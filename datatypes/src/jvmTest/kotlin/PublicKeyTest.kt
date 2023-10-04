@@ -1,9 +1,11 @@
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.EcCurve
+import at.asitplus.crypto.datatypes.fromJcaKey
 import at.asitplus.crypto.datatypes.getPublicKey
 import at.asitplus.crypto.datatypes.io.Base64Strict
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -35,14 +37,12 @@ class PublicKeyTest : FreeSpec({
                 keys
             ) { pubKey ->
 
-                val own = CryptoPublicKey.Ec.fromCoordinates(
-                    EcCurve.valueOf("SECP_${bits}_R_1"),
-                    pubKey.w.affineX.toByteArray(),
-                    pubKey.w.affineY.toByteArray()
-                )
+                val own = CryptoPublicKey.Ec.fromJcaKey(pubKey)
+                own.shouldNotBeNull()
                 println(Json.encodeToString(own))
                 println(own.encoded.encodeToString(Base16()))
                 println(own.keyId)
+                own.pkcs8Encoded shouldBe pubKey.encoded
                 CryptoPublicKey.fromKeyId(own.keyId) shouldBe own
                 own.getPublicKey().encoded shouldBe pubKey.encoded
             }

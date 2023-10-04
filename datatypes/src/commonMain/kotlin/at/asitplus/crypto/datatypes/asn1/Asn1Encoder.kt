@@ -3,6 +3,7 @@
 package at.asitplus.crypto.datatypes.asn1
 
 import at.asitplus.crypto.datatypes.CryptoPublicKey
+import at.asitplus.crypto.datatypes.EcCurve
 import at.asitplus.crypto.datatypes.JwsAlgorithm
 import at.asitplus.crypto.datatypes.TbsCertificate
 import at.asitplus.crypto.datatypes.asn1.JwsExtensions.encodeToByteArray
@@ -107,9 +108,13 @@ private fun JwsAlgorithm.encodeToAsn1() = when (this) {
 fun CryptoPublicKey.encodeToAsn1() = when (this) {
     is CryptoPublicKey.Ec -> sequence {
         sequence {
-            //TODO does this still check out for other key sizes??
             oid { "2A8648CE3D0201" }
-            oid { "2A8648CE3D030107" }
+            when(curve) {
+                EcCurve.SECP_256_R_1 ->   oid { "2A8648CE3D030107" }
+                EcCurve.SECP_384_R_1 -> oid{"2B81040022"}
+                EcCurve.SECP_521_R_1 -> oid{"2B81040023"}
+            }
+
         }
         bitString { (byteArrayOf(0x04.toByte()) + x.ensureSize(curve.coordinateLengthBytes) + y.ensureSize(curve.coordinateLengthBytes)) }
     }

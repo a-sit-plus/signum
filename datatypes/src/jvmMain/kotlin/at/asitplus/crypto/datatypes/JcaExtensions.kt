@@ -1,6 +1,10 @@
 package at.asitplus.crypto.datatypes
 
 import at.asitplus.crypto.datatypes.asn1.JwsExtensions.ensureSize
+import org.bouncycastle.asn1.ASN1ObjectIdentifier
+import org.bouncycastle.asn1.ASN1Sequence
+import org.bouncycastle.asn1.sec.SECNamedCurves
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.JCEECPublicKey
 import org.bouncycastle.jce.spec.ECPublicKeySpec
@@ -31,6 +35,8 @@ val EcCurve.jcaName
         EcCurve.SECP_521_R_1 -> "secp521r1"
     }
 
+fun EcCurve.Companion.byJcaName(name: String) = EcCurve.entries.find { it.jcaName == name }
+
 
 fun CryptoPublicKey.Ec.getPublicKey(): ECPublicKey {
     val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.jwkName)
@@ -48,12 +54,20 @@ fun CryptoPublicKey.Rsa.getPublicKey(): RSAPublicKey =
     ) as RSAPublicKey
 
 
-fun CryptoPublicKey.Ec.Companion.fromJcaKey(publicKey: ECPublicKey, ecCurve: EcCurve) =
-    fromCoordinates(
-        ecCurve,
-        publicKey.w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes),
-        publicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
+fun CryptoPublicKey.Ec.Companion.fromJcaKey(publicKey: ECPublicKey): CryptoPublicKey.Ec? {
+    val curve = EcCurve.byJcaName(
+        SECNamedCurves.getName(
+            SubjectPublicKeyInfo.getInstance(
+                ASN1Sequence.getInstance(publicKey.encoded)
+            ).algorithm.parameters as ASN1ObjectIdentifier
+        )
+    ) ?: return null
+    return fromCoordinates(
+        curve,
+        publicKey.w.affineX.toByteArray().ensureSize(curve.coordinateLengthBytes),
+        publicKey.w.affineY.toByteArray().ensureSize(curve.coordinateLengthBytes)
     )
+}
 
 fun CryptoPublicKey.Rsa.fromJcaKey(publicKey: RSAPublicKey): CryptoPublicKey.Rsa? {
     val sz = CryptoPublicKey.Rsa.Size.entries.find { it.number.toInt() == publicKey.modulus.bitLength() } ?: return null

@@ -18,6 +18,8 @@ sealed class CryptoPublicKey {
     @Transient
     abstract val encoded: ByteArray
 
+    @Transient
+    val pkcs8Encoded by lazy {  encodeToAsn1()}
 
     companion object {
 
@@ -75,8 +77,6 @@ sealed class CryptoPublicKey {
             }
             int { e.toInt() }
         }
-
-        val pkcs8Encoded = encodeToAsn1()
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true

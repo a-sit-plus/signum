@@ -12,15 +12,20 @@ import kotlinx.serialization.encoding.Encoder
  * EC Curve Class [jwkName] really does use established JWK curve names
  */
 @Serializable(with = EcCurveSerializer::class)
-enum class EcCurve(val jwkName: String, val keyLengthBits: UInt) {
+enum class EcCurve(
+    val jwkName: String,
+    val keyLengthBits: UInt,
+    val coordinateLengthBytes: UInt = keyLengthBits / 8u,
+    val signatureLengthBytes: UInt = coordinateLengthBytes
+) {
 
     SECP_256_R_1("P-256", 256u),
     SECP_384_R_1("P-384", 384u),
-    SECP_521_R_1("P-521", 521u);
+    SECP_521_R_1("P-521", 521u, 66u);
 
-    val coordinateLengthBytes = keyLengthBits / 8u
-
-    val signatureLengthBytes = keyLengthBits / 8u
+    companion object {
+        fun of(bits: UInt) = entries.find { it.keyLengthBits == bits }
+    }
 
 }
 
