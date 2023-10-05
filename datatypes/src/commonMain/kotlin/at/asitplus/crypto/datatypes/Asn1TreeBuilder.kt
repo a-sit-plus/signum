@@ -21,7 +21,7 @@ class Asn1TreeBuilder(input: ByteArray) {
         return result.toList()
     }
 
-    private fun TLV.isContainer() = tag == 0x30.toByte() || tag == 0x31.toByte()
+    private fun TLV.isContainer() = tag == 0x30.toByte() || tag == 0x31.toByte() || tag == 0xA0.toByte()
 
     @Throws(IllegalArgumentException::class)
     private fun read(): TLV {

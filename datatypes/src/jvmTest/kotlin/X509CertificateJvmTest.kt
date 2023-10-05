@@ -1,6 +1,15 @@
-import at.asitplus.crypto.datatypes.*
+import at.asitplus.crypto.datatypes.Asn1TreeBuilder
+import at.asitplus.crypto.datatypes.CryptoPublicKey
+import at.asitplus.crypto.datatypes.EcCurve
+import at.asitplus.crypto.datatypes.ExtendedTlv
+import at.asitplus.crypto.datatypes.JwsAlgorithm
+import at.asitplus.crypto.datatypes.TbsCertificate
+import at.asitplus.crypto.datatypes.X509Certificate
 import at.asitplus.crypto.datatypes.asn1.ensureSize
+import at.asitplus.crypto.datatypes.fromJcaKey
+import at.asitplus.crypto.datatypes.jcaName
 import io.kotest.core.spec.style.FreeSpec
+import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -21,7 +30,7 @@ import java.security.cert.CertificateFactory
 import java.security.interfaces.ECPublicKey
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.*
+import java.util.Date
 import kotlin.math.absoluteValue
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.days
@@ -165,7 +174,86 @@ class X509CertificateJvmTest : FreeSpec({
         parsed.shouldNotBeEmpty()
         parsed.size shouldBe 1
         println(parsed[0])
+        val matches = parsed.expect {
+            sequence {
+                sequence {
+                    container(0xA0) {
+                        integer()
+                    }
+                    long()
+                    sequence {
+                        oid()
+                    }
+                    sequence {
+                        set {
+                            sequence {
+                                oid()
+                                utf8String()
+                            }
+                        }
+                    }
+                    sequence {
+                        utcTime()
+                        utcTime()
+                    }
+                    sequence {
+                        set {
+                            sequence {
+                                oid()
+                                utf8String()
+                            }
+                        }
+                    }
+                    sequence {
+                        // SPKI!
+                    }
+                }
+                sequence {
+                    oid()
+                }
+                bitString()
+            }
+        }
+        matches.shouldBeTrue()
     }
 
 
 })
+
+
+fun List<ExtendedTlv>.expect(init: SequenceReader.() -> Unit): Boolean {
+    val seq = SequenceReader(this)
+    seq.init()
+    return seq.matches
+}
+
+
+class SequenceReader(var extendedTlvs: List<ExtendedTlv>) {
+    var matches: Boolean = true
+
+    fun sequence(function: SequenceReader.() -> Unit) = container(0x30, function)
+    fun set(function: SequenceReader.() -> Unit) = container(0x31, function)
+
+    fun integer() = tag(0x02)
+    fun long() = tag(0x02)
+    fun bitString() = tag(0x03)
+    fun oid() = tag(0x06)
+    fun utf8String() = tag(0x0c)
+    fun utcTime() = tag(0x17)
+
+    fun container(tag: Int, function: SequenceReader.() -> Unit) {
+        val first = takeAndDrop()
+        if (first.tlv.tag != tag.toByte())
+            matches = false
+        matches = matches and first.children.expect(function)
+    }
+
+    private fun tag(tag: Byte) {
+        if (takeAndDrop().tlv.tag != tag)
+            matches = false
+    }
+
+    private fun takeAndDrop() = extendedTlvs.first()
+        .also { extendedTlvs = extendedTlvs.drop(1) }
+
+}
