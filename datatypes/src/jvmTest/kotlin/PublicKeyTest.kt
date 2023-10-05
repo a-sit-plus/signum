@@ -1,7 +1,4 @@
-import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.EcCurve
-import at.asitplus.crypto.datatypes.fromJcaKey
-import at.asitplus.crypto.datatypes.getPublicKey
+import at.asitplus.crypto.datatypes.*
 import at.asitplus.crypto.datatypes.io.Base64Strict
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
@@ -40,15 +37,16 @@ class PublicKeyTest : FreeSpec({
                 val own = CryptoPublicKey.Ec.fromJcaKey(pubKey)
                 own.shouldNotBeNull()
                 println(Json.encodeToString(own))
-                println(own.encoded.encodeToString(Base16()))
+                println(own.iosEncoded.encodeToString(Base16()))
+                println(own.derEncoded.encodeToString(Base16()))
                 println(own.keyId)
-                own.pkcs8Encoded shouldBe pubKey.encoded
+                own.derEncoded shouldBe pubKey.encoded
                 CryptoPublicKey.fromKeyId(own.keyId) shouldBe own
                 own.getPublicKey().encoded shouldBe pubKey.encoded
+                CryptoPublicKey.decodeFromDer(own.derEncoded) shouldBe own
             }
         }
     }
-
     "RSA" - {
         withData(512, 1024, 2048, 3072, 4096) { bits ->
             val keys = List<RSAPublicKey>(20) {
@@ -69,15 +67,16 @@ class PublicKeyTest : FreeSpec({
                 val sz = CryptoPublicKey.Rsa.Size.of(bits.toUInt())!!
                 val own = CryptoPublicKey.Rsa(sz, pubKey.modulus.toByteArray(), pubKey.publicExponent.toInt().toUInt())
                 println(Json.encodeToString(own))
-                println(own.encoded.encodeToString(Base16()))
+                println(own.iosEncoded.encodeToString(Base16()))
                 println(own.keyId)
                 val keyBytes = ((ASN1InputStream(pubKey.encoded).readObject()
                     .toASN1Primitive() as ASN1Sequence).elementAt(1) as DERBitString).bytes
-                own.encoded shouldBe keyBytes //PKCS#1
-                own.pkcs8Encoded shouldBe pubKey.encoded //PKCS#8
-
+                own.iosEncoded shouldBe keyBytes //PKCS#1
+                own.derEncoded shouldBe pubKey.encoded //PKCS#8
+                CryptoPublicKey.decodeFromDer(own.derEncoded) shouldBe own
                 own.getPublicKey().encoded shouldBe pubKey.encoded
             }
         }
     }
+
 })

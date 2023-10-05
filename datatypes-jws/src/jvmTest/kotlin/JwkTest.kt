@@ -36,7 +36,7 @@ class JwkTest : FreeSpec({
                 own.shouldNotBeNull()
                 println(own.serialize())
                 own.toAnsiX963ByteArray()
-                    .fold(onSuccess = { it shouldBe cryptoPubKey.encoded }, onFailure = { throw it })
+                    .fold(onSuccess = { it shouldBe cryptoPubKey.iosEncoded }, onFailure = { throw it })
 
                 CryptoPublicKey.fromKeyId(own.keyId!!) shouldBe cryptoPubKey
             }

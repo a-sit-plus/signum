@@ -132,7 +132,6 @@ fun CryptoPublicKey.encodeToAsn1() = when (this) {
             int { e.toInt() }
         }
         sequence {
-
             sequence {
                 oid { "2A864886F70D010101" }
                 asn1null()

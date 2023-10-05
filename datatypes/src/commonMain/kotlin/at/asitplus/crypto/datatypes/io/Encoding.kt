@@ -75,7 +75,7 @@ object MultibaseHelper {
 
 
     fun calcKid(rsaPublicKey: CryptoPublicKey.Rsa) =
-        "$PREFIX_DID_KEY:${multibaseWrapBase64(multicodecWrapRSA(rsaPublicKey.encoded))}"
+        "$PREFIX_DID_KEY:${multibaseWrapBase64(multicodecWrapRSA(rsaPublicKey.iosEncoded))}"
 
 
     fun calcEcPublicKeyCoords(keyId: String): Pair<ByteArray, ByteArray>? {

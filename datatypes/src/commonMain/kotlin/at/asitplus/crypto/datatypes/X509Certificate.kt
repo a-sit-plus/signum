@@ -49,18 +49,17 @@ data class TbsCertificate(
     }
 
     companion object {
-        fun decodeFromDer(input: ByteArray): TbsCertificate? {
+        @Throws(IllegalArgumentException::class)
+        fun decodeFromDer(input: ByteArray): TbsCertificate {
             return runCatching {
                 val reader = Asn1Reader(input)
-                val version = reader.read(0xA0) {
-                    runCatching { Asn1Reader(it).readInt() }.getOrNull()
-                }
+                val version = reader.read(0xA0) { Asn1Reader(it).readInt() }
                 val serialNumber = reader.readLong()
                 val sigAlg = reader.readSequence(JwsAlgorithm.Companion::decodeFromDer)
                 val issuerCommonName = reader.readSequence(::decodeIssuerName)
                 val timestamps = reader.readSequence(::decodeTimestamps)
                 val subjectCommonName = reader.readSequence(::decodeIssuerName)
-                val cryptoPublicKey = reader.readSequence(CryptoPublicKey.Companion::decodeFromDer)
+                val cryptoPublicKey = CryptoPublicKey.decodeFromDer(reader.rest)
 
                 return TbsCertificate(
                     version = version,
@@ -72,7 +71,7 @@ data class TbsCertificate(
                     subjectCommonName = subjectCommonName,
                     publicKey = cryptoPublicKey,
                 )
-            }.getOrNull()
+            }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
         }
 
         private fun decodeTimestamps(input: ByteArray): Pair<Instant, Instant>? = runCatching {
@@ -82,20 +81,18 @@ data class TbsCertificate(
             return Pair(firstInstant, secondInstant)
         }.getOrNull()
 
-        private fun decodeIssuerName(input: ByteArray) =
-            runCatching { Asn1Reader(input).readSet(::decodeX500Name) }.getOrNull()
+        private fun decodeIssuerName(input: ByteArray) = Asn1Reader(input).readSet(::decodeX500Name)
 
-        private fun decodeX500Name(input: ByteArray) =
-            runCatching { Asn1Reader(input).readSequence(::decodeRdn) }.getOrNull()
+        private fun decodeX500Name(input: ByteArray) = Asn1Reader(input).readSequence(::decodeRdn)
 
-        private fun decodeRdn(input: ByteArray): String? = runCatching {
+        private fun decodeRdn(input: ByteArray): String {
             val reader = Asn1Reader(input)
             val oid = reader.readOid()
             if (oid == "550403") {
                 return reader.readUtf8String()
             }
-            return null
-        }.getOrNull()
+            throw IllegalArgumentException("Expected RDN, got OID $oid")
+        }
 
     }
 }

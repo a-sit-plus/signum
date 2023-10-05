@@ -6,7 +6,11 @@ import kotlinx.datetime.Instant
 
 class Asn1Reader(input: ByteArray) {
 
-    var rest = input
+    var rest: ByteArray private set
+
+    init {
+        rest = input
+    }
 
     fun <T> readSequence(func: (ByteArray) -> T?) = read(0x30, func)
 
@@ -14,7 +18,7 @@ class Asn1Reader(input: ByteArray) {
 
     fun readOid() = read(0x06) { bytes -> bytes.encodeToString(Base16) }
 
-    fun readBitstring() = read(0x03, ::decodeBitstring)
+    fun readBitstring() = read(0x03, ::decodeBitString)
 
     fun readInt() = read(0x02, Int.Companion::decodeFromDer)
 
@@ -23,6 +27,8 @@ class Asn1Reader(input: ByteArray) {
     fun readInstant() = read(0x17, Instant.Companion::decodeFromDer)
 
     fun readUtf8String() = read(0x0c) { bytes -> String(bytes) }
+
+    fun readNull() = read(0x05) {}
 
     fun <T> read(tag: Int, func: (ByteArray) -> T?): T {
         val tlv = rest.readTlv()
@@ -37,11 +43,11 @@ class Asn1Reader(input: ByteArray) {
     }
 }
 
+fun decodeBitString(input: ByteArray) = input.drop(1).toByteArray()
 
-fun decodeBitstring(input: ByteArray) = input.drop(1).toByteArray()
-
-fun CryptoPublicKey.Companion.decodeFromDer(input: ByteArray): CryptoPublicKey? = runCatching {
-    val reader = Asn1Reader(input)
+@Throws(IllegalArgumentException::class)
+fun CryptoPublicKey.Companion.decodeFromDer(input: ByteArray): CryptoPublicKey {
+    val reader = Asn1Reader(input).readSequence { Asn1Reader(it) }
     val innerSequence = reader.readSequence { bytes -> bytes }
     val innerReader = Asn1Reader(innerSequence)
     val oid = innerReader.readOid()
@@ -59,17 +65,29 @@ fun CryptoPublicKey.Companion.decodeFromDer(input: ByteArray): CryptoPublicKey? 
         val x = xAndY.take(coordLen).toByteArray()
         val y = xAndY.drop(coordLen).take(coordLen).toByteArray()
         return CryptoPublicKey.Ec.fromCoordinates(curve, x, y)
+    } else if (oid == "2A864886F70D010101") {
+        innerReader.readNull()
+        val rsaSequence = Asn1Reader(reader.readBitstring()).readSequence { Asn1Reader(it) }
+        val n = rsaSequence.read(0x02) { it }
+        val e = rsaSequence.readInt().toUInt()
+        return CryptoPublicKey.Rsa(
+            CryptoPublicKey.Rsa.Size.of(((n.size - 1) * 8).toUInt()) ?: throw IllegalArgumentException(
+                "Illegal RSa key size: ${(n.size - 1) * 8}"
+            ), n, e
+        )
+
     } else {
         throw IllegalArgumentException("Non-EC Keys not supported")
     }
-}.getOrNull()
+}
 
-fun Instant.Companion.decodeFromDer(input: ByteArray): Instant {
+@Throws(IllegalArgumentException::class)
+fun Instant.Companion.decodeFromDer(input: ByteArray): Instant = runCatching {
     val s = String(input)
     val isoString =
         "20${s[0]}${s[1]}-${s[2]}${s[3]}-${s[4]}${s[5]}T${s[6]}${s[7]}:${s[8]}${s[9]}:${s[10]}${s[11]}${s[12]}"
     return Instant.parse(isoString)
-}
+}.getOrElse { throw IllegalArgumentException(it) }
 
 fun Int.Companion.decodeFromDer(input: ByteArray): Int {
     var result = 0
@@ -79,15 +97,16 @@ fun Int.Companion.decodeFromDer(input: ByteArray): Int {
     return result
 }
 
-fun Long.Companion.decodeFromDer(input: ByteArray): Long {
+@Throws(IllegalArgumentException::class)
+fun Long.Companion.decodeFromDer(input: ByteArray): Long =runCatching{
     var result = 0L
     for (i in input.indices) {
         result = (result shl Byte.SIZE_BITS) or (input[i].toUByte().toLong())
     }
     return result
-}
+}.getOrElse { throw IllegalArgumentException(it) }
 
-private fun ByteArray.readTlv(): TLV {
+private fun ByteArray.readTlv(): TLV =runCatching{
     if (this.isEmpty()) throw IllegalArgumentException("Can't read TLV, input empty")
     val tag = this[0]
     val firstLength = this[1]
@@ -109,7 +128,29 @@ private fun ByteArray.readTlv(): TLV {
     if (this.size < 2 + length) throw IllegalArgumentException("Out of bytes")
     val value = this.drop(2).take(length).toByteArray()
     return TLV(tag, length, value, 2 + length)
+}.getOrElse { throw if(it is IllegalArgumentException) it else IllegalArgumentException(it) }
+
+
+data class TLV(val tag: Byte, val length: Int, val content: ByteArray, val overallLength: Int) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as TLV
+
+        if (tag != other.tag) return false
+        if (length != other.length) return false
+        if (!content.contentEquals(other.content)) return false
+        if (overallLength != other.overallLength) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = tag.toInt()
+        result = 31 * result + length
+        result = 31 * result + content.contentHashCode()
+        result = 31 * result + overallLength
+        return result
+    }
 }
-
-
-data class TLV(val tag: Byte, val length: Int, val content: ByteArray, val overallLength: Int)

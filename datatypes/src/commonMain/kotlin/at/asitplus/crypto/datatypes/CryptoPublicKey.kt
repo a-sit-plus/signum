@@ -19,10 +19,10 @@ sealed class CryptoPublicKey {
     abstract val keyId: String
 
     @Transient
-    abstract val encoded: ByteArray
+    abstract val iosEncoded: ByteArray
 
     @Transient
-    val pkcs8Encoded by lazy { encodeToAsn1() }
+    val derEncoded by lazy { encodeToAsn1() }
 
     companion object {
 
@@ -61,7 +61,7 @@ sealed class CryptoPublicKey {
          * PKCS#1 encoded RSA Public Key
          */
         @Transient
-        override val encoded = sequence {
+        override val iosEncoded = sequence {
             tagged(0x02) {
                 n.ensureSize(bits.number / 8u).let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) }
             }
@@ -74,7 +74,7 @@ sealed class CryptoPublicKey {
 
             other as Rsa
 
-            return encoded.contentEquals(other.encoded)
+            return iosEncoded.contentEquals(other.iosEncoded)
         }
 
         override fun hashCode(): Int {
@@ -100,7 +100,7 @@ sealed class CryptoPublicKey {
             other as Ec
 
             if (curve != other.curve) return false
-            if (!encoded.contentEquals(other.encoded)) return false
+            if (!iosEncoded.contentEquals(other.iosEncoded)) return false
 
             return true
         }
@@ -131,7 +131,7 @@ sealed class CryptoPublicKey {
          * ANSI X9.63 Encoding as used by iOS
          */
         @Transient
-        override val encoded =
+        override val iosEncoded =
             curve.coordinateLengthBytes.let { byteArrayOf(0x04.toByte()) + x.ensureSize(it) + y.ensureSize(it) }
 
         @Transient
