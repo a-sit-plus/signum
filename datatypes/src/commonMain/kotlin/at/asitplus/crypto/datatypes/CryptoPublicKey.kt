@@ -13,7 +13,7 @@ import kotlinx.serialization.Transient
 sealed class CryptoPublicKey {
 
     //must be serializable, therefore <String,String>
-    val additionalProperties = mutableMapOf<String,String>()
+    val additionalProperties = mutableMapOf<String, String>()
 
     @Transient
     abstract val keyId: String
@@ -22,7 +22,7 @@ sealed class CryptoPublicKey {
     abstract val encoded: ByteArray
 
     @Transient
-    val pkcs8Encoded by lazy {  encodeToAsn1()}
+    val pkcs8Encoded by lazy { encodeToAsn1() }
 
     companion object {
 
@@ -117,18 +117,14 @@ sealed class CryptoPublicKey {
                 Ec(curve = curve, x = x, y = y)
 
             fun fromAnsiX963Bytes(src: ByteArray): CryptoPublicKey? {
-                val curve =
-                    EcCurve.entries.find { 2 * it.coordinateLengthBytes.toInt() == src.size - 1 } ?: return null
                 if (src[0] != 0x04.toByte()) return null
-
+                val curve = EcCurve.entries
+                    .find { 2 * it.coordinateLengthBytes.toInt() == src.size - 1 } ?: return null
                 val numBytes = curve.coordinateLengthBytes.toInt()
-
-                val xCoordinate = src.sliceArray(1..<numBytes)
-                val yCoordinate =
-                    src.sliceArray((numBytes + 1)..<(numBytes * 2 + 1))
-                return Ec(curve = curve, x = xCoordinate, y = yCoordinate)
+                val x = src.drop(1).take(numBytes).toByteArray()
+                val y = src.drop(1).drop(numBytes).take(numBytes).toByteArray()
+                return Ec(curve = curve, x = x, y = y)
             }
-
         }
 
         /**
