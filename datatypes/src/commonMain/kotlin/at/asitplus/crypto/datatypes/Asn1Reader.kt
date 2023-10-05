@@ -12,6 +12,8 @@ class Asn1Reader(input: ByteArray) {
         rest = input
     }
 
+
+    fun hasMore() = rest.isNotEmpty()
     fun <T> readSequence(func: (ByteArray) -> T?) = read(0x30, func)
 
     fun <T> readSet(func: (ByteArray) -> T?) = read(0x31, func)
@@ -26,6 +28,11 @@ class Asn1Reader(input: ByteArray) {
 
     fun readInstant() = read(0x17, Instant.Companion::decodeFromDer)
 
+    fun readString(): String =
+        if (rest[0] == 0x0C.toByte()) readUtf8String()
+        else read(0x13) { bytes -> String(bytes) }
+
+
     fun readUtf8String() = read(0x0c) { bytes -> String(bytes) }
 
     fun readNull() = read(0x05) {}
@@ -34,20 +41,22 @@ class Asn1Reader(input: ByteArray) {
         val tlv = rest.readTlv()
         if (tlv.tag != tag.toByte())
             throw IllegalArgumentException("Expected tag $tag, got ${tlv.tag}")
-        val obj = runCatching { func(tlv.content) }.getOrNull()
-            ?: throw IllegalArgumentException("Can't decode content")
+        val obj =
+            runCatching { func(tlv.content) }.getOrElse { throw IllegalArgumentException("Can't decode content", it) }
         if (tlv.overallLength > rest.size)
             throw IllegalArgumentException("Out of bytes")
         rest = rest.drop(tlv.overallLength).toByteArray()
-        return obj
+        return obj ?: throw IllegalArgumentException("Can't decode content")
     }
 }
 
 fun decodeBitString(input: ByteArray) = input.drop(1).toByteArray()
 
+
+
 @Throws(IllegalArgumentException::class)
-fun CryptoPublicKey.Companion.decodeFromDer(input: ByteArray): CryptoPublicKey {
-    val reader = Asn1Reader(input).readSequence { Asn1Reader(it) }
+fun CryptoPublicKey.Companion.decodeFromDer(src: Asn1Reader): CryptoPublicKey {
+    val reader = src.readSequence { Asn1Reader(it) }
     val innerSequence = reader.readSequence { bytes -> bytes }
     val innerReader = Asn1Reader(innerSequence)
     val oid = innerReader.readOid()
@@ -82,6 +91,9 @@ fun CryptoPublicKey.Companion.decodeFromDer(input: ByteArray): CryptoPublicKey {
 }
 
 @Throws(IllegalArgumentException::class)
+fun CryptoPublicKey.Companion.decodeFromDer(input: ByteArray): CryptoPublicKey = decodeFromDer(Asn1Reader(input))
+
+@Throws(IllegalArgumentException::class)
 fun Instant.Companion.decodeFromDer(input: ByteArray): Instant = runCatching {
     val s = String(input)
     val isoString =
@@ -98,7 +110,7 @@ fun Int.Companion.decodeFromDer(input: ByteArray): Int {
 }
 
 @Throws(IllegalArgumentException::class)
-fun Long.Companion.decodeFromDer(input: ByteArray): Long =runCatching{
+fun Long.Companion.decodeFromDer(input: ByteArray): Long = runCatching {
     var result = 0L
     for (i in input.indices) {
         result = (result shl Byte.SIZE_BITS) or (input[i].toUByte().toLong())
@@ -106,7 +118,7 @@ fun Long.Companion.decodeFromDer(input: ByteArray): Long =runCatching{
     return result
 }.getOrElse { throw IllegalArgumentException(it) }
 
-private fun ByteArray.readTlv(): TLV =runCatching{
+private fun ByteArray.readTlv(): TLV = runCatching {
     if (this.isEmpty()) throw IllegalArgumentException("Can't read TLV, input empty")
     val tag = this[0]
     val firstLength = this[1]
@@ -128,7 +140,7 @@ private fun ByteArray.readTlv(): TLV =runCatching{
     if (this.size < 2 + length) throw IllegalArgumentException("Out of bytes")
     val value = this.drop(2).take(length).toByteArray()
     return TLV(tag, length, value, 2 + length)
-}.getOrElse { throw if(it is IllegalArgumentException) it else IllegalArgumentException(it) }
+}.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
 
 
 data class TLV(val tag: Byte, val length: Int, val content: ByteArray, val overallLength: Int) {

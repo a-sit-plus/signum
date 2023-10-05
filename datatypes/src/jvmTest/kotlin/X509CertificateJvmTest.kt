@@ -64,11 +64,11 @@ class X509CertificateJvmTest : FreeSpec({
         val tbsCertificate = TbsCertificate(
             version = 2,
             serialNumber = serialNumber.toLong(),
-            issuerCommonName = commonName,
+            issuerName = listOf(commonName),
             validFrom = notBeforeDate.toInstant().toKotlinInstant(),
             validUntil = notAfterDate.toInstant().toKotlinInstant(),
             signatureAlgorithm = signatureAlgorithm,
-            subjectCommonName = commonName,
+            subjectName = listOf(commonName),
             publicKey = cryptoPublicKey
         )
         val signed = Signature.getInstance(signatureAlgorithm.jcaName).apply {
@@ -121,8 +121,8 @@ class X509CertificateJvmTest : FreeSpec({
         //x509Certificate.encodeToDer() shouldBe certificateHolder.encoded
         x509Certificate.signatureAlgorithm shouldBe signatureAlgorithm
         x509Certificate.tbsCertificate.version shouldBe 2
-        x509Certificate.tbsCertificate.issuerCommonName shouldBe commonName
-        x509Certificate.tbsCertificate.subjectCommonName shouldBe commonName
+        x509Certificate.tbsCertificate.issuerName shouldBe commonName
+        x509Certificate.tbsCertificate.subjectName shouldBe commonName
         x509Certificate.tbsCertificate.serialNumber shouldBe serialNumber.longValueExact()
         x509Certificate.tbsCertificate.signatureAlgorithm shouldBe signatureAlgorithm
         x509Certificate.tbsCertificate.validFrom shouldBe notBeforeDate.toInstant().truncatedTo(ChronoUnit.SECONDS)

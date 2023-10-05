@@ -16,9 +16,11 @@ class SequenceBuilder {
     internal val elements = mutableListOf<ByteArray>()
 
     fun tagged(tag: Int, block: () -> ByteArray) = apply { elements += asn1Tag(tag, block()) }
+    fun bool(block: () -> Boolean) = apply { elements += block().encodeToAsn1() }
     fun int(block: () -> Int) = apply { elements += block().encodeToAsn1() }
     fun long(block: () -> Long) = apply { elements += block().encodeToAsn1() }
 
+    fun octetString(block: () -> ByteArray) = apply { elements += block().encodeToOctetString() }
     fun bitString(block: () -> ByteArray) = apply { elements += block().encodeToBitString() }
 
     fun oid(block: () -> String) = apply { elements += block().encodeToOid() }
@@ -54,16 +56,21 @@ class SequenceBuilder {
         seq.init()
         elements += asn1Tag(0x31, seq.elements.fold(byteArrayOf()) { acc, bytes -> acc + bytes })
     }
+
+    fun append(derEncoded: ByteArray) = apply { elements += derEncoded }
 }
 
 
-fun sequence(init: SequenceBuilder.() -> Unit): ByteArray {
+fun sequence(root: SequenceBuilder.() -> Unit): ByteArray {
     val seq = SequenceBuilder()
-    seq.init()
+    seq.root()
     return asn1Tag(0x30, seq.elements.fold(byteArrayOf()) { acc, bytes -> acc + bytes })
 }
 
+private fun ByteArray.encodeToOctetString() = asn1Tag(0x04, this)
 private fun Int.encodeToAsn1() = asn1Tag(0x02, encodeToDer())
+
+private fun Boolean.encodeToAsn1() = asn1Tag(0x01, (if (this) 0xff else 0).encodeToDer())
 
 private fun Int.encodeToDer() = encodeToByteArray().dropWhile { it == 0.toByte() }.toByteArray()
 
@@ -99,13 +106,17 @@ private fun Instant.encodeToAsn1(): ByteArray {
 }
 
 fun JwsAlgorithm.Companion.decodeFromDer(input: ByteArray): JwsAlgorithm? {
-    if (input.contentEquals("2A8648CE3D040302".encodeToOid()))
+    if (input.contentEquals("2A8648CE3D040303".encodeToOid()))
+        return JwsAlgorithm.ES384
+    else if (input.contentEquals("2A8648CE3D040302".encodeToOid()))
         return JwsAlgorithm.ES256
+
     return null
 }
 
 private fun JwsAlgorithm.encodeToAsn1() = when (this) {
     JwsAlgorithm.ES256 -> "2A8648CE3D040302".encodeToOid()
+    JwsAlgorithm.ES384 -> "2A8648CE3D040303".encodeToOid()
     else -> throw IllegalArgumentException("sigAlg: $this")
 }
 
@@ -159,43 +170,43 @@ private fun Int.encodeLength(): ByteArray {
 }
 
 
-    /**
-     * Encode as a four-byte array
-     */
-    fun Int.encodeToByteArray(): ByteArray =
-        byteArrayOf((this ushr 24).toByte(), (this ushr 16).toByte(), (this ushr 8).toByte(), (this).toByte())
+/**
+ * Encode as a four-byte array
+ */
+fun Int.encodeToByteArray(): ByteArray =
+    byteArrayOf((this ushr 24).toByte(), (this ushr 16).toByte(), (this ushr 8).toByte(), (this).toByte())
 
-    /**
-     * Encode as a four-byte array
-     */
-    fun Long.encodeToByteArray(): ByteArray =
-        byteArrayOf(
-            (this ushr 56).toByte(), (this ushr 48).toByte(), (this ushr 40).toByte(), (this ushr 32).toByte(),
-            (this ushr 24).toByte(), (this ushr 16).toByte(), (this ushr 8).toByte(), (this).toByte()
-        )
+/**
+ * Encode as a four-byte array
+ */
+fun Long.encodeToByteArray(): ByteArray =
+    byteArrayOf(
+        (this ushr 56).toByte(), (this ushr 48).toByte(), (this ushr 40).toByte(), (this ushr 32).toByte(),
+        (this ushr 24).toByte(), (this ushr 16).toByte(), (this ushr 8).toByte(), (this).toByte()
+    )
 
-    /**
-     * Strips the leading 0x00 byte of an ASN.1-encoded Integer,
-     * that will be there if the first bit of the value is set,
-     * i.e. it is over 0x7F (or < 0 if it is signed)
-     */
-    fun ByteArray.stripLeadingSignByte() =
-        if (this[0] == 0.toByte() && this[1] < 0) drop(1).toByteArray() else this
+/**
+ * Strips the leading 0x00 byte of an ASN.1-encoded Integer,
+ * that will be there if the first bit of the value is set,
+ * i.e. it is over 0x7F (or < 0 if it is signed)
+ */
+fun ByteArray.stripLeadingSignByte() =
+    if (this[0] == 0.toByte() && this[1] < 0) drop(1).toByteArray() else this
 
-    /**
-     * The extracted values from ASN.1 may be too short
-     * to be simply concatenated as raw values,
-     * so we'll need to pad them with 0x00 bytes to the expected length
-     */
-    fun ByteArray.padWithZeros(len: Int): ByteArray =
-        if (size < len) ByteArray(len - size) { 0 } + this else this
+/**
+ * The extracted values from ASN.1 may be too short
+ * to be simply concatenated as raw values,
+ * so we'll need to pad them with 0x00 bytes to the expected length
+ */
+fun ByteArray.padWithZeros(len: Int): ByteArray =
+    if (size < len) ByteArray(len - size) { 0 } + this else this
 
-    /**
-     * Drops or adds zero bytes at the start until the [size] is reached
-     */
-    fun ByteArray.ensureSize(size: UInt): ByteArray = when {
-        this.size.toUInt() > size -> this.drop(1).toByteArray().ensureSize(size)
-        this.size.toUInt() < size -> (byteArrayOf(0) + this).ensureSize(size)
-        else -> this
-    }
+/**
+ * Drops or adds zero bytes at the start until the [size] is reached
+ */
+fun ByteArray.ensureSize(size: UInt): ByteArray = when {
+    this.size.toUInt() > size -> this.drop(1).toByteArray().ensureSize(size)
+    this.size.toUInt() < size -> (byteArrayOf(0) + this).ensureSize(size)
+    else -> this
+}
 

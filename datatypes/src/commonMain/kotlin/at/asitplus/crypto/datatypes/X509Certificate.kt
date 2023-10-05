@@ -15,11 +15,12 @@ data class TbsCertificate(
     val version: Int = 2,
     val serialNumber: Long,
     val signatureAlgorithm: JwsAlgorithm,
-    val issuerCommonName: String,
+    val issuerName: List<String>,
     val validFrom: Instant,
     val validUntil: Instant,
-    val subjectCommonName: String,
-    val publicKey: CryptoPublicKey
+    val subjectName: List<String>,
+    val publicKey: CryptoPublicKey,
+    val extensions: List<X509CertificateExtension>? = null
 ) {
     fun encodeToDer() = sequence {
         version { version }
@@ -28,9 +29,11 @@ data class TbsCertificate(
             sigAlg { signatureAlgorithm }
         }
         sequence {
-            set {
-                sequence {
-                    commonName { issuerCommonName }
+            issuerName.forEach {
+                set {
+                    sequence {
+                        commonName { it }
+                    }
                 }
             }
         }
@@ -39,13 +42,27 @@ data class TbsCertificate(
             utcTime { validUntil }
         }
         sequence {
-            set {
-                sequence {
-                    commonName { subjectCommonName }
+            subjectName.forEach {
+                set {
+                    sequence {
+                        commonName { it }
+                    }
                 }
             }
         }
         subjectPublicKey { publicKey }
+
+        extensions?.let {
+            if (it.isNotEmpty()) {
+                tagged(0xA3) {
+                    sequence(root = {
+                        it.forEach { ext ->
+                            append(ext.encoderToDer())
+                        }
+                    })
+                }
+            }
+        }
     }
 
     companion object {
@@ -56,20 +73,56 @@ data class TbsCertificate(
                 val version = reader.read(0xA0) { Asn1Reader(it).readInt() }
                 val serialNumber = reader.readLong()
                 val sigAlg = reader.readSequence(JwsAlgorithm.Companion::decodeFromDer)
-                val issuerCommonName = reader.readSequence(::decodeIssuerName)
+                val issuerName = reader.readSequence {
+                    var rest = it
+                    val names = mutableListOf<String>()
+                    while (rest.isNotEmpty()) {
+                        val nameReader = Asn1Reader(rest)
+                        val inner = nameReader.readSet { Asn1Reader(it) }
+                        names += inner.readSequence(::decodeRdn)
+                        rest = nameReader.rest
+                    }
+                    names
+                }
                 val timestamps = reader.readSequence(::decodeTimestamps)
-                val subjectCommonName = reader.readSequence(::decodeIssuerName)
-                val cryptoPublicKey = CryptoPublicKey.decodeFromDer(reader.rest)
+                val subject = reader.readSequence {
+                    var rest = it
+                    val names = mutableListOf<String>()
+                    while (rest.isNotEmpty()) {
+                        val nameReader = Asn1Reader(rest)
+                        val inner = nameReader.readSet { Asn1Reader(it) }
+                        names += inner.readSequence(::decodeRdn)
+                        rest = nameReader.rest
+                    }
+                    names
+                }
+                val cryptoPublicKey = CryptoPublicKey.decodeFromDer(reader)
+
+                val extensions = if (reader.hasMore()) {
+                    val extReader = reader.read(0xA3) { Asn1Reader(it) }
+                    extReader.readSequence {
+                        var rest = it
+                        val extns = mutableListOf<X509CertificateExtension>()
+                        while (rest.isNotEmpty()) {
+                            val nameReader = Asn1Reader(rest)
+
+                            extns += X509CertificateExtension.decodeFromDer(nameReader)
+                            rest = nameReader.rest
+                        }
+                        extns
+                    }
+                } else null
 
                 return TbsCertificate(
                     version = version,
                     serialNumber = serialNumber,
                     signatureAlgorithm = sigAlg,
-                    issuerCommonName = issuerCommonName,
+                    issuerName = issuerName,
                     validFrom = timestamps.first,
                     validUntil = timestamps.second,
-                    subjectCommonName = subjectCommonName,
+                    subjectName = subject,
                     publicKey = cryptoPublicKey,
+                    extensions = extensions,
                 )
             }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
         }
@@ -88,12 +141,59 @@ data class TbsCertificate(
         private fun decodeRdn(input: ByteArray): String {
             val reader = Asn1Reader(input)
             val oid = reader.readOid()
-            if (oid == "550403") {
-                return reader.readUtf8String()
+            if (oid == "550403" || oid == "550406" || oid == "55040A" || oid == "55040B") {
+                return reader.readString()
             }
             throw IllegalArgumentException("Expected RDN, got OID $oid")
         }
 
+    }
+}
+
+@Serializable
+data class X509CertificateExtension(
+    val id: String, val critical: Boolean = false,
+    @Serializable(with = ByteArrayBase64Serializer::class) val value: ByteArray
+) {
+
+    fun encoderToDer() = sequence {
+        oid { id }
+        if (critical) bool { true }
+        octetString { value }
+    }
+
+    companion object {
+
+        fun decodeFromDer(src: Asn1Reader): X509CertificateExtension {
+            val extReader = src.readSequence { Asn1Reader(it) }
+            val id = extReader.readOid()
+            val critical =
+                if (extReader.rest[0] == 0x01.toByte()) extReader.read(0x01) { it[0] == 0xff.toByte() } else false
+            val value = extReader.read(0x04) { it }
+            return X509CertificateExtension(id, critical, value)
+        }
+
+        fun decodeFromDer(input: ByteArray): X509CertificateExtension = decodeFromDer(Asn1Reader(input))
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as X509CertificateExtension
+
+        if (id != other.id) return false
+        if (critical != other.critical) return false
+        if (!value.contentEquals(other.value)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = id.hashCode()
+        result = 31 * result + critical.hashCode()
+        result = 31 * result + value.contentHashCode()
+        return result
     }
 }
 
@@ -136,10 +236,10 @@ data class X509Certificate(
     }
 
     companion object {
-        fun decodeFromDer(input: ByteArray): X509Certificate? {
+        fun decodeFromDer(input: ByteArray): X509Certificate {
             return runCatching {
                 Asn1Reader(input).readSequence(::decodeFromDerInner)
-            }.getOrNull()
+            }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
         }
 
         private fun decodeFromDerInner(input: ByteArray): X509Certificate {
