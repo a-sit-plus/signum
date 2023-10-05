@@ -1,6 +1,6 @@
 package at.asitplus.crypto.datatypes
 
-import at.asitplus.crypto.datatypes.asn1.JwsExtensions.ensureSize
+import at.asitplus.crypto.datatypes.asn1.ensureSize
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.sec.SECNamedCurves

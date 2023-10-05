@@ -1,7 +1,7 @@
 package at.asitplus.crypto.datatypes
 
-import at.asitplus.crypto.datatypes.asn1.JwsExtensions.ensureSize
 import at.asitplus.crypto.datatypes.asn1.encodeToAsn1
+import at.asitplus.crypto.datatypes.asn1.ensureSize
 import at.asitplus.crypto.datatypes.asn1.sequence
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.io.MultibaseHelper
@@ -11,6 +11,9 @@ import kotlinx.serialization.Transient
 
 @Serializable
 sealed class CryptoPublicKey {
+
+    //must be serializable, therefore <String,String>
+    val additionalProperties = mutableMapOf<String,String>()
 
     @Transient
     abstract val keyId: String
@@ -27,19 +30,6 @@ sealed class CryptoPublicKey {
             val (xCoordinate, yCoordinate) = MultibaseHelper.calcEcPublicKeyCoords(it)
                 ?: return null
             val curve = EcCurve.entries.find { it.coordinateLengthBytes.toInt() == xCoordinate.size } ?: return null
-            return Ec(curve = curve, x = xCoordinate, y = yCoordinate)
-        }
-
-        fun fromAnsiX963Bytes(src: ByteArray): CryptoPublicKey? {
-            val curve =
-                EcCurve.entries.find { 2 * it.coordinateLengthBytes.toInt() == src.size - 1 } ?: return null
-            if (src[0] != 0x04.toByte()) return null
-
-            val numBytes = curve.coordinateLengthBytes.toInt()
-
-            val xCoordinate = src.sliceArray(1..<numBytes)
-            val yCoordinate =
-                src.sliceArray((numBytes + 1)..<(numBytes * 2 + 1))
             return Ec(curve = curve, x = xCoordinate, y = yCoordinate)
         }
     }
@@ -125,6 +115,19 @@ sealed class CryptoPublicKey {
         companion object {
             fun fromCoordinates(curve: EcCurve, x: ByteArray, y: ByteArray): Ec =
                 Ec(curve = curve, x = x, y = y)
+
+            fun fromAnsiX963Bytes(src: ByteArray): CryptoPublicKey? {
+                val curve =
+                    EcCurve.entries.find { 2 * it.coordinateLengthBytes.toInt() == src.size - 1 } ?: return null
+                if (src[0] != 0x04.toByte()) return null
+
+                val numBytes = curve.coordinateLengthBytes.toInt()
+
+                val xCoordinate = src.sliceArray(1..<numBytes)
+                val yCoordinate =
+                    src.sliceArray((numBytes + 1)..<(numBytes * 2 + 1))
+                return Ec(curve = curve, x = xCoordinate, y = yCoordinate)
+            }
 
         }
 

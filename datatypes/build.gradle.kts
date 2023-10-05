@@ -8,11 +8,7 @@ plugins {
     id("at.asitplus.gradle.conventions")
 }
 
-group = "at.asitplus.crypto"
 version = "1.0-SNAPSHOT"
-
-val encoding = "1.2.3"
-val okio = "3.5.0"
 
 kotlin {
 
@@ -22,8 +18,8 @@ kotlin {
             dependencies {
                 api(serialization("json"))
                 api(datetime())
-                implementation("io.matthewnelson.kotlin-components:encoding-base16:${encoding}")
-                implementation("io.matthewnelson.kotlin-components:encoding-base64:${encoding}")
+                implementation("io.matthewnelson.kotlin-components:encoding-base16:${DatatypeVersions.encoding}")
+                implementation("io.matthewnelson.kotlin-components:encoding-base64:${DatatypeVersions.encoding}")
             }
         }
 

@@ -1,6 +1,5 @@
 import at.asitplus.crypto.datatypes.*
-import at.asitplus.crypto.datatypes.asn1.JwsExtensions.ensureSize
-import at.asitplus.crypto.datatypes.io.MultibaseHelper
+import at.asitplus.crypto.datatypes.asn1.ensureSize
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.base16.Base16
