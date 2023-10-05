@@ -98,7 +98,7 @@ fun Int.Companion.decodeFromDer(input: ByteArray): Int {
 }
 
 @Throws(IllegalArgumentException::class)
-fun Long.Companion.decodeFromDer(input: ByteArray): Long =runCatching{
+fun Long.Companion.decodeFromDer(input: ByteArray): Long = runCatching {
     var result = 0L
     for (i in input.indices) {
         result = (result shl Byte.SIZE_BITS) or (input[i].toUByte().toLong())
@@ -106,9 +106,10 @@ fun Long.Companion.decodeFromDer(input: ByteArray): Long =runCatching{
     return result
 }.getOrElse { throw IllegalArgumentException(it) }
 
-private fun ByteArray.readTlv(): TLV =runCatching{
+fun ByteArray.readTlv(): TLV = runCatching {
     if (this.isEmpty()) throw IllegalArgumentException("Can't read TLV, input empty")
     val tag = this[0]
+    if (this.size == 1) return TLV(tag, 0, byteArrayOf(), 1)
     val firstLength = this[1]
     if (firstLength == 0x82.toByte()) {
         if (this.size < 4) throw IllegalArgumentException("Can't decode length")
@@ -124,11 +125,11 @@ private fun ByteArray.readTlv(): TLV =runCatching{
         val value = this.drop(3).take(length).toByteArray()
         return TLV(tag, length, value, 3 + length)
     }
-    val length = firstLength.toInt()
+    val length = firstLength.toUByte().toInt()
     if (this.size < 2 + length) throw IllegalArgumentException("Out of bytes")
     val value = this.drop(2).take(length).toByteArray()
     return TLV(tag, length, value, 2 + length)
-}.getOrElse { throw if(it is IllegalArgumentException) it else IllegalArgumentException(it) }
+}.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
 
 
 data class TLV(val tag: Byte, val length: Int, val content: ByteArray, val overallLength: Int) {
@@ -153,4 +154,13 @@ data class TLV(val tag: Byte, val length: Int, val content: ByteArray, val overa
         result = 31 * result + overallLength
         return result
     }
+
+    override fun toString(): String {
+        return "TLV(tag=0x${byteArrayOf(tag).encodeToString(Base16)}" +
+                ", length=$length" +
+                ", overallLength=$overallLength" +
+                ", content=${content.encodeToString(Base16)})"
+    }
+
+
 }

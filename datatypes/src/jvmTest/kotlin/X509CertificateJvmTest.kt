@@ -1,6 +1,7 @@
 import at.asitplus.crypto.datatypes.*
 import at.asitplus.crypto.datatypes.asn1.ensureSize
 import io.kotest.core.spec.style.FreeSpec
+import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -134,5 +135,37 @@ class X509CertificateJvmTest : FreeSpec({
         parsedPublicKey.x shouldBe keyX
         parsedPublicKey.y shouldBe keyY
     }
+
+    "Certificate can be parsed to tree" {
+        val ecPublicKey = keyPair.public as ECPublicKey
+        val keyX = ecPublicKey.w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
+        val keyY = ecPublicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
+        val cryptoPublicKey = CryptoPublicKey.Ec(curve = ecCurve, x = keyX, y = keyY)
+
+        // create certificate with bouncycastle
+        val notBeforeDate = Date.from(Instant.now())
+        val notAfterDate = Date.from(Instant.now().plusSeconds(30.days.inWholeSeconds))
+        val serialNumber: BigInteger = BigInteger.valueOf(Random.nextLong().absoluteValue)
+        val commonName = "DefaultCryptoService"
+        val issuer = X500Name("CN=$commonName")
+        val builder = X509v3CertificateBuilder(
+            /* issuer = */ issuer,
+            /* serial = */ serialNumber,
+            /* notBefore = */ notBeforeDate,
+            /* notAfter = */ notAfterDate,
+            /* subject = */ issuer,
+            /* publicKeyInfo = */ SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
+        )
+        val signatureAlgorithm = JwsAlgorithm.ES256
+        val contentSigner: ContentSigner = JcaContentSignerBuilder(signatureAlgorithm.jcaName).build(keyPair.private)
+        val certificateHolder = builder.build(contentSigner)
+
+        println(certificateHolder.encoded.encodeToString(Base16))
+        val parsed = Asn1TreeBuilder(certificateHolder.encoded).readAll()
+        parsed.shouldNotBeEmpty()
+        parsed.size shouldBe 1
+        println(parsed[0])
+    }
+
 
 })
