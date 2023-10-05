@@ -10,4 +10,5 @@ pluginManagement {
 }
 include(":datatypes")
 include(":datatypes-jws")
-rootProject.name = "datatypes-umbrella"
+include(":datatypes-cose")
+rootProject.name = "crypto-umbrella"

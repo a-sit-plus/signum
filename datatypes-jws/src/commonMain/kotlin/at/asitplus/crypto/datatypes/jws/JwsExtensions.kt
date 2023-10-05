@@ -67,9 +67,3 @@ object JwsExtensions {
 
 }
 
-private const val JWK_ID = "jwkIdentifier"
-var CryptoPublicKey.jwkId: String
-    get() = additionalProperties[JWK_ID] ?: keyId
-    set(value) {
-        additionalProperties[JWK_ID] = value
-    }
