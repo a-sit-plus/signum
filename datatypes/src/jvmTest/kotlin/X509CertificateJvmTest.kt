@@ -3,6 +3,7 @@ import at.asitplus.crypto.datatypes.asn1.ensureSize
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.toKotlinInstant
@@ -18,6 +19,7 @@ import java.security.Signature
 import java.security.cert.CertificateFactory
 import java.security.interfaces.ECPublicKey
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.*
 import kotlin.math.absoluteValue
 import kotlin.random.Random
@@ -113,16 +115,24 @@ class X509CertificateJvmTest : FreeSpec({
         val contentSigner: ContentSigner = JcaContentSignerBuilder(signatureAlgorithm.jcaName).build(keyPair.private)
         val certificateHolder = builder.build(contentSigner)
 
-        val x509Certificate = X509Certificate.deserialize(certificateHolder.encoded)
+        val x509Certificate = X509Certificate.decodeFromDer(certificateHolder.encoded)
         x509Certificate.shouldNotBeNull()
 
         x509Certificate.encodeToDer() shouldBe certificateHolder.encoded
         x509Certificate.signatureAlgorithm shouldBe signatureAlgorithm
+        x509Certificate.tbsCertificate.version shouldBe 2
         x509Certificate.tbsCertificate.issuerCommonName shouldBe commonName
         x509Certificate.tbsCertificate.subjectCommonName shouldBe commonName
-        x509Certificate.tbsCertificate.serialNumber shouldBe serialNumber
+        x509Certificate.tbsCertificate.serialNumber shouldBe serialNumber.longValueExact()
         x509Certificate.tbsCertificate.signatureAlgorithm shouldBe signatureAlgorithm
-        x509Certificate.tbsCertificate.publicKey.encoded shouldBe keyPair.public.encoded
+        x509Certificate.tbsCertificate.validFrom shouldBe notBeforeDate.toInstant().truncatedTo(ChronoUnit.SECONDS)
+            .toKotlinInstant()
+        x509Certificate.tbsCertificate.validUntil shouldBe notAfterDate.toInstant().truncatedTo(ChronoUnit.SECONDS)
+            .toKotlinInstant()
+        val parsedPublicKey = x509Certificate.tbsCertificate.publicKey
+        parsedPublicKey.shouldBeInstanceOf<CryptoPublicKey.Ec>()
+        parsedPublicKey.x shouldBe keyX
+        parsedPublicKey.y shouldBe keyY
     }
 
 })
