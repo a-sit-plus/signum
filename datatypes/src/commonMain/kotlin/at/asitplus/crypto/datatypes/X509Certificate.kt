@@ -4,6 +4,7 @@ import at.asitplus.crypto.datatypes.asn1.decodeFromDer
 import at.asitplus.crypto.datatypes.asn1.sequence
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import kotlinx.datetime.Instant
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -160,11 +161,13 @@ sealed class Asn1String() {
     abstract val value:String
 
     @Serializable
+    @SerialName("UTF8String")
     class UTF8(override val value: String) : Asn1String() {
         override val tag = 0x0C.toByte()
     }
 
     @Serializable
+    @SerialName("PrintableString")
     class Printable(override val value: String) : Asn1String() {
         override val tag = 0x13.toByte()
     }
@@ -176,6 +179,7 @@ sealed class DistingushedName {
     abstract val value: Asn1String
 
     @Serializable
+    @SerialName("CN")
     class CommonName(override val value: Asn1String) : DistingushedName() {
         override val oid = OID
 
@@ -185,6 +189,7 @@ sealed class DistingushedName {
     }
 
     @Serializable
+    @SerialName("C")
     class Country(override val value: Asn1String) : DistingushedName() {
         override val oid = OID
 
@@ -194,6 +199,7 @@ sealed class DistingushedName {
     }
 
     @Serializable
+    @SerialName("O")
     class Organization(override val value: Asn1String) : DistingushedName() {
         override val oid = OID
 
@@ -203,6 +209,7 @@ sealed class DistingushedName {
     }
 
     @Serializable
+    @SerialName("OU")
     class OrganizationalUnit(override val value: Asn1String) : DistingushedName() {
         override val oid = OID
 
@@ -212,6 +219,7 @@ sealed class DistingushedName {
     }
 
     @Serializable
+    @SerialName("?")
     class Other(override val value: Asn1String, override val oid: String) : DistingushedName() {
     }
 }
