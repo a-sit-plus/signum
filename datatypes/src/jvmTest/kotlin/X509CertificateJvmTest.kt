@@ -86,6 +86,7 @@ class X509CertificateJvmTest : FreeSpec({
         println(kotlinEncoded.encodeToString(Base16()))
         println(jvmEncoded.encodeToString(Base16()))
 
+        //TODO Christian
         kotlinEncoded.drop(7).take(228) shouldBe jvmEncoded.drop(7).take(228)
 
         val parsedFromKotlinCertificate =
@@ -123,8 +124,8 @@ class X509CertificateJvmTest : FreeSpec({
         //x509Certificate.encodeToDer() shouldBe certificateHolder.encoded
         x509Certificate.signatureAlgorithm shouldBe signatureAlgorithm
         x509Certificate.tbsCertificate.version shouldBe 2
-        x509Certificate.tbsCertificate.issuerName shouldBe commonName
-        x509Certificate.tbsCertificate.subjectName shouldBe commonName
+        x509Certificate.tbsCertificate.issuerName.first().value.value shouldBe commonName
+        x509Certificate.tbsCertificate.subjectName.first().value.value shouldBe commonName
         x509Certificate.tbsCertificate.serialNumber shouldBe serialNumber.longValueExact()
         x509Certificate.tbsCertificate.signatureAlgorithm shouldBe signatureAlgorithm
         x509Certificate.tbsCertificate.validFrom shouldBe notBeforeDate.toInstant().truncatedTo(ChronoUnit.SECONDS)
