@@ -1,5 +1,12 @@
 package at.asitplus.crypto.datatypes
 
+import at.asitplus.crypto.datatypes.asn1.BERTags.BIT_STRING
+import at.asitplus.crypto.datatypes.asn1.BERTags.INTEGER
+import at.asitplus.crypto.datatypes.asn1.BERTags.NULL
+import at.asitplus.crypto.datatypes.asn1.BERTags.OBJECT_IDENTIFIER
+import at.asitplus.crypto.datatypes.asn1.BERTags.PRINTABLE_STRING
+import at.asitplus.crypto.datatypes.asn1.BERTags.UTC_TIME
+import at.asitplus.crypto.datatypes.asn1.BERTags.UTF8_STRING
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Instant
@@ -18,24 +25,24 @@ class Asn1Reader(input: ByteArray) {
 
     fun <T> readSet(func: (ByteArray) -> T?) = read(0x31, func)
 
-    fun readOid() = read(0x06) { bytes -> bytes.encodeToString(Base16) }
+    fun readOid() = read(OBJECT_IDENTIFIER) { bytes -> bytes.encodeToString(Base16) }
 
-    fun readBitstring() = read(0x03, ::decodeBitString)
+    fun readBitstring() = read(BIT_STRING, ::decodeBitString)
 
-    fun readInt() = read(0x02, Int.Companion::decodeFromDer)
+    fun readInt() = read(INTEGER, Int.Companion::decodeFromDer)
 
-    fun readLong() = read(0x02, Long.Companion::decodeFromDer)
+    fun readLong() = read(INTEGER, Long.Companion::decodeFromDer)
 
-    fun readInstant() = read(0x17, Instant.Companion::decodeFromDer)
+    fun readUtcTime() = read(UTC_TIME, Instant.Companion::decodeUtcTimeFromDer)
 
     fun readString(): Asn1String =
-        if (rest[0] == 0x0C.toByte()) Asn1String.UTF8(readUtf8String())
-        else Asn1String.Printable(read(0x13) { bytes -> String(bytes) })
+        if (rest[0] == UTF8_STRING.toByte()) Asn1String.UTF8(readUtf8String())
+        else Asn1String.Printable(read(PRINTABLE_STRING) { bytes -> String(bytes) })
 
 
-    fun readUtf8String() = read(0x0c) { bytes -> String(bytes) }
+    fun readUtf8String() = read(UTF8_STRING) { bytes -> String(bytes) }
 
-    fun readNull() = read(0x05) {}
+    fun readNull() = read(NULL) {}
 
     fun <T> read(tag: Int, func: (ByteArray) -> T?): T {
         val tlv = rest.readTlv()
@@ -76,7 +83,7 @@ fun CryptoPublicKey.Companion.decodeFromDer(src: Asn1Reader): CryptoPublicKey {
     } else if (oid == "2A864886F70D010101") {
         innerReader.readNull()
         val rsaSequence = Asn1Reader(reader.readBitstring()).readSequence { Asn1Reader(it) }
-        val n = rsaSequence.read(0x02) { it }
+        val n = rsaSequence.read(INTEGER) { it }
         val e = rsaSequence.readInt().toUInt()
         return CryptoPublicKey.Rsa(
             CryptoPublicKey.Rsa.Size.of(((n.size - 1) * 8).toUInt()) ?: throw IllegalArgumentException(
@@ -93,7 +100,7 @@ fun CryptoPublicKey.Companion.decodeFromDer(src: Asn1Reader): CryptoPublicKey {
 fun CryptoPublicKey.Companion.decodeFromDer(input: ByteArray): CryptoPublicKey = decodeFromDer(Asn1Reader(input))
 
 @Throws(IllegalArgumentException::class)
-fun Instant.Companion.decodeFromDer(input: ByteArray): Instant = runCatching {
+fun Instant.Companion.decodeUtcTimeFromDer(input: ByteArray): Instant = runCatching {
     val s = String(input)
     val isoString =
         "20${s[0]}${s[1]}-${s[2]}${s[3]}-${s[4]}${s[5]}T${s[6]}${s[7]}:${s[8]}${s[9]}:${s[10]}${s[11]}${s[12]}"

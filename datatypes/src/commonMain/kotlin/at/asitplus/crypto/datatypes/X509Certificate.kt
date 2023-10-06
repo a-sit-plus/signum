@@ -1,5 +1,6 @@
 package at.asitplus.crypto.datatypes
 
+import at.asitplus.crypto.datatypes.asn1.BERTags
 import at.asitplus.crypto.datatypes.asn1.decodeFromDer
 import at.asitplus.crypto.datatypes.asn1.sequence
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
@@ -130,8 +131,8 @@ data class TbsCertificate(
 
         private fun decodeTimestamps(input: ByteArray): Pair<Instant, Instant>? = runCatching {
             val reader = Asn1Reader(input)
-            val firstInstant = reader.readInstant()
-            val secondInstant = reader.readInstant()
+            val firstInstant = reader.readUtcTime()
+            val secondInstant = reader.readUtcTime()
             return Pair(firstInstant, secondInstant)
         }.getOrNull()
 
@@ -163,13 +164,13 @@ sealed class Asn1String() {
     @Serializable
     @SerialName("UTF8String")
     class UTF8(override val value: String) : Asn1String() {
-        override val tag = 0x0C.toByte()
+        override val tag = BERTags.UTF8_STRING.toByte()
     }
 
     @Serializable
     @SerialName("PrintableString")
     class Printable(override val value: String) : Asn1String() {
-        override val tag = 0x13.toByte()
+        override val tag = BERTags.PRINTABLE_STRING.toByte()
     }
 }
 
@@ -242,8 +243,8 @@ data class X509CertificateExtension(
             val extReader = src.readSequence { Asn1Reader(it) }
             val id = extReader.readOid()
             val critical =
-                if (extReader.rest[0] == 0x01.toByte()) extReader.read(0x01) { it[0] == 0xff.toByte() } else false
-            val value = extReader.read(0x04) { it }
+                if (extReader.rest[0] == BERTags.BOOLEAN.toByte()) extReader.read(BERTags.BOOLEAN) { it[0] == 0xff.toByte() } else false
+            val value = extReader.read(BERTags.OCTET_STRING) { it }
             return X509CertificateExtension(id, critical, value)
         }
 

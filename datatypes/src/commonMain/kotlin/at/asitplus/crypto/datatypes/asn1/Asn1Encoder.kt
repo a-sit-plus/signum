@@ -3,9 +3,19 @@
 package at.asitplus.crypto.datatypes.asn1
 
 import at.asitplus.crypto.datatypes.*
+import at.asitplus.crypto.datatypes.asn1.BERTags.BIT_STRING
+import at.asitplus.crypto.datatypes.asn1.BERTags.BOOLEAN
+import at.asitplus.crypto.datatypes.asn1.BERTags.INTEGER
+import at.asitplus.crypto.datatypes.asn1.BERTags.NULL
+import at.asitplus.crypto.datatypes.asn1.BERTags.OBJECT_IDENTIFIER
+import at.asitplus.crypto.datatypes.asn1.BERTags.OCTET_STRING
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.datetime.Instant
+import at.asitplus.crypto.datatypes.asn1.BERTags.PRINTABLE_STRING
+import at.asitplus.crypto.datatypes.asn1.BERTags.UTC_TIME
+import at.asitplus.crypto.datatypes.asn1.BERTags.UTF8_STRING
+import at.asitplus.crypto.datatypes.asn1.DERTags.DER_SET
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 class SequenceBuilder {
@@ -22,8 +32,8 @@ class SequenceBuilder {
 
     fun oid(block: () -> String) = apply { elements += block().encodeToOid() }
 
-    fun utf8String(block: () -> String) = apply { elements += asn1Tag(0x0c, block().encodeToByteArray()) }
-    fun printableString(block: () -> String) = apply { elements += asn1Tag(0x13, block().encodeToByteArray()) }
+    fun utf8String(block: () -> String) = apply { elements += asn1Tag(UTF8_STRING, block().encodeToByteArray()) }
+    fun printableString(block: () -> String) = apply { elements += asn1Tag(PRINTABLE_STRING, block().encodeToByteArray()) }
 
     fun version(block: () -> Int) = apply { elements += asn1Tag(0xA0, block().encodeToAsn1()) }
 
@@ -41,7 +51,7 @@ class SequenceBuilder {
         else printableString { str.value }
     }
 
-    fun asn1null() = apply { elements += byteArrayOf(0x05.toByte(), 0x00.toByte()) }
+    fun asn1null() = apply { elements += byteArrayOf(NULL.toByte(), 0x00.toByte()) }
 
     fun subjectPublicKey(block: () -> CryptoPublicKey) = apply { elements += block().encodeToAsn1() }
 
@@ -49,19 +59,19 @@ class SequenceBuilder {
 
     fun sigAlg(block: () -> JwsAlgorithm) = apply { elements += block().encodeToAsn1() }
 
-    fun utcTime(block: () -> Instant) = apply { elements += block().encodeToAsn1() }
+    fun utcTime(block: () -> Instant) = apply { elements += block().encodeToUtcTime() }
 
     fun sequence(init: SequenceBuilder.() -> Unit) = apply {
         val seq = SequenceBuilder()
         seq.init()
-        elements += asn1Tag(0x30, seq.elements.fold(byteArrayOf()) { acc, bytes -> acc + bytes })
+        elements += asn1Tag(DERTags.DER_SEQUENCE, seq.elements.fold(byteArrayOf()) { acc, bytes -> acc + bytes })
     }
 
 
     fun set(init: SequenceBuilder.() -> Unit) = apply {
         val seq = SequenceBuilder()
         seq.init()
-        elements += asn1Tag(0x31, seq.elements.fold(byteArrayOf()) { acc, bytes -> acc + bytes })
+        elements += asn1Tag(DER_SET, seq.elements.fold(byteArrayOf()) { acc, bytes -> acc + bytes })
     }
 
     fun append(derEncoded: ByteArray) = apply { elements += derEncoded }
@@ -71,29 +81,29 @@ class SequenceBuilder {
 fun sequence(root: SequenceBuilder.() -> Unit): ByteArray {
     val seq = SequenceBuilder()
     seq.root()
-    return asn1Tag(0x30, seq.elements.fold(byteArrayOf()) { acc, bytes -> acc + bytes })
+    return asn1Tag(DERTags.DER_SEQUENCE, seq.elements.fold(byteArrayOf()) { acc, bytes -> acc + bytes })
 }
 
-private fun ByteArray.encodeToOctetString() = asn1Tag(0x04, this)
-private fun Int.encodeToAsn1() = asn1Tag(0x02, encodeToDer())
+private fun ByteArray.encodeToOctetString() = asn1Tag(OCTET_STRING, this)
+private fun Int.encodeToAsn1() = asn1Tag(INTEGER, encodeToDer())
 
-private fun Boolean.encodeToAsn1() = asn1Tag(0x01, (if (this) 0xff else 0).encodeToDer())
+private fun Boolean.encodeToAsn1() = asn1Tag(BOOLEAN, (if (this) 0xff else 0).encodeToDer())
 
 private fun Int.encodeToDer() = encodeToByteArray().dropWhile { it == 0.toByte() }.toByteArray()
 
-private fun Long.encodeToAsn1() = asn1Tag(0x02, encodeToDer())
+private fun Long.encodeToAsn1() = asn1Tag(INTEGER, encodeToDer())
 
 private fun Long.encodeToDer() = encodeToByteArray().dropWhile { it == 0.toByte() }.toByteArray()
 
-private fun ByteArray.encodeToBitString() = asn1Tag(0x03, (byteArrayOf(0x00) + this))
+private fun ByteArray.encodeToBitString() = asn1Tag(BIT_STRING, (byteArrayOf(0x00) + this))
 
 private fun asn1Tag(tag: Int, value: ByteArray) = byteArrayOf(tag.toByte()) + value.size.encodeLength() + value
 
-private fun String.encodeToOid() = asn1Tag(0x06, decodeToByteArray(Base16()))
+private fun String.encodeToOid() = asn1Tag(OBJECT_IDENTIFIER, decodeToByteArray(Base16()))
 
-private fun Instant.encodeToAsn1(): ByteArray {
+private fun Instant.encodeToUtcTime(): ByteArray {
     val value = this.toString()
-    if (value.isEmpty()) return asn1Tag(0x17, byteArrayOf())
+    if (value.isEmpty()) return asn1Tag(UTC_TIME, byteArrayOf())
     val matchResult = Regex("[0-9]{2}([0-9]{2})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})")
         .matchAt(value, 0)
         ?: throw IllegalArgumentException("instant serialization failed: $value")
@@ -109,7 +119,7 @@ private fun Instant.encodeToAsn1(): ByteArray {
         ?: throw IllegalArgumentException("instant serialization minute failed: $value")
     val seconds = matchResult.groups[6]?.value
         ?: throw IllegalArgumentException("instant serialization seconds failed: $value")
-    return asn1Tag(0x17, "$year$month$day$hour$minute${seconds}Z".encodeToByteArray())
+    return asn1Tag(UTC_TIME, "$year$month$day$hour$minute${seconds}Z".encodeToByteArray())
 }
 
 fun JwsAlgorithm.Companion.decodeFromDer(input: ByteArray): JwsAlgorithm? {
@@ -138,12 +148,12 @@ fun CryptoPublicKey.encodeToAsn1() = when (this) {
             }
 
         }
-        bitString { (byteArrayOf(0x04.toByte()) + x.ensureSize(curve.coordinateLengthBytes) + y.ensureSize(curve.coordinateLengthBytes)) }
+        bitString { (byteArrayOf(OCTET_STRING.toByte()) + x.ensureSize(curve.coordinateLengthBytes) + y.ensureSize(curve.coordinateLengthBytes)) }
     }
 
     is CryptoPublicKey.Rsa -> {
         val key = sequence {
-            tagged(0x02) {
+            tagged(INTEGER) {
                 n.ensureSize(bits.number / 8u)
                     .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) }
             }
