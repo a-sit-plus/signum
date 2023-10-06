@@ -1,6 +1,8 @@
 import at.asitplus.crypto.datatypes.*
 import at.asitplus.crypto.datatypes.asn1.ensureSize
 import io.kotest.core.spec.style.FreeSpec
+import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -20,7 +22,7 @@ import java.security.cert.CertificateFactory
 import java.security.interfaces.ECPublicKey
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.*
+import java.util.Date
 import kotlin.math.absoluteValue
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.days
@@ -135,4 +137,115 @@ class X509CertificateJvmTest : FreeSpec({
         parsedPublicKey.y shouldBe keyY
     }
 
+    "Certificate can be parsed to tree" {
+        val ecPublicKey = keyPair.public as ECPublicKey
+        val keyX = ecPublicKey.w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
+        val keyY = ecPublicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
+        val cryptoPublicKey = CryptoPublicKey.Ec(curve = ecCurve, x = keyX, y = keyY)
+
+        // create certificate with bouncycastle
+        val notBeforeDate = Date.from(Instant.now())
+        val notAfterDate = Date.from(Instant.now().plusSeconds(30.days.inWholeSeconds))
+        val serialNumber: BigInteger = BigInteger.valueOf(Random.nextLong().absoluteValue)
+        val commonName = "DefaultCryptoService"
+        val issuer = X500Name("CN=$commonName")
+        val builder = X509v3CertificateBuilder(
+            /* issuer = */ issuer,
+            /* serial = */ serialNumber,
+            /* notBefore = */ notBeforeDate,
+            /* notAfter = */ notAfterDate,
+            /* subject = */ issuer,
+            /* publicKeyInfo = */ SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
+        )
+        val signatureAlgorithm = JwsAlgorithm.ES256
+        val contentSigner: ContentSigner = JcaContentSignerBuilder(signatureAlgorithm.jcaName).build(keyPair.private)
+        val certificateHolder = builder.build(contentSigner)
+
+        println(certificateHolder.encoded.encodeToString(Base16))
+        val parsed = Asn1TreeBuilder(certificateHolder.encoded).readAll()
+        parsed.shouldNotBeEmpty()
+        parsed.size shouldBe 1
+        println(parsed[0])
+        val matches = parsed.expect {
+            sequence {
+                sequence {
+                    container(0xA0) {
+                        integer()
+                    }
+                    long()
+                    sequence {
+                        oid()
+                    }
+                    sequence {
+                        set {
+                            sequence {
+                                oid()
+                                utf8String()
+                            }
+                        }
+                    }
+                    sequence {
+                        utcTime()
+                        utcTime()
+                    }
+                    sequence {
+                        set {
+                            sequence {
+                                oid()
+                                utf8String()
+                            }
+                        }
+                    }
+                    sequence {
+                        // SPKI!
+                    }
+                }
+                sequence {
+                    oid()
+                }
+                bitString()
+            }
+        }
+        matches.shouldBeTrue()
+    }
+
+
 })
+
+
+fun List<ExtendedTlv>.expect(init: SequenceReader.() -> Unit): Boolean {
+    val seq = SequenceReader(this)
+    seq.init()
+    return seq.matches
+}
+
+
+class SequenceReader(var extendedTlvs: List<ExtendedTlv>) {
+    var matches: Boolean = true
+
+    fun sequence(function: SequenceReader.() -> Unit) = container(0x30, function)
+    fun set(function: SequenceReader.() -> Unit) = container(0x31, function)
+
+    fun integer() = tag(0x02)
+    fun long() = tag(0x02)
+    fun bitString() = tag(0x03)
+    fun oid() = tag(0x06)
+    fun utf8String() = tag(0x0c)
+    fun utcTime() = tag(0x17)
+
+    fun container(tag: Int, function: SequenceReader.() -> Unit) {
+        val first = takeAndDrop()
+        if (first.tlv.tag != tag.toByte())
+            matches = false
+        matches = matches and first.children.expect(function)
+    }
+
+    private fun tag(tag: Byte) {
+        if (takeAndDrop().tlv.tag != tag)
+            matches = false
+    }
+
+    private fun takeAndDrop() = extendedTlvs.first()
+        .also { extendedTlvs = extendedTlvs.drop(1) }
+
+}
