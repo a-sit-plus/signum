@@ -1,4 +1,5 @@
 import at.asitplus.crypto.datatypes.*
+import at.asitplus.crypto.datatypes.asn1.decodeFromDer
 import at.asitplus.crypto.datatypes.io.Base64Strict
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData

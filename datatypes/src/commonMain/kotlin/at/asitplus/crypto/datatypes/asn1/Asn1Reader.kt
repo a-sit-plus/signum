@@ -1,5 +1,8 @@
-package at.asitplus.crypto.datatypes
+package at.asitplus.crypto.datatypes.asn1
 
+import at.asitplus.crypto.datatypes.Asn1String
+import at.asitplus.crypto.datatypes.CryptoPublicKey
+import at.asitplus.crypto.datatypes.EcCurve
 import at.asitplus.crypto.datatypes.asn1.BERTags.BIT_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.INTEGER
 import at.asitplus.crypto.datatypes.asn1.BERTags.NULL

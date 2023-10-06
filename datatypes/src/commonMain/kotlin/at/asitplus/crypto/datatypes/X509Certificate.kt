@@ -1,5 +1,6 @@
 package at.asitplus.crypto.datatypes
 
+import at.asitplus.crypto.datatypes.asn1.Asn1Reader
 import at.asitplus.crypto.datatypes.asn1.BERTags
 import at.asitplus.crypto.datatypes.asn1.decodeFromDer
 import at.asitplus.crypto.datatypes.asn1.sequence

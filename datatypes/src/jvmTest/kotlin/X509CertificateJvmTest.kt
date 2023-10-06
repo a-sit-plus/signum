@@ -1,4 +1,6 @@
 import at.asitplus.crypto.datatypes.*
+import at.asitplus.crypto.datatypes.asn1.Asn1TreeBuilder
+import at.asitplus.crypto.datatypes.asn1.ExtendedTlv
 import at.asitplus.crypto.datatypes.asn1.ensureSize
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.booleans.shouldBeTrue

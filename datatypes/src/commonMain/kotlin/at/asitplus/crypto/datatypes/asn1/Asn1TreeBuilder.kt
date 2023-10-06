@@ -1,4 +1,4 @@
-package at.asitplus.crypto.datatypes
+package at.asitplus.crypto.datatypes.asn1
 
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
