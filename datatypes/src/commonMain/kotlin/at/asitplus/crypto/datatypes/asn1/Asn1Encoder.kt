@@ -38,7 +38,7 @@ class SequenceBuilder {
         val str = block()
         if (str is Asn1String.UTF8)
             utf8String { str.value }
-        else elements += asn1Tag(0x0c, str.value.encodeToByteArray())
+        else printableString { str.value }
     }
 
     fun asn1null() = apply { elements += byteArrayOf(0x05.toByte(), 0x00.toByte()) }
