@@ -1,5 +1,6 @@
 import at.asitplus.crypto.datatypes.X509Certificate
 import io.kotest.core.spec.style.FreeSpec
+import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.encodeToString
@@ -23,6 +24,7 @@ class X509CertParserTest : FreeSpec({
         val parsedCert = X509Certificate.decodeFromDer(certBytes)
         println(Json { prettyPrint = true }.encodeToString(parsedCert))
         println(parsedCert.encodeToDer().encodeToString(Base16()))
+        parsedCert.encodeToDer() shouldBe jcaCert.encoded
 
     }
 

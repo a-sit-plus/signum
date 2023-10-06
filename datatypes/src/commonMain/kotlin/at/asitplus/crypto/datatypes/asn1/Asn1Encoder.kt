@@ -2,10 +2,7 @@
 
 package at.asitplus.crypto.datatypes.asn1
 
-import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.EcCurve
-import at.asitplus.crypto.datatypes.JwsAlgorithm
-import at.asitplus.crypto.datatypes.TbsCertificate
+import at.asitplus.crypto.datatypes.*
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.datetime.Instant
@@ -26,12 +23,22 @@ class SequenceBuilder {
     fun oid(block: () -> String) = apply { elements += block().encodeToOid() }
 
     fun utf8String(block: () -> String) = apply { elements += asn1Tag(0x0c, block().encodeToByteArray()) }
+    fun printableString(block: () -> String) = apply { elements += asn1Tag(0x13, block().encodeToByteArray()) }
 
     fun version(block: () -> Int) = apply { elements += asn1Tag(0xA0, block().encodeToAsn1()) }
 
-    fun commonName(block: () -> String) = apply {
-        oid { "550403" }
-        utf8String { block() }
+    fun distinguishedName(block: () -> DistingushedName) = apply {
+        val dn = block()
+        oid { dn.oid }
+        writeString { dn.value }
+
+    }
+
+    fun writeString(block: () -> Asn1String) = apply {
+        val str = block()
+        if (str is Asn1String.UTF8)
+            utf8String { str.value }
+        else elements += asn1Tag(0x0c, str.value.encodeToByteArray())
     }
 
     fun asn1null() = apply { elements += byteArrayOf(0x05.toByte(), 0x00.toByte()) }

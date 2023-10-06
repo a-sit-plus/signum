@@ -46,7 +46,7 @@ class X509CertificateJvmTest : FreeSpec({
         val notBeforeDate = Date.from(Instant.now())
         val notAfterDate = Date.from(Instant.now().plusSeconds(30.days.inWholeSeconds))
         val serialNumber: BigInteger = BigInteger.valueOf(Random.nextLong().absoluteValue)
-        val commonName = "DefaultCryptoService"
+        val commonName = DistingushedName.CommonName(Asn1String.UTF8("DefaultCryptoService"))
         val issuer = X500Name("CN=$commonName")
         val builder = X509v3CertificateBuilder(
             /* issuer = */ issuer,

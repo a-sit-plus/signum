@@ -28,9 +28,9 @@ class Asn1Reader(input: ByteArray) {
 
     fun readInstant() = read(0x17, Instant.Companion::decodeFromDer)
 
-    fun readString(): String =
-        if (rest[0] == 0x0C.toByte()) readUtf8String()
-        else read(0x13) { bytes -> String(bytes) }
+    fun readString(): Asn1String =
+        if (rest[0] == 0x0C.toByte()) Asn1String.UTF8(readUtf8String())
+        else Asn1String.Printable(read(0x13) { bytes -> String(bytes) })
 
 
     fun readUtf8String() = read(0x0c) { bytes -> String(bytes) }
@@ -51,7 +51,6 @@ class Asn1Reader(input: ByteArray) {
 }
 
 fun decodeBitString(input: ByteArray) = input.drop(1).toByteArray()
-
 
 
 @Throws(IllegalArgumentException::class)

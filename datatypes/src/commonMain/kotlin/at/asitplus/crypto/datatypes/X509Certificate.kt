@@ -15,10 +15,10 @@ data class TbsCertificate(
     val version: Int = 2,
     val serialNumber: Long,
     val signatureAlgorithm: JwsAlgorithm,
-    val issuerName: List<String>,
+    val issuerName: List<DistingushedName>,
     val validFrom: Instant,
     val validUntil: Instant,
-    val subjectName: List<String>,
+    val subjectName: List<DistingushedName>,
     val publicKey: CryptoPublicKey,
     val extensions: List<X509CertificateExtension>? = null
 ) {
@@ -32,7 +32,7 @@ data class TbsCertificate(
             issuerName.forEach {
                 set {
                     sequence {
-                        commonName { it }
+                        distinguishedName { it }
                     }
                 }
             }
@@ -45,7 +45,7 @@ data class TbsCertificate(
             subjectName.forEach {
                 set {
                     sequence {
-                        commonName { it }
+                        distinguishedName { it }
                     }
                 }
             }
@@ -75,7 +75,7 @@ data class TbsCertificate(
                 val sigAlg = reader.readSequence(JwsAlgorithm.Companion::decodeFromDer)
                 val issuerName = reader.readSequence {
                     var rest = it
-                    val names = mutableListOf<String>()
+                    val names = mutableListOf<DistingushedName>()
                     while (rest.isNotEmpty()) {
                         val nameReader = Asn1Reader(rest)
                         val inner = nameReader.readSet { Asn1Reader(it) }
@@ -87,7 +87,7 @@ data class TbsCertificate(
                 val timestamps = reader.readSequence(::decodeTimestamps)
                 val subject = reader.readSequence {
                     var rest = it
-                    val names = mutableListOf<String>()
+                    val names = mutableListOf<DistingushedName>()
                     while (rest.isNotEmpty()) {
                         val nameReader = Asn1Reader(rest)
                         val inner = nameReader.readSet { Asn1Reader(it) }
@@ -134,19 +134,85 @@ data class TbsCertificate(
             return Pair(firstInstant, secondInstant)
         }.getOrNull()
 
-        private fun decodeIssuerName(input: ByteArray) = Asn1Reader(input).readSet(::decodeX500Name)
-
-        private fun decodeX500Name(input: ByteArray) = Asn1Reader(input).readSequence(::decodeRdn)
-
-        private fun decodeRdn(input: ByteArray): String {
+        private fun decodeRdn(input: ByteArray): DistingushedName {
             val reader = Asn1Reader(input)
             val oid = reader.readOid()
-            if (oid == "550403" || oid == "550406" || oid == "55040A" || oid == "55040B") {
-                return reader.readString()
+            if (oid.startsWith("5504")) {
+                val str = reader.readString()
+                return when (oid) {
+                    DistingushedName.CommonName.OID -> DistingushedName.CommonName(str)
+                    DistingushedName.Country.OID -> DistingushedName.Country(str)
+                    DistingushedName.Organization.OID -> DistingushedName.Organization(str)
+                    DistingushedName.OrganizationalUnit.OID -> DistingushedName.OrganizationalUnit(str)
+                    else -> DistingushedName.Other(str, oid)
+                }
+
             }
             throw IllegalArgumentException("Expected RDN, got OID $oid")
         }
+    }
+}
 
+//TODO auto-sanitize and/or reduce
+@Serializable
+sealed class Asn1String() {
+    abstract val tag: Byte
+    abstract val value:String
+
+    @Serializable
+    class UTF8(override val value: String) : Asn1String() {
+        override val tag = 0x0C.toByte()
+    }
+
+    @Serializable
+    class Printable(override val value: String) : Asn1String() {
+        override val tag = 0x13.toByte()
+    }
+}
+
+@Serializable
+sealed class DistingushedName {
+    abstract val oid: String
+    abstract val value: Asn1String
+
+    @Serializable
+    class CommonName(override val value: Asn1String) : DistingushedName() {
+        override val oid = OID
+
+        companion object {
+            val OID = "550403"
+        }
+    }
+
+    @Serializable
+    class Country(override val value: Asn1String) : DistingushedName() {
+        override val oid = OID
+
+        companion object {
+            val OID = "550406"
+        }
+    }
+
+    @Serializable
+    class Organization(override val value: Asn1String) : DistingushedName() {
+        override val oid = OID
+
+        companion object {
+            val OID = "55040A"
+        }
+    }
+
+    @Serializable
+    class OrganizationalUnit(override val value: Asn1String) : DistingushedName() {
+        override val oid = OID
+
+        companion object {
+            val OID = "55040B"
+        }
+    }
+
+    @Serializable
+    class Other(override val value: Asn1String, override val oid: String) : DistingushedName() {
     }
 }
 
