@@ -173,7 +173,7 @@ fun CryptoPublicKey.encodeToAsn1() = when (this) {
 
 }
 
-private fun Int.encodeLength(): ByteArray {
+fun Int.encodeLength(): ByteArray {
     if (this < 128) {
         return byteArrayOf(this.toByte())
     }

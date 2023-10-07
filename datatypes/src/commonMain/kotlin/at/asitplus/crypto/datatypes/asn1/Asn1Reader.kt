@@ -130,30 +130,37 @@ fun Long.Companion.decodeFromDer(input: ByteArray): Long = runCatching {
 fun ByteArray.readTlv(): TLV = runCatching {
     if (this.isEmpty()) throw IllegalArgumentException("Can't read TLV, input empty")
     val tag = this[0]
-    if (this.size == 1) return TLV(tag, 0, byteArrayOf(), 1)
+    if (this.size == 1) return TLV(tag, byteArrayOf())
     val firstLength = this[1]
     if (firstLength == 0x82.toByte()) {
         if (this.size < 4) throw IllegalArgumentException("Can't decode length")
         val length = (this[2].toUByte().toInt() shl 8) + this[3].toUByte().toInt()
         if (this.size < 4 + length) throw IllegalArgumentException("Out of bytes")
         val value = this.drop(4).take(length).toByteArray()
-        return TLV(tag, length, value, 4 + length)
+        return TLV(tag,value)
     }
     if (firstLength == 0x81.toByte()) {
         if (this.size < 3) throw IllegalArgumentException("Can't decode length")
         val length = this[2].toUByte().toInt()
         if (this.size < 3 + length) throw IllegalArgumentException("Out of bytes")
         val value = this.drop(3).take(length).toByteArray()
-        return TLV(tag, length, value, 3 + length)
+        return TLV(tag, value)
     }
     val length = firstLength.toUByte().toInt()
     if (this.size < 2 + length) throw IllegalArgumentException("Out of bytes")
     val value = this.drop(2).take(length).toByteArray()
-    return TLV(tag, length, value, 2 + length)
+    return TLV(tag, value)
 }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
 
 
-data class TLV(val tag: Byte, val length: Int, val content: ByteArray, val overallLength: Int) {
+data class TLV(val tag: Byte, val content: ByteArray) {
+
+
+    val encodedLength by lazy { content.size.encodeLength() }
+    val length by lazy { content.size }
+    val overallLength by lazy { length + 1 + encodedLength.size }
+
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -161,18 +168,14 @@ data class TLV(val tag: Byte, val length: Int, val content: ByteArray, val overa
         other as TLV
 
         if (tag != other.tag) return false
-        if (length != other.length) return false
         if (!content.contentEquals(other.content)) return false
-        if (overallLength != other.overallLength) return false
 
         return true
     }
 
     override fun hashCode(): Int {
         var result = tag.toInt()
-        result = 31 * result + length
         result = 31 * result + content.contentHashCode()
-        result = 31 * result + overallLength
         return result
     }
 
