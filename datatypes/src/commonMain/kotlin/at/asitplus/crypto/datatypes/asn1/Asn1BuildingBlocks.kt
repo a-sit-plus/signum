@@ -3,34 +3,41 @@ package at.asitplus.crypto.datatypes.asn1
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 
-data class ExtendedTlv(val tlv: TLV, val children: List<ExtendedTlv>) {
+sealed class ExtendedTlv protected constructor(private val tlv: TLV, val children: List<ExtendedTlv>?) {
 
     val encodedLength by lazy { length.encodeLength() }
     val length: Int by lazy {
-        if (children.isEmpty()) tlv.length
-        else children.fold(0) { acc, extendedTlv -> acc + extendedTlv.overallLength }
+        children?.fold(0) { acc, extendedTlv -> acc + extendedTlv.overallLength } ?: tlv.length
     }
 
     val overallLength by lazy { length + 1 + encodedLength.size }
 
+    val content by lazy { tlv.content }
+
+    val tag by lazy { tlv.tag }
+
     val derEncoded: ByteArray by lazy {
-        if (children.isEmpty()) byteArrayOf(tlv.tag, *encodedLength, *tlv.content)
-        else {
-            children.fold(byteArrayOf()) { acc, extendedTlv -> acc + extendedTlv.derEncoded }
-                .let { byteArrayOf(tlv.tag, *it.size.encodeLength(), *it) }
-        }
+        children?.fold(byteArrayOf()) { acc, extendedTlv -> acc + extendedTlv.derEncoded }
+            ?.let { byteArrayOf(tlv.tag, *it.size.encodeLength(), *it) }
+            ?: byteArrayOf(tlv.tag, *encodedLength, *tlv.content)
     }
 
     override fun toString(): String {
         return "ETLV(tag=0x${byteArrayOf(tlv.tag).encodeToString(Base16)}" +
-                ", length=${tlv.length}" +
-                ", overallLength=${tlv.overallLength}" +
-                if (children.isNotEmpty()) ", children=${children}" else ", content=${tlv.content.encodeToString(Base16)}" +
+                ", length=${length}" +
+                ", overallLength=${overallLength}" +
+                if (children == null) ", children=${children}" else ", content=${tlv.content.encodeToString(Base16)}" +
                         ")"
     }
 }
 
-fun PrimitiveTLV(tag:Int, content: ByteArray)=ExtendedTlv(TLV(tag, content), emptyList())
+
+sealed class Asn1Structure(tag: Int, children: List<ExtendedTlv>?) : ExtendedTlv(TLV(tag, byteArrayOf()), children)
+class Asn1Sequence(children: List<ExtendedTlv>?) : Asn1Structure(DERTags.DER_SEQUENCE, children)
+class Asn1Set(children: List<ExtendedTlv>?) : Asn1Structure(DERTags.DER_SET, children)
+
+
+class Asn1Primitive(tag: Int, content: ByteArray) : ExtendedTlv(TLV(tag, content), null)
 
 data class TLV(val tag: Byte, val content: ByteArray) {
 

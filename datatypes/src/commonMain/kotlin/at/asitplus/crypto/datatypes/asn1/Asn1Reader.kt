@@ -24,16 +24,16 @@ class Asn1StructureReader(input: ByteArray) {
         val result = mutableListOf<ExtendedTlv>()
         while (rest.isNotEmpty()) {
             val tlv = read()
-            if (tlv.isContainer() && tlv.content.isNotEmpty()) {
-                result.add(ExtendedTlv(tlv, Asn1StructureReader(tlv.content).readAll()))
-            } else {
-                result.add(ExtendedTlv(tlv, listOf()))
-            }
+            if (tlv.isSeuqence()) result.add(Asn1Sequence(Asn1StructureReader(tlv.content).readAll()))
+            else if (tlv.isSet()) result.add(Asn1Set(Asn1StructureReader(tlv.content).readAll()))
+            else result.add(Asn1Primitive(tlv.tag.toInt(), tlv.content))
+
         }
         return result.toList()
     }
 
-    private fun TLV.isContainer() = tag == 0x30.toByte() || tag == 0x31.toByte() || tag == 0xA0.toByte()
+    private fun TLV.isSet() = tag == 0x31.toByte()
+    private fun TLV.isSeuqence() = tag == 0x30.toByte()
 
     @Throws(IllegalArgumentException::class)
     private fun read(): TLV {
@@ -44,7 +44,6 @@ class Asn1StructureReader(input: ByteArray) {
         return tlv
     }
 }
-
 
 
 class Asn1Reader(input: ByteArray) {
@@ -170,7 +169,7 @@ fun ByteArray.readTlv(): TLV = runCatching {
         val length = (this[2].toUByte().toInt() shl 8) + this[3].toUByte().toInt()
         if (this.size < 4 + length) throw IllegalArgumentException("Out of bytes")
         val value = this.drop(4).take(length).toByteArray()
-        return TLV(tag,value)
+        return TLV(tag, value)
     }
     if (firstLength == 0x81.toByte()) {
         if (this.size < 3) throw IllegalArgumentException("Can't decode length")

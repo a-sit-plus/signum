@@ -12,7 +12,6 @@ import at.asitplus.crypto.datatypes.asn1.BERTags.OCTET_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.PRINTABLE_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.UTC_TIME
 import at.asitplus.crypto.datatypes.asn1.BERTags.UTF8_STRING
-import at.asitplus.crypto.datatypes.asn1.DERTags.DER_SEQUENCE
 import at.asitplus.crypto.datatypes.asn1.DERTags.DER_SET
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -20,7 +19,7 @@ import kotlinx.datetime.Instant
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 
-class Asn1TreeBuilder(val tag: Int = DER_SEQUENCE) {
+class Asn1TreeBuilder() {
     internal val elements = mutableListOf<ExtendedTlv>()
 
     fun append(child: ExtendedTlv) = apply { elements += child }
@@ -33,9 +32,9 @@ class Asn1TreeBuilder(val tag: Int = DER_SEQUENCE) {
 
     fun oid(block: () -> String) = apply { elements += block().encodeTolvOid() }
 
-    fun utf8String(block: () -> String) = apply { elements += PrimitiveTLV(UTF8_STRING, block().encodeToByteArray()) }
+    fun utf8String(block: () -> String) = apply { elements += Asn1Primitive(UTF8_STRING, block().encodeToByteArray()) }
     fun printableString(block: () -> String) =
-        apply { elements += PrimitiveTLV(PRINTABLE_STRING, block().encodeToByteArray()) }
+        apply { elements += Asn1Primitive(PRINTABLE_STRING, block().encodeToByteArray()) }
 
     fun string(block: () -> Asn1String) = apply {
         val str = block()
@@ -50,41 +49,47 @@ class Asn1TreeBuilder(val tag: Int = DER_SEQUENCE) {
         string { dn.value }
     }
 
-    fun version(block: () -> Int) = apply { elements += PrimitiveTLV(0xA0, block().encodeToAsn1()) }
+    fun version(block: () -> Int) = apply { elements += Asn1Primitive(0xA0, block().encodeToAsn1()) }
 
-    fun asn1null() = apply { elements += PrimitiveTLV(NULL, byteArrayOf()) } //TODO: check if this erally works
+    fun asn1null() = apply { elements += Asn1Primitive(NULL, byteArrayOf()) } //TODO: check if this erally works
 
-    fun utcTime(block: () -> Instant) = apply { elements += PrimitiveTLV(UTC_TIME, block().encodeToAsn1ValuePart()) }
+    fun utcTime(block: () -> Instant) = apply { elements += Asn1Primitive(UTC_TIME, block().encodeToAsn1ValuePart()) }
 
-    private fun nest(tag: Int, init: Asn1TreeBuilder.() -> Unit) = apply {
-        val seq = Asn1TreeBuilder(tag)
+    private fun nest(isSequence: Boolean, init: Asn1TreeBuilder.() -> Unit) = apply {
+        val seq = Asn1TreeBuilder()
         seq.init()
-        elements += ExtendedTlv(TLV(seq.tag, byteArrayOf()), seq.elements)
+        elements += if (isSequence) Asn1Sequence(seq.elements) else Asn1Set(seq.elements)
     }
 
-    fun sequence(init: Asn1TreeBuilder.() -> Unit) = nest(DER_SEQUENCE, init)
-    fun set(init: Asn1TreeBuilder.() -> Unit) = nest(DER_SET, init)
+    fun sequence(init: Asn1TreeBuilder.() -> Unit) = nest(true, init)
+    fun set(init: Asn1TreeBuilder.() -> Unit) = nest(false, init)
 
 }
 
 
 fun asn1Sequence(root: Asn1TreeBuilder.() -> Unit): ExtendedTlv {
-    val seq = Asn1TreeBuilder(DER_SEQUENCE)
+    val seq = Asn1TreeBuilder()
     seq.root()
-    return ExtendedTlv(TLV(seq.tag, byteArrayOf()), seq.elements)
+    return Asn1Sequence(seq.elements)
 }
 
-private fun Int.encodeToTlv() = PrimitiveTLV(INTEGER, encodeToDer())
+fun asn1Set(root: Asn1TreeBuilder.() -> Unit): ExtendedTlv {
+    val seq = Asn1TreeBuilder()
+    seq.root()
+    return Asn1Set(seq.elements)
+}
 
-private fun Boolean.encodeToTlv() = PrimitiveTLV(BOOLEAN, (if (this) 0xff else 0).encodeToDer())
+private fun Int.encodeToTlv() = Asn1Primitive(INTEGER, encodeToDer())
 
-private fun Long.encodeToTlv() = PrimitiveTLV(INTEGER, encodeToDer())
+private fun Boolean.encodeToTlv() = Asn1Primitive(BOOLEAN, (if (this) 0xff else 0).encodeToDer())
 
-private fun ByteArray.encodeToTlvOctetString() = PrimitiveTLV(OCTET_STRING, this)
+private fun Long.encodeToTlv() = Asn1Primitive(INTEGER, encodeToDer())
 
-private fun ByteArray.encodeToTlvBitString() = PrimitiveTLV(BIT_STRING, (byteArrayOf(0x00) + this))
+private fun ByteArray.encodeToTlvOctetString() = Asn1Primitive(OCTET_STRING, this)
 
-private fun String.encodeTolvOid() = PrimitiveTLV(OBJECT_IDENTIFIER, decodeToByteArray(Base16()))
+private fun ByteArray.encodeToTlvBitString() = Asn1Primitive(BIT_STRING, (byteArrayOf(0x00) + this))
+
+private fun String.encodeTolvOid() = Asn1Primitive(OBJECT_IDENTIFIER, decodeToByteArray(Base16()))
 
 
 class SequenceBuilder {

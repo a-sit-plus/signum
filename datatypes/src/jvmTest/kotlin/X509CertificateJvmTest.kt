@@ -24,7 +24,7 @@ import java.security.cert.CertificateFactory
 import java.security.interfaces.ECPublicKey
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.Date
+import java.util.*
 import kotlin.math.absoluteValue
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.days
@@ -172,9 +172,7 @@ class X509CertificateJvmTest : FreeSpec({
         val matches = parsed.expect {
             sequence {
                 sequence {
-                    container(0xA0) {
-                        integer()
-                    }
+                    tag(0xA0.toByte())
                     long()
                     sequence {
                         oid()
@@ -238,13 +236,13 @@ class SequenceReader(var extendedTlvs: List<ExtendedTlv>) {
 
     fun container(tag: Int, function: SequenceReader.() -> Unit) {
         val first = takeAndDrop()
-        if (first.tlv.tag != tag.toByte())
+        if (first.tag != tag.toByte())
             matches = false
-        matches = matches and first.children.expect(function)
+        matches = matches and first.children!!.expect(function)
     }
 
-    private fun tag(tag: Byte) {
-        if (takeAndDrop().tlv.tag != tag)
+    fun tag(tag: Byte) {
+        if (takeAndDrop().tag != tag)
             matches = false
     }
 
