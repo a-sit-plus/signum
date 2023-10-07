@@ -22,13 +22,25 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 class Asn1TreeBuilder() {
     internal val elements = mutableListOf<ExtendedTlv>()
 
-    fun append(child: ExtendedTlv) = apply { elements += child }
+    fun append(child: () -> ExtendedTlv) = apply { elements += child() }
     fun bool(block: () -> Boolean) = apply { elements += block().encodeToTlv() }
     fun int(block: () -> Int) = apply { elements += block().encodeToTlv() }
     fun long(block: () -> Long) = apply { elements += block().encodeToTlv() }
 
     fun octetString(block: () -> ByteArray) = apply { elements += block().encodeToTlvOctetString() }
+
+    fun octetString(child: ExtendedTlv) = apply {
+        octetString(block = {
+            child.derEncoded
+        })
+    }
+
     fun bitString(block: () -> ByteArray) = apply { elements += block().encodeToTlvBitString() }
+    fun bitString(child: ExtendedTlv) = apply {
+        bitString(block = {
+            child.derEncoded
+        })
+    }
 
     fun oid(block: () -> String) = apply { elements += block().encodeTolvOid() }
 
@@ -43,11 +55,18 @@ class Asn1TreeBuilder() {
         else printableString { str.value }
     }
 
+    //TODO this is cursed and needs to go!
     fun distinguishedName(block: () -> DistingushedName) = apply {
         val dn = block()
         oid { dn.oid }
         string { dn.value }
     }
+
+    fun tbsCertificate(block: () -> TbsCertificate) = apply { elements += block().encodeToTlv() }
+
+    fun sigAlg(block: () -> JwsAlgorithm) = apply { elements += block().encodeToTlv() }
+
+    fun subjectPublicKey(block: () -> CryptoPublicKey) = apply { elements += block().encodeToTlv() }
 
     fun version(block: () -> Int) = apply { elements += Asn1Primitive(0xA0, block().encodeToAsn1()) }
 
@@ -214,6 +233,12 @@ private fun JwsAlgorithm.encodeToAsn1() = when (this) {
     else -> throw IllegalArgumentException("sigAlg: $this")
 }
 
+private fun JwsAlgorithm.encodeToTlv() = when (this) {
+    JwsAlgorithm.ES256 -> Asn1Primitive(OBJECT_IDENTIFIER, "2A8648CE3D040302".decodeToByteArray(Base16))
+    JwsAlgorithm.ES384 -> Asn1Primitive(OBJECT_IDENTIFIER, "2A8648CE3D040303".decodeToByteArray(Base16))
+    else -> throw IllegalArgumentException("sigAlg: $this")
+}
+
 fun CryptoPublicKey.encodeToAsn1() = when (this) {
     is CryptoPublicKey.Ec -> legacySequence {
         sequence {
@@ -247,7 +272,41 @@ fun CryptoPublicKey.encodeToAsn1() = when (this) {
 
         }
     }
+}
 
+fun CryptoPublicKey.encodeToTlv() = when (this) {
+    is CryptoPublicKey.Ec -> asn1Sequence {
+        sequence {
+            oid { "2A8648CE3D0201" }
+            when (curve) {
+                EcCurve.SECP_256_R_1 -> oid { "2A8648CE3D030107" }
+                EcCurve.SECP_384_R_1 -> oid { "2B81040022" }
+                EcCurve.SECP_521_R_1 -> oid { "2B81040023" }
+            }
+
+        }
+        bitString { (byteArrayOf(OCTET_STRING.toByte()) + x.ensureSize(curve.coordinateLengthBytes) + y.ensureSize(curve.coordinateLengthBytes)) }
+    }
+
+    is CryptoPublicKey.Rsa -> {
+        asn1Sequence {
+            sequence {
+                oid { "2A864886F70D010101" }
+                asn1null()
+            }
+            bitString(
+                asn1Sequence {
+                    append {
+                        Asn1Primitive(INTEGER,
+                            n.ensureSize(bits.number / 8u)
+                                .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
+                    }
+                    int { e.toInt() }
+                }
+            )
+
+        }
+    }
 }
 
 fun Int.encodeLength(): ByteArray {

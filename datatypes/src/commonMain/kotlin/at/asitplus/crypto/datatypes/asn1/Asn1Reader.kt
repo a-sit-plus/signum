@@ -45,6 +45,15 @@ class Asn1StructureReader(input: ByteArray) {
     }
 }
 
+fun Asn1Primitive.readOid() = parse(OBJECT_IDENTIFIER) {
+    it.encodeToString(Base16)
+}
+
+inline fun <reified T> Asn1Primitive.parse(tag: Int, decode: (content: ByteArray) -> T) = runCatching {
+    if (tag.toByte() != this.tag) throw IllegalArgumentException("Tag mismatch. Expected: $tag, is: ${this.tag}")
+    decode(content)
+}.getOrElse { if (it is IllegalArgumentException) throw it else throw IllegalArgumentException(it) }
+
 
 class Asn1Reader(input: ByteArray) {
 

@@ -1,9 +1,6 @@
 package at.asitplus.crypto.datatypes
 
-import at.asitplus.crypto.datatypes.asn1.Asn1Reader
-import at.asitplus.crypto.datatypes.asn1.BERTags
-import at.asitplus.crypto.datatypes.asn1.decodeFromDer
-import at.asitplus.crypto.datatypes.asn1.legacySequence
+import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
@@ -63,6 +60,52 @@ data class TbsCertificate(
                             append(ext.encoderToDer())
                         }
                     })
+                }
+            }
+        }
+    }
+
+    fun encodeToTlv() = asn1Sequence {
+        version { version }
+        long { serialNumber }
+        sequence {
+            sigAlg { signatureAlgorithm }
+        }
+        sequence {
+            issuerName.forEach {
+                set {
+                    sequence {
+                        distinguishedName { it }
+                    }
+                }
+            }
+        }
+        sequence {
+            utcTime { validFrom }
+            utcTime { validUntil }
+        }
+        sequence {
+            subjectName.forEach {
+                set {
+                    sequence {
+                        distinguishedName { it }
+                    }
+                }
+            }
+        }
+        subjectPublicKey { publicKey }
+
+        extensions?.let {
+            if (it.isNotEmpty()) {
+                append {
+                    Asn1Primitive(
+                        0xA3,
+                        asn1Sequence {
+                            it.forEach { ext ->
+                                append { ext.encodeToTlv() }
+                            }
+                        }.derEncoded
+                    )
                 }
             }
         }
@@ -160,7 +203,7 @@ data class TbsCertificate(
 @Serializable
 sealed class Asn1String() {
     abstract val tag: Byte
-    abstract val value:String
+    abstract val value: String
 
     @Serializable
     @SerialName("UTF8String")
@@ -238,6 +281,12 @@ data class X509CertificateExtension(
         octetString { value }
     }
 
+    fun encodeToTlv() = asn1Sequence {
+        oid { id }
+        if (critical) bool { true }
+        octetString { value }
+    }
+
     companion object {
 
         fun decodeFromDer(src: Asn1Reader): X509CertificateExtension {
@@ -246,6 +295,16 @@ data class X509CertificateExtension(
             val critical =
                 if (extReader.rest[0] == BERTags.BOOLEAN.toByte()) extReader.read(BERTags.BOOLEAN) { it[0] == 0xff.toByte() } else false
             val value = extReader.read(BERTags.OCTET_STRING) { it }
+            return X509CertificateExtension(id, critical, value)
+        }
+
+        fun decodeFromTlv(src: Asn1Sequence): X509CertificateExtension {
+
+            val id = (src.children[0] as Asn1Primitive).readOid()
+            val critical =
+                if (src.children[1].tag == BERTags.BOOLEAN.toByte()) (src.children[1] as Asn1Primitive).content[0] == 0xff.toByte() else false
+
+            val value = (src.children.last() as Asn1Primitive).parse(BERTags.OCTET_STRING) { it }
             return X509CertificateExtension(id, critical, value)
         }
 
@@ -284,6 +343,13 @@ data class X509Certificate(
     val signature: ByteArray
 ) {
     fun encodeToDer() = legacySequence {
+        tbsCertificate { tbsCertificate }
+        sequence {
+            sigAlg { signatureAlgorithm }
+        }
+        bitString { signature }
+    }
+    fun encodeToTlv() = asn1Sequence {
         tbsCertificate { tbsCertificate }
         sequence {
             sigAlg { signatureAlgorithm }

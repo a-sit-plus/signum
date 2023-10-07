@@ -19,13 +19,17 @@ class X509CertParserTest : FreeSpec({
         )
     ) as JcaCertificate
 
-    "Certificate can be parsed" {
+    "Certificate can be parsed" - {
         println(jcaCert.encoded.encodeToString(Base16))
         val parsedCert = X509Certificate.decodeFromDer(certBytes)
         println(Json { prettyPrint = true }.encodeToString(parsedCert))
         println(parsedCert.encodeToDer().encodeToString(Base16()))
-        parsedCert.encodeToDer() shouldBe jcaCert.encoded
-
+        "and encoded to match the original bytes" {
+            parsedCert.encodeToDer() shouldBe jcaCert.encoded
+        }
+        "also matches using new encoder" {
+            parsedCert.encodeToTlv().derEncoded shouldBe jcaCert.encoded
+        }
     }
 
 
