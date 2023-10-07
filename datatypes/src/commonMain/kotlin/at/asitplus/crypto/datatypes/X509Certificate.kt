@@ -173,10 +173,71 @@ data class TbsCertificate(
             }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
         }
 
+        fun decodeFromTlv(input: Asn1Sequence): TbsCertificate {
+            return runCatching {
+                val version = input.nextChild().let {
+                    (it as Asn1Primitive).parse(0xA0) {
+                        (Asn1StructureReader(it).readAll().first() as Asn1Primitive).readInt()
+                    }
+                }
+                val serialNumber = (input.nextChild() as Asn1Primitive).readLong()
+                val sigAlg = (input.nextChild() as Asn1Sequence).let {
+                    if (it.children.size != 1) throw IllegalArgumentException("More than one element for SigAlg!")
+                    JwsAlgorithm.decodeFromTlv(it.nextChild() as Asn1Primitive)
+
+                }
+                val issuerNames = (input.nextChild() as Asn1Sequence).children.map {
+                    it as Asn1Set
+                    if (it.children.size != 1) throw IllegalArgumentException("Invalid Issuer Structure")
+                    DistingushedName.decodeFromTlv(it.nextChild() as Asn1Sequence)
+                }
+
+
+                val timestamps = decodeTimestamps(input.nextChild() as Asn1Sequence)?:throw IllegalArgumentException("error parsing Timestamps")
+                val subject = (input.nextChild() as Asn1Sequence).children.map {
+                    it as Asn1Set
+                    if (it.children.size != 1) throw IllegalArgumentException("Invalid Subject Structure")
+                    DistingushedName.decodeFromTlv(it.nextChild() as Asn1Sequence)
+                }
+
+                val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(input.nextChild() as Asn1Sequence)
+
+                val extensions = if (input.hasMoreChildren()) {
+                    (input.nextChild() as Asn1Primitive).parse(0xA3){
+                        (Asn1StructureReader(it).readAll().first() as Asn1Sequence).children.map {
+                            X509CertificateExtension.decodeFromTlv(it as Asn1Sequence)
+                        }
+                    }
+                } else null
+
+                if(input.hasMoreChildren()) throw IllegalArgumentException("Superfluous Data in Certificate Structure")
+
+                return TbsCertificate(
+                    version = version,
+                    serialNumber = serialNumber,
+                    signatureAlgorithm = sigAlg,
+                    issuerName = issuerNames,
+                    validFrom = timestamps.first,
+                    validUntil = timestamps.second,
+                    subjectName = subject,
+                    publicKey = cryptoPublicKey,
+                    extensions = extensions,
+                )
+            }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
+        }
+
         private fun decodeTimestamps(input: ByteArray): Pair<Instant, Instant>? = runCatching {
             val reader = Asn1Reader(input)
             val firstInstant = reader.readUtcTime()
             val secondInstant = reader.readUtcTime()
+            return Pair(firstInstant, secondInstant)
+        }.getOrNull()
+
+        private fun decodeTimestamps(input: Asn1Sequence): Pair<Instant, Instant>? = runCatching {
+
+            val firstInstant = (input.nextChild() as Asn1Primitive).readUtcTime()
+            val secondInstant = (input.nextChild() as Asn1Primitive).readUtcTime()
+            if (input.hasMoreChildren()) throw IllegalArgumentException("Superfluous content in Validity")
             return Pair(firstInstant, secondInstant)
         }.getOrNull()
 
@@ -265,7 +326,25 @@ sealed class DistingushedName {
 
     @Serializable
     @SerialName("?")
-    class Other(override val value: Asn1String, override val oid: String) : DistingushedName() {
+    class Other(override val value: Asn1String, override val oid: String) : DistingushedName()
+
+    companion object {
+        fun decodeFromTlv(input: Asn1Sequence): DistingushedName {
+            val oid = (input.nextChild() as Asn1Primitive).readOid()
+            if (oid.startsWith("5504")) {
+                val str = (input.nextChild() as Asn1Primitive).readString()
+                if (input.hasMoreChildren()) throw IllegalArgumentException("Superfluous elements in RDN")
+                return when (oid) {
+                    DistingushedName.CommonName.OID -> DistingushedName.CommonName(str)
+                    DistingushedName.Country.OID -> DistingushedName.Country(str)
+                    DistingushedName.Organization.OID -> DistingushedName.Organization(str)
+                    DistingushedName.OrganizationalUnit.OID -> DistingushedName.OrganizationalUnit(str)
+                    else -> DistingushedName.Other(str, oid)
+                }
+
+            }
+            throw IllegalArgumentException("Expected RDN, got OID $oid")
+        }
     }
 }
 
@@ -349,6 +428,7 @@ data class X509Certificate(
         }
         bitString { signature }
     }
+
     fun encodeToTlv() = asn1Sequence {
         tbsCertificate { tbsCertificate }
         sequence {
@@ -378,6 +458,18 @@ data class X509Certificate(
     }
 
     companion object {
+
+        fun decodeFromTlv(src:Asn1Sequence): X509Certificate {
+            val tbs= TbsCertificate.decodeFromTlv(src.nextChild() as Asn1Sequence)
+            val sigAlg = JwsAlgorithm.decodeFromTlv((src.nextChild() as Asn1Sequence).let {
+                if (it.children.size!=1) throw IllegalArgumentException("Invalid SigAlg Structure")
+                it.nextChild() as Asn1Primitive
+            })
+            val signature = (src.nextChild() as Asn1Primitive).readBitString()
+            if(src.hasMoreChildren()) throw  IllegalArgumentException("Superfluous structure in Certificate Structure")
+            return X509Certificate(tbs, sigAlg,signature)
+        }
+
         fun decodeFromDer(input: ByteArray): X509Certificate {
             return runCatching {
                 Asn1Reader(input).readSequence(::decodeFromDerInner)

@@ -227,6 +227,7 @@ fun JwsAlgorithm.Companion.decodeFromDer(input: ByteArray): JwsAlgorithm? {
     return null
 }
 
+
 private fun JwsAlgorithm.encodeToAsn1() = when (this) {
     JwsAlgorithm.ES256 -> "2A8648CE3D040302".encodeToOid()
     JwsAlgorithm.ES384 -> "2A8648CE3D040303".encodeToOid()

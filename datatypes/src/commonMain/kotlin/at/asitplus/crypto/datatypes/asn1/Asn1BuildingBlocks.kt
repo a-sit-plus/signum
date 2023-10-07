@@ -3,7 +3,7 @@ package at.asitplus.crypto.datatypes.asn1
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 
-sealed class ExtendedTlv protected constructor(private val tlv: TLV, open val children: List<ExtendedTlv>?) {
+sealed class ExtendedTlv protected constructor(private val tlv: TLV, protected open val children: List<ExtendedTlv>?) {
 
     val encodedLength by lazy { length.encodeLength() }
     val length: Int by lazy {
@@ -32,9 +32,16 @@ sealed class ExtendedTlv protected constructor(private val tlv: TLV, open val ch
 }
 
 
-sealed class Asn1Structure(tag: Int, children: List<ExtendedTlv>?) : ExtendedTlv(TLV(tag, byteArrayOf()), children){
-    override val children: List<ExtendedTlv>
+sealed class Asn1Structure(tag: Int, children: List<ExtendedTlv>?) : ExtendedTlv(TLV(tag, byteArrayOf()), children) {
+    public override val children: List<ExtendedTlv>
         get() = super.children!!
+
+    private var index = 0
+    fun nextChild() = children[index++]
+
+    fun hasMoreChildren() = children.size > index
+
+    fun peek() = children[index]
 }
 
 class Asn1Sequence(children: List<ExtendedTlv>) : Asn1Structure(DERTags.DER_SEQUENCE, children) {

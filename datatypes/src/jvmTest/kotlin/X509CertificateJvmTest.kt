@@ -1,4 +1,5 @@
 import at.asitplus.crypto.datatypes.*
+import at.asitplus.crypto.datatypes.asn1.Asn1Structure
 import at.asitplus.crypto.datatypes.asn1.Asn1StructureReader
 import at.asitplus.crypto.datatypes.asn1.ExtendedTlv
 import at.asitplus.crypto.datatypes.asn1.ensureSize
@@ -238,7 +239,7 @@ class SequenceReader(var extendedTlvs: List<ExtendedTlv>) {
         val first = takeAndDrop()
         if (first.tag != tag.toByte())
             matches = false
-        matches = matches and first.children!!.expect(function)
+        matches = matches and (first as Asn1Structure).children.expect(function)
     }
 
     fun tag(tag: Byte) {

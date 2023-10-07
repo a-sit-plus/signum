@@ -3,6 +3,7 @@ package at.asitplus.crypto.datatypes.asn1
 import at.asitplus.crypto.datatypes.Asn1String
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.EcCurve
+import at.asitplus.crypto.datatypes.JwsAlgorithm
 import at.asitplus.crypto.datatypes.asn1.BERTags.BIT_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.INTEGER
 import at.asitplus.crypto.datatypes.asn1.BERTags.NULL
@@ -48,6 +49,31 @@ class Asn1StructureReader(input: ByteArray) {
 fun Asn1Primitive.readOid() = parse(OBJECT_IDENTIFIER) {
     it.encodeToString(Base16)
 }
+
+fun Asn1Primitive.readInt() = parse(INTEGER) {
+    Int.decodeFromDer(it)
+}
+
+fun Asn1Primitive.readLong() = parse(INTEGER) {
+    Long.decodeFromDer(it)
+}
+
+fun Asn1Primitive.readString(): Asn1String =
+    if (tag == UTF8_STRING.toByte()) Asn1String.UTF8(String(content))
+    else if (tag == PRINTABLE_STRING.toByte()) Asn1String.Printable(String(content))
+    else TODO("Support other string types!")
+
+fun Asn1Primitive.readUtcTime() = parse(UTC_TIME, Instant.Companion::decodeUtcTimeFromDer)
+fun Asn1Primitive.readBitString() = parse(BIT_STRING, ::decodeBitString)
+fun Asn1Primitive.readNull() = parse(NULL) {}
+
+fun JwsAlgorithm.Companion.decodeFromTlv(input: Asn1Primitive) =
+    when (input.readOid()) {
+        "2A8648CE3D040303" -> JwsAlgorithm.ES384
+        "2A8648CE3D040302" -> JwsAlgorithm.ES256
+        else -> TODO("Implement remaining algorithm oids")
+    }
+
 
 inline fun <reified T> Asn1Primitive.parse(tag: Int, decode: (content: ByteArray) -> T) = runCatching {
     if (tag.toByte() != this.tag) throw IllegalArgumentException("Tag mismatch. Expected: $tag, is: ${this.tag}")
@@ -137,6 +163,50 @@ fun CryptoPublicKey.Companion.decodeFromDer(src: Asn1Reader): CryptoPublicKey {
 
     } else {
         throw IllegalArgumentException("Non-EC Keys not supported")
+    }
+}
+
+@Throws(IllegalArgumentException::class)
+fun CryptoPublicKey.Companion.decodeFromTlv(src: Asn1Sequence): CryptoPublicKey {
+    if (src.children.size != 2) throw IllegalArgumentException("Invalid SPKI Structure!")
+    val keyInfo = src.nextChild() as Asn1Sequence
+    if (keyInfo.children.size != 2) throw IllegalArgumentException("Superfluous data in  SPKI!")
+
+    val oid = (keyInfo.nextChild() as Asn1Primitive).readOid()
+
+    if (oid == "2A8648CE3D0201") {
+        val curveOid = (keyInfo.nextChild() as Asn1Primitive).readOid()
+        val curve = when (curveOid) {
+            "2A8648CE3D030107" -> EcCurve.SECP_256_R_1
+            "2B81040022" -> EcCurve.SECP_384_R_1
+            "2B81040023" -> EcCurve.SECP_521_R_1
+            else -> throw IllegalArgumentException("Curve not supported: $curveOid")
+        }
+        val bitString = (src.nextChild() as Asn1Primitive).readBitString()
+
+
+        val xAndY = bitString.drop(1).toByteArray()
+        val coordLen = curve.coordinateLengthBytes.toInt()
+        val x = xAndY.take(coordLen).toByteArray()
+        val y = xAndY.drop(coordLen).take(coordLen).toByteArray()
+        return CryptoPublicKey.Ec.fromCoordinates(curve, x, y)
+    } else if (oid == "2A864886F70D010101") {
+        (keyInfo.nextChild() as Asn1Primitive).readNull()
+        val bitString = (src.nextChild() as Asn1Primitive).readBitString()
+        Asn1StructureReader(bitString).readAll().let {
+            if (it.size != 1) throw IllegalArgumentException("Superfluous data in SPKI!")
+            val rsaSequence = it.first() as Asn1Sequence
+            val n = (rsaSequence.nextChild() as Asn1Primitive).parse(INTEGER) { it }
+            val e = (rsaSequence.nextChild() as Asn1Primitive).readInt().toUInt()
+            if (rsaSequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous data in SPKI!")
+            return CryptoPublicKey.Rsa(
+                CryptoPublicKey.Rsa.Size.of(((n.size - 1) * 8).toUInt()) ?: throw IllegalArgumentException(
+                    "Illegal RSa key size: ${(n.size - 1) * 8}"
+                ), n, e
+            )
+        }
+    } else {
+        throw IllegalArgumentException("Unsupported Key Type: $oid")
     }
 }
 
