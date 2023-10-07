@@ -3,7 +3,7 @@ package at.asitplus.crypto.datatypes
 import at.asitplus.crypto.datatypes.asn1.Asn1Reader
 import at.asitplus.crypto.datatypes.asn1.BERTags
 import at.asitplus.crypto.datatypes.asn1.decodeFromDer
-import at.asitplus.crypto.datatypes.asn1.sequence
+import at.asitplus.crypto.datatypes.asn1.legacySequence
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
@@ -25,7 +25,7 @@ data class TbsCertificate(
     val publicKey: CryptoPublicKey,
     val extensions: List<X509CertificateExtension>? = null
 ) {
-    fun encodeToDer() = sequence {
+    fun encodeToDer() = legacySequence {
         version { version }
         long { serialNumber }
         sequence {
@@ -58,7 +58,7 @@ data class TbsCertificate(
         extensions?.let {
             if (it.isNotEmpty()) {
                 tagged(0xA3) {
-                    sequence(root = {
+                    legacySequence(root = {
                         it.forEach { ext ->
                             append(ext.encoderToDer())
                         }
@@ -232,7 +232,7 @@ data class X509CertificateExtension(
     @Serializable(with = ByteArrayBase64Serializer::class) val value: ByteArray
 ) {
 
-    fun encoderToDer() = sequence {
+    fun encoderToDer() = legacySequence {
         oid { id }
         if (critical) bool { true }
         octetString { value }
@@ -283,7 +283,7 @@ data class X509Certificate(
     @Serializable(with = ByteArrayBase64Serializer::class)
     val signature: ByteArray
 ) {
-    fun encodeToDer() = sequence {
+    fun encodeToDer() = legacySequence {
         tbsCertificate { tbsCertificate }
         sequence {
             sigAlg { signatureAlgorithm }

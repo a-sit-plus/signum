@@ -1,5 +1,5 @@
 import at.asitplus.crypto.datatypes.*
-import at.asitplus.crypto.datatypes.asn1.Asn1TreeBuilder
+import at.asitplus.crypto.datatypes.asn1.Asn1StructureReader
 import at.asitplus.crypto.datatypes.asn1.ExtendedTlv
 import at.asitplus.crypto.datatypes.asn1.ensureSize
 import io.kotest.core.spec.style.FreeSpec
@@ -165,7 +165,7 @@ class X509CertificateJvmTest : FreeSpec({
         val certificateHolder = builder.build(contentSigner)
 
         println(certificateHolder.encoded.encodeToString(Base16))
-        val parsed = Asn1TreeBuilder(certificateHolder.encoded).readAll()
+        val parsed = Asn1StructureReader(certificateHolder.encoded).readAll()
         parsed.shouldNotBeEmpty()
         parsed.size shouldBe 1
         println(parsed[0])

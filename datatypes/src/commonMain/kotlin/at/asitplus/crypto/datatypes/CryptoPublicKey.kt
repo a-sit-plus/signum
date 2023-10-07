@@ -2,7 +2,7 @@ package at.asitplus.crypto.datatypes
 
 import at.asitplus.crypto.datatypes.asn1.encodeToAsn1
 import at.asitplus.crypto.datatypes.asn1.ensureSize
-import at.asitplus.crypto.datatypes.asn1.sequence
+import at.asitplus.crypto.datatypes.asn1.legacySequence
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.io.MultibaseHelper
 import kotlinx.serialization.SerialName
@@ -61,7 +61,7 @@ sealed class CryptoPublicKey {
          * PKCS#1 encoded RSA Public Key
          */
         @Transient
-        override val iosEncoded = sequence {
+        override val iosEncoded = legacySequence {
             tagged(0x02) {
                 n.ensureSize(bits.number / 8u).let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) }
             }
