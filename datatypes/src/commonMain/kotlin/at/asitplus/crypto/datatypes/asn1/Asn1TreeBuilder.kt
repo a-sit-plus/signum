@@ -34,6 +34,23 @@ class Asn1TreeBuilder(input: ByteArray) {
 }
 
 data class ExtendedTlv(val tlv: TLV, val children: List<ExtendedTlv>) {
+
+    val encodedLength by lazy { length.encodeLength() }
+    val length: Int by lazy {
+        if (children.isEmpty()) tlv.length
+        else children.fold(0) { acc, extendedTlv -> acc + extendedTlv.overallLength }
+    }
+
+    val overallLength by lazy { length + 1 + encodedLength.size }
+
+    val derEncoded: ByteArray by lazy {
+        if (children.isEmpty()) byteArrayOf(tlv.tag, *encodedLength, *tlv.content)
+        else {
+            children.fold(byteArrayOf()) { acc, extendedTlv -> acc + extendedTlv.derEncoded }
+                .let { byteArrayOf(tlv.tag, *it.size.encodeLength(), *it) }
+        }
+    }
+
     override fun toString(): String {
         return "ETLV(tag=0x${byteArrayOf(tlv.tag).encodeToString(Base16)}" +
                 ", length=${tlv.length}" +

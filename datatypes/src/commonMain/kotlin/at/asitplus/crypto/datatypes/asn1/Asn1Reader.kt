@@ -156,7 +156,7 @@ fun ByteArray.readTlv(): TLV = runCatching {
 data class TLV(val tag: Byte, val content: ByteArray) {
 
 
-    val encodedLength by lazy { content.size.encodeLength() }
+    val encodedLength by lazy { length.encodeLength() }
     val length by lazy { content.size }
     val overallLength by lazy { length + 1 + encodedLength.size }
 
