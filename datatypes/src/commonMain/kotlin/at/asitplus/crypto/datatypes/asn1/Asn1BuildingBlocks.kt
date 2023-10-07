@@ -23,21 +23,28 @@ sealed class ExtendedTlv protected constructor(private val tlv: TLV, val childre
     }
 
     override fun toString(): String {
-        return "ETLV(tag=0x${byteArrayOf(tlv.tag).encodeToString(Base16)}" +
+        return "(tag=0x${byteArrayOf(tag).encodeToString(Base16)}" +
                 ", length=${length}" +
                 ", overallLength=${overallLength}" +
-                if (children == null) ", children=${children}" else ", content=${tlv.content.encodeToString(Base16)}" +
+                if (children != null) ", children=${children}" else ", content=${content.encodeToString(Base16)}" +
                         ")"
     }
 }
 
 
 sealed class Asn1Structure(tag: Int, children: List<ExtendedTlv>?) : ExtendedTlv(TLV(tag, byteArrayOf()), children)
-class Asn1Sequence(children: List<ExtendedTlv>?) : Asn1Structure(DERTags.DER_SEQUENCE, children)
-class Asn1Set(children: List<ExtendedTlv>?) : Asn1Structure(DERTags.DER_SET, children)
 
+class Asn1Sequence(children: List<ExtendedTlv>?) : Asn1Structure(DERTags.DER_SEQUENCE, children) {
+    override fun toString() = "Sequence" + super.toString()
+}
 
-class Asn1Primitive(tag: Int, content: ByteArray) : ExtendedTlv(TLV(tag, content), null)
+class Asn1Set(children: List<ExtendedTlv>?) : Asn1Structure(DERTags.DER_SET, children) {
+    override fun toString() = "Set" + super.toString()
+}
+
+class Asn1Primitive(tag: Int, content: ByteArray) : ExtendedTlv(TLV(tag, content), null) {
+    override fun toString() = "Primitive" + super.toString()
+}
 
 data class TLV(val tag: Byte, val content: ByteArray) {
 
