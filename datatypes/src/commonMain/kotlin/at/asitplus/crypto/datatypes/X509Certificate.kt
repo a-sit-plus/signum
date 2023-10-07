@@ -175,6 +175,7 @@ data class TbsCertificate(
 
         fun decodeFromTlv(input: Asn1Sequence): TbsCertificate {
             return runCatching {
+                //TODO make sure to always check for superfluous data
                 val version = input.nextChild().let {
                     (it as Asn1Primitive).parse(0xA0) {
                         (Asn1StructureReader(it).readAll().first() as Asn1Primitive).readInt()
