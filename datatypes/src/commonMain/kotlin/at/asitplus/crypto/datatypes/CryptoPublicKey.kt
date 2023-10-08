@@ -1,8 +1,6 @@
 package at.asitplus.crypto.datatypes
 
-import at.asitplus.crypto.datatypes.asn1.encodeToAsn1
-import at.asitplus.crypto.datatypes.asn1.ensureSize
-import at.asitplus.crypto.datatypes.asn1.legacySequence
+import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.io.MultibaseHelper
 import kotlinx.serialization.SerialName
@@ -22,7 +20,7 @@ sealed class CryptoPublicKey {
     abstract val iosEncoded: ByteArray
 
     @Transient
-    val derEncoded by lazy { encodeToAsn1() }
+    val derEncoded by lazy { encodeToTlv().derEncoded }
 
     companion object {
 
@@ -61,12 +59,12 @@ sealed class CryptoPublicKey {
          * PKCS#1 encoded RSA Public Key
          */
         @Transient
-        override val iosEncoded = legacySequence {
-            tagged(0x02u) {
-                n.ensureSize(bits.number / 8u).let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) }
+        override val iosEncoded = asn1Sequence {
+            append {  Asn1Primitive(BERTags.INTEGER,
+                n.ensureSize(bits.number / 8u).let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
             }
             int { e.toInt() }
-        }
+        }.derEncoded
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true

@@ -1,5 +1,10 @@
-import at.asitplus.crypto.datatypes.*
-import at.asitplus.crypto.datatypes.asn1.decodeFromDer
+import at.asitplus.crypto.datatypes.CryptoPublicKey
+import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
+import at.asitplus.crypto.datatypes.asn1.ExtendedTlv
+import at.asitplus.crypto.datatypes.asn1.decodeFromTlv
+import at.asitplus.crypto.datatypes.asn1.parse
+import at.asitplus.crypto.datatypes.fromJcaKey
+import at.asitplus.crypto.datatypes.getPublicKey
 import at.asitplus.crypto.datatypes.io.Base64Strict
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
@@ -44,7 +49,7 @@ class PublicKeyTest : FreeSpec({
                 own.derEncoded shouldBe pubKey.encoded
                 CryptoPublicKey.fromKeyId(own.keyId) shouldBe own
                 own.getPublicKey().encoded shouldBe pubKey.encoded
-                CryptoPublicKey.decodeFromDer(own.derEncoded) shouldBe own
+                CryptoPublicKey.decodeFromTlv(ExtendedTlv.parse(own.derEncoded) as Asn1Sequence) shouldBe own
             }
         }
     }
@@ -74,7 +79,7 @@ class PublicKeyTest : FreeSpec({
                     .toASN1Primitive() as ASN1Sequence).elementAt(1) as DERBitString).bytes
                 own.iosEncoded shouldBe keyBytes //PKCS#1
                 own.derEncoded shouldBe pubKey.encoded //PKCS#8
-                CryptoPublicKey.decodeFromDer(own.derEncoded) shouldBe own
+                CryptoPublicKey.decodeFromTlv(ExtendedTlv.parse(own.derEncoded) as Asn1Sequence) shouldBe own
                 own.getPublicKey().encoded shouldBe pubKey.encoded
             }
         }

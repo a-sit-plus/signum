@@ -4,6 +4,7 @@ import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 
 sealed class ExtendedTlv protected constructor(private val tlv: TLV, protected open val children: List<ExtendedTlv>?) {
+    companion object
 
     val encodedLength by lazy { length.encodeLength() }
     val length: Int by lazy {
@@ -44,7 +45,7 @@ sealed class Asn1Structure(tag: UByte, children: List<ExtendedTlv>?) : ExtendedT
     fun peek() = children[index]
 }
 
-class Asn1Tagged(tag: UByte, val contained: ExtendedTlv) : ExtendedTlv(TLV(tag, byteArrayOf()), listOf(contained)){
+class Asn1Tagged(tag: UByte, val contained: ExtendedTlv) : ExtendedTlv(TLV(tag, byteArrayOf()), listOf(contained)) {
     override fun toString() = "Tagged" + super.toString()
 }
 

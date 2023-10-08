@@ -1,6 +1,7 @@
 import at.asitplus.crypto.datatypes.X509Certificate
 import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.Asn1StructureReader
+import at.asitplus.crypto.datatypes.asn1.ExtendedTlv
+import at.asitplus.crypto.datatypes.asn1.parse
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.base16.Base16
@@ -25,26 +26,12 @@ class X509CertParserTest : FreeSpec({
 
     "Certificate can be parsed" - {
         println(jcaCert.encoded.encodeToString(Base16))
-        "using old decoder" - {
 
-            val parsedCert = X509Certificate.decodeFromDer(certBytes)
-            println(Json { prettyPrint = true }.encodeToString(parsedCert))
-            println(parsedCert.encodeToDer().encodeToString(Base16()))
-            "and encoded to match the original bytes" {
-                parsedCert.encodeToDer() shouldBe jcaCert.encoded
-            }
-            "also matches using new encoder" {
-                parsedCert.encodeToTlv().derEncoded shouldBe jcaCert.encoded
-            }
-        }
-
-        "using new decoder" -{
-            val parsedCert = X509Certificate.decodeFromTlv(Asn1StructureReader(certBytes).readAll().first() as Asn1Sequence)
+        "using new decoder" - {
+            val parsedCert = X509Certificate.decodeFromTlv(ExtendedTlv.parse(certBytes) as Asn1Sequence)
             println(json.encodeToString(parsedCert))
-            println(parsedCert.encodeToDer().encodeToString(Base16()))
-            "and encoded to match the original bytes" {
-                parsedCert.encodeToDer() shouldBe jcaCert.encoded
-            }
+            println(parsedCert.encodeToTlv().derEncoded.encodeToString(Base16()))
+
             "also matches using new encoder" {
                 parsedCert.encodeToTlv().derEncoded shouldBe jcaCert.encoded
             }

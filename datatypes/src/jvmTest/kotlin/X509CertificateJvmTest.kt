@@ -1,8 +1,5 @@
 import at.asitplus.crypto.datatypes.*
-import at.asitplus.crypto.datatypes.asn1.Asn1Structure
-import at.asitplus.crypto.datatypes.asn1.Asn1StructureReader
-import at.asitplus.crypto.datatypes.asn1.ExtendedTlv
-import at.asitplus.crypto.datatypes.asn1.ensureSize
+import at.asitplus.crypto.datatypes.asn1.*
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldNotBeEmpty
@@ -78,11 +75,11 @@ class X509CertificateJvmTest : FreeSpec({
         )
         val signed = Signature.getInstance(signatureAlgorithm.jcaName).apply {
             initSign(keyPair.private)
-            update(tbsCertificate.encodeToDer())
+            update(tbsCertificate.encodeToTlv().derEncoded)
         }.sign()
         val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, signed)
 
-        val kotlinEncoded = x509Certificate.encodeToDer()
+        val kotlinEncoded = x509Certificate.encodeToTlv().derEncoded
         val jvmEncoded = certificateHolder.encoded
         println("Certificates will never entirely match because of randomness in ECDSA signature")
         //kotlinEncoded shouldBe jvmEncoded
@@ -121,7 +118,8 @@ class X509CertificateJvmTest : FreeSpec({
         val contentSigner: ContentSigner = JcaContentSignerBuilder(signatureAlgorithm.jcaName).build(keyPair.private)
         val certificateHolder = builder.build(contentSigner)
 
-        val x509Certificate = X509Certificate.decodeFromDer(certificateHolder.encoded)
+        val x509Certificate =
+            X509Certificate.decodeFromTlv(ExtendedTlv.parse(certificateHolder.encoded) as Asn1Sequence)
         x509Certificate.shouldNotBeNull()
 
         //x509Certificate.encodeToDer() shouldBe certificateHolder.encoded
@@ -166,11 +164,10 @@ class X509CertificateJvmTest : FreeSpec({
         val certificateHolder = builder.build(contentSigner)
 
         println(certificateHolder.encoded.encodeToString(Base16))
-        val parsed = Asn1StructureReader(certificateHolder.encoded).readAll()
-        parsed.shouldNotBeEmpty()
-        parsed.size shouldBe 1
-        println(parsed[0])
-        val matches = parsed.expect {
+        val parsed = ExtendedTlv.parse(certificateHolder.encoded)
+
+        println(parsed)
+        val matches = listOf(parsed).expect {
             sequence {
                 sequence {
                     tag(0xA0u)

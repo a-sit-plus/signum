@@ -25,6 +25,7 @@ class Asn1TreeBuilder() {
     internal val elements = mutableListOf<ExtendedTlv>()
 
     fun append(child: () -> ExtendedTlv) = apply { elements += child() }
+    fun tagged(tag:UByte, child: () -> ExtendedTlv) = apply { elements += Asn1Tagged(tag,child()) }
     fun bool(block: () -> Boolean) = apply { elements += block().encodeToTlv() }
     fun int(block: () -> Int) = apply { elements += block().encodeToTlv() }
     fun long(block: () -> Long) = apply { elements += block().encodeToTlv() }
@@ -126,72 +127,6 @@ private fun ByteArray.encodeToTlvBitString() = Asn1Primitive(BIT_STRING, (byteAr
 private fun String.encodeTolvOid() = Asn1Primitive(OBJECT_IDENTIFIER, decodeToByteArray(Base16()))
 
 
-class SequenceBuilder {
-
-    internal val elements = mutableListOf<ByteArray>()
-
-    fun tagged(tag: UByte, block: () -> ByteArray) = apply { elements += asn1Tag(tag, block()) }
-    fun bool(block: () -> Boolean) = apply { elements += block().encodeToAsn1() }
-    fun int(block: () -> Int) = apply { elements += block().encodeToAsn1() }
-    fun long(block: () -> Long) = apply { elements += block().encodeToAsn1() }
-
-    fun octetString(block: () -> ByteArray) = apply { elements += block().encodeToOctetString() }
-    fun bitString(block: () -> ByteArray) = apply { elements += block().encodeToBitString() }
-
-    fun oid(block: () -> String) = apply { elements += block().encodeToOid() }
-
-    fun utf8String(block: () -> String) = apply { elements += asn1Tag(UTF8_STRING, block().encodeToByteArray()) }
-    fun printableString(block: () -> String) =
-        apply { elements += asn1Tag(PRINTABLE_STRING, block().encodeToByteArray()) }
-
-    fun version(block: () -> Int) = apply { elements += asn1Tag(0xA0u, block().encodeToAsn1()) }
-
-    fun distinguishedName(block: () -> DistingushedName) = apply {
-        val dn = block()
-        oid { dn.oid }
-        string { dn.value }
-
-    }
-
-    fun string(block: () -> Asn1String) = apply {
-        val str = block()
-        if (str is Asn1String.UTF8) utf8String { str.value }
-        else printableString { str.value }
-    }
-
-    fun asn1null() = apply { elements += byteArrayOf(NULL.toByte(), 0x00.toByte()) }
-
-    fun subjectPublicKey(block: () -> CryptoPublicKey) = apply { elements += block().encodeToAsn1() }
-
-    fun tbsCertificate(block: () -> TbsCertificate) = apply { elements += block().encodeToDer() }
-
-    fun sigAlg(block: () -> JwsAlgorithm) = apply { elements += block().encodeToAsn1() }
-
-    fun utcTime(block: () -> Instant) = apply { elements += block().encodeToUtcTime() }
-
-    fun sequence(init: SequenceBuilder.() -> Unit) = apply {
-        val seq = SequenceBuilder()
-        seq.init()
-        elements += asn1Tag(DERTags.DER_SEQUENCE, seq.elements.fold(byteArrayOf()) { acc, bytes -> acc + bytes })
-    }
-
-
-    fun set(init: SequenceBuilder.() -> Unit) = apply {
-        val seq = SequenceBuilder()
-        seq.init()
-        elements += asn1Tag(DER_SET, seq.elements.fold(byteArrayOf()) { acc, bytes -> acc + bytes })
-    }
-
-    fun append(derEncoded: ByteArray) = apply { elements += derEncoded }
-}
-
-
-fun legacySequence(root: SequenceBuilder.() -> Unit): ByteArray {
-    val seq = SequenceBuilder()
-    seq.root()
-    return asn1Tag(DERTags.DER_SEQUENCE, seq.elements.fold(byteArrayOf()) { acc, bytes -> acc + bytes })
-}
-
 private fun ByteArray.encodeToOctetString() = asn1Tag(OCTET_STRING, this)
 private fun Int.encodeToAsn1() = asn1Tag(INTEGER, encodeToDer())
 
@@ -239,50 +174,10 @@ fun JwsAlgorithm.Companion.decodeFromDer(input: ByteArray): JwsAlgorithm? {
 }
 
 
-private fun JwsAlgorithm.encodeToAsn1() = when (this) {
-    JwsAlgorithm.ES256 -> "2A8648CE3D040302".encodeToOid()
-    JwsAlgorithm.ES384 -> "2A8648CE3D040303".encodeToOid()
-    else -> throw IllegalArgumentException("sigAlg: $this")
-}
-
 private fun JwsAlgorithm.encodeToTlv() = when (this) {
     JwsAlgorithm.ES256 -> Asn1Primitive(OBJECT_IDENTIFIER, "2A8648CE3D040302".decodeToByteArray(Base16))
     JwsAlgorithm.ES384 -> Asn1Primitive(OBJECT_IDENTIFIER, "2A8648CE3D040303".decodeToByteArray(Base16))
     else -> throw IllegalArgumentException("sigAlg: $this")
-}
-
-fun CryptoPublicKey.encodeToAsn1() = when (this) {
-    is CryptoPublicKey.Ec -> legacySequence {
-        sequence {
-            oid { "2A8648CE3D0201" }
-            when (curve) {
-                EcCurve.SECP_256_R_1 -> oid { "2A8648CE3D030107" }
-                EcCurve.SECP_384_R_1 -> oid { "2B81040022" }
-                EcCurve.SECP_521_R_1 -> oid { "2B81040023" }
-            }
-
-        }
-        bitString { (byteArrayOf(OCTET_STRING.toByte()) + x.ensureSize(curve.coordinateLengthBytes) + y.ensureSize(curve.coordinateLengthBytes)) }
-    }
-
-    is CryptoPublicKey.Rsa -> {
-        val key = legacySequence {
-            tagged(INTEGER) {
-                n.ensureSize(bits.number / 8u).let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) }
-            }
-            int { e.toInt() }
-        }
-        legacySequence {
-            sequence {
-                oid { "2A864886F70D010101" }
-                asn1null()
-            }
-            bitString {
-                key
-            }
-
-        }
-    }
 }
 
 fun CryptoPublicKey.encodeToTlv() = when (this) {
