@@ -18,12 +18,12 @@ sealed class ExtendedTlv protected constructor(private val tlv: TLV, protected o
 
     val derEncoded: ByteArray by lazy {
         children?.fold(byteArrayOf()) { acc, extendedTlv -> acc + extendedTlv.derEncoded }
-            ?.let { byteArrayOf(tlv.tag, *it.size.encodeLength(), *it) }
-            ?: byteArrayOf(tlv.tag, *encodedLength, *tlv.content)
+            ?.let { byteArrayOf(tlv.tag.toByte(), *it.size.encodeLength(), *it) }
+            ?: byteArrayOf(tlv.tag.toByte(), *encodedLength, *tlv.content)
     }
 
     override fun toString(): String {
-        return "(tag=0x${byteArrayOf(tag).encodeToString(Base16)}" +
+        return "(tag=0x${byteArrayOf(tag.toByte()).encodeToString(Base16)}" +
                 ", length=${length}" +
                 ", overallLength=${overallLength}" +
                 if (children != null) ", children=${children}" else ", content=${content.encodeToString(Base16)}" +
@@ -32,7 +32,7 @@ sealed class ExtendedTlv protected constructor(private val tlv: TLV, protected o
 }
 
 
-sealed class Asn1Structure(tag: Int, children: List<ExtendedTlv>?) : ExtendedTlv(TLV(tag, byteArrayOf()), children) {
+sealed class Asn1Structure(tag: UByte, children: List<ExtendedTlv>?) : ExtendedTlv(TLV(tag, byteArrayOf()), children) {
     public override val children: List<ExtendedTlv>
         get() = super.children!!
 
@@ -44,6 +44,10 @@ sealed class Asn1Structure(tag: Int, children: List<ExtendedTlv>?) : ExtendedTlv
     fun peek() = children[index]
 }
 
+class Asn1Tagged(tag: UByte, val contained: ExtendedTlv) : ExtendedTlv(TLV(tag, byteArrayOf()), listOf(contained)){
+    override fun toString() = "Tagged" + super.toString()
+}
+
 class Asn1Sequence(children: List<ExtendedTlv>) : Asn1Structure(DERTags.DER_SEQUENCE, children) {
     override fun toString() = "Sequence" + super.toString()
 }
@@ -52,13 +56,11 @@ class Asn1Set(children: List<ExtendedTlv>?) : Asn1Structure(DERTags.DER_SET, chi
     override fun toString() = "Set" + super.toString()
 }
 
-class Asn1Primitive(tag: Int, content: ByteArray) : ExtendedTlv(TLV(tag, content), null) {
+class Asn1Primitive(tag: UByte, content: ByteArray) : ExtendedTlv(TLV(tag, content), null) {
     override fun toString() = "Primitive" + super.toString()
 }
 
-data class TLV(val tag: Byte, val content: ByteArray) {
-
-    constructor(tag: Int, content: ByteArray) : this(tag.toByte(), content)
+data class TLV(val tag: UByte, val content: ByteArray) {
 
     val encodedLength by lazy { length.encodeLength() }
     val length by lazy { content.size }
@@ -83,7 +85,7 @@ data class TLV(val tag: Byte, val content: ByteArray) {
     }
 
     override fun toString(): String {
-        return "TLV(tag=0x${byteArrayOf(tag).encodeToString(Base16)}" +
+        return "TLV(tag=0x${byteArrayOf(tag.toByte()).encodeToString(Base16)}" +
                 ", length=$length" +
                 ", overallLength=$overallLength" +
                 ", content=${content.encodeToString(Base16)})"

@@ -173,7 +173,7 @@ class X509CertificateJvmTest : FreeSpec({
         val matches = parsed.expect {
             sequence {
                 sequence {
-                    tag(0xA0.toByte())
+                    tag(0xA0u)
                     long()
                     sequence {
                         oid()
@@ -225,24 +225,24 @@ fun List<ExtendedTlv>.expect(init: SequenceReader.() -> Unit): Boolean {
 class SequenceReader(var extendedTlvs: List<ExtendedTlv>) {
     var matches: Boolean = true
 
-    fun sequence(function: SequenceReader.() -> Unit) = container(0x30, function)
-    fun set(function: SequenceReader.() -> Unit) = container(0x31, function)
+    fun sequence(function: SequenceReader.() -> Unit) = container(0x30u, function)
+    fun set(function: SequenceReader.() -> Unit) = container(0x31u, function)
 
-    fun integer() = tag(0x02)
-    fun long() = tag(0x02)
-    fun bitString() = tag(0x03)
-    fun oid() = tag(0x06)
-    fun utf8String() = tag(0x0c)
-    fun utcTime() = tag(0x17)
+    fun integer() = tag(0x02u)
+    fun long() = tag(0x02u)
+    fun bitString() = tag(0x03u)
+    fun oid() = tag(0x06u)
+    fun utf8String() = tag(0x0cu)
+    fun utcTime() = tag(0x17u)
 
-    fun container(tag: Int, function: SequenceReader.() -> Unit) {
+    fun container(tag: UByte, function: SequenceReader.() -> Unit) {
         val first = takeAndDrop()
-        if (first.tag != tag.toByte())
+        if (first.tag != tag)
             matches = false
         matches = matches and (first as Asn1Structure).children.expect(function)
     }
 
-    fun tag(tag: Byte) {
+    fun tag(tag: UByte) {
         if (takeAndDrop().tag != tag)
             matches = false
     }

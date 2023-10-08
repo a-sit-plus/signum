@@ -13,8 +13,10 @@ import at.asitplus.crypto.datatypes.asn1.BERTags.PRINTABLE_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.UTC_TIME
 import at.asitplus.crypto.datatypes.asn1.BERTags.UTF8_STRING
 import at.asitplus.crypto.datatypes.asn1.DERTags.DER_SET
+import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Instant
 import kotlin.io.encoding.ExperimentalEncodingApi
 
@@ -36,11 +38,7 @@ class Asn1TreeBuilder() {
     }
 
     fun bitString(block: () -> ByteArray) = apply { elements += block().encodeToTlvBitString() }
-    fun bitString(child: ExtendedTlv) = apply {
-        bitString(block = {
-            child.derEncoded
-        })
-    }
+    fun bitString(child: ExtendedTlv) = apply { bitString(block = { child.derEncoded }) }
 
     fun oid(block: () -> String) = apply { elements += block().encodeTolvOid() }
 
@@ -50,8 +48,7 @@ class Asn1TreeBuilder() {
 
     fun string(block: () -> Asn1String) = apply {
         val str = block()
-        if (str is Asn1String.UTF8)
-            utf8String { str.value }
+        if (str is Asn1String.UTF8) utf8String { str.value }
         else printableString { str.value }
     }
 
@@ -68,21 +65,33 @@ class Asn1TreeBuilder() {
 
     fun subjectPublicKey(block: () -> CryptoPublicKey) = apply { elements += block().encodeToTlv() }
 
-    fun version(block: () -> Int) = apply { elements += Asn1Primitive(0xA0, block().encodeToAsn1()) }
+    fun version(block: () -> Int) = apply { elements += Asn1Tagged(0u.toExplicitTag(), block().encodeToTlv()) }
 
     fun asn1null() = apply { elements += Asn1Primitive(NULL, byteArrayOf()) } //TODO: check if this erally works
 
     fun utcTime(block: () -> Instant) = apply { elements += Asn1Primitive(UTC_TIME, block().encodeToAsn1ValuePart()) }
 
-    private fun nest(isSequence: Boolean, init: Asn1TreeBuilder.() -> Unit) = apply {
+
+    private fun nest(type: CollectionType, init: Asn1TreeBuilder.() -> Unit) = apply {
         val seq = Asn1TreeBuilder()
         seq.init()
-        elements += if (isSequence) Asn1Sequence(seq.elements) else Asn1Set(seq.elements)
+        elements += if (type == CollectionType.SEQUENCE) Asn1Sequence(seq.elements) else Asn1Set(seq.elements.let {
+            if (type == CollectionType.SET) it.sortedBy { it.tag }
+            else {
+                if (it.any { elem -> elem.tag != it.first().tag }) throw IllegalArgumentException("SET_OF must only contain elements fo the same tag")
+                it.sortedBy { it.derEncoded.encodeToString(Base16) }//TODo this is inefficient
+            }
+        })
     }
 
-    fun sequence(init: Asn1TreeBuilder.() -> Unit) = nest(true, init)
-    fun set(init: Asn1TreeBuilder.() -> Unit) = nest(false, init)
+    fun sequence(init: Asn1TreeBuilder.() -> Unit) = nest(CollectionType.SEQUENCE, init)
+    fun set(init: Asn1TreeBuilder.() -> Unit) = nest(CollectionType.SET, init)
+    fun setOf(init: Asn1TreeBuilder.() -> Unit) = nest(CollectionType.SET_OF, init)
 
+}
+
+private enum class CollectionType {
+    SET, SEQUENCE, SET_OF
 }
 
 
@@ -93,6 +102,12 @@ fun asn1Sequence(root: Asn1TreeBuilder.() -> Unit): ExtendedTlv {
 }
 
 fun asn1Set(root: Asn1TreeBuilder.() -> Unit): ExtendedTlv {
+    val seq = Asn1TreeBuilder()
+    seq.root()
+    return Asn1Set(seq.elements.sortedBy { it.tag })
+}
+
+fun asn1SetOf(root: Asn1TreeBuilder.() -> Unit): ExtendedTlv {
     val seq = Asn1TreeBuilder()
     seq.root()
     return Asn1Set(seq.elements)
@@ -115,7 +130,7 @@ class SequenceBuilder {
 
     internal val elements = mutableListOf<ByteArray>()
 
-    fun tagged(tag: Int, block: () -> ByteArray) = apply { elements += asn1Tag(tag, block()) }
+    fun tagged(tag: UByte, block: () -> ByteArray) = apply { elements += asn1Tag(tag, block()) }
     fun bool(block: () -> Boolean) = apply { elements += block().encodeToAsn1() }
     fun int(block: () -> Int) = apply { elements += block().encodeToAsn1() }
     fun long(block: () -> Long) = apply { elements += block().encodeToAsn1() }
@@ -129,7 +144,7 @@ class SequenceBuilder {
     fun printableString(block: () -> String) =
         apply { elements += asn1Tag(PRINTABLE_STRING, block().encodeToByteArray()) }
 
-    fun version(block: () -> Int) = apply { elements += asn1Tag(0xA0, block().encodeToAsn1()) }
+    fun version(block: () -> Int) = apply { elements += asn1Tag(0xA0u, block().encodeToAsn1()) }
 
     fun distinguishedName(block: () -> DistingushedName) = apply {
         val dn = block()
@@ -140,8 +155,7 @@ class SequenceBuilder {
 
     fun string(block: () -> Asn1String) = apply {
         val str = block()
-        if (str is Asn1String.UTF8)
-            utf8String { str.value }
+        if (str is Asn1String.UTF8) utf8String { str.value }
         else printableString { str.value }
     }
 
@@ -191,7 +205,7 @@ private fun Long.encodeToDer() = encodeToByteArray().dropWhile { it == 0.toByte(
 
 private fun ByteArray.encodeToBitString() = asn1Tag(BIT_STRING, (byteArrayOf(0x00) + this))
 
-private fun asn1Tag(tag: Int, value: ByteArray) = byteArrayOf(tag.toByte()) + value.size.encodeLength() + value
+private fun asn1Tag(tag: UByte, value: ByteArray) = byteArrayOf(tag.toByte()) + value.size.encodeLength() + value
 
 private fun String.encodeToOid() = asn1Tag(OBJECT_IDENTIFIER, decodeToByteArray(Base16()))
 
@@ -200,29 +214,26 @@ private fun Instant.encodeToUtcTime() = asn1Tag(UTC_TIME, encodeToAsn1ValuePart(
 private fun Instant.encodeToAsn1ValuePart(): ByteArray {
     val value = this.toString()
     if (value.isEmpty()) return byteArrayOf()
-    val matchResult = Regex("[0-9]{2}([0-9]{2})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})")
-        .matchAt(value, 0)
-        ?: throw IllegalArgumentException("instant serialization failed: $value")
-    val year = matchResult.groups[1]?.value
-        ?: throw IllegalArgumentException("instant serialization year failed: $value")
-    val month = matchResult.groups[2]?.value
-        ?: throw IllegalArgumentException("instant serialization month failed: $value")
-    val day = matchResult.groups[3]?.value
-        ?: throw IllegalArgumentException("instant serialization day failed: $value")
-    val hour = matchResult.groups[4]?.value
-        ?: throw IllegalArgumentException("instant serialization hour failed: $value")
-    val minute = matchResult.groups[5]?.value
-        ?: throw IllegalArgumentException("instant serialization minute failed: $value")
-    val seconds = matchResult.groups[6]?.value
-        ?: throw IllegalArgumentException("instant serialization seconds failed: $value")
+    val matchResult =
+        Regex("[0-9]{2}([0-9]{2})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})").matchAt(value, 0)
+            ?: throw IllegalArgumentException("instant serialization failed: $value")
+    val year =
+        matchResult.groups[1]?.value ?: throw IllegalArgumentException("instant serialization year failed: $value")
+    val month =
+        matchResult.groups[2]?.value ?: throw IllegalArgumentException("instant serialization month failed: $value")
+    val day = matchResult.groups[3]?.value ?: throw IllegalArgumentException("instant serialization day failed: $value")
+    val hour =
+        matchResult.groups[4]?.value ?: throw IllegalArgumentException("instant serialization hour failed: $value")
+    val minute =
+        matchResult.groups[5]?.value ?: throw IllegalArgumentException("instant serialization minute failed: $value")
+    val seconds =
+        matchResult.groups[6]?.value ?: throw IllegalArgumentException("instant serialization seconds failed: $value")
     return "$year$month$day$hour$minute${seconds}Z".encodeToByteArray()
 }
 
 fun JwsAlgorithm.Companion.decodeFromDer(input: ByteArray): JwsAlgorithm? {
-    if (input.contentEquals("2A8648CE3D040303".encodeToOid()))
-        return JwsAlgorithm.ES384
-    else if (input.contentEquals("2A8648CE3D040302".encodeToOid()))
-        return JwsAlgorithm.ES256
+    if (input.contentEquals("2A8648CE3D040303".encodeToOid())) return JwsAlgorithm.ES384
+    else if (input.contentEquals("2A8648CE3D040302".encodeToOid())) return JwsAlgorithm.ES256
 
     return null
 }
@@ -257,8 +268,7 @@ fun CryptoPublicKey.encodeToAsn1() = when (this) {
     is CryptoPublicKey.Rsa -> {
         val key = legacySequence {
             tagged(INTEGER) {
-                n.ensureSize(bits.number / 8u)
-                    .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) }
+                n.ensureSize(bits.number / 8u).let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) }
             }
             int { e.toInt() }
         }
@@ -295,16 +305,14 @@ fun CryptoPublicKey.encodeToTlv() = when (this) {
                 oid { "2A864886F70D010101" }
                 asn1null()
             }
-            bitString(
-                asn1Sequence {
-                    append {
-                        Asn1Primitive(INTEGER,
-                            n.ensureSize(bits.number / 8u)
-                                .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
-                    }
-                    int { e.toInt() }
+            bitString(asn1Sequence {
+                append {
+                    Asn1Primitive(INTEGER,
+                        n.ensureSize(bits.number / 8u)
+                            .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
                 }
-            )
+                int { e.toInt() }
+            })
 
         }
     }
@@ -333,27 +341,30 @@ fun Int.encodeToByteArray(): ByteArray =
 /**
  * Encode as a four-byte array
  */
-fun Long.encodeToByteArray(): ByteArray =
-    byteArrayOf(
-        (this ushr 56).toByte(), (this ushr 48).toByte(), (this ushr 40).toByte(), (this ushr 32).toByte(),
-        (this ushr 24).toByte(), (this ushr 16).toByte(), (this ushr 8).toByte(), (this).toByte()
-    )
+fun Long.encodeToByteArray(): ByteArray = byteArrayOf(
+    (this ushr 56).toByte(),
+    (this ushr 48).toByte(),
+    (this ushr 40).toByte(),
+    (this ushr 32).toByte(),
+    (this ushr 24).toByte(),
+    (this ushr 16).toByte(),
+    (this ushr 8).toByte(),
+    (this).toByte()
+)
 
 /**
  * Strips the leading 0x00 byte of an ASN.1-encoded Integer,
  * that will be there if the first bit of the value is set,
  * i.e. it is over 0x7F (or < 0 if it is signed)
  */
-fun ByteArray.stripLeadingSignByte() =
-    if (this[0] == 0.toByte() && this[1] < 0) drop(1).toByteArray() else this
+fun ByteArray.stripLeadingSignByte() = if (this[0] == 0.toByte() && this[1] < 0) drop(1).toByteArray() else this
 
 /**
  * The extracted values from ASN.1 may be too short
  * to be simply concatenated as raw values,
  * so we'll need to pad them with 0x00 bytes to the expected length
  */
-fun ByteArray.padWithZeros(len: Int): ByteArray =
-    if (size < len) ByteArray(len - size) { 0 } + this else this
+fun ByteArray.padWithZeros(len: Int): ByteArray = if (size < len) ByteArray(len - size) { 0 } + this else this
 
 /**
  * Drops or adds zero bytes at the start until the [size] is reached

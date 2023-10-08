@@ -11,6 +11,8 @@ import at.asitplus.crypto.datatypes.asn1.BERTags.OBJECT_IDENTIFIER
 import at.asitplus.crypto.datatypes.asn1.BERTags.PRINTABLE_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.UTC_TIME
 import at.asitplus.crypto.datatypes.asn1.BERTags.UTF8_STRING
+import at.asitplus.crypto.datatypes.asn1.DERTags.isContainer
+import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Instant
@@ -25,16 +27,26 @@ class Asn1StructureReader(input: ByteArray) {
         val result = mutableListOf<ExtendedTlv>()
         while (rest.isNotEmpty()) {
             val tlv = read()
-            if (tlv.isSeuqence()) result.add(Asn1Sequence(Asn1StructureReader(tlv.content).readAll()))
+            if (tlv.isSequence()) result.add(Asn1Sequence(Asn1StructureReader(tlv.content).readAll()))
             else if (tlv.isSet()) result.add(Asn1Set(Asn1StructureReader(tlv.content).readAll()))
-            else result.add(Asn1Primitive(tlv.tag.toInt(), tlv.content))
+            else if (tlv.isExplicitlyTagged()) result.add(
+                Asn1Tagged(
+                    tlv.tag,
+                    Asn1StructureReader(tlv.content).readAll().let {
+                        if (it.size != 1) throw IllegalArgumentException("TAGGED contains ${it.size} objects")
+                        it.first()
+                    })
+            )
+            else result.add(Asn1Primitive(tlv.tag, tlv.content))
 
         }
         return result.toList()
     }
 
-    private fun TLV.isSet() = tag == 0x31.toByte()
-    private fun TLV.isSeuqence() = tag == 0x30.toByte()
+    private fun TLV.isSet() = tag == DERTags.DER_SET
+    private fun TLV.isSequence() = tag == DERTags.DER_SEQUENCE
+    private fun TLV.isExplicitlyTagged() =
+        tag.isContainer() //yes, this includes sequences and set, so we need to check this last!
 
     @Throws(IllegalArgumentException::class)
     private fun read(): TLV {
@@ -46,26 +58,31 @@ class Asn1StructureReader(input: ByteArray) {
     }
 }
 
-fun Asn1Primitive.readOid() = parse(OBJECT_IDENTIFIER) {
+fun Asn1Primitive.readOid() = decode(OBJECT_IDENTIFIER) {
     it.encodeToString(Base16)
 }
 
-fun Asn1Primitive.readInt() = parse(INTEGER) {
+fun Asn1Primitive.readInt() = decode(INTEGER) {
     Int.decodeFromDer(it)
 }
 
-fun Asn1Primitive.readLong() = parse(INTEGER) {
+fun Asn1Primitive.readLong() = decode(INTEGER) {
     Long.decodeFromDer(it)
 }
 
 fun Asn1Primitive.readString(): Asn1String =
-    if (tag == UTF8_STRING.toByte()) Asn1String.UTF8(String(content))
-    else if (tag == PRINTABLE_STRING.toByte()) Asn1String.Printable(String(content))
+    if (tag == UTF8_STRING) Asn1String.UTF8(String(content))
+    else if (tag == PRINTABLE_STRING) Asn1String.Printable(String(content))
     else TODO("Support other string types!")
 
-fun Asn1Primitive.readUtcTime() = parse(UTC_TIME, Instant.Companion::decodeUtcTimeFromDer)
-fun Asn1Primitive.readBitString() = parse(BIT_STRING, ::decodeBitString)
-fun Asn1Primitive.readNull() = parse(NULL) {}
+fun Asn1Primitive.readUtcTime() = decode(UTC_TIME, Instant.Companion::decodeUtcTimeFromDer)
+fun Asn1Primitive.readBitString() = decode(BIT_STRING, ::decodeBitString)
+fun Asn1Primitive.readNull() = decode(NULL) {}
+
+fun Asn1Tagged.verify(tag: UByte): ExtendedTlv {
+    if (this.tag != tag.toExplicitTag()) throw IllegalArgumentException("Tag ${this.tag} does not match expected tag ${tag.toExplicitTag()}")
+    return this.contained
+}
 
 fun JwsAlgorithm.Companion.decodeFromTlv(input: Asn1Primitive) =
     when (input.readOid()) {
@@ -75,8 +92,8 @@ fun JwsAlgorithm.Companion.decodeFromTlv(input: Asn1Primitive) =
     }
 
 
-inline fun <reified T> Asn1Primitive.parse(tag: Int, decode: (content: ByteArray) -> T) = runCatching {
-    if (tag.toByte() != this.tag) throw IllegalArgumentException("Tag mismatch. Expected: $tag, is: ${this.tag}")
+inline fun <reified T> Asn1Primitive.decode(tag: UByte, decode: (content: ByteArray) -> T) = runCatching {
+    if (tag != this.tag) throw IllegalArgumentException("Tag mismatch. Expected: $tag, is: ${this.tag}")
     decode(content)
 }.getOrElse { if (it is IllegalArgumentException) throw it else throw IllegalArgumentException(it) }
 
@@ -91,9 +108,9 @@ class Asn1Reader(input: ByteArray) {
 
 
     fun hasMore() = rest.isNotEmpty()
-    fun <T> readSequence(func: (ByteArray) -> T?) = read(0x30, func)
+    fun <T> readSequence(func: (ByteArray) -> T?) = read(0x30u, func)
 
-    fun <T> readSet(func: (ByteArray) -> T?) = read(0x31, func)
+    fun <T> readSet(func: (ByteArray) -> T?) = read(0x31u, func)
 
     fun readOid() = read(OBJECT_IDENTIFIER) { bytes -> bytes.encodeToString(Base16) }
 
@@ -114,9 +131,9 @@ class Asn1Reader(input: ByteArray) {
 
     fun readNull() = read(NULL) {}
 
-    fun <T> read(tag: Int, func: (ByteArray) -> T?): T {
+    fun <T> read(tag: UByte, func: (ByteArray) -> T?): T {
         val tlv = rest.readTlv()
-        if (tlv.tag != tag.toByte())
+        if (tlv.tag != tag)
             throw IllegalArgumentException("Expected tag $tag, got ${tlv.tag}")
         val obj =
             runCatching { func(tlv.content) }.getOrElse { throw IllegalArgumentException("Can't decode content", it) }
@@ -196,7 +213,7 @@ fun CryptoPublicKey.Companion.decodeFromTlv(src: Asn1Sequence): CryptoPublicKey 
         Asn1StructureReader(bitString).readAll().let {
             if (it.size != 1) throw IllegalArgumentException("Superfluous data in SPKI!")
             val rsaSequence = it.first() as Asn1Sequence
-            val n = (rsaSequence.nextChild() as Asn1Primitive).parse(INTEGER) { it }
+            val n = (rsaSequence.nextChild() as Asn1Primitive).decode(INTEGER) { it }
             val e = (rsaSequence.nextChild() as Asn1Primitive).readInt().toUInt()
             if (rsaSequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous data in SPKI!")
             return CryptoPublicKey.Rsa(
@@ -240,7 +257,7 @@ fun Long.Companion.decodeFromDer(input: ByteArray): Long = runCatching {
 
 fun ByteArray.readTlv(): TLV = runCatching {
     if (this.isEmpty()) throw IllegalArgumentException("Can't read TLV, input empty")
-    val tag = this[0]
+    val tag = this[0].toUByte()
     if (this.size == 1) return TLV(tag, byteArrayOf())
     val firstLength = this[1]
     if (firstLength == 0x82.toByte()) {

@@ -1,6 +1,7 @@
 package at.asitplus.crypto.datatypes
 
 import at.asitplus.crypto.datatypes.asn1.*
+import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
@@ -54,7 +55,7 @@ data class TbsCertificate(
 
         extensions?.let {
             if (it.isNotEmpty()) {
-                tagged(0xA3) {
+                tagged(0xA3u) {
                     legacySequence(root = {
                         it.forEach { ext ->
                             append(ext.encoderToDer())
@@ -98,13 +99,12 @@ data class TbsCertificate(
         extensions?.let {
             if (it.isNotEmpty()) {
                 append {
-                    Asn1Primitive(
-                        0xA3,
+                    Asn1Tagged(3u.toExplicitTag(),
                         asn1Sequence {
                             it.forEach { ext ->
                                 append { ext.encodeToTlv() }
                             }
-                        }.derEncoded
+                        }
                     )
                 }
             }
@@ -116,7 +116,7 @@ data class TbsCertificate(
         fun decodeFromDer(input: ByteArray): TbsCertificate {
             return runCatching {
                 val reader = Asn1Reader(input)
-                val version = reader.read(0xA0) { Asn1Reader(it).readInt() }
+                val version = reader.read(0xA0u) { Asn1Reader(it).readInt() }
                 val serialNumber = reader.readLong()
                 val sigAlg = reader.readSequence(JwsAlgorithm.Companion::decodeFromDer)
                 val issuerName = reader.readSequence {
@@ -145,7 +145,7 @@ data class TbsCertificate(
                 val cryptoPublicKey = CryptoPublicKey.decodeFromDer(reader)
 
                 val extensions = if (reader.hasMore()) {
-                    val extReader = reader.read(0xA3) { Asn1Reader(it) }
+                    val extReader = reader.read(0xA3u) { Asn1Reader(it) }
                     extReader.readSequence {
                         var rest = it
                         val extns = mutableListOf<X509CertificateExtension>()
@@ -177,9 +177,7 @@ data class TbsCertificate(
             return runCatching {
                 //TODO make sure to always check for superfluous data
                 val version = input.nextChild().let {
-                    (it as Asn1Primitive).parse(0xA0) {
-                        (Asn1StructureReader(it).readAll().first() as Asn1Primitive).readInt()
-                    }
+                    ((it as Asn1Tagged).verify(0u) as Asn1Primitive).readInt()
                 }
                 val serialNumber = (input.nextChild() as Asn1Primitive).readLong()
                 val sigAlg = (input.nextChild() as Asn1Sequence).let {
@@ -194,7 +192,8 @@ data class TbsCertificate(
                 }
 
 
-                val timestamps = decodeTimestamps(input.nextChild() as Asn1Sequence)?:throw IllegalArgumentException("error parsing Timestamps")
+                val timestamps = decodeTimestamps(input.nextChild() as Asn1Sequence)
+                    ?: throw IllegalArgumentException("error parsing Timestamps")
                 val subject = (input.nextChild() as Asn1Sequence).children.map {
                     it as Asn1Set
                     if (it.children.size != 1) throw IllegalArgumentException("Invalid Subject Structure")
@@ -204,14 +203,12 @@ data class TbsCertificate(
                 val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(input.nextChild() as Asn1Sequence)
 
                 val extensions = if (input.hasMoreChildren()) {
-                    (input.nextChild() as Asn1Primitive).parse(0xA3){
-                        (Asn1StructureReader(it).readAll().first() as Asn1Sequence).children.map {
-                            X509CertificateExtension.decodeFromTlv(it as Asn1Sequence)
-                        }
+                    ((input.nextChild() as Asn1Tagged).verify(3u) as Asn1Sequence).children.map {
+                        X509CertificateExtension.decodeFromTlv(it as Asn1Sequence)
                     }
                 } else null
 
-                if(input.hasMoreChildren()) throw IllegalArgumentException("Superfluous Data in Certificate Structure")
+                if (input.hasMoreChildren()) throw IllegalArgumentException("Superfluous Data in Certificate Structure")
 
                 return TbsCertificate(
                     version = version,
@@ -382,9 +379,9 @@ data class X509CertificateExtension(
 
             val id = (src.children[0] as Asn1Primitive).readOid()
             val critical =
-                if (src.children[1].tag == BERTags.BOOLEAN.toByte()) (src.children[1] as Asn1Primitive).content[0] == 0xff.toByte() else false
+                if (src.children[1].tag == BERTags.BOOLEAN) (src.children[1] as Asn1Primitive).content[0] == 0xff.toByte() else false
 
-            val value = (src.children.last() as Asn1Primitive).parse(BERTags.OCTET_STRING) { it }
+            val value = (src.children.last() as Asn1Primitive).decode(BERTags.OCTET_STRING) { it }
             return X509CertificateExtension(id, critical, value)
         }
 
@@ -460,15 +457,15 @@ data class X509Certificate(
 
     companion object {
 
-        fun decodeFromTlv(src:Asn1Sequence): X509Certificate {
-            val tbs= TbsCertificate.decodeFromTlv(src.nextChild() as Asn1Sequence)
+        fun decodeFromTlv(src: Asn1Sequence): X509Certificate {
+            val tbs = TbsCertificate.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val sigAlg = JwsAlgorithm.decodeFromTlv((src.nextChild() as Asn1Sequence).let {
-                if (it.children.size!=1) throw IllegalArgumentException("Invalid SigAlg Structure")
+                if (it.children.size != 1) throw IllegalArgumentException("Invalid SigAlg Structure")
                 it.nextChild() as Asn1Primitive
             })
             val signature = (src.nextChild() as Asn1Primitive).readBitString()
-            if(src.hasMoreChildren()) throw  IllegalArgumentException("Superfluous structure in Certificate Structure")
-            return X509Certificate(tbs, sigAlg,signature)
+            if (src.hasMoreChildren()) throw IllegalArgumentException("Superfluous structure in Certificate Structure")
+            return X509Certificate(tbs, sigAlg, signature)
         }
 
         fun decodeFromDer(input: ByteArray): X509Certificate {

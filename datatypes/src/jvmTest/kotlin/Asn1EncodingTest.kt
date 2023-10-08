@@ -64,10 +64,10 @@ class Asn1EncodingTest : FreeSpec({
             printableString { "Bar" }
 
             set {
-                int { 3 }
-                long { 123456789876543L }
                 bool { false }
                 bool { true }
+                int { 3 }
+                long { 123456789876543L }
             }
             sequence {
                 asn1null()
