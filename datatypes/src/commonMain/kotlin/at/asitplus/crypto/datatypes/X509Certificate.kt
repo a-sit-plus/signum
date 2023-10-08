@@ -2,6 +2,7 @@ package at.asitplus.crypto.datatypes
 
 import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
+import at.asitplus.crypto.datatypes.asn1.DERTags.toImplicitTag
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
@@ -21,6 +22,8 @@ data class TbsCertificate(
     val validUntil: Instant,
     val subjectName: List<DistingushedName>,
     val publicKey: CryptoPublicKey,
+    val issuerUniqueID: ByteArray? = null,
+    val subjectUniqueID: ByteArray? = null,
     val extensions: List<X509CertificateExtension>? = null
 ) {
     fun encodeToTlv() = asn1Sequence {
@@ -52,6 +55,9 @@ data class TbsCertificate(
             }
         }
         subjectPublicKey { publicKey }
+
+        issuerUniqueID?.let { append { Asn1Primitive(1u.toImplicitTag(), it.encodeToBitString()) } }
+        subjectUniqueID?.let { append { Asn1Primitive(2u.toImplicitTag(), it.encodeToBitString()) } }
 
         extensions?.let {
             if (it.isNotEmpty()) {
@@ -100,6 +106,14 @@ data class TbsCertificate(
 
                 val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(input.nextChild() as Asn1Sequence)
 
+                val issuerUniqueID = if (input.peek().tag == 1u.toImplicitTag()) {
+                    (input.nextChild() as Asn1Primitive).decode(1u.toImplicitTag()) { decodeBitString(it) }
+                } else null
+
+                val subjectUniqueID = if (input.peek().tag == 2u.toImplicitTag()) {
+                    (input.nextChild() as Asn1Primitive).decode(2u.toImplicitTag()) { decodeBitString(it) }
+                } else null
+
                 val extensions = if (input.hasMoreChildren()) {
                     ((input.nextChild() as Asn1Tagged).verify(3u) as Asn1Sequence).children.map {
                         X509CertificateExtension.decodeFromTlv(it as Asn1Sequence)
@@ -117,6 +131,8 @@ data class TbsCertificate(
                     validUntil = timestamps.second,
                     subjectName = subject,
                     publicKey = cryptoPublicKey,
+                    issuerUniqueID = issuerUniqueID,
+                    subjectUniqueID = subjectUniqueID,
                     extensions = extensions,
                 )
             }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }

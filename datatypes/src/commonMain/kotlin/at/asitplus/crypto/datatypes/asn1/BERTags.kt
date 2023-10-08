@@ -60,7 +60,7 @@ object DERTags {
     fun UByte.toExplicitTag() = BERTags.CONSTRUCTED or BERTags.TAGGED or this
 
     fun UInt.toExplicitTag()= toUByte().toExplicitTag()
-
+    fun UInt.toImplicitTag() = toUByte().toImplicitTag()
     fun UByte.toImplicitTag() =
         if (isContainer()) throw IllegalArgumentException("Implicit tag $this would result in CONSTRUCTED bit set") else BERTags.TAGGED or this
 

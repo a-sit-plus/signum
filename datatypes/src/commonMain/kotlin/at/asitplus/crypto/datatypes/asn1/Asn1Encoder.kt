@@ -12,7 +12,6 @@ import at.asitplus.crypto.datatypes.asn1.BERTags.OCTET_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.PRINTABLE_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.UTC_TIME
 import at.asitplus.crypto.datatypes.asn1.BERTags.UTF8_STRING
-import at.asitplus.crypto.datatypes.asn1.DERTags.DER_SET
 import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -25,7 +24,7 @@ class Asn1TreeBuilder() {
     internal val elements = mutableListOf<ExtendedTlv>()
 
     fun append(child: () -> ExtendedTlv) = apply { elements += child() }
-    fun tagged(tag:UByte, child: () -> ExtendedTlv) = apply { elements += Asn1Tagged(tag,child()) }
+    fun tagged(tag: UByte, child: () -> ExtendedTlv) = apply { elements += Asn1Tagged(tag, child()) }
     fun bool(block: () -> Boolean) = apply { elements += block().encodeToTlv() }
     fun int(block: () -> Int) = apply { elements += block().encodeToTlv() }
     fun long(block: () -> Long) = apply { elements += block().encodeToTlv() }
@@ -122,29 +121,17 @@ private fun Long.encodeToTlv() = Asn1Primitive(INTEGER, encodeToDer())
 
 private fun ByteArray.encodeToTlvOctetString() = Asn1Primitive(OCTET_STRING, this)
 
-private fun ByteArray.encodeToTlvBitString() = Asn1Primitive(BIT_STRING, (byteArrayOf(0x00) + this))
+private fun ByteArray.encodeToTlvBitString() = Asn1Primitive(BIT_STRING, encodeToBitString())
+fun ByteArray.encodeToBitString() = byteArrayOf(0x00) + this
 
 private fun String.encodeTolvOid() = Asn1Primitive(OBJECT_IDENTIFIER, decodeToByteArray(Base16()))
 
 
-private fun ByteArray.encodeToOctetString() = asn1Tag(OCTET_STRING, this)
-private fun Int.encodeToAsn1() = asn1Tag(INTEGER, encodeToDer())
-
-private fun Boolean.encodeToAsn1() = asn1Tag(BOOLEAN, (if (this) 0xff else 0).encodeToDer())
-
 private fun Int.encodeToDer() = encodeToByteArray().dropWhile { it == 0.toByte() }.toByteArray()
 
-private fun Long.encodeToAsn1() = asn1Tag(INTEGER, encodeToDer())
 
 private fun Long.encodeToDer() = encodeToByteArray().dropWhile { it == 0.toByte() }.toByteArray()
 
-private fun ByteArray.encodeToBitString() = asn1Tag(BIT_STRING, (byteArrayOf(0x00) + this))
-
-private fun asn1Tag(tag: UByte, value: ByteArray) = byteArrayOf(tag.toByte()) + value.size.encodeLength() + value
-
-private fun String.encodeToOid() = asn1Tag(OBJECT_IDENTIFIER, decodeToByteArray(Base16()))
-
-private fun Instant.encodeToUtcTime() = asn1Tag(UTC_TIME, encodeToAsn1ValuePart())
 
 private fun Instant.encodeToAsn1ValuePart(): ByteArray {
     val value = this.toString()
@@ -165,14 +152,6 @@ private fun Instant.encodeToAsn1ValuePart(): ByteArray {
         matchResult.groups[6]?.value ?: throw IllegalArgumentException("instant serialization seconds failed: $value")
     return "$year$month$day$hour$minute${seconds}Z".encodeToByteArray()
 }
-
-fun JwsAlgorithm.Companion.decodeFromDer(input: ByteArray): JwsAlgorithm? {
-    if (input.contentEquals("2A8648CE3D040303".encodeToOid())) return JwsAlgorithm.ES384
-    else if (input.contentEquals("2A8648CE3D040302".encodeToOid())) return JwsAlgorithm.ES256
-
-    return null
-}
-
 
 private fun JwsAlgorithm.encodeToTlv() = when (this) {
     JwsAlgorithm.ES256 -> Asn1Primitive(OBJECT_IDENTIFIER, "2A8648CE3D040302".decodeToByteArray(Base16))
