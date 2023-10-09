@@ -1,6 +1,6 @@
 package at.asitplus.crypto.datatypes.asn1
 
-//Basedon https://github.com/bcgit/bc-java/blob/main/core/src/main/java/org/bouncycastle/asn1/BERTags.java
+//Based on https://github.com/bcgit/bc-java/blob/main/core/src/main/java/org/bouncycastle/asn1/BERTags.java
 object BERTags {
     // 0x00: Reserved for use by the encoding rules
     const val BOOLEAN: UByte = 0x01u
@@ -59,7 +59,7 @@ object DERTags {
     val DER_SET: UByte = BERTags.CONSTRUCTED or BERTags.SET
     fun UByte.toExplicitTag() = BERTags.CONSTRUCTED or BERTags.TAGGED or this
 
-    fun UInt.toExplicitTag()= toUByte().toExplicitTag()
+    fun UInt.toExplicitTag() = toUByte().toExplicitTag()
     fun UInt.toImplicitTag() = toUByte().toImplicitTag()
     fun UByte.toImplicitTag() =
         if (isContainer()) throw IllegalArgumentException("Implicit tag $this would result in CONSTRUCTED bit set") else BERTags.TAGGED or this

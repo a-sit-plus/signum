@@ -1,6 +1,10 @@
 package at.asitplus.crypto.datatypes
 
-import at.asitplus.crypto.datatypes.asn1.*
+import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
+import at.asitplus.crypto.datatypes.asn1.BERTags
+import at.asitplus.crypto.datatypes.asn1.asn1Sequence
+import at.asitplus.crypto.datatypes.asn1.encodeToTlv
+import at.asitplus.crypto.datatypes.asn1.ensureSize
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.io.MultibaseHelper
 import kotlinx.serialization.SerialName
@@ -60,8 +64,10 @@ sealed class CryptoPublicKey {
          */
         @Transient
         override val iosEncoded = asn1Sequence {
-            append {  Asn1Primitive(BERTags.INTEGER,
-                n.ensureSize(bits.number / 8u).let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
+            append {
+                Asn1Primitive(BERTags.INTEGER,
+                    n.ensureSize(bits.number / 8u)
+                        .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
             }
             int { e.toInt() }
         }.derEncoded

@@ -104,7 +104,6 @@ fun JwsAlgorithm.Companion.decodeFromTlv(input: Asn1Sequence): JwsAlgorithm {
             if (input.nextChild().tag != NULL) throw IllegalArgumentException("RSA Params not supported yet")
             if (input.hasMoreChildren()) throw IllegalArgumentException("Superfluous Content in Signature")
             alg
-
         }
     }
 }
@@ -134,8 +133,6 @@ fun CryptoPublicKey.Companion.decodeFromTlv(src: Asn1Sequence): CryptoPublicKey 
             else -> throw IllegalArgumentException("Curve not supported: $curveOid")
         }
         val bitString = (src.nextChild() as Asn1Primitive).readBitString()
-
-
         val xAndY = bitString.drop(1).toByteArray()
         val coordLen = curve.coordinateLengthBytes.toInt()
         val x = xAndY.take(coordLen).toByteArray()
@@ -149,11 +146,9 @@ fun CryptoPublicKey.Companion.decodeFromTlv(src: Asn1Sequence): CryptoPublicKey 
         val e = (rsaSequence.nextChild() as Asn1Primitive).readInt().toUInt()
         if (rsaSequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous data in SPKI!")
         return CryptoPublicKey.Rsa(
-            CryptoPublicKey.Rsa.Size.of(((n.size - 1) * 8).toUInt()) ?: throw IllegalArgumentException(
-                "Illegal RSa key size: ${(n.size - 1) * 8}"
-            ), n, e
+            CryptoPublicKey.Rsa.Size.of(((n.size - 1) * 8).toUInt())
+                ?: throw IllegalArgumentException("Illegal RSA key size: ${(n.size - 1) * 8}"), n, e
         )
-
     } else {
         throw IllegalArgumentException("Unsupported Key Type: $oid")
     }

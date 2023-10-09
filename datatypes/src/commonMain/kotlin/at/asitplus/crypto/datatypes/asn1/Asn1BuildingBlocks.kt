@@ -42,7 +42,7 @@ sealed class Asn1Encodable protected constructor(
                         ")"
     }
 
-    fun toDerHexString()=derEncoded.encodeToString(Base16)
+    fun toDerHexString() = derEncoded.encodeToString(Base16)
 }
 
 object Asn1EncodableSerializer : KSerializer<Asn1Encodable> {
@@ -69,7 +69,7 @@ sealed class Asn1Structure(tag: UByte, children: List<Asn1Encodable>?) :
 
     fun hasMoreChildren() = children.size > index
 
-    fun peek() = if(!hasMoreChildren()) null else children[index]
+    fun peek() = if (!hasMoreChildren()) null else children[index]
 }
 
 class Asn1Tagged(tag: UByte, val contained: Asn1Encodable) : Asn1Encodable(TLV(tag, byteArrayOf()), listOf(contained)) {
