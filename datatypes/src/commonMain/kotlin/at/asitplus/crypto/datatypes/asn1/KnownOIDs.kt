@@ -24,6 +24,7 @@ object KnownOIDs {
     val `encryption` = ObjectIdentifier("0 2 262 1 10 1 2")
     val `none` = ObjectIdentifier("0 2 262 1 10 1 2 0")
     val `rsaTelesec` = ObjectIdentifier("0 2 262 1 10 1 2 1")
+
     //  val `des` = ObjectIdentifier("0 2 262 1 10 1 2 2")
     val `desECB` = ObjectIdentifier("0 2 262 1 10 1 2 2 1")
     val `desCBC` = ObjectIdentifier("0 2 262 1 10 1 2 2 2")
@@ -37,6 +38,7 @@ object KnownOIDs {
     val `des3CFB8` = ObjectIdentifier("0 2 262 1 10 1 2 3 4")
     val `des3CFB64` = ObjectIdentifier("0 2 262 1 10 1 2 3 5")
     val `magenta` = ObjectIdentifier("0 2 262 1 10 1 2 4")
+
     //  val `idea` = ObjectIdentifier("0 2 262 1 10 1 2 5")
     //  val `ideaECB` = ObjectIdentifier("0 2 262 1 10 1 2 5 1")
     //  val `ideaCBC` = ObjectIdentifier("0 2 262 1 10 1 2 5 2")
@@ -44,16 +46,20 @@ object KnownOIDs {
     val `ideaCFB8` = ObjectIdentifier("0 2 262 1 10 1 2 5 4")
     val `ideaCFB64` = ObjectIdentifier("0 2 262 1 10 1 2 5 5")
     val `oneWayFunction` = ObjectIdentifier("0 2 262 1 10 1 3")
+
     //  val `md4` = ObjectIdentifier("0 2 262 1 10 1 3 1")
     //  val `md5` = ObjectIdentifier("0 2 262 1 10 1 3 2")
     val `sqModNX509` = ObjectIdentifier("0 2 262 1 10 1 3 3")
     val `sqModNISO` = ObjectIdentifier("0 2 262 1 10 1 3 4")
+
     //   val `ripemd128` = ObjectIdentifier("0 2 262 1 10 1 3 5")
     val `hashUsingBlockCipher` = ObjectIdentifier("0 2 262 1 10 1 3 6")
     val `mac` = ObjectIdentifier("0 2 262 1 10 1 3 7")
+
     //  val `ripemd160` = ObjectIdentifier("0 2 262 1 10 1 3 8")
     val `fecFunction` = ObjectIdentifier("0 2 262 1 10 1 4")
     val `reedSolomon` = ObjectIdentifier("0 2 262 1 10 1 4 1")
+
     //  val `module` = ObjectIdentifier("0 2 262 1 10 2")
     //  val `algorithms` = ObjectIdentifier("0 2 262 1 10 2 0")
     val `attributeTypes` = ObjectIdentifier("0 2 262 1 10 2 1")
@@ -70,8 +76,10 @@ object KnownOIDs {
     val `telesecTtpBasisApplication` = ObjectIdentifier("0 2 262 1 10 2 12")
     val `telesecTtpMessages` = ObjectIdentifier("0 2 262 1 10 2 13")
     val `telesecTtpTimeStampApplication` = ObjectIdentifier("0 2 262 1 10 2 14")
+
     //  val `objectClass` = ObjectIdentifier("0 2 262 1 10 3")
     val `telesecOtherName` = ObjectIdentifier("0 2 262 1 10 3 0")
+
     //   val `directory` = ObjectIdentifier("0 2 262 1 10 3 1")
     val `directoryType` = ObjectIdentifier("0 2 262 1 10 3 2")
     val `directoryGroup` = ObjectIdentifier("0 2 262 1 10 3 3")
@@ -80,11 +88,14 @@ object KnownOIDs {
     val `package` = ObjectIdentifier("0 2 262 1 10 4")
     val `parameter` = ObjectIdentifier("0 2 262 1 10 5")
     val `nameBinding` = ObjectIdentifier("0 2 262 1 10 6")
+
     //  val `attribute` = ObjectIdentifier("0 2 262 1 10 7")
     val `applicationGroupIdentifier` = ObjectIdentifier("0 2 262 1 10 7 0")
+
     //  val `certificateType` = ObjectIdentifier("0 2 262 1 10 7 1")
     val `telesecCertificate` = ObjectIdentifier("0 2 262 1 10 7 2")
     val `certificateNumber` = ObjectIdentifier("0 2 262 1 10 7 3")
+
     //  val `certificateRevocationList` = ObjectIdentifier("0 2 262 1 10 7 4")
     val `creationDate` = ObjectIdentifier("0 2 262 1 10 7 5")
     val `issuer` = ObjectIdentifier("0 2 262 1 10 7 6")
@@ -109,6 +120,7 @@ object KnownOIDs {
     val `physicalCardNumber` = ObjectIdentifier("0 2 262 1 10 7 25")
     val `fileType` = ObjectIdentifier("0 2 262 1 10 7 26")
     val `ctlFileIsArchive` = ObjectIdentifier("0 2 262 1 10 7 27")
+
     //  val `emailAddress` = ObjectIdentifier("0 2 262 1 10 7 28")
     val `certificateTemplateList` = ObjectIdentifier("0 2 262 1 10 7 29")
     val `directoryName` = ObjectIdentifier("0 2 262 1 10 7 30")
@@ -319,6 +331,7 @@ object KnownOIDs {
     val `userID` = ObjectIdentifier("0 9 2342 19200300 100 1 1")
     val `rfc822Mailbox` = ObjectIdentifier("0 9 2342 19200300 100 1 3")
     val `domainComponent` = ObjectIdentifier("0 9 2342 19200300 100 1 25")
+
     // val `ripemd160` = ObjectIdentifier("1 0 10118 3 0 49")
     // val `ripemd128` = ObjectIdentifier("1 0 10118 3 0 50")
     val `whirlpool` = ObjectIdentifier("1 0 10118 3 0 55")
@@ -368,15 +381,18 @@ object KnownOIDs {
     val `qtmrpkiPurpose` = ObjectIdentifier("1 2 36 1 3 1 3 2 2")
     val `qtmrpkiIndividual` = ObjectIdentifier("1 2 36 1 3 1 3 2 2 1")
     val `qtmrpkiDeviceControl` = ObjectIdentifier("1 2 36 1 3 1 3 2 2 2")
+
     //  val `qtmrpkiDevice` = ObjectIdentifier("1 2 36 1 3 1 3 2 2 3")
     //  val `qtmrpkiAuthorisedParty` = ObjectIdentifier("1 2 36 1 3 1 3 2 2 4")
     val `qtmrpkiDeviceSystem` = ObjectIdentifier("1 2 36 1 3 1 3 2 2 5")
+
     //  val `qtmrpkiDevice` = ObjectIdentifier("1 2 36 1 3 1 3 2 3")
     val `qtmrpkiDriverLicense` = ObjectIdentifier("1 2 36 1 3 1 3 2 3 1")
     val `qtmrpkiIndustryAuthority` = ObjectIdentifier("1 2 36 1 3 1 3 2 3 2")
     val `qtmrpkiMarineLicense` = ObjectIdentifier("1 2 36 1 3 1 3 2 3 3")
     val `qtmrpkiAdultProofOfAge` = ObjectIdentifier("1 2 36 1 3 1 3 2 3 4")
     val `qtmrpkiSam` = ObjectIdentifier("1 2 36 1 3 1 3 2 3 5")
+
     // val `qtmrpkiAuthorisedParty` = ObjectIdentifier("1 2 36 1 3 1 3 2 4")
     val `qtmrpkiTransportInspector` = ObjectIdentifier("1 2 36 1 3 1 3 2 4 1")
     val `qtmrpkiPoliceOfficer` = ObjectIdentifier("1 2 36 1 3 1 3 2 4 2")
@@ -592,13 +608,16 @@ object KnownOIDs {
     val `callissuer` = ObjectIdentifier("1 2 840 10040 2 2")
     val `reject` = ObjectIdentifier("1 2 840 10040 2 3")
     val `pickupToken` = ObjectIdentifier("1 2 840 10040 2 4")
+
     //   val `attribute` = ObjectIdentifier("1 2 840 10040 3")
     // val `countersignature` = ObjectIdentifier("1 2 840 10040 3 1")
     val `attribute-cert` = ObjectIdentifier("1 2 840 10040 3 2")
     val `algorithm` = ObjectIdentifier("1 2 840 10040 4")
+
     //  val `dsa` = ObjectIdentifier("1 2 840 10040 4 1")
     val `dsa-match` = ObjectIdentifier("1 2 840 10040 4 2")
     val `dsaWithSha1` = ObjectIdentifier("1 2 840 10040 4 3")
+
     //  val `fieldType` = ObjectIdentifier("1 2 840 10045 1")
     val `prime-field` = ObjectIdentifier("1 2 840 10045 1 1")
     val `characteristic-two-field` = ObjectIdentifier("1 2 840 10045 1 2")
@@ -636,6 +655,7 @@ object KnownOIDs {
     val `ecdsaWithSHA256` = ObjectIdentifier("1 2 840 10045 4 3 2")
     val `ecdsaWithSHA384` = ObjectIdentifier("1 2 840 10045 4 3 3")
     val `ecdsaWithSHA512` = ObjectIdentifier("1 2 840 10045 4 3 4")
+
     //   val `fieldType` = ObjectIdentifier("1 2 840 10046 1")
     val `gf-prime` = ObjectIdentifier("1 2 840 10046 1 1")
     val `numberType` = ObjectIdentifier("1 2 840 10046 2")
@@ -653,11 +673,13 @@ object KnownOIDs {
     val `iec62351` = ObjectIdentifier("1 2 840 10070")
     val `iec62351_8` = ObjectIdentifier("1 2 840 10070 8")
     val `iecUserRoles` = ObjectIdentifier("1 2 840 10070 8 1")
+
     //  OID = "1 2 840 113533 7")
     //  val `nsn")
     //  OID = "1 2 840 113533 7 65")
     //  val `nsn-ce")
     val `entrustVersInfo` = ObjectIdentifier("1 2 840 113533 7 65 0")
+
     //  OID = "1 2 840 113533 7 66")
     //  val `nsn-alg")
     val `cast3CBC` = ObjectIdentifier("1 2 840 113533 7 66 3")
@@ -665,13 +687,16 @@ object KnownOIDs {
     val `cast5MAC` = ObjectIdentifier("1 2 840 113533 7 66 11")
     val `pbeWithMD5AndCAST5-CBC` = ObjectIdentifier("1 2 840 113533 7 66 12")
     val `passwordBasedMac` = ObjectIdentifier("1 2 840 113533 7 66 13")
+
     //  OID = "1 2 840 113533 7 67")
     //  val `nsn-oc")
     val `entrustUser` = ObjectIdentifier("1 2 840 113533 7 67 0")
+
     //  OID = "1 2 840 113533 7 68")
     //  val `nsn-at")
     val `entrustCAInfo` = ObjectIdentifier("1 2 840 113533 7 68 0")
     val `attributeCertificate` = ObjectIdentifier("1 2 840 113533 7 68 10")
+
     //  OID = "1 2 840 113549 1 1")
     // val `pkcs-1")
     val `rsaEncryption` = ObjectIdentifier("1 2 840 113549 1 1 1")
@@ -689,9 +714,11 @@ object KnownOIDs {
     val `sha224WithRSAEncryption` = ObjectIdentifier("1 2 840 113549 1 1 14")
     val `rsaOAEPEncryptionSET` = ObjectIdentifier("1 2 840 113549 1 1 6")
     val `bsafeRsaEncr` = ObjectIdentifier("1 2 840 113549 1 2")
+
     //   OID = "1 2 840 113549 1 3")
     // val `pkcs-3")
     val `dhKeyAgreement` = ObjectIdentifier("1 2 840 113549 1 3 1")
+
     // OID = "1 2 840 113549 1 5")
     // val `pkcs-5")
     val `pbeWithMD2AndDES-CBC` = ObjectIdentifier("1 2 840 113549 1 5 1")
@@ -703,6 +730,7 @@ object KnownOIDs {
     val `pkcs5PBKDF2` = ObjectIdentifier("1 2 840 113549 1 5 12")
     val `pkcs5PBES2` = ObjectIdentifier("1 2 840 113549 1 5 13")
     val `pkcs5PBMAC1` = ObjectIdentifier("1 2 840 113549 1 5 14")
+
     //  OID = "1 2 840 113549 1 7")
     //  val `pkcs-7")
     val `data` = ObjectIdentifier("1 2 840 113549 1 7 1")
@@ -713,13 +741,16 @@ object KnownOIDs {
     val `encryptedData` = ObjectIdentifier("1 2 840 113549 1 7 6")
     val `dataWithAttributes` = ObjectIdentifier("1 2 840 113549 1 7 7")
     val `encryptedPrivateKeyInfo` = ObjectIdentifier("1 2 840 113549 1 7 8")
+
     //   OID = "1 2 840 113549 1 9")
     //   val `pkcs-9")
     val `emailAddress` = ObjectIdentifier("1 2 840 113549 1 9 1")
     val `unstructuredName` = ObjectIdentifier("1 2 840 113549 1 9 2")
+
     // val `contentType` = ObjectIdentifier("1 2 840 113549 1 9 3")
     val `messageDigest` = ObjectIdentifier("1 2 840 113549 1 9 4")
     val `signingTime` = ObjectIdentifier("1 2 840 113549 1 9 5")
+
     // val `countersignature` = ObjectIdentifier("1 2 840 113549 1 9 6")
     val `challengePassword` = ObjectIdentifier("1 2 840 113549 1 9 7")
     val `unstructuredAddress` = ObjectIdentifier("1 2 840 113549 1 9 8")
@@ -732,6 +763,7 @@ object KnownOIDs {
     val `sMIMECapabilities` = ObjectIdentifier("1 2 840 113549 1 9 15")
     val `preferSignedData` = ObjectIdentifier("1 2 840 113549 1 9 15 1")
     val `canNotDecryptAny` = ObjectIdentifier("1 2 840 113549 1 9 15 2")
+
     // val `receiptRequest` = ObjectIdentifier("1 2 840 113549 1 9 15 3")
     // val `receipt` = ObjectIdentifier("1 2 840 113549 1 9 15 4")
     val `contentHints` = ObjectIdentifier("1 2 840 113549 1 9 15 5")
@@ -744,10 +776,12 @@ object KnownOIDs {
     val `id-mod-msg-v3` = ObjectIdentifier("1 2 840 113549 1 9 16 0 4")
     val `id-mod-ets-eSignature-88` = ObjectIdentifier("1 2 840 113549 1 9 16 0 5")
     val `id-mod-ets-eSignature-97` = ObjectIdentifier("1 2 840 113549 1 9 16 0 6")
+
     //  val `id-mod-ets-eSigPolicy-88` = ObjectIdentifier("1 2 840 113549 1 9 16 0 7")
     //  val `id-mod-ets-eSigPolicy-88` = ObjectIdentifier("1 2 840 113549 1 9 16 0 8")
     //  val `contentType` = ObjectIdentifier("1 2 840 113549 1 9 16 1")
     val `anyContentType` = ObjectIdentifier("1 2 840 113549 1 9 16 1 0")
+
     //  val `receipt` = ObjectIdentifier("1 2 840 113549 1 9 16 1 1")
     //  val `authData` = ObjectIdentifier("1 2 840 113549 1 9 16 1 2")
     val `publishCert` = ObjectIdentifier("1 2 840 113549 1 9 16 1 3")
@@ -919,12 +953,14 @@ object KnownOIDs {
     val `domainSig` = ObjectIdentifier("1 2 840 113549 1 9 16 9 2")
     val `additionalAttributesSig` = ObjectIdentifier("1 2 840 113549 1 9 16 9 3")
     val `reviewSig` = ObjectIdentifier("1 2 840 113549 1 9 16 9 4")
+
     //  val `envelopedData` = ObjectIdentifier("1 2 840 113549 1 9 16 10 1")
     //  val `signedData` = ObjectIdentifier("1 2 840 113549 1 9 16 10 2")
     val `certsOnly` = ObjectIdentifier("1 2 840 113549 1 9 16 10 3")
     val `signedReceipt` = ObjectIdentifier("1 2 840 113549 1 9 16 10 4")
     val `envelopedX400` = ObjectIdentifier("1 2 840 113549 1 9 16 10 5")
     val `signedX400` = ObjectIdentifier("1 2 840 113549 1 9 16 10 6")
+
     //  val `compressedData` = ObjectIdentifier("1 2 840 113549 1 9 16 10 7")
     val `capabilities` = ObjectIdentifier("1 2 840 113549 1 9 16 11")
     val `preferBinaryInside` = ObjectIdentifier("1 2 840 113549 1 9 16 11 1")
@@ -969,6 +1005,7 @@ object KnownOIDs {
     val `pkcs9objectClass` = ObjectIdentifier("1 2 840 113549 1 9 24")
     val `pkcs9attributes` = ObjectIdentifier("1 2 840 113549 1 9 25")
     val `pkcs15Token` = ObjectIdentifier("1 2 840 113549 1 9 25 1")
+
     //  val `encryptedPrivateKeyInfo` = ObjectIdentifier("1 2 840 113549 1 9 25 2")
     val `randomNonce` = ObjectIdentifier("1 2 840 113549 1 9 25 3")
     val `sequenceNumber` = ObjectIdentifier("1 2 840 113549 1 9 25 4")
@@ -976,6 +1013,7 @@ object KnownOIDs {
     val `pkcs9syntax` = ObjectIdentifier("1 2 840 113549 1 9 26")
     val `pkcs9matchingRules` = ObjectIdentifier("1 2 840 113549 1 9 27")
     val `cmsAlgorithmProtection` = ObjectIdentifier("1 2 840 113549 1 9 52")
+
     // OID = "1 2 840 113549 1 12")
     // val `pkcs-12")
     val `pkcs-12-PbeIds` = ObjectIdentifier("1 2 840 113549 1 12 1")
@@ -987,6 +1025,7 @@ object KnownOIDs {
     val `pbeWithSHAAnd40BitRC2-CBC` = ObjectIdentifier("1 2 840 113549 1 12 1 6")
     val `pkcs-12-ESPVKID` = ObjectIdentifier("1 2 840 113549 1 12 2")
     val `pkcs-12-PKCS8KeyShrouding` = ObjectIdentifier("1 2 840 113549 1 12 2 1")
+
     //  OID = "1 2 840 113549 1 12 3")
     //  val `pkcs-12-BagIds")
     val `pkcs-12-keyBagId` = ObjectIdentifier("1 2 840 113549 1 12 3 1")
@@ -997,6 +1036,7 @@ object KnownOIDs {
     val `pkcs-12-CertBagID` = ObjectIdentifier("1 2 840 113549 1 12 4")
     val `pkcs-12-X509CertCRLBagID` = ObjectIdentifier("1 2 840 113549 1 12 4 1")
     val `pkcs-12-SDSICertBagID` = ObjectIdentifier("1 2 840 113549 1 12 4 2")
+
     //  OID = "1 2 840 113549 1 12 5")
     //  val `pkcs-12-OID")
     val `pkcs-12-PBEID` = ObjectIdentifier("1 2 840 113549 1 12 5 1")
@@ -1013,6 +1053,7 @@ object KnownOIDs {
     val `pkcs-12-RSAEncryptionWithTripleDES` = ObjectIdentifier("1 2 840 113549 1 12 5 2 3")
     val `pkcs-12-SignatureID` = ObjectIdentifier("1 2 840 113549 1 12 5 3")
     val `pkcs-12-RSASignatureWithSHA1Digest` = ObjectIdentifier("1 2 840 113549 1 12 5 3 1")
+
     //  OID = "1 2 840 113549 1 12 10")
     //  val `pkcs-12Version1")
     //  OID = "1 2 840 113549 1 12 10 1")
@@ -1027,6 +1068,7 @@ object KnownOIDs {
     val `pkcs15attributes` = ObjectIdentifier("1 2 840 113549 1 15 2")
     val `pkcs15contentType` = ObjectIdentifier("1 2 840 113549 1 15 3")
     val `pkcs15content` = ObjectIdentifier("1 2 840 113549 1 15 3 1")
+
     //OID = "1 2 840 113549 2")
     // val `digestAlgorithm")
     val `md2` = ObjectIdentifier("1 2 840 113549 2 2")
@@ -1037,6 +1079,7 @@ object KnownOIDs {
     val `hmacWithSHA256` = ObjectIdentifier("1 2 840 113549 2 9")
     val `hmacWithSHA384` = ObjectIdentifier("1 2 840 113549 2 10")
     val `hmacWithSHA512` = ObjectIdentifier("1 2 840 113549 2 11")
+
     //   OID = "1 2 840 113549 3")
     // val `encryptionAlgorithm")
     val `rc2CBC` = ObjectIdentifier("1 2 840 113549 3 2")
@@ -1206,6 +1249,7 @@ object KnownOIDs {
     val `embeddedNTCrypto` = ObjectIdentifier("1 3 6 1 4 1 311 10 3 8")
     val `rootListSigner` = ObjectIdentifier("1 3 6 1 4 1 311 10 3 9")
     val `qualifiedSubordination` = ObjectIdentifier("1 3 6 1 4 1 311 10 3 10")
+
     //  val `keyRecovery` = ObjectIdentifier("1 3 6 1 4 1 311 10 3 11")
     //  val `documentSigning` = ObjectIdentifier("1 3 6 1 4 1 311 10 3 12")
     val `lifetimeSigning` = ObjectIdentifier("1 3 6 1 4 1 311 10 3 13")
@@ -1252,6 +1296,7 @@ object KnownOIDs {
     val `crlVirtualBase` = ObjectIdentifier("1 3 6 1 4 1 311 21 3")
     val `crlNextPublish` = ObjectIdentifier("1 3 6 1 4 1 311 21 4")
     val `caExchange` = ObjectIdentifier("1 3 6 1 4 1 311 21 5")
+
     //   val `keyRecovery` = ObjectIdentifier("1 3 6 1 4 1 311 21 6")
     val `certificateTemplate` = ObjectIdentifier("1 3 6 1 4 1 311 21 7")
     val `rdnDummySigner` = ObjectIdentifier("1 3 6 1 4 1 311 21 9")
@@ -1435,6 +1480,7 @@ object KnownOIDs {
     val `keyPurposeClientAuth` = ObjectIdentifier("1 3 6 1 5 2 3 4")
     val `keyPurposeKdc` = ObjectIdentifier("1 3 6 1 5 2 3 5")
     val `kdf` = ObjectIdentifier("1 3 6 1 5 2 3 6")
+
     //    OID = "1 3 6 1 5 5 7")
     //   val `pkix")
     val `attributeCert` = ObjectIdentifier("1 3 6 1 5 5 7 0 12")
@@ -1451,6 +1497,7 @@ object KnownOIDs {
     val `acProxying` = ObjectIdentifier("1 3 6 1 5 5 7 1 10")
     val `subjectInfoAccess` = ObjectIdentifier("1 3 6 1 5 5 7 1 11")
     val `logoType` = ObjectIdentifier("1 3 6 1 5 5 7 1 12")
+
     //   val `wlanSSID` = ObjectIdentifier("1 3 6 1 5 5 7 1 13")
     val `proxyCertInfo` = ObjectIdentifier("1 3 6 1 5 5 7 1 14")
     val `acPolicies` = ObjectIdentifier("1 3 6 1 5 5 7 1 15")
@@ -1486,8 +1533,10 @@ object KnownOIDs {
     val `ipsecEndSystem` = ObjectIdentifier("1 3 6 1 5 5 7 3 5")
     val `ipsecTunnel` = ObjectIdentifier("1 3 6 1 5 5 7 3 6")
     val `ipsecUser` = ObjectIdentifier("1 3 6 1 5 5 7 3 7")
+
     //   val `timeStamping` = ObjectIdentifier("1 3 6 1 5 5 7 3 8")
     val `ocspSigning` = ObjectIdentifier("1 3 6 1 5 5 7 3 9")
+
     //   val `dvcs` = ObjectIdentifier("1 3 6 1 5 5 7 3 10")
     val `sbgpCertAAServerAuth` = ObjectIdentifier("1 3 6 1 5 5 7 3 11")
     val `scvpResponder` = ObjectIdentifier("1 3 6 1 5 5 7 3 12")
@@ -1514,6 +1563,7 @@ object KnownOIDs {
     val `rpcTLSClient` = ObjectIdentifier("1 3 6 1 5 5 7 3 33")
     val `rpcTLSServer` = ObjectIdentifier("1 3 6 1 5 5 7 3 34")
     val `bundleSecurity` = ObjectIdentifier("1 3 6 1 5 5 7 3 35")
+
     //  val `documentSigning` = ObjectIdentifier("1 3 6 1 5 5 7 3 36")
     val `cmpInformationTypes` = ObjectIdentifier("1 3 6 1 5 5 7 4")
     val `caProtEncCert` = ObjectIdentifier("1 3 6 1 5 5 7 4 1")
@@ -1566,6 +1616,7 @@ object KnownOIDs {
     val `ecdsaShake256` = ObjectIdentifier("1 3 6 1 5 5 7 6 33")
     val `cmcControls` = ObjectIdentifier("1 3 6 1 5 5 7 7")
     val `otherNames` = ObjectIdentifier("1 3 6 1 5 5 7 8")
+
     //  val `personalData` = ObjectIdentifier("1 3 6 1 5 5 7 8 1")
     val `userGroup` = ObjectIdentifier("1 3 6 1 5 5 7 8 2")
     val `permanentIdentifier` = ObjectIdentifier("1 3 6 1 5 5 7 8 3")
@@ -1576,17 +1627,20 @@ object KnownOIDs {
     val `smtpUTF8Mailbox` = ObjectIdentifier("1 3 6 1 5 5 7 8 9")
     val `acpNodeName` = ObjectIdentifier("1 3 6 1 5 5 7 8 10")
     val `bundleEID` = ObjectIdentifier("1 3 6 1 5 5 7 8 11")
+
     //  val `personalData` = ObjectIdentifier("1 3 6 1 5 5 7 9")
     val `dateOfBirth` = ObjectIdentifier("1 3 6 1 5 5 7 9 1")
     val `placeOfBirth` = ObjectIdentifier("1 3 6 1 5 5 7 9 2")
     val `gender` = ObjectIdentifier("1 3 6 1 5 5 7 9 3")
     val `countryOfCitizenship` = ObjectIdentifier("1 3 6 1 5 5 7 9 4")
     val `countryOfResidence` = ObjectIdentifier("1 3 6 1 5 5 7 9 5")
+
     //  val `attributeCertificate` = ObjectIdentifier("1 3 6 1 5 5 7 10")
     val `authenticationInfo` = ObjectIdentifier("1 3 6 1 5 5 7 10 1")
     val `accessIdentity` = ObjectIdentifier("1 3 6 1 5 5 7 10 2")
     val `chargingIdentity` = ObjectIdentifier("1 3 6 1 5 5 7 10 3")
     val `group` = ObjectIdentifier("1 3 6 1 5 5 7 10 4")
+
     //  val `role` = ObjectIdentifier("1 3 6 1 5 5 7 10 5")
     //  val `wlanSSID` = ObjectIdentifier("1 3 6 1 5 5 7 10 6")
     //  val `personalData` = ObjectIdentifier("1 3 6 1 5 5 7 11")
@@ -1647,10 +1701,12 @@ object KnownOIDs {
     val `ocspArchiveCutoff` = ObjectIdentifier("1 3 6 1 5 5 7 48 1 6")
     val `ocspServiceLocator` = ObjectIdentifier("1 3 6 1 5 5 7 48 1 7")
     val `caIssuers` = ObjectIdentifier("1 3 6 1 5 5 7 48 2")
+
     //   val `timeStamping` = ObjectIdentifier("1 3 6 1 5 5 7 48 3")
     //   val `dvcs` = ObjectIdentifier("1 3 6 1 5 5 7 48 4")
     val `caRepository` = ObjectIdentifier("1 3 6 1 5 5 7 48 5")
     val `signedObjectRepository` = ObjectIdentifier("1 3 6 1 5 5 7 48 7")
+
     //   val `rpkiManifest` = ObjectIdentifier("1 3 6 1 5 5 7 48 10")
     val `signedObject` = ObjectIdentifier("1 3 6 1 5 5 7 48 11")
     val `hmacMD5` = ObjectIdentifier("1 3 6 1 5 5 8 1 1")
@@ -1666,13 +1722,16 @@ object KnownOIDs {
     val `decMD2withRSA` = ObjectIdentifier("1 3 12 2 1011 7 3 1")
     val `decMD4withRSA` = ObjectIdentifier("1 3 12 2 1011 7 3 2")
     val `decDEAMAC` = ObjectIdentifier("1 3 12 2 1011 7 3 3")
+
     //  val `sha` = ObjectIdentifier("1 3 14 2 26 5")
     //   val `rsa` = ObjectIdentifier("1 3 14 3 2 1 1")
     val `md4WitRSA` = ObjectIdentifier("1 3 14 3 2 2")
     val `md5WithRSA` = ObjectIdentifier("1 3 14 3 2 3")
+
     //  val `md4WithRSAEncryption` = ObjectIdentifier("1 3 14 3 2 4")
     val `sqmod-N` = ObjectIdentifier("1 3 14 3 2 2 1")
     val `sqmod-NwithRSA` = ObjectIdentifier("1 3 14 3 2 3 1")
+
     // OID = "1 3 14 3 2 6")
     // val `desECB")
     //  OID = "1 3 14 3 2 7")
@@ -1690,6 +1749,7 @@ object KnownOIDs {
     val `shaWithRSASignature` = ObjectIdentifier("1 3 14 3 2 15")
     val `dhWithCommonModulus` = ObjectIdentifier("1 3 14 3 2 16")
     val `desEDE` = ObjectIdentifier("1 3 14 3 2 17")
+
     // val `sha` = ObjectIdentifier("1 3 14 3 2 18")
     val `mdc-2` = ObjectIdentifier("1 3 14 3 2 19")
     val `dsaCommon` = ObjectIdentifier("1 3 14 3 2 20")
@@ -1739,6 +1799,7 @@ object KnownOIDs {
     val `draft` = ObjectIdentifier("1 3 36 1 2")
     val `sio` = ObjectIdentifier("1 3 36 2")
     val `sedu` = ObjectIdentifier("1 3 36 2 1")
+
     //  val `algorithm` = ObjectIdentifier("1 3 36 3")
     val `encryptionAlgorithm` = ObjectIdentifier("1 3 36 3 1")
     val `des` = ObjectIdentifier("1 3 36 3 1 1")
@@ -1752,12 +1813,15 @@ object KnownOIDs {
     val `des_3CBC_pad` = ObjectIdentifier("1 3 36 3 1 3 2 1")
     val `des_3CBC_ISOpad` = ObjectIdentifier("1 3 36 3 1 3 2 1 1")
     val `idea` = ObjectIdentifier("1 3 36 3 1 2")
+
     //  val `ideaECB` = ObjectIdentifier("1 3 36 3 1 2 1")
     val `ideaECB_pad` = ObjectIdentifier("1 3 36 3 1 2 1 1")
     val `ideaECB_ISOpad` = ObjectIdentifier("1 3 36 3 1 2 1 1 1")
+
     //  val `ideaCBC` = ObjectIdentifier("1 3 36 3 1 2 2")
     val `ideaCBC_pad` = ObjectIdentifier("1 3 36 3 1 2 2 1")
     val `ideaCBC_ISOpad` = ObjectIdentifier("1 3 36 3 1 2 2 1 1")
+
     //  val `ideaOFB` = ObjectIdentifier("1 3 36 3 1 2 3")
     // val `ideaCFB` = ObjectIdentifier("1 3 36 3 1 2 4")
     //  val `rsaEncryption` = ObjectIdentifier("1 3 36 3 1 4")
@@ -1767,12 +1831,14 @@ object KnownOIDs {
     val `bsi_1CBC_pad` = ObjectIdentifier("1 3 36 3 1 5 2")
     val `bsi_1CBC_PEMpad` = ObjectIdentifier("1 3 36 3 1 5 2 1")
     val `hashAlgorithm` = ObjectIdentifier("1 3 36 3 2")
+
     //  val `ripemd160` = ObjectIdentifier("1 3 36 3 2 1")
     //  val `ripemd128` = ObjectIdentifier("1 3 36 3 2 2")
     val `ripemd256` = ObjectIdentifier("1 3 36 3 2 3")
     val `mdc2singleLength` = ObjectIdentifier("1 3 36 3 2 4")
     val `mdc2doubleLength` = ObjectIdentifier("1 3 36 3 2 5")
     val `signatureAlgorithm` = ObjectIdentifier("1 3 36 3 3")
+
     // val `rsaSignature` = ObjectIdentifier("1 3 36 3 3 1")
     val `rsaSignatureWithsha1` = ObjectIdentifier("1 3 36 3 3 1 1")
     val `rsaSignatureWithsha1_l512_l2` = ObjectIdentifier("1 3 36 3 3 1 1 512 2")
@@ -1873,6 +1939,7 @@ object KnownOIDs {
     val `declarationOfMajority` = ObjectIdentifier("1 3 36 8 3 5")
     val `integratedCircuitCardSerialNumber` = ObjectIdentifier("1 3 36 8 3 6")
     val `pKReference` = ObjectIdentifier("1 3 36 8 3 7")
+
     //  val `restriction` = ObjectIdentifier("1 3 36 8 3 8")
     val `retrieveIfAllowed` = ObjectIdentifier("1 3 36 8 3 9")
     val `requestedCertificate` = ObjectIdentifier("1 3 36 8 3 10")
@@ -1901,6 +1968,7 @@ object KnownOIDs {
     val `certHash` = ObjectIdentifier("1 3 36 8 3 13")
     val `nameAtBirth` = ObjectIdentifier("1 3 36 8 3 14")
     val `additionalInformation` = ObjectIdentifier("1 3 36 8 3 15")
+
     //  val `personalData` = ObjectIdentifier("1 3 36 8 4 1")
     //  val `restriction` = ObjectIdentifier("1 3 36 8 4 8")
     val `rsaIndicateSHA1` = ObjectIdentifier("1 3 36 8 5 1 1 1")
@@ -2140,6 +2208,7 @@ object KnownOIDs {
     val `clearance` = ObjectIdentifier("2 5 4 55")
     val `defaultDirQop` = ObjectIdentifier("2 5 4 56")
     val `attributeIntegrityInfo` = ObjectIdentifier("2 5 4 57")
+
     //  val `attributeCertificate` = ObjectIdentifier("2 5 4 58")
     val `attributeCertificateRevocationList` = ObjectIdentifier("2 5 4 59")
     val `confKeyInfo` = ObjectIdentifier("2 5 4 60")
@@ -2154,6 +2223,7 @@ object KnownOIDs {
     val `certificatePolicy` = ObjectIdentifier("2 5 4 69")
     val `pkiPath` = ObjectIdentifier("2 5 4 70")
     val `privPolicy` = ObjectIdentifier("2 5 4 71")
+
     //  val `role` = ObjectIdentifier("2 5 4 72")
     val `delegationPath` = ObjectIdentifier("2 5 4 73")
     val `protPrivPolicy` = ObjectIdentifier("2 5 4 74")
@@ -2209,16 +2279,20 @@ object KnownOIDs {
     val `groupOfUniqueNames` = ObjectIdentifier("2 5 6 17")
     val `pkiUser` = ObjectIdentifier("2 5 6 21")
     val `pkiCA` = ObjectIdentifier("2 5 6 22")
+
     //   val `rsa` = ObjectIdentifier("2 5 8 1 1")
     //   val `authorityKeyIdentifier` = ObjectIdentifier("2 5 29 1")
     val `keyAttributes` = ObjectIdentifier("2 5 29 2")
+
     //   val `certificatePolicies` = ObjectIdentifier("2 5 29 3")
     val `keyUsageRestriction` = ObjectIdentifier("2 5 29 4")
     val `policyMapping` = ObjectIdentifier("2 5 29 5")
     val `subtreesConstraint` = ObjectIdentifier("2 5 29 6")
+
     //   val `subjectAltName` = ObjectIdentifier("2 5 29 7")
     //  val `issuerAltName` = ObjectIdentifier("2 5 29 8")
     val `subjectDirectoryAttributes` = ObjectIdentifier("2 5 29 9")
+
     // val `basicConstraints` = ObjectIdentifier("2 5 29 10")
     //  val `nameConstraints` = ObjectIdentifier("2 5 29 11")
     //  val `policyConstraints` = ObjectIdentifier("2 5 29 12")
@@ -2234,6 +2308,7 @@ object KnownOIDs {
     val `expirationDate` = ObjectIdentifier("2 5 29 22")
     val `instructionCode` = ObjectIdentifier("2 5 29 23")
     val `invalidityDate` = ObjectIdentifier("2 5 29 24")
+
     //   val `cRLDistributionPoints` = ObjectIdentifier("2 5 29 25")
     //   val `issuingDistributionPoint` = ObjectIdentifier("2 5 29 26")
     val `deltaCRLIndicator` = ObjectIdentifier("2 5 29 27")
@@ -2241,11 +2316,14 @@ object KnownOIDs {
     val `certificateIssuer` = ObjectIdentifier("2 5 29 29")
     val `nameConstraints` = ObjectIdentifier("2 5 29 30")
     val `cRLDistributionPoints` = ObjectIdentifier("2 5 29 31")
+
     //  val `certificatePolicies` = ObjectIdentifier("2 5 29 32")
     val `anyPolicy` = ObjectIdentifier("2 5 29 32 0")
     val `policyMappings` = ObjectIdentifier("2 5 29 33")
+
     //  val `policyConstraints` = ObjectIdentifier("2 5 29 34")
     val `authorityKeyIdentifier` = ObjectIdentifier("2 5 29 35")
+
     // val `policyConstraints` = ObjectIdentifier("2 5 29 36")
     val `extKeyUsage` = ObjectIdentifier("2 5 29 37")
     val `anyExtendedKeyUsage` = ObjectIdentifier("2 5 29 37 0")
@@ -2283,6 +2361,7 @@ object KnownOIDs {
     val `holderNameConstraints` = ObjectIdentifier("2 5 29 69")
     val `privateKeySmartCard` = ObjectIdentifier("2 16 578 1 26 1 3 1")
     val `privateKeySoftToken` = ObjectIdentifier("2 16 578 1 26 1 3 2")
+
     //  val `sslEvident.  Also assigned as BuyPass EV policy` = ObjectIdentifier("2 16 578 1 26 1 3 3")
     val `sslBusinessPlus` = ObjectIdentifier("2 16 578 1 26 1 3 4")
     val `privateKeyHardToken` = ObjectIdentifier("2 16 578 1 26 1 3 5")
@@ -2463,6 +2542,7 @@ object KnownOIDs {
     val `privacyMarkTooLong` = ObjectIdentifier("2 16 840 1 101 2 1 22 2")
     val `unrecognizedSecurityPolicy` = ObjectIdentifier("2 16 840 1 101 2 1 22 3")
     val `slabel` = ObjectIdentifier("2 16 840 1 101 3 1")
+
     //   val `pki` = ObjectIdentifier("2 16 840 1 101 3 2")
     val `NIST policyIdentifier` = ObjectIdentifier("2 16 840 1 101 3 2 1")
     val `fbcaRudimentaryPolicy` = ObjectIdentifier("2 16 840 1 101 3 2 1 3 1")
@@ -2542,6 +2622,7 @@ object KnownOIDs {
     val `md5WithRSAEncryptionBSafe1` = ObjectIdentifier("2 16 840 1 113719 1 2 8 30")
     val `sha1WithRSAEncryptionBSafe1` = ObjectIdentifier("2 16 840 1 113719 1 2 8 31")
     val `lmDigest` = ObjectIdentifier("2 16 840 1 113719 1 2 8 32")
+
     // val `md2` = ObjectIdentifier("2 16 840 1 113719 1 2 8 40")
     // val `md5` = ObjectIdentifier("2 16 840 1 113719 1 2 8 50")
     val `ikeHmacWithSHA1-RSA` = ObjectIdentifier("2 16 840 1 113719 1 2 8 51")
@@ -2549,11 +2630,13 @@ object KnownOIDs {
     val `rc2CbcPad` = ObjectIdentifier("2 16 840 1 113719 1 2 8 69")
     val `sha-1` = ObjectIdentifier("2 16 840 1 113719 1 2 8 82")
     val `rc2BSafe1Cbc` = ObjectIdentifier("2 16 840 1 113719 1 2 8 92")
+
     // val `md4` = ObjectIdentifier("2 16 840 1 113719 1 2 8 95")
     val `md4Packet` = ObjectIdentifier("2 16 840 1 113719 1 2 8 130")
     val `rsaEncryptionBsafe1` = ObjectIdentifier("2 16 840 1 113719 1 2 8 131")
     val `nwPassword` = ObjectIdentifier("2 16 840 1 113719 1 2 8 132")
     val `novellObfuscate-1` = ObjectIdentifier("2 16 840 1 113719 1 2 8 133")
+
     // val `pki` = ObjectIdentifier("2 16 840 1 113719 1 9")
     val `pkiAttributeType` = ObjectIdentifier("2 16 840 1 113719 1 9 4")
     val `securityAttributes` = ObjectIdentifier("2 16 840 1 113719 1 9 4 1")
@@ -2585,6 +2668,7 @@ object KnownOIDs {
     val `employeeType` = ObjectIdentifier("2 16 840 1 113730 3 1 4")
     val `userPKCS12` = ObjectIdentifier("2 16 840 1 113730 3 1 216")
     val `inetOrgPerson` = ObjectIdentifier("2 16 840 1 113730 3 2 2")
+
     //  val `serverGatedCrypto` = ObjectIdentifier("2 16 840 1 113730 4 1")
     val `verisignCZAG` = ObjectIdentifier("2 16 840 1 113733 1 6 3")
     val `verisignInBox` = ObjectIdentifier("2 16 840 1 113733 1 6 6")
@@ -2595,6 +2679,7 @@ object KnownOIDs {
     val `verisignCPSv1notice` = ObjectIdentifier("2 16 840 1 113733 1 7 1 1 1")
     val `verisignCPSv1nsi` = ObjectIdentifier("2 16 840 1 113733 1 7 1 1 2")
     val `verisignISSStrongCrypto` = ObjectIdentifier("2 16 840 1 113733 1 8 1")
+
     //   val `pki` = ObjectIdentifier("2 16 840 1 113733 1")
     val `pkcs7Attribute` = ObjectIdentifier("2 16 840 1 113733 1 9")
     val `messageType` = ObjectIdentifier("2 16 840 1 113733 1 9 2")
@@ -2633,6 +2718,7 @@ object KnownOIDs {
     val `digiCertGridClassicCert` = ObjectIdentifier("2 16 840 1 114412 4 31")
     val `digiCertGridIntegratedCert` = ObjectIdentifier("2 16 840 1 114412 4 31 5")
     val `digiCertGridHostCert` = ObjectIdentifier("2 16 840 1 114412 31 4 31 1")
+
     //  val `contentType` = ObjectIdentifier("2 23 42 0")
     val `panData` = ObjectIdentifier("2 23 42 0 0")
     val `panToken` = ObjectIdentifier("2 23 42 0 1")
@@ -2640,6 +2726,7 @@ object KnownOIDs {
     val `msgExt` = ObjectIdentifier("2 23 42 1")
     val `field` = ObjectIdentifier("2 23 42 2")
     val `fullName` = ObjectIdentifier("2 23 42 2 0")
+
     //  val `givenName` = ObjectIdentifier("2 23 42 2 1")
     val `familyName` = ObjectIdentifier("2 23 42 2 2")
     val `birthFamilyName` = ObjectIdentifier("2 23 42 2 3")
@@ -2652,21 +2739,26 @@ object KnownOIDs {
     val `amount` = ObjectIdentifier("2 23 42 2 10")
     val `accountNumber` = ObjectIdentifier("2 23 42 2 11")
     val `passPhrase` = ObjectIdentifier("2 23 42 2 12")
+
     // val `attribute` = ObjectIdentifier("2 23 42 3")
     // val `cert` = ObjectIdentifier("2 23 42 3 0")
     val `rootKeyThumb` = ObjectIdentifier("2 23 42 3 0 0")
     val `additionalPolicy` = ObjectIdentifier("2 23 42 3 0 1")
+
     // val `algorithm` = ObjectIdentifier("2 23 42 4")
     // val `policy` = ObjectIdentifier("2 23 42 5")
     val `root` = ObjectIdentifier("2 23 42 5 0")
+
     // val `module` = ObjectIdentifier("2 23 42 6")
     val `certExt` = ObjectIdentifier("2 23 42 7")
+
     //  val `hashedRootKey` = ObjectIdentifier("2 23 42 7 0")
     //  val `certificateType` = ObjectIdentifier("2 23 42 7 1")
     // val `merchantData` = ObjectIdentifier("2 23 42 7 2")
     // val `cardCertRequired` = ObjectIdentifier("2 23 42 7 3")
     //val `tunneling` = ObjectIdentifier("2 23 42 7 4")
     val `setExtensions` = ObjectIdentifier("2 23 42 7 5")
+
     //  val `setQualifier` = ObjectIdentifier("2 23 42 7 6")
     val `brand` = ObjectIdentifier("2 23 42 8")
     val `IATA-ATA` = ObjectIdentifier("2 23 42 8 1")
@@ -2754,6 +2846,7 @@ object KnownOIDs {
     val `domainValidated` = ObjectIdentifier("2 23 140 1 2 1")
     val `subjectIdentityValidated` = ObjectIdentifier("2 23 140 1 2 2")
     val `codeSigningRequirements` = ObjectIdentifier("2 23 140 1 4 1")
+
     /*
     val `hashedRootKey` = ObjectIdentifier("2 54 1775 2")
     val `certificateType` = ObjectIdentifier("2 54 1775 3")
@@ -2762,7 +2855,7 @@ object KnownOIDs {
     val `tunneling` = ObjectIdentifier("2 54 1775 6")
     val `setQualifier` = ObjectIdentifier("2 54 1775 7")
     */
-  //  val `setData` = ObjectIdentifier("2 54 1775 99")
+    //  val `setData` = ObjectIdentifier("2 54 1775 99")
     val `A-Trust EV policy` = ObjectIdentifier("1 2 40 0 17 1 22")
     val `AffirmTrust EV policy` = ObjectIdentifier("1 3 6 1 4 1 34697 2 1")
     val `AffirmTrust EV policy 2` = ObjectIdentifier("1 3 6 1 4 1 34697 2 2")

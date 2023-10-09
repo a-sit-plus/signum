@@ -47,7 +47,7 @@ class X509CertificateJvmTest : FreeSpec({
         val notBeforeDate = Date.from(Instant.now())
         val notAfterDate = Date.from(Instant.now().plusSeconds(30.days.inWholeSeconds))
         val serialNumber: BigInteger = BigInteger.valueOf(Random.nextLong().absoluteValue)
-        val commonName = DistingushedName.CommonName(Asn1String.UTF8("DefaultCryptoService"))
+        val commonName = "DefaultCryptoService"
         val issuer = X500Name("CN=$commonName")
         val builder = X509v3CertificateBuilder(
             /* issuer = */ issuer,
@@ -65,11 +65,11 @@ class X509CertificateJvmTest : FreeSpec({
         val tbsCertificate = TbsCertificate(
             version = 2,
             serialNumber = serialNumber.toByteArray(),
-            issuerName = listOf(commonName),
+            issuerName = listOf(DistingushedName.CommonName(Asn1String.UTF8(commonName))),
             validFrom = notBeforeDate.toInstant().toKotlinInstant(),
             validUntil = notAfterDate.toInstant().toKotlinInstant(),
             signatureAlgorithm = signatureAlgorithm,
-            subjectName = listOf(commonName),
+            subjectName = listOf(DistingushedName.CommonName(Asn1String.UTF8(commonName))),
             publicKey = cryptoPublicKey
         )
         val signed = Signature.getInstance(signatureAlgorithm.jcaName).apply {
@@ -84,8 +84,6 @@ class X509CertificateJvmTest : FreeSpec({
         //kotlinEncoded shouldBe jvmEncoded
         println(kotlinEncoded.encodeToString(Base16()))
         println(jvmEncoded.encodeToString(Base16()))
-
-        //TODO Christian
         kotlinEncoded.drop(7).take(228) shouldBe jvmEncoded.drop(7).take(228)
 
         val parsedFromKotlinCertificate =
@@ -126,7 +124,7 @@ class X509CertificateJvmTest : FreeSpec({
         x509Certificate.tbsCertificate.version shouldBe 2
         x509Certificate.tbsCertificate.issuerName.first().value.content shouldBe commonName.encodeToByteArray()
         x509Certificate.tbsCertificate.subjectName.first().value.content shouldBe commonName.encodeToByteArray()
-        x509Certificate.tbsCertificate.serialNumber shouldBe serialNumber.longValueExact()
+        x509Certificate.tbsCertificate.serialNumber shouldBe serialNumber.toByteArray()
         x509Certificate.tbsCertificate.signatureAlgorithm shouldBe signatureAlgorithm
         x509Certificate.tbsCertificate.validFrom shouldBe notBeforeDate.toInstant().truncatedTo(ChronoUnit.SECONDS)
             .toKotlinInstant()

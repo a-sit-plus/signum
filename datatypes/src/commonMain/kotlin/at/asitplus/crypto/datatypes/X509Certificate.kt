@@ -1,8 +1,29 @@
 package at.asitplus.crypto.datatypes
 
-import at.asitplus.crypto.datatypes.asn1.*
+import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
+import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
+import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
+import at.asitplus.crypto.datatypes.asn1.Asn1Set
+import at.asitplus.crypto.datatypes.asn1.Asn1Tagged
+import at.asitplus.crypto.datatypes.asn1.Asn1TreeBuilder
+import at.asitplus.crypto.datatypes.asn1.BERTags
 import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import at.asitplus.crypto.datatypes.asn1.DERTags.toImplicitTag
+import at.asitplus.crypto.datatypes.asn1.KnownOIDs
+import at.asitplus.crypto.datatypes.asn1.ObjectIdentifier
+import at.asitplus.crypto.datatypes.asn1.asn1Sequence
+import at.asitplus.crypto.datatypes.asn1.asn1Set
+import at.asitplus.crypto.datatypes.asn1.decode
+import at.asitplus.crypto.datatypes.asn1.decodeBitString
+import at.asitplus.crypto.datatypes.asn1.decodeFromTlv
+import at.asitplus.crypto.datatypes.asn1.encodeToBitString
+import at.asitplus.crypto.datatypes.asn1.encodeToTlv
+import at.asitplus.crypto.datatypes.asn1.readBitString
+import at.asitplus.crypto.datatypes.asn1.readInt
+import at.asitplus.crypto.datatypes.asn1.readOid
+import at.asitplus.crypto.datatypes.asn1.readString
+import at.asitplus.crypto.datatypes.asn1.readInstant
+import at.asitplus.crypto.datatypes.asn1.verify
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
@@ -33,13 +54,13 @@ data class TbsCertificate(
 
     fun encodeToTlv() = asn1Sequence {
         version { version }
-        append {Asn1Primitive(BERTags.INTEGER, serialNumber) }
+        append { Asn1Primitive(BERTags.INTEGER, serialNumber) }
         sigAlg { signatureAlgorithm }
         sequence { issuerName.forEach { append { it.enCodeToTlv() } } }
 
         sequence {
-            utcTime { validFrom }
-            utcTime { validUntil }
+            rfc5820Time(validFrom)
+            rfc5820Time(validUntil)
         }
         sequence { subjectName.forEach { append { it.enCodeToTlv() } } }
 
@@ -63,72 +84,74 @@ data class TbsCertificate(
         }
     }
 
-    companion object {
-        fun decodeFromTlv(input: Asn1Sequence): TbsCertificate {
-            return runCatching {
-                //TODO make sure to always check for superfluous data
-                val version = input.nextChild().let {
-                    ((it as Asn1Tagged).verify(0u) as Asn1Primitive).readInt()
-                }
-                val serialNumber = (input.nextChild() as Asn1Primitive).decode(BERTags.INTEGER){it}
-                val sigAlg = JwsAlgorithm.decodeFromTlv(input.nextChild() as Asn1Sequence)
-                val issuerNames = (input.nextChild() as Asn1Sequence).children.map {
-                    DistingushedName.decodeFromTlv(it as Asn1Set)
-                }
-
-
-                val timestamps = decodeTimestamps(input.nextChild() as Asn1Sequence)
-                    ?: throw IllegalArgumentException("error parsing Timestamps")
-                val subject = (input.nextChild() as Asn1Sequence).children.map {
-                    DistingushedName.decodeFromTlv(it as Asn1Set)
-                }
-
-                val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(input.nextChild() as Asn1Sequence)
-
-                val issuerUniqueID = input.peek()?.let { next ->
-                    if (next.tag == 1u.toImplicitTag()) {
-                        (input.nextChild() as Asn1Primitive).decode(1u.toImplicitTag()) { decodeBitString(it) }
-                    } else null
-                }
-
-                val subjectUniqueID = input.peek()?.let { next ->
-                    if (next.tag == 2u.toImplicitTag()) {
-                        (input.nextChild() as Asn1Primitive).decode(2u.toImplicitTag()) { decodeBitString(it) }
-                    } else null
-                }
-                val extensions = if (input.hasMoreChildren()) {
-                    ((input.nextChild() as Asn1Tagged).verify(3u) as Asn1Sequence).children.map {
-                        X509CertificateExtension.decodeFromTlv(it as Asn1Sequence)
-                    }
-                } else null
-
-                if (input.hasMoreChildren()) throw IllegalArgumentException("Superfluous Data in Certificate Structure")
-
-                return TbsCertificate(
-                    version = version,
-                    serialNumber = serialNumber,
-                    signatureAlgorithm = sigAlg,
-                    issuerName = issuerNames,
-                    validFrom = timestamps.first,
-                    validUntil = timestamps.second,
-                    subjectName = subject,
-                    publicKey = cryptoPublicKey,
-                    issuerUniqueID = issuerUniqueID,
-                    subjectUniqueID = subjectUniqueID,
-                    extensions = extensions,
-                )
-            }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
+    private fun Asn1TreeBuilder.rfc5820Time(instant: Instant) {
+        if (instant > Instant.parse("2050-01-01T00:00:00Z")) { // per RFC 5280 4.1.2.5
+            generalizedTime { instant }
+        } else {
+            utcTime { instant }
         }
+    }
 
+    companion object {
+        fun decodeFromTlv(input: Asn1Sequence) = runCatching {
+            //TODO make sure to always check for superfluous data
+            val version = input.nextChild().let {
+                ((it as Asn1Tagged).verify(0u) as Asn1Primitive).readInt()
+            }
+            val serialNumber = (input.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
+            val sigAlg = JwsAlgorithm.decodeFromTlv(input.nextChild() as Asn1Sequence)
+            val issuerNames = (input.nextChild() as Asn1Sequence).children.map {
+                DistingushedName.decodeFromTlv(it as Asn1Set)
+            }
+
+            val timestamps = decodeTimestamps(input.nextChild() as Asn1Sequence)
+                ?: throw IllegalArgumentException("error parsing Timestamps")
+            val subject = (input.nextChild() as Asn1Sequence).children.map {
+                DistingushedName.decodeFromTlv(it as Asn1Set)
+            }
+
+            val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(input.nextChild() as Asn1Sequence)
+
+            val issuerUniqueID = input.peek()?.let { next ->
+                if (next.tag == 1u.toImplicitTag()) {
+                    (input.nextChild() as Asn1Primitive).decode(1u.toImplicitTag()) { decodeBitString(it) }
+                } else null
+            }
+
+            val subjectUniqueID = input.peek()?.let { next ->
+                if (next.tag == 2u.toImplicitTag()) {
+                    (input.nextChild() as Asn1Primitive).decode(2u.toImplicitTag()) { decodeBitString(it) }
+                } else null
+            }
+            val extensions = if (input.hasMoreChildren()) {
+                ((input.nextChild() as Asn1Tagged).verify(3u) as Asn1Sequence).children.map {
+                    X509CertificateExtension.decodeFromTlv(it as Asn1Sequence)
+                }
+            } else null
+
+            if (input.hasMoreChildren()) throw IllegalArgumentException("Superfluous Data in Certificate Structure")
+
+            TbsCertificate(
+                version = version,
+                serialNumber = serialNumber,
+                signatureAlgorithm = sigAlg,
+                issuerName = issuerNames,
+                validFrom = timestamps.first,
+                validUntil = timestamps.second,
+                subjectName = subject,
+                publicKey = cryptoPublicKey,
+                issuerUniqueID = issuerUniqueID,
+                subjectUniqueID = subjectUniqueID,
+                extensions = extensions,
+            )
+        }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
 
         private fun decodeTimestamps(input: Asn1Sequence): Pair<Instant, Instant>? = runCatching {
-
-            val firstInstant = (input.nextChild() as Asn1Primitive).readUtcTime()
-            val secondInstant = (input.nextChild() as Asn1Primitive).readUtcTime()
+            val firstInstant = (input.nextChild() as Asn1Primitive).readInstant()
+            val secondInstant = (input.nextChild() as Asn1Primitive).readInstant()
             if (input.hasMoreChildren()) throw IllegalArgumentException("Superfluous content in Validity")
             return Pair(firstInstant, secondInstant)
         }.getOrNull()
-
     }
 }
 

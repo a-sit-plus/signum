@@ -1,6 +1,6 @@
 import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
 import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
+import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
 import at.asitplus.crypto.datatypes.asn1.decodeFromTlv
 import at.asitplus.crypto.datatypes.asn1.parse
 import at.asitplus.crypto.datatypes.fromJcaKey
@@ -23,7 +23,6 @@ import java.security.interfaces.RSAPublicKey
 
 class PublicKeyTest : FreeSpec({
     "EC" - {
-
         withData(256, 384, 521) { bits ->
             val keys = List<ECPublicKey>(1000) {
                 val ecKp = KeyPairGenerator.getInstance("EC").apply {

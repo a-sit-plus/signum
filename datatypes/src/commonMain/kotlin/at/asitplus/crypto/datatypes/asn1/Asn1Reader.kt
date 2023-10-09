@@ -5,6 +5,7 @@ import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.EcCurve
 import at.asitplus.crypto.datatypes.JwsAlgorithm
 import at.asitplus.crypto.datatypes.asn1.BERTags.BIT_STRING
+import at.asitplus.crypto.datatypes.asn1.BERTags.GENERALIZED_TIME
 import at.asitplus.crypto.datatypes.asn1.BERTags.INTEGER
 import at.asitplus.crypto.datatypes.asn1.BERTags.NULL
 import at.asitplus.crypto.datatypes.asn1.BERTags.OBJECT_IDENTIFIER
@@ -76,9 +77,13 @@ fun Asn1Primitive.readLong() = decode(INTEGER) {
 fun Asn1Primitive.readString(): Asn1String =
     if (tag == UTF8_STRING) Asn1String.UTF8(String(content))
     else if (tag == PRINTABLE_STRING) Asn1String.Printable(String(content))
-    else TODO("Support other string types!")
+    else TODO("Support other string tag $tag")
 
-fun Asn1Primitive.readUtcTime() = decode(UTC_TIME, Instant.Companion::decodeUtcTimeFromDer)
+fun Asn1Primitive.readInstant(): Instant =
+    if (tag == UTC_TIME) decode(UTC_TIME, Instant.Companion::decodeUtcTimeFromDer)
+    else if (tag == GENERALIZED_TIME) decode(GENERALIZED_TIME, Instant.Companion::decodeGeneralizedTimeFromDer)
+    else TODO("Support time tag $tag")
+
 fun Asn1Primitive.readBitString() = decode(BIT_STRING, ::decodeBitString)
 fun Asn1Primitive.readNull() = decode(NULL) {}
 
@@ -104,7 +109,6 @@ fun JwsAlgorithm.Companion.decodeFromTlv(input: Asn1Sequence): JwsAlgorithm {
             if (input.nextChild().tag != NULL) throw IllegalArgumentException("RSA Params not supported yet")
             if (input.hasMoreChildren()) throw IllegalArgumentException("Superfluous Content in Signature")
             alg
-
         }
     }
 }
@@ -134,8 +138,6 @@ fun CryptoPublicKey.Companion.decodeFromTlv(src: Asn1Sequence): CryptoPublicKey 
             else -> throw IllegalArgumentException("Curve not supported: $curveOid")
         }
         val bitString = (src.nextChild() as Asn1Primitive).readBitString()
-
-
         val xAndY = bitString.drop(1).toByteArray()
         val coordLen = curve.coordinateLengthBytes.toInt()
         val x = xAndY.take(coordLen).toByteArray()
@@ -149,11 +151,9 @@ fun CryptoPublicKey.Companion.decodeFromTlv(src: Asn1Sequence): CryptoPublicKey 
         val e = (rsaSequence.nextChild() as Asn1Primitive).readInt().toUInt()
         if (rsaSequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous data in SPKI!")
         return CryptoPublicKey.Rsa(
-            CryptoPublicKey.Rsa.Size.of(((n.size - 1) * 8).toUInt()) ?: throw IllegalArgumentException(
-                "Illegal RSa key size: ${(n.size - 1) * 8}"
-            ), n, e
+            CryptoPublicKey.Rsa.Size.of(((n.size - 1) * 8).toUInt())
+                ?: throw IllegalArgumentException("Illegal RSA key size: ${(n.size - 1) * 8}"), n, e
         )
-
     } else {
         throw IllegalArgumentException("Unsupported Key Type: $oid")
     }
@@ -162,9 +162,31 @@ fun CryptoPublicKey.Companion.decodeFromTlv(src: Asn1Sequence): CryptoPublicKey 
 @Throws(IllegalArgumentException::class)
 fun Instant.Companion.decodeUtcTimeFromDer(input: ByteArray): Instant = runCatching {
     val s = String(input)
-    val isoString =
-        "20${s[0]}${s[1]}-${s[2]}${s[3]}-${s[4]}${s[5]}T${s[6]}${s[7]}:${s[8]}${s[9]}:${s[10]}${s[11]}${s[12]}"
-    return Instant.parse(isoString)
+    if (s.length != 13) throw IllegalArgumentException("Input too short: $input")
+    val year = "${s[0]}${s[1]}".toInt()
+    val century = if (year <= 49) "20" else "19" // RFC 5280 4.1.2.5 Validity
+    val isoString = "$century${s[0]}${s[1]}" + // year
+            "-${s[2]}${s[3]}" + // month
+            "-${s[4]}${s[5]}" + // day
+            "T${s[6]}${s[7]}" + // hour
+            ":${s[8]}${s[9]}" + // minute
+            ":${s[10]}${s[11]}" + // seconds
+            "${s[12]}" // time offset
+    return parse(isoString)
+}.getOrElse { throw IllegalArgumentException(it) }
+
+@Throws(IllegalArgumentException::class)
+fun Instant.Companion.decodeGeneralizedTimeFromDer(input: ByteArray): Instant = runCatching {
+    val s = String(input)
+    if (s.length != 15) throw IllegalArgumentException("Input too short: $input")
+    val isoString = "${s[0]}${s[1]}${s[2]}${s[3]}" + // year
+            "-${s[4]}${s[5]}" + // month
+            "-${s[6]}${s[7]}" + // day
+            "T${s[8]}${s[9]}" + // hour
+            ":${s[10]}${s[11]}" + // minute
+            ":${s[12]}${s[13]}" + // seconds
+            "${s[14]}" // time offset
+    return parse(isoString)
 }.getOrElse { throw IllegalArgumentException(it) }
 
 fun Int.Companion.decodeFromDer(input: ByteArray): Int {

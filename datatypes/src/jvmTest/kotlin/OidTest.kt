@@ -1,6 +1,5 @@
 import at.asitplus.crypto.datatypes.asn1.ObjectIdentifier
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
@@ -18,9 +17,9 @@ class OidTest : FreeSpec({
             ObjectIdentifier.decodeFromTlv(oid.encodeToTlv()) shouldBe oid
         }
 
-            checkAll(iterations = 15, Arb.positiveInt(39)) { second ->
-                checkAll(iterations = 1000, Arb.intArray(Arb.int(0..128), Arb.positiveInt(Int.MAX_VALUE))) {
-                    listOf(1,2).forEach { first ->
+        checkAll(iterations = 15, Arb.positiveInt(39)) { second ->
+            checkAll(iterations = 1000, Arb.intArray(Arb.int(0..128), Arb.positiveInt(Int.MAX_VALUE))) {
+                listOf(1, 2).forEach { first ->
                     val oid = ObjectIdentifier(
                         first.toUInt(),
                         second.toUInt(),

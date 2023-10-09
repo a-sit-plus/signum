@@ -4,7 +4,7 @@ import at.asitplus.crypto.datatypes.asn1.parse
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.datetime.Clock
-import java.util.*
+import java.util.Base64
 
 class Asn1EncodingTest : FreeSpec({
     val certBytes = Base64.getMimeDecoder()
