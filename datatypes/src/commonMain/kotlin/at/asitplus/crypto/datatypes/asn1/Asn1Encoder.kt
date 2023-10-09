@@ -2,9 +2,14 @@
 
 package at.asitplus.crypto.datatypes.asn1
 
-import at.asitplus.crypto.datatypes.*
+import at.asitplus.crypto.datatypes.Asn1String
+import at.asitplus.crypto.datatypes.CryptoPublicKey
+import at.asitplus.crypto.datatypes.EcCurve
+import at.asitplus.crypto.datatypes.JwsAlgorithm
+import at.asitplus.crypto.datatypes.TbsCertificate
 import at.asitplus.crypto.datatypes.asn1.BERTags.BIT_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.BOOLEAN
+import at.asitplus.crypto.datatypes.asn1.BERTags.GENERALIZED_TIME
 import at.asitplus.crypto.datatypes.asn1.BERTags.INTEGER
 import at.asitplus.crypto.datatypes.asn1.BERTags.NULL
 import at.asitplus.crypto.datatypes.asn1.BERTags.OBJECT_IDENTIFIER
@@ -52,8 +57,10 @@ class Asn1TreeBuilder() {
 
     fun asn1null() = apply { elements += Asn1Primitive(NULL, byteArrayOf()) }
 
-    fun utcTime(block: () -> Instant) = apply { elements += Asn1Primitive(UTC_TIME, block().encodeToAsn1ValuePart()) }
+    fun utcTime(block: () -> Instant) = apply { elements += Asn1Primitive(UTC_TIME, block().encodeToAsn1UtcTime()) }
 
+    fun generalizedTime(block: () -> Instant) =
+        apply { elements += Asn1Primitive(GENERALIZED_TIME, block().encodeToAsn1GeneralizedTime()) }
 
     private fun nest(type: CollectionType, init: Asn1TreeBuilder.() -> Unit) = apply {
         val seq = Asn1TreeBuilder()
@@ -62,7 +69,7 @@ class Asn1TreeBuilder() {
             if (type == CollectionType.SET) it.sortedBy { it.tag }
             else {
                 if (it.any { elem -> elem.tag != it.first().tag }) throw IllegalArgumentException("SET_OF must only contain elements fo the same tag")
-                it.sortedBy { it.derEncoded.encodeToString(Base16) }//TODo this is inefficient
+                it.sortedBy { it.derEncoded.encodeToString(Base16) } //TODo this is inefficient
             }
         })
     }
@@ -74,7 +81,9 @@ class Asn1TreeBuilder() {
 }
 
 private enum class CollectionType {
-    SET, SEQUENCE, SET_OF
+    SET,
+    SEQUENCE,
+    SET_OF
 }
 
 
@@ -115,25 +124,34 @@ private fun Int.encodeToDer() = encodeToByteArray().dropWhile { it == 0.toByte()
 
 private fun Long.encodeToDer() = encodeToByteArray().dropWhile { it == 0.toByte() }.toByteArray()
 
+private fun Instant.encodeToAsn1UtcTime(): ByteArray {
+    return encodeToAsn1Time().drop(2).encodeToByteArray()
+}
 
-private fun Instant.encodeToAsn1ValuePart(): ByteArray {
+private fun Instant.encodeToAsn1GeneralizedTime(): ByteArray {
+    return encodeToAsn1Time().encodeToByteArray()
+}
+
+private fun Instant.encodeToAsn1Time(): String {
     val value = this.toString()
-    if (value.isEmpty()) return byteArrayOf()
-    val matchResult =
-        Regex("[0-9]{2}([0-9]{2})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})").matchAt(value, 0)
-            ?: throw IllegalArgumentException("instant serialization failed: $value")
-    val year =
-        matchResult.groups[1]?.value ?: throw IllegalArgumentException("instant serialization year failed: $value")
-    val month =
-        matchResult.groups[2]?.value ?: throw IllegalArgumentException("instant serialization month failed: $value")
-    val day = matchResult.groups[3]?.value ?: throw IllegalArgumentException("instant serialization day failed: $value")
-    val hour =
-        matchResult.groups[4]?.value ?: throw IllegalArgumentException("instant serialization hour failed: $value")
-    val minute =
-        matchResult.groups[5]?.value ?: throw IllegalArgumentException("instant serialization minute failed: $value")
-    val seconds =
-        matchResult.groups[6]?.value ?: throw IllegalArgumentException("instant serialization seconds failed: $value")
-    return "$year$month$day$hour$minute${seconds}Z".encodeToByteArray()
+    if (value.isEmpty())
+        throw IllegalArgumentException("Instant serialization failed: no value")
+    val matchResult = Regex("([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})")
+        .matchAt(value, 0)
+        ?: throw IllegalArgumentException("Instant serialization failed: $value")
+    val year = matchResult.groups[1]?.value
+        ?: throw IllegalArgumentException("Instant serialization year failed: $value")
+    val month = matchResult.groups[2]?.value
+        ?: throw IllegalArgumentException("Instant serialization month failed: $value")
+    val day = matchResult.groups[3]?.value
+        ?: throw IllegalArgumentException("Instant serialization day failed: $value")
+    val hour = matchResult.groups[4]?.value
+        ?: throw IllegalArgumentException("Instant serialization hour failed: $value")
+    val minute = matchResult.groups[5]?.value
+        ?: throw IllegalArgumentException("Instant serialization minute failed: $value")
+    val seconds = matchResult.groups[6]?.value
+        ?: throw IllegalArgumentException("Instant serialization seconds failed: $value")
+    return "$year$month$day$hour$minute$seconds" + "Z"
 }
 
 private fun JwsAlgorithm.encodeToTlv() = when (this) {

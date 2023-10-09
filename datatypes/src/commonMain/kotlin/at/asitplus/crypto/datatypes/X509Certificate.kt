@@ -22,7 +22,7 @@ import at.asitplus.crypto.datatypes.asn1.readBitString
 import at.asitplus.crypto.datatypes.asn1.readInt
 import at.asitplus.crypto.datatypes.asn1.readOid
 import at.asitplus.crypto.datatypes.asn1.readString
-import at.asitplus.crypto.datatypes.asn1.readUtcTime
+import at.asitplus.crypto.datatypes.asn1.readInstant
 import at.asitplus.crypto.datatypes.asn1.verify
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import kotlinx.datetime.Instant
@@ -59,8 +59,8 @@ data class TbsCertificate(
         sequence { issuerName.forEach { append { it.enCodeToTlv() } } }
 
         sequence {
-            utcTime { validFrom }
-            utcTime { validUntil }
+            rfc5820Time(validFrom)
+            rfc5820Time(validUntil)
         }
         sequence { subjectName.forEach { append { it.enCodeToTlv() } } }
 
@@ -84,6 +84,14 @@ data class TbsCertificate(
         }
     }
 
+    private fun Asn1TreeBuilder.rfc5820Time(instant: Instant) {
+        if (instant > Instant.parse("2050-01-01T00:00:00Z")) { // per RFC 5280 4.1.2.5
+            generalizedTime { instant }
+        } else {
+            utcTime { instant }
+        }
+    }
+
     companion object {
         fun decodeFromTlv(input: Asn1Sequence) = runCatching {
             //TODO make sure to always check for superfluous data
@@ -95,7 +103,6 @@ data class TbsCertificate(
             val issuerNames = (input.nextChild() as Asn1Sequence).children.map {
                 DistingushedName.decodeFromTlv(it as Asn1Set)
             }
-
 
             val timestamps = decodeTimestamps(input.nextChild() as Asn1Sequence)
                 ?: throw IllegalArgumentException("error parsing Timestamps")
@@ -139,15 +146,12 @@ data class TbsCertificate(
             )
         }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
 
-
         private fun decodeTimestamps(input: Asn1Sequence): Pair<Instant, Instant>? = runCatching {
-
-            val firstInstant = (input.nextChild() as Asn1Primitive).readUtcTime()
-            val secondInstant = (input.nextChild() as Asn1Primitive).readUtcTime()
+            val firstInstant = (input.nextChild() as Asn1Primitive).readInstant()
+            val secondInstant = (input.nextChild() as Asn1Primitive).readInstant()
             if (input.hasMoreChildren()) throw IllegalArgumentException("Superfluous content in Validity")
             return Pair(firstInstant, secondInstant)
         }.getOrNull()
-
     }
 }
 

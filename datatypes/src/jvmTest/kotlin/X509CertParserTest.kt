@@ -20,7 +20,7 @@ private val json = Json { prettyPrint = true }
 class X509CertParserTest : FreeSpec({
 
     "Real Certificates" - {
-        withData("certWithSkiAndExt.pem", "digicert-root.pem", "github-com.pem") { crt ->
+        withData("certWithSkiAndExt.pem", "digicert-root.pem", "github-com.pem", "cert-times.pem") { crt ->
             val certBytes = Base64.getMimeDecoder()
                 .decode(javaClass.classLoader.getResourceAsStream(crt).reader().readText())
             val jcaCert = CertificateFactory.getInstance("X.509")
