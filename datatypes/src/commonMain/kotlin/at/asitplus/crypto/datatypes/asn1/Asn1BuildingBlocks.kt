@@ -1,9 +1,20 @@
 package at.asitplus.crypto.datatypes.asn1
 
 import io.matthewnelson.encoding.base16.Base16
+import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
-sealed class Asn1Encodable protected constructor(private val tlv: TLV, protected open val children: List<Asn1Encodable>?) {
+@Serializable(with = Asn1EncodableSerializer::class)
+sealed class Asn1Encodable protected constructor(
+    private val tlv: TLV,
+    protected open val children: List<Asn1Encodable>?
+) {
     companion object
 
     val encodedLength by lazy { length.encodeLength() }
@@ -32,8 +43,22 @@ sealed class Asn1Encodable protected constructor(private val tlv: TLV, protected
     }
 }
 
+object Asn1EncodableSerializer : KSerializer<Asn1Encodable> {
+    override val descriptor = PrimitiveSerialDescriptor("Asn1Encodable", PrimitiveKind.STRING)
 
-sealed class Asn1Structure(tag: UByte, children: List<Asn1Encodable>?) : Asn1Encodable(TLV(tag, byteArrayOf()), children) {
+    override fun deserialize(decoder: Decoder): Asn1Encodable {
+        return Asn1Encodable.parse(decoder.decodeString().decodeToByteArray(Base16))
+    }
+
+    override fun serialize(encoder: Encoder, value: Asn1Encodable) {
+        encoder.encodeString(value.derEncoded.encodeToString(Base16))
+    }
+
+}
+
+
+sealed class Asn1Structure(tag: UByte, children: List<Asn1Encodable>?) :
+    Asn1Encodable(TLV(tag, byteArrayOf()), children) {
     public override val children: List<Asn1Encodable>
         get() = super.children!!
 
@@ -42,7 +67,7 @@ sealed class Asn1Structure(tag: UByte, children: List<Asn1Encodable>?) : Asn1Enc
 
     fun hasMoreChildren() = children.size > index
 
-    fun peek() = children[index]
+    fun peek() = if(!hasMoreChildren()) null else children[index]
 }
 
 class Asn1Tagged(tag: UByte, val contained: Asn1Encodable) : Asn1Encodable(TLV(tag, byteArrayOf()), listOf(contained)) {

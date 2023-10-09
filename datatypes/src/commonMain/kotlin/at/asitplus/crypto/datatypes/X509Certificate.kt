@@ -26,34 +26,25 @@ data class TbsCertificate(
     val subjectUniqueID: ByteArray? = null,
     val extensions: List<X509CertificateExtension>? = null
 ) {
+
+
+    private fun Asn1TreeBuilder.version(block: () -> Int) =
+        apply { elements += Asn1Tagged(0u.toExplicitTag(), block().encodeToTlv()) }
+
     fun encodeToTlv() = asn1Sequence {
         version { version }
         long { serialNumber }
         sequence {
             sigAlg { signatureAlgorithm }
         }
-        sequence {
-            issuerName.forEach {
-                set {
-                    sequence {
-                        distinguishedName { it }
-                    }
-                }
-            }
-        }
+        sequence { issuerName.forEach { append { it.enCodeToTlv() } } }
+
         sequence {
             utcTime { validFrom }
             utcTime { validUntil }
         }
-        sequence {
-            subjectName.forEach {
-                set {
-                    sequence {
-                        distinguishedName { it }
-                    }
-                }
-            }
-        }
+        sequence { subjectName.forEach { append { it.enCodeToTlv() } } }
+
         subjectPublicKey { publicKey }
 
         issuerUniqueID?.let { append { Asn1Primitive(1u.toImplicitTag(), it.encodeToBitString()) } }
@@ -75,8 +66,6 @@ data class TbsCertificate(
     }
 
     companion object {
-
-
         fun decodeFromTlv(input: Asn1Sequence): TbsCertificate {
             return runCatching {
                 //TODO make sure to always check for superfluous data
@@ -87,33 +76,31 @@ data class TbsCertificate(
                 val sigAlg = (input.nextChild() as Asn1Sequence).let {
                     if (it.children.size != 1) throw IllegalArgumentException("More than one element for SigAlg!")
                     JwsAlgorithm.decodeFromTlv(it.nextChild() as Asn1Primitive)
-
                 }
                 val issuerNames = (input.nextChild() as Asn1Sequence).children.map {
-                    it as Asn1Set
-                    if (it.children.size != 1) throw IllegalArgumentException("Invalid Issuer Structure")
-                    DistingushedName.decodeFromTlv(it.nextChild() as Asn1Sequence)
+                    DistingushedName.decodeFromTlv(it as Asn1Set)
                 }
 
 
                 val timestamps = decodeTimestamps(input.nextChild() as Asn1Sequence)
                     ?: throw IllegalArgumentException("error parsing Timestamps")
                 val subject = (input.nextChild() as Asn1Sequence).children.map {
-                    it as Asn1Set
-                    if (it.children.size != 1) throw IllegalArgumentException("Invalid Subject Structure")
-                    DistingushedName.decodeFromTlv(it.nextChild() as Asn1Sequence)
+                    DistingushedName.decodeFromTlv(it as Asn1Set)
                 }
 
                 val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(input.nextChild() as Asn1Sequence)
 
-                val issuerUniqueID = if (input.peek().tag == 1u.toImplicitTag()) {
-                    (input.nextChild() as Asn1Primitive).decode(1u.toImplicitTag()) { decodeBitString(it) }
-                } else null
+                val issuerUniqueID = input.peek()?.let { next ->
+                    if (next.tag == 1u.toImplicitTag()) {
+                        (input.nextChild() as Asn1Primitive).decode(1u.toImplicitTag()) { decodeBitString(it) }
+                    } else null
+                }
 
-                val subjectUniqueID = if (input.peek().tag == 2u.toImplicitTag()) {
-                    (input.nextChild() as Asn1Primitive).decode(2u.toImplicitTag()) { decodeBitString(it) }
-                } else null
-
+                val subjectUniqueID = input.peek()?.let { next ->
+                    if (next.tag == 2u.toImplicitTag()) {
+                        (input.nextChild() as Asn1Primitive).decode(2u.toImplicitTag()) { decodeBitString(it) }
+                    } else null
+                }
                 val extensions = if (input.hasMoreChildren()) {
                     ((input.nextChild() as Asn1Tagged).verify(3u) as Asn1Sequence).children.map {
                         X509CertificateExtension.decodeFromTlv(it as Asn1Sequence)
@@ -153,31 +140,35 @@ data class TbsCertificate(
 //TODO auto-sanitize and/or reduce
 @Serializable
 sealed class Asn1String() {
-    abstract val tag: Byte
+    abstract val tag: UByte
     abstract val value: String
 
     @Serializable
     @SerialName("UTF8String")
     class UTF8(override val value: String) : Asn1String() {
-        override val tag = BERTags.UTF8_STRING.toByte()
+        override val tag = BERTags.UTF8_STRING
     }
 
     @Serializable
     @SerialName("PrintableString")
     class Printable(override val value: String) : Asn1String() {
-        override val tag = BERTags.PRINTABLE_STRING.toByte()
+        override val tag = BERTags.PRINTABLE_STRING
     }
+
+    fun encodeToTlv() = Asn1Primitive(tag, value.encodeToByteArray())
 }
 
 @Serializable
-sealed class DistingushedName {
+sealed class DistingushedName() {
     abstract val oid: String
-    abstract val value: Asn1String
+    abstract val value: Asn1Encodable
 
     @Serializable
     @SerialName("CN")
-    class CommonName(override val value: Asn1String) : DistingushedName() {
+    class CommonName(override val value: Asn1Encodable) : DistingushedName() {
         override val oid = OID
+
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
             val OID = "550403"
@@ -186,8 +177,10 @@ sealed class DistingushedName {
 
     @Serializable
     @SerialName("C")
-    class Country(override val value: Asn1String) : DistingushedName() {
+    class Country(override val value: Asn1Encodable) : DistingushedName() {
         override val oid = OID
+
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
             val OID = "550406"
@@ -196,8 +189,10 @@ sealed class DistingushedName {
 
     @Serializable
     @SerialName("O")
-    class Organization(override val value: Asn1String) : DistingushedName() {
+    class Organization(override val value: Asn1Encodable) : DistingushedName() {
         override val oid = OID
+
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
             val OID = "55040A"
@@ -206,8 +201,10 @@ sealed class DistingushedName {
 
     @Serializable
     @SerialName("OU")
-    class OrganizationalUnit(override val value: Asn1String) : DistingushedName() {
+    class OrganizationalUnit(override val value: Asn1Encodable) : DistingushedName() {
         override val oid = OID
+
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
             val OID = "55040B"
@@ -216,24 +213,37 @@ sealed class DistingushedName {
 
     @Serializable
     @SerialName("?")
-    class Other(override val value: Asn1String, override val oid: String) : DistingushedName()
+    class Other(override val oid: String, override val value: Asn1Encodable) : DistingushedName() {
+        constructor(oid: String, str: Asn1String) : this(oid, Asn1Primitive(str.tag, str.value.encodeToByteArray()))
+    }
+
+    fun enCodeToTlv() = asn1Set {
+        sequence {
+            oid { oid }
+            append { value }
+        }
+    }
 
     companion object {
-        fun decodeFromTlv(input: Asn1Sequence): DistingushedName {
-            val oid = (input.nextChild() as Asn1Primitive).readOid()
+        fun decodeFromTlv(input: Asn1Set): DistingushedName {
+            if (input.children.size != 1) throw IllegalArgumentException("Invalid Subject Structure")
+            val sequence = input.nextChild() as Asn1Sequence
+            val oid = (sequence.nextChild() as Asn1Primitive).readOid()
             if (oid.startsWith("5504")) {
-                val str = (input.nextChild() as Asn1Primitive).readString()
-                if (input.hasMoreChildren()) throw IllegalArgumentException("Superfluous elements in RDN")
+                val asn1String = sequence.nextChild() as Asn1Primitive
+                val str = (asn1String).readString()
+                if (sequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous elements in RDN")
                 return when (oid) {
                     DistingushedName.CommonName.OID -> DistingushedName.CommonName(str)
                     DistingushedName.Country.OID -> DistingushedName.Country(str)
                     DistingushedName.Organization.OID -> DistingushedName.Organization(str)
                     DistingushedName.OrganizationalUnit.OID -> DistingushedName.OrganizationalUnit(str)
-                    else -> DistingushedName.Other(str, oid)
+                    else -> DistingushedName.Other(oid, asn1String)
                 }
 
             }
-            throw IllegalArgumentException("Expected RDN, got OID $oid")
+            return DistingushedName.Other(oid, sequence.nextChild())
+                .also { if (sequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous elements in RDN") }
         }
     }
 }

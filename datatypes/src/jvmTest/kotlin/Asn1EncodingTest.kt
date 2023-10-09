@@ -25,9 +25,6 @@ class Asn1EncodingTest : FreeSpec({
         val new = asn1Sequence {
             asn1null()
             asn1null()
-            distinguishedName {
-                DistingushedName.CommonName(Asn1String.Printable("Oklahoma"))
-            }
             asn1null()
             asn1null()
 

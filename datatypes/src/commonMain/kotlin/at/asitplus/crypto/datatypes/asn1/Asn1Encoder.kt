@@ -9,10 +9,7 @@ import at.asitplus.crypto.datatypes.asn1.BERTags.INTEGER
 import at.asitplus.crypto.datatypes.asn1.BERTags.NULL
 import at.asitplus.crypto.datatypes.asn1.BERTags.OBJECT_IDENTIFIER
 import at.asitplus.crypto.datatypes.asn1.BERTags.OCTET_STRING
-import at.asitplus.crypto.datatypes.asn1.BERTags.PRINTABLE_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.UTC_TIME
-import at.asitplus.crypto.datatypes.asn1.BERTags.UTF8_STRING
-import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -30,33 +27,20 @@ class Asn1TreeBuilder() {
     fun long(block: () -> Long) = apply { elements += block().encodeToTlv() }
 
     fun octetString(block: () -> ByteArray) = apply { elements += block().encodeToTlvOctetString() }
-
-    fun octetString(child: Asn1Encodable) = apply {
-        octetString(block = {
-            child.derEncoded
-        })
-    }
+    fun octetString(child: Asn1Encodable) = apply { octetString(block = { child.derEncoded }) }
 
     fun bitString(block: () -> ByteArray) = apply { elements += block().encodeToTlvBitString() }
     fun bitString(child: Asn1Encodable) = apply { bitString(block = { child.derEncoded }) }
 
     fun oid(block: () -> String) = apply { elements += block().encodeTolvOid() }
 
-    fun utf8String(block: () -> String) = apply { elements += Asn1Primitive(UTF8_STRING, block().encodeToByteArray()) }
-    fun printableString(block: () -> String) =
-        apply { elements += Asn1Primitive(PRINTABLE_STRING, block().encodeToByteArray()) }
+    fun utf8String(block: () -> String) = apply { elements += Asn1String.UTF8(block()).encodeToTlv() }
+    fun printableString(block: () -> String) = apply { elements += Asn1String.Printable(block()).encodeToTlv() }
 
     fun string(block: () -> Asn1String) = apply {
         val str = block()
         if (str is Asn1String.UTF8) utf8String { str.value }
         else printableString { str.value }
-    }
-
-    //TODO this is cursed and needs to go!
-    fun distinguishedName(block: () -> DistingushedName) = apply {
-        val dn = block()
-        oid { dn.oid }
-        string { dn.value }
     }
 
     fun tbsCertificate(block: () -> TbsCertificate) = apply { elements += block().encodeToTlv() }
@@ -65,9 +49,7 @@ class Asn1TreeBuilder() {
 
     fun subjectPublicKey(block: () -> CryptoPublicKey) = apply { elements += block().encodeToTlv() }
 
-    fun version(block: () -> Int) = apply { elements += Asn1Tagged(0u.toExplicitTag(), block().encodeToTlv()) }
-
-    fun asn1null() = apply { elements += Asn1Primitive(NULL, byteArrayOf()) } //TODO: check if this erally works
+    fun asn1null() = apply { elements += Asn1Primitive(NULL, byteArrayOf()) }
 
     fun utcTime(block: () -> Instant) = apply { elements += Asn1Primitive(UTC_TIME, block().encodeToAsn1ValuePart()) }
 
@@ -113,7 +95,7 @@ fun asn1SetOf(root: Asn1TreeBuilder.() -> Unit): Asn1Encodable {
     return Asn1Set(seq.elements)
 }
 
-private fun Int.encodeToTlv() = Asn1Primitive(INTEGER, encodeToDer())
+fun Int.encodeToTlv() = Asn1Primitive(INTEGER, encodeToDer())
 
 private fun Boolean.encodeToTlv() = Asn1Primitive(BOOLEAN, (if (this) 0xff else 0).encodeToDer())
 
