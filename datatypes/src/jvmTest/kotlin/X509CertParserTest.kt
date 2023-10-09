@@ -11,9 +11,13 @@ import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.ByteArrayInputStream
+import java.io.File
+import java.io.FileReader
+import java.io.InputStream
 import java.security.cert.CertificateFactory
 import java.util.*
 import java.security.cert.X509Certificate as JcaCertificate
+
 
 private val json = Json { prettyPrint = true }
 
@@ -48,8 +52,26 @@ class X509CertParserTest : FreeSpec({
                 parsedCert.encodeToTlv().derEncoded shouldBe jcaCert.encoded
             }
         }
+    }
 
+    "system trust store" - {
+        val certs = File("/etc/ssl/certs").listFiles { f: File -> f.name.endsWith(".pem") }.asList()
 
+        withData(certs) { cert ->
+            val jcaCert = runCatching { convertStringToX509Cert(FileReader(cert).readText()) }.getOrNull()
+            jcaCert?.let { crt ->
+                X509Certificate.decodeFromTlv(Asn1Encodable.parse(crt.encoded) as Asn1Sequence)
+                    .encodeToTlv().derEncoded shouldBe crt.encoded
+            }
+        }
     }
 
 })
+
+@Throws(Exception::class)
+private fun convertStringToX509Cert(certificate: String): java.security.cert.X509Certificate {
+    val targetStream: InputStream = ByteArrayInputStream(certificate.toByteArray())
+    return CertificateFactory
+        .getInstance("X509")
+        .generateCertificate(targetStream) as java.security.cert.X509Certificate
+}
