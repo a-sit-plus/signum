@@ -1,10 +1,6 @@
 package at.asitplus.crypto.datatypes
 
-import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
-import at.asitplus.crypto.datatypes.asn1.BERTags
-import at.asitplus.crypto.datatypes.asn1.asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.encodeToTlv
-import at.asitplus.crypto.datatypes.asn1.ensureSize
+import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.io.MultibaseHelper
 import kotlinx.serialization.SerialName
@@ -40,7 +36,7 @@ sealed class CryptoPublicKey {
     data class Rsa(
         val bits: Size,
         @Serializable(with = ByteArrayBase64Serializer::class) val n: ByteArray,
-        val e: UInt,
+        val e: ByteArray,
     ) : CryptoPublicKey() {
 
         enum class Size(val number: UInt) {
@@ -69,7 +65,7 @@ sealed class CryptoPublicKey {
                     n.ensureSize(bits.number / 8u)
                         .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
             }
-            long { e.toLong() }
+            append { Asn1Primitive(BERTags.INTEGER, e) }
         }.derEncoded
 
         override fun equals(other: Any?): Boolean {

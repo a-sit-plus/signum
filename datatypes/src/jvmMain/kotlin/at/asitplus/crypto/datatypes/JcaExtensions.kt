@@ -54,7 +54,7 @@ fun CryptoPublicKey.Ec.getPublicKey(): ECPublicKey {
 private val rsaFactory = KeyFactory.getInstance("RSA")
 fun CryptoPublicKey.Rsa.getPublicKey(): RSAPublicKey =
     rsaFactory.generatePublic(
-        RSAPublicKeySpec(BigInteger(1, n), BigInteger.valueOf(e.toLong()))
+        RSAPublicKeySpec(BigInteger(1, n), BigInteger(e))
     ) as RSAPublicKey
 
 
@@ -75,5 +75,5 @@ fun CryptoPublicKey.Ec.Companion.fromJcaKey(publicKey: ECPublicKey): CryptoPubli
 
 fun CryptoPublicKey.Rsa.fromJcaKey(publicKey: RSAPublicKey): CryptoPublicKey.Rsa? {
     val sz = CryptoPublicKey.Rsa.Size.entries.find { it.number.toInt() == publicKey.modulus.bitLength() } ?: return null
-    return CryptoPublicKey.Rsa(sz, publicKey.modulus.toByteArray(), publicKey.publicExponent.toInt().toUInt())
+    return CryptoPublicKey.Rsa(sz, publicKey.modulus.toByteArray(), publicKey.publicExponent.toByteArray())
 }

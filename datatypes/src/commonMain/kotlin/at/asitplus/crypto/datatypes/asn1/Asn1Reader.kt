@@ -148,7 +148,7 @@ fun CryptoPublicKey.Companion.decodeFromTlv(src: Asn1Sequence): CryptoPublicKey 
         val bitString = (src.nextChild() as Asn1Primitive).readBitString()
         val rsaSequence = Asn1Encodable.parse(bitString) as Asn1Sequence
         val n = (rsaSequence.nextChild() as Asn1Primitive).decode(INTEGER) { it }
-        val e = (rsaSequence.nextChild() as Asn1Primitive).readLong().toUInt()
+        val e = (rsaSequence.nextChild() as Asn1Primitive).decode(INTEGER) { it }
         if (rsaSequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous data in SPKI!")
         return CryptoPublicKey.Rsa(
             CryptoPublicKey.Rsa.Size.of(((n.size - 1) * 8).toUInt())

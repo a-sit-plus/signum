@@ -70,7 +70,7 @@ class PublicKeyTest : FreeSpec({
             ) { pubKey ->
 
                 val sz = CryptoPublicKey.Rsa.Size.of(bits.toUInt())!!
-                val own = CryptoPublicKey.Rsa(sz, pubKey.modulus.toByteArray(), pubKey.publicExponent.toInt().toUInt())
+                val own = CryptoPublicKey.Rsa(sz, pubKey.modulus.toByteArray(), pubKey.publicExponent.toByteArray())
                 println(Json.encodeToString(own))
                 println(own.iosEncoded.encodeToString(Base16()))
                 println(own.keyId)
