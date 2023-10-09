@@ -8,6 +8,9 @@ class ObjectIdentifier(vararg val nodes: UInt) {
         if (nodes.size < 2) throw IllegalArgumentException("at least two nodes required!")
         if (nodes[0] * 40u > UByte.MAX_VALUE.toUInt()) throw IllegalArgumentException("first node too lage!")
         //TODO more sanity checks
+
+        if(nodes.first()>2u) throw IllegalArgumentException("OID must start with either 1 or 2")
+        if(nodes[1]>39u) throw IllegalArgumentException("Second segment must be <40")
     }
 
     constructor(oid: String) : this(*oid.split('.').map { it.toUInt() }.toUIntArray())
@@ -61,14 +64,14 @@ class ObjectIdentifier(vararg val nodes: UInt) {
                 } else {
                     var currentNode = mutableListOf<String>()
                     while (rest[0].toUByte() > 127u) {
-                        val uInt = String(rest[0].toString(2).toCharArray().drop(1).toCharArray()).padStart(7,'0')
+                        val full = String(rest[0].toString(2).toCharArray())
+                            val uInt= String(full.drop(1).toCharArray()).padStart(7,'0')
                         currentNode += uInt
                         rest = rest.drop(1)
                     }
-                    currentNode +=String(rest[0].toString(2).toCharArray().drop(1).toCharArray()).padStart(7,'0')
+                    currentNode +=String(rest[0].toString(2).toCharArray()).padStart(7,'0')
                     rest = rest.drop(1)
                     collected += currentNode.fold(""){acc, s -> acc+s }.toUInt(2)
-                    //collected += collectNode.fold("") { acc, byte -> acc + byte.toString(2) }.toUInt(2)
                 }
             }
             return ObjectIdentifier(*collected.toUIntArray())
