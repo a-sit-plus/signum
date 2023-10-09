@@ -137,10 +137,30 @@ private fun Instant.encodeToAsn1ValuePart(): ByteArray {
 }
 
 private fun JwsAlgorithm.encodeToTlv() = when (this) {
-    JwsAlgorithm.ES256 -> KnownOIDs.ecdsaWithSHA256.encodeToTlv()
-    JwsAlgorithm.ES384 -> KnownOIDs.ecdsaWithSHA384.encodeToTlv()
-    JwsAlgorithm.ES512 -> KnownOIDs.ecdsaWithSHA512.encodeToTlv()
-    else -> throw IllegalArgumentException("sigAlg: $this")
+    JwsAlgorithm.ES256 -> asn1Sequence { oid { KnownOIDs.ecdsaWithSHA256 } }
+    JwsAlgorithm.ES384 -> asn1Sequence { oid { KnownOIDs.ecdsaWithSHA384 } }
+    JwsAlgorithm.ES512 -> asn1Sequence { oid { KnownOIDs.ecdsaWithSHA512 } }
+    JwsAlgorithm.RS256 -> asn1Sequence {
+        oid { KnownOIDs.sha256WithRSAEncryption }
+        asn1null()
+    }
+
+    JwsAlgorithm.RS384 -> asn1Sequence {
+        oid { KnownOIDs.sha384WithRSAEncryption }
+        asn1null()
+    }
+
+    JwsAlgorithm.RS512 -> asn1Sequence {
+        oid { KnownOIDs.sha512WithRSAEncryption }
+        asn1null()
+    }
+
+    JwsAlgorithm.UNOFFICIAL_RSA_SHA1 -> asn1Sequence {
+        oid { KnownOIDs.sha1WithRSAEncryption }
+        asn1null()
+    }
+
+    JwsAlgorithm.HMAC256 -> throw IllegalArgumentException("sigAlg: $this")
 }
 
 fun CryptoPublicKey.encodeToTlv() = when (this) {

@@ -15,7 +15,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class TbsCertificate(
     val version: Int = 2,
-    val serialNumber: Long,
+    val serialNumber: ByteArray,
     val signatureAlgorithm: JwsAlgorithm,
     val issuerName: List<DistingushedName>,
     val validFrom: Instant,
@@ -33,10 +33,8 @@ data class TbsCertificate(
 
     fun encodeToTlv() = asn1Sequence {
         version { version }
-        long { serialNumber }
-        sequence {
-            sigAlg { signatureAlgorithm }
-        }
+        append {Asn1Primitive(BERTags.INTEGER, serialNumber) }
+        sigAlg { signatureAlgorithm }
         sequence { issuerName.forEach { append { it.enCodeToTlv() } } }
 
         sequence {
@@ -72,11 +70,8 @@ data class TbsCertificate(
                 val version = input.nextChild().let {
                     ((it as Asn1Tagged).verify(0u) as Asn1Primitive).readInt()
                 }
-                val serialNumber = (input.nextChild() as Asn1Primitive).readLong()
-                val sigAlg = (input.nextChild() as Asn1Sequence).let {
-                    if (it.children.size != 1) throw IllegalArgumentException("More than one element for SigAlg!")
-                    JwsAlgorithm.decodeFromTlv(it.nextChild() as Asn1Primitive)
-                }
+                val serialNumber = (input.nextChild() as Asn1Primitive).decode(BERTags.INTEGER){it}
+                val sigAlg = JwsAlgorithm.decodeFromTlv(input.nextChild() as Asn1Sequence)
                 val issuerNames = (input.nextChild() as Asn1Sequence).children.map {
                     DistingushedName.decodeFromTlv(it as Asn1Set)
                 }
@@ -214,7 +209,10 @@ sealed class DistingushedName() {
     @Serializable
     @SerialName("?")
     class Other(override val oid: ObjectIdentifier, override val value: Asn1Encodable) : DistingushedName() {
-        constructor(oid: ObjectIdentifier, str: Asn1String) : this(oid, Asn1Primitive(str.tag, str.value.encodeToByteArray()))
+        constructor(oid: ObjectIdentifier, str: Asn1String) : this(
+            oid,
+            Asn1Primitive(str.tag, str.value.encodeToByteArray())
+        )
     }
 
     fun enCodeToTlv() = asn1Set {
@@ -229,7 +227,7 @@ sealed class DistingushedName() {
             if (input.children.size != 1) throw IllegalArgumentException("Invalid Subject Structure")
             val sequence = input.nextChild() as Asn1Sequence
             val oid = (sequence.nextChild() as Asn1Primitive).readOid()
-            if (oid.nodes.size>=3 && oid.nodes[0] == 2u &&oid.nodes[1]==5u && oid.nodes[2] ==4u) {
+            if (oid.nodes.size >= 3 && oid.nodes[0] == 2u && oid.nodes[1] == 5u && oid.nodes[2] == 4u) {
                 val asn1String = sequence.nextChild() as Asn1Primitive
                 val str = (asn1String).readString()
                 if (sequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous elements in RDN")
@@ -308,9 +306,7 @@ data class X509Certificate(
 
     fun encodeToTlv() = asn1Sequence {
         tbsCertificate { tbsCertificate }
-        sequence {
-            sigAlg { signatureAlgorithm }
-        }
+        sigAlg { signatureAlgorithm }
         bitString { signature }
     }
 
@@ -338,10 +334,7 @@ data class X509Certificate(
 
         fun decodeFromTlv(src: Asn1Sequence): X509Certificate {
             val tbs = TbsCertificate.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val sigAlg = JwsAlgorithm.decodeFromTlv((src.nextChild() as Asn1Sequence).let {
-                if (it.children.size != 1) throw IllegalArgumentException("Invalid SigAlg Structure")
-                it.nextChild() as Asn1Primitive
-            })
+            val sigAlg = JwsAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val signature = (src.nextChild() as Asn1Primitive).readBitString()
             if (src.hasMoreChildren()) throw IllegalArgumentException("Superfluous structure in Certificate Structure")
             return X509Certificate(tbs, sigAlg, signature)

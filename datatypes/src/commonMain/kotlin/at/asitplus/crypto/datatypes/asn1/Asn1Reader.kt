@@ -87,13 +87,27 @@ fun Asn1Tagged.verify(tag: UByte): Asn1Encodable {
     return this.contained
 }
 
-fun JwsAlgorithm.Companion.decodeFromTlv(input: Asn1Primitive) =
-    when (input.readOid()) {
+fun JwsAlgorithm.Companion.decodeFromTlv(input: Asn1Sequence): JwsAlgorithm {
+    val oid = (input.nextChild() as Asn1Primitive).readOid()
+    return when (oid) {
         KnownOIDs.ecdsaWithSHA512 -> JwsAlgorithm.ES512
         KnownOIDs.ecdsaWithSHA384 -> JwsAlgorithm.ES384
         KnownOIDs.ecdsaWithSHA256 -> JwsAlgorithm.ES256
-        else -> TODO("Implement remaining algorithm oids")
+        else -> {
+            val alg = when (oid) {
+                KnownOIDs.sha1WithRSAEncryption -> JwsAlgorithm.UNOFFICIAL_RSA_SHA1
+                KnownOIDs.sha256WithRSAEncryption -> JwsAlgorithm.RS256
+                KnownOIDs.sha384WithRSAEncryption -> JwsAlgorithm.RS384
+                KnownOIDs.sha512WithRSAEncryption -> JwsAlgorithm.RS512
+                else -> TODO("Implement remaining algorithm oids")
+            }
+            if (input.nextChild().tag != NULL) throw IllegalArgumentException("RSA Params not supported yet")
+            if (input.hasMoreChildren()) throw IllegalArgumentException("Superfluous Content in Signature")
+            alg
+
+        }
     }
+}
 
 
 inline fun <reified T> Asn1Primitive.decode(tag: UByte, decode: (content: ByteArray) -> T) = runCatching {

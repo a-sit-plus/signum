@@ -64,7 +64,7 @@ class X509CertificateJvmTest : FreeSpec({
         // create certificate with our structure
         val tbsCertificate = TbsCertificate(
             version = 2,
-            serialNumber = serialNumber.toLong(),
+            serialNumber = serialNumber.toByteArray(),
             issuerName = listOf(commonName),
             validFrom = notBeforeDate.toInstant().toKotlinInstant(),
             validUntil = notAfterDate.toInstant().toKotlinInstant(),
