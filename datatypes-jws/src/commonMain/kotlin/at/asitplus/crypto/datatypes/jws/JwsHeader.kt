@@ -2,8 +2,11 @@
 
 package at.asitplus.crypto.datatypes.jws
 
-import at.asitplus.crypto.datatypes.CryptoUtils
 import at.asitplus.crypto.datatypes.JwsAlgorithm
+import at.asitplus.crypto.datatypes.X509Certificate
+import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
+import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
+import at.asitplus.crypto.datatypes.asn1.parse
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.jws.io.jsonSerializer
 import io.github.aakira.napier.Napier
@@ -79,7 +82,8 @@ data class JwsHeader(
     val publicKey: JsonWebKey? by lazy {
         jsonWebKey
             ?: keyId?.let { JsonWebKey.fromKeyId(it) }
-            ?: certificateChain?.firstOrNull()?.let { CryptoUtils.extractPublicKeyFromX509Cert(it)?.toJsonWebKey() }
+            ?: certificateChain?.firstOrNull()
+                ?.let { X509Certificate.decodeFromTlv(Asn1Encodable.parse(it) as Asn1Sequence).tbsCertificate.publicKey.toJsonWebKey() }
     }
 
     companion object {
