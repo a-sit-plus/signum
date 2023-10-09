@@ -69,7 +69,7 @@ sealed class CryptoPublicKey {
                     n.ensureSize(bits.number / 8u)
                         .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
             }
-            int { e.toInt() }
+            long { e.toLong() }
         }.derEncoded
 
         override fun equals(other: Any?): Boolean {

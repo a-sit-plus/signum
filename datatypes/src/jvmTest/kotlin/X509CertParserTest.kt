@@ -51,8 +51,14 @@ class X509CertParserTest : FreeSpec({
         withData(certs) { cert ->
             val jcaCert = runCatching { convertStringToX509Cert(FileReader(cert).readText()) }.getOrNull()
             jcaCert?.let { crt ->
-                X509Certificate.decodeFromTlv(Asn1Encodable.parse(crt.encoded) as Asn1Sequence)
-                    .encodeToTlv().derEncoded shouldBe crt.encoded
+                val own = X509Certificate.decodeFromTlv(Asn1Encodable.parse(crt.encoded) as Asn1Sequence)
+                    .encodeToTlv().derEncoded
+                withClue(
+                    "Expect: ${crt.encoded.encodeToString(Base16)}\n" +
+                            "Actual: ${own.encodeToString(Base16)}"
+                ) {
+                    own shouldBe crt.encoded
+                }
             }
         }
     }
