@@ -18,8 +18,8 @@ data class TbsCertificate(
     val serialNumber: ByteArray,
     val signatureAlgorithm: JwsAlgorithm,
     val issuerName: List<DistingushedName>,
-    val validFrom: Instant,
-    val validUntil: Instant,
+    val validFrom: Pair<Instant, Boolean>,
+    val validUntil: Pair<Instant, Boolean>,
     val subjectName: List<DistingushedName>,
     val publicKey: CryptoPublicKey,
     val issuerUniqueID: ByteArray? = null,
@@ -38,8 +38,8 @@ data class TbsCertificate(
         sequence { issuerName.forEach { append { it.enCodeToTlv() } } }
 
         sequence {
-            rfc5820Time(validFrom)
-            rfc5820Time(validUntil)
+            if (validFrom.second) utcTime { validFrom.first } else generalizedTime { validFrom.first }
+            if (validUntil.second) utcTime { validUntil.first } else generalizedTime { validUntil.first }
         }
         sequence { subjectName.forEach { append { it.enCodeToTlv() } } }
 
@@ -125,12 +125,13 @@ data class TbsCertificate(
             )
         }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
 
-        private fun decodeTimestamps(input: Asn1Sequence): Pair<Instant, Instant>? = runCatching {
-            val firstInstant = (input.nextChild() as Asn1Primitive).readInstant()
-            val secondInstant = (input.nextChild() as Asn1Primitive).readInstant()
-            if (input.hasMoreChildren()) throw IllegalArgumentException("Superfluous content in Validity")
-            return Pair(firstInstant, secondInstant)
-        }.getOrNull()
+        private fun decodeTimestamps(input: Asn1Sequence): Pair<Pair<Instant, Boolean>, Pair<Instant, Boolean>>? =
+            runCatching {
+                val firstInstant = (input.nextChild() as Asn1Primitive).readInstant()
+                val secondInstant = (input.nextChild() as Asn1Primitive).readInstant()
+                if (input.hasMoreChildren()) throw IllegalArgumentException("Superfluous content in Validity")
+                return Pair(firstInstant, secondInstant)
+            }.getOrNull()
     }
 }
 
@@ -235,9 +236,15 @@ sealed class DistingushedName() {
                 if (sequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous elements in RDN")
                 return when (oid) {
                     CommonName.OID -> str.fold(onSuccess = { CommonName(it) }, onFailure = { CommonName(asn1String) })
-                    Country.OID ->str.fold(onSuccess = { Country(it) }, onFailure = { Country(asn1String) })
-                    Organization.OID ->str.fold(onSuccess = { Organization(it) }, onFailure = { Organization(asn1String) })
-                    OrganizationalUnit.OID -> str.fold(onSuccess = { OrganizationalUnit(it) }, onFailure = { OrganizationalUnit(asn1String) })
+                    Country.OID -> str.fold(onSuccess = { Country(it) }, onFailure = { Country(asn1String) })
+                    Organization.OID -> str.fold(
+                        onSuccess = { Organization(it) },
+                        onFailure = { Organization(asn1String) })
+
+                    OrganizationalUnit.OID -> str.fold(
+                        onSuccess = { OrganizationalUnit(it) },
+                        onFailure = { OrganizationalUnit(asn1String) })
+
                     else -> Other(oid, asn1String)
                 }
 

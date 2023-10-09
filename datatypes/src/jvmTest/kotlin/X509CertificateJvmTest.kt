@@ -66,8 +66,8 @@ class X509CertificateJvmTest : FreeSpec({
             version = 2,
             serialNumber = serialNumber.toByteArray(),
             issuerName = listOf(DistingushedName.CommonName(Asn1String.UTF8(commonName))),
-            validFrom = notBeforeDate.toInstant().toKotlinInstant(),
-            validUntil = notAfterDate.toInstant().toKotlinInstant(),
+            validFrom = notBeforeDate.toInstant().toKotlinInstant() to true,
+            validUntil = notAfterDate.toInstant().toKotlinInstant() to true,
             signatureAlgorithm = signatureAlgorithm,
             subjectName = listOf(DistingushedName.CommonName(Asn1String.UTF8(commonName))),
             publicKey = cryptoPublicKey
