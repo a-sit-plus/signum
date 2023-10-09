@@ -18,7 +18,7 @@ import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Instant
 
 
-fun ExtendedTlv.Companion.parse(input: ByteArray) = Asn1Reader(input).doParse().let {
+fun Asn1Encodable.Companion.parse(input: ByteArray) = Asn1Reader(input).doParse().let {
     if (it.size != 1) throw IllegalArgumentException("Multiple ASN1 structures found")
     it.first()
 }
@@ -28,8 +28,8 @@ private class Asn1Reader(input: ByteArray) {
     private var rest = input
 
     @Throws(IllegalArgumentException::class)
-    fun doParse(): List<ExtendedTlv> {
-        val result = mutableListOf<ExtendedTlv>()
+    fun doParse(): List<Asn1Encodable> {
+        val result = mutableListOf<Asn1Encodable>()
         while (rest.isNotEmpty()) {
             val tlv = read()
             if (tlv.isSequence()) result.add(Asn1Sequence(Asn1Reader(tlv.content).doParse()))
@@ -84,7 +84,7 @@ fun Asn1Primitive.readUtcTime() = decode(UTC_TIME, Instant.Companion::decodeUtcT
 fun Asn1Primitive.readBitString() = decode(BIT_STRING, ::decodeBitString)
 fun Asn1Primitive.readNull() = decode(NULL) {}
 
-fun Asn1Tagged.verify(tag: UByte): ExtendedTlv {
+fun Asn1Tagged.verify(tag: UByte): Asn1Encodable {
     if (this.tag != tag.toExplicitTag()) throw IllegalArgumentException("Tag ${this.tag} does not match expected tag ${tag.toExplicitTag()}")
     return this.contained
 }
@@ -131,7 +131,7 @@ fun CryptoPublicKey.Companion.decodeFromTlv(src: Asn1Sequence): CryptoPublicKey 
     } else if (oid == "2A864886F70D010101") {
         (keyInfo.nextChild() as Asn1Primitive).readNull()
         val bitString = (src.nextChild() as Asn1Primitive).readBitString()
-        val rsaSequence = ExtendedTlv.parse(bitString) as Asn1Sequence
+        val rsaSequence = Asn1Encodable.parse(bitString) as Asn1Sequence
         val n = (rsaSequence.nextChild() as Asn1Primitive).decode(INTEGER) { it }
         val e = (rsaSequence.nextChild() as Asn1Primitive).readInt().toUInt()
         if (rsaSequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous data in SPKI!")

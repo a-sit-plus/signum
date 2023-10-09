@@ -3,7 +3,7 @@ package at.asitplus.crypto.datatypes.asn1
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 
-sealed class ExtendedTlv protected constructor(private val tlv: TLV, protected open val children: List<ExtendedTlv>?) {
+sealed class Asn1Encodable protected constructor(private val tlv: TLV, protected open val children: List<Asn1Encodable>?) {
     companion object
 
     val encodedLength by lazy { length.encodeLength() }
@@ -33,8 +33,8 @@ sealed class ExtendedTlv protected constructor(private val tlv: TLV, protected o
 }
 
 
-sealed class Asn1Structure(tag: UByte, children: List<ExtendedTlv>?) : ExtendedTlv(TLV(tag, byteArrayOf()), children) {
-    public override val children: List<ExtendedTlv>
+sealed class Asn1Structure(tag: UByte, children: List<Asn1Encodable>?) : Asn1Encodable(TLV(tag, byteArrayOf()), children) {
+    public override val children: List<Asn1Encodable>
         get() = super.children!!
 
     private var index = 0
@@ -45,19 +45,19 @@ sealed class Asn1Structure(tag: UByte, children: List<ExtendedTlv>?) : ExtendedT
     fun peek() = children[index]
 }
 
-class Asn1Tagged(tag: UByte, val contained: ExtendedTlv) : ExtendedTlv(TLV(tag, byteArrayOf()), listOf(contained)) {
+class Asn1Tagged(tag: UByte, val contained: Asn1Encodable) : Asn1Encodable(TLV(tag, byteArrayOf()), listOf(contained)) {
     override fun toString() = "Tagged" + super.toString()
 }
 
-class Asn1Sequence(children: List<ExtendedTlv>) : Asn1Structure(DERTags.DER_SEQUENCE, children) {
+class Asn1Sequence(children: List<Asn1Encodable>) : Asn1Structure(DERTags.DER_SEQUENCE, children) {
     override fun toString() = "Sequence" + super.toString()
 }
 
-class Asn1Set(children: List<ExtendedTlv>?) : Asn1Structure(DERTags.DER_SET, children) {
+class Asn1Set(children: List<Asn1Encodable>?) : Asn1Structure(DERTags.DER_SET, children) {
     override fun toString() = "Set" + super.toString()
 }
 
-class Asn1Primitive(tag: UByte, content: ByteArray) : ExtendedTlv(TLV(tag, content), null) {
+class Asn1Primitive(tag: UByte, content: ByteArray) : Asn1Encodable(TLV(tag, content), null) {
     override fun toString() = "Primitive" + super.toString()
 }
 

@@ -1,6 +1,6 @@
 import at.asitplus.crypto.datatypes.X509Certificate
 import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.ExtendedTlv
+import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
 import at.asitplus.crypto.datatypes.asn1.parse
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
@@ -28,7 +28,7 @@ class X509CertParserTest : FreeSpec({
         println(jcaCert.encoded.encodeToString(Base16))
 
         "using new decoder" - {
-            val parsedCert = X509Certificate.decodeFromTlv(ExtendedTlv.parse(certBytes) as Asn1Sequence)
+            val parsedCert = X509Certificate.decodeFromTlv(Asn1Encodable.parse(certBytes) as Asn1Sequence)
             println(json.encodeToString(parsedCert))
             println(parsedCert.encodeToTlv().derEncoded.encodeToString(Base16()))
 

@@ -21,24 +21,24 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 
 
 class Asn1TreeBuilder() {
-    internal val elements = mutableListOf<ExtendedTlv>()
+    internal val elements = mutableListOf<Asn1Encodable>()
 
-    fun append(child: () -> ExtendedTlv) = apply { elements += child() }
-    fun tagged(tag: UByte, child: () -> ExtendedTlv) = apply { elements += Asn1Tagged(tag, child()) }
+    fun append(child: () -> Asn1Encodable) = apply { elements += child() }
+    fun tagged(tag: UByte, child: () -> Asn1Encodable) = apply { elements += Asn1Tagged(tag, child()) }
     fun bool(block: () -> Boolean) = apply { elements += block().encodeToTlv() }
     fun int(block: () -> Int) = apply { elements += block().encodeToTlv() }
     fun long(block: () -> Long) = apply { elements += block().encodeToTlv() }
 
     fun octetString(block: () -> ByteArray) = apply { elements += block().encodeToTlvOctetString() }
 
-    fun octetString(child: ExtendedTlv) = apply {
+    fun octetString(child: Asn1Encodable) = apply {
         octetString(block = {
             child.derEncoded
         })
     }
 
     fun bitString(block: () -> ByteArray) = apply { elements += block().encodeToTlvBitString() }
-    fun bitString(child: ExtendedTlv) = apply { bitString(block = { child.derEncoded }) }
+    fun bitString(child: Asn1Encodable) = apply { bitString(block = { child.derEncoded }) }
 
     fun oid(block: () -> String) = apply { elements += block().encodeTolvOid() }
 
@@ -95,19 +95,19 @@ private enum class CollectionType {
 }
 
 
-fun asn1Sequence(root: Asn1TreeBuilder.() -> Unit): ExtendedTlv {
+fun asn1Sequence(root: Asn1TreeBuilder.() -> Unit): Asn1Encodable {
     val seq = Asn1TreeBuilder()
     seq.root()
     return Asn1Sequence(seq.elements)
 }
 
-fun asn1Set(root: Asn1TreeBuilder.() -> Unit): ExtendedTlv {
+fun asn1Set(root: Asn1TreeBuilder.() -> Unit): Asn1Encodable {
     val seq = Asn1TreeBuilder()
     seq.root()
     return Asn1Set(seq.elements.sortedBy { it.tag })
 }
 
-fun asn1SetOf(root: Asn1TreeBuilder.() -> Unit): ExtendedTlv {
+fun asn1SetOf(root: Asn1TreeBuilder.() -> Unit): Asn1Encodable {
     val seq = Asn1TreeBuilder()
     seq.root()
     return Asn1Set(seq.elements)

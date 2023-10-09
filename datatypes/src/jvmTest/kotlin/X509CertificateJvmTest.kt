@@ -2,7 +2,6 @@ import at.asitplus.crypto.datatypes.*
 import at.asitplus.crypto.datatypes.asn1.*
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.booleans.shouldBeTrue
-import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -119,7 +118,7 @@ class X509CertificateJvmTest : FreeSpec({
         val certificateHolder = builder.build(contentSigner)
 
         val x509Certificate =
-            X509Certificate.decodeFromTlv(ExtendedTlv.parse(certificateHolder.encoded) as Asn1Sequence)
+            X509Certificate.decodeFromTlv(Asn1Encodable.parse(certificateHolder.encoded) as Asn1Sequence)
         x509Certificate.shouldNotBeNull()
 
         //x509Certificate.encodeToDer() shouldBe certificateHolder.encoded
@@ -164,7 +163,7 @@ class X509CertificateJvmTest : FreeSpec({
         val certificateHolder = builder.build(contentSigner)
 
         println(certificateHolder.encoded.encodeToString(Base16))
-        val parsed = ExtendedTlv.parse(certificateHolder.encoded)
+        val parsed = Asn1Encodable.parse(certificateHolder.encoded)
 
         println(parsed)
         val matches = listOf(parsed).expect {
@@ -212,14 +211,14 @@ class X509CertificateJvmTest : FreeSpec({
 })
 
 
-fun List<ExtendedTlv>.expect(init: SequenceReader.() -> Unit): Boolean {
+fun List<Asn1Encodable>.expect(init: SequenceReader.() -> Unit): Boolean {
     val seq = SequenceReader(this)
     seq.init()
     return seq.matches
 }
 
 
-class SequenceReader(var extendedTlvs: List<ExtendedTlv>) {
+class SequenceReader(var asn1Encodables: List<Asn1Encodable>) {
     var matches: Boolean = true
 
     fun sequence(function: SequenceReader.() -> Unit) = container(0x30u, function)
@@ -244,7 +243,7 @@ class SequenceReader(var extendedTlvs: List<ExtendedTlv>) {
             matches = false
     }
 
-    private fun takeAndDrop() = extendedTlvs.first()
-        .also { extendedTlvs = extendedTlvs.drop(1) }
+    private fun takeAndDrop() = asn1Encodables.first()
+        .also { asn1Encodables = asn1Encodables.drop(1) }
 
 }
