@@ -32,7 +32,8 @@ class Asn1TreeBuilder() {
     fun bitString(block: () -> ByteArray) = apply { elements += block().encodeToTlvBitString() }
     fun bitString(child: Asn1Encodable) = apply { bitString(block = { child.derEncoded }) }
 
-    fun oid(block: () -> String) = apply { elements += block().encodeTolvOid() }
+    fun hexEncoded(block: () -> String) = apply { elements += block().encodeTolvOid() }
+    fun oid(block: () -> ObjectIdentifier) = apply { elements += block().encodeToTlv() }
 
     fun utf8String(block: () -> String) = apply { elements += Asn1String.UTF8(block()).encodeToTlv() }
     fun printableString(block: () -> String) = apply { elements += Asn1String.Printable(block()).encodeToTlv() }
@@ -136,19 +137,20 @@ private fun Instant.encodeToAsn1ValuePart(): ByteArray {
 }
 
 private fun JwsAlgorithm.encodeToTlv() = when (this) {
-    JwsAlgorithm.ES256 -> Asn1Primitive(OBJECT_IDENTIFIER, "2A8648CE3D040302".decodeToByteArray(Base16))
-    JwsAlgorithm.ES384 -> Asn1Primitive(OBJECT_IDENTIFIER, "2A8648CE3D040303".decodeToByteArray(Base16))
+    JwsAlgorithm.ES256 -> KnownOIDs.ecdsaWithSHA256.encodeToTlv()
+    JwsAlgorithm.ES384 -> KnownOIDs.ecdsaWithSHA384.encodeToTlv()
+    JwsAlgorithm.ES512 -> KnownOIDs.ecdsaWithSHA512.encodeToTlv()
     else -> throw IllegalArgumentException("sigAlg: $this")
 }
 
 fun CryptoPublicKey.encodeToTlv() = when (this) {
     is CryptoPublicKey.Ec -> asn1Sequence {
         sequence {
-            oid { "2A8648CE3D0201" }
+            oid { KnownOIDs.ecPublicKey }
             when (curve) {
-                EcCurve.SECP_256_R_1 -> oid { "2A8648CE3D030107" }
-                EcCurve.SECP_384_R_1 -> oid { "2B81040022" }
-                EcCurve.SECP_521_R_1 -> oid { "2B81040023" }
+                EcCurve.SECP_256_R_1 -> oid { KnownOIDs.prime256v1 }
+                EcCurve.SECP_384_R_1 -> oid { KnownOIDs.secp384r1 }
+                EcCurve.SECP_521_R_1 -> oid { KnownOIDs.secp521r1 }
             }
 
         }
@@ -158,7 +160,7 @@ fun CryptoPublicKey.encodeToTlv() = when (this) {
     is CryptoPublicKey.Rsa -> {
         asn1Sequence {
             sequence {
-                oid { "2A864886F70D010101" }
+                oid { KnownOIDs.rsaEncryption }
                 asn1null()
             }
             bitString(asn1Sequence {

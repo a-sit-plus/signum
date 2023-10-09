@@ -160,7 +160,7 @@ sealed class Asn1String() {
 
 @Serializable
 sealed class DistingushedName() {
-    abstract val oid: String
+    abstract val oid: ObjectIdentifier
     abstract val value: Asn1Encodable
 
     @Serializable
@@ -171,7 +171,7 @@ sealed class DistingushedName() {
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
-            val OID = "550403"
+            val OID = KnownOIDs.commonName
         }
     }
 
@@ -183,7 +183,7 @@ sealed class DistingushedName() {
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
-            val OID = "550406"
+            val OID = KnownOIDs.countryName
         }
     }
 
@@ -195,7 +195,7 @@ sealed class DistingushedName() {
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
-            val OID = "55040A"
+            val OID = KnownOIDs.organizationName
         }
     }
 
@@ -207,14 +207,14 @@ sealed class DistingushedName() {
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
-            val OID = "55040B"
+            val OID = KnownOIDs.organizationalUnitName
         }
     }
 
     @Serializable
     @SerialName("?")
-    class Other(override val oid: String, override val value: Asn1Encodable) : DistingushedName() {
-        constructor(oid: String, str: Asn1String) : this(oid, Asn1Primitive(str.tag, str.value.encodeToByteArray()))
+    class Other(override val oid: ObjectIdentifier, override val value: Asn1Encodable) : DistingushedName() {
+        constructor(oid: ObjectIdentifier, str: Asn1String) : this(oid, Asn1Primitive(str.tag, str.value.encodeToByteArray()))
     }
 
     fun enCodeToTlv() = asn1Set {
@@ -229,20 +229,20 @@ sealed class DistingushedName() {
             if (input.children.size != 1) throw IllegalArgumentException("Invalid Subject Structure")
             val sequence = input.nextChild() as Asn1Sequence
             val oid = (sequence.nextChild() as Asn1Primitive).readOid()
-            if (oid.startsWith("5504")) {
+            if (oid.nodes.size>=3 && oid.nodes[0] == 2u &&oid.nodes[1]==5u && oid.nodes[2] ==4u) {
                 val asn1String = sequence.nextChild() as Asn1Primitive
                 val str = (asn1String).readString()
                 if (sequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous elements in RDN")
                 return when (oid) {
-                    DistingushedName.CommonName.OID -> DistingushedName.CommonName(str)
-                    DistingushedName.Country.OID -> DistingushedName.Country(str)
-                    DistingushedName.Organization.OID -> DistingushedName.Organization(str)
-                    DistingushedName.OrganizationalUnit.OID -> DistingushedName.OrganizationalUnit(str)
-                    else -> DistingushedName.Other(oid, asn1String)
+                    CommonName.OID -> CommonName(str)
+                    Country.OID -> Country(str)
+                    Organization.OID -> Organization(str)
+                    OrganizationalUnit.OID -> OrganizationalUnit(str)
+                    else -> Other(oid, asn1String)
                 }
 
             }
-            return DistingushedName.Other(oid, sequence.nextChild())
+            return Other(oid, sequence.nextChild())
                 .also { if (sequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous elements in RDN") }
         }
     }
@@ -250,7 +250,7 @@ sealed class DistingushedName() {
 
 @Serializable
 data class X509CertificateExtension(
-    val id: String, val critical: Boolean = false,
+    val id: ObjectIdentifier, val critical: Boolean = false,
     @Serializable(with = ByteArrayBase64Serializer::class) val value: ByteArray
 ) {
 

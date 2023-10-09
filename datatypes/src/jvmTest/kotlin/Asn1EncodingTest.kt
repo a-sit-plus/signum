@@ -1,5 +1,3 @@
-import at.asitplus.crypto.datatypes.Asn1String
-import at.asitplus.crypto.datatypes.DistingushedName
 import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
 import at.asitplus.crypto.datatypes.asn1.asn1Sequence
 import at.asitplus.crypto.datatypes.asn1.parse
@@ -39,8 +37,8 @@ class Asn1EncodingTest : FreeSpec({
             }
             sequence {
                 asn1null()
-                oid { "CAFEBABE" }
-                oid { "BADDAD" }
+                hexEncoded { "CAFEBABE" }
+                hexEncoded { "BADDAD" }
                 utcTime { instant }
             }
         }

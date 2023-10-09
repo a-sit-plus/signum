@@ -13,8 +13,6 @@ import at.asitplus.crypto.datatypes.asn1.BERTags.UTC_TIME
 import at.asitplus.crypto.datatypes.asn1.BERTags.UTF8_STRING
 import at.asitplus.crypto.datatypes.asn1.DERTags.isContainer
 import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
-import io.matthewnelson.encoding.base16.Base16
-import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Instant
 
 
@@ -64,7 +62,7 @@ private class Asn1Reader(input: ByteArray) {
 }
 
 fun Asn1Primitive.readOid() = decode(OBJECT_IDENTIFIER) {
-    it.encodeToString(Base16)
+    ObjectIdentifier.parse(it)
 }
 
 fun Asn1Primitive.readInt() = decode(INTEGER) {
@@ -91,8 +89,9 @@ fun Asn1Tagged.verify(tag: UByte): Asn1Encodable {
 
 fun JwsAlgorithm.Companion.decodeFromTlv(input: Asn1Primitive) =
     when (input.readOid()) {
-        "2A8648CE3D040303" -> JwsAlgorithm.ES384
-        "2A8648CE3D040302" -> JwsAlgorithm.ES256
+        KnownOIDs.ecdsaWithSHA512 -> JwsAlgorithm.ES512
+        KnownOIDs.ecdsaWithSHA384 -> JwsAlgorithm.ES384
+        KnownOIDs.ecdsaWithSHA256 -> JwsAlgorithm.ES256
         else -> TODO("Implement remaining algorithm oids")
     }
 
@@ -112,12 +111,12 @@ fun CryptoPublicKey.Companion.decodeFromTlv(src: Asn1Sequence): CryptoPublicKey 
 
     val oid = (keyInfo.nextChild() as Asn1Primitive).readOid()
 
-    if (oid == "2A8648CE3D0201") {
+    if (oid == KnownOIDs.ecPublicKey) {
         val curveOid = (keyInfo.nextChild() as Asn1Primitive).readOid()
         val curve = when (curveOid) {
-            "2A8648CE3D030107" -> EcCurve.SECP_256_R_1
-            "2B81040022" -> EcCurve.SECP_384_R_1
-            "2B81040023" -> EcCurve.SECP_521_R_1
+            KnownOIDs.prime256v1 -> EcCurve.SECP_256_R_1
+            KnownOIDs.secp384r1 -> EcCurve.SECP_384_R_1
+            KnownOIDs.secp521r1 -> EcCurve.SECP_521_R_1
             else -> throw IllegalArgumentException("Curve not supported: $curveOid")
         }
         val bitString = (src.nextChild() as Asn1Primitive).readBitString()
@@ -128,7 +127,7 @@ fun CryptoPublicKey.Companion.decodeFromTlv(src: Asn1Sequence): CryptoPublicKey 
         val x = xAndY.take(coordLen).toByteArray()
         val y = xAndY.drop(coordLen).take(coordLen).toByteArray()
         return CryptoPublicKey.Ec.fromCoordinates(curve, x, y)
-    } else if (oid == "2A864886F70D010101") {
+    } else if (oid == KnownOIDs.rsaEncryption) {
         (keyInfo.nextChild() as Asn1Primitive).readNull()
         val bitString = (src.nextChild() as Asn1Primitive).readBitString()
         val rsaSequence = Asn1Encodable.parse(bitString) as Asn1Sequence

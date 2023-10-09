@@ -1,19 +1,25 @@
 package at.asitplus.crypto.datatypes.asn1
 
-import kotlin.experimental.and
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
-class ObjectIdentifier(vararg val nodes: UInt) {
+@Serializable(with = ObjectIdSerializer::class)
+class ObjectIdentifier(@Transient vararg val nodes: UInt) {
 
     init {
         if (nodes.size < 2) throw IllegalArgumentException("at least two nodes required!")
         if (nodes[0] * 40u > UByte.MAX_VALUE.toUInt()) throw IllegalArgumentException("first node too lage!")
         //TODO more sanity checks
 
-        if(nodes.first()>2u) throw IllegalArgumentException("OID must start with either 1 or 2")
-        if(nodes[1]>39u) throw IllegalArgumentException("Second segment must be <40")
+        if (nodes.first() > 2u) throw IllegalArgumentException("OID must start with either 1 or 2")
+        if (nodes[1] > 39u) throw IllegalArgumentException("Second segment must be <40")
     }
 
-    constructor(oid: String) : this(*oid.split('.').map { it.toUInt() }.toUIntArray())
+    constructor(oid: String) : this(*(oid.split(if (oid.contains('.')) '.' else ' ')).map { it.toUInt() }.toUIntArray())
 
     override fun toString() = nodes.joinToString(separator = ".") { it.toString() }
 
@@ -29,7 +35,8 @@ class ObjectIdentifier(vararg val nodes: UInt) {
         if (this < 128u) return byteArrayOf(this.toByte())
         val septets = toString(2).reversed().chunked(7).map { it.reversed().toUByte(2) }.reversed()
 
-        return septets.mapIndexed { i, b -> (if (i < septets.size - 1) b or 0x80u else b).toByte() }.toByteArray()
+        return septets.mapIndexed { i, b -> (if (i < septets.size - 1) b or 0x80u else b).toByte() }
+            .toByteArray()
 
     }
 
@@ -48,14 +55,20 @@ class ObjectIdentifier(vararg val nodes: UInt) {
             if (oid.tag != BERTags.OBJECT_IDENTIFIER) throw IllegalArgumentException("Not an OID (tag: ${oid.tag}")
             if (oid.length < 1) throw IllegalArgumentException("Empty OIDs are not supported")
 
+            return parse(oid.content)
+
+        }
+
+        fun parse(rawValue: ByteArray): ObjectIdentifier {
+            if (rawValue.isEmpty()) throw IllegalArgumentException("Empty OIDs are not supported")
             val (first, second) =
-                if (oid.content[0] >= 80) {
-                    2u to oid.content[0].toUByte() - 80u
+                if (rawValue[0] >= 80) {
+                    2u to rawValue[0].toUByte() - 80u
                 } else {
-                    oid.content[0].toUByte() / 40u to oid.content[0].toUByte() % 40u
+                    rawValue[0].toUByte() / 40u to rawValue[0].toUByte() % 40u
                 }
 
-            var rest = oid.content.drop(1).map { it.toUByte() }
+            var rest = rawValue.drop(1).map { it.toUByte() }
             val collected = mutableListOf(first, second)
             while (rest.isNotEmpty()) {
                 if (rest[0].toUByte() < 128u) {
@@ -65,18 +78,28 @@ class ObjectIdentifier(vararg val nodes: UInt) {
                     var currentNode = mutableListOf<String>()
                     while (rest[0].toUByte() > 127u) {
                         val full = String(rest[0].toString(2).toCharArray())
-                            val uInt= String(full.drop(1).toCharArray()).padStart(7,'0')
+                        val uInt = String(full.drop(1).toCharArray()).padStart(7, '0')
                         currentNode += uInt
                         rest = rest.drop(1)
                     }
-                    currentNode +=String(rest[0].toString(2).toCharArray()).padStart(7,'0')
+                    currentNode += String(rest[0].toString(2).toCharArray()).padStart(7, '0')
                     rest = rest.drop(1)
-                    collected += currentNode.fold(""){acc, s -> acc+s }.toUInt(2)
+                    collected += currentNode.fold("") { acc, s -> acc + s }.toUInt(2)
                 }
             }
             return ObjectIdentifier(*collected.toUIntArray())
-
         }
+    }
+
+}
+
+object ObjectIdSerializer : KSerializer<ObjectIdentifier> {
+    override val descriptor = PrimitiveSerialDescriptor("OID", PrimitiveKind.STRING)
+
+    override fun deserialize(decoder: Decoder): ObjectIdentifier = ObjectIdentifier(decoder.decodeString())
+
+    override fun serialize(encoder: Encoder, value: ObjectIdentifier) {
+        encoder.encodeString(value.nodes.joinToString(separator = ".") { it.toString() })
     }
 
 }
