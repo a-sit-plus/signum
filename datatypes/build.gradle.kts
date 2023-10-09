@@ -21,6 +21,11 @@ kotlin {
                 implementation("io.matthewnelson.kotlin-components:encoding-base16:${DatatypeVersions.encoding}")
                 implementation("io.matthewnelson.kotlin-components:encoding-base64:${DatatypeVersions.encoding}")
             }
+            val commonTest by getting {
+                dependencies {
+                    implementation(at.asitplus.gradle.kotest("property"))
+                }
+            }
         }
 
         val jvmMain by getting{
