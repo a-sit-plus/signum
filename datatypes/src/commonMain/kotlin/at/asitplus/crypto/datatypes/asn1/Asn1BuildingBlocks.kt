@@ -41,6 +41,8 @@ sealed class Asn1Encodable protected constructor(
                 if (children != null) ", children=${children}" else ", content=${content.encodeToString(Base16)}" +
                         ")"
     }
+
+    fun toDerHexString()=derEncoded.encodeToString(Base16)
 }
 
 object Asn1EncodableSerializer : KSerializer<Asn1Encodable> {
