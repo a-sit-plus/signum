@@ -1,0 +1,282 @@
+SEQUENCE {
+  SEQUENCE {  # TBSCertificate
+    [0] {  # ENUMERATED
+      INTEGER { 2 }  # v3
+    }  # version
+    INTEGER { `01d8b3c6028f6b0e` }  # serialNumber
+    SEQUENCE {  # AlgorithmIdentifier
+      # sha256WithRSAEncryption
+      OBJECT_IDENTIFIER { 1.2.840.113549.1.1.11 }  # algorithm
+      NULL {}  # parameters
+    }  # signature
+    SEQUENCE {  # Name
+      SET {
+        SEQUENCE {
+          # countryName
+          OBJECT_IDENTIFIER { 2.5.4.6 }
+          PrintableString { "GB" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # stateOrProvinceName
+          OBJECT_IDENTIFIER { 2.5.4.8 }
+          PrintableString { "London" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # localityName
+          OBJECT_IDENTIFIER { 2.5.4.7 }
+          PrintableString { "London" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # organizationName
+          OBJECT_IDENTIFIER { 2.5.4.10 }
+          PrintableString { "Google" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # organizationUnitName
+          OBJECT_IDENTIFIER { 2.5.4.11 }
+          PrintableString { "Eng" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # commonName
+          OBJECT_IDENTIFIER { 2.5.4.3 }
+          PrintableString { "FakeIntermediateAuthority" }
+        }
+      }
+    }  # issuer
+  
+    SEQUENCE {  # Validity
+      UTCTime { "230811064847Z" }  # notBefore
+      UTCTime { "260412064847Z" }  # notAfter
+    }  # validity
+    SEQUENCE {  # Name
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # countryName
+          OBJECT_IDENTIFIER { 2.5.4.6 }  # type
+          PrintableString { "US" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # stateOrProvinceName
+          OBJECT_IDENTIFIER { 2.5.4.8 }  # type
+          UTF8String { "California" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # localityName
+          OBJECT_IDENTIFIER { 2.5.4.7 }  # type
+          UTF8String { "Mountain View" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # organizationName
+          OBJECT_IDENTIFIER { 2.5.4.10 }  # type
+          UTF8String { "Google Inc" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # commonName
+          OBJECT_IDENTIFIER { 2.5.4.3 }  # type
+          UTF8String { "*.google.com" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # surname
+          OBJECT_IDENTIFIER { 2.5.4.4 }  # type
+          UTF8String { "RFC5280 s4.2.1.9 'The pathLenConstraint field ... gives the maximum number of non-self-issued intermediate certificates that may follow this certificate in a valid certification path.'" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # givenName
+          OBJECT_IDENTIFIER { 2.5.4.42 }  # type
+          UTF8String { "Intermediate CA cert used to sign" }  # value
+        }
+      }
+    }  # subject
+    # Generated from cfg/leaf.private.pem via:
+    #  - openssl req -new -x509 -config cfg/fake-intermediate-ca.cnf -days 365 -extensions v3_ca -inform pem -key cfg/leaf.private.pem -outform der -out temp.der
+    #  - der2ascii -i temp.der -o temp.ascii
+    #  - manually extract the subjectPublicKeyInfo
+    SEQUENCE {  # SubjectPublicKeyInfo
+      SEQUENCE {  # AlgorithmIdentifier
+        # ecPublicKey
+        OBJECT_IDENTIFIER { 1.2.840.10045.2.1 }  # algorithm
+        # secp256r1
+        OBJECT_IDENTIFIER { 1.2.840.10045.3.1.7 }  # parameters
+      }
+      BIT_STRING { `0004baddaef3f00303d55f2255e1bf1d16cdf0c01e8476f970223c1ab31af94924c4a01429f6b1a02e4b863b9f71f3ad149ef2d1c4a8d814438ab0eb78ce37a32410` }  # subjectPublicKey
+    }  # subjectPublicKeyInfo
+    [3] {
+      SEQUENCE {  # Extensions
+        SEQUENCE {  # Extension
+          # extKeyUsage
+          OBJECT_IDENTIFIER { 2.5.29.37 }  # extnID = id-ce-extKeyUsage
+          OCTET_STRING {
+            SEQUENCE {  # ExtKeyUsageSyntax
+              # serverAuth
+              OBJECT_IDENTIFIER { 1.3.6.1.5.5.7.3.1 }  # KeyPurposeId
+              # clientAuth
+              OBJECT_IDENTIFIER { 1.3.6.1.5.5.7.3.2 }  # KeyPurposeId
+            }  # extnValue
+          }  # value
+        }
+        SEQUENCE {  # Extension
+          # subjectAltName
+          OBJECT_IDENTIFIER { 2.5.29.17 }  # extnID = id-ce-subjectAltName
+          OCTET_STRING {
+            SEQUENCE {  # GeneralName
+              [2 PRIMITIVE] { "*.google.com" }  # dNSName
+              [2 PRIMITIVE] { "*.android.com" }  # dNSName
+              [2 PRIMITIVE] { "*.appengine.google.com" }  # dNSName
+              [2 PRIMITIVE] { "*.cloud.google.com" }  # dNSName
+              [2 PRIMITIVE] { "*.google-analytics.com" }  # dNSName
+              [2 PRIMITIVE] { "*.google.ca" }  # dNSName
+              [2 PRIMITIVE] { "*.google.cl" }  # dNSName
+              [2 PRIMITIVE] { "*.google.co.in" }  # dNSName
+              [2 PRIMITIVE] { "*.google.co.jp" }  # dNSName
+              [2 PRIMITIVE] { "*.google.co.uk" }  # dNSName
+              [2 PRIMITIVE] { "*.google.com.ar" }  # dNSName
+              [2 PRIMITIVE] { "*.google.com.au" }  # dNSName
+              [2 PRIMITIVE] { "*.google.com.br" }  # dNSName
+              [2 PRIMITIVE] { "*.google.com.co" }  # dNSName
+              [2 PRIMITIVE] { "*.google.com.mx" }  # dNSName
+              [2 PRIMITIVE] { "*.google.com.tr" }  # dNSName
+              [2 PRIMITIVE] { "*.google.com.vn" }  # dNSName
+              [2 PRIMITIVE] { "*.google.de" }  # dNSName
+              [2 PRIMITIVE] { "*.google.es" }  # dNSName
+              [2 PRIMITIVE] { "*.google.fr" }  # dNSName
+              [2 PRIMITIVE] { "*.google.hu" }  # dNSName
+              [2 PRIMITIVE] { "*.google.it" }  # dNSName
+              [2 PRIMITIVE] { "*.google.nl" }  # dNSName
+              [2 PRIMITIVE] { "*.google.pl" }  # dNSName
+              [2 PRIMITIVE] { "*.google.pt" }  # dNSName
+              [2 PRIMITIVE] { "*.googleadapis.com" }  # dNSName
+              [2 PRIMITIVE] { "*.googleapis.cn" }  # dNSName
+              [2 PRIMITIVE] { "*.googlecommerce.com" }  # dNSName
+              [2 PRIMITIVE] { "*.googlevideo.com" }  # dNSName
+              [2 PRIMITIVE] { "*.gstatic.cn" }  # dNSName
+              [2 PRIMITIVE] { "*.gstatic.com" }  # dNSName
+              [2 PRIMITIVE] { "*.gvt1.com" }  # dNSName
+              [2 PRIMITIVE] { "*.gvt2.com" }  # dNSName
+              [2 PRIMITIVE] { "*.metric.gstatic.com" }  # dNSName
+              [2 PRIMITIVE] { "*.urchin.com" }  # dNSName
+              [2 PRIMITIVE] { "*.url.google.com" }  # dNSName
+              [2 PRIMITIVE] { "*.youtube-nocookie.com" }  # dNSName
+              [2 PRIMITIVE] { "*.youtube.com" }  # dNSName
+              [2 PRIMITIVE] { "*.youtubeeducation.com" }  # dNSName
+              [2 PRIMITIVE] { "*.ytimg.com" }  # dNSName
+              [2 PRIMITIVE] { "android.clients.google.com" }  # dNSName
+              [2 PRIMITIVE] { "android.com" }  # dNSName
+              [2 PRIMITIVE] { "g.co" }  # dNSName
+              [2 PRIMITIVE] { "goo.gl" }  # dNSName
+              [2 PRIMITIVE] { "google-analytics.com" }  # dNSName
+              [2 PRIMITIVE] { "google.com" }  # dNSName
+              [2 PRIMITIVE] { "googlecommerce.com" }  # dNSName
+              [2 PRIMITIVE] { "urchin.com" }  # dNSName
+              [2 PRIMITIVE] { "youtu.be" }  # dNSName
+              [2 PRIMITIVE] { "youtube.com" }  # dNSName
+              [2 PRIMITIVE] { "youtubeeducation.com" }  # dNSName
+            }  # extnValue
+          }  # value
+        }
+        SEQUENCE {  # Extension
+          # keyUsage
+          OBJECT_IDENTIFIER { 2.5.29.15 }  # extnID = id-ce-keyUsage
+          BOOLEAN { `ff` }  # critical
+          OCTET_STRING {
+            BIT_STRING { `07` `8080` }  # KeyUsage = b100000001 = digitalSignature, decipherOnly
+          }  # extnValue
+        }
+        SEQUENCE {  # Extension
+          # authorityInfoAccess
+          OBJECT_IDENTIFIER { 1.3.6.1.5.5.7.1.1 }  # extnID = id-pe-authorityInfoAccess
+          OCTET_STRING {
+            SEQUENCE {  # AuthorityInfoAccessSyntax
+              SEQUENCE {  # AccessDescription
+                # caIssuers
+                OBJECT_IDENTIFIER { 1.3.6.1.5.5.7.48.2 }  # accessMethod
+                [6 PRIMITIVE] { "http://pki.google.com/GIAG2.crt" }  # accessLocation
+              }
+              SEQUENCE {  # AccessDescription
+                # ocsp
+                OBJECT_IDENTIFIER { 1.3.6.1.5.5.7.48.1 }  # accessMethod
+                [6 PRIMITIVE] { "http://clients1.google.com/ocsp" }  # accessLocation
+              }
+            }
+          }  # extnValue
+        }
+        SEQUENCE {  # Extension
+          # authorityKeyIdentifier
+          OBJECT_IDENTIFIER { 2.5.29.35 }  # extnID = id-ce-authorityKeyIdentifier
+          OCTET_STRING {
+            SEQUENCE {  # AuthorityKeyIdentifier
+              [0 PRIMITIVE] { `dbf46e63eee2dcbebf38604f9831d06444f163d8` }  # KeyIdentifier
+            }
+          }  # extnValue
+        }
+        SEQUENCE {  # Extension
+          # basicConstraints
+          OBJECT_IDENTIFIER { 2.5.29.19 }  # extnID = id-ce-basicConstraints
+          BOOLEAN { `ff` }  # critical
+          OCTET_STRING {
+            SEQUENCE {}  # BasicConstraints
+          }  # extnValue
+        }
+        SEQUENCE {  # Extension
+          # certificatePolicies
+          OBJECT_IDENTIFIER { 2.5.29.32 }  # extnID = id-ce-certificatePolicies
+          OCTET_STRING {
+            SEQUENCE {  # CertificatePolicies
+              SEQUENCE {  # PolicyInformation
+                OBJECT_IDENTIFIER { 1.3.6.1.4.1.11129.2.5.1 }  # CertPolicyId = 'Google Internet Authority G2'
+              }
+              SEQUENCE {  # PolicyInformation
+                # organization-validated
+                OBJECT_IDENTIFIER { 2.23.140.1.2.2 }  # CertPolicyId
+              }
+            }  # certificatePolicies
+          }  # extnValue
+        }
+        SEQUENCE {  # Extension
+          # cRLDistributionPoints
+          OBJECT_IDENTIFIER { 2.5.29.31 }  # extnID = id-ce-cRLDistributionPoints
+          OCTET_STRING {
+            SEQUENCE {  # CRLDistributionPoints
+              SEQUENCE {  # DistributionPoint
+                [0] {  # DistributionPointName
+                  [0] {  # GeneralNames
+                    [6 PRIMITIVE] { "http://pki.google.com/GIAG2.crl" }  # uniformResourceIdentifier
+                  }  # fullName
+                }  # distributionPoint
+              }
+            }
+          }  # extnValue
+        }
+      }  # extensions
+    }
+  }  # tbsCertificate
+  SEQUENCE {
+    OBJECT_IDENTIFIER { 1.2.840.113549.1.1.11 }
+    NULL {}
+  }
+  BIT_STRING {
+    `00`
+    `973bfc78bf04b186a76e4b049f786e039fdbe61a9e91fdb0c7de0ce8192c0b600513ad31bbe9dd600187f75d95ec00ef21a2a4a59e7a9f07a1885b87b74a234ad0b12cb4461d7acd83d80255f40ca28cae198497a46e00ff44dd1f39f76964d20fd33726c1aea1e95a2e9b65b432d8043d59ee192261be1e0f8e34e3cea7ef95865bc819170131fec297b42d87618a4b828d69abc486523f265957a1bf6dd004fe9a8bf112142b954d8891910aa6a505b4edb8c77552456520d9c997227068177db71ad8215de3f570e8cf454c9a5fc2152f2fd7ffe7baca6f2ac43866392829d7388ab3576b5f782467ec96af119a495c38b368a4b988a94e075a0ddea41db4`
+  }
+}

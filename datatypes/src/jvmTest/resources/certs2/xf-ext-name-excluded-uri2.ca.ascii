@@ -1,0 +1,185 @@
+SEQUENCE {
+  SEQUENCE {  # TBSCertificate
+    [0] {  # ENUMERATED
+      INTEGER { 2 }  # v3
+    }  # version
+    INTEGER { `01e3ddeb15584c1c` }  # serialNumber
+    SEQUENCE {  # AlgorithmIdentifier
+      # sha256WithRSAEncryption
+      OBJECT_IDENTIFIER { 1.2.840.113549.1.1.11 }  # algorithm
+      NULL {}  # parameters
+    }  # signature
+    SEQUENCE {  # Name
+      SET {
+        SEQUENCE {
+          # countryName
+          OBJECT_IDENTIFIER { 2.5.4.6 }
+          PrintableString { "GB" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # stateOrProvinceName
+          OBJECT_IDENTIFIER { 2.5.4.8 }
+          PrintableString { "London" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # localityName
+          OBJECT_IDENTIFIER { 2.5.4.7 }
+          PrintableString { "London" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # organizationName
+          OBJECT_IDENTIFIER { 2.5.4.10 }
+          PrintableString { "Google" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # organizationUnitName
+          OBJECT_IDENTIFIER { 2.5.4.11 }
+          PrintableString { "Eng" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # commonName
+          OBJECT_IDENTIFIER { 2.5.4.3 }
+          PrintableString { "FakeCertificateAuthority" }
+        }
+      }
+    }  # issuer
+    SEQUENCE {  # Validity
+      UTCTime { "230811064847Z" }  # notBefore
+      UTCTime { "260412064847Z" }  # notAfter
+    }  # validity
+    SEQUENCE {  # Name
+      SET {
+        SEQUENCE {
+          # countryName
+          OBJECT_IDENTIFIER { 2.5.4.6 }
+          PrintableString { "GB" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # stateOrProvinceName
+          OBJECT_IDENTIFIER { 2.5.4.8 }
+          PrintableString { "London" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # localityName
+          OBJECT_IDENTIFIER { 2.5.4.7 }
+          PrintableString { "London" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # organizationName
+          OBJECT_IDENTIFIER { 2.5.4.10 }
+          PrintableString { "Google" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # organizationUnitName
+          OBJECT_IDENTIFIER { 2.5.4.11 }
+          PrintableString { "Eng" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # commonName
+          OBJECT_IDENTIFIER { 2.5.4.3 }
+          PrintableString { "FakeIntermediateAuthority" }
+        }
+      }
+    }  # issuer
+  
+    # Generated from cfg/fake-intermediate-ca.private.pem via:
+    #  - openssl req -new -x509 -config cfg/fake-intermediate-ca.cnf -days 365 -extensions v3_ca -inform pem -key cfg/fake-intermediate-ca.private.pem -outform der -out temp.der
+    #  - der2ascii -i temp.der -o temp.ascii
+    #  - manually extract the subjectPublicKeyInfo
+    SEQUENCE {  # SubjectPublicKeyInfo
+      SEQUENCE {  # AlgorithmIdentifier
+        # rsaEncryption
+        OBJECT_IDENTIFIER { 1.2.840.113549.1.1.1 }  # algorithm
+        NULL {}  # parameters
+      }
+      BIT_STRING {
+        `00`  # no unused bits
+        SEQUENCE {
+          INTEGER { `00caa40c7a6de92622d46719c82940c6bdcb4439e7fa84011db304154837fa55d5984b2aff140ed6ce276b29d5e88d39ebbe97be5321d2a3f227ef46681c6f847785b468787ad43d5049898f9e6b4ace74c00fc868387eae82ae910c6d8724c448f3e08ea83e0cf8e1e87fa1dd29f4d0eb3ab238770f1a4ea614c4b1db5bedf9a4f09d1ed8a8d04028d6fc69440b3737e7d6fd29b07036470089815ac951cf2da08076fcd85728878171e4104b391651f285eda03441bff35228f1cdc4dc31f92614fdb665512f76e98294fc2abe1aa05854d8b5dee3960807503d0e3526e53ac767e88db6f13461f60c47d2fd0b51cfa69997d426a11214dda20ee5684d75f7c5` }
+          INTEGER { 65537 }
+        }
+      }  # subjectPublicKey
+    }  # subjectPublicKeyInfo
+    [3] {
+      SEQUENCE {  # Extensions
+        SEQUENCE {
+          # basicConstraints
+          OBJECT_IDENTIFIER { 2.5.29.19 }  # extnID = id-ce-basicConstraints
+          BOOLEAN { `ff` }  # critical
+          OCTET_STRING {
+            SEQUENCE {
+              BOOLEAN { `ff` }  # cA
+              INTEGER { 0 }  # pathLenConstraint
+            }  # extnValue
+          }  # value
+        }
+        SEQUENCE {  # Extension
+          # extKeyUsage
+          OBJECT_IDENTIFIER { 2.5.29.15 }  # extnID = id-ce-keyUsage
+          BOOLEAN { `ff` }  # critical
+          OCTET_STRING {
+            BIT_STRING { `07` `ff80` }  # 7 unused bits, b111111111
+          }  # value
+        }
+        SEQUENCE {  # Extension
+          # authorityKeyIdentifier
+          OBJECT_IDENTIFIER { 2.5.29.35 }  # extnID = id-ce-authorityKeyIdentifier
+          OCTET_STRING {
+            SEQUENCE {  # AuthorityKeyIdentifier
+              [0 PRIMITIVE] { `01020304` }  # KeyIdentifier
+            }
+          }  # extnValue
+        }
+        SEQUENCE {  # Extension
+          # subjectKeyIdentifier
+          OBJECT_IDENTIFIER { 2.5.29.14 }  # extnID = id-ce-subjectKeyIdentifier
+          OCTET_STRING {
+            OCTET_STRING { `dbf46e63eee2dcbebf38604f9831d06444f163d8` }  # SubjectKeyIdentifier
+          }  # extnValue
+        }
+        SEQUENCE {
+          # nameConstraints
+          OBJECT_IDENTIFIER { 2.5.29.30 }  # extnID = id-ce-nameConstraints
+          BOOLEAN { `ff` }  # critical
+          OCTET_STRING {
+            SEQUENCE {  # NameConstraints
+              [1] {  # GeneralSubtrees
+                SEQUENCE {  # GeneralSubtree
+                  [6 PRIMITIVE] { "excluded.com" }  # IA5String uniformResourceIdentifier
+                }  # base
+              }  # excludedSubtrees
+            }  # extnValue
+          }  # value
+        }
+      }  # extensions
+    }
+  }  # tbsCertificate
+  SEQUENCE {
+    OBJECT_IDENTIFIER { 1.2.840.113549.1.1.11 }
+    NULL {}
+  }
+  BIT_STRING {
+    `00`
+    `8aec3b4cd76ca73059d055bf31d20e8c0da354c1797532c15574946ab87729435fae13d43b017bb32ba0f3d58059cc20fc6be7f1e136025035fd27a5a56c39f1d0bfa5af1f0e428a630a70b1bac602f0ee72d2c0e4e536e08278fadfac287783d22e103a3bfe705bc999d60aeb9267ca1d9806058a37e50350ab371881b4416f07fb085e81806d648589f203161367f976b15572d1c13b0f3481a1becca25b059821708b501a4d5d472822c9d4ef77f3ad53647d8823b07ea930e42b8532bf3ed24031a86f0c7807a53ca6e18940ef23e42d6ec1524df40e673467bc055ec153c63353c54475928a8e2dc59fc904a706d96a1972ef86348002282f5859223ac6`
+  }
+}
