@@ -17,18 +17,20 @@ class OidTest : FreeSpec({
             ObjectIdentifier.decodeFromTlv(oid.encodeToTlv()) shouldBe oid
         }
 
-        checkAll(iterations = 15, Arb.positiveInt(39)) { second ->
-            checkAll(iterations = 1000, Arb.intArray(Arb.int(0..128), Arb.positiveInt(Int.MAX_VALUE))) {
-                listOf(1, 2).forEach { first ->
-                    val oid = ObjectIdentifier(
-                        first.toUInt(),
-                        second.toUInt(),
-                        *(it.map { it.toUInt() }.toUIntArray())
-                    )
+        "Automated" - {
+            checkAll(iterations = 15, Arb.positiveInt(39)) { second ->
+                checkAll(iterations = 1000, Arb.intArray(Arb.int(0..128), Arb.positiveInt(Int.MAX_VALUE))) {
+                    listOf(1, 2).forEach { first ->
+                        val oid = ObjectIdentifier(
+                            first.toUInt(),
+                            second.toUInt(),
+                            *(it.map { it.toUInt() }.toUIntArray())
+                        )
 
-                    val parsed = ObjectIdentifier.decodeFromTlv(oid.encodeToTlv())
-                    if (parsed != oid) println("is:     $oid\nparsed: $parsed")
-                    parsed shouldBe oid
+                        val parsed = ObjectIdentifier.decodeFromTlv(oid.encodeToTlv())
+                        if (parsed != oid) println("is:     $oid\nparsed: $parsed")
+                        parsed shouldBe oid
+                    }
                 }
             }
         }

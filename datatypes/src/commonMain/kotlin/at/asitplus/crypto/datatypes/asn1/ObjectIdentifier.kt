@@ -31,7 +31,19 @@ class ObjectIdentifier(@Transient vararg val nodes: UInt) {
 
     //based on the very concise explanation found on SO: https://stackoverflow.com/a/25786793
     private fun UInt.encodeOidNode(): ByteArray {
-        //TODO maybe move to BitSet to avoid const of stringification?
+
+        /**
+         * BitSet-Based implementation would be:
+         *         val septettes = KmmBitSet(this.toLong().encodeToByteArray().dropWhile { it == 0.toByte() }.reversed()
+         *             .toMutableList()
+         *         ).chunked(7)
+         *         for (i in 1..<septettes.size) {
+         *             septettes[i][7] = true
+         *         }
+         *       return septettes.map { it.toByteArray().firstOrNull() ?: 0 }.reversed().toByteArray()
+         *  However, creation of our bitSet is grossly inefficient as it is not a value class in order to be usable also on iOS
+         *  Hence, we create a lot of objects for interop reasons, which is why it is probably better, if this stays for now
+         */
         if (this < 128u) return byteArrayOf(this.toByte())
         val septets = toString(2).reversed().chunked(7).map { it.reversed().toUByte(2) }.reversed()
 
