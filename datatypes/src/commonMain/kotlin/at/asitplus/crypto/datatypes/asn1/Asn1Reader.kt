@@ -6,12 +6,16 @@ import at.asitplus.crypto.datatypes.EcCurve
 import at.asitplus.crypto.datatypes.JwsAlgorithm
 import at.asitplus.crypto.datatypes.asn1.BERTags.BIT_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.GENERALIZED_TIME
+import at.asitplus.crypto.datatypes.asn1.BERTags.IA5_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.INTEGER
 import at.asitplus.crypto.datatypes.asn1.BERTags.NULL
+import at.asitplus.crypto.datatypes.asn1.BERTags.NUMERIC_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.OBJECT_IDENTIFIER
 import at.asitplus.crypto.datatypes.asn1.BERTags.PRINTABLE_STRING
+import at.asitplus.crypto.datatypes.asn1.BERTags.UNIVERSAL_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.UTC_TIME
 import at.asitplus.crypto.datatypes.asn1.BERTags.UTF8_STRING
+import at.asitplus.crypto.datatypes.asn1.BERTags.VISIBLE_STRING
 import at.asitplus.crypto.datatypes.asn1.DERTags.isContainer
 import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import kotlinx.datetime.Instant
@@ -76,7 +80,11 @@ fun Asn1Primitive.readLong() = decode(INTEGER) {
 
 fun Asn1Primitive.readString(): Asn1String =
     if (tag == UTF8_STRING) Asn1String.UTF8(String(content))
+    else if (tag == UNIVERSAL_STRING) Asn1String.Universal(String(content))
+    else if (tag == IA5_STRING) Asn1String.IA5(String(content))
     else if (tag == PRINTABLE_STRING) Asn1String.Printable(String(content))
+    else if (tag == NUMERIC_STRING) Asn1String.Numeric(String(content))
+    else if (tag == VISIBLE_STRING) Asn1String.Visible(String(content))
     else TODO("Support other string tag $tag")
 
 fun Asn1Primitive.readInstant() =

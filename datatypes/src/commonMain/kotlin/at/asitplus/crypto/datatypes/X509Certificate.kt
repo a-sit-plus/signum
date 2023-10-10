@@ -1,8 +1,31 @@
 package at.asitplus.crypto.datatypes
 
-import at.asitplus.crypto.datatypes.asn1.*
+import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
+import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
+import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
+import at.asitplus.crypto.datatypes.asn1.Asn1Set
+import at.asitplus.crypto.datatypes.asn1.Asn1Tagged
+import at.asitplus.crypto.datatypes.asn1.Asn1TreeBuilder
+import at.asitplus.crypto.datatypes.asn1.BERTags
 import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import at.asitplus.crypto.datatypes.asn1.DERTags.toImplicitTag
+import at.asitplus.crypto.datatypes.asn1.KnownOIDs
+import at.asitplus.crypto.datatypes.asn1.ObjectIdentifier
+import at.asitplus.crypto.datatypes.asn1.asn1Sequence
+import at.asitplus.crypto.datatypes.asn1.asn1Set
+import at.asitplus.crypto.datatypes.asn1.decode
+import at.asitplus.crypto.datatypes.asn1.decodeBitString
+import at.asitplus.crypto.datatypes.asn1.decodeFromTlv
+import at.asitplus.crypto.datatypes.asn1.encodeToAsn1GeneralizedTime
+import at.asitplus.crypto.datatypes.asn1.encodeToAsn1UtcTime
+import at.asitplus.crypto.datatypes.asn1.encodeToBitString
+import at.asitplus.crypto.datatypes.asn1.encodeToTlv
+import at.asitplus.crypto.datatypes.asn1.readBitString
+import at.asitplus.crypto.datatypes.asn1.readInstant
+import at.asitplus.crypto.datatypes.asn1.readInt
+import at.asitplus.crypto.datatypes.asn1.readOid
+import at.asitplus.crypto.datatypes.asn1.readString
+import at.asitplus.crypto.datatypes.asn1.verify
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.KSerializer
@@ -145,9 +168,43 @@ sealed class Asn1String() {
     }
 
     @Serializable
+    @SerialName("UniversalString")
+    class Universal(override val value: String) : Asn1String() {
+        override val tag = BERTags.UNIVERSAL_STRING
+    }
+
+    @Serializable
+    @SerialName("VisibleString")
+    class Visible(override val value: String) : Asn1String() {
+        override val tag = BERTags.VISIBLE_STRING
+    }
+
+    @Serializable
+    @SerialName("IA5String")
+    class IA5(override val value: String) : Asn1String() {
+        override val tag = BERTags.IA5_STRING
+    }
+
+    @Serializable
     @SerialName("PrintableString")
     class Printable(override val value: String) : Asn1String() {
+        init {
+            Regex("[a-zA-Z0-9 '()+,-./:=?]*").matchEntire(value)
+                ?: throw IllegalArgumentException("Input contains invalid chars: '$value'")
+        }
+
         override val tag = BERTags.PRINTABLE_STRING
+    }
+
+    @Serializable
+    @SerialName("NumericString")
+    class Numeric(override val value: String) : Asn1String() {
+        init {
+            Regex("[0-9 ]*").matchEntire(value)
+                ?: throw IllegalArgumentException("Input contains invalid chars: '$value'")
+        }
+
+        override val tag = BERTags.NUMERIC_STRING
     }
 
     fun encodeToTlv() = Asn1Primitive(tag, value.encodeToByteArray())
