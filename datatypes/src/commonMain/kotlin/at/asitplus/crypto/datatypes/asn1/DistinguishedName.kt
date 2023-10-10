@@ -77,7 +77,7 @@ sealed class DistinguishedName() {
             if (input.children.size != 1) throw IllegalArgumentException("Invalid Subject Structure")
             val sequence = input.nextChild() as Asn1Sequence
             val oid = (sequence.nextChild() as Asn1Primitive).readOid()
-            if (oid.nodes.size >= 3 && oid.nodes[0] == 2u && oid.nodes[1] == 5u && oid.nodes[2] == 4u) {
+            if (oid.nodes.size >= 3 && oid.toString().startsWith("2.5.4.")) {
                 val asn1String = sequence.nextChild() as Asn1Primitive
                 val str = runCatching { (asn1String).readString() }
                 if (sequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous elements in RDN")

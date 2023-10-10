@@ -34,6 +34,18 @@ sealed class Asn1String() {
     }
 
     @Serializable
+    @SerialName("TeletexString")
+    class Teletex(override val value: String) : Asn1String() {
+        override val tag = BERTags.T61_STRING
+    }
+
+    @Serializable
+    @SerialName("BMPString")
+    class BMP(override val value: String) : Asn1String() {
+        override val tag = BERTags.BMP_STRING
+    }
+
+    @Serializable
     @SerialName("PrintableString")
     class Printable(override val value: String) : Asn1String() {
         init {
