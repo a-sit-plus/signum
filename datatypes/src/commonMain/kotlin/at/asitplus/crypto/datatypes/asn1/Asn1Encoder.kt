@@ -2,11 +2,7 @@
 
 package at.asitplus.crypto.datatypes.asn1
 
-import at.asitplus.crypto.datatypes.Asn1String
-import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.EcCurve
-import at.asitplus.crypto.datatypes.JwsAlgorithm
-import at.asitplus.crypto.datatypes.TbsCertificate
+import at.asitplus.crypto.datatypes.*
 import at.asitplus.crypto.datatypes.asn1.BERTags.BIT_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.BOOLEAN
 import at.asitplus.crypto.datatypes.asn1.BERTags.GENERALIZED_TIME
@@ -124,11 +120,11 @@ private fun Int.encodeToDer() = encodeToByteArray().dropWhile { it == 0.toByte()
 
 private fun Long.encodeToDer() = encodeToByteArray().dropWhile { it == 0.toByte() }.toByteArray()
 
- fun Instant.encodeToAsn1UtcTime(): ByteArray {
+fun Instant.encodeToAsn1UtcTime(): ByteArray {
     return encodeToAsn1Time().drop(2).encodeToByteArray()
 }
 
- fun Instant.encodeToAsn1GeneralizedTime(): ByteArray {
+fun Instant.encodeToAsn1GeneralizedTime(): ByteArray {
     return encodeToAsn1Time().encodeToByteArray()
 }
 

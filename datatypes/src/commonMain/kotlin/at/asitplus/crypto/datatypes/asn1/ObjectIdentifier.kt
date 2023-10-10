@@ -6,6 +6,9 @@ import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlin.experimental.and
+import kotlin.experimental.or
+import kotlin.math.ceil
 
 @Serializable(with = ObjectIdSerializer::class)
 class ObjectIdentifier(@Transient vararg val nodes: UInt) {
@@ -31,25 +34,12 @@ class ObjectIdentifier(@Transient vararg val nodes: UInt) {
 
     //based on the very concise explanation found on SO: https://stackoverflow.com/a/25786793
     private fun UInt.encodeOidNode(): ByteArray {
-
-        /**
-         * BitSet-Based implementation would be:
-         *         val septettes = KmmBitSet(this.toLong().encodeToByteArray().dropWhile { it == 0.toByte() }.reversed()
-         *             .toMutableList()
-         *         ).chunked(7)
-         *         for (i in 1..<septettes.size) {
-         *             septettes[i][7] = true
-         *         }
-         *       return septettes.map { it.toByteArray().firstOrNull() ?: 0 }.reversed().toByteArray()
-         *  However, creation of our bitSet is grossly inefficient as it is not a value class in order to be usable also on iOS
-         *  Hence, we create a lot of objects for interop reasons, which is why it is probably better, if this stays for now
-         */
         if (this < 128u) return byteArrayOf(this.toByte())
-        val septets = toString(2).reversed().chunked(7).map { it.reversed().toUByte(2) }.reversed()
-
-        return septets.mapIndexed { i, b -> (if (i < septets.size - 1) b or 0x80u else b).toByte() }
-            .toByteArray()
-
+        val septettes = toCompactByteArray().toSeptetts()
+        for (i in 1..<septettes.size) {
+            septettes[i] = septettes[i].setBit(7)
+        }
+        return septettes.reversedArray()
     }
 
     val bytes: ByteArray by lazy {
@@ -80,23 +70,21 @@ class ObjectIdentifier(@Transient vararg val nodes: UInt) {
                     rawValue[0].toUByte() / 40u to rawValue[0].toUByte() % 40u
                 }
 
-            var rest = rawValue.drop(1).map { it.toUByte() }
+            var index = 1
             val collected = mutableListOf(first, second)
-            while (rest.isNotEmpty()) {
-                if (rest[0].toUByte() < 128u) {
-                    collected += rest[0].toUInt()
-                    rest = rest.drop(1)
+            while (index < rawValue.size) {
+                if (rawValue[index] >= 0) {
+                    collected += rawValue[index].toUInt()
+                    index++
                 } else {
-                    var currentNode = mutableListOf<String>()
-                    while (rest[0].toUByte() > 127u) {
-                        val full = String(rest[0].toString(2).toCharArray())
-                        val uInt = String(full.drop(1).toCharArray()).padStart(7, '0')
-                        currentNode += uInt
-                        rest = rest.drop(1)
+                    var currentNode = mutableListOf<Byte>()
+                    while (rawValue[index] < 0) {
+                        currentNode += rawValue[index] //+= parsed
+                        index++
                     }
-                    currentNode += String(rest[0].toString(2).toCharArray()).padStart(7, '0')
-                    rest = rest.drop(1)
-                    collected += currentNode.fold("") { acc, s -> acc + s }.toUInt(2)
+                    currentNode += rawValue[index]
+                    index++
+                    collected += currentNode.septettsToUInt()
                 }
             }
             return ObjectIdentifier(*collected.toUIntArray())
@@ -114,4 +102,66 @@ object ObjectIdSerializer : KSerializer<ObjectIdentifier> {
         encoder.encodeString(value.nodes.joinToString(separator = ".") { it.toString() })
     }
 
+}
+
+
+private fun ByteArray.toSeptetts(): ByteArray {
+    var pos = 0
+    val chunks = mutableListOf<Byte>()
+    while (pos < this.size * 8) {
+        var chunk = 0.toByte()
+
+        var fresh = true
+        while (fresh || (pos % 7 != 0)) {
+            fresh = false
+            if (this.getBit(pos)) chunk = chunk.setBit(pos % 7)
+            pos++
+        }
+        if ((pos >= this.size * 8)) {
+            if (chunk != 0.toByte()) chunks += chunk
+        } else chunks += chunk
+    }
+    return chunks.toByteArray()
+}
+
+private inline fun ByteArray.getBit(index: Int): Boolean =
+    if (index < 0) throw IndexOutOfBoundsException("index = $index")
+    else kotlin.runCatching {
+        this[getByteIndex(index)].getBit(getBitIndex(index))
+    }.getOrElse { false }
+
+private inline fun ByteArray.setBit(i: Int) {
+    this[getByteIndex(i)] = this[getByteIndex(i)].setBit(getBitIndex(i))
+}
+
+private inline fun Byte.setBit(i: Int) = ((1 shl getBitIndex(i)).toByte() or this)
+private inline fun getByteIndex(i: Int) = (i / 8)
+private inline fun getBitIndex(i: Int) = (i % 8)
+
+private inline fun Byte.getBit(index: Int): Boolean = (((1 shl index).toByte() and this) != 0.toByte())
+
+private fun UInt.toCompactByteArray(): ByteArray =
+    if (this < 256u) byteArrayOf(this.toUByte().toByte())
+    else if (this < 65535u) byteArrayOf((this).toByte(), (this shr 8).toByte())
+    else if (this < 16777216u) byteArrayOf((this).toByte(), (this shr 8).toByte(), (this shr 16).toByte())
+    else byteArrayOf((this).toByte(), (this shr 8).toByte(), (this shr 16).toByte(), (this shr 24).toByte())
+
+private fun UInt.Companion.decodeFrom(input: ByteArray): UInt {
+    var result = 0u
+    for (i in input.indices.reversed()) {
+        result = (result shl Byte.SIZE_BITS) or (input[i].toUByte().toUInt())
+    }
+    return result
+}
+
+private fun MutableList<Byte>.septettsToUInt(): UInt {
+    val result = ByteArray(ceil(size.toFloat() * 7f / 8f).toInt())
+    var globalIndex = 0
+    for (index in indices.reversed()) {
+        for (i in 0..<7) {
+            if (this[index].getBit(i)) result.setBit(globalIndex)
+            globalIndex++
+        }
+    }
+    return UInt.decodeFrom(result)
 }

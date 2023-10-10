@@ -26,7 +26,6 @@ class OidTest : FreeSpec({
                             second.toUInt(),
                             *(it.map { it.toUInt() }.toUIntArray())
                         )
-
                         val parsed = ObjectIdentifier.decodeFromTlv(oid.encodeToTlv())
                         if (parsed != oid) println("is:     $oid\nparsed: $parsed")
                         parsed shouldBe oid
