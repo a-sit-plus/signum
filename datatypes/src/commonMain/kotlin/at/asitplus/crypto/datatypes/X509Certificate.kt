@@ -92,7 +92,7 @@ data class TbsCertificate(
         fun decodeFromTlv(input: Asn1Sequence) = runCatching {
             //TODO make sure to always check for superfluous data
             val version = input.nextChild().let {
-                ((it as Asn1Tagged).verify(0u) as Asn1Primitive).readInt()
+                ((it as Asn1Tagged).verify(0u).single() as Asn1Primitive).readInt()
             }
             val serialNumber = (input.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
             val sigAlg = JwsAlgorithm.decodeFromTlv(input.nextChild() as Asn1Sequence)
@@ -120,7 +120,7 @@ data class TbsCertificate(
                 } else null
             }
             val extensions = if (input.hasMoreChildren()) {
-                ((input.nextChild() as Asn1Tagged).verify(3u) as Asn1Sequence).children.map {
+                ((input.nextChild() as Asn1Tagged).verify(3u).single() as Asn1Sequence).children.map {
                     X509CertificateExtension.decodeFromTlv(it as Asn1Sequence)
                 }
             } else null

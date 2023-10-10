@@ -41,7 +41,7 @@ private class Asn1Reader(input: ByteArray) {
             else if (tlv.isExplicitlyTagged()) result.add(
                 Asn1Tagged(
                     tlv.tag,
-                    Asn1Reader(tlv.content).doParse().firstOrNull()
+                    Asn1Reader(tlv.content).doParse()
                 )
             )
             else result.add(Asn1Primitive(tlv.tag, tlv.content))
@@ -96,9 +96,9 @@ fun Asn1Primitive.readInstant() =
 fun Asn1Primitive.readBitString() = decode(BIT_STRING, ::decodeBitString)
 fun Asn1Primitive.readNull() = decode(NULL) {}
 
-fun Asn1Tagged.verify(tag: UByte): Asn1Encodable {
+fun Asn1Tagged.verify(tag: UByte): List<Asn1Encodable> {
     if (this.tag != tag.toExplicitTag()) throw IllegalArgumentException("Tag ${this.tag} does not match expected tag ${tag.toExplicitTag()}")
-    return this.contained ?: Asn1Primitive(NULL, byteArrayOf())
+    return this.contained
 }
 
 fun JwsAlgorithm.Companion.decodeFromTlv(input: Asn1Sequence): JwsAlgorithm {

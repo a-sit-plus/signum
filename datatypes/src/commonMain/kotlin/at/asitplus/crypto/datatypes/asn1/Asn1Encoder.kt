@@ -110,7 +110,7 @@ private fun Long.encodeToTlv() = Asn1Primitive(INTEGER, encodeToDer())
 
 private fun ByteArray.encodeToTlvOctetString() = Asn1Primitive(OCTET_STRING, this)
 
-private fun ByteArray.encodeToTlvBitString() = Asn1Primitive(BIT_STRING, encodeToBitString())
+fun ByteArray.encodeToTlvBitString() = Asn1Primitive(BIT_STRING, encodeToBitString())
 fun ByteArray.encodeToBitString() = byteArrayOf(0x00) + this
 
 private fun String.encodeTolvOid() = Asn1Primitive(OBJECT_IDENTIFIER, decodeToByteArray(Base16()))

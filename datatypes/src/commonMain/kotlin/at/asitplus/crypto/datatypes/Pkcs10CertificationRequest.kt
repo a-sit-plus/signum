@@ -23,7 +23,7 @@ data class TbsCertificationRequest(
     val version: Int = 0,
     val subjectName: List<DistinguishedName>,
     val publicKey: CryptoPublicKey,
-    val extensions: List<X509CertificateExtension>? = null
+    val extensions: List<Pkcs10CertificationRequestAttribute>? = null
 ) {
 
     fun encodeToTlv() = asn1Sequence {
@@ -33,15 +33,8 @@ data class TbsCertificationRequest(
         append {
             Asn1Tagged(
                 0u.toExplicitTag(),
-                extensions?.let {
-                    if (it.isNotEmpty()) {
-                        asn1Sequence {
-                            it.forEach { ext -> append { ext.encodeToTlv() } }
-                        }
-                    } else {
-                        null
-                    }
-                })
+                extensions?.map { it.encodeToTlv() } ?: listOf()
+            )
         }
     }
 
@@ -53,13 +46,8 @@ data class TbsCertificationRequest(
             }
             val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(input.nextChild() as Asn1Sequence)
             val extensions = if (input.hasMoreChildren()) {
-                when (val encodable = (input.nextChild() as Asn1Tagged).verify(0u)) {
-                    is Asn1Sequence -> encodable.children.map {
-                        X509CertificateExtension.decodeFromTlv(it as Asn1Sequence)
-                    }
-
-                    else -> null
-                }
+                (input.nextChild() as Asn1Tagged).verify(0u)
+                    .map { Pkcs10CertificationRequestAttribute.decodeFromTlv(it as Asn1Sequence) }
             } else null
 
             if (input.hasMoreChildren()) throw IllegalArgumentException("Superfluous Data in CSR Structure")
