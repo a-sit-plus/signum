@@ -1,7 +1,7 @@
-import at.asitplus.crypto.datatypes.X509Certificate
-import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
+import at.asitplus.crypto.datatypes.asn1.Asn1Element
 import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
 import at.asitplus.crypto.datatypes.asn1.parse
+import at.asitplus.crypto.datatypes.pki.X509Certificate
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
@@ -34,7 +34,7 @@ class X509CertParserTest : FreeSpec({
 
             println(jcaCert.encoded.encodeToString(Base16))
 
-            val parsedCert = X509Certificate.decodeFromTlv(Asn1Encodable.parse(certBytes) as Asn1Sequence)
+            val parsedCert = X509Certificate.decodeFromTlv(Asn1Element.parse(certBytes) as Asn1Sequence)
             println(json.encodeToString(parsedCert))
             println(parsedCert.encodeToTlv().derEncoded.encodeToString(Base16()))
 
@@ -66,7 +66,7 @@ class X509CertParserTest : FreeSpec({
 
 
         withData(nameFn = { it.subjectDN.name }, uniqueCerts.sortedBy { it.subjectDN.name }) { crt ->
-            val own = X509Certificate.decodeFromTlv(Asn1Encodable.parse(crt.encoded) as Asn1Sequence)
+            val own = X509Certificate.decodeFromTlv(Asn1Element.parse(crt.encoded) as Asn1Sequence)
                 .encodeToTlv().derEncoded
             withClue(
                 "Expect: ${crt.encoded.encodeToString(Base16)}\n" +
@@ -82,21 +82,21 @@ class X509CertParserTest : FreeSpec({
         val (ok, faulty) = readGoogleCerts()
 
         "OK certs should parse" - {
-            withData(nameFn = { it.first }, ok) {
-                X509Certificate.decodeFromTlv(Asn1Encodable.parse(it.second) as Asn1Sequence)
+            val good= ok.filterNot { it.first == "ok-inherited-keyparams.ca.der" || it.first == "ok-inherited-keyparams.leaf.der" } //filter out certs with DSA pubKeys
+
+            withData(nameFn = { it.first }, good) {
+                X509Certificate.decodeFromTlv(Asn1Element.parse(it.second) as Asn1Sequence)
             }
         }
         "Faulty certs should glitch out" - {
-            withData(nameFn = { it.first }, faulty) { crt->
-               runCatching {
-                   shouldThrow<Throwable> {
-                       X509Certificate.decodeFromTlv(Asn1Encodable.parse(crt.second) as Asn1Sequence)
-                   }
-               }.getOrElse { println("W: ${crt.first} parsed too leniently") }
+            withData(nameFn = { it.first }, faulty) { crt ->
+                runCatching {
+                    shouldThrow<Throwable> {
+                        X509Certificate.decodeFromTlv(Asn1Element.parse(crt.second) as Asn1Sequence)
+                    }
+                }.getOrElse { println("W: ${crt.first} parsed too leniently") }
             }
         }
-
-
     }
 })
 

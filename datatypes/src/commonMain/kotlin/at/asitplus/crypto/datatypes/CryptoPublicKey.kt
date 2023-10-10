@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
 @Serializable
-sealed class CryptoPublicKey {
+sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
 
     //must be serializable, therefore <String,String>
     val additionalProperties = mutableMapOf<String, String>()
@@ -22,13 +22,86 @@ sealed class CryptoPublicKey {
     @Transient
     val derEncoded by lazy { encodeToTlv().derEncoded }
 
-    companion object {
+    override fun encodeToTlv() = when (this) {
+        is Ec -> asn1Sequence {
+            sequence {
+                oid { KnownOIDs.ecPublicKey }
+                when (curve) {
+                    EcCurve.SECP_256_R_1 -> oid { KnownOIDs.prime256v1 }
+                    EcCurve.SECP_384_R_1 -> oid { KnownOIDs.secp384r1 }
+                    EcCurve.SECP_521_R_1 -> oid { KnownOIDs.secp521r1 }
+                }
+            }
+            bitString {
+                (byteArrayOf(BERTags.OCTET_STRING.toByte()) + x.ensureSize(curve.coordinateLengthBytes) + y.ensureSize(
+                    curve.coordinateLengthBytes
+                ))
+            }
+        }
+
+        is Rsa -> {
+            asn1Sequence {
+                sequence {
+                    oid { KnownOIDs.rsaEncryption }
+                    asn1null()
+                }
+                bitString(asn1Sequence {
+                    append {
+                        Asn1Primitive(
+                            BERTags.INTEGER,
+                            n.ensureSize(bits.number / 8u)
+                                .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
+                    }
+                    append { Asn1Primitive(BERTags.INTEGER, e) }
+                })
+            }
+        }
+    }
+
+    companion object : Asn1Decodable<Asn1Sequence, CryptoPublicKey> {
 
         fun fromKeyId(it: String): CryptoPublicKey? {
             val (xCoordinate, yCoordinate) = MultibaseHelper.calcEcPublicKeyCoords(it)
                 ?: return null
             val curve = EcCurve.entries.find { it.coordinateLengthBytes.toInt() == xCoordinate.size } ?: return null
             return Ec(curve = curve, x = xCoordinate, y = yCoordinate)
+        }
+
+        override fun decodeFromTlv(src: Asn1Sequence): CryptoPublicKey {
+            if (src.children.size != 2) throw IllegalArgumentException("Invalid SPKI Structure!")
+            val keyInfo = src.nextChild() as Asn1Sequence
+            if (keyInfo.children.size != 2) throw IllegalArgumentException("Superfluous data in  SPKI!")
+
+            val oid = (keyInfo.nextChild() as Asn1Primitive).readOid()
+
+            if (oid == KnownOIDs.ecPublicKey) {
+                val curveOid = (keyInfo.nextChild() as Asn1Primitive).readOid()
+                val curve = when (curveOid) {
+                    KnownOIDs.prime256v1 -> at.asitplus.crypto.datatypes.EcCurve.SECP_256_R_1
+                    KnownOIDs.secp384r1 -> at.asitplus.crypto.datatypes.EcCurve.SECP_384_R_1
+                    KnownOIDs.secp521r1 -> at.asitplus.crypto.datatypes.EcCurve.SECP_521_R_1
+                    else -> throw IllegalArgumentException("Curve not supported: $curveOid")
+                }
+                val bitString = (src.nextChild() as Asn1Primitive).readBitString()
+                val xAndY = bitString.drop(1).toByteArray()
+                val coordLen = curve.coordinateLengthBytes.toInt()
+                val x = xAndY.take(coordLen).toByteArray()
+                val y = xAndY.drop(coordLen).take(coordLen).toByteArray()
+                return Ec.fromCoordinates(curve, x, y)
+            } else if (oid == KnownOIDs.rsaEncryption) {
+                (keyInfo.nextChild() as Asn1Primitive).readNull()
+                val bitString = (src.nextChild() as Asn1Primitive).readBitString()
+                val rsaSequence = Asn1Element.parse(bitString) as Asn1Sequence
+                val n = (rsaSequence.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
+                val e = (rsaSequence.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
+                if (rsaSequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous data in SPKI!")
+                return Rsa(
+                    at.asitplus.crypto.datatypes.CryptoPublicKey.Rsa.Size.of(((n.size - 1) * 8).toUInt())
+                        ?: throw IllegalArgumentException("Illegal RSA key size: ${(n.size - 1) * 8}"), n, e
+                )
+            } else {
+                throw IllegalArgumentException("Unsupported Key Type: $oid")
+            }
         }
     }
 

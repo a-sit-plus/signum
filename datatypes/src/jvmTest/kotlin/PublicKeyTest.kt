@@ -1,7 +1,6 @@
 import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
+import at.asitplus.crypto.datatypes.asn1.Asn1Element
 import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.decodeFromTlv
 import at.asitplus.crypto.datatypes.asn1.parse
 import at.asitplus.crypto.datatypes.fromJcaKey
 import at.asitplus.crypto.datatypes.getPublicKey
@@ -48,7 +47,7 @@ class PublicKeyTest : FreeSpec({
                 own.derEncoded shouldBe pubKey.encoded
                 CryptoPublicKey.fromKeyId(own.keyId) shouldBe own
                 own.getPublicKey().encoded shouldBe pubKey.encoded
-                CryptoPublicKey.decodeFromTlv(Asn1Encodable.parse(own.derEncoded) as Asn1Sequence) shouldBe own
+                CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.derEncoded) as Asn1Sequence) shouldBe own
             }
         }
     }
@@ -78,7 +77,7 @@ class PublicKeyTest : FreeSpec({
                     .toASN1Primitive() as ASN1Sequence).elementAt(1) as DERBitString).bytes
                 own.iosEncoded shouldBe keyBytes //PKCS#1
                 own.derEncoded shouldBe pubKey.encoded //PKCS#8
-                CryptoPublicKey.decodeFromTlv(Asn1Encodable.parse(own.derEncoded) as Asn1Sequence) shouldBe own
+                CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.derEncoded) as Asn1Sequence) shouldBe own
                 own.getPublicKey().encoded shouldBe pubKey.encoded
             }
         }

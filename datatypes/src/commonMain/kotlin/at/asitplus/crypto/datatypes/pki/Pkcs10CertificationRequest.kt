@@ -1,16 +1,9 @@
-package at.asitplus.crypto.datatypes
+package at.asitplus.crypto.datatypes.pki
 
-import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
-import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.Asn1Set
-import at.asitplus.crypto.datatypes.asn1.Asn1Tagged
+import at.asitplus.crypto.datatypes.CryptoPublicKey
+import at.asitplus.crypto.datatypes.JwsAlgorithm
+import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
-import at.asitplus.crypto.datatypes.asn1.DistinguishedName
-import at.asitplus.crypto.datatypes.asn1.asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.decodeFromTlv
-import at.asitplus.crypto.datatypes.asn1.readBitString
-import at.asitplus.crypto.datatypes.asn1.readInt
-import at.asitplus.crypto.datatypes.asn1.verify
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import kotlinx.serialization.Serializable
 
@@ -24,9 +17,9 @@ data class TbsCertificationRequest(
     val subjectName: List<DistinguishedName>,
     val publicKey: CryptoPublicKey,
     val extensions: List<Pkcs10CertificationRequestAttribute>? = null
-) {
+) : Asn1Encodable<Asn1Sequence> {
 
-    fun encodeToTlv() = asn1Sequence {
+    override fun encodeToTlv() = asn1Sequence {
         int { version }
         sequence { subjectName.forEach { append { it.encodeToTlv() } } }
         subjectPublicKey { publicKey }
@@ -38,19 +31,19 @@ data class TbsCertificationRequest(
         }
     }
 
-    companion object {
-        fun decodeFromTlv(input: Asn1Sequence) = runCatching {
-            val version = (input.nextChild() as Asn1Primitive).readInt()
-            val subject = (input.nextChild() as Asn1Sequence).children.map {
+    companion object : Asn1Decodable<Asn1Sequence, TbsCertificationRequest> {
+        override fun decodeFromTlv(src: Asn1Sequence) = runCatching {
+            val version = (src.nextChild() as Asn1Primitive).readInt()
+            val subject = (src.nextChild() as Asn1Sequence).children.map {
                 DistinguishedName.decodeFromTlv(it as Asn1Set)
             }
-            val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(input.nextChild() as Asn1Sequence)
-            val extensions = if (input.hasMoreChildren()) {
-                (input.nextChild() as Asn1Tagged).verify(0u)
+            val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(src.nextChild() as Asn1Sequence)
+            val extensions = if (src.hasMoreChildren()) {
+                (src.nextChild() as Asn1Tagged).verify(0u)
                     .map { Pkcs10CertificationRequestAttribute.decodeFromTlv(it as Asn1Sequence) }
             } else null
 
-            if (input.hasMoreChildren()) throw IllegalArgumentException("Superfluous Data in CSR Structure")
+            if (src.hasMoreChildren()) throw IllegalArgumentException("Superfluous Data in CSR Structure")
 
             TbsCertificationRequest(
                 version = version,
@@ -72,9 +65,9 @@ data class CertificationRequest(
     val signatureAlgorithm: JwsAlgorithm,
     @Serializable(with = ByteArrayBase64Serializer::class)
     val signature: ByteArray
-) {
+) : Asn1Encodable<Asn1Sequence> {
 
-    fun encodeToTlv() = asn1Sequence {
+    override fun encodeToTlv() = asn1Sequence {
         tbsCertificationRequest { tbsCsr }
         sigAlg { signatureAlgorithm }
         bitString { signature }
@@ -100,9 +93,9 @@ data class CertificationRequest(
         return result
     }
 
-    companion object {
+    companion object : Asn1Decodable<Asn1Sequence, CertificationRequest> {
 
-        fun decodeFromTlv(src: Asn1Sequence): CertificationRequest {
+        override fun decodeFromTlv(src: Asn1Sequence): CertificationRequest {
             val tbsCsr = TbsCertificationRequest.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val sigAlg = JwsAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val signature = (src.nextChild() as Asn1Primitive).readBitString()

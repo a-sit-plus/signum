@@ -3,8 +3,8 @@
 package at.asitplus.crypto.datatypes.jws
 
 import at.asitplus.crypto.datatypes.JwsAlgorithm
-import at.asitplus.crypto.datatypes.X509Certificate
-import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
+import at.asitplus.crypto.datatypes.pki.X509Certificate
+import at.asitplus.crypto.datatypes.asn1.Asn1Element
 import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
 import at.asitplus.crypto.datatypes.asn1.parse
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
@@ -83,7 +83,7 @@ data class JwsHeader(
         jsonWebKey
             ?: keyId?.let { JsonWebKey.fromKeyId(it) }
             ?: certificateChain?.firstOrNull()
-                ?.let { X509Certificate.decodeFromTlv(Asn1Encodable.parse(it) as Asn1Sequence).tbsCertificate.publicKey.toJsonWebKey() }
+                ?.let { X509Certificate.decodeFromTlv(Asn1Element.parse(it) as Asn1Sequence).tbsCertificate.publicKey.toJsonWebKey() }
     }
 
     companion object {

@@ -11,6 +11,8 @@ import at.asitplus.crypto.datatypes.asn1.BERTags.NULL
 import at.asitplus.crypto.datatypes.asn1.BERTags.OBJECT_IDENTIFIER
 import at.asitplus.crypto.datatypes.asn1.BERTags.OCTET_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.UTC_TIME
+import at.asitplus.crypto.datatypes.pki.TbsCertificate
+import at.asitplus.crypto.datatypes.pki.TbsCertificationRequest
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -19,19 +21,19 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 
 
 class Asn1TreeBuilder() {
-    internal val elements = mutableListOf<Asn1Encodable>()
+    internal val elements = mutableListOf<Asn1Element>()
 
-    fun append(child: () -> Asn1Encodable) = apply { elements += child() }
-    fun tagged(tag: UByte, child: () -> Asn1Encodable) = apply { elements += Asn1Tagged(tag, child()) }
+    fun append(child: () -> Asn1Element) = apply { elements += child() }
+    fun tagged(tag: UByte, child: () -> Asn1Element) = apply { elements += Asn1Tagged(tag, child()) }
     fun bool(block: () -> Boolean) = apply { elements += block().encodeToTlv() }
     fun int(block: () -> Int) = apply { elements += block().encodeToTlv() }
     fun long(block: () -> Long) = apply { elements += block().encodeToTlv() }
 
     fun octetString(block: () -> ByteArray) = apply { elements += block().encodeToTlvOctetString() }
-    fun octetString(child: Asn1Encodable) = apply { octetString(block = { child.derEncoded }) }
+    fun octetString(child: Asn1Element) = apply { octetString(block = { child.derEncoded }) }
 
     fun bitString(block: () -> ByteArray) = apply { elements += block().encodeToTlvBitString() }
-    fun bitString(child: Asn1Encodable) = apply { bitString(block = { child.derEncoded }) }
+    fun bitString(child: Asn1Element) = apply { bitString(block = { child.derEncoded }) }
 
     fun hexEncoded(block: () -> String) = apply { elements += block().encodeTolvOid() }
     fun oid(block: () -> ObjectIdentifier) = apply { elements += block().encodeToTlv() }
@@ -65,8 +67,8 @@ class Asn1TreeBuilder() {
         elements += if (type == CollectionType.SEQUENCE) Asn1Sequence(seq.elements) else Asn1Set(seq.elements.let {
             if (type == CollectionType.SET) it.sortedBy { it.tag }
             else {
-                if (it.any { elem -> elem.tag != it.first().tag }) throw IllegalArgumentException("SET_OF must only contain elements fo the same tag")
-                it.sortedBy { it.derEncoded.encodeToString(Base16) } //TODo this is inefficient
+                if (it.any { elem -> elem.tag != it.first().tag }) throw IllegalArgumentException("SET_OF must only contain elements of the same tag")
+                it.sortedBy { it.derEncoded.encodeToString(Base16) } //TODO this is inefficient
             }
         })
     }
@@ -84,19 +86,19 @@ private enum class CollectionType {
 }
 
 
-fun asn1Sequence(root: Asn1TreeBuilder.() -> Unit): Asn1Encodable {
+fun asn1Sequence(root: Asn1TreeBuilder.() -> Unit): Asn1Sequence {
     val seq = Asn1TreeBuilder()
     seq.root()
     return Asn1Sequence(seq.elements)
 }
 
-fun asn1Set(root: Asn1TreeBuilder.() -> Unit): Asn1Encodable {
+fun asn1Set(root: Asn1TreeBuilder.() -> Unit): Asn1Set {
     val seq = Asn1TreeBuilder()
     seq.root()
     return Asn1Set(seq.elements.sortedBy { it.tag })
 }
 
-fun asn1SetOf(root: Asn1TreeBuilder.() -> Unit): Asn1Encodable {
+fun asn1SetOf(root: Asn1TreeBuilder.() -> Unit): Asn1Set {
     val seq = Asn1TreeBuilder()
     seq.root()
     return Asn1Set(seq.elements)
@@ -150,66 +152,6 @@ fun Instant.encodeToAsn1Time(): String {
     val seconds = matchResult.groups[6]?.value
         ?: throw IllegalArgumentException("Instant serialization seconds failed: $value")
     return "$year$month$day$hour$minute$seconds" + "Z"
-}
-
-private fun JwsAlgorithm.encodeToTlv() = when (this) {
-    JwsAlgorithm.ES256 -> asn1Sequence { oid { KnownOIDs.ecdsaWithSHA256 } }
-    JwsAlgorithm.ES384 -> asn1Sequence { oid { KnownOIDs.ecdsaWithSHA384 } }
-    JwsAlgorithm.ES512 -> asn1Sequence { oid { KnownOIDs.ecdsaWithSHA512 } }
-    JwsAlgorithm.RS256 -> asn1Sequence {
-        oid { KnownOIDs.sha256WithRSAEncryption }
-        asn1null()
-    }
-
-    JwsAlgorithm.RS384 -> asn1Sequence {
-        oid { KnownOIDs.sha384WithRSAEncryption }
-        asn1null()
-    }
-
-    JwsAlgorithm.RS512 -> asn1Sequence {
-        oid { KnownOIDs.sha512WithRSAEncryption }
-        asn1null()
-    }
-
-    JwsAlgorithm.UNOFFICIAL_RSA_SHA1 -> asn1Sequence {
-        oid { KnownOIDs.sha1WithRSAEncryption }
-        asn1null()
-    }
-
-    JwsAlgorithm.HMAC256 -> throw IllegalArgumentException("sigAlg: $this")
-}
-
-fun CryptoPublicKey.encodeToTlv() = when (this) {
-    is CryptoPublicKey.Ec -> asn1Sequence {
-        sequence {
-            oid { KnownOIDs.ecPublicKey }
-            when (curve) {
-                EcCurve.SECP_256_R_1 -> oid { KnownOIDs.prime256v1 }
-                EcCurve.SECP_384_R_1 -> oid { KnownOIDs.secp384r1 }
-                EcCurve.SECP_521_R_1 -> oid { KnownOIDs.secp521r1 }
-            }
-
-        }
-        bitString { (byteArrayOf(OCTET_STRING.toByte()) + x.ensureSize(curve.coordinateLengthBytes) + y.ensureSize(curve.coordinateLengthBytes)) }
-    }
-
-    is CryptoPublicKey.Rsa -> {
-        asn1Sequence {
-            sequence {
-                oid { KnownOIDs.rsaEncryption }
-                asn1null()
-            }
-            bitString(asn1Sequence {
-                append {
-                    Asn1Primitive(INTEGER,
-                        n.ensureSize(bits.number / 8u)
-                            .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
-                }
-                append { Asn1Primitive(BERTags.INTEGER, e) }
-            })
-
-        }
-    }
 }
 
 fun Int.encodeLength(): ByteArray {

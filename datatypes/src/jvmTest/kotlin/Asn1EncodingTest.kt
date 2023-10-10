@@ -1,4 +1,4 @@
-import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
+import at.asitplus.crypto.datatypes.asn1.Asn1Element
 import at.asitplus.crypto.datatypes.asn1.asn1Sequence
 import at.asitplus.crypto.datatypes.asn1.parse
 import io.kotest.core.spec.style.FreeSpec
@@ -12,7 +12,7 @@ class Asn1EncodingTest : FreeSpec({
 
 
     "Parsing and encoding results in the same bytes" {
-        val tree = Asn1Encodable.parse(certBytes)
+        val tree = Asn1Element.parse(certBytes)
         tree.derEncoded shouldBe certBytes
     }
 

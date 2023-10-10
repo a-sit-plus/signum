@@ -22,7 +22,7 @@ import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import kotlinx.datetime.Instant
 
 
-fun Asn1Encodable.Companion.parse(input: ByteArray) = Asn1Reader(input).doParse().let {
+fun Asn1Element.Companion.parse(input: ByteArray) = Asn1Reader(input).doParse().let {
     if (it.size != 1) throw IllegalArgumentException("Multiple ASN1 structures found")
     it.first()
 }
@@ -32,8 +32,8 @@ private class Asn1Reader(input: ByteArray) {
     private var rest = input
 
     @Throws(IllegalArgumentException::class)
-    fun doParse(): List<Asn1Encodable> {
-        val result = mutableListOf<Asn1Encodable>()
+    fun doParse(): List<Asn1Element> {
+        val result = mutableListOf<Asn1Element>()
         while (rest.isNotEmpty()) {
             val tlv = read()
             if (tlv.isSequence()) result.add(Asn1Sequence(Asn1Reader(tlv.content).doParse()))
@@ -96,31 +96,10 @@ fun Asn1Primitive.readInstant() =
 fun Asn1Primitive.readBitString() = decode(BIT_STRING, ::decodeBitString)
 fun Asn1Primitive.readNull() = decode(NULL) {}
 
-fun Asn1Tagged.verify(tag: UByte): List<Asn1Encodable> {
+fun Asn1Tagged.verify(tag: UByte): List<Asn1Element> {
     if (this.tag != tag.toExplicitTag()) throw IllegalArgumentException("Tag ${this.tag} does not match expected tag ${tag.toExplicitTag()}")
     return this.contained
 }
-
-fun JwsAlgorithm.Companion.decodeFromTlv(input: Asn1Sequence): JwsAlgorithm {
-    return when (val oid = (input.nextChild() as Asn1Primitive).readOid()) {
-        KnownOIDs.ecdsaWithSHA512 -> JwsAlgorithm.ES512
-        KnownOIDs.ecdsaWithSHA384 -> JwsAlgorithm.ES384
-        KnownOIDs.ecdsaWithSHA256 -> JwsAlgorithm.ES256
-        else -> {
-            val alg = when (oid) {
-                KnownOIDs.sha1WithRSAEncryption -> JwsAlgorithm.UNOFFICIAL_RSA_SHA1
-                KnownOIDs.sha256WithRSAEncryption -> JwsAlgorithm.RS256
-                KnownOIDs.sha384WithRSAEncryption -> JwsAlgorithm.RS384
-                KnownOIDs.sha512WithRSAEncryption -> JwsAlgorithm.RS512
-                else -> TODO("Implement remaining algorithm oid: $oid")
-            }
-            if (input.nextChild().tag != NULL) throw IllegalArgumentException("RSA Params not supported yet")
-            if (input.hasMoreChildren()) throw IllegalArgumentException("Superfluous Content in Signature")
-            alg
-        }
-    }
-}
-
 
 inline fun <reified T> Asn1Primitive.decode(tag: UByte, decode: (content: ByteArray) -> T) = runCatching {
     if (tag != this.tag) throw IllegalArgumentException("Tag mismatch. Expected: $tag, is: ${this.tag}")
@@ -129,43 +108,6 @@ inline fun <reified T> Asn1Primitive.decode(tag: UByte, decode: (content: ByteAr
 
 fun decodeBitString(input: ByteArray) = input.drop(1).toByteArray()
 
-@Throws(IllegalArgumentException::class)
-fun CryptoPublicKey.Companion.decodeFromTlv(src: Asn1Sequence): CryptoPublicKey {
-    if (src.children.size != 2) throw IllegalArgumentException("Invalid SPKI Structure!")
-    val keyInfo = src.nextChild() as Asn1Sequence
-    if (keyInfo.children.size != 2) throw IllegalArgumentException("Superfluous data in  SPKI!")
-
-    val oid = (keyInfo.nextChild() as Asn1Primitive).readOid()
-
-    if (oid == KnownOIDs.ecPublicKey) {
-        val curveOid = (keyInfo.nextChild() as Asn1Primitive).readOid()
-        val curve = when (curveOid) {
-            KnownOIDs.prime256v1 -> EcCurve.SECP_256_R_1
-            KnownOIDs.secp384r1 -> EcCurve.SECP_384_R_1
-            KnownOIDs.secp521r1 -> EcCurve.SECP_521_R_1
-            else -> throw IllegalArgumentException("Curve not supported: $curveOid")
-        }
-        val bitString = (src.nextChild() as Asn1Primitive).readBitString()
-        val xAndY = bitString.drop(1).toByteArray()
-        val coordLen = curve.coordinateLengthBytes.toInt()
-        val x = xAndY.take(coordLen).toByteArray()
-        val y = xAndY.drop(coordLen).take(coordLen).toByteArray()
-        return CryptoPublicKey.Ec.fromCoordinates(curve, x, y)
-    } else if (oid == KnownOIDs.rsaEncryption) {
-        (keyInfo.nextChild() as Asn1Primitive).readNull()
-        val bitString = (src.nextChild() as Asn1Primitive).readBitString()
-        val rsaSequence = Asn1Encodable.parse(bitString) as Asn1Sequence
-        val n = (rsaSequence.nextChild() as Asn1Primitive).decode(INTEGER) { it }
-        val e = (rsaSequence.nextChild() as Asn1Primitive).decode(INTEGER) { it }
-        if (rsaSequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous data in SPKI!")
-        return CryptoPublicKey.Rsa(
-            CryptoPublicKey.Rsa.Size.of(((n.size - 1) * 8).toUInt())
-                ?: throw IllegalArgumentException("Illegal RSA key size: ${(n.size - 1) * 8}"), n, e
-        )
-    } else {
-        throw IllegalArgumentException("Unsupported Key Type: $oid")
-    }
-}
 
 @Throws(IllegalArgumentException::class)
 fun Instant.Companion.decodeUtcTimeFromDer(input: ByteArray): Instant = runCatching {

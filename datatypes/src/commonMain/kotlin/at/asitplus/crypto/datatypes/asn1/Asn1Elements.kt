@@ -11,12 +11,12 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 @Serializable(with = Asn1EncodableSerializer::class)
-sealed class Asn1Encodable(
+sealed class Asn1Element(
     private val tlv: TLV,
-    protected open val children: List<Asn1Encodable>?
+    protected open val children: List<Asn1Element>?
 ) {
     companion object {
-        fun decodeFromDerHexString(derEncoded: String) = Asn1Encodable.parse(derEncoded.decodeToByteArray(Base16))
+        fun decodeFromDerHexString(derEncoded: String) = Asn1Element.parse(derEncoded.decodeToByteArray(Base16))
     }
 
     val encodedLength by lazy { length.encodeLength() }
@@ -47,23 +47,23 @@ sealed class Asn1Encodable(
     fun toDerHexString() = derEncoded.encodeToString(Base16)
 }
 
-object Asn1EncodableSerializer : KSerializer<Asn1Encodable> {
+object Asn1EncodableSerializer : KSerializer<Asn1Element> {
     override val descriptor = PrimitiveSerialDescriptor("Asn1Encodable", PrimitiveKind.STRING)
 
-    override fun deserialize(decoder: Decoder): Asn1Encodable {
-        return Asn1Encodable.parse(decoder.decodeString().decodeToByteArray(Base16))
+    override fun deserialize(decoder: Decoder): Asn1Element {
+        return Asn1Element.parse(decoder.decodeString().decodeToByteArray(Base16))
     }
 
-    override fun serialize(encoder: Encoder, value: Asn1Encodable) {
+    override fun serialize(encoder: Encoder, value: Asn1Element) {
         encoder.encodeString(value.derEncoded.encodeToString(Base16))
     }
 
 }
 
 
-sealed class Asn1Structure(tag: UByte, children: List<Asn1Encodable>?) :
-    Asn1Encodable(TLV(tag, byteArrayOf()), children) {
-    public override val children: List<Asn1Encodable>
+sealed class Asn1Structure(tag: UByte, children: List<Asn1Element>?) :
+    Asn1Element(TLV(tag, byteArrayOf()), children) {
+    public override val children: List<Asn1Element>
         get() = super.children!!
 
     private var index = 0
@@ -74,22 +74,22 @@ sealed class Asn1Structure(tag: UByte, children: List<Asn1Encodable>?) :
     fun peek() = if (!hasMoreChildren()) null else children[index]
 }
 
-class Asn1Tagged(tag: UByte, val contained: List<Asn1Encodable>) :
-    Asn1Encodable(TLV(tag, byteArrayOf()), contained.toList()) {
-    constructor(tag: UByte, vararg contained: Asn1Encodable) : this(tag, contained.toList())
+class Asn1Tagged(tag: UByte, val contained: List<Asn1Element>) :
+    Asn1Element(TLV(tag, byteArrayOf()), contained.toList()) {
+    constructor(tag: UByte, vararg contained: Asn1Element) : this(tag, contained.toList())
 
     override fun toString() = "Tagged" + super.toString()
 }
 
-class Asn1Sequence(children: List<Asn1Encodable>) : Asn1Structure(DERTags.DER_SEQUENCE, children) {
+class Asn1Sequence(children: List<Asn1Element>) : Asn1Structure(DERTags.DER_SEQUENCE, children) {
     override fun toString() = "Sequence" + super.toString()
 }
 
-class Asn1Set(children: List<Asn1Encodable>?) : Asn1Structure(DERTags.DER_SET, children) {
+class Asn1Set(children: List<Asn1Element>?) : Asn1Structure(DERTags.DER_SET, children) {
     override fun toString() = "Set" + super.toString()
 }
 
-class Asn1Primitive(tag: UByte, content: ByteArray) : Asn1Encodable(TLV(tag, content), null) {
+class Asn1Primitive(tag: UByte, content: ByteArray) : Asn1Element(TLV(tag, content), null) {
     override fun toString() = "Primitive" + super.toString()
 }
 

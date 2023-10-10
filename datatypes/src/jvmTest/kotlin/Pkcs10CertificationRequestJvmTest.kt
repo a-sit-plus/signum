@@ -1,15 +1,12 @@
-import at.asitplus.crypto.datatypes.CertificationRequest
+import at.asitplus.crypto.datatypes.pki.CertificationRequest
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.EcCurve
 import at.asitplus.crypto.datatypes.JwsAlgorithm
-import at.asitplus.crypto.datatypes.Pkcs10CertificationRequestAttribute
-import at.asitplus.crypto.datatypes.TbsCertificationRequest
-import at.asitplus.crypto.datatypes.X509CertificateExtension
-import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
-import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
+import at.asitplus.crypto.datatypes.pki.Pkcs10CertificationRequestAttribute
+import at.asitplus.crypto.datatypes.pki.TbsCertificationRequest
+import at.asitplus.crypto.datatypes.asn1.Asn1Element
 import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
 import at.asitplus.crypto.datatypes.asn1.Asn1String
-import at.asitplus.crypto.datatypes.asn1.BERTags
 import at.asitplus.crypto.datatypes.asn1.DistinguishedName
 import at.asitplus.crypto.datatypes.asn1.KnownOIDs
 import at.asitplus.crypto.datatypes.asn1.ensureSize
@@ -106,8 +103,8 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             subjectName = listOf(DistinguishedName.CommonName(Asn1String.UTF8(commonName))),
             publicKey = cryptoPublicKey,
             extensions = listOf(
-                Pkcs10CertificationRequestAttribute(KnownOIDs.keyUsage, Asn1Encodable.parse(keyUsage.encoded)),
-                Pkcs10CertificationRequestAttribute(KnownOIDs.extKeyUsage, Asn1Encodable.parse(extendedKeyUsage.encoded))
+                Pkcs10CertificationRequestAttribute(KnownOIDs.keyUsage, Asn1Element.parse(keyUsage.encoded)),
+                Pkcs10CertificationRequestAttribute(KnownOIDs.extKeyUsage, Asn1Element.parse(extendedKeyUsage.encoded))
             )
         )
         val signed = Signature.getInstance(signatureAlgorithm.jcaName).apply {
@@ -141,7 +138,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         val bcCsr = PKCS10CertificationRequestBuilder(X500Name("CN=$commonName"), spki).build(contentSigner)
 
-        val csr = CertificationRequest.decodeFromTlv(Asn1Encodable.parse(bcCsr.encoded) as Asn1Sequence)
+        val csr = CertificationRequest.decodeFromTlv(Asn1Element.parse(bcCsr.encoded) as Asn1Sequence)
         csr.shouldNotBeNull()
 
         //x509Certificate.encodeToDer() shouldBe certificateHolder.encoded

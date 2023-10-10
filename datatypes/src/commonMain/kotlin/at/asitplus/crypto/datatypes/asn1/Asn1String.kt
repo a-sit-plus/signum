@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 //TODO auto-sanitize and/or reduce
 @Serializable
-sealed class Asn1String() {
+sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
     abstract val tag: UByte
     abstract val value: String
 
@@ -67,5 +67,9 @@ sealed class Asn1String() {
         override val tag = BERTags.NUMERIC_STRING
     }
 
-    fun encodeToTlv() = Asn1Primitive(tag, value.encodeToByteArray())
+    override fun encodeToTlv() = Asn1Primitive(tag, value.encodeToByteArray())
+
+    companion object : Asn1Decodable<Asn1Primitive, Asn1String> {
+        override fun decodeFromTlv(src: Asn1Primitive): Asn1String = src.readString()
+    }
 }
