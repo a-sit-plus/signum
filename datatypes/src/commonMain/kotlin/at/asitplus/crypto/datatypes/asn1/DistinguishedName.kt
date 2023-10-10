@@ -65,7 +65,7 @@ sealed class DistinguishedName() {
         )
     }
 
-    fun enCodeToTlv() = asn1Set {
+    fun encodeToTlv() = asn1Set {
         sequence {
             oid { oid }
             append { value }

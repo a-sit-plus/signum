@@ -74,7 +74,8 @@ sealed class Asn1Structure(tag: UByte, children: List<Asn1Encodable>?) :
     fun peek() = if (!hasMoreChildren()) null else children[index]
 }
 
-class Asn1Tagged(tag: UByte, val contained: Asn1Encodable) : Asn1Encodable(TLV(tag, byteArrayOf()), listOf(contained)) {
+class Asn1Tagged(tag: UByte, val contained: Asn1Encodable?) :
+    Asn1Encodable(TLV(tag, byteArrayOf()), contained?.let { listOf(it) }) {
     override fun toString() = "Tagged" + super.toString()
 }
 

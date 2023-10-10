@@ -60,13 +60,13 @@ data class TbsCertificate(
         version { version }
         append { Asn1Primitive(BERTags.INTEGER, serialNumber) }
         sigAlg { signatureAlgorithm }
-        sequence { issuerName.forEach { append { it.enCodeToTlv() } } }
+        sequence { issuerName.forEach { append { it.encodeToTlv() } } }
 
         sequence {
             append { validFrom.asn1Object }
             append { validUntil.asn1Object }
         }
-        sequence { subjectName.forEach { append { it.enCodeToTlv() } } }
+        sequence { subjectName.forEach { append { it.encodeToTlv() } } }
 
         subjectPublicKey { publicKey }
 

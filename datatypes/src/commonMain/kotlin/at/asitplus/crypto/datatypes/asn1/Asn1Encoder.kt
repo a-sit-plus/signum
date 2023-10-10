@@ -46,6 +46,7 @@ class Asn1TreeBuilder() {
     }
 
     fun tbsCertificate(block: () -> TbsCertificate) = apply { elements += block().encodeToTlv() }
+    fun tbsCertificationRequest(block: () -> TbsCertificationRequest) = apply { elements += block().encodeToTlv() }
 
     fun sigAlg(block: () -> JwsAlgorithm) = apply { elements += block().encodeToTlv() }
 
@@ -115,10 +116,11 @@ fun ByteArray.encodeToBitString() = byteArrayOf(0x00) + this
 private fun String.encodeTolvOid() = Asn1Primitive(OBJECT_IDENTIFIER, decodeToByteArray(Base16()))
 
 
-private fun Int.encodeToDer() = encodeToByteArray().dropWhile { it == 0.toByte() }.toByteArray()
+private fun Int.encodeToDer() = if (this == 0) byteArrayOf(0) else
+    encodeToByteArray().dropWhile { it == 0.toByte() }.toByteArray()
 
-
-private fun Long.encodeToDer() = encodeToByteArray().dropWhile { it == 0.toByte() }.toByteArray()
+private fun Long.encodeToDer() = if (this == 0L) byteArrayOf(0) else
+    encodeToByteArray().dropWhile { it == 0.toByte() }.toByteArray()
 
 fun Instant.encodeToAsn1UtcTime(): ByteArray {
     return encodeToAsn1Time().drop(2).encodeToByteArray()
