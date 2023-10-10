@@ -66,8 +66,8 @@ class X509CertificateJvmTest : FreeSpec({
             version = 2,
             serialNumber = serialNumber.toByteArray(),
             issuerName = listOf(DistingushedName.CommonName(Asn1String.UTF8(commonName))),
-            validFrom = notBeforeDate.toInstant().toKotlinInstant() to true,
-            validUntil = notAfterDate.toInstant().toKotlinInstant() to true,
+            validFrom = CertificateTimeStamp(notBeforeDate.toInstant().toKotlinInstant()),
+            validUntil = CertificateTimeStamp(notAfterDate.toInstant().toKotlinInstant()),
             signatureAlgorithm = signatureAlgorithm,
             subjectName = listOf(DistingushedName.CommonName(Asn1String.UTF8(commonName))),
             publicKey = cryptoPublicKey
@@ -126,9 +126,11 @@ class X509CertificateJvmTest : FreeSpec({
         x509Certificate.tbsCertificate.subjectName.first().value.content shouldBe commonName.encodeToByteArray()
         x509Certificate.tbsCertificate.serialNumber shouldBe serialNumber.toByteArray()
         x509Certificate.tbsCertificate.signatureAlgorithm shouldBe signatureAlgorithm
-        x509Certificate.tbsCertificate.validFrom shouldBe notBeforeDate.toInstant().truncatedTo(ChronoUnit.SECONDS)
+        x509Certificate.tbsCertificate.validFrom.instant shouldBe notBeforeDate.toInstant()
+            .truncatedTo(ChronoUnit.SECONDS)
             .toKotlinInstant()
-        x509Certificate.tbsCertificate.validUntil shouldBe notAfterDate.toInstant().truncatedTo(ChronoUnit.SECONDS)
+        x509Certificate.tbsCertificate.validUntil.instant shouldBe notAfterDate.toInstant()
+            .truncatedTo(ChronoUnit.SECONDS)
             .toKotlinInstant()
         val parsedPublicKey = x509Certificate.tbsCertificate.publicKey
         parsedPublicKey.shouldBeInstanceOf<CryptoPublicKey.Ec>()

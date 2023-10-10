@@ -124,15 +124,15 @@ private fun Int.encodeToDer() = encodeToByteArray().dropWhile { it == 0.toByte()
 
 private fun Long.encodeToDer() = encodeToByteArray().dropWhile { it == 0.toByte() }.toByteArray()
 
-private fun Instant.encodeToAsn1UtcTime(): ByteArray {
+ fun Instant.encodeToAsn1UtcTime(): ByteArray {
     return encodeToAsn1Time().drop(2).encodeToByteArray()
 }
 
-private fun Instant.encodeToAsn1GeneralizedTime(): ByteArray {
+ fun Instant.encodeToAsn1GeneralizedTime(): ByteArray {
     return encodeToAsn1Time().encodeToByteArray()
 }
 
-private fun Instant.encodeToAsn1Time(): String {
+fun Instant.encodeToAsn1Time(): String {
     val value = this.toString()
     if (value.isEmpty())
         throw IllegalArgumentException("Instant serialization failed: no value")

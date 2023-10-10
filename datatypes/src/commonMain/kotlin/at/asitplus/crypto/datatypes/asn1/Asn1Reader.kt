@@ -79,9 +79,9 @@ fun Asn1Primitive.readString(): Asn1String =
     else if (tag == PRINTABLE_STRING) Asn1String.Printable(String(content))
     else TODO("Support other string tag $tag")
 
-fun Asn1Primitive.readInstant(): Pair<Instant,Boolean> =
-    if (tag == UTC_TIME) decode(UTC_TIME, Instant.Companion::decodeUtcTimeFromDer) to true
-    else if (tag == GENERALIZED_TIME) decode(GENERALIZED_TIME, Instant.Companion::decodeGeneralizedTimeFromDer) to false
+fun Asn1Primitive.readInstant() =
+    if (tag == UTC_TIME) decode(UTC_TIME, Instant.Companion::decodeUtcTimeFromDer)
+    else if (tag == GENERALIZED_TIME) decode(GENERALIZED_TIME, Instant.Companion::decodeGeneralizedTimeFromDer)
     else TODO("Support time tag $tag")
 
 fun Asn1Primitive.readBitString() = decode(BIT_STRING, ::decodeBitString)

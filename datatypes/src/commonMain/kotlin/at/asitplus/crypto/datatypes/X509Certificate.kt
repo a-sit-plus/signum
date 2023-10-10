@@ -5,8 +5,13 @@ import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import at.asitplus.crypto.datatypes.asn1.DERTags.toImplicitTag
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import kotlinx.datetime.Instant
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
 /**
  * Very simple implementation of the meat of an X.509 Certificate:
@@ -18,8 +23,8 @@ data class TbsCertificate(
     val serialNumber: ByteArray,
     val signatureAlgorithm: JwsAlgorithm,
     val issuerName: List<DistingushedName>,
-    val validFrom: Pair<Instant, Boolean>,
-    val validUntil: Pair<Instant, Boolean>,
+    val validFrom: CertificateTimeStamp,
+    val validUntil: CertificateTimeStamp,
     val subjectName: List<DistingushedName>,
     val publicKey: CryptoPublicKey,
     val issuerUniqueID: ByteArray? = null,
@@ -38,8 +43,8 @@ data class TbsCertificate(
         sequence { issuerName.forEach { append { it.enCodeToTlv() } } }
 
         sequence {
-            if (validFrom.second) utcTime { validFrom.first } else generalizedTime { validFrom.first }
-            if (validUntil.second) utcTime { validUntil.first } else generalizedTime { validUntil.first }
+            append { validFrom.asn1Object }
+            append { validUntil.asn1Object }
         }
         sequence { subjectName.forEach { append { it.enCodeToTlv() } } }
 
@@ -60,14 +65,6 @@ data class TbsCertificate(
                     )
                 }
             }
-        }
-    }
-
-    private fun Asn1TreeBuilder.rfc5820Time(instant: Instant) {
-        if (instant > Instant.parse("2050-01-01T00:00:00Z")) { // per RFC 5280 4.1.2.5
-            generalizedTime { instant }
-        } else {
-            utcTime { instant }
         }
     }
 
@@ -125,13 +122,13 @@ data class TbsCertificate(
             )
         }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
 
-        private fun decodeTimestamps(input: Asn1Sequence): Pair<Pair<Instant, Boolean>, Pair<Instant, Boolean>>? =
+        private fun decodeTimestamps(input: Asn1Sequence): Pair<CertificateTimeStamp, CertificateTimeStamp> =
             runCatching {
-                val firstInstant = (input.nextChild() as Asn1Primitive).readInstant()
-                val secondInstant = (input.nextChild() as Asn1Primitive).readInstant()
+                val firstInstant = CertificateTimeStamp(input.nextChild() as Asn1Primitive)
+                val secondInstant = CertificateTimeStamp(input.nextChild() as Asn1Primitive)
                 if (input.hasMoreChildren()) throw IllegalArgumentException("Superfluous content in Validity")
                 return Pair(firstInstant, secondInstant)
-            }.getOrNull()
+            }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
     }
 }
 
@@ -349,4 +346,37 @@ data class X509Certificate(
             return X509Certificate(tbs, sigAlg, signature)
         }
     }
+}
+
+@Serializable(with = CertTimeStampSerializer::class)
+class CertificateTimeStamp(val asn1Object: Asn1Primitive) {
+    init {
+        if (asn1Object.tag != BERTags.UTC_TIME && asn1Object.tag != BERTags.GENERALIZED_TIME)
+            throw IllegalArgumentException("Not a timestamp!")
+    }
+
+    constructor(instant: Instant) : this(instant.wrap())
+
+    val instant by lazy { asn1Object.readInstant() }
+
+    companion object {
+        fun Instant.wrap() = if (this > Instant.parse("2050-01-01T00:00:00Z")) { // per RFC 5280 4.1.2.5
+            Asn1Primitive(BERTags.GENERALIZED_TIME, encodeToAsn1GeneralizedTime())
+        } else {
+            Asn1Primitive(BERTags.UTC_TIME, encodeToAsn1UtcTime())
+        }
+
+    }
+}
+
+object CertTimeStampSerializer : KSerializer<CertificateTimeStamp> {
+    override val descriptor = PrimitiveSerialDescriptor("CertificateTimestamp", PrimitiveKind.STRING)
+
+    override fun deserialize(decoder: Decoder) =
+        CertificateTimeStamp(Asn1Encodable.decodeFromDerHexString(decoder.decodeString()) as Asn1Primitive)
+
+    override fun serialize(encoder: Encoder, value: CertificateTimeStamp) {
+        encoder.encodeString(value.asn1Object.toDerHexString())
+    }
+
 }

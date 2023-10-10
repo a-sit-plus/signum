@@ -11,11 +11,13 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 @Serializable(with = Asn1EncodableSerializer::class)
-sealed class Asn1Encodable protected constructor(
+sealed class Asn1Encodable(
     private val tlv: TLV,
     protected open val children: List<Asn1Encodable>?
 ) {
-    companion object
+    companion object {
+        fun decodeFromDerHexString(derEncoded: String) = Asn1Encodable.parse(derEncoded.decodeToByteArray(Base16))
+    }
 
     val encodedLength by lazy { length.encodeLength() }
     val length: Int by lazy {
