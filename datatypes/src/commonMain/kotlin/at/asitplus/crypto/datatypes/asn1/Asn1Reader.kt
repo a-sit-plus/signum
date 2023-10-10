@@ -1,6 +1,5 @@
 package at.asitplus.crypto.datatypes.asn1
 
-import at.asitplus.crypto.datatypes.Asn1String
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.EcCurve
 import at.asitplus.crypto.datatypes.JwsAlgorithm
@@ -101,8 +100,7 @@ fun Asn1Tagged.verify(tag: UByte): Asn1Encodable {
 }
 
 fun JwsAlgorithm.Companion.decodeFromTlv(input: Asn1Sequence): JwsAlgorithm {
-    val oid = (input.nextChild() as Asn1Primitive).readOid()
-    return when (oid) {
+    return when (val oid = (input.nextChild() as Asn1Primitive).readOid()) {
         KnownOIDs.ecdsaWithSHA512 -> JwsAlgorithm.ES512
         KnownOIDs.ecdsaWithSHA384 -> JwsAlgorithm.ES384
         KnownOIDs.ecdsaWithSHA256 -> JwsAlgorithm.ES256
@@ -112,7 +110,7 @@ fun JwsAlgorithm.Companion.decodeFromTlv(input: Asn1Sequence): JwsAlgorithm {
                 KnownOIDs.sha256WithRSAEncryption -> JwsAlgorithm.RS256
                 KnownOIDs.sha384WithRSAEncryption -> JwsAlgorithm.RS384
                 KnownOIDs.sha512WithRSAEncryption -> JwsAlgorithm.RS512
-                else -> TODO("Implement remaining algorithm oids")
+                else -> TODO("Implement remaining algorithm oid: $oid")
             }
             if (input.nextChild().tag != NULL) throw IllegalArgumentException("RSA Params not supported yet")
             if (input.hasMoreChildren()) throw IllegalArgumentException("Superfluous Content in Signature")

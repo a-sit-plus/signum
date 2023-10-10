@@ -65,11 +65,11 @@ class X509CertificateJvmTest : FreeSpec({
         val tbsCertificate = TbsCertificate(
             version = 2,
             serialNumber = serialNumber.toByteArray(),
-            issuerName = listOf(DistingushedName.CommonName(Asn1String.UTF8(commonName))),
+            issuerName = listOf(DistinguishedName.CommonName(Asn1String.UTF8(commonName))),
             validFrom = CertificateTimeStamp(notBeforeDate.toInstant().toKotlinInstant()),
             validUntil = CertificateTimeStamp(notAfterDate.toInstant().toKotlinInstant()),
             signatureAlgorithm = signatureAlgorithm,
-            subjectName = listOf(DistingushedName.CommonName(Asn1String.UTF8(commonName))),
+            subjectName = listOf(DistinguishedName.CommonName(Asn1String.UTF8(commonName))),
             publicKey = cryptoPublicKey
         )
         val signed = Signature.getInstance(signatureAlgorithm.jcaName).apply {
