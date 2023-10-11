@@ -1,8 +1,7 @@
 import DatatypeVersions.encoding
 import DatatypeVersions.kmmresult
 import DatatypeVersions.okio
-import at.asitplus.gradle.bouncycastle
-import at.asitplus.gradle.napier
+import at.asitplus.gradle.*
 
 plugins {
     kotlin("multiplatform")
@@ -12,6 +11,7 @@ plugins {
 
 version = "1.0-SNAPSHOT"
 
+exportIosFramework("KmpCryptoDatatypeJws",  serialization("json"), datetime(), project(":datatypes"))
 kotlin {
     sourceSets {
         val commonMain by getting {

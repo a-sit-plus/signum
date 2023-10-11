@@ -1,6 +1,4 @@
-import at.asitplus.gradle.bouncycastle
-import at.asitplus.gradle.datetime
-import at.asitplus.gradle.serialization
+import at.asitplus.gradle.*
 
 plugins {
     kotlin("multiplatform")
@@ -10,9 +8,9 @@ plugins {
 
 version = "1.0-SNAPSHOT"
 
+
+exportIosFramework("KmpCrypto",  serialization("json"),datetime())
 kotlin {
-
-
     sourceSets {
         val commonMain by getting {
             dependencies {
