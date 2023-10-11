@@ -9,9 +9,13 @@ import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.base64.Base64
+import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileReader
@@ -82,7 +86,8 @@ class X509CertParserTest : FreeSpec({
         val (ok, faulty) = readGoogleCerts()
 
         "OK certs should parse" - {
-            val good= ok.filterNot { it.first == "ok-inherited-keyparams.ca.der" || it.first == "ok-inherited-keyparams.leaf.der" } //filter out certs with DSA pubKeys
+            val good =
+                ok.filterNot { it.first == "ok-inherited-keyparams.ca.der" || it.first == "ok-inherited-keyparams.leaf.der" } //filter out certs with DSA pubKeys
 
             withData(nameFn = { it.first }, good) {
                 X509Certificate.decodeFromTlv(Asn1Element.parse(it.second) as Asn1Sequence)
@@ -96,6 +101,33 @@ class X509CertParserTest : FreeSpec({
                     }
                 }.getOrElse { println("W: ${crt.first} parsed too leniently") }
             }
+        }
+
+        "From attestation collector" - {
+            val json = File("./src/jvmTest/resources/results").listFiles()
+                .map { Json.parseToJsonElement(it.readText()).jsonObject }
+            val certs = json.mapIndexed { i, collected ->
+                (collected["device"]!!.jsonPrimitive.toString() + " ($i)") to collected.get("attestationProof")!!.jsonArray.map {
+                    it.jsonPrimitive.toString().replace("\\n", "").replace("\\r", "").replace("\"","")
+                }
+            }.toMap()
+
+            withData(certs) {
+                withData(it) {
+                    val encodedSrc = it.decodeToByteArray(Base64 {})
+
+                    val jcaCert =  CertificateFactory
+                        .getInstance("X509")
+                        .generateCertificate(ByteArrayInputStream(encodedSrc)) as java.security.cert.X509Certificate
+
+                    val ownCert =
+                        X509Certificate.decodeFromTlv(Asn1Element.parse(encodedSrc) as Asn1Sequence)
+
+                    jcaCert.encoded shouldBe encodedSrc
+                    ownCert.encodeToTlv().derEncoded shouldBe  encodedSrc
+                }
+            }
+
         }
     }
 })
