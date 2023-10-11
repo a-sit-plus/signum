@@ -74,6 +74,7 @@ sealed class DistinguishedName : Asn1Encodable<Asn1Set> {
 
     companion object : Asn1Decodable<Asn1Set, DistinguishedName> {
 
+        @OptIn(ExperimentalUnsignedTypes::class)
         override fun decodeFromTlv(src: Asn1Set): DistinguishedName {
             if (src.children.size != 1) throw IllegalArgumentException("Invalid Subject Structure")
             val sequence = src.nextChild() as Asn1Sequence

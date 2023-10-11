@@ -71,7 +71,6 @@ data class CoseKey(
             val xCoordinate = it.sliceArray(1 until 33)
             val yCoordinate = it.sliceArray(33 until 65)
             val keyId = MultibaseHelper.calcKeyId(curve.toJwkCurve(), xCoordinate, yCoordinate)
-                ?: return null
             return CoseKey(
                 type = type,
                 keyId = keyId.encodeToByteArray(),
@@ -92,7 +91,6 @@ data class CoseKey(
                 return null
             }
             val keyId = MultibaseHelper.calcKeyId(curve.toJwkCurve(), x, y)
-                ?: return null
             return CoseKey(
                 type = type,
                 keyId = keyId.encodeToByteArray(),
@@ -177,6 +175,15 @@ data class CoseKey(
 
 
 }
+
+fun CryptoPublicKey.toCoseKey() = CoseKey( //TODO expand to other types!
+    type = CoseKeyType.EC2,
+    curve = (this as CryptoPublicKey.Ec).curve.toCoseCurve(),
+    keyId = keyId.encodeToByteArray(),
+    algorithm = CoseAlgorithm.ES256,
+    x = x,
+    y = y
+)
 
 private const val COSE_KID = "coseKid"
 var CryptoPublicKey.coseKid: String

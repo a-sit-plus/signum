@@ -76,7 +76,6 @@ data class TbsCertificate(
             }
 
             val timestamps = decodeTimestamps(src.nextChild() as Asn1Sequence)
-                ?: throw IllegalArgumentException("error parsing Timestamps")
             val subject = (src.nextChild() as Asn1Sequence).children.map {
                 DistinguishedName.decodeFromTlv(it as Asn1Set)
             }
@@ -164,6 +163,8 @@ data class X509Certificate(
         return result
     }
 
+    val publicKey:CryptoPublicKey get()= tbsCertificate.publicKey
+
     companion object:Asn1Decodable<Asn1Sequence, X509Certificate> {
 
         override fun decodeFromTlv(src: Asn1Sequence): X509Certificate {
@@ -173,5 +174,6 @@ data class X509Certificate(
             if (src.hasMoreChildren()) throw IllegalArgumentException("Superfluous structure in Certificate Structure")
             return X509Certificate(tbs, sigAlg, signature)
         }
+
     }
 }

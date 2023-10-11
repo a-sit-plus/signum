@@ -58,8 +58,8 @@ enum class JwsAlgorithm(val identifier: String) : Asn1Encodable<Asn1Sequence> {
     }
 
     companion object:Asn1Decodable<Asn1Sequence,JwsAlgorithm>{
-        override fun decodeFromTlv(input: Asn1Sequence): JwsAlgorithm {
-            return when (val oid = (input.nextChild() as Asn1Primitive).readOid()) {
+        override fun decodeFromTlv(src: Asn1Sequence): JwsAlgorithm {
+            return when (val oid = (src.nextChild() as Asn1Primitive).readOid()) {
                 KnownOIDs.ecdsaWithSHA512 -> ES512
                 KnownOIDs.ecdsaWithSHA384 -> ES384
                 KnownOIDs.ecdsaWithSHA256 -> ES256
@@ -71,8 +71,8 @@ enum class JwsAlgorithm(val identifier: String) : Asn1Encodable<Asn1Sequence> {
                         KnownOIDs.sha512WithRSAEncryption -> RS512
                         else -> TODO("Implement remaining algorithm oid: $oid")
                     }
-                    if (input.nextChild().tag != BERTags.NULL) throw IllegalArgumentException("RSA Params not supported yet")
-                    if (input.hasMoreChildren()) throw IllegalArgumentException("Superfluous Content in Signature")
+                    if (src.nextChild().tag != BERTags.NULL) throw IllegalArgumentException("RSA Params not supported yet")
+                    if (src.hasMoreChildren()) throw IllegalArgumentException("Superfluous Content in Signature")
                     alg
                 }
             }

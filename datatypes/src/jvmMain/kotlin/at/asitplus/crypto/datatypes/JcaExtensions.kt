@@ -10,6 +10,7 @@ import org.bouncycastle.jce.provider.JCEECPublicKey
 import org.bouncycastle.jce.spec.ECPublicKeySpec
 import java.math.BigInteger
 import java.security.KeyFactory
+import java.security.PublicKey
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPublicKey
 import java.security.spec.RSAPublicKeySpec
@@ -42,6 +43,11 @@ val EcCurve.jcaName
 fun EcCurve.Companion.byJcaName(name: String) = EcCurve.entries.find { it.jcaName == name }
 
 
+fun CryptoPublicKey.getPublicKey() = when(this) {
+    is CryptoPublicKey.Ec -> getPublicKey()
+    is CryptoPublicKey.Rsa -> getPublicKey()
+}
+
 fun CryptoPublicKey.Ec.getPublicKey(): ECPublicKey {
     val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.jwkName)
     val x = BigInteger(1, x)
@@ -73,7 +79,13 @@ fun CryptoPublicKey.Ec.Companion.fromJcaKey(publicKey: ECPublicKey): CryptoPubli
     )
 }
 
-fun CryptoPublicKey.Rsa.fromJcaKey(publicKey: RSAPublicKey): CryptoPublicKey.Rsa? {
+fun CryptoPublicKey.Companion.fromJcaKey(publicKey: PublicKey) =
+    if (publicKey is RSAPublicKey) CryptoPublicKey.Rsa.fromJcaKey(publicKey)
+    else if (publicKey is ECPublicKey) CryptoPublicKey.Ec.fromJcaKey(publicKey)
+    else throw IllegalArgumentException("Unsupported Key Type")
+
+
+fun CryptoPublicKey.Rsa.Companion.fromJcaKey(publicKey: RSAPublicKey): CryptoPublicKey.Rsa? {
     val sz = CryptoPublicKey.Rsa.Size.entries.find { it.number.toInt() == publicKey.modulus.bitLength() } ?: return null
     return CryptoPublicKey.Rsa(sz, publicKey.modulus.toByteArray(), publicKey.publicExponent.toByteArray())
 }

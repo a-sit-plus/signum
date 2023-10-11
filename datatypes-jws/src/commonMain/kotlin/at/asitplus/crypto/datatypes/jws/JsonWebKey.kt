@@ -80,6 +80,7 @@ data class JsonWebKey(
     ): JsonWebKey? = CryptoPublicKey.Ec.fromCoordinates(curve, x, y).toJsonWebKey()
 
 
+    @Deprecated("Use CryptoPublicKey functionality instead!")
     fun toAnsiX963ByteArray(): KmmResult<ByteArray> {
         if (x != null && y != null)
             return KmmResult.success(byteArrayOf(0x04.toByte()) + x + y);

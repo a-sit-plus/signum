@@ -42,6 +42,7 @@ object JwsExtensions {
      * JWS spec concatenates the R and S values,
      * but JCA needs an ASN.1 structure (SEQUENCE of two INTEGER) around it
      */
+    @Deprecated("kmp-crypt already does this. s remove it!")
     fun ByteArray.convertToAsn1Signature(len: Int): ByteArray = if (size == len * 2) {
         val rValue = sliceArray(0 until len).toAsn1Integer()
         val sValue = sliceArray(len until len * 2).toAsn1Integer()

@@ -2,6 +2,7 @@ package at.asitplus.crypto.datatypes.asn1
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
@@ -10,8 +11,9 @@ import kotlin.experimental.and
 import kotlin.experimental.or
 import kotlin.math.ceil
 
+@ExperimentalUnsignedTypes
 @Serializable(with = ObjectIdSerializer::class)
-class ObjectIdentifier(@Transient vararg val nodes: UInt):Asn1Encodable<Asn1Primitive> {
+class ObjectIdentifier(@Transient vararg val nodes: UInt) : Asn1Encodable<Asn1Primitive> {
 
     init {
         if (nodes.size < 2) throw IllegalArgumentException("at least two nodes required!")
@@ -50,9 +52,9 @@ class ObjectIdentifier(@Transient vararg val nodes: UInt):Asn1Encodable<Asn1Prim
         ) { acc, bytes -> acc + bytes }
     }
 
-   override fun encodeToTlv() = Asn1Primitive(BERTags.OBJECT_IDENTIFIER, bytes)
+    override fun encodeToTlv() = Asn1Primitive(BERTags.OBJECT_IDENTIFIER, bytes)
 
-    companion object:Asn1Decodable<Asn1Primitive,ObjectIdentifier> {
+    companion object : Asn1Decodable<Asn1Primitive, ObjectIdentifier> {
         override fun decodeFromTlv(src: Asn1Primitive): ObjectIdentifier {
             if (src.tag != BERTags.OBJECT_IDENTIFIER) throw IllegalArgumentException("Not an OID (tag: ${src.tag}")
             if (src.length < 1) throw IllegalArgumentException("Empty OIDs are not supported")
