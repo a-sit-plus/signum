@@ -27,6 +27,14 @@ data class JsonWebKey(
     @SerialName("y")
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val y: ByteArray? = null,
+
+    //Todo Chekc name
+    @SerialName("n")
+    @Serializable(with = ByteArrayBase64UrlSerializer::class)
+    val n: ByteArray? = null,
+    @SerialName("e")
+    @Serializable(with = ByteArrayBase64UrlSerializer::class)
+    val e: ByteArray? = null,
 ) {
     fun serialize() = jsonSerializer.encodeToString(this)
 
@@ -47,7 +55,7 @@ data class JsonWebKey(
             if (other.y == null) return false
             if (!y.contentEquals(other.y)) return false
         } else if (other.y != null) return false
-
+        //Todo n, e
         return true
     }
 
@@ -58,6 +66,8 @@ data class JsonWebKey(
         result = 31 * result + (x?.contentHashCode() ?: 0)
         result = 31 * result + (y?.contentHashCode() ?: 0)
         return result
+
+        //todo n, e
     }
 
     companion object {
@@ -69,8 +79,7 @@ data class JsonWebKey(
         }
 
         fun fromKeyId(it: String): JsonWebKey? = CryptoPublicKey.fromKeyId(it)?.toJsonWebKey()
-
-        fun fromAnsiX963Bytes(it: ByteArray): JsonWebKey? = CryptoPublicKey.Ec.fromAnsiX963Bytes(it)?.toJsonWebKey()
+        fun fromIosEncoded(bytes: ByteArray) = CryptoPublicKey.fromIosEncoded(bytes).toJsonWebKey()
     }
 
     fun fromCoordinates(

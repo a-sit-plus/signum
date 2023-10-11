@@ -92,20 +92,26 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
                 val n = (rsaSequence.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
                 val e = (rsaSequence.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
                 if (rsaSequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous data in SPKI!")
-                return Rsa(
-                    at.asitplus.crypto.datatypes.CryptoPublicKey.Rsa.Size.of(((n.size - 1) * 8).toUInt())
-                        ?: throw IllegalArgumentException("Illegal RSA key size: ${(n.size - 1) * 8}"), n, e
-                )
+                return Rsa(Rsa.Size.of(n), n, e)
             } else {
                 throw IllegalArgumentException("Unsupported Key Type: $oid")
             }
         }
+
+        fun fromIosEncoded(it: ByteArray): CryptoPublicKey =
+            when (it[0].toInt()) {
+                0x04 -> Ec.fromAnsiX963Bytes(it)
+                DERTags.DER_SEQUENCE.toInt() -> Rsa.fromPKCS1encoded(it)
+                else -> throw IllegalArgumentException("Unsupported Key type")
+            }
     }
 
     @Serializable
     data class Rsa(
         val bits: Size,
+        // todo drop leading zeros
         @Serializable(with = ByteArrayBase64Serializer::class) val n: ByteArray,
+        // todo drop leading zeros
         val e: ByteArray,
     ) : CryptoPublicKey() {
 
@@ -119,6 +125,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
 
             companion object {
                 fun of(numBits: UInt) = entries.find { it.number == numBits }
+                fun of(n: ByteArray) = entries.find { n.size <= (it.number.toInt()/8 + 1) }?: throw IllegalArgumentException("Unsupported key size ${n.size}")
             }
         }
 
@@ -155,6 +162,15 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
             return result
         }
 
+        companion object{
+            fun fromPKCS1encoded(input: ByteArray): Rsa {
+                val conv = Asn1Element.parse(input) as Asn1Sequence
+                val n = (conv.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
+                val e = (conv.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
+                if (conv.hasMoreChildren()) throw IllegalArgumentException("Superfluous bytes")
+                return Rsa(Size.of(n), n, e)
+            }
+        }
     }
 
     @Serializable
@@ -187,10 +203,10 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
             fun fromCoordinates(curve: EcCurve, x: ByteArray, y: ByteArray): Ec =
                 Ec(curve = curve, x = x, y = y)
 
-            fun fromAnsiX963Bytes(src: ByteArray): CryptoPublicKey? {
-                if (src[0] != 0x04.toByte()) return null
+            fun fromAnsiX963Bytes(src: ByteArray): CryptoPublicKey {
+                if (src[0] != 0x04.toByte()) throw IllegalArgumentException("No EC key")
                 val curve = EcCurve.entries
-                    .find { 2 * it.coordinateLengthBytes.toInt() == src.size - 1 } ?: return null
+                    .find { 2 * it.coordinateLengthBytes.toInt() == src.size - 1 } ?: throw IllegalArgumentException("Unknown Curve")
                 val numBytes = curve.coordinateLengthBytes.toInt()
                 val x = src.drop(1).take(numBytes).toByteArray()
                 val y = src.drop(1).drop(numBytes).take(numBytes).toByteArray()

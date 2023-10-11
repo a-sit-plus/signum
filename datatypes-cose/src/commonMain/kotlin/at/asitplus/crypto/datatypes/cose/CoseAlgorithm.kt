@@ -15,12 +15,14 @@ enum class CoseAlgorithm(val value: Int) {
     ES256(-7),
     ES384(-35),
     ES512(-36),
+    RS256(-257), // TODO rest
     HMAC256_256(5);
 
     fun toJwsAlgorithm() = when(this) {
         ES256 -> JwsAlgorithm.ES256
         ES384 -> JwsAlgorithm.ES384
         ES512 -> JwsAlgorithm.ES512
+        //TODO
         HMAC256_256 -> JwsAlgorithm.HMAC256
     }
 
@@ -29,7 +31,7 @@ enum class CoseAlgorithm(val value: Int) {
             ES256 -> 256 / 8
             ES384 -> 384 / 8
             ES512 -> 512 / 8
-            else -> throw IllegalArgumentException(this.toString())
+            else -> -1 // RSA non fixed sig length
         }
 }
 
