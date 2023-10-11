@@ -15,15 +15,15 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class TbsCertificate(
     val version: Int = 2,
-    val serialNumber: ByteArray,
+    @Serializable(with = ByteArrayBase64Serializer::class) val serialNumber: ByteArray,
     val signatureAlgorithm: JwsAlgorithm,
     val issuerName: List<DistinguishedName>,
     val validFrom: CertificateTimeStamp,
     val validUntil: CertificateTimeStamp,
     val subjectName: List<DistinguishedName>,
     val publicKey: CryptoPublicKey,
-    val issuerUniqueID: ByteArray? = null,
-    val subjectUniqueID: ByteArray? = null,
+    @Serializable(with = ByteArrayBase64Serializer::class) val issuerUniqueID: ByteArray? = null,
+    @Serializable(with = ByteArrayBase64Serializer::class) val subjectUniqueID: ByteArray? = null,
     val extensions: List<X509CertificateExtension>? = null
 ) : Asn1Encodable<Asn1Sequence> {
 
@@ -163,9 +163,9 @@ data class X509Certificate(
         return result
     }
 
-    val publicKey:CryptoPublicKey get()= tbsCertificate.publicKey
+    val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
 
-    companion object:Asn1Decodable<Asn1Sequence, X509Certificate> {
+    companion object : Asn1Decodable<Asn1Sequence, X509Certificate> {
 
         override fun decodeFromTlv(src: Asn1Sequence): X509Certificate {
             val tbs = TbsCertificate.decodeFromTlv(src.nextChild() as Asn1Sequence)

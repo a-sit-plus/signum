@@ -1,18 +1,9 @@
+import at.asitplus.crypto.datatypes.*
+import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.pki.CertificationRequest
-import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.EcCurve
-import at.asitplus.crypto.datatypes.JwsAlgorithm
+import at.asitplus.crypto.datatypes.pki.DistinguishedName
 import at.asitplus.crypto.datatypes.pki.Pkcs10CertificationRequestAttribute
 import at.asitplus.crypto.datatypes.pki.TbsCertificationRequest
-import at.asitplus.crypto.datatypes.asn1.Asn1Element
-import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.Asn1String
-import at.asitplus.crypto.datatypes.pki.DistinguishedName
-import at.asitplus.crypto.datatypes.asn1.KnownOIDs
-import at.asitplus.crypto.datatypes.asn1.ensureSize
-import at.asitplus.crypto.datatypes.asn1.parse
-import at.asitplus.crypto.datatypes.fromJcaKey
-import at.asitplus.crypto.datatypes.jcaName
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -20,11 +11,7 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import org.bouncycastle.asn1.x500.X500Name
-import org.bouncycastle.asn1.x509.ExtendedKeyUsage
-import org.bouncycastle.asn1.x509.Extension
-import org.bouncycastle.asn1.x509.KeyPurposeId
-import org.bouncycastle.asn1.x509.KeyUsage
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
+import org.bouncycastle.asn1.x509.*
 import org.bouncycastle.operator.ContentSigner
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder
@@ -55,9 +42,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
         val signatureAlgorithm = JwsAlgorithm.ES256
-        val contentSigner: ContentSigner = JcaContentSignerBuilder(signatureAlgorithm.jcaName).build(keyPair.private)
-        val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
-        val bcCsr = PKCS10CertificationRequestBuilder(X500Name("CN=$commonName"), spki).build(contentSigner)
+
 
         val tbsCsr = TbsCertificationRequest(
             version = 0,
@@ -66,11 +51,18 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         )
         val signed = Signature.getInstance(signatureAlgorithm.jcaName).apply {
             initSign(keyPair.private)
-            update(tbsCsr.encodeToTlv().derEncoded)
+            update(tbsCsr.derEncoded)
         }.sign()
         val csr = CertificationRequest(tbsCsr, signatureAlgorithm, signed)
 
-        val kotlinEncoded = csr.encodeToTlv().derEncoded
+        println(csr.derEncoded.encodeToString(Base16))
+
+        val kotlinEncoded = csr.derEncoded
+
+        val contentSigner: ContentSigner = JcaContentSignerBuilder(signatureAlgorithm.jcaName).build(keyPair.private)
+        val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
+        val bcCsr = PKCS10CertificationRequestBuilder(X500Name("CN=$commonName"), spki).build(contentSigner)
+
         val jvmEncoded = bcCsr.encoded
         println("CSR will never entirely match because of randomness in ECDSA signature")
         //kotlinEncoded shouldBe jvmEncoded

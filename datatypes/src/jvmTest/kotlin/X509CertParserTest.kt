@@ -1,3 +1,4 @@
+import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.asn1.Asn1Element
 import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
 import at.asitplus.crypto.datatypes.asn1.parse
@@ -38,15 +39,34 @@ class X509CertParserTest : FreeSpec({
 
             println(jcaCert.encoded.encodeToString(Base16))
 
-            val parsedCert = X509Certificate.decodeFromTlv(Asn1Element.parse(certBytes) as Asn1Sequence)
-            println(json.encodeToString(parsedCert))
-            println(parsedCert.encodeToTlv().derEncoded.encodeToString(Base16()))
+            val cert = X509Certificate.derDecode(certBytes)
+
+            when (val pk = cert.publicKey) {
+                is CryptoPublicKey.Ec -> println(
+                    "Certificate with serial no. ${
+                        cert.tbsCertificate.serialNumber.encodeToString(Base16)
+                    } contains an EC public key using curve ${pk.curve}"
+                )
+
+                is CryptoPublicKey.Rsa -> println(
+                    "Certificate with serial no. ${
+                        cert.tbsCertificate.serialNumber.encodeToString(Base16)
+                    } contains a ${pk.bits.number} bit RSA public key"
+                )
+            }
+
+            println("The full certificate is:\n${Json { prettyPrint = true }.encodeToString(cert)}")
+
+            println("Re-encoding it produces the same bytes? ${cert.derEncoded contentEquals certBytes}")
+
+
+            println(cert.encodeToTlv().derEncoded.encodeToString(Base16))
 
             withClue(
                 "Expect: ${jcaCert.encoded.encodeToString(Base16)}\n" +
-                        "Actual: ${parsedCert.encodeToTlv().derEncoded.encodeToString(Base16)}"
+                        "Actual: ${cert.encodeToTlv().derEncoded.encodeToString(Base16)}"
             ) {
-                parsedCert.encodeToTlv().derEncoded shouldBe jcaCert.encoded
+                cert.encodeToTlv().derEncoded shouldBe jcaCert.encoded
             }
         }
     }
@@ -102,34 +122,36 @@ class X509CertParserTest : FreeSpec({
                 }.getOrElse { println("W: ${crt.first} parsed too leniently") }
             }
         }
-
-        "From attestation collector" - {
-            val json = File("./src/jvmTest/resources/results").listFiles()
-                .map { Json.parseToJsonElement(it.readText()).jsonObject }
-            val certs = json.mapIndexed { i, collected ->
-                (collected["device"]!!.jsonPrimitive.toString() + " ($i)") to collected.get("attestationProof")!!.jsonArray.map {
-                    it.jsonPrimitive.toString().replace("\\n", "").replace("\\r", "").replace("\"","")
-                }
-            }.toMap()
-
-            withData(certs) {
-                withData(it) {
-                    val encodedSrc = it.decodeToByteArray(Base64 {})
-
-                    val jcaCert =  CertificateFactory
-                        .getInstance("X509")
-                        .generateCertificate(ByteArrayInputStream(encodedSrc)) as java.security.cert.X509Certificate
-
-                    val ownCert =
-                        X509Certificate.decodeFromTlv(Asn1Element.parse(encodedSrc) as Asn1Sequence)
-
-                    jcaCert.encoded shouldBe encodedSrc
-                    ownCert.encodeToTlv().derEncoded shouldBe  encodedSrc
-                }
-            }
-
-        }
     }
+
+
+
+    "From attestation collector" - {
+        val json = File("./src/jvmTest/resources/results").listFiles()
+            .map { Json.parseToJsonElement(it.readText()).jsonObject }
+        val certs = json.mapIndexed { i, collected ->
+            (collected["device"]!!.jsonPrimitive.toString() + " ($i)") to collected.get("attestationProof")!!.jsonArray.map {
+                it.jsonPrimitive.toString().replace("\\n", "").replace("\\r", "").replace("\"", "")
+            }
+        }.toMap()
+
+        withData(certs) {
+            withData(it) {
+                val encodedSrc = it.decodeToByteArray(Base64 {})
+
+                val jcaCert = CertificateFactory
+                    .getInstance("X509")
+                    .generateCertificate(ByteArrayInputStream(encodedSrc)) as java.security.cert.X509Certificate
+
+                val cert = X509Certificate.derDecode(encodedSrc)
+
+                jcaCert.encoded shouldBe encodedSrc
+                cert.encodeToTlv().derEncoded shouldBe encodedSrc
+            }
+        }
+
+    }
+
 })
 
 

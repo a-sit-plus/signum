@@ -61,7 +61,7 @@ sealed class Asn1Element(
                         ")"
     }
 
-    fun toDerHexString() = derEncoded.encodeToString(Base16)
+    fun toDerHexString() = derEncoded.encodeToString(Base16{strict()})
     override fun hashCode(): Int {
         var result = tlv.hashCode()
         result = 31 * result + (children?.hashCode() ?: 0)

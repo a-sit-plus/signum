@@ -153,7 +153,7 @@ fun Long.Companion.decodeFromDer(input: ByteArray): Long = runCatching {
     return result
 }.getOrElse { throw IllegalArgumentException(it) }
 
-fun ByteArray.readTlv(): TLV = runCatching {
+private fun ByteArray.readTlv(): TLV = runCatching {
     if (this.isEmpty()) throw IllegalArgumentException("Can't read TLV, input empty")
     val tag = this[0].toUByte()
     if (this.size == 1) return TLV(tag, byteArrayOf())
