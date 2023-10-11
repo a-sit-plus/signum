@@ -45,7 +45,7 @@ even entertaining the thought of implementing such functionality. It therefore n
 2023-10)
 
 While the ASN.1 perser will happily parse any valid ASN.1 structure you throw at it and write it back correctly too, 
-higher-level abstractions (such as X509Certificate) are too lenient in some aspectes and too strict in others.
+higher-level abstractions (such as X509Certificate) are too lenient in some aspects and too strict in others.
 For example: DSA-signed certificates will not parse to an instance of `X509Certificate`.
 At the same time, the certificates containing the same extension multiple times will work file too
  

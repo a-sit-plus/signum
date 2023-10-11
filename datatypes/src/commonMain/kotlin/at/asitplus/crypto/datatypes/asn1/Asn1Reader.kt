@@ -1,8 +1,5 @@
 package at.asitplus.crypto.datatypes.asn1
 
-import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.EcCurve
-import at.asitplus.crypto.datatypes.JwsAlgorithm
 import at.asitplus.crypto.datatypes.asn1.BERTags.BIT_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.BMP_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.GENERALIZED_TIME
@@ -78,14 +75,14 @@ fun Asn1Primitive.readLong() = decode(INTEGER) {
 }
 
 fun Asn1Primitive.readString(): Asn1String =
-    if (tag == UTF8_STRING) Asn1String.UTF8(String(content))
-    else if (tag == UNIVERSAL_STRING) Asn1String.Universal(String(content))
-    else if (tag == IA5_STRING) Asn1String.IA5(String(content))
-    else if (tag == BMP_STRING) Asn1String.BMP(String(content))
-    else if (tag == T61_STRING) Asn1String.Teletex(String(content))
-    else if (tag == PRINTABLE_STRING) Asn1String.Printable(String(content))
-    else if (tag == NUMERIC_STRING) Asn1String.Numeric(String(content))
-    else if (tag == VISIBLE_STRING) Asn1String.Visible(String(content))
+    if (tag == UTF8_STRING) Asn1String.UTF8(content.decodeToString())
+    else if (tag == UNIVERSAL_STRING) Asn1String.Universal(content.decodeToString())
+    else if (tag == IA5_STRING) Asn1String.IA5(content.decodeToString())
+    else if (tag == BMP_STRING) Asn1String.BMP(content.decodeToString())
+    else if (tag == T61_STRING) Asn1String.Teletex(content.decodeToString())
+    else if (tag == PRINTABLE_STRING) Asn1String.Printable(content.decodeToString())
+    else if (tag == NUMERIC_STRING) Asn1String.Numeric(content.decodeToString())
+    else if (tag == VISIBLE_STRING) Asn1String.Visible(content.decodeToString())
     else TODO("Support other string tag $tag")
 
 fun Asn1Primitive.readInstant() =
@@ -111,7 +108,7 @@ fun decodeBitString(input: ByteArray) = input.drop(1).toByteArray()
 
 @Throws(IllegalArgumentException::class)
 fun Instant.Companion.decodeUtcTimeFromDer(input: ByteArray): Instant = runCatching {
-    val s = String(input)
+    val s = input.decodeToString()
     if (s.length != 13) throw IllegalArgumentException("Input too short: $input")
     val year = "${s[0]}${s[1]}".toInt()
     val century = if (year <= 49) "20" else "19" // RFC 5280 4.1.2.5 Validity
@@ -127,7 +124,7 @@ fun Instant.Companion.decodeUtcTimeFromDer(input: ByteArray): Instant = runCatch
 
 @Throws(IllegalArgumentException::class)
 fun Instant.Companion.decodeGeneralizedTimeFromDer(input: ByteArray): Instant = runCatching {
-    val s = String(input)
+    val s = input.decodeToString()
     if (s.length != 15) throw IllegalArgumentException("Input too short: $input")
     val isoString = "${s[0]}${s[1]}${s[2]}${s[3]}" + // year
             "-${s[4]}${s[5]}" + // month
