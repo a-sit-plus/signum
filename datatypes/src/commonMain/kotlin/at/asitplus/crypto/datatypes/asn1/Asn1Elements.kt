@@ -15,6 +15,23 @@ sealed class Asn1Element(
     private val tlv: TLV,
     protected open val children: List<Asn1Element>?
 ) {
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other ==null) return false
+        if(other !is Asn1Element) return false
+        if(tag!= other.tag) return false
+        if(!content.contentEquals(other.content)) return false
+        if(this is Asn1Structure && other !is Asn1Structure) return false
+        if(this is Asn1Primitive && other !is Asn1Primitive) return false
+        if (this is Asn1Primitive){
+            return (this.content contentEquals other.content)
+        }else{
+            this as Asn1Structure
+            other as Asn1Structure
+            return children == other.children
+        }
+    }
     companion object {
         fun decodeFromDerHexString(derEncoded: String) = Asn1Element.parse(derEncoded.decodeToByteArray(Base16))
     }
@@ -45,6 +62,11 @@ sealed class Asn1Element(
     }
 
     fun toDerHexString() = derEncoded.encodeToString(Base16)
+    override fun hashCode(): Int {
+        var result = tlv.hashCode()
+        result = 31 * result + (children?.hashCode() ?: 0)
+        return result
+    }
 }
 
 object Asn1EncodableSerializer : KSerializer<Asn1Element> {

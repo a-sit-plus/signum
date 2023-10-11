@@ -176,7 +176,8 @@ fun ByteArray.readTlv(): TLV = runCatching {
         return TLV(tag, value)
     }
     val length = firstLength.toUByte().toInt()
-    if (this.size < 2 + length) throw IllegalArgumentException("Out of bytes")
+    if (this.size < 2 + length)
+        throw IllegalArgumentException("Out of bytes")
     val value = this.drop(2).take(length).toByteArray()
     return TLV(tag, value)
 }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }

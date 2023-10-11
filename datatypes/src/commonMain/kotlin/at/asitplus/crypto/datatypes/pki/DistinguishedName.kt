@@ -1,5 +1,6 @@
-package at.asitplus.crypto.datatypes.asn1
+package at.asitplus.crypto.datatypes.pki
 
+import at.asitplus.crypto.datatypes.asn1.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -102,4 +103,3 @@ sealed class DistinguishedName : Asn1Encodable<Asn1Set> {
         }
     }
 }
-

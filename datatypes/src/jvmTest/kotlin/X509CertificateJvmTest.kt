@@ -1,6 +1,7 @@
 import at.asitplus.crypto.datatypes.*
 import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.pki.CertificateTimeStamp
+import at.asitplus.crypto.datatypes.pki.DistinguishedName
 import at.asitplus.crypto.datatypes.pki.TbsCertificate
 import at.asitplus.crypto.datatypes.pki.X509Certificate
 import io.kotest.core.spec.style.FreeSpec
