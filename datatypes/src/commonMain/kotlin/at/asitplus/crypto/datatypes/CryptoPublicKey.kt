@@ -19,9 +19,6 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
     @Transient
     abstract val iosEncoded: ByteArray
 
-    @Transient
-    val derEncoded by lazy { encodeToTlv().derEncoded }
-
     override fun encodeToTlv() = when (this) {
         is Ec -> asn1Sequence {
             sequence {

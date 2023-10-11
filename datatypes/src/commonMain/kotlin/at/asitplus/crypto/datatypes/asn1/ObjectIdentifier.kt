@@ -11,7 +11,7 @@ import kotlin.experimental.or
 import kotlin.math.ceil
 
 @Serializable(with = ObjectIdSerializer::class)
-class ObjectIdentifier(@Transient vararg val nodes: UInt) {
+class ObjectIdentifier(@Transient vararg val nodes: UInt):Asn1Encodable<Asn1Primitive> {
 
     init {
         if (nodes.size < 2) throw IllegalArgumentException("at least two nodes required!")
@@ -35,11 +35,11 @@ class ObjectIdentifier(@Transient vararg val nodes: UInt) {
     //based on the very concise explanation found on SO: https://stackoverflow.com/a/25786793
     private fun UInt.encodeOidNode(): ByteArray {
         if (this < 128u) return byteArrayOf(this.toByte())
-        val septettes = toCompactByteArray().toSeptetts()
-        for (i in 1..<septettes.size) {
-            septettes[i] = septettes[i].setBit(7)
+        val septets = toCompactByteArray().toSeptets()
+        for (i in 1..<septets.size) {
+            septets[i] = septets[i].setBit(7)
         }
-        return septettes.reversedArray()
+        return septets.reversedArray()
     }
 
     val bytes: ByteArray by lazy {
@@ -50,14 +50,14 @@ class ObjectIdentifier(@Transient vararg val nodes: UInt) {
         ) { acc, bytes -> acc + bytes }
     }
 
-    fun encodeToTlv() = Asn1Primitive(BERTags.OBJECT_IDENTIFIER, bytes)
+   override fun encodeToTlv() = Asn1Primitive(BERTags.OBJECT_IDENTIFIER, bytes)
 
-    companion object {
-        fun decodeFromTlv(oid: Asn1Primitive): ObjectIdentifier {
-            if (oid.tag != BERTags.OBJECT_IDENTIFIER) throw IllegalArgumentException("Not an OID (tag: ${oid.tag}")
-            if (oid.length < 1) throw IllegalArgumentException("Empty OIDs are not supported")
+    companion object:Asn1Decodable<Asn1Primitive,ObjectIdentifier> {
+        override fun decodeFromTlv(src: Asn1Primitive): ObjectIdentifier {
+            if (src.tag != BERTags.OBJECT_IDENTIFIER) throw IllegalArgumentException("Not an OID (tag: ${src.tag}")
+            if (src.length < 1) throw IllegalArgumentException("Empty OIDs are not supported")
 
-            return parse(oid.content)
+            return parse(src.content)
 
         }
 
@@ -84,7 +84,7 @@ class ObjectIdentifier(@Transient vararg val nodes: UInt) {
                     }
                     currentNode += rawValue[index]
                     index++
-                    collected += currentNode.septettsToUInt()
+                    collected += currentNode.septetsToUInt()
                 }
             }
             return ObjectIdentifier(*collected.toUIntArray())
@@ -105,7 +105,7 @@ object ObjectIdSerializer : KSerializer<ObjectIdentifier> {
 }
 
 
-private fun ByteArray.toSeptetts(): ByteArray {
+private fun ByteArray.toSeptets(): ByteArray {
     var pos = 0
     val chunks = mutableListOf<Byte>()
     while (pos < this.size * 8) {
@@ -154,7 +154,7 @@ private fun UInt.Companion.decodeFrom(input: ByteArray): UInt {
     return result
 }
 
-private fun MutableList<Byte>.septettsToUInt(): UInt {
+private fun MutableList<Byte>.septetsToUInt(): UInt {
     val result = ByteArray(ceil(size.toFloat() * 7f / 8f).toInt())
     var globalIndex = 0
     for (index in indices.reversed()) {
