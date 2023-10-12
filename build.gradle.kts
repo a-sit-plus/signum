@@ -12,6 +12,7 @@ tasks.getByName("dokkaHtmlMultiModule") {
     (this as DokkaMultiModuleTask)
     outputDirectory.set(File("$buildDir/dokka"))
     includes.from("README.md")
+    moduleName.set("KMP Crypto")
 }
 
 allprojects {

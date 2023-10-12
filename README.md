@@ -36,8 +36,8 @@ the JVM/Android and iOS.
 
 This library consists of three modules, each of which is published on maven central:
 
-| Name              | `datatypes`                                                                                                                  | `datatypes-jws`                                                                                                                                                                                                                       | `datatypes-cose`                                                                                                                                                                                                                    |
-|-------------------|------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Name                | `datatypes`                                                                                                                  | `datatypes-jws` (WIP)                                                                                                                                                                                                                 | `datatypes-cose` (WIP)                                                                                                                                                                                                              |
+|---------------------|------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | _Description_       | Base module containing the public key class (`CryptoPublicKey`), algorithm identifiers, the ASN.1 parser, X.509 certificate. | JWS/JWE/JWT module containing JWS/E/T-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. | COSE module containing all COSE/CWT-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. |
 | _Maven Coordinates_ | `at.asitplus.crypto:datatypes`                                                                                               | `at.asitplus.crypto:datatypes-jws`                                                                                                                                                                                                    | `at.asitplus.crypto:datatypes-cose`                                                                                                                                                                                                 |
 
@@ -48,9 +48,11 @@ Simply declare the desired dependency to get going:
 ```kotlin 
 implementation("at.asitplus.crypto:datatypes:$version")
 ```
+
 ```kotlin 
 implementation("at.asitplus.crypto:datatypes-jws:$version")
 ```
+
 ```kotlin 
 implementation("at.asitplus.crypto:datatypes.cose:$version")
 ```
@@ -59,7 +61,8 @@ implementation("at.asitplus.crypto:datatypes.cose:$version")
 
 _Relevant classes like `CryptoPublicKey`, `X509Certificate`, `Pkcs10CertificationREquest`, etc. all
 implement `Asn1Encodable` and their respective companions implement `Asn1Decodable`.
-Which means that you can do things like parsing and examining certificates, creating CSRs, or transferring key material._
+Which means that you can do things like parsing and examining certificates, creating CSRs, or transferring key
+material._
 
 <br>
 
@@ -268,43 +271,44 @@ DSL, which returns an `Asn1Structure`:
 
 ```kotlin
 asn1Sequence {
-  tagged(31u) {
-    Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00))
-  }
-  set {
-    sequence {
-      setOf {
-        printableString { "World" }
-        printableString { "Hello" }
-      }
-      set {
-        printableString { "World" }
-        printableString { "Hello" }
-        utf8String { "!!!" }
-      }
-
+    tagged(31u) {
+        Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00))
     }
-  }
-  asn1null()
+    set {
+        sequence {
+            setOf {
+                printableString { "World" }
+                printableString { "Hello" }
+            }
+            set {
+                printableString { "World" }
+                printableString { "Hello" }
+                utf8String { "!!!" }
+            }
 
-  oid { ObjectIdentifier("1.2.603.624.97") }
-
-  utf8String { "Foo" }
-  printableString { "Bar" }
-
-  set {
-    int { 3 }
-    long { -65789876543L }
-    bool { false }
-    bool { true }
-  }
-  sequence {
+        }
+    }
     asn1null()
-    string { Asn1String.Numeric("12345") }
-    utcTime { instant }
-  }
+
+    oid { ObjectIdentifier("1.2.603.624.97") }
+
+    utf8String { "Foo" }
+    printableString { "Bar" }
+
+    set {
+        int { 3 }
+        long { -65789876543L }
+        bool { false }
+        bool { true }
+    }
+    sequence {
+        asn1null()
+        string { Asn1String.Numeric("12345") }
+        utcTime { instant }
+    }
 }
 ```
+
 In accodance with DER-Encoding, this produces the following ASN.1 structure:
 
 ```
