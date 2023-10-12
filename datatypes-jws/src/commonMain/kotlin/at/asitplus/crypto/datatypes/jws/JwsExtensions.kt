@@ -1,7 +1,6 @@
 package at.asitplus.crypto.datatypes.jws
 
-import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
+import at.asitplus.crypto.datatypes.asn1.encodeTo4Bytes
 import at.asitplus.crypto.datatypes.asn1.padWithZeros
 import at.asitplus.crypto.datatypes.asn1.stripLeadingSignByte
 
@@ -65,9 +64,9 @@ object JwsExtensions {
         if (this[0] == 0x00.toByte() && this[1] > 0) drop(1).toByteArray() else this
 
     /**
-     * Encode the length of (as four bytes) plus the value itself
+     * Prepend `this` with the size as four bytes
      */
-    fun ByteArray?.encodeWithLength() = (this?.size ?: 0).encodeToByteArray() + (this ?: byteArrayOf())
+    fun ByteArray.prependWith4BytesSize() = this.size.encodeTo4Bytes() + this
 
 }
 

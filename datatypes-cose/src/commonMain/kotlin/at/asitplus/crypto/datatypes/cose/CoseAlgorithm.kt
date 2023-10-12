@@ -24,6 +24,7 @@ enum class CoseAlgorithm(val value: Int) {
         ES512 -> JwsAlgorithm.ES512
         //TODO
         HMAC256_256 -> JwsAlgorithm.HMAC256
+        RS256 -> TODO()
     }
 
     val signatureValueLength

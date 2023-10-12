@@ -331,10 +331,10 @@ private fun String.encodeTolvOid() = Asn1Primitive(OBJECT_IDENTIFIER, decodeToBy
 
 
 private fun Int.encodeToDer() = if (this == 0) byteArrayOf(0) else
-    encodeToByteArray().dropWhile { it == 0.toByte() }.toByteArray()
+    encodeTo4Bytes().dropWhile { it == 0.toByte() }.toByteArray()
 
 private fun Long.encodeToDer() = if (this == 0L) byteArrayOf(0) else
-    encodeToByteArray().dropWhile { it == 0.toByte() }.toByteArray()
+    encodeTo8Bytes().dropWhile { it == 0.toByte() }.toByteArray()
 
 /**
  * Produces a UTC TIME as [Asn1Primitive]
@@ -371,13 +371,17 @@ private fun Instant.encodeToAsn1Time(): String {
 /**
  * Encode as a four-byte array
  */
-fun Int.encodeToByteArray(): ByteArray =
-    byteArrayOf((this ushr 24).toByte(), (this ushr 16).toByte(), (this ushr 8).toByte(), (this).toByte())
+fun Int.encodeTo4Bytes(): ByteArray = byteArrayOf(
+    (this ushr 24).toByte(),
+    (this ushr 16).toByte(),
+    (this ushr 8).toByte(),
+    (this).toByte()
+)
 
 /**
  * Encode as an eight-byte array
  */
-fun Long.encodeToByteArray(): ByteArray = byteArrayOf(
+fun Long.encodeTo8Bytes(): ByteArray = byteArrayOf(
     (this ushr 56).toByte(),
     (this ushr 48).toByte(),
     (this ushr 40).toByte(),
