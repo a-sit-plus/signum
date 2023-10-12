@@ -11,6 +11,13 @@ import kotlin.experimental.and
 import kotlin.experimental.or
 import kotlin.math.ceil
 
+/**
+ * ASN.1 OBJECT IDENTIFIER featuring the most cursed encoding of numbers known to man, which probably surfaced due to an ungodly combination
+ * of madness, cruelty and a twisted sense of humour combined with god complex, of what most probably were tormented souls to begin with.
+ *
+ * @param nodes OID Tree nodes passed in order (e.g. 1u, 2u, 96u, …)
+ * @throws IllegalArgumentException if less than two nodes are supplied, the first node is >2 or the second node is >39
+ */
 @ExperimentalUnsignedTypes
 @Serializable(with = ObjectIdSerializer::class)
 class ObjectIdentifier(@Transient vararg val nodes: UInt) : Asn1Encodable<Asn1Primitive> {
@@ -24,8 +31,14 @@ class ObjectIdentifier(@Transient vararg val nodes: UInt) : Asn1Encodable<Asn1Pr
         if (nodes[1] > 39u) throw IllegalArgumentException("Second segment must be <40")
     }
 
+    /**
+     * @param oid in human-readable format (e.g. "1.2.96")
+     */
     constructor(oid: String) : this(*(oid.split(if (oid.contains('.')) '.' else ' ')).map { it.toUInt() }.toUIntArray())
 
+    /**
+     * @return human-readable format (e.g. "1.2.96")
+     */
     override fun toString() = nodes.joinToString(separator = ".") { it.toString() }
 
     override fun equals(other: Any?): Boolean {
@@ -44,6 +57,9 @@ class ObjectIdentifier(@Transient vararg val nodes: UInt) : Asn1Encodable<Asn1Pr
         return septets.reversedArray()
     }
 
+    /**
+     * Cursed encoding of OID nodes. A sacrifice of pristine numbers requested by the past gods of the netherrealm
+     */
     val bytes: ByteArray by lazy {
         nodes.slice(2..<nodes.size).map { it.encodeOidNode() }.fold(
             byteArrayOf(
@@ -52,9 +68,18 @@ class ObjectIdentifier(@Transient vararg val nodes: UInt) : Asn1Encodable<Asn1Pr
         ) { acc, bytes -> acc + bytes }
     }
 
+    /**
+     * @return an OBJECT IDENTIFIER [Asn1Primitive]
+     */
     override fun encodeToTlv() = Asn1Primitive(BERTags.OBJECT_IDENTIFIER, bytes)
 
     companion object : Asn1Decodable<Asn1Primitive, ObjectIdentifier> {
+
+        /**
+         * parsed an OBJECT IDENTIFIER contained in [src] to an [ObjectIdentifier]
+         * @throws Throwable  all sorts of errors on invalid input
+         */
+        @Throws(Throwable::class)
         override fun decodeFromTlv(src: Asn1Primitive): ObjectIdentifier {
             if (src.tag != BERTags.OBJECT_IDENTIFIER) throw IllegalArgumentException("Not an OID (tag: ${src.tag}")
             if (src.length < 1) throw IllegalArgumentException("Empty OIDs are not supported")
@@ -63,6 +88,11 @@ class ObjectIdentifier(@Transient vararg val nodes: UInt) : Asn1Encodable<Asn1Pr
 
         }
 
+        /**
+         * Casts our the evil demons that haunt OID components encoded into [rawValue]
+         * @return ObjectIdentifier if decoding succeeded
+         * @throws Throwable all sorts of errors on invalid input
+         */
         fun parse(rawValue: ByteArray): ObjectIdentifier {
             if (rawValue.isEmpty()) throw IllegalArgumentException("Empty OIDs are not supported")
             val (first, second) =
@@ -107,6 +137,11 @@ object ObjectIdSerializer : KSerializer<ObjectIdentifier> {
 }
 
 
+/**
+ * decodes this [Asn1Primitive]'s content into an [ObjectIdentifier]
+ *
+ * @throws [Throwable] all sorts of exceptions on invalid input
+ */
 fun Asn1Primitive.readOid() = decode(BERTags.OBJECT_IDENTIFIER) {
     ObjectIdentifier.parse(it)
 }
