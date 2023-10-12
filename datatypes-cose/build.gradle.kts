@@ -33,3 +33,40 @@ kotlin {
 }
 
 val javadocJar = setupDokka(baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/", multiModuleDoc = true)
+
+
+publishing {
+    publications {
+        withType<MavenPublication> {
+            artifact(javadocJar)
+            pom {
+                name.set("KMP Crypto Datatypes -  COSE Addons")
+                description.set("Kotlin Multiplatform library implementing the W3C VC Data Model")
+                url.set("https://github.com/a-sit-plus/kmp-crypto")
+                licenses {
+                    license {
+                        name.set("The Apache License, Version 2.0")
+                        url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                    }
+                }
+                developers {
+                    developer {
+                        id.set("JesusMcCloud")
+                        name.set("Bernd Prünster")
+                        email.set("bernd.pruenster@a-sit.at")
+                    }
+                    developer {
+                        id.set("nodh")
+                        name.set("Christian Kollmann")
+                        email.set("christian.kollmann@a-sit.at")
+                    }
+                }
+                scm {
+                    connection.set("scm:git:git@github.com:a-sit-plus/kmp-crypto.git")
+                    developerConnection.set("scm:git:git@github.com:a-sit-plus/kmp-crypto.git")
+                    url.set("https://github.com/a-sit-plus/kmp-crypto")
+                }
+            }
+        }
+    }
+}

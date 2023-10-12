@@ -13,7 +13,7 @@ import kotlin.math.ceil
 
 /**
  * ASN.1 OBJECT IDENTIFIER featuring the most cursed encoding of numbers known to man, which probably surfaced due to an ungodly combination
- * of madness, cruelty and a twisted sense of humour combined with god complex, of what most probably were tormented souls to begin with.
+ * of madness, cruelty and a twisted sense of humour. Courtesy of what were most probably tormented souls to begin with.
  *
  * @param nodes OID Tree nodes passed in order (e.g. 1u, 2u, 96u, …)
  * @throws IllegalArgumentException if less than two nodes are supplied, the first node is >2 or the second node is >39
@@ -58,7 +58,7 @@ class ObjectIdentifier(@Transient vararg val nodes: UInt) : Asn1Encodable<Asn1Pr
     }
 
     /**
-     * Cursed encoding of OID nodes. A sacrifice of pristine numbers requested by the past gods of the netherrealm
+     * Cursed encoding of OID nodes. A sacrifice of pristine numbers requested by past gods of the netherrealm
      */
     val bytes: ByteArray by lazy {
         nodes.slice(2..<nodes.size).map { it.encodeOidNode() }.fold(
@@ -76,7 +76,7 @@ class ObjectIdentifier(@Transient vararg val nodes: UInt) : Asn1Encodable<Asn1Pr
     companion object : Asn1Decodable<Asn1Primitive, ObjectIdentifier> {
 
         /**
-         * parsed an OBJECT IDENTIFIER contained in [src] to an [ObjectIdentifier]
+         * Parses an OBJECT IDENTIFIER contained in [src] to an [ObjectIdentifier]
          * @throws Throwable  all sorts of errors on invalid input
          */
         @Throws(Throwable::class)
@@ -89,7 +89,7 @@ class ObjectIdentifier(@Transient vararg val nodes: UInt) : Asn1Encodable<Asn1Pr
         }
 
         /**
-         * Casts our the evil demons that haunt OID components encoded into [rawValue]
+         * Casts out the evil demons that haunt OID components encoded into [rawValue]
          * @return ObjectIdentifier if decoding succeeded
          * @throws Throwable all sorts of errors on invalid input
          */

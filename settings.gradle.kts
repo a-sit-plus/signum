@@ -11,4 +11,4 @@ pluginManagement {
 include(":datatypes")
 include(":datatypes-jws")
 include(":datatypes-cose")
-rootProject.name = "crypto-umbrella"
+rootProject.name = "kmp-crypto"

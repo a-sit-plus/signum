@@ -4,7 +4,7 @@
 [![Kotlin](https://img.shields.io/badge/kotlin-multiplatform-orange.svg?logo=kotlin)](http://kotlinlang.org)
 [![Kotlin](https://img.shields.io/badge/kotlin-1.9.10-blue.svg?logo=kotlin)](http://kotlinlang.org)
 [![Java](https://img.shields.io/badge/java-11+-blue.svg?logo=OPENJDK)](https://www.oracle.com/java/technologies/downloads/#java11)
-[![Maven Central](https://img.shields.io/maven-central/v/at.asitplus/kmp-crypto)](https://mvnrepository.com/artifact/at.asitplus.kmp-crypto/)
+[![Maven Central](https://img.shields.io/maven-central/v/at.asitplus.crypto/datatypes)](https://mvnrepository.com/artifact/at.asitplus.crypto/datatypes/)
 
 ## Kotlin Multiplatform Crypto/PKI library and ASN1 Parser + Encoder
 
