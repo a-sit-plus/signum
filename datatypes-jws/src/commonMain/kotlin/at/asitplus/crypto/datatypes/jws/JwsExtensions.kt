@@ -5,6 +5,9 @@ import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
 import at.asitplus.crypto.datatypes.asn1.padWithZeros
 import at.asitplus.crypto.datatypes.asn1.stripLeadingSignByte
 
+
+//TODO a lot of this can now be streamlined thanks to our various helpers and ASN.1 Foo
+
 object JwsExtensions {
 
     private val ASN1_TAG_SEQUENCE = 0x30.toByte()

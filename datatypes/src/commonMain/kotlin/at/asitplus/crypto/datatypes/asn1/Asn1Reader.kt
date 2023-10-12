@@ -95,7 +95,7 @@ fun Asn1Primitive.readNull() = decode(NULL) {}
 
 fun Asn1Tagged.verify(tag: UByte): List<Asn1Element> {
     if (this.tag != tag.toExplicitTag()) throw IllegalArgumentException("Tag ${this.tag} does not match expected tag ${tag.toExplicitTag()}")
-    return this.contained
+    return this.children
 }
 
 inline fun <reified T> Asn1Primitive.decode(tag: UByte, decode: (content: ByteArray) -> T) = runCatching {

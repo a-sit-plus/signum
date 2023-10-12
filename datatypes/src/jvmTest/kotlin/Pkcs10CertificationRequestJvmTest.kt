@@ -136,7 +136,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         //x509Certificate.encodeToDer() shouldBe certificateHolder.encoded
         csr.signatureAlgorithm shouldBe signatureAlgorithm
         csr.tbsCsr.version shouldBe 0
-        csr.tbsCsr.subjectName.first().value.content shouldBe commonName.encodeToByteArray()
+        (csr.tbsCsr.subjectName.first().value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
         val parsedPublicKey = csr.tbsCsr.publicKey
         parsedPublicKey.shouldBeInstanceOf<CryptoPublicKey.Ec>()
         parsedPublicKey.x shouldBe keyX

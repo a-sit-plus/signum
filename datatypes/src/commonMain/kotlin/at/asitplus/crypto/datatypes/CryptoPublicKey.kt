@@ -224,6 +224,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
         @Transient
         override val keyId = MultibaseHelper.calcKeyId(curve, x, y)
 
-
     }
 }
+
+fun Asn1TreeBuilder.subjectPublicKey(block: () -> CryptoPublicKey) = apply { elements += block().encodeToTlv() }

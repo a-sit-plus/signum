@@ -3,6 +3,10 @@ package at.asitplus.crypto.datatypes.asn1
 //Converted from Peter Gutmann's dumpasn1
 
 //TODO clean up this mess
+/**
+ * Auto-converted, thinned-out version of Peter Gutmann's [dumpasn1.cfg](https://www.cs.auckland.ac.nz/~pgut001/dumpasn1.cfg)
+ * containign known OIDs relevant in the X.509/PKI context
+ */
 object KnownOIDs {
 
     //Most of it is commented out, because this is just too much unstructured bloat. Feel free to un-comment anhting you need

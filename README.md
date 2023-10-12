@@ -206,6 +206,8 @@ To parse any DER-encoded ASN.1 structure, call `Asn1Element.parse(derBytes)`, wh
 It can be re-encoded (and yes, it is a true re-encoding, since the original bytes are discarded after decoding) by
 accessing the lazily evaluated `.derEncoded` property.
 
+**Note that decoding operations will throw exceptions if invalid data is provided!**
+
 A parsed `Asn1Element` can either be a primitive (whose tag and value can be read) or a structure (like a set or
 sequence) whose child
 nodes can be processed as desired. Subclasses of `Asn1Element` reflect this:

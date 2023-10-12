@@ -23,7 +23,7 @@ import java.security.interfaces.RSAPublicKey
 class PublicKeyTest : FreeSpec({
     "EC" - {
         withData(256, 384, 521) { bits ->
-            val keys = List<ECPublicKey>(1000) {
+            val keys = List<ECPublicKey>(256000/bits) {
                 val ecKp = KeyPairGenerator.getInstance("EC").apply {
                     initialize(bits)
                 }.genKeyPair()
@@ -53,7 +53,7 @@ class PublicKeyTest : FreeSpec({
     }
     "RSA" - {
         withData(512, 1024, 2048, 3072, 4096) { bits ->
-            val keys = List<RSAPublicKey>(20) {
+            val keys = List<RSAPublicKey>(13000/bits) {
                 val rsaKP = KeyPairGenerator.getInstance("RSA").apply {
                     initialize(bits)
                 }.genKeyPair()
