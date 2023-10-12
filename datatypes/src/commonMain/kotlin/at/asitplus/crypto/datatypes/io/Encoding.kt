@@ -14,6 +14,9 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
+/**
+ * Strict Base64 URL encode
+ */
 val Base64UrlStrict = Base64(config = Base64ConfigBuilder().apply {
     lineBreakInterval = 0
     encodeToUrlSafe = true
@@ -22,6 +25,9 @@ val Base64UrlStrict = Base64(config = Base64ConfigBuilder().apply {
 }.build())
 
 
+/**
+ * Strict Base64 encoder
+ */
 val Base64Strict = Base64(config = Base64ConfigBuilder().apply {
     lineBreakInterval = 0
     encodeToUrlSafe = false
@@ -30,6 +36,9 @@ val Base64Strict = Base64(config = Base64ConfigBuilder().apply {
 }.build())
 
 
+/**
+ * De-/serializes Base64 strings to/from [ByteArray]
+ */
 object ByteArrayBase64Serializer : KSerializer<ByteArray> {
 
     override val descriptor: SerialDescriptor =
@@ -45,6 +54,10 @@ object ByteArrayBase64Serializer : KSerializer<ByteArray> {
 
 }
 
+
+/**
+ * De-/serializes Base64Url strings to/from [ByteArray]
+ */
 object ByteArrayBase64UrlSerializer : KSerializer<ByteArray> {
 
     override val descriptor: SerialDescriptor =

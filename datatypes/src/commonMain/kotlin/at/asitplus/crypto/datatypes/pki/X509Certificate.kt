@@ -6,6 +6,8 @@ import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import at.asitplus.crypto.datatypes.asn1.DERTags.toImplicitTag
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
+import at.asitplus.crypto.datatypes.sigAlg
+import at.asitplus.crypto.datatypes.subjectPublicKey
 import kotlinx.serialization.Serializable
 
 /**
@@ -126,6 +128,7 @@ data class TbsCertificate(
     }
 }
 
+fun Asn1TreeBuilder.tbsCertificate(block: () -> TbsCertificate) = apply { elements += block().encodeToTlv() }
 /**
  * Very simple implementation of an X.509 Certificate
  */

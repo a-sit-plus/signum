@@ -80,6 +80,9 @@ enum class JwsAlgorithm(val identifier: String) : Asn1Encodable<Asn1Sequence> {
     }
 }
 
+
+fun Asn1TreeBuilder.sigAlg(block: () -> JwsAlgorithm) = apply { elements += block().encodeToTlv() }
+
 object JwsAlgorithmSerializer : KSerializer<JwsAlgorithm> {
 
     override val descriptor: SerialDescriptor =

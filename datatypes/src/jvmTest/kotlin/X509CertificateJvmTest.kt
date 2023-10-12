@@ -126,8 +126,8 @@ class X509CertificateJvmTest : FreeSpec({
         //x509Certificate.encodeToDer() shouldBe certificateHolder.encoded
         x509Certificate.signatureAlgorithm shouldBe signatureAlgorithm
         x509Certificate.tbsCertificate.version shouldBe 2
-        x509Certificate.tbsCertificate.issuerName.first().value.content shouldBe commonName.encodeToByteArray()
-        x509Certificate.tbsCertificate.subjectName.first().value.content shouldBe commonName.encodeToByteArray()
+        (x509Certificate.tbsCertificate.issuerName.first().value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
+        (x509Certificate.tbsCertificate.subjectName.first().value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
         x509Certificate.tbsCertificate.serialNumber shouldBe serialNumber.toByteArray()
         x509Certificate.tbsCertificate.signatureAlgorithm shouldBe signatureAlgorithm
         x509Certificate.tbsCertificate.validFrom.instant shouldBe notBeforeDate.toInstant()

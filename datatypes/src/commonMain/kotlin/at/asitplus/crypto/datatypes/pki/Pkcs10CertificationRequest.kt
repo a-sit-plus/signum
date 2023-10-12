@@ -5,11 +5,17 @@ import at.asitplus.crypto.datatypes.JwsAlgorithm
 import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
+import at.asitplus.crypto.datatypes.sigAlg
+import at.asitplus.crypto.datatypes.subjectPublicKey
 import kotlinx.serialization.Serializable
 
 /**
  * The meat of a PKCS#10 Certification Request:
  * The structure that gets signed
+ * @param version defaults to 0
+ * @param subjectName list of subject distingished names
+ * @param publicKey nomen est omen
+ * @param extensions nomen est omen
  */
 @Serializable
 data class TbsCertificationRequest(
@@ -104,3 +110,6 @@ data class CertificationRequest(
         }
     }
 }
+
+fun Asn1TreeBuilder.tbsCertificationRequest(block: () -> TbsCertificationRequest) =
+    apply { elements += block().encodeToTlv() }

@@ -4,10 +4,16 @@ import at.asitplus.crypto.datatypes.asn1.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * X.500 Name (used in X.509 Certificates)
+ */
+
+//TODO: value should be Asn1Primitive???
 @Serializable
 sealed class DistinguishedName : Asn1Encodable<Asn1Set> {
     abstract val oid: ObjectIdentifier
     abstract val value: Asn1Element
+
 
     @Serializable
     @SerialName("CN")

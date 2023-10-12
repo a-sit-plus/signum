@@ -59,6 +59,9 @@ class Asn1EncodingTest : FreeSpec({
         }
 
         println(sequence)
+
+        Asn1Element.parse(sequence.derEncoded).derEncoded shouldBe  sequence.derEncoded
         println("DER-encoded: ${sequence.toDerHexString()}")
+
     }
 })

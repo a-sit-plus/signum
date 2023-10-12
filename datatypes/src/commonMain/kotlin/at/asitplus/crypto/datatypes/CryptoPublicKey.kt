@@ -110,7 +110,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
     data class Rsa private constructor(
         val bits: Size,
         @Serializable(with = ByteArrayBase64Serializer::class) val n: ByteArray,
-        val e: ByteArray,
+        @Serializable(with = ByteArrayBase64Serializer::class) val e: ByteArray,
     ) : CryptoPublicKey() {
 
         private constructor(triple: Triple<ByteArray, ByteArray, Size>) : this(
@@ -236,3 +236,5 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
 
 private fun sanitizeRsaInputs(n: ByteArray, e: ByteArray) = n.dropWhile { it == 0.toByte() }.toByteArray()
     .let { Triple(it, e.dropWhile { it == 0.toByte() }.toByteArray(), CryptoPublicKey.Rsa.Size.of(it)) }
+
+fun Asn1TreeBuilder.subjectPublicKey(block: () -> CryptoPublicKey) = apply { elements += block().encodeToTlv() }
