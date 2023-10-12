@@ -92,7 +92,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
                 val n = (rsaSequence.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
                 val e = (rsaSequence.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
                 if (rsaSequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous data in SPKI!")
-                return Rsa(Rsa.Size.of(n), n, e)
+                return Rsa(n, e)
             } else {
                 throw IllegalArgumentException("Unsupported Key Type: $oid")
             }
@@ -107,13 +107,19 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
     }
 
     @Serializable
-    data class Rsa(
+    data class Rsa private constructor(
         val bits: Size,
-        // todo drop leading zeros
         @Serializable(with = ByteArrayBase64Serializer::class) val n: ByteArray,
-        // todo drop leading zeros
         val e: ByteArray,
     ) : CryptoPublicKey() {
+
+        private constructor(triple: Triple<ByteArray, ByteArray, Size>) : this(
+            triple.third,
+            triple.first,
+            triple.second
+        )
+
+        constructor(n: ByteArray, e: ByteArray) : this(sanitizeRsaInputs(n, e))
 
         enum class Size(val number: UInt) {
             RSA_512(512u),
@@ -125,7 +131,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
 
             companion object {
                 fun of(numBits: UInt) = entries.find { it.number == numBits }
-                fun of(n: ByteArray) = entries.find { n.size <= (it.number.toInt()/8 + 1) }?: throw IllegalArgumentException("Unsupported key size ${n.size}")
+                fun of(n: ByteArray) = entries.find { n.size <= (it.number.toInt() / 8 + 1) }
+                    ?: throw IllegalArgumentException("Unsupported key size ${n.size}")
             }
         }
 
@@ -147,7 +154,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
-            if(other==null) return false
+            if (other == null) return false
             if (this::class != other::class) return false
 
             other as Rsa
@@ -162,7 +169,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
             return result
         }
 
-        companion object{
+        companion object {
             fun fromPKCS1encoded(input: ByteArray): Rsa {
                 val conv = Asn1Element.parse(input) as Asn1Sequence
                 val n = (conv.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
@@ -206,7 +213,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
             fun fromAnsiX963Bytes(src: ByteArray): CryptoPublicKey {
                 if (src[0] != 0x04.toByte()) throw IllegalArgumentException("No EC key")
                 val curve = EcCurve.entries
-                    .find { 2 * it.coordinateLengthBytes.toInt() == src.size - 1 } ?: throw IllegalArgumentException("Unknown Curve")
+                    .find { 2 * it.coordinateLengthBytes.toInt() == src.size - 1 }
+                    ?: throw IllegalArgumentException("Unknown Curve")
                 val numBytes = curve.coordinateLengthBytes.toInt()
                 val x = src.drop(1).take(numBytes).toByteArray()
                 val y = src.drop(1).drop(numBytes).take(numBytes).toByteArray()
@@ -223,7 +231,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
 
         @Transient
         override val keyId = MultibaseHelper.calcKeyId(curve, x, y)
-
-
     }
 }
+
+private fun sanitizeRsaInputs(n: ByteArray, e: ByteArray) = n.dropWhile { it == 0.toByte() }.toByteArray()
+    .let { Triple(it, e.dropWhile { it == 0.toByte() }.toByteArray(), CryptoPublicKey.Rsa.Size.of(it)) }

@@ -68,8 +68,13 @@ class PublicKeyTest : FreeSpec({
                 keys
             ) { pubKey ->
 
-                val sz = CryptoPublicKey.Rsa.Size.of(bits.toUInt())!!
-                val own = CryptoPublicKey.Rsa(sz, pubKey.modulus.toByteArray(), pubKey.publicExponent.toByteArray())
+                val own = CryptoPublicKey.Rsa(pubKey.modulus.toByteArray(), pubKey.publicExponent.toByteArray())
+                val own1 = CryptoPublicKey.Rsa(byteArrayOf(0,0,0) + pubKey.modulus.toByteArray(),byteArrayOf(0,0,0) + pubKey.publicExponent.toByteArray())
+
+                // Correctly drops leading zeros
+                own1.n shouldBe own.n
+                own1.e shouldBe own.e
+
                 println(Json.encodeToString(own))
                 println(own.iosEncoded.encodeToString(Base16()))
                 println(own.keyId)

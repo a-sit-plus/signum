@@ -86,6 +86,5 @@ fun CryptoPublicKey.Companion.fromJcaKey(publicKey: PublicKey) =
 
 
 fun CryptoPublicKey.Rsa.Companion.fromJcaKey(publicKey: RSAPublicKey): CryptoPublicKey.Rsa? {
-    val sz = CryptoPublicKey.Rsa.Size.entries.find { it.number.toInt() == publicKey.modulus.bitLength() } ?: return null
-    return CryptoPublicKey.Rsa(sz, publicKey.modulus.toByteArray(), publicKey.publicExponent.toByteArray())
+    return CryptoPublicKey.Rsa(publicKey.modulus.toByteArray(), publicKey.publicExponent.toByteArray())
 }
