@@ -21,7 +21,7 @@ kotlin {
             }
             val commonTest by getting {
                 dependencies {
-                    implementation(at.asitplus.gradle.kotest("property"))
+                    implementation(kotest("property"))
                 }
             }
         }
@@ -36,3 +36,5 @@ kotlin {
         val jvmTest by getting
     }
 }
+
+val javadocJar = setupDokka(baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/", multiModuleDoc = true)

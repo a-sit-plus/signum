@@ -78,21 +78,20 @@ class Asn1EncodingTest : FreeSpec({
             }
             asn1null()
 
-            oid { ObjectIdentifier("1.2.60873.543.65.2324.97") }
+            oid { ObjectIdentifier("1.2.603.624.97") }
 
             utf8String { "Foo" }
             printableString { "Bar" }
 
             set {
                 int { 3 }
-                long { 123456789876543L }
+                long { -65789876543L }
                 bool { false }
                 bool { true }
             }
             sequence {
                 asn1null()
-                hexEncoded { "CAFEBABE" }
-                hexEncoded { "BADDAD" }
+                string { Asn1String.Numeric("12345") }
                 utcTime { instant }
             }
         }
@@ -100,7 +99,7 @@ class Asn1EncodingTest : FreeSpec({
         println(sequence)
 
         Asn1Element.parse(sequence.derEncoded).derEncoded shouldBe sequence.derEncoded
-        println("DER-encoded: ${sequence.toDerHexString()}")
+        println(sequence.toDerHexString(lineLen = 58))
 
     }
 })

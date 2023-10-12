@@ -91,6 +91,7 @@ data class JsonWebKey(
 
     @Deprecated("Use CryptoPublicKey functionality instead!")
     fun toAnsiX963ByteArray(): KmmResult<ByteArray> {
+        //TODO use cryptopublickey functionality
         if (x != null && y != null)
             return KmmResult.success(byteArrayOf(0x04.toByte()) + x + y);
         return KmmResult.failure(IllegalArgumentException())
@@ -117,6 +118,8 @@ data class JsonWebKey(
             x = x,
             y = y,
         ).apply { jwkId = identifier }
+
+        //TODO RSA
     }
 }
 

@@ -38,8 +38,8 @@ This library consists of three modules, each of which is published on maven cent
 
 | Name              | `datatypes`                                                                                                                  | `datatypes-jws`                                                                                                                                                                                                                       | `datatypes-cose`                                                                                                                                                                                                                    |
 |-------------------|------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Description       | Base module containing the public key class (`CryptoPublicKey`), algorithm identifiers, the ASN.1 parser, X.509 certificate. | JWS/JWE/JWT module containing JWS/E/T-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. | COSE module containing all COSE/CWT-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. |
-| Maven Coordinates | `at.asitplus.crypto:datatypes`                                                                                               | `at.asitplus.crypto:datatypes-jws`                                                                                                                                                                                                    | `at.asitplus.crypto:datatypes-cose`                                                                                                                                                                                                 |
+| _Description_       | Base module containing the public key class (`CryptoPublicKey`), algorithm identifiers, the ASN.1 parser, X.509 certificate. | JWS/JWE/JWT module containing JWS/E/T-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. | COSE module containing all COSE/CWT-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. |
+| _Maven Coordinates_ | `at.asitplus.crypto:datatypes`                                                                                               | `at.asitplus.crypto:datatypes-jws`                                                                                                                                                                                                    | `at.asitplus.crypto:datatypes-cose`                                                                                                                                                                                                 |
 
 ### Using it in your Projects
 
@@ -48,10 +48,20 @@ Simply declare the desired dependency to get going:
 ```kotlin 
 implementation("at.asitplus.crypto:datatypes:$version")
 ```
+```kotlin 
+implementation("at.asitplus.crypto:datatypes-jws:$version")
+```
+```kotlin 
+implementation("at.asitplus.crypto:datatypes.cose:$version")
+```
 
-Relevant classes like `CryptoPublicKey`, `X509Certificate`, `Pkcs10CertificationREquest`, etc. all
+<br>
+
+_Relevant classes like `CryptoPublicKey`, `X509Certificate`, `Pkcs10CertificationREquest`, etc. all
 implement `Asn1Encodable` and their respective companions implement `Asn1Decodable`.
-Which means that you can do things like parsing and examining certificates, creating CSRs, or transferring key material.
+Which means that you can do things like parsing and examining certificates, creating CSRs, or transferring key material._
+
+<br>
 
 ### Certificate Parsing
 
@@ -196,7 +206,15 @@ val csr = CertificationRequest(tbsCsr, signatureAlgorithm, signed)
 println(csr.derEncoded)
 ```
 
-> [3081DA308181020100301F311D301B06035504030C1444656661756C7443727970746F536572766963653059301306072A8648CE3D020106082A8648CE3D03010703420004DF2444267805C50B29C4BFC2C726AF82F6BA8EBE1FACED277D475E12CF417816AE7218EC1C79844FEA89CDBA1E2DD4BD5039F76E4FBF8F999D548FD1151BC205A000300A06082A8648CE3D04030203480030450221008CB8D6ADAD4A594C75CD807D92807BF5EA72D8B10676E6B2FC1F813D9E1FD82F022037FD26AE0D2578E0266BCEABC83A35CE324CBFA6446411CBE24753E8B1F0852E](https://lapo.it/asn1js/#MIHaMIGBAgEAMB8xHTAbBgNVBAMMFERlZmF1bHRDcnlwdG9TZXJ2aWNlMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE3yREJngFxQspxL_Cxyavgva6jr4frO0nfUdeEs9BeBauchjsHHmET-qJzboeLdS9UDn3bk-_j5mdVI_RFRvCBaAAMAoGCCqGSM49BAMCA0gAMEUCIQCMuNatrUpZTHXNgH2SgHv16nLYsQZ25rL8H4E9nh_YLwIgN_0mrg0leOAma86ryDo1zjJMv6ZEZBHL4kdT6LHwhS4)
+Which results in the following output:
+
+> [3081D9308181020100301F311D301B06035504030C1444656661756C74437279
+> 70746F536572766963653059301306072A8648CE3D020106082A8648CE3D0301
+> 07034200043797E977E359AAABFC9177E7C95FD5B4BE4AC24C4FF13F3233F774
+> E8B65FE5FBA5057513BD076CFFB2E17567AC9BD43737FB6BDF496CC6DCB47194
+> BBE7512F0BA000300A06082A8648CE3D0403020347003044022079D188C09E20
+> C70AFF096B9484DDDE70484485FD551676273A517E818B94644E02206B222905
+> D343C1D6FC9319A364CECA7E67956E4B99D63537E17A9F5D4093D7AE](https://lapo.it/asn1js/#MIHZMIGBAgEAMB8xHTAbBgNVBAMMFERlZmF1bHRDcnlwdG9TZXJ2aWNlMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEN5fpd-NZqqv8kXfnyV_VtL5KwkxP8T8yM_d06LZf5fulBXUTvQds_7LhdWesm9Q3N_tr30lsxty0cZS751EvC6AAMAoGCCqGSM49BAMCA0cAMEQCIHnRiMCeIMcK_wlrlITd3nBIRIX9VRZ2JzpRfoGLlGROAiBrIikF00PB1vyTGaNkzsp-Z5VuS5nWNTfhep9dQJPXrg)
 
 ### Working with Generic ASN.1 Structures
 
@@ -255,34 +273,34 @@ asn1Sequence {
   }
   set {
     sequence {
-      setOf { //note: DER encoding enfoces sorting here, so the result switches those
+      setOf {
         printableString { "World" }
         printableString { "Hello" }
       }
-      set { //note: DER encoding enfoces sorting by tags, so the order changes in the ourput
+      set {
         printableString { "World" }
         printableString { "Hello" }
         utf8String { "!!!" }
       }
+
     }
   }
   asn1null()
 
-  oid { ObjectIdentifier("1.2.60873.543.65.2324.97") }
+  oid { ObjectIdentifier("1.2.603.624.97") }
 
   utf8String { "Foo" }
   printableString { "Bar" }
 
   set {
     int { 3 }
-    long { 123456789876543L }
+    long { -65789876543L }
     bool { false }
     bool { true }
   }
   sequence {
     asn1null()
-    hexEncoded { "CAFEBABE" }
-    hexEncoded { "BADDAD" }
+    string { Asn1String.Numeric("12345") }
     utcTime { instant }
   }
 }
@@ -306,20 +324,19 @@ SEQUENCE {
       }
    }
    NULL 
-   OBJECTIDENTIFIER 1.2.60873.543.65.2324.97
+   OBJECTIDENTIFIER 1.2.603.624.97
    UTF8String 'Foo'
    PrintableString 'Bar'
    SET {
       BOOLEAN FALSE
       BOOLEAN TRUE
       INTEGER 0x03 (3 decimal)
-      INTEGER 0x7048861B0F3F
+      INTEGER 0xFFF0AE9E26C1
    }
    SEQUENCE {
       NULL 
-      OBJECTIDENTIFIER 5.2
-      OBJECTIDENTIFIER 4.26
-      UTCTime '231011202808Z'
+      NumericString '12345'
+      UTCTime '231012190130Z'
    }
 }
 ```

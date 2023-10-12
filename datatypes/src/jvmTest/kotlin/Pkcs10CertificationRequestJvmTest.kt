@@ -55,7 +55,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         }.sign()
         val csr = CertificationRequest(tbsCsr, signatureAlgorithm, signed)
 
-        println(csr.derEncoded.encodeToString(Base16))
+        println(csr.encodeToTlv().toDerHexString(lineLen = 64))
 
         val kotlinEncoded = csr.derEncoded
 
@@ -96,7 +96,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             publicKey = cryptoPublicKey,
             extensions = listOf(
                 Pkcs10CertificationRequestAttribute(KnownOIDs.keyUsage, Asn1Element.parse(keyUsage.encoded)),
-                Pkcs10CertificationRequestAttribute(KnownOIDs.extKeyUsage, Asn1Element.parse(extendedKeyUsage.encoded))
+                Pkcs10CertificationRequestAttribute(KnownOIDs.`extKeyUsage`, Asn1Element.parse(extendedKeyUsage.encoded))
             )
         )
         val signed = Signature.getInstance(signatureAlgorithm.jcaName).apply {

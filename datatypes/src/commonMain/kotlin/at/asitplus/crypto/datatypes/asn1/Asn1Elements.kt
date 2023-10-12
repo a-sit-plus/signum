@@ -85,7 +85,12 @@ sealed class Asn1Element(
     /**
      * Convenience method to directly produce an HEX string of this element's ANS.1 representation
      */
-    fun toDerHexString() = derEncoded.encodeToString(Base16 { strict() })
+    fun toDerHexString(lineLen: Byte? = null) = derEncoded.encodeToString(Base16 {
+        lineLen?.let {
+            lineBreakInterval = lineLen
+        }
+    })
+
     override fun hashCode(): Int {
         var result = tlv.hashCode()
         result = 31 * result + (children?.hashCode() ?: 0)

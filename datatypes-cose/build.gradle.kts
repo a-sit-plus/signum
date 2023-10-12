@@ -1,9 +1,6 @@
 import DatatypeVersions.encoding
 import DatatypeVersions.kmmresult
-import at.asitplus.gradle.datetime
-import at.asitplus.gradle.exportIosFramework
-import at.asitplus.gradle.napier
-import at.asitplus.gradle.serialization
+import at.asitplus.gradle.*
 
 plugins {
     kotlin("multiplatform")
@@ -34,3 +31,5 @@ kotlin {
         val jvmTest by getting
     }
 }
+
+val javadocJar = setupDokka(baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/", multiModuleDoc = true)
