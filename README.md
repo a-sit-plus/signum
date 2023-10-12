@@ -365,3 +365,4 @@ even entertaining the thought of implementing such functionality. It therefore n
 * We don't yet know how compliant everything really is, but so far it could parse and re-encode every certificate we
   threw at it without braking anything
 * Number of supported Algorithms is limited to the usual suspects (sorry, no Bernstein curves )-:)
+* The JWS and COSE modules currently only support ES256 and EC keys. This is WIP and will be done ASAP.
