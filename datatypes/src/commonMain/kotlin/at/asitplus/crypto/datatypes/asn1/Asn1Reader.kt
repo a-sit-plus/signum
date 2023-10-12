@@ -16,6 +16,8 @@ import at.asitplus.crypto.datatypes.asn1.BERTags.VISIBLE_STRING
 import at.asitplus.crypto.datatypes.asn1.DERTags.isContainer
 import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import kotlinx.datetime.Instant
+import kotlin.experimental.and
+
 
 /**
  * Parses the provides [input] into a single [Asn1Element]
@@ -193,23 +195,23 @@ private fun Instant.Companion.decodeGeneralizedTimeFromDer(input: ByteArray): In
 }.getOrElse { throw IllegalArgumentException(it) }
 
 private fun Int.Companion.decodeFromDer(input: ByteArray): Int {
-    var result = 0
-    if (input.size > 4) throw IllegalArgumentException("Too many bytes!")
-    for (i in input.indices) {
-        result = (result shl Byte.SIZE_BITS) or (input[i].toUByte().toInt())
-    }
-    return result
+    return Long.decodeFromDer(input).toInt()
 }
 
 @Throws(IllegalArgumentException::class)
-private fun Long.Companion.decodeFromDer(input: ByteArray): Long {
+fun Long.Companion.decodeFromDer(bytes: ByteArray): Long {
+    val input = if (bytes.size == 8) bytes else {
+        if (bytes.size > 9) throw IllegalArgumentException("Absolute value too large!")
+        val padding = if (bytes.first() and 0x80.toByte() != 0.toByte()) 0xFF.toByte() else 0x00.toByte()
+        ByteArray(9 - bytes.size) { padding } + bytes
+    }
     var result = 0L
-    if (input.size > 8) throw IllegalArgumentException("Too many bytes!")
     for (i in input.indices) {
         result = (result shl Byte.SIZE_BITS) or (input[i].toUByte().toLong())
     }
     return result
 }
+
 
 private fun ByteArray.readTlv(): TLV = runCatching {
     if (this.isEmpty()) throw IllegalArgumentException("Can't read TLV, input empty")

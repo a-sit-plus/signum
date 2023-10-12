@@ -30,10 +30,7 @@ data class TbsCertificationRequest(
         sequence { subjectName.forEach { append { it.encodeToTlv() } } }
         subjectPublicKey { publicKey }
         append {
-            Asn1Tagged(
-                0u.toExplicitTag(),
-                extensions?.map { it.encodeToTlv() } ?: listOf()
-            )
+            Asn1Tagged(0u.toExplicitTag(), extensions?.map { it.encodeToTlv() } ?: listOf())
         }
     }
 

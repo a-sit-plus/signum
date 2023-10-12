@@ -305,7 +305,7 @@ fun Int.encodeToTlv() = Asn1Primitive(INTEGER, encodeToDer())
 /**
  * Produces a BOOLEAN as [Asn1Primitive]
  */
-fun Boolean.encodeToTlv() = Asn1Primitive(BOOLEAN, (if (this) 0xff else 0).encodeToDer())
+fun Boolean.encodeToTlv() = Asn1Primitive(BOOLEAN, byteArrayOf(if (this) 0xff.toByte() else 0))
 
 /**
  * Produces an INTEGER as [Asn1Primitive]
@@ -331,10 +331,10 @@ private fun String.encodeTolvOid() = Asn1Primitive(OBJECT_IDENTIFIER, decodeToBy
 
 
 private fun Int.encodeToDer() = if (this == 0) byteArrayOf(0) else
-    encodeTo4Bytes().dropWhile { it == 0.toByte() }.toByteArray()
+    encodeToByteArray()
 
 private fun Long.encodeToDer() = if (this == 0L) byteArrayOf(0) else
-    encodeTo8Bytes().dropWhile { it == 0.toByte() }.toByteArray()
+    encodeToByteArray()
 
 /**
  * Produces a UTC TIME as [Asn1Primitive]
@@ -391,6 +391,103 @@ fun Long.encodeTo8Bytes(): ByteArray = byteArrayOf(
     (this ushr 8).toByte(),
     (this).toByte()
 )
+
+/**
+ * Encodes a signed Long correctly to a compact byte array
+ */
+fun Long.encodeToByteArray(): ByteArray {
+    //fast case
+    if (this >= Byte.MIN_VALUE && this <= Byte.MAX_VALUE) return byteArrayOf(this.toByte())
+    if (this >= Short.MIN_VALUE && this <= Short.MAX_VALUE) return byteArrayOf((this ushr 8).toByte(), this.toByte())
+    if (this >= -(0x80 shl 16) && this < (0x80 shl 16)) return byteArrayOf(
+        (this ushr 16).toByte(),
+        (this ushr 8).toByte(),
+        this.toByte()
+    )
+    if (this >= -((0x80L shl 24)) && this < (0x80L shl 24)) return byteArrayOf(
+        (this ushr 24).toByte(),
+        (this ushr 16).toByte(),
+        (this ushr 8).toByte(),
+        this.toByte()
+    )
+    if (this >= Int.MIN_VALUE && this <= Int.MAX_VALUE) return byteArrayOf(
+        (this ushr 32).toByte(),
+        (this ushr 24).toByte(),
+        (this ushr 16).toByte(),
+        (this ushr 8).toByte(),
+        this.toByte()
+    )
+
+    if (this >= -((0x80L shl 40)) && this < (0x80L shl 40)) return byteArrayOf(
+        (this ushr 40).toByte(),
+        (this ushr 32).toByte(),
+        (this ushr 24).toByte(),
+        (this ushr 16).toByte(),
+        (this ushr 8).toByte(),
+        this.toByte()
+    )
+    if (this >= -((0x80L shl 48)) && this < (0x80L shl 48)) return byteArrayOf(
+        (this ushr 48).toByte(),
+        (this ushr 40).toByte(),
+        (this ushr 32).toByte(),
+        (this ushr 24).toByte(),
+        (this ushr 16).toByte(),
+        (this ushr 8).toByte(),
+        this.toByte()
+    )
+    //-Overflow FTW!
+    @Suppress("INTEGER_OVERFLOW")
+    if (this >= ((0x80L shl 56)) && this < ((0x80L shl 56) - 1)) return byteArrayOf(
+        (this ushr 56).toByte(),
+        (this ushr 48).toByte(),
+        (this ushr 40).toByte(),
+        (this ushr 32).toByte(),
+        (this ushr 24).toByte(),
+        (this ushr 16).toByte(),
+        (this ushr 8).toByte(),
+        this.toByte()
+    )
+    return byteArrayOf(
+        (this ushr 64).toByte(),
+        (this ushr 56).toByte(),
+        (this ushr 48).toByte(),
+        (this ushr 40).toByte(),
+        (this ushr 32).toByte(),
+        (this ushr 24).toByte(),
+        (this ushr 16).toByte(),
+        (this ushr 8).toByte(),
+        this.toByte()
+    )
+}
+
+/**
+ * Encodes a signed Long correctly to a compact byte array
+ */
+fun Int.encodeToByteArray(): ByteArray {
+    if (this >= Byte.MIN_VALUE && this <= Byte.MAX_VALUE) return byteArrayOf(this.toByte())
+    if (this >= Short.MIN_VALUE && this <= Short.MAX_VALUE) return byteArrayOf((this ushr 8).toByte(), this.toByte())
+    if (this >= -(0x80 shl 16) && this < (0x80 shl 16)) return byteArrayOf(
+        (this ushr 16).toByte(),
+        (this ushr 8).toByte(),
+        this.toByte()
+    )
+    //-Overflow FTW!
+    @Suppress("INTEGER_OVERFLOW")
+    if (this >= ((0x80 shl 24)) && this < ((0x80 shl 24) - 1)) return byteArrayOf(
+        (this ushr 24).toByte(),
+        (this ushr 16).toByte(),
+        (this ushr 8).toByte(),
+        this.toByte()
+    )
+    return byteArrayOf(
+        (this ushr 32).toByte(),
+        (this ushr 24).toByte(),
+        (this ushr 16).toByte(),
+        (this ushr 8).toByte(),
+        this.toByte()
+    )
+
+}
 
 /**
  * Strips the leading 0x00 byte of an ASN.1-encoded Integer,

@@ -1,7 +1,13 @@
 import at.asitplus.crypto.datatypes.asn1.*
 import io.kotest.core.spec.style.FreeSpec
+import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
+import io.kotest.property.Arb
+import io.kotest.property.arbitrary.int
+import io.kotest.property.arbitrary.long
+import io.kotest.property.checkAll
 import kotlinx.datetime.Clock
+import org.bouncycastle.asn1.ASN1Integer
 import java.util.*
 
 @OptIn(ExperimentalUnsignedTypes::class)
@@ -9,6 +15,39 @@ class Asn1EncodingTest : FreeSpec({
     val certBytes = Base64.getMimeDecoder()
         .decode(javaClass.classLoader.getResourceAsStream("certWithSkiAndExt.pem").reader().readText())
 
+
+
+    "Ans1 Number encoding" - {
+
+        withData(15253481L, -1446230472L, 0L, 1L, -1L, -2L, -9994587L, 340281555L) {
+            val bytes = (it).encodeToByteArray()
+
+            val fromBC = ASN1Integer(it).encoded
+            val long = Long.decodeFromDer(bytes)
+
+            val encoded = Asn1Primitive(BERTags.INTEGER, bytes).derEncoded
+            encoded shouldBe fromBC
+            long shouldBe it
+        }
+
+
+        "longs" - {
+            checkAll(iterations = 15000, Arb.long()) {
+                val seq = asn1Sequence { long { it } }
+                val decoded = (seq.nextChild() as Asn1Primitive).readLong()
+                decoded shouldBe it
+            }
+        }
+
+        "ints" - {
+            checkAll(iterations = 15000, Arb.int()) {
+                val seq = asn1Sequence { int { it } }
+                val decoded = (seq.nextChild() as Asn1Primitive).readInt()
+                decoded shouldBe it
+            }
+        }
+
+    }
 
     "Parsing and encoding results in the same bytes" {
         val tree = Asn1Element.parse(certBytes)
@@ -60,7 +99,7 @@ class Asn1EncodingTest : FreeSpec({
 
         println(sequence)
 
-        Asn1Element.parse(sequence.derEncoded).derEncoded shouldBe  sequence.derEncoded
+        Asn1Element.parse(sequence.derEncoded).derEncoded shouldBe sequence.derEncoded
         println("DER-encoded: ${sequence.toDerHexString()}")
 
     }

@@ -49,7 +49,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
                             n.ensureSize(bits.number / 8u)
                                 .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
                     }
-                    append { Asn1Primitive(BERTags.INTEGER, e) }
+                    int { e }
                 })
             }
         }
@@ -90,7 +90,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
                 val bitString = (src.nextChild() as Asn1Primitive).readBitString()
                 val rsaSequence = Asn1Element.parse(bitString) as Asn1Sequence
                 val n = (rsaSequence.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
-                val e = (rsaSequence.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
+                val e = (rsaSequence.nextChild() as Asn1Primitive).readInt()
                 if (rsaSequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous data in SPKI!")
                 return Rsa(n, e)
             } else {
@@ -110,16 +110,16 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
     data class Rsa private constructor(
         val bits: Size,
         @Serializable(with = ByteArrayBase64Serializer::class) val n: ByteArray,
-        @Serializable(with = ByteArrayBase64Serializer::class) val e: ByteArray,
+        val e: Int,
     ) : CryptoPublicKey() {
 
-        private constructor(triple: Triple<ByteArray, ByteArray, Size>) : this(
+        private constructor(triple: Triple<ByteArray, Int, Size>) : this(
             triple.third,
             triple.first,
             triple.second
         )
 
-        constructor(n: ByteArray, e: ByteArray) : this(sanitizeRsaInputs(n, e))
+        constructor(n: ByteArray, e: Int) : this(sanitizeRsaInputs(n, e))
 
         enum class Size(val number: UInt) {
             RSA_512(512u),
@@ -149,7 +149,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
                     n.ensureSize(bits.number / 8u)
                         .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
             }
-            append { Asn1Primitive(BERTags.INTEGER, e) }
+            int { e }
         }.derEncoded
 
         override fun equals(other: Any?): Boolean {
@@ -173,7 +173,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
             fun fromPKCS1encoded(input: ByteArray): Rsa {
                 val conv = Asn1Element.parse(input) as Asn1Sequence
                 val n = (conv.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
-                val e = (conv.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
+                val e = (conv.nextChild() as Asn1Primitive).readInt()
                 if (conv.hasMoreChildren()) throw IllegalArgumentException("Superfluous bytes")
                 return Rsa(Size.of(n), n, e)
             }
@@ -234,7 +234,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
     }
 }
 
-private fun sanitizeRsaInputs(n: ByteArray, e: ByteArray) = n.dropWhile { it == 0.toByte() }.toByteArray()
-    .let { Triple(it, e.dropWhile { it == 0.toByte() }.toByteArray(), CryptoPublicKey.Rsa.Size.of(it)) }
+private fun sanitizeRsaInputs(n: ByteArray, e: Int) = n.dropWhile { it == 0.toByte() }.toByteArray()
+    .let { Triple(it, e, CryptoPublicKey.Rsa.Size.of(it)) }
 
 fun Asn1TreeBuilder.subjectPublicKey(block: () -> CryptoPublicKey) = apply { elements += block().encodeToTlv() }
