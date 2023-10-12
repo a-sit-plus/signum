@@ -129,6 +129,7 @@ data class TbsCertificate(
 }
 
 fun Asn1TreeBuilder.tbsCertificate(block: () -> TbsCertificate) = apply { elements += block().encodeToTlv() }
+
 /**
  * Very simple implementation of an X.509 Certificate
  */

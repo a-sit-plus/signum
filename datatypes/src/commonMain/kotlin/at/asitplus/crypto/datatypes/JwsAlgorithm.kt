@@ -9,6 +9,10 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
+
+/**
+ * Since we support only JWS algorithms (with one exception), this class is called what it's called.
+ */
 @Serializable(with = JwsAlgorithmSerializer::class)
 enum class JwsAlgorithm(val identifier: String) : Asn1Encodable<Asn1Sequence> {
 
@@ -18,7 +22,11 @@ enum class JwsAlgorithm(val identifier: String) : Asn1Encodable<Asn1Sequence> {
     RS256("RS256"),
     RS384("RS384"),
     RS512("RS512"),
-    UNOFFICIAL_RSA_SHA1("RS1"),
+
+    /**
+     * The one exception, which is not a valid JWS algorithm identifier
+     */
+    NON_JWS_SHA1_WITH_RSA("RS1"),
     HMAC256("HS256");
 
     val signatureValueLength
@@ -49,7 +57,7 @@ enum class JwsAlgorithm(val identifier: String) : Asn1Encodable<Asn1Sequence> {
             asn1null()
         }
 
-        UNOFFICIAL_RSA_SHA1 -> asn1Sequence {
+        NON_JWS_SHA1_WITH_RSA -> asn1Sequence {
             oid { KnownOIDs.sha1WithRSAEncryption }
             asn1null()
         }
@@ -65,7 +73,7 @@ enum class JwsAlgorithm(val identifier: String) : Asn1Encodable<Asn1Sequence> {
                 KnownOIDs.ecdsaWithSHA256 -> ES256
                 else -> {
                     val alg = when (oid) {
-                        KnownOIDs.sha1WithRSAEncryption -> UNOFFICIAL_RSA_SHA1
+                        KnownOIDs.sha1WithRSAEncryption -> NON_JWS_SHA1_WITH_RSA
                         KnownOIDs.sha256WithRSAEncryption -> RS256
                         KnownOIDs.sha384WithRSAEncryption -> RS384
                         KnownOIDs.sha512WithRSAEncryption -> RS512

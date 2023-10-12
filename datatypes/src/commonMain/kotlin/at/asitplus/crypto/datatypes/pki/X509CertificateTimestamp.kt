@@ -9,7 +9,12 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-//TODO everything here feels off! Why isn't this an [Asn1Encodable] and why is his companion not implementing Asn1Decodable???
+//TODO everything here feels off! Why isn't this an [Asn1Encodable] and why is his companion not implementing [Asn1Decodable]???
+/**
+ * Wrapper for encoding timestamps into certificates (since GENERALIZED TIME and UTC TIME exist)
+ *
+ * @param asn1Object an Asn1Object representing either UTC TIME or GENERALIZED TIME
+ */
 @Serializable(with = CertTimeStampSerializer::class)
 class CertificateTimeStamp(val asn1Object: Asn1Primitive) {
     init {
@@ -17,6 +22,9 @@ class CertificateTimeStamp(val asn1Object: Asn1Primitive) {
             throw IllegalArgumentException("Not a timestamp!")
     }
 
+    /**
+     * This is the constructor you want to use. Automatically chooses the correct time encoding
+     */
     constructor(instant: Instant) : this(instant.wrap())
 
     val instant by lazy { asn1Object.readInstant() }

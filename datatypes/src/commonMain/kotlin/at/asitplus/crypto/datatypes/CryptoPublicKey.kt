@@ -7,15 +7,29 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
+/**
+ * Representation of a public key structure
+ */
 @Serializable
 sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
 
+    /**
+     * This is meant for storing additional properties, which may be relevant for certain use cases.
+     * For example, Json Web Keys or Cose Keys may define an arbitrary key IDs.
+     * This is not meant for Algorithm parameters! If an algorithm needs parameters, the implementing classes should be extended
+     */
     //must be serializable, therefore <String,String>
     val additionalProperties = mutableMapOf<String, String>()
 
+    /**
+     * Multibase KID
+     */
     @Transient
     abstract val keyId: String
 
+    /**
+     * Representation of this key in the same ways as iOS would encode it natively
+     */
     @Transient
     abstract val iosEncoded: ByteArray
 
@@ -57,10 +71,17 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
 
     companion object : Asn1Decodable<Asn1Sequence, CryptoPublicKey> {
 
+
+        /**
+         * Parses a KID and reconstructs a [CryptoPublicKey] from it
+         *
+         * @throws Throwable all sorts of exception on in valid input
+         */
         fun fromKeyId(it: String): CryptoPublicKey? {
             val (xCoordinate, yCoordinate) = MultibaseHelper.calcEcPublicKeyCoords(it)
                 ?: return null
             val curve = EcCurve.entries.find { it.coordinateLengthBytes.toInt() == xCoordinate.size } ?: return null
+            //TODO RSA
             return Ec(curve = curve, x = xCoordinate, y = yCoordinate)
         }
 
@@ -98,6 +119,9 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
             }
         }
 
+        /**
+         * Parses this key from an iOS-encoded one
+         */
         fun fromIosEncoded(it: ByteArray): CryptoPublicKey =
             when (it[0].toInt()) {
                 0x04 -> Ec.fromAnsiX963Bytes(it)
@@ -106,10 +130,24 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
             }
     }
 
+    /**
+     * RSA Public key
+     */
     @Serializable
     data class Rsa private constructor(
+        /**
+         * RSA key size
+         */
         val bits: Size,
+
+        /**
+         * modulus
+         */
         @Serializable(with = ByteArrayBase64Serializer::class) val n: ByteArray,
+
+        /**
+         * public exponent
+         */
         val e: Int,
     ) : CryptoPublicKey() {
 
@@ -121,6 +159,9 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
 
         constructor(n: ByteArray, e: Int) : this(sanitizeRsaInputs(n, e))
 
+        /**
+         * enum of supported RSA key sized. For sanity checks!
+         */
         enum class Size(val number: UInt) {
             RSA_512(512u),
             RSA_1024(1024u),
@@ -131,7 +172,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
 
             companion object {
                 fun of(numBits: UInt) = entries.find { it.number == numBits }
-                fun of(n: ByteArray) = entries.find { n.size <= (it.number.toInt() / 8 + 1) }
+                fun of(n: ByteArray) = entries.find { n.size == (it.number.toInt() / 8) }
                     ?: throw IllegalArgumentException("Unsupported key size ${n.size}")
             }
         }
@@ -170,6 +211,11 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
         }
 
         companion object {
+            /**
+             * decodes a PKCS#1-encoded RSA key
+             *
+             * @throws Throwable all sorts of exceptions on invalid input
+             */
             fun fromPKCS1encoded(input: ByteArray): Rsa {
                 val conv = Asn1Element.parse(input) as Asn1Sequence
                 val n = (conv.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
@@ -180,6 +226,10 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
         }
     }
 
+    /**
+     * EC public key representation
+     * The properties and constructor params are exactly what their names suggest
+     */
     @Serializable
     @SerialName("EC")
     data class Ec(
@@ -207,9 +257,15 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
         }
 
         companion object {
+            /**
+             * Decodes a key from the provided parameters
+             */
             fun fromCoordinates(curve: EcCurve, x: ByteArray, y: ByteArray): Ec =
                 Ec(curve = curve, x = x, y = y)
 
+            /**
+             * Decodes a key from its ANSI X9.63 representation
+             */
             fun fromAnsiX963Bytes(src: ByteArray): CryptoPublicKey {
                 if (src[0] != 0x04.toByte()) throw IllegalArgumentException("No EC key")
                 val curve = EcCurve.entries

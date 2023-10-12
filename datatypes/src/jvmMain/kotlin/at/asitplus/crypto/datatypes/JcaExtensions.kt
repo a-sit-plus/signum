@@ -25,7 +25,7 @@ val JwsAlgorithm.jcaName
         JwsAlgorithm.RS256 -> "SHA256withRSA"
         JwsAlgorithm.RS384 -> "SHA348withRSA"
         JwsAlgorithm.RS512 -> "SHA512withRSA"
-        JwsAlgorithm.UNOFFICIAL_RSA_SHA1 -> "SHA1withRSA"
+        JwsAlgorithm.NON_JWS_SHA1_WITH_RSA -> "SHA1withRSA"
     }
 
 val Digest.jcaName

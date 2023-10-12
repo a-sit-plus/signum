@@ -347,3 +347,4 @@ even entertaining the thought of implementing such functionality. It therefore n
   and write-back certificates without mangling them.
 * We don't yet know how compliant everything really is, but so far it could parse and re-encode every certificate we
   threw at it without braking anything
+* Number of supported Algorithms is limited to the usual suspects (sorry, no Bernstein curves )-:)
