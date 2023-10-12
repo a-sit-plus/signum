@@ -107,6 +107,11 @@ object ObjectIdSerializer : KSerializer<ObjectIdentifier> {
 }
 
 
+fun Asn1Primitive.readOid() = decode(BERTags.OBJECT_IDENTIFIER) {
+    ObjectIdentifier.parse(it)
+}
+
+
 private fun ByteArray.toSeptets(): ByteArray {
     var pos = 0
     val chunks = mutableListOf<Byte>()
