@@ -6,7 +6,7 @@ plugins {
     id("at.asitplus.gradle.conventions")
 }
 
-version = "1.0"
+version = "1.0.0"
 
 
 exportIosFramework("KmpCrypto",  serialization("json"),datetime())
