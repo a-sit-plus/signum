@@ -20,8 +20,8 @@ types and functionality related to crypto and PKI applications:
 * Certification Request (CSR)
 * ObjectIdentifier Class with human-readable notation (e.g. 1.2.9.6245.3.72.13.4.7.6)
 * Generic ASN.1 abstractions to operate on and create arbitrary ASN.1 Data
-* JWS-related data structures (Json Web Keys, JWT, etc…)
-* COSE-related data structures (Cose Keys, CWT, et…)
+* JWS-related data structures (JSON Web Keys, JWT, etc…)
+* COSE-related data structures (COSE Keys, CWT, etc…)
 * Serializability of all data classes for debugging
 * **ASN.1 Parser and Encoder including a DSL to generate ASN.1 structures**
 
@@ -60,7 +60,7 @@ implementation("at.asitplus.crypto:datatypes.cose:$version")
 
 <br>
 
-_Relevant classes like `CryptoPublicKey`, `X509Certificate`, `Pkcs10CertificationREquest`, etc. all
+_Relevant classes like `CryptoPublicKey`, `X509Certificate`, `Pkcs10CertificationRequest`, etc. all
 implement `Asn1Encodable` and their respective companions implement `Asn1Decodable`.
 Which means that you can do things like parsing and examining certificates, creating CSRs, or transferring key
 material._
@@ -111,7 +111,7 @@ Which produces the following output:
       },
       {
         "type": "O",
-        "value": "133352657075626C696B204F6573746572726569636820287665727472657465\n6E20647572636820424B4120756E6420424D445729"
+        "value": "133352657075626C696B204F65737465727265696368202876657274726574656E20647572636820424B4120756E6420424D445729"
       },
       {
         "type": "OU",
@@ -119,7 +119,7 @@ Which produces the following output:
       },
       {
         "type": "CN",
-        "value": "132B542D52657075626C696B2D4F657374657272656963682D41757468656E74\n6966697A696572756E672D3031"
+        "value": "132B542D52657075626C696B2D4F657374657272656963682D41757468656E746966697A696572756E672D3031"
       }
     ],
     "validFrom": "170D3233303932303132343135305A",
@@ -131,7 +131,7 @@ Which produces the following output:
       },
       {
         "type": "O",
-        "value": "133352657075626C696B204F6573746572726569636820287665727472657465\n6E20647572636820424B4120756E6420424D445729"
+        "value": "133352657075626C696B204F65737465727265696368202876657274726574656E20647572636820424B4120756E6420424D445729"
       },
       {
         "type": "OU",
@@ -139,7 +139,7 @@ Which produces the following output:
       },
       {
         "type": "CN",
-        "value": "1340542D42696E64756E67732D5A6572746966696B61742D4157502D31653064\n3638306365646461343963653931333738646261393432653366343234666366\n3164"
+        "value": "1340542D42696E64756E67732D5A6572746966696B61742D4157502D3165306436383063656464613439636539313337386462613934326533663432346663663164"
       }
     ],
     "publicKey": {
@@ -310,7 +310,7 @@ asn1Sequence {
 }
 ```
 
-In accodance with DER-Encoding, this produces the following ASN.1 structure:
+In accordance with DER-Encoding, this produces the following ASN.1 structure:
 
 ```
 SEQUENCE {
@@ -352,11 +352,11 @@ As this library provides multiplatform data types to help interop with platform-
 not provide any functionality to carry out the actual cryptographic operations.
 Also, it provides no abstractions for private keys, because those should never leave a system in the first place.
 
-While a multiplatform crypto provider would be awesome, this sort fo things also needs a careful design phase before
+While a multiplatform crypto provider would be awesome, this sort of things also needs a careful design phase before
 even entertaining the thought of implementing such functionality. It therefore not planned at the time of this writing (
 2023-10)
 
-* While the ASN.1 perser will happily parse any valid **DER-encoded** ASN.1 structure you throw at it and the encoder
+* While the ASN.1 parser will happily parse any valid **DER-encoded** ASN.1 structure you throw at it and the encoder
   write it back correctly too. (No, we don't care for BER, since we want to transport cryptographic material)
 * Higher-level abstractions (such as `X509Certificate`) are too lenient in some aspects and
   too strict in others.
