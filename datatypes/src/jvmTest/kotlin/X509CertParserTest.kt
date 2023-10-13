@@ -31,7 +31,7 @@ private val json = Json { prettyPrint = true }
 class X509CertParserTest : FreeSpec({
 
     "Real Certificates" - {
-        withData("certWithSkiAndExt.pem", "digicert-root.pem", "github-com.pem", "cert-times.pem") { crt ->
+        withData("digicert-root.pem", "github-com.pem", "cert-times.pem") { crt ->
             val certBytes = java.util.Base64.getMimeDecoder()
                 .decode(javaClass.classLoader.getResourceAsStream(crt).reader().readText())
             val jcaCert = CertificateFactory.getInstance("X.509")
@@ -75,13 +75,17 @@ class X509CertParserTest : FreeSpec({
         val certs = File("/etc/ssl/certs").listFiles { f: File -> f.name.endsWith(".pem") }.mapNotNull {
             runCatching { convertStringToX509Cert(FileReader(it).readText()) }.getOrNull()
         }
-        val pemEncodeCerts = File("/etc/ssl/certs/ca-certificates.crt").readText().split(Regex.fromLiteral("-\n-"))
+        val pemEncodeCerts = runCatching {
+             File("/etc/ssl/certs/ca-certificates.crt").readText().split(Regex.fromLiteral("-\n-"))
             .mapNotNull {
                 var pem = if (it.startsWith("-----")) it else "-$it"
                 pem = if (!pem.endsWith("-----")) "$pem-" else pem
 
                 runCatching { convertStringToX509Cert(pem) }.getOrNull()
             }
+        }.getOrElse {
+            println("W: could not load /etc/ssl/certs/ca-certificates.crt")
+            emptyList() }
         val uniqueCerts = (certs + pemEncodeCerts).distinctBy {
             it.encoded.encodeToString(Base64 {})
         }

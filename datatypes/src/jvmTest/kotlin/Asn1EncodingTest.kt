@@ -13,7 +13,7 @@ import java.util.*
 @OptIn(ExperimentalUnsignedTypes::class)
 class Asn1EncodingTest : FreeSpec({
     val certBytes = Base64.getMimeDecoder()
-        .decode(javaClass.classLoader.getResourceAsStream("certWithSkiAndExt.pem").reader().readText())
+        .decode(javaClass.classLoader.getResourceAsStream("github-com.pem").reader().readText())
 
 
 

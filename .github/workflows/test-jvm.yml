@@ -1,4 +1,4 @@
-name: Test JVM implementation
+name: Test Common + JVM
 on: [push]
 jobs:
   build:
@@ -13,11 +13,11 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
       - name: Run tests
-        run: ./gradlew jvmTest
+        run: ./gradlew allTests
       - name: Test Report
         uses: dorny/test-reporter@v1
         if: success() || failure()
         with:
-          name: datatypes Tests
-          path: datatypes/build/test-results/**/TEST*.xml
+          name: All Tests
+          path: datatypes/build/test-results/**/TEST*.xml,datatypes-cose/build/test-results/**/TEST*.xml,datatypes-jws/build/test-results/**/TEST*.xml
           reporter: java-junit
