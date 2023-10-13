@@ -1,0 +1,18 @@
+name: Build JVM artifacts
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Build jar
+        run: ./gradlew assemble
+      - name: Upload jar datatypes
+        uses: actions/upload-artifact@v3
+        with:
+          name: datatypes
+          path: |
+            datatypes/build/libs/*jar
