@@ -5,6 +5,7 @@ import at.asitplus.gradle.*
 plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization")
+    id("signing")
     id("at.asitplus.gradle.conventions")
 }
 
@@ -67,6 +68,16 @@ publishing {
                     url.set("https://github.com/a-sit-plus/kmp-crypto")
                 }
             }
+        }
+    }
+    repositories {
+        mavenLocal {
+            signing.isRequired = false
+        }
+        maven {
+            url = uri(layout.projectDirectory.dir("..").dir("repo"))
+            name = "local"
+            signing.isRequired = false
         }
     }
 }
