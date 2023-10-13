@@ -1,6 +1,6 @@
 # 🔥🔥🔥KMP Crypto🔥🔥🔥
 
-![Build KMP](https://github.com/a-sit-plus/kmp-crypto/actions/workflows/build-kmp.yml/badge.svg)
+[![Build KMP](https://github.com/a-sit-plus/kmp-crypto/actions/workflows/build-kmp.yml/badge.svg)](https://github.com/a-sit-plus/kmp-crypto/actions/workflows/build-kmp.yml)
 [![GitHub license](https://img.shields.io/badge/license-Apache%20License%202.0-brightgreen.svg?style=flat)](http://www.apache.org/licenses/LICENSE-2.0)
 [![Kotlin](https://img.shields.io/badge/kotlin-multiplatform-orange.svg?logo=kotlin)](http://kotlinlang.org)
 [![Kotlin](https://img.shields.io/badge/kotlin-1.9.10-blue.svg?logo=kotlin)](http://kotlinlang.org)
@@ -28,7 +28,7 @@ types and functionality related to crypto and PKI applications:
 This last bit means that
 **you can work with X509 Certificates, public keys, CSRs and arbitrary ASN.1 structures on iOS.**
 
-**Do check our the full API docs [here]()**!
+**Do check our the full API docs [here](https://a-sit-plus.github.io/kmp-crypto/)**!
 
 ## Usage
 
@@ -50,6 +50,7 @@ Simply declare the desired dependency to get going:
 implementation("at.asitplus.crypto:datatypes:$version")
 ```
 
+<!--
 ```kotlin 
 implementation("at.asitplus.crypto:datatypes-jws:$version")
 ```
@@ -57,6 +58,7 @@ implementation("at.asitplus.crypto:datatypes-jws:$version")
 ```kotlin 
 implementation("at.asitplus.crypto:datatypes.cose:$version")
 ```
+ -->
 
 <br>
 
