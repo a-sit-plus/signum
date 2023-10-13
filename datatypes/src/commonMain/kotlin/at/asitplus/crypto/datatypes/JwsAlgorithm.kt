@@ -14,20 +14,21 @@ import kotlinx.serialization.encoding.Encoder
  * Since we support only JWS algorithms (with one exception), this class is called what it's called.
  */
 @Serializable(with = JwsAlgorithmSerializer::class)
-enum class JwsAlgorithm(val identifier: String) : Asn1Encodable<Asn1Sequence> {
+enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifier) : Asn1Encodable<Asn1Sequence>,
+    Identifiable {
 
-    ES256("ES256"),
-    ES384("ES384"),
-    ES512("ES512"),
-    RS256("RS256"),
-    RS384("RS384"),
-    RS512("RS512"),
+    ES256("ES256", KnownOIDs.ecdsaWithSHA256),
+    ES384("ES384", KnownOIDs.ecdsaWithSHA384),
+    ES512("ES512", KnownOIDs.ecdsaWithSHA512),
+    RS256("RS256", KnownOIDs.sha256WithRSAEncryption),
+    RS384("RS384", KnownOIDs.sha384WithRSAEncryption),
+    RS512("RS512", KnownOIDs.sha512WithRSAEncryption),
 
     /**
      * The one exception, which is not a valid JWS algorithm identifier
      */
-    NON_JWS_SHA1_WITH_RSA("RS1"),
-    HMAC256("HS256");
+    NON_JWS_SHA1_WITH_RSA("RS1", KnownOIDs.sha1WithRSAEncryption),
+    HMAC256("HS256", KnownOIDs.hmacWithSHA256);
 
     val signatureValueLength
         get() = when (this) {
@@ -39,44 +40,44 @@ enum class JwsAlgorithm(val identifier: String) : Asn1Encodable<Asn1Sequence> {
         }
 
     override fun encodeToTlv() = when (this) {
-        ES256 -> asn1Sequence { oid { KnownOIDs.ecdsaWithSHA256 } }
-        ES384 -> asn1Sequence { oid { KnownOIDs.ecdsaWithSHA384 } }
-        ES512 -> asn1Sequence { oid { KnownOIDs.ecdsaWithSHA512 } }
+        ES256 -> asn1Sequence { oid { oid } }
+        ES384 -> asn1Sequence { oid { oid } }
+        ES512 -> asn1Sequence { oid { oid } }
         RS256 -> asn1Sequence {
-            oid { KnownOIDs.sha256WithRSAEncryption }
+            oid { oid }
             asn1null()
         }
 
         RS384 -> asn1Sequence {
-            oid { KnownOIDs.sha384WithRSAEncryption }
+            oid { oid }
             asn1null()
         }
 
         RS512 -> asn1Sequence {
-            oid { KnownOIDs.sha512WithRSAEncryption }
+            oid { oid }
             asn1null()
         }
 
         NON_JWS_SHA1_WITH_RSA -> asn1Sequence {
-            oid { KnownOIDs.sha1WithRSAEncryption }
+            oid { oid }
             asn1null()
         }
 
         HMAC256 -> throw IllegalArgumentException("sigAlg: $this")
     }
 
-    companion object:Asn1Decodable<Asn1Sequence,JwsAlgorithm>{
+    companion object : Asn1Decodable<Asn1Sequence, JwsAlgorithm> {
         override fun decodeFromTlv(src: Asn1Sequence): JwsAlgorithm {
             return when (val oid = (src.nextChild() as Asn1Primitive).readOid()) {
-                KnownOIDs.ecdsaWithSHA512 -> ES512
-                KnownOIDs.ecdsaWithSHA384 -> ES384
-                KnownOIDs.ecdsaWithSHA256 -> ES256
+                ES512.oid -> ES512
+                ES384.oid -> ES384
+                ES256.oid -> ES256
                 else -> {
                     val alg = when (oid) {
-                        KnownOIDs.sha1WithRSAEncryption -> NON_JWS_SHA1_WITH_RSA
-                        KnownOIDs.sha256WithRSAEncryption -> RS256
-                        KnownOIDs.sha384WithRSAEncryption -> RS384
-                        KnownOIDs.sha512WithRSAEncryption -> RS512
+                        NON_JWS_SHA1_WITH_RSA.oid -> NON_JWS_SHA1_WITH_RSA
+                        RS256.oid -> RS256
+                        RS384.oid -> RS384
+                        RS512.oid -> RS512
                         else -> TODO("Implement remaining algorithm oid: $oid")
                     }
                     if (src.nextChild().tag != BERTags.NULL) throw IllegalArgumentException("RSA Params not supported yet")

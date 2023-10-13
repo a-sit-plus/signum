@@ -5,13 +5,13 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Pkcs10CertificationRequestAttribute(
-    val id: ObjectIdentifier,
+    override val oid: ObjectIdentifier,
     val value: List<Asn1Element>
-) : Asn1Encodable<Asn1Sequence> {
+) : Asn1Encodable<Asn1Sequence>, Identifiable {
     constructor(id: ObjectIdentifier, value: Asn1Element) : this(id, listOf(value))
 
     override fun encodeToTlv() = asn1Sequence {
-        oid { id }
+        oid { oid }
         set { value.forEach { append { it } } }
     }
 
@@ -22,14 +22,14 @@ data class Pkcs10CertificationRequestAttribute(
 
         other as Pkcs10CertificationRequestAttribute
 
-        if (id != other.id) return false
+        if (oid != other.oid) return false
         if (value != other.value) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = id.hashCode()
+        var result = oid.hashCode()
         result = 31 * result + value.hashCode()
         return result
     }

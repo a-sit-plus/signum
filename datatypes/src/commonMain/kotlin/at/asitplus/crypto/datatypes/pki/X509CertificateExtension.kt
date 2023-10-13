@@ -6,12 +6,13 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class X509CertificateExtension(
-    val id: ObjectIdentifier, val critical: Boolean = false,
+    override val oid: ObjectIdentifier,
+    val critical: Boolean = false,
     @Serializable(with = ByteArrayBase64Serializer::class) val value: ByteArray
-) : Asn1Encodable<Asn1Sequence> {
+) : Asn1Encodable<Asn1Sequence>, Identifiable {
 
     override fun encodeToTlv() = asn1Sequence {
-        oid { id }
+        oid { oid }
         if (critical) bool { true }
         octetString { value }
     }
@@ -37,7 +38,7 @@ data class X509CertificateExtension(
 
         other as X509CertificateExtension
 
-        if (id != other.id) return false
+        if (oid != other.oid) return false
         if (critical != other.critical) return false
         if (!value.contentEquals(other.value)) return false
 
@@ -45,7 +46,7 @@ data class X509CertificateExtension(
     }
 
     override fun hashCode(): Int {
-        var result = id.hashCode()
+        var result = oid.hashCode()
         result = 31 * result + critical.hashCode()
         result = 31 * result + value.contentHashCode()
         return result

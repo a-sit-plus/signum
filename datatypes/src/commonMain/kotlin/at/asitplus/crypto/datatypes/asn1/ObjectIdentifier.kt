@@ -138,6 +138,13 @@ object ObjectIdSerializer : KSerializer<ObjectIdentifier> {
 
 
 /**
+ * Adds [oid] to the implementing class
+ */
+interface Identifiable {
+    val oid: ObjectIdentifier
+}
+
+/**
  * decodes this [Asn1Primitive]'s content into an [ObjectIdentifier]
  *
  * @throws [Throwable] all sorts of exceptions on invalid input

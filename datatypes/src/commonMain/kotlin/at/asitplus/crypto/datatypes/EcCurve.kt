@@ -1,5 +1,8 @@
 package at.asitplus.crypto.datatypes
 
+import at.asitplus.crypto.datatypes.asn1.Identifiable
+import at.asitplus.crypto.datatypes.asn1.KnownOIDs
+import at.asitplus.crypto.datatypes.asn1.ObjectIdentifier
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -16,12 +19,13 @@ enum class EcCurve(
     val jwkName: String,
     val keyLengthBits: UInt,
     val coordinateLengthBytes: UInt = keyLengthBits / 8u,
-    val signatureLengthBytes: UInt = coordinateLengthBytes
-) {
+    val signatureLengthBytes: UInt = coordinateLengthBytes,
+    override val oid: ObjectIdentifier
+) : Identifiable {
 
-    SECP_256_R_1("P-256", 256u),
-    SECP_384_R_1("P-384", 384u),
-    SECP_521_R_1("P-521", 521u, 66u);
+    SECP_256_R_1("P-256", 256u, oid = KnownOIDs.prime256v1),
+    SECP_384_R_1("P-384", 384u, oid = KnownOIDs.secp384r1),
+    SECP_521_R_1("P-521", 521u, 66u, oid = KnownOIDs.secp521r1);
 
     companion object {
         fun of(bits: UInt) = entries.find { it.keyLengthBits == bits }

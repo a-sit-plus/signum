@@ -31,6 +31,9 @@ val JwsAlgorithm.jcaName
 val Digest.jcaName
     get() = when (this) {
         Digest.SHA256 -> "SHA-256"
+        Digest.SHA384 -> "SHA-384"
+        Digest.SHA512 -> "SHA-512"
+        Digest.SHA1 -> "SHA-1"
     }
 
 val EcCurve.jcaName
@@ -43,7 +46,7 @@ val EcCurve.jcaName
 fun EcCurve.Companion.byJcaName(name: String) = EcCurve.entries.find { it.jcaName == name }
 
 
-fun CryptoPublicKey.getPublicKey() = when(this) {
+fun CryptoPublicKey.getPublicKey() = when (this) {
     is CryptoPublicKey.Ec -> getPublicKey()
     is CryptoPublicKey.Rsa -> getPublicKey()
 }

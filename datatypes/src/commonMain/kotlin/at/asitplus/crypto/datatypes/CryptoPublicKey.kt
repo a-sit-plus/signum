@@ -11,7 +11,7 @@ import kotlinx.serialization.Transient
  * Representation of a public key structure
  */
 @Serializable
-sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
+sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
     /**
      * This is meant for storing additional properties, which may be relevant for certain use cases.
@@ -36,12 +36,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
     override fun encodeToTlv() = when (this) {
         is Ec -> asn1Sequence {
             sequence {
-                oid { KnownOIDs.ecPublicKey }
-                when (curve) {
-                    EcCurve.SECP_256_R_1 -> oid { KnownOIDs.prime256v1 }
-                    EcCurve.SECP_384_R_1 -> oid { KnownOIDs.secp384r1 }
-                    EcCurve.SECP_521_R_1 -> oid { KnownOIDs.secp521r1 }
-                }
+                oid { oid }
+                oid { curve.oid }
             }
             bitString {
                 (byteArrayOf(BERTags.OCTET_STRING.toByte()) + x.ensureSize(curve.coordinateLengthBytes) + y.ensureSize(
@@ -53,7 +49,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
         is Rsa -> {
             asn1Sequence {
                 sequence {
-                    oid { KnownOIDs.rsaEncryption }
+                    oid { oid }
                     asn1null()
                 }
                 bitString(asn1Sequence {
@@ -90,32 +86,32 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
             val keyInfo = src.nextChild() as Asn1Sequence
             if (keyInfo.children.size != 2) throw IllegalArgumentException("Superfluous data in  SPKI!")
 
-            val oid = (keyInfo.nextChild() as Asn1Primitive).readOid()
+            when (val oid = (keyInfo.nextChild() as Asn1Primitive).readOid()) {
+                Ec.oid -> {
+                    val curveOid = (keyInfo.nextChild() as Asn1Primitive).readOid()
+                    val curve = EcCurve.entries.find { it.oid == curveOid }
+                        ?: throw IllegalArgumentException("Curve not supported: $curveOid")
 
-            if (oid == KnownOIDs.ecPublicKey) {
-                val curveOid = (keyInfo.nextChild() as Asn1Primitive).readOid()
-                val curve = when (curveOid) {
-                    KnownOIDs.prime256v1 -> at.asitplus.crypto.datatypes.EcCurve.SECP_256_R_1
-                    KnownOIDs.secp384r1 -> at.asitplus.crypto.datatypes.EcCurve.SECP_384_R_1
-                    KnownOIDs.secp521r1 -> at.asitplus.crypto.datatypes.EcCurve.SECP_521_R_1
-                    else -> throw IllegalArgumentException("Curve not supported: $curveOid")
+                    val bitString = (src.nextChild() as Asn1Primitive).readBitString()
+                    val xAndY = bitString.drop(1).toByteArray()
+                    val coordLen = curve.coordinateLengthBytes.toInt()
+                    val x = xAndY.take(coordLen).toByteArray()
+                    val y = xAndY.drop(coordLen).take(coordLen).toByteArray()
+                    return Ec.fromCoordinates(curve, x, y)
                 }
-                val bitString = (src.nextChild() as Asn1Primitive).readBitString()
-                val xAndY = bitString.drop(1).toByteArray()
-                val coordLen = curve.coordinateLengthBytes.toInt()
-                val x = xAndY.take(coordLen).toByteArray()
-                val y = xAndY.drop(coordLen).take(coordLen).toByteArray()
-                return Ec.fromCoordinates(curve, x, y)
-            } else if (oid == KnownOIDs.rsaEncryption) {
-                (keyInfo.nextChild() as Asn1Primitive).readNull()
-                val bitString = (src.nextChild() as Asn1Primitive).readBitString()
-                val rsaSequence = Asn1Element.parse(bitString) as Asn1Sequence
-                val n = (rsaSequence.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
-                val e = (rsaSequence.nextChild() as Asn1Primitive).readInt()
-                if (rsaSequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous data in SPKI!")
-                return Rsa(n, e)
-            } else {
-                throw IllegalArgumentException("Unsupported Key Type: $oid")
+
+                Rsa.oid -> {
+                    (keyInfo.nextChild() as Asn1Primitive).readNull()
+                    val bitString = (src.nextChild() as Asn1Primitive).readBitString()
+                    val rsaSequence = Asn1Element.parse(bitString) as Asn1Sequence
+                    val n = (rsaSequence.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
+                    val e = (rsaSequence.nextChild() as Asn1Primitive).readInt()
+                    if (rsaSequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous data in SPKI!")
+                    return Rsa(n, e)
+                }
+
+                else -> throw IllegalArgumentException("Unsupported Key Type: $oid")
+
             }
         }
 
@@ -159,6 +155,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
 
         constructor(n: ByteArray, e: Int) : this(sanitizeRsaInputs(n, e))
 
+        override val oid = Rsa.oid
+
         /**
          * enum of supported RSA key sized. For sanity checks!
          */
@@ -170,10 +168,12 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
             RSA_4096(4096u);
 
 
-            companion object {
+            companion object : Identifiable {
                 fun of(numBits: UInt) = entries.find { it.number == numBits }
                 fun of(n: ByteArray) = entries.find { n.size == (it.number.toInt() / 8) }
                     ?: throw IllegalArgumentException("Unsupported key size ${n.size}")
+
+                override val oid = KnownOIDs.rsaEncryption
             }
         }
 
@@ -210,7 +210,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
             return result
         }
 
-        companion object {
+        companion object : Identifiable {
             /**
              * decodes a PKCS#1-encoded RSA key
              *
@@ -223,6 +223,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
                 if (conv.hasMoreChildren()) throw IllegalArgumentException("Superfluous bytes")
                 return Rsa(Size.of(n), n, e)
             }
+
+            override val oid = KnownOIDs.rsaEncryption
         }
     }
 
@@ -237,6 +239,9 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
         @Serializable(with = ByteArrayBase64Serializer::class) val x: ByteArray,
         @Serializable(with = ByteArrayBase64Serializer::class) val y: ByteArray,
     ) : CryptoPublicKey() {
+
+        override val oid = Ec.oid
+
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other == null || this::class != other::class) return false
@@ -256,7 +261,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
             return result
         }
 
-        companion object {
+        companion object : Identifiable {
             /**
              * Decodes a key from the provided parameters
              */
@@ -276,6 +281,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence> {
                 val y = src.drop(1).drop(numBytes).take(numBytes).toByteArray()
                 return Ec(curve = curve, x = x, y = y)
             }
+
+            override val oid = KnownOIDs.ecPublicKey
         }
 
         /**

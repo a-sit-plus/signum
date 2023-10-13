@@ -10,8 +10,7 @@ import kotlinx.serialization.Serializable
 
 //TODO: value should be Asn1Primitive???
 @Serializable
-sealed class DistinguishedName : Asn1Encodable<Asn1Set> {
-    abstract val oid: ObjectIdentifier
+sealed class DistinguishedName : Asn1Encodable<Asn1Set>, Identifiable {
     abstract val value: Asn1Element
 
 

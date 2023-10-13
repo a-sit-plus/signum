@@ -2705,7 +2705,7 @@ object KnownOIDs {
     val `ikeHmacWithSHA1-RSA` = ObjectIdentifier("2 16 840 1 113719 1 2 8 51")
     val `ikeHmacWithMD5-RSA` = ObjectIdentifier("2 16 840 1 113719 1 2 8 52")
     val `rc2CbcPad` = ObjectIdentifier("2 16 840 1 113719 1 2 8 69")
-    val `sha-1` = ObjectIdentifier("2 16 840 1 113719 1 2 8 82")
+   // val `sha-1` = ObjectIdentifier("2 16 840 1 113719 1 2 8 82")
     val `rc2BSafe1Cbc` = ObjectIdentifier("2 16 840 1 113719 1 2 8 92")
 
     // val `md4` = ObjectIdentifier("2 16 840 1 113719 1 2 8 95")

@@ -1,13 +1,17 @@
 package at.asitplus.crypto.datatypes
 
+import at.asitplus.crypto.datatypes.asn1.Identifiable
+import at.asitplus.crypto.datatypes.asn1.KnownOIDs
+import at.asitplus.crypto.datatypes.asn1.ObjectIdentifier
+
 /**
  * Currently, we only support SHA-256
  */
-enum class Digest {
+enum class Digest(override val oid: ObjectIdentifier) : Identifiable {
 
-    //TODO expand, maybe even add the okio dependency and plug it in here?
-    // at least mention that okio providres it?
-    // the jws module laredy has a hard dependenc yon okio, so…
-    SHA256;
+    SHA1(KnownOIDs.sha1),
+    SHA256(KnownOIDs.`sha-256`),
+    SHA384(KnownOIDs.`sha-384`),
+    SHA512(KnownOIDs.`sha-512`);
 
 }
