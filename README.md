@@ -28,7 +28,7 @@ types and functionality related to crypto and PKI applications:
 This last bit means that
 **you can work with X509 Certificates, public keys, CSRs and arbitrary ASN.1 structures on iOS.**
 
-**Do check our the full API docs [here](https://a-sit-plus.github.io/kmp-crypto/)**!
+**Do check out the full API docs [here](https://a-sit-plus.github.io/kmp-crypto/)**!
 
 ## Usage
 
@@ -40,7 +40,7 @@ This library consists of three modules, each of which is published on maven cent
 | Name           | `datatypes`                                                                                                                  | `datatypes-jws` (WIP)                                                                                                                                                                                                                 | `datatypes-cose` (WIP)                                                                                                                                                                                                              |
 |----------------|------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | _Info_         | Base module containing the public key class (`CryptoPublicKey`), algorithm identifiers, the ASN.1 parser, X.509 certificate. | JWS/JWE/JWT module containing JWS/E/T-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. | COSE module containing all COSE/CWT-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. |
-| _Maven Coords_ | `at.asitplus.crypto:datatypes`                                                                                               | `at.asitplus.crypto:datatypes-jws`                                                                                                                                                                                                    | `at.asitplus.crypto:datatypes-cose`                                                                                                                                                                                                 |
+| _Maven Coords_ | `at.asitplus.crypto:datatypes`                                                                                               | <!--`at.asitplus.crypto:datatypes-jws`--> (WIP; not yet released)                                                                                                                                                                     | <!--`at.asitplus.crypto:datatypes-cose`--> (WIP; not yet released)                                                                                                                                                                  |
 
 ### Using it in your Projects
 
