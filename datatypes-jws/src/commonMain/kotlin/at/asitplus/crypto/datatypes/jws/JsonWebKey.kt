@@ -3,6 +3,7 @@ package at.asitplus.crypto.datatypes.jws
 import at.asitplus.KmmResult
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.EcCurve
+import at.asitplus.crypto.datatypes.asn1.decodeFromDer
 import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
 import at.asitplus.crypto.datatypes.io.Base64Strict
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64UrlSerializer
@@ -30,10 +31,10 @@ data class JsonWebKey(
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val y: ByteArray? = null,
     //RSA
-    @SerialName("mod")
+    @SerialName("n")
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val n: ByteArray? = null,
-    @SerialName("exp")
+    @SerialName("e")
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val e: ByteArray? = null,
 ) {
@@ -98,7 +99,6 @@ data class JsonWebKey(
 
     @Deprecated("Use CryptoPublicKey functionality instead!")
     fun toAnsiX963ByteArray(): KmmResult<ByteArray> {
-
         if (x != null && y != null)
             return KmmResult.success(byteArrayOf(0x04.toByte()) + x + y);
         return KmmResult.failure(IllegalArgumentException())
@@ -112,16 +112,36 @@ data class JsonWebKey(
         keyId ?: "urn:ietf:params:oauth:jwk-thumbprint:sha256:${jwkThumbprint}"
     }
 
-    override fun toString(): String {
-        return "JsonWebKey(type=$type, curve=$curve, keyId=$keyId," +
-                " x=${x?.encodeToString(Base64Strict)}," +
-                " y=${y?.encodeToString(Base64Strict)})" +
-                " mod=${n?.encodeToString(Base64Strict)})" +
-                " exp=${e?.encodeToString(Base64Strict)})"
-    }
+    override fun toString() =
+        when (type) {
+            JwkType.EC -> "JsonWebKey(" +
+                    "type=$type, " +
+                    "curve=$curve, " +
+                    "keyId=$keyId," +
+                    "x=${x?.encodeToString(Base64Strict)}," +
+                    "y=${y?.encodeToString(Base64Strict)}" +
+                    ")"
+
+            JwkType.RSA -> "JsonWebKey(" +
+                    "type=$type, " +
+                    "keyId=$keyId," +
+                    "n=${n?.encodeToString(Base64Strict)})" +
+                    "e=${e?.encodeToString(Base64Strict)}" +
+                    ")"
+
+            null -> "JsonWebKey(" +
+                    "type=$type, " +
+                    "curve=$curve, " +
+                    "keyId=$keyId," +
+                    "x=${x?.encodeToString(Base64Strict)}," +
+                    "y=${y?.encodeToString(Base64Strict)}" +
+                    "n=${n?.encodeToString(Base64Strict)})" +
+                    "e=${e?.encodeToString(Base64Strict)}" +
+                    ")"
+        }
 
     fun toCryptoPublicKey(): CryptoPublicKey? =
-        when (this.type){
+        when (type) {
             JwkType.EC -> {
                 this.curve?.let {
                     CryptoPublicKey.Ec(
@@ -131,16 +151,19 @@ data class JsonWebKey(
                     )
                 }
             }
+
             JwkType.RSA -> {
                 this.n?.let {
                     CryptoPublicKey.Rsa(
                         n = it,
-                        e = e?.fold(0) { acc, byte -> (acc shl 8) or (byte.toInt() and 0xFF) } ?: return null
+                        e = e?.let { bytes -> Int.decodeFromDer(bytes) } ?: return null
                     )
                 }
             }
+
             else -> null
         }
+
 }
 
 fun CryptoPublicKey.toJsonWebKey(): JsonWebKey =

@@ -194,7 +194,7 @@ private fun Instant.Companion.decodeGeneralizedTimeFromDer(input: ByteArray): In
     return parse(isoString)
 }.getOrElse { throw IllegalArgumentException(it) }
 
-private fun Int.Companion.decodeFromDer(input: ByteArray): Int {
+fun Int.Companion.decodeFromDer(input: ByteArray): Int {
     return Long.decodeFromDer(input).toInt()
 }
 
