@@ -125,35 +125,20 @@ object MultibaseHelper {
             it.removePrefix("m").decodeToByteArrayOrNull(Base64Strict)
         } else null
 
-    // No decompression, because that would need some EC math
-    private fun decodeEcKey(it: ByteArray?): Pair<ByteArray, ByteArray>? {
-        if (it == null) return null
-        val half: Int = it.size.floorDiv(2)
-        val x = it.sliceArray(0 until half)
-        val y = it.sliceArray(half until it.size)
-        return Pair(x, y)
+    private fun decodeEcKey(it: ByteArray?): CryptoPublicKey? {
+        val test = it?.let { bytes -> byteArrayOf(0x04.toByte(), *bytes) }
+        return if (test != null) CryptoPublicKey.Ec.fromAnsiX963Bytes(test) else null
     }
 
     private fun decodeRsaKey(it: ByteArray?): CryptoPublicKey? {
-        return if ( it != null ) CryptoPublicKey.Rsa.fromPKCS1encoded(it) else null
+        return if (it != null) CryptoPublicKey.Rsa.fromPKCS1encoded(it) else null
     }
 
-    fun calcPublicKey(multiKey: Pair<Boolean, ByteArray>?): CryptoPublicKey? {
-        when (multiKey?.first) {
-            true -> {
-                val (xCoordinate, yCoordinate) = decodeEcKey(
-                    multiKey.second
-                ) ?: return null
-                val curve =
-                    EcCurve.entries.find { it.coordinateLengthBytes.toInt() == xCoordinate.size } ?: return null
-                return CryptoPublicKey.Ec(curve = curve, x = xCoordinate, y = yCoordinate)
-            }
-
-            false -> {
-                return decodeRsaKey(multiKey.second)
-            }
-
-            else -> return null
+    internal fun calcPublicKey(multiKey: Pair<Boolean, ByteArray>?): CryptoPublicKey? {
+        return when (multiKey?.first) {
+            true -> decodeEcKey(multiKey.second)
+            false -> decodeRsaKey(multiKey.second)
+            else -> null
         }
     }
 
@@ -164,7 +149,7 @@ object MultibaseHelper {
         val multibaseDecode = multibaseDecode(stripped)
         val multiKey = multiKeyDecode(multibaseDecode) ?: return null
 
-        return if (multiKey.first) decodeEcKey(multiKey.second) else TODO("ASN1 decoding of RSA keys")
+        return decodeEcKeyDep(multiKey.second)
     }
 
     @Deprecated("Dependency of calcEncPublicKeyCoords - Use [multiKeyGetKty] instead ")
@@ -177,4 +162,14 @@ object MultibaseHelper {
                 false to it.drop(2).toByteArray()
             } else null
         } else null
+
+    @Deprecated("Use [Ec.fromAnsiX963Bytes] instead")
+    // No decompression, because that would need some EC math
+    private fun decodeEcKeyDep(it: ByteArray?): Pair<ByteArray, ByteArray>? {
+        if (it == null) return null
+        val half: Int = it.size.floorDiv(2)
+        val x = it.sliceArray(0 until half)
+        val y = it.sliceArray(half until it.size)
+        return Pair(x, y)
+    }
 }
