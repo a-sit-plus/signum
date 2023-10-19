@@ -113,32 +113,15 @@ data class JsonWebKey(
     }
 
     override fun toString() =
-        when (type) {
-            JwkType.EC -> "JsonWebKey(" +
-                    "type=$type, " +
-                    "curve=$curve, " +
-                    "keyId=$keyId," +
-                    "x=${x?.encodeToString(Base64Strict)}," +
-                    "y=${y?.encodeToString(Base64Strict)}" +
-                    ")"
-
-            JwkType.RSA -> "JsonWebKey(" +
-                    "type=$type, " +
-                    "keyId=$keyId," +
-                    "n=${n?.encodeToString(Base64Strict)})" +
-                    "e=${e?.encodeToString(Base64Strict)}" +
-                    ")"
-
-            null -> "JsonWebKey(" +
-                    "type=$type, " +
-                    "curve=$curve, " +
-                    "keyId=$keyId," +
-                    "x=${x?.encodeToString(Base64Strict)}," +
-                    "y=${y?.encodeToString(Base64Strict)}" +
-                    "n=${n?.encodeToString(Base64Strict)})" +
-                    "e=${e?.encodeToString(Base64Strict)}" +
-                    ")"
-        }
+        "JsonWebKey(" +
+                "type=$type, " +
+                "curve=$curve, " +
+                "keyId=$keyId," +
+                "x=${x?.encodeToString(Base64Strict)}," +
+                "y=${y?.encodeToString(Base64Strict)}" +
+                "n=${n?.encodeToString(Base64Strict)})" +
+                "e=${e?.encodeToString(Base64Strict)}" +
+                ")"
 
     fun toCryptoPublicKey(): CryptoPublicKey? =
         when (type) {
@@ -153,9 +136,9 @@ data class JsonWebKey(
             }
 
             JwkType.RSA -> {
-                this.n?.let {
+                this.let {
                     CryptoPublicKey.Rsa(
-                        n = it,
+                        n = n ?: return null,
                         e = e?.let { bytes -> Int.decodeFromDer(bytes) } ?: return null
                     )
                 }
@@ -175,7 +158,7 @@ fun CryptoPublicKey.toJsonWebKey(): JsonWebKey =
                 curve = curve,
                 x = x,
                 y = y
-            )
+            ).apply { jwkId = identifier }
 
         is CryptoPublicKey.Rsa ->
             JsonWebKey(
@@ -183,7 +166,7 @@ fun CryptoPublicKey.toJsonWebKey(): JsonWebKey =
                 keyId = jwkId,
                 n = n,
                 e = e.encodeToByteArray()
-            )
+            ).apply { jwkId = identifier }
     }
 
 private const val JWK_ID = "jwkIdentifier"

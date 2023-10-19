@@ -79,11 +79,10 @@ object MultibaseHelper {
 
     private fun multibaseWrapBase64(it: ByteArray) = "m${it.encodeToString(Base64Strict)}"
 
-    // 0x1200 would be with compression, so we'll use 0x1290
-    private fun multicodecWrapEC(it: ByteArray) = byteArrayOf(0x12.toByte(), 0x90.toByte()) + it
+    private fun multicodecWrapRSA(it: ByteArray) = byteArrayOf(0x12.toByte(), 0x05.toByte()) + it
 
     // 0x1200 would be with compression, so we'll use 0x1290
-    private fun multicodecWrapRSA(it: ByteArray) = byteArrayOf(0x12.toByte(), 0x05.toByte()) + it
+    private fun multicodecWrapEC(it: ByteArray) = byteArrayOf(0x12.toByte(), 0x90.toByte()) + it
 
     // No compression, because decompression would need some EC math
     private fun encodeEcKey(x: ByteArray, y: ByteArray, curve: EcCurve) =
