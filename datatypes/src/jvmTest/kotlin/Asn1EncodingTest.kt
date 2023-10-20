@@ -17,7 +17,7 @@ class Asn1EncodingTest : FreeSpec({
 
     val bitSet = KmmBitSet.fromBitString("011011100101110111")
     "Bit String" {
-        val fromBitSet = Asn1BitString.fromBitSet(bitSet)
+        val fromBitSet = Asn1BitString(bitSet)
         fromBitSet.encodeToTlv().toDerHexString() shouldBe "0304066E5DC0"
         fromBitSet.toBitSet().toBitString() shouldBe "011011100101110111"
         fromBitSet.toBitSet() shouldBe bitSet

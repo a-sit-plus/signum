@@ -103,7 +103,7 @@ data class CertificationRequest(
             val sigAlg = JwsAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val signature = (src.nextChild() as Asn1Primitive).readBitString()
             if (src.hasMoreChildren()) throw IllegalArgumentException("Superfluous structure in CSR Structure")
-            return CertificationRequest(tbsCsr, sigAlg, signature)
+            return CertificationRequest(tbsCsr, sigAlg, signature.rawBytes)
         }
     }
 }

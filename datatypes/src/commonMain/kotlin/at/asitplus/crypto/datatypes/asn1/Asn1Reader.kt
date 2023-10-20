@@ -128,7 +128,7 @@ fun Asn1Primitive.readInstant() =
  * @throws [Throwable] all sorts of exceptions on invalid input
  */
 @Throws(Throwable::class)
-fun Asn1Primitive.readBitString() = decode(BIT_STRING, ::decodeBitString)
+fun Asn1Primitive.readBitString() = Asn1BitString.decodeFromTlv(this)
 
 
 /**
@@ -157,12 +157,6 @@ inline fun <reified T> Asn1Primitive.decode(tag: UByte, transform: (content: Byt
     if (tag != this.tag) throw IllegalArgumentException("Tag mismatch. Expected: $tag, is: ${this.tag}")
     transform(content)
 }.getOrElse { if (it is IllegalArgumentException) throw it else throw IllegalArgumentException(it) }
-
-/**
- * Decodes the provided BIT STRING value [input] into a [ByteArray] (i.e. drops the first byte)
- */
-fun decodeBitString(input: ByteArray) = input.drop(1).toByteArray()
-
 
 @Throws(IllegalArgumentException::class)
 private fun Instant.Companion.decodeUtcTimeFromDer(input: ByteArray): Instant = runCatching {

@@ -1,5 +1,12 @@
 package at.asitplus.crypto.datatypes.io
 
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlin.experimental.and
 import kotlin.experimental.inv
 import kotlin.experimental.or
@@ -32,25 +39,42 @@ private fun Byte.getBit(index: Int): Boolean =
  * bitSet[8] = true //10100000 1    (ByteArray representation: [5,1])
  * ```
  *
- * To inspect the actual memory layout of the underlying bytes (i.e. the result of calling [toByteArray]), use [memDump]
+ * To inspect the actual memory layout of the underlying bytes (i.e. the result of calling [toByteArray]), use [memDump].
+ *
+ * Implements [Iterable] over bits. Use [bytes] to iterate over bytes
  */
-class KmmBitSet internal constructor(private val bytes: MutableList<Byte>) {
+@Serializable(with=KmmBitSetSerializer::class)
+class KmmBitSet private constructor(private val buffer: MutableList<Byte>) : Iterable<Boolean> {
+
+
+    /**
+     * List view on the bytes backing this bit set. Changes to the bytes directly affect this bitset.
+     */
+    val bytes: List<Byte> get() = buffer
+
+    /**
+     * Preallocates a buffer capable of holding [nbits] many bits
+     */
     constructor(nbits: Long = 0) : this(
         if (nbits < 0) throw IllegalArgumentException("a bit set of size $nbits makes no sense")
-        else
-            MutableList(getByteIndex(nbits) + 1) { 0.toByte() })
+        else MutableList(getByteIndex(nbits) + 1) { 0.toByte() })
 
 
-    operator fun get(index: Long): Boolean = bytes.getBit(index)
+    /**
+     * Returns the bit at [index]. Never throws an exception when [index]>=0, as getting a bit outside the underlying
+     * bytes' bounds returns false.
+     */
+    operator fun get(index: Long): Boolean = buffer.getBit(index)
 
+    /**
+     * return the next bit set to true following [fromIndex]
+     */
     fun nextSetBit(fromIndex: Long): Long {
         if (fromIndex < 0) throw IndexOutOfBoundsException("fromIndex = $fromIndex")
-
         val byteIndex = getByteIndex(fromIndex)
-
-        if (byteIndex >= bytes.size) return -1
+        if (byteIndex >= buffer.size) return -1
         else {
-            bytes.subList(byteIndex, bytes.size).let { list ->
+            buffer.subList(byteIndex, buffer.size).let { list ->
                 val startIndex = getBitIndex(fromIndex).toLong()
                 for (i: Long in startIndex until list.size.toLong() * 8L) {
                     if (list.getBit(i)) return byteIndex.toLong() * 8L + i
@@ -60,46 +84,58 @@ class KmmBitSet internal constructor(private val bytes: MutableList<Byte>) {
         }
     }
 
+    /**
+     * Sets the bit at [index] to [value]
+     */
     operator fun set(index: Long, value: Boolean) {
         val byteIndex = getByteIndex(index)
-        while (bytes.size <= byteIndex) bytes.add(0)
-        val byte = bytes[byteIndex]
-        bytes[byteIndex] =
+        while (buffer.size <= byteIndex) buffer.add(0)
+        val byte = buffer[byteIndex]
+        buffer[byteIndex] =
             if (value) {
                 ((1 shl getBitIndex(index)).toByte() or byte)
             } else
                 ((1 shl getBitIndex(index)).toByte().inv() and byte)
+        if (!value) compact()
     }
 
+    /**
+     * shorthand for set(index,true)
+     */
+    fun set(index: Long) {
+        this[index] = true
+    }
+
+    /**
+     * Current length of the bitset.
+     */
     fun length(): Long = highestSetIndex() + 1L
 
-    fun forEach(block: (it: Boolean) -> Unit) {
-        for (i in 0..<length()) block(this[i])
-    }
-
+    /**
+     * This is the real deal, as it has [Long] indices
+     */
     inline fun forEachIndexed(block: (i: Long, it: Boolean) -> Unit) {
         for (i in 0..<length()) block(i, this[i])
     }
 
-    fun forEachByte(block: (it: Byte) -> Unit) {
-        if (bytes.isEmpty() || highestSetIndex() == -1L) return
-        bytes.subList(0, getByteIndex(highestSetIndex()) + 1).forEach(block)
-    }
-
-    fun <T> mapByte(block: (it: Byte) -> T): List<T> {
-        val list = mutableListOf<T>()
-        forEachByte { list += block(it) }
-        return list
-    }
-
+    /**
+     * Allocates a fresh byte array and writes the values of this bitset's underlying bytes to it
+     */
     fun toByteArray(): ByteArray {
-        return if (bytes.isEmpty() || highestSetIndex() == -1L) byteArrayOf()
-        else bytes.subList(0, getByteIndex(highestSetIndex()) + 1).toTypedArray().toByteArray()
+        return if (buffer.isEmpty() || highestSetIndex() == -1L) byteArrayOf()
+        else buffer.subList(0, getByteIndex(highestSetIndex()) + 1).toTypedArray().toByteArray()
+    }
+
+    private fun compact() {
+        for (i in buffer.indices.reversed()) {
+            if (buffer[i] == 0.toByte()) buffer.removeAt(i) else return
+        }
     }
 
     private fun highestSetIndex(): Long {
-        for (i: Long in bytes.size.toLong() * 8L - 1L downTo 0L) {
-            if (bytes.getBit(i)) return i
+        compact()
+        for (i: Long in buffer.size.toLong() * 8L - 1L downTo 0L) {
+            if (buffer.getBit(i)) return i
         }
         return -1L
     }
@@ -159,6 +195,9 @@ class KmmBitSet internal constructor(private val bytes: MutableList<Byte>) {
     fun memDump() = toByteArray().memDump()
 
 
+    /**
+     * @see toBitString
+     */
     override fun toString() = toBitString()
     override fun equals(other: Any?): Boolean {
         if (other == null) return false
@@ -170,13 +209,26 @@ class KmmBitSet internal constructor(private val bytes: MutableList<Byte>) {
         return true
     }
 
+
+    /**
+     * returns an iterator over bits. use [bytes]`.iterator()` to iterate over bytes
+     */
+    override fun iterator(): Iterator<Boolean> = object : Iterator<Boolean> {
+        var index = 0L
+        override fun hasNext(): Boolean = index < (length() - 1)
+        override fun next(): Boolean = get(index++)
+    }
+
     companion object {
         /**
          * Wraps [bytes] into a BitSet. Copies all bytes.
          * Hence, modifications to [bytes] are **not** reflected in the newly created BitSet.
          */
-        fun wrap(bytes: ByteArray) = bytes.toBitSet()
+        fun from(bytes: ByteArray) = KmmBitSet(bytes.toMutableList())
 
+        /**
+         * Creates bitset from hunan-readably bit string representation
+         */
         fun fromBitString(bitString: String): KmmBitSet {
             if (bitString.isEmpty()) return KmmBitSet()
             if (!bitString.matches(Regex("^[01]+\$"))) throw IllegalArgumentException("Not a bit string")
@@ -189,7 +241,10 @@ class KmmBitSet internal constructor(private val bytes: MutableList<Byte>) {
     }
 }
 
-fun ByteArray.toBitSet(): KmmBitSet = KmmBitSet(toMutableList())
+/**
+ * @see KmmBitSet.from
+ */
+fun ByteArray.toBitSet(): KmmBitSet = KmmBitSet.from(this)
 
 
 /**
@@ -246,3 +301,14 @@ fun ByteArray.toBitString(): String =
  */
 fun ByteArray.memDump(): String =
     joinToString(separator = " ") { it.toUByte().toString(2).padStart(8, '0') }
+
+object KmmBitSetSerializer:KSerializer<KmmBitSet>{
+    override val descriptor = PrimitiveSerialDescriptor("KmmBitSet", PrimitiveKind.STRING)
+
+    override fun deserialize(decoder: Decoder) = KmmBitSet.fromBitString(decoder.decodeString())
+
+    override fun serialize(encoder: Encoder, value: KmmBitSet) {
+       encoder.encodeString(value.toBitString())
+    }
+
+}
