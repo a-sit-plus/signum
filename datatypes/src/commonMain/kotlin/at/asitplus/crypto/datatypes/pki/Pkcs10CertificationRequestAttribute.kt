@@ -41,5 +41,4 @@ data class Pkcs10CertificationRequestAttribute(
             return Pkcs10CertificationRequestAttribute(id, value)
         }
     }
-
 }

@@ -25,6 +25,28 @@ data class TbsCertificationRequest(
     val attributes: List<Pkcs10CertificationRequestAttribute>? = null
 ) : Asn1Encodable<Asn1Sequence> {
 
+    /**
+     * Convenience constructor for adding [X509CertificateExtension]`s` to a CSR (in addition to generic attributes
+     *
+     * @throws IllegalArgumentException if no extensions are provided
+     */
+    @Throws(IllegalArgumentException::class)
+    constructor(
+        subjectName: List<DistinguishedName>,
+        publicKey: CryptoPublicKey,
+        extensions: List<X509CertificateExtension>,
+        version: Int = 0,
+        attributes: List<Pkcs10CertificationRequestAttribute>? = null,
+    ) : this(version, subjectName, publicKey, mutableListOf<Pkcs10CertificationRequestAttribute>().also { attrs ->
+        if(extensions.isEmpty()) throw  IllegalArgumentException("No extensions provided!")
+        attributes?.let { attrs.addAll(it) }
+        attrs.add(Pkcs10CertificationRequestAttribute(KnownOIDs.extensionRequest, asn1Sequence {
+            extensions.forEach {
+                append { it.encodeToTlv() }
+            }
+        }))
+    })
+
     override fun encodeToTlv() = asn1Sequence {
         int { version }
         sequence { subjectName.forEach { append { it.encodeToTlv() } } }
