@@ -2,6 +2,7 @@ package at.asitplus.crypto.datatypes.io
 
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.EcCurve
+import at.asitplus.crypto.datatypes.asn1.decodeFromDer
 import at.asitplus.crypto.datatypes.asn1.ensureSize
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.base64.Base64ConfigBuilder
@@ -76,6 +77,17 @@ object ByteArrayBase64UrlSerializer : KSerializer<ByteArray> {
 object MultibaseHelper {
     private const val PREFIX_DID_KEY = "did:key"
 
+    private fun multibaseWrapBase64(it: ByteArray) = "m${it.encodeToString(Base64Strict)}"
+
+    private fun multicodecWrapRSA(it: ByteArray) = byteArrayOf(0x12.toByte(), 0x05.toByte()) + it
+
+    // 0x1200 would be with compression, so we'll use 0x1290
+    private fun multicodecWrapEC(it: ByteArray) = byteArrayOf(0x12.toByte(), 0x90.toByte()) + it
+
+    // No compression, because decompression would need some EC math
+    private fun encodeEcKey(x: ByteArray, y: ByteArray, curve: EcCurve) =
+        x.ensureSize(curve.coordinateLengthBytes) + y.ensureSize(curve.coordinateLengthBytes)
+
     /**
      * Returns something like `did:key:mEpA...` with the [x] and [y] values appended in Base64.
      * This translates to `Base64(0x12, 0x90, EC-P-{256,384,521}-Key)`.
@@ -86,33 +98,60 @@ object MultibaseHelper {
     fun calcKeyId(curve: EcCurve, x: ByteArray, y: ByteArray) =
         "$PREFIX_DID_KEY:${multibaseWrapBase64(multicodecWrapEC(encodeEcKey(x, y, curve)))}"
 
-
-    fun calcKid(rsaPublicKey: CryptoPublicKey.Rsa) =
+    fun calcKeyId(rsaPublicKey: CryptoPublicKey.Rsa) =
         "$PREFIX_DID_KEY:${multibaseWrapBase64(multicodecWrapRSA(rsaPublicKey.iosEncoded))}"
 
-
-    fun calcEcPublicKeyCoords(keyId: String): Pair<ByteArray, ByteArray>? {
+    fun stripKeyId(keyId: String): Pair<Boolean, ByteArray>? {
         if (!keyId.startsWith("$PREFIX_DID_KEY:")) return null
         val stripped = keyId.removePrefix("$PREFIX_DID_KEY:")
-        val multibaseDecode = multibaseDecode(stripped)
-        val multiKey = multiKeyDecode(multibaseDecode) ?: return null
+        val multibaseDecoded = multibaseDecode(stripped)
+        val multiKey = multiKeyGetKty(multibaseDecoded) ?: return null
 
-        return if (multiKey.first) decodeEcKey(multiKey.second) else TODO("ASN1 decoding of RSA keys")
+        return multiKey.first to multiKey.second
     }
 
-    private fun multibaseWrapBase64(it: ByteArray) = "m${it.encodeToString(Base64Strict)}"
+    private fun multiKeyGetKty(it: ByteArray?) =
+        if (it != null && it.size > 3 && it[0] == 0x12.toByte()) {
+            when (it[1]) {
+                0x90.toByte() -> true to it.drop(2).toByteArray()  // Case EC
+                0x05.toByte() -> false to it.drop(2).toByteArray() // Case RSA
+                else -> null
+            }
+        } else null
 
     private fun multibaseDecode(it: String?) =
         if (it != null && it.startsWith("m")) {
             it.removePrefix("m").decodeToByteArrayOrNull(Base64Strict)
         } else null
 
-    // 0x1200 would be with compression, so we'll use 0x1290
-    private fun multicodecWrapEC(it: ByteArray) = byteArrayOf(0x12.toByte(), 0x90.toByte()) + it
+    private fun decodeEcKey(it: ByteArray?): CryptoPublicKey? {
+        val test = it?.let { bytes -> byteArrayOf(0x04.toByte(), *bytes) }
+        return if (test != null) CryptoPublicKey.Ec.fromAnsiX963Bytes(test) else null
+    }
 
-    // 0x1200 would be with compression, so we'll use 0x1290
-    private fun multicodecWrapRSA(it: ByteArray) = byteArrayOf(0x12.toByte(), 0x05.toByte()) + it
+    private fun decodeRsaKey(it: ByteArray?): CryptoPublicKey? {
+        return if (it != null) CryptoPublicKey.Rsa.fromPKCS1encoded(it) else null
+    }
 
+    internal fun calcPublicKey(multiKey: Pair<Boolean, ByteArray>?): CryptoPublicKey? {
+        return when (multiKey?.first) {
+            true -> decodeEcKey(multiKey.second)
+            false -> decodeRsaKey(multiKey.second)
+            else -> null
+        }
+    }
+
+    @Deprecated("Use [CryptoPublicKey.fromKeyId] instead")
+    fun calcEcPublicKeyCoords(keyId: String): Pair<ByteArray, ByteArray>? {
+        if (!keyId.startsWith("$PREFIX_DID_KEY:")) return null
+        val stripped = keyId.removePrefix("$PREFIX_DID_KEY:")
+        val multibaseDecode = multibaseDecode(stripped)
+        val multiKey = multiKeyDecode(multibaseDecode) ?: return null
+
+        return decodeEcKeyDep(multiKey.second)
+    }
+
+    @Deprecated("Dependency of calcEncPublicKeyCoords - Use [multiKeyGetKty] instead ")
     // 0x1200 would be with compression, so we'll use 0x1290
     private fun multiKeyDecode(it: ByteArray?) =
         if (it != null && it.size > 3 && it[0] == 0x12.toByte()) {
@@ -123,12 +162,9 @@ object MultibaseHelper {
             } else null
         } else null
 
-    // No compression, because decompression would need some EC math
-    private fun encodeEcKey(x: ByteArray, y: ByteArray, curve: EcCurve) =
-        x.ensureSize(curve.coordinateLengthBytes) + y.ensureSize(curve.coordinateLengthBytes)
-
+    @Deprecated("Use [Ec.fromAnsiX963Bytes] instead")
     // No decompression, because that would need some EC math
-    private fun decodeEcKey(it: ByteArray?): Pair<ByteArray, ByteArray>? {
+    private fun decodeEcKeyDep(it: ByteArray?): Pair<ByteArray, ByteArray>? {
         if (it == null) return null
         val half: Int = it.size.floorDiv(2)
         val x = it.sliceArray(0 until half)

@@ -71,14 +71,11 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         /**
          * Parses a KID and reconstructs a [CryptoPublicKey] from it
          *
-         * @throws Throwable all sorts of exception on in valid input
+         * @throws Throwable all sorts of exception on invalid input
          */
         fun fromKeyId(it: String): CryptoPublicKey? {
-            val (xCoordinate, yCoordinate) = MultibaseHelper.calcEcPublicKeyCoords(it)
-                ?: return null
-            val curve = EcCurve.entries.find { it.coordinateLengthBytes.toInt() == xCoordinate.size } ?: return null
-            //TODO RSA
-            return Ec(curve = curve, x = xCoordinate, y = yCoordinate)
+            val strippedKey = MultibaseHelper.stripKeyId(it)
+            return MultibaseHelper.calcPublicKey(strippedKey)
         }
 
         override fun decodeFromTlv(src: Asn1Sequence): CryptoPublicKey {
@@ -147,10 +144,15 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         val e: Int,
     ) : CryptoPublicKey() {
 
-        private constructor(triple: Triple<ByteArray, Int, Size>) : this(
-            triple.third,
-            triple.first,
-            triple.second
+        init {
+            val computed = Size.of(n)
+            if (bits != computed) throw IllegalArgumentException("Provided number of bits (${bits.number}) does not match computed number of bits (${computed.number})")
+        }
+
+        private constructor(params: RsaParams) : this(
+            params.size,
+            params.n,
+            params.e
         )
 
         constructor(n: ByteArray, e: Int) : this(sanitizeRsaInputs(n, e))
@@ -170,15 +172,18 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
             companion object : Identifiable {
                 fun of(numBits: UInt) = entries.find { it.number == numBits }
-                fun of(n: ByteArray) = entries.find { n.size == (it.number.toInt() / 8) }
-                    ?: throw IllegalArgumentException("Unsupported key size ${n.size}")
+                fun of(n: ByteArray): Size {
+                    val nTruncSize = n.dropWhile { it == 0.toByte() }.size
+                    return entries.find { nTruncSize == (it.number.toInt() / 8) }
+                        ?: throw IllegalArgumentException("Unsupported key size $nTruncSize")
+                }
 
                 override val oid = KnownOIDs.rsaEncryption
             }
         }
 
         @Transient
-        override val keyId by lazy { MultibaseHelper.calcKid(this) }
+        override val keyId by lazy { MultibaseHelper.calcKeyId(this) }
 
         /**
          * PKCS#1 encoded RSA Public Key
@@ -297,7 +302,19 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
     }
 }
 
-private fun sanitizeRsaInputs(n: ByteArray, e: Int) = n.dropWhile { it == 0.toByte() }.toByteArray()
-    .let { Triple(it, e, CryptoPublicKey.Rsa.Size.of(it)) }
+
+//Helper typealias, for helper sanitization function. Enables passing all params along constructors for constructor chaining
+private typealias RsaParams = Triple<ByteArray, Int, CryptoPublicKey.Rsa.Size>
+private val RsaParams.n get() = first
+private val RsaParams.e get() = second
+private val RsaParams.size get() = third
+
+/**
+ * Sanitizes RSA parameters and maps it to the correct [CryptoPublicKey.Rsa.Size] enum
+ * This function lives here and returns a typealiased Triple to allow for constructor chaining.
+ * If we were to change the primary constructor, we'd need to write a custom serializer
+ */
+private fun sanitizeRsaInputs(n: ByteArray, e: Int): RsaParams = n.dropWhile { it == 0.toByte() }.toByteArray()
+    .let { Triple(byteArrayOf(0, *it), e, CryptoPublicKey.Rsa.Size.of(it)) }
 
 fun Asn1TreeBuilder.subjectPublicKey(block: () -> CryptoPublicKey) = apply { elements += block().encodeToTlv() }
