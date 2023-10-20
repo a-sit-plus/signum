@@ -21,12 +21,23 @@ class Asn1BitString private constructor(
 ) :
     Asn1Encodable<Asn1Primitive> {
 
+
+    /**
+     * helper constructor to be able to use [fromBitSet]
+     */
     private constructor(derValue: Pair<Byte, ByteArray>) : this(derValue.first, derValue.second)
 
     /**
      * Creates an ASN.1 BIT STRING from the provided bitSet.
      * The transformation to [rawBytes] and the calculation of [numPaddingBits] happens
      * immediately in the constructor. Hence, modifications to the source KmmBitSet have no effect on the resulting [Asn1BitString].
+     *
+     * **BEWARE:** a bitset (as [KmmBitSet] implements it) is, by definition only as long as the highest bit set!
+     * Hence, trailing zeroes are **ALWAYS** stripped. If you require tailing zeroes, the easiest quick-and-dirty hack to accomplish this in general is as follows:
+     *
+     *  - set the last bit you require as tailing zero to one
+     *  - call this constructor
+     *  - flip the previously set bit back (this will be the lowest bit set in last byte of [rawBytes]).
      *
      * @param source the source [KmmBitSet], which is discarded after [rawBytes] and [numPaddingBits] have been calculated
      */
@@ -36,7 +47,9 @@ class Asn1BitString private constructor(
      * Transforms [rawBytes] and wraps into a [KmmBitSet]. The last [numPaddingBits] bits are ignored.
      * This is a deep copy and mirrors the bits in every byte to match
      * the native bitset layout where bit any byte indices run in opposite direction.
-     * Hence, motifications to the resulting bitset do not affect [rawBytes]
+     * Hence, modifications to the resulting bitset do not affect [rawBytes]
+     *
+     * Note: Tailing zeroes never count towards the length of the bitset
      *
      * See [KmmBitSet] for more details on bit string representation vs memory layout.
      *
