@@ -15,6 +15,9 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okio.ByteString.Companion.toByteString
 
+/**
+ * JSON Web Key as per [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517#section-4)
+ */
 @Serializable
 data class JsonWebKey(
     @SerialName("crv")
@@ -149,6 +152,9 @@ data class JsonWebKey(
 
 }
 
+/**
+ * Converts a [CryptoPublicKey] to a [JsonWebKey]
+ */
 fun CryptoPublicKey.toJsonWebKey(): JsonWebKey =
     when (this) {
         is CryptoPublicKey.Ec ->
@@ -170,6 +176,10 @@ fun CryptoPublicKey.toJsonWebKey(): JsonWebKey =
     }
 
 private const val JWK_ID = "jwkIdentifier"
+
+/**
+ * Holds [JsonWebKey.keyId] when transforming a [JsonWebKey] to a [CryptoPublicKey]
+ */
 var CryptoPublicKey.jwkId: String
     get() = additionalProperties[JWK_ID] ?: keyId
     set(value) {

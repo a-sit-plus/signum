@@ -8,6 +8,11 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
+/**
+ * Supported JSE algorithms.
+ *
+ * See [RFC 7516](https://datatracker.ietf.org/doc/html/rfc7516)
+ */
 @Serializable(with = JweEncryptionSerializer::class)
 enum class JweEncryption(val text: String) {
 

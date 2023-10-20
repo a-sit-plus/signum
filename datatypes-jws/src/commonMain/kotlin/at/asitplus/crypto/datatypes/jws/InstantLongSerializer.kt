@@ -8,6 +8,9 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
+/**
+ * JWS-Compliant [Instant] serializer. An instant is represented as seconds from epoch.
+ */
 class InstantLongSerializer : KSerializer<Instant> {
 
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("InstantLongSerializer", PrimitiveKind.LONG)
