@@ -63,7 +63,7 @@ data class TbsCertificationRequest(
  * Very simple implementation of a PKCS#10 Certification Request
  */
 @Serializable
-data class CertificationRequest(
+data class Pkcs10CertificationRequest(
     val tbsCsr: TbsCertificationRequest,
     val signatureAlgorithm: JwsAlgorithm,
     @Serializable(with = ByteArrayBase64Serializer::class)
@@ -80,7 +80,7 @@ data class CertificationRequest(
         if (this === other) return true
         if (other == null || this::class != other::class) return false
 
-        other as CertificationRequest
+        other as Pkcs10CertificationRequest
 
         if (tbsCsr != other.tbsCsr) return false
         if (signatureAlgorithm != other.signatureAlgorithm) return false
@@ -96,14 +96,14 @@ data class CertificationRequest(
         return result
     }
 
-    companion object : Asn1Decodable<Asn1Sequence, CertificationRequest> {
+    companion object : Asn1Decodable<Asn1Sequence, Pkcs10CertificationRequest> {
 
-        override fun decodeFromTlv(src: Asn1Sequence): CertificationRequest {
+        override fun decodeFromTlv(src: Asn1Sequence): Pkcs10CertificationRequest {
             val tbsCsr = TbsCertificationRequest.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val sigAlg = JwsAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val signature = (src.nextChild() as Asn1Primitive).readBitString()
             if (src.hasMoreChildren()) throw IllegalArgumentException("Superfluous structure in CSR Structure")
-            return CertificationRequest(tbsCsr, sigAlg, signature)
+            return Pkcs10CertificationRequest(tbsCsr, sigAlg, signature)
         }
     }
 }

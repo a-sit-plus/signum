@@ -1,6 +1,6 @@
 import at.asitplus.crypto.datatypes.*
 import at.asitplus.crypto.datatypes.asn1.*
-import at.asitplus.crypto.datatypes.pki.CertificationRequest
+import at.asitplus.crypto.datatypes.pki.Pkcs10CertificationRequest
 import at.asitplus.crypto.datatypes.pki.DistinguishedName
 import at.asitplus.crypto.datatypes.pki.Pkcs10CertificationRequestAttribute
 import at.asitplus.crypto.datatypes.pki.TbsCertificationRequest
@@ -53,7 +53,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             initSign(keyPair.private)
             update(tbsCsr.derEncoded)
         }.sign()
-        val csr = CertificationRequest(tbsCsr, signatureAlgorithm, signed)
+        val csr = Pkcs10CertificationRequest(tbsCsr, signatureAlgorithm, signed)
 
         println(csr.encodeToTlv().toDerHexString(lineLen = 64))
 
@@ -103,7 +103,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             initSign(keyPair.private)
             update(tbsCsr.encodeToTlv().derEncoded)
         }.sign()
-        val csr = CertificationRequest(tbsCsr, signatureAlgorithm, signed)
+        val csr = Pkcs10CertificationRequest(tbsCsr, signatureAlgorithm, signed)
 
         val kotlinEncoded = csr.encodeToTlv().derEncoded
         val jvmEncoded = bcCsr.encoded
@@ -130,7 +130,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         val bcCsr = PKCS10CertificationRequestBuilder(X500Name("CN=$commonName"), spki).build(contentSigner)
 
-        val csr = CertificationRequest.decodeFromTlv(Asn1Element.parse(bcCsr.encoded) as Asn1Sequence)
+        val csr = Pkcs10CertificationRequest.decodeFromTlv(Asn1Element.parse(bcCsr.encoded) as Asn1Sequence)
         csr.shouldNotBeNull()
 
         //x509Certificate.encodeToDer() shouldBe certificateHolder.encoded
