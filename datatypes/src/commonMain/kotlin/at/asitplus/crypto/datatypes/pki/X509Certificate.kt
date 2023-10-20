@@ -99,13 +99,13 @@ data class TbsCertificate(
 
             val issuerUniqueID = src.peek()?.let { next ->
                 if (next.tag == 1u.toImplicitTag()) {
-                    (src.nextChild() as Asn1Primitive).let { Asn1BitString.derDecode(byteArrayOf(BERTags.BIT_STRING.toByte(),*it.content)) }
+                    (src.nextChild() as Asn1Primitive).let  { Asn1BitString.decodeFromTlv(it, 1u.toImplicitTag()) }
                 } else null
             }
 
             val subjectUniqueID = src.peek()?.let { next ->
                 if (next.tag == 2u.toImplicitTag()) {
-                    (src.nextChild() as Asn1Primitive).let { Asn1BitString.derDecode(byteArrayOf(BERTags.BIT_STRING.toByte(),*it.content)) }
+                    (src.nextChild() as Asn1Primitive).let { Asn1BitString.decodeFromTlv(it, 2u.toImplicitTag()) }
                 } else null
             }
             val extensions = if (src.hasMoreChildren()) {

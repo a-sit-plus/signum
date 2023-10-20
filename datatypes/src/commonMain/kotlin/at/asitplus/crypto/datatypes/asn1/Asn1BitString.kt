@@ -55,7 +55,7 @@ class Asn1BitString private constructor(
         return bitset
     }
 
-    companion object : Asn1Decodable<Asn1Primitive, Asn1BitString> {
+    companion object : Asn1TagVerifyingDecodable<Asn1BitString> {
         private fun fromBitSet(bitSet: KmmBitSet): Pair<Byte, ByteArray> {
             val rawBytes = bitSet.bytes.map {
                 var res = 0
@@ -67,11 +67,15 @@ class Asn1BitString private constructor(
             return ((8 - (bitSet.length() % 8)) % 8).toByte() to rawBytes
         }
 
-        override fun decodeFromTlv(src: Asn1Primitive): Asn1BitString {
-            if (src.tag != BERTags.BIT_STRING) throw IllegalArgumentException("Expected tag ${BERTags.BIT_STRING}, is: ${src.tag}")
+        private fun decode(src: Asn1Primitive, tagOverride: UByte? = null): Asn1BitString {
+            if (src.tag != tagOverride ?: BERTags.BIT_STRING) throw IllegalArgumentException("Expected tag ${tagOverride ?: BERTags.BIT_STRING}, is: ${src.tag}")
             if (src.length == 0) return Asn1BitString(0, byteArrayOf())
             return Asn1BitString(src.content[0], src.content.sliceArray(1..<src.content.size))
         }
+
+        override fun decodeFromTlv(src: Asn1Primitive) = decodeFromTlv(src, null)
+
+        override fun decodeFromTlv(src: Asn1Primitive, tagOverride: UByte?) = decode(src, tagOverride)
     }
 
     override fun encodeToTlv() = Asn1Primitive(BERTags.BIT_STRING, byteArrayOf(numPaddingBits, *rawBytes))
