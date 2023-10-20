@@ -15,14 +15,14 @@ import kotlinx.serialization.Serializable
  * @param version defaults to 0
  * @param subjectName list of subject distingished names
  * @param publicKey nomen est omen
- * @param extensions nomen est omen
+ * @param attributes nomen est omen
  */
 @Serializable
 data class TbsCertificationRequest(
     val version: Int = 0,
     val subjectName: List<DistinguishedName>,
     val publicKey: CryptoPublicKey,
-    val extensions: List<Pkcs10CertificationRequestAttribute>? = null
+    val attributes: List<Pkcs10CertificationRequestAttribute>? = null
 ) : Asn1Encodable<Asn1Sequence> {
 
     override fun encodeToTlv() = asn1Sequence {
@@ -30,7 +30,7 @@ data class TbsCertificationRequest(
         sequence { subjectName.forEach { append { it.encodeToTlv() } } }
         subjectPublicKey { publicKey }
         append {
-            Asn1Tagged(0u.toExplicitTag(), extensions?.map { it.encodeToTlv() } ?: listOf())
+            Asn1Tagged(0u.toExplicitTag(), attributes?.map { it.encodeToTlv() } ?: listOf())
         }
     }
 
@@ -52,7 +52,7 @@ data class TbsCertificationRequest(
                 version = version,
                 subjectName = subject,
                 publicKey = cryptoPublicKey,
-                extensions = extensions,
+                attributes = extensions,
             )
         }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
     }

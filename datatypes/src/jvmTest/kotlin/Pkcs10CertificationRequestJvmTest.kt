@@ -94,7 +94,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             version = 0,
             subjectName = listOf(DistinguishedName.CommonName(Asn1String.UTF8(commonName))),
             publicKey = cryptoPublicKey,
-            extensions = listOf(
+            attributes = listOf(
                 Pkcs10CertificationRequestAttribute(KnownOIDs.keyUsage, Asn1Element.parse(keyUsage.encoded)),
                 Pkcs10CertificationRequestAttribute(KnownOIDs.`extKeyUsage`, Asn1Element.parse(extendedKeyUsage.encoded))
             )
