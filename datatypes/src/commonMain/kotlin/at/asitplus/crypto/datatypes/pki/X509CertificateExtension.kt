@@ -27,9 +27,9 @@ data class X509CertificateExtension private constructor(
     ) : this(oid, value, critical)
 
     override fun encodeToTlv() = asn1Sequence {
-        oid { oid }
+        append(oid)
         if (critical) bool { true }
-        append { value }
+        append(value)
     }
 
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {

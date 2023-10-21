@@ -169,6 +169,7 @@ sealed class Asn1Structure(tag: UByte, children: List<Asn1Element>?) :
  * @param tag the ASN.1 Tag to be used
  * @param children the child nodes to be contained in this tag
  */
+//TODO check if explicitly tagged
 class Asn1Tagged(tag: UByte, children: List<Asn1Element>) : Asn1Structure(tag, children) {
 
     /**

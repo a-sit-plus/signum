@@ -35,31 +35,29 @@ data class TbsCertificate(
 
     override fun encodeToTlv() = asn1Sequence {
         version { version }
-        append { Asn1Primitive(BERTags.INTEGER, serialNumber) }
+        append(Asn1Primitive(BERTags.INTEGER, serialNumber))
         sigAlg { signatureAlgorithm }
-        sequence { issuerName.forEach { append { it.encodeToTlv() } } }
+        sequence { issuerName.forEach { append(it.encodeToTlv()) } }
 
         sequence {
-            append { validFrom.asn1Object }
-            append { validUntil.asn1Object }
+            append(validFrom.asn1Object)
+            append(validUntil.asn1Object)
         }
-        sequence { subjectName.forEach { append { it.encodeToTlv() } } }
+        sequence { subjectName.forEach { append(it) } }
 
         subjectPublicKey { publicKey }
 
-        issuerUniqueID?.let { append { Asn1Primitive(1u.toImplicitTag(), it.encodeToBitString()) } }
-        subjectUniqueID?.let { append { Asn1Primitive(2u.toImplicitTag(), it.encodeToBitString()) } }
+        issuerUniqueID?.let { append(Asn1Primitive(1u.toImplicitTag(), it.encodeToBitString())) }
+        subjectUniqueID?.let { append(Asn1Primitive(2u.toImplicitTag(), it.encodeToBitString())) }
 
         extensions?.let {
             if (it.isNotEmpty()) {
-                append {
-                    Asn1Tagged(3u.toExplicitTag(),
-                        asn1Sequence {
-                            it.forEach { ext ->
-                                append { ext.encodeToTlv() }
-                            }
+                tagged(3u) {
+                    sequence {
+                        it.forEach { ext ->
+                            append(ext.encodeToTlv())
                         }
-                    )
+                    }
                 }
             }
         }

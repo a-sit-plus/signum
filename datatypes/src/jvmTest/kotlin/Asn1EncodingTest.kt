@@ -18,8 +18,15 @@ class Asn1EncodingTest : FreeSpec({
 
     "OCTET STRING Test" {
         val seq = asn1Sequence {
-            octetString { asn1Sequence { utf8String { "foo" } }.derEncoded }
+            octetStringEncapsulated {
+                sequence { utf8String { "foo" } }
+                set { utf8String { "bar" } }
+                append(Asn1String.Printable("a").encodeToTlv())
+            }
             octetString { byteArrayOf(17) }
+
+
+
             octetString {
                 asn1Set {
                     int { 99 }
@@ -39,7 +46,7 @@ class Asn1EncodingTest : FreeSpec({
                     }
                 }.derEncoded
             }
-            tagged(10u) { Clock.System.now().encodeToAsn1UtcTime() }
+            tagged(9u) { Clock.System.now().encodeToAsn1UtcTime() }
             octetString { byteArrayOf(17, -43, 23, -12, 8, 65, 90) }
             bool { false }
             bool { true }
@@ -90,7 +97,7 @@ class Asn1EncodingTest : FreeSpec({
         val instant = Clock.System.now()
 
         val sequence = asn1Sequence {
-            tagged(31u) {
+            tagged(1u) {
                 Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00))
             }
             set {
@@ -109,7 +116,7 @@ class Asn1EncodingTest : FreeSpec({
             }
             asn1null()
 
-            oid { ObjectIdentifier("1.2.603.624.97") }
+            append(ObjectIdentifier("1.2.603.624.97"))
 
             utf8String { "Foo" }
             printableString { "Bar" }

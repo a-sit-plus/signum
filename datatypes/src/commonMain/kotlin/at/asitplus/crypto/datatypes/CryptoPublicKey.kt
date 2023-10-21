@@ -36,8 +36,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
     override fun encodeToTlv() = when (this) {
         is Ec -> asn1Sequence {
             sequence {
-                oid { oid }
-                oid { curve.oid }
+                append(oid)
+                append(curve.oid)
             }
             bitString {
                 (byteArrayOf(
@@ -51,18 +51,10 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         is Rsa -> {
             asn1Sequence {
                 sequence {
-                    oid { oid }
+                    append(oid)
                     asn1null()
                 }
-                bitString(asn1Sequence {
-                    append {
-                        Asn1Primitive(
-                            BERTags.INTEGER,
-                            n.ensureSize(bits.number / 8u)
-                                .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
-                    }
-                    int { e }
-                })
+                bitString { iosEncoded }
             }
         }
     }
@@ -192,11 +184,11 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          */
         @Transient
         override val iosEncoded = asn1Sequence {
-            append {
+            append(
                 Asn1Primitive(BERTags.INTEGER,
                     n.ensureSize(bits.number / 8u)
                         .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
-            }
+            )
             int { e }
         }.derEncoded
 

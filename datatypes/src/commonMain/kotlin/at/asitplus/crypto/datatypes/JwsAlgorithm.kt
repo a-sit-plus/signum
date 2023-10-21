@@ -40,26 +40,27 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
         }
 
     override fun encodeToTlv() = when (this) {
-        ES256 -> asn1Sequence { oid { oid } }
-        ES384 -> asn1Sequence { oid { oid } }
-        ES512 -> asn1Sequence { oid { oid } }
+        ES256 -> asn1Sequence { append(oid) }
+        ES384 -> asn1Sequence { append(oid) }
+        ES512 -> asn1Sequence { append(oid) }
+
         RS256 -> asn1Sequence {
-            oid { oid }
+            append(oid) 
             asn1null()
         }
 
         RS384 -> asn1Sequence {
-            oid { oid }
+            append(oid) 
             asn1null()
         }
 
         RS512 -> asn1Sequence {
-            oid { oid }
+            append(oid) 
             asn1null()
         }
 
         NON_JWS_SHA1_WITH_RSA -> asn1Sequence {
-            oid { oid }
+            append(oid) 
             asn1null()
         }
 

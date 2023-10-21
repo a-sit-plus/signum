@@ -38,21 +38,19 @@ data class TbsCertificationRequest(
         version: Int = 0,
         attributes: List<Pkcs10CertificationRequestAttribute>? = null,
     ) : this(version, subjectName, publicKey, mutableListOf<Pkcs10CertificationRequestAttribute>().also { attrs ->
-        if(extensions.isEmpty()) throw  IllegalArgumentException("No extensions provided!")
+        if (extensions.isEmpty()) throw IllegalArgumentException("No extensions provided!")
         attributes?.let { attrs.addAll(it) }
         attrs.add(Pkcs10CertificationRequestAttribute(KnownOIDs.extensionRequest, asn1Sequence {
-            extensions.forEach {
-                append { it.encodeToTlv() }
-            }
+            extensions.forEach { append(it) }
         }))
     })
 
     override fun encodeToTlv() = asn1Sequence {
         int { version }
-        sequence { subjectName.forEach { append { it.encodeToTlv() } } }
+        sequence { subjectName.forEach { append(it) } }
         subjectPublicKey { publicKey }
-        append {
-            Asn1Tagged(0u.toExplicitTag(), attributes?.map { it.encodeToTlv() } ?: listOf())
+        tagged(0u) {
+            attributes?.map { append(it) }
         }
     }
 
