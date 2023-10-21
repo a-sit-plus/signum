@@ -8,7 +8,6 @@ import at.asitplus.crypto.datatypes.asn1.BERTags.GENERALIZED_TIME
 import at.asitplus.crypto.datatypes.asn1.BERTags.INTEGER
 import at.asitplus.crypto.datatypes.asn1.BERTags.NULL
 import at.asitplus.crypto.datatypes.asn1.BERTags.OBJECT_IDENTIFIER
-import at.asitplus.crypto.datatypes.asn1.BERTags.OCTET_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.UTC_TIME
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -315,7 +314,7 @@ fun Long.encodeToTlv() = Asn1Primitive(INTEGER, encodeToDer())
 /**
  * Produces an OCTET STRING as [Asn1Primitive]
  */
-fun ByteArray.encodeToTlvOctetString() = Asn1Primitive(OCTET_STRING, this)
+fun ByteArray.encodeToTlvOctetString() = Asn1PrimitiveOctetString(this)
 
 /**
  * Produces a BIT STRING as [Asn1Primitive]

@@ -16,6 +16,37 @@ class Asn1EncodingTest : FreeSpec({
         .decode(javaClass.classLoader.getResourceAsStream("github-com.pem").reader().readText())
 
 
+    "OCTET STRING Test" {
+        val seq = asn1Sequence {
+            octetString { asn1Sequence { utf8String { "foo" } }.derEncoded }
+            octetString { byteArrayOf(17) }
+            octetString {
+                asn1Set {
+                    int { 99 }
+                    octetString { byteArrayOf(1, 2, 3) }
+                    octetString {
+                        Asn1EncapsulatingOctetString(
+                            listOf(
+                                Asn1PrimitiveOctetString(
+                                    byteArrayOf(
+                                        7,
+                                        6,
+                                        3,
+                                    )
+                                )
+                            )
+                        ).derEncoded
+                    }
+                }.derEncoded
+            }
+            tagged(10u) { Clock.System.now().encodeToAsn1UtcTime() }
+            octetString { byteArrayOf(17, -43, 23, -12, 8, 65, 90) }
+            bool { false }
+            bool { true }
+        }
+        val parsed = Asn1Element.parse(seq.derEncoded)
+        println(parsed.prettyPrint())
+    }
 
     "Ans1 Number encoding" - {
 

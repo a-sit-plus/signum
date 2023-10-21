@@ -15,7 +15,7 @@ import kotlinx.serialization.encoding.Encoder
  */
 @Serializable(with = Asn1EncodableSerializer::class)
 sealed class Asn1Element(
-    private val tlv: TLV,
+    protected val tlv: TLV,
     protected open val children: List<Asn1Element>?
 ) {
 
@@ -78,8 +78,32 @@ sealed class Asn1Element(
         return "(tag=0x${byteArrayOf(tag.toByte()).encodeToString(Base16)}" +
                 ", length=${length}" +
                 ", overallLength=${overallLength}" +
-                if (children != null) ", children=${children}" else ", content=${content.encodeToString(Base16)}" +
-                        ")"
+                if (children != null) ", children=${children}" else ", content=${
+                    content.encodeToString(Base16 {
+                        lineBreakInterval = 0;encodeToLowercase = false
+                    })
+                }" + ")"
+    }
+
+    fun prettyPrint() = prettyPrint(0)
+
+    protected open fun prettyPrint(indent: Int): String = "(tag=0x${byteArrayOf(tag.toByte()).encodeToString(Base16)}" +
+            ", length=${length}" +
+            ", overallLength=${overallLength})" +
+            if (children != null) children!!.joinToString(
+                prefix = "\n" + (" " * indent) + "{\n",
+                separator = "\n",
+                postfix = "\n" + (" " * indent) + "}"
+            ) { it.prettyPrint(indent + 2) } else ", content=${
+                content.encodeToString(Base16 {
+                    lineBreakInterval = 0;encodeToLowercase = false
+                })
+            }" + ")"
+
+    protected operator fun String.times(op: Int): String {
+        var s = this
+        kotlin.repeat(op) { s += this }
+        return s
     }
 
     /**
@@ -155,6 +179,7 @@ class Asn1Tagged(tag: UByte, children: List<Asn1Element>) : Asn1Structure(tag, c
     constructor(tag: UByte, vararg children: Asn1Element) : this(tag, children.toList())
 
     override fun toString() = "Tagged" + super.toString()
+    override fun prettyPrint(indent: Int) = (" " * indent) + "Tagged" + super.prettyPrint(indent + 2)
 }
 
 /**
@@ -163,6 +188,31 @@ class Asn1Tagged(tag: UByte, children: List<Asn1Element>) : Asn1Structure(tag, c
  */
 class Asn1Sequence(children: List<Asn1Element>) : Asn1Structure(DERTags.DER_SEQUENCE, children) {
     override fun toString() = "Sequence" + super.toString()
+    override fun prettyPrint(indent: Int) = (" " * indent) + "Sequence" + super.prettyPrint(indent + 2)
+}
+/**
+ * ASN.1 OCTET STRING 0x04 ([BERTags.OCTET_STRING]) containing an [Asn1Element]
+ * @param children the elements to put into this sequence
+ */
+class Asn1EncapsulatingOctetString(children: List<Asn1Element>) : Asn1Structure(BERTags.OCTET_STRING, children) {
+    override fun toString() = "OCTET STRING Encapsulating" + super.toString()
+
+
+    override fun prettyPrint(indent: Int) =
+        (" " * indent) + "OCTET STRING Encapsulating" + super.prettyPrint(indent + 2)
+
+
+    public override val content: ByteArray get() = super.content
+}
+
+/**
+ * ASN.1 OCTET STRING 0x04 ([BERTags.OCTET_STRING]) containing data, which does not decode to an [Asn1Element]
+ * @param content the data to hold
+ */
+class Asn1PrimitiveOctetString(content: ByteArray) : Asn1Primitive(BERTags.OCTET_STRING, content) {
+    override fun toString() = "OCTET STRING " + super.toString()
+
+    override fun prettyPrint(indent: Int) = (" " * indent) + "OCTET STRING Primitive" + tlv.toString().substring(3)
 }
 
 
@@ -172,13 +222,19 @@ class Asn1Sequence(children: List<Asn1Element>) : Asn1Structure(DERTags.DER_SEQU
  */
 class Asn1Set(children: List<Asn1Element>?) : Asn1Structure(DERTags.DER_SET, children) {
     override fun toString() = "Set" + super.toString()
+
+
+    override fun prettyPrint(indent: Int) = (" " * indent) + "Set" + super.prettyPrint(indent + 2)
 }
 
 /**
  * ASN.1 primitive. Hold o children, but [content] under [tag]
  */
-class Asn1Primitive(tag: UByte, content: ByteArray) : Asn1Element(TLV(tag, content), null) {
+open class Asn1Primitive(tag: UByte, content: ByteArray) : Asn1Element(TLV(tag, content), null) {
     override fun toString() = "Primitive" + super.toString()
+
+
+    override fun prettyPrint(indent: Int) = (" " * indent) + "Primitive" + super.prettyPrint(indent)
 
     /**
      * Data contained in this ASN.1 primitive in its encoded form. Requires decoding to interpret it
@@ -187,7 +243,7 @@ class Asn1Primitive(tag: UByte, content: ByteArray) : Asn1Element(TLV(tag, conte
         get() = super.content
 }
 
-internal data class TLV(val tag: UByte, val content: ByteArray) {
+data class TLV(val tag: UByte, val content: ByteArray) {
 
     val encodedLength by lazy { length.encodeLength() }
     val length by lazy { content.size }

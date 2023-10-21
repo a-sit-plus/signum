@@ -1,20 +1,35 @@
 package at.asitplus.crypto.datatypes.pki
 
 import at.asitplus.crypto.datatypes.asn1.*
-import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class X509CertificateExtension(
+data class X509CertificateExtension private constructor(
     override val oid: ObjectIdentifier,
-    val critical: Boolean = false,
-    @Serializable(with = ByteArrayBase64Serializer::class) val value: ByteArray
+    val value: Asn1Element,
+    val critical: Boolean = false
 ) : Asn1Encodable<Asn1Sequence>, Identifiable {
+
+    init {
+        if (value.tag != BERTags.OCTET_STRING) throw IllegalArgumentException("Value is not an octed string!")
+    }
+
+    public constructor(
+        oid: ObjectIdentifier,
+        critical: Boolean = false,
+        value: Asn1EncapsulatingOctetString
+    ) : this(oid, value, critical)
+
+    public constructor(
+        oid: ObjectIdentifier,
+        critical: Boolean = false,
+        value: Asn1PrimitiveOctetString
+    ) : this(oid, value, critical)
 
     override fun encodeToTlv() = asn1Sequence {
         oid { oid }
         if (critical) bool { true }
-        octetString { value }
+        append { value }
     }
 
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
@@ -25,8 +40,8 @@ data class X509CertificateExtension(
             val critical =
                 if (src.children[1].tag == BERTags.BOOLEAN) (src.children[1] as Asn1Primitive).content[0] == 0xff.toByte() else false
 
-            val value = (src.children.last() as Asn1Primitive).decode(BERTags.OCTET_STRING) { it }
-            return X509CertificateExtension(id, critical, value)
+            val value = src.children.last()
+            return X509CertificateExtension(id, value, critical)
         }
 
     }
@@ -40,7 +55,7 @@ data class X509CertificateExtension(
 
         if (oid != other.oid) return false
         if (critical != other.critical) return false
-        if (!value.contentEquals(other.value)) return false
+        if (value != other.value) return false
 
         return true
     }
@@ -48,7 +63,7 @@ data class X509CertificateExtension(
     override fun hashCode(): Int {
         var result = oid.hashCode()
         result = 31 * result + critical.hashCode()
-        result = 31 * result + value.contentHashCode()
+        result = 31 * result + value.hashCode()
         return result
     }
 }

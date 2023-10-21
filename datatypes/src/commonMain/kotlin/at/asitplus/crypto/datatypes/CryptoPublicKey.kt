@@ -40,8 +40,10 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                 oid { curve.oid }
             }
             bitString {
-                (byteArrayOf(BERTags.OCTET_STRING.toByte()) + x.ensureSize(curve.coordinateLengthBytes) + y.ensureSize(
-                    curve.coordinateLengthBytes
+                (byteArrayOf(
+                    0x04,
+                    *(x.ensureSize(curve.coordinateLengthBytes)),
+                    *y.ensureSize(curve.coordinateLengthBytes)
                 ))
             }
         }
@@ -305,6 +307,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
 //Helper typealias, for helper sanitization function. Enables passing all params along constructors for constructor chaining
 private typealias RsaParams = Triple<ByteArray, Int, CryptoPublicKey.Rsa.Size>
+
 private val RsaParams.n get() = first
 private val RsaParams.e get() = second
 private val RsaParams.size get() = third

@@ -7,6 +7,7 @@ import at.asitplus.crypto.datatypes.asn1.BERTags.IA5_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.INTEGER
 import at.asitplus.crypto.datatypes.asn1.BERTags.NULL
 import at.asitplus.crypto.datatypes.asn1.BERTags.NUMERIC_STRING
+import at.asitplus.crypto.datatypes.asn1.BERTags.OCTET_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.PRINTABLE_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.T61_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.UNIVERSAL_STRING
@@ -49,10 +50,15 @@ private class Asn1Reader(input: ByteArray) {
                     Asn1Reader(tlv.content).doParse()
                 )
             )
+            else if (tlv.tag == OCTET_STRING) {
+                runCatching {
+                    result.add(Asn1EncapsulatingOctetString(Asn1Reader(tlv.content).doParse()))
+                }.getOrElse { result.add(Asn1PrimitiveOctetString(tlv.content)) }
+            }
             else result.add(Asn1Primitive(tlv.tag, tlv.content))
 
         }
-        return result.toList()
+        return result
     }
 
     private fun TLV.isSet() = tag == DERTags.DER_SET
