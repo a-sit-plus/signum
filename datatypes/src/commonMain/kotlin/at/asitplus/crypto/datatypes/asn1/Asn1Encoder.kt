@@ -20,41 +20,41 @@ import kotlin.io.encoding.ExperimentalEncodingApi
  * Class Providing a DSL for creating arbitrary ASN.1 structures. You will almost certainyl never use it directly, but rather use it as follows:
  * ```kotlin
  * asn1Sequence {
- *   tagged(31u) {
- *     Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00))
- *   }
- *   set {
- *     sequence {
- *       setOf { //note: DER encoding enfoces sorting here, so the result switches those
- *         printableString { "World" }
- *         printableString { "Hello" }
- *       }
- *       set { //note: DER encoding enfoces sorting by tags, so the order changes in the ourput
- *         printableString { "World" }
- *         printableString { "Hello" }
- *         utf8String { "!!!" }
- *       }
+ *     tagged(1u) {
+ *         append(Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00)))
  *     }
- *   }
- *   asn1null()
+ *     set {
+ *         sequence {
+ *             setOf {
+ *                 printableString("World")
+ *                 printableString("Hello")
+ *             }
+ *             set {
+ *                 printableString("World")
+ *                 printableString("Hello")
+ *                 utf8String("!!!")
+ *             }
  *
- *   oid { ObjectIdentifier("1.2.60873.543.65.2324.97") }
- *
- *   utf8String { "Foo" }
- *   printableString { "Bar" }
- *
- *   set {
- *     int { 3 }
- *     long { 123456789876543L }
- *     bool { false }
- *     bool { true }
- *   }
- *   sequence {
+ *         }
+ *     }
  *     asn1null()
- *     hexEncoded { "CAFEBABE" }
- *     hexEncoded { "BADDAD" }
- *     utcTime { instant }
- *   }
+ *
+ *     append(ObjectIdentifier("1.2.603.624.97"))
+ *
+ *     utf8String("Foo")
+ *     printableString("Bar")
+ *
+ *     set {
+ *         int(3)
+ *         long(-65789876543L)
+ *         bool(false)
+ *         bool(true)
+ *     }
+ *     sequence {
+ *         asn1null()
+ *         append(Asn1String.Numeric("12345"))
+ *         utcTime(instant)
+ *     }
  * }
  * ```
  */
@@ -177,13 +177,13 @@ class Asn1TreeBuilder {
      *   set {
      *     sequence {
      *       setOf { //note: DER encoding enforces sorting here, so the result switches those
-     *         printableString { "World" }
-     *         printableString { "Hello" }
+     *         printableString("World")
+     *         printableString("Hello")
      *       }
      *       set { //note: DER encoding enforces sorting by tags, so the order changes in the output
-     *         printableString { "World" }
-     *         printableString { "Hello" }
-     *         utf8String { "!!!" }
+     *         printableString("World")
+     *         printableString("Hello")
+     *         utf8String("!!!")
      *       }
      *     }
      *   }
@@ -199,13 +199,13 @@ class Asn1TreeBuilder {
      *   set {
      *     sequence {
      *       setOf { //note: DER encoding enforces sorting here, so the result switches those
-     *         printableString { "World" }
-     *         printableString { "Hello" }
+     *         printableString("World")
+     *         printableString("Hello")
      *       }
      *       set { //note: DER encoding enforces sorting by tags, so the order changes in the output
-     *         printableString { "World" }
-     *         printableString { "Hello" }
-     *         utf8String { "!!!" }
+     *         printableString("World")
+     *         printableString("Hello")
+     *         utf8String("!!!")
      *       }
      *     }
      *   }
@@ -221,13 +221,13 @@ class Asn1TreeBuilder {
      *   set {
      *     sequence {
      *       setOf { //note: DER encoding enforces sorting here, so the result switches those
-     *         printableString { "World" }
-     *         printableString { "Hello" }
+     *         printableString("World")
+     *         printableString("Hello")
      *       }
      *       set { //note: DER encoding enforces sorting by tags, so the order changes in the output
-     *         printableString { "World" }
-     *         printableString { "Hello" }
-     *         utf8String { "!!!" }
+     *         printableString("World")
+     *         printableString("Hello")
+     *         utf8String("!!!")
      *       }
      *     }
      *   }
@@ -240,12 +240,12 @@ class Asn1TreeBuilder {
      * ```kotlin
      *   set {
      *     octetString {
-     *       printableString { "Hello" }
-     *       printableString { "World" }
+     *       printableString("Hello")
+     *       printableString("World")
      *       sequence {
-     *         printableString { "World" }
-     *         printableString { "Hello" }
-     *         utf8String { "!!!" }
+     *         printableString("World")
+     *         printableString("Hello")
+     *         utf8String("!!!")
      *       }
      *     }
      *   }
@@ -269,9 +269,9 @@ private enum class CollectionType {
  * ```kotlin
  * sequence {
  *   asn1Null()
- *   printableString { "World" }
- *   printableString { "Hello" }
- *   utf8String { "!!!" }
+ *   printableString("World")
+ *   printableString("Hello")
+ *   utf8String("!!!")
  * }
  *  ```
  */
@@ -288,9 +288,9 @@ fun asn1Sequence(root: Asn1TreeBuilder.() -> Unit): Asn1Sequence {
  * ```kotlin
  * set {
  *   asn1Null()
- *   printableString { "World" }
- *   printableString { "Hello" }
- *   utf8String { "!!!" }
+ *   printableString("World")
+ *   printableString("Hello")
+ *   utf8String("!!!")
  * }
  *  ```
  */
@@ -306,9 +306,9 @@ fun asn1Set(root: Asn1TreeBuilder.() -> Unit): Asn1Set {
  *
  * ```kotlin
  * setOf {
- *   printableString { "World" }
- *   printableString { "!!!" }
- *   printableString { "Hello" }
+ *   printableString("World")
+ *   printableString("!!!")
+ *   printableString("Hello")
  * }
  *  ```
  */
@@ -348,9 +348,6 @@ fun ByteArray.encodeToTlvBitString() = Asn1Primitive(BIT_STRING, encodeToBitStri
  * Prepends 0x00 to this ByteArray for encoding it into a BIT STRING. Useful for implicit tagging
  */
 fun ByteArray.encodeToBitString() = byteArrayOf(0x00) + this
-
-private fun String.encodeTolvOid() = Asn1Primitive(OBJECT_IDENTIFIER, decodeToByteArray(Base16()))
-
 
 private fun Int.encodeToDer() = if (this == 0) byteArrayOf(0) else
     encodeToByteArray()

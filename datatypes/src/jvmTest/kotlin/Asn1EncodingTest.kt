@@ -48,7 +48,7 @@ class Asn1EncodingTest : FreeSpec({
                     }
                 }.derEncoded
             )
-            tagged(9u) { Clock.System.now().encodeToAsn1UtcTime() }
+            tagged(9u) { append(Clock.System.now().encodeToAsn1UtcTime()) }
             octetString(byteArrayOf(17, -43, 23, -12, 8, 65, 90))
             bool(false)
             bool(true)
@@ -100,7 +100,7 @@ class Asn1EncodingTest : FreeSpec({
 
         val sequence = asn1Sequence {
             tagged(1u) {
-                Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00))
+                append(Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00)))
             }
             set {
                 sequence {
