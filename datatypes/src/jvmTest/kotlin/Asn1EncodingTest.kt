@@ -1,5 +1,5 @@
 import at.asitplus.crypto.datatypes.asn1.*
-import at.asitplus.crypto.datatypes.io.KmmBitSet
+import at.asitplus.crypto.datatypes.io.BitSet
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
@@ -15,7 +15,7 @@ import java.util.*
 class Asn1EncodingTest : FreeSpec({
 
 
-    val bitSet = KmmBitSet.fromBitString("011011100101110111")
+    val bitSet = BitSet.fromBitString("011011100101110111")
     "Bit String" {
         val fromBitSet = Asn1BitString(bitSet)
         fromBitSet.encodeToTlv().toDerHexString() shouldBe "0304066E5DC0"

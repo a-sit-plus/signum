@@ -1,6 +1,6 @@
 package at.asitplus.crypto.datatypes.asn1
 
-import at.asitplus.crypto.datatypes.io.KmmBitSet
+import at.asitplus.crypto.datatypes.io.BitSet
 
 /**
  * ASN.1 BIT STRING
@@ -13,7 +13,7 @@ class Asn1BitString private constructor(
 
     /**
      * The raw bytes containing the bit string. The bits contained in [rawBytes] are laid out, as printed when calling
-     * [KmmBitSet.toBitString], right-padded with [numPaddingBits] many zero bits to the last byte boundary.
+     * [BitSet.toBitString], right-padded with [numPaddingBits] many zero bits to the last byte boundary.
      *
      * The overall [Asn1Primitive.content] resulting from [encodeToTlv] is `byteArrayOf(numPaddingBits, *rawBytes)`
      */
@@ -30,33 +30,33 @@ class Asn1BitString private constructor(
     /**
      * Creates an ASN.1 BIT STRING from the provided bitSet.
      * The transformation to [rawBytes] and the calculation of [numPaddingBits] happens
-     * immediately in the constructor. Hence, modifications to the source KmmBitSet have no effect on the resulting [Asn1BitString].
+     * immediately in the constructor. Hence, modifications to the source BitSet have no effect on the resulting [Asn1BitString].
      *
-     * **BEWARE:** a bitset (as [KmmBitSet] implements it) is, by definition only as long as the highest bit set!
+     * **BEWARE:** a bitset (as [BitSet] implements it) is, by definition only as long as the highest bit set!
      * Hence, trailing zeroes are **ALWAYS** stripped. If you require tailing zeroes, the easiest quick-and-dirty hack to accomplish this in general is as follows:
      *
      *  - set the last bit you require as tailing zero to one
      *  - call this constructor
      *  - flip the previously set bit back (this will be the lowest bit set in last byte of [rawBytes]).
      *
-     * @param source the source [KmmBitSet], which is discarded after [rawBytes] and [numPaddingBits] have been calculated
+     * @param source the source [BitSet], which is discarded after [rawBytes] and [numPaddingBits] have been calculated
      */
-    constructor(source: KmmBitSet) : this(fromBitSet(source))
+    constructor(source: BitSet) : this(fromBitSet(source))
 
     /**
-     * Transforms [rawBytes] and wraps into a [KmmBitSet]. The last [numPaddingBits] bits are ignored.
+     * Transforms [rawBytes] and wraps into a [BitSet]. The last [numPaddingBits] bits are ignored.
      * This is a deep copy and mirrors the bits in every byte to match
      * the native bitset layout where bit any byte indices run in opposite direction.
      * Hence, modifications to the resulting bitset do not affect [rawBytes]
      *
      * Note: Tailing zeroes never count towards the length of the bitset
      *
-     * See [KmmBitSet] for more details on bit string representation vs memory layout.
+     * See [BitSet] for more details on bit string representation vs memory layout.
      *
      */
-    fun toBitSet(): KmmBitSet {
+    fun toBitSet(): BitSet {
         val size = rawBytes.size.toLong() * 8 - numPaddingBits
-        val bitset = KmmBitSet(size)
+        val bitset = BitSet(size)
         for (i in rawBytes.indices) {
             val bitOffset = i.toLong() * 8L
             for (bitIndex in 0..<8) {
@@ -69,7 +69,7 @@ class Asn1BitString private constructor(
     }
 
     companion object : Asn1TagVerifyingDecodable<Asn1BitString> {
-        private fun fromBitSet(bitSet: KmmBitSet): Pair<Byte, ByteArray> {
+        private fun fromBitSet(bitSet: BitSet): Pair<Byte, ByteArray> {
             val rawBytes = bitSet.bytes.map {
                 var res = 0
                 for (i in 0..7) {

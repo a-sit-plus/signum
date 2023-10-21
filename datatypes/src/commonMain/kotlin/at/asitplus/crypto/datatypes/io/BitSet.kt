@@ -4,7 +4,6 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlin.experimental.and
@@ -33,7 +32,7 @@ private fun Byte.getBit(index: Int): Boolean =
  * The [toBitString] function print our the bits as they are accessible, disragarding byte-alignment and memory layout:
  *
  * ```kotlin
- * val bitSet = KmmBitSet()
+ * val bitSet = BitSet()
  * bitSet[0] = true //1             (ByteArray representation: [1])
  * bitSet[2] = true //101           (ByteArray representation: [5])
  * bitSet[8] = true //10100000 1    (ByteArray representation: [5,1])
@@ -43,8 +42,8 @@ private fun Byte.getBit(index: Int): Boolean =
  *
  * Implements [Iterable] over bits. Use [bytes] to iterate over bytes
  */
-@Serializable(with=KmmBitSetSerializer::class)
-class KmmBitSet private constructor(private val buffer: MutableList<Byte>) : Iterable<Boolean> {
+@Serializable(with=BitSetSerializer::class)
+class BitSet private constructor(private val buffer: MutableList<Byte>) : Iterable<Boolean> {
 
 
     /**
@@ -201,8 +200,8 @@ class KmmBitSet private constructor(private val buffer: MutableList<Byte>) : Ite
     override fun toString() = toBitString()
     override fun equals(other: Any?): Boolean {
         if (other == null) return false
-        if (other::class != KmmBitSet::class) return false
-        other as KmmBitSet
+        if (other::class != BitSet::class) return false
+        other as BitSet
         forEachIndexed { i, it ->
             if (other[i] != it) return false
         }
@@ -224,15 +223,15 @@ class KmmBitSet private constructor(private val buffer: MutableList<Byte>) : Ite
          * Wraps [bytes] into a BitSet. Copies all bytes.
          * Hence, modifications to [bytes] are **not** reflected in the newly created BitSet.
          */
-        fun from(bytes: ByteArray) = KmmBitSet(bytes.toMutableList())
+        fun from(bytes: ByteArray) = BitSet(bytes.toMutableList())
 
         /**
          * Creates bitset from hunan-readably bit string representation
          */
-        fun fromBitString(bitString: String): KmmBitSet {
-            if (bitString.isEmpty()) return KmmBitSet()
+        fun fromBitString(bitString: String): BitSet {
+            if (bitString.isEmpty()) return BitSet()
             if (!bitString.matches(Regex("^[01]+\$"))) throw IllegalArgumentException("Not a bit string")
-            return KmmBitSet(bitString.length.toLong()).apply {
+            return BitSet(bitString.length.toLong()).apply {
                 bitString.forEachIndexed { i, it ->
                     this[i.toLong()] = (it == '1')
                 }
@@ -242,9 +241,9 @@ class KmmBitSet private constructor(private val buffer: MutableList<Byte>) : Ite
 }
 
 /**
- * @see KmmBitSet.from
+ * @see BitSet.from
  */
-fun ByteArray.toBitSet(): KmmBitSet = KmmBitSet.from(this)
+fun ByteArray.toBitSet(): BitSet = BitSet.from(this)
 
 
 /**
@@ -302,12 +301,12 @@ fun ByteArray.toBitString(): String =
 fun ByteArray.memDump(): String =
     joinToString(separator = " ") { it.toUByte().toString(2).padStart(8, '0') }
 
-object KmmBitSetSerializer:KSerializer<KmmBitSet>{
-    override val descriptor = PrimitiveSerialDescriptor("KmmBitSet", PrimitiveKind.STRING)
+object BitSetSerializer:KSerializer<BitSet>{
+    override val descriptor = PrimitiveSerialDescriptor("BitSet", PrimitiveKind.STRING)
 
-    override fun deserialize(decoder: Decoder) = KmmBitSet.fromBitString(decoder.decodeString())
+    override fun deserialize(decoder: Decoder) = BitSet.fromBitString(decoder.decodeString())
 
-    override fun serialize(encoder: Encoder, value: KmmBitSet) {
+    override fun serialize(encoder: Encoder, value: BitSet) {
        encoder.encodeString(value.toBitString())
     }
 

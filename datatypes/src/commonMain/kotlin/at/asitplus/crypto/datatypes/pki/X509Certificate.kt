@@ -6,7 +6,7 @@ import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import at.asitplus.crypto.datatypes.asn1.DERTags.toImplicitTag
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
-import at.asitplus.crypto.datatypes.io.KmmBitSet
+import at.asitplus.crypto.datatypes.io.BitSet
 import at.asitplus.crypto.datatypes.sigAlg
 import at.asitplus.crypto.datatypes.subjectPublicKey
 import kotlinx.serialization.Serializable
@@ -25,8 +25,8 @@ data class TbsCertificate(
     val validUntil: CertificateTimeStamp,
     val subjectName: List<DistinguishedName>,
     val publicKey: CryptoPublicKey,
-    val issuerUniqueID: KmmBitSet? = null,
-    val subjectUniqueID: KmmBitSet? = null,
+    val issuerUniqueID: BitSet? = null,
+    val subjectUniqueID: BitSet? = null,
     val extensions: List<X509CertificateExtension>? = null
 ) : Asn1Encodable<Asn1Sequence> {
 

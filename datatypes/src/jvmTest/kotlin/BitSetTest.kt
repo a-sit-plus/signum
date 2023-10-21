@@ -1,4 +1,3 @@
-import at.asitplus.crypto.datatypes.io.KmmBitSet
 import at.asitplus.crypto.datatypes.io.memDump
 import at.asitplus.crypto.datatypes.io.toBitSet
 import at.asitplus.crypto.datatypes.io.toBitString
@@ -12,6 +11,7 @@ import io.kotest.property.arbitrary.booleanArray
 import io.kotest.property.arbitrary.int
 import io.kotest.property.checkAll
 import java.util.*
+import at.asitplus.crypto.datatypes.io.BitSet as KmpBitSet
 
 class BitSetTest : FreeSpec({
 
@@ -23,9 +23,9 @@ class BitSetTest : FreeSpec({
 
 
 
-            KmmBitSet.fromBitString("011011100101110111").toBitString() shouldBe "011011100101110111"
+            KmpBitSet.fromBitString("011011100101110111").toBitString() shouldBe "011011100101110111"
 
-            val kmm = KmmBitSet(0)
+            val kmm = KmpBitSet(0)
             val jvm = BitSet(0)
 
             2.let {
@@ -34,7 +34,7 @@ class BitSetTest : FreeSpec({
             }
             jvm.toBitString() shouldBe "001"
             kmm.toBitString() shouldBe "001"
-            KmmBitSet.fromBitString(kmm.toBitString()) shouldBe kmm
+            KmpBitSet.fromBitString(kmm.toBitString()) shouldBe kmm
 
             8.let {
                 kmm[it.toLong()] = true
@@ -42,7 +42,7 @@ class BitSetTest : FreeSpec({
             }
             jvm.toBitString() shouldBe "001000001"
             kmm.toBitString() shouldBe "001000001"
-            KmmBitSet.fromBitString(kmm.toBitString()) shouldBe kmm
+            KmpBitSet.fromBitString(kmm.toBitString()) shouldBe kmm
 
 
             2.let {
@@ -52,7 +52,7 @@ class BitSetTest : FreeSpec({
 
             jvm.toBitString() shouldBe "000000001"
             kmm.toBitString() shouldBe "000000001"
-            KmmBitSet.fromBitString(kmm.toBitString()) shouldBe kmm
+            KmpBitSet.fromBitString(kmm.toBitString()) shouldBe kmm
 
             10.let {
                 kmm[it.toLong()] = false
@@ -61,7 +61,7 @@ class BitSetTest : FreeSpec({
 
             jvm.toBitString() shouldBe "000000001"
             kmm.toBitString() shouldBe "000000001"
-            KmmBitSet.fromBitString(kmm.toBitString()) shouldBe kmm
+            KmpBitSet.fromBitString(kmm.toBitString()) shouldBe kmm
 
 
             8.let {
@@ -71,7 +71,7 @@ class BitSetTest : FreeSpec({
 
             jvm.toBitString() shouldBe ""
             kmm.toBitString() shouldBe ""
-            KmmBitSet.fromBitString(kmm.toBitString()) shouldBe kmm
+            KmpBitSet.fromBitString(kmm.toBitString()) shouldBe kmm
 
 
             val bits = BitSet()
@@ -89,7 +89,7 @@ class BitSetTest : FreeSpec({
             byteArrayOf(7).memDump() shouldBe "00000111"
             byteArrayOf(17, 31).memDump() shouldBe "00010001 00011111"
 
-            val kmm = KmmBitSet(0)
+            val kmm = KmpBitSet(0)
             val jvm = BitSet(0)
 
             2.let {
@@ -157,7 +157,7 @@ class BitSetTest : FreeSpec({
                     input.indices.shuffled().forEach { i -> it.set(i, input[i]) }
                 }
                 val kmm = withClue("size: $size") {
-                    KmmBitSet(size.toLong()).also {
+                    KmpBitSet(size.toLong()).also {
                         input.indices.shuffled().forEach { i -> it[i.toLong()] = input[i] }
                     }
                 }
@@ -235,7 +235,7 @@ class BitSetTest : FreeSpec({
                         input.indices.shuffled().forEach { i -> it.set(i, input[i]) }
                     }
                     val kmm = withClue("size: $size") {
-                        KmmBitSet(size.toLong()).also {
+                        KmpBitSet(size.toLong()).also {
                             input.indices.shuffled().forEach { i -> it[i.toLong()] = input[i] }
                         }
                     }

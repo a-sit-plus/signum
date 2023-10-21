@@ -10,7 +10,7 @@ import at.asitplus.crypto.datatypes.asn1.BERTags.NULL
 import at.asitplus.crypto.datatypes.asn1.BERTags.OBJECT_IDENTIFIER
 import at.asitplus.crypto.datatypes.asn1.BERTags.OCTET_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.UTC_TIME
-import at.asitplus.crypto.datatypes.io.KmmBitSet
+import at.asitplus.crypto.datatypes.io.BitSet
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -104,10 +104,10 @@ class Asn1TreeBuilder {
     fun bitString(block: () -> ByteArray) = apply { elements += block().encodeToTlvBitString() }
 
     /**
-     * Transforms the passed KmmBitSet as BIT STRING [Asn1Primitive] to this ASN.1 structure.
+     * Transforms the passed BitSet as BIT STRING [Asn1Primitive] to this ASN.1 structure.
      * **Left-Aligned and right-padded (see [Asn1BitString])**
      */
-    fun bitString(bitSet: KmmBitSet) = apply { elements += Asn1BitString(bitSet).encodeToTlv() }
+    fun bitString(bitSet: BitSet) = apply { elements += Asn1BitString(bitSet).encodeToTlv() }
 
     /**
      * Adds the passed [Asn1Element] as BIT STRING [Asn1Primitive] to this ASN.1 structure
