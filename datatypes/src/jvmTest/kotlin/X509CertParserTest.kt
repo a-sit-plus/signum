@@ -17,6 +17,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.bouncycastle.jcajce.provider.asymmetric.X509
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileReader
@@ -29,6 +30,14 @@ import java.security.cert.X509Certificate as JcaCertificate
 private val json = Json { prettyPrint = true }
 
 class X509CertParserTest : FreeSpec({
+
+    "Manual" {
+        //ok-uniqueid-incomplete-byte.der
+        val derBytes =
+            javaClass.classLoader.getResourceAsStream("certs/ok-uniqueid-incomplete-byte.der").readBytes()
+        X509Certificate.derDecode(derBytes)
+    }
+
 
     "Real Certificates" - {
         withData("digicert-root.pem", "github-com.pem", "cert-times.pem") { crt ->

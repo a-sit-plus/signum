@@ -6,6 +6,7 @@ import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import at.asitplus.crypto.datatypes.asn1.DERTags.toImplicitTag
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
+import at.asitplus.crypto.datatypes.io.BitSet
 import at.asitplus.crypto.datatypes.sigAlg
 import at.asitplus.crypto.datatypes.subjectPublicKey
 import kotlinx.serialization.Serializable
@@ -24,8 +25,8 @@ data class TbsCertificate(
     val validUntil: CertificateTimeStamp,
     val subjectName: List<DistinguishedName>,
     val publicKey: CryptoPublicKey,
-    @Serializable(with = ByteArrayBase64Serializer::class) val issuerUniqueID: ByteArray? = null,
-    @Serializable(with = ByteArrayBase64Serializer::class) val subjectUniqueID: ByteArray? = null,
+    val issuerUniqueID: BitSet? = null,
+    val subjectUniqueID: BitSet? = null,
     val extensions: List<X509CertificateExtension>? = null
 ) : Asn1Encodable<Asn1Sequence> {
 
@@ -47,8 +48,20 @@ data class TbsCertificate(
 
         subjectPublicKey { publicKey }
 
-        issuerUniqueID?.let { append { Asn1Primitive(1u.toImplicitTag(), it.encodeToBitString()) } }
-        subjectUniqueID?.let { append { Asn1Primitive(2u.toImplicitTag(), it.encodeToBitString()) } }
+        issuerUniqueID?.let {
+            append {
+                Asn1Primitive(
+                    1u.toImplicitTag(), Asn1BitString(it).let { byteArrayOf(it.numPaddingBits, *it.rawBytes) }
+                )
+            }
+        }
+        subjectUniqueID?.let {
+            append {
+                Asn1Primitive(
+                    2u.toImplicitTag(), Asn1BitString(it).let { byteArrayOf(it.numPaddingBits, *it.rawBytes) }
+                )
+            }
+        }
 
         extensions?.let {
             if (it.isNotEmpty()) {
@@ -86,13 +99,13 @@ data class TbsCertificate(
 
             val issuerUniqueID = src.peek()?.let { next ->
                 if (next.tag == 1u.toImplicitTag()) {
-                    (src.nextChild() as Asn1Primitive).decode(1u.toImplicitTag()) { decodeBitString(it) }
+                    (src.nextChild() as Asn1Primitive).let  { Asn1BitString.decodeFromTlv(it, 1u.toImplicitTag()) }
                 } else null
             }
 
             val subjectUniqueID = src.peek()?.let { next ->
                 if (next.tag == 2u.toImplicitTag()) {
-                    (src.nextChild() as Asn1Primitive).decode(2u.toImplicitTag()) { decodeBitString(it) }
+                    (src.nextChild() as Asn1Primitive).let { Asn1BitString.decodeFromTlv(it, 2u.toImplicitTag()) }
                 } else null
             }
             val extensions = if (src.hasMoreChildren()) {
@@ -112,8 +125,8 @@ data class TbsCertificate(
                 validUntil = timestamps.second,
                 subjectName = subject,
                 publicKey = cryptoPublicKey,
-                issuerUniqueID = issuerUniqueID,
-                subjectUniqueID = subjectUniqueID,
+                issuerUniqueID = issuerUniqueID?.toBitSet(),
+                subjectUniqueID = subjectUniqueID?.toBitSet(),
                 extensions = extensions,
             )
         }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
@@ -176,7 +189,7 @@ data class X509Certificate(
             val sigAlg = JwsAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val signature = (src.nextChild() as Asn1Primitive).readBitString()
             if (src.hasMoreChildren()) throw IllegalArgumentException("Superfluous structure in Certificate Structure")
-            return X509Certificate(tbs, sigAlg, signature)
+            return X509Certificate(tbs, sigAlg, signature.rawBytes)
         }
 
     }

@@ -125,7 +125,7 @@ object MultibaseHelper {
         } else null
 
     private fun decodeEcKey(it: ByteArray?): CryptoPublicKey? {
-        val test = it?.let { bytes -> byteArrayOf(0x04.toByte(), *bytes) }
+        val test = it?.let { bytes -> byteArrayOf(CryptoPublicKey.Ec.ANSI_PREFIX, *bytes) }
         return if (test != null) CryptoPublicKey.Ec.fromAnsiX963Bytes(test) else null
     }
 

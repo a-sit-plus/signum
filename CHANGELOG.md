@@ -10,3 +10,5 @@
 ### 2.0.0
  * JWS Support
  * Bugfixes and streamlining all over the place
+ * Proper BIT STRING
+ * BitSet (100% Kotlin BitSet implementation)

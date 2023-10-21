@@ -63,7 +63,7 @@ data class TbsCertificationRequest(
                 DistinguishedName.decodeFromTlv(it as Asn1Set)
             }
             val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val extensions = if (src.hasMoreChildren()) {
+            val attributes = if (src.hasMoreChildren()) {
                 (src.nextChild() as Asn1Tagged).verify(0u)
                     .map { Pkcs10CertificationRequestAttribute.decodeFromTlv(it as Asn1Sequence) }
             } else null
@@ -74,7 +74,7 @@ data class TbsCertificationRequest(
                 version = version,
                 subjectName = subject,
                 publicKey = cryptoPublicKey,
-                attributes = extensions,
+                attributes = attributes,
             )
         }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
     }
@@ -125,7 +125,7 @@ data class Pkcs10CertificationRequest(
             val sigAlg = JwsAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val signature = (src.nextChild() as Asn1Primitive).readBitString()
             if (src.hasMoreChildren()) throw IllegalArgumentException("Superfluous structure in CSR Structure")
-            return Pkcs10CertificationRequest(tbsCsr, sigAlg, signature)
+            return Pkcs10CertificationRequest(tbsCsr, sigAlg, signature.rawBytes)
         }
     }
 }

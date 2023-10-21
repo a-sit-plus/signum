@@ -1,4 +1,5 @@
 import at.asitplus.crypto.datatypes.asn1.*
+import at.asitplus.crypto.datatypes.io.BitSet
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
@@ -12,10 +13,15 @@ import java.util.*
 
 @OptIn(ExperimentalUnsignedTypes::class)
 class Asn1EncodingTest : FreeSpec({
-    val certBytes = Base64.getMimeDecoder()
-        .decode(javaClass.classLoader.getResourceAsStream("github-com.pem").reader().readText())
 
 
+    val bitSet = BitSet.fromBitString("011011100101110111")
+    "Bit String" {
+        val fromBitSet = Asn1BitString(bitSet)
+        fromBitSet.encodeToTlv().toDerHexString() shouldBe "0304066E5DC0"
+        fromBitSet.toBitSet().toBitString() shouldBe "011011100101110111"
+        fromBitSet.toBitSet() shouldBe bitSet
+    }
 
     "Ans1 Number encoding" - {
 
@@ -50,11 +56,13 @@ class Asn1EncodingTest : FreeSpec({
     }
 
     "Parsing and encoding results in the same bytes" {
+        val certBytes = Base64.getMimeDecoder()
+            .decode(javaClass.classLoader.getResourceAsStream("github-com.pem").reader().readText())
         val tree = Asn1Element.parse(certBytes)
         tree.derEncoded shouldBe certBytes
     }
 
-    "Old and new encoder produce the same bytes" {
+    "Encoding and parsing results in the same bytes" {
 
         val instant = Clock.System.now()
 
@@ -100,6 +108,5 @@ class Asn1EncodingTest : FreeSpec({
 
         Asn1Element.parse(sequence.derEncoded).derEncoded shouldBe sequence.derEncoded
         println(sequence.toDerHexString(lineLen = 58))
-
     }
 })

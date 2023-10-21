@@ -23,6 +23,7 @@ kotlin {
             val commonTest by getting {
                 dependencies {
                     implementation(kotest("property"))
+                    implementation(kotlin("reflect"))
                 }
             }
         }
