@@ -10,7 +10,7 @@ plugins {
     id("at.asitplus.gradle.conventions")
 }
 
-version = "1.0-SNAPSHOT"
+version = "2.0.0"
 
 exportIosFramework("KmpCryptoDatatypeJws",  serialization("json"), datetime(), project(":datatypes"))
 kotlin {

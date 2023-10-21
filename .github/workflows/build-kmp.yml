@@ -20,3 +20,9 @@ jobs:
           name: datatypes
           path: |
             datatypes/build/libs/*jar
+      - name: Upload jar datatypes-jws
+        uses: actions/upload-artifact@v3
+        with:
+          name: datatypes-jws
+          path: |
+            datatypes-jws/build/libs/*jar
