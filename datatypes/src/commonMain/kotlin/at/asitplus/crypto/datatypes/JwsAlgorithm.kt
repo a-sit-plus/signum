@@ -91,7 +91,6 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
 }
 
 
-fun Asn1TreeBuilder.sigAlg(block: () -> JwsAlgorithm) = apply { elements += block().encodeToTlv() }
 
 object JwsAlgorithmSerializer : KSerializer<JwsAlgorithm> {
 

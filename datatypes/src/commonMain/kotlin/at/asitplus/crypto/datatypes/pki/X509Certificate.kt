@@ -3,11 +3,8 @@ package at.asitplus.crypto.datatypes.pki
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.JwsAlgorithm
 import at.asitplus.crypto.datatypes.asn1.*
-import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import at.asitplus.crypto.datatypes.asn1.DERTags.toImplicitTag
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
-import at.asitplus.crypto.datatypes.sigAlg
-import at.asitplus.crypto.datatypes.subjectPublicKey
 import kotlinx.serialization.Serializable
 
 /**
@@ -30,22 +27,25 @@ data class TbsCertificate(
 ) : Asn1Encodable<Asn1Sequence> {
 
 
-    private fun Asn1TreeBuilder.version(block: () -> Int) =
-        apply { elements += Asn1Tagged(0u.toExplicitTag(), block().encodeToTlv()) }
+    private fun Asn1TreeBuilder.version(block: () -> Int) {
+        tagged(0u) { int(block) }
+    }
 
     override fun encodeToTlv() = asn1Sequence {
         version { version }
         append(Asn1Primitive(BERTags.INTEGER, serialNumber))
-        sigAlg { signatureAlgorithm }
-        sequence { issuerName.forEach { append(it.encodeToTlv()) } }
+        append(signatureAlgorithm)
+        sequence { issuerName.forEach { append(it) } }
 
         sequence {
             append(validFrom.asn1Object)
             append(validUntil.asn1Object)
         }
+
         sequence { subjectName.forEach { append(it) } }
 
-        subjectPublicKey { publicKey }
+        //subject public key
+        append(publicKey)
 
         issuerUniqueID?.let { append(Asn1Primitive(1u.toImplicitTag(), it.encodeToBitString())) }
         subjectUniqueID?.let { append(Asn1Primitive(2u.toImplicitTag(), it.encodeToBitString())) }
@@ -54,9 +54,7 @@ data class TbsCertificate(
             if (it.isNotEmpty()) {
                 tagged(3u) {
                     sequence {
-                        it.forEach { ext ->
-                            append(ext.encodeToTlv())
-                        }
+                        it.forEach { ext -> append(ext) }
                     }
                 }
             }
@@ -126,8 +124,6 @@ data class TbsCertificate(
     }
 }
 
-fun Asn1TreeBuilder.tbsCertificate(block: () -> TbsCertificate) = apply { elements += block().encodeToTlv() }
-
 /**
  * Very simple implementation of an X.509 Certificate
  */
@@ -140,8 +136,8 @@ data class X509Certificate(
 ) : Asn1Encodable<Asn1Sequence> {
 
     override fun encodeToTlv() = asn1Sequence {
-        tbsCertificate { tbsCertificate }
-        sigAlg { signatureAlgorithm }
+        append(tbsCertificate)
+        append(signatureAlgorithm)
         bitString { signature }
     }
 

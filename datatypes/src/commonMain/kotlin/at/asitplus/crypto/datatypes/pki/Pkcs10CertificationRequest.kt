@@ -3,10 +3,7 @@ package at.asitplus.crypto.datatypes.pki
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.JwsAlgorithm
 import at.asitplus.crypto.datatypes.asn1.*
-import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
-import at.asitplus.crypto.datatypes.sigAlg
-import at.asitplus.crypto.datatypes.subjectPublicKey
 import kotlinx.serialization.Serializable
 
 /**
@@ -48,10 +45,10 @@ data class TbsCertificationRequest(
     override fun encodeToTlv() = asn1Sequence {
         int { version }
         sequence { subjectName.forEach { append(it) } }
-        subjectPublicKey { publicKey }
-        tagged(0u) {
-            attributes?.map { append(it) }
-        }
+
+        //subject Public Key
+        append(publicKey)
+        tagged(0u) { attributes?.map { append(it) } }
     }
 
     companion object : Asn1Decodable<Asn1Sequence, TbsCertificationRequest> {
@@ -91,8 +88,8 @@ data class Pkcs10CertificationRequest(
 ) : Asn1Encodable<Asn1Sequence> {
 
     override fun encodeToTlv() = asn1Sequence {
-        tbsCertificationRequest { tbsCsr }
-        sigAlg { signatureAlgorithm }
+        append(tbsCsr)
+        append(signatureAlgorithm)
         bitString { signature }
     }
 
@@ -127,6 +124,3 @@ data class Pkcs10CertificationRequest(
         }
     }
 }
-
-fun Asn1TreeBuilder.tbsCertificationRequest(block: () -> TbsCertificationRequest) =
-    apply { elements += block().encodeToTlv() }

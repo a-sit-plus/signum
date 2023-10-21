@@ -1,5 +1,6 @@
 package at.asitplus.crypto.datatypes.asn1
 
+import at.asitplus.crypto.datatypes.asn1.DERTags.isExplicitTag
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -39,7 +40,9 @@ sealed class Asn1Element(
     companion object {
         /**
          * Convenience method to directly parse a HEX-string representation of DER-encoded data
+         * @throws [Throwable] all sorts of errors on invalid input
          */
+        @Throws(IllegalArgumentException::class, Throwable::class)
         fun decodeFromDerHexString(derEncoded: String) = Asn1Element.parse(derEncoded.decodeToByteArray(Base16))
     }
 
@@ -165,19 +168,23 @@ sealed class Asn1Structure(tag: UByte, children: List<Asn1Element>?) :
 
 /**
  * Explicit ASN.1 Tag. Can contain any number of [children]
- *
- * @param tag the ASN.1 Tag to be used
- * @param children the child nodes to be contained in this tag
  */
-//TODO check if explicitly tagged
-class Asn1Tagged(tag: UByte, children: List<Asn1Element>) : Asn1Structure(tag, children) {
+class Asn1Tagged
+/**
+ * @param tag the ASN.1 Tag to be used (assumed to have [BERTags.CONSTRUCTED] and [BERTags.TAGGED] bits set)
+ * @param children the child nodes to be contained in this tag
+ *
+ * @throws IllegalArgumentException is [tag] does not have [BERTags.CONSTRUCTED] and [BERTags.TAGGED] bits set
+ */
+@Throws(IllegalArgumentException::class)
+constructor(tag: UByte, children: List<Asn1Element>) : Asn1Structure(tag, children) {
 
-    /**
-     * Convenience constructor using varargs for [children]
-     * @param tag the ASN.1 Tag to be used
-     * @param children the child nodes to be contained in this tag
-     */
-    constructor(tag: UByte, vararg children: Asn1Element) : this(tag, children.toList())
+    init {
+        if (!tag.isExplicitTag) throw IllegalArgumentException(
+            "Tag 0x${byteArrayOf(tag.toByte()).encodeToString(Base16)} " +
+                    "is not an explicit tag"
+        )
+    }
 
     override fun toString() = "Tagged" + super.toString()
     override fun prettyPrint(indent: Int) = (" " * indent) + "Tagged" + super.prettyPrint(indent + 2)
@@ -191,6 +198,7 @@ class Asn1Sequence(children: List<Asn1Element>) : Asn1Structure(DERTags.DER_SEQU
     override fun toString() = "Sequence" + super.toString()
     override fun prettyPrint(indent: Int) = (" " * indent) + "Sequence" + super.prettyPrint(indent + 2)
 }
+
 /**
  * ASN.1 OCTET STRING 0x04 ([BERTags.OCTET_STRING]) containing an [Asn1Element]
  * @param children the elements to put into this sequence

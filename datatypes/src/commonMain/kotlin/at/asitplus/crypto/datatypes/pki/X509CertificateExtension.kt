@@ -3,6 +3,9 @@ package at.asitplus.crypto.datatypes.pki
 import at.asitplus.crypto.datatypes.asn1.*
 import kotlinx.serialization.Serializable
 
+/**
+ * X.509 Certificate Extension
+ */
 @Serializable
 data class X509CertificateExtension private constructor(
     override val oid: ObjectIdentifier,
@@ -11,7 +14,7 @@ data class X509CertificateExtension private constructor(
 ) : Asn1Encodable<Asn1Sequence>, Identifiable {
 
     init {
-        if (value.tag != BERTags.OCTET_STRING) throw IllegalArgumentException("Value is not an octed string!")
+        if (value.tag != BERTags.OCTET_STRING) throw IllegalArgumentException("Value is not an octet string!")
     }
 
     public constructor(
