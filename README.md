@@ -275,78 +275,72 @@ DSL, which returns an `Asn1Structure`:
 
 ```kotlin
 asn1Sequence {
-    tagged(31u) {
-        Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00))
-    }
-    set {
-        sequence {
-            setOf {
-                printableString { "World" }
-                printableString { "Hello" }
-            }
-            set {
-                printableString { "World" }
-                printableString { "Hello" }
-                utf8String { "!!!" }
-            }
-
-        }
-    }
-    asn1null()
-
-    oid { ObjectIdentifier("1.2.603.624.97") }
-
-    utf8String { "Foo" }
-    printableString { "Bar" }
-
-    set {
-        int { 3 }
-        long { -65789876543L }
-        bool { false }
-        bool { true }
-    }
+  tagged(1u) {
+    append(Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00)))
+  }
+  set {
     sequence {
-        asn1null()
-        string { Asn1String.Numeric("12345") }
-        utcTime { instant }
+      setOf {
+        printableString("World")
+        printableString("Hello")
+      }
+      set {
+        printableString("World")
+        printableString("Hello")
+        utf8String("!!!")
+      }
+
     }
+  }
+  asn1null()
+
+  append(ObjectIdentifier("1.2.603.624.97"))
+
+  utf8String("Foo")
+  printableString("Bar")
+
+  set {
+    int(3)
+    long(-65789876543L)
+    bool(false)
+    bool(true)
+  }
+  sequence {
+    asn1null()
+    append(Asn1String.Numeric("12345"))
+    utcTime(instant)
+  }
 }
 ```
 
 In accordance with DER-Encoding, this produces the following ASN.1 structure:
 
 ```
-SEQUENCE {
-   [1F] 010100
-   SET {
-      SEQUENCE {
-         SET {
-            PrintableString 'Hello'
-            PrintableString 'World'
-         }
-         SET {
-            UTF8String '!!!'
-            PrintableString 'World'
-            PrintableString 'Hello'
-         }
-      }
-   }
-   NULL 
-   OBJECTIDENTIFIER 1.2.603.624.97
-   UTF8String 'Foo'
-   PrintableString 'Bar'
-   SET {
-      BOOLEAN FALSE
-      BOOLEAN TRUE
-      INTEGER 0x03 (3 decimal)
-      INTEGER 0xFFF0AE9E26C1
-   }
-   SEQUENCE {
-      NULL 
-      NumericString '12345'
-      UTCTime '231012190130Z'
-   }
-}
+SEQUENCE (8 elem)
+  [1] (1 elem)
+    BOOLEAN false
+  SET (1 elem)
+    SEQUENCE (2 elem)
+      SET (2 elem)
+        PrintableString Hello
+        PrintableString World
+      SET (3 elem)
+        UTF8String !!!
+        PrintableString World
+        PrintableString Hello
+  NULL
+  OBJECT IDENTIFIER 1.2.603.624.97
+  UTF8String Foo
+  PrintableString Bar
+  SET (4 elem)
+    BOOLEAN false
+    BOOLEAN true
+    INTEGER 3
+    INTEGER (36 bit) -65789876543
+  SEQUENCE (3 elem)
+    NULL
+    NumericString 12345
+    UTCTime 2023-10-21 21:14:49 UTC
 ```
 
 ## Limitations

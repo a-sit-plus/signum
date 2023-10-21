@@ -73,8 +73,8 @@ sealed class DistinguishedName : Asn1Encodable<Asn1Set>, Identifiable {
 
     override fun encodeToTlv() = asn1Set {
         sequence {
-            oid { oid }
-            append { value }
+            append(oid)
+            append(value)
         }
     }
 

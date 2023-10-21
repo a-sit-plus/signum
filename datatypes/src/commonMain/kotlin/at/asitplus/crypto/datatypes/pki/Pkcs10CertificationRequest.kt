@@ -3,10 +3,7 @@ package at.asitplus.crypto.datatypes.pki
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.JwsAlgorithm
 import at.asitplus.crypto.datatypes.asn1.*
-import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
-import at.asitplus.crypto.datatypes.sigAlg
-import at.asitplus.crypto.datatypes.subjectPublicKey
 import kotlinx.serialization.Serializable
 
 /**
@@ -38,22 +35,20 @@ data class TbsCertificationRequest(
         version: Int = 0,
         attributes: List<Pkcs10CertificationRequestAttribute>? = null,
     ) : this(version, subjectName, publicKey, mutableListOf<Pkcs10CertificationRequestAttribute>().also { attrs ->
-        if(extensions.isEmpty()) throw  IllegalArgumentException("No extensions provided!")
+        if (extensions.isEmpty()) throw IllegalArgumentException("No extensions provided!")
         attributes?.let { attrs.addAll(it) }
         attrs.add(Pkcs10CertificationRequestAttribute(KnownOIDs.extensionRequest, asn1Sequence {
-            extensions.forEach {
-                append { it.encodeToTlv() }
-            }
+            extensions.forEach { append(it) }
         }))
     })
 
     override fun encodeToTlv() = asn1Sequence {
-        int { version }
-        sequence { subjectName.forEach { append { it.encodeToTlv() } } }
-        subjectPublicKey { publicKey }
-        append {
-            Asn1Tagged(0u.toExplicitTag(), attributes?.map { it.encodeToTlv() } ?: listOf())
-        }
+        int(version)
+        sequence { subjectName.forEach { append(it) } }
+
+        //subject Public Key
+        append(publicKey)
+        tagged(0u) { attributes?.map { append(it) } }
     }
 
     companion object : Asn1Decodable<Asn1Sequence, TbsCertificationRequest> {
@@ -93,9 +88,9 @@ data class Pkcs10CertificationRequest(
 ) : Asn1Encodable<Asn1Sequence> {
 
     override fun encodeToTlv() = asn1Sequence {
-        tbsCertificationRequest { tbsCsr }
-        sigAlg { signatureAlgorithm }
-        bitString { signature }
+        append(tbsCsr)
+        append(signatureAlgorithm)
+        bitString(signature)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -129,6 +124,3 @@ data class Pkcs10CertificationRequest(
         }
     }
 }
-
-fun Asn1TreeBuilder.tbsCertificationRequest(block: () -> TbsCertificationRequest) =
-    apply { elements += block().encodeToTlv() }

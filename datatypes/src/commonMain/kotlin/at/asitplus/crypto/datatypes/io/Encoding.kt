@@ -2,7 +2,6 @@ package at.asitplus.crypto.datatypes.io
 
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.EcCurve
-import at.asitplus.crypto.datatypes.asn1.decodeFromDer
 import at.asitplus.crypto.datatypes.asn1.ensureSize
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.base64.Base64ConfigBuilder

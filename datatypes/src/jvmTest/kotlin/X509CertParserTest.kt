@@ -47,7 +47,8 @@ class X509CertParserTest : FreeSpec({
                 .generateCertificate(ByteArrayInputStream(certBytes)) as JcaCertificate
 
             println(jcaCert.encoded.encodeToString(Base16))
-
+            val elem = Asn1Element.parse(certBytes)
+        Json{prettyPrint=true}.encodeToString(elem)
             val cert = X509Certificate.derDecode(certBytes)
 
             when (val pk = cert.publicKey) {
@@ -69,7 +70,8 @@ class X509CertParserTest : FreeSpec({
             println("Re-encoding it produces the same bytes? ${cert.derEncoded contentEquals certBytes}")
 
 
-            println(cert.encodeToTlv().derEncoded.encodeToString(Base16))
+            println(cert.encodeToTlv())
+            println(cert.encodeToTlv().toDerHexString())
 
             withClue(
                 "Expect: ${jcaCert.encoded.encodeToString(Base16)}\n" +
@@ -85,16 +87,17 @@ class X509CertParserTest : FreeSpec({
             runCatching { convertStringToX509Cert(FileReader(it).readText()) }.getOrNull()
         }
         val pemEncodeCerts = runCatching {
-             File("/etc/ssl/certs/ca-certificates.crt").readText().split(Regex.fromLiteral("-\n-"))
-            .mapNotNull {
-                var pem = if (it.startsWith("-----")) it else "-$it"
-                pem = if (!pem.endsWith("-----")) "$pem-" else pem
+            File("/etc/ssl/certs/ca-certificates.crt").readText().split(Regex.fromLiteral("-\n-"))
+                .mapNotNull {
+                    var pem = if (it.startsWith("-----")) it else "-$it"
+                    pem = if (!pem.endsWith("-----")) "$pem-" else pem
 
-                runCatching { convertStringToX509Cert(pem) }.getOrNull()
-            }
+                    runCatching { convertStringToX509Cert(pem) }.getOrNull()
+                }
         }.getOrElse {
             println("W: could not load /etc/ssl/certs/ca-certificates.crt")
-            emptyList() }
+            emptyList()
+        }
         val uniqueCerts = (certs + pemEncodeCerts).distinctBy {
             it.encoded.encodeToString(Base64 {})
         }
@@ -123,7 +126,9 @@ class X509CertParserTest : FreeSpec({
                 ok.filterNot { it.first == "ok-inherited-keyparams.ca.der" || it.first == "ok-inherited-keyparams.leaf.der" } //filter out certs with DSA pubKeys
 
             withData(nameFn = { it.first }, good) {
-                X509Certificate.decodeFromTlv(Asn1Element.parse(it.second) as Asn1Sequence)
+                val src = Asn1Element.parse(it.second) as Asn1Sequence
+                println(src.prettyPrint())
+                X509Certificate.decodeFromTlv(src)
             }
         }
         "Faulty certs should glitch out" - {

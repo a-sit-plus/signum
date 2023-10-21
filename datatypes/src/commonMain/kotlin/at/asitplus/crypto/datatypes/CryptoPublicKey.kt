@@ -36,31 +36,26 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
     override fun encodeToTlv() = when (this) {
         is Ec -> asn1Sequence {
             sequence {
-                oid { oid }
-                oid { curve.oid }
+                append(oid)
+                append(curve.oid)
             }
-            bitString {
-                (byteArrayOf(BERTags.OCTET_STRING.toByte()) + x.ensureSize(curve.coordinateLengthBytes) + y.ensureSize(
-                    curve.coordinateLengthBytes
-                ))
-            }
+            bitString(
+                byteArrayOf(
+                    0x04,
+                    *(x.ensureSize(curve.coordinateLengthBytes)),
+                    *y.ensureSize(curve.coordinateLengthBytes)
+                )
+            )
+
         }
 
         is Rsa -> {
             asn1Sequence {
                 sequence {
-                    oid { oid }
+                    append(oid)
                     asn1null()
                 }
-                bitString(asn1Sequence {
-                    append {
-                        Asn1Primitive(
-                            BERTags.INTEGER,
-                            n.ensureSize(bits.number / 8u)
-                                .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
-                    }
-                    int { e }
-                })
+                bitString(iosEncoded)
             }
         }
     }
@@ -191,12 +186,12 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          */
         @Transient
         override val iosEncoded = asn1Sequence {
-            append {
+            append(
                 Asn1Primitive(BERTags.INTEGER,
                     n.ensureSize(bits.number / 8u)
                         .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
-            }
-            int { e }
+            )
+            int(e)
         }.derEncoded
 
         override fun equals(other: Any?): Boolean {
@@ -321,5 +316,3 @@ private val RsaParams.size get() = third
  */
 private fun sanitizeRsaInputs(n: ByteArray, e: Int): RsaParams = n.dropWhile { it == 0.toByte() }.toByteArray()
     .let { Triple(byteArrayOf(0, *it), e, CryptoPublicKey.Rsa.Size.of(it)) }
-
-fun Asn1TreeBuilder.subjectPublicKey(block: () -> CryptoPublicKey) = apply { elements += block().encodeToTlv() }

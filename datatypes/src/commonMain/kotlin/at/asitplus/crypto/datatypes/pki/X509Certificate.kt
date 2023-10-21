@@ -3,12 +3,9 @@ package at.asitplus.crypto.datatypes.pki
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.JwsAlgorithm
 import at.asitplus.crypto.datatypes.asn1.*
-import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import at.asitplus.crypto.datatypes.asn1.DERTags.toImplicitTag
-import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.io.BitSet
-import at.asitplus.crypto.datatypes.sigAlg
-import at.asitplus.crypto.datatypes.subjectPublicKey
+import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import kotlinx.serialization.Serializable
 
 /**
@@ -31,48 +28,47 @@ data class TbsCertificate(
 ) : Asn1Encodable<Asn1Sequence> {
 
 
-    private fun Asn1TreeBuilder.version(block: () -> Int) =
-        apply { elements += Asn1Tagged(0u.toExplicitTag(), block().encodeToTlv()) }
+    private fun Asn1TreeBuilder.version(value: Int) {
+        tagged(0u) { int(value) }
+    }
 
     override fun encodeToTlv() = asn1Sequence {
-        version { version }
-        append { Asn1Primitive(BERTags.INTEGER, serialNumber) }
-        sigAlg { signatureAlgorithm }
-        sequence { issuerName.forEach { append { it.encodeToTlv() } } }
+        version(version)
+        append(Asn1Primitive(BERTags.INTEGER, serialNumber))
+        append(signatureAlgorithm)
+        sequence { issuerName.forEach { append(it) } }
 
         sequence {
-            append { validFrom.asn1Object }
-            append { validUntil.asn1Object }
+            append(validFrom.asn1Object)
+            append(validUntil.asn1Object)
         }
-        sequence { subjectName.forEach { append { it.encodeToTlv() } } }
 
-        subjectPublicKey { publicKey }
+        sequence { subjectName.forEach { append(it) } }
+
+        //subject public key
+        append(publicKey)
 
         issuerUniqueID?.let {
-            append {
+            append(
                 Asn1Primitive(
-                    1u.toImplicitTag(), Asn1BitString(it).let { byteArrayOf(it.numPaddingBits, *it.rawBytes) }
-                )
-            }
+                    1u.toImplicitTag(),
+                    Asn1BitString(it).let { byteArrayOf(it.numPaddingBits, *it.rawBytes) })
+            )
         }
         subjectUniqueID?.let {
-            append {
+            append(
                 Asn1Primitive(
-                    2u.toImplicitTag(), Asn1BitString(it).let { byteArrayOf(it.numPaddingBits, *it.rawBytes) }
-                )
-            }
+                    1u.toImplicitTag(),
+                    Asn1BitString(it).let { byteArrayOf(it.numPaddingBits, *it.rawBytes) })
+            )
         }
 
         extensions?.let {
             if (it.isNotEmpty()) {
-                append {
-                    Asn1Tagged(3u.toExplicitTag(),
-                        asn1Sequence {
-                            it.forEach { ext ->
-                                append { ext.encodeToTlv() }
-                            }
-                        }
-                    )
+                tagged(3u) {
+                    sequence {
+                        it.forEach { ext -> append(ext) }
+                    }
                 }
             }
         }
@@ -99,7 +95,7 @@ data class TbsCertificate(
 
             val issuerUniqueID = src.peek()?.let { next ->
                 if (next.tag == 1u.toImplicitTag()) {
-                    (src.nextChild() as Asn1Primitive).let  { Asn1BitString.decodeFromTlv(it, 1u.toImplicitTag()) }
+                    (src.nextChild() as Asn1Primitive).let { Asn1BitString.decodeFromTlv(it, 1u.toImplicitTag()) }
                 } else null
             }
 
@@ -141,8 +137,6 @@ data class TbsCertificate(
     }
 }
 
-fun Asn1TreeBuilder.tbsCertificate(block: () -> TbsCertificate) = apply { elements += block().encodeToTlv() }
-
 /**
  * Very simple implementation of an X.509 Certificate
  */
@@ -155,9 +149,9 @@ data class X509Certificate(
 ) : Asn1Encodable<Asn1Sequence> {
 
     override fun encodeToTlv() = asn1Sequence {
-        tbsCertificate { tbsCertificate }
-        sigAlg { signatureAlgorithm }
-        bitString { signature }
+        append(tbsCertificate)
+        append(signatureAlgorithm)
+        bitString(signature)
     }
 
     override fun equals(other: Any?): Boolean {
