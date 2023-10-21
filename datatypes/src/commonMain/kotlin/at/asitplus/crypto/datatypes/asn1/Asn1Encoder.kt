@@ -87,87 +87,72 @@ class Asn1TreeBuilder {
     /**
      * Adds a BOOL [Asn1Primitive] to this ASN.1 structure
      */
-    fun bool(block: () -> Boolean) {
-        elements += block().encodeToTlv()
+    fun bool(value: Boolean) {
+        elements += value.encodeToTlv()
     }
 
     /**
      * Adds an INTEGER [Asn1Primitive] to this ASN.1 structure
      */
-    fun int(block: () -> Int) {
-        elements += block().encodeToTlv()
+    fun int(value: Int) {
+        elements += value.encodeToTlv()
     }
 
     /**
      * Adds an INTEGER [Asn1Primitive] to this ASN.1 structure
      */
-    fun long(block: () -> Long) {
-        elements += block().encodeToTlv()
+    fun long(value: Long) {
+        elements += value.encodeToTlv()
     }
 
     /**
      * Adds the passed bytes as OCTET STRING [Asn1Element] to this ASN.1 structure
      */
-    fun octetString(block: () -> ByteArray) = apply { elements += block().encodeToTlvOctetString() }
+    fun octetString(bytes: ByteArray) {
+        elements += bytes.encodeToTlvOctetString()
+    }
 
     /**
      * Adds the passed bytes as BIT STRING [Asn1Primitive] to this ASN.1 structure
      */
-    fun bitString(block: () -> ByteArray) {
-        elements += block().encodeToTlvBitString()
+    fun bitString(bytes: ByteArray) {
+        elements += bytes.encodeToTlvBitString()
     }
 
     /**
-     * Shorthand method taking a HEX representation of an OID value, adding it as an OBJECT IDENTIFIER to this ASN.1 structure.
-     * Really only useful for quick debugging against other ASN.1 decoders, such as https://lapo.it/asn1js/, so we're keeping it for now
+     * Adds the passed string as UTF8 STRING [Asn1Primitive] to this ASN.1 structure
      */
-    @Deprecated("Used only for quick debugging. May be removed in the future")
-    fun hexEncoded(block: () -> String) {
-        elements += block().encodeTolvOid()
+    fun utf8String(value: String) {
+        elements += Asn1String.UTF8(value).encodeToTlv()
     }
 
     /**
-     * Adds the passed string as UTF8 STRING to this ASN.1 structure
+     * Adds the passed string as PRINTABLE STRING [Asn1Primitive] to this ASN.1 structure
      */
-    fun utf8String(block: () -> String) {
-        elements += Asn1String.UTF8(block()).encodeToTlv()
-    }
-
-    /**
-     * Adds the passed string as PRINTABLE STRING to this ASN.1 structure
-     */
-    fun printableString(block: () -> String) {
-        elements += Asn1String.Printable(block()).encodeToTlv()
-    }
-
-    /**
-     * Adds the passed [Asn1String] to this ASN.1 structure
-     */
-    fun string(block: () -> Asn1String) {
-        val str = block()
-        str.encodeToTlv()
+    fun printableString(value: String) {
+        elements += Asn1String.Printable(value).encodeToTlv()
     }
 
 
     /**
-     * Adds a NULL to this ASN.1 structure
+     * Adds a NULL [Asn1Primitive] to this ASN.1 structure
      */
     fun asn1null() {
         elements += Asn1Primitive(NULL, byteArrayOf())
     }
 
     /**
-     * Adds the passed instant as UTC TIME to this ASN.1 structure
+     * Adds the passed instant as UTC TIME [Asn1Primitive] to this ASN.1 structure
      */
-    fun utcTime(block: () -> Instant) {
-        elements += block().encodeToAsn1UtcTime()
+    fun utcTime(value: Instant) {
+        elements += value.encodeToAsn1UtcTime()
     }
 
     /**
-     * Adds the passed instant as GENERALIZED TIME to this ASN.1 structure
+     * Adds the passed instant as GENERALIZED TIME [Asn1Primitive] to this ASN.1 structure
      */
-    fun generalizedTime(block: () -> Instant) {
-        elements += block().encodeToAsn1GeneralizedTime()
+    fun generalizedTime(value: Instant) {
+        elements += value.encodeToAsn1GeneralizedTime()
     }
 
     private fun nest(type: CollectionType, init: Asn1TreeBuilder.() -> Unit) {

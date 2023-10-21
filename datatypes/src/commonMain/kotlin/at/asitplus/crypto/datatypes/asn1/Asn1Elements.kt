@@ -63,7 +63,7 @@ sealed class Asn1Element(
     }
 
     /**
-     * Total number of bytes required to represent the ths element, when encoding to to ASN.1.
+     * Total number of bytes required to represent the ths element, when encoding to ASN.1.
      */
     val overallLength by lazy { length + 1 + encodedLength.size }
 

@@ -19,37 +19,39 @@ class Asn1EncodingTest : FreeSpec({
     "OCTET STRING Test" {
         val seq = asn1Sequence {
             octetStringEncapsulated {
-                sequence { utf8String { "foo" } }
-                set { utf8String { "bar" } }
+                sequence { utf8String("foo") }
+                set { utf8String("bar") }
                 append(Asn1String.Printable("a").encodeToTlv())
             }
-            octetString { byteArrayOf(17) }
+            octetString(byteArrayOf(17))
 
 
 
-            octetString {
+            octetString(
                 asn1Set {
-                    int { 99 }
-                    octetString { byteArrayOf(1, 2, 3) }
-                    octetString {
-                        Asn1EncapsulatingOctetString(
-                            listOf(
-                                Asn1PrimitiveOctetString(
-                                    byteArrayOf(
-                                        7,
-                                        6,
-                                        3,
+                    int(99)
+                    octetString(byteArrayOf(1, 2, 3))
+                    octetStringEncapsulated {
+                        append(
+                            Asn1EncapsulatingOctetString(
+                                listOf(
+                                    Asn1PrimitiveOctetString(
+                                        byteArrayOf(
+                                            7,
+                                            6,
+                                            3,
+                                        )
                                     )
                                 )
                             )
-                        ).derEncoded
+                        )
                     }
                 }.derEncoded
-            }
+            )
             tagged(9u) { Clock.System.now().encodeToAsn1UtcTime() }
-            octetString { byteArrayOf(17, -43, 23, -12, 8, 65, 90) }
-            bool { false }
-            bool { true }
+            octetString(byteArrayOf(17, -43, 23, -12, 8, 65, 90))
+            bool(false)
+            bool(true)
         }
         val parsed = Asn1Element.parse(seq.derEncoded)
         println(parsed.prettyPrint())
@@ -71,7 +73,7 @@ class Asn1EncodingTest : FreeSpec({
 
         "longs" - {
             checkAll(iterations = 15000, Arb.long()) {
-                val seq = asn1Sequence { long { it } }
+                val seq = asn1Sequence { long(it) }
                 val decoded = (seq.nextChild() as Asn1Primitive).readLong()
                 decoded shouldBe it
             }
@@ -79,7 +81,7 @@ class Asn1EncodingTest : FreeSpec({
 
         "ints" - {
             checkAll(iterations = 15000, Arb.int()) {
-                val seq = asn1Sequence { int { it } }
+                val seq = asn1Sequence { int(it) }
                 val decoded = (seq.nextChild() as Asn1Primitive).readInt()
                 decoded shouldBe it
             }
@@ -103,13 +105,13 @@ class Asn1EncodingTest : FreeSpec({
             set {
                 sequence {
                     setOf {
-                        printableString { "World" }
-                        printableString { "Hello" }
+                        printableString("World")
+                        printableString("Hello")
                     }
                     set {
-                        printableString { "World" }
-                        printableString { "Hello" }
-                        utf8String { "!!!" }
+                        printableString("World")
+                        printableString("Hello")
+                        utf8String("!!!")
                     }
 
                 }
@@ -118,19 +120,19 @@ class Asn1EncodingTest : FreeSpec({
 
             append(ObjectIdentifier("1.2.603.624.97"))
 
-            utf8String { "Foo" }
-            printableString { "Bar" }
+            utf8String("Foo")
+            printableString("Bar")
 
             set {
-                int { 3 }
-                long { -65789876543L }
-                bool { false }
-                bool { true }
+                int(3)
+                long(-65789876543L)
+                bool(false)
+                bool(true)
             }
             sequence {
                 asn1null()
-                string { Asn1String.Numeric("12345") }
-                utcTime { instant }
+                append(Asn1String.Numeric("12345"))
+                utcTime(instant)
             }
         }
 

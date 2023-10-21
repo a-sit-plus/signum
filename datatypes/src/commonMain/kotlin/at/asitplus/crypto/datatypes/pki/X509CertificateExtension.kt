@@ -31,7 +31,7 @@ data class X509CertificateExtension private constructor(
 
     override fun encodeToTlv() = asn1Sequence {
         append(oid)
-        if (critical) bool { true }
+        if (critical) bool(true)
         append(value)
     }
 

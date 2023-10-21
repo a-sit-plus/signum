@@ -43,7 +43,7 @@ data class TbsCertificationRequest(
     })
 
     override fun encodeToTlv() = asn1Sequence {
-        int { version }
+        int(version)
         sequence { subjectName.forEach { append(it) } }
 
         //subject Public Key
@@ -90,7 +90,7 @@ data class Pkcs10CertificationRequest(
     override fun encodeToTlv() = asn1Sequence {
         append(tbsCsr)
         append(signatureAlgorithm)
-        bitString { signature }
+        bitString(signature)
     }
 
     override fun equals(other: Any?): Boolean {

@@ -27,12 +27,12 @@ data class TbsCertificate(
 ) : Asn1Encodable<Asn1Sequence> {
 
 
-    private fun Asn1TreeBuilder.version(block: () -> Int) {
-        tagged(0u) { int(block) }
+    private fun Asn1TreeBuilder.version(value: Int) {
+        tagged(0u) { int(value) }
     }
 
     override fun encodeToTlv() = asn1Sequence {
-        version { version }
+        version(version)
         append(Asn1Primitive(BERTags.INTEGER, serialNumber))
         append(signatureAlgorithm)
         sequence { issuerName.forEach { append(it) } }
@@ -138,7 +138,7 @@ data class X509Certificate(
     override fun encodeToTlv() = asn1Sequence {
         append(tbsCertificate)
         append(signatureAlgorithm)
-        bitString { signature }
+        bitString(signature)
     }
 
     override fun equals(other: Any?): Boolean {

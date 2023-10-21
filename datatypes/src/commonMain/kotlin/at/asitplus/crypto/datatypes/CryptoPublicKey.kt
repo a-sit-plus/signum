@@ -39,13 +39,14 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                 append(oid)
                 append(curve.oid)
             }
-            bitString {
-                (byteArrayOf(
+            bitString(
+                byteArrayOf(
                     0x04,
                     *(x.ensureSize(curve.coordinateLengthBytes)),
                     *y.ensureSize(curve.coordinateLengthBytes)
-                ))
-            }
+                )
+            )
+
         }
 
         is Rsa -> {
@@ -54,7 +55,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                     append(oid)
                     asn1null()
                 }
-                bitString { iosEncoded }
+                bitString(iosEncoded)
             }
         }
     }
@@ -189,7 +190,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                     n.ensureSize(bits.number / 8u)
                         .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
             )
-            int { e }
+            int(e)
         }.derEncoded
 
         override fun equals(other: Any?): Boolean {
