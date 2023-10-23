@@ -145,7 +145,7 @@ data class JsonWebKey(
             }
 
             else -> null
-        }
+        }?.apply { jwkId = identifier }
 
 }
 
@@ -158,7 +158,7 @@ fun CryptoPublicKey.toJsonWebKey(): JsonWebKey =
                 curve = curve,
                 x = x,
                 y = y
-            ).apply { jwkId = identifier }
+            )
 
         is CryptoPublicKey.Rsa ->
             JsonWebKey(
@@ -166,7 +166,7 @@ fun CryptoPublicKey.toJsonWebKey(): JsonWebKey =
                 keyId = jwkId,
                 n = n,
                 e = e.encodeToByteArray()
-            ).apply { jwkId = identifier }
+            )
     }
 
 private const val JWK_ID = "jwkIdentifier"
