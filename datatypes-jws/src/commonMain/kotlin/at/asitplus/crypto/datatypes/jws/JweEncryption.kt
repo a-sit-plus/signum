@@ -9,7 +9,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 /**
- * Supported JSE algorithms.
+ * Supported JWE algorithms.
  *
  * See [RFC 7516](https://datatracker.ietf.org/doc/html/rfc7516)
  */

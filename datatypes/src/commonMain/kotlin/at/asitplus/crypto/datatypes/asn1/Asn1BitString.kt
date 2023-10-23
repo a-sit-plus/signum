@@ -73,7 +73,7 @@ class Asn1BitString private constructor(
             val rawBytes = bitSet.bytes.map {
                 var res = 0
                 for (i in 0..7) {
-                    if (it.toUByte().toInt() and (0x80 shr i) != 0) res = res or (0x01 shl i)//(0x80 shl (7 - i))
+                    if (it.toUByte().toInt() and (0x80 shr i) != 0) res = res or (0x01 shl i)
                 }
                 res.toUByte().toByte()
             }.toByteArray()

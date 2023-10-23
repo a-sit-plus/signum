@@ -42,7 +42,7 @@ sealed class Asn1Element(
          * Convenience method to directly parse a HEX-string representation of DER-encoded data
          * @throws [Throwable] all sorts of errors on invalid input
          */
-        @Throws(IllegalArgumentException::class, Throwable::class)
+        @Throws(Throwable::class)
         fun decodeFromDerHexString(derEncoded: String) = Asn1Element.parse(derEncoded.decodeToByteArray(Base16))
     }
 
@@ -77,31 +77,32 @@ sealed class Asn1Element(
             ?: byteArrayOf(tlv.tag.toByte(), *encodedLength, *tlv.content)
     }
 
-    override fun toString(): String {
-        return "(tag=0x${byteArrayOf(tag.toByte()).encodeToString(Base16)}" +
-                ", length=${length}" +
-                ", overallLength=${overallLength}" +
-                if (children != null) ", children=${children}" else ", content=${
-                    content.encodeToString(Base16 {
-                        lineBreakInterval = 0;encodeToLowercase = false
-                    })
-                }" + ")"
-    }
+    override fun toString(): String = "(tag=0x${byteArrayOf(tag.toByte()).encodeToString(Base16)}" +
+            ", length=${length}" +
+            ", overallLength=${overallLength}" +
+            (children?.let { ", children=$children" } ?: ", content=${
+                content.encodeToString(Base16 {
+                    lineBreakInterval = 0;encodeToLowercase = false
+                })
+            }") +
+            ")"
+
 
     fun prettyPrint() = prettyPrint(0)
 
     protected open fun prettyPrint(indent: Int): String = "(tag=0x${byteArrayOf(tag.toByte()).encodeToString(Base16)}" +
             ", length=${length}" +
-            ", overallLength=${overallLength})" +
-            if (children != null) children!!.joinToString(
-                prefix = "\n" + (" " * indent) + "{\n",
+            ", overallLength=${overallLength}" +
+            ((children?.joinToString(
+                prefix = ")\n" + (" " * indent) + "{\n",
                 separator = "\n",
                 postfix = "\n" + (" " * indent) + "}"
-            ) { it.prettyPrint(indent + 2) } else ", content=${
+            ) { it.prettyPrint(indent + 2) }) ?: ", content=${
                 content.encodeToString(Base16 {
                     lineBreakInterval = 0;encodeToLowercase = false
                 })
-            }" + ")"
+            })")
+
 
     protected operator fun String.times(op: Int): String {
         var s = this
