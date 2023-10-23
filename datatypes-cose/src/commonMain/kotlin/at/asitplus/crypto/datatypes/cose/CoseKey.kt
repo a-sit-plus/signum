@@ -264,11 +264,14 @@ data class CoseKey(
             null
         }
 
-        fun fromAnsiX963Bytes(it: ByteArray, algorithm: CoseAlgorithm? = null): CoseKey?
-                = CryptoPublicKey.Ec.fromAnsiX963Bytes(it).toCoseKey(algorithm)
+        fun fromAnsiX963Bytes(input: ByteArray, algorithm: CoseAlgorithm? = null): CoseKey?
+            = CryptoPublicKey.Ec.fromAnsiX963Bytes(input).toCoseKey(algorithm)
 
         fun fromCoordinates(curve: CoseEllipticCurve, x: ByteArray, y: ByteArray, algorithm: CoseAlgorithm? = null): CoseKey?
-                = CryptoPublicKey.Ec.fromCoordinates(curve.toJwkCurve(), x, y).toCoseKey(algorithm)
+            = CryptoPublicKey.Ec.fromCoordinates(curve.toJwkCurve(), x, y).toCoseKey(algorithm)
+
+        fun fromPKCS1encoded(input: ByteArray, algorithm: CoseAlgorithm? = null): CoseKey?
+            = CryptoPublicKey.Rsa.fromPKCS1encoded(input).toCoseKey(algorithm)
 
         @Deprecated("Use CryptoPublicKey.fromAnsiX963Bytes instead!")
         fun fromAnsiX963Bytes(type: CoseKeyType, curve: CoseEllipticCurve, it: ByteArray) =
