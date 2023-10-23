@@ -3,6 +3,7 @@ package at.asitplus.crypto.datatypes.cose
 import at.asitplus.KmmResult
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.EcCurve
+import at.asitplus.crypto.datatypes.asn1.decodeFromDer
 import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
 import at.asitplus.crypto.datatypes.cose.io.cborSerializer
 import at.asitplus.crypto.datatypes.io.MultibaseHelper
@@ -16,10 +17,12 @@ import kotlinx.serialization.cbor.SerialLabel
 // Class needed to handle overlapping serial labels in COSE standard
 sealed class CoseKeyParams() {
 
+    abstract fun toCryptoPublicKey(): CryptoPublicKey?
+
     // Implements elliptic curve public key parameters in case of y being a Bytearray
     @OptIn(ExperimentalSerializationApi::class)
     @Serializable
-    data class EcYByteArray(
+    data class EcYByteArrayParams(
         @SerialLabel(-1)
         @SerialName("crv")
         val curve: CoseEllipticCurve? = null,
@@ -32,12 +35,12 @@ sealed class CoseKeyParams() {
         @SerialLabel(-4)
         @SerialName("d")
         val d: ByteArray? = null
-    ): CoseKeyParams() {
+    ) : CoseKeyParams() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other == null || this::class != other::class) return false
 
-            other as EcYByteArray
+            other as EcYByteArrayParams
 
             if (curve != other.curve) return false
             if (x != null) {
@@ -64,17 +67,21 @@ sealed class CoseKeyParams() {
             return result
         }
 
-        fun toAnsiX963ByteArray(): KmmResult<ByteArray> {
-            if (x != null && y != null)
-                return KmmResult.success(byteArrayOf(0x04.toByte()) + x + y);
-            return KmmResult.failure(IllegalArgumentException())
+        override fun toCryptoPublicKey(): CryptoPublicKey? {
+            return let {
+                CryptoPublicKey.Ec.fromCoordinates(
+                    curve = curve?.toJwkCurve() ?: return null,
+                    x = x ?: return null,
+                    y = y ?: return null
+                )
+            }
         }
     }
 
     // Implements elliptic curve public key parameters in case of y being a bool value
     @OptIn(ExperimentalSerializationApi::class)
     @Serializable
-    data class EcYBool(
+    data class EcYBoolParams(
         @SerialLabel(-1)
         @SerialName("crv")
         val curve: CoseEllipticCurve? = null,
@@ -87,13 +94,13 @@ sealed class CoseKeyParams() {
         @SerialLabel(-4)
         @SerialName("d")
         val d: ByteArray? = null
-    ): CoseKeyParams() {
+    ) : CoseKeyParams() {
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other == null || this::class != other::class) return false
 
-            other as EcYBool
+            other as EcYBoolParams
 
             if (curve != other.curve) return false
             if (x != null) {
@@ -117,18 +124,15 @@ sealed class CoseKeyParams() {
             return result
         }
 
-        fun toAnsiX963ByteArray(): KmmResult<ByteArray> {
-//            if (x != null && y != null)
-//                return KmmResult.success(byteArrayOf(0x04.toByte()) + x + y);
-//            return KmmResult.failure(IllegalArgumentException())
-            TODO()
-        }
+        override fun toCryptoPublicKey(): CryptoPublicKey? = TODO()
+
+//        TODO conversion to cryptoPublicKey (needs de-/compression of Y coordinate)
     }
 
     // Implements RSA public key parameters
     @OptIn(ExperimentalSerializationApi::class)
     @Serializable
-    data class Rsa(
+    data class RsaParams(
         @SerialLabel(-1)
         @SerialName("n")
         val n: ByteArray? = null,
@@ -138,12 +142,12 @@ sealed class CoseKeyParams() {
         @SerialLabel(-4)
         @SerialName("d")
         val d: ByteArray? = null
-    ): CoseKeyParams() {
+    ) : CoseKeyParams() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other == null || this::class != other::class) return false
 
-            other as Rsa
+            other as RsaParams
 
             if (n != null) {
                 if (other.n == null) return false
@@ -167,12 +171,21 @@ sealed class CoseKeyParams() {
             result = 31 * result + (d?.contentHashCode() ?: 0)
             return result
         }
+
+        override fun toCryptoPublicKey(): CryptoPublicKey? {
+            return let {
+                CryptoPublicKey.Rsa(
+                    n = n ?: return null,
+                    e = e?.let { bytes -> Int.decodeFromDer(bytes) } ?: return null
+                )
+            }
+        }
     }
 }
 
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
-data class CoseKey (
+data class CoseKey(
     @SerialLabel(1)
     @SerialName("kty")
     val type: CoseKeyType,
@@ -203,17 +216,6 @@ data class CoseKey (
                 keyParams.toString()
     }
 
-    fun toCryptoPublicKey(): CryptoPublicKey? {
-//        if (this.type != CoseKeyType.EC2 || this.curve == null || this.keyId == null || this.x == null || this.y == null) return null
-//        return CryptoPublicKey.Ec(
-//            curve = curve.toJwkCurve(),
-//            x = x,
-//            y = y,
-//        ).apply { coseKid = keyId }
-        TODO()
-    }
-
-    fun serialize() = cborSerializer.encodeToByteArray(this)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -249,6 +251,10 @@ data class CoseKey (
         return result
     }
 
+    fun toCryptoPublicKey() = keyParams.toCryptoPublicKey()
+
+    fun serialize() = cborSerializer.encodeToByteArray(this)
+
     companion object {
 
         fun deserialize(it: ByteArray) = kotlin.runCatching {
@@ -258,63 +264,85 @@ data class CoseKey (
             null
         }
 
-        @Deprecated("Needlessly restrictive, use [fromAnsiX963Bytes(type, Bytearray)] instead!")
+        fun fromAnsiX963Bytes(it: ByteArray, algorithm: CoseAlgorithm? = null): CoseKey?
+                = CryptoPublicKey.Ec.fromAnsiX963Bytes(it).toCoseKey(algorithm)
+
+        fun fromCoordinates(curve: CoseEllipticCurve, x: ByteArray, y: ByteArray, algorithm: CoseAlgorithm? = null): CoseKey?
+                = CryptoPublicKey.Ec.fromCoordinates(curve.toJwkCurve(), x, y).toCoseKey(algorithm)
+
+        @Deprecated("Use CryptoPublicKey.fromAnsiX963Bytes instead!")
         fun fromAnsiX963Bytes(type: CoseKeyType, curve: CoseEllipticCurve, it: ByteArray) =
             if (type == CoseKeyType.EC2 && curve == CoseEllipticCurve.P256) {
                 val pubKey = CryptoPublicKey.Ec.fromAnsiX963Bytes(it)
-                pubKey.toCoseKey(type = type)
+                pubKey.toCoseKey()
             } else null
 
-        fun fromAnsiX963Bytes(type: CoseKeyType, it: ByteArray) =
-            if (type == CoseKeyType.EC2) {
-                val pubKey = CryptoPublicKey.Ec.fromAnsiX963Bytes(it)
-                pubKey.toCoseKey(type)
-            } else null
-
+        @Deprecated("Use function [fromCoordinates] above instead")
         fun fromCoordinates(
             type: CoseKeyType,
             curve: CoseEllipticCurve,
             x: ByteArray,
             y: ByteArray
-        ) =
-            if (type == CoseKeyType.EC2) {
-                CryptoPublicKey.Ec.fromCoordinates(curve.toJwkCurve(), x, y).toCoseKey(type)
-            } else null
-    }
-}
-
-fun CryptoPublicKey.toCoseKey(type: CoseKeyType): Nothing =  //TODO expand to other types!
-    when (type) {
-        CoseKeyType.EC2 -> TODO()
-//            CoseKey(
+        ): CoseKey? {
+//            if (type != CoseKeyType.EC2 || curve != CoseEllipticCurve.P256) {
+//                return null
+//            }
+//            val keyId = MultibaseHelper.calcKeyId(curve.toJwkCurve(), x, y)
+//            return CoseKey(
 //                type = type,
-//                curve = (this as CryptoPublicKey.Ec).curve.toCoseCurve(),
 //                keyId = keyId.encodeToByteArray(),
-//                algorithm = when (curve) {
-//                    EcCurve.SECP_256_R_1 -> CoseAlgorithm.ES256
-//                    EcCurve.SECP_384_R_1 -> CoseAlgorithm.ES384
-//                    EcCurve.SECP_521_R_1 -> CoseAlgorithm.ES512
-//                },
+//                algorithm = CoseAlgorithm.ES256,
+//                curve = curve,
 //                x = x,
 //                y = y
 //            )
+            return fromCoordinates(curve, x, y)
+        }
 
-        CoseKeyType.RSA -> TODO()
-//            CoseKey(
-//                type = type,
-//                keyId = keyId.encodeToByteArray(),
-//                algorithm = when ((this as CryptoPublicKey.Rsa).bits) {
-//                    CryptoPublicKey.Rsa.Size.RSA_512 -> TODO()
-//                    CryptoPublicKey.Rsa.Size.RSA_1024 -> TODO()
-//                    CryptoPublicKey.Rsa.Size.RSA_2048 -> TODO()
-//                    CryptoPublicKey.Rsa.Size.RSA_3027 -> TODO()
-//                    CryptoPublicKey.Rsa.Size.RSA_4096 -> TODO()
-//                },
-//                n = n,
-//                e = e.encodeToByteArray()
-//            )
+    }
+}
 
-        else -> TODO()//throw IllegalArgumentException("Not supported") //TODO?
+/**
+ * Converts CryptoPublicKey into CoseKey
+ * If algorithm is not set then key can be used for any algorithm with same kty (RFC 8152), returns null for invalid kty/algorithm pairs
+ */
+fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): CoseKey? =
+    when (this) {
+        is CryptoPublicKey.Ec ->
+            if ((algorithm != null) && (algorithm != when (curve) {
+                    EcCurve.SECP_256_R_1 -> CoseAlgorithm.ES256
+                    EcCurve.SECP_384_R_1 -> CoseAlgorithm.ES384
+                    EcCurve.SECP_521_R_1 -> CoseAlgorithm.ES512
+                })
+            )
+                null
+            else CoseKey(
+                keyParams = CoseKeyParams.EcYByteArrayParams(
+                    curve = curve.toCoseCurve(),
+                    x = x,
+                    y = y
+                ),
+                type = CoseKeyType.EC2,
+                keyId = keyId.encodeToByteArray(),
+                algorithm = algorithm
+            )
+
+        is CryptoPublicKey.Rsa ->
+            if ((algorithm != null) && (algorithm !in listOf(
+                    CoseAlgorithm.PS256, CoseAlgorithm.PS384, CoseAlgorithm.PS512,
+                    CoseAlgorithm.RS256, CoseAlgorithm.RS384, CoseAlgorithm.RS512
+                ))
+            )
+                null
+            else CoseKey(
+                keyParams = CoseKeyParams.RsaParams(
+                    n = n,
+                    e = e.encodeToByteArray()
+                ),
+                type = CoseKeyType.RSA,
+                keyId = keyId.encodeToByteArray(),
+                algorithm = algorithm
+            )
     }
 
 private const val COSE_KID = "coseKid"
