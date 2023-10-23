@@ -12,19 +12,42 @@ import kotlinx.serialization.encoding.Encoder
 @Serializable(with = CoseAlgorithmSerializer::class)
 enum class CoseAlgorithm(val value: Int) {
 
+    // ECDSA with SHA-size
     ES256(-7),
     ES384(-35),
     ES512(-36),
-    RS256(-257), // TODO rest
-    HMAC256_256(5);
+
+    // HMAC-size with SHA-size
+    HS256(-7),
+    HS384(-35),
+    HS512(-36),
+
+    // RSASSA-PSS with SHA-size
+    PS256(-7),
+    PS384(-35),
+    PS512(-36),
+
+    // RSASSA-PKCS1-v1_5 with SHA-size
+    RS256(-7),
+    RS384(-35),
+    RS512(-36);
 
     fun toJwsAlgorithm() = when(this) {
         ES256 -> JwsAlgorithm.ES256
         ES384 -> JwsAlgorithm.ES384
         ES512 -> JwsAlgorithm.ES512
-        //TODO
-        HMAC256_256 -> JwsAlgorithm.HMAC256
-        RS256 -> TODO()
+
+        HS256 -> JwsAlgorithm.HS256
+        HS384 -> JwsAlgorithm.HS384
+        HS512 -> JwsAlgorithm.HS512
+
+        PS256 -> JwsAlgorithm.PS256
+        PS384 -> JwsAlgorithm.PS384
+        PS512 -> JwsAlgorithm.PS512
+
+        RS256 -> JwsAlgorithm.RS256
+        RS384 -> JwsAlgorithm.RS384
+        RS512 -> JwsAlgorithm.RS512
     }
 
     val signatureValueLength
@@ -32,7 +55,7 @@ enum class CoseAlgorithm(val value: Int) {
             ES256 -> 256 / 8
             ES384 -> 384 / 8
             ES512 -> 512 / 8
-            else -> -1 // RSA non fixed sig length
+            else -> -1 // TODO RSA non fixed sig length, but rest needs to be added
         }
 }
 

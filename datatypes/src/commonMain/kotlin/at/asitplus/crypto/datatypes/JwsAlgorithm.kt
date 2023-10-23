@@ -16,10 +16,19 @@ import kotlinx.serialization.encoding.Encoder
 @Serializable(with = JwsAlgorithmSerializer::class)
 enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifier) : Asn1Encodable<Asn1Sequence>,
     Identifiable {
-
+    // TODO double-check OID
     ES256("ES256", KnownOIDs.ecdsaWithSHA256),
     ES384("ES384", KnownOIDs.ecdsaWithSHA384),
     ES512("ES512", KnownOIDs.ecdsaWithSHA512),
+    // TODO check OID
+    HS256("HS256", KnownOIDs.hmacWithSHA256),
+    HS384("HS384", KnownOIDs.sha384WithRSAEncryption),
+    HS512("HS512", KnownOIDs.sha512WithRSAEncryption),
+    // TODO check OID
+    PS256("PS256", KnownOIDs.sha256WithRSAEncryption),
+    PS384("PS384", KnownOIDs.sha384WithRSAEncryption),
+    PS512("PS512", KnownOIDs.sha512WithRSAEncryption),
+    // TODO check OID
     RS256("RS256", KnownOIDs.sha256WithRSAEncryption),
     RS384("RS384", KnownOIDs.sha384WithRSAEncryption),
     RS512("RS512", KnownOIDs.sha512WithRSAEncryption),
@@ -27,22 +36,31 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
     /**
      * The one exception, which is not a valid JWS algorithm identifier
      */
-    NON_JWS_SHA1_WITH_RSA("RS1", KnownOIDs.sha1WithRSAEncryption),
-    HMAC256("HS256", KnownOIDs.hmacWithSHA256);
+    NON_JWS_SHA1_WITH_RSA("RS1", KnownOIDs.sha1WithRSAEncryption);
 
     val signatureValueLength
         get() = when (this) {
             ES256 -> 256 / 8
             ES384 -> 384 / 8
             ES512 -> 512 / 8
-            HMAC256 -> 256 / 8
-            else -> -1 //TODO("RSA has no fixed size???")
+            HS256 -> 256 / 8
+            else -> -1 //TODO("RS has no fixed size") TODO("HS and PS")
+
         }
 
     override fun encodeToTlv() = when (this) {
         ES256 -> asn1Sequence { oid { oid } }
         ES384 -> asn1Sequence { oid { oid } }
         ES512 -> asn1Sequence { oid { oid } }
+
+        HS256 -> TODO()//throw IllegalArgumentException("sigAlg: $this")
+        HS384 -> TODO()
+        HS512 -> TODO()
+
+        PS256 -> TODO()
+        PS384 -> TODO()
+        PS512 -> TODO()
+
         RS256 -> asn1Sequence {
             oid { oid }
             asn1null()
@@ -62,8 +80,6 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
             oid { oid }
             asn1null()
         }
-
-        HMAC256 -> throw IllegalArgumentException("sigAlg: $this")
     }
 
     companion object : Asn1Decodable<Asn1Sequence, JwsAlgorithm> {
