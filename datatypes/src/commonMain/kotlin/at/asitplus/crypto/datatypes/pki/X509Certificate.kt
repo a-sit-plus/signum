@@ -18,8 +18,8 @@ data class TbsCertificate(
     @Serializable(with = ByteArrayBase64Serializer::class) val serialNumber: ByteArray,
     val signatureAlgorithm: JwsAlgorithm,
     val issuerName: List<DistinguishedName>,
-    val validFrom: CertificateTimeStamp,
-    val validUntil: CertificateTimeStamp,
+    val validFrom: Asn1Time,
+    val validUntil: Asn1Time,
     val subjectName: List<DistinguishedName>,
     val publicKey: CryptoPublicKey,
     val issuerUniqueID: BitSet? = null,
@@ -39,8 +39,8 @@ data class TbsCertificate(
         sequence { issuerName.forEach { append(it) } }
 
         sequence {
-            append(validFrom.asn1Object)
-            append(validUntil.asn1Object)
+            append(validFrom)
+            append(validUntil)
         }
 
         sequence { subjectName.forEach { append(it) } }
@@ -127,10 +127,10 @@ data class TbsCertificate(
             )
         }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
 
-        private fun decodeTimestamps(input: Asn1Sequence): Pair<CertificateTimeStamp, CertificateTimeStamp> =
+        private fun decodeTimestamps(input: Asn1Sequence): Pair<Asn1Time, Asn1Time> =
             runCatching {
-                val firstInstant = CertificateTimeStamp(input.nextChild() as Asn1Primitive)
-                val secondInstant = CertificateTimeStamp(input.nextChild() as Asn1Primitive)
+                val firstInstant = Asn1Time.decodeFromTlv(input.nextChild() as Asn1Primitive)
+                val secondInstant = Asn1Time.decodeFromTlv(input.nextChild() as Asn1Primitive)
                 if (input.hasMoreChildren()) throw IllegalArgumentException("Superfluous content in Validity")
                 return Pair(firstInstant, secondInstant)
             }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
