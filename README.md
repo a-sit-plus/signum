@@ -7,7 +7,7 @@
 [![Java](https://img.shields.io/badge/java-11+-blue.svg?logo=OPENJDK)](https://www.oracle.com/java/technologies/downloads/#java11)
 [![Maven Central](https://img.shields.io/maven-central/v/at.asitplus.crypto/datatypes)](https://mvnrepository.com/artifact/at.asitplus.crypto/datatypes/)
 
-## Kotlin Multiplatform Crypto/PKI library and ASN1 Parser + Encoder
+## Kotlin Multiplatform Crypto/PKI Library and ASN1 Parser + Encoder
 
 _(We are not doing the Prince thing; the emojis are not part of the project name)_
 
