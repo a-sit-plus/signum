@@ -11,7 +11,7 @@ plugins {
 
 version = "1.0-SNAPSHOT"
 
-exportIosFramework("KmpCryptoDatatypesCose",  serialization("json"), datetime(), project(":datatypes"))
+exportIosFramework("KmpCryptoCose",  serialization("cbor"), datetime(), project(":datatypes"))
 kotlin {
     sourceSets {
         val commonMain by getting {
