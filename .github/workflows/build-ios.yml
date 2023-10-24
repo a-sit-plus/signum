@@ -1,4 +1,4 @@
-name: build
+name: Build iOS Frameworks
 on: workflow_dispatch
 jobs:
   build:
