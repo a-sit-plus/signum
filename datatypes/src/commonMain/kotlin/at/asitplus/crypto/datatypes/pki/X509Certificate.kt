@@ -3,11 +3,9 @@ package at.asitplus.crypto.datatypes.pki
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.JwsAlgorithm
 import at.asitplus.crypto.datatypes.asn1.*
-import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import at.asitplus.crypto.datatypes.asn1.DERTags.toImplicitTag
+import at.asitplus.crypto.datatypes.io.BitSet
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
-import at.asitplus.crypto.datatypes.sigAlg
-import at.asitplus.crypto.datatypes.subjectPublicKey
 import kotlinx.serialization.Serializable
 
 /**
@@ -20,46 +18,57 @@ data class TbsCertificate(
     @Serializable(with = ByteArrayBase64Serializer::class) val serialNumber: ByteArray,
     val signatureAlgorithm: JwsAlgorithm,
     val issuerName: List<DistinguishedName>,
-    val validFrom: CertificateTimeStamp,
-    val validUntil: CertificateTimeStamp,
+    val validFrom: Asn1Time,
+    val validUntil: Asn1Time,
     val subjectName: List<DistinguishedName>,
     val publicKey: CryptoPublicKey,
-    @Serializable(with = ByteArrayBase64Serializer::class) val issuerUniqueID: ByteArray? = null,
-    @Serializable(with = ByteArrayBase64Serializer::class) val subjectUniqueID: ByteArray? = null,
+    val issuerUniqueID: BitSet? = null,
+    val subjectUniqueID: BitSet? = null,
     val extensions: List<X509CertificateExtension>? = null
 ) : Asn1Encodable<Asn1Sequence> {
 
 
-    private fun Asn1TreeBuilder.version(block: () -> Int) =
-        apply { elements += Asn1Tagged(0u.toExplicitTag(), block().encodeToTlv()) }
+    private fun Asn1TreeBuilder.version(value: Int) {
+        tagged(0u) { int(value) }
+    }
 
     override fun encodeToTlv() = asn1Sequence {
-        version { version }
-        append { Asn1Primitive(BERTags.INTEGER, serialNumber) }
-        sigAlg { signatureAlgorithm }
-        sequence { issuerName.forEach { append { it.encodeToTlv() } } }
+        version(version)
+        append(Asn1Primitive(BERTags.INTEGER, serialNumber))
+        append(signatureAlgorithm)
+        sequence { issuerName.forEach { append(it) } }
 
         sequence {
-            append { validFrom.asn1Object }
-            append { validUntil.asn1Object }
+            append(validFrom)
+            append(validUntil)
         }
-        sequence { subjectName.forEach { append { it.encodeToTlv() } } }
 
-        subjectPublicKey { publicKey }
+        sequence { subjectName.forEach { append(it) } }
 
-        issuerUniqueID?.let { append { Asn1Primitive(1u.toImplicitTag(), it.encodeToBitString()) } }
-        subjectUniqueID?.let { append { Asn1Primitive(2u.toImplicitTag(), it.encodeToBitString()) } }
+        //subject public key
+        append(publicKey)
+
+        issuerUniqueID?.let {
+            append(
+                Asn1Primitive(
+                    1u.toImplicitTag(),
+                    Asn1BitString(it).let { byteArrayOf(it.numPaddingBits, *it.rawBytes) })
+            )
+        }
+        subjectUniqueID?.let {
+            append(
+                Asn1Primitive(
+                    1u.toImplicitTag(),
+                    Asn1BitString(it).let { byteArrayOf(it.numPaddingBits, *it.rawBytes) })
+            )
+        }
 
         extensions?.let {
             if (it.isNotEmpty()) {
-                append {
-                    Asn1Tagged(3u.toExplicitTag(),
-                        asn1Sequence {
-                            it.forEach { ext ->
-                                append { ext.encodeToTlv() }
-                            }
-                        }
-                    )
+                tagged(3u) {
+                    sequence {
+                        it.forEach { ext -> append(ext) }
+                    }
                 }
             }
         }
@@ -86,13 +95,13 @@ data class TbsCertificate(
 
             val issuerUniqueID = src.peek()?.let { next ->
                 if (next.tag == 1u.toImplicitTag()) {
-                    (src.nextChild() as Asn1Primitive).decode(1u.toImplicitTag()) { decodeBitString(it) }
+                    (src.nextChild() as Asn1Primitive).let { Asn1BitString.decodeFromTlv(it, 1u.toImplicitTag()) }
                 } else null
             }
 
             val subjectUniqueID = src.peek()?.let { next ->
                 if (next.tag == 2u.toImplicitTag()) {
-                    (src.nextChild() as Asn1Primitive).decode(2u.toImplicitTag()) { decodeBitString(it) }
+                    (src.nextChild() as Asn1Primitive).let { Asn1BitString.decodeFromTlv(it, 2u.toImplicitTag()) }
                 } else null
             }
             val extensions = if (src.hasMoreChildren()) {
@@ -112,23 +121,21 @@ data class TbsCertificate(
                 validUntil = timestamps.second,
                 subjectName = subject,
                 publicKey = cryptoPublicKey,
-                issuerUniqueID = issuerUniqueID,
-                subjectUniqueID = subjectUniqueID,
+                issuerUniqueID = issuerUniqueID?.toBitSet(),
+                subjectUniqueID = subjectUniqueID?.toBitSet(),
                 extensions = extensions,
             )
         }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
 
-        private fun decodeTimestamps(input: Asn1Sequence): Pair<CertificateTimeStamp, CertificateTimeStamp> =
+        private fun decodeTimestamps(input: Asn1Sequence): Pair<Asn1Time, Asn1Time> =
             runCatching {
-                val firstInstant = CertificateTimeStamp(input.nextChild() as Asn1Primitive)
-                val secondInstant = CertificateTimeStamp(input.nextChild() as Asn1Primitive)
+                val firstInstant = Asn1Time.decodeFromTlv(input.nextChild() as Asn1Primitive)
+                val secondInstant = Asn1Time.decodeFromTlv(input.nextChild() as Asn1Primitive)
                 if (input.hasMoreChildren()) throw IllegalArgumentException("Superfluous content in Validity")
                 return Pair(firstInstant, secondInstant)
             }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
     }
 }
-
-fun Asn1TreeBuilder.tbsCertificate(block: () -> TbsCertificate) = apply { elements += block().encodeToTlv() }
 
 /**
  * Very simple implementation of an X.509 Certificate
@@ -142,9 +149,9 @@ data class X509Certificate(
 ) : Asn1Encodable<Asn1Sequence> {
 
     override fun encodeToTlv() = asn1Sequence {
-        tbsCertificate { tbsCertificate }
-        sigAlg { signatureAlgorithm }
-        bitString { signature }
+        append(tbsCertificate)
+        append(signatureAlgorithm)
+        bitString(signature)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -176,7 +183,7 @@ data class X509Certificate(
             val sigAlg = JwsAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val signature = (src.nextChild() as Asn1Primitive).readBitString()
             if (src.hasMoreChildren()) throw IllegalArgumentException("Superfluous structure in Certificate Structure")
-            return X509Certificate(tbs, sigAlg, signature)
+            return X509Certificate(tbs, sigAlg, signature.rawBytes)
         }
 
     }

@@ -7,7 +7,7 @@ plugins {
     id("at.asitplus.gradle.conventions")
 }
 
-version = "1.0.0"
+version = "2.0.0"
 
 
 exportIosFramework("KmpCrypto",  serialization("json"),datetime())
@@ -23,6 +23,7 @@ kotlin {
             val commonTest by getting {
                 dependencies {
                     implementation(kotest("property"))
+                    implementation(kotlin("reflect"))
                 }
             }
         }
@@ -46,7 +47,7 @@ publishing {
             artifact(javadocJar)
             pom {
                 name.set("KMP Crypto Datatypes")
-                description.set("Kotlin Multiplatform library implementing the W3C VC Data Model")
+                description.set("Kotlin Multiplatform Crypto Core Library, Datatypes and ASN.1 Perser+Encoder")
                 url.set("https://github.com/a-sit-plus/kmp-crypto")
                 licenses {
                     license {

@@ -7,11 +7,10 @@ import at.asitplus.crypto.datatypes.asn1.BERTags.BOOLEAN
 import at.asitplus.crypto.datatypes.asn1.BERTags.GENERALIZED_TIME
 import at.asitplus.crypto.datatypes.asn1.BERTags.INTEGER
 import at.asitplus.crypto.datatypes.asn1.BERTags.NULL
-import at.asitplus.crypto.datatypes.asn1.BERTags.OBJECT_IDENTIFIER
-import at.asitplus.crypto.datatypes.asn1.BERTags.OCTET_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.UTC_TIME
+import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
+import at.asitplus.crypto.datatypes.io.BitSet
 import io.matthewnelson.encoding.base16.Base16
-import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Instant
 import kotlin.io.encoding.ExperimentalEncodingApi
@@ -20,41 +19,41 @@ import kotlin.io.encoding.ExperimentalEncodingApi
  * Class Providing a DSL for creating arbitrary ASN.1 structures. You will almost certainyl never use it directly, but rather use it as follows:
  * ```kotlin
  * asn1Sequence {
- *   tagged(31u) {
- *     Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00))
- *   }
- *   set {
- *     sequence {
- *       setOf { //note: DER encoding enfoces sorting here, so the result switches those
- *         printableString { "World" }
- *         printableString { "Hello" }
- *       }
- *       set { //note: DER encoding enfoces sorting by tags, so the order changes in the ourput
- *         printableString { "World" }
- *         printableString { "Hello" }
- *         utf8String { "!!!" }
- *       }
+ *     tagged(1u) {
+ *         append(Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00)))
  *     }
- *   }
- *   asn1null()
+ *     set {
+ *         sequence {
+ *             setOf {
+ *                 printableString("World")
+ *                 printableString("Hello")
+ *             }
+ *             set {
+ *                 printableString("World")
+ *                 printableString("Hello")
+ *                 utf8String("!!!")
+ *             }
  *
- *   oid { ObjectIdentifier("1.2.60873.543.65.2324.97") }
- *
- *   utf8String { "Foo" }
- *   printableString { "Bar" }
- *
- *   set {
- *     int { 3 }
- *     long { 123456789876543L }
- *     bool { false }
- *     bool { true }
- *   }
- *   sequence {
+ *         }
+ *     }
  *     asn1null()
- *     hexEncoded { "CAFEBABE" }
- *     hexEncoded { "BADDAD" }
- *     utcTime { instant }
- *   }
+ *
+ *     append(ObjectIdentifier("1.2.603.624.97"))
+ *
+ *     utf8String("Foo")
+ *     printableString("Bar")
+ *
+ *     set {
+ *         int(3)
+ *         long(-65789876543L)
+ *         bool(false)
+ *         bool(true)
+ *     }
+ *     sequence {
+ *         asn1null()
+ *         append(Asn1String.Numeric("12345"))
+ *         utcTime(instant)
+ *     }
  * }
  * ```
  */
@@ -64,100 +63,109 @@ class Asn1TreeBuilder {
     /**
      * appends a single [Asn1Element] to this ASN.1 structure
      */
-    fun append(child: () -> Asn1Element) = apply { elements += child() }
+    fun append(child: Asn1Element) {
+        elements += child
+    }
 
     /**
-     * EXPLICITLY tags a single [Asn1Element] and adds it to this ASN.1 structure
+     * appends a single [Asn1Encodable] to this ASN.1 structure
      */
-    fun tagged(tag: UByte, child: () -> Asn1Element) = apply { elements += Asn1Tagged(tag, child()) }
+    fun append(child: Asn1Encodable<*>) = append(child.encodeToTlv())
+
+    /**
+     * EXPLICITLY tags and encapsulates the result of [init]
+     * <br>
+     * **NOTE:** automatically calls [at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag] on [tag]
+     */
+    fun tagged(tag: UByte, init: Asn1TreeBuilder.() -> Unit) {
+        val seq = Asn1TreeBuilder()
+        seq.init()
+        elements += Asn1Tagged(tag.toExplicitTag(), seq.elements)
+    }
 
     /**
      * Adds a BOOL [Asn1Primitive] to this ASN.1 structure
      */
-    fun bool(block: () -> Boolean) = apply { elements += block().encodeToTlv() }
+    fun bool(value: Boolean) {
+        elements += value.encodeToTlv()
+    }
 
     /**
      * Adds an INTEGER [Asn1Primitive] to this ASN.1 structure
      */
-    fun int(block: () -> Int) = apply { elements += block().encodeToTlv() }
+    fun int(value: Int) {
+        elements += value.encodeToTlv()
+    }
 
     /**
      * Adds an INTEGER [Asn1Primitive] to this ASN.1 structure
      */
-    fun long(block: () -> Long) = apply { elements += block().encodeToTlv() }
+    fun long(value: Long) {
+        elements += value.encodeToTlv()
+    }
 
     /**
-     * Adds the passed bytes as OCTET STRING [Asn1Primitive] to this ASN.1 structure
+     * Adds the passed bytes as OCTET STRING [Asn1Element] to this ASN.1 structure
      */
-    fun octetString(block: () -> ByteArray) = apply { elements += block().encodeToTlvOctetString() }
-
-    /**
-     * Adds passed [Asn1Element] as OCTET STRING [Asn1Primitive] to this ASN.1 structure
-     */
-    fun octetString(child: Asn1Element) = apply { octetString(block = { child.derEncoded }) }
+    fun octetString(bytes: ByteArray) {
+        elements += bytes.encodeToTlvOctetString()
+    }
 
     /**
      * Adds the passed bytes as BIT STRING [Asn1Primitive] to this ASN.1 structure
      */
-    fun bitString(block: () -> ByteArray) = apply { elements += block().encodeToTlvBitString() }
+    fun bitString(bytes: ByteArray) {
+        elements += bytes.encodeToTlvBitString()
+    }
 
     /**
-     * Adds the passed [Asn1Element] as BIT STRING [Asn1Primitive] to this ASN.1 structure
+     * Transforms the passed BitSet as BIT STRING [Asn1Primitive] to this ASN.1 structure.
+     * **Left-Aligned and right-padded (see [Asn1BitString])**
      */
-    fun bitString(child: Asn1Element) = apply { bitString(block = { child.derEncoded }) }
+    fun bitString(bitSet: BitSet) = apply { elements += Asn1BitString(bitSet).encodeToTlv() }
 
     /**
-     * Adds the passed [ObjectIdentifier] as OBJECT IDENTIFIER to this ASN.1 structure
+     * Adds the passed string as UTF8 STRING [Asn1Primitive] to this ASN.1 structure
      */
-    fun oid(block: () -> ObjectIdentifier) = apply { elements += block().encodeToTlv() }
+    fun utf8String(value: String) {
+        elements += Asn1String.UTF8(value).encodeToTlv()
+    }
 
     /**
-     * Shorthand method taking a HEX representation of an OID value, adding it as an OBJECT IDENTIFIER to this ASN.1 structure.
-     * Really only useful for quick debugging against other ASN.1 decoders, such as https://lapo.it/asn1js/, so we're keeping it for now
+     * Adds the passed string as PRINTABLE STRING [Asn1Primitive] to this ASN.1 structure
      */
-    @Deprecated("Used only for quick debugging. May be removed in the future")
-    fun hexEncoded(block: () -> String) = apply { elements += block().encodeTolvOid() }
-
-
-    /**
-     * Adds the passed string as UTF8 STRING to this ASN.1 structure
-     */
-    fun utf8String(block: () -> String) = apply { elements += Asn1String.UTF8(block()).encodeToTlv() }
-
-    /**
-     * Adds the passed string as PRINTABLE STRING to this ASN.1 structure
-     */
-    fun printableString(block: () -> String) = apply { elements += Asn1String.Printable(block()).encodeToTlv() }
-
-    /**
-     * Adds the passed [Asn1String] to this ASN.1 structure
-     */
-    fun string(block: () -> Asn1String) = apply {
-        val str = block()
-        append { str.encodeToTlv() }
+    fun printableString(value: String) {
+        elements += Asn1String.Printable(value).encodeToTlv()
     }
 
 
     /**
-     * Adds a NULL to this ASN.1 structure
+     * Adds a NULL [Asn1Primitive] to this ASN.1 structure
      */
-    fun asn1null() = apply { elements += Asn1Primitive(NULL, byteArrayOf()) }
+    fun asn1null() {
+        elements += Asn1Primitive(NULL, byteArrayOf())
+    }
 
     /**
-     * Adds the passed instant as UTC TIME to this ASN.1 structure
+     * Adds the passed instant as UTC TIME [Asn1Primitive] to this ASN.1 structure
      */
-    fun utcTime(block: () -> Instant) = apply { elements += block().encodeToAsn1UtcTime() }
+    fun utcTime(value: Instant) {
+        elements += value.encodeToAsn1UtcTime()
+    }
 
     /**
-     * Adds the passed instant as GENERALIZED TIME to this ASN.1 structure
+     * Adds the passed instant as GENERALIZED TIME [Asn1Primitive] to this ASN.1 structure
      */
-    fun generalizedTime(block: () -> Instant) =
-        apply { elements += block().encodeToAsn1GeneralizedTime() }
+    fun generalizedTime(value: Instant) {
+        elements += value.encodeToAsn1GeneralizedTime()
+    }
 
-    private fun nest(type: CollectionType, init: Asn1TreeBuilder.() -> Unit) = apply {
+    private fun nest(type: CollectionType, init: Asn1TreeBuilder.() -> Unit) {
         val seq = Asn1TreeBuilder()
         seq.init()
-        elements += if (type == CollectionType.SEQUENCE) Asn1Sequence(seq.elements) else Asn1Set(seq.elements.let {
+        elements += if (type == CollectionType.SEQUENCE) Asn1Sequence(seq.elements)
+        else if (type == CollectionType.OCTET_STRING) Asn1EncapsulatingOctetString(seq.elements)
+        else Asn1Set(seq.elements.let {
             if (type == CollectionType.SET) it.sortedBy { it.tag }
             else {
                 if (it.any { elem -> elem.tag != it.first().tag }) throw IllegalArgumentException("SET_OF must only contain elements of the same tag")
@@ -173,14 +181,14 @@ class Asn1TreeBuilder {
      * ```kotlin
      *   set {
      *     sequence {
-     *       setOf { //note: DER encoding enfoces sorting here, so the result switches those
-     *         printableString { "World" }
-     *         printableString { "Hello" }
+     *       setOf { //note: DER encoding enforces sorting here, so the result switches those
+     *         printableString("World")
+     *         printableString("Hello")
      *       }
-     *       set { //note: DER encoding enfoces sorting by tags, so the order changes in the ourput
-     *         printableString { "World" }
-     *         printableString { "Hello" }
-     *         utf8String { "!!!" }
+     *       set { //note: DER encoding enforces sorting by tags, so the order changes in the output
+     *         printableString("World")
+     *         printableString("Hello")
+     *         utf8String("!!!")
      *       }
      *     }
      *   }
@@ -195,14 +203,14 @@ class Asn1TreeBuilder {
      * ```kotlin
      *   set {
      *     sequence {
-     *       setOf { //note: DER encoding enfoces sorting here, so the result switches those
-     *         printableString { "World" }
-     *         printableString { "Hello" }
+     *       setOf { //note: DER encoding enforces sorting here, so the result switches those
+     *         printableString("World")
+     *         printableString("Hello")
      *       }
-     *       set { //note: DER encoding enfoces sorting by tags, so the order changes in the ourput
-     *         printableString { "World" }
-     *         printableString { "Hello" }
-     *         utf8String { "!!!" }
+     *       set { //note: DER encoding enforces sorting by tags, so the order changes in the output
+     *         printableString("World")
+     *         printableString("Hello")
+     *         utf8String("!!!")
      *       }
      *     }
      *   }
@@ -217,14 +225,14 @@ class Asn1TreeBuilder {
      * ```kotlin
      *   set {
      *     sequence {
-     *       setOf { //note: DER encoding enfoces sorting here, so the result switches those
-     *         printableString { "World" }
-     *         printableString { "Hello" }
+     *       setOf { //note: DER encoding enforces sorting here, so the result switches those
+     *         printableString("World")
+     *         printableString("Hello")
      *       }
-     *       set { //note: DER encoding enfoces sorting by tags, so the order changes in the ourput
-     *         printableString { "World" }
-     *         printableString { "Hello" }
-     *         utf8String { "!!!" }
+     *       set { //note: DER encoding enforces sorting by tags, so the order changes in the output
+     *         printableString("World")
+     *         printableString("Hello")
+     *         utf8String("!!!")
      *       }
      *     }
      *   }
@@ -232,12 +240,31 @@ class Asn1TreeBuilder {
      */
     fun setOf(init: Asn1TreeBuilder.() -> Unit) = nest(CollectionType.SET_OF, init)
 
+    /**
+     * OCTET STRING builder. The result of [init] is encapsulated into an ASN.1 OCTET STRING and then added to this ASN.1 structure
+     * ```kotlin
+     *   set {
+     *     octetString {
+     *       printableString("Hello")
+     *       printableString("World")
+     *       sequence {
+     *         printableString("World")
+     *         printableString("Hello")
+     *         utf8String("!!!")
+     *       }
+     *     }
+     *   }
+     *  ```
+     */
+    fun octetStringEncapsulated(init: Asn1TreeBuilder.() -> Unit) = nest(CollectionType.OCTET_STRING, init)
+
 }
 
 private enum class CollectionType {
     SET,
     SEQUENCE,
-    SET_OF
+    SET_OF,
+    OCTET_STRING
 }
 
 /**
@@ -247,9 +274,9 @@ private enum class CollectionType {
  * ```kotlin
  * sequence {
  *   asn1Null()
- *   printableString { "World" }
- *   printableString { "Hello" }
- *   utf8String { "!!!" }
+ *   printableString("World")
+ *   printableString("Hello")
+ *   utf8String("!!!")
  * }
  *  ```
  */
@@ -266,9 +293,9 @@ fun asn1Sequence(root: Asn1TreeBuilder.() -> Unit): Asn1Sequence {
  * ```kotlin
  * set {
  *   asn1Null()
- *   printableString { "World" }
- *   printableString { "Hello" }
- *   utf8String { "!!!" }
+ *   printableString("World")
+ *   printableString("Hello")
+ *   utf8String("!!!")
  * }
  *  ```
  */
@@ -284,9 +311,9 @@ fun asn1Set(root: Asn1TreeBuilder.() -> Unit): Asn1Set {
  *
  * ```kotlin
  * setOf {
- *   printableString { "World" }
- *   printableString { "!!!" }
- *   printableString { "Hello" }
+ *   printableString("World")
+ *   printableString("!!!")
+ *   printableString("Hello")
  * }
  *  ```
  */
@@ -315,7 +342,7 @@ fun Long.encodeToTlv() = Asn1Primitive(INTEGER, encodeToDer())
 /**
  * Produces an OCTET STRING as [Asn1Primitive]
  */
-fun ByteArray.encodeToTlvOctetString() = Asn1Primitive(OCTET_STRING, this)
+fun ByteArray.encodeToTlvOctetString() = Asn1PrimitiveOctetString(this)
 
 /**
  * Produces a BIT STRING as [Asn1Primitive]
@@ -326,9 +353,6 @@ fun ByteArray.encodeToTlvBitString() = Asn1Primitive(BIT_STRING, encodeToBitStri
  * Prepends 0x00 to this ByteArray for encoding it into a BIT STRING. Useful for implicit tagging
  */
 fun ByteArray.encodeToBitString() = byteArrayOf(0x00) + this
-
-private fun String.encodeTolvOid() = Asn1Primitive(OBJECT_IDENTIFIER, decodeToByteArray(Base16()))
-
 
 private fun Int.encodeToDer() = if (this == 0) byteArrayOf(0) else
     encodeToByteArray()

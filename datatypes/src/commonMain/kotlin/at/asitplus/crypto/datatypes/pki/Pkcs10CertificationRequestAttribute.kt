@@ -11,8 +11,8 @@ data class Pkcs10CertificationRequestAttribute(
     constructor(id: ObjectIdentifier, value: Asn1Element) : this(id, listOf(value))
 
     override fun encodeToTlv() = asn1Sequence {
-        oid { oid }
-        set { value.forEach { append { it } } }
+        append ( oid )
+        set { value.forEach { append(it) } }
     }
 
     override fun equals(other: Any?): Boolean {
@@ -41,5 +41,4 @@ data class Pkcs10CertificationRequestAttribute(
             return Pkcs10CertificationRequestAttribute(id, value)
         }
     }
-
 }

@@ -7,7 +7,7 @@
 [![Java](https://img.shields.io/badge/java-11+-blue.svg?logo=OPENJDK)](https://www.oracle.com/java/technologies/downloads/#java11)
 [![Maven Central](https://img.shields.io/maven-central/v/at.asitplus.crypto/datatypes)](https://mvnrepository.com/artifact/at.asitplus.crypto/datatypes/)
 
-## Kotlin Multiplatform Crypto/PKI library and ASN1 Parser + Encoder
+## Kotlin Multiplatform Crypto/PKI Library and ASN1 Parser + Encoder
 
 _(We are not doing the Prince thing; the emojis are not part of the project name)_
 
@@ -23,6 +23,7 @@ types and functionality related to crypto and PKI applications:
 * JWS-related data structures (JSON Web Keys, JWT, etc…)
 * COSE-related data structures (COSE Keys, CWT, etc…)
 * Serializability of all data classes for debugging
+* 100% pure Kotlin BitSet
 * **ASN.1 Parser and Encoder including a DSL to generate ASN.1 structures**
 
 This last bit means that
@@ -37,10 +38,10 @@ the JVM/Android and iOS.
 
 This library consists of three modules, each of which is published on maven central:
 
-| Name           | `datatypes`                                                                                                                  | `datatypes-jws` (WIP)                                                                                                                                                                                                                 | `datatypes-cose` (WIP)                                                                                                                                                                                                              |
+| Name           | `datatypes`                                                                                                                  | `datatypes-jws`                                                                                                                                                                                                                       | `datatypes-cose` (WIP)                                                                                                                                                                                                              |
 |----------------|------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | _Info_         | Base module containing the public key class (`CryptoPublicKey`), algorithm identifiers, the ASN.1 parser, X.509 certificate. | JWS/JWE/JWT module containing JWS/E/T-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. | COSE module containing all COSE/CWT-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. |
-| _Maven Coords_ | `at.asitplus.crypto:datatypes`                                                                                               | <!--`at.asitplus.crypto:datatypes-jws`--> (WIP; not yet released)                                                                                                                                                                     | <!--`at.asitplus.crypto:datatypes-cose`--> (WIP; not yet released)                                                                                                                                                                  |
+| _Maven Coords_ | `at.asitplus.crypto:datatypes`                                                                                               | `at.asitplus.crypto:datatypes-jws`                                                                                                                                                                                                    | <!--`at.asitplus.crypto:datatypes-cose`--> (WIP; not yet released)                                                                                                                                                                  |
 
 ### Using it in your Projects
 
@@ -274,78 +275,72 @@ DSL, which returns an `Asn1Structure`:
 
 ```kotlin
 asn1Sequence {
-    tagged(31u) {
-        Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00))
-    }
-    set {
-        sequence {
-            setOf {
-                printableString { "World" }
-                printableString { "Hello" }
-            }
-            set {
-                printableString { "World" }
-                printableString { "Hello" }
-                utf8String { "!!!" }
-            }
-
-        }
-    }
-    asn1null()
-
-    oid { ObjectIdentifier("1.2.603.624.97") }
-
-    utf8String { "Foo" }
-    printableString { "Bar" }
-
-    set {
-        int { 3 }
-        long { -65789876543L }
-        bool { false }
-        bool { true }
-    }
+  tagged(1u) {
+    append(Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00)))
+  }
+  set {
     sequence {
-        asn1null()
-        string { Asn1String.Numeric("12345") }
-        utcTime { instant }
+      setOf {
+        printableString("World")
+        printableString("Hello")
+      }
+      set {
+        printableString("World")
+        printableString("Hello")
+        utf8String("!!!")
+      }
+
     }
+  }
+  asn1null()
+
+  append(ObjectIdentifier("1.2.603.624.97"))
+
+  utf8String("Foo")
+  printableString("Bar")
+
+  set {
+    int(3)
+    long(-65789876543L)
+    bool(false)
+    bool(true)
+  }
+  sequence {
+    asn1null()
+    append(Asn1String.Numeric("12345"))
+    utcTime(instant)
+  }
 }
 ```
 
 In accordance with DER-Encoding, this produces the following ASN.1 structure:
 
 ```
-SEQUENCE {
-   [1F] 010100
-   SET {
-      SEQUENCE {
-         SET {
-            PrintableString 'Hello'
-            PrintableString 'World'
-         }
-         SET {
-            UTF8String '!!!'
-            PrintableString 'World'
-            PrintableString 'Hello'
-         }
-      }
-   }
-   NULL 
-   OBJECTIDENTIFIER 1.2.603.624.97
-   UTF8String 'Foo'
-   PrintableString 'Bar'
-   SET {
-      BOOLEAN FALSE
-      BOOLEAN TRUE
-      INTEGER 0x03 (3 decimal)
-      INTEGER 0xFFF0AE9E26C1
-   }
-   SEQUENCE {
-      NULL 
-      NumericString '12345'
-      UTCTime '231012190130Z'
-   }
-}
+SEQUENCE (8 elem)
+  [1] (1 elem)
+    BOOLEAN false
+  SET (1 elem)
+    SEQUENCE (2 elem)
+      SET (2 elem)
+        PrintableString Hello
+        PrintableString World
+      SET (3 elem)
+        UTF8String !!!
+        PrintableString World
+        PrintableString Hello
+  NULL
+  OBJECT IDENTIFIER 1.2.603.624.97
+  UTF8String Foo
+  PrintableString Bar
+  SET (4 elem)
+    BOOLEAN false
+    BOOLEAN true
+    INTEGER 3
+    INTEGER (36 bit) -65789876543
+  SEQUENCE (3 elem)
+    NULL
+    NumericString 12345
+    UTCTime 2023-10-21 21:14:49 UTC
 ```
 
 ## Limitations

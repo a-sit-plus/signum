@@ -1,0 +1,42 @@
+name: build
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+      - name: Build klibs
+        run: ./gradlew iosArm64MainKlibrary iosX64MainKlibrary
+      - name: Build XCFrameworks
+        run: ./gradlew assembleKmpCryptoXCFramework assembleKmpCryptoJwsXCFramework
+      - name: Upload debug XCFramework KmpCrypto
+        uses: actions/upload-artifact@v3
+        with:
+          name: KmpCrypto-debug.xcframework
+          path: |
+            datatypes/build/XCFrameworks/debug/
+      - name: Upload debug XCFramework KmpCryptoJws
+        uses: actions/upload-artifact@v3
+        with:
+          name: KmpCryptoJws-debug.xcframework
+          path: |
+            datatypes-jws/build/XCFrameworks/debug/
+      - name: Upload release XCFramework KmpCrypto
+        uses: actions/upload-artifact@v3
+        with:
+          name: KmpCrypto-release.xcframework
+          path: |
+            datatypes/build/XCFrameworks/release/
+      - name: Upload release XCFramework KmpCryptoJws
+        uses: actions/upload-artifact@v3
+        with:
+          name: KmpCryptoJws-release.xcframework
+          path: |
+            datatypes-jws/build/XCFrameworks/release/

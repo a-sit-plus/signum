@@ -1,12 +1,12 @@
 package at.asitplus.crypto.datatypes.asn1
 
-import at.asitplus.crypto.datatypes.asn1.BERTags.BIT_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.BMP_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.GENERALIZED_TIME
 import at.asitplus.crypto.datatypes.asn1.BERTags.IA5_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.INTEGER
 import at.asitplus.crypto.datatypes.asn1.BERTags.NULL
 import at.asitplus.crypto.datatypes.asn1.BERTags.NUMERIC_STRING
+import at.asitplus.crypto.datatypes.asn1.BERTags.OCTET_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.PRINTABLE_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.T61_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.UNIVERSAL_STRING
@@ -49,10 +49,15 @@ private class Asn1Reader(input: ByteArray) {
                     Asn1Reader(tlv.content).doParse()
                 )
             )
+            else if (tlv.tag == OCTET_STRING) {
+                runCatching {
+                    result.add(Asn1EncapsulatingOctetString(Asn1Reader(tlv.content).doParse()))
+                }.getOrElse { result.add(Asn1PrimitiveOctetString(tlv.content)) }
+            }
             else result.add(Asn1Primitive(tlv.tag, tlv.content))
 
         }
-        return result.toList()
+        return result
     }
 
     private fun TLV.isSet() = tag == DERTags.DER_SET
@@ -128,7 +133,7 @@ fun Asn1Primitive.readInstant() =
  * @throws [Throwable] all sorts of exceptions on invalid input
  */
 @Throws(Throwable::class)
-fun Asn1Primitive.readBitString() = decode(BIT_STRING, ::decodeBitString)
+fun Asn1Primitive.readBitString() = Asn1BitString.decodeFromTlv(this)
 
 
 /**
@@ -157,12 +162,6 @@ inline fun <reified T> Asn1Primitive.decode(tag: UByte, transform: (content: Byt
     if (tag != this.tag) throw IllegalArgumentException("Tag mismatch. Expected: $tag, is: ${this.tag}")
     transform(content)
 }.getOrElse { if (it is IllegalArgumentException) throw it else throw IllegalArgumentException(it) }
-
-/**
- * Decodes the provided BIT STRING value [input] into a [ByteArray] (i.e. drops the first byte)
- */
-fun decodeBitString(input: ByteArray) = input.drop(1).toByteArray()
-
 
 @Throws(IllegalArgumentException::class)
 private fun Instant.Companion.decodeUtcTimeFromDer(input: ByteArray): Instant = runCatching {

@@ -8,6 +8,8 @@ import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 
 /**
  * Representation of a signed JSON Web Signature object, i.e. consisting of header, payload and signature.
+ *
+ * See [RFC 7515](https://datatracker.ietf.org/doc/html/rfc7515)
  */
 data class JwsSigned(
     val header: JwsHeader,

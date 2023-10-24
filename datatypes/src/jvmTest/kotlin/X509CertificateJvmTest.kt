@@ -1,6 +1,6 @@
 import at.asitplus.crypto.datatypes.*
 import at.asitplus.crypto.datatypes.asn1.*
-import at.asitplus.crypto.datatypes.pki.CertificateTimeStamp
+import at.asitplus.crypto.datatypes.asn1.Asn1Time
 import at.asitplus.crypto.datatypes.pki.DistinguishedName
 import at.asitplus.crypto.datatypes.pki.TbsCertificate
 import at.asitplus.crypto.datatypes.pki.X509Certificate
@@ -70,8 +70,8 @@ class X509CertificateJvmTest : FreeSpec({
             version = 2,
             serialNumber = serialNumber.toByteArray(),
             issuerName = listOf(DistinguishedName.CommonName(Asn1String.UTF8(commonName))),
-            validFrom = CertificateTimeStamp(notBeforeDate.toInstant().toKotlinInstant()),
-            validUntil = CertificateTimeStamp(notAfterDate.toInstant().toKotlinInstant()),
+            validFrom = Asn1Time(notBeforeDate.toInstant().toKotlinInstant()),
+            validUntil = Asn1Time(notAfterDate.toInstant().toKotlinInstant()),
             signatureAlgorithm = signatureAlgorithm,
             subjectName = listOf(DistinguishedName.CommonName(Asn1String.UTF8(commonName))),
             publicKey = cryptoPublicKey

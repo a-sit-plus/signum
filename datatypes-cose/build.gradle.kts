@@ -11,7 +11,7 @@ plugins {
 
 version = "1.0-SNAPSHOT"
 
-exportIosFramework("KmpCryptoDatatypesCose",  serialization("json"), datetime(), project(":datatypes"))
+exportIosFramework("KmpCryptoCose",  serialization("cbor"), datetime(), project(":datatypes"))
 kotlin {
     sourceSets {
         val commonMain by getting {
@@ -41,8 +41,8 @@ publishing {
         withType<MavenPublication> {
             artifact(javadocJar)
             pom {
-                name.set("KMP Crypto Datatypes -  COSE Addons")
-                description.set("Kotlin Multiplatform library implementing the W3C VC Data Model")
+                name.set("KMP Crypto Datatypes - COSE Addons")
+                description.set("Kotlin Multiplatform Crypto Library - COSE Addons")
                 url.set("https://github.com/a-sit-plus/kmp-crypto")
                 licenses {
                     license {

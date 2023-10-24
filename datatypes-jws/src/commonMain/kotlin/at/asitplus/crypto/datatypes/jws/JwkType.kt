@@ -8,6 +8,11 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
+/**
+ * Supported JSON Web Key types.
+ *
+ * See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517#section-4)
+ */
 @Serializable(with = JwkTypeSerializer::class)
 enum class JwkType(val text: String) {
 

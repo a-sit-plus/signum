@@ -9,6 +9,8 @@ import kotlinx.serialization.encodeToString
 
 /**
  * Header of a [JweEncrypted] or [JweDecrypted].
+ *
+ * See [RFC 7516](https://datatracker.ietf.org/doc/html/rfc7516)
  */
 @Serializable
 data class JweHeader(
