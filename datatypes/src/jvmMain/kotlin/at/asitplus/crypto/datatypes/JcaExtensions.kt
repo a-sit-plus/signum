@@ -21,11 +21,16 @@ val JwsAlgorithm.jcaName
         JwsAlgorithm.ES256 -> "SHA256withECDSA"
         JwsAlgorithm.ES384 -> "SHA384withECDSA"
         JwsAlgorithm.ES512 -> "SHA512withECDSA"
-        JwsAlgorithm.HMAC256 -> "HmacSHA256"
+        JwsAlgorithm.HS256 -> "HmacSHA256"
         JwsAlgorithm.RS256 -> "SHA256withRSA"
         JwsAlgorithm.RS384 -> "SHA348withRSA"
         JwsAlgorithm.RS512 -> "SHA512withRSA"
         JwsAlgorithm.NON_JWS_SHA1_WITH_RSA -> "SHA1withRSA"
+        JwsAlgorithm.HS384 -> TODO()
+        JwsAlgorithm.HS512 -> TODO()
+        JwsAlgorithm.PS256 -> TODO()
+        JwsAlgorithm.PS384 -> TODO()
+        JwsAlgorithm.PS512 -> TODO()
     }
 
 val Digest.jcaName

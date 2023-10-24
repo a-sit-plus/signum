@@ -17,20 +17,21 @@ enum class CoseAlgorithm(val value: Int) {
     ES384(-35),
     ES512(-36),
 
+    //TODO: does it belong here?
     // HMAC-size with SHA-size
-    HS256(-7),
-    HS384(-35),
-    HS512(-36),
+    HS256(5),
+    HS384(6),
+    HS512(7),
 
     // RSASSA-PSS with SHA-size
-    PS256(-7),
-    PS384(-35),
-    PS512(-36),
+    PS256(-37),
+    PS384(-38),
+    PS512(-39),
 
     // RSASSA-PKCS1-v1_5 with SHA-size
-    RS256(-7),
-    RS384(-35),
-    RS512(-36);
+    RS256(-257),
+    RS384(-258),
+    RS512(-259);
 
     fun toJwsAlgorithm() = when(this) {
         ES256 -> JwsAlgorithm.ES256

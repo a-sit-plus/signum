@@ -28,7 +28,11 @@ kotlin {
 
         val jvmMain by getting
 
-        val commonTest by getting
+        val commonTest by getting {
+            dependencies {
+                implementation(kotlin("reflect"))
+            }
+        }
         val jvmTest by getting
     }
 }
