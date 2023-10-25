@@ -23,8 +23,8 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
     ES512("ES512", KnownOIDs.ecdsaWithSHA512),
     // TODO check OID
     HS256("HS256", KnownOIDs.hmacWithSHA256),
-    HS384("HS384", KnownOIDs.sha384WithRSAEncryption),
-    HS512("HS512", KnownOIDs.sha512WithRSAEncryption),
+    HS384("HS384", KnownOIDs.hmacWithSHA384),
+    HS512("HS512", KnownOIDs.hmacWithSHA512),
     // TODO check OID
     PS256("PS256", KnownOIDs.sha256WithRSAEncryption),
     PS384("PS384", KnownOIDs.sha384WithRSAEncryption),

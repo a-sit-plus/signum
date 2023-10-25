@@ -254,18 +254,6 @@ data class CoseKey(
             x: ByteArray,
             y: ByteArray
         ): CoseKey? {
-//            if (type != CoseKeyType.EC2 || curve != CoseEllipticCurve.P256) {
-//                return null
-//            }
-//            val keyId = MultibaseHelper.calcKeyId(curve.toJwkCurve(), x, y)
-//            return CoseKey(
-//                type = type,
-//                keyId = keyId.encodeToByteArray(),
-//                algorithm = CoseAlgorithm.ES256,
-//                curve = curve,
-//                x = x,
-//                y = y
-//            )
             return fromCoordinates(curve, x, y)
         }
 
