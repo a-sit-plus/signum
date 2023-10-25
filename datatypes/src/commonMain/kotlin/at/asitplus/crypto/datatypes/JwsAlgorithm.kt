@@ -17,19 +17,19 @@ import kotlinx.serialization.encoding.Encoder
 enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifier) : Asn1Encodable<Asn1Sequence>,
     Identifiable {
 
-    // TODO double-check OID
     ES256("ES256", KnownOIDs.ecdsaWithSHA256),
     ES384("ES384", KnownOIDs.ecdsaWithSHA384),
     ES512("ES512", KnownOIDs.ecdsaWithSHA512),
-    // TODO check OID
+
     HS256("HS256", KnownOIDs.hmacWithSHA256),
     HS384("HS384", KnownOIDs.hmacWithSHA384),
     HS512("HS512", KnownOIDs.hmacWithSHA512),
+
     // TODO check OID
     PS256("PS256", KnownOIDs.sha256WithRSAEncryption),
     PS384("PS384", KnownOIDs.sha384WithRSAEncryption),
     PS512("PS512", KnownOIDs.sha512WithRSAEncryption),
-    // TODO check OID
+
     RS256("RS256", KnownOIDs.sha256WithRSAEncryption),
     RS384("RS384", KnownOIDs.sha384WithRSAEncryption),
     RS512("RS512", KnownOIDs.sha512WithRSAEncryption),
@@ -41,12 +41,13 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
 
     val signatureValueLength
         get() = when (this) {
-            ES256 -> 256 / 8
-            ES384 -> 384 / 8
-            ES512 -> 512 / 8
+            ES256 -> 256 / 8 * 2
+            ES384 -> 384 / 8 * 2
+            ES512 -> 512 / 8 * 2
             HS256 -> 256 / 8
-            else -> -1 //TODO("RS has no fixed size") TODO("HS and PS")
-
+            HS384 -> 384 / 8
+            HS512 -> 512 / 8
+            else -> -1 // RSA signatures do not have a fixed size
         }
 
     override fun encodeToTlv() = when (this) {

@@ -513,7 +513,6 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                     )
                 else if (label == labels["n/crv"]) {
                     when (type) {
-                        CoseKeyType.OKP -> TODO()
                         CoseKeyType.EC2 -> {
                             val deser = CoseEllipticCurveSerializer
                             crv = decodeNullableSerializableElement(deser.descriptor, index, deser)
@@ -525,7 +524,6 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                         }
 
                         CoseKeyType.SYMMETRIC -> TODO()
-                        CoseKeyType.RESERVED -> TODO()
                         null -> TODO()
                     }
 
@@ -542,7 +540,6 @@ object CoseKeySerializer : KSerializer<CoseKey> {
 
         }
         return when (type) {
-            CoseKeyType.OKP -> TODO()
             CoseKeyType.EC2 -> {
                 CoseEcKeySerialContainer(type, keyId, alg, keyOps, baseIv, crv, xOrE, y, d).toCoseKey()
             }
@@ -552,7 +549,6 @@ object CoseKeySerializer : KSerializer<CoseKey> {
             }
 
             CoseKeyType.SYMMETRIC -> TODO()
-            CoseKeyType.RESERVED -> TODO()
         }
     }
 

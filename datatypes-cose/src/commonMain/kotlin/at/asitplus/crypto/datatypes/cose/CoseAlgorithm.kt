@@ -17,7 +17,6 @@ enum class CoseAlgorithm(val value: Int) {
     ES384(-35),
     ES512(-36),
 
-    //TODO: does it belong here?
     // HMAC-size with SHA-size
     HS256(5),
     HS384(6),
@@ -53,10 +52,13 @@ enum class CoseAlgorithm(val value: Int) {
 
     val signatureValueLength
         get() = when (this) {
-            ES256 -> 256 / 8
-            ES384 -> 384 / 8
-            ES512 -> 512 / 8
-            else -> -1 // TODO RSA non fixed sig length, but rest needs to be added
+            ES256 -> 256 / 8 * 2
+            ES384 -> 384 / 8 * 2
+            ES512 -> 512 / 8 * 2
+            HS256 -> 256 / 8
+            HS384 -> 384 / 8
+            HS512 -> 512 / 8
+            else -> -1 // RSA signatures do not have a fixed size
         }
 }
 
