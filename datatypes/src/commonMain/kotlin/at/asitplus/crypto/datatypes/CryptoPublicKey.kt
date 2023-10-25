@@ -36,31 +36,26 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
     override fun encodeToTlv() = when (this) {
         is Ec -> asn1Sequence {
             sequence {
-                oid { oid }
-                oid { curve.oid }
+                append(oid)
+                append(curve.oid)
             }
-            bitString {
-                (byteArrayOf(BERTags.OCTET_STRING.toByte()) + x.ensureSize(curve.coordinateLengthBytes) + y.ensureSize(
-                    curve.coordinateLengthBytes
-                ))
-            }
+            bitString(
+                byteArrayOf(
+                    0x04,
+                    *(x.ensureSize(curve.coordinateLengthBytes)),
+                    *y.ensureSize(curve.coordinateLengthBytes)
+                )
+            )
+
         }
 
         is Rsa -> {
             asn1Sequence {
                 sequence {
-                    oid { oid }
+                    append(oid)
                     asn1null()
                 }
-                bitString(asn1Sequence {
-                    append {
-                        Asn1Primitive(
-                            BERTags.INTEGER,
-                            n.ensureSize(bits.number / 8u)
-                                .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
-                    }
-                    int { e }
-                })
+                bitString(iosEncoded)
             }
         }
     }
@@ -90,7 +85,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                         ?: throw IllegalArgumentException("Curve not supported: $curveOid")
 
                     val bitString = (src.nextChild() as Asn1Primitive).readBitString()
-                    val xAndY = bitString.drop(1).toByteArray()
+                    if(bitString.rawBytes.first()!= Ec.ANSI_PREFIX) throw IllegalArgumentException("EC key not prefixed with 0x04")
+                    val xAndY = bitString.rawBytes.drop(1)
                     val coordLen = curve.coordinateLengthBytes.toInt()
                     val x = xAndY.take(coordLen).toByteArray()
                     val y = xAndY.drop(coordLen).take(coordLen).toByteArray()
@@ -100,7 +96,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                 Rsa.oid -> {
                     (keyInfo.nextChild() as Asn1Primitive).readNull()
                     val bitString = (src.nextChild() as Asn1Primitive).readBitString()
-                    val rsaSequence = Asn1Element.parse(bitString) as Asn1Sequence
+                    val rsaSequence = Asn1Element.parse(bitString.rawBytes) as Asn1Sequence
                     val n = (rsaSequence.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
                     val e = (rsaSequence.nextChild() as Asn1Primitive).readInt()
                     if (rsaSequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous data in SPKI!")
@@ -116,9 +112,9 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          * Parses this key from an iOS-encoded one
          */
         fun fromIosEncoded(it: ByteArray): CryptoPublicKey =
-            when (it[0].toInt()) {
-                0x04 -> Ec.fromAnsiX963Bytes(it)
-                DERTags.DER_SEQUENCE.toInt() -> Rsa.fromPKCS1encoded(it)
+            when (it[0].toUByte()) {
+                Ec.ANSI_PREFIX.toUByte() -> Ec.fromAnsiX963Bytes(it)
+                DERTags.DER_SEQUENCE -> Rsa.fromPKCS1encoded(it)
                 else -> throw IllegalArgumentException("Unsupported Key type")
             }
     }
@@ -144,10 +140,15 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         val e: Int,
     ) : CryptoPublicKey() {
 
-        private constructor(triple: Triple<ByteArray, Int, Size>) : this(
-            triple.third,
-            triple.first,
-            triple.second
+        init {
+            val computed = Size.of(n)
+            if (bits != computed) throw IllegalArgumentException("Provided number of bits (${bits.number}) does not match computed number of bits (${computed.number})")
+        }
+
+        private constructor(params: RsaParams) : this(
+            params.size,
+            params.n,
+            params.e
         )
 
         constructor(n: ByteArray, e: Int) : this(sanitizeRsaInputs(n, e))
@@ -185,12 +186,12 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          */
         @Transient
         override val iosEncoded = asn1Sequence {
-            append {
+            append(
                 Asn1Primitive(BERTags.INTEGER,
                     n.ensureSize(bits.number / 8u)
                         .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
-            }
-            int { e }
+            )
+            int(e)
         }.derEncoded
 
         override fun equals(other: Any?): Boolean {
@@ -262,6 +263,9 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
 
         companion object : Identifiable {
+
+            const val ANSI_PREFIX = 0x04.toByte()
+
             /**
              * Decodes a key from the provided parameters
              */
@@ -272,7 +276,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
              * Decodes a key from its ANSI X9.63 representation
              */
             fun fromAnsiX963Bytes(src: ByteArray): CryptoPublicKey {
-                if (src[0] != 0x04.toByte()) throw IllegalArgumentException("No EC key")
+                if (src[0] != ANSI_PREFIX) throw IllegalArgumentException("No EC key")
                 val curve = EcCurve.entries
                     .find { 2 * it.coordinateLengthBytes.toInt() == src.size - 1 }
                     ?: throw IllegalArgumentException("Unknown Curve")
@@ -290,14 +294,25 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          */
         @Transient
         override val iosEncoded =
-            curve.coordinateLengthBytes.let { byteArrayOf(0x04.toByte()) + x.ensureSize(it) + y.ensureSize(it) }
+            curve.coordinateLengthBytes.let { byteArrayOf(ANSI_PREFIX, *(x.ensureSize(it)), *(y.ensureSize(it))) }
 
         @Transient
         override val keyId = MultibaseHelper.calcKeyId(curve, x, y)
     }
 }
 
-private fun sanitizeRsaInputs(n: ByteArray, e: Int) = n.dropWhile { it == 0.toByte() }.toByteArray()
-    .let { Triple(byteArrayOf(0, *it), e, CryptoPublicKey.Rsa.Size.of(it)) }
 
-fun Asn1TreeBuilder.subjectPublicKey(block: () -> CryptoPublicKey) = apply { elements += block().encodeToTlv() }
+//Helper typealias, for helper sanitization function. Enables passing all params along constructors for constructor chaining
+private typealias RsaParams = Triple<ByteArray, Int, CryptoPublicKey.Rsa.Size>
+
+private val RsaParams.n get() = first
+private val RsaParams.e get() = second
+private val RsaParams.size get() = third
+
+/**
+ * Sanitizes RSA parameters and maps it to the correct [CryptoPublicKey.Rsa.Size] enum
+ * This function lives here and returns a typealiased Triple to allow for constructor chaining.
+ * If we were to change the primary constructor, we'd need to write a custom serializer
+ */
+private fun sanitizeRsaInputs(n: ByteArray, e: Int): RsaParams = n.dropWhile { it == 0.toByte() }.toByteArray()
+    .let { Triple(byteArrayOf(0, *it), e, CryptoPublicKey.Rsa.Size.of(it)) }

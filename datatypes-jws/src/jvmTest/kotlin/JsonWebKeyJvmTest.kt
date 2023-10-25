@@ -53,30 +53,6 @@ class JsonWebKeyJvmTest : FreeSpec({
         }
     }
 
-    //Todo move to CryptoPublicKeyTest
-//    "JWK can be created from ANSI X962" - {
-//        val xFromBc = (keyPair.public as ECPublicKey).w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
-//        val yFromBc = (keyPair.public as ECPublicKey).w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
-//        val ansiX962 = byteArrayOf(0x04) + xFromBc + yFromBc
-//        val jsonWebKey = CryptoPublicKey.Ec.fromAnsiX963Bytes(ansiX962)!!.toJsonWebKey()
-//
-//        jsonWebKey.shouldNotBeNull()
-//        jsonWebKey.x shouldBe xFromBc
-//        jsonWebKey.y shouldBe yFromBc
-//        jsonWebKey.keyId.shouldNotBeNull()
-//        jsonWebKey.keyId shouldHaveMinLength 32
-//        jsonWebKey.toAnsiX963ByteArray().getOrThrow() shouldBe ansiX962
-//
-//        "it can be recreated" {
-//            val recreatedJwk = JsonWebKey.fromKeyId(jsonWebKey.keyId!!)
-//            recreatedJwk.shouldNotBeNull()
-//            recreatedJwk.keyId shouldBe jsonWebKey.keyId
-//            recreatedJwk.x shouldBe jsonWebKey.x
-//            recreatedJwk.y shouldBe jsonWebKey.y
-//            jsonWebKey.toAnsiX963ByteArray().getOrThrow() shouldBe ansiX962
-//        }
-//    }
-
     "JWK can be created from n and e" - {
         val nFromBc = (keyPairRSA.public as RSAPublicKey).modulus.toByteArray()
         val eFromBc = (keyPairRSA.public as RSAPublicKey).publicExponent.toInt()

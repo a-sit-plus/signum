@@ -62,6 +62,7 @@ class PublicKeyTest : FreeSpec({
         }
 
     }
+
     "RSA" - {
         withData(512, 1024, 2048, 3072, 4096) { bits ->
             val keys = List<RSAPublicKey>(13000 / bits) {
@@ -81,7 +82,7 @@ class PublicKeyTest : FreeSpec({
 
                 val own = CryptoPublicKey.Rsa(pubKey.modulus.toByteArray(), pubKey.publicExponent.toInt())
                 val own1 = CryptoPublicKey.Rsa(
-                    byteArrayOf(0, 0, 0) + pubKey.modulus.toByteArray(),
+                    ByteArray((0..10).random()) { 0 } + pubKey.modulus.toByteArray(),
                     pubKey.publicExponent.toInt()
                 )
 
@@ -109,5 +110,4 @@ class PublicKeyTest : FreeSpec({
             pubKey1 shouldBe pubKey2
         }
     }
-
 })

@@ -14,6 +14,8 @@ import kotlinx.serialization.encodeToString
 /**
  * Content of a JWT (JsonWebToken), with many optional keys,
  * since no claim is strongly required.
+ *
+ * See [RFC 7519](https://datatracker.ietf.org/doc/html/rfc7519)
  */
 @Serializable
 data class JsonWebToken(

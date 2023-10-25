@@ -59,6 +59,8 @@ object DERTags {
     val DER_SET: UByte = BERTags.CONSTRUCTED or BERTags.SET
     fun UByte.toExplicitTag() = BERTags.CONSTRUCTED or BERTags.TAGGED or this
 
+    val UByte.isExplicitTag get() = ((this and BERTags.CONSTRUCTED) != 0.toUByte()) && ((this and BERTags.TAGGED) != 0.toUByte())
+
     fun UInt.toExplicitTag() = toUByte().toExplicitTag()
     fun UInt.toImplicitTag() = toUByte().toImplicitTag()
     fun UByte.toImplicitTag() =

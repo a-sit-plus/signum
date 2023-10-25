@@ -2,7 +2,6 @@ package at.asitplus.crypto.datatypes.io
 
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.EcCurve
-import at.asitplus.crypto.datatypes.asn1.decodeFromDer
 import at.asitplus.crypto.datatypes.asn1.ensureSize
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.base64.Base64ConfigBuilder
@@ -79,11 +78,10 @@ object MultibaseHelper {
 
     private fun multibaseWrapBase64(it: ByteArray) = "m${it.encodeToString(Base64Strict)}"
 
-    // 0x1200 would be with compression, so we'll use 0x1290
-    private fun multicodecWrapEC(it: ByteArray) = byteArrayOf(0x12.toByte(), 0x90.toByte()) + it
+    private fun multicodecWrapRSA(it: ByteArray) = byteArrayOf(0x12.toByte(), 0x05.toByte()) + it
 
     // 0x1200 would be with compression, so we'll use 0x1290
-    private fun multicodecWrapRSA(it: ByteArray) = byteArrayOf(0x12.toByte(), 0x05.toByte()) + it
+    private fun multicodecWrapEC(it: ByteArray) = byteArrayOf(0x12.toByte(), 0x90.toByte()) + it
 
     // No compression, because decompression would need some EC math
     private fun encodeEcKey(x: ByteArray, y: ByteArray, curve: EcCurve) =
@@ -126,7 +124,7 @@ object MultibaseHelper {
         } else null
 
     private fun decodeEcKey(it: ByteArray?): CryptoPublicKey? {
-        val test = it?.let { bytes -> byteArrayOf(0x04.toByte(), *bytes) }
+        val test = it?.let { bytes -> byteArrayOf(CryptoPublicKey.Ec.ANSI_PREFIX, *bytes) }
         return if (test != null) CryptoPublicKey.Ec.fromAnsiX963Bytes(test) else null
     }
 

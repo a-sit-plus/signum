@@ -45,3 +45,7 @@ To publish locally for testing, one can skip the signing tasks:
 ```shell
 ./gradlew clean publishToMavenLocal -x signJvmPublication -x signKotlinMultiplatformPublication -x signIosArm64Publication -x signIosSimulatorArm64Publication -x signIosX64Publication
 ```
+
+## Creating a new release
+
+Create a release branch and do the usual commits, i.e. setting the version number and so on. Push it to Github. Run the workflow "Build iOS Framework", and attach the artefacts to the release info page on GitHub. Use the link from there to update the [Swift Package](https://github.com/a-sit-plus/swift-package-kmp-crypto), modifying `Package.swift` and entering the URLs. The checksum is the output of `sha256sum *framework.zip`.

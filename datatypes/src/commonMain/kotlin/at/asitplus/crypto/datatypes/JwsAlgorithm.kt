@@ -16,6 +16,7 @@ import kotlinx.serialization.encoding.Encoder
 @Serializable(with = JwsAlgorithmSerializer::class)
 enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifier) : Asn1Encodable<Asn1Sequence>,
     Identifiable {
+
     // TODO double-check OID
     ES256("ES256", KnownOIDs.ecdsaWithSHA256),
     ES384("ES384", KnownOIDs.ecdsaWithSHA384),
@@ -49,9 +50,9 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
         }
 
     override fun encodeToTlv() = when (this) {
-        ES256 -> asn1Sequence { oid { oid } }
-        ES384 -> asn1Sequence { oid { oid } }
-        ES512 -> asn1Sequence { oid { oid } }
+        ES256 -> asn1Sequence { append(oid) }
+        ES384 -> asn1Sequence { append(oid) }
+        ES512 -> asn1Sequence { append(oid) }
 
         HS256 -> TODO()//throw IllegalArgumentException("sigAlg: $this")
         HS384 -> TODO()
@@ -62,22 +63,22 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
         PS512 -> TODO()
 
         RS256 -> asn1Sequence {
-            oid { oid }
+            append(oid) 
             asn1null()
         }
 
         RS384 -> asn1Sequence {
-            oid { oid }
+            append(oid) 
             asn1null()
         }
 
         RS512 -> asn1Sequence {
-            oid { oid }
+            append(oid) 
             asn1null()
         }
 
         NON_JWS_SHA1_WITH_RSA -> asn1Sequence {
-            oid { oid }
+            append(oid) 
             asn1null()
         }
     }
@@ -104,9 +105,6 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
         }
     }
 }
-
-
-fun Asn1TreeBuilder.sigAlg(block: () -> JwsAlgorithm) = apply { elements += block().encodeToTlv() }
 
 object JwsAlgorithmSerializer : KSerializer<JwsAlgorithm> {
 

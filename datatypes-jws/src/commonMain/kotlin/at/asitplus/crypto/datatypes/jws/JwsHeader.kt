@@ -18,6 +18,8 @@ import kotlinx.serialization.encodeToString
 
 /**
  * Header of a [JwsSigned].
+ *
+ * See [RFC 7515](https://datatracker.ietf.org/doc/html/rfc7515#section-4)
  */
 @Serializable
 data class JwsHeader(

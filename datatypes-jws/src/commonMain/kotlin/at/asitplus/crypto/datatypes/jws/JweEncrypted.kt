@@ -10,6 +10,8 @@ import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
  * Representation of an encrypted JSON Web Encryption object, consisting of its 5 parts: Header, encrypted key,
  * IV, ciphertext, authentication tag.
  *
+ * See [RFC 7516](https://datatracker.ietf.org/doc/html/rfc7516)
+ *
  * @see [JweDecrypted]
  */
 data class JweEncrypted(

@@ -5,6 +5,8 @@ import at.asitplus.crypto.datatypes.jws.JweHeader
 /**
  * Representation of a decrypted JSON Web Encryption object, i.e. header and payload.
  *
+ * See [RFC 7516](https://datatracker.ietf.org/doc/html/rfc7516)
+ *
  * @see [JweEncrypted]
  */
 data class JweDecrypted(

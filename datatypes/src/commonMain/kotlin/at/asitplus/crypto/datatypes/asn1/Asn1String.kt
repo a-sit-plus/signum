@@ -22,7 +22,7 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
     }
 
     /**
-     * UNIVERSAL STIRNG (unchecked)
+     * UNIVERSAL STRING (unchecked)
      */
     @Serializable
     @SerialName("UniversalString")

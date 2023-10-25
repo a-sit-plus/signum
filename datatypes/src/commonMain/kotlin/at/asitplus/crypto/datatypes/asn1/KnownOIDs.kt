@@ -781,9 +781,12 @@ object KnownOIDs {
     val `extendedCertificateAttributes` = ObjectIdentifier("1 2 840 113549 1 9 9")
     val `issuerAndSerialNumber` = ObjectIdentifier("1 2 840 113549 1 9 10")
     val `passwordCheck` = ObjectIdentifier("1 2 840 113549 1 9 11")
+    */
     val `publicKey` = ObjectIdentifier("1 2 840 113549 1 9 12")
     val `signingDescription` = ObjectIdentifier("1 2 840 113549 1 9 13")
     val `extensionRequest` = ObjectIdentifier("1 2 840 113549 1 9 14")
+
+    /*
     val `sMIMECapabilities` = ObjectIdentifier("1 2 840 113549 1 9 15")
     val `preferSignedData` = ObjectIdentifier("1 2 840 113549 1 9 15 1")
     val `canNotDecryptAny` = ObjectIdentifier("1 2 840 113549 1 9 15 2")

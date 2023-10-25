@@ -15,6 +15,9 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okio.ByteString.Companion.toByteString
 
+/**
+ * JSON Web Key as per [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517#section-4)
+ */
 @Serializable
 data class JsonWebKey(
     @SerialName("crv")
@@ -113,32 +116,15 @@ data class JsonWebKey(
     }
 
     override fun toString() =
-        when (type) {
-            JwkType.EC -> "JsonWebKey(" +
-                    "type=$type, " +
-                    "curve=$curve, " +
-                    "keyId=$keyId," +
-                    "x=${x?.encodeToString(Base64Strict)}," +
-                    "y=${y?.encodeToString(Base64Strict)}" +
-                    ")"
-
-            JwkType.RSA -> "JsonWebKey(" +
-                    "type=$type, " +
-                    "keyId=$keyId," +
-                    "n=${n?.encodeToString(Base64Strict)})" +
-                    "e=${e?.encodeToString(Base64Strict)}" +
-                    ")"
-
-            null -> "JsonWebKey(" +
-                    "type=$type, " +
-                    "curve=$curve, " +
-                    "keyId=$keyId," +
-                    "x=${x?.encodeToString(Base64Strict)}," +
-                    "y=${y?.encodeToString(Base64Strict)}" +
-                    "n=${n?.encodeToString(Base64Strict)})" +
-                    "e=${e?.encodeToString(Base64Strict)}" +
-                    ")"
-        }
+        "JsonWebKey(" +
+                "type=$type, " +
+                "curve=$curve, " +
+                "keyId=$keyId," +
+                "x=${x?.encodeToString(Base64Strict)}," +
+                "y=${y?.encodeToString(Base64Strict)}" +
+                "n=${n?.encodeToString(Base64Strict)})" +
+                "e=${e?.encodeToString(Base64Strict)}" +
+                ")"
 
     fun toCryptoPublicKey(): CryptoPublicKey? =
         when (type) {
@@ -153,19 +139,22 @@ data class JsonWebKey(
             }
 
             JwkType.RSA -> {
-                this.n?.let {
+                this.let {
                     CryptoPublicKey.Rsa(
-                        n = it,
+                        n = n ?: return null,
                         e = e?.let { bytes -> Int.decodeFromDer(bytes) } ?: return null
                     )
                 }
             }
 
             else -> null
-        }
+        }?.apply { jwkId = identifier }
 
 }
 
+/**
+ * Converts a [CryptoPublicKey] to a [JsonWebKey]
+ */
 fun CryptoPublicKey.toJsonWebKey(): JsonWebKey =
     when (this) {
         is CryptoPublicKey.Ec ->
@@ -187,6 +176,10 @@ fun CryptoPublicKey.toJsonWebKey(): JsonWebKey =
     }
 
 private const val JWK_ID = "jwkIdentifier"
+
+/**
+ * Holds [JsonWebKey.keyId] when transforming a [JsonWebKey] to a [CryptoPublicKey]
+ */
 var CryptoPublicKey.jwkId: String
     get() = additionalProperties[JWK_ID] ?: keyId
     set(value) {
