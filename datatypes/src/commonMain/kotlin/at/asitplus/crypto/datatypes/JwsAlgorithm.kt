@@ -144,18 +144,13 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
 
 
             return sigAlg.let {
-                if (it == KnownOIDs.`sha-256`) PS256.also { if (saltLen != 256 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
-                else if (it == KnownOIDs.`sha-384`) PS384.also {
-                    if (saltLen != 384 / 8) throw IllegalArgumentException(
-                        "Non-recommended salt length used: $saltLen"
-                    )
+                when (it) {
+                    KnownOIDs.`sha-256` -> PS256.also { if (saltLen != 256 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
+                    KnownOIDs.`sha-384` -> PS384.also { if (saltLen != 384 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
+                    KnownOIDs.`sha-512` -> PS512.also { if (saltLen != 512 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
+
+                    else -> throw IllegalArgumentException("Unsupported OID: $it")
                 }
-                else if (it == KnownOIDs.`sha-512`) PS512.also {
-                    if (saltLen != 512 / 8) throw IllegalArgumentException(
-                        "Non-recommended salt length used: $saltLen"
-                    )
-                }
-                else throw IllegalArgumentException("Unsupported OID: $it")
             }
         }
     }

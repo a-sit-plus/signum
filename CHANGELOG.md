@@ -16,3 +16,7 @@
  * Initial pretty-printing of ASN.1 Strucutres
  * Massive ASN.1 builder DSL streamlining
  * More convenient explicit tagging
+
+### 2.1.0
+* COSE Support
+* Full RSA and HMAC Support
