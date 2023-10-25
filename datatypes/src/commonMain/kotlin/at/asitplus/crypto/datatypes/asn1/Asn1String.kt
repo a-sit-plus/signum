@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 //TODO auto-sanitize and/or reduce
 /**
- * ASN.! String class used as wrapper do discrimante between different ASN.1 string types
+ * ASN.! String class used as wrapper do discriminate between different ASN.1 string types
  */
 @Serializable
 sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
