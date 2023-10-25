@@ -240,7 +240,7 @@ data class CoseKey(
         fun fromPKCS1encoded(input: ByteArray, algorithm: CoseAlgorithm? = null): CoseKey? =
             CryptoPublicKey.Rsa.fromPKCS1encoded(input).toCoseKey(algorithm)
 
-        @Deprecated("Use CryptoPublicKey.fromAnsiX963Bytes instead!")
+        @Deprecated("Use function [fromAnsiX963Bytes] above instead!")
         fun fromAnsiX963Bytes(type: CoseKeyType, curve: CoseEllipticCurve, it: ByteArray) =
             if (type == CoseKeyType.EC2 && curve == CoseEllipticCurve.P256) {
                 val pubKey = CryptoPublicKey.Ec.fromAnsiX963Bytes(it)
