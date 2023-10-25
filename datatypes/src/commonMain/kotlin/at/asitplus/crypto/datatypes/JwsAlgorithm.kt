@@ -83,13 +83,7 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
     }
 
     override fun encodeToTlv() = when (this) {
-        ES256 -> asn1Sequence { append(oid) }
-        ES384 -> asn1Sequence { append(oid) }
-        ES512 -> asn1Sequence { append(oid) }
-
-        HS256 -> TODO()
-        HS384 -> TODO()
-        HS512 -> TODO()
+        ES256, ES384, ES512 -> asn1Sequence { append(oid) }
 
         PS256 -> encodePSSParams(256)
 
@@ -97,62 +91,33 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
 
         PS512 -> encodePSSParams(512)
 
-        RS256 -> asn1Sequence {
-            append(oid)
-            asn1null()
-        }
-
-        RS384 -> asn1Sequence {
-            append(oid)
-            asn1null()
-        }
-
-        RS512 -> asn1Sequence {
-            append(oid)
-            asn1null()
-        }
-
-        NON_JWS_SHA1_WITH_RSA -> asn1Sequence {
+        HS256, HS384, HS512,
+        RS256, RS384, RS512, NON_JWS_SHA1_WITH_RSA -> asn1Sequence {
             append(oid)
             asn1null()
         }
     }
 
     companion object : Asn1Decodable<Asn1Sequence, JwsAlgorithm> {
+
+        private fun fromOid(oid: ObjectIdentifier) = entries.first { it.oid == oid }
+
         override fun decodeFromTlv(src: Asn1Sequence): JwsAlgorithm {
             return when (val oid = (src.nextChild() as Asn1Primitive).readOid()) {
-                ES512.oid -> ES512
-                ES384.oid -> ES384
-                ES256.oid -> ES256
-                else -> when (oid) {
-                    NON_JWS_SHA1_WITH_RSA.oid -> NON_JWS_SHA1_WITH_RSA
-                    RS256.oid -> RS256.also {
-                        if (src.nextChild().tag != BERTags.NULL) throw IllegalArgumentException(
-                            "RSA Params not supported yet"
-                        )
-                    }
+                ES512.oid, ES384.oid, ES256.oid -> JwsAlgorithm.fromOid(oid)
 
-                    RS384.oid -> RS384.also {
-                        if (src.nextChild().tag != BERTags.NULL) throw IllegalArgumentException(
-                            "RSA Params not supported yet"
-                        )
-                    }
-
-                    RS512.oid -> RS512.also {
-                        if (src.nextChild().tag != BERTags.NULL) throw IllegalArgumentException(
-                            "RSA Params not supported yet"
-                        )
-                    }
-
-                    PS256.oid, PS384.oid, PS512.oid -> parsePssParams(src)
-
-
-                    else -> TODO("Implement remaining algorithm oid: $oid")
+                NON_JWS_SHA1_WITH_RSA.oid -> NON_JWS_SHA1_WITH_RSA
+                RS256.oid, RS384.oid, RS512.oid,
+                HS256.oid, HS384.oid, HS512.oid -> JwsAlgorithm.fromOid(oid).also {
+                    if (src.nextChild().tag != BERTags.NULL) throw IllegalArgumentException("RSA Params not allowed")
                 }
 
+                PS256.oid, PS384.oid, PS512.oid -> parsePssParams(src)
+                else -> throw IllegalArgumentException("Unsupported algorithm oid: $oid")
             }
 
         }
+
 
         private fun parsePssParams(src: Asn1Sequence): JwsAlgorithm {
             val seq = src.nextChild() as Asn1Sequence
