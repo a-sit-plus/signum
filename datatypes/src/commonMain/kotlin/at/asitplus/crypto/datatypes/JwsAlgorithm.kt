@@ -26,9 +26,9 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
     HS512("HS512", KnownOIDs.hmacWithSHA512),
 
     // TODO check OID
-    PS256("PS256", KnownOIDs.sha256WithRSAEncryption),
-    PS384("PS384", KnownOIDs.sha384WithRSAEncryption),
-    PS512("PS512", KnownOIDs.sha512WithRSAEncryption),
+    PS256("PS256", KnownOIDs.rsaPSS),
+    PS384("PS384", KnownOIDs.rsaPSS),
+    PS512("PS512", KnownOIDs.rsaPSS),
 
     RS256("RS256", KnownOIDs.sha256WithRSAEncryption),
     RS384("RS384", KnownOIDs.sha384WithRSAEncryption),
@@ -50,36 +50,70 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
             else -> -1 // RSA signatures do not have a fixed size
         }
 
+    private fun encodePSSParams(bits: Int): Asn1Sequence {
+        val shaOid = when (bits) {
+            256 -> KnownOIDs.`sha-256`
+            384 -> KnownOIDs.`sha-384`
+            512 -> KnownOIDs.`sha-512`
+            else -> TODO()
+        }
+        return asn1Sequence {
+            append(oid)
+            sequence {
+                tagged(0.toUByte()) {
+                    sequence {
+                        append(shaOid)
+                        asn1null()
+                    }
+                }
+                tagged(1.toUByte()) {
+                    sequence {
+                        append(KnownOIDs.`pkcs1-MGF`)
+                        sequence {
+                            append(shaOid)
+                            asn1null()
+                        }
+                    }
+                }
+                tagged(2.toUByte()) {
+                    int(bits / 8)
+                }
+            }
+        }
+    }
+
     override fun encodeToTlv() = when (this) {
         ES256 -> asn1Sequence { append(oid) }
         ES384 -> asn1Sequence { append(oid) }
         ES512 -> asn1Sequence { append(oid) }
 
-        HS256 -> TODO()//throw IllegalArgumentException("sigAlg: $this")
+        HS256 -> TODO()
         HS384 -> TODO()
         HS512 -> TODO()
 
-        PS256 -> TODO()
-        PS384 -> TODO()
-        PS512 -> TODO()
+        PS256 -> encodePSSParams(256)
+
+        PS384 -> encodePSSParams(384)
+
+        PS512 -> encodePSSParams(512)
 
         RS256 -> asn1Sequence {
-            append(oid) 
+            append(oid)
             asn1null()
         }
 
         RS384 -> asn1Sequence {
-            append(oid) 
+            append(oid)
             asn1null()
         }
 
         RS512 -> asn1Sequence {
-            append(oid) 
+            append(oid)
             asn1null()
         }
 
         NON_JWS_SHA1_WITH_RSA -> asn1Sequence {
-            append(oid) 
+            append(oid)
             asn1null()
         }
     }
@@ -90,18 +124,74 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
                 ES512.oid -> ES512
                 ES384.oid -> ES384
                 ES256.oid -> ES256
-                else -> {
-                    val alg = when (oid) {
-                        NON_JWS_SHA1_WITH_RSA.oid -> NON_JWS_SHA1_WITH_RSA
-                        RS256.oid -> RS256
-                        RS384.oid -> RS384
-                        RS512.oid -> RS512
-                        else -> TODO("Implement remaining algorithm oid: $oid")
+                else -> when (oid) {
+                    NON_JWS_SHA1_WITH_RSA.oid -> NON_JWS_SHA1_WITH_RSA
+                    RS256.oid -> RS256.also {
+                        if (src.nextChild().tag != BERTags.NULL) throw IllegalArgumentException(
+                            "RSA Params not supported yet"
+                        )
                     }
-                    if (src.nextChild().tag != BERTags.NULL) throw IllegalArgumentException("RSA Params not supported yet")
-                    if (src.hasMoreChildren()) throw IllegalArgumentException("Superfluous Content in Signature")
-                    alg
+
+                    RS384.oid -> RS384.also {
+                        if (src.nextChild().tag != BERTags.NULL) throw IllegalArgumentException(
+                            "RSA Params not supported yet"
+                        )
+                    }
+
+                    RS512.oid -> RS512.also {
+                        if (src.nextChild().tag != BERTags.NULL) throw IllegalArgumentException(
+                            "RSA Params not supported yet"
+                        )
+                    }
+
+                    PS256.oid, PS384.oid, PS512.oid -> parsePssParams(src)
+
+
+                    else -> TODO("Implement remaining algorithm oid: $oid")
                 }
+
+            }
+
+        }
+
+        private fun parsePssParams(src: Asn1Sequence): JwsAlgorithm {
+            val seq = src.nextChild() as Asn1Sequence
+            val first = (seq.nextChild() as Asn1Tagged).verify(0.toUByte()).single() as Asn1Sequence
+
+            val sigAlg = (first.nextChild() as Asn1Primitive).readOid()
+            if (first.nextChild().tag != BERTags.NULL) throw IllegalArgumentException(
+                "PSS Params not supported yet"
+            )
+
+            val second = (seq.nextChild() as Asn1Tagged).verify(1.toUByte()).single() as Asn1Sequence
+            val mgf = (second.nextChild() as Asn1Primitive).readOid()
+            if (mgf != KnownOIDs.`pkcs1-MGF`) throw IllegalArgumentException("Illegal OID: $mgf")
+            val inner = second.nextChild() as Asn1Sequence
+            val innerHash = (inner.nextChild() as Asn1Primitive).readOid()
+            if (innerHash != sigAlg) throw IllegalArgumentException("HashFunction mismatch! Expected: $sigAlg, is: $innerHash")
+
+            if (inner.nextChild().tag != BERTags.NULL) throw IllegalArgumentException(
+                "PSS Params not supported yet"
+            )
+
+
+            val last = (seq.nextChild() as Asn1Tagged).verify(2.toUByte()).single() as Asn1Primitive
+            val saltLen = last.readInt()
+
+
+            return sigAlg.let {
+                if (it == KnownOIDs.`sha-256`) PS256.also { if (saltLen != 256 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
+                else if (it == KnownOIDs.`sha-384`) PS384.also {
+                    if (saltLen != 384 / 8) throw IllegalArgumentException(
+                        "Non-recommended salt length used: $saltLen"
+                    )
+                }
+                else if (it == KnownOIDs.`sha-512`) PS512.also {
+                    if (saltLen != 512 / 8) throw IllegalArgumentException(
+                        "Non-recommended salt length used: $saltLen"
+                    )
+                }
+                else throw IllegalArgumentException("Unsupported OID: $it")
             }
         }
     }
