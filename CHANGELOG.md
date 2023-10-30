@@ -18,3 +18,5 @@
  * More convenient explicit tagging
 
 ### NEXT
+ * new interface `Asn1OctetString` to unify both ASN.1 OCTET STREAM classes
+ * fix broken `content` property of `Asn1EncapsulatingOctetString`
