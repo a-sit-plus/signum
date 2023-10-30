@@ -28,7 +28,7 @@ data class CoseKey(
     val algorithm: CoseAlgorithm? = null,
     val operations: Array<CoseKeyOperation>? = null,
     val baseIv: ByteArray? = null,
-    val keyParams: CoseKeyParams
+    val keyParams: CoseKeyParams?
 ) {
     override fun toString(): String {
         return "CoseKey(type=$type," +
@@ -75,9 +75,9 @@ data class CoseKey(
     }
 
     /**
-     * @return a [CryptoPublicKey] equivalent if conversion is possibl (i.e. if all key params are set)<br> or `null` in case the required key params are not contained in this COSE key (i.e. if only a `kid` is used))
+     * @return a [CryptoPublicKey] equivalent if conversion is possible (i.e. if all key params are set)<br> or `null` in case the required key params are not contained in this COSE key (i.e. if only a `kid` is used)
      */
-    fun toCryptoPublicKey() = keyParams.toCryptoPublicKey()
+    fun toCryptoPublicKey() = keyParams?.toCryptoPublicKey()
 
     fun serialize() = cborSerializer.encodeToByteArray(this)
 
@@ -158,6 +158,7 @@ var CryptoPublicKey.coseKid: String
     }
 
 
+@OptIn(ExperimentalSerializationApi::class)
 object CoseKeySerializer : KSerializer<CoseKey> {
 
     @Serializable
@@ -231,6 +232,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
         fun toCoseKey(): CoseKey
     }
 
+
     @Serializable
     private class CoseEcKeySerialContainer(
         @SerialLabel(1)
@@ -274,6 +276,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
             CoseKey(type, keyId, algorithm, operations, baseIv, CoseKeyParams.EcYByteArrayParams(curve, x, y, d))
 
     }
+
 
     @Serializable
     private class CoseRsaKeySerialContainer(
@@ -382,7 +385,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                                 n = decodeNullableSerializableElement(deser.descriptor, index, deser)
                             }
 
-                            CoseKeyType.SYMMETRIC -> TODO()
+                            CoseKeyType.SYMMETRIC -> {}
                         }
 
                     }
@@ -423,7 +426,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                 CoseRsaKeySerialContainer(type, keyId, alg, keyOps, baseIv, n, xOrE, d).toCoseKey()
             }
 
-            CoseKeyType.SYMMETRIC -> TODO()
+            CoseKeyType.SYMMETRIC -> CoseKey(type, keyId, alg, keyOps, keyParams = null)
         }
     }
 
