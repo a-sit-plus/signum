@@ -76,18 +76,19 @@ data class CoseKey(
     }
 
     /**
-     * @return a [CryptoPublicKey] equivalent if conversion is possible (i.e. if all key params are set)<br> or `null` in case the required key params are not contained in this COSE key (i.e. if only a `kid` is used)
+     * @return a KmmResult wrapped [CryptoPublicKey] equivalent if conversion is possible (i.e. if all key params are set)<br> or KmmResult.Failure in case the required key params are not contained in this COSE key (i.e. if only a `kid` is used)
      */
-    fun toCryptoPublicKey() = keyParams?.toCryptoPublicKey()
+    fun toCryptoPublicKey() =
+        keyParams?.toCryptoPublicKey() ?: KmmResult.failure(IllegalArgumentException("No public key parameters!"))
 
     fun serialize() = cborSerializer.encodeToByteArray(this)
 
     companion object {
         fun deserialize(it: ByteArray) = kotlin.runCatching {
-            cborSerializer.decodeFromByteArray<CoseKey>(it)
+            KmmResult.success(cborSerializer.decodeFromByteArray<CoseKey>(it))
         }.getOrElse {
             Napier.w("deserialize failed", it)
-            null
+            KmmResult.failure(SerializationException("Deserialize failed"))
         }
 
         @Deprecated("Use [CryptoPublicKey.fromAnsiX963Bytes] and [toCoseKey] instead!")
@@ -109,8 +110,8 @@ data class CoseKey(
 }
 
 /**
- * Converts CryptoPublicKey into CoseKey
- * If [algorithm] is not set then key can be used for any algorithm with same kty (RFC 8152), returns null for invalid kty/algorithm pairs
+ * Converts CryptoPublicKey into KmmResult wrapped CoseKey
+ * If [algorithm] is not set then key can be used for any algorithm with same kty (RFC 8152), returns KmmResult.Failure for invalid kty/algorithm pairs
  */
 fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseKey> =
     when (this) {

@@ -1,5 +1,7 @@
 package at.asitplus.crypto.datatypes.cose
 
+import at.asitplus.KmmResult
+import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.asn1.decodeFromDer
 
@@ -8,7 +10,7 @@ import at.asitplus.crypto.datatypes.asn1.decodeFromDer
  */
 sealed class CoseKeyParams() {
 
-    abstract fun toCryptoPublicKey(): CryptoPublicKey?
+    abstract fun toCryptoPublicKey(): KmmResult<CryptoPublicKey>
 
     /**
      * COSE EC public key parameters **without point compression**, i.e. the y coordinate being a ByteArray.
@@ -51,12 +53,14 @@ sealed class CoseKeyParams() {
             return result
         }
 
-        override fun toCryptoPublicKey(): CryptoPublicKey? {
-            return CryptoPublicKey.Ec.fromCoordinates(
-                curve = curve?.toJwkCurve() ?: return null,
-                x = x ?: return null,
-                y = y ?: return null
-            )
+        override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> {
+            return runCatching {
+                CryptoPublicKey.Ec.fromCoordinates(
+                    curve = curve?.toJwkCurve() ?: throw IllegalArgumentException("Missing or invalid curve!"),
+                    x = x ?: throw IllegalArgumentException("Missing x-coordinate!"),
+                    y = y ?: throw IllegalArgumentException("Missing y-coordinate!")
+                )
+            }.wrap()
         }
     }
 
@@ -140,11 +144,13 @@ sealed class CoseKeyParams() {
             return result
         }
 
-        override fun toCryptoPublicKey(): CryptoPublicKey? {
-            return CryptoPublicKey.Rsa(
-                    n = n ?: return null,
-                    e = e?.let { bytes -> Int.decodeFromDer(bytes) } ?: return null
+        override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> {
+            return runCatching {
+                CryptoPublicKey.Rsa(
+                    n = n ?: throw IllegalArgumentException("Missing modulus n!"),
+                    e = e?.let { bytes -> Int.decodeFromDer(bytes) } ?: throw IllegalArgumentException("Missing or invalid exponent e!")
                 )
+            }.wrap()
         }
     }
 }
