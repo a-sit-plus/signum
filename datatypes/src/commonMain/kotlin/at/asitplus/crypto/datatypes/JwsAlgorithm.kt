@@ -38,7 +38,13 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
      */
     NON_JWS_SHA1_WITH_RSA("RS1", KnownOIDs.sha1WithRSAEncryption);
 
-    val signatureValueLength
+    /**
+     * For `ESXXX` and `HSXXX` this is the length (in bytes) of the signature value obtained when using a certain signature algorithm.
+     *
+     * `null` for RSA-based signatures with length depending on the key size (i.e. `PSXXX`, `RSXXX`, and [NON_JWS_SHA1_WITH_RSA])
+     *
+     */
+    val signatureValueLength: Int?
         get() = when (this) {
             ES256 -> 256 / 8 * 2
             ES384 -> 384 / 8 * 2
@@ -46,7 +52,7 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
             HS256 -> 256 / 8
             HS384 -> 384 / 8
             HS512 -> 512 / 8
-            else -> -1 // RSA signatures do not have a fixed size
+            else -> null
         }
 
     private fun encodePSSParams(bits: Int): Asn1Sequence {
