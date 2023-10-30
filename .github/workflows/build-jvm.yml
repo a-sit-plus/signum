@@ -26,3 +26,9 @@ jobs:
           name: datatypes-jws
           path: |
             datatypes-jws/build/libs/*jar
+      - name: Upload jar datatypes-crypto
+        uses: actions/upload-artifact@v3
+        with:
+          name: datatypes-crypto
+          path: |
+            datatypes-crypto/build/libs/*jar
