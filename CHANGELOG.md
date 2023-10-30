@@ -17,6 +17,10 @@
  * Massive ASN.1 builder DSL streamlining
  * More convenient explicit tagging
 
-### 2.1.0
+
+### NEXT
 * COSE Support
 * Full RSA and HMAC Support
+* new interface `Asn1OctetString` to unify both ASN.1 OCTET STREAM classes
+* fix broken `content` property of `Asn1EncapsulatingOctetString`
+
