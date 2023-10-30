@@ -18,8 +18,6 @@ kotlin {
             dependencies {
                 api(project(":datatypes"))
                 api(serialization("cbor"))
-                api("at.asitplus:kmmresult:${kmmresult}")
-                // implementation("com.squareup.okio:okio:${okio}")
                 implementation(napier())
                 implementation("io.matthewnelson.kotlin-components:encoding-base16:${encoding}")
                 implementation("io.matthewnelson.kotlin-components:encoding-base64:${encoding}")

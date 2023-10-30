@@ -18,7 +18,6 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(project(":datatypes"))
-                api("at.asitplus:kmmresult:${kmmresult}")
                 implementation("com.squareup.okio:okio:${okio}")
                 implementation(napier())
                 implementation("io.matthewnelson.kotlin-components:encoding-base16:${encoding}")
