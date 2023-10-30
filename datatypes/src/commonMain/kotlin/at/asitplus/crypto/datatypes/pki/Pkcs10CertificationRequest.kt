@@ -52,6 +52,7 @@ data class TbsCertificationRequest(
     }
 
     companion object : Asn1Decodable<Asn1Sequence, TbsCertificationRequest> {
+        @Throws(Throwable::class)
         override fun decodeFromTlv(src: Asn1Sequence) = runCatching {
             val version = (src.nextChild() as Asn1Primitive).readInt()
             val subject = (src.nextChild() as Asn1Sequence).children.map {
@@ -115,6 +116,7 @@ data class Pkcs10CertificationRequest(
 
     companion object : Asn1Decodable<Asn1Sequence, Pkcs10CertificationRequest> {
 
+        @Throws(Throwable::class)
         override fun decodeFromTlv(src: Asn1Sequence): Pkcs10CertificationRequest {
             val tbsCsr = TbsCertificationRequest.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val sigAlg = JwsAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)

@@ -53,8 +53,7 @@ private class Asn1Reader(input: ByteArray) {
                 runCatching {
                     result.add(Asn1EncapsulatingOctetString(Asn1Reader(tlv.content).doParse()))
                 }.getOrElse { result.add(Asn1PrimitiveOctetString(tlv.content)) }
-            }
-            else result.add(Asn1Primitive(tlv.tag, tlv.content))
+            } else result.add(Asn1Primitive(tlv.tag, tlv.content))
 
         }
         return result
@@ -81,9 +80,12 @@ private class Asn1Reader(input: ByteArray) {
  * @throws [Throwable] all sorts of exceptions on invalid input
  */
 @Throws(Throwable::class)
-fun Asn1Primitive.readInt() = decode(INTEGER) {
-    Int.decodeFromDer(it)
-}
+fun Asn1Primitive.readInt() = decode(INTEGER) { Int.decodeFromDer(it) }
+
+/**
+ * Exception-free version of [readInt]
+ */
+fun Asn1Primitive.readIntOrNull() = runCatching { readInt() }.getOrNull()
 
 
 /**
@@ -92,9 +94,12 @@ fun Asn1Primitive.readInt() = decode(INTEGER) {
  * @throws [Throwable] all sorts of exceptions on invalid input
  */
 @Throws(Throwable::class)
-fun Asn1Primitive.readLong() = decode(INTEGER) {
-    Long.decodeFromDer(it)
-}
+fun Asn1Primitive.readLong() = decode(INTEGER) { Long.decodeFromDer(it) }
+
+/**
+ * Exception-free version of [readLong]
+ */
+fun Asn1Primitive.readLongOrNull() = runCatching { readLong() }.getOrNull()
 
 
 /**
@@ -116,6 +121,12 @@ fun Asn1Primitive.readString(): Asn1String =
 
 
 /**
+ * Exception-free version of [readString]
+ */
+fun Asn1Primitive.readStringOrNull() = runCatching { readString() }.getOrNull()
+
+
+/**
  * decodes this [Asn1Primitive]'s content into an [Instant] if it is encoded as UTC TIME or GENERALIZED TIME
  *
  * @throws [Throwable] all sorts of exceptions on invalid input
@@ -126,6 +137,11 @@ fun Asn1Primitive.readInstant() =
     else if (tag == GENERALIZED_TIME) decode(GENERALIZED_TIME, Instant.Companion::decodeGeneralizedTimeFromDer)
     else TODO("Support time tag $tag")
 
+/**
+ * Exception-free version of [readInstant]
+ */
+fun Asn1Primitive.readInstantOrNull() = runCatching { readInstant() }.getOrNull()
+
 
 /**
  * decodes this [Asn1Primitive]'s content into an [ByteArray], assuming it was encoded as BIT STRING
@@ -134,6 +150,11 @@ fun Asn1Primitive.readInstant() =
  */
 @Throws(Throwable::class)
 fun Asn1Primitive.readBitString() = Asn1BitString.decodeFromTlv(this)
+
+/**
+ * Exception-free version of [readBitString]
+ */
+fun Asn1Primitive.readBitStringOrNull() = runCatching { readBitString() }.getOrNull()
 
 
 /**
@@ -145,23 +166,43 @@ fun Asn1Primitive.readBitString() = Asn1BitString.decodeFromTlv(this)
 fun Asn1Primitive.readNull() = decode(NULL) {}
 
 /**
+ * Name seems odd, but this is just an exception-free version of [readNull]
+ */
+fun Asn1Primitive.readNullOrNull() = runCatching { readNull() }.getOrNull()
+
+
+/**
  * Returns this [Asn1Tagged] children, if its tag matches [tag]
  *
  * @throws [Throwable] all sorts of exceptions on invalid input
  */
+@Throws(Throwable::class)
 fun Asn1Tagged.verify(tag: UByte): List<Asn1Element> {
     if (this.tag != tag.toExplicitTag()) throw IllegalArgumentException("Tag ${this.tag} does not match expected tag ${tag.toExplicitTag()}")
     return this.children
 }
 
 /**
- * Geneeric decoding function. Verifies that this [Asn1Primitive]'s tag matches [tag]
- * and transforms its content as per [transform]
+ * Exception-free version of [verify]
  */
+fun Asn1Tagged.verifyOrNull(tag: UByte) = runCatching { verify(tag) }.getOrNull()
+
+
+/**
+ * Generic decoding function. Verifies that this [Asn1Primitive]'s tag matches [tag]
+ * and transforms its content as per [transform]
+ * @throws [Throwable] all sorts of exceptions on invalid input
+ */
+@Throws(IllegalArgumentException::class)
 inline fun <reified T> Asn1Primitive.decode(tag: UByte, transform: (content: ByteArray) -> T) = runCatching {
     if (tag != this.tag) throw IllegalArgumentException("Tag mismatch. Expected: $tag, is: ${this.tag}")
     transform(content)
 }.getOrElse { if (it is IllegalArgumentException) throw it else throw IllegalArgumentException(it) }
+
+/**
+ * Exception-free version of [decode]
+ */
+inline fun <reified T> Asn1Primitive.decodeOrNull(tag: UByte, transform: (content: ByteArray) -> T) = runCatching { decode(tag,transform) }.getOrNull()
 
 @Throws(IllegalArgumentException::class)
 private fun Instant.Companion.decodeUtcTimeFromDer(input: ByteArray): Instant = runCatching {
@@ -193,12 +234,13 @@ private fun Instant.Companion.decodeGeneralizedTimeFromDer(input: ByteArray): In
     return parse(isoString)
 }.getOrElse { throw IllegalArgumentException(it) }
 
-fun Int.Companion.decodeFromDer(input: ByteArray): Int {
+@Throws(IllegalArgumentException::class)
+internal fun Int.Companion.decodeFromDer(input: ByteArray): Int {
     return Long.decodeFromDer(input).toInt()
 }
 
 @Throws(IllegalArgumentException::class)
-fun Long.Companion.decodeFromDer(bytes: ByteArray): Long {
+internal fun Long.Companion.decodeFromDer(bytes: ByteArray): Long {
     val input = if (bytes.size == 8) bytes else {
         if (bytes.size > 9) throw IllegalArgumentException("Absolute value too large!")
         val padding = if (bytes.first() and 0x80.toByte() != 0.toByte()) 0xFF.toByte() else 0x00.toByte()

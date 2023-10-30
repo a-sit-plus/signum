@@ -37,6 +37,7 @@ data class X509CertificateExtension private constructor(
 
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
 
+        @Throws(Throwable::class)
         override fun decodeFromTlv(src: Asn1Sequence): X509CertificateExtension {
 
             val id = (src.children[0] as Asn1Primitive).readOid()

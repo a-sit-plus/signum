@@ -75,6 +75,7 @@ data class TbsCertificate(
     }
 
     companion object : Asn1Decodable<Asn1Sequence, TbsCertificate> {
+        @Throws(Throwable::class)
         override fun decodeFromTlv(src: Asn1Sequence) = runCatching {
             //TODO make sure to always check for superfluous data
             val version = src.nextChild().let {
@@ -178,6 +179,7 @@ data class X509Certificate(
 
     companion object : Asn1Decodable<Asn1Sequence, X509Certificate> {
 
+        @Throws(Throwable::class)
         override fun decodeFromTlv(src: Asn1Sequence): X509Certificate {
             val tbs = TbsCertificate.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val sigAlg = JwsAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)

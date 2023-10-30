@@ -178,7 +178,7 @@ class Asn1Tagged
  * @throws IllegalArgumentException is [tag] does not have [BERTags.CONSTRUCTED] and [BERTags.TAGGED] bits set
  */
 @Throws(IllegalArgumentException::class)
-constructor(tag: UByte, children: List<Asn1Element>) : Asn1Structure(tag, children) {
+internal constructor(tag: UByte, children: List<Asn1Element>) : Asn1Structure(tag, children) {
 
     init {
         if (!tag.isExplicitTag) throw IllegalArgumentException(
