@@ -106,6 +106,7 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
 
     companion object : Asn1Decodable<Asn1Sequence, JwsAlgorithm> {
 
+        @Throws(Throwable::class)
         private fun fromOid(oid: ObjectIdentifier) = entries.first { it.oid == oid }
 
         @Throws(Throwable::class)

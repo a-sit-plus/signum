@@ -168,7 +168,7 @@ class Asn1TreeBuilder {
         else Asn1Set(seq.elements.let {
             if (type == CollectionType.SET) it.sortedBy { it.tag }
             else {
-                if (it.any { elem -> elem.tag != it.first().tag }) throw IllegalArgumentException("SET_OF must only contain elements of the same tag")
+                if (it.any { elem -> elem.tag != it.first().tag }) throw IllegalArgumentException("SET OF must only contain elements of the same tag")
                 it.sortedBy { it.derEncoded.encodeToString(Base16) } //TODO this is inefficient
             }
         })
@@ -237,6 +237,8 @@ class Asn1TreeBuilder {
      *     }
      *   }
      *  ```
+     *
+     *  @throws IllegalArgumentException if children have different tags
      */
     fun setOf(init: Asn1TreeBuilder.() -> Unit) = nest(CollectionType.SET_OF, init)
 
@@ -321,6 +323,27 @@ fun asn1SetOf(root: Asn1TreeBuilder.() -> Unit): Asn1Set {
     val seq = Asn1TreeBuilder()
     seq.root()
     return Asn1Set(seq.elements)
+}
+
+/**
+ * Creates a new EXPLICITLY TAGGED ASN.1 structure as [Asn1Tagged] using [tag].
+ *
+ * * **NOTE:** automatically calls [at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag] on [tag]
+ *
+ * Use as follows:
+ *
+ * ```kotlin
+ * asn1Tagged(2u) {
+ *   printableString("World World")
+ *   asn1Null()
+ *   int(1337)
+ * }
+ *  ```
+ */
+fun asn1Tagged(tag:UByte, root: Asn1TreeBuilder.() -> Unit): Asn1Tagged {
+    val seq = Asn1TreeBuilder()
+    seq.root()
+    return Asn1Tagged(tag.toExplicitTag(),seq.elements)
 }
 
 /**

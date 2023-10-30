@@ -20,7 +20,7 @@ import kotlin.math.ceil
  */
 @ExperimentalUnsignedTypes
 @Serializable(with = ObjectIdSerializer::class)
-class ObjectIdentifier(@Transient vararg val nodes: UInt) : Asn1Encodable<Asn1Primitive> {
+class ObjectIdentifier  @Throws(IllegalArgumentException::class) constructor(@Transient vararg val nodes: UInt) : Asn1Encodable<Asn1Primitive> {
 
     init {
         if (nodes.size < 2) throw IllegalArgumentException("at least two nodes required!")
@@ -93,6 +93,7 @@ class ObjectIdentifier(@Transient vararg val nodes: UInt) : Asn1Encodable<Asn1Pr
          * @return ObjectIdentifier if decoding succeeded
          * @throws Throwable all sorts of errors on invalid input
          */
+        @Throws(Throwable::class)
         fun parse(rawValue: ByteArray): ObjectIdentifier {
             if (rawValue.isEmpty()) throw IllegalArgumentException("Empty OIDs are not supported")
             val (first, second) =

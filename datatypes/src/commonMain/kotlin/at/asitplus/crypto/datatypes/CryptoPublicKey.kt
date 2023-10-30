@@ -112,7 +112,6 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         /**
          * Parses this key from an iOS-encoded one
          */
-        @Throws(Throwable::class)
         fun fromIosEncoded(it: ByteArray): CryptoPublicKey =
             when (it[0].toUByte()) {
                 Ec.ANSI_PREFIX.toUByte() -> Ec.fromAnsiX963Bytes(it)
@@ -125,7 +124,9 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
      * RSA Public key
      */
     @Serializable
-    data class Rsa private constructor(
+    data class Rsa
+    @Throws(Throwable::class)
+    private constructor(
         /**
          * RSA key size
          */
@@ -153,6 +154,10 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             params.e
         )
 
+        /**
+         * @throws Throwable in case of illegal input (odd key size, for example)
+         */
+        @Throws(Throwable::class)
         constructor(n: ByteArray, e: Int) : this(sanitizeRsaInputs(n, e))
 
         override val oid = Rsa.oid
@@ -277,6 +282,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             /**
              * Decodes a key from the provided parameters
              */
+            @Throws(Throwable::class)
             fun fromCoordinates(curve: EcCurve, x: ByteArray, y: ByteArray): Ec =
                 Ec(curve = curve, x = x, y = y)
 

@@ -75,6 +75,7 @@ data class TbsCertificate(
     }
 
     companion object : Asn1Decodable<Asn1Sequence, TbsCertificate> {
+        @Throws(Throwable::class)
         override fun decodeFromTlv(src: Asn1Sequence) = runCatching {
             //TODO make sure to always check for superfluous data
             val version = src.nextChild().let {

@@ -68,10 +68,12 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
 
     /**
      * PRINTABLE STRING (checked)
+     * @throws IllegalArgumentException if illegal characters are provided
      */
     @Serializable
     @SerialName("PrintableString")
-    class Printable(override val value: String) : Asn1String() {
+
+    class Printable @Throws(IllegalArgumentException::class) constructor(override val value: String) : Asn1String() {
         init {
             Regex("[a-zA-Z0-9 '()+,-./:=?]*").matchEntire(value)
                 ?: throw IllegalArgumentException("Input contains invalid chars: '$value'")
@@ -82,10 +84,11 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
 
     /**
      * NUMERIC STRING (checked)
+     * @throws IllegalArgumentException if illegal characters are provided
      */
     @Serializable
     @SerialName("NumericString")
-    class Numeric(override val value: String) : Asn1String() {
+    class Numeric @Throws(IllegalArgumentException::class) constructor(override val value: String) : Asn1String() {
         init {
             Regex("[0-9 ]*").matchEntire(value)
                 ?: throw IllegalArgumentException("Input contains invalid chars: '$value'")
