@@ -1,6 +1,7 @@
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.asn1.Asn1Element
 import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
+import at.asitplus.crypto.datatypes.asn1.ensureSize
 import at.asitplus.crypto.datatypes.asn1.parse
 import at.asitplus.crypto.datatypes.fromJcaKey
 import at.asitplus.crypto.datatypes.getPublicKey
@@ -50,6 +51,16 @@ class PublicKeyTest : FreeSpec({
                 CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.derEncoded) as Asn1Sequence) shouldBe own
             }
         }
+
+        "Equality tests" {
+            val keyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair()
+            val pubKey1 = CryptoPublicKey.derDecode(keyPair.public.encoded)
+            val pubKey2 = CryptoPublicKey.derDecode(keyPair.public.encoded)
+
+            pubKey1.hashCode() shouldBe pubKey2.hashCode()
+            pubKey1 shouldBe pubKey2
+        }
+
     }
 
     "RSA" - {
@@ -89,6 +100,14 @@ class PublicKeyTest : FreeSpec({
                 CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.derEncoded) as Asn1Sequence) shouldBe own
                 own.getPublicKey().encoded shouldBe pubKey.encoded
             }
+        }
+        "Equality tests" {
+            val keyPair = KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }.genKeyPair()
+            val pubKey1 = CryptoPublicKey.derDecode(keyPair.public.encoded)
+            val pubKey2 = CryptoPublicKey.derDecode(keyPair.public.encoded)
+
+            pubKey1.hashCode() shouldBe pubKey2.hashCode()
+            pubKey1 shouldBe pubKey2
         }
     }
 })

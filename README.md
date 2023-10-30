@@ -38,10 +38,10 @@ the JVM/Android and iOS.
 
 This library consists of three modules, each of which is published on maven central:
 
-| Name           | `datatypes`                                                                                                                  | `datatypes-jws`                                                                                                                                                                                                                       | `datatypes-cose` (WIP)                                                                                                                                                                                                              |
+| Name           | `datatypes`                                                                                                                  | `datatypes-jws`                                                                                                                                                                                                                       | `datatypes-cose`                                                                                                                                                                                                                    |
 |----------------|------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | _Info_         | Base module containing the public key class (`CryptoPublicKey`), algorithm identifiers, the ASN.1 parser, X.509 certificate. | JWS/JWE/JWT module containing JWS/E/T-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. | COSE module containing all COSE/CWT-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. |
-| _Maven Coords_ | `at.asitplus.crypto:datatypes`                                                                                               | `at.asitplus.crypto:datatypes-jws`                                                                                                                                                                                                    | <!--`at.asitplus.crypto:datatypes-cose`--> (WIP; not yet released)                                                                                                                                                                  |
+| _Maven Coords_ | `at.asitplus.crypto:datatypes`                                                                                               | `at.asitplus.crypto:datatypes-jws`                                                                                                                                                                                                    | `at.asitplus.crypto:datatypes-cose`                                                                                                                                                                                                 |
 
 ### Using it in your Projects
 
@@ -49,6 +49,14 @@ Simply declare the desired dependency to get going:
 
 ```kotlin 
 implementation("at.asitplus.crypto:datatypes:$version")
+```
+
+```kotlin 
+implementation("at.asitplus.crypto:datatypes-jws:$version")
+```
+
+```kotlin 
+implementation("at.asitplus.crypto:datatypes-cose:$version")
 ```
 
 <!--
@@ -275,41 +283,41 @@ DSL, which returns an `Asn1Structure`:
 
 ```kotlin
 asn1Sequence {
-  tagged(1u) {
-    append(Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00)))
-  }
-  set {
-    sequence {
-      setOf {
-        printableString("World")
-        printableString("Hello")
-      }
-      set {
-        printableString("World")
-        printableString("Hello")
-        utf8String("!!!")
-      }
-
+    tagged(1u) {
+        append(Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00)))
     }
-  }
-  asn1null()
+    set {
+        sequence {
+            setOf {
+                printableString("World")
+                printableString("Hello")
+            }
+            set {
+                printableString("World")
+                printableString("Hello")
+                utf8String("!!!")
+            }
 
-  append(ObjectIdentifier("1.2.603.624.97"))
-
-  utf8String("Foo")
-  printableString("Bar")
-
-  set {
-    int(3)
-    long(-65789876543L)
-    bool(false)
-    bool(true)
-  }
-  sequence {
+        }
+    }
     asn1null()
-    append(Asn1String.Numeric("12345"))
-    utcTime(instant)
-  }
+
+    append(ObjectIdentifier("1.2.603.624.97"))
+
+    utf8String("Foo")
+    printableString("Bar")
+
+    set {
+        int(3)
+        long(-65789876543L)
+        bool(false)
+        bool(true)
+    }
+    sequence {
+        asn1null()
+        append(Asn1String.Numeric("12345"))
+        utcTime(instant)
+    }
 }
 ```
 
@@ -353,7 +361,7 @@ While a multiplatform crypto provider would be awesome, this sort of things also
 even entertaining the thought of implementing such functionality. It therefore not planned at the time of this writing (
 2023-10)
 
-* While the ASN.1 parser will happily parse any valid **DER-encoded** ASN.1 structure you throw at it and the encoder
+* While the ASN.1 parser will happily parse any valid **DER-encoded** ASN.1 structure you throw at it and the encoder will
   write it back correctly too. (No, we don't care for BER, since we want to transport cryptographic material)
 * Higher-level abstractions (such as `X509Certificate`) are too lenient in some aspects and
   too strict in others.
@@ -367,4 +375,3 @@ even entertaining the thought of implementing such functionality. It therefore n
 * We don't yet know how compliant everything really is, but so far it could parse and re-encode every certificate we
   threw at it without braking anything
 * Number of supported Algorithms is limited to the usual suspects (sorry, no Bernstein curves )-:)
-* The JWS and COSE modules currently only support ES256 and EC keys. This is WIP and will be done ASAP.
