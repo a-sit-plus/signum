@@ -141,12 +141,10 @@ sealed class CoseKeyParams() {
         }
 
         override fun toCryptoPublicKey(): CryptoPublicKey? {
-            return let {
-                CryptoPublicKey.Rsa(
+            return CryptoPublicKey.Rsa(
                     n = n ?: return null,
                     e = e?.let { bytes -> Int.decodeFromDer(bytes) } ?: return null
                 )
-            }
         }
     }
 }
