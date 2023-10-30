@@ -223,6 +223,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
             when (val params = src.keyParams) {
                 is CoseKeyParams.RsaParams -> params.d
                 is CoseKeyParams.EcYByteArrayParams -> params.d
+                else -> null
             },
 
             )
