@@ -9,7 +9,7 @@ plugins {
     id("at.asitplus.gradle.conventions")
 }
 
-version = "1.0-SNAPSHOT"
+version = "2.1.0-SNAPSHOT"
 
 exportIosFramework("KmpCryptoCose",  serialization("cbor"), datetime(), project(":datatypes"))
 kotlin {
