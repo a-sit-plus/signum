@@ -1,5 +1,6 @@
 package at.asitplus.crypto.datatypes.cose
 
+import at.asitplus.KmmResult
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.EcCurve
 import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
@@ -102,7 +103,7 @@ data class CoseKey(
             curve: CoseEllipticCurve,
             x: ByteArray,
             y: ByteArray
-        ): CoseKey? = CryptoPublicKey.Ec.fromCoordinates(curve.toJwkCurve(), x, y).toCoseKey()
+        ): CoseKey? = CryptoPublicKey.Ec.fromCoordinates(curve.toJwkCurve(), x, y).toCoseKey().getOrNull()
 
     }
 }
@@ -111,7 +112,7 @@ data class CoseKey(
  * Converts CryptoPublicKey into CoseKey
  * If [algorithm] is not set then key can be used for any algorithm with same kty (RFC 8152), returns null for invalid kty/algorithm pairs
  */
-fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): CoseKey? =
+fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseKey> =
     when (this) {
         is CryptoPublicKey.Ec ->
             if ((algorithm != null) && (algorithm != when (curve) {
@@ -119,17 +120,18 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): CoseKey? =
                     EcCurve.SECP_384_R_1 -> CoseAlgorithm.ES384
                     EcCurve.SECP_521_R_1 -> CoseAlgorithm.ES512
                 })
-            )
-                null
-            else CoseKey(
-                keyParams = CoseKeyParams.EcYByteArrayParams(
-                    curve = curve.toCoseCurve(),
-                    x = x,
-                    y = y
-                ),
-                type = CoseKeyType.EC2,
-                keyId = keyId.encodeToByteArray(),
-                algorithm = algorithm
+            ) KmmResult.failure(IllegalArgumentException("Algorithm and Key Type mismatch!"))
+            else KmmResult.success(
+                CoseKey(
+                    keyParams = CoseKeyParams.EcYByteArrayParams(
+                        curve = curve.toCoseCurve(),
+                        x = x,
+                        y = y
+                    ),
+                    type = CoseKeyType.EC2,
+                    keyId = keyId.encodeToByteArray(),
+                    algorithm = algorithm
+                )
             )
 
         is CryptoPublicKey.Rsa ->
@@ -137,16 +139,17 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): CoseKey? =
                     CoseAlgorithm.PS256, CoseAlgorithm.PS384, CoseAlgorithm.PS512,
                     CoseAlgorithm.RS256, CoseAlgorithm.RS384, CoseAlgorithm.RS512
                 ))
-            )
-                null
-            else CoseKey(
-                keyParams = CoseKeyParams.RsaParams(
-                    n = n,
-                    e = e.encodeToByteArray()
-                ),
-                type = CoseKeyType.RSA,
-                keyId = keyId.encodeToByteArray(),
-                algorithm = algorithm
+            ) KmmResult.failure(IllegalArgumentException("Algorithm and Key Type mismatch!"))
+            else KmmResult.success(
+                CoseKey(
+                    keyParams = CoseKeyParams.RsaParams(
+                        n = n,
+                        e = e.encodeToByteArray()
+                    ),
+                    type = CoseKeyType.RSA,
+                    keyId = keyId.encodeToByteArray(),
+                    algorithm = algorithm
+                )
             )
     }
 
