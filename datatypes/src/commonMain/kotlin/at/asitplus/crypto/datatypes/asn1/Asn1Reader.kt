@@ -238,7 +238,7 @@ private fun Instant.Companion.decodeGeneralizedTimeFromDer(input: ByteArray): In
  * @throws Asn1Exception if the byte array is too long to be parsed to an int (note that only rudimentary checking happens)
  */
 @Throws(Asn1Exception::class)
-internal fun Int.Companion.decodeFromDer(input: ByteArray): Int = runRethrowing {
+fun Int.Companion.decodeFromDer(input: ByteArray): Int = runRethrowing {
     if (input.size > 5) throw IllegalArgumentException("Absolute value too large!")
     return Long.decodeFromDer(input).toInt()
 }
@@ -247,7 +247,7 @@ internal fun Int.Companion.decodeFromDer(input: ByteArray): Int = runRethrowing 
  * @throws IllegalArgumentException if the byte array is too long to be parsed to a long (note that only rudimentary checking happens)
  */
 @Throws(Asn1Exception::class)
-internal fun Long.Companion.decodeFromDer(bytes: ByteArray): Long = runRethrowing {
+fun Long.Companion.decodeFromDer(bytes: ByteArray): Long = runRethrowing {
     val input = if (bytes.size == 8) bytes else {
         if (bytes.size > 9) throw IllegalArgumentException("Absolute value too large!")
         val padding = if (bytes.first() and 0x80.toByte() != 0.toByte()) 0xFF.toByte() else 0x00.toByte()
