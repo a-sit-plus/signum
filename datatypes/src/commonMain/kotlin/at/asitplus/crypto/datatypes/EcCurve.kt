@@ -5,6 +5,7 @@ import at.asitplus.crypto.datatypes.asn1.KnownOIDs
 import at.asitplus.crypto.datatypes.asn1.ObjectIdentifier
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -46,7 +47,7 @@ object EcCurveSerializer : KSerializer<EcCurve> {
     override fun deserialize(decoder: Decoder): EcCurve {
         val decoded = decoder.decodeString()
         return EcCurve.entries.firstOrNull { it.jwkName == decoded }
-            ?: throw Throwable("Unsupported EC Curve Type $decoded")
+            ?: throw SerializationException("Unsupported EC Curve Type $decoded")
     }
 
 }

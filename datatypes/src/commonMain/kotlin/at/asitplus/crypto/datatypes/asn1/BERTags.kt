@@ -62,9 +62,14 @@ object DERTags {
     val UByte.isExplicitTag get() = ((this and BERTags.CONSTRUCTED) != 0.toUByte()) && ((this and BERTags.TAGGED) != 0.toUByte())
 
     fun UInt.toExplicitTag() = toUByte().toExplicitTag()
-    fun UInt.toImplicitTag() = toUByte().toImplicitTag()
-    fun UByte.toImplicitTag() =
+
+    @Throws(Asn1Exception::class)
+    fun UInt.toImplicitTag() = runRethrowing { toUByte().toImplicitTag() }
+
+    @Throws(Asn1Exception::class)
+    fun UByte.toImplicitTag() = runRethrowing {
         if (isContainer()) throw IllegalArgumentException("Implicit tag $this would result in CONSTRUCTED bit set") else BERTags.TAGGED or this
+    }
 
     fun UByte.isContainer() = this and BERTags.CONSTRUCTED != 0.toUByte()
 }

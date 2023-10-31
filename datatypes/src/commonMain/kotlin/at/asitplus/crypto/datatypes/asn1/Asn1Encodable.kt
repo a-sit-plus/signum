@@ -11,13 +11,15 @@ interface Asn1Encodable<A : Asn1Element> {
     /**
      * Encodes the implementing object into an [A]
      */
+    @Throws(Asn1Exception::class)
     fun encodeToTlv(): A
 
     /**
      * Convenience property to directly get the DER-encoded representation of the implementing object
      */
+
     @Transient
-    val derEncoded get() = encodeToTlv().derEncoded
+    val derEncoded @Throws(Asn1Exception::class) get() = encodeToTlv().derEncoded
 }
 
 /**
@@ -27,9 +29,9 @@ interface Asn1Encodable<A : Asn1Element> {
 interface Asn1Decodable<A : Asn1Element, T : Asn1Encodable<A>> {
     /**
      * Processes an [A], parsing it into an instance of [T]
-     * @throws [Throwable] of various sorts if invalid data is provided
+     * @throws Asn1Exception if invalid data is provided
      */
-    @Throws(Throwable::class)
+    @Throws(Asn1Exception::class)
     fun decodeFromTlv(src: A): T
 
     /**
@@ -39,9 +41,9 @@ interface Asn1Decodable<A : Asn1Element, T : Asn1Encodable<A>> {
 
     /**
      * Convenience method, directly DER-decoding a byte array to [T]
-     * @throws [Throwable] of various sorts if invalid data is provided
+     * @throws Asn1Exception if invalid data is provided
      */
-    @Throws(Throwable::class)
+    @Throws(Asn1Exception::class)
     fun derDecode(src: ByteArray): T = decodeFromTlv(Asn1Element.parse(src) as A)
 
     /**
@@ -55,8 +57,9 @@ interface Asn1TagVerifyingDecodable<T : Asn1Encodable<Asn1Primitive>> : Asn1Deco
     /**
      * Same as [Asn1Decodable.decodeFromTlv], but allows overriding the tag, should the implementing class verify it.
      * Useful for implicit tagging, in which case you will want to call [at.asitplus.crypto.datatypes.asn1.DERTags.toImplicitTag] on [tagOverride].
+     * @throws Asn1Exception
      */
-    @Throws(Throwable::class)
+    @Throws(Asn1Exception::class)
     fun decodeFromTlv(src: Asn1Primitive, tagOverride: UByte?): T
 
     /**
@@ -69,7 +72,7 @@ interface Asn1TagVerifyingDecodable<T : Asn1Encodable<Asn1Primitive>> : Asn1Deco
      * Same as [Asn1Decodable.derDecode], but allows overriding the tag, should the implementing class verify it.
      * Useful for implicit tagging.
      */
-    @Throws(Throwable::class)
+    @Throws(Asn1Exception::class)
     fun derDecode(src: ByteArray, tagOverride: UByte?): T =
         decodeFromTlv(Asn1Element.parse(src) as Asn1Primitive, tagOverride)
 
