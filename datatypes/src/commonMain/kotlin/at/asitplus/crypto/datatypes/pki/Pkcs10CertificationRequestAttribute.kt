@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 package at.asitplus.crypto.datatypes.pki
 
 import at.asitplus.crypto.datatypes.asn1.*
@@ -11,7 +13,7 @@ data class Pkcs10CertificationRequestAttribute(
     constructor(id: ObjectIdentifier, value: Asn1Element) : this(id, listOf(value))
 
     override fun encodeToTlv() = asn1Sequence {
-        append ( oid )
+        append(oid)
         set { value.forEach { append(it) } }
     }
 
@@ -35,8 +37,8 @@ data class Pkcs10CertificationRequestAttribute(
     }
 
     companion object : Asn1Decodable<Asn1Sequence, Pkcs10CertificationRequestAttribute> {
-        @Throws(Throwable::class)
-        override fun decodeFromTlv(src: Asn1Sequence): Pkcs10CertificationRequestAttribute {
+        @Throws(Asn1Exception::class)
+        override fun decodeFromTlv(src: Asn1Sequence): Pkcs10CertificationRequestAttribute = runRethrowing {
             val id = (src.children[0] as Asn1Primitive).readOid()
             val value = (src.children.last() as Asn1Set).children
             return Pkcs10CertificationRequestAttribute(id, value)

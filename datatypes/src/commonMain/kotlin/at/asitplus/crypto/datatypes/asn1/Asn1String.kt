@@ -68,15 +68,15 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
 
     /**
      * PRINTABLE STRING (checked)
-     * @throws IllegalArgumentException if illegal characters are provided
+     * @throws Asn1Exception if illegal characters are provided
      */
     @Serializable
     @SerialName("PrintableString")
 
-    class Printable @Throws(IllegalArgumentException::class) constructor(override val value: String) : Asn1String() {
+    class Printable @Throws(Asn1Exception::class) constructor(override val value: String) : Asn1String() {
         init {
             Regex("[a-zA-Z0-9 '()+,-./:=?]*").matchEntire(value)
-                ?: throw IllegalArgumentException("Input contains invalid chars: '$value'")
+                ?: throw Asn1Exception("Input contains invalid chars: '$value'")
         }
 
         override val tag = BERTags.PRINTABLE_STRING
@@ -84,14 +84,14 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
 
     /**
      * NUMERIC STRING (checked)
-     * @throws IllegalArgumentException if illegal characters are provided
+     * @throws Asn1Exception if illegal characters are provided
      */
     @Serializable
     @SerialName("NumericString")
-    class Numeric @Throws(IllegalArgumentException::class) constructor(override val value: String) : Asn1String() {
+    class Numeric @Throws(Asn1Exception::class) constructor(override val value: String) : Asn1String() {
         init {
             Regex("[0-9 ]*").matchEntire(value)
-                ?: throw IllegalArgumentException("Input contains invalid chars: '$value'")
+                ?: throw Asn1Exception("Input contains invalid chars: '$value'")
         }
 
         override val tag = BERTags.NUMERIC_STRING
@@ -100,6 +100,8 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
     override fun encodeToTlv() = Asn1Primitive(tag, value.encodeToByteArray())
 
     companion object : Asn1Decodable<Asn1Primitive, Asn1String> {
+
+        @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Primitive): Asn1String = src.readString()
     }
 }

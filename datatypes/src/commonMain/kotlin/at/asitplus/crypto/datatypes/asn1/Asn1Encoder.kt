@@ -10,8 +10,6 @@ import at.asitplus.crypto.datatypes.asn1.BERTags.NULL
 import at.asitplus.crypto.datatypes.asn1.BERTags.UTC_TIME
 import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import at.asitplus.crypto.datatypes.io.BitSet
-import io.matthewnelson.encoding.base16.Base16
-import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Instant
 import kotlin.io.encoding.ExperimentalEncodingApi
 
@@ -69,7 +67,9 @@ class Asn1TreeBuilder {
 
     /**
      * appends a single [Asn1Encodable] to this ASN.1 structure
+     * @throws Asn1Exception in case encoding constrints of children are violated
      */
+    @Throws(Asn1Exception::class)
     fun append(child: Asn1Encodable<*>) = append(child.encodeToTlv())
 
     /**
@@ -160,18 +160,19 @@ class Asn1TreeBuilder {
         elements += value.encodeToAsn1GeneralizedTime()
     }
 
+    /**
+     * @throws Asn1Exception if illegal SET or SET OF structures are to be constructed
+     */
+    @Throws(Asn1Exception::class)
     private fun nest(type: CollectionType, init: Asn1TreeBuilder.() -> Unit) {
         val seq = Asn1TreeBuilder()
         seq.init()
-        elements += if (type == CollectionType.SEQUENCE) Asn1Sequence(seq.elements)
-        else if (type == CollectionType.OCTET_STRING) Asn1EncapsulatingOctetString(seq.elements)
-        else Asn1Set(seq.elements.let {
-            if (type == CollectionType.SET) it.sortedBy { it.tag }
-            else {
-                if (it.any { elem -> elem.tag != it.first().tag }) throw IllegalArgumentException("SET OF must only contain elements of the same tag")
-                it.sortedBy { it.derEncoded.encodeToString(Base16) } //TODO this is inefficient
-            }
-        })
+        elements += when (type) {
+            CollectionType.SEQUENCE -> Asn1Sequence(seq.elements)
+            CollectionType.OCTET_STRING -> Asn1EncapsulatingOctetString(seq.elements)
+            CollectionType.SET -> Asn1Set(seq.elements)
+            CollectionType.SET_OF -> Asn1SetOf(seq.elements)
+        }
     }
 
     /**
@@ -238,8 +239,9 @@ class Asn1TreeBuilder {
      *   }
      *  ```
      *
-     *  @throws IllegalArgumentException if children have different tags
+     *  @throws Asn1Exception if children have different tags
      */
+    @Throws(Asn1Exception::class)
     fun setOf(init: Asn1TreeBuilder.() -> Unit) = nest(CollectionType.SET_OF, init)
 
     /**
@@ -318,11 +320,15 @@ fun asn1Set(root: Asn1TreeBuilder.() -> Unit): Asn1Set {
  *   printableString("Hello")
  * }
  *  ```
+ *
+ *  @throws Asn1Exception if children of different tags are added
  */
+
+@Throws(Asn1Exception::class)
 fun asn1SetOf(root: Asn1TreeBuilder.() -> Unit): Asn1Set {
     val seq = Asn1TreeBuilder()
     seq.root()
-    return Asn1Set(seq.elements)
+    return Asn1SetOf(seq.elements)
 }
 
 /**
@@ -340,10 +346,10 @@ fun asn1SetOf(root: Asn1TreeBuilder.() -> Unit): Asn1Set {
  * }
  *  ```
  */
-fun asn1Tagged(tag:UByte, root: Asn1TreeBuilder.() -> Unit): Asn1Tagged {
+fun asn1Tagged(tag: UByte, root: Asn1TreeBuilder.() -> Unit): Asn1Tagged {
     val seq = Asn1TreeBuilder()
     seq.root()
-    return Asn1Tagged(tag.toExplicitTag(),seq.elements)
+    return Asn1Tagged(tag.toExplicitTag(), seq.elements)
 }
 
 /**

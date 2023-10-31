@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 package at.asitplus.crypto.datatypes.asn1
 
 import kotlinx.serialization.KSerializer
@@ -16,19 +18,20 @@ import kotlin.math.ceil
  * of madness, cruelty and a twisted sense of humour. Courtesy of what were most probably tormented souls to begin with.
  *
  * @param nodes OID Tree nodes passed in order (e.g. 1u, 2u, 96u, …)
- * @throws IllegalArgumentException if less than two nodes are supplied, the first node is >2 or the second node is >39
+ * @throws Asn1Exception if less than two nodes are supplied, the first node is >2 or the second node is >39
  */
 @ExperimentalUnsignedTypes
 @Serializable(with = ObjectIdSerializer::class)
-class ObjectIdentifier  @Throws(IllegalArgumentException::class) constructor(@Transient vararg val nodes: UInt) : Asn1Encodable<Asn1Primitive> {
+class ObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transient vararg val nodes: UInt) :
+    Asn1Encodable<Asn1Primitive> {
 
     init {
-        if (nodes.size < 2) throw IllegalArgumentException("at least two nodes required!")
-        if (nodes[0] * 40u > UByte.MAX_VALUE.toUInt()) throw IllegalArgumentException("first node too lage!")
+        if (nodes.size < 2) throw Asn1StructuralException("at least two nodes required!")
+        if (nodes[0] * 40u > UByte.MAX_VALUE.toUInt()) throw Asn1Exception("first node too lage!")
         //TODO more sanity checks
 
-        if (nodes.first() > 2u) throw IllegalArgumentException("OID must start with either 1 or 2")
-        if (nodes[1] > 39u) throw IllegalArgumentException("Second segment must be <40")
+        if (nodes.first() > 2u) throw Asn1Exception("OID must start with either 1 or 2")
+        if (nodes[1] > 39u) throw Asn1Exception("Second segment must be <40")
     }
 
     /**
@@ -77,12 +80,12 @@ class ObjectIdentifier  @Throws(IllegalArgumentException::class) constructor(@Tr
 
         /**
          * Parses an OBJECT IDENTIFIER contained in [src] to an [ObjectIdentifier]
-         * @throws Throwable  all sorts of errors on invalid input
+         * @throws Asn1Exception  all sorts of errors on invalid input
          */
-        @Throws(Throwable::class)
+        @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Primitive): ObjectIdentifier {
-            if (src.tag != BERTags.OBJECT_IDENTIFIER) throw IllegalArgumentException("Not an OID (tag: ${src.tag}")
-            if (src.length < 1) throw IllegalArgumentException("Empty OIDs are not supported")
+            if (src.tag != BERTags.OBJECT_IDENTIFIER) throw Asn1TagMismatchException(BERTags.OBJECT_IDENTIFIER, src.tag)
+            if (src.length < 1) throw Asn1StructuralException("Empty OIDs are not supported")
 
             return parse(src.content)
 
@@ -91,11 +94,11 @@ class ObjectIdentifier  @Throws(IllegalArgumentException::class) constructor(@Tr
         /**
          * Casts out the evil demons that haunt OID components encoded into [rawValue]
          * @return ObjectIdentifier if decoding succeeded
-         * @throws Throwable all sorts of errors on invalid input
+         * @throws Asn1Exception all sorts of errors on invalid input
          */
-        @Throws(Throwable::class)
-        fun parse(rawValue: ByteArray): ObjectIdentifier {
-            if (rawValue.isEmpty()) throw IllegalArgumentException("Empty OIDs are not supported")
+        @Throws(Asn1Exception::class)
+        fun parse(rawValue: ByteArray): ObjectIdentifier = runRethrowing {
+            if (rawValue.isEmpty()) throw Asn1Exception("Empty OIDs are not supported")
             val (first, second) =
                 if (rawValue[0] >= 80) {
                     2u to rawValue[0].toUByte() - 80u
@@ -110,7 +113,7 @@ class ObjectIdentifier  @Throws(IllegalArgumentException::class) constructor(@Tr
                     collected += rawValue[index].toUInt()
                     index++
                 } else {
-                    var currentNode = mutableListOf<Byte>()
+                    val currentNode = mutableListOf<Byte>()
                     while (rawValue[index] < 0) {
                         currentNode += rawValue[index] //+= parsed
                         index++
@@ -148,10 +151,11 @@ interface Identifiable {
 /**
  * decodes this [Asn1Primitive]'s content into an [ObjectIdentifier]
  *
- * @throws [Throwable] all sorts of exceptions on invalid input
+ * @throws Asn1Exception on invalid input
  */
-fun Asn1Primitive.readOid() = decode(BERTags.OBJECT_IDENTIFIER) {
-    ObjectIdentifier.parse(it)
+@Throws(Asn1Exception::class)
+fun Asn1Primitive.readOid() = runRethrowing {
+    decode(BERTags.OBJECT_IDENTIFIER) { ObjectIdentifier.parse(it) }
 }
 
 
