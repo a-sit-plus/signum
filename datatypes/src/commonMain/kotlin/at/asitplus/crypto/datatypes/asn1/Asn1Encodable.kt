@@ -10,16 +10,16 @@ interface Asn1Encodable<A : Asn1Element> {
 
     /**
      * Encodes the implementing object into an [A]
+     * @throws Asn1Exception in case an illegal ASN.1 Object was to be constructed
      */
     @Throws(Asn1Exception::class)
     fun encodeToTlv(): A
 
     /**
-     * Convenience property to directly get the DER-encoded representation of the implementing object
+     * Convenience function to directly get the DER-encoded representation of the implementing object
      */
-
-    @Transient
-    val derEncoded @Throws(Asn1Exception::class) get() = encodeToTlv().derEncoded
+    @Throws(Asn1Exception::class)
+    fun encodeToDER()  = encodeToTlv().derEncoded
 }
 
 /**

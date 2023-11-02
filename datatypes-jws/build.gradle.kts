@@ -1,5 +1,4 @@
 import DatatypeVersions.encoding
-import DatatypeVersions.kmmresult
 import DatatypeVersions.okio
 import at.asitplus.gradle.*
 
@@ -12,10 +11,14 @@ plugins {
 
 version = "2.1.0-SNAPSHOT"
 
-exportIosFramework("KmpCryptoJws",  serialization("json"), datetime(), project(":datatypes"))
 kotlin {
+    jvm()
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
+
     sourceSets {
-        val commonMain by getting {
+        commonMain {
             dependencies {
                 api(project(":datatypes"))
                 implementation("com.squareup.okio:okio:${okio}")
@@ -24,18 +27,10 @@ kotlin {
                 implementation("io.matthewnelson.kotlin-components:encoding-base64:${encoding}")
             }
         }
-
-        val jvmMain by getting
-
-        val commonTest by getting {
-            dependencies {
-                implementation(kotlin("reflect"))
-            }
-        }
-        val jvmTest by getting
     }
 }
 
+exportIosFramework("KmpCryptoJws", serialization("json"), datetime(), project(":datatypes"))
 
 val javadocJar = setupDokka(baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/", multiModuleDoc = true)
 

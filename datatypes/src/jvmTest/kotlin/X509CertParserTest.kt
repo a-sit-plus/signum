@@ -67,7 +67,7 @@ class X509CertParserTest : FreeSpec({
 
             println("The full certificate is:\n${Json { prettyPrint = true }.encodeToString(cert)}")
 
-            println("Re-encoding it produces the same bytes? ${cert.derEncoded contentEquals certBytes}")
+            println("Re-encoding it produces the same bytes? ${cert.encodeToDER() contentEquals certBytes}")
 
 
             println(cert.encodeToTlv())
