@@ -11,14 +11,10 @@ plugins {
 
 version = "2.1.0-SNAPSHOT"
 
+exportIosFramework("KmpCryptoCose",  serialization("cbor"), datetime(), project(":datatypes"))
 kotlin {
-    jvm()
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
-
     sourceSets {
-        commonMain {
+        val commonMain by getting {
             dependencies {
                 api(project(":datatypes"))
                 api(serialization("cbor"))
@@ -27,11 +23,17 @@ kotlin {
                 implementation("io.matthewnelson.kotlin-components:encoding-base64:${encoding}")
             }
         }
+
+        val jvmMain by getting
+
+        val commonTest by getting {
+            dependencies {
+                implementation(kotlin("reflect"))
+            }
+        }
+        val jvmTest by getting
     }
 }
-
-
-exportIosFramework("KmpCryptoCose",  serialization("cbor"), datetime(), project(":datatypes"))
 
 val javadocJar = setupDokka(baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/", multiModuleDoc = true)
 
