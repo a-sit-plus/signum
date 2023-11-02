@@ -23,4 +23,8 @@
 * Full RSA and HMAC Support
 * new interface `Asn1OctetString` to unify both ASN.1 OCTET STREAM classes
 * fix broken `content` property of `Asn1EncapsulatingOctetString`
+* refactor `.derEncoded` property of `Asn1Encodable` interface to function `.encodeToDer()`
+* consistent exception handling behaviour
+  * throw new type `Asn1Exception` for ASN.1-related errors)
+  * add `xxxOrNull()` functions for all encoding/decoding/parsing functions
 
