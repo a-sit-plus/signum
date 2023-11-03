@@ -41,6 +41,24 @@ class Asn1Time(val instant: Instant, formatOverride: Format? = null) : Asn1Encod
             Format.GENERALIZED -> instant.encodeToAsn1GeneralizedTime()
         }
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as Asn1Time
+
+        if (instant != other.instant) return false
+        if (format != other.format) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = instant.hashCode()
+        result = 31 * result + format.hashCode()
+        return result
+    }
+
 
     /**
      * Enum of suppoerted Time formats
