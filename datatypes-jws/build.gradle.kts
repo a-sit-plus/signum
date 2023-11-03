@@ -12,7 +12,13 @@ plugins {
 
 version = "2.1.0-SNAPSHOT"
 
-exportIosFramework("KmpCryptoJws",  serialization("json"), datetime(), project(":datatypes"))
+exportIosFramework(
+    "KmpCryptoJws",
+    serialization("json"),
+    datetime(),
+    "at.asitplus:kmmresult:${kmmresult}",
+    project(":datatypes")
+)
 kotlin {
     sourceSets {
         val commonMain by getting {

@@ -3,7 +3,7 @@
 ## 1.0
 
 ### 1.0.0
- First public release[index.html](..%2F0000%20OSS%2Fa-sit-plus.github.io%2Findex.html)
+ First public release
  
 ## 2.0
 
@@ -25,6 +25,6 @@
 * fix broken `content` property of `Asn1EncapsulatingOctetString`
 * refactor `.derEncoded` property of `Asn1Encodable` interface to function `.encodeToDer()`
 * consistent exception handling behaviour
-  * throw new type `Asn1Exception` for ASN.1-related errors)
+  * throw new type `Asn1Exception` for ASN.1-related errors
   * add `xxxOrNull()` functions for all encoding/decoding/parsing functions
 

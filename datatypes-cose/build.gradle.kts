@@ -11,7 +11,13 @@ plugins {
 
 version = "2.1.0-SNAPSHOT"
 
-exportIosFramework("KmpCryptoCose",  serialization("cbor"), datetime(), project(":datatypes"))
+exportIosFramework(
+    "KmpCryptoCose",
+    serialization("cbor"),
+    datetime(),
+    "at.asitplus:kmmresult:${kmmresult}",
+    project(":datatypes")
+)
 kotlin {
     sourceSets {
         val commonMain by getting {
