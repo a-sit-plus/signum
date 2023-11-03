@@ -28,7 +28,7 @@ interface Asn1Encodable<A : Asn1Element> {
     /**
      * Exception-free version of [encodeToDer]
      */
-    fun encodeRoDerOrNull() = runCatching { encodeToDer() }.getOrNull()
+    fun encodeToDerOrNull() = runCatching { encodeToDer() }.getOrNull()
 }
 
 /**
