@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 package at.asitplus.crypto.datatypes.pki
 
 import at.asitplus.crypto.datatypes.asn1.*
@@ -81,14 +83,15 @@ sealed class DistinguishedName : Asn1Encodable<Asn1Set>, Identifiable {
     companion object : Asn1Decodable<Asn1Set, DistinguishedName> {
 
         @OptIn(ExperimentalUnsignedTypes::class)
-        override fun decodeFromTlv(src: Asn1Set): DistinguishedName {
-            if (src.children.size != 1) throw IllegalArgumentException("Invalid Subject Structure")
+        @Throws(Asn1Exception::class)
+        override fun decodeFromTlv(src: Asn1Set): DistinguishedName = runRethrowing {
+            if (src.children.size != 1) throw Asn1StructuralException("Invalid Subject Structure")
             val sequence = src.nextChild() as Asn1Sequence
             val oid = (sequence.nextChild() as Asn1Primitive).readOid()
             if (oid.nodes.size >= 3 && oid.toString().startsWith("2.5.4.")) {
                 val asn1String = sequence.nextChild() as Asn1Primitive
                 val str = runCatching { (asn1String).readString() }
-                if (sequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous elements in RDN")
+                if (sequence.hasMoreChildren()) throw Asn1StructuralException("Superfluous elements in RDN")
                 return when (oid) {
                     CommonName.OID -> str.fold(onSuccess = { CommonName(it) }, onFailure = { CommonName(asn1String) })
                     Country.OID -> str.fold(onSuccess = { Country(it) }, onFailure = { Country(asn1String) })
@@ -104,7 +107,7 @@ sealed class DistinguishedName : Asn1Encodable<Asn1Set>, Identifiable {
                 }
             }
             return Other(oid, sequence.nextChild())
-                .also { if (sequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous elements in RDN") }
+                .also { if (sequence.hasMoreChildren()) throw Asn1StructuralException("Superfluous elements in RDN") }
         }
     }
 }

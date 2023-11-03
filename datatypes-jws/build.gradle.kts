@@ -12,13 +12,18 @@ plugins {
 
 version = "2.1.0-SNAPSHOT"
 
-exportIosFramework("KmpCryptoJws",  serialization("json"), datetime(), project(":datatypes"))
+exportIosFramework(
+    "KmpCryptoJws",
+    serialization("json"),
+    datetime(),
+    "at.asitplus:kmmresult:${kmmresult}",
+    project(":datatypes")
+)
 kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
                 api(project(":datatypes"))
-                api("at.asitplus:kmmresult:${kmmresult}")
                 implementation("com.squareup.okio:okio:${okio}")
                 implementation(napier())
                 implementation("io.matthewnelson.kotlin-components:encoding-base16:${encoding}")

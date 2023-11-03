@@ -1,3 +1,5 @@
+import DatatypeVersions.encoding
+import DatatypeVersions.kmmresult
 import at.asitplus.gradle.*
 
 plugins {
@@ -10,15 +12,16 @@ plugins {
 version = "2.1.0-SNAPSHOT"
 
 
-exportIosFramework("KmpCrypto",  serialization("json"),datetime())
+exportIosFramework("KmpCrypto", serialization("json"), datetime(), "at.asitplus:kmmresult:${kmmresult}")
 kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                api("at.asitplus:kmmresult:${kmmresult}")
                 api(serialization("json"))
                 api(datetime())
-                implementation("io.matthewnelson.kotlin-components:encoding-base16:${DatatypeVersions.encoding}")
-                implementation("io.matthewnelson.kotlin-components:encoding-base64:${DatatypeVersions.encoding}")
+                implementation("io.matthewnelson.kotlin-components:encoding-base16:${encoding}")
+                implementation("io.matthewnelson.kotlin-components:encoding-base64:${encoding}")
             }
             val commonTest by getting {
                 dependencies {
@@ -28,7 +31,7 @@ kotlin {
             }
         }
 
-        val jvmMain by getting{
+        val jvmMain by getting {
             dependencies {
                 api(bouncycastle("bcpkix"))
             }

@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 package at.asitplus.crypto.datatypes
 
 import at.asitplus.crypto.datatypes.asn1.*
@@ -105,35 +107,40 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
 
     companion object : Asn1Decodable<Asn1Sequence, JwsAlgorithm> {
 
-        private fun fromOid(oid: ObjectIdentifier) = entries.first { it.oid == oid }
+        @Throws(Asn1OidException::class)
+        private fun fromOid(oid: ObjectIdentifier) = runCatching { entries.first { it.oid == oid } }.getOrElse {
+            throw Asn1OidException("Unsupported OID: $oid", oid)
+        }
 
-        override fun decodeFromTlv(src: Asn1Sequence): JwsAlgorithm {
-            return when (val oid = (src.nextChild() as Asn1Primitive).readOid()) {
+        @Throws(Asn1Exception::class)
+        override fun decodeFromTlv(src: Asn1Sequence): JwsAlgorithm = runRethrowing {
+            when (val oid = (src.nextChild() as Asn1Primitive).readOid()) {
                 ES512.oid, ES384.oid, ES256.oid -> JwsAlgorithm.fromOid(oid)
 
                 NON_JWS_SHA1_WITH_RSA.oid -> NON_JWS_SHA1_WITH_RSA
                 RS256.oid, RS384.oid, RS512.oid,
                 HS256.oid, HS384.oid, HS512.oid -> JwsAlgorithm.fromOid(oid).also {
-                    if (src.nextChild().tag != BERTags.NULL) throw IllegalArgumentException("RSA Params not allowed")
+                    val tag = src.nextChild().tag
+                    if (tag != BERTags.NULL)
+                        throw Asn1TagMismatchException(BERTags.NULL, tag, "RSA Params not allowed.")
                 }
 
                 PS256.oid, PS384.oid, PS512.oid -> parsePssParams(src)
-                else -> throw IllegalArgumentException("Unsupported algorithm oid: $oid")
+                else -> throw Asn1Exception("Unsupported algorithm oid: $oid")
             }
-
         }
 
-
-        private fun parsePssParams(src: Asn1Sequence): JwsAlgorithm {
+        @Throws(Asn1Exception::class)
+        private fun parsePssParams(src: Asn1Sequence): JwsAlgorithm = runRethrowing {
             val seq = src.nextChild() as Asn1Sequence
-            val first = (seq.nextChild() as Asn1Tagged).verify(0.toUByte()).single() as Asn1Sequence
+            val first = (seq.nextChild() as Asn1Tagged).verifyTag(0.toUByte()).single() as Asn1Sequence
 
             val sigAlg = (first.nextChild() as Asn1Primitive).readOid()
-            if (first.nextChild().tag != BERTags.NULL) throw IllegalArgumentException(
-                "PSS Params not supported yet"
-            )
+            val tag = first.nextChild().tag
+            if (tag != BERTags.NULL)
+                throw Asn1TagMismatchException(BERTags.NULL, tag, "PSS Params not supported yet")
 
-            val second = (seq.nextChild() as Asn1Tagged).verify(1.toUByte()).single() as Asn1Sequence
+            val second = (seq.nextChild() as Asn1Tagged).verifyTag(1.toUByte()).single() as Asn1Sequence
             val mgf = (second.nextChild() as Asn1Primitive).readOid()
             if (mgf != KnownOIDs.`pkcs1-MGF`) throw IllegalArgumentException("Illegal OID: $mgf")
             val inner = second.nextChild() as Asn1Sequence
@@ -145,7 +152,7 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
             )
 
 
-            val last = (seq.nextChild() as Asn1Tagged).verify(2.toUByte()).single() as Asn1Primitive
+            val last = (seq.nextChild() as Asn1Tagged).verifyTag(2.toUByte()).single() as Asn1Primitive
             val saltLen = last.readInt()
 
 

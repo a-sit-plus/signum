@@ -151,10 +151,16 @@ sealed class Asn1Structure(tag: UByte, children: List<Asn1Element>?) :
 
     /**
      * Returns the next child held by this structure. Useful for iterating over its children when parsing complex structures.
-     * @throws [IndexOutOfBoundsException] if no more children are available
+     * @throws [Asn1StructuralException] if no more children are available
      */
-    @Throws(IndexOutOfBoundsException::class)
-    fun nextChild() = children[index++]
+    @Throws(Asn1StructuralException::class)
+    fun nextChild() =
+        runCatching { children[index++] }.getOrElse { throw Asn1StructuralException("No more content left") }
+
+    /**
+     * Exception-free version of [nextChild]
+     */
+    fun nextChildOrNull() = runCatching { nextChild() }.getOrNull()
 
     /**
      * Returns `true` if more children can be retrieved by [nextChild]. `false` otherwise
@@ -162,7 +168,7 @@ sealed class Asn1Structure(tag: UByte, children: List<Asn1Element>?) :
     fun hasMoreChildren() = children.size > index
 
     /**
-     * Returns the current child (useful when iterating over this structures children)
+     * Returns the current child (useful when iterating over this structure's children)
      */
     fun peek() = if (!hasMoreChildren()) null else children[index]
 }
@@ -175,13 +181,13 @@ class Asn1Tagged
  * @param tag the ASN.1 Tag to be used (assumed to have [BERTags.CONSTRUCTED] and [BERTags.TAGGED] bits set)
  * @param children the child nodes to be contained in this tag
  *
- * @throws IllegalArgumentException is [tag] does not have [BERTags.CONSTRUCTED] and [BERTags.TAGGED] bits set
+ * @throws Asn1Exception is [tag] does not have [BERTags.CONSTRUCTED] and [BERTags.TAGGED] bits set
  */
-@Throws(IllegalArgumentException::class)
-constructor(tag: UByte, children: List<Asn1Element>) : Asn1Structure(tag, children) {
+@Throws(Asn1Exception::class)
+internal constructor(tag: UByte, children: List<Asn1Element>) : Asn1Structure(tag, children) {
 
     init {
-        if (!tag.isExplicitTag) throw IllegalArgumentException(
+        if (!tag.isExplicitTag) throw Asn1Exception(
             "Tag 0x${byteArrayOf(tag.toByte()).encodeToString(Base16)} " +
                     "is not an explicit tag"
         )
@@ -195,7 +201,7 @@ constructor(tag: UByte, children: List<Asn1Element>) : Asn1Structure(tag, childr
  * ASN.1 SEQUENCE 0x30 ([DERTags.DER_SEQUENCE])
  * @param children the elements to put into this sequence
  */
-class Asn1Sequence(children: List<Asn1Element>) : Asn1Structure(DERTags.DER_SEQUENCE, children) {
+class Asn1Sequence internal constructor(children: List<Asn1Element>) : Asn1Structure(DERTags.DER_SEQUENCE, children) {
     override fun toString() = "Sequence" + super.toString()
     override fun prettyPrint(indent: Int) = (" " * indent) + "Sequence" + super.prettyPrint(indent + 2)
 }
@@ -237,15 +243,28 @@ class Asn1PrimitiveOctetString(content: ByteArray) : Asn1Primitive(BERTags.OCTET
 
 
 /**
- * ASN.1 SET 0x30 ([DERTags.DER_SET])
- * @param children the elements to put into this set
+ * ASN.1 SET 0x31 ([DERTags.DER_SET])
+ * @param children the elements to put into this set. will be automatically sorted by tag
  */
-class Asn1Set(children: List<Asn1Element>?) : Asn1Structure(DERTags.DER_SET, children) {
+open class Asn1Set internal constructor(children: List<Asn1Element>?) :
+    Asn1Structure(DERTags.DER_SET, children?.sortedBy { it.tag }) {
     override fun toString() = "Set" + super.toString()
 
 
     override fun prettyPrint(indent: Int) = (" " * indent) + "Set" + super.prettyPrint(indent + 2)
 }
+
+/**
+ * ASN.1 SET OF 0x31 ([DERTags.DER_SET])
+ * @param children the elements to put into this set. will be automatically checked to have the same tag and sorted by value
+ * @throws Asn1Exception if children are using different tags
+ */
+class Asn1SetOf @Throws(Asn1Exception::class) internal constructor(children: List<Asn1Element>?) :
+    Asn1Set(children?.let {
+        if (it.any { elem -> elem.tag != it.first().tag }) throw Asn1Exception("SET OF must only contain elements of the same tag")
+        it.sortedBy { it.derEncoded.encodeToString(Base16) } //TODO this is inefficient
+
+    })
 
 /**
  * ASN.1 primitive. Hold o children, but [content] under [tag]
@@ -324,6 +343,7 @@ data class TLV(val tag: UByte, val content: ByteArray) {
     }
 }
 
+@Throws(IllegalArgumentException::class)
 private fun Int.encodeLength(): ByteArray {
     if (this < 128) {
         return byteArrayOf(this.toByte())

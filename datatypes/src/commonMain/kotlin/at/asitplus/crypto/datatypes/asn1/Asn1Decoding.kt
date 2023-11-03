@@ -23,12 +23,11 @@ import kotlin.experimental.and
  * Parses the provides [input] into a single [Asn1Element]
  * @return the parsed [Asn1Element]
  *
- * @throws [IllegalArgumentException] on invalid input or if more than a single root structure was contained in the [input]
- * @throws [Throwable] all sorts of errors on invalid input
+ * @throws Asn1Exception on invalid input or if more than a single root structure was contained in the [input]
  */
-@Throws(IllegalArgumentException::class, Throwable::class)
+@Throws(Asn1Exception::class)
 fun Asn1Element.Companion.parse(input: ByteArray) = Asn1Reader(input).doParse().let {
-    if (it.size != 1) throw IllegalArgumentException("Multiple ASN1 structures found")
+    if (it.size != 1) throw Asn1StructuralException("Multiple ASN.1 structures found")
     it.first()
 }
 
@@ -36,8 +35,8 @@ private class Asn1Reader(input: ByteArray) {
 
     private var rest = input
 
-    @Throws(IllegalArgumentException::class)
-    fun doParse(): List<Asn1Element> {
+    @Throws(Asn1Exception::class)
+    fun doParse(): List<Asn1Element> = runRethrowing {
         val result = mutableListOf<Asn1Element>()
         while (rest.isNotEmpty()) {
             val tlv = read()
@@ -53,8 +52,7 @@ private class Asn1Reader(input: ByteArray) {
                 runCatching {
                     result.add(Asn1EncapsulatingOctetString(Asn1Reader(tlv.content).doParse()))
                 }.getOrElse { result.add(Asn1PrimitiveOctetString(tlv.content)) }
-            }
-            else result.add(Asn1Primitive(tlv.tag, tlv.content))
+            } else result.add(Asn1Primitive(tlv.tag, tlv.content))
 
         }
         return result
@@ -65,11 +63,11 @@ private class Asn1Reader(input: ByteArray) {
     private fun TLV.isExplicitlyTagged() =
         tag.isContainer() //yes, this includes sequences and set, so we need to check this last!
 
-    @Throws(IllegalArgumentException::class)
-    private fun read(): TLV {
+    @Throws(Asn1Exception::class)
+    private fun read(): TLV = runRethrowing {
         val tlv = rest.readTlv()
         if (tlv.overallLength > rest.size)
-            throw IllegalArgumentException("Out of bytes")
+            throw Asn1Exception("Out of bytes")
         rest = rest.drop(tlv.overallLength).toByteArray()
         return tlv
     }
@@ -80,10 +78,13 @@ private class Asn1Reader(input: ByteArray) {
  *
  * @throws [Throwable] all sorts of exceptions on invalid input
  */
-@Throws(Throwable::class)
-fun Asn1Primitive.readInt() = decode(INTEGER) {
-    Int.decodeFromDer(it)
-}
+@Throws(Asn1Exception::class)
+fun Asn1Primitive.readInt() = runRethrowing { decode(INTEGER) { Int.decodeFromDer(it) } }
+
+/**
+ * Exception-free version of [readInt]
+ */
+fun Asn1Primitive.readIntOrNull() = runCatching { readInt() }.getOrNull()
 
 
 /**
@@ -91,10 +92,13 @@ fun Asn1Primitive.readInt() = decode(INTEGER) {
  *
  * @throws [Throwable] all sorts of exceptions on invalid input
  */
-@Throws(Throwable::class)
-fun Asn1Primitive.readLong() = decode(INTEGER) {
-    Long.decodeFromDer(it)
-}
+@Throws(Asn1Exception::class)
+fun Asn1Primitive.readLong() = runRethrowing { decode(INTEGER) { Long.decodeFromDer(it) } }
+
+/**
+ * Exception-free version of [readLong]
+ */
+fun Asn1Primitive.readLongOrNull() = runCatching { readLong() }.getOrNull()
 
 
 /**
@@ -103,7 +107,7 @@ fun Asn1Primitive.readLong() = decode(INTEGER) {
  * @throws [Throwable] all sorts of exceptions on invalid input
  */
 @Throws(Throwable::class)
-fun Asn1Primitive.readString(): Asn1String =
+fun Asn1Primitive.readString(): Asn1String = runRethrowing {
     if (tag == UTF8_STRING) Asn1String.UTF8(content.decodeToString())
     else if (tag == UNIVERSAL_STRING) Asn1String.Universal(content.decodeToString())
     else if (tag == IA5_STRING) Asn1String.IA5(content.decodeToString())
@@ -113,58 +117,95 @@ fun Asn1Primitive.readString(): Asn1String =
     else if (tag == NUMERIC_STRING) Asn1String.Numeric(content.decodeToString())
     else if (tag == VISIBLE_STRING) Asn1String.Visible(content.decodeToString())
     else TODO("Support other string tag $tag")
+}
+
+/**
+ * Exception-free version of [readString]
+ */
+fun Asn1Primitive.readStringOrNull() = runCatching { readString() }.getOrNull()
 
 
 /**
  * decodes this [Asn1Primitive]'s content into an [Instant] if it is encoded as UTC TIME or GENERALIZED TIME
  *
- * @throws [Throwable] all sorts of exceptions on invalid input
+ * @throws Asn1Exception on invalid input
  */
-@Throws(Throwable::class)
+@Throws(Asn1Exception::class)
 fun Asn1Primitive.readInstant() =
     if (tag == UTC_TIME) decode(UTC_TIME, Instant.Companion::decodeUtcTimeFromDer)
     else if (tag == GENERALIZED_TIME) decode(GENERALIZED_TIME, Instant.Companion::decodeGeneralizedTimeFromDer)
     else TODO("Support time tag $tag")
 
+/**
+ * Exception-free version of [readInstant]
+ */
+fun Asn1Primitive.readInstantOrNull() = runCatching { readInstant() }.getOrNull()
+
 
 /**
  * decodes this [Asn1Primitive]'s content into an [ByteArray], assuming it was encoded as BIT STRING
  *
- * @throws [Throwable] all sorts of exceptions on invalid input
+ * @throws Asn1Exception  on invalid input
  */
-@Throws(Throwable::class)
+@Throws(Asn1Exception::class)
 fun Asn1Primitive.readBitString() = Asn1BitString.decodeFromTlv(this)
+
+/**
+ * Exception-free version of [readBitString]
+ */
+fun Asn1Primitive.readBitStringOrNull() = runCatching { readBitString() }.getOrNull()
 
 
 /**
  * decodes this [Asn1Primitive] to null (i.e. verifies the tag to be [BERTags.NULL] and the content to be empty
  *
- * @throws [Throwable] all sorts of exceptions on invalid input
+ * @throws Asn1Exception  on invalid input
  */
-@Throws(Throwable::class)
+@Throws(Asn1Exception::class)
 fun Asn1Primitive.readNull() = decode(NULL) {}
+
+/**
+ * Name seems odd, but this is just an exception-free version of [readNull]
+ */
+fun Asn1Primitive.readNullOrNull() = runCatching { readNull() }.getOrNull()
+
 
 /**
  * Returns this [Asn1Tagged] children, if its tag matches [tag]
  *
- * @throws [Throwable] all sorts of exceptions on invalid input
+ * @throws Asn1TagMismatchException if the tag does not match
  */
-fun Asn1Tagged.verify(tag: UByte): List<Asn1Element> {
-    if (this.tag != tag.toExplicitTag()) throw IllegalArgumentException("Tag ${this.tag} does not match expected tag ${tag.toExplicitTag()}")
+@Throws(Asn1TagMismatchException::class)
+fun Asn1Tagged.verifyTag(tag: UByte): List<Asn1Element> {
+    if (this.tag != tag.toExplicitTag()) throw Asn1TagMismatchException(tag.toExplicitTag(), this.tag)
     return this.children
 }
 
 /**
- * Geneeric decoding function. Verifies that this [Asn1Primitive]'s tag matches [tag]
- * and transforms its content as per [transform]
+ * Exception-free version of [verifyTag]
  */
-inline fun <reified T> Asn1Primitive.decode(tag: UByte, transform: (content: ByteArray) -> T) = runCatching {
-    if (tag != this.tag) throw IllegalArgumentException("Tag mismatch. Expected: $tag, is: ${this.tag}")
-    transform(content)
-}.getOrElse { if (it is IllegalArgumentException) throw it else throw IllegalArgumentException(it) }
+fun Asn1Tagged.verifyTagOrNull(tag: UByte) = runCatching { verifyTag(tag) }.getOrNull()
 
-@Throws(IllegalArgumentException::class)
-private fun Instant.Companion.decodeUtcTimeFromDer(input: ByteArray): Instant = runCatching {
+
+/**
+ * Generic decoding function. Verifies that this [Asn1Primitive]'s tag matches [tag]
+ * and transforms its content as per [transform]
+ * @throws Asn1Exception all sorts of exceptions on invalid input
+ */
+@Throws(Asn1Exception::class)
+inline fun <reified T> Asn1Primitive.decode(tag: UByte, transform: (content: ByteArray) -> T) = runRethrowing {
+    if (tag != this.tag) throw Asn1TagMismatchException(tag, this.tag)
+    transform(content)
+}
+
+/**
+ * Exception-free version of [decode]
+ */
+inline fun <reified T> Asn1Primitive.decodeOrNull(tag: UByte, transform: (content: ByteArray) -> T) =
+    runCatching { decode(tag, transform) }.getOrNull()
+
+@Throws(Asn1Exception::class)
+private fun Instant.Companion.decodeUtcTimeFromDer(input: ByteArray): Instant = runRethrowing {
     val s = input.decodeToString()
     if (s.length != 13) throw IllegalArgumentException("Input too short: $input")
     val year = "${s[0]}${s[1]}".toInt()
@@ -177,10 +218,10 @@ private fun Instant.Companion.decodeUtcTimeFromDer(input: ByteArray): Instant = 
             ":${s[10]}${s[11]}" + // seconds
             "${s[12]}" // time offset
     return parse(isoString)
-}.getOrElse { throw IllegalArgumentException(it) }
+}
 
-@Throws(IllegalArgumentException::class)
-private fun Instant.Companion.decodeGeneralizedTimeFromDer(input: ByteArray): Instant = runCatching {
+@Throws(Asn1Exception::class)
+private fun Instant.Companion.decodeGeneralizedTimeFromDer(input: ByteArray): Instant = runRethrowing {
     val s = input.decodeToString()
     if (s.length != 15) throw IllegalArgumentException("Input too short: $input")
     val isoString = "${s[0]}${s[1]}${s[2]}${s[3]}" + // year
@@ -191,14 +232,22 @@ private fun Instant.Companion.decodeGeneralizedTimeFromDer(input: ByteArray): In
             ":${s[12]}${s[13]}" + // seconds
             "${s[14]}" // time offset
     return parse(isoString)
-}.getOrElse { throw IllegalArgumentException(it) }
+}
 
-fun Int.Companion.decodeFromDer(input: ByteArray): Int {
+/**
+ * @throws Asn1Exception if the byte array is too long to be parsed to an int (note that only rudimentary checking happens)
+ */
+@Throws(Asn1Exception::class)
+fun Int.Companion.decodeFromDer(input: ByteArray): Int = runRethrowing {
+    if (input.size > 5) throw IllegalArgumentException("Absolute value too large!")
     return Long.decodeFromDer(input).toInt()
 }
 
-@Throws(IllegalArgumentException::class)
-fun Long.Companion.decodeFromDer(bytes: ByteArray): Long {
+/**
+ * @throws IllegalArgumentException if the byte array is too long to be parsed to a long (note that only rudimentary checking happens)
+ */
+@Throws(Asn1Exception::class)
+fun Long.Companion.decodeFromDer(bytes: ByteArray): Long = runRethrowing {
     val input = if (bytes.size == 8) bytes else {
         if (bytes.size > 9) throw IllegalArgumentException("Absolute value too large!")
         val padding = if (bytes.first() and 0x80.toByte() != 0.toByte()) 0xFF.toByte() else 0x00.toByte()
@@ -212,7 +261,8 @@ fun Long.Companion.decodeFromDer(bytes: ByteArray): Long {
 }
 
 
-private fun ByteArray.readTlv(): TLV = runCatching {
+@Throws(Asn1Exception::class)
+private fun ByteArray.readTlv(): TLV = runRethrowing {
     if (this.isEmpty()) throw IllegalArgumentException("Can't read TLV, input empty")
     val tag = this[0].toUByte()
     if (this.size == 1) return TLV(tag, byteArrayOf())
@@ -236,5 +286,5 @@ private fun ByteArray.readTlv(): TLV = runCatching {
         throw IllegalArgumentException("Out of bytes")
     val value = this.drop(2).take(length).toByteArray()
     return TLV(tag, value)
-}.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
+}
 

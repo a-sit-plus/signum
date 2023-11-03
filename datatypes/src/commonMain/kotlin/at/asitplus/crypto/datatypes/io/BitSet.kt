@@ -42,7 +42,7 @@ private fun Byte.getBit(index: Int): Boolean =
  *
  * Implements [Iterable] over bits. Use [bytes] to iterate over bytes
  */
-@Serializable(with=BitSetSerializer::class)
+@Serializable(with = BitSetSerializer::class)
 class BitSet private constructor(private val buffer: MutableList<Byte>) : Iterable<Boolean> {
 
 
@@ -227,7 +227,9 @@ class BitSet private constructor(private val buffer: MutableList<Byte>) : Iterab
 
         /**
          * Creates bitset from hunan-readably bit string representation
+         * @throws IllegalArgumentException if the provided string containes characters other than '1' and '0'
          */
+        @Throws(IllegalArgumentException::class)
         fun fromBitString(bitString: String): BitSet {
             if (bitString.isEmpty()) return BitSet()
             if (!bitString.matches(Regex("^[01]+\$"))) throw IllegalArgumentException("Not a bit string")
@@ -237,6 +239,11 @@ class BitSet private constructor(private val buffer: MutableList<Byte>) : Iterab
                 }
             }
         }
+
+        /**
+         * Exception-free version of [fromBitString]
+         */
+        fun fromBitStringOrNull(bitString: String) = runCatching { fromBitString(bitString) }.getOrNull()
     }
 }
 
@@ -301,13 +308,13 @@ fun ByteArray.toBitString(): String =
 fun ByteArray.memDump(): String =
     joinToString(separator = " ") { it.toUByte().toString(2).padStart(8, '0') }
 
-object BitSetSerializer:KSerializer<BitSet>{
+object BitSetSerializer : KSerializer<BitSet> {
     override val descriptor = PrimitiveSerialDescriptor("BitSet", PrimitiveKind.STRING)
 
     override fun deserialize(decoder: Decoder) = BitSet.fromBitString(decoder.decodeString())
 
     override fun serialize(encoder: Encoder, value: BitSet) {
-       encoder.encodeString(value.toBitString())
+        encoder.encodeString(value.toBitString())
     }
 
 }
