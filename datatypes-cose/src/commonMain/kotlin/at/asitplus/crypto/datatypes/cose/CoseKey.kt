@@ -1,6 +1,8 @@
 package at.asitplus.crypto.datatypes.cose
 
 import at.asitplus.KmmResult
+import at.asitplus.KmmResult.Companion.failure
+import at.asitplus.KmmResult.Companion.success
 import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.EcCurve
@@ -76,25 +78,29 @@ data class CoseKey(
     }
 
     /**
-     * @return a KmmResult wrapped [CryptoPublicKey] equivalent if conversion is possible (i.e. if all key params are set)<br> or KmmResult.Failure in case the required key params are not contained in this COSE key (i.e. if only a `kid` is used)
+     * @return a KmmResult wrapped [CryptoPublicKey] equivalent if conversion is possible (i.e. if all key params are set)
+     * or the first error. More details in either [CoseKeyParams.RsaParams.toCryptoPublicKey] or [CoseKeyParams.EcYByteArrayParams.toCryptoPublicKey]
      */
     fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
         keyParams?.toCryptoPublicKey() ?: KmmResult.failure(IllegalArgumentException("No public key parameters!"))
 
     fun serialize() = cborSerializer.encodeToByteArray(this)
 
+    /**
+     * Contains convenience functions
+     */
     companion object {
         fun deserialize(it: ByteArray) =
             runCatching { cborSerializer.decodeFromByteArray<CoseKey>(it) }.wrap()
 
         fun fromKeyId(keyId: String): KmmResult<CoseKey> =
-            runCatching { CryptoPublicKey.fromKeyId(keyId).toCoseKey() }.wrap()
+            runCatching { CryptoPublicKey.fromKeyId(keyId).toCoseKey().getOrThrow() }.wrap()
 
         fun fromIosEncoded(bytes: ByteArray): KmmResult<CoseKey> =
-            runCatching { CryptoPublicKey.fromIosEncoded(bytes).toCoseKey() }.wrap()
+            runCatching { CryptoPublicKey.fromIosEncoded(bytes).toCoseKey().getOrThrow() }.wrap()
 
         fun fromCoordinates(curve: CoseEllipticCurve, x: ByteArray, y: ByteArray): KmmResult<CoseKey> =
-            runCatching { CryptoPublicKey.Ec.fromCoordinates(curve.toJwkCurve(), x, y).toCoseKey() }.wrap()
+            runCatching { CryptoPublicKey.Ec.fromCoordinates(curve.toJwkCurve(), x, y).toCoseKey().getOrThrow() }.wrap()
 
         @Deprecated("Use [fromIosEncoded] instead!")
         fun fromAnsiX963Bytes(type: CoseKeyType, curve: CoseEllipticCurve, it: ByteArray) =
@@ -104,23 +110,24 @@ data class CoseKey(
             } else null
 
 
+        @Throws(Throwable::class)
         @Deprecated("Use above instead")
         fun fromCoordinates(
             type: CoseKeyType,
             curve: CoseEllipticCurve,
             x: ByteArray,
             y: ByteArray
-        ): CoseKey? = CryptoPublicKey.Ec.fromCoordinates(curve.toJwkCurve(), x, y).toCoseKey()
+        ): CoseKey? = CryptoPublicKey.Ec.fromCoordinates(curve.toJwkCurve(), x, y).toCoseKey().getOrNull()
 
     }
 }
 
 /**
- * Converts [CryptoPublicKey] into a [CoseKey]
- * If [algorithm] is not set then key can be used for any algorithm with same kty (RFC 8152), throws [IllegalArgumentException] for invalid kty/algorithm pairs
+ * Converts [CryptoPublicKey] into a KmmResult wrapped [CoseKey]
+ * If [algorithm] is not set then key can be used for any algorithm with same kty (RFC 8152), returns [IllegalArgumentException] for invalid kty/algorithm pairs
  */
 @Throws(Throwable::class)
-fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): CoseKey =
+fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseKey> =
     when (this) {
         is CryptoPublicKey.Ec ->
             if ((algorithm != null) && (algorithm != when (curve) {
@@ -128,16 +135,18 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): CoseKey =
                     EcCurve.SECP_384_R_1 -> CoseAlgorithm.ES384
                     EcCurve.SECP_521_R_1 -> CoseAlgorithm.ES512
                 })
-            ) throw IllegalArgumentException("Algorithm and Key Type mismatch")
-            else CoseKey(
-                keyParams = CoseKeyParams.EcYByteArrayParams(
-                    curve = curve.toCoseCurve(),
-                    x = x,
-                    y = y
-                ),
-                type = CoseKeyType.EC2,
-                keyId = keyId.encodeToByteArray(),
-                algorithm = algorithm
+            ) failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
+            else success(
+                CoseKey(
+                    keyParams = CoseKeyParams.EcYByteArrayParams(
+                        curve = curve.toCoseCurve(),
+                        x = x,
+                        y = y
+                    ),
+                    type = CoseKeyType.EC2,
+                    keyId = keyId.encodeToByteArray(),
+                    algorithm = algorithm
+                )
             )
 
         is CryptoPublicKey.Rsa ->
@@ -145,15 +154,17 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): CoseKey =
                     CoseAlgorithm.PS256, CoseAlgorithm.PS384, CoseAlgorithm.PS512,
                     CoseAlgorithm.RS256, CoseAlgorithm.RS384, CoseAlgorithm.RS512
                 ))
-            ) throw IllegalArgumentException("Algorithm and Key Type mismatch")
-            else CoseKey(
-                keyParams = CoseKeyParams.RsaParams(
-                    n = n,
-                    e = e.encodeToByteArray()
-                ),
-                type = CoseKeyType.RSA,
-                keyId = keyId.encodeToByteArray(),
-                algorithm = algorithm
+            ) failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
+            else success(
+                CoseKey(
+                    keyParams = CoseKeyParams.RsaParams(
+                        n = n,
+                        e = e.encodeToByteArray()
+                    ),
+                    type = CoseKeyType.RSA,
+                    keyId = keyId.encodeToByteArray(),
+                    algorithm = algorithm
+                )
             )
     }
 

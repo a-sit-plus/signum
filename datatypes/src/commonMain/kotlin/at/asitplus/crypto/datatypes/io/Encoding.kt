@@ -87,11 +87,16 @@ object MultibaseHelper {
     // 0x1200 would be with compression, so we'll use 0x1290
     private fun multicodecWrapEC(it: ByteArray) = byteArrayOf(0x12.toByte(), 0x90.toByte()) + it
 
-    // No compression, because decompression would need some EC math
+    /**
+     * Simple Ec Key encoding, if appended with ANSI_PREFIX then valid ANSI X9.63 encoding
+     * No compression, because decompression would need some EC math
+     */
     fun encodeEcKey(key: CryptoPublicKey.Ec): ByteArray =
         key.x.ensureSize(key.curve.coordinateLengthBytes) + key.y.ensureSize(key.curve.coordinateLengthBytes)
 
-    //PKCS#1 encoded RSA Public Key
+    /**
+     * PKCS#1 encoded RSA Public Key
+     */
     fun encodeRsaKey(key: CryptoPublicKey.Rsa): ByteArray =
         asn1Sequence {
             append(
@@ -110,7 +115,6 @@ object MultibaseHelper {
      * uncompressed P-256 key. We can't use the compressed format, because decoding that would
      * require some EC Point math...
      */
-
     fun calcKeyId(key: CryptoPublicKey): String {
         return when (key) {
             is CryptoPublicKey.Ec -> "$PREFIX_DID_KEY:${multibaseWrapBase64(multicodecWrapEC(encodeEcKey(key)))}"
@@ -142,17 +146,21 @@ object MultibaseHelper {
                 ?: throw SerializationException("Base64 decoding failed")
         } else throw IllegalArgumentException("Encoding not supported")
 
+    @Throws(Throwable::class)
     private fun decodeEcKey(it: ByteArray): CryptoPublicKey {
         val bytes = byteArrayOf(CryptoPublicKey.Ec.ANSI_PREFIX, *it)
         return CryptoPublicKey.Ec.fromAnsiX963Bytes(bytes)
     }
 
+    @Throws(Throwable::class)
     private fun decodeRsaKey(it: ByteArray): CryptoPublicKey =
         CryptoPublicKey.Rsa.fromPKCS1encoded(it)
 
+    @Throws(Throwable::class)
     private fun decodeKeyId(keyId: String): Pair<Boolean, ByteArray> =
         multiKeyGetKty(multibaseDecode(multiKeyRemovePrefix(keyId)))
 
+    @Throws(Throwable::class)
     internal fun calcPublicKey(keyId: String): CryptoPublicKey {
         val multiKey = decodeKeyId(keyId)
         return when (multiKey.first) {
