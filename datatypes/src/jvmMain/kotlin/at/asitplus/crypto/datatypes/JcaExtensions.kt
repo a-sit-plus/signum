@@ -1,6 +1,9 @@
 package at.asitplus.crypto.datatypes
 
+import at.asitplus.KmmResult
+import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.asn1.ensureSize
+import kotlinx.serialization.SerializationException
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.sec.SECNamedCurves
@@ -48,7 +51,7 @@ val EcCurve.jcaName
         EcCurve.SECP_521_R_1 -> "secp521r1"
     }
 
-fun EcCurve.Companion.byJcaName(name: String) = EcCurve.entries.find { it.jcaName == name }
+fun EcCurve.Companion.byJcaName(name: String): EcCurve? = EcCurve.entries.find { it.jcaName == name }
 
 
 fun CryptoPublicKey.getPublicKey() = when (this) {
@@ -71,15 +74,15 @@ fun CryptoPublicKey.Rsa.getPublicKey(): RSAPublicKey =
         RSAPublicKeySpec(BigInteger(1, n), BigInteger.valueOf(e.toLong()))
     ) as RSAPublicKey
 
-
-fun CryptoPublicKey.Ec.Companion.fromJcaKey(publicKey: ECPublicKey): CryptoPublicKey.Ec? {
+@Throws(Throwable::class)
+fun CryptoPublicKey.Ec.Companion.fromJcaKey(publicKey: ECPublicKey): CryptoPublicKey.Ec {
     val curve = EcCurve.byJcaName(
         SECNamedCurves.getName(
             SubjectPublicKeyInfo.getInstance(
                 ASN1Sequence.getInstance(publicKey.encoded)
             ).algorithm.parameters as ASN1ObjectIdentifier
         )
-    ) ?: return null
+    ) ?: throw SerializationException("Unknown Jca name")
     return fromCoordinates(
         curve,
         publicKey.w.affineX.toByteArray().ensureSize(curve.coordinateLengthBytes),
@@ -87,12 +90,15 @@ fun CryptoPublicKey.Ec.Companion.fromJcaKey(publicKey: ECPublicKey): CryptoPubli
     )
 }
 
-fun CryptoPublicKey.Companion.fromJcaKey(publicKey: PublicKey) =
-    if (publicKey is RSAPublicKey) CryptoPublicKey.Rsa.fromJcaKey(publicKey)
-    else if (publicKey is ECPublicKey) CryptoPublicKey.Ec.fromJcaKey(publicKey)
-    else throw IllegalArgumentException("Unsupported Key Type")
+fun CryptoPublicKey.Rsa.Companion.fromJcaKey(publicKey: RSAPublicKey): CryptoPublicKey.Rsa =
+    CryptoPublicKey.Rsa(publicKey.modulus.toByteArray(), publicKey.publicExponent.toInt())
 
+fun CryptoPublicKey.Companion.fromJcaKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
+    runCatching {
+        when (publicKey) {
+            is RSAPublicKey -> CryptoPublicKey.Rsa.fromJcaKey(publicKey)
+            is ECPublicKey -> CryptoPublicKey.Ec.fromJcaKey(publicKey)
+            else -> throw IllegalArgumentException("Unsupported Key Type")
+        }
+    }.wrap()
 
-fun CryptoPublicKey.Rsa.Companion.fromJcaKey(publicKey: RSAPublicKey): CryptoPublicKey.Rsa? {
-    return CryptoPublicKey.Rsa(publicKey.modulus.toByteArray(), publicKey.publicExponent.toInt())
-}

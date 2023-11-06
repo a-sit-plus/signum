@@ -14,6 +14,7 @@ import kotlinx.serialization.encoding.Encoder
 /**
  * EC Curve Class [jwkName] really does use established JWK curve names
  */
+@OptIn(ExperimentalUnsignedTypes::class)
 @Serializable(with = EcCurveSerializer::class)
 enum class EcCurve(
     val jwkName: String,

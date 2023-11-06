@@ -13,6 +13,7 @@ import kotlinx.serialization.encoding.Encoder
 /**
  * Since we support only JWS algorithms (with one exception), this class is called what it's called.
  */
+@OptIn(ExperimentalUnsignedTypes::class)
 @Serializable(with = JwsAlgorithmSerializer::class)
 enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifier) : Asn1Encodable<Asn1Sequence>,
     Identifiable {
@@ -107,6 +108,7 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
 
         private fun fromOid(oid: ObjectIdentifier) = entries.first { it.oid == oid }
 
+        @Throws(Throwable::class)
         override fun decodeFromTlv(src: Asn1Sequence): JwsAlgorithm {
             return when (val oid = (src.nextChild() as Asn1Primitive).readOid()) {
                 ES512.oid, ES384.oid, ES256.oid -> JwsAlgorithm.fromOid(oid)
@@ -173,6 +175,6 @@ object JwsAlgorithmSerializer : KSerializer<JwsAlgorithm> {
 
     override fun deserialize(decoder: Decoder): JwsAlgorithm {
         val decoded = decoder.decodeString()
-        return JwsAlgorithm.values().first { it.identifier == decoded }
+        return JwsAlgorithm.entries.first { it.identifier == decoded }
     }
 }

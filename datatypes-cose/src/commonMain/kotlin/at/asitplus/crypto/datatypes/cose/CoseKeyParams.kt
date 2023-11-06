@@ -56,9 +56,9 @@ sealed class CoseKeyParams() {
         override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> {
             return runCatching {
                 CryptoPublicKey.Ec.fromCoordinates(
-                    curve = curve?.toJwkCurve() ?: throw IllegalArgumentException("Missing or invalid curve!"),
-                    x = x ?: throw IllegalArgumentException("Missing x-coordinate!"),
-                    y = y ?: throw IllegalArgumentException("Missing y-coordinate!")
+                    curve = curve?.toJwkCurve() ?: throw IllegalArgumentException("Missing or invalid curve"),
+                    x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
+                    y = y ?: throw IllegalArgumentException("Missing y-coordinate")
                 )
             }.wrap()
         }
@@ -147,8 +147,8 @@ sealed class CoseKeyParams() {
         override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> {
             return runCatching {
                 CryptoPublicKey.Rsa(
-                    n = n ?: throw IllegalArgumentException("Missing modulus n!"),
-                    e = e?.let { bytes -> Int.decodeFromDer(bytes) } ?: throw IllegalArgumentException("Missing or invalid exponent e!")
+                    n = n ?: throw IllegalArgumentException("Missing modulus n"),
+                    e = e?.let { bytes -> Int.decodeFromDer(bytes) } ?: throw IllegalArgumentException("Missing or invalid exponent e")
                 )
             }.wrap()
         }

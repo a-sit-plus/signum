@@ -40,7 +40,7 @@ class JsonWebKeyJvmTest : FreeSpec({
         jsonWebKey.keyId shouldHaveMinLength 32
 
         "it can be recreated from keyId" {
-            val recreatedJwk = JsonWebKey.fromKeyId(jsonWebKey.keyId!!)
+            val recreatedJwk = JsonWebKey.fromKeyId(jsonWebKey.keyId!!).getOrThrow()
             recreatedJwk.shouldNotBeNull()
             recreatedJwk.keyId shouldBe jsonWebKey.keyId
             recreatedJwk.x shouldBe jsonWebKey.x
@@ -48,7 +48,7 @@ class JsonWebKeyJvmTest : FreeSpec({
         }
 
         "it can be converted back to CryptoPublicKey" {
-            val recreatedPubKey = jsonWebKey.toCryptoPublicKey()
+            val recreatedPubKey = jsonWebKey.toCryptoPublicKey().getOrThrow()
             (pubKey == recreatedPubKey) shouldBe true
         }
     }
@@ -65,12 +65,12 @@ class JsonWebKeyJvmTest : FreeSpec({
         jwk.keyId.shouldNotBeNull()
 
         "it can be converted back to CryptoPublicKey" {
-            val recreatedPubKey = jwk.toCryptoPublicKey()
+            val recreatedPubKey = jwk.toCryptoPublicKey().getOrThrow()
             (pubKey == recreatedPubKey) shouldBe true
         }
 
         "it can be recreated from keyId" {
-            val recreatedJwk = JsonWebKey.fromKeyId(jwk.keyId!!)
+            val recreatedJwk = JsonWebKey.fromKeyId(jwk.keyId!!).getOrThrow()
             recreatedJwk.shouldNotBeNull()
             recreatedJwk.keyId shouldBe jwk.keyId
             recreatedJwk.n shouldBe jwk.n
