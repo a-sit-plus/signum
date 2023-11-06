@@ -27,9 +27,9 @@ class CoseKeySerializationTest : FreeSpec({
                             KeyPairGenerator.getInstance("EC").apply {
                                 initialize(256)
                             }.genKeyPair().public
-                        )!!.toCoseKey().getOrThrow(), CryptoPublicKey.fromJcaKey(KeyPairGenerator.getInstance("EC").apply {
+                        ).getOrThrow().toCoseKey(), CryptoPublicKey.fromJcaKey(KeyPairGenerator.getInstance("EC").apply {
                             initialize(256)
-                        }.genKeyPair().public)!!.toCoseKey().getOrThrow()
+                        }.genKeyPair().public).getOrThrow().toCoseKey()
                     )
                 )
             println(cose.encodeToString(Base16))
@@ -55,7 +55,7 @@ class CoseKeySerializationTest : FreeSpec({
                     keys
                 ) { pubKey ->
 
-                    val coseKey = CryptoPublicKey.fromJcaKey(pubKey)!!.toCoseKey().getOrThrow()
+                    val coseKey = CryptoPublicKey.fromJcaKey(pubKey).getOrThrow().toCoseKey()
                     val cose =
                         cborSerializer.encodeToByteArray(coseKey)
                     println(cose.encodeToString(Base16))
@@ -83,7 +83,7 @@ class CoseKeySerializationTest : FreeSpec({
                     keys
                 ) { pubKey ->
 
-                    val coseKey = CryptoPublicKey.fromJcaKey(pubKey)!!.toCoseKey(CoseAlgorithm.RS256).getOrThrow()
+                    val coseKey = CryptoPublicKey.fromJcaKey(pubKey).getOrThrow().toCoseKey(CoseAlgorithm.RS256)
                     val cose =
                         cborSerializer.encodeToByteArray(coseKey)
                     println(cose.encodeToString(Base16))
