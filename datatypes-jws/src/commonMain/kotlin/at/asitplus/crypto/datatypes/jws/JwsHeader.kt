@@ -85,7 +85,7 @@ data class JwsHeader(
         jsonWebKey
             ?: keyId?.let { JsonWebKey.fromKeyId(it).getOrNull() }
             ?: certificateChain?.firstOrNull()
-                ?.let { X509Certificate.decodeFromTlv(Asn1Element.parse(it) as Asn1Sequence).tbsCertificate.publicKey.toJsonWebKey() }
+                ?.let { X509Certificate.decodeFromTlv(Asn1Element.parse(it) as Asn1Sequence).tbsCertificate.publicKey.toJsonWebKey().getOrNull() }
     }
 
     companion object {

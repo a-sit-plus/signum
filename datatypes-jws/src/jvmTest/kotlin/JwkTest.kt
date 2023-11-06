@@ -30,8 +30,8 @@ class JwkTest : FreeSpec({
                 keys
             ) { pubKey ->
 
-                val cryptoPubKey = CryptoPublicKey.Ec.fromJcaKey(pubKey)!!
-                val own = cryptoPubKey.toJsonWebKey()
+                val cryptoPubKey = CryptoPublicKey.Ec.fromJcaKey(pubKey)
+                val own = cryptoPubKey.toJsonWebKey().getOrThrow()
                 own.keyId shouldBe cryptoPubKey.jwkId
                 own.shouldNotBeNull()
                 println(own.serialize())

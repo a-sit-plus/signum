@@ -31,7 +31,7 @@ class JsonWebKeyJvmTest : FreeSpec({
         val xFromBc = (keyPair.public as ECPublicKey).w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
         val yFromBc = (keyPair.public as ECPublicKey).w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
         val pubKey = CryptoPublicKey.Ec.fromCoordinates(ecCurve, xFromBc, yFromBc)
-        val jsonWebKey = pubKey.toJsonWebKey()
+        val jsonWebKey = pubKey.toJsonWebKey().getOrThrow()
 
         jsonWebKey.shouldNotBeNull()
         jsonWebKey.x shouldBe xFromBc
@@ -57,7 +57,7 @@ class JsonWebKeyJvmTest : FreeSpec({
         val nFromBc = (keyPairRSA.public as RSAPublicKey).modulus.toByteArray()
         val eFromBc = (keyPairRSA.public as RSAPublicKey).publicExponent.toInt()
         val pubKey = CryptoPublicKey.Rsa(nFromBc, eFromBc)
-        val jwk = pubKey.toJsonWebKey()
+        val jwk = pubKey.toJsonWebKey().getOrThrow()
 
         jwk.shouldNotBeNull()
         jwk.n shouldBe nFromBc
