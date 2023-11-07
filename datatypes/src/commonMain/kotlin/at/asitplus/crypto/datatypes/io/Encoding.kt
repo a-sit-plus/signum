@@ -174,20 +174,11 @@ object MultibaseHelper {
         if (!keyId.startsWith("$PREFIX_DID_KEY:")) return null
         val stripped = keyId.removePrefix("$PREFIX_DID_KEY:")
         val multibaseDecode = multibaseDecode(stripped)
-        val multiKey = multiKeyDecode(multibaseDecode) ?: return null
+        val multiKey = multiKeyGetKty(multibaseDecode)
 
         return decodeEcKeyDep(multiKey.second)
     }
 
-    @Deprecated("Dependency of calcEncPublicKeyCoords - Use [multiKeyGetKty] instead ")
-    // 0x1200 would be with compression, so we'll use 0x1290
-    private fun multiKeyDecode(it: ByteArray?) = if (it != null && it.size > 3 && it[0] == 0x12.toByte()) {
-        if (it[1] == 0x90.toByte()) {
-            true to it.drop(2).toByteArray()
-        } else if (it[1] == 0x05.toByte()) {
-            false to it.drop(2).toByteArray()
-        } else null
-    } else null
 
     @Deprecated("Use [Ec.fromAnsiX963Bytes] instead")
     // No decompression, because that would need some EC math
