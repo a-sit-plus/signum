@@ -126,7 +126,6 @@ data class CoseKey(
  * Converts [CryptoPublicKey] into a KmmResult wrapped [CoseKey]
  * If [algorithm] is not set then key can be used for any algorithm with same kty (RFC 8152), returns [IllegalArgumentException] for invalid kty/algorithm pairs
  */
-@Throws(Throwable::class)
 fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseKey> =
     when (this) {
         is CryptoPublicKey.Ec ->
