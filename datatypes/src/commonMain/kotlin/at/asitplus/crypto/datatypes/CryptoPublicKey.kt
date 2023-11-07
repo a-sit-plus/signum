@@ -72,9 +72,9 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          * @throws Throwable all sorts of exception on invalid input
          */
         @Throws(Throwable::class)
-        fun fromKeyId(it: String): CryptoPublicKey {
-            return MultibaseHelper.calcPublicKey(it)
-        }
+        fun fromKeyId(it: String): CryptoPublicKey =
+            MultibaseHelper.calcPublicKey(it)
+        
 
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Sequence): CryptoPublicKey = runRethrowing {
