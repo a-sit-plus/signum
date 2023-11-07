@@ -7,6 +7,7 @@ import at.asitplus.crypto.datatypes.asn1.asn1Sequence
 import at.asitplus.crypto.datatypes.asn1.ensureSize
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.base64.Base64ConfigBuilder
+import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArrayOrNull
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.KSerializer
@@ -50,9 +51,14 @@ object ByteArrayBase64Serializer : KSerializer<ByteArray> {
     override fun serialize(encoder: Encoder, value: ByteArray) {
         encoder.encodeString(value.encodeToString(Base64Strict))
     }
+
+    //cannot annotate with throws here because interface has no annotation
+    /**
+     * @throws SerializationException on error
+     */
     override fun deserialize(decoder: Decoder): ByteArray {
-        return decoder.decodeString().decodeToByteArrayOrNull(Base64Strict)
-            ?: throw SerializationException("Base64 decoding failed")
+        return kotlin.runCatching { decoder.decodeString().decodeToByteArray(Base64Strict) }
+            .getOrElse { throw SerializationException("Base64 decoding failed", it) }
     }
 
 }
@@ -70,10 +76,14 @@ object ByteArrayBase64UrlSerializer : KSerializer<ByteArray> {
         encoder.encodeString(value.encodeToString(Base64UrlStrict))
     }
 
+    //cannot annotate with throws here because interface has no annotation
+    /**
+     * @throws SerializationException on error
+     */
     override fun deserialize(decoder: Decoder): ByteArray {
-        return decoder.decodeString().decodeToByteArrayOrNull(Base64UrlStrict) ?: byteArrayOf()
+        return kotlin.runCatching { decoder.decodeString().decodeToByteArray(Base64UrlStrict) }
+            .getOrElse { throw SerializationException("Base64 decoding failed", it) }
     }
-
 }
 
 
@@ -169,6 +179,7 @@ object MultibaseHelper {
         }
     }
 
+    //These two functions will remain until the latest version of this lib is integrated back into che VC lib.
     @Deprecated("Use [CryptoPublicKey.fromKeyId] instead")
     fun calcEcPublicKeyCoords(keyId: String): Pair<ByteArray, ByteArray>? {
         if (!keyId.startsWith("$PREFIX_DID_KEY:")) return null

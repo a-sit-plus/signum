@@ -107,11 +107,11 @@ data class CoseKey(
             if (type == CoseKeyType.EC2 && curve == CoseEllipticCurve.P256) {
                 val pubKey = CryptoPublicKey.Ec.fromAnsiX963Bytes(it)
                 pubKey.toCoseKey()
-            } else null
+            } else KmmResult.failure(UnsupportedOperationException("Key type $type not supported"))
 
 
         @Throws(Throwable::class)
-        @Deprecated("Use above instead")
+        @Deprecated("Use [fromIosEncoded] instead")
         fun fromCoordinates(
             type: CoseKeyType,
             curve: CoseEllipticCurve,

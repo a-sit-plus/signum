@@ -8,7 +8,7 @@ import at.asitplus.crypto.datatypes.asn1.decodeFromDer
 /**
  * Wrapper to handle parameters for different COSE public key types.
  */
-sealed class CoseKeyParams() {
+sealed class CoseKeyParams {
 
     abstract fun toCryptoPublicKey(): KmmResult<CryptoPublicKey>
 
