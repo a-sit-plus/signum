@@ -18,7 +18,8 @@
  * More convenient explicit tagging
 
 
-### NEXT
+### 2.1.0
+* Kotlin 1.9.20
 * COSE Support
 * Full RSA and HMAC Support
 * New interface `Asn1OctetString` to unify both ASN.1 OCTET STREAM classes
@@ -28,5 +29,6 @@
   * Throw new type `Asn1Exception` for ASN.1-related errors
   * Throw `IllegalArgumentException` for input-related errors
   * Add `xxxOrNull()` functions for all encoding/decoding/parsing functions
+  * Add `xxxSafe()` functions to encapsulate endocing/decoding in `KmmResult`
   * Return `KmmResult` for conversions between different key representations ( i.e. `CryptoPublicKey`, `CoseKey` and `JsonWebKey`) 
 

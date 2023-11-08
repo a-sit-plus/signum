@@ -1,9 +1,8 @@
 # 🔥🔥🔥KMP Crypto🔥🔥🔥
 
-[![Build KMP](https://github.com/a-sit-plus/kmp-crypto/actions/workflows/build-kmp.yml/badge.svg)](https://github.com/a-sit-plus/kmp-crypto/actions/workflows/build-kmp.yml)
 [![GitHub license](https://img.shields.io/badge/license-Apache%20License%202.0-brightgreen.svg?style=flat)](http://www.apache.org/licenses/LICENSE-2.0)
 [![Kotlin](https://img.shields.io/badge/kotlin-multiplatform-orange.svg?logo=kotlin)](http://kotlinlang.org)
-[![Kotlin](https://img.shields.io/badge/kotlin-1.9.10-blue.svg?logo=kotlin)](http://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/kotlin-1.9.20-blue.svg?logo=kotlin)](http://kotlinlang.org)
 [![Java](https://img.shields.io/badge/java-11+-blue.svg?logo=OPENJDK)](https://www.oracle.com/java/technologies/downloads/#java11)
 [![Maven Central](https://img.shields.io/maven-central/v/at.asitplus.crypto/datatypes)](https://mvnrepository.com/artifact/at.asitplus.crypto/datatypes/)
 
@@ -81,7 +80,7 @@ material._
 ### Certificate Parsing
 
 ```kotlin
-val cert = X509Certificate.derDecode(certBytes)
+val cert = X509Certificate.decodefromDer(certBytes)
 
 when (val pk = cert.publicKey) {
     is CryptoPublicKey.Ec -> println(
@@ -258,7 +257,7 @@ Any complex data structure (such as CSR, public key, certificate, …) implement
 To also suport going the other way, the companion objects of these complex classes implement `Asn1Decodable`, which
 allows for
 
-* directly parsing DER-encoded byte arrays by calling `.derDecode(bytes)`
+* directly parsing DER-encoded byte arrays by calling `.decodeFromDer(bytes)`
 * processing an `Asn1Element` by calling `.fromTlv(src)`
 
 #### Decoding Values
