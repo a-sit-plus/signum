@@ -70,17 +70,17 @@ interface Asn1Decodable<A : Asn1Element, T : Asn1Encodable<A>> {
      * @throws Asn1Exception if invalid data is provided
      */
     @Throws(Asn1Exception::class)
-    fun derDecode(src: ByteArray): T = decodeFromTlv(Asn1Element.parse(src) as A)
+    fun decodeFromDer(src: ByteArray): T = decodeFromTlv(Asn1Element.parse(src) as A)
 
     /**
-     * Exception-free version of [derDecode]
+     * Exception-free version of [decodeFromDer]
      */
-    fun derDecodeOrNull(src: ByteArray) = runCatching { derDecode(src) }.getOrNull()
+    fun decodeFromDerOrNull(src: ByteArray) = runCatching { decodeFromDer(src) }.getOrNull()
 
     /**
-     * Safe version of [derDecode], wrapping the result into a [KmmResult]
+     * Safe version of [decodeFromDer], wrapping the result into a [KmmResult]
      */
-    fun derDecodeSafe(src: ByteArray) = runCatching { derDecode(src) }.wrap()
+    fun decodeFromDerSafe(src: ByteArray) = runCatching { decodeFromDer(src) }.wrap()
 }
 
 interface Asn1TagVerifyingDecodable<T : Asn1Encodable<Asn1Primitive>> :
@@ -108,21 +108,21 @@ interface Asn1TagVerifyingDecodable<T : Asn1Encodable<Asn1Primitive>> :
 
 
     /**
-     * Same as [Asn1Decodable.derDecode], but allows overriding the tag, should the implementing class verify it.
+     * Same as [Asn1Decodable.decodeFromDer], but allows overriding the tag, should the implementing class verify it.
      * Useful for implicit tagging.
      */
     @Throws(Asn1Exception::class)
-    fun derDecode(src: ByteArray, tagOverride: UByte?): T =
+    fun decodeFromDer(src: ByteArray, tagOverride: UByte?): T =
         decodeFromTlv(Asn1Element.parse(src) as Asn1Primitive, tagOverride)
 
     /**
-     * Exception-free version of [derDecode]
+     * Exception-free version of [decodeFromDer]
      */
-    fun derDecodeOrNull(src: ByteArray, tagOverride: UByte?) =
-        runCatching { derDecode(src, tagOverride) }.getOrNull()
+    fun decodeFromDerOrNull(src: ByteArray, tagOverride: UByte?) =
+        runCatching { decodeFromDer(src, tagOverride) }.getOrNull()
 
     /**
-     * Safe version of [derDecode], wrapping the result into a [KmmResult]
+     * Safe version of [decodeFromDer], wrapping the result into a [KmmResult]
      */
-    fun derDecodeSafe(src: ByteArray,tagOverride: UByte?)= runCatching { derDecode(src, tagOverride) }.wrap()
+    fun decodeFromDerSafe(src: ByteArray, tagOverride: UByte?)= runCatching { decodeFromDer(src, tagOverride) }.wrap()
 }

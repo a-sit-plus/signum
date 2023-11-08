@@ -34,7 +34,7 @@ class X509CertParserTest : FreeSpec({
         //ok-uniqueid-incomplete-byte.der
         val derBytes =
             javaClass.classLoader.getResourceAsStream("certs/ok-uniqueid-incomplete-byte.der").readBytes()
-        X509Certificate.derDecode(derBytes)
+        X509Certificate.decodeFromDer(derBytes)
     }
 
 
@@ -48,7 +48,7 @@ class X509CertParserTest : FreeSpec({
             println(jcaCert.encoded.encodeToString(Base16))
             val elem = Asn1Element.parse(certBytes)
         Json{prettyPrint=true}.encodeToString(elem)
-            val cert = X509Certificate.derDecode(certBytes)
+            val cert = X509Certificate.decodeFromDer(certBytes)
 
             when (val pk = cert.publicKey) {
                 is CryptoPublicKey.Ec -> println(
@@ -160,7 +160,7 @@ class X509CertParserTest : FreeSpec({
                     .getInstance("X509")
                     .generateCertificate(ByteArrayInputStream(encodedSrc)) as java.security.cert.X509Certificate
 
-                val cert = X509Certificate.derDecode(encodedSrc)
+                val cert = X509Certificate.decodeFromDer(encodedSrc)
 
                 jcaCert.encoded shouldBe encodedSrc
                 cert.encodeToTlv().derEncoded shouldBe encodedSrc
