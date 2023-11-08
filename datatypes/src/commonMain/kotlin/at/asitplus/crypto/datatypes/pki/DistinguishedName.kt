@@ -80,6 +80,19 @@ sealed class DistinguishedName : Asn1Encodable<Asn1Set>, Identifiable {
         }
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as DistinguishedName
+
+        return value == other.value
+    }
+
+    override fun hashCode(): Int {
+        return value.hashCode()
+    }
+
     companion object : Asn1Decodable<Asn1Set, DistinguishedName> {
 
         @OptIn(ExperimentalUnsignedTypes::class)

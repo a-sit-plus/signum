@@ -98,6 +98,23 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
     }
 
     override fun encodeToTlv() = Asn1Primitive(tag, value.encodeToByteArray())
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as Asn1String
+
+        if (tag != other.tag) return false
+        if (value != other.value) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = tag.hashCode()
+        result = 31 * result + value.hashCode()
+        return result
+    }
 
     companion object : Asn1Decodable<Asn1Primitive, Asn1String> {
 

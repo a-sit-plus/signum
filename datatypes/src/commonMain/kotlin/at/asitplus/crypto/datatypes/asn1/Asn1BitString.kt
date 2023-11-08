@@ -97,4 +97,21 @@ class Asn1BitString private constructor(
     }
 
     override fun encodeToTlv() = Asn1Primitive(BERTags.BIT_STRING, byteArrayOf(numPaddingBits, *rawBytes))
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as Asn1BitString
+
+        if (numPaddingBits != other.numPaddingBits) return false
+        if (!rawBytes.contentEquals(other.rawBytes)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = numPaddingBits.toInt()
+        result = 31 * result + rawBytes.contentHashCode()
+        return result
+    }
 }

@@ -19,13 +19,13 @@ data class X509CertificateExtension @Throws(Asn1Exception::class) private constr
         if (value.tag != BERTags.OCTET_STRING) throw Asn1TagMismatchException(BERTags.OCTET_STRING, value.tag)
     }
 
-    public constructor(
+    constructor(
         oid: ObjectIdentifier,
         critical: Boolean = false,
         value: Asn1EncapsulatingOctetString
     ) : this(oid, value, critical)
 
-    public constructor(
+    constructor(
         oid: ObjectIdentifier,
         critical: Boolean = false,
         value: Asn1PrimitiveOctetString

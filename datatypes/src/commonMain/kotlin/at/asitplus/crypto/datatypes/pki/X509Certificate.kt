@@ -77,6 +77,42 @@ data class TbsCertificate(
         }
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as TbsCertificate
+
+        if (version != other.version) return false
+        if (!serialNumber.contentEquals(other.serialNumber)) return false
+        if (signatureAlgorithm != other.signatureAlgorithm) return false
+        if (issuerName != other.issuerName) return false
+        if (validFrom != other.validFrom) return false
+        if (validUntil != other.validUntil) return false
+        if (subjectName != other.subjectName) return false
+        if (publicKey != other.publicKey) return false
+        if (issuerUniqueID != other.issuerUniqueID) return false
+        if (subjectUniqueID != other.subjectUniqueID) return false
+        if (extensions != other.extensions) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = version
+        result = 31 * result + serialNumber.contentHashCode()
+        result = 31 * result + signatureAlgorithm.hashCode()
+        result = 31 * result + issuerName.hashCode()
+        result = 31 * result + validFrom.hashCode()
+        result = 31 * result + validUntil.hashCode()
+        result = 31 * result + subjectName.hashCode()
+        result = 31 * result + publicKey.hashCode()
+        result = 31 * result + (issuerUniqueID?.hashCode() ?: 0)
+        result = 31 * result + (subjectUniqueID?.hashCode() ?: 0)
+        result = 31 * result + (extensions?.hashCode() ?: 0)
+        return result
+    }
+
     companion object : Asn1Decodable<Asn1Sequence, TbsCertificate> {
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Sequence) = runRethrowing {
