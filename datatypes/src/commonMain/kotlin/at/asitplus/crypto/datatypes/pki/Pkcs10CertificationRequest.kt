@@ -51,6 +51,28 @@ data class TbsCertificationRequest(
         tagged(0u) { attributes?.map { append(it) } }
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as TbsCertificationRequest
+
+        if (version != other.version) return false
+        if (subjectName != other.subjectName) return false
+        if (publicKey != other.publicKey) return false
+        if (attributes != other.attributes) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = version
+        result = 31 * result + subjectName.hashCode()
+        result = 31 * result + publicKey.hashCode()
+        result = 31 * result + (attributes?.hashCode() ?: 0)
+        return result
+    }
+
     companion object : Asn1Decodable<Asn1Sequence, TbsCertificationRequest> {
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Sequence) = runRethrowing {

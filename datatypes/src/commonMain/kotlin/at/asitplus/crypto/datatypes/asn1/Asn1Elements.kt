@@ -28,12 +28,12 @@ sealed class Asn1Element(
         if (!content.contentEquals(other.content)) return false
         if (this is Asn1Structure && other !is Asn1Structure) return false
         if (this is Asn1Primitive && other !is Asn1Primitive) return false
-        if (this is Asn1Primitive) {
-            return (this.content contentEquals other.content)
+        return if (this is Asn1Primitive) {
+            (this.content contentEquals other.content)
         } else {
             this as Asn1Structure
             other as Asn1Structure
-            return children == other.children
+            children == other.children
         }
     }
 
