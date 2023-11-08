@@ -12,6 +12,7 @@ import kotlinx.serialization.Transient
 /**
  * Representation of a public key structure
  */
+@OptIn(ExperimentalUnsignedTypes::class)
 @Serializable
 sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
@@ -44,7 +45,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             bitString(
                 byteArrayOf(
                     0x04,
-                    *(x.ensureSize(curve.coordinateLengthBytes)),
+                    *x.ensureSize(curve.coordinateLengthBytes),
                     *y.ensureSize(curve.coordinateLengthBytes)
                 )
             )
@@ -71,10 +72,9 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          * @throws Throwable all sorts of exception on invalid input
          */
         @Throws(Throwable::class)
-        fun fromKeyId(it: String): CryptoPublicKey? {
-            val strippedKey = MultibaseHelper.stripKeyId(it)
-            return MultibaseHelper.calcPublicKey(strippedKey)
-        }
+        fun fromKeyId(it: String): CryptoPublicKey =
+            MultibaseHelper.calcPublicKey(it)
+        
 
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Sequence): CryptoPublicKey = runRethrowing {
@@ -199,14 +199,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          * PKCS#1 encoded RSA Public Key
          */
         @Transient
-        override val iosEncoded = asn1Sequence {
-            append(
-                Asn1Primitive(BERTags.INTEGER,
-                    n.ensureSize(bits.number / 8u)
-                        .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
-            )
-            int(e)
-        }.derEncoded
+        override val iosEncoded = MultibaseHelper.encodeRsaKey(this)
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -258,6 +251,16 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
         override val oid = Ec.oid
 
+        /**
+         * ANSI X9.63 Encoding as used by iOS
+         */
+        @Transient
+        override val iosEncoded =
+            byteArrayOf(ANSI_PREFIX, *MultibaseHelper.encodeEcKey(this))
+
+        @Transient
+        override val keyId by lazy { MultibaseHelper.calcKeyId(this) }
+
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other == null || this::class != other::class) return false
@@ -304,16 +307,6 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
             override val oid = KnownOIDs.ecPublicKey
         }
-
-        /**
-         * ANSI X9.63 Encoding as used by iOS
-         */
-        @Transient
-        override val iosEncoded =
-            curve.coordinateLengthBytes.let { byteArrayOf(ANSI_PREFIX, *(x.ensureSize(it)), *(y.ensureSize(it))) }
-
-        @Transient
-        override val keyId = MultibaseHelper.calcKeyId(curve, x, y)
     }
 }
 

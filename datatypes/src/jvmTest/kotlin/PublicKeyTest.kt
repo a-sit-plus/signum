@@ -53,8 +53,8 @@ class PublicKeyTest : FreeSpec({
 
         "Equality tests" {
             val keyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair()
-            val pubKey1 = CryptoPublicKey.derDecode(keyPair.public.encoded)
-            val pubKey2 = CryptoPublicKey.derDecode(keyPair.public.encoded)
+            val pubKey1 = CryptoPublicKey.decodeFromDer(keyPair.public.encoded)
+            val pubKey2 = CryptoPublicKey.decodeFromDer(keyPair.public.encoded)
 
             pubKey1.hashCode() shouldBe pubKey2.hashCode()
             pubKey1 shouldBe pubKey2
@@ -102,8 +102,8 @@ class PublicKeyTest : FreeSpec({
         }
         "Equality tests" {
             val keyPair = KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }.genKeyPair()
-            val pubKey1 = CryptoPublicKey.derDecode(keyPair.public.encoded)
-            val pubKey2 = CryptoPublicKey.derDecode(keyPair.public.encoded)
+            val pubKey1 = CryptoPublicKey.decodeFromDer(keyPair.public.encoded)
+            val pubKey2 = CryptoPublicKey.decodeFromDer(keyPair.public.encoded)
 
             pubKey1.hashCode() shouldBe pubKey2.hashCode()
             pubKey1 shouldBe pubKey2

@@ -1,6 +1,8 @@
 package at.asitplus.crypto.datatypes.jws
 
 import at.asitplus.KmmResult
+import at.asitplus.KmmResult.Companion.success
+import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.EcCurve
 import at.asitplus.crypto.datatypes.asn1.decodeFromDer
@@ -41,7 +43,25 @@ data class JsonWebKey(
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val e: ByteArray? = null,
 ) {
-    fun serialize() = jsonSerializer.encodeToString(this)
+
+    val jwkThumbprint: String by lazy {
+        Json.encodeToString(this).encodeToByteArray().toByteString().sha256().base64Url()
+    }
+
+    val identifier: String by lazy {
+        keyId ?: "urn:ietf:params:oauth:jwk-thumbprint:sha256:${jwkThumbprint}"
+    }
+
+    override fun toString() =
+        "JsonWebKey(" +
+                "type=$type, " +
+                "curve=$curve, " +
+                "keyId=$keyId," +
+                "x=${x?.encodeToString(Base64Strict)}," +
+                "y=${y?.encodeToString(Base64Strict)}" +
+                "n=${n?.encodeToString(Base64Strict)})" +
+                "e=${e?.encodeToString(Base64Strict)}" +
+                ")"
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -83,95 +103,85 @@ data class JsonWebKey(
         return result
     }
 
+    /**
+     * @return a KmmResult wrapped [CryptoPublicKey] equivalent if conversion is possible (i.e. if all key params are set)
+     * or the first error.
+     */
+    fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
+        runCatching {
+            when (type) {
+                JwkType.EC -> {
+                    CryptoPublicKey.Ec.fromCoordinates(
+                        curve = curve ?: throw IllegalArgumentException("Missing or invalid curve"),
+                        x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
+                        y = y ?: throw IllegalArgumentException("Missing y-coordinate")
+                    ).apply { jwkId = identifier }
+                }
+
+                JwkType.RSA -> {
+                    CryptoPublicKey.Rsa(
+                        n = n ?: throw IllegalArgumentException("Missing modulus n"),
+                        e = e?.let { bytes -> Int.decodeFromDer(bytes) }
+                            ?: throw IllegalArgumentException("Missing or invalid exponent e")
+                    ).apply { jwkId = identifier }
+                }
+
+                else -> throw IllegalArgumentException("Missing key type")
+            }
+        }.wrap()
+
+    fun serialize() = jsonSerializer.encodeToString(this)
+
+    /**
+     * Contains convenience functions
+     */
     companion object {
+        fun deserialize(it: String): KmmResult<JsonWebKey> =
+            runCatching { jsonSerializer.decodeFromString<JsonWebKey>(it) }.wrap()
 
-        fun deserialize(it: String) = kotlin.runCatching {
-            jsonSerializer.decodeFromString<JsonWebKey>(it)
-        }.getOrNull()
+        fun fromKeyId(it: String): KmmResult<JsonWebKey> =
+            runCatching { CryptoPublicKey.fromKeyId(it).toJsonWebKey().getOrThrow() }.wrap()
 
-        fun fromKeyId(it: String): JsonWebKey? = CryptoPublicKey.fromKeyId(it)?.toJsonWebKey()
-        fun fromIosEncoded(bytes: ByteArray) = CryptoPublicKey.fromIosEncoded(bytes).toJsonWebKey()
+        fun fromIosEncoded(bytes: ByteArray): KmmResult<JsonWebKey> =
+            runCatching { CryptoPublicKey.fromIosEncoded(bytes).toJsonWebKey().getOrThrow() }.wrap()
+
+        fun fromCoordinates(curve: EcCurve, x: ByteArray, y: ByteArray): KmmResult<JsonWebKey> =
+            runCatching { CryptoPublicKey.Ec.fromCoordinates(curve, x, y).toJsonWebKey().getOrThrow() }.wrap()
     }
 
-    fun fromCoordinates(
-        curve: EcCurve,
-        x: ByteArray,
-        y: ByteArray
-    ): JsonWebKey = CryptoPublicKey.Ec.fromCoordinates(curve, x, y).toJsonWebKey()
 
-
-    @Deprecated("Use CryptoPublicKey functionality instead!")
+    @Deprecated("Use [fromIosEncoded] instead!")
     fun toAnsiX963ByteArray(): KmmResult<ByteArray> {
         if (x != null && y != null)
             return KmmResult.success(byteArrayOf(0x04.toByte()) + x + y);
         return KmmResult.failure(IllegalArgumentException())
     }
-
-    val jwkThumbprint: String by lazy {
-        Json.encodeToString(this).encodeToByteArray().toByteString().sha256().base64Url()
-    }
-
-    val identifier: String by lazy {
-        keyId ?: "urn:ietf:params:oauth:jwk-thumbprint:sha256:${jwkThumbprint}"
-    }
-
-    override fun toString() =
-        "JsonWebKey(" +
-                "type=$type, " +
-                "curve=$curve, " +
-                "keyId=$keyId," +
-                "x=${x?.encodeToString(Base64Strict)}," +
-                "y=${y?.encodeToString(Base64Strict)}" +
-                "n=${n?.encodeToString(Base64Strict)})" +
-                "e=${e?.encodeToString(Base64Strict)}" +
-                ")"
-
-    fun toCryptoPublicKey(): CryptoPublicKey? =
-        when (type) {
-            JwkType.EC -> {
-                this.curve?.let {
-                    CryptoPublicKey.Ec(
-                        curve = it,
-                        x = x ?: return null,
-                        y = y ?: return null
-                    )
-                }
-            }
-
-            JwkType.RSA -> {
-                this.let {
-                    CryptoPublicKey.Rsa(
-                        n = n ?: return null,
-                        e = e?.let { bytes -> Int.decodeFromDer(bytes) } ?: return null
-                    )
-                }
-            }
-
-            else -> null
-        }?.apply { jwkId = identifier }
-
 }
 
 /**
- * Converts a [CryptoPublicKey] to a [JsonWebKey]
+ * Converts a [CryptoPublicKey] to a KmmResult wrapped [JsonWebKey] - will never fail, wrapping for consistent types
  */
-fun CryptoPublicKey.toJsonWebKey(): JsonWebKey =
+fun CryptoPublicKey.toJsonWebKey(): KmmResult<JsonWebKey> =
     when (this) {
         is CryptoPublicKey.Ec ->
-            JsonWebKey(
-                type = JwkType.EC,
-                keyId = jwkId,
-                curve = curve,
-                x = x,
-                y = y
+            success(
+                JsonWebKey(
+                    type = JwkType.EC,
+                    keyId = jwkId,
+                    curve = curve,
+                    x = x,
+                    y = y
+                )
             )
 
         is CryptoPublicKey.Rsa ->
-            JsonWebKey(
-                type = JwkType.RSA,
-                keyId = jwkId,
-                n = n,
-                e = e.encodeToByteArray()
+            success(
+                JsonWebKey(
+                    type = JwkType.RSA,
+                    keyId = jwkId,
+                    n = n,
+                    e = e.encodeToByteArray()
+                )
             )
     }
 

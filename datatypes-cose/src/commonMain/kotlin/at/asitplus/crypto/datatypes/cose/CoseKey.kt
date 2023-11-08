@@ -1,11 +1,13 @@
 package at.asitplus.crypto.datatypes.cose
 
 import at.asitplus.KmmResult
+import at.asitplus.KmmResult.Companion.failure
+import at.asitplus.KmmResult.Companion.success
+import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.EcCurve
 import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
 import at.asitplus.crypto.datatypes.cose.io.cborSerializer
-import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.*
@@ -76,28 +78,40 @@ data class CoseKey(
     }
 
     /**
-     * @return a [CryptoPublicKey] equivalent if conversion is possible (i.e. if all key params are set)<br> or `null` in case the required key params are not contained in this COSE key (i.e. if only a `kid` is used)
+     * @return a KmmResult wrapped [CryptoPublicKey] equivalent if conversion is possible (i.e. if all key params are set)
+     * or the first error. More details in either [CoseKeyParams.RsaParams.toCryptoPublicKey] or [CoseKeyParams.EcYByteArrayParams.toCryptoPublicKey]
      */
-    fun toCryptoPublicKey() = keyParams?.toCryptoPublicKey()
+    fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
+        keyParams?.toCryptoPublicKey() ?: KmmResult.failure(IllegalArgumentException("No public key parameters!"))
 
     fun serialize() = cborSerializer.encodeToByteArray(this)
 
+    /**
+     * Contains convenience functions
+     */
     companion object {
-        fun deserialize(it: ByteArray) = kotlin.runCatching {
-            cborSerializer.decodeFromByteArray<CoseKey>(it)
-        }.getOrElse {
-            Napier.w("deserialize failed", it)
-            null
-        }
+        fun deserialize(it: ByteArray) =
+            runCatching { cborSerializer.decodeFromByteArray<CoseKey>(it) }.wrap()
 
-        @Deprecated("Use [CryptoPublicKey.fromAnsiX963Bytes] and [toCoseKey] instead!")
+        fun fromKeyId(keyId: String): KmmResult<CoseKey> =
+            runCatching { CryptoPublicKey.fromKeyId(keyId).toCoseKey().getOrThrow() }.wrap()
+
+        fun fromIosEncoded(bytes: ByteArray): KmmResult<CoseKey> =
+            runCatching { CryptoPublicKey.fromIosEncoded(bytes).toCoseKey().getOrThrow() }.wrap()
+
+        fun fromCoordinates(curve: CoseEllipticCurve, x: ByteArray, y: ByteArray): KmmResult<CoseKey> =
+            runCatching { CryptoPublicKey.Ec.fromCoordinates(curve.toJwkCurve(), x, y).toCoseKey().getOrThrow() }.wrap()
+
+        @Deprecated("Use [fromIosEncoded] instead!")
         fun fromAnsiX963Bytes(type: CoseKeyType, curve: CoseEllipticCurve, it: ByteArray) =
             if (type == CoseKeyType.EC2 && curve == CoseEllipticCurve.P256) {
                 val pubKey = CryptoPublicKey.Ec.fromAnsiX963Bytes(it)
                 pubKey.toCoseKey()
-            } else null
+            } else KmmResult.failure(UnsupportedOperationException("Key type $type not supported"))
 
-        @Deprecated("Use function [CryptoPublicKey.fromCoordinates] and [toCoseKey] above instead")
+
+        @Throws(Throwable::class)
+        @Deprecated("Use [fromIosEncoded] instead")
         fun fromCoordinates(
             type: CoseKeyType,
             curve: CoseEllipticCurve,
@@ -109,8 +123,8 @@ data class CoseKey(
 }
 
 /**
- * Converts CryptoPublicKey into CoseKey
- * If [algorithm] is not set then key can be used for any algorithm with same kty (RFC 8152), returns null for invalid kty/algorithm pairs
+ * Converts [CryptoPublicKey] into a KmmResult wrapped [CoseKey]
+ * If [algorithm] is not set then key can be used for any algorithm with same kty (RFC 8152), returns [IllegalArgumentException] for invalid kty/algorithm pairs
  */
 fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseKey> =
     when (this) {
@@ -120,8 +134,8 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseK
                     EcCurve.SECP_384_R_1 -> CoseAlgorithm.ES384
                     EcCurve.SECP_521_R_1 -> CoseAlgorithm.ES512
                 })
-            ) KmmResult.failure(IllegalArgumentException("Algorithm and Key Type mismatch!"))
-            else KmmResult.success(
+            ) failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
+            else success(
                 CoseKey(
                     keyParams = CoseKeyParams.EcYByteArrayParams(
                         curve = curve.toCoseCurve(),
@@ -139,8 +153,8 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseK
                     CoseAlgorithm.PS256, CoseAlgorithm.PS384, CoseAlgorithm.PS512,
                     CoseAlgorithm.RS256, CoseAlgorithm.RS384, CoseAlgorithm.RS512
                 ))
-            ) KmmResult.failure(IllegalArgumentException("Algorithm and Key Type mismatch!"))
-            else KmmResult.success(
+            ) failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
+            else success(
                 CoseKey(
                     keyParams = CoseKeyParams.RsaParams(
                         n = n,
