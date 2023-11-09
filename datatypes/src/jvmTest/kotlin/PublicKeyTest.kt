@@ -39,7 +39,6 @@ class PublicKeyTest : FreeSpec({
             ) { pubKey ->
 
                 val own = CryptoPublicKey.Ec.fromJcaKey(pubKey).getOrThrow()
-                own.shouldNotBeNull()
                 println(Json.encodeToString(own))
                 println(own.iosEncoded.encodeToString(Base16()))
                 println(own.encodeToDer().encodeToString(Base16()))
