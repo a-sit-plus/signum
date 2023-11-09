@@ -15,10 +15,8 @@ import kotlinx.serialization.encoding.Encoder
  */
 @Serializable(with = JwkTypeSerializer::class)
 enum class JwkType(val text: String) {
-
     EC("EC"),
     RSA("RSA");
-
 }
 
 object JwkTypeSerializer : KSerializer<JwkType?> {

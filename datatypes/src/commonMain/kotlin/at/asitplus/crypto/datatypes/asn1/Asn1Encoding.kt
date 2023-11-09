@@ -1,7 +1,7 @@
-@file:OptIn(ExperimentalEncodingApi::class)
-
 package at.asitplus.crypto.datatypes.asn1
 
+import at.asitplus.KmmResult
+import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.asn1.BERTags.BIT_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.BOOLEAN
 import at.asitplus.crypto.datatypes.asn1.BERTags.GENERALIZED_TIME
@@ -10,10 +10,7 @@ import at.asitplus.crypto.datatypes.asn1.BERTags.NULL
 import at.asitplus.crypto.datatypes.asn1.BERTags.UTC_TIME
 import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import at.asitplus.crypto.datatypes.io.BitSet
-import io.matthewnelson.encoding.base16.Base16
-import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Instant
-import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
  * Class Providing a DSL for creating arbitrary ASN.1 structures. You will almost certainyl never use it directly, but rather use it as follows:
@@ -69,7 +66,9 @@ class Asn1TreeBuilder {
 
     /**
      * appends a single [Asn1Encodable] to this ASN.1 structure
+     * @throws Asn1Exception in case encoding constrints of children are violated
      */
+    @Throws(Asn1Exception::class)
     fun append(child: Asn1Encodable<*>) = append(child.encodeToTlv())
 
     /**
@@ -133,7 +132,11 @@ class Asn1TreeBuilder {
 
     /**
      * Adds the passed string as PRINTABLE STRING [Asn1Primitive] to this ASN.1 structure
+     *
+     * @throws Asn1Exception if illegal characters are to be encoded into a printable string
      */
+
+    @Throws(Asn1Exception::class)
     fun printableString(value: String) {
         elements += Asn1String.Printable(value).encodeToTlv()
     }
@@ -160,18 +163,19 @@ class Asn1TreeBuilder {
         elements += value.encodeToAsn1GeneralizedTime()
     }
 
+    /**
+     * @throws Asn1Exception if illegal SET or SET OF structures are to be constructed
+     */
+    @Throws(Asn1Exception::class)
     private fun nest(type: CollectionType, init: Asn1TreeBuilder.() -> Unit) {
         val seq = Asn1TreeBuilder()
         seq.init()
-        elements += if (type == CollectionType.SEQUENCE) Asn1Sequence(seq.elements)
-        else if (type == CollectionType.OCTET_STRING) Asn1EncapsulatingOctetString(seq.elements)
-        else Asn1Set(seq.elements.let {
-            if (type == CollectionType.SET) it.sortedBy { it.tag }
-            else {
-                if (it.any { elem -> elem.tag != it.first().tag }) throw IllegalArgumentException("SET_OF must only contain elements of the same tag")
-                it.sortedBy { it.derEncoded.encodeToString(Base16) } //TODO this is inefficient
-            }
-        })
+        elements += when (type) {
+            CollectionType.SEQUENCE -> Asn1Sequence(seq.elements)
+            CollectionType.OCTET_STRING -> Asn1EncapsulatingOctetString(seq.elements)
+            CollectionType.SET -> Asn1Set(seq.elements)
+            CollectionType.SET_OF -> Asn1SetOf(seq.elements)
+        }
     }
 
     /**
@@ -237,7 +241,10 @@ class Asn1TreeBuilder {
      *     }
      *   }
      *  ```
+     *
+     *  @throws Asn1Exception if children have different tags
      */
+    @Throws(Asn1Exception::class)
     fun setOf(init: Asn1TreeBuilder.() -> Unit) = nest(CollectionType.SET_OF, init)
 
     /**
@@ -256,7 +263,8 @@ class Asn1TreeBuilder {
      *   }
      *  ```
      */
-    fun octetStringEncapsulated(init: Asn1TreeBuilder.() -> Unit) = nest(CollectionType.OCTET_STRING, init)
+    fun octetStringEncapsulated(init: Asn1TreeBuilder.() -> Unit) =
+        nest(CollectionType.OCTET_STRING, init)
 
 }
 
@@ -287,6 +295,19 @@ fun asn1Sequence(root: Asn1TreeBuilder.() -> Unit): Asn1Sequence {
 }
 
 /**
+ * Exception-free version of [asn1Sequence]
+ */
+fun asn1SequenceOrNull(root: Asn1TreeBuilder.() -> Unit) =
+    runCatching { asn1Sequence(root) }.getOrNull()
+
+
+/**
+ * Safe version of [asn1Sequence], wrapping the result into a [KmmResult]
+ */
+fun asn1SequenceSafe(root: Asn1TreeBuilder.() -> Unit) = runCatching { asn1Sequence(root) }.wrap()
+
+
+/**
  * Creates a new  SET as [Asn1Set]. Elements are sorted by tag.
  * Use as follows:
  *
@@ -306,6 +327,18 @@ fun asn1Set(root: Asn1TreeBuilder.() -> Unit): Asn1Set {
 }
 
 /**
+ * Exception-free version of [asn1Set]
+ */
+fun asn1SetOrNull(root: Asn1TreeBuilder.() -> Unit) = runCatching { asn1Set(root) }.getOrNull()
+
+
+/**
+ * Safe version of [asn1Set], wrapping the result into a [KmmResult]
+ */
+fun asn1SetSafe(root: Asn1TreeBuilder.() -> Unit) = runCatching { asn1Set(root) }.wrap()
+
+
+/**
  * Creates a new SET OF as [Asn1Set]. Tags of all added elements need to be the same. Elements are sorted by encoded value
  * Use as follows:
  *
@@ -316,12 +349,61 @@ fun asn1Set(root: Asn1TreeBuilder.() -> Unit): Asn1Set {
  *   printableString("Hello")
  * }
  *  ```
+ *
+ *  @throws Asn1Exception if children of different tags are added
  */
+@Throws(Asn1Exception::class)
 fun asn1SetOf(root: Asn1TreeBuilder.() -> Unit): Asn1Set {
     val seq = Asn1TreeBuilder()
     seq.root()
-    return Asn1Set(seq.elements)
+    return Asn1SetOf(seq.elements)
 }
+
+/**
+ * Exception-free version of [asn1SetOf]
+ */
+fun asn1SetOfOrNull(root: Asn1TreeBuilder.() -> Unit) = runCatching { asn1SetOf(root) }.getOrNull()
+
+
+/**
+ * Safe version of [asn1SetOf], wrapping the result into a [KmmResult]
+ */
+fun asn1SetOfSafe(root: Asn1TreeBuilder.() -> Unit) = runCatching { asn1SetOf(root) }.wrap()
+
+
+/**
+ * Creates a new EXPLICITLY TAGGED ASN.1 structure as [Asn1Tagged] using [tag].
+ *
+ * * **NOTE:** automatically calls [at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag] on [tag]
+ *
+ * Use as follows:
+ *
+ * ```kotlin
+ * asn1Tagged(2u) {
+ *   printableString("World World")
+ *   asn1Null()
+ *   int(1337)
+ * }
+ *  ```
+ */
+fun asn1Tagged(tag: UByte, root: Asn1TreeBuilder.() -> Unit): Asn1Tagged {
+    val seq = Asn1TreeBuilder()
+    seq.root()
+    return Asn1Tagged(tag.toExplicitTag(), seq.elements)
+}
+
+/**
+ * Exception-free version of [asn1Tagged]
+ */
+fun asn1TaggedOrNull(tag: UByte, root: Asn1TreeBuilder.() -> Unit) =
+    runCatching { asn1Tagged(tag, root) }.getOrNull()
+
+/**
+ * Safe version on [asn1Tagged], wrapping the result into a [KmmResult]
+ */
+fun asn1TaggedSafe(tag: UByte, root: Asn1TreeBuilder.() -> Unit) =
+    runCatching { asn1Tagged(tag, root) }.wrap()
+
 
 /**
  * Produces an INTEGER as [Asn1Primitive]
@@ -363,12 +445,14 @@ private fun Long.encodeToDer() = if (this == 0L) byteArrayOf(0) else
 /**
  * Produces a UTC TIME as [Asn1Primitive]
  */
-fun Instant.encodeToAsn1UtcTime() = Asn1Primitive(UTC_TIME, encodeToAsn1Time().drop(2).encodeToByteArray())
+fun Instant.encodeToAsn1UtcTime() =
+    Asn1Primitive(UTC_TIME, encodeToAsn1Time().drop(2).encodeToByteArray())
 
 /**
  * Produces a GENERALIZED TIME as [Asn1Primitive]
  */
-fun Instant.encodeToAsn1GeneralizedTime() = Asn1Primitive(GENERALIZED_TIME, encodeToAsn1Time().encodeToByteArray())
+fun Instant.encodeToAsn1GeneralizedTime() =
+    Asn1Primitive(GENERALIZED_TIME, encodeToAsn1Time().encodeToByteArray())
 
 private fun Instant.encodeToAsn1Time(): String {
     val value = this.toString()
@@ -422,7 +506,10 @@ fun Long.encodeTo8Bytes(): ByteArray = byteArrayOf(
 fun Long.encodeToByteArray(): ByteArray {
     //fast case
     if (this >= Byte.MIN_VALUE && this <= Byte.MAX_VALUE) return byteArrayOf(this.toByte())
-    if (this >= Short.MIN_VALUE && this <= Short.MAX_VALUE) return byteArrayOf((this ushr 8).toByte(), this.toByte())
+    if (this >= Short.MIN_VALUE && this <= Short.MAX_VALUE) return byteArrayOf(
+        (this ushr 8).toByte(),
+        this.toByte()
+    )
     if (this >= -(0x80 shl 16) && this < (0x80 shl 16)) return byteArrayOf(
         (this ushr 16).toByte(),
         (this ushr 8).toByte(),
@@ -489,7 +576,10 @@ fun Long.encodeToByteArray(): ByteArray {
  */
 fun Int.encodeToByteArray(): ByteArray {
     if (this >= Byte.MIN_VALUE && this <= Byte.MAX_VALUE) return byteArrayOf(this.toByte())
-    if (this >= Short.MIN_VALUE && this <= Short.MAX_VALUE) return byteArrayOf((this ushr 8).toByte(), this.toByte())
+    if (this >= Short.MIN_VALUE && this <= Short.MAX_VALUE) return byteArrayOf(
+        (this ushr 8).toByte(),
+        this.toByte()
+    )
     if (this >= -(0x80 shl 16) && this < (0x80 shl 16)) return byteArrayOf(
         (this ushr 16).toByte(),
         (this ushr 8).toByte(),
@@ -518,14 +608,16 @@ fun Int.encodeToByteArray(): ByteArray {
  * that will be there if the first bit of the value is set,
  * i.e. it is over 0x7F (or < 0 if it is signed)
  */
-fun ByteArray.stripLeadingSignByte() = if (this[0] == 0.toByte() && this[1] < 0) drop(1).toByteArray() else this
+fun ByteArray.stripLeadingSignByte() =
+    if (this[0] == 0.toByte() && this[1] < 0) drop(1).toByteArray() else this
 
 /**
  * The extracted values from ASN.1 may be too short
  * to be simply concatenated as raw values,
  * so we'll need to pad them with 0x00 bytes to the expected length
  */
-fun ByteArray.padWithZeros(len: Int): ByteArray = if (size < len) ByteArray(len - size) { 0 } + this else this
+fun ByteArray.padWithZeros(len: Int): ByteArray =
+    if (size < len) ByteArray(len - size) { 0 } + this else this
 
 /**
  * Drops or adds zero bytes at the start until the [size] is reached

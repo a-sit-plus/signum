@@ -1,13 +1,17 @@
 package at.asitplus.crypto.datatypes.io
 
 import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.EcCurve
+import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
+import at.asitplus.crypto.datatypes.asn1.BERTags
+import at.asitplus.crypto.datatypes.asn1.asn1Sequence
 import at.asitplus.crypto.datatypes.asn1.ensureSize
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.base64.Base64ConfigBuilder
+import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArrayOrNull
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -48,8 +52,13 @@ object ByteArrayBase64Serializer : KSerializer<ByteArray> {
         encoder.encodeString(value.encodeToString(Base64Strict))
     }
 
+    //cannot annotate with throws here because interface has no annotation
+    /**
+     * @throws SerializationException on error
+     */
     override fun deserialize(decoder: Decoder): ByteArray {
-        return decoder.decodeString().decodeToByteArrayOrNull(Base64Strict) ?: byteArrayOf()
+        return kotlin.runCatching { decoder.decodeString().decodeToByteArray(Base64Strict) }
+            .getOrElse { throw SerializationException("Base64 decoding failed", it) }
     }
 
 }
@@ -67,11 +76,16 @@ object ByteArrayBase64UrlSerializer : KSerializer<ByteArray> {
         encoder.encodeString(value.encodeToString(Base64UrlStrict))
     }
 
+    //cannot annotate with throws here because interface has no annotation
+    /**
+     * @throws SerializationException on error
+     */
     override fun deserialize(decoder: Decoder): ByteArray {
-        return decoder.decodeString().decodeToByteArrayOrNull(Base64UrlStrict) ?: byteArrayOf()
+        return kotlin.runCatching { decoder.decodeString().decodeToByteArray(Base64UrlStrict) }
+            .getOrElse { throw SerializationException("Base64 decoding failed", it) }
     }
-
 }
+
 
 object MultibaseHelper {
     private const val PREFIX_DID_KEY = "did:key"
@@ -83,9 +97,26 @@ object MultibaseHelper {
     // 0x1200 would be with compression, so we'll use 0x1290
     private fun multicodecWrapEC(it: ByteArray) = byteArrayOf(0x12.toByte(), 0x90.toByte()) + it
 
-    // No compression, because decompression would need some EC math
-    private fun encodeEcKey(x: ByteArray, y: ByteArray, curve: EcCurve) =
-        x.ensureSize(curve.coordinateLengthBytes) + y.ensureSize(curve.coordinateLengthBytes)
+    /**
+     * Simple Ec Key encoding, if appended with ANSI_PREFIX then valid ANSI X9.63 encoding
+     * No compression, because decompression would need some EC math
+     */
+    fun encodeEcKey(key: CryptoPublicKey.Ec): ByteArray =
+        key.x.ensureSize(key.curve.coordinateLengthBytes) + key.y.ensureSize(key.curve.coordinateLengthBytes)
+
+    /**
+     * PKCS#1 encoded RSA Public Key
+     */
+    fun encodeRsaKey(key: CryptoPublicKey.Rsa): ByteArray =
+        asn1Sequence {
+            append(
+                Asn1Primitive(
+                    BERTags.INTEGER,
+                    key.n.ensureSize(key.bits.number / 8u)
+                        .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
+            )
+            int(key.e)
+        }.derEncoded
 
     /**
      * Returns something like `did:key:mEpA...` with the [x] and [y] values appended in Base64.
@@ -94,72 +125,71 @@ object MultibaseHelper {
      * uncompressed P-256 key. We can't use the compressed format, because decoding that would
      * require some EC Point math...
      */
-    fun calcKeyId(curve: EcCurve, x: ByteArray, y: ByteArray) =
-        "$PREFIX_DID_KEY:${multibaseWrapBase64(multicodecWrapEC(encodeEcKey(x, y, curve)))}"
-
-    fun calcKeyId(rsaPublicKey: CryptoPublicKey.Rsa) =
-        "$PREFIX_DID_KEY:${multibaseWrapBase64(multicodecWrapRSA(rsaPublicKey.iosEncoded))}"
-
-    fun stripKeyId(keyId: String): Pair<Boolean, ByteArray>? {
-        if (!keyId.startsWith("$PREFIX_DID_KEY:")) return null
-        val stripped = keyId.removePrefix("$PREFIX_DID_KEY:")
-        val multibaseDecoded = multibaseDecode(stripped)
-        val multiKey = multiKeyGetKty(multibaseDecoded) ?: return null
-
-        return multiKey.first to multiKey.second
-    }
-
-    private fun multiKeyGetKty(it: ByteArray?) =
-        if (it != null && it.size > 3 && it[0] == 0x12.toByte()) {
-            when (it[1]) {
-                0x90.toByte() -> true to it.drop(2).toByteArray()  // Case EC
-                0x05.toByte() -> false to it.drop(2).toByteArray() // Case RSA
-                else -> null
-            }
-        } else null
-
-    private fun multibaseDecode(it: String?) =
-        if (it != null && it.startsWith("m")) {
-            it.removePrefix("m").decodeToByteArrayOrNull(Base64Strict)
-        } else null
-
-    private fun decodeEcKey(it: ByteArray?): CryptoPublicKey? {
-        val test = it?.let { bytes -> byteArrayOf(CryptoPublicKey.Ec.ANSI_PREFIX, *bytes) }
-        return if (test != null) CryptoPublicKey.Ec.fromAnsiX963Bytes(test) else null
-    }
-
-    private fun decodeRsaKey(it: ByteArray?): CryptoPublicKey? {
-        return if (it != null) CryptoPublicKey.Rsa.fromPKCS1encoded(it) else null
-    }
-
-    internal fun calcPublicKey(multiKey: Pair<Boolean, ByteArray>?): CryptoPublicKey? {
-        return when (multiKey?.first) {
-            true -> decodeEcKey(multiKey.second)
-            false -> decodeRsaKey(multiKey.second)
-            else -> null
+    fun calcKeyId(key: CryptoPublicKey): String {
+        return when (key) {
+            is CryptoPublicKey.Ec -> "$PREFIX_DID_KEY:${multibaseWrapBase64(multicodecWrapEC(encodeEcKey(key)))}"
+            is CryptoPublicKey.Rsa -> "$PREFIX_DID_KEY:${multibaseWrapBase64(multicodecWrapRSA(key.iosEncoded))}"
         }
     }
 
+    @Throws(Throwable::class)
+    private fun multiKeyRemovePrefix(keyId: String): String =
+        keyId.takeIf { it.startsWith("$PREFIX_DID_KEY:") }?.removePrefix("$PREFIX_DID_KEY:")
+            ?: throw IllegalArgumentException("Key ID does not specify public key")
+
+    @Throws(Throwable::class)
+    private fun multiKeyGetKty(it: ByteArray): Pair<Boolean, ByteArray> =
+        if (it.size <= 3) {
+            throw IllegalArgumentException("Invalid key size")
+        } else if (it[0] != 0x12.toByte()) {
+            throw IllegalArgumentException("Unknown public key identifier")
+        } else when (it[1]) {
+            0x90.toByte() -> true to it.drop(2).toByteArray()  // Case EC
+            0x05.toByte() -> false to it.drop(2).toByteArray() // Case RSA
+            else -> throw IllegalArgumentException("Unknown public key identifier")
+        }
+
+    @Throws(Throwable::class)
+    private fun multibaseDecode(it: String): ByteArray =
+        if (it.startsWith("m")) {
+            it.removePrefix("m").decodeToByteArrayOrNull(Base64Strict)
+                ?: throw SerializationException("Base64 decoding failed")
+        } else throw IllegalArgumentException("Encoding not supported")
+
+    @Throws(Throwable::class)
+    private fun decodeEcKey(it: ByteArray): CryptoPublicKey {
+        val bytes = byteArrayOf(CryptoPublicKey.Ec.ANSI_PREFIX, *it)
+        return CryptoPublicKey.Ec.fromAnsiX963Bytes(bytes)
+    }
+
+    @Throws(Throwable::class)
+    private fun decodeRsaKey(it: ByteArray): CryptoPublicKey =
+        CryptoPublicKey.Rsa.fromPKCS1encoded(it)
+
+    @Throws(Throwable::class)
+    private fun decodeKeyId(keyId: String): Pair<Boolean, ByteArray> =
+        multiKeyGetKty(multibaseDecode(multiKeyRemovePrefix(keyId)))
+
+    @Throws(Throwable::class)
+    internal fun calcPublicKey(keyId: String): CryptoPublicKey {
+        val multiKey = decodeKeyId(keyId)
+        return when (multiKey.first) {
+            true -> decodeEcKey(multiKey.second)
+            false -> decodeRsaKey(multiKey.second)
+        }
+    }
+
+    //These two functions will remain until the latest version of this lib is integrated back into che VC lib.
     @Deprecated("Use [CryptoPublicKey.fromKeyId] instead")
     fun calcEcPublicKeyCoords(keyId: String): Pair<ByteArray, ByteArray>? {
         if (!keyId.startsWith("$PREFIX_DID_KEY:")) return null
         val stripped = keyId.removePrefix("$PREFIX_DID_KEY:")
         val multibaseDecode = multibaseDecode(stripped)
-        val multiKey = multiKeyDecode(multibaseDecode) ?: return null
+        val multiKey = multiKeyGetKty(multibaseDecode)
 
         return decodeEcKeyDep(multiKey.second)
     }
 
-    @Deprecated("Dependency of calcEncPublicKeyCoords - Use [multiKeyGetKty] instead ")
-    // 0x1200 would be with compression, so we'll use 0x1290
-    private fun multiKeyDecode(it: ByteArray?) =
-        if (it != null && it.size > 3 && it[0] == 0x12.toByte()) {
-            if (it[1] == 0x90.toByte()) {
-                true to it.drop(2).toByteArray()
-            } else if (it[1] == 0x05.toByte()) {
-                false to it.drop(2).toByteArray()
-            } else null
-        } else null
 
     @Deprecated("Use [Ec.fromAnsiX963Bytes] instead")
     // No decompression, because that would need some EC math

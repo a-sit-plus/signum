@@ -32,53 +32,93 @@ data class TbsCertificate(
         tagged(0u) { int(value) }
     }
 
-    override fun encodeToTlv() = asn1Sequence {
-        version(version)
-        append(Asn1Primitive(BERTags.INTEGER, serialNumber))
-        append(signatureAlgorithm)
-        sequence { issuerName.forEach { append(it) } }
+    @Throws(Asn1Exception::class)
+    override fun encodeToTlv() = runRethrowing {
+        asn1Sequence {
+            version(version)
+            append(Asn1Primitive(BERTags.INTEGER, serialNumber))
+            append(signatureAlgorithm)
+            sequence { issuerName.forEach { append(it) } }
 
-        sequence {
-            append(validFrom)
-            append(validUntil)
-        }
+            sequence {
+                append(validFrom)
+                append(validUntil)
+            }
 
-        sequence { subjectName.forEach { append(it) } }
+            sequence { subjectName.forEach { append(it) } }
 
-        //subject public key
-        append(publicKey)
+            //subject public key
+            append(publicKey)
 
-        issuerUniqueID?.let {
-            append(
-                Asn1Primitive(
-                    1u.toImplicitTag(),
-                    Asn1BitString(it).let { byteArrayOf(it.numPaddingBits, *it.rawBytes) })
-            )
-        }
-        subjectUniqueID?.let {
-            append(
-                Asn1Primitive(
-                    1u.toImplicitTag(),
-                    Asn1BitString(it).let { byteArrayOf(it.numPaddingBits, *it.rawBytes) })
-            )
-        }
+            issuerUniqueID?.let {
+                append(
+                    Asn1Primitive(
+                        1u.toImplicitTag(),
+                        Asn1BitString(it).let { byteArrayOf(it.numPaddingBits, *it.rawBytes) })
+                )
+            }
+            subjectUniqueID?.let {
+                append(
+                    Asn1Primitive(
+                        1u.toImplicitTag(),
+                        Asn1BitString(it).let { byteArrayOf(it.numPaddingBits, *it.rawBytes) })
+                )
+            }
 
-        extensions?.let {
-            if (it.isNotEmpty()) {
-                tagged(3u) {
-                    sequence {
-                        it.forEach { ext -> append(ext) }
+            extensions?.let {
+                if (it.isNotEmpty()) {
+                    tagged(3u) {
+                        sequence {
+                            it.forEach { ext -> append(ext) }
+                        }
                     }
                 }
             }
         }
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as TbsCertificate
+
+        if (version != other.version) return false
+        if (!serialNumber.contentEquals(other.serialNumber)) return false
+        if (signatureAlgorithm != other.signatureAlgorithm) return false
+        if (issuerName != other.issuerName) return false
+        if (validFrom != other.validFrom) return false
+        if (validUntil != other.validUntil) return false
+        if (subjectName != other.subjectName) return false
+        if (publicKey != other.publicKey) return false
+        if (issuerUniqueID != other.issuerUniqueID) return false
+        if (subjectUniqueID != other.subjectUniqueID) return false
+        if (extensions != other.extensions) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = version
+        result = 31 * result + serialNumber.contentHashCode()
+        result = 31 * result + signatureAlgorithm.hashCode()
+        result = 31 * result + issuerName.hashCode()
+        result = 31 * result + validFrom.hashCode()
+        result = 31 * result + validUntil.hashCode()
+        result = 31 * result + subjectName.hashCode()
+        result = 31 * result + publicKey.hashCode()
+        result = 31 * result + (issuerUniqueID?.hashCode() ?: 0)
+        result = 31 * result + (subjectUniqueID?.hashCode() ?: 0)
+        result = 31 * result + (extensions?.hashCode() ?: 0)
+        return result
+    }
+
     companion object : Asn1Decodable<Asn1Sequence, TbsCertificate> {
-        override fun decodeFromTlv(src: Asn1Sequence) = runCatching {
+        @Throws(Asn1Exception::class)
+        override fun decodeFromTlv(src: Asn1Sequence) = runRethrowing {
             //TODO make sure to always check for superfluous data
             val version = src.nextChild().let {
-                ((it as Asn1Tagged).verify(0u).single() as Asn1Primitive).readInt()
+                ((it as Asn1Tagged).verifyTag(0u).single() as Asn1Primitive).readInt()
             }
             val serialNumber = (src.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
             val sigAlg = JwsAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
@@ -105,12 +145,12 @@ data class TbsCertificate(
                 } else null
             }
             val extensions = if (src.hasMoreChildren()) {
-                ((src.nextChild() as Asn1Tagged).verify(3u).single() as Asn1Sequence).children.map {
+                ((src.nextChild() as Asn1Tagged).verifyTag(3u).single() as Asn1Sequence).children.map {
                     X509CertificateExtension.decodeFromTlv(it as Asn1Sequence)
                 }
             } else null
 
-            if (src.hasMoreChildren()) throw IllegalArgumentException("Superfluous Data in Certificate Structure")
+            if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous Data in Certificate Structure")
 
             TbsCertificate(
                 version = version,
@@ -125,15 +165,15 @@ data class TbsCertificate(
                 subjectUniqueID = subjectUniqueID?.toBitSet(),
                 extensions = extensions,
             )
-        }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
+        }
 
         private fun decodeTimestamps(input: Asn1Sequence): Pair<Asn1Time, Asn1Time> =
-            runCatching {
+            runRethrowing {
                 val firstInstant = Asn1Time.decodeFromTlv(input.nextChild() as Asn1Primitive)
                 val secondInstant = Asn1Time.decodeFromTlv(input.nextChild() as Asn1Primitive)
-                if (input.hasMoreChildren()) throw IllegalArgumentException("Superfluous content in Validity")
+                if (input.hasMoreChildren()) throw Asn1StructuralException("Superfluous content in Validity")
                 return Pair(firstInstant, secondInstant)
-            }.getOrElse { throw if (it is IllegalArgumentException) it else IllegalArgumentException(it) }
+            }
     }
 }
 
@@ -148,6 +188,8 @@ data class X509Certificate(
     val signature: ByteArray
 ) : Asn1Encodable<Asn1Sequence> {
 
+
+    @Throws(Asn1Exception::class)
     override fun encodeToTlv() = asn1Sequence {
         append(tbsCertificate)
         append(signatureAlgorithm)
@@ -178,11 +220,12 @@ data class X509Certificate(
 
     companion object : Asn1Decodable<Asn1Sequence, X509Certificate> {
 
-        override fun decodeFromTlv(src: Asn1Sequence): X509Certificate {
+        @Throws(Asn1Exception::class)
+        override fun decodeFromTlv(src: Asn1Sequence): X509Certificate = runRethrowing {
             val tbs = TbsCertificate.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val sigAlg = JwsAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val signature = (src.nextChild() as Asn1Primitive).readBitString()
-            if (src.hasMoreChildren()) throw IllegalArgumentException("Superfluous structure in Certificate Structure")
+            if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous structure in Certificate Structure")
             return X509Certificate(tbs, sigAlg, signature.rawBytes)
         }
 

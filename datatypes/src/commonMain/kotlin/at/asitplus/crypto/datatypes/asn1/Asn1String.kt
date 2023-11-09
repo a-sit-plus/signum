@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 //TODO auto-sanitize and/or reduce
 /**
- * ASN.! String class used as wrapper do discrimante between different ASN.1 string types
+ * ASN.! String class used as wrapper do discriminate between different ASN.1 string types
  */
 @Serializable
 sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
@@ -68,13 +68,15 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
 
     /**
      * PRINTABLE STRING (checked)
+     * @throws Asn1Exception if illegal characters are provided
      */
     @Serializable
     @SerialName("PrintableString")
-    class Printable(override val value: String) : Asn1String() {
+
+    class Printable @Throws(Asn1Exception::class) constructor(override val value: String) : Asn1String() {
         init {
             Regex("[a-zA-Z0-9 '()+,-./:=?]*").matchEntire(value)
-                ?: throw IllegalArgumentException("Input contains invalid chars: '$value'")
+                ?: throw Asn1Exception("Input contains invalid chars: '$value'")
         }
 
         override val tag = BERTags.PRINTABLE_STRING
@@ -82,21 +84,41 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
 
     /**
      * NUMERIC STRING (checked)
+     * @throws Asn1Exception if illegal characters are provided
      */
     @Serializable
     @SerialName("NumericString")
-    class Numeric(override val value: String) : Asn1String() {
+    class Numeric @Throws(Asn1Exception::class) constructor(override val value: String) : Asn1String() {
         init {
             Regex("[0-9 ]*").matchEntire(value)
-                ?: throw IllegalArgumentException("Input contains invalid chars: '$value'")
+                ?: throw Asn1Exception("Input contains invalid chars: '$value'")
         }
 
         override val tag = BERTags.NUMERIC_STRING
     }
 
     override fun encodeToTlv() = Asn1Primitive(tag, value.encodeToByteArray())
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as Asn1String
+
+        if (tag != other.tag) return false
+        if (value != other.value) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = tag.hashCode()
+        result = 31 * result + value.hashCode()
+        return result
+    }
 
     companion object : Asn1Decodable<Asn1Primitive, Asn1String> {
+
+        @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Primitive): Asn1String = src.readString()
     }
 }

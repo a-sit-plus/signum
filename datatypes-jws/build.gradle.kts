@@ -10,15 +10,17 @@ plugins {
     id("at.asitplus.gradle.conventions")
 }
 
-version = "2.0.0"
+version = "2.1.0"
 
-exportIosFramework("KmpCryptoJws",  serialization("json"), datetime(), project(":datatypes"))
 kotlin {
+    jvm()
+    iosArm64()
+    iosSimulatorArm64()
+    iosX64()
     sourceSets {
-        val commonMain by getting {
+        commonMain {
             dependencies {
                 api(project(":datatypes"))
-                api("at.asitplus:kmmresult:${kmmresult}")
                 implementation("com.squareup.okio:okio:${okio}")
                 implementation(napier())
                 implementation("io.matthewnelson.kotlin-components:encoding-base16:${encoding}")
@@ -26,13 +28,20 @@ kotlin {
             }
         }
 
-        val jvmMain by getting
-
-        val commonTest by getting
-        val jvmTest by getting
+        commonTest {
+            dependencies {
+                implementation(kotlin("reflect"))
+            }
+        }
     }
 }
-
+exportIosFramework(
+    "KmpCryptoJws",
+    serialization("json"),
+    datetime(),
+    "at.asitplus:kmmresult:${kmmresult}",
+    project(":datatypes")
+)
 
 val javadocJar = setupDokka(baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/", multiModuleDoc = true)
 

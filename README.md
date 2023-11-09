@@ -1,9 +1,8 @@
 # 🔥🔥🔥KMP Crypto🔥🔥🔥
 
-[![Build KMP](https://github.com/a-sit-plus/kmp-crypto/actions/workflows/build-kmp.yml/badge.svg)](https://github.com/a-sit-plus/kmp-crypto/actions/workflows/build-kmp.yml)
 [![GitHub license](https://img.shields.io/badge/license-Apache%20License%202.0-brightgreen.svg?style=flat)](http://www.apache.org/licenses/LICENSE-2.0)
 [![Kotlin](https://img.shields.io/badge/kotlin-multiplatform-orange.svg?logo=kotlin)](http://kotlinlang.org)
-[![Kotlin](https://img.shields.io/badge/kotlin-1.9.10-blue.svg?logo=kotlin)](http://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/kotlin-1.9.20-blue.svg?logo=kotlin)](http://kotlinlang.org)
 [![Java](https://img.shields.io/badge/java-11+-blue.svg?logo=OPENJDK)](https://www.oracle.com/java/technologies/downloads/#java11)
 [![Maven Central](https://img.shields.io/maven-central/v/at.asitplus.crypto/datatypes)](https://mvnrepository.com/artifact/at.asitplus.crypto/datatypes/)
 
@@ -38,10 +37,10 @@ the JVM/Android and iOS.
 
 This library consists of three modules, each of which is published on maven central:
 
-| Name           | `datatypes`                                                                                                                  | `datatypes-jws`                                                                                                                                                                                                                       | `datatypes-cose` (WIP)                                                                                                                                                                                                              |
+| Name           | `datatypes`                                                                                                                  | `datatypes-jws`                                                                                                                                                                                                                       | `datatypes-cose`                                                                                                                                                                                                                    |
 |----------------|------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | _Info_         | Base module containing the public key class (`CryptoPublicKey`), algorithm identifiers, the ASN.1 parser, X.509 certificate. | JWS/JWE/JWT module containing JWS/E/T-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. | COSE module containing all COSE/CWT-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. |
-| _Maven Coords_ | `at.asitplus.crypto:datatypes`                                                                                               | `at.asitplus.crypto:datatypes-jws`                                                                                                                                                                                                    | <!--`at.asitplus.crypto:datatypes-cose`--> (WIP; not yet released)                                                                                                                                                                  |
+| _Maven Coords_ | `at.asitplus.crypto:datatypes`                                                                                               | `at.asitplus.crypto:datatypes-jws`                                                                                                                                                                                                    | `at.asitplus.crypto:datatypes-cose`                                                                                                                                                                                                 |
 
 ### Using it in your Projects
 
@@ -49,6 +48,14 @@ Simply declare the desired dependency to get going:
 
 ```kotlin 
 implementation("at.asitplus.crypto:datatypes:$version")
+```
+
+```kotlin 
+implementation("at.asitplus.crypto:datatypes-jws:$version")
+```
+
+```kotlin 
+implementation("at.asitplus.crypto:datatypes-cose:$version")
 ```
 
 <!--
@@ -73,7 +80,7 @@ material._
 ### Certificate Parsing
 
 ```kotlin
-val cert = X509Certificate.derDecode(certBytes)
+val cert = X509Certificate.decodefromDer(certBytes)
 
 when (val pk = cert.publicKey) {
     is CryptoPublicKey.Ec -> println(
@@ -91,7 +98,7 @@ when (val pk = cert.publicKey) {
 
 println("The full certificate is:\n${Json { prettyPrint = true }.encodeToString(cert)}")
 
-println("Re-encoding it produces the same bytes? ${cert.derEncoded contentEquals certBytes}")
+println("Re-encoding it produces the same bytes? ${cert.encodeToDer() contentEquals certBytes}")
 ```
 
 Which produces the following output:
@@ -207,10 +214,10 @@ val tbsCsr = TbsCertificationRequest(
     subjectName = listOf(DistinguishedName.CommonName(Asn1String.UTF8(commonName))),
     publicKey = cryptoPublicKey
 )
-val signed =  /* pass tbsCsr.derEncoded to platform code*/
+val signed =  /* pass tbsCsr.encodeToDer() to platform code*/
 val csr = CertificationRequest(tbsCsr, signatureAlgorithm, signed)
 
-println(csr.derEncoded)
+println(csr.encodeToDer())
 ```
 
 Which results in the following output:
@@ -245,12 +252,12 @@ nodes can be processed as desired. Subclasses of `Asn1Element` reflect this:
 Any complex data structure (such as CSR, public key, certificate, …) implements `Asn1Encodable`, which means you can:
 
 * encapsulate it into an ASN.1 Tree by calling `.encodeToTlv()`
-* directly get a DER-encoded version through the `.derEncoded` lazily evaluated property
+* directly get a DER-encoded byte array through the `.encodetoDer()` function
 
 To also suport going the other way, the companion objects of these complex classes implement `Asn1Decodable`, which
 allows for
 
-* directly parsing DER-encoded byte arrays by calling `.derDecode(bytes)`
+* directly parsing DER-encoded byte arrays by calling `.decodeFromDer(bytes)`
 * processing an `Asn1Element` by calling `.fromTlv(src)`
 
 #### Decoding Values
@@ -275,41 +282,41 @@ DSL, which returns an `Asn1Structure`:
 
 ```kotlin
 asn1Sequence {
-  tagged(1u) {
-    append(Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00)))
-  }
-  set {
-    sequence {
-      setOf {
-        printableString("World")
-        printableString("Hello")
-      }
-      set {
-        printableString("World")
-        printableString("Hello")
-        utf8String("!!!")
-      }
-
+    tagged(1u) {
+        append(Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00)))
     }
-  }
-  asn1null()
+    set {
+        sequence {
+            setOf {
+                printableString("World")
+                printableString("Hello")
+            }
+            set {
+                printableString("World")
+                printableString("Hello")
+                utf8String("!!!")
+            }
 
-  append(ObjectIdentifier("1.2.603.624.97"))
-
-  utf8String("Foo")
-  printableString("Bar")
-
-  set {
-    int(3)
-    long(-65789876543L)
-    bool(false)
-    bool(true)
-  }
-  sequence {
+        }
+    }
     asn1null()
-    append(Asn1String.Numeric("12345"))
-    utcTime(instant)
-  }
+
+    append(ObjectIdentifier("1.2.603.624.97"))
+
+    utf8String("Foo")
+    printableString("Bar")
+
+    set {
+        int(3)
+        long(-65789876543L)
+        bool(false)
+        bool(true)
+    }
+    sequence {
+        asn1null()
+        append(Asn1String.Numeric("12345"))
+        utcTime(instant)
+    }
 }
 ```
 
@@ -353,7 +360,7 @@ While a multiplatform crypto provider would be awesome, this sort of things also
 even entertaining the thought of implementing such functionality. It therefore not planned at the time of this writing (
 2023-10)
 
-* While the ASN.1 parser will happily parse any valid **DER-encoded** ASN.1 structure you throw at it and the encoder
+* While the ASN.1 parser will happily parse any valid **DER-encoded** ASN.1 structure you throw at it and the encoder will
   write it back correctly too. (No, we don't care for BER, since we want to transport cryptographic material)
 * Higher-level abstractions (such as `X509Certificate`) are too lenient in some aspects and
   too strict in others.
@@ -367,4 +374,3 @@ even entertaining the thought of implementing such functionality. It therefore n
 * We don't yet know how compliant everything really is, but so far it could parse and re-encode every certificate we
   threw at it without braking anything
 * Number of supported Algorithms is limited to the usual suspects (sorry, no Bernstein curves )-:)
-* The JWS and COSE modules currently only support ES256 and EC keys. This is WIP and will be done ASAP.

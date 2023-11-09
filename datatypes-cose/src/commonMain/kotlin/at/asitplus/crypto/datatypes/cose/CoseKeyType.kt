@@ -10,12 +10,9 @@ import kotlinx.serialization.encoding.Encoder
 
 @Serializable(with = CoseKeyTypeSerializer::class)
 enum class CoseKeyType(val value: Int) {
-
-    OKP(1),
     EC2(2),
-    SYMMETRIC(4),
-    RESERVED(0);
-
+    RSA(3),
+    SYMMETRIC(4)
 }
 
 object CoseKeyTypeSerializer : KSerializer<CoseKeyType> {

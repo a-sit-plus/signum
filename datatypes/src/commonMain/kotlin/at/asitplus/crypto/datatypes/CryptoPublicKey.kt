@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 package at.asitplus.crypto.datatypes
 
 import at.asitplus.crypto.datatypes.asn1.*
@@ -10,6 +12,7 @@ import kotlinx.serialization.Transient
 /**
  * Representation of a public key structure
  */
+@OptIn(ExperimentalUnsignedTypes::class)
 @Serializable
 sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
@@ -42,7 +45,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             bitString(
                 byteArrayOf(
                     0x04,
-                    *(x.ensureSize(curve.coordinateLengthBytes)),
+                    *x.ensureSize(curve.coordinateLengthBytes),
                     *y.ensureSize(curve.coordinateLengthBytes)
                 )
             )
@@ -68,24 +71,25 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          *
          * @throws Throwable all sorts of exception on invalid input
          */
-        fun fromKeyId(it: String): CryptoPublicKey? {
-            val strippedKey = MultibaseHelper.stripKeyId(it)
-            return MultibaseHelper.calcPublicKey(strippedKey)
-        }
+        @Throws(Throwable::class)
+        fun fromKeyId(it: String): CryptoPublicKey =
+            MultibaseHelper.calcPublicKey(it)
+        
 
-        override fun decodeFromTlv(src: Asn1Sequence): CryptoPublicKey {
-            if (src.children.size != 2) throw IllegalArgumentException("Invalid SPKI Structure!")
+        @Throws(Asn1Exception::class)
+        override fun decodeFromTlv(src: Asn1Sequence): CryptoPublicKey = runRethrowing {
+            if (src.children.size != 2) throw Asn1StructuralException("Invalid SPKI Structure!")
             val keyInfo = src.nextChild() as Asn1Sequence
-            if (keyInfo.children.size != 2) throw IllegalArgumentException("Superfluous data in  SPKI!")
+            if (keyInfo.children.size != 2) throw Asn1StructuralException("Superfluous data in  SPKI!")
 
             when (val oid = (keyInfo.nextChild() as Asn1Primitive).readOid()) {
                 Ec.oid -> {
                     val curveOid = (keyInfo.nextChild() as Asn1Primitive).readOid()
                     val curve = EcCurve.entries.find { it.oid == curveOid }
-                        ?: throw IllegalArgumentException("Curve not supported: $curveOid")
+                        ?: throw Asn1Exception("Curve not supported: $curveOid")
 
                     val bitString = (src.nextChild() as Asn1Primitive).readBitString()
-                    if(bitString.rawBytes.first()!= Ec.ANSI_PREFIX) throw IllegalArgumentException("EC key not prefixed with 0x04")
+                    if (bitString.rawBytes.first() != Ec.ANSI_PREFIX) throw Asn1Exception("EC key not prefixed with 0x04")
                     val xAndY = bitString.rawBytes.drop(1)
                     val coordLen = curve.coordinateLengthBytes.toInt()
                     val x = xAndY.take(coordLen).toByteArray()
@@ -99,11 +103,11 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                     val rsaSequence = Asn1Element.parse(bitString.rawBytes) as Asn1Sequence
                     val n = (rsaSequence.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
                     val e = (rsaSequence.nextChild() as Asn1Primitive).readInt()
-                    if (rsaSequence.hasMoreChildren()) throw IllegalArgumentException("Superfluous data in SPKI!")
+                    if (rsaSequence.hasMoreChildren()) throw Asn1StructuralException("Superfluous data in SPKI!")
                     return Rsa(n, e)
                 }
 
-                else -> throw IllegalArgumentException("Unsupported Key Type: $oid")
+                else -> throw Asn1Exception("Unsupported Key Type: $oid")
 
             }
         }
@@ -111,6 +115,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         /**
          * Parses this key from an iOS-encoded one
          */
+        @Throws(Throwable::class)
         fun fromIosEncoded(it: ByteArray): CryptoPublicKey =
             when (it[0].toUByte()) {
                 Ec.ANSI_PREFIX.toUByte() -> Ec.fromAnsiX963Bytes(it)
@@ -123,7 +128,9 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
      * RSA Public key
      */
     @Serializable
-    data class Rsa private constructor(
+    data class Rsa
+    @Throws(IllegalArgumentException::class)
+    private constructor(
         /**
          * RSA key size
          */
@@ -145,12 +152,17 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             if (bits != computed) throw IllegalArgumentException("Provided number of bits (${bits.number}) does not match computed number of bits (${computed.number})")
         }
 
+        @Throws(IllegalArgumentException::class)
         private constructor(params: RsaParams) : this(
             params.size,
             params.n,
             params.e
         )
 
+        /**
+         * @throws IllegalArgumentException in case of illegal input (odd key size, for example)
+         */
+        @Throws(IllegalArgumentException::class)
         constructor(n: ByteArray, e: Int) : this(sanitizeRsaInputs(n, e))
 
         override val oid = Rsa.oid
@@ -168,6 +180,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
             companion object : Identifiable {
                 fun of(numBits: UInt) = entries.find { it.number == numBits }
+
+                @Throws(IllegalArgumentException::class)
                 fun of(n: ByteArray): Size {
                     val nTruncSize = n.dropWhile { it == 0.toByte() }.size
                     return entries.find { nTruncSize == (it.number.toInt() / 8) }
@@ -185,14 +199,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          * PKCS#1 encoded RSA Public Key
          */
         @Transient
-        override val iosEncoded = asn1Sequence {
-            append(
-                Asn1Primitive(BERTags.INTEGER,
-                    n.ensureSize(bits.number / 8u)
-                        .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
-            )
-            int(e)
-        }.derEncoded
+        override val iosEncoded = MultibaseHelper.encodeRsaKey(this)
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -215,13 +222,14 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             /**
              * decodes a PKCS#1-encoded RSA key
              *
-             * @throws Throwable all sorts of exceptions on invalid input
+             * @throws Asn1Exception all sorts of exceptions on invalid input
              */
-            fun fromPKCS1encoded(input: ByteArray): Rsa {
+            @Throws(Asn1Exception::class)
+            fun fromPKCS1encoded(input: ByteArray): Rsa = runRethrowing {
                 val conv = Asn1Element.parse(input) as Asn1Sequence
                 val n = (conv.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
                 val e = (conv.nextChild() as Asn1Primitive).readInt()
-                if (conv.hasMoreChildren()) throw IllegalArgumentException("Superfluous bytes")
+                if (conv.hasMoreChildren()) throw Asn1StructuralException("Superfluous bytes")
                 return Rsa(Size.of(n), n, e)
             }
 
@@ -242,6 +250,16 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
     ) : CryptoPublicKey() {
 
         override val oid = Ec.oid
+
+        /**
+         * ANSI X9.63 Encoding as used by iOS
+         */
+        @Transient
+        override val iosEncoded =
+            byteArrayOf(ANSI_PREFIX, *MultibaseHelper.encodeEcKey(this))
+
+        @Transient
+        override val keyId by lazy { MultibaseHelper.calcKeyId(this) }
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -275,6 +293,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             /**
              * Decodes a key from its ANSI X9.63 representation
              */
+            @Throws(Throwable::class)
             fun fromAnsiX963Bytes(src: ByteArray): CryptoPublicKey {
                 if (src[0] != ANSI_PREFIX) throw IllegalArgumentException("No EC key")
                 val curve = EcCurve.entries
@@ -288,16 +307,6 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
             override val oid = KnownOIDs.ecPublicKey
         }
-
-        /**
-         * ANSI X9.63 Encoding as used by iOS
-         */
-        @Transient
-        override val iosEncoded =
-            curve.coordinateLengthBytes.let { byteArrayOf(ANSI_PREFIX, *(x.ensureSize(it)), *(y.ensureSize(it))) }
-
-        @Transient
-        override val keyId = MultibaseHelper.calcKeyId(curve, x, y)
     }
 }
 
@@ -314,5 +323,6 @@ private val RsaParams.size get() = third
  * This function lives here and returns a typealiased Triple to allow for constructor chaining.
  * If we were to change the primary constructor, we'd need to write a custom serializer
  */
+@Throws(IllegalArgumentException::class)
 private fun sanitizeRsaInputs(n: ByteArray, e: Int): RsaParams = n.dropWhile { it == 0.toByte() }.toByteArray()
     .let { Triple(byteArrayOf(0, *it), e, CryptoPublicKey.Rsa.Size.of(it)) }

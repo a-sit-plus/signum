@@ -15,7 +15,7 @@ jobs:
       - name: Build klibs
         run: ./gradlew iosArm64MainKlibrary iosX64MainKlibrary
       - name: Build XCFrameworks
-        run: ./gradlew assembleKmpCryptoXCFramework assembleKmpCryptoJwsXCFramework
+        run: ./gradlew assembleKmpCryptoXCFramework assembleKmpCryptoJwsXCFramework assembleKmpCryptoCoseXCFramework
       - name: Upload debug XCFramework KmpCrypto
         uses: actions/upload-artifact@v3
         with:
@@ -28,6 +28,12 @@ jobs:
           name: KmpCryptoJws-debug.xcframework
           path: |
             datatypes-jws/build/XCFrameworks/debug/
+      - name: Upload debug XCFramework KmpCryptoCose
+        uses: actions/upload-artifact@v3
+        with:
+          name: KmpCryptoCose-debug.xcframework
+          path: |
+            datatypes-cose/build/XCFrameworks/debug/
       - name: Upload release XCFramework KmpCrypto
         uses: actions/upload-artifact@v3
         with:
@@ -40,3 +46,9 @@ jobs:
           name: KmpCryptoJws-release.xcframework
           path: |
             datatypes-jws/build/XCFrameworks/release/
+      - name: Upload release XCFramework KmpCryptoCose
+        uses: actions/upload-artifact@v3
+        with:
+          name: KmpCryptoCose-release.xcframework
+          path: |
+            datatypes-cose/build/XCFrameworks/release/

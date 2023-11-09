@@ -1,3 +1,5 @@
+import DatatypeVersions.encoding
+import DatatypeVersions.kmmresult
 import at.asitplus.gradle.*
 
 plugins {
@@ -7,37 +9,40 @@ plugins {
     id("at.asitplus.gradle.conventions")
 }
 
-version = "2.0.0"
+version = "2.1.0"
 
 
-exportIosFramework("KmpCrypto",  serialization("json"),datetime())
 kotlin {
+    jvm()
+    iosArm64()
+    iosSimulatorArm64()
+    iosX64()
     sourceSets {
-        val commonMain by getting {
+        commonMain {
             dependencies {
+                api("at.asitplus:kmmresult:${kmmresult}")
                 api(serialization("json"))
                 api(datetime())
-                implementation("io.matthewnelson.kotlin-components:encoding-base16:${DatatypeVersions.encoding}")
-                implementation("io.matthewnelson.kotlin-components:encoding-base64:${DatatypeVersions.encoding}")
-            }
-            val commonTest by getting {
-                dependencies {
-                    implementation(kotest("property"))
-                    implementation(kotlin("reflect"))
-                }
+                implementation("io.matthewnelson.kotlin-components:encoding-base16:${encoding}")
+                implementation("io.matthewnelson.kotlin-components:encoding-base64:${encoding}")
             }
         }
 
-        val jvmMain by getting{
+        commonTest {
+            dependencies {
+                implementation(kotest("property"))
+                implementation(kotlin("reflect"))
+            }
+        }
+
+        jvmMain {
             dependencies {
                 api(bouncycastle("bcpkix"))
             }
         }
-
-        val commonTest by getting
-        val jvmTest by getting
     }
 }
+exportIosFramework("KmpCrypto", serialization("json"), datetime(), "at.asitplus:kmmresult:${kmmresult}")
 
 val javadocJar = setupDokka(baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/", multiModuleDoc = true)
 

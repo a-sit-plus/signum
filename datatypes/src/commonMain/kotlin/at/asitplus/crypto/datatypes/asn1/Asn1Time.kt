@@ -29,6 +29,8 @@ class Asn1Time(val instant: Instant, formatOverride: Format? = null) : Asn1Encod
 
     companion object : Asn1Decodable<Asn1Primitive, Asn1Time> {
         private val THRESHOLD_GENERALIZED_TIME = Instant.parse("2050-01-01T00:00:00Z")
+
+        @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Primitive) =
             Asn1Time(src.readInstant(), if (src.tag == BERTags.UTC_TIME) Format.UTC else Format.GENERALIZED)
     }
@@ -38,6 +40,24 @@ class Asn1Time(val instant: Instant, formatOverride: Format? = null) : Asn1Encod
             Format.UTC -> instant.encodeToAsn1UtcTime()
             Format.GENERALIZED -> instant.encodeToAsn1GeneralizedTime()
         }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as Asn1Time
+
+        if (instant != other.instant) return false
+        if (format != other.format) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = instant.hashCode()
+        result = 31 * result + format.hashCode()
+        return result
+    }
 
 
     /**

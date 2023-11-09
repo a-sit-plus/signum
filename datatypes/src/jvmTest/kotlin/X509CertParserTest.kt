@@ -17,7 +17,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import org.bouncycastle.jcajce.provider.asymmetric.X509
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileReader
@@ -35,7 +34,7 @@ class X509CertParserTest : FreeSpec({
         //ok-uniqueid-incomplete-byte.der
         val derBytes =
             javaClass.classLoader.getResourceAsStream("certs/ok-uniqueid-incomplete-byte.der").readBytes()
-        X509Certificate.derDecode(derBytes)
+        X509Certificate.decodeFromDer(derBytes)
     }
 
 
@@ -49,7 +48,7 @@ class X509CertParserTest : FreeSpec({
             println(jcaCert.encoded.encodeToString(Base16))
             val elem = Asn1Element.parse(certBytes)
         Json{prettyPrint=true}.encodeToString(elem)
-            val cert = X509Certificate.derDecode(certBytes)
+            val cert = X509Certificate.decodeFromDer(certBytes)
 
             when (val pk = cert.publicKey) {
                 is CryptoPublicKey.Ec -> println(
@@ -67,7 +66,7 @@ class X509CertParserTest : FreeSpec({
 
             println("The full certificate is:\n${Json { prettyPrint = true }.encodeToString(cert)}")
 
-            println("Re-encoding it produces the same bytes? ${cert.derEncoded contentEquals certBytes}")
+            println("Re-encoding it produces the same bytes? ${cert.encodeToDer() contentEquals certBytes}")
 
 
             println(cert.encodeToTlv())
@@ -161,7 +160,7 @@ class X509CertParserTest : FreeSpec({
                     .getInstance("X509")
                     .generateCertificate(ByteArrayInputStream(encodedSrc)) as java.security.cert.X509Certificate
 
-                val cert = X509Certificate.derDecode(encodedSrc)
+                val cert = X509Certificate.decodeFromDer(encodedSrc)
 
                 jcaCert.encoded shouldBe encodedSrc
                 cert.encodeToTlv().derEncoded shouldBe encodedSrc

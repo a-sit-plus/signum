@@ -3,7 +3,7 @@
 ## 1.0
 
 ### 1.0.0
- First public release[index.html](..%2F0000%20OSS%2Fa-sit-plus.github.io%2Findex.html)
+ First public release
  
 ## 2.0
 
@@ -16,3 +16,19 @@
  * Initial pretty-printing of ASN.1 Strucutres
  * Massive ASN.1 builder DSL streamlining
  * More convenient explicit tagging
+
+
+### 2.1.0
+* Kotlin 1.9.20
+* COSE Support
+* Full RSA and HMAC Support
+* New interface `Asn1OctetString` to unify both ASN.1 OCTET STREAM classes
+* Fix broken `content` property of `Asn1EncapsulatingOctetString`
+* Refactor `.derEncoded` property of `Asn1Encodable` interface to function `.encodeToDer()`
+* Consistent exception handling behaviour
+  * Throw new type `Asn1Exception` for ASN.1-related errors
+  * Throw `IllegalArgumentException` for input-related errors
+  * Add `xxxOrNull()` functions for all encoding/decoding/parsing functions
+  * Add `xxxSafe()` functions to encapsulate endocing/decoding in `KmmResult`
+  * Return `KmmResult` for conversions between different key representations ( i.e. `CryptoPublicKey`, `CoseKey` and `JsonWebKey`) 
+

@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 package at.asitplus.crypto.datatypes.pki
 
 import at.asitplus.crypto.datatypes.asn1.*
@@ -7,23 +9,23 @@ import kotlinx.serialization.Serializable
  * X.509 Certificate Extension
  */
 @Serializable
-data class X509CertificateExtension private constructor(
+data class X509CertificateExtension @Throws(Asn1Exception::class) private constructor(
     override val oid: ObjectIdentifier,
     val value: Asn1Element,
     val critical: Boolean = false
 ) : Asn1Encodable<Asn1Sequence>, Identifiable {
 
     init {
-        if (value.tag != BERTags.OCTET_STRING) throw IllegalArgumentException("Value is not an octet string!")
+        if (value.tag != BERTags.OCTET_STRING) throw Asn1TagMismatchException(BERTags.OCTET_STRING, value.tag)
     }
 
-    public constructor(
+    constructor(
         oid: ObjectIdentifier,
         critical: Boolean = false,
         value: Asn1EncapsulatingOctetString
     ) : this(oid, value, critical)
 
-    public constructor(
+    constructor(
         oid: ObjectIdentifier,
         critical: Boolean = false,
         value: Asn1PrimitiveOctetString
@@ -37,7 +39,8 @@ data class X509CertificateExtension private constructor(
 
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
 
-        override fun decodeFromTlv(src: Asn1Sequence): X509CertificateExtension {
+        @Throws(Asn1Exception::class)
+        override fun decodeFromTlv(src: Asn1Sequence): X509CertificateExtension = runRethrowing {
 
             val id = (src.children[0] as Asn1Primitive).readOid()
             val critical =

@@ -31,7 +31,7 @@ class JsonWebKeyJvmTest : FreeSpec({
         val xFromBc = (keyPair.public as ECPublicKey).w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
         val yFromBc = (keyPair.public as ECPublicKey).w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
         val pubKey = CryptoPublicKey.Ec.fromCoordinates(ecCurve, xFromBc, yFromBc)
-        val jsonWebKey = pubKey.toJsonWebKey()
+        val jsonWebKey = pubKey.toJsonWebKey().getOrThrow()
 
         jsonWebKey.shouldNotBeNull()
         jsonWebKey.x shouldBe xFromBc
@@ -40,7 +40,7 @@ class JsonWebKeyJvmTest : FreeSpec({
         jsonWebKey.keyId shouldHaveMinLength 32
 
         "it can be recreated from keyId" {
-            val recreatedJwk = JsonWebKey.fromKeyId(jsonWebKey.keyId!!)
+            val recreatedJwk = JsonWebKey.fromKeyId(jsonWebKey.keyId!!).getOrThrow()
             recreatedJwk.shouldNotBeNull()
             recreatedJwk.keyId shouldBe jsonWebKey.keyId
             recreatedJwk.x shouldBe jsonWebKey.x
@@ -48,7 +48,7 @@ class JsonWebKeyJvmTest : FreeSpec({
         }
 
         "it can be converted back to CryptoPublicKey" {
-            val recreatedPubKey = jsonWebKey.toCryptoPublicKey()
+            val recreatedPubKey = jsonWebKey.toCryptoPublicKey().getOrThrow()
             (pubKey == recreatedPubKey) shouldBe true
         }
     }
@@ -57,7 +57,7 @@ class JsonWebKeyJvmTest : FreeSpec({
         val nFromBc = (keyPairRSA.public as RSAPublicKey).modulus.toByteArray()
         val eFromBc = (keyPairRSA.public as RSAPublicKey).publicExponent.toInt()
         val pubKey = CryptoPublicKey.Rsa(nFromBc, eFromBc)
-        val jwk = pubKey.toJsonWebKey()
+        val jwk = pubKey.toJsonWebKey().getOrThrow()
 
         jwk.shouldNotBeNull()
         jwk.n shouldBe nFromBc
@@ -65,12 +65,12 @@ class JsonWebKeyJvmTest : FreeSpec({
         jwk.keyId.shouldNotBeNull()
 
         "it can be converted back to CryptoPublicKey" {
-            val recreatedPubKey = jwk.toCryptoPublicKey()
+            val recreatedPubKey = jwk.toCryptoPublicKey().getOrThrow()
             (pubKey == recreatedPubKey) shouldBe true
         }
 
         "it can be recreated from keyId" {
-            val recreatedJwk = JsonWebKey.fromKeyId(jwk.keyId!!)
+            val recreatedJwk = JsonWebKey.fromKeyId(jwk.keyId!!).getOrThrow()
             recreatedJwk.shouldNotBeNull()
             recreatedJwk.keyId shouldBe jwk.keyId
             recreatedJwk.n shouldBe jwk.n
