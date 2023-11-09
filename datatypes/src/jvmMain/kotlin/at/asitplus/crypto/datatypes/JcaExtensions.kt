@@ -75,30 +75,30 @@ fun CryptoPublicKey.Rsa.getPublicKey(): RSAPublicKey =
     ) as RSAPublicKey
 
 @Throws(Throwable::class)
-fun CryptoPublicKey.Ec.Companion.fromJcaKey(publicKey: ECPublicKey): CryptoPublicKey.Ec {
-    val curve = EcCurve.byJcaName(
-        SECNamedCurves.getName(
-            SubjectPublicKeyInfo.getInstance(
-                ASN1Sequence.getInstance(publicKey.encoded)
-            ).algorithm.parameters as ASN1ObjectIdentifier
-        )
-    ) ?: throw SerializationException("Unknown Jca name")
-    return fromCoordinates(
-        curve,
-        publicKey.w.affineX.toByteArray().ensureSize(curve.coordinateLengthBytes),
-        publicKey.w.affineY.toByteArray().ensureSize(curve.coordinateLengthBytes)
-    )
-}
-
-fun CryptoPublicKey.Rsa.Companion.fromJcaKey(publicKey: RSAPublicKey): CryptoPublicKey.Rsa =
-    CryptoPublicKey.Rsa(publicKey.modulus.toByteArray(), publicKey.publicExponent.toInt())
-
-fun CryptoPublicKey.Companion.fromJcaKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
+fun CryptoPublicKey.Ec.Companion.fromJcaKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey> =
     runCatching {
+        val curve = EcCurve.byJcaName(
+            SECNamedCurves.getName(
+                SubjectPublicKeyInfo.getInstance(
+                    ASN1Sequence.getInstance(publicKey.encoded)
+                ).algorithm.parameters as ASN1ObjectIdentifier
+            )
+        ) ?: throw SerializationException("Unknown Jca name")
+        fromCoordinates(
+            curve,
+            publicKey.w.affineX.toByteArray().ensureSize(curve.coordinateLengthBytes),
+            publicKey.w.affineY.toByteArray().ensureSize(curve.coordinateLengthBytes)
+        )
+    }.wrap()
+
+fun CryptoPublicKey.Rsa.Companion.fromJcaKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey> =
+    runCatching { CryptoPublicKey.Rsa(publicKey.modulus.toByteArray(), publicKey.publicExponent.toInt()) }.wrap()
+
+@Throws(Throwable::class)
+fun CryptoPublicKey.Companion.fromJcaKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
         when (publicKey) {
             is RSAPublicKey -> CryptoPublicKey.Rsa.fromJcaKey(publicKey)
             is ECPublicKey -> CryptoPublicKey.Ec.fromJcaKey(publicKey)
-            else -> throw IllegalArgumentException("Unsupported Key Type")
+            else -> KmmResult.failure(IllegalArgumentException("Unsupported Key Type"))
         }
-    }.wrap()
 

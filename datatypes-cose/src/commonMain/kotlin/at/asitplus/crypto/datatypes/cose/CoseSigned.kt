@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUnsignedTypes::class)
-
 package at.asitplus.crypto.datatypes.cose
 
 import at.asitplus.crypto.datatypes.cose.io.cborSerializer

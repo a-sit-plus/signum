@@ -44,8 +44,7 @@ class X509CertificateJvmTest : FreeSpec({
 
     "Certificates match" {
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaKey(ecPublicKey)
-        cryptoPublicKey.shouldNotBeNull()
+        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaKey(ecPublicKey).getOrThrow()
 
         // create certificate with bouncycastle
         val notBeforeDate = Date.from(Instant.now())
