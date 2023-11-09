@@ -75,7 +75,7 @@ fun CryptoPublicKey.Rsa.getPublicKey(): RSAPublicKey =
     ) as RSAPublicKey
 
 @Throws(Throwable::class)
-fun CryptoPublicKey.Ec.Companion.fromJcaKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey.Ec> =
+fun CryptoPublicKey.Ec.Companion.fromJcaKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey> =
     runCatching {
         val curve = EcCurve.byJcaName(
             SECNamedCurves.getName(
@@ -91,16 +91,14 @@ fun CryptoPublicKey.Ec.Companion.fromJcaKey(publicKey: ECPublicKey): KmmResult<C
         )
     }.wrap()
 
-fun CryptoPublicKey.Rsa.Companion.fromJcaKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey.Rsa> =
+fun CryptoPublicKey.Rsa.Companion.fromJcaKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey> =
     runCatching { CryptoPublicKey.Rsa(publicKey.modulus.toByteArray(), publicKey.publicExponent.toInt()) }.wrap()
 
 @Throws(Throwable::class)
 fun CryptoPublicKey.Companion.fromJcaKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
-    runCatching {
         when (publicKey) {
-            is RSAPublicKey -> CryptoPublicKey.Rsa.fromJcaKey(publicKey).getOrThrow()
-            is ECPublicKey -> CryptoPublicKey.Ec.fromJcaKey(publicKey).getOrThrow()
-            else -> throw IllegalArgumentException("Unsupported Key Type")
+            is RSAPublicKey -> CryptoPublicKey.Rsa.fromJcaKey(publicKey)
+            is ECPublicKey -> CryptoPublicKey.Ec.fromJcaKey(publicKey)
+            else -> KmmResult.failure(IllegalArgumentException("Unsupported Key Type"))
         }
-    }.wrap()
 
