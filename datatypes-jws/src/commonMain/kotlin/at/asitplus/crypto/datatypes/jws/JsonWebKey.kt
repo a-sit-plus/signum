@@ -42,6 +42,10 @@ data class JsonWebKey(
     @SerialName("e")
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val e: ByteArray? = null,
+    //Symmetric Key
+    @SerialName("k")
+    @Serializable(with = ByteArrayBase64UrlSerializer::class)
+    val k: ByteArray? = null
 ) {
 
     val jwkThumbprint: String by lazy {
@@ -61,6 +65,7 @@ data class JsonWebKey(
                 "y=${y?.encodeToString(Base64Strict)}" +
                 "n=${n?.encodeToString(Base64Strict)})" +
                 "e=${e?.encodeToString(Base64Strict)}" +
+                "k=${k?.encodeToString(Base64Strict)}" +
                 ")"
 
     override fun equals(other: Any?): Boolean {
@@ -89,6 +94,10 @@ data class JsonWebKey(
             if (other.e == null) return false
             if (!e.contentEquals(other.e)) return false
         } else if (other.e != null) return false
+        if (k != null) {
+            if (other.k == null) return false
+            if (!k.contentEquals(other.k)) return false
+        } else if (other.k != null) return false
         return true
     }
 
@@ -100,6 +109,7 @@ data class JsonWebKey(
         result = 31 * result + (y?.contentHashCode() ?: 0)
         result = 31 * result + (n?.hashCode() ?: 0)
         result = 31 * result + (e?.hashCode() ?: 0)
+        result = 31 * result + (k?.hashCode() ?: 0)
         return result
     }
 
@@ -126,7 +136,7 @@ data class JsonWebKey(
                     ).apply { jwkId = identifier }
                 }
 
-                else -> throw IllegalArgumentException("Missing key type")
+                else -> throw IllegalArgumentException("Illegal key type")
             }
         }.wrap()
 
