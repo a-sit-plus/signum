@@ -32,3 +32,4 @@
   * Add `xxxSafe()` functions to encapsulate endocing/decoding in `KmmResult`
   * Return `KmmResult` for conversions between different key representations ( i.e. `CryptoPublicKey`, `CoseKey` and `JsonWebKey`) 
 
+### NEXT
