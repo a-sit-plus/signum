@@ -109,6 +109,7 @@ data class JsonWebKey(
         result = 31 * result + (y?.contentHashCode() ?: 0)
         result = 31 * result + (n?.hashCode() ?: 0)
         result = 31 * result + (e?.hashCode() ?: 0)
+        result = 31 * result + (k?.hashCode() ?: 0)
         return result
     }
 
