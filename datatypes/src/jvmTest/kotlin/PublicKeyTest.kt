@@ -23,7 +23,7 @@ import java.security.interfaces.RSAPublicKey
 class PublicKeyTest : FreeSpec({
     "EC" - {
         withData(256, 384, 521) { bits ->
-            val keys = List<ECPublicKey>(256000 / bits) {
+            val keys = List<ECPublicKey>(100) {
                 val ecKp = KeyPairGenerator.getInstance("EC").apply {
                     initialize(bits)
                 }.genKeyPair()
@@ -39,31 +39,37 @@ class PublicKeyTest : FreeSpec({
             ) { pubKey ->
 
                 val own = CryptoPublicKey.Ec.fromJcaKey(pubKey).getOrThrow()
+                own.shouldNotBeNull()
+
+                val pubKey2 = CryptoPublicKey.Ec.fromJcaKey(pubKey)
+                val iosDerived = CryptoPublicKey.fromIosEncoded(own.iosEncoded)
+                val keyIdDerived = CryptoPublicKey.fromKeyId(own.keyId)
+
+                pubKey2.hashCode() shouldBe own.hashCode()
+                pubKey2 shouldBe own
+                iosDerived.hashCode() shouldBe own.hashCode()
+                iosDerived shouldBe own
+                keyIdDerived.hashCode() shouldBe own.hashCode()
+                keyIdDerived shouldBe own
+
                 println(Json.encodeToString(own))
                 println(own.iosEncoded.encodeToString(Base16()))
                 println(own.encodeToDer().encodeToString(Base16()))
                 println(own.keyId)
                 own.encodeToDer() shouldBe pubKey.encoded
-                CryptoPublicKey.fromKeyId(own.keyId) shouldBe own
+
                 own.getPublicKey().encoded shouldBe pubKey.encoded
                 CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.encodeToDer()) as Asn1Sequence) shouldBe own
+
+
             }
-        }
-
-        "Equality tests" {
-            val keyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair()
-            val pubKey1 = CryptoPublicKey.decodeFromDer(keyPair.public.encoded)
-            val pubKey2 = CryptoPublicKey.decodeFromDer(keyPair.public.encoded)
-
-            pubKey1.hashCode() shouldBe pubKey2.hashCode()
-            pubKey1 shouldBe pubKey2
         }
 
     }
 
     "RSA" - {
         withData(512, 1024, 2048, 3072, 4096) { bits ->
-            val keys = List<RSAPublicKey>(13000 / bits) {
+            val keys = List<RSAPublicKey>(100) {
                 val rsaKP = KeyPairGenerator.getInstance("RSA").apply {
                     initialize(bits)
                 }.genKeyPair()
@@ -79,14 +85,24 @@ class PublicKeyTest : FreeSpec({
             ) { pubKey ->
 
                 val own = CryptoPublicKey.Rsa(pubKey.modulus.toByteArray(), pubKey.publicExponent.toInt())
-                val own1 = CryptoPublicKey.Rsa(
-                    ByteArray((0..10).random()) { 0 } + pubKey.modulus.toByteArray(),
-                    pubKey.publicExponent.toInt()
-                )
+                own.shouldNotBeNull()
+                val pubKey2 = CryptoPublicKey.Rsa(
+                        ByteArray((0..10).random()) { 0 } + pubKey.modulus.toByteArray(),
+                        pubKey.publicExponent.toInt()
+                    )
+                val iosDerived = CryptoPublicKey.fromIosEncoded(own.iosEncoded)
+                val keyIdDerived = CryptoPublicKey.fromKeyId(own.keyId)
 
                 // Correctly drops leading zeros
-                own1.n shouldBe own.n
-                own1.e shouldBe own.e
+                pubKey2.n shouldBe own.n
+                pubKey2.e shouldBe own.e
+
+                pubKey2.hashCode() shouldBe own.hashCode()
+                pubKey2 shouldBe own
+                iosDerived.hashCode() shouldBe own.hashCode()
+                iosDerived shouldBe own
+                keyIdDerived.hashCode() shouldBe own.hashCode()
+                keyIdDerived shouldBe own
 
                 println(Json.encodeToString(own))
                 println(own.iosEncoded.encodeToString(Base16()))
@@ -99,13 +115,6 @@ class PublicKeyTest : FreeSpec({
                 own.getPublicKey().encoded shouldBe pubKey.encoded
             }
         }
-        "Equality tests" {
-            val keyPair = KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }.genKeyPair()
-            val pubKey1 = CryptoPublicKey.decodeFromDer(keyPair.public.encoded)
-            val pubKey2 = CryptoPublicKey.decodeFromDer(keyPair.public.encoded)
 
-            pubKey1.hashCode() shouldBe pubKey2.hashCode()
-            pubKey1 shouldBe pubKey2
-        }
     }
 })
