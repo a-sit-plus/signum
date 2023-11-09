@@ -26,7 +26,7 @@ object CoseKeyTypeSerializer : KSerializer<CoseKeyType> {
 
     override fun deserialize(decoder: Decoder): CoseKeyType {
         val decoded = decoder.decodeInt()
-        return CoseKeyType.values().firstOrNull { it.value == decoded }
+        return CoseKeyType.entries.firstOrNull { it.value == decoded }
             ?: throw IllegalArgumentException("Not known: $decoded")
     }
 }

@@ -82,7 +82,7 @@ data class CoseKey(
      * or the first error. More details in either [CoseKeyParams.RsaParams.toCryptoPublicKey] or [CoseKeyParams.EcYByteArrayParams.toCryptoPublicKey]
      */
     fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
-        keyParams?.toCryptoPublicKey() ?: KmmResult.failure(IllegalArgumentException("No public key parameters!"))
+        keyParams?.toCryptoPublicKey() ?: failure(IllegalArgumentException("No public key parameters!"))
 
     fun serialize() = cborSerializer.encodeToByteArray(this)
 
