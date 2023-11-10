@@ -38,12 +38,12 @@ class PublicKeyTest : FreeSpec({
                 keys
             ) { pubKey ->
 
-                val own = CryptoPublicKey.Ec.fromJcaKey(pubKey).getOrThrow()
+                val own: CryptoPublicKey = CryptoPublicKey.Ec.fromJcaKey(pubKey).getOrThrow() as CryptoPublicKey.Ec
                 own.shouldNotBeNull()
 
-                val pubKey2 = CryptoPublicKey.Ec.fromJcaKey(pubKey)
-                val iosDerived = CryptoPublicKey.fromIosEncoded(own.iosEncoded)
-                val keyIdDerived = CryptoPublicKey.fromKeyId(own.keyId)
+                val pubKey2: CryptoPublicKey = CryptoPublicKey.Ec.fromJcaKey(pubKey).getOrThrow()
+                val iosDerived: CryptoPublicKey = CryptoPublicKey.fromIosEncoded(own.iosEncoded)
+                val keyIdDerived: CryptoPublicKey = CryptoPublicKey.fromKeyId(own.keyId)
 
                 pubKey2.hashCode() shouldBe own.hashCode()
                 pubKey2 shouldBe own
@@ -84,14 +84,14 @@ class PublicKeyTest : FreeSpec({
                 keys
             ) { pubKey ->
 
-                val own = CryptoPublicKey.Rsa(pubKey.modulus.toByteArray(), pubKey.publicExponent.toInt())
+                val own: CryptoPublicKey.Rsa = CryptoPublicKey.fromJcaKey(pubKey).getOrThrow() as CryptoPublicKey.Rsa
                 own.shouldNotBeNull()
-                val pubKey2 = CryptoPublicKey.Rsa(
+                val pubKey2: CryptoPublicKey.Rsa = CryptoPublicKey.Rsa(
                         ByteArray((0..10).random()) { 0 } + pubKey.modulus.toByteArray(),
                         pubKey.publicExponent.toInt()
                     )
-                val iosDerived = CryptoPublicKey.fromIosEncoded(own.iosEncoded)
-                val keyIdDerived = CryptoPublicKey.fromKeyId(own.keyId)
+                val iosDerived: CryptoPublicKey = CryptoPublicKey.fromIosEncoded(own.iosEncoded)
+                val keyIdDerived: CryptoPublicKey = CryptoPublicKey.fromKeyId(own.keyId)
 
                 // Correctly drops leading zeros
                 pubKey2.n shouldBe own.n
