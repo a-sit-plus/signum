@@ -1,5 +1,4 @@
 import DatatypeVersions.encoding
-import DatatypeVersions.kmmresult
 import at.asitplus.gradle.*
 
 plugins {
@@ -39,7 +38,7 @@ exportIosFramework(
     "KmpCryptoCose",
     serialization("cbor"),
     datetime(),
-    "at.asitplus:kmmresult:${kmmresult}",
+    kmmresult(),
     project(":datatypes")
 )
 
