@@ -86,11 +86,16 @@ sealed class DistinguishedName : Asn1Encodable<Asn1Set>, Identifiable {
 
         other as DistinguishedName
 
-        return value == other.value
+        if (value != other.value) return false
+        if (oid != other.oid) return false
+
+        return true
     }
 
     override fun hashCode(): Int {
-        return value.hashCode()
+        var result = value.hashCode()
+        result = 31 * result + oid.hashCode()
+        return result
     }
 
     companion object : Asn1Decodable<Asn1Set, DistinguishedName> {
