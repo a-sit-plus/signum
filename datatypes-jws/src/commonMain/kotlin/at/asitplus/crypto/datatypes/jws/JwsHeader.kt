@@ -2,6 +2,8 @@
 
 package at.asitplus.crypto.datatypes.jws
 
+import at.asitplus.KmmResult.Companion.wrap
+import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.JwsAlgorithm
 import at.asitplus.crypto.datatypes.pki.X509Certificate
 import at.asitplus.crypto.datatypes.asn1.Asn1Element
@@ -81,11 +83,13 @@ data class JwsHeader(
         return result
     }
 
-    val publicKey: JsonWebKey? by lazy {
-        jsonWebKey
-            ?: keyId?.let { JsonWebKey.fromKeyId(it).getOrNull() }
+    val publicKey: CryptoPublicKey? by lazy {
+        runCatching {
+            jsonWebKey?.toCryptoPublicKey()?.getOrNull()
+            ?: keyId?.let { CryptoPublicKey.fromKeyId(it) }
             ?: certificateChain?.firstOrNull()
-                ?.let { X509Certificate.decodeFromTlv(Asn1Element.parse(it) as Asn1Sequence).tbsCertificate.publicKey.toJsonWebKey().getOrNull() }
+                ?.let { X509Certificate.decodeFromTlv(Asn1Element.parse(it) as Asn1Sequence).publicKey }
+        }.wrap().getOrNull()
     }
 
     companion object {
@@ -95,7 +99,6 @@ data class JwsHeader(
             Napier.w("deserialize failed", it)
             null
         }
-
 
     }
 }
