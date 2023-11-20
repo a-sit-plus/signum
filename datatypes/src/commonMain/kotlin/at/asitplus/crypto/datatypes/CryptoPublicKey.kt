@@ -65,9 +65,18 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          * @throws Throwable all sorts of exception on invalid input
          */
         @Throws(Throwable::class)
-        fun fromKeyId(it: String): CryptoPublicKey =
-            MultibaseHelper.calcPublicKey(it)
-
+        fun fromKeyId(it: String): CryptoPublicKey {
+            val decodedKeyId = MultibaseHelper.decodeKeyId(it)
+            return when (decodedKeyId.first) {
+                true -> Ec.fromAnsiX963Bytes(
+                    byteArrayOf(
+                        Ec.ANSI_PREFIX,
+                        *decodedKeyId.second
+                    )
+                )
+                false -> Rsa.fromPKCS1encoded(decodedKeyId.second)
+            }
+        }
 
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Sequence): CryptoPublicKey = runRethrowing {
