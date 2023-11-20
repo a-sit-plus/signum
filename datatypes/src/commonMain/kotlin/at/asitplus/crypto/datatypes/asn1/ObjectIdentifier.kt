@@ -50,6 +50,10 @@ class ObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transient vara
         return nodes contentEquals other.nodes
     }
 
+    override fun hashCode(): Int {
+        return nodes.hashCode()
+    }
+
     //based on the very concise explanation found on SO: https://stackoverflow.com/a/25786793
     private fun UInt.encodeOidNode(): ByteArray {
         if (this < 128u) return byteArrayOf(this.toByte())
