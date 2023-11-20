@@ -74,7 +74,6 @@ fun CryptoPublicKey.Rsa.getPublicKey(): RSAPublicKey =
         RSAPublicKeySpec(BigInteger(1, n), BigInteger.valueOf(e.toLong()))
     ) as RSAPublicKey
 
-@Throws(Throwable::class)
 fun CryptoPublicKey.Ec.Companion.fromJcaKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey> =
     runCatching {
         val curve = EcCurve.byJcaName(
@@ -94,7 +93,6 @@ fun CryptoPublicKey.Ec.Companion.fromJcaKey(publicKey: ECPublicKey): KmmResult<C
 fun CryptoPublicKey.Rsa.Companion.fromJcaKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey> =
     runCatching { CryptoPublicKey.Rsa(publicKey.modulus.toByteArray(), publicKey.publicExponent.toInt()) }.wrap()
 
-@Throws(Throwable::class)
 fun CryptoPublicKey.Companion.fromJcaKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
         when (publicKey) {
             is RSAPublicKey -> CryptoPublicKey.Rsa.fromJcaKey(publicKey)
