@@ -33,3 +33,5 @@
   * Return `KmmResult` for conversions between different key representations ( i.e. `CryptoPublicKey`, `CoseKey` and `JsonWebKey`) 
 
 ### NEXT
+* Dependency Updates
+  * KmmResult 1.5.4
