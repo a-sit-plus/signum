@@ -35,3 +35,7 @@
 ### NEXT
 * Dependency Updates
   * KmmResult 1.5.4
+* Refactor `MultiBaseHelper` to only handle conversion
+* Change `JwsHeader.publicKey` from JsonWebKey to CryptoPublicKey
+* Remove `SignatureValueLength` parameters from JWS- & Cose Algorithm Enum class
+* Remove deprecated functions

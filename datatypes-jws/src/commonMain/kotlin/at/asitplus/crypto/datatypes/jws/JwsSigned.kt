@@ -51,7 +51,7 @@ data class JwsSigned(
                 ?: return null.also { Napier.w("Could not parse JWS: $it") }
             val payload = stringList[1].decodeToByteArrayOrNull(Base64Strict)
                 ?: return null.also { Napier.w("Could not parse JWS: $it") }
-            val signature = stringList[2].decodeToByteArrayOrNull(Base64Strict) //TODO() RSA and OCT?
+            val signature = stringList[2].decodeToByteArrayOrNull(Base64Strict)
                 ?: return null.also { Napier.w("Could not parse JWS: $it") }
             return JwsSigned(header, payload, signature, "${stringList[0]}.${stringList[1]}")
         }

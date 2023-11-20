@@ -83,13 +83,17 @@ data class JwsHeader(
         return result
     }
 
+    /**
+     * Tries to compute a public key in descending order from JWK, KeyID or the certificate chain
+     * and takes the first success or null
+     */
     val publicKey: CryptoPublicKey? by lazy {
-        runCatching {
-            jsonWebKey?.toCryptoPublicKey()?.getOrNull()
-            ?: keyId?.let { CryptoPublicKey.fromKeyId(it) }
-            ?: certificateChain?.firstOrNull()
-                ?.let { X509Certificate.decodeFromTlv(Asn1Element.parse(it) as Asn1Sequence).publicKey }
-        }.wrap().getOrNull()
+        jsonWebKey?.toCryptoPublicKey()?.getOrNull()
+            ?: keyId?.let { runCatching { CryptoPublicKey.fromKeyId(it) } }?.getOrNull()
+            ?: certificateChain
+                ?.firstNotNullOfOrNull {
+                    runCatching { X509Certificate.decodeFromTlv(Asn1Element.parse(it) as Asn1Sequence).publicKey }.getOrNull()
+                }
     }
 
     companion object {
