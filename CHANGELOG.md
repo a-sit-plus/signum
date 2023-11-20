@@ -39,3 +39,4 @@
 * Change `JwsHeader.publicKey` from JsonWebKey to CryptoPublicKey
 * Remove `SignatureValueLength` parameters from JWS- & Cose Algorithm Enum class
 * Remove deprecated functions
+* New `JwsAlgorithm` to `CoseAlgorithm` conversion
