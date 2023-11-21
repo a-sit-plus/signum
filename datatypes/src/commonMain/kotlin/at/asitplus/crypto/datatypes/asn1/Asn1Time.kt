@@ -61,7 +61,7 @@ class Asn1Time(val instant: Instant, formatOverride: Format? = null) : Asn1Encod
 
 
     /**
-     * Enum of suppoerted Time formats
+     * Enum of supported Time formats
      */
     enum class Format {
         /**
