@@ -16,7 +16,8 @@ import kotlinx.serialization.encoding.Encoder
 @Serializable(with = JwkTypeSerializer::class)
 enum class JwkType(val text: String) {
     EC("EC"),
-    RSA("RSA");
+    RSA("RSA"),
+    SYM("oct");
 }
 
 object JwkTypeSerializer : KSerializer<JwkType?> {
@@ -30,6 +31,6 @@ object JwkTypeSerializer : KSerializer<JwkType?> {
 
     override fun deserialize(decoder: Decoder): JwkType? {
         val decoded = decoder.decodeString()
-        return JwkType.values().firstOrNull { it.text == decoded }
+        return JwkType.entries.firstOrNull { it.text == decoded }
     }
 }

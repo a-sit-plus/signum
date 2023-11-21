@@ -49,17 +49,6 @@ enum class CoseAlgorithm(val value: Int) {
         RS384 -> JwsAlgorithm.RS384
         RS512 -> JwsAlgorithm.RS512
     }
-
-    val signatureValueLength
-        get() = when (this) {
-            ES256 -> 256 / 8 * 2
-            ES384 -> 384 / 8 * 2
-            ES512 -> 512 / 8 * 2
-            HS256 -> 256 / 8
-            HS384 -> 384 / 8
-            HS512 -> 512 / 8
-            else -> -1 // RSA signatures do not have a fixed size
-        }
 }
 
 
@@ -74,7 +63,7 @@ object CoseAlgorithmSerializer : KSerializer<CoseAlgorithm> {
 
     override fun deserialize(decoder: Decoder): CoseAlgorithm {
         val decoded = decoder.decodeInt()
-        return CoseAlgorithm.values().first { it.value == decoded }
+        return CoseAlgorithm.entries.first { it.value == decoded }
     }
 
 }

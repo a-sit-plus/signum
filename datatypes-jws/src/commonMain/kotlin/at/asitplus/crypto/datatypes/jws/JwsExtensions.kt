@@ -17,7 +17,7 @@ object JwsExtensions {
      * if it is wrapped in an ASN.1 Sequence of two ASN.1 Integers
      * (e.g. when computed in Java)
      */
-    fun ByteArray.extractSignatureValues(expectedLength: Int): ByteArray {
+    fun ByteArray.extractSignatureValues(expectedLength: UInt): ByteArray {
         if (this[0] != ASN1_TAG_SEQUENCE) return this
         val sequenceLen = this[1]
         if (size != (2 + sequenceLen)) return this
@@ -35,8 +35,8 @@ object JwsExtensions {
         val sEndIndex = sStartIndex + sLength
         val rValue = sliceArray(rStartIndex until rEndIndex)
         val sValue = sliceArray(sStartIndex until sEndIndex)
-        val rValueRaw = rValue.stripLeadingSignByte().padWithZeros(expectedLength)
-        val sValueRaw = sValue.stripLeadingSignByte().padWithZeros(expectedLength)
+        val rValueRaw = rValue.stripLeadingSignByte().padWithZeros(expectedLength.toInt())
+        val sValueRaw = sValue.stripLeadingSignByte().padWithZeros(expectedLength.toInt())
         return rValueRaw + sValueRaw
     }
 

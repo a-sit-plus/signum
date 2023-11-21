@@ -2,6 +2,7 @@
 
 package at.asitplus.crypto.datatypes.jws
 
+import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.jws.io.jsonSerializer
 import io.github.aakira.napier.Napier
@@ -71,11 +72,8 @@ data class JsonWebToken(
     }
 
     companion object {
-        fun deserialize(it: String) = kotlin.runCatching {
+        fun deserialize(it: String) = runCatching {
             jsonSerializer.decodeFromString<JsonWebToken>(it)
-        }.getOrElse {
-            Napier.w("deserialize failed", it)
-            null
-        }
+        }.wrap()
     }
 }

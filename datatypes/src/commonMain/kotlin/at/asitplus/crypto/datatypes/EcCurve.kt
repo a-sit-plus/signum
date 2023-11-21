@@ -21,7 +21,7 @@ enum class EcCurve(
     val jwkName: String,
     val keyLengthBits: UInt,
     val coordinateLengthBytes: UInt = keyLengthBits / 8u,
-    val signatureLengthBytes: UInt = coordinateLengthBytes,
+    val signatureLengthBytes: UInt = coordinateLengthBytes * 2u,
     override val oid: ObjectIdentifier
 ) : Identifiable {
 

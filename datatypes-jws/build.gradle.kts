@@ -1,5 +1,4 @@
 import DatatypeVersions.encoding
-import DatatypeVersions.kmmresult
 import DatatypeVersions.okio
 import at.asitplus.gradle.*
 
@@ -39,7 +38,7 @@ exportIosFramework(
     "KmpCryptoJws",
     serialization("json"),
     datetime(),
-    "at.asitplus:kmmresult:${kmmresult}",
+    kmmresult(),
     project(":datatypes")
 )
 
