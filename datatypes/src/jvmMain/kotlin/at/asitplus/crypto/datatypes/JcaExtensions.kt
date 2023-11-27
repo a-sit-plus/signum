@@ -54,27 +54,32 @@ val EcCurve.jcaName
 fun EcCurve.Companion.byJcaName(name: String): EcCurve? = EcCurve.entries.find { it.jcaName == name }
 
 
-fun CryptoPublicKey.getPublicKey() = when (this) {
-    is CryptoPublicKey.Ec -> getPublicKey()
-    is CryptoPublicKey.Rsa -> getPublicKey()
+fun CryptoPublicKey.getJcaPublicKey() = when (this) {
+    is CryptoPublicKey.Ec -> getJcaPublicKey()
+    is CryptoPublicKey.Rsa -> getJcaPublicKey()
 }
 
-fun CryptoPublicKey.Ec.getPublicKey(): ECPublicKey {
-    val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.jwkName)
-    val x = BigInteger(1, x)
-    val y = BigInteger(1, y)
-    val ecPoint = parameterSpec.curve.createPoint(x, y)
-    val ecPublicKeySpec = ECPublicKeySpec(ecPoint, parameterSpec)
-    return JCEECPublicKey("EC", ecPublicKeySpec)
+fun CryptoPublicKey.Ec.getJcaPublicKey(): KmmResult<ECPublicKey> {
+    return runCatching {
+        val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.jwkName)
+        val x = BigInteger(1, x)
+        val y = BigInteger(1, y)
+        val ecPoint = parameterSpec.curve.createPoint(x, y)
+        val ecPublicKeySpec = ECPublicKeySpec(ecPoint, parameterSpec)
+        JCEECPublicKey("EC", ecPublicKeySpec)
+    }.wrap()
 }
 
 private val rsaFactory = KeyFactory.getInstance("RSA")
-fun CryptoPublicKey.Rsa.getPublicKey(): RSAPublicKey =
-    rsaFactory.generatePublic(
-        RSAPublicKeySpec(BigInteger(1, n), BigInteger.valueOf(e.toLong()))
-    ) as RSAPublicKey
 
-fun CryptoPublicKey.Ec.Companion.fromJcaKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey> =
+fun CryptoPublicKey.Rsa.getJcaPublicKey(): KmmResult<RSAPublicKey> =
+    runCatching {
+        rsaFactory.generatePublic(
+            RSAPublicKeySpec(BigInteger(1, n), BigInteger.valueOf(e.toLong()))
+        ) as RSAPublicKey
+    }.wrap()
+
+fun CryptoPublicKey.Ec.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey> =
     runCatching {
         val curve = EcCurve.byJcaName(
             SECNamedCurves.getName(
@@ -90,13 +95,13 @@ fun CryptoPublicKey.Ec.Companion.fromJcaKey(publicKey: ECPublicKey): KmmResult<C
         )
     }.wrap()
 
-fun CryptoPublicKey.Rsa.Companion.fromJcaKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey> =
+fun CryptoPublicKey.Rsa.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey> =
     runCatching { CryptoPublicKey.Rsa(publicKey.modulus.toByteArray(), publicKey.publicExponent.toInt()) }.wrap()
 
-fun CryptoPublicKey.Companion.fromJcaKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
+fun CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
         when (publicKey) {
-            is RSAPublicKey -> CryptoPublicKey.Rsa.fromJcaKey(publicKey)
-            is ECPublicKey -> CryptoPublicKey.Ec.fromJcaKey(publicKey)
+            is RSAPublicKey -> CryptoPublicKey.Rsa.fromJcaPublicKey(publicKey)
+            is ECPublicKey -> CryptoPublicKey.Ec.fromJcaPublicKey(publicKey)
             else -> KmmResult.failure(IllegalArgumentException("Unsupported Key Type"))
         }
 
