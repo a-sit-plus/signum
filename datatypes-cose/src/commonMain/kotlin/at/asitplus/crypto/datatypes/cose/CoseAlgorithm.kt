@@ -30,7 +30,10 @@ enum class CoseAlgorithm(val value: Int) {
     // RSASSA-PKCS1-v1_5 with SHA-size
     RS256(-257),
     RS384(-258),
-    RS512(-259);
+    RS512(-259),
+
+    // Legacy support
+    RS1(-65535);
 
     fun toJwsAlgorithm() = when(this) {
         ES256 -> JwsAlgorithm.ES256
@@ -48,6 +51,7 @@ enum class CoseAlgorithm(val value: Int) {
         RS256 -> JwsAlgorithm.RS256
         RS384 -> JwsAlgorithm.RS384
         RS512 -> JwsAlgorithm.RS512
+        RS1 -> JwsAlgorithm.NON_JWS_SHA1_WITH_RSA
     }
 
 }
@@ -67,7 +71,7 @@ fun JwsAlgorithm.toCoseAlgorithm() = when (this) {
     JwsAlgorithm.RS256 -> CoseAlgorithm.RS256
     JwsAlgorithm.RS384 -> CoseAlgorithm.RS384
     JwsAlgorithm.RS512 -> CoseAlgorithm.RS512
-    JwsAlgorithm.NON_JWS_SHA1_WITH_RSA -> TODO()
+    JwsAlgorithm.NON_JWS_SHA1_WITH_RSA -> CoseAlgorithm.RS1
 }
 
 object CoseAlgorithmSerializer : KSerializer<CoseAlgorithm> {
