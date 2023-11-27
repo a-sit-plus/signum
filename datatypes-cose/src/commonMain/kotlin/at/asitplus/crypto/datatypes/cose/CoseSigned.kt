@@ -1,5 +1,6 @@
 package at.asitplus.crypto.datatypes.cose
 
+import at.asitplus.crypto.datatypes.CryptoSignature
 import at.asitplus.crypto.datatypes.cose.io.cborSerializer
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base16.Base16
@@ -29,7 +30,7 @@ data class CoseSigned(
     @ByteString
     val payload: ByteArray?,
     @ByteString
-    val signature: ByteArray,
+    val signature: CryptoSignature,
 ) {
 
     fun serialize() = cborSerializer.encodeToByteArray(this)
@@ -46,14 +47,14 @@ data class CoseSigned(
             if (other.payload == null) return false
             if (!payload.contentEquals(other.payload)) return false
         } else if (other.payload != null) return false
-        return signature.contentEquals(other.signature)
+        return signature != other.signature
     }
 
     override fun hashCode(): Int {
         var result = protectedHeader.hashCode()
         result = 31 * result + (unprotectedHeader?.hashCode() ?: 0)
         result = 31 * result + (payload?.contentHashCode() ?: 0)
-        result = 31 * result + signature.contentHashCode()
+        result = 31 * result + signature.hashCode()
         return result
     }
 
@@ -61,7 +62,7 @@ data class CoseSigned(
         return "CoseSigned(protectedHeader=${protectedHeader.value}," +
                 " unprotectedHeader=$unprotectedHeader," +
                 " payload=${payload?.encodeToString(Base16(strict = true))}," +
-                " signature=${signature.encodeToString(Base16(strict = true))})"
+                " signature=${signature.rawByteArray.encodeToString(Base16(strict = true))})"
     }
 
     companion object {

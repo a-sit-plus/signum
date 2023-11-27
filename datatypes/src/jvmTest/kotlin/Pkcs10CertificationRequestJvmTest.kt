@@ -37,7 +37,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
 
     "CSR match" {
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaKey(ecPublicKey).getOrThrow()
+        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaPublicKey(ecPublicKey).getOrThrow()
 
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
@@ -76,7 +76,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
 
     "CSR with attributes match" {
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaKey(ecPublicKey).getOrThrow()
+        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaPublicKey(ecPublicKey).getOrThrow()
 
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
@@ -121,7 +121,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
 
     "CSRs with extensionRequest match" {
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaKey(ecPublicKey).getOrThrow()
+        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaPublicKey(ecPublicKey).getOrThrow()
 
         // create CSR with bouncycastle
         val commonName = "localhost"

@@ -40,3 +40,5 @@
 * Remove `SignatureValueLength` parameters from JWS- & Cose Algorithm Enum class
 * Remove deprecated functions
 * New `JwsAlgorithm` to `CoseAlgorithm` conversion
+* New `CryptoSignature` class for easy Asn1 - RawByteArray conversion
+* Rename function `.toJcaPublicKey` from `.toPublicKey` to reflect connection to JVM

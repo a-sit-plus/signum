@@ -3,7 +3,7 @@ import at.asitplus.crypto.datatypes.cose.CoseAlgorithm
 import at.asitplus.crypto.datatypes.cose.CoseKey
 import at.asitplus.crypto.datatypes.cose.io.cborSerializer
 import at.asitplus.crypto.datatypes.cose.toCoseKey
-import at.asitplus.crypto.datatypes.fromJcaKey
+import at.asitplus.crypto.datatypes.fromJcaPublicKey
 import at.asitplus.crypto.datatypes.io.Base64Strict
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
@@ -23,11 +23,11 @@ class CoseKeySerializationTest : FreeSpec({
             val cose =
                 cborSerializer.encodeToByteArray(
                     arrayOf(
-                        CryptoPublicKey.fromJcaKey(
+                        CryptoPublicKey.fromJcaPublicKey(
                             KeyPairGenerator.getInstance("EC").apply {
                                 initialize(256)
                             }.genKeyPair().public
-                        ).getOrThrow().toCoseKey().getOrThrow(), CryptoPublicKey.fromJcaKey(KeyPairGenerator.getInstance("EC").apply {
+                        ).getOrThrow().toCoseKey().getOrThrow(), CryptoPublicKey.fromJcaPublicKey(KeyPairGenerator.getInstance("EC").apply {
                             initialize(256)
                         }.genKeyPair().public).getOrThrow().toCoseKey().getOrThrow()
                     )
@@ -55,7 +55,7 @@ class CoseKeySerializationTest : FreeSpec({
                     keys
                 ) { pubKey ->
 
-                    val coseKey: CoseKey = CryptoPublicKey.fromJcaKey(pubKey).getOrThrow().toCoseKey().getOrThrow()
+                    val coseKey: CoseKey = CryptoPublicKey.fromJcaPublicKey(pubKey).getOrThrow().toCoseKey().getOrThrow()
                     val cose =
                         cborSerializer.encodeToByteArray(coseKey)
                     println(cose.encodeToString(Base16))
@@ -82,7 +82,7 @@ class CoseKeySerializationTest : FreeSpec({
                     },
                     keys
                 ) { pubKey ->
-                    val coseKey: CoseKey = CryptoPublicKey.fromJcaKey(pubKey).getOrThrow().toCoseKey(CoseAlgorithm.RS256).getOrThrow()
+                    val coseKey: CoseKey = CryptoPublicKey.fromJcaPublicKey(pubKey).getOrThrow().toCoseKey(CoseAlgorithm.RS256).getOrThrow()
                     val cose = cborSerializer.encodeToByteArray(coseKey)
 
                     println(cose.encodeToString(Base16))

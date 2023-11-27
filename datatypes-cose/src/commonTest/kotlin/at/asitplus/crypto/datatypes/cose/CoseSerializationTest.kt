@@ -1,5 +1,7 @@
 package at.asitplus.crypto.datatypes.cose
 
+import at.asitplus.crypto.datatypes.CryptoSignature
+import at.asitplus.crypto.datatypes.JwsAlgorithm
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
 import io.kotest.core.spec.style.FreeSpec
@@ -20,7 +22,7 @@ class CoseSerializationTest : FreeSpec({
             protectedHeader = ByteStringWrapper(CoseHeader(algorithm = CoseAlgorithm.ES256)),
             unprotectedHeader = CoseHeader(),
             payload = "This is the content.".encodeToByteArray(),
-            signature = "bar".encodeToByteArray()
+            signature = CryptoSignature.fromRawByteArray("bar".encodeToByteArray(), JwsAlgorithm.ES256)
         )
         val serialized = cose.serialize().encodeToString(Base16(strict = true)).uppercase()
 

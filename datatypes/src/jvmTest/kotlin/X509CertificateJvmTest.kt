@@ -1,6 +1,5 @@
 import at.asitplus.crypto.datatypes.*
 import at.asitplus.crypto.datatypes.asn1.*
-import at.asitplus.crypto.datatypes.asn1.Asn1Time
 import at.asitplus.crypto.datatypes.pki.DistinguishedName
 import at.asitplus.crypto.datatypes.pki.TbsCertificate
 import at.asitplus.crypto.datatypes.pki.X509Certificate
@@ -44,7 +43,7 @@ class X509CertificateJvmTest : FreeSpec({
 
     "Certificates match" {
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaKey(ecPublicKey).getOrThrow()
+        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaPublicKey(ecPublicKey).getOrThrow()
 
         // create certificate with bouncycastle
         val notBeforeDate = Date.from(Instant.now())
@@ -79,7 +78,7 @@ class X509CertificateJvmTest : FreeSpec({
             initSign(keyPair.private)
             update(tbsCertificate.encodeToTlv().derEncoded)
         }.sign()
-        val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, signed)
+        val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, CryptoSignature.fromDerEncoded(signed, signatureAlgorithm))
 
         val kotlinEncoded = x509Certificate.encodeToTlv().derEncoded
         val jvmEncoded = certificateHolder.encoded
