@@ -1,7 +1,7 @@
 package at.asitplus.crypto.datatypes.pki
 
 import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.JwsAlgorithm
+import at.asitplus.crypto.datatypes.CryptoAlgorithm
 import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.asn1.DERTags.toImplicitTag
 import at.asitplus.crypto.datatypes.io.BitSet
@@ -16,7 +16,7 @@ import kotlinx.serialization.Serializable
 data class TbsCertificate(
     val version: Int = 2,
     @Serializable(with = ByteArrayBase64Serializer::class) val serialNumber: ByteArray,
-    val signatureAlgorithm: JwsAlgorithm,
+    val signatureAlgorithm: CryptoAlgorithm,
     val issuerName: List<DistinguishedName>,
     val validFrom: Asn1Time,
     val validUntil: Asn1Time,
@@ -121,7 +121,7 @@ data class TbsCertificate(
                 ((it as Asn1Tagged).verifyTag(0u).single() as Asn1Primitive).readInt()
             }
             val serialNumber = (src.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
-            val sigAlg = JwsAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
+            val sigAlg = CryptoAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val issuerNames = (src.nextChild() as Asn1Sequence).children.map {
                 DistinguishedName.decodeFromTlv(it as Asn1Set)
             }
@@ -183,7 +183,7 @@ data class TbsCertificate(
 @Serializable
 data class X509Certificate(
     val tbsCertificate: TbsCertificate,
-    val signatureAlgorithm: JwsAlgorithm,
+    val signatureAlgorithm: CryptoAlgorithm,
     @Serializable(with = ByteArrayBase64Serializer::class)
     val signature: ByteArray
 ) : Asn1Encodable<Asn1Sequence> {
@@ -223,7 +223,7 @@ data class X509Certificate(
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Sequence): X509Certificate = runRethrowing {
             val tbs = TbsCertificate.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val sigAlg = JwsAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
+            val sigAlg = CryptoAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val signature = (src.nextChild() as Asn1Primitive).readBitString()
             if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous structure in Certificate Structure")
             return X509Certificate(tbs, sigAlg, signature.rawBytes)
