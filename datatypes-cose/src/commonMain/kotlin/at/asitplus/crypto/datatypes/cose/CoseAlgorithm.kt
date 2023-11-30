@@ -1,6 +1,6 @@
 package at.asitplus.crypto.datatypes.cose
 
-import at.asitplus.crypto.datatypes.JwsAlgorithm
+import at.asitplus.crypto.datatypes.CryptoAlgorithm
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -30,27 +30,52 @@ enum class CoseAlgorithm(val value: Int) {
     // RSASSA-PKCS1-v1_5 with SHA-size
     RS256(-257),
     RS384(-258),
-    RS512(-259);
+    RS512(-259),
 
-    fun toJwsAlgorithm() = when(this) {
-        ES256 -> JwsAlgorithm.ES256
-        ES384 -> JwsAlgorithm.ES384
-        ES512 -> JwsAlgorithm.ES512
+    // RSASSA-PKCS1-v1_5 using SHA-1
+    RS1(-65535);
 
-        HS256 -> JwsAlgorithm.HS256
-        HS384 -> JwsAlgorithm.HS384
-        HS512 -> JwsAlgorithm.HS512
 
-        PS256 -> JwsAlgorithm.PS256
-        PS384 -> JwsAlgorithm.PS384
-        PS512 -> JwsAlgorithm.PS512
+    fun fromCoseToCrypto() = when(this) {
+        ES256 -> CryptoAlgorithm.ES256
+        ES384 -> CryptoAlgorithm.ES384
+        ES512 -> CryptoAlgorithm.ES512
 
-        RS256 -> JwsAlgorithm.RS256
-        RS384 -> JwsAlgorithm.RS384
-        RS512 -> JwsAlgorithm.RS512
+        HS256 -> CryptoAlgorithm.HS256
+        HS384 -> CryptoAlgorithm.HS384
+        HS512 -> CryptoAlgorithm.HS512
+
+        PS256 -> CryptoAlgorithm.PS256
+        PS384 -> CryptoAlgorithm.PS384
+        PS512 -> CryptoAlgorithm.PS512
+
+        RS256 -> CryptoAlgorithm.RS256
+        RS384 -> CryptoAlgorithm.RS384
+        RS512 -> CryptoAlgorithm.RS512
+
+        RS1 -> CryptoAlgorithm.RS1
+    }
+
+    fun fromCryptoToCose(algorithm: CryptoAlgorithm) = when(algorithm) {
+        CryptoAlgorithm.ES256 -> ES256
+        CryptoAlgorithm.ES384 -> ES384
+        CryptoAlgorithm.ES512 -> ES512
+
+        CryptoAlgorithm.HS256 -> HS256
+        CryptoAlgorithm.HS384 -> HS384
+        CryptoAlgorithm.HS512 -> HS512
+
+        CryptoAlgorithm.PS256 -> PS256
+        CryptoAlgorithm.PS384 -> PS384
+        CryptoAlgorithm.PS512 -> PS512
+
+        CryptoAlgorithm.RS256 -> RS256
+        CryptoAlgorithm.RS384 -> RS384
+        CryptoAlgorithm.RS512 -> RS512
+
+        CryptoAlgorithm.RS1 -> RS1
     }
 }
-
 
 object CoseAlgorithmSerializer : KSerializer<CoseAlgorithm> {
 
