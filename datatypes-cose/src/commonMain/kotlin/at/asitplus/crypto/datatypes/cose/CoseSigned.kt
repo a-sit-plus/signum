@@ -30,7 +30,7 @@ data class CoseSigned(
     @ByteString
     val payload: ByteArray?,
     @ByteString
-    val signature: CryptoSignature,
+    val signature: CryptoSignature
 ) {
 
     fun serialize() = cborSerializer.encodeToByteArray(this)

@@ -227,7 +227,7 @@ data class X509Certificate(
             val sigAlg = JwsAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val signature = (src.nextChild() as Asn1Primitive).readBitString()
             if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous structure in Certificate Structure")
-            return X509Certificate(tbs, sigAlg, CryptoSignature.fromDerEncoded(signature.rawBytes, sigAlg))
+            return X509Certificate(tbs, sigAlg, CryptoSignature.decodeFromDer(signature.rawBytes))
         }
 
     }
