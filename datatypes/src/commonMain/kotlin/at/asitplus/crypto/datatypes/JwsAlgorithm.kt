@@ -15,16 +15,17 @@ import kotlinx.serialization.encoding.Encoder
  */
 @OptIn(ExperimentalUnsignedTypes::class)
 @Serializable(with = JwsAlgorithmSerializer::class)
-enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifier) : Asn1Encodable<Asn1Sequence>,
+enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifier, val isEC: Boolean = false) :
+    Asn1Encodable<Asn1Sequence>,
     Identifiable {
 
-    ES256("ES256", KnownOIDs.ecdsaWithSHA256),
-    ES384("ES384", KnownOIDs.ecdsaWithSHA384),
-    ES512("ES512", KnownOIDs.ecdsaWithSHA512),
+    ES256("ES256", KnownOIDs.ecdsaWithSHA256, true),
+    ES384("ES384", KnownOIDs.ecdsaWithSHA384, true),
+    ES512("ES512", KnownOIDs.ecdsaWithSHA512, true),
 
-    HS256("HS256", KnownOIDs.hmacWithSHA256),
-    HS384("HS384", KnownOIDs.hmacWithSHA384),
-    HS512("HS512", KnownOIDs.hmacWithSHA512),
+    HS256("HS256", KnownOIDs.hmacWithSHA256, true),
+    HS384("HS384", KnownOIDs.hmacWithSHA384, true),
+    HS512("HS512", KnownOIDs.hmacWithSHA512, true),
 
     PS256("PS256", KnownOIDs.rsaPSS),
     PS384("PS384", KnownOIDs.rsaPSS),
