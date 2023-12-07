@@ -24,12 +24,12 @@ import kotlinx.serialization.encodeToString
  */
 @Serializable
 data class JwsHeader(
-    @SerialName("alg")
-    val algorithm: JwsAlgorithm,
     @SerialName("kid")
     val keyId: String? = null,
     @SerialName("typ")
     val type: String? = null,
+    @SerialName("alg")
+    val algorithm: JwsAlgorithm,
     @SerialName("cty")
     val contentType: String? = null,
     @SerialName("x5c")

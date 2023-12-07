@@ -5,6 +5,8 @@ import at.asitplus.crypto.datatypes.JwsAlgorithm
 import at.asitplus.crypto.datatypes.io.Base64UrlStrict
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArrayOrNull
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.serialization.Serializable
 
 /**
  * Representation of a signed JSON Web Signature object, i.e. consisting of header, payload and signature.
@@ -14,11 +16,15 @@ import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArrayOrNull
 data class JwsSigned(
     val header: JwsHeader,
     val payload: ByteArray,
-    val signature: CryptoSignature,
-    val plainSignatureInput: String,
+    val signature: CryptoSignature
 ) {
+
+    val plainSignatureInput: String by lazy {
+        prepareJwsSignatureInput(header, payload)
+    }
+
     fun serialize(): String {
-        return "${plainSignatureInput}.${signature.serialize()}"
+        return "${plainSignatureInput}.${signature.rawByteArray.encodeToString(Base64UrlStrict)}"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -29,15 +35,13 @@ data class JwsSigned(
 
         if (header != other.header) return false
         if (!payload.contentEquals(other.payload)) return false
-        if (signature != other.signature) return false
-        return plainSignatureInput == other.plainSignatureInput
+        return signature == other.signature
     }
 
     override fun hashCode(): Int {
         var result = header.hashCode()
         result = 31 * result + payload.contentHashCode()
         result = 31 * result + signature.hashCode()
-        result = 31 * result + plainSignatureInput.hashCode()
         return result
     }
 
@@ -59,7 +63,10 @@ data class JwsSigned(
                     }
                 } ?: return null.also { Napier.w("Could not parse JWS: $it") }
 
-            return JwsSigned(header, payload, signature, "${stringList[0]}.${stringList[1]}")
+            return JwsSigned(header, payload, signature)
         }
     }
 }
+
+fun prepareJwsSignatureInput(header: JwsHeader, payload: ByteArray): String =
+    "${header.serialize().encodeToByteArray().encodeToString(Base64UrlStrict)}.${payload.encodeToString(Base64UrlStrict)}"
