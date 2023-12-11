@@ -59,7 +59,7 @@ class X509CertificateJvmTest : FreeSpec({
             /* subject = */ issuer,
             /* publicKeyInfo = */ SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         )
-        val signatureAlgorithm = JwsAlgorithm.ES256
+        val signatureAlgorithm = CryptoAlgorithm.ES256
         val contentSigner: ContentSigner = JcaContentSignerBuilder(signatureAlgorithm.jcaName).build(keyPair.private)
         val certificateHolder = builder.build(contentSigner)
 
@@ -117,7 +117,7 @@ class X509CertificateJvmTest : FreeSpec({
             /* subject = */ issuer,
             /* publicKeyInfo = */ SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         )
-        val signatureAlgorithm = JwsAlgorithm.ES256
+        val signatureAlgorithm = CryptoAlgorithm.ES256
         val contentSigner: ContentSigner = JcaContentSignerBuilder(signatureAlgorithm.jcaName).build(keyPair.private)
         val certificateHolder = builder.build(contentSigner)
 
@@ -164,7 +164,7 @@ class X509CertificateJvmTest : FreeSpec({
             /* subject = */ issuer,
             /* publicKeyInfo = */ SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         )
-        val signatureAlgorithm = JwsAlgorithm.ES256
+        val signatureAlgorithm = CryptoAlgorithm.ES256
         val contentSigner: ContentSigner = JcaContentSignerBuilder(signatureAlgorithm.jcaName).build(keyPair.private)
         val certificateHolder = builder.build(contentSigner)
 

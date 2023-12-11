@@ -19,21 +19,21 @@ import java.security.interfaces.RSAPublicKey
 import java.security.spec.RSAPublicKeySpec
 
 
-val JwsAlgorithm.jcaName
+val CryptoAlgorithm.jcaName
     get() = when (this) {
-        JwsAlgorithm.ES256 -> "SHA256withECDSA"
-        JwsAlgorithm.ES384 -> "SHA384withECDSA"
-        JwsAlgorithm.ES512 -> "SHA512withECDSA"
-        JwsAlgorithm.HS256 -> "HmacSHA256"
-        JwsAlgorithm.HS384 -> "HmacSHA384"
-        JwsAlgorithm.HS512 -> "HmacSHA512"
-        JwsAlgorithm.RS256 -> "SHA256withRSA"
-        JwsAlgorithm.RS384 -> "SHA348withRSA"
-        JwsAlgorithm.RS512 -> "SHA512withRSA"
-        JwsAlgorithm.PS256 -> "SHA256withRSA"
-        JwsAlgorithm.PS384 -> "SHA348withRSA"
-        JwsAlgorithm.PS512 -> "SHA512withRSA"
-        JwsAlgorithm.NON_JWS_SHA1_WITH_RSA -> "SHA1withRSA"
+        CryptoAlgorithm.ES256 -> "SHA256withECDSA"
+        CryptoAlgorithm.ES384 -> "SHA384withECDSA"
+        CryptoAlgorithm.ES512 -> "SHA512withECDSA"
+        CryptoAlgorithm.HS256 -> "HmacSHA256"
+        CryptoAlgorithm.HS384 -> "HmacSHA384"
+        CryptoAlgorithm.HS512 -> "HmacSHA512"
+        CryptoAlgorithm.RS256 -> "SHA256withRSA"
+        CryptoAlgorithm.RS384 -> "SHA348withRSA"
+        CryptoAlgorithm.RS512 -> "SHA512withRSA"
+        CryptoAlgorithm.PS256 -> "SHA256withRSA"
+        CryptoAlgorithm.PS384 -> "SHA348withRSA"
+        CryptoAlgorithm.PS512 -> "SHA512withRSA"
+        CryptoAlgorithm.RS1 -> "SHA1withRSA"
     }
 
 val Digest.jcaName
