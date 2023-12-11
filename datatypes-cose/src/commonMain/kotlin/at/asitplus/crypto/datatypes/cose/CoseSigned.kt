@@ -70,7 +70,7 @@ data class CoseSigned(
         var result = protectedHeader.hashCode()
         result = 31 * result + (unprotectedHeader?.hashCode() ?: 0)
         result = 31 * result + (payload?.contentHashCode() ?: 0)
-        result = 31 * result + rawSignature.hashCode()
+        result = 31 * result + rawSignature.contentHashCode()
         return result
     }
 

@@ -41,4 +41,4 @@
 * Remove deprecated functions
 * New `CryptoAlgorithm` class 
 * New `CryptoSignature` class for easy Asn1 - RawByteArray conversion
-* Rename function `.toJcaPublicKey` from `.toPublicKey` to reflect connection to JVM
+* Rename function in file `JcaExtensions.kt` from `.toPublicKey` to `.toJcaPublicKey` to reflect connection to JVM
