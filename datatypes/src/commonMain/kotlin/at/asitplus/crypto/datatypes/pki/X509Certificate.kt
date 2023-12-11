@@ -185,16 +185,14 @@ data class TbsCertificate(
 data class X509Certificate(
     val tbsCertificate: TbsCertificate,
     val signatureAlgorithm: JwsAlgorithm,
-    @Serializable(with = ByteArrayBase64Serializer::class)
     val signature: CryptoSignature
 ) : Asn1Encodable<Asn1Sequence> {
-
 
     @Throws(Asn1Exception::class)
     override fun encodeToTlv() = asn1Sequence {
         append(tbsCertificate)
         append(signatureAlgorithm)
-        bitString(signature.rawByteArray) //TODO Double check
+        append(signature.encodeToTlvBitString())
     }
 
     override fun equals(other: Any?): Boolean {
@@ -225,9 +223,10 @@ data class X509Certificate(
         override fun decodeFromTlv(src: Asn1Sequence): X509Certificate = runRethrowing {
             val tbs = TbsCertificate.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val sigAlg = JwsAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val signature = (src.nextChild() as Asn1Primitive).readBitString()
+            val test = src.nextChild()
+            val signature = CryptoSignature.decodeFromTlv(test)
             if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous structure in Certificate Structure")
-            return X509Certificate(tbs, sigAlg, CryptoSignature.decodeFromDer(signature.rawBytes))
+            return X509Certificate(tbs, sigAlg, signature)
         }
 
     }

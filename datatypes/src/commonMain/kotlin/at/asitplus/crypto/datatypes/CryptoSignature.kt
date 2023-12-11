@@ -1,8 +1,10 @@
 package at.asitplus.crypto.datatypes
 
 import at.asitplus.crypto.datatypes.asn1.*
+import at.asitplus.crypto.datatypes.asn1.BERTags.BIT_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.INTEGER
 import at.asitplus.crypto.datatypes.io.Base64UrlStrict
+import at.asitplus.crypto.datatypes.io.toBitString
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.KSerializer
@@ -20,13 +22,22 @@ import kotlinx.serialization.encoding.Encoder
  * Does not check for anything!
  */
 
-@Serializable
+@Serializable(with = CryptoSignature.CryptoSignatureSerializer::class)
 sealed class CryptoSignature(
     @Contextual
     protected val signature: Asn1Element,
 ) : Asn1Encodable<Asn1Element> {
 
-    abstract fun serialize(): String
+    /**
+     * Removes ASN1 Structure and returns the value(s) as ByteArray
+     */
+    abstract val rawByteArray: ByteArray
+
+
+    // abstract fun serialize(): String
+    fun serialize(): String = signature.derEncoded.encodeToString(Base64UrlStrict)
+
+    abstract fun encodeToTlvBitString(): Asn1Element
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -37,25 +48,25 @@ sealed class CryptoSignature(
         return signature == other.signature
     }
 
-    override fun hashCode(): Int {
-        return signature.hashCode()
-    }
+    override fun hashCode(): Int = signature.hashCode()
 
     override fun encodeToTlv(): Asn1Element = signature
 
-//    override fun encodeToDer(): ByteArray {
-//        return signature.derEncoded
-//    }
+    object CryptoSignatureSerializer : KSerializer<CryptoSignature> {
+        override val descriptor: SerialDescriptor
+            get() = PrimitiveSerialDescriptor("CryptoSignature", PrimitiveKind.STRING)
 
-    /**
-     * Removes ASN1 Structure and returns the value(s) as ByteArray
-     */
-    abstract val rawByteArray: ByteArray
+        override fun deserialize(decoder: Decoder): RSAorHMAC =
+            RSAorHMAC(decoder.decodeString().encodeToByteArray())
 
+        override fun serialize(encoder: Encoder, value: CryptoSignature) {
+            encoder.encodeString(value.serialize())
+        }
+    }
     /**
      * Input is expected to be x,y coordinates concatenated to bytearray
      */
-    @Serializable(with = EC.CryptoSignatureSerializer::class)
+    //@Serializable(with = EC.CryptoSignatureSerializer::class)
     class EC(input: ByteArray) : CryptoSignature(
         asn1Sequence {
             append(
@@ -72,8 +83,9 @@ sealed class CryptoSignature(
             )
         }
     ) {
-        override fun serialize(): String =
-            rawByteArray.encodeToString(Base64UrlStrict)
+//        override fun serialize(): String =
+//            //rawByteArray.encodeToString(Base64UrlStrict)
+//            signature.derEncoded.encodeToString(Base64UrlStrict)
 
         override val rawByteArray by lazy {
             val coordSizes = listOf(
@@ -90,39 +102,42 @@ sealed class CryptoSignature(
             )
         }
 
-        object CryptoSignatureSerializer : KSerializer<EC> {
-            override val descriptor: SerialDescriptor
-                get() = PrimitiveSerialDescriptor("CryptoSignature", PrimitiveKind.STRING)
+        override fun encodeToTlvBitString(): Asn1Element = encodeToDer().encodeToTlvBitString()
 
-            override fun deserialize(decoder: Decoder): EC =
-                EC(decoder.decodeString().encodeToByteArray())
-
-            override fun serialize(encoder: Encoder, value: EC) {
-                encoder.encodeString(value.serialize())
-            }
-        }
+//        object CryptoSignatureSerializer : KSerializer<EC> {
+//            override val descriptor: SerialDescriptor
+//                get() = PrimitiveSerialDescriptor("CryptoSignature", PrimitiveKind.STRING)
+//
+//            override fun deserialize(decoder: Decoder): EC =
+//                EC(decoder.decodeString().encodeToByteArray())
+//
+//            override fun serialize(encoder: Encoder, value: EC) {
+//                encoder.encodeString(value.serialize())
+//            }
+//        }
     }
 
-    @Serializable(with = RSAorHMAC.CryptoSignatureSerializer::class)
+    //@Serializable(with = RSAorHMAC.CryptoSignatureSerializer::class)
     class RSAorHMAC(input: ByteArray) : CryptoSignature(
-        Asn1Primitive(INTEGER, input)
+        Asn1Primitive(BIT_STRING, input)
     ) {
-        override fun serialize(): String =
-            rawByteArray.encodeToString(Base64UrlStrict)
+//        override fun serialize(): String =
+//            rawByteArray.encodeToString(Base64UrlStrict)
 
-        override val rawByteArray by lazy { (signature as Asn1Primitive).decode(INTEGER) { it } }
+        override val rawByteArray by lazy { (signature as Asn1Primitive).decode(BIT_STRING) { it } }
+        override fun encodeToTlvBitString(): Asn1Element = this.encodeToTlv()
 
-        object CryptoSignatureSerializer : KSerializer<RSAorHMAC> {
-            override val descriptor: SerialDescriptor
-                get() = PrimitiveSerialDescriptor("CryptoSignature", PrimitiveKind.STRING)
-
-            override fun deserialize(decoder: Decoder): RSAorHMAC =
-                RSAorHMAC(decoder.decodeString().encodeToByteArray())
-
-            override fun serialize(encoder: Encoder, value: RSAorHMAC) {
-                encoder.encodeString(value.serialize())
-            }
-        }
+//        object CryptoSignatureSerializer : KSerializer<RSAorHMAC> {
+//            override val descriptor: SerialDescriptor
+//                get() = PrimitiveSerialDescriptor("CryptoSignature", PrimitiveKind.STRING)
+//
+//            override fun deserialize(decoder: Decoder): RSAorHMAC =
+//                RSAorHMAC(decoder.decodeString().encodeToByteArray())
+//
+//            override fun serialize(encoder: Encoder, value: RSAorHMAC) {
+//                encoder.encodeString(value.serialize())
+//            }
+//        }
     }
 
     companion object : Asn1Decodable<Asn1Element, CryptoSignature> {
@@ -130,7 +145,7 @@ sealed class CryptoSignature(
         override fun decodeFromTlv(src: Asn1Element): CryptoSignature =
             runRethrowing {
                 when (src.tag) {
-                    INTEGER -> RSAorHMAC((src as Asn1Primitive).decode(INTEGER) { it })
+                    BIT_STRING -> RSAorHMAC((src as Asn1Primitive).decode(BIT_STRING) { it })
                     DERTags.DER_SEQUENCE -> {
                         val first = ((src as Asn1Sequence).nextChild() as Asn1Primitive).decode(INTEGER) { it.dropWhile { it == 0.toByte() } }.toByteArray()
                         val second = (src.nextChild() as Asn1Primitive).decode(INTEGER) { it.dropWhile { it == 0.toByte() } }.toByteArray()
