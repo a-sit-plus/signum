@@ -22,7 +22,7 @@ class CoseSerializationTest : FreeSpec({
             protectedHeader = ByteStringWrapper(CoseHeader(algorithm = CoseAlgorithm.ES256)),
             unprotectedHeader = CoseHeader(),
             payload = "This is the content.".encodeToByteArray(),
-            signature = CryptoSignature.fromRawByteArray("bar".encodeToByteArray(), JwsAlgorithm.ES256)
+            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()) //RSAorHMAC because EC expects tuple
         )
         val serialized = cose.serialize().encodeToString(Base16(strict = true)).uppercase()
 

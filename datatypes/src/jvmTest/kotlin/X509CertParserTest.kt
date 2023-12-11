@@ -47,9 +47,11 @@ class X509CertParserTest : FreeSpec({
 
             println(jcaCert.encoded.encodeToString(Base16))
             val elem = Asn1Element.parse(certBytes)
-        Json{prettyPrint=true}.encodeToString(elem)
+            Json { prettyPrint = true }.encodeToString(elem)
             val cert = X509Certificate.decodeFromDer(certBytes)
 
+            val test = cert.signature.serialize()
+            print(test)
             when (val pk = cert.publicKey) {
                 is CryptoPublicKey.Ec -> println(
                     "Certificate with serial no. ${
@@ -74,7 +76,7 @@ class X509CertParserTest : FreeSpec({
 
             withClue(
                 "Expect: ${jcaCert.encoded.encodeToString(Base16)}\n" +
-                        "Actual: ${cert.encodeToTlv().derEncoded.encodeToString(Base16)}"
+                        "Actual: ${cert.encodeToDer().encodeToString(Base16)}"
             ) {
                 cert.encodeToTlv().derEncoded shouldBe jcaCert.encoded
             }

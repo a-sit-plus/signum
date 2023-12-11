@@ -78,14 +78,18 @@ class X509CertificateJvmTest : FreeSpec({
             initSign(keyPair.private)
             update(tbsCertificate.encodeToTlv().derEncoded)
         }.sign()
-        val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, CryptoSignature.fromDerEncoded(signed, signatureAlgorithm))
+        val test = CryptoSignature.decodeFromDer(signed)
+        val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, test)
 
-        val kotlinEncoded = x509Certificate.encodeToTlv().derEncoded
+        val kotlinEncoded = x509Certificate.encodeToDer()
         val jvmEncoded = certificateHolder.encoded
-        println("Certificates will never entirely match because of randomness in ECDSA signature")
-        //kotlinEncoded shouldBe jvmEncoded
-        println(kotlinEncoded.encodeToString(Base16()))
-        println(jvmEncoded.encodeToString(Base16()))
+        println(
+            "Certificates will never entirely match because of randomness in ECDSA signature" +
+                    "\nKotlinEncoded\n" +
+                    kotlinEncoded.encodeToString(Base16()) +
+                    "\nJvmEncoded\n" +
+                    jvmEncoded.encodeToString(Base16())
+        )
         kotlinEncoded.drop(7).take(228) shouldBe jvmEncoded.drop(7).take(228)
 
         val parsedFromKotlinCertificate =
