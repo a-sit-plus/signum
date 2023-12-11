@@ -1,7 +1,6 @@
 package at.asitplus.crypto.datatypes.cose
 
 import at.asitplus.crypto.datatypes.CryptoSignature
-import at.asitplus.crypto.datatypes.JwsAlgorithm
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
 import io.kotest.core.spec.style.FreeSpec

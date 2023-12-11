@@ -1,8 +1,6 @@
 package at.asitplus.crypto.datatypes.jws
 
 import at.asitplus.crypto.datatypes.CryptoSignature
-import at.asitplus.crypto.datatypes.JwsAlgorithm
-import at.asitplus.crypto.datatypes.io.Base64Strict
 import at.asitplus.crypto.datatypes.io.Base64UrlStrict
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArrayOrNull
