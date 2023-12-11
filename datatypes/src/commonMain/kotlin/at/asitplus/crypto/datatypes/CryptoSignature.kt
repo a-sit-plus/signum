@@ -1,7 +1,6 @@
 package at.asitplus.crypto.datatypes
 
 import at.asitplus.crypto.datatypes.asn1.*
-import at.asitplus.crypto.datatypes.asn1.BERTags.BIT_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.INTEGER
 import at.asitplus.crypto.datatypes.io.Base64UrlStrict
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -35,6 +34,8 @@ sealed class CryptoSignature(
 
     // abstract fun serialize(): String
     fun serialize(): String = signature.derEncoded.encodeToString(Base64UrlStrict)
+
+    abstract fun encodeToTlvBitString(): Asn1Element
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -99,6 +100,8 @@ sealed class CryptoSignature(
             )
         }
 
+        override fun encodeToTlvBitString(): Asn1Element = encodeToDer().encodeToTlvBitString()
+
 //        object CryptoSignatureSerializer : KSerializer<EC> {
 //            override val descriptor: SerialDescriptor
 //                get() = PrimitiveSerialDescriptor("CryptoSignature", PrimitiveKind.STRING)
@@ -120,6 +123,7 @@ sealed class CryptoSignature(
 //            rawByteArray.encodeToString(Base64UrlStrict)
 
         override val rawByteArray by lazy { (signature as Asn1Primitive).decode(BIT_STRING) { it } }
+        override fun encodeToTlvBitString(): Asn1Element = this.encodeToTlv()
 
 //        object CryptoSignatureSerializer : KSerializer<RSAorHMAC> {
 //            override val descriptor: SerialDescriptor

@@ -192,7 +192,7 @@ data class X509Certificate(
     override fun encodeToTlv() = asn1Sequence {
         append(tbsCertificate)
         append(signatureAlgorithm)
-        append(signature)
+        append(signature.encodeToTlvBitString())
     }
 
     override fun equals(other: Any?): Boolean {
