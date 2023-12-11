@@ -4,7 +4,6 @@ import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.asn1.BERTags.BIT_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.INTEGER
 import at.asitplus.crypto.datatypes.io.Base64UrlStrict
-import at.asitplus.crypto.datatypes.io.toBitString
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.KSerializer
@@ -33,8 +32,6 @@ sealed class CryptoSignature(
      */
     abstract val rawByteArray: ByteArray
 
-
-    // abstract fun serialize(): String
     fun serialize(): String = signature.derEncoded.encodeToString(Base64UrlStrict)
 
     abstract fun encodeToTlvBitString(): Asn1Element
@@ -63,10 +60,10 @@ sealed class CryptoSignature(
             encoder.encodeString(value.serialize())
         }
     }
+
     /**
      * Input is expected to be x,y coordinates concatenated to bytearray
      */
-    //@Serializable(with = EC.CryptoSignatureSerializer::class)
     class EC(input: ByteArray) : CryptoSignature(
         asn1Sequence {
             append(
@@ -83,10 +80,6 @@ sealed class CryptoSignature(
             )
         }
     ) {
-//        override fun serialize(): String =
-//            //rawByteArray.encodeToString(Base64UrlStrict)
-//            signature.derEncoded.encodeToString(Base64UrlStrict)
-
         override val rawByteArray by lazy {
             val coordSizes = listOf(
                 32 - 1,
@@ -97,47 +90,21 @@ sealed class CryptoSignature(
                 coordSizes.filter { it <= ((signature as Asn1Sequence).children[0] as Asn1Primitive).content.size }
                     .minOrNull() ?: throw Exception("Illegal signature length")
             byteArrayOf(
-                *((signature as Asn1Sequence).children[0] as Asn1Primitive).decode(INTEGER) { it }.padWithZeros(coordSize),
+                *((signature as Asn1Sequence).children[0] as Asn1Primitive).decode(INTEGER) { it }
+                    .padWithZeros(coordSize),
                 *(signature.children[1] as Asn1Primitive).decode(INTEGER) { it }.padWithZeros(coordSize)
             )
         }
 
         override fun encodeToTlvBitString(): Asn1Element = encodeToDer().encodeToTlvBitString()
 
-//        object CryptoSignatureSerializer : KSerializer<EC> {
-//            override val descriptor: SerialDescriptor
-//                get() = PrimitiveSerialDescriptor("CryptoSignature", PrimitiveKind.STRING)
-//
-//            override fun deserialize(decoder: Decoder): EC =
-//                EC(decoder.decodeString().encodeToByteArray())
-//
-//            override fun serialize(encoder: Encoder, value: EC) {
-//                encoder.encodeString(value.serialize())
-//            }
-//        }
     }
 
-    //@Serializable(with = RSAorHMAC.CryptoSignatureSerializer::class)
     class RSAorHMAC(input: ByteArray) : CryptoSignature(
         Asn1Primitive(BIT_STRING, input)
     ) {
-//        override fun serialize(): String =
-//            rawByteArray.encodeToString(Base64UrlStrict)
-
         override val rawByteArray by lazy { (signature as Asn1Primitive).decode(BIT_STRING) { it } }
         override fun encodeToTlvBitString(): Asn1Element = this.encodeToTlv()
-
-//        object CryptoSignatureSerializer : KSerializer<RSAorHMAC> {
-//            override val descriptor: SerialDescriptor
-//                get() = PrimitiveSerialDescriptor("CryptoSignature", PrimitiveKind.STRING)
-//
-//            override fun deserialize(decoder: Decoder): RSAorHMAC =
-//                RSAorHMAC(decoder.decodeString().encodeToByteArray())
-//
-//            override fun serialize(encoder: Encoder, value: RSAorHMAC) {
-//                encoder.encodeString(value.serialize())
-//            }
-//        }
     }
 
     companion object : Asn1Decodable<Asn1Element, CryptoSignature> {
@@ -147,8 +114,12 @@ sealed class CryptoSignature(
                 when (src.tag) {
                     BIT_STRING -> RSAorHMAC((src as Asn1Primitive).decode(BIT_STRING) { it })
                     DERTags.DER_SEQUENCE -> {
-                        val first = ((src as Asn1Sequence).nextChild() as Asn1Primitive).decode(INTEGER) { it.dropWhile { it == 0.toByte() } }.toByteArray()
-                        val second = (src.nextChild() as Asn1Primitive).decode(INTEGER) { it.dropWhile { it == 0.toByte() } }.toByteArray()
+                        val first =
+                            ((src as Asn1Sequence).nextChild() as Asn1Primitive).decode(INTEGER) { it.dropWhile { it == 0.toByte() } }
+                                .toByteArray()
+                        val second =
+                            (src.nextChild() as Asn1Primitive).decode(INTEGER) { it.dropWhile { it == 0.toByte() } }
+                                .toByteArray()
                         if (src.hasMoreChildren()) throw IllegalArgumentException("Illegal Signature Format")
                         EC(first + second)
                     }

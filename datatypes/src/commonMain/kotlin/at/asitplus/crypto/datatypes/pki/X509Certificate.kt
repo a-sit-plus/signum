@@ -223,8 +223,7 @@ data class X509Certificate(
         override fun decodeFromTlv(src: Asn1Sequence): X509Certificate = runRethrowing {
             val tbs = TbsCertificate.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val sigAlg = JwsAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val test = src.nextChild()
-            val signature = CryptoSignature.decodeFromTlv(test)
+            val signature = CryptoSignature.decodeFromTlv(src.nextChild())
             if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous structure in Certificate Structure")
             return X509Certificate(tbs, sigAlg, signature)
         }
