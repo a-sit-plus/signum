@@ -17,7 +17,7 @@ import kotlinx.serialization.encoding.Encoder
 
 /**
  * Data class which holds Asn1 Encoding of a signature of a specified algorithm
- * Allows simple ASN1 - DER - Raw transformation of signature values
+ * Allows simple ASN1 - Raw transformation of signature values
  * Does not check for anything!
  */
 
