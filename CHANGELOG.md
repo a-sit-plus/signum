@@ -39,3 +39,6 @@
 * Change `JwsHeader.publicKey` from JsonWebKey to CryptoPublicKey
 * Remove `SignatureValueLength` parameters from JWS- & Cose Algorithm Enum class
 * Remove deprecated functions
+* New `CryptoAlgorithm` class 
+* New `CryptoSignature` class for easy Asn1 - RawByteArray conversion
+* Rename function in file `JcaExtensions.kt` from `.toPublicKey` to `.toJcaPublicKey` to reflect connection to JVM

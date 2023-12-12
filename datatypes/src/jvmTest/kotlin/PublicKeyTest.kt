@@ -2,12 +2,11 @@ import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.asn1.Asn1Element
 import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
 import at.asitplus.crypto.datatypes.asn1.parse
-import at.asitplus.crypto.datatypes.fromJcaKey
-import at.asitplus.crypto.datatypes.getPublicKey
+import at.asitplus.crypto.datatypes.fromJcaPublicKey
+import at.asitplus.crypto.datatypes.getJcaPublicKey
 import at.asitplus.crypto.datatypes.io.Base64Strict
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
-import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -38,14 +37,14 @@ class PublicKeyTest : FreeSpec({
                 keys
             ) { pubKey ->
 
-                val own = CryptoPublicKey.Ec.fromJcaKey(pubKey).getOrThrow()
+                val own = CryptoPublicKey.Ec.fromJcaPublicKey(pubKey).getOrThrow()
                 println(Json.encodeToString(own))
                 println(own.iosEncoded.encodeToString(Base16()))
                 println(own.encodeToDer().encodeToString(Base16()))
                 println(own.keyId)
                 own.encodeToDer() shouldBe pubKey.encoded
                 CryptoPublicKey.fromKeyId(own.keyId) shouldBe own
-                own.getPublicKey().encoded shouldBe pubKey.encoded
+                own.getJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
                 CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.encodeToDer()) as Asn1Sequence) shouldBe own
             }
         }
@@ -96,7 +95,7 @@ class PublicKeyTest : FreeSpec({
                 own.iosEncoded shouldBe keyBytes //PKCS#1
                 own.encodeToDer() shouldBe pubKey.encoded //PKCS#8
                 CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.encodeToDer()) as Asn1Sequence) shouldBe own
-                own.getPublicKey().encoded shouldBe pubKey.encoded
+                own.getJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
             }
         }
         "Equality tests" {

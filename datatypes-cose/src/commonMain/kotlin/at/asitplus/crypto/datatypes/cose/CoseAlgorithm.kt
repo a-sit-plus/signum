@@ -10,12 +10,12 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 @Serializable(with = CoseAlgorithmSerializer::class)
-enum class CoseAlgorithm(val value: Int) {
+enum class CoseAlgorithm(val value: Int, val isEC: Boolean = false) {
 
     // ECDSA with SHA-size
-    ES256(-7),
-    ES384(-35),
-    ES512(-36),
+    ES256(-7, true),
+    ES384(-35, true),
+    ES512(-36, true),
 
     // HMAC-size with SHA-size
     HS256(5),
@@ -36,7 +36,7 @@ enum class CoseAlgorithm(val value: Int) {
     RS1(-65535);
 
 
-    fun fromCoseToCrypto() = when(this) {
+    fun toCryptoAlgorithm() = when(this) {
         ES256 -> CryptoAlgorithm.ES256
         ES384 -> CryptoAlgorithm.ES384
         ES512 -> CryptoAlgorithm.ES512
@@ -55,26 +55,6 @@ enum class CoseAlgorithm(val value: Int) {
 
         RS1 -> CryptoAlgorithm.RS1
     }
-
-    fun fromCryptoToCose(algorithm: CryptoAlgorithm) = when(algorithm) {
-        CryptoAlgorithm.ES256 -> ES256
-        CryptoAlgorithm.ES384 -> ES384
-        CryptoAlgorithm.ES512 -> ES512
-
-        CryptoAlgorithm.HS256 -> HS256
-        CryptoAlgorithm.HS384 -> HS384
-        CryptoAlgorithm.HS512 -> HS512
-
-        CryptoAlgorithm.PS256 -> PS256
-        CryptoAlgorithm.PS384 -> PS384
-        CryptoAlgorithm.PS512 -> PS512
-
-        CryptoAlgorithm.RS256 -> RS256
-        CryptoAlgorithm.RS384 -> RS384
-        CryptoAlgorithm.RS512 -> RS512
-
-        CryptoAlgorithm.RS1 -> RS1
-    }
 }
 
 object CoseAlgorithmSerializer : KSerializer<CoseAlgorithm> {
@@ -91,4 +71,24 @@ object CoseAlgorithmSerializer : KSerializer<CoseAlgorithm> {
         return CoseAlgorithm.entries.first { it.value == decoded }
     }
 
+}
+
+fun CryptoAlgorithm.toCoseAlgorithm() = when(this) {
+    CryptoAlgorithm.ES256 -> CoseAlgorithm.ES256
+    CryptoAlgorithm.ES384 -> CoseAlgorithm.ES384
+    CryptoAlgorithm.ES512 -> CoseAlgorithm.ES512
+
+    CryptoAlgorithm.HS256 -> CoseAlgorithm.HS256
+    CryptoAlgorithm.HS384 -> CoseAlgorithm.HS384
+    CryptoAlgorithm.HS512 -> CoseAlgorithm.HS512
+
+    CryptoAlgorithm.PS256 -> CoseAlgorithm.PS256
+    CryptoAlgorithm.PS384 -> CoseAlgorithm.PS384
+    CryptoAlgorithm.PS512 -> CoseAlgorithm.PS512
+
+    CryptoAlgorithm.RS256 -> CoseAlgorithm.RS256
+    CryptoAlgorithm.RS384 -> CoseAlgorithm.RS384
+    CryptoAlgorithm.RS512 -> CoseAlgorithm.RS512
+
+    CryptoAlgorithm.RS1 -> CoseAlgorithm.RS1
 }

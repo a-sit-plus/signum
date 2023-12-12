@@ -201,7 +201,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          * PKCS#1 encoded RSA Public Key
          */
         @Transient
-        override val iosEncoded =
+        override val iosEncoded by lazy {
             asn1Sequence {
                 append(
                     Asn1Primitive(
@@ -211,6 +211,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                 )
                 int(e)
             }.derEncoded
+        }
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -266,12 +267,13 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          * ANSI X9.63 Encoding as used by iOS
          */
         @Transient
-        override val iosEncoded =
+        override val iosEncoded by lazy {
             byteArrayOf(
                 ANSI_PREFIX,
                 *x.ensureSize(curve.coordinateLengthBytes),
                 *y.ensureSize(curve.coordinateLengthBytes)
             )
+        }
 
         @Transient
         override val keyId by lazy { MultibaseHelper.calcKeyId(this) }

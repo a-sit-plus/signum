@@ -3,13 +3,11 @@ import at.asitplus.crypto.datatypes.EcCurve
 import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
 import at.asitplus.crypto.datatypes.asn1.ensureSize
 import at.asitplus.crypto.datatypes.jws.JsonWebKey
-import at.asitplus.crypto.datatypes.jws.io.jsonSerializer
 import at.asitplus.crypto.datatypes.jws.toJsonWebKey
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldHaveMinLength
-import kotlinx.serialization.serializer
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.interfaces.ECPublicKey
