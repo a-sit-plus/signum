@@ -28,10 +28,10 @@ val CryptoAlgorithm.jcaName
         CryptoAlgorithm.HS384 -> "HmacSHA384"
         CryptoAlgorithm.HS512 -> "HmacSHA512"
         CryptoAlgorithm.RS256 -> "SHA256withRSA"
-        CryptoAlgorithm.RS384 -> "SHA348withRSA"
+        CryptoAlgorithm.RS384 -> "SHA384withRSA"
         CryptoAlgorithm.RS512 -> "SHA512withRSA"
         CryptoAlgorithm.PS256 -> "SHA256withRSA"
-        CryptoAlgorithm.PS384 -> "SHA348withRSA"
+        CryptoAlgorithm.PS384 -> "SHA384withRSA"
         CryptoAlgorithm.PS512 -> "SHA512withRSA"
         CryptoAlgorithm.RS1 -> "SHA1withRSA"
     }
