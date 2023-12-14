@@ -14,12 +14,9 @@ import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 data class JwsSigned(
     val header: JwsHeader,
     val payload: ByteArray,
-    val signature: CryptoSignature
+    val signature: CryptoSignature,
+    val plainSignatureInput: String,
 ) {
-
-    val plainSignatureInput: String by lazy {
-        prepareJwsSignatureInput(header, payload)
-    }
 
     fun serialize(): String {
         return "${plainSignatureInput}.${signature.rawByteArray.encodeToString(Base64UrlStrict)}"
@@ -61,10 +58,8 @@ data class JwsSigned(
                     }
                 } ?: return null.also { Napier.w("Could not parse JWS: $it") }
 
-            return JwsSigned(header, payload, signature)
+            return JwsSigned(header, payload, signature, stringList[0] + "." + stringList[1])
         }
     }
 }
 
-fun prepareJwsSignatureInput(header: JwsHeader, payload: ByteArray): String =
-    "${header.serialize().encodeToByteArray().encodeToString(Base64UrlStrict)}.${payload.encodeToString(Base64UrlStrict)}"
