@@ -13,8 +13,11 @@ import at.asitplus.crypto.datatypes.asn1.asn1Sequence
 import at.asitplus.crypto.datatypes.asn1.decode
 import at.asitplus.crypto.datatypes.asn1.encodeToTlvBitString
 import at.asitplus.crypto.datatypes.asn1.ensureSize
+import at.asitplus.crypto.datatypes.asn1.padWithZeroIfNeeded
 import at.asitplus.crypto.datatypes.asn1.runRethrowing
+import at.asitplus.crypto.datatypes.asn1.stripLeadingSignByte
 import at.asitplus.crypto.datatypes.io.Base64UrlStrict
+import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.KSerializer
@@ -82,18 +85,17 @@ sealed class CryptoSignature(
      */
     class EC(private val rValue: ByteArray, private val sValue: ByteArray) : CryptoSignature(
         asn1Sequence {
-            append(Asn1Primitive(INTEGER, rValue.dropWhile { it == 0x00.toByte() }.toByteArray()))
-            append(Asn1Primitive(INTEGER, sValue.dropWhile { it == 0x00.toByte() }.toByteArray()))
+            append(Asn1Primitive(INTEGER, rValue.padWithZeroIfNeeded()))
+            append(Asn1Primitive(INTEGER, sValue.padWithZeroIfNeeded()))
         }
     ) {
         /**
          * JWS encodes an EC signature as the `r` and `s` value concatenated,
-         * which may contain a padding (leading 0x00), which is dropped in the other constructor,
-         * when creating the ASN.1 integers.
+         * which may contain a padding (leading 0x00), which are dropped here
          */
         constructor(input: ByteArray) : this(
-            input.sliceArray(0 until (input.size / 2)),
-            input.sliceArray((input.size / 2) until input.size)
+            input.sliceArray(0 until (input.size / 2)).dropWhile { it == 0x00.toByte() }.toByteArray(),
+            input.sliceArray((input.size / 2) until input.size).dropWhile { it == 0x00.toByte() }.toByteArray()
         )
 
         /**
@@ -123,8 +125,10 @@ sealed class CryptoSignature(
                 BIT_STRING -> RSAorHMAC((src as Asn1Primitive).decode(BIT_STRING) { it })
                 DER_SEQUENCE -> {
                     src as Asn1Sequence
-                    val first = dropFirstByteIfItIsPadding(src.nextChild() as Asn1Primitive)
-                    val second = dropFirstByteIfItIsPadding(src.nextChild() as Asn1Primitive)
+                    val first =
+                        (src.nextChild() as Asn1Primitive).decode<ByteArray>(INTEGER) { it }.stripLeadingSignByte()
+                    val second =
+                        (src.nextChild() as Asn1Primitive).decode<ByteArray>(INTEGER) { it }.stripLeadingSignByte()
                     if (src.hasMoreChildren()) throw IllegalArgumentException("Illegal Signature Format")
                     EC(first, second)
                 }
@@ -133,17 +137,5 @@ sealed class CryptoSignature(
             }
         }
 
-        /**
-         * In DER encoding, the first bit is the sign bit, so to encode numbers with the first bit set,
-         * one needs to prepend a 0x00 padding byte. In this function, we'll drop that, to get the raw value.
-         */
-        @Throws(Asn1Exception::class)
-        private fun dropFirstByteIfItIsPadding(src: Asn1Primitive): ByteArray {
-            val decoded: ByteArray = src.decode(INTEGER) { it }
-            if (decoded.size > 1 && decoded[0] == 0x00.toByte() && decoded[1] >= 0x80.toByte()) {
-                return decoded.drop(1).toByteArray()
-            }
-            return decoded
-        }
     }
 }
