@@ -1,6 +1,7 @@
 package at.asitplus.crypto.datatypes.cose
 
 import at.asitplus.KmmResult
+import at.asitplus.KmmResult.Companion.failure
 import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.asn1.decodeFromDer
@@ -152,5 +153,11 @@ sealed class CoseKeyParams {
                 )
             }.wrap()
         }
+    }
+
+    data class SymmKeyParams(
+        val k: ByteArray
+    ): CoseKeyParams() {
+        override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = failure(IllegalArgumentException("Symmetric keys do not have public component"))
     }
 }

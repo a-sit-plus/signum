@@ -612,12 +612,14 @@ fun ByteArray.stripLeadingSignByte() =
     if (this[0] == 0.toByte() && this[1] < 0) drop(1).toByteArray() else this
 
 /**
- * The extracted values from ASN.1 may be too short
- * to be simply concatenated as raw values,
- * so we'll need to pad them with 0x00 bytes to the expected length
+ * Adds a leading 0x00 byte for ASN.1 encoding of unsigned Integers,
+ * i.e. when the first byte is over 0x7F
  */
-fun ByteArray.padWithZeros(len: Int): ByteArray =
-    if (size < len) ByteArray(len - size) { 0 } + this else this
+fun ByteArray.padWithZeroIfNeeded() =
+    if (this.isNotEmpty() && this[0].toUByte() >= 0x80.toUByte())
+        byteArrayOf(0x00) + this
+    else
+        this
 
 /**
  * Drops or adds zero bytes at the start until the [size] is reached
@@ -628,4 +630,3 @@ fun ByteArray.ensureSize(size: UInt): ByteArray = when {
     this.size.toUInt() < size -> (byteArrayOf(0) + this).ensureSize(size)
     else -> this
 }
-

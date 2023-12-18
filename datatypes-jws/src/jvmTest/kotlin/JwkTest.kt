@@ -1,5 +1,5 @@
 import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.fromJcaKey
+import at.asitplus.crypto.datatypes.fromJcaPublicKey
 import at.asitplus.crypto.datatypes.io.Base64Strict
 import at.asitplus.crypto.datatypes.jws.jwkId
 import at.asitplus.crypto.datatypes.jws.toJsonWebKey
@@ -30,14 +30,12 @@ class JwkTest : FreeSpec({
                 keys
             ) { pubKey ->
 
-                val cryptoPubKey = CryptoPublicKey.Ec.fromJcaKey(pubKey)
+                val cryptoPubKey = CryptoPublicKey.Ec.fromJcaPublicKey(pubKey).getOrThrow()
                 val own = cryptoPubKey.toJsonWebKey().getOrThrow()
                 own.keyId shouldBe cryptoPubKey.jwkId
                 own.shouldNotBeNull()
                 println(own.serialize())
-                own.toAnsiX963ByteArray()
-                    .fold(onSuccess = { it shouldBe cryptoPubKey.iosEncoded }, onFailure = { throw it })
-
+                own.toCryptoPublicKey().getOrThrow().iosEncoded shouldBe cryptoPubKey.iosEncoded
                 CryptoPublicKey.fromKeyId(own.keyId!!) shouldBe cryptoPubKey
             }
         }

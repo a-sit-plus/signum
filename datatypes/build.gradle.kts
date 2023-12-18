@@ -1,5 +1,4 @@
 import DatatypeVersions.encoding
-import DatatypeVersions.kmmresult
 import at.asitplus.gradle.*
 
 plugins {
@@ -9,8 +8,7 @@ plugins {
     id("at.asitplus.gradle.conventions")
 }
 
-version = "2.1.0"
-
+version = "2.2.0"
 
 kotlin {
     jvm()
@@ -20,7 +18,7 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                api("at.asitplus:kmmresult:${kmmresult}")
+                api(kmmresult())
                 api(serialization("json"))
                 api(datetime())
                 implementation("io.matthewnelson.kotlin-components:encoding-base16:${encoding}")
@@ -42,7 +40,7 @@ kotlin {
         }
     }
 }
-exportIosFramework("KmpCrypto", serialization("json"), datetime(), "at.asitplus:kmmresult:${kmmresult}")
+exportIosFramework("KmpCrypto", serialization("json"), datetime(), kmmresult())
 
 val javadocJar = setupDokka(baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/", multiModuleDoc = true)
 

@@ -16,24 +16,37 @@ import java.security.KeyFactory
 import java.security.PublicKey
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPublicKey
+import java.security.spec.MGF1ParameterSpec
+import java.security.spec.PSSParameterSpec
 import java.security.spec.RSAPublicKeySpec
 
 
-val JwsAlgorithm.jcaName
+val CryptoAlgorithm.jcaName
     get() = when (this) {
-        JwsAlgorithm.ES256 -> "SHA256withECDSA"
-        JwsAlgorithm.ES384 -> "SHA384withECDSA"
-        JwsAlgorithm.ES512 -> "SHA512withECDSA"
-        JwsAlgorithm.HS256 -> "HmacSHA256"
-        JwsAlgorithm.HS384 -> "HmacSHA384"
-        JwsAlgorithm.HS512 -> "HmacSHA512"
-        JwsAlgorithm.RS256 -> "SHA256withRSA"
-        JwsAlgorithm.RS384 -> "SHA348withRSA"
-        JwsAlgorithm.RS512 -> "SHA512withRSA"
-        JwsAlgorithm.PS256 -> "SHA256withRSA"
-        JwsAlgorithm.PS384 -> "SHA348withRSA"
-        JwsAlgorithm.PS512 -> "SHA512withRSA"
-        JwsAlgorithm.NON_JWS_SHA1_WITH_RSA -> "SHA1withRSA"
+        CryptoAlgorithm.ES256 -> "SHA256withECDSA"
+        CryptoAlgorithm.ES384 -> "SHA384withECDSA"
+        CryptoAlgorithm.ES512 -> "SHA512withECDSA"
+        CryptoAlgorithm.HS256 -> "HmacSHA256"
+        CryptoAlgorithm.HS384 -> "HmacSHA384"
+        CryptoAlgorithm.HS512 -> "HmacSHA512"
+        CryptoAlgorithm.RS256 -> "SHA256withRSA"
+        CryptoAlgorithm.RS384 -> "SHA384withRSA"
+        CryptoAlgorithm.RS512 -> "SHA512withRSA"
+        CryptoAlgorithm.PS256 -> "RSASSA-PSS"
+        CryptoAlgorithm.PS384 -> "RSASSA-PSS"
+        CryptoAlgorithm.PS512 -> "RSASSA-PSS"
+        CryptoAlgorithm.RS1 -> "SHA1withRSA"
+    }
+
+val CryptoAlgorithm.jcaParams
+    get() = when (this) {
+        CryptoAlgorithm.PS256 -> PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 32, 1)
+
+        CryptoAlgorithm.PS384 -> PSSParameterSpec("SHA-384", "MGF1", MGF1ParameterSpec.SHA384, 48, 1)
+
+        CryptoAlgorithm.PS512 -> PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 64, 1)
+
+        else -> null
     }
 
 val Digest.jcaName
@@ -54,51 +67,61 @@ val EcCurve.jcaName
 fun EcCurve.Companion.byJcaName(name: String): EcCurve? = EcCurve.entries.find { it.jcaName == name }
 
 
-fun CryptoPublicKey.getPublicKey() = when (this) {
-    is CryptoPublicKey.Ec -> getPublicKey()
-    is CryptoPublicKey.Rsa -> getPublicKey()
+fun CryptoPublicKey.getJcaPublicKey() = when (this) {
+    is CryptoPublicKey.Ec -> getJcaPublicKey()
+    is CryptoPublicKey.Rsa -> getJcaPublicKey()
 }
 
-fun CryptoPublicKey.Ec.getPublicKey(): ECPublicKey {
-    val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.jwkName)
-    val x = BigInteger(1, x)
-    val y = BigInteger(1, y)
-    val ecPoint = parameterSpec.curve.createPoint(x, y)
-    val ecPublicKeySpec = ECPublicKeySpec(ecPoint, parameterSpec)
-    return JCEECPublicKey("EC", ecPublicKeySpec)
+fun CryptoPublicKey.Ec.getJcaPublicKey(): KmmResult<ECPublicKey> {
+    return runCatching {
+        val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.jwkName)
+        val x = BigInteger(1, x)
+        val y = BigInteger(1, y)
+        val ecPoint = parameterSpec.curve.createPoint(x, y)
+        val ecPublicKeySpec = ECPublicKeySpec(ecPoint, parameterSpec)
+        JCEECPublicKey("EC", ecPublicKeySpec)
+    }.wrap()
 }
 
 private val rsaFactory = KeyFactory.getInstance("RSA")
-fun CryptoPublicKey.Rsa.getPublicKey(): RSAPublicKey =
-    rsaFactory.generatePublic(
-        RSAPublicKeySpec(BigInteger(1, n), BigInteger.valueOf(e.toLong()))
-    ) as RSAPublicKey
 
-@Throws(Throwable::class)
-fun CryptoPublicKey.Ec.Companion.fromJcaKey(publicKey: ECPublicKey): CryptoPublicKey.Ec {
-    val curve = EcCurve.byJcaName(
-        SECNamedCurves.getName(
-            SubjectPublicKeyInfo.getInstance(
-                ASN1Sequence.getInstance(publicKey.encoded)
-            ).algorithm.parameters as ASN1ObjectIdentifier
-        )
-    ) ?: throw SerializationException("Unknown Jca name")
-    return fromCoordinates(
-        curve,
-        publicKey.w.affineX.toByteArray().ensureSize(curve.coordinateLengthBytes),
-        publicKey.w.affineY.toByteArray().ensureSize(curve.coordinateLengthBytes)
-    )
-}
-
-fun CryptoPublicKey.Rsa.Companion.fromJcaKey(publicKey: RSAPublicKey): CryptoPublicKey.Rsa =
-    CryptoPublicKey.Rsa(publicKey.modulus.toByteArray(), publicKey.publicExponent.toInt())
-
-fun CryptoPublicKey.Companion.fromJcaKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
+fun CryptoPublicKey.Rsa.getJcaPublicKey(): KmmResult<RSAPublicKey> =
     runCatching {
-        when (publicKey) {
-            is RSAPublicKey -> CryptoPublicKey.Rsa.fromJcaKey(publicKey)
-            is ECPublicKey -> CryptoPublicKey.Ec.fromJcaKey(publicKey)
-            else -> throw IllegalArgumentException("Unsupported Key Type")
-        }
+        rsaFactory.generatePublic(
+            RSAPublicKeySpec(BigInteger(1, n), BigInteger.valueOf(e.toLong()))
+        ) as RSAPublicKey
     }.wrap()
+
+fun CryptoPublicKey.Ec.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey> =
+    runCatching {
+        val curve = EcCurve.byJcaName(
+            SECNamedCurves.getName(
+                SubjectPublicKeyInfo.getInstance(
+                    ASN1Sequence.getInstance(publicKey.encoded)
+                ).algorithm.parameters as ASN1ObjectIdentifier
+            )
+        ) ?: throw SerializationException("Unknown Jca name")
+        fromCoordinates(
+            curve,
+            publicKey.w.affineX.toByteArray().ensureSize(curve.coordinateLengthBytes),
+            publicKey.w.affineY.toByteArray().ensureSize(curve.coordinateLengthBytes)
+        )
+    }.wrap()
+
+fun CryptoPublicKey.Rsa.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey> =
+    runCatching { CryptoPublicKey.Rsa(publicKey.modulus.toByteArray(), publicKey.publicExponent.toInt()) }.wrap()
+
+fun CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
+    when (publicKey) {
+        is RSAPublicKey -> CryptoPublicKey.Rsa.fromJcaPublicKey(publicKey)
+        is ECPublicKey -> CryptoPublicKey.Ec.fromJcaPublicKey(publicKey)
+        else -> KmmResult.failure(IllegalArgumentException("Unsupported Key Type"))
+    }
+
+
+val CryptoSignature.jcaSignatureBytes: ByteArray
+    get() = when (this) {
+        is CryptoSignature.EC -> encodeToDer()
+        is CryptoSignature.RSAorHMAC -> rawByteArray
+    }
 

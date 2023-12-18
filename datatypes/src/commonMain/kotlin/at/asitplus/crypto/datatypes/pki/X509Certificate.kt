@@ -1,7 +1,8 @@
 package at.asitplus.crypto.datatypes.pki
 
 import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.JwsAlgorithm
+import at.asitplus.crypto.datatypes.CryptoSignature
+import at.asitplus.crypto.datatypes.CryptoAlgorithm
 import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.asn1.DERTags.toImplicitTag
 import at.asitplus.crypto.datatypes.io.BitSet
@@ -9,14 +10,14 @@ import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import kotlinx.serialization.Serializable
 
 /**
- * Very simple implementation of the meat of an X.509 Certificate:
+ * Very simple implementation of the meat of a X.509 Certificate:
  * The structure that gets signed
  */
 @Serializable
 data class TbsCertificate(
     val version: Int = 2,
     @Serializable(with = ByteArrayBase64Serializer::class) val serialNumber: ByteArray,
-    val signatureAlgorithm: JwsAlgorithm,
+    val signatureAlgorithm: CryptoAlgorithm,
     val issuerName: List<DistinguishedName>,
     val validFrom: Asn1Time,
     val validUntil: Asn1Time,
@@ -121,7 +122,7 @@ data class TbsCertificate(
                 ((it as Asn1Tagged).verifyTag(0u).single() as Asn1Primitive).readInt()
             }
             val serialNumber = (src.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
-            val sigAlg = JwsAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
+            val sigAlg = CryptoAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val issuerNames = (src.nextChild() as Asn1Sequence).children.map {
                 DistinguishedName.decodeFromTlv(it as Asn1Set)
             }
@@ -183,9 +184,8 @@ data class TbsCertificate(
 @Serializable
 data class X509Certificate(
     val tbsCertificate: TbsCertificate,
-    val signatureAlgorithm: JwsAlgorithm,
-    @Serializable(with = ByteArrayBase64Serializer::class)
-    val signature: ByteArray
+    val signatureAlgorithm: CryptoAlgorithm,
+    val signature: CryptoSignature
 ) : Asn1Encodable<Asn1Sequence> {
 
 
@@ -193,7 +193,7 @@ data class X509Certificate(
     override fun encodeToTlv() = asn1Sequence {
         append(tbsCertificate)
         append(signatureAlgorithm)
-        bitString(signature)
+        append(signature.encodeToTlvBitString())
     }
 
     override fun equals(other: Any?): Boolean {
@@ -204,7 +204,7 @@ data class X509Certificate(
 
         if (tbsCertificate != other.tbsCertificate) return false
         if (signatureAlgorithm != other.signatureAlgorithm) return false
-        if (!signature.contentEquals(other.signature)) return false
+        if (signature != other.signature) return false
 
         return true
     }
@@ -212,7 +212,7 @@ data class X509Certificate(
     override fun hashCode(): Int {
         var result = tbsCertificate.hashCode()
         result = 31 * result + signatureAlgorithm.hashCode()
-        result = 31 * result + signature.contentHashCode()
+        result = 31 * result + signature.hashCode()
         return result
     }
 
@@ -223,10 +223,10 @@ data class X509Certificate(
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Sequence): X509Certificate = runRethrowing {
             val tbs = TbsCertificate.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val sigAlg = JwsAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val signature = (src.nextChild() as Asn1Primitive).readBitString()
+            val sigAlg = CryptoAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
+            val signature = CryptoSignature.decodeFromTlv(src.nextChild())
             if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous structure in Certificate Structure")
-            return X509Certificate(tbs, sigAlg, signature.rawBytes)
+            return X509Certificate(tbs, sigAlg, signature)
         }
 
     }

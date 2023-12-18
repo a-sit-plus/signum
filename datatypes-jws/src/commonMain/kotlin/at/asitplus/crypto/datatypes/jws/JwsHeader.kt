@@ -2,7 +2,8 @@
 
 package at.asitplus.crypto.datatypes.jws
 
-import at.asitplus.crypto.datatypes.JwsAlgorithm
+import at.asitplus.KmmResult.Companion.wrap
+import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.pki.X509Certificate
 import at.asitplus.crypto.datatypes.asn1.Asn1Element
 import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
@@ -23,12 +24,12 @@ import kotlinx.serialization.encodeToString
  */
 @Serializable
 data class JwsHeader(
-    @SerialName("alg")
-    val algorithm: JwsAlgorithm,
     @SerialName("kid")
     val keyId: String? = null,
     @SerialName("typ")
     val type: String? = null,
+    @SerialName("alg")
+    val algorithm: JwsAlgorithm,
     @SerialName("cty")
     val contentType: String? = null,
     @SerialName("x5c")
@@ -81,11 +82,17 @@ data class JwsHeader(
         return result
     }
 
-    val publicKey: JsonWebKey? by lazy {
-        jsonWebKey
-            ?: keyId?.let { JsonWebKey.fromKeyId(it).getOrNull() }
-            ?: certificateChain?.firstOrNull()
-                ?.let { X509Certificate.decodeFromTlv(Asn1Element.parse(it) as Asn1Sequence).tbsCertificate.publicKey.toJsonWebKey().getOrNull() }
+    /**
+     * Tries to compute a public key in descending order from JWK, KeyID or the certificate chain
+     * and takes the first success or null
+     */
+    val publicKey: CryptoPublicKey? by lazy {
+        jsonWebKey?.toCryptoPublicKey()?.getOrNull()
+            ?: keyId?.let { runCatching { CryptoPublicKey.fromKeyId(it) } }?.getOrNull()
+            ?: certificateChain
+                ?.firstNotNullOfOrNull {
+                    runCatching { X509Certificate.decodeFromTlv(Asn1Element.parse(it) as Asn1Sequence).publicKey }.getOrNull()
+                }
     }
 
     companion object {
@@ -95,7 +102,6 @@ data class JwsHeader(
             Napier.w("deserialize failed", it)
             null
         }
-
 
     }
 }

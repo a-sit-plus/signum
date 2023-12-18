@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUnsignedTypes::class)
-
 package at.asitplus.crypto.datatypes
 
 import at.asitplus.crypto.datatypes.asn1.*
@@ -11,52 +9,32 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-
-/**
- * Since we support only JWS algorithms (with one exception), this class is called what it's called.
- */
 @OptIn(ExperimentalUnsignedTypes::class)
-@Serializable(with = JwsAlgorithmSerializer::class)
-enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifier) : Asn1Encodable<Asn1Sequence>,
-    Identifiable {
+@Serializable(with = CryptoAlgorithmSerializer::class)
+enum class CryptoAlgorithm(override val oid: ObjectIdentifier) : Asn1Encodable<Asn1Sequence>, Identifiable {
 
-    ES256("ES256", KnownOIDs.ecdsaWithSHA256),
-    ES384("ES384", KnownOIDs.ecdsaWithSHA384),
-    ES512("ES512", KnownOIDs.ecdsaWithSHA512),
+    // ECDSA with SHA-size
+    ES256(KnownOIDs.ecdsaWithSHA256),
+    ES384(KnownOIDs.ecdsaWithSHA384),
+    ES512(KnownOIDs.ecdsaWithSHA512),
 
-    HS256("HS256", KnownOIDs.hmacWithSHA256),
-    HS384("HS384", KnownOIDs.hmacWithSHA384),
-    HS512("HS512", KnownOIDs.hmacWithSHA512),
+    // HMAC-size with SHA-size
+    HS256(KnownOIDs.hmacWithSHA256),
+    HS384(KnownOIDs.hmacWithSHA384),
+    HS512(KnownOIDs.hmacWithSHA512),
 
-    PS256("PS256", KnownOIDs.rsaPSS),
-    PS384("PS384", KnownOIDs.rsaPSS),
-    PS512("PS512", KnownOIDs.rsaPSS),
+    // RSASSA-PSS with SHA-size
+    PS256(KnownOIDs.rsaPSS),
+    PS384(KnownOIDs.rsaPSS),
+    PS512(KnownOIDs.rsaPSS),
 
-    RS256("RS256", KnownOIDs.sha256WithRSAEncryption),
-    RS384("RS384", KnownOIDs.sha384WithRSAEncryption),
-    RS512("RS512", KnownOIDs.sha512WithRSAEncryption),
+    // RSASSA-PKCS1-v1_5 with SHA-size
+    RS256(KnownOIDs.sha256WithRSAEncryption),
+    RS384(KnownOIDs.sha384WithRSAEncryption),
+    RS512(KnownOIDs.sha512WithRSAEncryption),
 
-    /**
-     * The one exception, which is not a valid JWS algorithm identifier
-     */
-    NON_JWS_SHA1_WITH_RSA("RS1", KnownOIDs.sha1WithRSAEncryption);
-
-    /**
-     * For `ESXXX` and `HSXXX` this is the length (in bytes) of the signature value obtained when using a certain signature algorithm.
-     *
-     * `null` for RSA-based signatures with length depending on the key size (i.e. `PSXXX`, `RSXXX`, and [NON_JWS_SHA1_WITH_RSA])
-     *
-     */
-    val signatureValueLength: Int?
-        get() = when (this) {
-            ES256 -> 256 / 8 * 2
-            ES384 -> 384 / 8 * 2
-            ES512 -> 512 / 8 * 2
-            HS256 -> 256 / 8
-            HS384 -> 384 / 8
-            HS512 -> 512 / 8
-            else -> null
-        }
+    // RSASSA-PKCS1-v1_5 using SHA-1
+    RS1(KnownOIDs.sha1WithRSAEncryption);
 
     private fun encodePSSParams(bits: Int): Asn1Sequence {
         val shaOid = when (bits) {
@@ -100,13 +78,13 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
         PS512 -> encodePSSParams(512)
 
         HS256, HS384, HS512,
-        RS256, RS384, RS512, NON_JWS_SHA1_WITH_RSA -> asn1Sequence {
+        RS256, RS384, RS512, RS1 -> asn1Sequence {
             append(oid)
             asn1null()
         }
     }
 
-    companion object : Asn1Decodable<Asn1Sequence, JwsAlgorithm> {
+    companion object : Asn1Decodable<Asn1Sequence, CryptoAlgorithm> {
 
         @Throws(Asn1OidException::class)
         private fun fromOid(oid: ObjectIdentifier) = runCatching { entries.first { it.oid == oid } }.getOrElse {
@@ -114,13 +92,13 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
         }
 
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(src: Asn1Sequence): JwsAlgorithm = runRethrowing {
+        override fun decodeFromTlv(src: Asn1Sequence): CryptoAlgorithm = runRethrowing {
             when (val oid = (src.nextChild() as Asn1Primitive).readOid()) {
-                ES512.oid, ES384.oid, ES256.oid -> JwsAlgorithm.fromOid(oid)
+                ES512.oid, ES384.oid, ES256.oid -> fromOid(oid)
 
-                NON_JWS_SHA1_WITH_RSA.oid -> NON_JWS_SHA1_WITH_RSA
+                RS1.oid -> RS1
                 RS256.oid, RS384.oid, RS512.oid,
-                HS256.oid, HS384.oid, HS512.oid -> JwsAlgorithm.fromOid(oid).also {
+                HS256.oid, HS384.oid, HS512.oid -> fromOid(oid).also {
                     val tag = src.nextChild().tag
                     if (tag != BERTags.NULL)
                         throw Asn1TagMismatchException(BERTags.NULL, tag, "RSA Params not allowed.")
@@ -132,7 +110,7 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
         }
 
         @Throws(Asn1Exception::class)
-        private fun parsePssParams(src: Asn1Sequence): JwsAlgorithm = runRethrowing {
+        private fun parsePssParams(src: Asn1Sequence): CryptoAlgorithm = runRethrowing {
             val seq = src.nextChild() as Asn1Sequence
             val first = (seq.nextChild() as Asn1Tagged).verifyTag(0.toUByte()).single() as Asn1Sequence
 
@@ -152,10 +130,8 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
                 "PSS Params not supported yet"
             )
 
-
             val last = (seq.nextChild() as Asn1Tagged).verifyTag(2.toUByte()).single() as Asn1Primitive
             val saltLen = last.readInt()
-
 
             return sigAlg.let {
                 when (it) {
@@ -170,17 +146,17 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
     }
 }
 
-object JwsAlgorithmSerializer : KSerializer<JwsAlgorithm> {
+object CryptoAlgorithmSerializer : KSerializer<CryptoAlgorithm> {
 
     override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor("JwsAlgorithmSerializer", PrimitiveKind.STRING)
+        PrimitiveSerialDescriptor("CryptoAlgorithmSerializer", PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, value: JwsAlgorithm) {
-        value.let { encoder.encodeString(it.identifier) }
+    override fun serialize(encoder: Encoder, value: CryptoAlgorithm) {
+        value.let { encoder.encodeString(it.name) }
     }
 
-    override fun deserialize(decoder: Decoder): JwsAlgorithm {
+    override fun deserialize(decoder: Decoder): CryptoAlgorithm {
         val decoded = decoder.decodeString()
-        return JwsAlgorithm.entries.first { it.identifier == decoded }
+        return CryptoAlgorithm.entries.first { it.name == decoded }
     }
 }

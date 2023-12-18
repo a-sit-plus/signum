@@ -37,12 +37,11 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
 
     "CSR match" {
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaKey(ecPublicKey)
-        cryptoPublicKey.shouldNotBeNull()
+        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaPublicKey(ecPublicKey).getOrThrow()
 
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
-        val signatureAlgorithm = JwsAlgorithm.ES256
+        val signatureAlgorithm = CryptoAlgorithm.ES256
 
 
         val tbsCsr = TbsCertificationRequest(
@@ -77,12 +76,11 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
 
     "CSR with attributes match" {
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaKey(ecPublicKey)
-        cryptoPublicKey.shouldNotBeNull()
+        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaPublicKey(ecPublicKey).getOrThrow()
 
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
-        val signatureAlgorithm = JwsAlgorithm.ES256
+        val signatureAlgorithm = CryptoAlgorithm.ES256
         val contentSigner: ContentSigner = JcaContentSignerBuilder(signatureAlgorithm.jcaName).build(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         val keyUsage = KeyUsage(KeyUsage.digitalSignature)
@@ -123,12 +121,11 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
 
     "CSRs with extensionRequest match" {
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaKey(ecPublicKey)
-        cryptoPublicKey.shouldNotBeNull()
+        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaPublicKey(ecPublicKey).getOrThrow()
 
         // create CSR with bouncycastle
         val commonName = "localhost"
-        val signatureAlgorithm = JwsAlgorithm.ES256
+        val signatureAlgorithm = CryptoAlgorithm.ES256
         val contentSigner: ContentSigner = JcaContentSignerBuilder(signatureAlgorithm.jcaName).build(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         val keyUsage = KeyUsage(KeyUsage.digitalSignature)
@@ -191,7 +188,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
 
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
-        val signatureAlgorithm = JwsAlgorithm.ES256
+        val signatureAlgorithm = CryptoAlgorithm.ES256
         val contentSigner: ContentSigner = JcaContentSignerBuilder(signatureAlgorithm.jcaName).build(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         val bcCsr = PKCS10CertificationRequestBuilder(X500Name("CN=$commonName"), spki).build(contentSigner)

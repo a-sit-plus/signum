@@ -1,8 +1,9 @@
-@file:OptIn(ExperimentalUnsignedTypes::class)
-
 package at.asitplus.crypto.datatypes.cose
 
+import at.asitplus.crypto.datatypes.CryptoPublicKey
+import at.asitplus.crypto.datatypes.CryptoSignature
 import at.asitplus.crypto.datatypes.cose.io.cborSerializer
+import at.asitplus.crypto.datatypes.pki.X509Certificate
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -31,8 +32,22 @@ data class CoseSigned(
     @ByteString
     val payload: ByteArray?,
     @ByteString
-    val signature: ByteArray,
+    @SerialName("signature")
+    private val rawSignature: ByteArray
 ) {
+
+    constructor(
+        protectedHeader: ByteStringWrapper<CoseHeader>,
+        unprotectedHeader: CoseHeader?,
+        payload: ByteArray?,
+        signature: CryptoSignature
+    ) : this(protectedHeader, unprotectedHeader, payload, signature.rawByteArray)
+
+    val signature: CryptoSignature by lazy {
+        if (protectedHeader.value.usesEC() ?: unprotectedHeader?.usesEC() ?: (rawSignature.size < 2048))
+            CryptoSignature.EC(rawSignature)
+        else CryptoSignature.RSAorHMAC(rawSignature)
+    }
 
     fun serialize() = cborSerializer.encodeToByteArray(this)
 
@@ -48,14 +63,14 @@ data class CoseSigned(
             if (other.payload == null) return false
             if (!payload.contentEquals(other.payload)) return false
         } else if (other.payload != null) return false
-        return signature.contentEquals(other.signature)
+        return rawSignature != other.rawSignature
     }
 
     override fun hashCode(): Int {
         var result = protectedHeader.hashCode()
         result = 31 * result + (unprotectedHeader?.hashCode() ?: 0)
         result = 31 * result + (payload?.contentHashCode() ?: 0)
-        result = 31 * result + signature.contentHashCode()
+        result = 31 * result + rawSignature.contentHashCode()
         return result
     }
 
@@ -63,7 +78,7 @@ data class CoseSigned(
         return "CoseSigned(protectedHeader=${protectedHeader.value}," +
                 " unprotectedHeader=$unprotectedHeader," +
                 " payload=${payload?.encodeToString(Base16(strict = true))}," +
-                " signature=${signature.encodeToString(Base16(strict = true))})"
+                " signature=${rawSignature.encodeToString(Base16(strict = true))})"
     }
 
     companion object {
@@ -74,6 +89,12 @@ data class CoseSigned(
             null
         }
     }
+}
+
+fun CoseHeader.usesEC(): Boolean? {
+    algorithm?.isEC?.let { return it }
+    certificateChain?.let { return X509Certificate.decodeFromDerOrNull(it)?.publicKey is CryptoPublicKey.Ec }
+    return null
 }
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -88,7 +109,7 @@ data class CoseSignatureInput(
     val externalAad: ByteArray,
     @ByteString
     val payload: ByteArray?,
-){
+) {
     fun serialize() = cborSerializer.encodeToByteArray(this)
 
     override fun equals(other: Any?): Boolean {

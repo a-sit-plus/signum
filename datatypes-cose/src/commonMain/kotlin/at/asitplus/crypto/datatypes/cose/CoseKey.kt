@@ -82,7 +82,7 @@ data class CoseKey(
      * or the first error. More details in either [CoseKeyParams.RsaParams.toCryptoPublicKey] or [CoseKeyParams.EcYByteArrayParams.toCryptoPublicKey]
      */
     fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
-        keyParams?.toCryptoPublicKey() ?: KmmResult.failure(IllegalArgumentException("No public key parameters!"))
+        keyParams?.toCryptoPublicKey() ?: failure(IllegalArgumentException("No public key parameters!"))
 
     fun serialize() = cborSerializer.encodeToByteArray(this)
 
@@ -218,7 +218,11 @@ object CoseKeySerializer : KSerializer<CoseKey> {
         @SerialLabel(-4)
         @SerialName("d")
         @ByteString
-        val d: ByteArray? = null
+        val d: ByteArray? = null,
+        @SerialLabel(-1)
+        @SerialName("k")
+        @ByteString
+        val k: ByteArray? = null
     ) {
         constructor(src: CoseKey) : this(
             src.type,
@@ -235,6 +239,10 @@ object CoseKeySerializer : KSerializer<CoseKey> {
             },
             when (val params = src.keyParams) {
                 is CoseKeyParams.RsaParams -> params.e
+                else -> null
+            },
+            when (val params = src.keyParams) {
+                is CoseKeyParams.SymmKeyParams -> params.k
                 else -> null
             },
             when (val params = src.keyParams) {
@@ -334,6 +342,39 @@ object CoseKeySerializer : KSerializer<CoseKey> {
         override fun toCoseKey() = CoseKey(type, keyId, algorithm, operations, baseIv, CoseKeyParams.RsaParams(n, e, d))
     }
 
+    @Serializable
+    private class CoseSymmKeySerialContainer(
+        @SerialLabel(1)
+        @SerialName("kty")
+        val type: CoseKeyType,
+        @SerialLabel(2)
+        @SerialName("kid")
+        @ByteString
+        val keyId: ByteArray? = null,
+        @SerialLabel(3)
+        @SerialName("alg")
+        val algorithm: CoseAlgorithm? = null,
+        @SerialLabel(4)
+        @SerialName("key_ops")
+        val operations: Array<CoseKeyOperation>? = null,
+        @SerialLabel(5)
+        @SerialName("Base IV")
+        @ByteString
+        val baseIv: ByteArray? = null,
+        @SerialLabel(-1)
+        @SerialName("k")
+        val k: ByteArray? = null,
+    ) : SerialContainer {
+        init {
+            if (type != CoseKeyType.SYMMETRIC) throw IllegalArgumentException("Not a symmetric key!")
+            if (k == null) throw IllegalArgumentException("Parameter k not optional for symmetric keys")
+        }
+
+        override fun toCoseKey() =
+            CoseKey(type, keyId, algorithm, operations, baseIv, CoseKeyParams.SymmKeyParams(k!!))
+
+    }
+
     override val descriptor: SerialDescriptor
         get() = CoseKeySerialContainer.serializer().descriptor
 
@@ -344,7 +385,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
             "alg" to 3,
             "key_ops" to 4,
             "Base IV" to 5,
-            "n/crv" to -1,
+            "k/n/crv" to -1,
             "x/e" to -2,
             "y" to -3,
             "d" to 4
@@ -360,6 +401,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
         var xOrE: ByteArray? = null
         var y: ByteArray? = null
         var d: ByteArray? = null
+        var k: ByteArray? = null
 
         decoder.decodeStructure(descriptor) {
             while (true) {
@@ -391,7 +433,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                             ArraySerializer(CoseKeyOperationSerializer)
                         )
 
-                    labels["n/crv"] -> {
+                    labels["k/n/crv"] -> {
                         when (type) {
                             CoseKeyType.EC2 -> {
                                 val deser = CoseEllipticCurveSerializer
@@ -403,7 +445,10 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                                 n = decodeNullableSerializableElement(deser.descriptor, index, deser)
                             }
 
-                            CoseKeyType.SYMMETRIC -> {}
+                            CoseKeyType.SYMMETRIC -> {
+                                val deser = ByteArraySerializer()
+                                k = decodeNullableSerializableElement(deser.descriptor, index, deser)
+                            }
                         }
 
                     }
@@ -444,7 +489,9 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                 CoseRsaKeySerialContainer(type, keyId, alg, keyOps, baseIv, n, xOrE, d).toCoseKey()
             }
 
-            CoseKeyType.SYMMETRIC -> CoseKey(type, keyId, alg, keyOps, keyParams = null)
+            CoseKeyType.SYMMETRIC -> {
+                CoseSymmKeySerialContainer(type,keyId,alg,keyOps,baseIv, k).toCoseKey()
+            }
         }
     }
 
