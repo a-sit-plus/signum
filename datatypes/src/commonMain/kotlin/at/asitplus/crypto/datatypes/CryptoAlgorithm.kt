@@ -11,12 +11,12 @@ import kotlinx.serialization.encoding.Encoder
 
 @OptIn(ExperimentalUnsignedTypes::class)
 @Serializable(with = CryptoAlgorithmSerializer::class)
-enum class CryptoAlgorithm(override val oid: ObjectIdentifier) : Asn1Encodable<Asn1Sequence>, Identifiable {
+enum class CryptoAlgorithm(override val oid: ObjectIdentifier, val isEc: Boolean = false) : Asn1Encodable<Asn1Sequence>, Identifiable {
 
     // ECDSA with SHA-size
-    ES256(KnownOIDs.ecdsaWithSHA256),
-    ES384(KnownOIDs.ecdsaWithSHA384),
-    ES512(KnownOIDs.ecdsaWithSHA512),
+    ES256(KnownOIDs.ecdsaWithSHA256, true),
+    ES384(KnownOIDs.ecdsaWithSHA384, true),
+    ES512(KnownOIDs.ecdsaWithSHA512, true),
 
     // HMAC-size with SHA-size
     HS256(KnownOIDs.hmacWithSHA256),
