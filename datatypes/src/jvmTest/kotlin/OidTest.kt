@@ -8,7 +8,6 @@ import io.kotest.property.arbitrary.intArray
 import io.kotest.property.arbitrary.positiveInt
 import io.kotest.property.checkAll
 
-@OptIn(ExperimentalUnsignedTypes::class)
 class OidTest : FreeSpec({
     "OID test" - {
 

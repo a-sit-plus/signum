@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUnsignedTypes::class)
-
 package at.asitplus.crypto.datatypes.pki
 
 import at.asitplus.crypto.datatypes.asn1.*
@@ -100,7 +98,6 @@ sealed class DistinguishedName : Asn1Encodable<Asn1Set>, Identifiable {
 
     companion object : Asn1Decodable<Asn1Set, DistinguishedName> {
 
-        @OptIn(ExperimentalUnsignedTypes::class)
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Set): DistinguishedName = runRethrowing {
             if (src.children.size != 1) throw Asn1StructuralException("Invalid Subject Structure")

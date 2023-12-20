@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUnsignedTypes::class)
-
 package at.asitplus.crypto.datatypes
 
 import at.asitplus.crypto.datatypes.asn1.*
@@ -12,7 +10,6 @@ import kotlinx.serialization.Transient
 /**
  * Representation of a public key structure
  */
-@OptIn(ExperimentalUnsignedTypes::class)
 @Serializable
 sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 

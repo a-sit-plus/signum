@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUnsignedTypes::class)
-
 package at.asitplus.crypto.datatypes.asn1
 
 import kotlinx.serialization.KSerializer
@@ -20,7 +18,6 @@ import kotlin.math.ceil
  * @param nodes OID Tree nodes passed in order (e.g. 1u, 2u, 96u, …)
  * @throws Asn1Exception if less than two nodes are supplied, the first node is >2 or the second node is >39
  */
-@ExperimentalUnsignedTypes
 @Serializable(with = ObjectIdSerializer::class)
 class ObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transient vararg val nodes: UInt) :
     Asn1Encodable<Asn1Primitive> {

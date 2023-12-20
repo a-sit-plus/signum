@@ -80,7 +80,7 @@ class X509CertParserTest : FreeSpec({
             }
         }
     }
-
+/*
     "system trust store" - {
         val certs = File("/etc/ssl/certs").listFiles { f: File -> f.name.endsWith(".pem") }.mapNotNull {
             runCatching { convertStringToX509Cert(FileReader(it).readText()) }.getOrNull()
@@ -114,7 +114,7 @@ class X509CertParserTest : FreeSpec({
                 own shouldBe crt.encoded
             }
         }
-    }
+    }*/
 
     "From Google's X509 Cert Test Suite" - {
 

@@ -16,7 +16,11 @@ kotlin {
     iosSimulatorArm64()
     iosX64()
     sourceSets {
-         commonMain {
+        all {
+            languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
+        }
+
+        commonMain {
             dependencies {
                 api(project(":datatypes"))
                 api(serialization("cbor"))
@@ -26,7 +30,7 @@ kotlin {
             }
         }
 
-         commonTest {
+        commonTest {
             dependencies {
                 implementation(kotlin("reflect"))
             }
