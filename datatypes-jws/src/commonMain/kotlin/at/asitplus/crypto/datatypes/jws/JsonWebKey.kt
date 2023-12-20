@@ -158,14 +158,6 @@ data class JsonWebKey(
         fun fromCoordinates(curve: EcCurve, x: ByteArray, y: ByteArray): KmmResult<JsonWebKey> =
             runCatching { CryptoPublicKey.Ec.fromCoordinates(curve, x, y).toJsonWebKey().getOrThrow() }.wrap()
     }
-
-
-    @Deprecated("Use [fromIosEncoded] instead!")
-    fun toAnsiX963ByteArray(): KmmResult<ByteArray> {
-        if (x != null && y != null)
-            return KmmResult.success(byteArrayOf(0x04.toByte()) + x + y);
-        return KmmResult.failure(IllegalArgumentException())
-    }
 }
 
 /**

@@ -1,6 +1,5 @@
 import at.asitplus.crypto.datatypes.*
 import at.asitplus.crypto.datatypes.asn1.*
-import at.asitplus.crypto.datatypes.asn1.Asn1Time
 import at.asitplus.crypto.datatypes.pki.DistinguishedName
 import at.asitplus.crypto.datatypes.pki.TbsCertificate
 import at.asitplus.crypto.datatypes.pki.X509Certificate
@@ -44,7 +43,7 @@ class X509CertificateJvmTest : FreeSpec({
 
     "Certificates match" {
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaKey(ecPublicKey).getOrThrow()
+        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaPublicKey(ecPublicKey).getOrThrow()
 
         // create certificate with bouncycastle
         val notBeforeDate = Date.from(Instant.now())
@@ -79,14 +78,18 @@ class X509CertificateJvmTest : FreeSpec({
             initSign(keyPair.private)
             update(tbsCertificate.encodeToTlv().derEncoded)
         }.sign()
-        val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, signed)
+        val test = CryptoSignature.decodeFromDer(signed)
+        val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, test)
 
-        val kotlinEncoded = x509Certificate.encodeToTlv().derEncoded
+        val kotlinEncoded = x509Certificate.encodeToDer()
         val jvmEncoded = certificateHolder.encoded
-        println("Certificates will never entirely match because of randomness in ECDSA signature")
-        //kotlinEncoded shouldBe jvmEncoded
-        println(kotlinEncoded.encodeToString(Base16()))
-        println(jvmEncoded.encodeToString(Base16()))
+        println(
+            "Certificates will never entirely match because of randomness in ECDSA signature" +
+                    "\nKotlinEncoded\n" +
+                    kotlinEncoded.encodeToString(Base16()) +
+                    "\nJvmEncoded\n" +
+                    jvmEncoded.encodeToString(Base16())
+        )
         kotlinEncoded.drop(7).take(228) shouldBe jvmEncoded.drop(7).take(228)
 
         val parsedFromKotlinCertificate =

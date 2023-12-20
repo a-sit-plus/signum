@@ -15,7 +15,8 @@ import kotlinx.serialization.encoding.Encoder
  * Since we support only JWS algorithms (with one exception), this class is called what it's called.
  */
 @Serializable(with = JwsAlgorithmSerializer::class)
-enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifier) : Asn1Encodable<Asn1Sequence>,
+enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifier) :
+    Asn1Encodable<Asn1Sequence>,
     Identifiable {
 
     ES256("ES256", KnownOIDs.ecdsaWithSHA256),
@@ -39,7 +40,7 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
      */
     NON_JWS_SHA1_WITH_RSA("RS1", KnownOIDs.sha1WithRSAEncryption);
 
-    fun fromJwsToCrypto() = when(this) {
+    fun toCryptoAlgorithm() = when (this) {
         ES256 -> CryptoAlgorithm.ES256
         ES384 -> CryptoAlgorithm.ES384
         ES512 -> CryptoAlgorithm.ES512
@@ -57,26 +58,6 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
         RS512 -> CryptoAlgorithm.RS512
 
         NON_JWS_SHA1_WITH_RSA -> CryptoAlgorithm.RS1
-    }
-
-    fun fromCryptoToJws(algorithm: CryptoAlgorithm) = when(algorithm) {
-        CryptoAlgorithm.ES256 -> ES256
-        CryptoAlgorithm.ES384 -> ES384
-        CryptoAlgorithm.ES512 -> ES512
-
-        CryptoAlgorithm.HS256 -> HS256
-        CryptoAlgorithm.HS384 -> HS384
-        CryptoAlgorithm.HS512 -> HS512
-
-        CryptoAlgorithm.PS256 -> PS256
-        CryptoAlgorithm.PS384 -> PS384
-        CryptoAlgorithm.PS512 -> PS512
-
-        CryptoAlgorithm.RS256 -> RS256
-        CryptoAlgorithm.RS384 -> RS384
-        CryptoAlgorithm.RS512 -> RS512
-
-        CryptoAlgorithm.RS1 -> NON_JWS_SHA1_WITH_RSA
     }
 
     private fun encodePSSParams(bits: Int): Asn1Sequence {
@@ -121,7 +102,8 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
         PS512 -> encodePSSParams(512)
 
         HS256, HS384, HS512,
-        RS256, RS384, RS512, NON_JWS_SHA1_WITH_RSA -> asn1Sequence {
+        RS256, RS384, RS512, NON_JWS_SHA1_WITH_RSA,
+        -> asn1Sequence {
             append(oid)
             asn1null()
         }
@@ -141,7 +123,8 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
 
                 NON_JWS_SHA1_WITH_RSA.oid -> NON_JWS_SHA1_WITH_RSA
                 RS256.oid, RS384.oid, RS512.oid,
-                HS256.oid, HS384.oid, HS512.oid -> fromOid(oid).also {
+                HS256.oid, HS384.oid, HS512.oid,
+                -> fromOid(oid).also {
                     val tag = src.nextChild().tag
                     if (tag != BERTags.NULL)
                         throw Asn1TagMismatchException(BERTags.NULL, tag, "RSA Params not allowed.")
@@ -204,4 +187,24 @@ object JwsAlgorithmSerializer : KSerializer<JwsAlgorithm> {
         val decoded = decoder.decodeString()
         return JwsAlgorithm.entries.first { it.identifier == decoded }
     }
+}
+
+fun CryptoAlgorithm.toJwsAlgorithm() = when (this) {
+    CryptoAlgorithm.ES256 -> JwsAlgorithm.ES256
+    CryptoAlgorithm.ES384 -> JwsAlgorithm.ES384
+    CryptoAlgorithm.ES512 -> JwsAlgorithm.ES512
+
+    CryptoAlgorithm.HS256 -> JwsAlgorithm.HS256
+    CryptoAlgorithm.HS384 -> JwsAlgorithm.HS384
+    CryptoAlgorithm.HS512 -> JwsAlgorithm.HS512
+
+    CryptoAlgorithm.PS256 -> JwsAlgorithm.PS256
+    CryptoAlgorithm.PS384 -> JwsAlgorithm.PS384
+    CryptoAlgorithm.PS512 -> JwsAlgorithm.PS512
+
+    CryptoAlgorithm.RS256 -> JwsAlgorithm.RS256
+    CryptoAlgorithm.RS384 -> JwsAlgorithm.RS384
+    CryptoAlgorithm.RS512 -> JwsAlgorithm.RS512
+
+    CryptoAlgorithm.RS1 -> JwsAlgorithm.NON_JWS_SHA1_WITH_RSA
 }
