@@ -118,10 +118,20 @@ fun CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<
         else -> KmmResult.failure(IllegalArgumentException("Unsupported Key Type"))
     }
 
-
+/**
+ * In Java EC signatures are returned as DER-encoded, RSA signatures however are raw bytearrays
+ */
 val CryptoSignature.jcaSignatureBytes: ByteArray
     get() = when (this) {
         is CryptoSignature.EC -> encodeToDer()
         is CryptoSignature.RSAorHMAC -> rawByteArray
     }
 
+/**
+ * In Java EC signatures are returned as DER-encoded, RSA signatures however are raw bytearrays
+ */
+fun CryptoSignature.parseFromJca(input: ByteArray, algorithm: CryptoAlgorithm)=
+    if (algorithm.isEc)
+        CryptoSignature.decodeFromDer(input)
+    else
+        CryptoSignature.RSAorHMAC(input)
