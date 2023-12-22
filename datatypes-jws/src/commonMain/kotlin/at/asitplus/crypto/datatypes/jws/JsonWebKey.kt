@@ -189,7 +189,7 @@ private const val JWK_ID = "jwkIdentifier"
  * Holds [JsonWebKey.keyId] when transforming a [JsonWebKey] to a [CryptoPublicKey]
  */
 var CryptoPublicKey.jwkId: String
-    get() = additionalProperties[JWK_ID] ?: keyId
+    get() = additionalProperties[JWK_ID] ?: multiBaseEncoded
     set(value) {
         additionalProperties[JWK_ID] = value
     }

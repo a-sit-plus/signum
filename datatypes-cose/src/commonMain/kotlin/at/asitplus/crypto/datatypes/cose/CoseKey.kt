@@ -143,7 +143,7 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseK
                         y = y
                     ),
                     type = CoseKeyType.EC2,
-                    keyId = keyId.encodeToByteArray(),
+                    keyId = multiBaseEncoded.encodeToByteArray(),
                     algorithm = algorithm
                 )
             )
@@ -161,7 +161,7 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseK
                         e = e.encodeToByteArray()
                     ),
                     type = CoseKeyType.RSA,
-                    keyId = keyId.encodeToByteArray(),
+                    keyId = multiBaseEncoded.encodeToByteArray(),
                     algorithm = algorithm
                 )
             )
@@ -169,7 +169,7 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseK
 
 private const val COSE_KID = "coseKid"
 var CryptoPublicKey.coseKid: String
-    get() = additionalProperties[COSE_KID] ?: keyId
+    get() = additionalProperties[COSE_KID] ?: multiBaseEncoded
     set(value) {
         additionalProperties[COSE_KID] = value
     }

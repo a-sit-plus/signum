@@ -49,3 +49,8 @@
   * New `CryptoSignature` class for easy Asn1 - RawByteArray conversion
 * Rename function in file `JcaExtensions.kt` from `.toPublicKey` to `.toJcaPublicKey` to reflect connection to JVMname function in file `JcaExtensions.kt` from `.toPublicKey` to `.toJcaPublicKey` to reflect connection to JVM
 * Remove VcLib-specific constants
+
+### Future Release
+* Change `CryptoPublicKey.toJsonWebKey()` return type from `KmmResult<JsonWebKey>` to `JsonWebKey`
+* Add `CryptoSignature.parseFromJca` function
+* Refactor `CryptoPublicKey.keyID` to `CryptoPublicKey.multiBaseEncoded` to reduce ambiguity

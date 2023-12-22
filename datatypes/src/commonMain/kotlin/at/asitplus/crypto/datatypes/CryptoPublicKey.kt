@@ -28,7 +28,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
      * Multibase KID
      */
     @Transient
-    abstract val keyId: String
+    abstract val multiBaseEncoded: String
 
     /**
      * Representation of this key in the same ways as iOS would encode it natively
@@ -195,7 +195,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
 
         @Transient
-        override val keyId by lazy { MultibaseHelper.calcKeyId(this) }
+        override val multiBaseEncoded by lazy { MultibaseHelper.calcKeyId(this) }
 
         /**
          * PKCS#1 encoded RSA Public Key
@@ -276,7 +276,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
 
         @Transient
-        override val keyId by lazy { MultibaseHelper.calcKeyId(this) }
+        override val multiBaseEncoded by lazy { MultibaseHelper.calcKeyId(this) }
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
