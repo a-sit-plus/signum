@@ -53,4 +53,5 @@
 ### Future Release
 * Change `CryptoPublicKey.toJsonWebKey()` return type from `KmmResult<JsonWebKey>` to `JsonWebKey`
 * Add `CryptoSignature.parseFromJca` function
-* Refactor `CryptoPublicKey.keyID` to `CryptoPublicKey.multiBaseEncoded` to reduce ambiguity
+* Refactor `CryptoPublicKey.keyID` to `CryptoPublicKey.didEncoded` to better reflect what it actually is
+* Rename `CryptoPublicKey.fromKeyId` to `CryptoPublicKey.fromDid`
