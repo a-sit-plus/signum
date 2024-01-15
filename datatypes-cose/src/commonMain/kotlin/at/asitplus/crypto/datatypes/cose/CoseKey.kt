@@ -14,7 +14,7 @@ import kotlinx.serialization.*
 import kotlinx.serialization.builtins.ArraySerializer
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.cbor.ByteString
-import kotlinx.serialization.cbor.SerialLabel
+import kotlinx.serialization.cbor.CborLabel
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
@@ -180,46 +180,46 @@ object CoseKeySerializer : KSerializer<CoseKey> {
 
     @Serializable
     private class CoseKeySerialContainer(
-        @SerialLabel(1)
+        @CborLabel(1)
         @SerialName("kty")
         val type: CoseKeyType,
-        @SerialLabel(2)
+        @CborLabel(2)
         @SerialName("kid")
         @ByteString
         val keyId: ByteArray? = null,
-        @SerialLabel(3)
+        @CborLabel(3)
         @SerialName("alg")
         val algorithm: CoseAlgorithm? = null,
-        @SerialLabel(4)
+        @CborLabel(4)
         @SerialName("key_ops")
         val operations: Array<CoseKeyOperation>? = null,
-        @SerialLabel(5)
+        @CborLabel(5)
         @SerialName("Base IV")
         @ByteString
         val baseIv: ByteArray? = null,
-        @SerialLabel(-1)
+        @CborLabel(-1)
         @SerialName("crv")
         val curve: CoseEllipticCurve? = null,
-        @SerialLabel(-2)
+        @CborLabel(-2)
         @SerialName("x")
         @ByteString
         val x: ByteArray? = null,
-        @SerialLabel(-3)
+        @CborLabel(-3)
         @SerialName("y")
         @ByteString
         val y: ByteArray? = null,
-        @SerialLabel(-1)
+        @CborLabel(-1)
         @SerialName("n")
         val n: ByteArray? = null,
-        @SerialLabel(-2)
+        @CborLabel(-2)
         @SerialName("e")
         @ByteString
         val e: ByteArray? = null,
-        @SerialLabel(-4)
+        @CborLabel(-4)
         @SerialName("d")
         @ByteString
         val d: ByteArray? = null,
-        @SerialLabel(-1)
+        @CborLabel(-1)
         @SerialName("k")
         @ByteString
         val k: ByteArray? = null
@@ -261,35 +261,35 @@ object CoseKeySerializer : KSerializer<CoseKey> {
 
     @Serializable
     private class CoseEcKeySerialContainer(
-        @SerialLabel(1)
+        @CborLabel(1)
         @SerialName("kty")
         val type: CoseKeyType,
-        @SerialLabel(2)
+        @CborLabel(2)
         @SerialName("kid")
         @ByteString
         val keyId: ByteArray? = null,
-        @SerialLabel(3)
+        @CborLabel(3)
         @SerialName("alg")
         val algorithm: CoseAlgorithm? = null,
-        @SerialLabel(4)
+        @CborLabel(4)
         @SerialName("key_ops")
         val operations: Array<CoseKeyOperation>? = null,
-        @SerialLabel(5)
+        @CborLabel(5)
         @SerialName("Base IV")
         @ByteString
         val baseIv: ByteArray? = null,
-        @SerialLabel(-1)
+        @CborLabel(-1)
         @SerialName("crv")
         val curve: CoseEllipticCurve? = null,
-        @SerialLabel(-2)
+        @CborLabel(-2)
         @SerialName("x")
         @ByteString
         val x: ByteArray? = null,
-        @SerialLabel(-3)
+        @CborLabel(-3)
         @SerialName("y")
         @ByteString
         val y: ByteArray? = null,
-        @SerialLabel(-4)
+        @CborLabel(-4)
         @SerialName("d")
         @ByteString
         val d: ByteArray? = null
@@ -306,31 +306,31 @@ object CoseKeySerializer : KSerializer<CoseKey> {
 
     @Serializable
     private class CoseRsaKeySerialContainer(
-        @SerialLabel(1)
+        @CborLabel(1)
         @SerialName("kty")
         val type: CoseKeyType,
-        @SerialLabel(2)
+        @CborLabel(2)
         @SerialName("kid")
         @ByteString
         val keyId: ByteArray? = null,
-        @SerialLabel(3)
+        @CborLabel(3)
         @SerialName("alg")
         val algorithm: CoseAlgorithm? = null,
-        @SerialLabel(4)
+        @CborLabel(4)
         @SerialName("key_ops")
         val operations: Array<CoseKeyOperation>? = null,
-        @SerialLabel(5)
+        @CborLabel(5)
         @SerialName("Base IV")
         @ByteString
         val baseIv: ByteArray? = null,
-        @SerialLabel(-1)
+        @CborLabel(-1)
         @SerialName("n")
         val n: ByteArray? = null,
-        @SerialLabel(-2)
+        @CborLabel(-2)
         @SerialName("e")
         @ByteString
         val e: ByteArray? = null,
-        @SerialLabel(-4)
+        @CborLabel(-4)
         @SerialName("d")
         @ByteString
         val d: ByteArray? = null
@@ -344,24 +344,24 @@ object CoseKeySerializer : KSerializer<CoseKey> {
 
     @Serializable
     private class CoseSymmKeySerialContainer(
-        @SerialLabel(1)
+        @CborLabel(1)
         @SerialName("kty")
         val type: CoseKeyType,
-        @SerialLabel(2)
+        @CborLabel(2)
         @SerialName("kid")
         @ByteString
         val keyId: ByteArray? = null,
-        @SerialLabel(3)
+        @CborLabel(3)
         @SerialName("alg")
         val algorithm: CoseAlgorithm? = null,
-        @SerialLabel(4)
+        @CborLabel(4)
         @SerialName("key_ops")
         val operations: Array<CoseKeyOperation>? = null,
-        @SerialLabel(5)
+        @CborLabel(5)
         @SerialName("Base IV")
         @ByteString
         val baseIv: ByteArray? = null,
-        @SerialLabel(-1)
+        @CborLabel(-1)
         @SerialName("k")
         val k: ByteArray? = null,
     ) : SerialContainer {
@@ -407,7 +407,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
             while (true) {
                 val index = decodeElementIndex(descriptor)
                 if (index == -1) break
-                val label = descriptor.getElementAnnotations(index).filterIsInstance<SerialLabel>().first().label
+                val label = descriptor.getElementAnnotations(index).filterIsInstance<CborLabel>().first().label
                 when (label) {
                     labels["kty"] -> type =
                         decodeSerializableElement(CoseKeyTypeSerializer.descriptor, index, CoseKeyTypeSerializer)

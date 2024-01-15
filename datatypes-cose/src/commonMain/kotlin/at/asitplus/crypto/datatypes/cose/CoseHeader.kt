@@ -6,7 +6,7 @@ import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.*
 import kotlinx.serialization.cbor.ByteString
-import kotlinx.serialization.cbor.SerialLabel
+import kotlinx.serialization.cbor.CborLabel
 
 /**
  * Protected header of a [CoseSigned].
@@ -14,28 +14,28 @@ import kotlinx.serialization.cbor.SerialLabel
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class CoseHeader(
-    @SerialLabel(1)
+    @CborLabel(1)
     @SerialName("alg")
     val algorithm: CoseAlgorithm? = null,
-    @SerialLabel(2)
+    @CborLabel(2)
     @SerialName("crit")
     val criticalHeaders: String? = null,
-    @SerialLabel(3)
+    @CborLabel(3)
     @SerialName("content type")
     val contentType: String? = null,
-    @SerialLabel(4)
+    @CborLabel(4)
     @SerialName("kid")
     @ByteString
     val kid: ByteArray? = null,
-    @SerialLabel(5)
+    @CborLabel(5)
     @SerialName("IV")
     @ByteString
     val iv: ByteArray? = null,
-    @SerialLabel(6)
+    @CborLabel(6)
     @SerialName("Partial IV")
     @ByteString
     val partialIv: ByteArray? = null,
-    @SerialLabel(33)
+    @CborLabel(33)
     @SerialName("x5chain")
     @ByteString
     // TODO this is wrong in the ISO example of IssuerAuth!?
