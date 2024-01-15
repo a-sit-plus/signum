@@ -7,9 +7,6 @@
  
 ## 2.0
 
-### NEXT
-
-
 ### 2.0.0
  * JWS Support
  * Bugfixes and streamlining all over the place
@@ -49,6 +46,10 @@
   * New `CryptoSignature` class for easy Asn1 - RawByteArray conversion
 * Rename function in file `JcaExtensions.kt` from `.toPublicKey` to `.toJcaPublicKey` to reflect connection to JVMname function in file `JcaExtensions.kt` from `.toPublicKey` to `.toJcaPublicKey` to reflect connection to JVM
 * Remove VcLib-specific constants
+
+#### 2.2.1
+* Update conventions
+  * Rename CBOR annotations
 
 ### Future Release
 * Change `CryptoPublicKey.toJsonWebKey()` return type from `KmmResult<JsonWebKey>` to `JsonWebKey`
