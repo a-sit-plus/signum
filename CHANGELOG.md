@@ -50,3 +50,4 @@
 #### 2.2.1
 * Update conventions
   * Rename CBOR annotations
+  * Target Java 17
