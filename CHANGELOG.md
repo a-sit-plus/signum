@@ -29,7 +29,7 @@
   * Throw new type `Asn1Exception` for ASN.1-related errors
   * Throw `IllegalArgumentException` for input-related errors
   * Add `xxxOrNull()` functions for all encoding/decoding/parsing functions
-  * Add `xxxSafe()` functions to encapsulate endocing/decoding in `KmmResult`
+  * Add `xxxSafe()` functions to encapsulate encoding/decoding in `KmmResult`
   * Return `KmmResult` for conversions between different key representations ( i.e. `CryptoPublicKey`, `CoseKey` and `JsonWebKey`) 
 
 ### 2.2.0
