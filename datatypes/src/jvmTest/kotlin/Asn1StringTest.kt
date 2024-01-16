@@ -21,23 +21,17 @@ class Asn1StringTest : FreeSpec ({
     val allAsn1Strings:List<Asn1String> = listOf(utf8, universal, visible, ia5, teletex, bmp, printable, numeric, utf81, universal1, teletex1)
 
     "Asn1Strings equals and hashCode" {
-        val listIterator = allAsn1Strings.iterator()
-        var integer = 0
-        while (listIterator.hasNext()) {
-            val item = listIterator.next()
-            var integerOther = 0
-            allAsn1Strings.forEach { other ->
-                if(integer == integerOther) {
-                    item shouldBe other
-                    item.hashCode() shouldBe other.hashCode()
+        allAsn1Strings.forEachIndexed { index1, asn1String1 ->
+            allAsn1Strings.forEachIndexed { index2, asn1String2 ->
+                if(index1 == index2) {
+                    asn1String1 shouldBe asn1String2
+                    asn1String1.hashCode() shouldBe asn1String2.hashCode()
                 }
                 else {
-                    item shouldNotBe other
-                    item.hashCode() shouldNotBe other.hashCode()
+                    asn1String1 shouldNotBe asn1String2
+                    asn1String1.hashCode() shouldNotBe asn1String2.hashCode()
                 }
-                integerOther++
             }
-            integer++
         }
     }
 })
