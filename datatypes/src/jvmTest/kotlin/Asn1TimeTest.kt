@@ -13,6 +13,7 @@ class Asn1TimeTest : FreeSpec ({
     "Asn1Time test equals and hashCode" {
         checkAll(
             iterations = 150,
+            /* Subtract random number from upper bound, which is used to add seconds to val [later] */
             Arb.instant(Instant.MIN, Instant.MAX.minusSeconds(824046715L))
         ) {
             val now = it
