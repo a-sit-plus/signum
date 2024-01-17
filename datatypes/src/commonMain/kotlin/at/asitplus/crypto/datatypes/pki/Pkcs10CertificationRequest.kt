@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
  * The meat of a PKCS#10 Certification Request:
  * The structure that gets signed
  * @param version defaults to 0
- * @param subjectName list of subject distingished names
+ * @param subjectName list of subject distinguished names
  * @param publicKey nomen est omen
  * @param attributes nomen est omen
  */

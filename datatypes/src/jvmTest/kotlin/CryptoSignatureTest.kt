@@ -1,0 +1,39 @@
+import at.asitplus.crypto.datatypes.CryptoSignature
+import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
+import io.kotest.core.spec.style.FreeSpec
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.kotest.property.Arb
+import io.kotest.property.arbitrary.int
+import io.kotest.property.checkAll
+
+class CryptoSignatureTest : FreeSpec( {
+
+    "Equals & hashCode" {
+        checkAll(iterations = 15, Arb.int(Byte.MIN_VALUE .. Byte.MAX_VALUE),
+            Arb.int(Byte.MIN_VALUE .. Byte.MAX_VALUE)) { first, second ->
+            val ec1 = CryptoSignature.EC(first.encodeToByteArray(), second.encodeToByteArray())
+            val ec2 = CryptoSignature.EC(first.encodeToByteArray(), second.encodeToByteArray())
+            val ec3 = CryptoSignature.EC(second.encodeToByteArray(), first.encodeToByteArray())
+            val rsa1 = CryptoSignature.RSAorHMAC(first.encodeToByteArray())
+            val rsa2 = CryptoSignature.RSAorHMAC(first.encodeToByteArray())
+            val rsa3 = CryptoSignature.RSAorHMAC(second.encodeToByteArray())
+
+            ec1 shouldBe ec1
+            ec1 shouldBe ec2
+            ec1 shouldNotBe ec3
+            ec1 shouldNotBe rsa1
+            rsa1 shouldBe rsa1
+            rsa1 shouldBe rsa2
+            rsa1 shouldNotBe rsa3
+
+            ec1.hashCode() shouldBe ec1.hashCode()
+            ec1.hashCode() shouldBe ec2.hashCode()
+            ec1.hashCode() shouldNotBe ec3.hashCode()
+            ec1.hashCode() shouldNotBe rsa1.hashCode()
+            rsa1.hashCode() shouldBe rsa1.hashCode()
+            rsa1.hashCode() shouldBe rsa2.hashCode()
+            rsa1.hashCode() shouldNotBe rsa3.hashCode()
+        }
+    }
+})

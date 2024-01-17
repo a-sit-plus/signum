@@ -16,6 +16,10 @@ kotlin {
     iosSimulatorArm64()
     iosX64()
     sourceSets {
+        all {
+            languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
+        }
+
         commonMain {
             dependencies {
                 api(kmmresult())

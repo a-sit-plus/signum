@@ -11,7 +11,6 @@ import kotlinx.datetime.Clock
 import org.bouncycastle.asn1.ASN1Integer
 import java.util.*
 
-@OptIn(ExperimentalUnsignedTypes::class)
 class Asn1EncodingTest : FreeSpec({
 
 
