@@ -14,6 +14,9 @@ import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
+import org.bouncycastle.asn1.x9.X9ECPoint
+import org.bouncycastle.jce.interfaces.ECPointEncoder
+import org.bouncycastle.oer.its.ieee1609dot2.basetypes.EccP256CurvePoint
 import java.security.KeyPairGenerator
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPublicKey

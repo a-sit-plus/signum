@@ -281,7 +281,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             )
         }
 
-        private fun decompressY(): ByteArray = TODO()
+        private fun decompressY(): ByteArray = TODO("implement as per https://stackoverflow.com/a/30431547")
 
         @Transient
         override val didEncoded by lazy { MultibaseHelper.encodeToDid(this) }
