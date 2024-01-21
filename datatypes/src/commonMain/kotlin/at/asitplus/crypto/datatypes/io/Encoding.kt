@@ -109,10 +109,35 @@ object MultibaseHelper {
      *  0x1292 P-512
      */
     private fun multiCodecWrapEC(it: ByteArray, curve: EcCurve) =
-        when(curve){
+        when (curve) {
             EcCurve.SECP_256_R_1 -> byteArrayOf(0x12.toByte(), 0x90.toByte()) + it
             EcCurve.SECP_384_R_1 -> byteArrayOf(0x12.toByte(), 0x91.toByte()) + it
             EcCurve.SECP_521_R_1 -> byteArrayOf(0x12.toByte(), 0x92.toByte()) + it
+        }
+
+    /**
+     * Adds a Multicodec identifier ('0x120x') to encoded P-xxx key with point compression
+     *
+     *  0x1200 P-256
+     *  0x1201 P-384
+     *  0x1202 P-512
+     */
+    private fun multiCodecWrapCompressedEC(it: ByteArray, signum: CryptoPublicKey.Ec.SIGNUM, curve: EcCurve) =
+        when (curve) {
+            EcCurve.SECP_256_R_1 -> byteArrayOf(
+                0x12.toByte(),
+                0x00.toByte()
+            ) + (if (signum == CryptoPublicKey.Ec.SIGNUM.POSITIVE) 0x01 else 0x00) + it
+
+            EcCurve.SECP_384_R_1 -> byteArrayOf(
+                0x12.toByte(),
+                0x01.toByte()
+            ) + (if (signum == CryptoPublicKey.Ec.SIGNUM.POSITIVE) 0x01 else 0x00) + it
+
+            EcCurve.SECP_521_R_1 -> byteArrayOf(
+                0x12.toByte(),
+                0x02.toByte()
+            ) + (if (signum == CryptoPublicKey.Ec.SIGNUM.POSITIVE) 0x01 else 0x00) + it
         }
 
     /**
@@ -123,10 +148,17 @@ object MultibaseHelper {
         return when (key) {
             is CryptoPublicKey.Ec -> "$PREFIX_DID_KEY:${
                 multibaseWrapBase64(
-                    multiCodecWrapEC(
-                        key.iosEncoded.drop(1).toByteArray(),
-                        key.curve
-                    )
+                    if (key.ySignum == null)
+                        multiCodecWrapEC(
+                            key.iosEncoded.drop(1).toByteArray(),
+                            key.curve
+                        )
+                    else
+                        multiCodecWrapCompressedEC(
+                            key.x,
+                            key.ySignum,
+                            key.curve
+                        )
                 )
             }"
 

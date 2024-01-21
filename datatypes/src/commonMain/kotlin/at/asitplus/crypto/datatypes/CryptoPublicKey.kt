@@ -257,11 +257,15 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
      */
     @Serializable
     @SerialName("EC")
-    data class Ec(
+    data class Ec private constructor(
         val curve: EcCurve,
         @Serializable(with = ByteArrayBase64Serializer::class) val x: ByteArray,
-        @Serializable(with = ByteArrayBase64Serializer::class) val y: ByteArray,
+        @Serializable(with = ByteArrayBase64Serializer::class) val y: ByteArray?,
+        @Serializable val ySignum: SIGNUM?,
     ) : CryptoPublicKey() {
+
+        constructor(curve: EcCurve, x: ByteArray, y: ByteArray) : this(curve, x, y, ySignum = null)
+        constructor(curve: EcCurve, x: ByteArray, ySignum: SIGNUM) : this(curve, x, y = null, ySignum)
 
         override val oid = Ec.oid
 
@@ -273,9 +277,11 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             byteArrayOf(
                 ANSI_PREFIX,
                 *x.ensureSize(curve.coordinateLengthBytes),
-                *y.ensureSize(curve.coordinateLengthBytes)
+                *y ?: decompressY().ensureSize(curve.coordinateLengthBytes)
             )
         }
+
+        private fun decompressY(): ByteArray = TODO()
 
         @Transient
         override val didEncoded by lazy { MultibaseHelper.encodeToDid(this) }
@@ -310,6 +316,12 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                 Ec(curve = curve, x = x, y = y)
 
             /**
+             * Decodes a key from the provided parameters
+             */
+            fun fromCoordinates(curve: EcCurve, x: ByteArray, signum: SIGNUM): Ec =
+                Ec(curve = curve, x = x, ySignum = signum)
+
+            /**
              * Decodes a key from its ANSI X9.63 representation
              */
             @Throws(Throwable::class)
@@ -325,6 +337,11 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             }
 
             override val oid = KnownOIDs.ecPublicKey
+        }
+
+        enum class SIGNUM {
+            POSITIVE,
+            NEGATIVE
         }
     }
 }

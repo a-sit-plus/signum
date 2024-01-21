@@ -1,10 +1,12 @@
 import at.asitplus.crypto.datatypes.CryptoPublicKey
+import at.asitplus.crypto.datatypes.EcCurve
 import at.asitplus.crypto.datatypes.cose.CoseAlgorithm
 import at.asitplus.crypto.datatypes.cose.CoseKey
 import at.asitplus.crypto.datatypes.cose.io.cborSerializer
 import at.asitplus.crypto.datatypes.cose.toCoseKey
 import at.asitplus.crypto.datatypes.fromJcaPublicKey
 import at.asitplus.crypto.datatypes.io.Base64Strict
+import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
@@ -27,7 +29,8 @@ class CoseKeySerializationTest : FreeSpec({
                             KeyPairGenerator.getInstance("EC").apply {
                                 initialize(256)
                             }.genKeyPair().public
-                        ).getOrThrow().toCoseKey().getOrThrow(), CryptoPublicKey.fromJcaPublicKey(KeyPairGenerator.getInstance("EC").apply {
+                        ).getOrThrow().toCoseKey().getOrThrow(),
+                        CryptoPublicKey.fromJcaPublicKey(KeyPairGenerator.getInstance("EC").apply {
                             initialize(256)
                         }.genKeyPair().public).getOrThrow().toCoseKey().getOrThrow()
                     )
@@ -55,13 +58,31 @@ class CoseKeySerializationTest : FreeSpec({
                     keys
                 ) { pubKey ->
 
-                    val coseKey: CoseKey = CryptoPublicKey.fromJcaPublicKey(pubKey).getOrThrow().toCoseKey().getOrThrow()
-                    val cose =
-                        cborSerializer.encodeToByteArray(coseKey)
-                    println(cose.encodeToString(Base16))
-                    val decoded = cborSerializer.decodeFromByteArray<CoseKey>(cose)
-                    decoded shouldBe coseKey
-                    println(decoded)
+                    withClue("Uncompressed")
+                    {
+                        val coseKey: CoseKey =
+                            CryptoPublicKey.fromJcaPublicKey(pubKey).getOrThrow().toCoseKey().getOrThrow()
+                        val cose = coseKey.serialize()
+                        println(cose.encodeToString(Base16))
+                        val decoded = CoseKey.deserialize(cose).getOrThrow()
+                        decoded shouldBe coseKey
+                        println(decoded)
+                    }
+
+                    withClue("Compressed")
+                    {
+                        val coseKey: CoseKey =
+                            CryptoPublicKey.Ec.fromCoordinates(
+                                EcCurve.of(bits.toUInt())!!,
+                                pubKey.w.affineX.toByteArray(),
+                                if (pubKey.w.affineY.signum() < 0) CryptoPublicKey.Ec.SIGNUM.NEGATIVE else CryptoPublicKey.Ec.SIGNUM.POSITIVE
+                            ).toCoseKey().getOrThrow()
+                        val cose = coseKey.serialize()
+                        println(cose.encodeToString(Base16))
+                        val decoded = CoseKey.deserialize(cose).getOrThrow()
+                        decoded shouldBe coseKey
+                        println(decoded)
+                    }
                 }
             }
         }
@@ -82,11 +103,13 @@ class CoseKeySerializationTest : FreeSpec({
                     },
                     keys
                 ) { pubKey ->
-                    val coseKey: CoseKey = CryptoPublicKey.fromJcaPublicKey(pubKey).getOrThrow().toCoseKey(CoseAlgorithm.RS256).getOrThrow()
-                    val cose = cborSerializer.encodeToByteArray(coseKey)
+                    val coseKey: CoseKey =
+                        CryptoPublicKey.fromJcaPublicKey(pubKey).getOrThrow().toCoseKey(CoseAlgorithm.RS256)
+                            .getOrThrow()
+                    val cose =coseKey.serialize()
 
                     println(cose.encodeToString(Base16))
-                    val decoded = cborSerializer.decodeFromByteArray<CoseKey>(cose)
+                    val decoded = CoseKey.deserialize(cose).getOrThrow()
                     decoded shouldBe coseKey
                     println(decoded)
                 }
