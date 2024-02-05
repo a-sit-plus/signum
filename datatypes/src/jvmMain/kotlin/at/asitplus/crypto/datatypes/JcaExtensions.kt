@@ -101,7 +101,7 @@ fun CryptoPublicKey.Ec.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmRe
                 ).algorithm.parameters as ASN1ObjectIdentifier
             )
         ) ?: throw SerializationException("Unknown Jca name")
-        fromCoordinates(
+        CryptoPublicKey.Ec(
             curve,
             publicKey.w.affineX.toByteArray().ensureSize(curve.coordinateLengthBytes),
             publicKey.w.affineY.toByteArray().ensureSize(curve.coordinateLengthBytes)

@@ -27,6 +27,7 @@ kotlin {
                 api(datetime())
                 implementation("io.matthewnelson.kotlin-components:encoding-base16:${encoding}")
                 implementation("io.matthewnelson.kotlin-components:encoding-base64:${encoding}")
+                implementation("com.ionspin.kotlin:bignum:0.3.9")
             }
         }
 

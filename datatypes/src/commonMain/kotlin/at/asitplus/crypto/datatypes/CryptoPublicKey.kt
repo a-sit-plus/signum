@@ -3,9 +3,14 @@ package at.asitplus.crypto.datatypes
 import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.io.MultibaseHelper
+import at.asitplus.crypto.datatypes.io.toBitString
+import com.ionspin.kotlin.bignum.integer.BigInteger
+import com.ionspin.kotlin.bignum.integer.Sign
+import com.ionspin.kotlin.bignum.integer.toBigInteger
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import kotlin.experimental.and
 
 /**
  * Representation of a public key structure
@@ -69,7 +74,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
             return when (bytes[1]) {
                 0x90.toByte(), 0x91.toByte(), 0x92.toByte() ->
-                    Ec.fromAnsiX963Bytes(byteArrayOf(Ec.ANSI_PREFIX, *bytes.drop(2).toByteArray()))
+                    Ec.fromAnsiX963Bytes(byteArrayOf(Ec.ANSI_UNCOMPRESSED_PREFIX, *bytes.drop(2).toByteArray()))
 
                 0x05.toByte() ->
                     Rsa.fromPKCS1encoded(bytes.drop(2).toByteArray())
@@ -93,12 +98,12 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                         ?: throw Asn1Exception("Curve not supported: $curveOid")
 
                     val bitString = (src.nextChild() as Asn1Primitive).readBitString()
-                    if (bitString.rawBytes.first() != Ec.ANSI_PREFIX) throw Asn1Exception("EC key not prefixed with 0x04")
+                    if (bitString.rawBytes.first() != Ec.ANSI_UNCOMPRESSED_PREFIX) throw Asn1Exception("EC key not prefixed with 0x04")
                     val xAndY = bitString.rawBytes.drop(1)
                     val coordLen = curve.coordinateLengthBytes.toInt()
                     val x = xAndY.take(coordLen).toByteArray()
                     val y = xAndY.drop(coordLen).take(coordLen).toByteArray()
-                    return Ec.fromCoordinates(curve, x, y)
+                    return Ec(curve, x, y)
                 }
 
                 Rsa.oid -> {
@@ -122,7 +127,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         @Throws(Throwable::class)
         fun fromIosEncoded(it: ByteArray): CryptoPublicKey =
             when (it[0].toUByte()) {
-                Ec.ANSI_PREFIX.toUByte() -> Ec.fromAnsiX963Bytes(it)
+                Ec.ANSI_UNCOMPRESSED_PREFIX.toUByte() -> Ec.fromAnsiX963Bytes(it)
                 DERTags.DER_SEQUENCE -> Rsa.fromPKCS1encoded(it)
                 else -> throw IllegalArgumentException("Unsupported Key type")
             }
@@ -254,20 +259,26 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
     /**
      * EC public key representation
      * The properties and constructor params are exactly what their names suggest
+     * Point compression is marked by the first bit in the x coordinate: 0x02-0x03 signals compression is used, 0x04 signals it is not used
      */
     @Serializable
     @SerialName("EC")
-    data class Ec private constructor(
+    data class Ec(
         val curve: EcCurve,
         @Serializable(with = ByteArrayBase64Serializer::class) val x: ByteArray,
-        @Serializable(with = ByteArrayBase64Serializer::class) val y: ByteArray?,
-        @Serializable val ySignum: SIGNUM?,
+        @Serializable(with = ByteArrayBase64Serializer::class) val y: ByteArray,
     ) : CryptoPublicKey() {
 
-        constructor(curve: EcCurve, x: ByteArray, y: ByteArray) : this(curve, x, y, ySignum = null)
-        constructor(curve: EcCurve, x: ByteArray, ySignum: SIGNUM) : this(curve, x, y = null, ySignum)
-
         override val oid = Ec.oid
+
+        /**
+         * According to https://www.secg.org/sec1-v2.pdf, https://www.secg.org/sec2-v2.pdf
+         * all currently supported curves (i.e. secp___r1) are of form F_p with p odd prime and as such
+         * 2 + (y mod 2) = 3 for all curves
+         */
+        private fun compressY(): Byte = (2 + (y[0] and 1.toByte())).toByte()
+
+        val compressedEncoded = byteArrayOf(compressY(), *x.ensureSize(curve.coordinateLengthBytes))
 
         /**
          * ANSI X9.63 Encoding as used by iOS
@@ -275,13 +286,11 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         @Transient
         override val iosEncoded by lazy {
             byteArrayOf(
-                ANSI_PREFIX,
+                ANSI_UNCOMPRESSED_PREFIX,
                 *x.ensureSize(curve.coordinateLengthBytes),
-                *y ?: decompressY().ensureSize(curve.coordinateLengthBytes)
+                *y.ensureSize(curve.coordinateLengthBytes)
             )
         }
-
-        private fun decompressY(): ByteArray = TODO("implement as per https://stackoverflow.com/a/30431547")
 
         @Transient
         override val didEncoded by lazy { MultibaseHelper.encodeToDid(this) }
@@ -306,33 +315,56 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
 
         companion object : Identifiable {
+            private fun decompressY(curve: EcCurve, root: Byte, x: ByteArray): ByteArray {
+                //TODO("implement as per https://stackoverflow.com/a/30431547")
+                val xBig = BigInteger.fromByteArray(x, Sign.POSITIVE)
+                require(quadraticResidueTest(curve.modulus, xBig))
 
-            const val ANSI_PREFIX = 0x04.toByte()
+                val alpha = (xBig.pow(3) + curve.a * xBig + curve.b).toModularBigInteger(curve.modulus)
+                val beta = alpha.residue.sqrt()
+                return if (root.mod(2) == beta.toByteArray()[0].toInt())
+                    beta.toByteArray()
+                else if (root.mod(2) == beta.toByteArray()[0].toInt())
+                    (curve.modulus - beta).toByteArray()
+                else throw Exception("Invalid root ${beta.toByteArray()[0].toInt()}")
+            }
 
-            /**
-             * Decodes a key from the provided parameters
-             */
-            fun fromCoordinates(curve: EcCurve, x: ByteArray, y: ByteArray): Ec =
-                Ec(curve = curve, x = x, y = y)
-
-            /**
-             * Decodes a key from the provided parameters
-             */
-            fun fromCoordinates(curve: EcCurve, x: ByteArray, signum: SIGNUM): Ec =
-                Ec(curve = curve, x = x, ySignum = signum)
+            const val ANSI_COMPRESSED_PREFIX_1 = 0x02.toByte()
+            const val ANSI_COMPRESSED_PREFIX_2 = 0x03.toByte()
+            const val ANSI_UNCOMPRESSED_PREFIX = 0x04.toByte()
 
             /**
              * Decodes a key from its ANSI X9.63 representation
              */
             @Throws(Throwable::class)
             fun fromAnsiX963Bytes(src: ByteArray): CryptoPublicKey {
-                if (src[0] != ANSI_PREFIX) throw IllegalArgumentException("No EC key")
-                val curve = EcCurve.entries
-                    .find { 2 * it.coordinateLengthBytes.toInt() == src.size - 1 }
-                    ?: throw IllegalArgumentException("Unknown Curve")
-                val numBytes = curve.coordinateLengthBytes.toInt()
-                val x = src.drop(1).take(numBytes).toByteArray()
-                val y = src.drop(1).drop(numBytes).take(numBytes).toByteArray()
+                val curve: EcCurve
+                val numBytes: Int
+                val x: ByteArray
+                val y: ByteArray
+
+                when (src[0]) {
+                    ANSI_UNCOMPRESSED_PREFIX -> {
+                        curve = EcCurve.entries
+                            .find { 2 * it.coordinateLengthBytes.toInt() == src.size - 1 }
+                            ?: throw IllegalArgumentException("Unknown Curve")
+                        numBytes = curve.coordinateLengthBytes.toInt()
+                        x = src.drop(1).take(numBytes).toByteArray()
+                        y = src.drop(1).drop(numBytes).take(numBytes).toByteArray()
+                    }
+
+                    ANSI_COMPRESSED_PREFIX_1, ANSI_COMPRESSED_PREFIX_2 -> {
+                        curve = EcCurve.entries
+                            .find { it.coordinateLengthBytes.toInt() == src.size - 1 }
+                            ?: throw IllegalArgumentException("Unknown Curve")
+                        numBytes = curve.coordinateLengthBytes.toInt()
+                        x = src.drop(1).take(numBytes).toByteArray()
+                        y = decompressY(curve, src[0], x)
+                    }
+
+                    else -> throw IllegalArgumentException("Invalid X9.63 EC key format")
+                }
+
                 return Ec(curve = curve, x = x, y = y)
             }
 
@@ -362,3 +394,12 @@ private val RsaParams.size get() = third
 @Throws(IllegalArgumentException::class)
 private fun sanitizeRsaInputs(n: ByteArray, e: Int): RsaParams = n.dropWhile { it == 0.toByte() }.toByteArray()
     .let { Triple(byteArrayOf(0, *it), e, CryptoPublicKey.Rsa.Size.of(it)) }
+
+
+/**
+ * Quadratic residue test verifies that a root exists
+ * p-1 always even since by assumption p always odd (holds for all implemented curves)
+ */
+private fun quadraticResidueTest(p: BigInteger, x: BigInteger): Boolean {
+    return (x.pow((p-1)/2)).mod(p) == BigInteger.ONE
+}

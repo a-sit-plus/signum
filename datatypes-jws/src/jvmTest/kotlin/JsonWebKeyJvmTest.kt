@@ -28,7 +28,7 @@ class JsonWebKeyJvmTest : FreeSpec({
     "JWK can be created from Coordinates" - {
         val xFromBc = (keyPair.public as ECPublicKey).w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
         val yFromBc = (keyPair.public as ECPublicKey).w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
-        val pubKey = CryptoPublicKey.Ec.fromCoordinates(ecCurve, xFromBc, yFromBc)
+        val pubKey = CryptoPublicKey.Ec(ecCurve, xFromBc, yFromBc)
         val jsonWebKey = pubKey.toJsonWebKey()
 
         jsonWebKey.shouldNotBeNull()

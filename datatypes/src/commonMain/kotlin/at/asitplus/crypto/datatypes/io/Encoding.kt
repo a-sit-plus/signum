@@ -145,17 +145,10 @@ object MultibaseHelper {
         return when (key) {
             is CryptoPublicKey.Ec -> "$PREFIX_DID_KEY:${
                 multibaseWrapBase64(
-                    if (key.ySignum == null)
-                        multiCodecWrapEC(
-                            key.iosEncoded.drop(1).toByteArray(),
-                            key.curve
-                        )
-                    else
-                        multiCodecWrapCompressedEC(
-                            key.x,
-                            key.ySignum,
-                            key.curve
-                        )
+                    multiCodecWrapEC(
+                        key.iosEncoded.drop(1).toByteArray(),
+                        key.curve
+                    )
                 )
             }"
 

@@ -10,13 +10,18 @@ import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
 import at.asitplus.crypto.datatypes.cose.io.cborSerializer
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.serialization.*
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ArraySerializer
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.CborLabel
 import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
@@ -32,7 +37,7 @@ data class CoseKey(
     val algorithm: CoseAlgorithm? = null,
     val operations: Array<CoseKeyOperation>? = null,
     val baseIv: ByteArray? = null,
-    val keyParams: CoseKeyParams?
+    val keyParams: CoseKeyParams?,
 ) {
     override fun toString(): String {
         return "CoseKey(type=$type," +
@@ -112,7 +117,7 @@ data class CoseKey(
             runCatching { CryptoPublicKey.fromIosEncoded(bytes).toCoseKey().getOrThrow() }.wrap()
 
         fun fromCoordinates(curve: CoseEllipticCurve, x: ByteArray, y: ByteArray): KmmResult<CoseKey> =
-            runCatching { CryptoPublicKey.Ec.fromCoordinates(curve.toJwkCurve(), x, y).toCoseKey().getOrThrow() }.wrap()
+            runCatching { CryptoPublicKey.Ec(curve.toJwkCurve(), x, y).toCoseKey().getOrThrow() }.wrap()
 
         @Deprecated("Use [fromIosEncoded] instead!")
         fun fromAnsiX963Bytes(type: CoseKeyType, curve: CoseEllipticCurve, it: ByteArray) =
@@ -128,8 +133,8 @@ data class CoseKey(
             type: CoseKeyType,
             curve: CoseEllipticCurve,
             x: ByteArray,
-            y: ByteArray
-        ): CoseKey? = CryptoPublicKey.Ec.fromCoordinates(curve.toJwkCurve(), x, y).toCoseKey().getOrNull()
+            y: ByteArray,
+        ): CoseKey? = CryptoPublicKey.Ec(curve.toJwkCurve(), x, y).toCoseKey().getOrNull()
 
     }
 }
@@ -148,28 +153,16 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseK
                 })
             ) failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
             else success(
-                if (ySignum == null)
-                    CoseKey(
-                        keyParams = CoseKeyParams.EcYByteArrayParams(
-                            curve = curve.toCoseCurve(),
-                            x = x,
-                            y = y
-                        ),
-                        type = CoseKeyType.EC2,
-                        keyId = didEncoded.encodeToByteArray(),
-                        algorithm = algorithm
-                    )
-                else
-                    CoseKey(
-                        keyParams = CoseKeyParams.EcYBoolParams(
-                            curve = curve.toCoseCurve(),
-                            x = x,
-                            y = ySignum == CryptoPublicKey.Ec.SIGNUM.POSITIVE
-                        ),
-                        type = CoseKeyType.EC2,
-                        keyId = didEncoded.encodeToByteArray(),
-                        algorithm = algorithm
-                    )
+                CoseKey(
+                    keyParams = CoseKeyParams.EcYByteArrayParams(
+                        curve = curve.toCoseCurve(),
+                        x = x,
+                        y = y
+                    ),
+                    type = CoseKeyType.EC2,
+                    keyId = didEncoded.encodeToByteArray(),
+                    algorithm = algorithm
+                )
             )
 
         is CryptoPublicKey.Rsa ->
@@ -246,7 +239,7 @@ object CoseKeyUncompressedSerializer : KSerializer<CoseKey> {
         @CborLabel(-1)
         @SerialName("k")
         @ByteString
-        val k: ByteArray? = null
+        val k: ByteArray? = null,
     ) {
         constructor(src: CoseKey) : this(
             src.type,
@@ -325,7 +318,7 @@ object CoseKeyUncompressedSerializer : KSerializer<CoseKey> {
         @CborLabel(-1)
         @SerialName("k")
         @ByteString
-        val k: ByteArray? = null
+        val k: ByteArray? = null,
     ) {
         constructor(src: CoseKey) : this(
             src.type,
@@ -398,7 +391,7 @@ object CoseKeyUncompressedSerializer : KSerializer<CoseKey> {
         @CborLabel(-4)
         @SerialName("d")
         @ByteString
-        val d: ByteArray? = null
+        val d: ByteArray? = null,
     ) : SerialContainer {
         init {
             if (type != CoseKeyType.EC2) throw IllegalArgumentException("Not an EC key!")
@@ -442,7 +435,7 @@ object CoseKeyUncompressedSerializer : KSerializer<CoseKey> {
         @CborLabel(-4)
         @SerialName("d")
         @ByteString
-        val d: ByteArray? = null
+        val d: ByteArray? = null,
     ) : SerialContainer {
         init {
             if (type != CoseKeyType.EC2) throw IllegalArgumentException("Not an EC key!")
@@ -483,7 +476,7 @@ object CoseKeyUncompressedSerializer : KSerializer<CoseKey> {
         @CborLabel(-4)
         @SerialName("d")
         @ByteString
-        val d: ByteArray? = null
+        val d: ByteArray? = null,
     ) : SerialContainer {
         init {
             if (type != CoseKeyType.RSA) throw IllegalArgumentException("Not an RSA key!")
@@ -705,7 +698,7 @@ object CoseKeyCompressedSerializer : KSerializer<CoseKey> {
         @CborLabel(-1)
         @SerialName("k")
         @ByteString
-        val k: ByteArray? = null
+        val k: ByteArray? = null,
     ) {
         constructor(src: CoseKey) : this(
             src.type,
@@ -778,7 +771,7 @@ object CoseKeyCompressedSerializer : KSerializer<CoseKey> {
         @CborLabel(-4)
         @SerialName("d")
         @ByteString
-        val d: ByteArray? = null
+        val d: ByteArray? = null,
     ) : SerialContainer {
         init {
             if (type != CoseKeyType.EC2) throw IllegalArgumentException("Not an EC key!")

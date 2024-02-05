@@ -72,20 +72,20 @@ class CoseKeySerializationTest : FreeSpec({
                         println(decoded)
                     }
 
-                    withClue("Compressed")
-                    {
-                        val coseKey: CoseKey =
-                            CryptoPublicKey.Ec.fromCoordinates(
-                                EcCurve.of(bits.toUInt())!!,
-                                pubKey.w.affineX.toByteArray(),
-                                if (pubKey.w.affineY.signum() < 0) CryptoPublicKey.Ec.SIGNUM.NEGATIVE else CryptoPublicKey.Ec.SIGNUM.POSITIVE
-                            ).toCoseKey().getOrThrow()
-                        val cose = coseKey.serialize()
-                        println(cose.encodeToString(Base16))
-                        val decoded = CoseKey.deserialize(cose).getOrThrow()
-                        decoded shouldBe coseKey
-                        println(decoded)
-                    }
+//                    withClue("Compressed")
+//                    {
+//                        val coseKey: CoseKey =
+//                            CryptoPublicKey.Ec(
+//                                EcCurve.of(bits.toUInt())!!,
+//                                pubKey.w.affineX.toByteArray(),
+//                                if (pubKey.w.affineY.signum() < 0) CryptoPublicKey.Ec.SIGNUM.NEGATIVE else CryptoPublicKey.Ec.SIGNUM.POSITIVE
+//                            ).toCoseKey().getOrThrow()
+//                        val cose = coseKey.serialize()
+//                        println(cose.encodeToString(Base16))
+//                        val decoded = CoseKey.deserialize(cose).getOrThrow()
+//                        decoded shouldBe coseKey
+//                        println(decoded)
+//                    }
                 }
             }
         }

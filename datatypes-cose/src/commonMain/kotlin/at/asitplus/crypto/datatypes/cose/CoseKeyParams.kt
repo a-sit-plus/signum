@@ -90,7 +90,7 @@ sealed class CoseKeyParams {
 
         override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> {
             return runCatching {
-                CryptoPublicKey.Ec.fromCoordinates(
+                CryptoPublicKey.Ec(
                     curve = curve?.toJwkCurve() ?: throw IllegalArgumentException("Missing or invalid curve"),
                     x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
                     y = y ?: throw IllegalArgumentException("Missing y-coordinate")
