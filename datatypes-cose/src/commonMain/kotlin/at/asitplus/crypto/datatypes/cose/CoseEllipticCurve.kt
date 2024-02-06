@@ -16,7 +16,7 @@ enum class CoseEllipticCurve(val value: Int) {
     P384(2),
     P521(3);
 
-    fun toJwkCurve() = when (this) {
+    fun toEcCurve() = when (this) {
         P256 -> EcCurve.SECP_256_R_1
         P384 -> EcCurve.SECP_384_R_1
         P521 -> EcCurve.SECP_521_R_1

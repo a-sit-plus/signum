@@ -66,7 +66,7 @@ sealed class CoseKeyParams {
         override val curve: CoseEllipticCurve? = null,
         override val x: ByteArray? = null,
         override val y: ByteArray? = null,
-        override val d: ByteArray? = null
+        override val d: ByteArray? = null,
     ) : EcKeyParams<ByteArray>() {
 
 
@@ -91,7 +91,7 @@ sealed class CoseKeyParams {
         override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> {
             return runCatching {
                 CryptoPublicKey.Ec(
-                    curve = curve?.toJwkCurve() ?: throw IllegalArgumentException("Missing or invalid curve"),
+                    curve = curve?.toEcCurve() ?: throw IllegalArgumentException("Missing or invalid curve"),
                     x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
                     y = y ?: throw IllegalArgumentException("Missing y-coordinate")
                 )
@@ -99,13 +99,11 @@ sealed class CoseKeyParams {
         }
     }
 
-
-    //TODO Implements elliptic curve public key parameters in case of y being a bool value
     data class EcYBoolParams(
         override val curve: CoseEllipticCurve? = null,
         override val x: ByteArray? = null,
         override val y: Boolean? = null,
-        override val d: ByteArray? = null
+        override val d: ByteArray? = null,
     ) : EcKeyParams<Boolean>() {
 
         //do not remove or IT WILL break
@@ -122,8 +120,11 @@ sealed class CoseKeyParams {
 
         override fun yHashCode(): Int = y?.hashCode() ?: 0
 
-        override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = TODO()
-        //        TODO conversion to cryptoPublicKey (needs de-/compression of Y coordinate)
+        override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = runCatching {
+            val yFlag = (2 + (y?.toInt() ?: throw Exception("Cannot determine key - Missing Indicator y"))).toByte()
+            x?.let { CryptoPublicKey.Ec.fromAnsiX963Bytes(byteArrayOf(yFlag, *x)) }
+                ?: throw Exception("Cannot determine key - Missing x coordinate")
+        }.wrap()
     }
 
     /**
@@ -132,7 +133,7 @@ sealed class CoseKeyParams {
     data class RsaParams(
         val n: ByteArray? = null,
         val e: ByteArray? = null,
-        val d: ByteArray? = null
+        val d: ByteArray? = null,
     ) : CoseKeyParams() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -175,9 +176,11 @@ sealed class CoseKeyParams {
     }
 
     data class SymmKeyParams(
-        val k: ByteArray
+        val k: ByteArray,
     ) : CoseKeyParams() {
         override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
             failure(IllegalArgumentException("Symmetric keys do not have public component"))
     }
 }
+
+fun Boolean.toInt() = if (this) 1 else 0

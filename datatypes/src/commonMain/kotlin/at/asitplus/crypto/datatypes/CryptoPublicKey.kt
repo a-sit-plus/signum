@@ -335,6 +335,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
 
         companion object : Identifiable {
+            @Throws(Throwable::class)
             private fun decompressY(curve: EcCurve, root: Byte, x: ByteArray): ByteArray {
                 val mod2Creator = ModularBigInteger.creatorForModulo(2)
                 val mod4Creator = ModularBigInteger.creatorForModulo(4)
@@ -348,7 +349,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                  */
                 require(quadraticResidueTest(alpha))
                 val beta = if (mod4Creator.fromBigInteger(curve.modulus) == mod4Creator.fromInt(3))
-                    alpha.pow((curve.modulus + 1) / 4) else throw Exception("Need to Implement Tonelli-Shanks Algorithm")
+                    alpha.pow((curve.modulus + 1) / 4) else throw IllegalArgumentException("Requires Tonelli-Shanks Algorithm")
 
                 return if (mod2Creator.fromByte(root) == mod2Creator.fromBigInteger(beta.residue)) {
                     beta.toByteArray()
@@ -397,11 +398,6 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             }
 
             override val oid = KnownOIDs.ecPublicKey
-        }
-
-        enum class SIGNUM {
-            POSITIVE,
-            NEGATIVE
         }
     }
 }

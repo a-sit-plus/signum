@@ -113,29 +113,14 @@ data class CoseKey(
         fun fromKeyId(keyId: String): KmmResult<CoseKey> =
             runCatching { CryptoPublicKey.fromDid(keyId).toCoseKey().getOrThrow() }.wrap()
 
+        /**
+         * iOS encoded is currently only supporting uncompressed keys. Might change in the future
+         */
         fun fromIosEncoded(bytes: ByteArray): KmmResult<CoseKey> =
             runCatching { CryptoPublicKey.fromIosEncoded(bytes).toCoseKey().getOrThrow() }.wrap()
 
         fun fromCoordinates(curve: CoseEllipticCurve, x: ByteArray, y: ByteArray): KmmResult<CoseKey> =
-            runCatching { CryptoPublicKey.Ec(curve.toJwkCurve(), x, y).toCoseKey().getOrThrow() }.wrap()
-
-        @Deprecated("Use [fromIosEncoded] instead!")
-        fun fromAnsiX963Bytes(type: CoseKeyType, curve: CoseEllipticCurve, it: ByteArray) =
-            if (type == CoseKeyType.EC2 && curve == CoseEllipticCurve.P256) {
-                val pubKey = CryptoPublicKey.Ec.fromAnsiX963Bytes(it)
-                pubKey.toCoseKey()
-            } else KmmResult.failure(UnsupportedOperationException("Key type $type not supported"))
-
-
-        @Throws(Throwable::class)
-        @Deprecated("Use [fromIosEncoded] instead")
-        fun fromCoordinates(
-            type: CoseKeyType,
-            curve: CoseEllipticCurve,
-            x: ByteArray,
-            y: ByteArray,
-        ): CoseKey? = CryptoPublicKey.Ec(curve.toJwkCurve(), x, y).toCoseKey().getOrNull()
-
+            runCatching { CryptoPublicKey.Ec(curve.toEcCurve(), x, y).toCoseKey().getOrThrow() }.wrap()
     }
 }
 

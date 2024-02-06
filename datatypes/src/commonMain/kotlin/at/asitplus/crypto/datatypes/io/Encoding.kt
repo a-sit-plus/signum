@@ -122,19 +122,11 @@ object MultibaseHelper {
      *  0x1201 P-384
      *  0x1202 P-512
      */
-    private fun multiCodecWrapCompressedEC(it: ByteArray, signum: CryptoPublicKey.Ec.SIGNUM, curve: EcCurve) =
+    private fun multiCodecWrapCompressedEC(it: ByteArray, curve: EcCurve) =
         when (curve) {
-            EcCurve.SECP_256_R_1 -> byteArrayOf(
-                0x12.toByte(), 0x00, (if (signum == CryptoPublicKey.Ec.SIGNUM.POSITIVE) 0x02 else 0x03)
-            ) + it
-
-            EcCurve.SECP_384_R_1 -> byteArrayOf(
-                0x12.toByte(), 0x01, (if (signum == CryptoPublicKey.Ec.SIGNUM.POSITIVE) 0x02 else 0x03)
-            ) + it
-
-            EcCurve.SECP_521_R_1 -> byteArrayOf(
-                0x12.toByte(), 0x02, (if (signum == CryptoPublicKey.Ec.SIGNUM.POSITIVE) 0x02 else 0x03)
-            ) + it
+            EcCurve.SECP_256_R_1 -> byteArrayOf(0x12.toByte(), 0x00.toByte()) + it
+            EcCurve.SECP_384_R_1 -> byteArrayOf(0x12.toByte(), 0x01.toByte()) + it
+            EcCurve.SECP_521_R_1 -> byteArrayOf(0x12.toByte(), 0x02.toByte()) + it
         }
 
     /**

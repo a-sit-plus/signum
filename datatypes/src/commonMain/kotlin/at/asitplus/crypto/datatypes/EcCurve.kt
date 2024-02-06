@@ -43,7 +43,6 @@ enum class EcCurve(
                     .toBigInteger(16)
 
             SECP_384_R_1 ->
-
                 "FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE FFFFFFFF 00000000 00000000 FFFFFFFF"
                     .replace(" ", "")
                     .toBigInteger(16)
