@@ -1,12 +1,31 @@
 package at.asitplus.crypto.datatypes
 
-import at.asitplus.crypto.datatypes.asn1.*
+import at.asitplus.crypto.datatypes.asn1.Asn1Decodable
+import at.asitplus.crypto.datatypes.asn1.Asn1Element
+import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
+import at.asitplus.crypto.datatypes.asn1.Asn1Exception
+import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
+import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
+import at.asitplus.crypto.datatypes.asn1.Asn1StructuralException
+import at.asitplus.crypto.datatypes.asn1.BERTags
+import at.asitplus.crypto.datatypes.asn1.DERTags
+import at.asitplus.crypto.datatypes.asn1.Identifiable
+import at.asitplus.crypto.datatypes.asn1.KnownOIDs
+import at.asitplus.crypto.datatypes.asn1.asn1Sequence
+import at.asitplus.crypto.datatypes.asn1.decode
+import at.asitplus.crypto.datatypes.asn1.ensureSize
+import at.asitplus.crypto.datatypes.asn1.parse
+import at.asitplus.crypto.datatypes.asn1.readBitString
+import at.asitplus.crypto.datatypes.asn1.readInt
+import at.asitplus.crypto.datatypes.asn1.readNull
+import at.asitplus.crypto.datatypes.asn1.readOid
+import at.asitplus.crypto.datatypes.asn1.runRethrowing
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.io.MultibaseHelper
 import at.asitplus.crypto.datatypes.io.toBitString
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
-import com.ionspin.kotlin.bignum.integer.toBigInteger
+import com.ionspin.kotlin.bignum.modular.ModularBigInteger
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -273,10 +292,11 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
         /**
          * According to https://www.secg.org/sec1-v2.pdf, https://www.secg.org/sec2-v2.pdf
-         * all currently supported curves (i.e. secp___r1) are of form F_p with p odd prime and as such
-         * 2 + (y mod 2) = 3 for all curves
+         * all currently supported curves (i.e. secp___r1) are of form F_p with p odd prime and so
+         * the compression bit is defined as 2 + (y mod 2) for all curves
+         * We assume y is big-endian!
          */
-        private fun compressY(): Byte = (2 + (y[0] and 1.toByte())).toByte()
+        private fun compressY(): Byte = (2 + (y.last() and 1.toByte())).toByte()
 
         val compressedEncoded = byteArrayOf(compressY(), *x.ensureSize(curve.coordinateLengthBytes))
 
@@ -316,17 +336,25 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
         companion object : Identifiable {
             private fun decompressY(curve: EcCurve, root: Byte, x: ByteArray): ByteArray {
-                //TODO("implement as per https://stackoverflow.com/a/30431547")
-                val xBig = BigInteger.fromByteArray(x, Sign.POSITIVE)
-                require(quadraticResidueTest(curve.modulus, xBig))
+                val mod2Creator = ModularBigInteger.creatorForModulo(2)
+                val mod4Creator = ModularBigInteger.creatorForModulo(4)
+                val xBigMod = curve.modCreator.fromBigInteger(BigInteger.fromByteArray(x, Sign.POSITIVE))
+                val alpha = xBigMod.pow(3) + curve.a * xBigMod + curve.b
 
-                val alpha = (xBig.pow(3) + curve.a * xBig + curve.b).toModularBigInteger(curve.modulus)
-                val beta = alpha.residue.sqrt()
-                return if (root.mod(2) == beta.toByteArray()[0].toInt())
+                /**
+                 * For the currently supported curves it holds that p = 3 (mod 4).
+                 * This property allows the closed formula solution
+                 * x^2 = b (mod p) <=> x = b^((p+1)/4) && b is quadratic residue
+                 */
+                require(quadraticResidueTest(alpha))
+                val beta = if (mod4Creator.fromBigInteger(curve.modulus) == mod4Creator.fromInt(3))
+                    alpha.pow((curve.modulus + 1) / 4) else throw Exception("Need to Implement Tonelli-Shanks Algorithm")
+
+                return if (mod2Creator.fromByte(root) == mod2Creator.fromBigInteger(beta.residue)) {
                     beta.toByteArray()
-                else if (root.mod(2) == beta.toByteArray()[0].toInt())
-                    (curve.modulus - beta).toByteArray()
-                else throw Exception("Invalid root ${beta.toByteArray()[0].toInt()}")
+                } else {
+                    (curve.modCreator.ZERO - beta).toByteArray()
+                }
             }
 
             const val ANSI_COMPRESSED_PREFIX_1 = 0x02.toByte()
@@ -400,6 +428,6 @@ private fun sanitizeRsaInputs(n: ByteArray, e: Int): RsaParams = n.dropWhile { i
  * Quadratic residue test verifies that a root exists
  * p-1 always even since by assumption p always odd (holds for all implemented curves)
  */
-private fun quadraticResidueTest(p: BigInteger, x: BigInteger): Boolean {
-    return (x.pow((p-1)/2)).mod(p) == BigInteger.ONE
+private fun quadraticResidueTest(x: ModularBigInteger): Boolean {
+    return x.pow((x.modulus - 1) / 2) == x.getCreator().ONE
 }
