@@ -342,9 +342,9 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                 val alpha = xBigMod.pow(3) + curve.a * xBigMod + curve.b
 
                 /**
-                 * For the currently supported curves it holds that p = 3 (mod 4).
+                 * For the currently supported curves it holds that p = 3 (mod 4), where p denotes the modulus.
                  * This property allows the closed formula solution
-                 * x^2 = b (mod p) <=> x = b^((p+1)/4) && b is quadratic residue
+                 * x^2 = a (mod p) <=> x = b^((p+1)/4) && a is quadratic residue
                  */
                 require(quadraticResidueTest(alpha))
                 val beta = if (mod4Creator.fromBigInteger(curve.modulus) == mod4Creator.fromInt(3))
