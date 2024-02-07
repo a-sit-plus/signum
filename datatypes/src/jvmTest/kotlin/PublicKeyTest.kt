@@ -21,9 +21,7 @@ import java.security.KeyPairGenerator
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPublicKey
 import com.ionspin.kotlin.bignum.integer.toBigInteger
-import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
 import org.bouncycastle.jce.provider.BouncyCastleProvider
-import org.bouncycastle.jce.provider.JCEECPublicKey
 import java.security.Security
 
 class PublicKeyTest : FreeSpec({
@@ -74,7 +72,7 @@ class PublicKeyTest : FreeSpec({
                 //test shouldBe (pubKey as BCECPublicKey).apply { setPointFormat("COMPRESSED") }.encoded
 
                 println(Json.encodeToString(own))
-                println(own.iosEncoded.encodeToString(Base16()))
+                println(own.iosEncoded().encodeToString(Base16()))
                 println(own.encodeToDer().encodeToString(Base16()))
                 println(own.didEncoded)
                 own.encodeToDer() shouldBe pubKey.encoded
@@ -123,11 +121,11 @@ class PublicKeyTest : FreeSpec({
                 own1.e shouldBe own.e
 
                 println(Json.encodeToString(own))
-                println(own.iosEncoded.encodeToString(Base16()))
+                println(own.pkcsEncoded.encodeToString(Base16()))
                 println(own.didEncoded)
                 val keyBytes = ((ASN1InputStream(pubKey.encoded).readObject()
                     .toASN1Primitive() as ASN1Sequence).elementAt(1) as DERBitString).bytes
-                own.iosEncoded shouldBe keyBytes //PKCS#1
+                own.pkcsEncoded shouldBe keyBytes //PKCS#1
                 own.encodeToDer() shouldBe pubKey.encoded //PKCS#8
                 CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.encodeToDer()) as Asn1Sequence) shouldBe own
                 own.getJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded

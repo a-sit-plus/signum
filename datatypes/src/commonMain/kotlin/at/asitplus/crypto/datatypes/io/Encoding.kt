@@ -139,7 +139,7 @@ object MultibaseHelper {
             is CryptoPublicKey.Ec -> "$PREFIX_DID_KEY:${
                 multibaseWrapBase64(
                     multiCodecWrapEC(
-                        key.iosEncoded.drop(1).toByteArray(),
+                        key.iosEncoded().drop(1).toByteArray(),
                         key.curve
                     )
                 )
@@ -147,7 +147,7 @@ object MultibaseHelper {
 
             is CryptoPublicKey.Rsa -> "$PREFIX_DID_KEY:${
                 multibaseWrapBase64(
-                    multicodecWrapRSA(key.iosEncoded)
+                    multicodecWrapRSA(key.iosEncoded())
                 )
             }"
         }

@@ -57,8 +57,11 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
     /**
      * Representation of this key in the same ways as iOS would encode it natively
      */
-    @Transient
-    abstract val iosEncoded: ByteArray
+    fun iosEncoded(useCompression: Boolean? = null): ByteArray =
+        when (this) {
+            is Ec -> ansiEncoded(useCompression)
+            is Rsa -> pkcsEncoded
+        }
 
     override fun encodeToTlv() = when (this) {
         is Ec -> asn1Sequence {
@@ -66,7 +69,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                 append(oid)
                 append(curve.oid)
             }
-            bitString(iosEncoded)
+            bitString(iosEncoded())
         }
 
         is Rsa -> {
@@ -75,7 +78,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                     append(oid)
                     asn1null()
                 }
-                bitString(iosEncoded)
+                bitString(iosEncoded())
             }
         }
     }
@@ -230,8 +233,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         /**
          * PKCS#1 encoded RSA Public Key
          */
-        @Transient
-        override val iosEncoded by lazy {
+        val pkcsEncoded by lazy {
             asn1Sequence {
                 append(
                     Asn1Primitive(
@@ -250,7 +252,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
             other as Rsa
 
-            return iosEncoded.contentEquals(other.iosEncoded)
+            return pkcsEncoded.contentEquals(other.pkcsEncoded)
         }
 
         override fun hashCode(): Int {
@@ -320,77 +322,87 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         /**
          * ANSI X9.63 Encoding as used by iOS
          */
-        @Transient
-        override val iosEncoded by lazy {
-            byteArrayOf(
-                ANSI_UNCOMPRESSED_PREFIX,
-                *x.ensureSize(curve.coordinateLengthBytes),
-                *y.ensureSize(curve.coordinateLengthBytes)
-            )
-        }
-
-        @Transient
-        override val didEncoded by lazy { MultibaseHelper.encodeToDid(this) }
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other == null || this::class != other::class) return false
-
-            other as Ec
-
-            if (curve != other.curve) return false
-            if (!iosEncoded.contentEquals(other.iosEncoded)) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = curve.hashCode()
-            result = 31 * result + x.contentHashCode()
-            result = 31 * result + y.contentHashCode()
-            return result
-        }
-
-        companion object : Identifiable {
-
-            private fun getCurve(coordSize: Int) = EcCurve.entries
-                .find { it.coordinateLengthBytes.toInt() == coordSize }
-                ?: throw IllegalArgumentException("Unknown Curve")
-
-            /**
-             * Decodes a key from its ANSI X9.63 representation
-             */
-            @Throws(Throwable::class)
-            fun fromAnsiX963Bytes(src: ByteArray): CryptoPublicKey {
-                val curve: EcCurve
-                val numBytes: Int
-                val x: ByteArray
-                val y: ByteArray
-
-                when (src[0]) {
-                    ANSI_UNCOMPRESSED_PREFIX -> {
-                        curve = getCurve((src.size -1)/2)
-                        numBytes = curve.coordinateLengthBytes.toInt()
-                        x = src.drop(1).take(numBytes).toByteArray()
-                        y = src.drop(1).drop(numBytes).take(numBytes).toByteArray()
-                    }
-
-                    ANSI_COMPRESSED_PREFIX_1, ANSI_COMPRESSED_PREFIX_2 -> {
-                        curve = getCurve(src.size -1)
-                        numBytes = curve.coordinateLengthBytes.toInt()
-                        x = src.drop(1).take(numBytes).toByteArray()
-                        y = decompressY(curve, x, (src[0] - 2) == 1)
-                    }
-
-                    else -> throw IllegalArgumentException("Invalid X9.63 EC key format")
+        fun ansiEncoded(useCompression: Boolean? = null): ByteArray =
+            when (useCompression) {
+                null -> ansiEncoded(this.compressedOnReceive)
+                true -> {
+                    val prefix = (2 + compressY().toInt()).toByte()
+                        .also { require(it == ANSI_COMPRESSED_PREFIX_1 || it == ANSI_COMPRESSED_PREFIX_2) }
+                    byteArrayOf(
+                        prefix,
+                        *x.ensureSize(curve.coordinateLengthBytes)
+                    )
                 }
 
-                return Ec(curve = curve, x = x, y = y)
+                false -> byteArrayOf(
+                    ANSI_UNCOMPRESSED_PREFIX,
+                    *x.ensureSize(curve.coordinateLengthBytes),
+                    *y.ensureSize(curve.coordinateLengthBytes)
+                )
             }
 
-            override val oid = KnownOIDs.ecPublicKey
-        }
+    @Transient
+    override val didEncoded by lazy { MultibaseHelper.encodeToDid(this) }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as Ec
+
+        if (curve != other.curve) return false
+        if (!iosEncoded().contentEquals(other.iosEncoded())) return false
+
+        return true
     }
+
+    override fun hashCode(): Int {
+        var result = curve.hashCode()
+        result = 31 * result + x.contentHashCode()
+        result = 31 * result + y.contentHashCode()
+        return result
+    }
+
+    companion object : Identifiable {
+
+        private fun getCurve(coordSize: Int) = EcCurve.entries
+            .find { it.coordinateLengthBytes.toInt() == coordSize }
+            ?: throw IllegalArgumentException("Unknown Curve")
+
+        /**
+         * Decodes a key from its ANSI X9.63 representation
+         */
+        @Throws(Throwable::class)
+        fun fromAnsiX963Bytes(src: ByteArray): CryptoPublicKey {
+            val curve: EcCurve
+            val numBytes: Int
+            val x: ByteArray
+            val y: ByteArray
+
+            when (src[0]) {
+                ANSI_UNCOMPRESSED_PREFIX -> {
+                    curve = getCurve((src.size - 1) / 2)
+                    numBytes = curve.coordinateLengthBytes.toInt()
+                    x = src.drop(1).take(numBytes).toByteArray()
+                    y = src.drop(1).drop(numBytes).take(numBytes).toByteArray()
+                }
+
+                ANSI_COMPRESSED_PREFIX_1, ANSI_COMPRESSED_PREFIX_2 -> {
+                    curve = getCurve(src.size - 1)
+                    numBytes = curve.coordinateLengthBytes.toInt()
+                    x = src.drop(1).take(numBytes).toByteArray()
+                    y = decompressY(curve, x, (src[0] - 2) == 1)
+                }
+
+                else -> throw IllegalArgumentException("Invalid X9.63 EC key format")
+            }
+
+            return Ec(curve = curve, x = x, y = y)
+        }
+
+        override val oid = KnownOIDs.ecPublicKey
+    }
+}
 }
 
 
