@@ -91,13 +91,16 @@ object MultibaseHelper {
 
     /**
      * https://datatracker.ietf.org/doc/html/draft-multiformats-multibase
-     *
+     *Magic
      * Adds correct Multibase identifier ('m') to Base64 encoding
+     * TODO: according to https://w3c-ccg.github.io/did-method-key/ should probably be base58bitcoin?
      */
     private fun multibaseWrapBase64(it: ByteArray) = "m${it.encodeToString(Base64Strict)}"
 
     /**
      * Adds correct Multicodec identifier ('0x1205') to encoded RSA key
+     * TODO: DER ENCODED!
+     * https://w3c-ccg.github.io/did-method-key/#rsa-repr
      */
     private fun multicodecWrapRSA(it: ByteArray) = byteArrayOf(0x12.toByte(), 0x05.toByte()) + it
 
