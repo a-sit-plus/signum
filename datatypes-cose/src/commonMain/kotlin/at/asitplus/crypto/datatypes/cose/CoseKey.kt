@@ -143,7 +143,7 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null, useCompression: 
                 /**
                  * if set use this, if not use receive value
                  */
-                val compression = useCompression ?: this.yOnReceive
+                val compression = useCompression ?: this.compressedOnReceive
                 val keyParams = if (compression) {
                     CoseKeyParams.EcYBoolParams(
                         curve = curve.toCoseCurve(),
