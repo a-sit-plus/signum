@@ -66,7 +66,7 @@ class PublicKeyTest : FreeSpec({
             ) { pubKey ->
 
                 val own = CryptoPublicKey.Ec.fromJcaPublicKey(pubKey).getOrThrow()
-                val test = (own as CryptoPublicKey.Ec).compressedEncoded
+                val test = (own as CryptoPublicKey.Ec).ansiEncoded(true)
                 val test2 = CryptoPublicKey.Ec.fromAnsiX963Bytes(test)
                 test2 shouldBe own
                 //test shouldBe (pubKey as BCECPublicKey).apply { setPointFormat("COMPRESSED") }.encoded

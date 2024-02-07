@@ -2,7 +2,9 @@ package at.asitplus.crypto.datatypes.io
 
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.EcCurve
-import at.asitplus.crypto.datatypes.Signum
+import at.asitplus.crypto.datatypes.misc.ANSI_COMPRESSED_PREFIX_1
+import at.asitplus.crypto.datatypes.misc.ANSI_COMPRESSED_PREFIX_2
+import at.asitplus.crypto.datatypes.misc.ANSI_UNCOMPRESSED_PREFIX
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.base64.Base64ConfigBuilder
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -50,7 +52,6 @@ object ByteArrayBase64Serializer : KSerializer<ByteArray> {
         encoder.encodeString(value.encodeToString(Base64Strict))
     }
 
-    //cannot be annotated with @Throws here because interfaces do not have annotations
     /**
      * @throws SerializationException on error
      */
@@ -101,49 +102,53 @@ object MultibaseHelper {
     private fun multicodecWrapRSA(it: ByteArray) = byteArrayOf(0x12.toByte(), 0x05.toByte()) + it
 
     /**
-     * Adds a Multicodec identifier ('0x129x') to encoded P-xxx key
-     * We use 0x129x to identify uncompressed EC keys of their respective size. Currently only 0x120x are draft identifiers,
-     * these however are used for compressed EC keys
+     * Adds a Multicodec identifier
+     * We use '0x129x' to identify uncompressed EC keys of their respective size, these are not officially used identifiers.
+     * Multicodec identifiers '0x120x' are draft identifiers for P-xxx keys with point compression
+     *
+     *  0x1200 P-256
+     *  0x1201 P-384
+     *  0x1202 P-512
      *
      *  0x1290 P-256
      *  0x1291 P-384
      *  0x1292 P-512
      */
-    private fun multiCodecWrapEC(it: ByteArray, curve: EcCurve) =
-        when (curve) {
-            EcCurve.SECP_256_R_1 -> byteArrayOf(0x12.toByte(), 0x90.toByte()) + it
-            EcCurve.SECP_384_R_1 -> byteArrayOf(0x12.toByte(), 0x91.toByte()) + it
-            EcCurve.SECP_521_R_1 -> byteArrayOf(0x12.toByte(), 0x92.toByte()) + it
-        }
+    private fun multiCodecWrapEC(curve: EcCurve, it: ByteArray) =
+        when (it[0]) {
+            ANSI_COMPRESSED_PREFIX_1, ANSI_COMPRESSED_PREFIX_2 ->
+                when (curve) {
+                    //TODO: how to we differentiate between the two possible y values
+                    EcCurve.SECP_256_R_1 -> byteArrayOf(0x12.toByte(), 0x00.toByte()) + it.drop(1)
+                    EcCurve.SECP_384_R_1 -> byteArrayOf(0x12.toByte(), 0x01.toByte()) + it.drop(1)
+                    EcCurve.SECP_521_R_1 -> byteArrayOf(0x12.toByte(), 0x02.toByte()) + it.drop(1)
+                }
 
-    /**
-     * Adds a Multicodec identifier ('0x120x') to encoded P-xxx key with point compression
-     *
-     *  0x1200 P-256
-     *  0x1201 P-384
-     *  0x1202 P-512
-     */
-    private fun multiCodecWrapCompressedEC(it: ByteArray, curve: EcCurve) =
-        when (curve) {
-            EcCurve.SECP_256_R_1 -> byteArrayOf(0x12.toByte(), 0x00.toByte()) + it
-            EcCurve.SECP_384_R_1 -> byteArrayOf(0x12.toByte(), 0x01.toByte()) + it
-            EcCurve.SECP_521_R_1 -> byteArrayOf(0x12.toByte(), 0x02.toByte()) + it
+            ANSI_UNCOMPRESSED_PREFIX ->
+                when (curve) {
+                    EcCurve.SECP_256_R_1 -> byteArrayOf(0x12.toByte(), 0x90.toByte()) + it.drop(1)
+                    EcCurve.SECP_384_R_1 -> byteArrayOf(0x12.toByte(), 0x91.toByte()) + it.drop(1)
+                    EcCurve.SECP_521_R_1 -> byteArrayOf(0x12.toByte(), 0x92.toByte()) + it.drop(1)
+                }
+            else -> throw Exception("Some Exception")
         }
 
     /**
      * Returns something like `did:key:mEpA...` with the public key parameters appended in Base64.
      * This translates for example to `Base64(0x12, 0x90, EC-P-{256,384,521}-Key)`.
      */
-    fun encodeToDid(key: CryptoPublicKey, useCompression: Boolean = true): String {
+    fun encodeToDid(key: CryptoPublicKey, useCompression: Boolean = false): String {
         return when (key) {
-            is CryptoPublicKey.Ec -> "$PREFIX_DID_KEY:${
-                multibaseWrapBase64(
-                    multiCodecWrapEC(
-                        key.iosEncoded().drop(1).toByteArray(),
-                        key.curve
+            is CryptoPublicKey.Ec -> {
+                "$PREFIX_DID_KEY:${
+                    multibaseWrapBase64(
+                        multiCodecWrapEC(
+                            key.curve,
+                            key.ansiEncoded(useCompression)
+                        )
                     )
-                )
-            }"
+                }"
+            }
 
             is CryptoPublicKey.Rsa -> "$PREFIX_DID_KEY:${
                 multibaseWrapBase64(
