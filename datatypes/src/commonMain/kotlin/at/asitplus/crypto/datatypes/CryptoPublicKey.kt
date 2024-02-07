@@ -22,14 +22,17 @@ import at.asitplus.crypto.datatypes.asn1.readOid
 import at.asitplus.crypto.datatypes.asn1.runRethrowing
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.io.MultibaseHelper
-import at.asitplus.crypto.datatypes.io.toBitString
-import com.ionspin.kotlin.bignum.integer.BigInteger
-import com.ionspin.kotlin.bignum.integer.Sign
-import com.ionspin.kotlin.bignum.modular.ModularBigInteger
+import at.asitplus.crypto.datatypes.misc.ANSI_COMPRESSED_PREFIX_1
+import at.asitplus.crypto.datatypes.misc.ANSI_COMPRESSED_PREFIX_2
+import at.asitplus.crypto.datatypes.misc.ANSI_UNCOMPRESSED_PREFIX
+import at.asitplus.crypto.datatypes.misc.compressY
+import at.asitplus.crypto.datatypes.misc.decompressY
+import at.asitplus.crypto.datatypes.misc.toInt
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import kotlin.experimental.and
+
+typealias Signum = Boolean
 
 /**
  * Representation of a public key structure
@@ -93,7 +96,9 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
             return when (bytes[1]) {
                 0x90.toByte(), 0x91.toByte(), 0x92.toByte() ->
-                    Ec.fromAnsiX963Bytes(byteArrayOf(Ec.ANSI_UNCOMPRESSED_PREFIX, *bytes.drop(2).toByteArray()))
+                    Ec.fromAnsiX963Bytes(byteArrayOf(ANSI_UNCOMPRESSED_PREFIX, *bytes.drop(2).toByteArray()))
+
+                //TODO compressed keys
 
                 0x05.toByte() ->
                     Rsa.fromPKCS1encoded(bytes.drop(2).toByteArray())
@@ -117,7 +122,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                         ?: throw Asn1Exception("Curve not supported: $curveOid")
 
                     val bitString = (src.nextChild() as Asn1Primitive).readBitString()
-                    if (bitString.rawBytes.first() != Ec.ANSI_UNCOMPRESSED_PREFIX) throw Asn1Exception("EC key not prefixed with 0x04")
+                    if (bitString.rawBytes.first() != ANSI_UNCOMPRESSED_PREFIX) throw Asn1Exception("EC key not prefixed with 0x04")
                     val xAndY = bitString.rawBytes.drop(1)
                     val coordLen = curve.coordinateLengthBytes.toInt()
                     val x = xAndY.take(coordLen).toByteArray()
@@ -146,7 +151,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         @Throws(Throwable::class)
         fun fromIosEncoded(it: ByteArray): CryptoPublicKey =
             when (it[0].toUByte()) {
-                Ec.ANSI_UNCOMPRESSED_PREFIX.toUByte() -> Ec.fromAnsiX963Bytes(it)
+                ANSI_UNCOMPRESSED_PREFIX.toUByte() -> Ec.fromAnsiX963Bytes(it)
                 DERTags.DER_SEQUENCE -> Rsa.fromPKCS1encoded(it)
                 else -> throw IllegalArgumentException("Unsupported Key type")
             }
@@ -204,7 +209,6 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             RSA_2048(2048u),
             RSA_3027(3072u),
             RSA_4096(4096u);
-
 
             companion object : Identifiable {
                 fun of(numBits: UInt) = entries.find { it.number == numBits }
@@ -282,23 +286,36 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
      */
     @Serializable
     @SerialName("EC")
-    data class Ec(
+    data class Ec private constructor(
         val curve: EcCurve,
         @Serializable(with = ByteArrayBase64Serializer::class) val x: ByteArray,
         @Serializable(with = ByteArrayBase64Serializer::class) val y: ByteArray,
+        val compressedOnReceive: Boolean,
     ) : CryptoPublicKey() {
+
+        /**
+         * Constructor for compressed keys
+         */
+        constructor(
+            curve: EcCurve,
+            x: ByteArray,
+            yIndicator: Signum,
+        ) : this(curve, x, decompressY(curve, x, yIndicator), true)
+
+        /**
+         * Constructor for uncompressed keys
+         */
+        constructor(
+            curve: EcCurve,
+            x: ByteArray,
+            y: ByteArray,
+        ) : this(curve, x, y, false)
 
         override val oid = Ec.oid
 
-        /**
-         * According to https://www.secg.org/sec1-v2.pdf, https://www.secg.org/sec2-v2.pdf
-         * all currently supported curves (i.e. secp___r1) are of form F_p with p odd prime and so
-         * the compression bit is defined as 2 + (y mod 2) for all curves
-         * We assume y is big-endian!
-         */
-        private fun compressY(): Byte = (2 + (y.last() and 1.toByte())).toByte()
 
-        val compressedEncoded = byteArrayOf(compressY(), *x.ensureSize(curve.coordinateLengthBytes))
+        val compressedEncoded =
+            byteArrayOf((2 + compressY().toInt()).toByte(), *x.ensureSize(curve.coordinateLengthBytes))
 
         /**
          * ANSI X9.63 Encoding as used by iOS
@@ -335,32 +352,10 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
 
         companion object : Identifiable {
-            @Throws(Throwable::class)
-            private fun decompressY(curve: EcCurve, root: Byte, x: ByteArray): ByteArray {
-                val mod2Creator = ModularBigInteger.creatorForModulo(2)
-                val mod4Creator = ModularBigInteger.creatorForModulo(4)
-                val xBigMod = curve.modCreator.fromBigInteger(BigInteger.fromByteArray(x, Sign.POSITIVE))
-                val alpha = xBigMod.pow(3) + curve.a * xBigMod + curve.b
 
-                /**
-                 * For the currently supported curves it holds that p = 3 (mod 4), where p denotes the modulus.
-                 * This property allows the closed formula solution
-                 * x^2 = a (mod p) <=> x = b^((p+1)/4) && a is quadratic residue
-                 */
-                require(quadraticResidueTest(alpha))
-                val beta = if (mod4Creator.fromBigInteger(curve.modulus) == mod4Creator.fromInt(3))
-                    alpha.pow((curve.modulus + 1) / 4) else throw IllegalArgumentException("Requires Tonelli-Shanks Algorithm")
-
-                return if (mod2Creator.fromByte(root) == mod2Creator.fromBigInteger(beta.residue)) {
-                    beta.toByteArray()
-                } else {
-                    (curve.modCreator.ZERO - beta).toByteArray()
-                }
-            }
-
-            const val ANSI_COMPRESSED_PREFIX_1 = 0x02.toByte()
-            const val ANSI_COMPRESSED_PREFIX_2 = 0x03.toByte()
-            const val ANSI_UNCOMPRESSED_PREFIX = 0x04.toByte()
+            private fun getCurve(coordSize: Int) = EcCurve.entries
+                .find { it.coordinateLengthBytes.toInt() == coordSize }
+                ?: throw IllegalArgumentException("Unknown Curve")
 
             /**
              * Decodes a key from its ANSI X9.63 representation
@@ -374,21 +369,17 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
                 when (src[0]) {
                     ANSI_UNCOMPRESSED_PREFIX -> {
-                        curve = EcCurve.entries
-                            .find { 2 * it.coordinateLengthBytes.toInt() == src.size - 1 }
-                            ?: throw IllegalArgumentException("Unknown Curve")
+                        curve = getCurve((src.size -1)/2)
                         numBytes = curve.coordinateLengthBytes.toInt()
                         x = src.drop(1).take(numBytes).toByteArray()
                         y = src.drop(1).drop(numBytes).take(numBytes).toByteArray()
                     }
 
                     ANSI_COMPRESSED_PREFIX_1, ANSI_COMPRESSED_PREFIX_2 -> {
-                        curve = EcCurve.entries
-                            .find { it.coordinateLengthBytes.toInt() == src.size - 1 }
-                            ?: throw IllegalArgumentException("Unknown Curve")
+                        curve = getCurve(src.size -1)
                         numBytes = curve.coordinateLengthBytes.toInt()
                         x = src.drop(1).take(numBytes).toByteArray()
-                        y = decompressY(curve, src[0], x)
+                        y = decompressY(curve, x, (src[0] - 2) == 1)
                     }
 
                     else -> throw IllegalArgumentException("Invalid X9.63 EC key format")
@@ -418,12 +409,3 @@ private val RsaParams.size get() = third
 @Throws(IllegalArgumentException::class)
 private fun sanitizeRsaInputs(n: ByteArray, e: Int): RsaParams = n.dropWhile { it == 0.toByte() }.toByteArray()
     .let { Triple(byteArrayOf(0, *it), e, CryptoPublicKey.Rsa.Size.of(it)) }
-
-
-/**
- * Quadratic residue test verifies that a root exists
- * p-1 always even since by assumption p always odd (holds for all implemented curves)
- */
-private fun quadraticResidueTest(x: ModularBigInteger): Boolean {
-    return x.pow((x.modulus - 1) / 2) == x.getCreator().ONE
-}

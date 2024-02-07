@@ -2,6 +2,7 @@ package at.asitplus.crypto.datatypes.io
 
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.EcCurve
+import at.asitplus.crypto.datatypes.Signum
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.base64.Base64ConfigBuilder
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -133,7 +134,7 @@ object MultibaseHelper {
      * Returns something like `did:key:mEpA...` with the public key parameters appended in Base64.
      * This translates for example to `Base64(0x12, 0x90, EC-P-{256,384,521}-Key)`.
      */
-    fun encodeToDid(key: CryptoPublicKey): String {
+    fun encodeToDid(key: CryptoPublicKey, useCompression: Boolean = true): String {
         return when (key) {
             is CryptoPublicKey.Ec -> "$PREFIX_DID_KEY:${
                 multibaseWrapBase64(

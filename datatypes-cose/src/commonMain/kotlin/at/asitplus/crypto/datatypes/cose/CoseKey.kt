@@ -6,8 +6,10 @@ import at.asitplus.KmmResult.Companion.success
 import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.EcCurve
+import at.asitplus.crypto.datatypes.Signum
 import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
 import at.asitplus.crypto.datatypes.cose.io.cborSerializer
+import at.asitplus.crypto.datatypes.misc.compressY
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -128,7 +130,7 @@ data class CoseKey(
  * Converts [CryptoPublicKey] into a KmmResult wrapped [CoseKey]
  * If [algorithm] is not set then key can be used for any algorithm with same kty (RFC 8152), returns [IllegalArgumentException] for invalid kty/algorithm pairs
  */
-fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseKey> =
+fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null, useCompression: Signum? = null): KmmResult<CoseKey> =
     when (this) {
         is CryptoPublicKey.Ec ->
             if ((algorithm != null) && (algorithm != when (curve) {
@@ -137,18 +139,31 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseK
                     EcCurve.SECP_521_R_1 -> CoseAlgorithm.ES512
                 })
             ) failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
-            else success(
-                CoseKey(
-                    keyParams = CoseKeyParams.EcYByteArrayParams(
+            else {
+                /**
+                 * if set use this, if not use receive value
+                 */
+                val compression = useCompression ?: this.yOnReceive
+                val keyParams = if (compression) {
+                    CoseKeyParams.EcYBoolParams(
                         curve = curve.toCoseCurve(),
                         x = x,
-                        y = y
-                    ),
-                    type = CoseKeyType.EC2,
-                    keyId = didEncoded.encodeToByteArray(),
-                    algorithm = algorithm
+                        y = this.compressY()
+                    )
+                } else CoseKeyParams.EcYByteArrayParams(
+                    curve = curve.toCoseCurve(),
+                    x = x,
+                    y = y
                 )
-            )
+                runCatching {
+                    CoseKey(
+                        keyParams = keyParams,
+                        type = CoseKeyType.EC2,
+                        keyId = didEncoded.encodeToByteArray(),
+                        algorithm = algorithm
+                    )
+                }.wrap()
+            }
 
         is CryptoPublicKey.Rsa ->
             if ((algorithm != null) && (algorithm !in listOf(
@@ -156,7 +171,7 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseK
                     CoseAlgorithm.RS256, CoseAlgorithm.RS384, CoseAlgorithm.RS512
                 ))
             ) failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
-            else success(
+            else runCatching {
                 CoseKey(
                     keyParams = CoseKeyParams.RsaParams(
                         n = n,
@@ -166,7 +181,7 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseK
                     keyId = didEncoded.encodeToByteArray(),
                     algorithm = algorithm
                 )
-            )
+            }.wrap()
     }
 
 private const val COSE_KID = "coseKid"

@@ -32,6 +32,7 @@ enum class EcCurve(
     SECP_521_R_1("P-521", 521u, 66u, oid = KnownOIDs.secp521r1);
 
     val modCreator by lazy { ModularBigInteger.creatorForModulo(this.modulus) }
+    
     /**
      * See https://www.secg.org/sec2-v2.pdf
      */

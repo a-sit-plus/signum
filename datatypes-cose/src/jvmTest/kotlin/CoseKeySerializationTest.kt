@@ -20,6 +20,7 @@ import org.bouncycastle.oer.its.ieee1609dot2.basetypes.EccP256CurvePoint
 import java.security.KeyPairGenerator
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPublicKey
+import kotlin.experimental.and
 
 class CoseKeySerializationTest : FreeSpec({
 
@@ -78,7 +79,7 @@ class CoseKeySerializationTest : FreeSpec({
 //                            CryptoPublicKey.Ec(
 //                                EcCurve.of(bits.toUInt())!!,
 //                                pubKey.w.affineX.toByteArray(),
-//                                if (pubKey.w.affineY.signum() < 0) CryptoPublicKey.Ec.SIGNUM.NEGATIVE else CryptoPublicKey.Ec.SIGNUM.POSITIVE
+//                                pubKey.w.affineY.toByteArray().last() and 1.toByte()
 //                            ).toCoseKey().getOrThrow()
 //                        val cose = coseKey.serialize()
 //                        println(cose.encodeToString(Base16))

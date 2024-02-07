@@ -6,12 +6,19 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
 import io.kotest.property.checkAll
+import kotlin.random.Random
 
-class CryptoSignatureTest : FreeSpec( {
+class CryptoSignatureTest : FreeSpec({
 
+    val values = (Byte.MIN_VALUE..Byte.MAX_VALUE).toMutableSet()
+    
     "Equals & hashCode" {
-        checkAll(iterations = 15, Arb.int(Byte.MIN_VALUE .. Byte.MAX_VALUE),
-            Arb.int(Byte.MIN_VALUE .. Byte.MAX_VALUE)) { first, second ->
+        repeat(
+            15
+        ) {
+            val first: Int = values.random().also { values.remove(it) }
+            val second: Int = values.random().also { values.remove(it) }
+
             val ec1 = CryptoSignature.EC(first.encodeToByteArray(), second.encodeToByteArray())
             val ec2 = CryptoSignature.EC(first.encodeToByteArray(), second.encodeToByteArray())
             val ec3 = CryptoSignature.EC(second.encodeToByteArray(), first.encodeToByteArray())

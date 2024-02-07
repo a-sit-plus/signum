@@ -21,9 +21,13 @@ import java.security.KeyPairGenerator
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPublicKey
 import com.ionspin.kotlin.bignum.integer.toBigInteger
+import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
+import org.bouncycastle.jce.provider.BouncyCastleProvider
+import org.bouncycastle.jce.provider.JCEECPublicKey
+import java.security.Security
 
 class PublicKeyTest : FreeSpec({
-
+    Security.addProvider(BouncyCastleProvider())
     "SECP256 modulus correct" {
         EcCurve.SECP_256_R_1.modulus shouldBe
             (2.toBigInteger().shl(223)
@@ -49,7 +53,7 @@ class PublicKeyTest : FreeSpec({
     "EC" - {
         withData(256, 384, 521) { bits ->
             val keys = List<ECPublicKey>(256000 / bits) {
-                val ecKp = KeyPairGenerator.getInstance("EC").apply {
+                val ecKp = KeyPairGenerator.getInstance("EC", "BC").apply {
                     initialize(bits)
                 }.genKeyPair()
                 ecKp.public as ECPublicKey
@@ -67,6 +71,7 @@ class PublicKeyTest : FreeSpec({
                 val test = (own as CryptoPublicKey.Ec).compressedEncoded
                 val test2 = CryptoPublicKey.Ec.fromAnsiX963Bytes(test)
                 test2 shouldBe own
+                //test shouldBe (pubKey as BCECPublicKey).apply { setPointFormat("COMPRESSED") }.encoded
 
                 println(Json.encodeToString(own))
                 println(own.iosEncoded.encodeToString(Base16()))
