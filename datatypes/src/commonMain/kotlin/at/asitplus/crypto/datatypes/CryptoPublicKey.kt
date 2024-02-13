@@ -30,7 +30,6 @@ import at.asitplus.crypto.datatypes.misc.decompressY
 import at.asitplus.crypto.datatypes.misc.toInt
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 
 typealias Signum = Boolean
 
@@ -49,19 +48,15 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
     val additionalProperties = mutableMapOf<String, String>()
 
     /**
-     * Representation of the key in DID format
+     * Representation of the key in DID format, EC compression is used if key was compressed on reception
      */
-    @Transient
     abstract val didEncoded: String
 
     /**
-     * Representation of this key in the same ways as iOS would encode it natively
+     * Representation of the key in the format used by iOS, EC compression is used if key was compressed on reception
      */
-    fun iosEncoded(useCompression: Boolean? = null): ByteArray =
-        when (this) {
-            is Ec -> ansiEncoded(useCompression)
-            is Rsa -> pkcsEncoded
-        }
+    abstract val iosEncoded: ByteArray
+
 
     override fun encodeToTlv() = when (this) {
         is Ec -> asn1Sequence {
@@ -69,7 +64,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                 append(oid)
                 append(curve.oid)
             }
-            bitString(iosEncoded())
+            bitString(iosEncoded)
         }
 
         is Rsa -> {
@@ -78,10 +73,12 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                     append(oid)
                     asn1null()
                 }
-                bitString(iosEncoded())
+                bitString(iosEncoded)
             }
         }
     }
+
+
 
     companion object : Asn1Decodable<Asn1Sequence, CryptoPublicKey> {
 
@@ -93,7 +90,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          */
         @Throws(Throwable::class)
         fun fromDid(input: String): CryptoPublicKey {
-            val bytes = MultibaseHelper.stripDid(input)
+            val bytes = MultibaseHelper.bytesFromDid(input)
             require(bytes.size > 3) { "Invalid key size" }
             require(bytes[0] == 0x12.toByte()) { "Unknown public key identifier" }
 
@@ -101,7 +98,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                 0x90.toByte(), 0x91.toByte(), 0x92.toByte() ->
                     Ec.fromAnsiX963Bytes(byteArrayOf(ANSI_UNCOMPRESSED_PREFIX, *bytes.drop(2).toByteArray()))
 
-                //TODO compressed keys
+                0x00.toByte(), 0x01.toByte(), 0x02.toByte() ->
+                    Ec.fromAnsiX963Bytes(bytes.drop(2).toByteArray()) //TODO works if Ansi constant is not dropped
 
                 0x05.toByte() ->
                     Rsa.fromPKCS1encoded(bytes.drop(2).toByteArray())
@@ -227,8 +225,20 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             }
         }
 
-        @Transient
-        override val didEncoded by lazy { MultibaseHelper.encodeToDid(this) }
+        /**
+         * Returns `did:key:$MULTIBASE_ENCODING$ALGORITHM_IDENTIFIER$BYTES` with the public key parameters appended in Base64.
+         * This translates for example to `Base64(0x12, 0x90, EC-P-{256,384,521}-Key)`.
+         * Example of arbitrary P-256 key `did:key:mEpDXw70K0VhlxlhGX/B7zmI+V904Zo+Mz0gethWLJqTtBY8ma21J56insvTuPy7maJUqOCgf5eZJ1AkNX9HzSjLu`
+         */
+        override val didEncoded by lazy {
+            "${MultibaseHelper.PREFIX_DID_KEY}:${
+                MultibaseHelper.multibaseWrapBase64(
+                    MultibaseHelper.multicodecWrapRSA(this.iosEncoded)
+                )
+            }"
+        }
+
+        override val iosEncoded by lazy { pkcsEncoded }
 
         /**
          * PKCS#1 encoded RSA Public Key
@@ -318,9 +328,9 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         /**
          * ANSI X9.63 Encoding as used by iOS
          */
-        fun ansiEncoded(useCompression: Boolean? = null): ByteArray =
+        fun toAnsiX963Encoded(useCompression: Boolean? = null): ByteArray =
             when (useCompression) {
-                null -> ansiEncoded(this.compressedOnReceive)
+                null -> toAnsiX963Encoded(this.compressedOnReceive)
                 true -> {
                     val prefix = (2 + compressY().toInt()).toByte()
                         .also { require(it == ANSI_COMPRESSED_PREFIX_1 || it == ANSI_COMPRESSED_PREFIX_2) }
@@ -337,8 +347,23 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                 )
             }
 
-        @Transient
-        override val didEncoded by lazy { MultibaseHelper.encodeToDid(this) }
+        /**
+         * Returns `did:key:$MULTIBASE_ENCODING$ALGORITHM_IDENTIFIER$BYTES` with the public key parameters appended in Base64.
+         * This translates for example to `Base64(0x12, 0x90, EC-P-{256,384,521}-Key)`.
+         * Example of arbitrary P-256 key `did:key:mEpDXw70K0VhlxlhGX/B7zmI+V904Zo+Mz0gethWLJqTtBY8ma21J56insvTuPy7maJUqOCgf5eZJ1AkNX9HzSjLu`
+         */
+        override val didEncoded by lazy {
+            "${MultibaseHelper.PREFIX_DID_KEY}:${
+                MultibaseHelper.multibaseWrapBase64(
+                    MultibaseHelper.multiCodecWrapEC(
+                        this.curve,
+                        this.toAnsiX963Encoded()
+                    )
+                )
+            }"
+        }
+
+        override val iosEncoded by lazy { toAnsiX963Encoded() }
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -347,7 +372,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             other as Ec
 
             if (curve != other.curve) return false
-            if (!iosEncoded().contentEquals(other.iosEncoded())) return false
+            if (!iosEncoded.contentEquals(other.iosEncoded)) return false
 
             return true
         }

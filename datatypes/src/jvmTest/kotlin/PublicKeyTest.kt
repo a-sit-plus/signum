@@ -6,6 +6,8 @@ import at.asitplus.crypto.datatypes.asn1.parse
 import at.asitplus.crypto.datatypes.fromJcaPublicKey
 import at.asitplus.crypto.datatypes.getJcaPublicKey
 import at.asitplus.crypto.datatypes.io.Base64Strict
+import com.ionspin.kotlin.bignum.integer.toBigInteger
+import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
@@ -17,35 +19,38 @@ import kotlinx.serialization.json.Json
 import org.bouncycastle.asn1.ASN1InputStream
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.DERBitString
+import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.KeyPairGenerator
+import java.security.Security
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPublicKey
-import com.ionspin.kotlin.bignum.integer.toBigInteger
-import org.bouncycastle.jce.provider.BouncyCastleProvider
-import java.security.Security
 
 class PublicKeyTest : FreeSpec({
     Security.addProvider(BouncyCastleProvider())
+
     "SECP256 modulus correct" {
         EcCurve.SECP_256_R_1.modulus shouldBe
-            (2.toBigInteger().shl(223)
-                * (2.toBigInteger().shl(31) - 1.toBigInteger())
-                + 2.toBigInteger().shl(191)
-                + 2.toBigInteger().shl(95)
-                - 1.toBigInteger())
+                (2.toBigInteger().shl(223)
+                        * (2.toBigInteger().shl(31) - 1.toBigInteger())
+                        + 2.toBigInteger().shl(191)
+                        + 2.toBigInteger().shl(95)
+                        - 1.toBigInteger())
     }
+
     "SECP384 modulus correct" {
         EcCurve.SECP_384_R_1.modulus shouldBe
-            (2.toBigInteger().shl(383)
-                - 2.toBigInteger().shl(127)
-                - 2.toBigInteger().shl(95)
-                + 2.toBigInteger().shl(31)
-                - 1.toBigInteger())
+                (2.toBigInteger().shl(383)
+                        - 2.toBigInteger().shl(127)
+                        - 2.toBigInteger().shl(95)
+                        + 2.toBigInteger().shl(31)
+                        - 1.toBigInteger())
     }
+
     "SECP521 modulus correct" {
         EcCurve.SECP_521_R_1.modulus shouldBe
-            (2.toBigInteger().shl(520)
-                - 1.toBigInteger())
+                (2.toBigInteger().shl(520)
+                        - 1.toBigInteger())
     }
 
     "EC" - {
@@ -66,19 +71,25 @@ class PublicKeyTest : FreeSpec({
             ) { pubKey ->
 
                 val own = CryptoPublicKey.Ec.fromJcaPublicKey(pubKey).getOrThrow()
-                val test = (own as CryptoPublicKey.Ec).ansiEncoded(true)
-                val test2 = CryptoPublicKey.Ec.fromAnsiX963Bytes(test)
-                test2 shouldBe own
-                //test shouldBe (pubKey as BCECPublicKey).apply { setPointFormat("COMPRESSED") }.encoded
 
-                println(Json.encodeToString(own))
-                println(own.iosEncoded().encodeToString(Base16()))
-                println(own.encodeToDer().encodeToString(Base16()))
-                println(own.didEncoded)
-                own.encodeToDer() shouldBe pubKey.encoded
-                CryptoPublicKey.fromDid(own.didEncoded) shouldBe own
-                own.getJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
-                CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.encodeToDer()) as Asn1Sequence) shouldBe own
+                withClue("Basic Conversions") {
+                    println(Json.encodeToString(own))
+                    println(own.iosEncoded.encodeToString(Base16()))
+                    println(own.encodeToDer().encodeToString(Base16()))
+                    println(own.didEncoded)
+                    own.encodeToDer() shouldBe pubKey.encoded
+                    CryptoPublicKey.fromDid(own.didEncoded) shouldBe own
+                    own.getJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
+                    CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.encodeToDer()) as Asn1Sequence) shouldBe own
+                }
+                withClue("Compressed Test") {
+                    val compressedPresentation = (own as CryptoPublicKey.Ec).toAnsiX963Encoded(true)
+                    val fromCompressed = CryptoPublicKey.Ec.fromAnsiX963Bytes(compressedPresentation)
+
+                    // bouncy castle compressed representation is calculated by exposing public coordinate from key and then encode that
+                    compressedPresentation shouldBe (pubKey as BCECPublicKey).q.getEncoded(true)
+                    fromCompressed shouldBe own
+                }
             }
         }
 
@@ -91,6 +102,13 @@ class PublicKeyTest : FreeSpec({
             pubKey1 shouldBe pubKey2
         }
 
+        "DID Tests" {
+            val listOfDidKeys = javaClass.classLoader.getResourceAsStream("did_keys.txt")?.reader()?.readLines()
+                ?: throw Exception("Test vectors missing!")
+            for (key in listOfDidKeys) {
+                //kotlin.runCatching { CryptoPublicKey.fromDid(key) }.wrap().getOrThrow()
+            }
+        }
     }
 
     "RSA" - {
