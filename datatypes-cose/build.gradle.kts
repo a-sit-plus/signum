@@ -8,7 +8,8 @@ plugins {
     id("at.asitplus.gradle.conventions")
 }
 
-version = "2.2.1"
+val artifactVersion: String by extra
+version = artifactVersion
 
 kotlin {
     jvm()
@@ -16,7 +17,11 @@ kotlin {
     iosSimulatorArm64()
     iosX64()
     sourceSets {
-         commonMain {
+        all {
+            languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
+        }
+
+        commonMain {
             dependencies {
                 api(project(":datatypes"))
                 api(serialization("cbor"))
@@ -26,7 +31,7 @@ kotlin {
             }
         }
 
-         commonTest {
+        commonTest {
             dependencies {
                 implementation(kotlin("reflect"))
             }

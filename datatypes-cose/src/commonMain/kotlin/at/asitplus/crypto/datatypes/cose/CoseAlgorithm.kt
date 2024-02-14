@@ -10,12 +10,12 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 @Serializable(with = CoseAlgorithmSerializer::class)
-enum class CoseAlgorithm(val value: Int, val isEC: Boolean = false) {
+enum class CoseAlgorithm(val value: Int) {
 
     // ECDSA with SHA-size
-    ES256(-7, true),
-    ES384(-35, true),
-    ES512(-36, true),
+    ES256(-7),
+    ES384(-35),
+    ES512(-36),
 
     // HMAC-size with SHA-size
     HS256(5),

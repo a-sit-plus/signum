@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalUnsignedTypes::class)
-
 package at.asitplus.crypto.datatypes.asn1
 
 //Converted from Peter Gutmann's dumpasn1

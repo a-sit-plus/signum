@@ -1,7 +1,6 @@
 package at.asitplus.crypto.datatypes.jws
 
 import at.asitplus.KmmResult
-import at.asitplus.KmmResult.Companion.success
 import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.EcCurve
@@ -45,7 +44,7 @@ data class JsonWebKey(
     //Symmetric Key
     @SerialName("k")
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
-    val k: ByteArray? = null
+    val k: ByteArray? = null,
 ) {
 
     val jwkThumbprint: String by lazy {
@@ -150,40 +149,37 @@ data class JsonWebKey(
             runCatching { jsonSerializer.decodeFromString<JsonWebKey>(it) }.wrap()
 
         fun fromKeyId(it: String): KmmResult<JsonWebKey> =
-            runCatching { CryptoPublicKey.fromKeyId(it).toJsonWebKey().getOrThrow() }.wrap()
+            runCatching { CryptoPublicKey.fromDid(it).toJsonWebKey() }.wrap()
 
         fun fromIosEncoded(bytes: ByteArray): KmmResult<JsonWebKey> =
-            runCatching { CryptoPublicKey.fromIosEncoded(bytes).toJsonWebKey().getOrThrow() }.wrap()
+            runCatching { CryptoPublicKey.fromIosEncoded(bytes).toJsonWebKey() }.wrap()
 
         fun fromCoordinates(curve: EcCurve, x: ByteArray, y: ByteArray): KmmResult<JsonWebKey> =
-            runCatching { CryptoPublicKey.Ec.fromCoordinates(curve, x, y).toJsonWebKey().getOrThrow() }.wrap()
+            runCatching { CryptoPublicKey.Ec.fromCoordinates(curve, x, y).toJsonWebKey() }.wrap()
     }
 }
 
 /**
- * Converts a [CryptoPublicKey] to a KmmResult wrapped [JsonWebKey] - will never fail, wrapping for consistent types
+ * Converts a [CryptoPublicKey] to a [JsonWebKey]
  */
-fun CryptoPublicKey.toJsonWebKey(): KmmResult<JsonWebKey> =
+fun CryptoPublicKey.toJsonWebKey(): JsonWebKey =
     when (this) {
         is CryptoPublicKey.Ec ->
-            success(
-                JsonWebKey(
-                    type = JwkType.EC,
-                    keyId = jwkId,
-                    curve = curve,
-                    x = x,
-                    y = y
-                )
+            JsonWebKey(
+                type = JwkType.EC,
+                keyId = jwkId,
+                curve = curve,
+                x = x,
+                y = y
             )
 
+
         is CryptoPublicKey.Rsa ->
-            success(
-                JsonWebKey(
-                    type = JwkType.RSA,
-                    keyId = jwkId,
-                    n = n,
-                    e = e.encodeToByteArray()
-                )
+            JsonWebKey(
+                type = JwkType.RSA,
+                keyId = jwkId,
+                n = n,
+                e = e.encodeToByteArray()
             )
     }
 
@@ -193,7 +189,7 @@ private const val JWK_ID = "jwkIdentifier"
  * Holds [JsonWebKey.keyId] when transforming a [JsonWebKey] to a [CryptoPublicKey]
  */
 var CryptoPublicKey.jwkId: String
-    get() = additionalProperties[JWK_ID] ?: keyId
+    get() = additionalProperties[JWK_ID] ?: didEncoded
     set(value) {
         additionalProperties[JWK_ID] = value
     }

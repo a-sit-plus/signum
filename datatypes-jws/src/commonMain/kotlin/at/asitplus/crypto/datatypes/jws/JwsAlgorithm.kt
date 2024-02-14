@@ -14,7 +14,6 @@ import kotlinx.serialization.encoding.Encoder
 /**
  * Since we support only JWS algorithms (with one exception), this class is called what it's called.
  */
-@OptIn(ExperimentalUnsignedTypes::class)
 @Serializable(with = JwsAlgorithmSerializer::class)
 enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifier) :
     Asn1Encodable<Asn1Sequence>,

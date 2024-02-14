@@ -51,3 +51,9 @@
 * Update conventions
   * Rename CBOR annotations
   * Target Java 17
+
+### 2.3.0
+* Change `CryptoPublicKey.toJsonWebKey()` return type from `KmmResult<JsonWebKey>` to `JsonWebKey`
+* Add `CryptoSignature.parseFromJca` function
+* Refactor `CryptoPublicKey.keyID` to `CryptoPublicKey.didEncoded` to better reflect what it actually is
+* Rename `CryptoPublicKey.fromKeyId` to `CryptoPublicKey.fromDid`

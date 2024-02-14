@@ -8,7 +8,8 @@ plugins {
     id("at.asitplus.gradle.conventions")
 }
 
-version = "2.2.1"
+val artifactVersion: String by extra
+version = artifactVersion
 
 kotlin {
     jvm()
@@ -16,6 +17,10 @@ kotlin {
     iosSimulatorArm64()
     iosX64()
     sourceSets {
+        all {
+            languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
+        }
+
         commonMain {
             dependencies {
                 api(kmmresult())
