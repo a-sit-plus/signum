@@ -89,10 +89,18 @@ object MultibaseHelper {
     internal const val PREFIX_DID_KEY = "did:key"
 
     /**
+     * TODO
+     *  + add private lookup table for multicodec prefixes which needs to be of form VarInt as described here https://github.com/multiformats/unsigned-varint
+     *    the bits after the prefix stay in their original representation (i think) as discussed here https://github.com/w3c-ccg/did-method-key/issues/43
+     *  + base58-btc encoding
+     *  + leading bit in EC case should not be dropped since its valid ANSIX963 encoding according to https://github.com/w3c-ccg/did-method-key/issues/37
+     *
+     */
+
+    /**
      * https://datatracker.ietf.org/doc/html/draft-multiformats-multibase
      *Magic
      * Adds correct Multibase identifier ('m') to Base64 encoding
-     * TODO: according to https://w3c-ccg.github.io/did-method-key/ should probably be base58bitcoin?
      */
     internal fun multibaseWrapBase64(it: ByteArray) = "m${it.encodeToString(Base64Strict)}"
 
@@ -115,12 +123,10 @@ object MultibaseHelper {
      *  0x1291 P-384
      *  0x1292 P-512
      */
-    //TODO: Test vectors https://w3c-ccg.github.io/did-method-key/#test-vectors
     internal fun multiCodecWrapEC(curve: EcCurve, it: ByteArray) =
         when (it[0]) {
             ANSI_COMPRESSED_PREFIX_1, ANSI_COMPRESSED_PREFIX_2 ->
                 when (curve) {
-                    //TODO: how to we differentiate between the two possible y values
                     EcCurve.SECP_256_R_1 -> byteArrayOf(0x12.toByte(), 0x00.toByte()) + it.drop(1)
                     EcCurve.SECP_384_R_1 -> byteArrayOf(0x12.toByte(), 0x01.toByte()) + it.drop(1)
                     EcCurve.SECP_521_R_1 -> byteArrayOf(0x12.toByte(), 0x02.toByte()) + it.drop(1)
@@ -128,7 +134,6 @@ object MultibaseHelper {
 
             ANSI_UNCOMPRESSED_PREFIX ->
                 when (curve) {
-                    //TODO: From above - check whether ANSI constant actually needs to be dropped
                     EcCurve.SECP_256_R_1 -> byteArrayOf(0x12.toByte(), 0x90.toByte()) + it.drop(1)
                     EcCurve.SECP_384_R_1 -> byteArrayOf(0x12.toByte(), 0x91.toByte()) + it.drop(1)
                     EcCurve.SECP_521_R_1 -> byteArrayOf(0x12.toByte(), 0x92.toByte()) + it.drop(1)
