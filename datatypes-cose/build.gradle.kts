@@ -8,7 +8,8 @@ plugins {
     id("at.asitplus.gradle.conventions")
 }
 
-version = "2.3.0-SNAPSHOT"
+val artifactVersion: String by extra
+version = artifactVersion
 
 kotlin {
     jvm()
