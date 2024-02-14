@@ -1,7 +1,7 @@
 import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
 
 plugins {
-    id("at.asitplus.gradle.conventions") version "1.9.22+20240115" //version can be omitted for composite build
+    id("at.asitplus.gradle.conventions") version "1.9.22+20240213" //version can be omitted for composite build
 }
 group = "at.asitplus.crypto"
 
