@@ -21,7 +21,7 @@ kotlin {
             languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
         }
 
-        commonMain {
+        val commonMain by getting {
             dependencies {
                 api(kmmresult())
                 api(serialization("json"))
@@ -32,23 +32,28 @@ kotlin {
             }
         }
 
-        commonTest {
+        val commonTest by getting {
             dependencies {
                 implementation(kotest("property"))
                 implementation(kotlin("reflect"))
             }
         }
 
-        jvmMain {
+        val jvmMain by getting {
             dependencies {
                 api(bouncycastle("bcpkix"))
             }
         }
+
+        val jvmTest by getting
     }
 }
 exportIosFramework("KmpCrypto", serialization("json"), datetime(), kmmresult())
 
-val javadocJar = setupDokka(baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/", multiModuleDoc = true)
+val javadocJar = setupDokka(
+    baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/",
+    multiModuleDoc = true
+)
 
 publishing {
     publications {
