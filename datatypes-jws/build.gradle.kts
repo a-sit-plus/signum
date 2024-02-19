@@ -22,7 +22,7 @@ kotlin {
             languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
         }
 
-        commonMain {
+        val commonMain by getting {
             dependencies {
                 api(project(":datatypes"))
                 implementation("com.squareup.okio:okio:${okio}")
@@ -32,11 +32,14 @@ kotlin {
             }
         }
 
-        commonTest {
+        val commonTest by getting {
             dependencies {
                 implementation(kotlin("reflect"))
             }
         }
+
+        val jvmMain by getting
+        val jvmTest by getting
     }
 }
 exportIosFramework(
@@ -47,7 +50,10 @@ exportIosFramework(
     project(":datatypes")
 )
 
-val javadocJar = setupDokka(baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/", multiModuleDoc = true)
+val javadocJar = setupDokka(
+    baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/",
+    multiModuleDoc = true
+)
 
 
 publishing {
