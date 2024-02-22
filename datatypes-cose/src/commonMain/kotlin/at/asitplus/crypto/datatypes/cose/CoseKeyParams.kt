@@ -6,7 +6,6 @@ import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.Signum
 import at.asitplus.crypto.datatypes.asn1.decodeFromDer
-import at.asitplus.crypto.datatypes.misc.toInt
 
 /**
  * Wrapper to handle parameters for different COSE public key types.

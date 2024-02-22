@@ -21,13 +21,15 @@ import at.asitplus.crypto.datatypes.asn1.readNull
 import at.asitplus.crypto.datatypes.asn1.readOid
 import at.asitplus.crypto.datatypes.asn1.runRethrowing
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
+import at.asitplus.crypto.datatypes.io.MultiBase
 import at.asitplus.crypto.datatypes.io.MultibaseHelper
 import at.asitplus.crypto.datatypes.misc.ANSI_COMPRESSED_PREFIX_1
 import at.asitplus.crypto.datatypes.misc.ANSI_COMPRESSED_PREFIX_2
 import at.asitplus.crypto.datatypes.misc.ANSI_UNCOMPRESSED_PREFIX
+import at.asitplus.crypto.datatypes.misc.UVarInt
 import at.asitplus.crypto.datatypes.misc.compressY
 import at.asitplus.crypto.datatypes.misc.decompressY
-import at.asitplus.crypto.datatypes.misc.toInt
+import at.asitplus.crypto.datatypes.misc.toUInt
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -79,10 +81,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
     }
 
 
-
     companion object : Asn1Decodable<Asn1Sequence, CryptoPublicKey> {
-
-
         /**
          * Parses a DID representation of a public key and
          * reconstructs the corresponding [CryptoPublicKey] from it
@@ -90,22 +89,22 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          */
         @Throws(Throwable::class)
         fun fromDid(input: String): CryptoPublicKey {
-            val bytes = MultibaseHelper.bytesFromDid(input)
-            require(bytes.size > 3) { "Invalid key size" }
-            require(bytes[0] == 0x12.toByte()) { "Unknown public key identifier" }
+            val bytes = MultibaseHelper.multiKeyRemovePrefix(input)
+            val decoded = MultiBase.decode(bytes)
+            val codec = UVarInt(decoded.sliceArray(0..1)).decode()
 
-            return when (bytes[1]) {
-                0x90.toByte(), 0x91.toByte(), 0x92.toByte() ->
-                    Ec.fromAnsiX963Bytes(byteArrayOf(ANSI_UNCOMPRESSED_PREFIX, *bytes.drop(2).toByteArray()))
+            return when (codec) {
+                0x1200uL, 0x1201uL, 0x1202uL ->
+                    Ec.fromAnsiX963Bytes(decoded.drop(2).toByteArray())
 
-                0x00.toByte(), 0x01.toByte(), 0x02.toByte() ->
-                    Ec.fromAnsiX963Bytes(bytes.drop(2).toByteArray()) //TODO works if Ansi constant is not dropped
+                0x1290uL, 0x1291uL, 0x1292uL ->
+                    Ec.fromAnsiX963Bytes(decoded.drop(2).toByteArray())
 
-                0x05.toByte() ->
-                    Rsa.fromPKCS1encoded(bytes.drop(2).toByteArray())
+                0x1205uL ->
+                    Rsa.fromPKCS1encoded(decoded.drop(2).toByteArray())
 
                 else ->
-                    throw IllegalArgumentException("Unknown public key identifier")
+                    throw IllegalArgumentException("Unknown public key identifier $codec")
             }
         }
 
@@ -231,11 +230,10 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          * Example of arbitrary P-256 key `did:key:mEpDXw70K0VhlxlhGX/B7zmI+V904Zo+Mz0gethWLJqTtBY8ma21J56insvTuPy7maJUqOCgf5eZJ1AkNX9HzSjLu`
          */
         override val didEncoded by lazy {
-            "${MultibaseHelper.PREFIX_DID_KEY}:${
-                MultibaseHelper.multibaseWrapBase64(
-                    MultibaseHelper.multicodecWrapRSA(this.iosEncoded)
-                )
-            }"
+            MultibaseHelper.PREFIX_DID_KEY + ":" + MultiBase.encode(
+                MultiBase.Base.BASE64,
+                UVarInt.encode(0x1205uL).bytes + this.pkcsEncoded
+            )
         }
 
         override val iosEncoded by lazy { pkcsEncoded }
@@ -332,7 +330,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             when (useCompression) {
                 null -> toAnsiX963Encoded(this.compressedOnReceive)
                 true -> {
-                    val prefix = (2 + compressY().toInt()).toByte()
+                    val prefix = (2U + compressY().toUInt()).toByte()
                         .also { require(it == ANSI_COMPRESSED_PREFIX_1 || it == ANSI_COMPRESSED_PREFIX_2) }
                     byteArrayOf(
                         prefix,
@@ -353,14 +351,15 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          * Example of arbitrary P-256 key `did:key:mEpDXw70K0VhlxlhGX/B7zmI+V904Zo+Mz0gethWLJqTtBY8ma21J56insvTuPy7maJUqOCgf5eZJ1AkNX9HzSjLu`
          */
         override val didEncoded by lazy {
-            "${MultibaseHelper.PREFIX_DID_KEY}:${
-                MultibaseHelper.multibaseWrapBase64(
-                    MultibaseHelper.multiCodecWrapEC(
-                        this.curve,
-                        this.toAnsiX963Encoded()
-                    )
-                )
-            }"
+            val codec = (0x12 shl 8).toULong() + when (curve) {
+                EcCurve.SECP_256_R_1 -> 0x00uL + 0x90uL * (1U - compressedOnReceive.toUInt())
+                EcCurve.SECP_384_R_1 -> 0x01uL + 0x90uL * (1U - compressedOnReceive.toUInt())
+                EcCurve.SECP_521_R_1 -> 0x02uL + 0x90uL * (1U - compressedOnReceive.toUInt())
+            }
+            MultibaseHelper.PREFIX_DID_KEY + ":" + MultiBase.encode(
+                MultiBase.Base.BASE64,
+                UVarInt.encode(codec).bytes + this.toAnsiX963Encoded()
+            )
         }
 
         override val iosEncoded by lazy { toAnsiX963Encoded() }

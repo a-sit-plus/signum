@@ -21,7 +21,7 @@ const val ANSI_UNCOMPRESSED_PREFIX = 0x04.toByte()
  */
 const val SIGNUM_POSITIVE: Signum = true
 const val SIGNUM_NEGATIVE: Signum = false
-fun Signum.toInt() = if (this) 1 else 0
+fun Signum.toUInt(): UInt = if (this) 1U else 0U
 
 /**
  * According to https://www.secg.org/sec1-v2.pdf, https://www.secg.org/sec2-v2.pdf

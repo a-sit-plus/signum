@@ -4,6 +4,7 @@ import at.asitplus.crypto.datatypes.EcCurve
 import at.asitplus.crypto.datatypes.misc.ANSI_COMPRESSED_PREFIX_1
 import at.asitplus.crypto.datatypes.misc.ANSI_COMPRESSED_PREFIX_2
 import at.asitplus.crypto.datatypes.misc.ANSI_UNCOMPRESSED_PREFIX
+import at.asitplus.crypto.datatypes.misc.UVarInt
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.base64.Base64ConfigBuilder
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -123,27 +124,27 @@ object MultibaseHelper {
      *  0x1291 P-384
      *  0x1292 P-512
      */
-    internal fun multiCodecWrapEC(curve: EcCurve, it: ByteArray) =
-        when (it[0]) {
-            ANSI_COMPRESSED_PREFIX_1, ANSI_COMPRESSED_PREFIX_2 ->
-                when (curve) {
-                    EcCurve.SECP_256_R_1 -> byteArrayOf(0x12.toByte(), 0x00.toByte()) + it.drop(1)
-                    EcCurve.SECP_384_R_1 -> byteArrayOf(0x12.toByte(), 0x01.toByte()) + it.drop(1)
-                    EcCurve.SECP_521_R_1 -> byteArrayOf(0x12.toByte(), 0x02.toByte()) + it.drop(1)
-                }
-
-            ANSI_UNCOMPRESSED_PREFIX ->
-                when (curve) {
-                    EcCurve.SECP_256_R_1 -> byteArrayOf(0x12.toByte(), 0x90.toByte()) + it.drop(1)
-                    EcCurve.SECP_384_R_1 -> byteArrayOf(0x12.toByte(), 0x91.toByte()) + it.drop(1)
-                    EcCurve.SECP_521_R_1 -> byteArrayOf(0x12.toByte(), 0x92.toByte()) + it.drop(1)
-                }
-
-            else -> throw Exception("Some Exception")
-        }
+//    internal fun multiCodecWrapEC(curve: EcCurve, it: ByteArray) =
+//        when (it[0]) {
+//            ANSI_COMPRESSED_PREFIX_1, ANSI_COMPRESSED_PREFIX_2 ->
+//                when (curve) {
+//                    EcCurve.SECP_256_R_1 -> UVarInt(byteArrayOf(0x12.toByte(), 0x00.toByte())).toByteArray() + it
+//                    EcCurve.SECP_384_R_1 -> UVarInt(byteArrayOf(0x12.toByte(), 0x01.toByte())).toByteArray() + it
+//                    EcCurve.SECP_521_R_1 -> UVarInt(byteArrayOf(0x12.toByte(), 0x02.toByte())).toByteArray() + it
+//                }
+//
+//            ANSI_UNCOMPRESSED_PREFIX ->
+//                when (curve) {
+//                    EcCurve.SECP_256_R_1 -> UVarInt(byteArrayOf(0x12.toByte(), 0x00.toByte())).toByteArray() + it
+//                    EcCurve.SECP_384_R_1 -> UVarInt(byteArrayOf(0x12.toByte(), 0x00.toByte())).toByteArray() + it
+//                    EcCurve.SECP_521_R_1 -> UVarInt(byteArrayOf(0x12.toByte(), 0x00.toByte())).toByteArray() + it
+//                }
+//
+//            else -> throw Exception("Some Exception")
+//        }
 
     @Throws(Throwable::class)
-    private fun multiKeyRemovePrefix(keyId: String): String =
+    internal fun multiKeyRemovePrefix(keyId: String): String =
         keyId.takeIf { it.startsWith("$PREFIX_DID_KEY:") }?.removePrefix("$PREFIX_DID_KEY:")
             ?: throw IllegalArgumentException("Input does not specify public key")
 
@@ -160,3 +161,30 @@ object MultibaseHelper {
     @Throws(Throwable::class)
     internal fun bytesFromDid(keyId: String): ByteArray = multibaseDecode(multiKeyRemovePrefix(keyId))
 }
+
+//fun BitSet.slice(start: Int, end: Int): BitSet {
+//    val counter = 0L
+//    val res = BitSet()
+//    while (end >= counter + start){
+//        res[counter] = this[counter + start]
+//    }
+//    return res
+//}
+
+//fun BitSet.toVarIntEncoded(): BitSet {
+//    var vector = this
+//    var counter: Long = 0
+//    var offset = 0L
+//    val res = BitSet()
+//
+//    for (i in vector) {
+//        if (counter.mod(7) != 0 || counter == 0L) {
+//            res[counter + offset] = i
+//        } else {
+//            res[counter + offset] = true
+//            offset++
+//        }
+//        counter++
+//    }
+//    return res
+//}

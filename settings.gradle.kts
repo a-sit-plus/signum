@@ -12,6 +12,7 @@ pluginManagement {
         }
     }
 }
+
 include(":datatypes")
 include(":datatypes-jws")
 include(":datatypes-cose")
