@@ -1,6 +1,20 @@
 package at.asitplus.crypto.datatypes.pki
 
-import at.asitplus.crypto.datatypes.asn1.*
+import at.asitplus.crypto.datatypes.asn1.Asn1Decodable
+import at.asitplus.crypto.datatypes.asn1.Asn1Element
+import at.asitplus.crypto.datatypes.asn1.Asn1EncapsulatingOctetString
+import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
+import at.asitplus.crypto.datatypes.asn1.Asn1Exception
+import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
+import at.asitplus.crypto.datatypes.asn1.Asn1PrimitiveOctetString
+import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
+import at.asitplus.crypto.datatypes.asn1.Asn1TagMismatchException
+import at.asitplus.crypto.datatypes.asn1.BERTags
+import at.asitplus.crypto.datatypes.asn1.Identifiable
+import at.asitplus.crypto.datatypes.asn1.ObjectIdentifier
+import at.asitplus.crypto.datatypes.asn1.asn1Sequence
+import at.asitplus.crypto.datatypes.asn1.readOid
+import at.asitplus.crypto.datatypes.asn1.runRethrowing
 import kotlinx.serialization.Serializable
 
 /**

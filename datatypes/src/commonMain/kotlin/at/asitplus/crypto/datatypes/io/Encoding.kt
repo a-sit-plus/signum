@@ -1,14 +1,8 @@
 package at.asitplus.crypto.datatypes.io
 
-import at.asitplus.crypto.datatypes.EcCurve
-import at.asitplus.crypto.datatypes.misc.ANSI_COMPRESSED_PREFIX_1
-import at.asitplus.crypto.datatypes.misc.ANSI_COMPRESSED_PREFIX_2
-import at.asitplus.crypto.datatypes.misc.ANSI_UNCOMPRESSED_PREFIX
-import at.asitplus.crypto.datatypes.misc.UVarInt
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.base64.Base64ConfigBuilder
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
-import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArrayOrNull
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
@@ -83,47 +77,4 @@ object ByteArrayBase64UrlSerializer : KSerializer<ByteArray> {
         return kotlin.runCatching { decoder.decodeString().decodeToByteArray(Base64UrlStrict) }
             .getOrElse { throw SerializationException("Base64 decoding failed", it) }
     }
-}
-
-
-object MultibaseHelper {
-    internal const val PREFIX_DID_KEY = "did:key"
-
-    /**
-     * Adds a Multicodec identifier
-     * We use '0x129x' to identify uncompressed EC keys of their respective size, these are not officially used identifiers.
-     * Multicodec identifiers '0x120x' are draft identifiers for P-xxx keys with point compression
-     *
-     *  0x1200 P-256
-     *  0x1201 P-384
-     *  0x1202 P-512
-     *
-     *  0x1290 P-256
-     *  0x1291 P-384
-     *  0x1292 P-512
-     */
-//    internal fun multiCodecWrapEC(curve: EcCurve, it: ByteArray) =
-//        when (it[0]) {
-//            ANSI_COMPRESSED_PREFIX_1, ANSI_COMPRESSED_PREFIX_2 ->
-//                when (curve) {
-//                    EcCurve.SECP_256_R_1 -> UVarInt(byteArrayOf(0x12.toByte(), 0x00.toByte())).toByteArray() + it
-//                    EcCurve.SECP_384_R_1 -> UVarInt(byteArrayOf(0x12.toByte(), 0x01.toByte())).toByteArray() + it
-//                    EcCurve.SECP_521_R_1 -> UVarInt(byteArrayOf(0x12.toByte(), 0x02.toByte())).toByteArray() + it
-//                }
-//
-//            ANSI_UNCOMPRESSED_PREFIX ->
-//                when (curve) {
-//                    EcCurve.SECP_256_R_1 -> UVarInt(byteArrayOf(0x12.toByte(), 0x00.toByte())).toByteArray() + it
-//                    EcCurve.SECP_384_R_1 -> UVarInt(byteArrayOf(0x12.toByte(), 0x00.toByte())).toByteArray() + it
-//                    EcCurve.SECP_521_R_1 -> UVarInt(byteArrayOf(0x12.toByte(), 0x00.toByte())).toByteArray() + it
-//                }
-//
-//            else -> throw Exception("Some Exception")
-//        }
-
-    @Throws(Throwable::class)
-    internal fun multiKeyRemovePrefix(keyId: String): String =
-        keyId.takeIf { it.startsWith("$PREFIX_DID_KEY:") }?.removePrefix("$PREFIX_DID_KEY:")
-            ?: throw IllegalArgumentException("Input does not specify public key")
-
 }

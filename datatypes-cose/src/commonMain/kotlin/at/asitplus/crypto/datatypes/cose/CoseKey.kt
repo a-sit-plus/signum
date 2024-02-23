@@ -130,7 +130,7 @@ data class CoseKey(
 fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseKey> =
     when (this) {
         is CryptoPublicKey.Ec ->
-            if ((algorithm == null) || !(algorithm.toCryptoAlgorithm().isEc))
+            if ((algorithm != null) && !(algorithm.toCryptoAlgorithm().isEc))
                 failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
             else {
                 val keyParams = if (this.useCompressedRepresentation) {
@@ -156,7 +156,7 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseK
             }
 
         is CryptoPublicKey.Rsa ->
-            if ((algorithm == null) || (algorithm !in listOf(
+            if ((algorithm != null) && (algorithm !in listOf(
                     CoseAlgorithm.PS256, CoseAlgorithm.PS384, CoseAlgorithm.PS512,
                     CoseAlgorithm.RS256, CoseAlgorithm.RS384, CoseAlgorithm.RS512
                 ))

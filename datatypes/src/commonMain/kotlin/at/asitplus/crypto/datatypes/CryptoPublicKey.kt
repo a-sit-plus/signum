@@ -22,7 +22,6 @@ import at.asitplus.crypto.datatypes.asn1.readOid
 import at.asitplus.crypto.datatypes.asn1.runRethrowing
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.io.MultiBase
-import at.asitplus.crypto.datatypes.io.MultibaseHelper
 import at.asitplus.crypto.datatypes.misc.ANSI_COMPRESSED_PREFIX_1
 import at.asitplus.crypto.datatypes.misc.ANSI_COMPRESSED_PREFIX_2
 import at.asitplus.crypto.datatypes.misc.ANSI_UNCOMPRESSED_PREFIX
@@ -89,7 +88,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          */
         @Throws(Throwable::class)
         fun fromDid(input: String): CryptoPublicKey {
-            val bytes = MultibaseHelper.multiKeyRemovePrefix(input)
+            val bytes = multiKeyRemovePrefix(input)
             val decoded = MultiBase.decode(bytes)
             val codec = UVarInt.fromByteArray(decoded.sliceArray(0..1)).toULong()
 
@@ -229,8 +228,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          * The Multicodec identifier for RSA is `0x1205` and the key bytes are represented as PKCS#1 encoding.
          */
         override val didEncoded by lazy {
-            MultibaseHelper.PREFIX_DID_KEY + ":" + MultiBase.encode(
-                MultiBase.Base.BASE64,
+            PREFIX_DID_KEY + ":" + MultiBase.encode(
+                MultiBase.Base.BASE58_BTC,
                 UVarInt(0x1205u).encodeToByteArray() + this.pkcsEncoded
             )
         }
@@ -360,12 +359,12 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          */
         override val didEncoded by lazy {
             val codec = (0x12 shl 8).toUInt() + when (curve) {
-                EcCurve.SECP_256_R_1 -> 0x00u + 0x90u * (1U - compressedOnReceive.toUInt())
-                EcCurve.SECP_384_R_1 -> 0x01u + 0x90u * (1U - compressedOnReceive.toUInt())
-                EcCurve.SECP_521_R_1 -> 0x02u + 0x90u * (1U - compressedOnReceive.toUInt())
+                EcCurve.SECP_256_R_1 -> 0x00u + 0x90u * (1U - useCompressedRepresentation.toUInt())
+                EcCurve.SECP_384_R_1 -> 0x01u + 0x90u * (1U - useCompressedRepresentation.toUInt())
+                EcCurve.SECP_521_R_1 -> 0x02u + 0x90u * (1U - useCompressedRepresentation.toUInt())
             }
-            MultibaseHelper.PREFIX_DID_KEY + ":" + MultiBase.encode(
-                MultiBase.Base.BASE64,
+            PREFIX_DID_KEY + ":" + MultiBase.encode(
+                MultiBase.Base.BASE58_BTC,
                 UVarInt(codec).encodeToByteArray() + this.toAnsiX963Encoded()
             )
         }
@@ -449,3 +448,10 @@ private val RsaParams.size get() = third
 @Throws(IllegalArgumentException::class)
 private fun sanitizeRsaInputs(n: ByteArray, e: Int): RsaParams = n.dropWhile { it == 0.toByte() }.toByteArray()
     .let { Triple(byteArrayOf(0, *it), e, CryptoPublicKey.Rsa.Size.of(it)) }
+
+
+private val PREFIX_DID_KEY = "did:key"
+@Throws(Throwable::class)
+private fun multiKeyRemovePrefix(keyId: String): String =
+    keyId.takeIf { it.startsWith("$PREFIX_DID_KEY:") }?.removePrefix("$PREFIX_DID_KEY:")
+        ?: throw IllegalArgumentException("Input does not specify public key")

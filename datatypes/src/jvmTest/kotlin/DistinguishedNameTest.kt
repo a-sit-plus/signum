@@ -1,5 +1,9 @@
 import at.asitplus.crypto.datatypes.asn1.KnownOIDs
-import at.asitplus.crypto.datatypes.pki.DistinguishedName.*
+import at.asitplus.crypto.datatypes.pki.DistinguishedName.CommonName
+import at.asitplus.crypto.datatypes.pki.DistinguishedName.Country
+import at.asitplus.crypto.datatypes.pki.DistinguishedName.Organization
+import at.asitplus.crypto.datatypes.pki.DistinguishedName.OrganizationalUnit
+import at.asitplus.crypto.datatypes.pki.DistinguishedName.Other
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe

@@ -1,11 +1,14 @@
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.getJcaPublicKey
 import at.asitplus.crypto.datatypes.jws.JwsSigned
+import com.nimbusds.jose.JWSObject
+import com.nimbusds.jose.crypto.ECDSAVerifier
+import com.nimbusds.jose.crypto.RSASSAVerifier
 import io.kotest.core.spec.style.FreeSpec
+import io.kotest.datatest.withData
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.nulls.shouldNotBeNull
-import io.kotest.matchers.types.shouldBeInstanceOf
-import java.security.Signature
+import java.security.interfaces.RSAPublicKey
 
 class JwsSignedTest : FreeSpec({
 
@@ -13,21 +16,18 @@ class JwsSignedTest : FreeSpec({
         val testvec = javaClass.classLoader.getResourceAsStream("JwsTestVectors.txt")?.reader()?.readLines()
             ?: throw Exception("TestVectors not found")
 
-        for (input in testvec) {
+        withData(testvec) { input ->
             val parsed = JwsSigned.parse(input)
             parsed.shouldNotBeNull()
 
             val publicKey = parsed.header.publicKey
             publicKey.shouldNotBeNull()
-            publicKey.shouldBeInstanceOf<CryptoPublicKey.Ec>()
-            val jcaKey = publicKey.getJcaPublicKey().getOrThrow()
-            val asn1Signature = parsed.signature.encodeToDer()
-            val signatureInput = parsed.plainSignatureInput.encodeToByteArray()
 
-            val result = Signature.getInstance("SHA256withECDSA").apply {
-                initVerify(jcaKey)
-                update(signatureInput)
-            }.verify(asn1Signature)
+            val jvmVerifier =
+                if (publicKey is CryptoPublicKey.Ec) ECDSAVerifier(publicKey.getJcaPublicKey().getOrThrow())
+                else RSASSAVerifier(publicKey.getJcaPublicKey().getOrThrow() as RSAPublicKey)
+
+            val result = JWSObject.parse(parsed.serialize()).verify(jvmVerifier)
             result.shouldBeTrue()
         }
     }

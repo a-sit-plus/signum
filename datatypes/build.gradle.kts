@@ -1,4 +1,10 @@
-import at.asitplus.gradle.*
+import at.asitplus.gradle.bouncycastle
+import at.asitplus.gradle.datetime
+import at.asitplus.gradle.exportIosFramework
+import at.asitplus.gradle.kmmresult
+import at.asitplus.gradle.kotest
+import at.asitplus.gradle.serialization
+import at.asitplus.gradle.setupDokka
 
 plugins {
     kotlin("multiplatform")

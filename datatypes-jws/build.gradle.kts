@@ -1,4 +1,9 @@
-import at.asitplus.gradle.*
+import at.asitplus.gradle.datetime
+import at.asitplus.gradle.exportIosFramework
+import at.asitplus.gradle.kmmresult
+import at.asitplus.gradle.napier
+import at.asitplus.gradle.serialization
+import at.asitplus.gradle.setupDokka
 
 plugins {
     kotlin("multiplatform")
@@ -27,6 +32,7 @@ kotlin {
                 implementation(libs.base16)
                 implementation(libs.base64)
                 implementation(napier())
+                implementation(libs.bignum) //Intellij bug work-around
             }
         }
 
@@ -37,7 +43,11 @@ kotlin {
         }
 
         val jvmMain by getting
-        val jvmTest by getting
+        val jvmTest by getting {
+            dependencies {
+                implementation(libs.jose)
+            }
+        }
     }
 }
 exportIosFramework(

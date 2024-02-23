@@ -14,15 +14,15 @@ import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
-import org.bouncycastle.asn1.x9.X9ECPoint
-import org.bouncycastle.jce.interfaces.ECPointEncoder
-import org.bouncycastle.oer.its.ieee1609dot2.basetypes.EccP256CurvePoint
+import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.KeyPairGenerator
+import java.security.Security
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPublicKey
-import kotlin.experimental.and
 
 class CoseKeySerializationTest : FreeSpec({
+    Security.addProvider(BouncyCastleProvider())
 
     "Serializing" - {
         "Manual" {
@@ -33,7 +33,7 @@ class CoseKeySerializationTest : FreeSpec({
                             KeyPairGenerator.getInstance("EC").apply {
                                 initialize(256)
                             }.genKeyPair().public
-                        ).getOrThrow().toCoseKey().getOrThrow(),
+                        ).getOrThrow().toCoseKey(CoseAlgorithm.ES256).getOrThrow(),
                         CryptoPublicKey.fromJcaPublicKey(KeyPairGenerator.getInstance("EC").apply {
                             initialize(256)
                         }.genKeyPair().public).getOrThrow().toCoseKey().getOrThrow()
@@ -47,8 +47,8 @@ class CoseKeySerializationTest : FreeSpec({
 
         "EC" - {
             withData(256, 384, 521) { bits ->
-                val keys = List<ECPublicKey>(256000 / bits) {
-                    val ecKp = KeyPairGenerator.getInstance("EC").apply {
+                val keys = List<ECPublicKey>(25600 / bits) {
+                    val ecKp = KeyPairGenerator.getInstance("EC", "BC").apply {
                         initialize(bits)
                     }.genKeyPair()
                     ecKp.public as ECPublicKey
@@ -73,20 +73,20 @@ class CoseKeySerializationTest : FreeSpec({
                         println(decoded)
                     }
 
-//                    withClue("Compressed")
-//                    {
-//                        val coseKey: CoseKey =
-//                            CryptoPublicKey.Ec(
-//                                EcCurve.of(bits.toUInt())!!,
-//                                pubKey.w.affineX.toByteArray(),
-//                                pubKey.w.affineY.toByteArray().last() and 1.toByte()
-//                            ).toCoseKey().getOrThrow()
-//                        val cose = coseKey.serialize()
-//                        println(cose.encodeToString(Base16))
-//                        val decoded = CoseKey.deserialize(cose).getOrThrow()
-//                        decoded shouldBe coseKey
-//                        println(decoded)
-//                    }
+                    withClue("Compressed")
+                    {
+                        val coseKey: CoseKey =
+                            CryptoPublicKey.Ec(
+                                EcCurve.of(bits.toUInt())!!,
+                                pubKey.w.affineX.toByteArray(),
+                                (pubKey as BCECPublicKey).q.getEncoded(true)//pubKey.w.affineY.toByteArray().last() and 1.toByte()
+                            ).toCoseKey().getOrThrow()
+                        val cose = coseKey.serialize()
+                        println(cose.encodeToString(Base16))
+                        val decoded = CoseKey.deserialize(cose).getOrThrow()
+                        decoded shouldBe coseKey
+                        println(decoded)
+                    }
                 }
             }
         }
