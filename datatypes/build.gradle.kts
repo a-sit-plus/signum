@@ -1,4 +1,3 @@
-import DatatypeVersions.encoding
 import at.asitplus.gradle.*
 
 plugins {
@@ -26,9 +25,9 @@ kotlin {
                 api(kmmresult())
                 api(serialization("json"))
                 api(datetime())
-                implementation("io.matthewnelson.kotlin-components:encoding-base16:${encoding}")
-                implementation("io.matthewnelson.kotlin-components:encoding-base64:${encoding}")
-                implementation("com.ionspin.kotlin:bignum:0.3.9")
+                implementation(libs.base16)
+                implementation(libs.base64)
+                implementation(libs.bignum)
             }
         }
 

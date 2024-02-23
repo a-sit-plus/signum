@@ -1,5 +1,3 @@
-import DatatypeVersions.encoding
-import DatatypeVersions.okio
 import at.asitplus.gradle.*
 
 plugins {
@@ -25,10 +23,10 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(project(":datatypes"))
-                implementation("com.squareup.okio:okio:${okio}")
+                implementation(libs.okio)
+                implementation(libs.base16)
+                implementation(libs.base64)
                 implementation(napier())
-                implementation("io.matthewnelson.kotlin-components:encoding-base16:${encoding}")
-                implementation("io.matthewnelson.kotlin-components:encoding-base64:${encoding}")
             }
         }
 
@@ -50,10 +48,7 @@ exportIosFramework(
     project(":datatypes")
 )
 
-val javadocJar = setupDokka(
-    baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/",
-    multiModuleDoc = true
-)
+val javadocJar = setupDokka(baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/", multiModuleDoc = true)
 
 
 publishing {

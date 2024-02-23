@@ -1,4 +1,3 @@
-import DatatypeVersions.encoding
 import at.asitplus.gradle.*
 
 plugins {
@@ -26,8 +25,8 @@ kotlin {
                 api(project(":datatypes"))
                 api(serialization("cbor"))
                 implementation(napier())
-                implementation("io.matthewnelson.kotlin-components:encoding-base16:${encoding}")
-                implementation("io.matthewnelson.kotlin-components:encoding-base64:${encoding}")
+                implementation(libs.base16)
+                implementation(libs.base64)
             }
         }
 
