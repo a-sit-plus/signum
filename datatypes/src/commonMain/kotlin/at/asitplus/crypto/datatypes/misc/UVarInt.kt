@@ -39,6 +39,7 @@ class UVarInt private constructor(private val number: ULong) {
 
         /**
          * decodes a varint-encoded ByteArray into a UVarInt
+         * @throws NumberFormatException on illegal input (e.g. values larger than unit63, or non-minimal encoding)
          */
         @Throws(NumberFormatException::class)
         fun fromByteArray(bytes: ByteArray): UVarInt = UVarInt(decode(bytes))
