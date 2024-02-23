@@ -1,35 +1,10 @@
 package at.asitplus.crypto.datatypes
 
-import at.asitplus.crypto.datatypes.asn1.Asn1Decodable
-import at.asitplus.crypto.datatypes.asn1.Asn1Element
-import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
-import at.asitplus.crypto.datatypes.asn1.Asn1Exception
-import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
-import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.Asn1StructuralException
-import at.asitplus.crypto.datatypes.asn1.BERTags
-import at.asitplus.crypto.datatypes.asn1.DERTags
-import at.asitplus.crypto.datatypes.asn1.Identifiable
-import at.asitplus.crypto.datatypes.asn1.KnownOIDs
-import at.asitplus.crypto.datatypes.asn1.asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.decode
-import at.asitplus.crypto.datatypes.asn1.ensureSize
-import at.asitplus.crypto.datatypes.asn1.parse
-import at.asitplus.crypto.datatypes.asn1.readBitString
-import at.asitplus.crypto.datatypes.asn1.readInt
-import at.asitplus.crypto.datatypes.asn1.readNull
-import at.asitplus.crypto.datatypes.asn1.readOid
-import at.asitplus.crypto.datatypes.asn1.runRethrowing
+import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.io.MultiBase
 import at.asitplus.crypto.datatypes.io.MultibaseHelper
-import at.asitplus.crypto.datatypes.misc.ANSI_COMPRESSED_PREFIX_1
-import at.asitplus.crypto.datatypes.misc.ANSI_COMPRESSED_PREFIX_2
-import at.asitplus.crypto.datatypes.misc.ANSI_UNCOMPRESSED_PREFIX
-import at.asitplus.crypto.datatypes.misc.UVarInt
-import at.asitplus.crypto.datatypes.misc.compressY
-import at.asitplus.crypto.datatypes.misc.decompressY
-import at.asitplus.crypto.datatypes.misc.toUInt
+import at.asitplus.crypto.datatypes.misc.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -91,7 +66,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         fun fromDid(input: String): CryptoPublicKey {
             val bytes = MultibaseHelper.multiKeyRemovePrefix(input)
             val decoded = MultiBase.decode(bytes)
-            val codec = UVarInt(decoded.sliceArray(0..1)).decode()
+            val codec = UVarInt.fromByteArray(decoded.sliceArray(0..1)).toULong()
 
             return when (codec) {
                 0x1200uL, 0x1201uL, 0x1202uL ->
@@ -232,7 +207,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         override val didEncoded by lazy {
             MultibaseHelper.PREFIX_DID_KEY + ":" + MultiBase.encode(
                 MultiBase.Base.BASE64,
-                UVarInt.encode(0x1205uL).bytes + this.pkcsEncoded
+                UVarInt(0x1205u).encodeToByteArray() + this.pkcsEncoded
             )
         }
 
@@ -351,14 +326,14 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          * Example of arbitrary P-256 key `did:key:mEpDXw70K0VhlxlhGX/B7zmI+V904Zo+Mz0gethWLJqTtBY8ma21J56insvTuPy7maJUqOCgf5eZJ1AkNX9HzSjLu`
          */
         override val didEncoded by lazy {
-            val codec = (0x12 shl 8).toULong() + when (curve) {
-                EcCurve.SECP_256_R_1 -> 0x00uL + 0x90uL * (1U - compressedOnReceive.toUInt())
-                EcCurve.SECP_384_R_1 -> 0x01uL + 0x90uL * (1U - compressedOnReceive.toUInt())
-                EcCurve.SECP_521_R_1 -> 0x02uL + 0x90uL * (1U - compressedOnReceive.toUInt())
+            val codec = (0x12 shl 8).toUInt() + when (curve) {
+                EcCurve.SECP_256_R_1 -> 0x00u + 0x90u * (1U - compressedOnReceive.toUInt())
+                EcCurve.SECP_384_R_1 -> 0x01u + 0x90u * (1U - compressedOnReceive.toUInt())
+                EcCurve.SECP_521_R_1 -> 0x02u + 0x90u * (1U - compressedOnReceive.toUInt())
             }
             MultibaseHelper.PREFIX_DID_KEY + ":" + MultiBase.encode(
                 MultiBase.Base.BASE64,
-                UVarInt.encode(codec).bytes + this.toAnsiX963Encoded()
+                UVarInt(codec).encodeToByteArray() + this.toAnsiX963Encoded()
             )
         }
 

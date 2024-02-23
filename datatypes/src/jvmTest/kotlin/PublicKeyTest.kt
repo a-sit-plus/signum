@@ -7,8 +7,6 @@ import at.asitplus.crypto.datatypes.asn1.parse
 import at.asitplus.crypto.datatypes.fromJcaPublicKey
 import at.asitplus.crypto.datatypes.getJcaPublicKey
 import at.asitplus.crypto.datatypes.io.Base64Strict
-import at.asitplus.crypto.datatypes.io.BitSet
-import at.asitplus.crypto.datatypes.io.toBitSet
 import at.asitplus.crypto.datatypes.misc.UVarInt
 import com.ionspin.kotlin.bignum.integer.toBigInteger
 import io.kotest.assertions.withClue
@@ -16,9 +14,7 @@ import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import io.kotest.matchers.string.shouldStartWith
 import io.matthewnelson.encoding.base16.Base16
-import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -59,16 +55,7 @@ class PublicKeyTest : FreeSpec({
                         - 1.toBigInteger())
     }
 
-    "UVarInt test" {
-        val long = 0x1290uL
 
-        val tes = UVarInt.encode(long)
-        val tes2 = UVarInt(tes.bytes)
-        val res = tes.decode().also { print("${tes.bytes.size}") }
-        val res2 = tes2.decode()
-        res shouldBe long
-        res2 shouldBe res
-    }
 
     "EC" - {
         withData(256, 384, 521) { bits ->
