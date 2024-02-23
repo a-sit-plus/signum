@@ -1,10 +1,35 @@
 package at.asitplus.crypto.datatypes
 
-import at.asitplus.crypto.datatypes.asn1.*
+import at.asitplus.crypto.datatypes.asn1.Asn1Decodable
+import at.asitplus.crypto.datatypes.asn1.Asn1Element
+import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
+import at.asitplus.crypto.datatypes.asn1.Asn1Exception
+import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
+import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
+import at.asitplus.crypto.datatypes.asn1.Asn1StructuralException
+import at.asitplus.crypto.datatypes.asn1.BERTags
+import at.asitplus.crypto.datatypes.asn1.DERTags
+import at.asitplus.crypto.datatypes.asn1.Identifiable
+import at.asitplus.crypto.datatypes.asn1.KnownOIDs
+import at.asitplus.crypto.datatypes.asn1.asn1Sequence
+import at.asitplus.crypto.datatypes.asn1.decode
+import at.asitplus.crypto.datatypes.asn1.ensureSize
+import at.asitplus.crypto.datatypes.asn1.parse
+import at.asitplus.crypto.datatypes.asn1.readBitString
+import at.asitplus.crypto.datatypes.asn1.readInt
+import at.asitplus.crypto.datatypes.asn1.readNull
+import at.asitplus.crypto.datatypes.asn1.readOid
+import at.asitplus.crypto.datatypes.asn1.runRethrowing
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.io.MultiBase
 import at.asitplus.crypto.datatypes.io.MultibaseHelper
-import at.asitplus.crypto.datatypes.misc.*
+import at.asitplus.crypto.datatypes.misc.ANSI_COMPRESSED_PREFIX_1
+import at.asitplus.crypto.datatypes.misc.ANSI_COMPRESSED_PREFIX_2
+import at.asitplus.crypto.datatypes.misc.ANSI_UNCOMPRESSED_PREFIX
+import at.asitplus.crypto.datatypes.misc.UVarInt
+import at.asitplus.crypto.datatypes.misc.compressY
+import at.asitplus.crypto.datatypes.misc.decompressY
+import at.asitplus.crypto.datatypes.misc.toUInt
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -200,9 +225,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
 
         /**
-         * Returns `did:key:$MULTIBASE_ENCODING$ALGORITHM_IDENTIFIER$BYTES` with the public key parameters appended in Base64.
-         * This translates for example to `Base64(0x12, 0x90, EC-P-{256,384,521}-Key)`.
-         * Example of arbitrary P-256 key `did:key:mEpDXw70K0VhlxlhGX/B7zmI+V904Zo+Mz0gethWLJqTtBY8ma21J56insvTuPy7maJUqOCgf5eZJ1AkNX9HzSjLu`
+         * Returns `did:key:$MULTIBASE_ENCODING_IDENTIFIER$MULTICODEC_ALGORITHM_IDENTIFIER$BYTES` with all bytes after MULTIBASE_ENCODING_IDENTIFIER in the assigned encoding.
+         * The Multicodec identifier for RSA is `0x1205` and the key bytes are represented as PKCS#1 encoding.
          */
         override val didEncoded by lazy {
             MultibaseHelper.PREFIX_DID_KEY + ":" + MultiBase.encode(
@@ -267,7 +291,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
     /**
      * EC public key representation
      * The properties and constructor params are exactly what their names suggest
-     * Point compression is marked by the first bit in the x coordinate: 0x02-0x03 signals compression is used, 0x04 signals it is not used
+     * @param useCompressedRepresentation indicates whether to use point compression where applicable
      */
     @Serializable
     @SerialName("EC")
@@ -275,7 +299,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         val curve: EcCurve,
         @Serializable(with = ByteArrayBase64Serializer::class) val x: ByteArray,
         @Serializable(with = ByteArrayBase64Serializer::class) val y: ByteArray,
-        val compressedOnReceive: Boolean,
+        var useCompressedRepresentation: Boolean,
     ) : CryptoPublicKey() {
 
         /**
@@ -301,9 +325,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         /**
          * ANSI X9.63 Encoding as used by iOS
          */
-        fun toAnsiX963Encoded(useCompression: Boolean? = null): ByteArray =
-            when (useCompression) {
-                null -> toAnsiX963Encoded(this.compressedOnReceive)
+        fun toAnsiX963Encoded(): ByteArray =
+            when (useCompressedRepresentation) {
                 true -> {
                     val prefix = (2U + compressY().toUInt()).toByte()
                         .also { require(it == ANSI_COMPRESSED_PREFIX_1 || it == ANSI_COMPRESSED_PREFIX_2) }
@@ -321,9 +344,19 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             }
 
         /**
-         * Returns `did:key:$MULTIBASE_ENCODING$ALGORITHM_IDENTIFIER$BYTES` with the public key parameters appended in Base64.
-         * This translates for example to `Base64(0x12, 0x90, EC-P-{256,384,521}-Key)`.
-         * Example of arbitrary P-256 key `did:key:mEpDXw70K0VhlxlhGX/B7zmI+V904Zo+Mz0gethWLJqTtBY8ma21J56insvTuPy7maJUqOCgf5eZJ1AkNX9HzSjLu`
+         * Returns `did:key:$MULTIBASE_ENCODING_IDENTIFIER$MULTICODEC_ALGORITHM_IDENTIFIER$BYTES` with all bytes after MULTIBASE_ENCODING_IDENTIFIER in the assigned encoding
+         * We use '0x129x' to identify uncompressed EC keys of their respective size, these are not officially used identifiers.
+         * Multicodec identifiers '0x120x' are draft identifiers for P-xxx keys with point compression
+         *
+         * 0x1200 P-256
+         * 0x1201 P-384
+         * 0x1202 P-512
+         *
+         * 0x1290 P-256
+         * 0x1291 P-384
+         * 0x1292 P-512
+         *
+         * The keybytes are ANSI X9.63 encoded (important for compression)
          */
         override val didEncoded by lazy {
             val codec = (0x12 shl 8).toUInt() + when (curve) {

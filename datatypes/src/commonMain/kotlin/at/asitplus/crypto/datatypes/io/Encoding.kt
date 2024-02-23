@@ -90,28 +90,6 @@ object MultibaseHelper {
     internal const val PREFIX_DID_KEY = "did:key"
 
     /**
-     * TODO
-     *  + add private lookup table for multicodec prefixes which needs to be of form VarInt as described here https://github.com/multiformats/unsigned-varint
-     *    the bits after the prefix stay in their original representation (i think) as discussed here https://github.com/w3c-ccg/did-method-key/issues/43
-     *  + base58-btc encoding
-     *  + leading bit in EC case should not be dropped since its valid ANSIX963 encoding according to https://github.com/w3c-ccg/did-method-key/issues/37
-     *
-     */
-
-    /**
-     * https://datatracker.ietf.org/doc/html/draft-multiformats-multibase
-     *Magic
-     * Adds correct Multibase identifier ('m') to Base64 encoding
-     */
-    internal fun multibaseWrapBase64(it: ByteArray) = "m${it.encodeToString(Base64Strict)}"
-
-    /**
-     * Adds correct Multicodec identifier ('0x1205') to encoded RSA key
-     * See https://github.com/multiformats/multicodec/blob/master/table.csv for up-to-date table
-     */
-    internal fun multicodecWrapRSA(it: ByteArray) = byteArrayOf(0x12.toByte(), 0x05.toByte()) + it
-
-    /**
      * Adds a Multicodec identifier
      * We use '0x129x' to identify uncompressed EC keys of their respective size, these are not officially used identifiers.
      * Multicodec identifiers '0x120x' are draft identifiers for P-xxx keys with point compression
@@ -148,43 +126,4 @@ object MultibaseHelper {
         keyId.takeIf { it.startsWith("$PREFIX_DID_KEY:") }?.removePrefix("$PREFIX_DID_KEY:")
             ?: throw IllegalArgumentException("Input does not specify public key")
 
-    @Throws(Throwable::class)
-    private fun multibaseDecode(it: String): ByteArray =
-        when (it.first()) {
-            'm' -> it.removePrefix("m").decodeToByteArrayOrNull(Base64Strict)
-                ?: throw SerializationException("Base64 decoding failed")
-
-            'z' -> TODO("Support Base58-Bitcoin not implemented")
-            else -> throw IllegalArgumentException("Encoding not supported")
-        }
-
-    @Throws(Throwable::class)
-    internal fun bytesFromDid(keyId: String): ByteArray = multibaseDecode(multiKeyRemovePrefix(keyId))
 }
-
-//fun BitSet.slice(start: Int, end: Int): BitSet {
-//    val counter = 0L
-//    val res = BitSet()
-//    while (end >= counter + start){
-//        res[counter] = this[counter + start]
-//    }
-//    return res
-//}
-
-//fun BitSet.toVarIntEncoded(): BitSet {
-//    var vector = this
-//    var counter: Long = 0
-//    var offset = 0L
-//    val res = BitSet()
-//
-//    for (i in vector) {
-//        if (counter.mod(7) != 0 || counter == 0L) {
-//            res[counter + offset] = i
-//        } else {
-//            res[counter + offset] = true
-//            offset++
-//        }
-//        counter++
-//    }
-//    return res
-//}
