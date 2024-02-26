@@ -49,9 +49,6 @@ class PublicKeyTest : FreeSpec({
 
                 withClue("Basic Conversions") {
                     println(Json.encodeToString(own))
-                    println(own.iosEncoded.encodeToString(Base16()))
-                    println(own.encodeToDer().encodeToString(Base16()))
-                    println(own.didEncoded)
                     own.encodeToDer() shouldBe pubKey.encoded
                     CryptoPublicKey.fromDid(own.didEncoded) shouldBe own
                     own.getJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
@@ -116,8 +113,7 @@ class PublicKeyTest : FreeSpec({
                 own1.e shouldBe own.e
 
                 println(Json.encodeToString(own))
-                println(own.pkcsEncoded.encodeToString(Base16()))
-                println(own.didEncoded)
+
                 val keyBytes = ((ASN1InputStream(pubKey.encoded).readObject()
                     .toASN1Primitive() as ASN1Sequence).elementAt(1) as DERBitString).bytes
                 own.pkcsEncoded shouldBe keyBytes //PKCS#1

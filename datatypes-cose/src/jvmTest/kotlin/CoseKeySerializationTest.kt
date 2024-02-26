@@ -79,7 +79,7 @@ class CoseKeySerializationTest : FreeSpec({
                             CryptoPublicKey.Ec(
                                 EcCurve.of(bits.toUInt())!!,
                                 pubKey.w.affineX.toByteArray(),
-                                (pubKey as BCECPublicKey).q.getEncoded(true)//pubKey.w.affineY.toByteArray().last() and 1.toByte()
+                                (pubKey as BCECPublicKey).q.getEncoded(true)
                             ).toCoseKey().getOrThrow()
                         val cose = coseKey.serialize()
                         println(cose.encodeToString(Base16))

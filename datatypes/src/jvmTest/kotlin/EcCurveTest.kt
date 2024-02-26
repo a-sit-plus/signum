@@ -3,6 +3,11 @@ import com.ionspin.kotlin.bignum.integer.toBigInteger
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 
+
+/**
+ * Verifies the hard coded field modulus versus its functional definition
+ * See https://www.secg.org/sec2-v2.pdf chapter 2
+ */
 class EcCurveTest: FreeSpec({
     "SECP256 modulus correct" {
         EcCurve.SECP_256_R_1.modulus shouldBe
