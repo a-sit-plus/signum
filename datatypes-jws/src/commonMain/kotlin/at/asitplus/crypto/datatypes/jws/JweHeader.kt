@@ -76,7 +76,7 @@ data class JweHeader(
 
 
     val publicKey: JsonWebKey? by lazy {
-        jsonWebKey ?: keyId?.let { JsonWebKey.fromKeyId(it).getOrNull() }
+        jsonWebKey ?: keyId?.let { JsonWebKey.fromDid(it).getOrNull() }
     }
 
     companion object {
