@@ -50,6 +50,7 @@ kotlin {
         }
     }
 }
+
 exportIosFramework(
     "KmpCryptoJws",
     serialization("json"),
@@ -58,7 +59,10 @@ exportIosFramework(
     project(":datatypes")
 )
 
-val javadocJar = setupDokka(baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/", multiModuleDoc = true)
+val javadocJar = setupDokka(
+    baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/",
+    multiModuleDoc = true
+)
 
 
 publishing {
