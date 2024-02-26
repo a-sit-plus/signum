@@ -64,3 +64,6 @@
 * Add Multibase Encoder/Decoder
 * Add UVarInt datatype (63 bit max)
 * Remove MultibaseHelper
+* Remove `@Serializable` annotation from `CoseKey`, since only the dedicated `serialize()` and `deserialize()` methods must be used
+* Rename `CoseKey.fromKeyId` to `CoseKey.fromDid`
+* Rename `JsonWebKey.fromKeyId` to `JsonWebKey.fromDid`
