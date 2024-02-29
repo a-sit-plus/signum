@@ -38,6 +38,7 @@ import kotlinx.serialization.encoding.decodeStructure
  *
  */
 @OptIn(ExperimentalSerializationApi::class)
+@Serializable(with = CoseKeyUncompressedSerializer::class)
 data class CoseKey(
     val type: CoseKeyType,
     val keyId: ByteArray? = null,
@@ -499,7 +500,10 @@ object CoseKeyUncompressedSerializer : KSerializer<CoseKey> {
                             index,
                             ByteArraySerializer()
                         )
-                    }.getOrElse { throw RetrydecodeEcException() }
+                    }.getOrElse {
+                    println("WUMBO")
+                        throw RetrydecodeEcException()
+                    }
 
                     labels["d"] -> d =
                         decodeNullableSerializableElement(
