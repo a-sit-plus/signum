@@ -102,10 +102,7 @@ data class CoseKey(
      * Uses [CoseKeyUncompressedSerializer] for uncompressed (i.e. symmetric RSA, non-point-compressed EC) keys
      * or [CoseKeyCompressedSerializer] for EC keys, which use point compression
      */
-    fun serialize() =
-        if (keyParams is CoseKeyParams.EcYBoolParams)
-            cborSerializer.encodeToByteArray(CoseKeyCompressedSerializer, this)
-        else cborSerializer.encodeToByteArray(CoseKeyUncompressedSerializer, this)
+    fun serialize() = cborSerializer.encodeToByteArray(this)
 
     /**
      * Contains convenience functions
@@ -119,13 +116,7 @@ data class CoseKey(
          *  high-performing parsers.
          */
         fun deserialize(it: ByteArray) =
-            runCatching { cborSerializer.decodeFromByteArray(CoseKeyUncompressedSerializer, it) }.fold(onSuccess = {
-                Result.success(it)
-            }, onFailure = { ex ->
-                if (ex is CoseKeyUncompressedSerializer.RetrydecodeEcException) kotlin.runCatching {
-                    cborSerializer.decodeFromByteArray(CoseKeyCompressedSerializer, it)
-                } else Result.failure(ex)
-            }).wrap()
+            runCatching { cborSerializer.decodeFromByteArray<CoseKey>( it) }.wrap()
 
         fun fromDid(input: String): KmmResult<CoseKey> =
             runCatching { CryptoPublicKey.fromDid(input).toCoseKey().getOrThrow() }.wrap()
@@ -434,8 +425,11 @@ object CoseKeyUncompressedSerializer : KSerializer<CoseKey> {
         var crv: CoseEllipticCurve? = null
         var xOrE: ByteArray? = null
         var y: ByteArray? = null
+        var yBool:Boolean?=null
         var d: ByteArray? = null
         var k: ByteArray? = null
+
+        var isCompressed=false
 
         decoder.decodeStructure(descriptor) {
             while (true) {
@@ -494,15 +488,21 @@ object CoseKeyUncompressedSerializer : KSerializer<CoseKey> {
                             ByteArraySerializer()
                         )
 
-                    labels["y"] -> y = kotlin.runCatching {
-                        decodeNullableSerializableElement(
+                    labels["y"] ->kotlin.runCatching {
+                        y = decodeNullableSerializableElement(
                             ByteArraySerializer().descriptor,
                             index,
                             ByteArraySerializer()
                         )
                     }.getOrElse {
                     println("WUMBO")
-                        throw RetrydecodeEcException()
+                        isCompressed=true
+                        yBool= decodeNullableSerializableElement(
+                            Boolean.serializer().descriptor,
+                            index,
+                            Boolean.serializer()
+                        )
+                      //  throw RetrydecodeEcException()
                     }
 
                     labels["d"] -> d =
@@ -520,7 +520,20 @@ object CoseKeyUncompressedSerializer : KSerializer<CoseKey> {
         }
         return when (type) {
             CoseKeyType.EC2 -> {
+                if(!isCompressed)
                 CoseUncompressedEcKeySerialContainer(type, keyId, alg, keyOps, baseIv, crv, xOrE, y, d).toCoseKey()
+                else
+                    CoseKeyCompressedSerializer.CoseCompressedEcKeySerialContainer(
+                        type,
+                        keyId,
+                        alg,
+                        keyOps,
+                        baseIv,
+                        crv,
+                        xOrE,
+                        yBool,
+                        d
+                    ).toCoseKey()
             }
 
             CoseKeyType.RSA -> {
@@ -536,10 +549,16 @@ object CoseKeyUncompressedSerializer : KSerializer<CoseKey> {
     class RetrydecodeEcException : SerializationException()
 
     override fun serialize(encoder: Encoder, value: CoseKey) {
-        encoder.encodeSerializableValue(
-            UncompressedCompoundCoseKeySerialContainer.serializer(),
-            UncompressedCompoundCoseKeySerialContainer(value)
-        )
+        kotlin.runCatching {
+            encoder.encodeSerializableValue(
+                UncompressedCompoundCoseKeySerialContainer.serializer(),
+                UncompressedCompoundCoseKeySerialContainer(value)
+            )
+        }.getOrElse { if (it is RetrydecodeEcException)
+            encoder.encodeSerializableValue(
+                CoseKeyCompressedSerializer.CompressedCompoundCoseKeySerialContainer.serializer(),
+                CoseKeyCompressedSerializer.CompressedCompoundCoseKeySerialContainer(value)
+            )}
     }
 
 }
@@ -555,7 +574,7 @@ object CoseKeyUncompressedSerializer : KSerializer<CoseKey> {
 object CoseKeyCompressedSerializer : KSerializer<CoseKey> {
 
     @Serializable
-    private class CompressedCompoundCoseKeySerialContainer(
+    internal class CompressedCompoundCoseKeySerialContainer(
         @CborLabel(1)
         @SerialName("kty")
         val type: CoseKeyType,
@@ -639,7 +658,7 @@ object CoseKeyCompressedSerializer : KSerializer<CoseKey> {
 
 
     @Serializable
-    private class CoseCompressedEcKeySerialContainer(
+    internal class CoseCompressedEcKeySerialContainer(
         @CborLabel(1)
         @SerialName("kty")
         val type: CoseKeyType,
