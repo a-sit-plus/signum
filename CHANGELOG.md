@@ -56,7 +56,7 @@
 * Refactor `CryptoPublicKey.keyID` to `CryptoPublicKey.didEncoded` to better reflect what it actually is
 * Rename `CryptoPublicKey.fromKeyId` to `CryptoPublicKey.fromDid`
 
-### 2.4.0
+### 2.4.0-SNAPSHOT
 * Add Support for EC Point compression
 * Add Support for full Cose-Key Spec
 * Correct Multibase Encoding
@@ -64,6 +64,6 @@
 * Add Multibase Encoder/Decoder
 * Add UVarInt datatype (63 bit max)
 * Remove MultibaseHelper
-* Remove `@Serializable` annotation from `CoseKey`, since only the dedicated `serialize()` and `deserialize()` methods must be used
+* Finally make `CoseKey`'s EC Point compression play nicely with kotlinx.serialization
 * Rename `CoseKey.fromKeyId` to `CoseKey.fromDid`
 * Rename `JsonWebKey.fromKeyId` to `JsonWebKey.fromDid`
