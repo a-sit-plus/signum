@@ -6,6 +6,8 @@ import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
 import at.asitplus.crypto.datatypes.cose.CoseKey.Companion.deserialize
+import at.asitplus.crypto.datatypes.cose.CoseKeySerializer.CompressedCompoundCoseKeySerialContainer
+import at.asitplus.crypto.datatypes.cose.CoseKeySerializer.UncompressedCompoundCoseKeySerialContainer
 import at.asitplus.crypto.datatypes.cose.io.cborSerializer
 import at.asitplus.crypto.datatypes.misc.compressY
 import io.matthewnelson.encoding.base16.Base16
@@ -264,7 +266,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
             if (src.keyParams is CoseKeyParams.EcKeyParams<*>) src.keyParams.x else null,
             when (src.keyParams) {
                 is CoseKeyParams.EcYByteArrayParams -> src.keyParams.y
-                is CoseKeyParams.EcYBoolParams -> throw RetrydecodeEcException()
+                is CoseKeyParams.EcYBoolParams -> throw SerializationException("EC Point Compression is unsupported by this container")
                 else -> null
             },
             when (val params = src.keyParams) {
@@ -541,14 +543,12 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                             ByteArraySerializer()
                         )
                     }.getOrElse {
-                        println("WUMBO")
                         isCompressed = true
                         yBool = decodeNullableSerializableElement(
                             Boolean.serializer().descriptor,
                             index,
                             Boolean.serializer()
                         )
-                        //  throw RetrydecodeEcException()
                     }
 
                     labels["d"] -> d =
@@ -616,21 +616,16 @@ object CoseKeySerializer : KSerializer<CoseKey> {
         }
     }
 
-    class RetrydecodeEcException : SerializationException()
-
     override fun serialize(encoder: Encoder, value: CoseKey) {
-        kotlin.runCatching {
+        if (value.keyParams is CoseKeyParams.EcYBoolParams)
             encoder.encodeSerializableValue(
-                UncompressedCompoundCoseKeySerialContainer.serializer(),
-                UncompressedCompoundCoseKeySerialContainer(value)
+                CompressedCompoundCoseKeySerialContainer.serializer(),
+                CompressedCompoundCoseKeySerialContainer(value)
             )
-        }.getOrElse {
-            if (it is RetrydecodeEcException)
-                encoder.encodeSerializableValue(
-                    CompressedCompoundCoseKeySerialContainer.serializer(),
-                    CompressedCompoundCoseKeySerialContainer(value)
-                )
-        }
+        else encoder.encodeSerializableValue(
+            UncompressedCompoundCoseKeySerialContainer.serializer(),
+            UncompressedCompoundCoseKeySerialContainer(value)
+        )
     }
 
 
