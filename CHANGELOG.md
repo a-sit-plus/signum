@@ -56,7 +56,7 @@
 * Refactor `CryptoPublicKey.keyID` to `CryptoPublicKey.didEncoded` to better reflect what it actually is
 * Rename `CryptoPublicKey.fromKeyId` to `CryptoPublicKey.fromDid`
 
-### 2.4.0-SNAPSHOT
+### 2.4.0
 * Add Support for EC Point compression
 * Add Support for full Cose-Key Spec
 * Correct Multibase Encoding
