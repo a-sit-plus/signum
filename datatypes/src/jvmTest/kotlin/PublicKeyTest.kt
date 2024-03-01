@@ -1,3 +1,4 @@
+import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.asn1.Asn1Element
 import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
@@ -5,6 +6,7 @@ import at.asitplus.crypto.datatypes.asn1.parse
 import at.asitplus.crypto.datatypes.fromJcaPublicKey
 import at.asitplus.crypto.datatypes.getJcaPublicKey
 import at.asitplus.crypto.datatypes.io.Base64Strict
+import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
@@ -16,15 +18,20 @@ import kotlinx.serialization.json.Json
 import org.bouncycastle.asn1.ASN1InputStream
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.DERBitString
+import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.KeyPairGenerator
+import java.security.Security
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPublicKey
 
 class PublicKeyTest : FreeSpec({
+    Security.addProvider(BouncyCastleProvider())
+
     "EC" - {
         withData(256, 384, 521) { bits ->
-            val keys = List<ECPublicKey>(256000 / bits) {
-                val ecKp = KeyPairGenerator.getInstance("EC").apply {
+            val keys = List<ECPublicKey>(25600 / bits) {
+                val ecKp = KeyPairGenerator.getInstance("EC", "BC").apply {
                     initialize(bits)
                 }.genKeyPair()
                 ecKp.public as ECPublicKey
@@ -39,14 +46,24 @@ class PublicKeyTest : FreeSpec({
             ) { pubKey ->
 
                 val own = CryptoPublicKey.Ec.fromJcaPublicKey(pubKey).getOrThrow()
-                println(Json.encodeToString(own))
-                println(own.iosEncoded.encodeToString(Base16()))
-                println(own.encodeToDer().encodeToString(Base16()))
-                println(own.didEncoded)
-                own.encodeToDer() shouldBe pubKey.encoded
-                CryptoPublicKey.fromDid(own.didEncoded) shouldBe own
-                own.getJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
-                CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.encodeToDer()) as Asn1Sequence) shouldBe own
+
+                withClue("Basic Conversions") {
+                    println(Json.encodeToString(own))
+                    own.encodeToDer() shouldBe pubKey.encoded
+                    CryptoPublicKey.fromDid(own.didEncoded) shouldBe own
+                    own.getJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
+                    CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.encodeToDer()) as Asn1Sequence) shouldBe own
+                }
+
+                withClue("Compressed Test") {
+                    (own as CryptoPublicKey.Ec).useCompressedRepresentation = true
+                    val compressedPresentation = own.toAnsiX963Encoded()
+                    val fromCompressed = CryptoPublicKey.Ec.fromAnsiX963Bytes(compressedPresentation)
+
+                    // bouncy castle compressed representation is calculated by exposing public coordinate from key and then encode that
+                    compressedPresentation shouldBe (pubKey as BCECPublicKey).q.getEncoded(true)
+                    fromCompressed shouldBe own
+                }
             }
         }
 
@@ -59,6 +76,13 @@ class PublicKeyTest : FreeSpec({
             pubKey1 shouldBe pubKey2
         }
 
+        "DID Tests" {
+            val listOfDidKeys = javaClass.classLoader.getResourceAsStream("did_keys.txt")?.reader()?.readLines()
+                ?: throw Exception("Test vectors missing!")
+            for (key in listOfDidKeys) {
+                kotlin.runCatching { CryptoPublicKey.fromDid(key) }.wrap().getOrThrow()
+            }
+        }
     }
 
     "RSA" - {
@@ -89,11 +113,10 @@ class PublicKeyTest : FreeSpec({
                 own1.e shouldBe own.e
 
                 println(Json.encodeToString(own))
-                println(own.iosEncoded.encodeToString(Base16()))
-                println(own.didEncoded)
+
                 val keyBytes = ((ASN1InputStream(pubKey.encoded).readObject()
                     .toASN1Primitive() as ASN1Sequence).elementAt(1) as DERBitString).bytes
-                own.iosEncoded shouldBe keyBytes //PKCS#1
+                own.pkcsEncoded shouldBe keyBytes //PKCS#1
                 own.encodeToDer() shouldBe pubKey.encoded //PKCS#8
                 CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.encodeToDer()) as Asn1Sequence) shouldBe own
                 own.getJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded

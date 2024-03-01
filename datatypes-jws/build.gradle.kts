@@ -1,6 +1,9 @@
-import DatatypeVersions.encoding
-import DatatypeVersions.okio
-import at.asitplus.gradle.*
+import at.asitplus.gradle.datetime
+import at.asitplus.gradle.exportIosFramework
+import at.asitplus.gradle.kmmresult
+import at.asitplus.gradle.napier
+import at.asitplus.gradle.serialization
+import at.asitplus.gradle.setupDokka
 
 plugins {
     kotlin("multiplatform")
@@ -22,23 +25,32 @@ kotlin {
             languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
         }
 
-        commonMain {
+        val commonMain by getting {
             dependencies {
                 api(project(":datatypes"))
-                implementation("com.squareup.okio:okio:${okio}")
+                implementation(libs.okio)
+                implementation(libs.base16)
+                implementation(libs.base64)
                 implementation(napier())
-                implementation("io.matthewnelson.kotlin-components:encoding-base16:${encoding}")
-                implementation("io.matthewnelson.kotlin-components:encoding-base64:${encoding}")
+                implementation(libs.bignum) //Intellij bug work-around
             }
         }
 
-        commonTest {
+        val commonTest by getting {
             dependencies {
                 implementation(kotlin("reflect"))
             }
         }
+
+        val jvmMain by getting
+        val jvmTest by getting {
+            dependencies {
+                implementation(libs.jose)
+            }
+        }
     }
 }
+
 exportIosFramework(
     "KmpCryptoJws",
     serialization("json"),
@@ -47,7 +59,10 @@ exportIosFramework(
     project(":datatypes")
 )
 
-val javadocJar = setupDokka(baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/", multiModuleDoc = true)
+val javadocJar = setupDokka(
+    baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/",
+    multiModuleDoc = true
+)
 
 
 publishing {

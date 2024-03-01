@@ -1,5 +1,9 @@
-import DatatypeVersions.encoding
-import at.asitplus.gradle.*
+import at.asitplus.gradle.datetime
+import at.asitplus.gradle.exportIosFramework
+import at.asitplus.gradle.kmmresult
+import at.asitplus.gradle.napier
+import at.asitplus.gradle.serialization
+import at.asitplus.gradle.setupDokka
 
 plugins {
     kotlin("multiplatform")
@@ -21,21 +25,23 @@ kotlin {
             languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
         }
 
-        commonMain {
+        val commonMain by getting {
             dependencies {
                 api(project(":datatypes"))
                 api(serialization("cbor"))
                 implementation(napier())
-                implementation("io.matthewnelson.kotlin-components:encoding-base16:${encoding}")
-                implementation("io.matthewnelson.kotlin-components:encoding-base64:${encoding}")
+                implementation(libs.base16)
+                implementation(libs.base64)
+                implementation(libs.bignum) //Intellij bug work-around
             }
         }
 
-        commonTest {
+        val commonTest by getting {
             dependencies {
                 implementation(kotlin("reflect"))
             }
         }
+        val jvmTest by getting
     }
 }
 
@@ -47,7 +53,10 @@ exportIosFramework(
     project(":datatypes")
 )
 
-val javadocJar = setupDokka(baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/", multiModuleDoc = true)
+val javadocJar = setupDokka(
+    baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/",
+    multiModuleDoc = true
+)
 
 
 publishing {

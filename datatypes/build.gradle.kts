@@ -1,5 +1,10 @@
-import DatatypeVersions.encoding
-import at.asitplus.gradle.*
+import at.asitplus.gradle.bouncycastle
+import at.asitplus.gradle.datetime
+import at.asitplus.gradle.exportIosFramework
+import at.asitplus.gradle.kmmresult
+import at.asitplus.gradle.kotest
+import at.asitplus.gradle.serialization
+import at.asitplus.gradle.setupDokka
 
 plugins {
     kotlin("multiplatform")
@@ -21,33 +26,39 @@ kotlin {
             languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
         }
 
-        commonMain {
+        val commonMain by getting {
             dependencies {
                 api(kmmresult())
                 api(serialization("json"))
                 api(datetime())
-                implementation("io.matthewnelson.kotlin-components:encoding-base16:${encoding}")
-                implementation("io.matthewnelson.kotlin-components:encoding-base64:${encoding}")
+                implementation(libs.base16)
+                implementation(libs.base64)
+                implementation(libs.bignum)
             }
         }
 
-        commonTest {
+        val commonTest by getting {
             dependencies {
                 implementation(kotest("property"))
                 implementation(kotlin("reflect"))
             }
         }
 
-        jvmMain {
+        val jvmMain by getting {
             dependencies {
                 api(bouncycastle("bcpkix"))
             }
         }
+
+        val jvmTest by getting
     }
 }
 exportIosFramework("KmpCrypto", serialization("json"), datetime(), kmmresult())
 
-val javadocJar = setupDokka(baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/", multiModuleDoc = true)
+val javadocJar = setupDokka(
+    baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/",
+    multiModuleDoc = true
+)
 
 publishing {
     publications {

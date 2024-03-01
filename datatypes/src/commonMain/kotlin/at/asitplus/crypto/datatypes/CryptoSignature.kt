@@ -17,7 +17,6 @@ import at.asitplus.crypto.datatypes.asn1.padWithZeroIfNeeded
 import at.asitplus.crypto.datatypes.asn1.runRethrowing
 import at.asitplus.crypto.datatypes.asn1.stripLeadingSignByte
 import at.asitplus.crypto.datatypes.io.Base64UrlStrict
-import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.KSerializer

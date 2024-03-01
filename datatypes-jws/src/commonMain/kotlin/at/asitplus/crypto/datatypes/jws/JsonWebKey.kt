@@ -120,7 +120,7 @@ data class JsonWebKey(
         runCatching {
             when (type) {
                 JwkType.EC -> {
-                    CryptoPublicKey.Ec.fromCoordinates(
+                    CryptoPublicKey.Ec(
                         curve = curve ?: throw IllegalArgumentException("Missing or invalid curve"),
                         x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
                         y = y ?: throw IllegalArgumentException("Missing y-coordinate")
@@ -148,14 +148,14 @@ data class JsonWebKey(
         fun deserialize(it: String): KmmResult<JsonWebKey> =
             runCatching { jsonSerializer.decodeFromString<JsonWebKey>(it) }.wrap()
 
-        fun fromKeyId(it: String): KmmResult<JsonWebKey> =
-            runCatching { CryptoPublicKey.fromDid(it).toJsonWebKey() }.wrap()
+        fun fromDid(input: String): KmmResult<JsonWebKey> =
+            runCatching { CryptoPublicKey.fromDid(input).toJsonWebKey() }.wrap()
 
         fun fromIosEncoded(bytes: ByteArray): KmmResult<JsonWebKey> =
             runCatching { CryptoPublicKey.fromIosEncoded(bytes).toJsonWebKey() }.wrap()
 
         fun fromCoordinates(curve: EcCurve, x: ByteArray, y: ByteArray): KmmResult<JsonWebKey> =
-            runCatching { CryptoPublicKey.Ec.fromCoordinates(curve, x, y).toJsonWebKey() }.wrap()
+            runCatching { CryptoPublicKey.Ec(curve, x, y).toJsonWebKey() }.wrap()
     }
 }
 

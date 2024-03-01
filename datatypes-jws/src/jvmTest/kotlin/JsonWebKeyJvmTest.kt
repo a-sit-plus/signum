@@ -28,7 +28,7 @@ class JsonWebKeyJvmTest : FreeSpec({
     "JWK can be created from Coordinates" - {
         val xFromBc = (keyPair.public as ECPublicKey).w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
         val yFromBc = (keyPair.public as ECPublicKey).w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
-        val pubKey = CryptoPublicKey.Ec.fromCoordinates(ecCurve, xFromBc, yFromBc)
+        val pubKey = CryptoPublicKey.Ec(ecCurve, xFromBc, yFromBc)
         val jsonWebKey = pubKey.toJsonWebKey()
 
         jsonWebKey.shouldNotBeNull()
@@ -38,7 +38,7 @@ class JsonWebKeyJvmTest : FreeSpec({
         jsonWebKey.keyId shouldHaveMinLength 32
 
         "it can be recreated from keyId" {
-            val recreatedJwk = JsonWebKey.fromKeyId(jsonWebKey.keyId!!).getOrThrow()
+            val recreatedJwk = JsonWebKey.fromDid(jsonWebKey.keyId!!).getOrThrow()
             recreatedJwk.shouldNotBeNull()
             recreatedJwk.keyId shouldBe jsonWebKey.keyId
             recreatedJwk.x shouldBe jsonWebKey.x
@@ -68,7 +68,7 @@ class JsonWebKeyJvmTest : FreeSpec({
         }
 
         "it can be recreated from keyId" {
-            val recreatedJwk = JsonWebKey.fromKeyId(jwk.keyId!!).getOrThrow()
+            val recreatedJwk = JsonWebKey.fromDid(jwk.keyId!!).getOrThrow()
             recreatedJwk.shouldNotBeNull()
             recreatedJwk.keyId shouldBe jwk.keyId
             recreatedJwk.n shouldBe jwk.n

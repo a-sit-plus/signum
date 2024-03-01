@@ -39,12 +39,10 @@
 * Change `JwsHeader.publicKey` from JsonWebKey to CryptoPublicKey
 * Remove `SignatureValueLength` parameters from JWS & COSE Algorithm Enum class
 * Remove deprecated functions
-* New `CryptoAlgorithm` class
-* New `CryptoSignature` class for easy Asn1 - RawByteArray conversion
 * Rename `Jws` classes
   * New `CryptoAlgorithm` class
   * New `CryptoSignature` class for easy Asn1 - RawByteArray conversion
-* Rename function in file `JcaExtensions.kt` from `.toPublicKey` to `.toJcaPublicKey` to reflect connection to JVMname function in file `JcaExtensions.kt` from `.toPublicKey` to `.toJcaPublicKey` to reflect connection to JVM
+* Rename function in file `JcaExtensions.kt` from `.toPublicKey` to `.toJcaPublicKey` to reflect connection to JVM
 * Remove VcLib-specific constants
 
 #### 2.2.1
@@ -57,3 +55,15 @@
 * Add `CryptoSignature.parseFromJca` function
 * Refactor `CryptoPublicKey.keyID` to `CryptoPublicKey.didEncoded` to better reflect what it actually is
 * Rename `CryptoPublicKey.fromKeyId` to `CryptoPublicKey.fromDid`
+
+### 2.4.0
+* Add Support for EC Point compression
+* Add Support for full Cose-Key Spec
+* Correct Multibase Encoding
+* Change `DID:KEY` encoding to Base58_BTC to comply with draft
+* Add Multibase Encoder/Decoder
+* Add UVarInt datatype (63 bit max)
+* Remove MultibaseHelper
+* Finally make `CoseKey`'s EC Point compression play nicely with kotlinx.serialization
+* Rename `CoseKey.fromKeyId` to `CoseKey.fromDid`
+* Rename `JsonWebKey.fromKeyId` to `JsonWebKey.fromDid`
