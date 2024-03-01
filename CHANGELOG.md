@@ -67,3 +67,5 @@
 * Finally make `CoseKey`'s EC Point compression play nicely with kotlinx.serialization
 * Rename `CoseKey.fromKeyId` to `CoseKey.fromDid`
 * Rename `JsonWebKey.fromKeyId` to `JsonWebKey.fromDid`
+
+### NEXT
