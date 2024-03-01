@@ -6,6 +6,8 @@ import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
 import at.asitplus.crypto.datatypes.cose.CoseKey.Companion.deserialize
+import at.asitplus.crypto.datatypes.cose.CoseKeySerializer.CompressedCompoundCoseKeySerialContainer
+import at.asitplus.crypto.datatypes.cose.CoseKeySerializer.UncompressedCompoundCoseKeySerialContainer
 import at.asitplus.crypto.datatypes.cose.io.cborSerializer
 import at.asitplus.crypto.datatypes.misc.compressY
 import io.matthewnelson.encoding.base16.Base16
@@ -25,9 +27,8 @@ import kotlinx.serialization.encoding.decodeStructure
  * COSE public key as per [RFC 8152](https://www.rfc-editor.org/rfc/rfc8152.html#page-33).
  * Since this is used as part of a COSE-specific DTO, every property is nullable
  *
- * Deserializing involves guess-work since the COSE specification uses overlapping [CborLabel]s for all key types.
- * Therefore, this class in **NOT** marked as  [Serializable], as it cannot possibly work. This also means you cannot easily
- * deserialize an array or collection of COSE keys if even a single key uses point compression.
+ * Deserializing involves guess-work since the COSE specification uses overlapping [CborLabel]s for compressed and uncompressed EC keys
+ * and generally overlapping labels for various params regardless of key type.
  *
  * [RFC 8152](https://www.rfc-editor.org/rfc/rfc8152.html#page-33) really is a marvel in its own right:
  * Rarely a spec comes a long that highlights the harder bounds
@@ -38,6 +39,7 @@ import kotlinx.serialization.encoding.decodeStructure
  *
  */
 @OptIn(ExperimentalSerializationApi::class)
+@Serializable(with = CoseKeySerializer::class)
 data class CoseKey(
     val type: CoseKeyType,
     val keyId: ByteArray? = null,
@@ -92,51 +94,46 @@ data class CoseKey(
 
     /**
      * @return a KmmResult wrapped [CryptoPublicKey] equivalent if conversion is possible (i.e. if all key params are set)
-     * or the first error. More details in either [CoseKeyParams.RsaParams.toCryptoPublicKey] or [CoseKeyParams.EcYByteArrayParams.toCryptoPublicKey]
+     * or the first error. More details in either [CoseKeyParams.RsaParams.toCryptoPublicKey],
+     * [CoseKeyParams.EcYBoolParams.toCryptoPublicKey] or [CoseKeyParams.EcYByteArrayParams.toCryptoPublicKey]
      */
     fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
-        keyParams?.toCryptoPublicKey() ?: failure(IllegalArgumentException("No public key parameters!"))
+        keyParams?.toCryptoPublicKey()
+            ?: failure(IllegalArgumentException("No public key parameters!"))
 
-    /**
-     * Uses [CoseKeyUncompressedSerializer] for uncompressed (i.e. symmetric RSA, non-point-compressed EC) keys
-     * or [CoseKeyCompressedSerializer] for EC keys, which use point compression
-     */
-    fun serialize() =
-        if (keyParams is CoseKeyParams.EcYBoolParams)
-            cborSerializer.encodeToByteArray(CoseKeyCompressedSerializer, this)
-        else cborSerializer.encodeToByteArray(CoseKeyUncompressedSerializer, this)
+
+    fun serialize() = cborSerializer.encodeToByteArray(this)
 
     /**
      * Contains convenience functions
      */
     companion object {
 
-        /**
-         *  We first try deserializing using [CoseKeyUncompressedSerializer] and if it fails in a way that suggest it could
-         *  have encountered a point-compressed EC key, we try [CoseKeyCompressedSerializer]. Not pretty, but this is what you get,
-         *  when you are forced to follow a spec, which intentionally requires pointless lookahead where you can't have one for
-         *  high-performing parsers.
-         */
         fun deserialize(it: ByteArray) =
-            runCatching { cborSerializer.decodeFromByteArray(CoseKeyUncompressedSerializer, it) }.fold(onSuccess = {
-                Result.success(it)
-            }, onFailure = { ex ->
-                if (ex is CoseKeyUncompressedSerializer.RetrydecodeEcException) kotlin.runCatching {
-                    cborSerializer.decodeFromByteArray(CoseKeyCompressedSerializer, it)
-                } else Result.failure(ex)
-            }).wrap()
+            runCatching { cborSerializer.decodeFromByteArray<CoseKey>(it) }.wrap()
 
         fun fromDid(input: String): KmmResult<CoseKey> =
-            runCatching { CryptoPublicKey.fromDid(input).toCoseKey().getOrThrow() }.wrap()
+            runCatching {
+                CryptoPublicKey.fromDid(input).toCoseKey().getOrThrow()
+            }.wrap()
 
         /**
          * iOS encoded is currently only supporting uncompressed keys. Might change in the future
          */
         fun fromIosEncoded(bytes: ByteArray): KmmResult<CoseKey> =
-            runCatching { CryptoPublicKey.fromIosEncoded(bytes).toCoseKey().getOrThrow() }.wrap()
+            runCatching {
+                CryptoPublicKey.fromIosEncoded(bytes).toCoseKey().getOrThrow()
+            }.wrap()
 
-        fun fromCoordinates(curve: CoseEllipticCurve, x: ByteArray, y: ByteArray): KmmResult<CoseKey> =
-            runCatching { CryptoPublicKey.Ec(curve.toEcCurve(), x, y).toCoseKey().getOrThrow() }.wrap()
+        fun fromCoordinates(
+            curve: CoseEllipticCurve,
+            x: ByteArray,
+            y: ByteArray
+        ): KmmResult<CoseKey> =
+            runCatching {
+                CryptoPublicKey.Ec(curve.toEcCurve(), x, y).toCoseKey()
+                    .getOrThrow()
+            }.wrap()
     }
 }
 
@@ -174,8 +171,12 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseK
 
         is CryptoPublicKey.Rsa ->
             if ((algorithm != null) && (algorithm !in listOf(
-                    CoseAlgorithm.PS256, CoseAlgorithm.PS384, CoseAlgorithm.PS512,
-                    CoseAlgorithm.RS256, CoseAlgorithm.RS384, CoseAlgorithm.RS512
+                    CoseAlgorithm.PS256,
+                    CoseAlgorithm.PS384,
+                    CoseAlgorithm.PS512,
+                    CoseAlgorithm.RS256,
+                    CoseAlgorithm.RS384,
+                    CoseAlgorithm.RS512
                 ))
             ) failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
             else runCatching {
@@ -199,14 +200,15 @@ var CryptoPublicKey.coseKid: String
     }
 
 /**
- * Encapsulates serializing and deserializing uncompressed keys (i.e. anything but point-compressed EC keys).
+ * Encapsulates serializing and deserializing all types of COSE keys.
  * Actually, no [CoseKey] object is ever directly (de)serialized. Instead, all the whole structure of a [CoseKey]
- * is duplicated into a discrete class used solely for (de)serialization, which never uses point compression.
- * This is a flattened mammoth  data structure devoid of encapsulation, as demanded by the COSE spec.
- * Internally, this (de)serializes a map and copies the value from/to the flattened mammoth.
+ * is duplicated into a discrete class used solely for (de)serialization. For EC keys using point compression, this wrapper is [CompressedCompoundCoseKeySerialContainer],
+ * for all other key types, it is [UncompressedCompoundCoseKeySerialContainer]
+ * Both od these are flattened mammoth data structures devoid of encapsulation, as demanded by the COSE spec.
+ * Internally,  deserialization employs a map to as a lookup table for CborLabels to reconstruct the correct key using the flattened mammoth.
  */
 @OptIn(ExperimentalSerializationApi::class)
-object CoseKeyUncompressedSerializer : KSerializer<CoseKey> {
+object CoseKeySerializer : KSerializer<CoseKey> {
 
     @Serializable
     private class UncompressedCompoundCoseKeySerialContainer(
@@ -264,7 +266,7 @@ object CoseKeyUncompressedSerializer : KSerializer<CoseKey> {
             if (src.keyParams is CoseKeyParams.EcKeyParams<*>) src.keyParams.x else null,
             when (src.keyParams) {
                 is CoseKeyParams.EcYByteArrayParams -> src.keyParams.y
-                is CoseKeyParams.EcYBoolParams -> throw RetrydecodeEcException()
+                is CoseKeyParams.EcYBoolParams -> throw SerializationException("EC Point Compression is unsupported by this container")
                 else -> null
             },
             when (val params = src.keyParams) {
@@ -332,7 +334,14 @@ object CoseKeyUncompressedSerializer : KSerializer<CoseKey> {
         }
 
         override fun toCoseKey() =
-            CoseKey(type, keyId, algorithm, operations, baseIv, CoseKeyParams.EcYByteArrayParams(curve, x, y, d))
+            CoseKey(
+                type,
+                keyId,
+                algorithm,
+                operations,
+                baseIv,
+                CoseKeyParams.EcYByteArrayParams(curve, x, y, d)
+            )
 
     }
 
@@ -372,7 +381,14 @@ object CoseKeyUncompressedSerializer : KSerializer<CoseKey> {
             if (type != CoseKeyType.RSA) throw IllegalArgumentException("Not an RSA key!")
         }
 
-        override fun toCoseKey() = CoseKey(type, keyId, algorithm, operations, baseIv, CoseKeyParams.RsaParams(n, e, d))
+        override fun toCoseKey() = CoseKey(
+            type,
+            keyId,
+            algorithm,
+            operations,
+            baseIv,
+            CoseKeyParams.RsaParams(n, e, d)
+        )
     }
 
     @Serializable
@@ -404,7 +420,14 @@ object CoseKeyUncompressedSerializer : KSerializer<CoseKey> {
         }
 
         override fun toCoseKey() =
-            CoseKey(type, keyId, algorithm, operations, baseIv, CoseKeyParams.SymmKeyParams(k!!))
+            CoseKey(
+                type,
+                keyId,
+                algorithm,
+                operations,
+                baseIv,
+                CoseKeyParams.SymmKeyParams(k!!)
+            )
 
     }
 
@@ -433,17 +456,25 @@ object CoseKeyUncompressedSerializer : KSerializer<CoseKey> {
         var crv: CoseEllipticCurve? = null
         var xOrE: ByteArray? = null
         var y: ByteArray? = null
+        var yBool: Boolean? = null
         var d: ByteArray? = null
         var k: ByteArray? = null
+
+        var isCompressed = false
 
         decoder.decodeStructure(descriptor) {
             while (true) {
                 val index = decodeElementIndex(descriptor)
                 if (index == -1) break
-                val label = descriptor.getElementAnnotations(index).filterIsInstance<CborLabel>().first().label
+                val label = descriptor.getElementAnnotations(index)
+                    .filterIsInstance<CborLabel>().first().label
                 when (label) {
                     labels["kty"] -> type =
-                        decodeSerializableElement(CoseKeyTypeSerializer.descriptor, index, CoseKeyTypeSerializer)
+                        decodeSerializableElement(
+                            CoseKeyTypeSerializer.descriptor,
+                            index,
+                            CoseKeyTypeSerializer
+                        )
 
                     labels["kid"] -> keyId =
                         decodeNullableSerializableElement(
@@ -470,17 +501,29 @@ object CoseKeyUncompressedSerializer : KSerializer<CoseKey> {
                         when (type) {
                             CoseKeyType.EC2 -> {
                                 val deser = CoseEllipticCurveSerializer
-                                crv = decodeNullableSerializableElement(deser.descriptor, index, deser)
+                                crv = decodeNullableSerializableElement(
+                                    deser.descriptor,
+                                    index,
+                                    deser
+                                )
                             }
 
                             CoseKeyType.RSA -> {
                                 val deser = ByteArraySerializer()
-                                n = decodeNullableSerializableElement(deser.descriptor, index, deser)
+                                n = decodeNullableSerializableElement(
+                                    deser.descriptor,
+                                    index,
+                                    deser
+                                )
                             }
 
                             CoseKeyType.SYMMETRIC -> {
                                 val deser = ByteArraySerializer()
-                                k = decodeNullableSerializableElement(deser.descriptor, index, deser)
+                                k = decodeNullableSerializableElement(
+                                    deser.descriptor,
+                                    index,
+                                    deser
+                                )
                             }
                         }
 
@@ -493,13 +536,20 @@ object CoseKeyUncompressedSerializer : KSerializer<CoseKey> {
                             ByteArraySerializer()
                         )
 
-                    labels["y"] -> y = kotlin.runCatching {
-                        decodeNullableSerializableElement(
+                    labels["y"] -> kotlin.runCatching {
+                        y = decodeNullableSerializableElement(
                             ByteArraySerializer().descriptor,
                             index,
                             ByteArraySerializer()
                         )
-                    }.getOrElse { throw RetrydecodeEcException() }
+                    }.getOrElse {
+                        isCompressed = true
+                        yBool = decodeNullableSerializableElement(
+                            Boolean.serializer().descriptor,
+                            index,
+                            Boolean.serializer()
+                        )
+                    }
 
                     labels["d"] -> d =
                         decodeNullableSerializableElement(
@@ -516,39 +566,68 @@ object CoseKeyUncompressedSerializer : KSerializer<CoseKey> {
         }
         return when (type) {
             CoseKeyType.EC2 -> {
-                CoseUncompressedEcKeySerialContainer(type, keyId, alg, keyOps, baseIv, crv, xOrE, y, d).toCoseKey()
+                if (!isCompressed) CoseUncompressedEcKeySerialContainer(
+                    type,
+                    keyId,
+                    alg,
+                    keyOps,
+                    baseIv,
+                    crv,
+                    xOrE,
+                    y,
+                    d
+                ).toCoseKey()
+                else CoseCompressedEcKeySerialContainer(
+                    type,
+                    keyId,
+                    alg,
+                    keyOps,
+                    baseIv,
+                    crv,
+                    xOrE,
+                    yBool,
+                    d
+                ).toCoseKey()
             }
 
             CoseKeyType.RSA -> {
-                CoseRsaKeySerialContainer(type, keyId, alg, keyOps, baseIv, n, xOrE, d).toCoseKey()
+                CoseRsaKeySerialContainer(
+                    type,
+                    keyId,
+                    alg,
+                    keyOps,
+                    baseIv,
+                    n,
+                    xOrE,
+                    d
+                ).toCoseKey()
             }
 
             CoseKeyType.SYMMETRIC -> {
-                CoseSymmKeySerialContainer(type, keyId, alg, keyOps, baseIv, k).toCoseKey()
+                CoseSymmKeySerialContainer(
+                    type,
+                    keyId,
+                    alg,
+                    keyOps,
+                    baseIv,
+                    k
+                ).toCoseKey()
             }
         }
     }
 
-    class RetrydecodeEcException : SerializationException()
-
     override fun serialize(encoder: Encoder, value: CoseKey) {
-        encoder.encodeSerializableValue(
+        if (value.keyParams is CoseKeyParams.EcYBoolParams)
+            encoder.encodeSerializableValue(
+                CompressedCompoundCoseKeySerialContainer.serializer(),
+                CompressedCompoundCoseKeySerialContainer(value)
+            )
+        else encoder.encodeSerializableValue(
             UncompressedCompoundCoseKeySerialContainer.serializer(),
             UncompressedCompoundCoseKeySerialContainer(value)
         )
     }
 
-}
-
-/**
- * Encapsulates serializing and deserializing point-compressed EC keys.
- * Actually, no [CoseKey] object is ever directly (de)serialized. Instead, all the whole structure of a [CoseKey]
- * is duplicated into a discrete class used solely for (de)serialization, which never uses point compression.
- * This is a flattened mammoth  data structure devoid of encapsulation, as demanded by the COSE spec.
- * Internally, this (de)serializes a map and copies the value from/to the flattened mammoth.
- */
-@OptIn(ExperimentalSerializationApi::class)
-object CoseKeyCompressedSerializer : KSerializer<CoseKey> {
 
     @Serializable
     private class CompressedCompoundCoseKeySerialContainer(
@@ -606,7 +685,10 @@ object CoseKeyCompressedSerializer : KSerializer<CoseKey> {
             if (src.keyParams is CoseKeyParams.EcKeyParams<*>) src.keyParams.x else null,
             when (src.keyParams) {
                 is CoseKeyParams.EcYBoolParams -> src.keyParams.y
-                is CoseKeyParams.EcYByteArrayParams -> throw IllegalArgumentException("this container demands EC point compression")
+                is CoseKeyParams.EcYByteArrayParams -> throw IllegalArgumentException(
+                    "this container demands EC point compression"
+                )
+
                 else -> null
             },
             when (val params = src.keyParams) {
@@ -629,13 +711,9 @@ object CoseKeyCompressedSerializer : KSerializer<CoseKey> {
         )
     }
 
-    private interface SerialContainer {
-        fun toCoseKey(): CoseKey
-    }
-
 
     @Serializable
-    private class CoseCompressedEcKeySerialContainer(
+    internal class CoseCompressedEcKeySerialContainer(
         @CborLabel(1)
         @SerialName("kty")
         val type: CoseKeyType,
@@ -674,131 +752,14 @@ object CoseKeyCompressedSerializer : KSerializer<CoseKey> {
         }
 
         override fun toCoseKey() =
-            CoseKey(type, keyId, algorithm, operations, baseIv, CoseKeyParams.EcYBoolParams(curve, x, y, d))
+            CoseKey(
+                type,
+                keyId,
+                algorithm,
+                operations,
+                baseIv,
+                CoseKeyParams.EcYBoolParams(curve, x, y, d)
+            )
 
     }
-
-
-    override val descriptor: SerialDescriptor
-        get() = CompressedCompoundCoseKeySerialContainer.serializer().descriptor
-
-    override fun deserialize(decoder: Decoder): CoseKey {
-        val labels = mapOf<String, Long>(
-            "kty" to 1,
-            "kid" to 2,
-            "alg" to 3,
-            "key_ops" to 4,
-            "Base IV" to 5,
-            "k/n/crv" to -1,
-            "x/e" to -2,
-            "y" to -3,
-            "d" to 4
-        )
-
-        lateinit var type: CoseKeyType
-        var keyId: ByteArray? = null
-        var alg: CoseAlgorithm? = null
-        var keyOps: Array<CoseKeyOperation>? = null
-        var baseIv: ByteArray? = null
-        var n: ByteArray? = null
-        var crv: CoseEllipticCurve? = null
-        var xOrE: ByteArray? = null
-        var y: Boolean? = null
-        var d: ByteArray? = null
-        var k: ByteArray? = null
-
-        decoder.decodeStructure(descriptor) {
-            while (true) {
-                val index = decodeElementIndex(descriptor)
-                if (index == -1) break
-                val label = descriptor.getElementAnnotations(index).filterIsInstance<CborLabel>().first().label
-                when (label) {
-                    labels["kty"] -> type =
-                        decodeSerializableElement(CoseKeyTypeSerializer.descriptor, index, CoseKeyTypeSerializer)
-
-                    labels["kid"] -> keyId =
-                        decodeNullableSerializableElement(
-                            ByteArraySerializer().descriptor,
-                            index,
-                            ByteArraySerializer()
-                        )
-
-                    labels["alg"] -> alg =
-                        decodeNullableSerializableElement(
-                            CoseAlgorithmSerializer.descriptor,
-                            index,
-                            CoseAlgorithmSerializer
-                        )
-
-                    labels["key_ops"] -> keyOps =
-                        decodeNullableSerializableElement(
-                            ArraySerializer(CoseKeyOperationSerializer).descriptor,
-                            index,
-                            ArraySerializer(CoseKeyOperationSerializer)
-                        )
-
-                    labels["k/n/crv"] -> {
-                        when (type) {
-                            CoseKeyType.EC2 -> {
-                                val deser = CoseEllipticCurveSerializer
-                                crv = decodeNullableSerializableElement(deser.descriptor, index, deser)
-                            }
-
-                            CoseKeyType.RSA -> {
-                                val deser = ByteArraySerializer()
-                                n = decodeNullableSerializableElement(deser.descriptor, index, deser)
-                            }
-
-                            CoseKeyType.SYMMETRIC -> {
-                                val deser = ByteArraySerializer()
-                                k = decodeNullableSerializableElement(deser.descriptor, index, deser)
-                            }
-                        }
-
-                    }
-
-                    labels["x/e"] -> xOrE =
-                        decodeNullableSerializableElement(
-                            ByteArraySerializer().descriptor,
-                            index,
-                            ByteArraySerializer()
-                        )
-
-                    labels["y"] -> y =
-                        decodeNullableSerializableElement(
-                            Boolean.serializer().descriptor,
-                            index,
-                            Boolean.serializer()
-                        )
-
-                    labels["d"] -> d =
-                        decodeNullableSerializableElement(
-                            ByteArraySerializer().descriptor,
-                            index,
-                            ByteArraySerializer()
-                        )
-
-                    else -> {
-                        break
-                    }
-                }
-            }
-        }
-        return when (type) {
-            CoseKeyType.EC2 -> {
-                CoseCompressedEcKeySerialContainer(type, keyId, alg, keyOps, baseIv, crv, xOrE, y, d).toCoseKey()
-            }
-
-            else -> throw SerializationException("Only point-compressed EC keys are supported here!")
-        }
-    }
-
-
-    override fun serialize(encoder: Encoder, value: CoseKey) {
-        encoder.encodeSerializableValue(
-            CompressedCompoundCoseKeySerialContainer.serializer(),
-            CompressedCompoundCoseKeySerialContainer(value)
-        )
-    }
-
 }
