@@ -1,4 +1,5 @@
-import at.asitplus.crypto.datatypes.jws.JwsAlgorithm
+package at.asitplus.crypto.datatypes.jws
+
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe

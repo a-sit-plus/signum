@@ -1,3 +1,5 @@
+package at.asitplus.crypto.datatypes.jws
+
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.EcCurve
 import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
