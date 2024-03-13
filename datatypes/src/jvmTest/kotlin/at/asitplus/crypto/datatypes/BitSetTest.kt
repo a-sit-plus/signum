@@ -1,3 +1,5 @@
+package at.asitplus.crypto.datatypes
+
 import at.asitplus.crypto.datatypes.io.memDump
 import at.asitplus.crypto.datatypes.io.toBitSet
 import at.asitplus.crypto.datatypes.io.toBitString

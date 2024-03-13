@@ -1,3 +1,5 @@
+package at.asitplus.crypto.datatypes
+
 import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.asn1.Asn1Element
@@ -38,9 +40,8 @@ class PublicKeyTest : FreeSpec({
             }
             withData(
                 nameFn = {
-                    "(x: ${
-                        it.w.affineX.toByteArray().encodeToString(Base64Strict)
-                    } y: ${it.w.affineY.toByteArray().encodeToString(Base64Strict)})"
+                    "(x: ${it.w.affineX.toByteArray().encodeToString(Base64Strict)}" +
+                            " y: ${it.w.affineY.toByteArray().encodeToString(Base64Strict)})"
                 },
                 keys
             ) { pubKey ->

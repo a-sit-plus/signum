@@ -1,3 +1,5 @@
+package at.asitplus.crypto.datatypes
+
 import at.asitplus.crypto.datatypes.CryptoAlgorithm
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.CryptoSignature

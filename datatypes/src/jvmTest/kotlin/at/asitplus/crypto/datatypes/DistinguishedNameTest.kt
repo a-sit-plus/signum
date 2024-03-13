@@ -1,3 +1,5 @@
+package at.asitplus.crypto.datatypes
+
 import at.asitplus.crypto.datatypes.asn1.KnownOIDs
 import at.asitplus.crypto.datatypes.pki.DistinguishedName.CommonName
 import at.asitplus.crypto.datatypes.pki.DistinguishedName.Country

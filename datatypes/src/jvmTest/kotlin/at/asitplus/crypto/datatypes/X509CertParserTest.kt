@@ -1,4 +1,5 @@
-import at.asitplus.crypto.datatypes.CryptoPublicKey
+package at.asitplus.crypto.datatypes
+
 import at.asitplus.crypto.datatypes.asn1.Asn1Element
 import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
 import at.asitplus.crypto.datatypes.asn1.parse

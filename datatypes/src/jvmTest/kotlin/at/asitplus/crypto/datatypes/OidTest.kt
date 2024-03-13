@@ -1,3 +1,5 @@
+package at.asitplus.crypto.datatypes
+
 import at.asitplus.crypto.datatypes.asn1.ObjectIdentifier
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
