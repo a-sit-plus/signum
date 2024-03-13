@@ -69,3 +69,4 @@
 * Rename `JsonWebKey.fromKeyId` to `JsonWebKey.fromDid`
 
 ### NEXT
+ * Parse more certificates from `x5c` in JWS headers
