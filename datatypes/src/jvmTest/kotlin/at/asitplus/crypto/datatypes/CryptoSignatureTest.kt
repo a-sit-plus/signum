@@ -1,6 +1,5 @@
 package at.asitplus.crypto.datatypes
 
-import at.asitplus.crypto.datatypes.CryptoSignature
 import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
@@ -9,11 +8,9 @@ import io.kotest.matchers.shouldNotBe
 class CryptoSignatureTest : FreeSpec({
 
     val values = (Byte.MIN_VALUE..Byte.MAX_VALUE).toMutableSet()
-    
+
     "Equals & hashCode" {
-        repeat(
-            15
-        ) {
+        repeat(15) {
             val first: Int = values.random().also { values.remove(it) }
             val second: Int = values.random().also { values.remove(it) }
 

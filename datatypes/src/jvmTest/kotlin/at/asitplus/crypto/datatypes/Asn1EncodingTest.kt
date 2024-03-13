@@ -19,6 +19,7 @@ import at.asitplus.crypto.datatypes.asn1.readLong
 import at.asitplus.crypto.datatypes.io.BitSet
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
@@ -80,7 +81,7 @@ class Asn1EncodingTest : FreeSpec({
             bool(true)
         }
         val parsed = Asn1Element.parse(seq.derEncoded)
-        println(parsed.prettyPrint())
+        parsed.shouldNotBeNull()
     }
 
     "Ans1 Number encoding" - {
@@ -164,9 +165,6 @@ class Asn1EncodingTest : FreeSpec({
             }
         }
 
-        println(sequence)
-
         Asn1Element.parse(sequence.derEncoded).derEncoded shouldBe sequence.derEncoded
-        println(sequence.toDerHexString(lineLen = 58))
     }
 })

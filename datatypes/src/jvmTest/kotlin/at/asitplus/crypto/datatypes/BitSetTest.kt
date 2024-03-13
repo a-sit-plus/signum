@@ -19,12 +19,7 @@ class BitSetTest : FreeSpec({
 
     //outer container required for checkall
     "Custom BitSet Implementation" - {
-
-
         "manual tests" {
-
-
-
             KmpBitSet.fromBitString("011011100101110111").toBitString() shouldBe "011011100101110111"
 
             val kmm = KmpBitSet(0)
@@ -83,10 +78,7 @@ class BitSetTest : FreeSpec({
             bits[8] = true; bits.memDump() shouldBe "00000111 00000001"
         }
 
-
         "memDump manual tests" {
-
-
             byteArrayOf(4).memDump() shouldBe "00000100"
             byteArrayOf(7).memDump() shouldBe "00000111"
             byteArrayOf(17, 31).memDump() shouldBe "00010001 00011111"
@@ -134,7 +126,6 @@ class BitSetTest : FreeSpec({
             jvm.memDump() shouldBe ""
             kmm.memDump() shouldBe ""
         }
-
 
         checkAll(
             iterations = 32,

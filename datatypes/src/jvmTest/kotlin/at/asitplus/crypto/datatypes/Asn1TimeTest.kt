@@ -10,7 +10,7 @@ import io.kotest.property.checkAll
 import kotlinx.datetime.toKotlinInstant
 import java.time.Instant
 
-class Asn1TimeTest : FreeSpec ({
+class Asn1TimeTest : FreeSpec({
 
     "Asn1Time test equals and hashCode" {
         checkAll(
