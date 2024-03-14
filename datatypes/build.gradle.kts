@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import java.io.FileInputStream
+import java.util.regex.Pattern
 
 
 buildscript {
@@ -26,24 +27,35 @@ version = artifactVersion
 private val Pair<*, String?>.comment: String? get() = this.second
 private val Pair<String, *>.oid: String? get() = this.first
 
-tasks.register<DefaultTask>("generateOid") {
+generateKnowOIDs()
+
+tasks.register<DefaultTask>("regenerateKnownOIDs") {
+    doFirst { generateKnowOIDs() }
+}
+
+fun generateKnowOIDs() {
+    logger.log(LogLevel.INFO, "> Regenerating KnownOIDs.kt")
     val collected = mutableMapOf<String, Pair<String, String?>>()
-    doFirst {
 
 
-        var oid: String? = null
-        var comment: String? = null
-        var description: String? = null
+    var oid: String? = null
+    var comment: String? = null
+    var description: String? = null
 
-        FileInputStream(
-            project.layout.projectDirectory.dir("src").dir("commonMain").dir("resources").file("dumpasn1.cfg").asFile
-        ).reader().forEachLine { line ->
-            if (!(line.isBlank() || line.startsWith("#"))) {
-                //we know a new OID
-                if (line.startsWith("OID = ")) {
-                    val newOID = line.substring("OID = ".length).trim()
-                    // we know the previously declared OID was fully read
-                    if (oid != null) {
+    FileInputStream(
+        project.layout.projectDirectory.dir("src").dir("commonMain").dir("resources").file("dumpasn1.cfg").asFile
+    ).reader().forEachLine { line ->
+        if (!(line.isBlank() || line.startsWith("#"))) {
+            //we know a new OID
+            if (line.startsWith("OID = ")) {
+                val newOID = line.substring("OID = ".length).trim()
+                // we know the previously declared OID was fully read
+                if (oid != null) {
+                    //filter iffy stuff
+                    val segments = oid!!.split(Pattern.compile("\\s"))
+                    if (segments.size > 1 && segments[1].toUInt() > 39u)
+                        logger.warn("Skipping OID $oid ($description)")
+                    else {
                         //if we collected the name of this OID already, we need to assign a new name
                         collected[description]?.also { existing ->
                             collected["${description}_$oid"] = Pair(oid!!, comment)
@@ -52,53 +64,46 @@ tasks.register<DefaultTask>("generateOid") {
                             collected[description!!] = Pair(oid!!, comment)
                         }
                     }
-                    oid = newOID
-                    description = null
-                    comment = null
-                } else if (line.startsWith("Description = ")) {
-                    description = line.substring("Description = ".length).trim().replace("?", "").replace("(", "")
-                        .replace(")", "").replace("#", "").replace(",", "").let {
-                            it.ifBlank { oid }
-                        }
-                } else if (line.startsWith("Comment = ")) {
-                    comment = line.substring("Comment = ".length).trim()
                 }
+                oid = newOID
+                description = null
+                comment = null
+            } else if (line.startsWith("Description = ")) {
+                description = line.substring("Description = ".length).trim().replace("?", "").replace("(", "")
+                    .replace(")", "").replace("#", "").replace(",", "").let {
+                        it.ifBlank { oid }
+                    }
+            } else if (line.startsWith("Comment = ")) {
+                comment = line.substring("Comment = ".length).trim()
             }
         }
-
-        collected.forEach { name, oidTriple ->
-            println("$name =  ${oidTriple.oid} (${oidTriple.comment})")
-        }
     }
 
-    doLast {
-        val knownOIDs = ClassName("at.asitplus.crypto.datatypes.asn1", "Known_OIDs")
-        val file = FileSpec.builder("at.asitplus.crypto.datatypes.asn1", "Known_OIDs")
-            .addType(
-                TypeSpec.objectBuilder("Known_OIDs").apply {
-                    collected.toList().distinctBy { (_, oidTriple) -> oidTriple.oid }.sortedBy { (name, _) -> name }
-                        .forEach { (name, oidTriple) ->
-                            addProperty(
-                                PropertySpec.builder(
-                                    name,
-                                    ClassName(packageName = "at.asitplus.crypto.datatypes.asn1", "ObjectIdentifier")
-                                )
-                                    .initializer("\nObjectIdentifier(\n\"${oidTriple.oid}\"\n)")
-                                    .addKdoc("`${oidTriple.oid}`: ${oidTriple.comment}")
-                                    .build()
+    val file = FileSpec.builder("at.asitplus.crypto.datatypes.asn1", "KnownOIDs")
+        .addType(
+            TypeSpec.objectBuilder("KnownOIDs").apply {
+                collected.toList().distinctBy { (_, oidTriple) -> oidTriple.oid }.sortedBy { (name, _) -> name }
+                    .forEach { (name, oidTriple) ->
+                        addProperty(
+                            PropertySpec.builder(
+                                name,
+                                ClassName(packageName = "at.asitplus.crypto.datatypes.asn1", "ObjectIdentifier")
                             )
-                        }
+                                .initializer("\nObjectIdentifier(\n\"${oidTriple.oid}\"\n)")
+                                .addKdoc("`${oidTriple.oid}`: ${oidTriple.comment}")
+                                .build()
+                        )
+                    }
 
-                }.build()
-            ).build()
+            }.build()
+        ).build()
 
-        file.writeTo(
-            project.layout.projectDirectory.dir("src").dir("commonMain").dir("kotlin").file("KnownOids.kt").asFile
-        )
-    }
+    file.writeTo(
+        project.layout.projectDirectory.dir("generated").dir("commonMain").dir("kotlin").asFile
+    )
+
 }
 
-tasks.getByName("metadataMainClasses").dependsOn(tasks.getByName("generateOid"))
 
 
 kotlin {
@@ -120,6 +125,7 @@ kotlin {
             resources.exclude {
                 it.name == "dumpasn1.cfg"
             }
+            kotlin.srcDir(project.layout.projectDirectory.dir("generated").dir("commonMain").dir("kotlin"))
 
             dependencies {
                 api(kmmresult())
