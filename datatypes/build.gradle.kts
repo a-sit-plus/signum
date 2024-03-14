@@ -23,12 +23,11 @@ val artifactVersion: String by extra
 version = artifactVersion
 
 
-private val Triple<String, String?, MutableList<Pair<String, String?>>>.clash: MutableList<Pair<String, String?>> get() = this.third
-private val Triple<*, String?, *>.comment: String? get() = this.second
-private val Triple<String, *, *>.oid: String? get() = this.first
+private val Pair<*, String?>.comment: String? get() = this.second
+private val Pair<String, *>.oid: String? get() = this.first
 
 tasks.register<DefaultTask>("generateOid") {
-    val collected = mutableMapOf<String, Triple<String, String?, MutableList<Pair<String, String?>>>>()
+    val collected = mutableMapOf<String, Pair<String, String?>>()
     doFirst {
 
 
@@ -45,11 +44,12 @@ tasks.register<DefaultTask>("generateOid") {
                     val newOID = line.substring("OID = ".length).trim()
                     // we know the previously declared OID was fully read
                     if (oid != null) {
-                        //check if we collected the name of this OID already
+                        //if we collected the name of this OID already, we need to assign a new name
                         collected[description]?.also { existing ->
-                            existing.clash.add(oid!! to comment)
+                            collected["${description}_$oid"] = Pair(oid!!, comment)
                         } ?: run {
-                            collected[description!!] = Triple(oid!!, comment, mutableListOf())
+                            //if it is still new, we can just add it
+                            collected[description!!] = Pair(oid!!, comment)
                         }
                     }
                     oid = newOID
@@ -68,9 +68,6 @@ tasks.register<DefaultTask>("generateOid") {
 
         collected.forEach { name, oidTriple ->
             println("$name =  ${oidTriple.oid} (${oidTriple.comment})")
-            oidTriple.clash.forEach {
-                println("\tclashes with ${it.first} (${it.second})")
-            }
         }
     }
 
@@ -79,16 +76,18 @@ tasks.register<DefaultTask>("generateOid") {
         val file = FileSpec.builder("at.asitplus.crypto.datatypes.asn1", "Known_OIDs")
             .addType(
                 TypeSpec.objectBuilder("Known_OIDs").apply {
-                    collected.forEach { name, oidTriple ->
-                        addProperty(
-                            PropertySpec.builder(
-                                name,
-                                ClassName(packageName = "at.asitplus.crypto.datatypes.asn1", "ObjectIdentifier")
+                    collected.toList().distinctBy { (_, oidTriple) -> oidTriple.oid }.sortedBy { (name, _) -> name }
+                        .forEach { (name, oidTriple) ->
+                            addProperty(
+                                PropertySpec.builder(
+                                    name,
+                                    ClassName(packageName = "at.asitplus.crypto.datatypes.asn1", "ObjectIdentifier")
+                                )
+                                    .initializer("\nObjectIdentifier(\n\"${oidTriple.oid}\"\n)")
+                                    .addKdoc("`${oidTriple.oid}`: ${oidTriple.comment}")
+                                    .build()
                             )
-                                .initializer("\nObjectIdentifier(\n\"${oidTriple.oid}\"\n) /*${oidTriple.comment}. AKA\n\t\t ${oidTriple.clash.joinToString { "${it.first} (${it.second})" }} */")
-                                .build()
-                        )
-                    }
+                        }
 
                 }.build()
             ).build()
