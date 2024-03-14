@@ -25,7 +25,7 @@ kotlin {
             languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
         }
 
-        val commonMain by getting {
+         commonMain {
             dependencies {
                 api(project(":datatypes"))
                 api(serialization("cbor"))
@@ -35,13 +35,6 @@ kotlin {
                 implementation(libs.bignum) //Intellij bug work-around
             }
         }
-
-        val commonTest by getting {
-            dependencies {
-                implementation(kotlin("reflect"))
-            }
-        }
-        val jvmTest by getting
     }
 }
 
