@@ -57,7 +57,7 @@ fun generateKnowOIDs() {
                         logger.warn("Skipping OID $oid ($description)")
                     else {
                         //if we collected the name of this OID already, we need to assign a new name
-                        collected[description]?.also { existing ->
+                        collected[description]?.also { _ ->
                             collected["${description}_$oid"] = Pair(oid!!, comment)
                         } ?: run {
                             //if it is still new, we can just add it
@@ -89,8 +89,8 @@ fun generateKnowOIDs() {
                                 name,
                                 ClassName(packageName = "at.asitplus.crypto.datatypes.asn1", "ObjectIdentifier")
                             )
-                                .initializer("\nObjectIdentifier(\n\"${oidTriple.oid}\"\n)")
-                                .addKdoc("`${oidTriple.oid}`: ${oidTriple.comment}")
+                                .initializer("\nObjectIdentifier(\n\"${oidTriple.oid!!}\"\n)")
+                                .addKdoc("`${oidTriple.oid!!.replace(' ', '.')}`: ${oidTriple.comment}")
                                 .build()
                         )
                     }
@@ -118,13 +118,6 @@ kotlin {
         }
 
         commonMain {
-
-            //workaround [KT-66563](https://youtrack.jetbrains.com/issue/KT-66563/Stop-including-resources-to-metadata-klib)
-            //triggering [KT-65315](https://youtrack.jetbrains.com/issue/KT-65315/KMP-Composite-compileIosMainKotlinMetadata-fails-with-Could-not-find-included-iOS-dependency)
-            //I'm still inclined to keep it here, should we ever want to crank it up with Kotlinpoet to parse the actual source and not McGyuver-it. That is: once the bugfixes land in production Kotlin
-            resources.exclude {
-                it.name == "dumpasn1.cfg"
-            }
             kotlin.srcDir(project.layout.projectDirectory.dir("generated").dir("commonMain").dir("kotlin"))
 
             dependencies {
