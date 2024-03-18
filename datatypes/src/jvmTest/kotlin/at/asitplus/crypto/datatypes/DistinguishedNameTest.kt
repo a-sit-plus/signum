@@ -1,3 +1,5 @@
+package at.asitplus.crypto.datatypes
+
 import at.asitplus.crypto.datatypes.asn1.KnownOIDs
 import at.asitplus.crypto.datatypes.pki.DistinguishedName.CommonName
 import at.asitplus.crypto.datatypes.pki.DistinguishedName.Country
@@ -11,9 +13,11 @@ import io.kotest.matchers.shouldNotBe
 
 class DistinguishedNameTest : FreeSpec({
     "DistinguishedName test equals and hashCode" - {
-        val oids = listOf(KnownOIDs.countryName, KnownOIDs.country, KnownOIDs.houseIdentifier,
+        val oids = listOf(
+            KnownOIDs.countryName, KnownOIDs.country, KnownOIDs.houseIdentifier,
             KnownOIDs.organizationName, KnownOIDs.organization, KnownOIDs.organizationalUnit,
-            KnownOIDs.organizationalPerson, KnownOIDs.brainpoolP512r1)
+            KnownOIDs.organizationalPerson, KnownOIDs.brainpoolP512r1
+        )
         withData(oids) { first ->
             withData(oids) { second ->
                 if (first != second) {

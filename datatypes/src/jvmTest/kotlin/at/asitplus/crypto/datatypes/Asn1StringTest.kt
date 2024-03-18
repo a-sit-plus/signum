@@ -1,9 +1,11 @@
+package at.asitplus.crypto.datatypes
+
 import at.asitplus.crypto.datatypes.asn1.Asn1String
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
-class Asn1StringTest : FreeSpec ({
+class Asn1StringTest : FreeSpec({
 
     val utf8 = Asn1String.UTF8("uÄasdiu3")
     val universal = Asn1String.Universal("adsa4")
@@ -18,16 +20,16 @@ class Asn1StringTest : FreeSpec ({
     val universal1 = Asn1String.Universal("a32dsa4")
     val teletex1 = Asn1String.Teletex("sdfsad45")
 
-    val allAsn1Strings:List<Asn1String> = listOf(utf8, universal, visible, ia5, teletex, bmp, printable, numeric, utf81, universal1, teletex1)
+    val allAsn1Strings: List<Asn1String> =
+        listOf(utf8, universal, visible, ia5, teletex, bmp, printable, numeric, utf81, universal1, teletex1)
 
     "Asn1Strings equals and hashCode" {
         allAsn1Strings.forEachIndexed { index1, asn1String1 ->
             allAsn1Strings.forEachIndexed { index2, asn1String2 ->
-                if(index1 == index2) {
+                if (index1 == index2) {
                     asn1String1 shouldBe asn1String2
                     asn1String1.hashCode() shouldBe asn1String2.hashCode()
-                }
-                else {
+                } else {
                     asn1String1 shouldNotBe asn1String2
                     asn1String1.hashCode() shouldNotBe asn1String2.hashCode()
                 }

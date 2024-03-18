@@ -1,3 +1,5 @@
+package at.asitplus.crypto.datatypes
+
 import at.asitplus.crypto.datatypes.asn1.ObjectIdentifier
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
@@ -32,7 +34,7 @@ class OidTest : FreeSpec({
                             second.toUInt(),
                             *(it.map { it.toUInt() }.toUIntArray())
                         )
-                        val second1 = if(second > 1) second - 1 else second + 1
+                        val second1 = if (second > 1) second - 1 else second + 1
 
                         val oid1 = ObjectIdentifier(
                             first.toUInt(),
@@ -40,7 +42,6 @@ class OidTest : FreeSpec({
                             *(it.map { it.toUInt() }.toUIntArray())
                         )
                         val parsed = ObjectIdentifier.decodeFromTlv(oid.encodeToTlv())
-                        if (parsed != oid) println("is:     $oid\nparsed: $parsed")
                         parsed shouldBe oid
                         parsed.hashCode() shouldBe oid.hashCode()
                         parsed shouldNotBe oid1
