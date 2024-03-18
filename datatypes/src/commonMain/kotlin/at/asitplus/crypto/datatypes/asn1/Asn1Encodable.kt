@@ -1,3 +1,5 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package at.asitplus.crypto.datatypes.asn1
 
 import at.asitplus.KmmResult
