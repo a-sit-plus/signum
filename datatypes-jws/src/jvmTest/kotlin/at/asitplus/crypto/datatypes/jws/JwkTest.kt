@@ -1,8 +1,8 @@
+package at.asitplus.crypto.datatypes.jws
+
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.fromJcaPublicKey
 import at.asitplus.crypto.datatypes.io.Base64Strict
-import at.asitplus.crypto.datatypes.jws.jwkId
-import at.asitplus.crypto.datatypes.jws.toJsonWebKey
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldNotBeNull

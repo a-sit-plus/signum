@@ -1,7 +1,5 @@
-import at.asitplus.crypto.datatypes.CryptoAlgorithm
-import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.CryptoSignature
-import at.asitplus.crypto.datatypes.EcCurve
+package at.asitplus.crypto.datatypes
+
 import at.asitplus.crypto.datatypes.asn1.Asn1Element
 import at.asitplus.crypto.datatypes.asn1.Asn1EncapsulatingOctetString
 import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
@@ -12,8 +10,6 @@ import at.asitplus.crypto.datatypes.asn1.Asn1Time
 import at.asitplus.crypto.datatypes.asn1.KnownOIDs
 import at.asitplus.crypto.datatypes.asn1.ensureSize
 import at.asitplus.crypto.datatypes.asn1.parse
-import at.asitplus.crypto.datatypes.fromJcaPublicKey
-import at.asitplus.crypto.datatypes.jcaName
 import at.asitplus.crypto.datatypes.pki.DistinguishedName
 import at.asitplus.crypto.datatypes.pki.TbsCertificate
 import at.asitplus.crypto.datatypes.pki.X509Certificate
@@ -120,7 +116,6 @@ class X509CertificateJvmTest : FreeSpec({
         val ecPublicKey = keyPair.public as ECPublicKey
         val keyX = ecPublicKey.w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
         val keyY = ecPublicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
-        val cryptoPublicKey = CryptoPublicKey.Ec(curve = ecCurve, x = keyX, y = keyY)
 
         // create certificate with bouncycastle
         val notBeforeDate = Date.from(Instant.now())
@@ -187,10 +182,8 @@ class X509CertificateJvmTest : FreeSpec({
         val contentSigner: ContentSigner = JcaContentSignerBuilder(signatureAlgorithm.jcaName).build(keyPair.private)
         val certificateHolder = builder.build(contentSigner)
 
-        println(certificateHolder.encoded.encodeToString(Base16))
         val parsed = Asn1Element.parse(certificateHolder.encoded)
 
-        println(parsed)
         val matches = listOf(parsed).expect {
             sequence {
                 sequence {
@@ -297,7 +290,9 @@ class X509CertificateJvmTest : FreeSpec({
             serialNumber = serialNumber.toByteArray(),
             issuerName = listOf(DistinguishedName.CommonName(Asn1String.UTF8(commonName))),
             validFrom = Asn1Time(Date.from(Instant.now().plusSeconds(1)).toInstant().toKotlinInstant()),
-            validUntil = Asn1Time(Date.from(Instant.now().plusSeconds(30.days.inWholeSeconds)).toInstant().toKotlinInstant()),
+            validUntil = Asn1Time(
+                Date.from(Instant.now().plusSeconds(30.days.inWholeSeconds)).toInstant().toKotlinInstant()
+            ),
             signatureAlgorithm = signatureAlgorithm256,
             subjectName = listOf(DistinguishedName.CommonName(Asn1String.UTF8(commonName))),
             publicKey = cryptoPublicKey

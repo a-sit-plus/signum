@@ -7,7 +7,7 @@ object BERTags {
     const val INTEGER: UByte = 0x02u
     const val BIT_STRING: UByte = 0x03u
     const val OCTET_STRING: UByte = 0x04u
-    const val NULL: UByte = 0x05u
+    const val ASN1_NULL: UByte = 0x05u
     const val OBJECT_IDENTIFIER: UByte = 0x06u
     const val OBJECT_DESCRIPTOR: UByte = 0x07u
     const val EXTERNAL: UByte = 0x08u

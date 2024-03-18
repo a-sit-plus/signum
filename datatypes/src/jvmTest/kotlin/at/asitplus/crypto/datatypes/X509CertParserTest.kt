@@ -1,4 +1,5 @@
-import at.asitplus.crypto.datatypes.CryptoPublicKey
+package at.asitplus.crypto.datatypes
+
 import at.asitplus.crypto.datatypes.asn1.Asn1Element
 import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
 import at.asitplus.crypto.datatypes.asn1.parse
@@ -7,12 +8,12 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -45,31 +46,7 @@ class X509CertParserTest : FreeSpec({
             val jcaCert = CertificateFactory.getInstance("X.509")
                 .generateCertificate(ByteArrayInputStream(certBytes)) as JcaCertificate
 
-            println(jcaCert.encoded.encodeToString(Base16))
             val cert = X509Certificate.decodeFromDer(certBytes)
-
-            when (val pk = cert.publicKey) {
-                is CryptoPublicKey.Ec -> println(
-                    "Certificate with serial no. ${
-                        cert.tbsCertificate.serialNumber.encodeToString(Base16)
-                    } contains an EC public key using curve ${pk.curve}"
-                )
-
-                is CryptoPublicKey.Rsa -> println(
-                    "Certificate with serial no. ${
-                        cert.tbsCertificate.serialNumber.encodeToString(Base16)
-                    } contains a ${pk.bits.number} bit RSA public key"
-                )
-            }
-
-            println("The full certificate is:\n${Json { prettyPrint = true }.encodeToString(cert)}")
-
-            println("Re-encoding it produces the same bytes? ${cert.encodeToDer() contentEquals certBytes}")
-
-
-            println(cert.encodeToTlv())
-            println(cert.encodeToTlv().toDerHexString())
-
             withClue(
                 "Expect: ${jcaCert.encoded.encodeToString(Base16)}\n" +
                         "Actual: ${cert.encodeToDer().encodeToString(Base16)}"
@@ -101,13 +78,13 @@ class X509CertParserTest : FreeSpec({
 
         println("Got ${certs.size} discrete certs and ${pemEncodeCerts.size} from trust store (${uniqueCerts.size} unique ones)")
 
-
-        withData(nameFn = { it.subjectDN.name }, uniqueCerts.sortedBy { it.subjectDN.name }) { crt ->
+        withData(
+            nameFn = { it.subjectX500Principal.name },
+            uniqueCerts.sortedBy { it.subjectX500Principal.name }) { crt ->
             val own = X509Certificate.decodeFromTlv(Asn1Element.parse(crt.encoded) as Asn1Sequence)
                 .encodeToTlv().derEncoded
             withClue(
-                "Expect: ${crt.encoded.encodeToString(Base16)}\n" +
-                        "Actual: ${own.encodeToString(Base16)}"
+                "Expect: ${crt.encoded.encodeToString(Base16)}\n" + "Actual: ${own.encodeToString(Base16)}"
             ) {
                 own shouldBe crt.encoded
             }
@@ -124,7 +101,6 @@ class X509CertParserTest : FreeSpec({
 
             withData(nameFn = { it.first }, good) {
                 val src = Asn1Element.parse(it.second) as Asn1Sequence
-                println(src.prettyPrint())
                 X509Certificate.decodeFromTlv(src)
             }
         }
@@ -143,7 +119,8 @@ class X509CertParserTest : FreeSpec({
 
     "From attestation collector" - {
         val json = File("./src/jvmTest/resources/results").listFiles()
-            .map { Json.parseToJsonElement(it.readText()).jsonObject }
+            ?.map { Json.parseToJsonElement(it.readText()).jsonObject }
+            .shouldNotBeNull()
         val certs = json.mapIndexed { i, collected ->
             (collected["device"]!!.jsonPrimitive.toString() + " ($i)") to collected.get("attestationProof")!!.jsonArray.map {
                 it.jsonPrimitive.toString().replace("\\n", "").replace("\\r", "").replace("\"", "")
@@ -172,10 +149,11 @@ class X509CertParserTest : FreeSpec({
 
 private fun readGoogleCerts(): Pair<List<Pair<String, ByteArray>>, List<Pair<String, ByteArray>>> {
     val cert1 = File("./src/jvmTest/resources/certs").listFiles()
-        .filter { it.extension == "der" && !it.name.contains(".chain.") }
-    val certs2 =
-        File("./src/jvmTest/resources/certs2").listFiles()
-            .filter { it.extension == "der" && !it.name.contains(".chain.") }
+        ?.filter { it.extension == "der" && !it.name.contains(".chain.") }
+        .shouldNotBeNull()
+    val certs2 = File("./src/jvmTest/resources/certs2").listFiles()
+        ?.filter { it.extension == "der" && !it.name.contains(".chain.") }
+        .shouldNotBeNull()
     val all = cert1 + certs2
 
     val ok = all.filter { it.name.startsWith("ok-") }

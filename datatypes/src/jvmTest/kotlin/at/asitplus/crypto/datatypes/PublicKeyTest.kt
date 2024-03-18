@@ -1,20 +1,16 @@
+package at.asitplus.crypto.datatypes
+
 import at.asitplus.KmmResult.Companion.wrap
-import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.asn1.Asn1Element
 import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
 import at.asitplus.crypto.datatypes.asn1.parse
-import at.asitplus.crypto.datatypes.fromJcaPublicKey
-import at.asitplus.crypto.datatypes.getJcaPublicKey
 import at.asitplus.crypto.datatypes.io.Base64Strict
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import org.bouncycastle.asn1.ASN1InputStream
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.DERBitString
@@ -30,7 +26,7 @@ class PublicKeyTest : FreeSpec({
 
     "EC" - {
         withData(256, 384, 521) { bits ->
-            val keys = List<ECPublicKey>(25600 / bits) {
+            val keys = List(25600 / bits) {
                 val ecKp = KeyPairGenerator.getInstance("EC", "BC").apply {
                     initialize(bits)
                 }.genKeyPair()
@@ -38,9 +34,8 @@ class PublicKeyTest : FreeSpec({
             }
             withData(
                 nameFn = {
-                    "(x: ${
-                        it.w.affineX.toByteArray().encodeToString(Base64Strict)
-                    } y: ${it.w.affineY.toByteArray().encodeToString(Base64Strict)})"
+                    "(x: ${it.w.affineX.toByteArray().encodeToString(Base64Strict)}" +
+                            " y: ${it.w.affineY.toByteArray().encodeToString(Base64Strict)})"
                 },
                 keys
             ) { pubKey ->
@@ -48,7 +43,6 @@ class PublicKeyTest : FreeSpec({
                 val own = CryptoPublicKey.Ec.fromJcaPublicKey(pubKey).getOrThrow()
 
                 withClue("Basic Conversions") {
-                    println(Json.encodeToString(own))
                     own.encodeToDer() shouldBe pubKey.encoded
                     CryptoPublicKey.fromDid(own.didEncoded) shouldBe own
                     own.getJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
@@ -87,7 +81,7 @@ class PublicKeyTest : FreeSpec({
 
     "RSA" - {
         withData(512, 1024, 2048, 3072, 4096) { bits ->
-            val keys = List<RSAPublicKey>(13000 / bits) {
+            val keys = List(13000 / bits) {
                 val rsaKP = KeyPairGenerator.getInstance("RSA").apply {
                     initialize(bits)
                 }.genKeyPair()
@@ -111,8 +105,6 @@ class PublicKeyTest : FreeSpec({
                 // Correctly drops leading zeros
                 own1.n shouldBe own.n
                 own1.e shouldBe own.e
-
-                println(Json.encodeToString(own))
 
                 val keyBytes = ((ASN1InputStream(pubKey.encoded).readObject()
                     .toASN1Primitive() as ASN1Sequence).elementAt(1) as DERBitString).bytes

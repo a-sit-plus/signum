@@ -1,3 +1,5 @@
+package at.asitplus.crypto.datatypes
+
 import at.asitplus.crypto.datatypes.asn1.Asn1Time
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
@@ -8,7 +10,7 @@ import io.kotest.property.checkAll
 import kotlinx.datetime.toKotlinInstant
 import java.time.Instant
 
-class Asn1TimeTest : FreeSpec ({
+class Asn1TimeTest : FreeSpec({
 
     "Asn1Time test equals and hashCode" {
         checkAll(

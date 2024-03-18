@@ -27,8 +27,6 @@ sealed class CoseKeyParams {
             if (this === other) return true
             if (other == null || other !is EcKeyParams<*>) return false
 
-            other as EcKeyParams<*>
-
             if (curve != other.curve) return false
             if (x != null) {
                 if (other.x == null) return false

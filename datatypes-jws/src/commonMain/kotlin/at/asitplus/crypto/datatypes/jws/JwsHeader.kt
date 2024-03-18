@@ -10,6 +10,8 @@ import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.jws.io.jsonSerializer
 import at.asitplus.crypto.datatypes.pki.X509Certificate
 import io.github.aakira.napier.Napier
+import io.matthewnelson.encoding.base64.Base64
+import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -90,9 +92,18 @@ data class JwsHeader(
             ?: keyId?.let { runCatching { CryptoPublicKey.fromDid(it) } }?.getOrNull()
             ?: certificateChain
                 ?.firstNotNullOfOrNull {
-                    runCatching { X509Certificate.decodeFromTlv(Asn1Element.parse(it) as Asn1Sequence).publicKey }.getOrNull()
+                    runCatching {
+                        X509Certificate.decodeFromTlv(Asn1Element.parse(it) as Asn1Sequence).publicKey
+                    }.getOrNull() ?: runCatching {
+                        X509Certificate.decodeFromTlv(Asn1Element.parse(it.decodeX5c()) as Asn1Sequence).publicKey
+                    }.getOrNull()
                 }
     }
+
+    private fun ByteArray.decodeX5c() = decodeToString()
+        .replace("-----BEGIN CERTIFICATE-----\n", "")
+        .replace("\n-----END CERTIFICATE-----", "")
+        .decodeToByteArray(Base64())
 
     companion object {
         fun deserialize(it: String) = kotlin.runCatching {
