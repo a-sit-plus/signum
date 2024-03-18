@@ -78,9 +78,9 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
 
     private fun encodePSSParams(bits: Int): Asn1Sequence {
         val shaOid = when (bits) {
-            256 -> KnownOIDs.`sha-256`
-            384 -> KnownOIDs.`sha-384`
-            512 -> KnownOIDs.`sha-512`
+            256 -> KnownOIDs.`sha_256`
+            384 -> KnownOIDs.`sha_384`
+            512 -> KnownOIDs.`sha_512`
             else -> TODO()
         }
         return asn1Sequence {
@@ -94,7 +94,7 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
                 }
                 tagged(1.toUByte()) {
                     sequence {
-                        append(KnownOIDs.`pkcs1-MGF`)
+                        append(KnownOIDs.`pkcs1_MGF`)
                         sequence {
                             append(shaOid)
                             asn1null()
@@ -142,8 +142,8 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
                 HS256.oid, HS384.oid, HS512.oid,
                 -> fromOid(oid).also {
                     val tag = src.nextChild().tag
-                    if (tag != BERTags.NULL)
-                        throw Asn1TagMismatchException(BERTags.NULL, tag, "RSA Params not allowed.")
+                    if (tag != BERTags.ASN1_NULL)
+                        throw Asn1TagMismatchException(BERTags.ASN1_NULL, tag, "RSA Params not allowed.")
                 }
 
                 PS256.oid, PS384.oid, PS512.oid -> parsePssParams(src)
@@ -158,17 +158,17 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
 
             val sigAlg = (first.nextChild() as Asn1Primitive).readOid()
             val tag = first.nextChild().tag
-            if (tag != BERTags.NULL)
-                throw Asn1TagMismatchException(BERTags.NULL, tag, "PSS Params not supported yet")
+            if (tag != BERTags.ASN1_NULL)
+                throw Asn1TagMismatchException(BERTags.ASN1_NULL, tag, "PSS Params not supported yet")
 
             val second = (seq.nextChild() as Asn1Tagged).verifyTag(1.toUByte()).single() as Asn1Sequence
             val mgf = (second.nextChild() as Asn1Primitive).readOid()
-            if (mgf != KnownOIDs.`pkcs1-MGF`) throw IllegalArgumentException("Illegal OID: $mgf")
+            if (mgf != KnownOIDs.`pkcs1_MGF`) throw IllegalArgumentException("Illegal OID: $mgf")
             val inner = second.nextChild() as Asn1Sequence
             val innerHash = (inner.nextChild() as Asn1Primitive).readOid()
             if (innerHash != sigAlg) throw IllegalArgumentException("HashFunction mismatch! Expected: $sigAlg, is: $innerHash")
 
-            if (inner.nextChild().tag != BERTags.NULL) throw IllegalArgumentException(
+            if (inner.nextChild().tag != BERTags.ASN1_NULL) throw IllegalArgumentException(
                 "PSS Params not supported yet"
             )
 
@@ -179,9 +179,9 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
 
             return sigAlg.let {
                 when (it) {
-                    KnownOIDs.`sha-256` -> PS256.also { if (saltLen != 256 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
-                    KnownOIDs.`sha-384` -> PS384.also { if (saltLen != 384 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
-                    KnownOIDs.`sha-512` -> PS512.also { if (saltLen != 512 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
+                    KnownOIDs.`sha_256` -> PS256.also { if (saltLen != 256 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
+                    KnownOIDs.`sha_384` -> PS384.also { if (saltLen != 384 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
+                    KnownOIDs.`sha_512` -> PS512.also { if (saltLen != 512 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
 
                     else -> throw IllegalArgumentException("Unsupported OID: $it")
                 }

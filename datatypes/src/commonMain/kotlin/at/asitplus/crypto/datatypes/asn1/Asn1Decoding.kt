@@ -4,7 +4,7 @@ import at.asitplus.crypto.datatypes.asn1.BERTags.BMP_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.GENERALIZED_TIME
 import at.asitplus.crypto.datatypes.asn1.BERTags.IA5_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.INTEGER
-import at.asitplus.crypto.datatypes.asn1.BERTags.NULL
+import at.asitplus.crypto.datatypes.asn1.BERTags.ASN1_NULL
 import at.asitplus.crypto.datatypes.asn1.BERTags.NUMERIC_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.OCTET_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.PRINTABLE_STRING
@@ -157,12 +157,12 @@ fun Asn1Primitive.readBitStringOrNull() = runCatching { readBitString() }.getOrN
 
 
 /**
- * decodes this [Asn1Primitive] to null (i.e. verifies the tag to be [BERTags.NULL] and the content to be empty
+ * decodes this [Asn1Primitive] to null (i.e. verifies the tag to be [BERTags.ASN1_NULL] and the content to be empty
  *
  * @throws Asn1Exception  on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readNull() = decode(NULL) {}
+fun Asn1Primitive.readNull() = decode(ASN1_NULL) {}
 
 /**
  * Name seems odd, but this is just an exception-free version of [readNull]
