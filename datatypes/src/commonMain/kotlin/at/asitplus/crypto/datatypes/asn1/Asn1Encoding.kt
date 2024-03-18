@@ -6,7 +6,7 @@ import at.asitplus.crypto.datatypes.asn1.BERTags.BIT_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.BOOLEAN
 import at.asitplus.crypto.datatypes.asn1.BERTags.GENERALIZED_TIME
 import at.asitplus.crypto.datatypes.asn1.BERTags.INTEGER
-import at.asitplus.crypto.datatypes.asn1.BERTags.NULL
+import at.asitplus.crypto.datatypes.asn1.BERTags.ASN1_NULL
 import at.asitplus.crypto.datatypes.asn1.BERTags.UTC_TIME
 import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import at.asitplus.crypto.datatypes.io.BitSet
@@ -146,7 +146,7 @@ class Asn1TreeBuilder {
      * Adds a NULL [Asn1Primitive] to this ASN.1 structure
      */
     fun asn1null() {
-        elements += Asn1Primitive(NULL, byteArrayOf())
+        elements += Asn1Primitive(ASN1_NULL, byteArrayOf())
     }
 
     /**

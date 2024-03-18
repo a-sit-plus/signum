@@ -102,7 +102,7 @@ fun generateKnowOIDs() {
                     .replace("#", "")
                     .replace("\"", "")
                     .replace(' ', '_')
-                    //.replace('-', '_')
+                    .replace('-', '_')
                     .replace(",", "").let {
                         it.ifBlank { oid!!.replace(" ", "_") }
                     }

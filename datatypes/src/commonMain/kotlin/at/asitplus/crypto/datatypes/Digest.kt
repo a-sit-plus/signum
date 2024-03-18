@@ -10,8 +10,8 @@ import at.asitplus.crypto.datatypes.asn1.ObjectIdentifier
 enum class Digest(override val oid: ObjectIdentifier) : Identifiable {
 
     SHA1(KnownOIDs.sha1),
-    SHA256(KnownOIDs.`sha-256`),
-    SHA384(KnownOIDs.`sha-384`),
-    SHA512(KnownOIDs.`sha-512`);
+    SHA256(KnownOIDs.sha_256),
+    SHA384(KnownOIDs.sha_384),
+    SHA512(KnownOIDs.sha_512);
 
 }
