@@ -25,7 +25,7 @@ kotlin {
             languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
         }
 
-        val commonMain by getting {
+         commonMain {
             dependencies {
                 api(project(":datatypes"))
                 implementation(libs.okio)
@@ -36,14 +36,8 @@ kotlin {
             }
         }
 
-        val commonTest by getting {
-            dependencies {
-                implementation(kotlin("reflect"))
-            }
-        }
 
-        val jvmMain by getting
-        val jvmTest by getting {
+         jvmTest {
             dependencies {
                 implementation(libs.jose)
             }
@@ -56,7 +50,8 @@ exportIosFramework(
     serialization("json"),
     datetime(),
     kmmresult(),
-    project(":datatypes")
+    project(":datatypes"),
+    libs.bignum
 )
 
 val javadocJar = setupDokka(

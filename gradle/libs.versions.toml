@@ -3,10 +3,12 @@ encoding = "1.2.3"
 okio = "3.5.0"
 bignum = "0.3.9"
 jose = "9.31"
+kotlinpoet = "1.16.0"
 
 [libraries]
 base16 = { group = "io.matthewnelson.kotlin-components", name = "encoding-base16", version.ref = "encoding" }
 base64 = { group = "io.matthewnelson.kotlin-components", name = "encoding-base64", version.ref = "encoding" }
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }
 okio = { group = "com.squareup.okio", name = "okio", version.ref = "okio" }
-jose = { group = "com.nimbusds", name = "nimbus-jose-jwt", version.ref = "jose"}
+jose = { group = "com.nimbusds", name = "nimbus-jose-jwt", version.ref = "jose" }
+kotlinpoet = { group = "com.squareup", name = "kotlinpoet", version.ref = "kotlinpoet" }
