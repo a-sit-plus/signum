@@ -43,7 +43,8 @@ exportIosFramework(
     serialization("cbor"),
     datetime(),
     kmmresult(),
-    project(":datatypes")
+    project(":datatypes"),
+    libs.bignum
 )
 
 val javadocJar = setupDokka(

@@ -73,3 +73,5 @@
 * Kotlin 1.9.23 thanks to updated conventions
 * Generate `KnownOIDs` using [KotlinPoet](https://square.github.io/kotlinpoet/)
 * Work around KT-65315 thanks to updated conventions
+* BigNum as API dependency and iOS export (seems nonsensical,
+  but is somehow required when using this inside a compose multiplatform app)

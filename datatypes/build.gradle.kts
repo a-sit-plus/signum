@@ -34,7 +34,7 @@ tasks.register<DefaultTask>("regenerateKnownOIDs") {
 }
 
 fun generateKnowOIDs() {
-    logger.log(LogLevel.INFO, "> Regenerating KnownOIDs.kt")
+    logger.lifecycle("  Regenerating KnownOIDs.kt")
     val collected = mutableMapOf<String, Pair<String, String?>>()
 
 
@@ -54,7 +54,7 @@ fun generateKnowOIDs() {
                     //filter iffy stuff
                     val segments = oid!!.split(Pattern.compile("\\s"))
                     if (segments.size > 1 && segments[1].toUInt() > 39u)
-                        logger.warn("Skipping OID $oid ($description)")
+                        logger.warn("w: Skipping OID $oid $description ($comment)")
                     else {
                         //if we collected the name of this OID already, we need to assign a new name
                         collected[description]?.also { _ ->
@@ -126,7 +126,7 @@ kotlin {
                 api(datetime())
                 implementation(libs.base16)
                 implementation(libs.base64)
-                implementation(libs.bignum)
+                api(libs.bignum)
             }
         }
 
@@ -145,7 +145,8 @@ kotlin {
 
     }
 }
-exportIosFramework("KmpCrypto", serialization("json"), datetime(), kmmresult())
+
+exportIosFramework("KmpCrypto", serialization("json"), datetime(), kmmresult(), libs.bignum)
 
 val javadocJar = setupDokka(
     baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/",
