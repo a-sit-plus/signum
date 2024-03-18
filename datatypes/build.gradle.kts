@@ -27,12 +27,35 @@ version = artifactVersion
 private val Pair<*, String?>.comment: String? get() = this.second
 private val Pair<String, *>.oid: String? get() = this.first
 
+//generate Known OIDs when importing the project.
+//This is dirt-cheap, so it does not matter that this call is hardcoded here
 generateKnowOIDs()
 
+//Also create a task that regenerates known OIDs, should this be needed
 tasks.register<DefaultTask>("regenerateKnownOIDs") {
     doFirst { generateKnowOIDs() }
 }
 
+/**
+ * Generates `KnownOIDs.kt` containing an object of the same name
+ * in generated/commonMain/kotlin/at/asitplus/crypto/datatypes/asn1.
+ *
+ * This object contains the contents declared in src/commonMain/resources/dumpasn1.cfg,
+ * which is taken from Peter Gutmann's [dumpasn1](https://www.cs.auckland.ac.nz/~pgut001/dumpasn1.cfg).
+ *
+ * Internally, it iterates over the config file, collecting a tuple of OID, Description and optional Comment.
+ * When the next OID is encountered, the previously collected tuple ist added to a map
+ * (the Description is used as key, since this corresponds to what is colloquially referred to as attribute name).
+ * Due to Descriptions not being Unique, conflicts can arise.
+ * In that case, a new key is created as `Description||_||OID`.
+ * <br>
+ * Finally, some basic normalisation happens, since some Descriptions contain characters not allowed for Kotlin identifiers
+ * and malformed (deprecated OIDs) are stripped.
+ *
+ * Once the collection phase is finished, KotlinPoet is used to generate the actual Kotlin source.
+ *
+ * `# End of Fahnenstange`
+ */
 fun generateKnowOIDs() {
     logger.lifecycle("  Regenerating KnownOIDs.kt")
     val collected = mutableMapOf<String, Pair<String, String?>>()
