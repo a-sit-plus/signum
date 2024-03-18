@@ -66,7 +66,8 @@ fun generateKnowOIDs() {
     var description: String? = null
 
     FileInputStream(
-        project.layout.projectDirectory.dir("src").dir("commonMain").dir("resources").file("dumpasn1.cfg").asFile
+        project.layout.projectDirectory.dir("src").dir("commonMain")
+            .dir("resources").file("dumpasn1.cfg").asFile
     ).reader().forEachLine { line ->
         if (!(line.isBlank() || line.startsWith("#"))) {
             //we know a new OID
@@ -81,7 +82,9 @@ fun generateKnowOIDs() {
                     else {
                         //if we collected the name of this OID already, we need to assign a new name
                         collected[description]?.also { _ ->
-                            collected["${description}_$oid"] = Pair(oid!!, comment)
+                            collected["${description}_${
+                                oid!!.replace(" ", "_")
+                            }"] = Pair(oid!!, comment)
                         } ?: run {
                             //if it is still new, we can just add it
                             collected[description!!] = Pair(oid!!, comment)
@@ -92,9 +95,16 @@ fun generateKnowOIDs() {
                 description = null
                 comment = null
             } else if (line.startsWith("Description = ")) {
-                description = line.substring("Description = ".length).trim().replace("?", "").replace("(", "")
-                    .replace(")", "").replace("#", "").replace(",", "").let {
-                        it.ifBlank { oid }
+                description = line.substring("Description = ".length).trim()
+                    .replace("?", "")
+                    .replace("(", "")
+                    .replace(")", "")
+                    .replace("#", "")
+                    .replace("\"", "")
+                    .replace(' ', '_')
+                    //.replace('-', '_')
+                    .replace(",", "").let {
+                        it.ifBlank { oid!!.replace(" ", "_") }
                     }
             } else if (line.startsWith("Comment = ")) {
                 comment = line.substring("Comment = ".length).trim()
@@ -102,27 +112,41 @@ fun generateKnowOIDs() {
         }
     }
 
-    val file = FileSpec.builder("at.asitplus.crypto.datatypes.asn1", "KnownOIDs")
-        .addType(
-            TypeSpec.objectBuilder("KnownOIDs").apply {
-                collected.toList().distinctBy { (_, oidTriple) -> oidTriple.oid }.sortedBy { (name, _) -> name }
-                    .forEach { (name, oidTriple) ->
-                        addProperty(
-                            PropertySpec.builder(
-                                name,
-                                ClassName(packageName = "at.asitplus.crypto.datatypes.asn1", "ObjectIdentifier")
+    val file =
+        FileSpec.builder("at.asitplus.crypto.datatypes.asn1", "KnownOIDs")
+            .addType(
+                TypeSpec.objectBuilder("KnownOIDs").apply {
+                    collected.toList()
+                        .distinctBy { (_, oidTriple) -> oidTriple.oid }
+                        .sortedBy { (name, _) -> name }
+                        .forEach { (name, oidTriple) ->
+                            addProperty(
+                                PropertySpec.builder(
+                                    name,
+                                    ClassName(
+                                        packageName = "at.asitplus.crypto.datatypes.asn1",
+                                        "ObjectIdentifier"
+                                    )
+                                )
+                                    .initializer("\nObjectIdentifier(\n\"${oidTriple.oid!!}\"\n)")
+                                    .addKdoc(
+                                        "`${
+                                            oidTriple.oid!!.replace(
+                                                ' ',
+                                                '.'
+                                            )
+                                        }`: ${oidTriple.comment}"
+                                    )
+                                    .build()
                             )
-                                .initializer("\nObjectIdentifier(\n\"${oidTriple.oid!!}\"\n)")
-                                .addKdoc("`${oidTriple.oid!!.replace(' ', '.')}`: ${oidTriple.comment}")
-                                .build()
-                        )
-                    }
+                        }
 
-            }.build()
-        ).build()
+                }.build()
+            ).build()
 
     file.writeTo(
-        project.layout.projectDirectory.dir("generated").dir("commonMain").dir("kotlin").asFile
+        project.layout.projectDirectory.dir("generated").dir("commonMain")
+            .dir("kotlin").asFile
     )
 
 }
@@ -141,7 +165,10 @@ kotlin {
         }
 
         commonMain {
-            kotlin.srcDir(project.layout.projectDirectory.dir("generated").dir("commonMain").dir("kotlin"))
+            kotlin.srcDir(
+                project.layout.projectDirectory.dir("generated")
+                    .dir("commonMain").dir("kotlin")
+            )
 
             dependencies {
                 api(kmmresult())
@@ -169,7 +196,13 @@ kotlin {
     }
 }
 
-exportIosFramework("KmpCrypto", serialization("json"), datetime(), kmmresult(), libs.bignum)
+exportIosFramework(
+    "KmpCrypto",
+    serialization("json"),
+    datetime(),
+    kmmresult(),
+    libs.bignum
+)
 
 val javadocJar = setupDokka(
     baseUrl = "https://github.com/a-sit-plus/kmp-crypto/tree/main/",
