@@ -68,7 +68,7 @@
 * Rename `CoseKey.fromKeyId` to `CoseKey.fromDid`
 * Rename `JsonWebKey.fromKeyId` to `JsonWebKey.fromDid`
 
-### NEXT
+### 2.5.0
 * Parse more certificates from `x5c` in JWS headers
 * Kotlin 1.9.23 thanks to updated conventions
 * Generate `KnownOIDs` using [KotlinPoet](https://square.github.io/kotlinpoet/)
@@ -76,3 +76,6 @@
 * BigNum as API dependency and iOS export (seems nonsensical,
   but is somehow required when using this inside a compose multiplatform app)
 * Rename `BERTags.NULL` to `BERTags.ASN1_NULL` to fix broken ObjC export 
+
+### 2.6.0
+ * tbd
