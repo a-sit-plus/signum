@@ -27,14 +27,12 @@ data class JsonWebKey(
     val type: JwkType? = null,
     @SerialName("kid")
     val keyId: String? = null,
-    //EC
     @SerialName("x")
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val x: ByteArray? = null,
     @SerialName("y")
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val y: ByteArray? = null,
-    //RSA
     @SerialName("n")
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val n: ByteArray? = null,

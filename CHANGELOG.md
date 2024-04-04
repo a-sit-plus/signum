@@ -78,4 +78,4 @@
 * Rename `BERTags.NULL` to `BERTags.ASN1_NULL` to fix broken ObjC export 
 
 ### 2.6.0
- * tbd
+ * Pull in `JsonWebKeySet` from `vclib`
