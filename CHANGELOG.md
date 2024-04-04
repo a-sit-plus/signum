@@ -79,3 +79,4 @@
 
 ### 2.6.0
  * Pull in `JsonWebKeySet` from `vclib`
+ * Implement JWK Set Url (`jku`) in JWS headers

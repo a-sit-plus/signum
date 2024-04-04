@@ -45,47 +45,16 @@ data class JwsHeader(
     @Serializable(with = InstantLongSerializer::class)
     val expiration: Instant? = null,
     @SerialName("jwk")
-    val jsonWebKey: JsonWebKey? = null
+    val jsonWebKey: JsonWebKey? = null,
+    @SerialName("jku")
+    val jsonWebKeySetUrl: String? = null,
 ) {
 
     fun serialize() = jsonSerializer.encodeToString(this)
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-
-        other as JwsHeader
-
-        if (algorithm != other.algorithm) return false
-        if (keyId != other.keyId) return false
-        if (type != other.type) return false
-        if (contentType != other.contentType) return false
-        if (certificateChain != null) {
-            if (other.certificateChain == null) return false
-            if (!certificateChain.contentDeepEquals(other.certificateChain)) return false
-        } else if (other.certificateChain != null) return false
-        if (notBefore != other.notBefore) return false
-        if (issuedAt != other.issuedAt) return false
-        if (expiration != other.expiration) return false
-        return jsonWebKey == other.jsonWebKey
-    }
-
-    override fun hashCode(): Int {
-        var result = algorithm.hashCode()
-        result = 31 * result + (keyId?.hashCode() ?: 0)
-        result = 31 * result + (type?.hashCode() ?: 0)
-        result = 31 * result + (contentType?.hashCode() ?: 0)
-        result = 31 * result + (certificateChain?.contentDeepHashCode() ?: 0)
-        result = 31 * result + (notBefore?.hashCode() ?: 0)
-        result = 31 * result + (issuedAt?.hashCode() ?: 0)
-        result = 31 * result + (expiration?.hashCode() ?: 0)
-        result = 31 * result + (jsonWebKey?.hashCode() ?: 0)
-        return result
-    }
-
     /**
-     * Tries to compute a public key in descending order from JWK, KeyID or the certificate chain
-     * and takes the first success or null
+     * Tries to compute a public key in descending order from [jsonWebKey], [keyId],
+     * or [certificateChain], and takes the first success or null.
      */
     val publicKey: CryptoPublicKey? by lazy {
         jsonWebKey?.toCryptoPublicKey()?.getOrNull()
@@ -104,6 +73,43 @@ data class JwsHeader(
         .replace("-----BEGIN CERTIFICATE-----\n", "")
         .replace("\n-----END CERTIFICATE-----", "")
         .decodeToByteArray(Base64())
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as JwsHeader
+
+        if (keyId != other.keyId) return false
+        if (type != other.type) return false
+        if (algorithm != other.algorithm) return false
+        if (contentType != other.contentType) return false
+        if (certificateChain != null) {
+            if (other.certificateChain == null) return false
+            if (!certificateChain.contentDeepEquals(other.certificateChain)) return false
+        } else if (other.certificateChain != null) return false
+        if (notBefore != other.notBefore) return false
+        if (issuedAt != other.issuedAt) return false
+        if (expiration != other.expiration) return false
+        if (jsonWebKey != other.jsonWebKey) return false
+        if (jsonWebKeySetUrl != other.jsonWebKeySetUrl) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = keyId?.hashCode() ?: 0
+        result = 31 * result + (type?.hashCode() ?: 0)
+        result = 31 * result + algorithm.hashCode()
+        result = 31 * result + (contentType?.hashCode() ?: 0)
+        result = 31 * result + (certificateChain?.contentDeepHashCode() ?: 0)
+        result = 31 * result + (notBefore?.hashCode() ?: 0)
+        result = 31 * result + (issuedAt?.hashCode() ?: 0)
+        result = 31 * result + (expiration?.hashCode() ?: 0)
+        result = 31 * result + (jsonWebKey?.hashCode() ?: 0)
+        result = 31 * result + (jsonWebKeySetUrl?.hashCode() ?: 0)
+        return result
+    }
 
     companion object {
         fun deserialize(it: String) = kotlin.runCatching {
