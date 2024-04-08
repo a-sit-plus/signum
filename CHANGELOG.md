@@ -80,3 +80,5 @@
 ### 2.6.0
  * Pull in `JsonWebKeySet` from `vclib`
  * Implement JWK Set Url (`jku`) in JWS headers
+ * Implement Attestation JWT (`jwt`) in JWS headers
+ * Implement Confirmation keys (`cnf`) in JWT

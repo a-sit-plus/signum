@@ -38,10 +38,19 @@ data class JsonWebToken(
     val expiration: Instant? = null,
     @SerialName("jti")
     val jwtId: String? = null,
+    /**
+     * OID4VP: This claim contains the confirmation method as defined in RFC7800. It MUST contain a JWK as defined in
+     * Section 3.2 of RFC7800. This claim determines the public key for which the corresponding private key the
+     * Verifier MUST proof possession of when presenting the Verifier Attestation JWT. This additional security measure
+     * allows the Verifier to obtain a Verifier Attestation JWT from a trusted issuer and use it for a long time
+     * independent of that issuer without the risk of an adversary impersonating the Verifier by replaying a captured
+     * attestation.
+     */
+    @SerialName("cnf")
+    val confirmationKey: JsonWebKey? = null,
 ) {
 
     fun serialize() = jsonSerializer.encodeToString(this)
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -55,7 +64,10 @@ data class JsonWebToken(
         if (notBefore != other.notBefore) return false
         if (issuedAt != other.issuedAt) return false
         if (expiration != other.expiration) return false
-        return jwtId == other.jwtId
+        if (jwtId != other.jwtId) return false
+        if (confirmationKey != other.confirmationKey) return false
+
+        return true
     }
 
     override fun hashCode(): Int {
@@ -67,6 +79,7 @@ data class JsonWebToken(
         result = 31 * result + (issuedAt?.hashCode() ?: 0)
         result = 31 * result + (expiration?.hashCode() ?: 0)
         result = 31 * result + (jwtId?.hashCode() ?: 0)
+        result = 31 * result + (confirmationKey?.hashCode() ?: 0)
         return result
     }
 

@@ -48,6 +48,12 @@ data class JwsHeader(
     val jsonWebKey: JsonWebKey? = null,
     @SerialName("jku")
     val jsonWebKeySetUrl: String? = null,
+    /**
+     * OID4VP: Verifier Attestation JWT, used to authenticate a Verifier, by providing a JWT signed by a trusted
+     * third party. May be parsed as a [JwsSigned], with [JsonWebToken] as the payload.
+     */
+    @SerialName("jwt")
+    val attestationJwt: String? = null,
 ) {
 
     fun serialize() = jsonSerializer.encodeToString(this)
@@ -93,6 +99,7 @@ data class JwsHeader(
         if (expiration != other.expiration) return false
         if (jsonWebKey != other.jsonWebKey) return false
         if (jsonWebKeySetUrl != other.jsonWebKeySetUrl) return false
+        if (attestationJwt != other.attestationJwt) return false
 
         return true
     }
@@ -108,6 +115,7 @@ data class JwsHeader(
         result = 31 * result + (expiration?.hashCode() ?: 0)
         result = 31 * result + (jsonWebKey?.hashCode() ?: 0)
         result = 31 * result + (jsonWebKeySetUrl?.hashCode() ?: 0)
+        result = 31 * result + (attestationJwt?.hashCode() ?: 0)
         return result
     }
 
