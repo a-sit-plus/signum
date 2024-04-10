@@ -5,6 +5,7 @@ import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.CryptoSignature
 import at.asitplus.crypto.datatypes.asn1.Asn1BitString
 import at.asitplus.crypto.datatypes.asn1.Asn1Decodable
+import at.asitplus.crypto.datatypes.asn1.Asn1Element
 import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
 import at.asitplus.crypto.datatypes.asn1.Asn1Exception
 import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
@@ -18,11 +19,14 @@ import at.asitplus.crypto.datatypes.asn1.BERTags
 import at.asitplus.crypto.datatypes.asn1.DERTags.toImplicitTag
 import at.asitplus.crypto.datatypes.asn1.asn1Sequence
 import at.asitplus.crypto.datatypes.asn1.decode
+import at.asitplus.crypto.datatypes.asn1.parse
 import at.asitplus.crypto.datatypes.asn1.readInt
 import at.asitplus.crypto.datatypes.asn1.runRethrowing
 import at.asitplus.crypto.datatypes.asn1.verifyTag
 import at.asitplus.crypto.datatypes.io.BitSet
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
+import io.matthewnelson.encoding.base64.Base64
+import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.serialization.Serializable
 
 /**
@@ -244,6 +248,25 @@ data class X509Certificate(
             if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous structure in Certificate Structure")
             return X509Certificate(tbs, sigAlg, signature)
         }
+
+        /**
+         * Tries to decode [src] into an [X509Certificate], by parsing the bytes directly as ASN.1 structure,
+         * or by decoding from Base64, or by decoding to a String, stripping PEM headers
+         * (`-----BEGIN CERTIFICATE-----`) and then decoding from Base64.
+         */
+        @Throws(Asn1Exception::class)
+        fun decodeFromByteArray(src: ByteArray): X509Certificate? = runCatching {
+            X509Certificate.decodeFromTlv(Asn1Element.parse(src) as Asn1Sequence)
+        }.getOrNull() ?: runCatching {
+            X509Certificate.decodeFromTlv(Asn1Element.parse(src.decodeToByteArray(Base64())) as Asn1Sequence)
+        }.getOrNull() ?: runCatching {
+            X509Certificate.decodeFromTlv(Asn1Element.parse(src.decodeX5c()) as Asn1Sequence)
+        }.getOrNull()
+
+        private fun ByteArray.decodeX5c() = decodeToString()
+            .replace("-----BEGIN CERTIFICATE-----\n", "")
+            .replace("\n-----END CERTIFICATE-----", "")
+            .decodeToByteArray(Base64())
 
     }
 }
