@@ -65,20 +65,9 @@ data class JwsHeader(
     val publicKey: CryptoPublicKey? by lazy {
         jsonWebKey?.toCryptoPublicKey()?.getOrNull()
             ?: keyId?.let { runCatching { CryptoPublicKey.fromDid(it) } }?.getOrNull()
-            ?: certificateChain
-                ?.firstNotNullOfOrNull {
-                    runCatching {
-                        X509Certificate.decodeFromTlv(Asn1Element.parse(it) as Asn1Sequence).publicKey
-                    }.getOrNull() ?: runCatching {
-                        X509Certificate.decodeFromTlv(Asn1Element.parse(it.decodeX5c()) as Asn1Sequence).publicKey
-                    }.getOrNull()
-                }
+            ?: certificateChain?.firstNotNullOfOrNull { X509Certificate.decodeFromByteArray(it)?.publicKey }
     }
 
-    private fun ByteArray.decodeX5c() = decodeToString()
-        .replace("-----BEGIN CERTIFICATE-----\n", "")
-        .replace("\n-----END CERTIFICATE-----", "")
-        .decodeToByteArray(Base64())
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
