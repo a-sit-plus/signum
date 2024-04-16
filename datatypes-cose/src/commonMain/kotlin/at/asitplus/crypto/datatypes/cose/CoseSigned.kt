@@ -2,6 +2,7 @@ package at.asitplus.crypto.datatypes.cose
 
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.CryptoSignature
+import at.asitplus.crypto.datatypes.cose.io.Base16Strict
 import at.asitplus.crypto.datatypes.cose.io.cborSerializer
 import at.asitplus.crypto.datatypes.pki.X509Certificate
 import io.github.aakira.napier.Napier
@@ -82,8 +83,8 @@ data class CoseSigned(
     override fun toString(): String {
         return "CoseSigned(protectedHeader=${protectedHeader.value}," +
                 " unprotectedHeader=$unprotectedHeader," +
-                " payload=${payload?.encodeToString(Base16(strict = true))}," +
-                " signature=${rawSignature.encodeToString(Base16(strict = true))})"
+                " payload=${payload?.encodeToString(Base16Strict)}," +
+                " signature=${rawSignature.encodeToString(Base16Strict)})"
     }
 
     companion object {
@@ -145,8 +146,8 @@ data class CoseSignatureInput(
     override fun toString(): String {
         return "CoseSignatureInput(contextString='$contextString'," +
                 " protectedHeader=${protectedHeader.value}," +
-                " externalAad=${externalAad.encodeToString(Base16(strict = true))}," +
-                " payload=${payload?.encodeToString(Base16(strict = true))})"
+                " externalAad=${externalAad.encodeToString(Base16Strict)}," +
+                " payload=${payload?.encodeToString(Base16Strict)})"
     }
 
 

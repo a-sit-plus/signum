@@ -254,7 +254,6 @@ data class X509Certificate(
          * or by decoding from Base64, or by decoding to a String, stripping PEM headers
          * (`-----BEGIN CERTIFICATE-----`) and then decoding from Base64.
          */
-        @Throws(Asn1Exception::class)
         fun decodeFromByteArray(src: ByteArray): X509Certificate? = runCatching {
             X509Certificate.decodeFromTlv(Asn1Element.parse(src) as Asn1Sequence)
         }.getOrNull() ?: runCatching {

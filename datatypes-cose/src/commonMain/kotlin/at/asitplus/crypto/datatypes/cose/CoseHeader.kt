@@ -1,5 +1,6 @@
 package at.asitplus.crypto.datatypes.cose
 
+import at.asitplus.crypto.datatypes.cose.io.Base16Strict
 import at.asitplus.crypto.datatypes.cose.io.cborSerializer
 import io.github.aakira.napier.Napier
 import io.matthewnelson.encoding.base16.Base16
@@ -93,10 +94,10 @@ data class CoseHeader(
         return "CoseHeader(algorithm=$algorithm," +
                 " criticalHeaders=$criticalHeaders," +
                 " contentType=$contentType," +
-                " kid=${kid?.encodeToString(Base16(strict = true))}," +
-                " iv=${iv?.encodeToString(Base16(strict = true))}," +
-                " partialIv=${partialIv?.encodeToString(Base16(strict = true))}," +
-                " certificateChain=${certificateChain?.encodeToString(Base16(strict = true))})"
+                " kid=${kid?.encodeToString(Base16Strict)}," +
+                " iv=${iv?.encodeToString(Base16Strict)}," +
+                " partialIv=${partialIv?.encodeToString(Base16Strict)}," +
+                " certificateChain=${certificateChain?.encodeToString(Base16Strict)})"
     }
 
     companion object {

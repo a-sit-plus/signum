@@ -8,6 +8,7 @@ import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
 import at.asitplus.crypto.datatypes.cose.CoseKey.Companion.deserialize
 import at.asitplus.crypto.datatypes.cose.CoseKeySerializer.CompressedCompoundCoseKeySerialContainer
 import at.asitplus.crypto.datatypes.cose.CoseKeySerializer.UncompressedCompoundCoseKeySerialContainer
+import at.asitplus.crypto.datatypes.cose.io.Base16Strict
 import at.asitplus.crypto.datatypes.cose.io.cborSerializer
 import at.asitplus.crypto.datatypes.misc.compressY
 import io.matthewnelson.encoding.base16.Base16
@@ -50,10 +51,10 @@ data class CoseKey(
 ) {
     override fun toString(): String {
         return "CoseKey(type=$type," +
-                " keyId=${keyId?.encodeToString(Base16(strict = true))}," +
+                " keyId=${keyId?.encodeToString(Base16Strict)}," +
                 " algorithm=$algorithm," +
                 " operations=${operations?.contentToString()}," +
-                " baseIv=${baseIv?.encodeToString(Base16(strict = true))}," +
+                " baseIv=${baseIv?.encodeToString(Base16Strict)}," +
                 keyParams.toString()
     }
 
