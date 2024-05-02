@@ -190,6 +190,7 @@ kotlin {
         jvmMain {
             dependencies {
                 api(bouncycastle("bcpkix"))
+                api(coroutines("jvm"))
             }
         }
 

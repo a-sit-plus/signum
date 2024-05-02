@@ -76,3 +76,12 @@
 * BigNum as API dependency and iOS export (seems nonsensical,
   but is somehow required when using this inside a compose multiplatform app)
 * Rename `BERTags.NULL` to `BERTags.ASN1_NULL` to fix broken ObjC export 
+
+### 2.6.0
+ * Pull in `JsonWebKeySet` from `vclib`
+ * Implement JWK Set Url (`jku`) in JWS headers
+ * Implement Attestation JWT (`jwt`) in JWS headers
+ * Implement Confirmation keys (`cnf`) in JWT
+ * Implement `CborWebToken` (RFC 8392)
+ * Boolean ASN.1 decoding helper function
+ * Certificate to/from JCA certificate conversion functions

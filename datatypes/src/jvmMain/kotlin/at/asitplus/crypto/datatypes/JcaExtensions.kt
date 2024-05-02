@@ -3,6 +3,10 @@ package at.asitplus.crypto.datatypes
 import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.asn1.ensureSize
+import at.asitplus.crypto.datatypes.pki.X509Certificate
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerializationException
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import org.bouncycastle.asn1.ASN1Sequence
@@ -14,12 +18,15 @@ import org.bouncycastle.jce.spec.ECPublicKeySpec
 import java.math.BigInteger
 import java.security.KeyFactory
 import java.security.PublicKey
+import java.security.cert.CertificateFactory
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPublicKey
 import java.security.spec.MGF1ParameterSpec
 import java.security.spec.PSSParameterSpec
 import java.security.spec.RSAPublicKeySpec
 
+private val certificateFactoryMutex = Mutex()
+private val certFactory = CertificateFactory.getInstance("X.509")
 
 val CryptoAlgorithm.jcaName
     get() = when (this) {
@@ -130,8 +137,30 @@ val CryptoSignature.jcaSignatureBytes: ByteArray
 /**
  * In Java EC signatures are returned as DER-encoded, RSA signatures however are raw bytearrays
  */
-fun CryptoSignature.Companion.parseFromJca(input: ByteArray, algorithm: CryptoAlgorithm)=
+fun CryptoSignature.Companion.parseFromJca(input: ByteArray, algorithm: CryptoAlgorithm) =
     if (algorithm.isEc)
         CryptoSignature.decodeFromDer(input)
     else
         CryptoSignature.RSAorHMAC(input)
+
+/**
+ * Converts this [X509Certificate] to a [java.security.cert.X509Certificate].
+ * This function is suspending, because it uses a mutex to lock the underlying certificate factory (which is reused for performance reasons
+ */
+suspend fun X509Certificate.toJcaCertificate(): KmmResult<java.security.cert.X509Certificate> = runCatching {
+    certificateFactoryMutex.withLock {
+        certFactory.generateCertificate(encodeToDer().inputStream()) as java.security.cert.X509Certificate
+    }
+}.wrap()
+
+/**
+ * blocking implementation of [toJcaCertificate]
+ */
+fun X509Certificate.toJcaCertificateBlocking(): KmmResult<java.security.cert.X509Certificate> =
+    runBlocking { toJcaCertificate() }
+
+/**
+ * Converts this [java.security.cert.X509Certificate] to an [X509Certificate]
+ */
+fun java.security.cert.X509Certificate.toKmpCertificate() =
+    runCatching { X509Certificate.decodeFromDer(encoded) }.wrap()
