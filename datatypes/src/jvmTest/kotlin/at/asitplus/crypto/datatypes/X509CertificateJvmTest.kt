@@ -1,15 +1,6 @@
 package at.asitplus.crypto.datatypes
 
-import at.asitplus.crypto.datatypes.asn1.Asn1Element
-import at.asitplus.crypto.datatypes.asn1.Asn1EncapsulatingOctetString
-import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
-import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.Asn1String
-import at.asitplus.crypto.datatypes.asn1.Asn1Structure
-import at.asitplus.crypto.datatypes.asn1.Asn1Time
-import at.asitplus.crypto.datatypes.asn1.KnownOIDs
-import at.asitplus.crypto.datatypes.asn1.ensureSize
-import at.asitplus.crypto.datatypes.asn1.parse
+import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.pki.DistinguishedName
 import at.asitplus.crypto.datatypes.pki.TbsCertificate
 import at.asitplus.crypto.datatypes.pki.X509Certificate
@@ -22,6 +13,7 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.coroutines.launch
 import kotlinx.datetime.toKotlinInstant
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.ExtendedKeyUsage
@@ -110,6 +102,39 @@ class X509CertificateJvmTest : FreeSpec({
         val parsedFromKotlinCertificate =
             CertificateFactory.getInstance("X.509").generateCertificate(kotlinEncoded.inputStream())
         parsedFromKotlinCertificate.verify(keyPair.public)
+    }
+
+    "Certificates Conversions" {
+        val ecPublicKey = keyPair.public as ECPublicKey
+        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaPublicKey(ecPublicKey).getOrThrow()
+
+        // create certificate with bouncycastle
+        val notBeforeDate = Date.from(Instant.now())
+        val notAfterDate = Date.from(Instant.now().plusSeconds(30.days.inWholeSeconds))
+        val serialNumber: BigInteger = BigInteger.valueOf(Random.nextLong().absoluteValue)
+        val commonName = "DefaultCryptoService"
+        val signatureAlgorithm = CryptoAlgorithm.ES256
+
+
+        // create certificate with our structure
+        val tbsCertificate = TbsCertificate(
+            version = 2,
+            serialNumber = serialNumber.toByteArray(),
+            issuerName = listOf(DistinguishedName.CommonName(Asn1String.UTF8(commonName))),
+            validFrom = Asn1Time(notBeforeDate.toInstant().toKotlinInstant()),
+            validUntil = Asn1Time(notAfterDate.toInstant().toKotlinInstant()),
+            signatureAlgorithm = signatureAlgorithm,
+            subjectName = listOf(DistinguishedName.CommonName(Asn1String.UTF8(commonName))),
+            publicKey = cryptoPublicKey
+        )
+        val signed = Signature.getInstance(signatureAlgorithm.jcaName).apply {
+            initSign(keyPair.private)
+            update(tbsCertificate.encodeToTlv().derEncoded)
+        }.sign()
+        val test = CryptoSignature.decodeFromDer(signed)
+        val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, test)
+
+        repeat(500) { launch { x509Certificate.toJcaCertificate().getOrThrow().toKmpCertificate().getOrThrow().encodeToDer() shouldBe x509Certificate.encodeToDer() } }
     }
 
     "Certificate can be parsed" {
