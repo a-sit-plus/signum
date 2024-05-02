@@ -46,8 +46,6 @@ class Asn1EncodingTest : FreeSpec({
             }
             octetString(byteArrayOf(17))
 
-
-
             octetString(
                 asn1Set {
                     int(99)
