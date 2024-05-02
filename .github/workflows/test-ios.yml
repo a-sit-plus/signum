@@ -13,9 +13,9 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Build klibs
-        run: ./gradlew iosArm64MainKlibrary iosX64MainKlibrary
+        run: ./gradlew iosArm64MainKlibrary iosSimulatorArm64MainKlibrary
       - name: Run tests
-        run: ./gradlew iosX64Test
+        run: ./gradlew iosSimulatorArm64Test
       - name: Test Report
         uses: dorny/test-reporter@v1
         if: success() || failure()
