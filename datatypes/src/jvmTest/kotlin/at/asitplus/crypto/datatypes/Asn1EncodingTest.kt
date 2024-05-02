@@ -1,27 +1,13 @@
 package at.asitplus.crypto.datatypes
 
-import at.asitplus.crypto.datatypes.asn1.Asn1BitString
-import at.asitplus.crypto.datatypes.asn1.Asn1Element
-import at.asitplus.crypto.datatypes.asn1.Asn1EncapsulatingOctetString
-import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
-import at.asitplus.crypto.datatypes.asn1.Asn1PrimitiveOctetString
-import at.asitplus.crypto.datatypes.asn1.Asn1String
-import at.asitplus.crypto.datatypes.asn1.BERTags
-import at.asitplus.crypto.datatypes.asn1.ObjectIdentifier
-import at.asitplus.crypto.datatypes.asn1.asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.asn1Set
-import at.asitplus.crypto.datatypes.asn1.decodeFromDer
-import at.asitplus.crypto.datatypes.asn1.encodeToAsn1UtcTime
-import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
-import at.asitplus.crypto.datatypes.asn1.parse
-import at.asitplus.crypto.datatypes.asn1.readInt
-import at.asitplus.crypto.datatypes.asn1.readLong
+import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.io.BitSet
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
+import io.kotest.property.arbitrary.boolean
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.long
 import io.kotest.property.checkAll
@@ -30,6 +16,14 @@ import org.bouncycastle.asn1.ASN1Integer
 import java.util.*
 
 class Asn1EncodingTest : FreeSpec({
+
+    "Boolean" - {
+        checkAll(Arb.boolean()) {
+            val seq = asn1Sequence { bool(it) }
+            val decoded = (seq.nextChild() as Asn1Primitive).readBool()
+            decoded shouldBe it
+        }
+    }
 
 
     val bitSet = BitSet.fromBitString("011011100101110111")
