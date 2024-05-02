@@ -83,3 +83,5 @@
  * Implement Attestation JWT (`jwt`) in JWS headers
  * Implement Confirmation keys (`cnf`) in JWT
  * Implement `CborWebToken` (RFC 8392)
+ * Boolean ASN.1 decoding helper function
+ * Certificate to/from JCA certificate conversion functions
