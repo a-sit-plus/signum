@@ -25,8 +25,7 @@ import java.security.spec.MGF1ParameterSpec
 import java.security.spec.PSSParameterSpec
 import java.security.spec.RSAPublicKeySpec
 
-private val crtFactMut = Mutex()
-
+private val certificateFactoryMutex = Mutex()
 private val certFactory = CertificateFactory.getInstance("X.509")
 
 val CryptoAlgorithm.jcaName
@@ -149,7 +148,7 @@ fun CryptoSignature.Companion.parseFromJca(input: ByteArray, algorithm: CryptoAl
  * This function is suspending, because it uses a mutex to lock the underlying certificate factory (which is reused for performance reasons
  */
 suspend fun X509Certificate.toJcaCertificate(): KmmResult<java.security.cert.X509Certificate> = runCatching {
-    crtFactMut.withLock {
+    certificateFactoryMutex.withLock {
         certFactory.generateCertificate(encodeToDer().inputStream()) as java.security.cert.X509Certificate
     }
 }.wrap()
