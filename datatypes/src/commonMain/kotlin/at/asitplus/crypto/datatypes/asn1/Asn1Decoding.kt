@@ -1,10 +1,11 @@
 package at.asitplus.crypto.datatypes.asn1
 
+import at.asitplus.crypto.datatypes.asn1.BERTags.ASN1_NULL
 import at.asitplus.crypto.datatypes.asn1.BERTags.BMP_STRING
+import at.asitplus.crypto.datatypes.asn1.BERTags.BOOLEAN
 import at.asitplus.crypto.datatypes.asn1.BERTags.GENERALIZED_TIME
 import at.asitplus.crypto.datatypes.asn1.BERTags.IA5_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.INTEGER
-import at.asitplus.crypto.datatypes.asn1.BERTags.ASN1_NULL
 import at.asitplus.crypto.datatypes.asn1.BERTags.NUMERIC_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.OCTET_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.PRINTABLE_STRING
@@ -80,6 +81,23 @@ private class Asn1Reader(input: ByteArray) {
  */
 @Throws(Asn1Exception::class)
 fun Asn1Primitive.readInt() = runRethrowing { decode(INTEGER) { Int.decodeFromDer(it) } }
+
+/**
+ * decodes this [Asn1Primitive]'s content into an [Boolean]
+ *
+ * @throws [Throwable] all sorts of exceptions on invalid input
+ */
+@Throws(Asn1Exception::class)
+fun Asn1Primitive.readBool() = runRethrowing {
+    decode(BOOLEAN) {
+        if (it.size != 1) throw Asn1Exception("Not a Boolean!")
+        when (it.first().toUByte()) {
+            0.toUByte() -> false
+            0xff.toUByte() -> true
+            else -> throw Asn1Exception("${it.first().toString(16).uppercase()} is not a value!")
+        }
+    }
+}
 
 /**
  * Exception-free version of [readInt]
