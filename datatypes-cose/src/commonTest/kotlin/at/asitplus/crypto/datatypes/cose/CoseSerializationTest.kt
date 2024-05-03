@@ -34,8 +34,8 @@ class CoseSerializationTest : FreeSpec({
         val serialized = header.serialize().encodeToString(Base16(strict = true)).uppercase()
         println(serialized)
 
-        val deserialized = CoseHeader.deserialize(header.serialize())
-        deserialized.shouldNotBeNull()
+        val deserialized = CoseHeader.deserialize(header.serialize()).getOrThrow().shouldNotBeNull()
+
         deserialized.algorithm shouldBe header.algorithm
         deserialized.kid shouldBe header.kid
     }
