@@ -22,7 +22,7 @@ data class JweEncrypted(
     val authTag: ByteArray
 ) {
     val header: JweHeader?
-        get() = JweHeader.deserialize(headerAsParsed.decodeToString())
+        get() = JweHeader.deserialize(headerAsParsed.decodeToString()).getOrNull()
 
     fun serialize(): String {
         return headerAsParsed.encodeToString(Base64UrlStrict) +

@@ -54,7 +54,7 @@ data class JwsSigned(
             if (stringList.size != 3) return null.also { Napier.w("Could not parse JWS: $it") }
             val headerInput = stringList[0].decodeToByteArrayOrNull(Base64UrlStrict)
                 ?: return null.also { Napier.w("Could not parse JWS: $it") }
-            val header = JwsHeader.deserialize(headerInput.decodeToString())
+            val header = JwsHeader.deserialize(headerInput.decodeToString()).getOrNull()
                 ?: return null.also { Napier.w("Could not parse JWS: $it") }
             val payload = stringList[1].decodeToByteArrayOrNull(Base64UrlStrict)
                 ?: return null.also { Napier.w("Could not parse JWS: $it") }
