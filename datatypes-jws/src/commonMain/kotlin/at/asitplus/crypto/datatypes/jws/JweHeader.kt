@@ -1,8 +1,8 @@
 package at.asitplus.crypto.datatypes.jws
 
+import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64UrlSerializer
 import at.asitplus.crypto.datatypes.jws.io.jsonSerializer
-import io.github.aakira.napier.Napier
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -82,9 +82,6 @@ data class JweHeader(
     companion object {
         fun deserialize(it: String) = kotlin.runCatching {
             jsonSerializer.decodeFromString<JweHeader>(it)
-        }.getOrElse {
-            Napier.w("deserialize failed", it)
-            null
-        }
+        }.wrap()
     }
 }

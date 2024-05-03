@@ -1,12 +1,11 @@
 package at.asitplus.crypto.datatypes.cose
 
+import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.CryptoSignature
 import at.asitplus.crypto.datatypes.cose.io.Base16Strict
 import at.asitplus.crypto.datatypes.cose.io.cborSerializer
 import at.asitplus.crypto.datatypes.pki.X509Certificate
-import io.github.aakira.napier.Napier
-import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -90,10 +89,7 @@ data class CoseSigned(
     companion object {
         fun deserialize(it: ByteArray) = kotlin.runCatching {
             cborSerializer.decodeFromByteArray<CoseSigned>(it)
-        }.getOrElse {
-            Napier.w("deserialize failed", it)
-            null
-        }
+        }.wrap()
     }
 }
 
@@ -154,10 +150,7 @@ data class CoseSignatureInput(
     companion object {
         fun deserialize(it: ByteArray) = kotlin.runCatching {
             cborSerializer.decodeFromByteArray<CoseSignatureInput>(it)
-        }.getOrElse {
-            Napier.w("deserialize failed", it)
-            null
-        }
+        }.wrap()
     }
 }
 

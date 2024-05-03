@@ -2,15 +2,14 @@
 
 package at.asitplus.crypto.datatypes.jws
 
+import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.jws.io.InstantLongSerializer
 import at.asitplus.crypto.datatypes.jws.io.JwsCertificateSerializer
 import at.asitplus.crypto.datatypes.jws.io.jsonSerializer
 import at.asitplus.crypto.datatypes.pki.CertificateChain
-import at.asitplus.crypto.datatypes.pki.X509Certificate
 import at.asitplus.crypto.datatypes.pki.leaf
-import io.github.aakira.napier.Napier
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -110,10 +109,7 @@ data class JwsHeader(
     companion object {
         fun deserialize(it: String) = kotlin.runCatching {
             jsonSerializer.decodeFromString<JwsHeader>(it)
-        }.getOrElse {
-            Napier.w("deserialize failed", it)
-            null
-        }
+        }.wrap()
 
     }
 }
