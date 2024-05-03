@@ -1,9 +1,8 @@
 package at.asitplus.crypto.datatypes.cose
 
+import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.cose.io.Base16Strict
 import at.asitplus.crypto.datatypes.cose.io.cborSerializer
-import io.github.aakira.napier.Napier
-import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
@@ -103,9 +102,6 @@ data class CoseHeader(
     companion object {
         fun deserialize(it: ByteArray) = kotlin.runCatching {
             cborSerializer.decodeFromByteArray<CoseHeader>(it)
-        }.getOrElse {
-            Napier.w("deserialize failed", it)
-            null
-        }
+        }.wrap()
     }
 }
