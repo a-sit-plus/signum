@@ -25,10 +25,10 @@ constructor(
     val version: Int = 2,
     @Serializable(with = ByteArrayBase64Serializer::class) val serialNumber: ByteArray,
     val signatureAlgorithm: CryptoAlgorithm,
-    val issuerName: List<DistinguishedName>,
+    val issuerName: List<RelativeDistinguishedName>,
     val validFrom: Asn1Time,
     val validUntil: Asn1Time,
-    val subjectName: List<DistinguishedName>,
+    val subjectName: List<RelativeDistinguishedName>,
     val publicKey: CryptoPublicKey,
     val issuerUniqueID: BitSet? = null,
     val subjectUniqueID: BitSet? = null,
@@ -153,12 +153,12 @@ constructor(
             val serialNumber = (src.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
             val sigAlg = CryptoAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val issuerNames = (src.nextChild() as Asn1Sequence).children.map {
-                DistinguishedName.decodeFromTlv(it as Asn1Set)
+                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
             }
 
             val timestamps = decodeTimestamps(src.nextChild() as Asn1Sequence)
             val subject = (src.nextChild() as Asn1Sequence).children.map {
-                DistinguishedName.decodeFromTlv(it as Asn1Set)
+                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
             }
 
             val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(src.nextChild() as Asn1Sequence)
