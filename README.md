@@ -21,7 +21,7 @@ types and functionality related to crypto and PKI applications:
 * Generic ASN.1 abstractions to operate on and create arbitrary ASN.1 Data
 * JWS-related data structures (JSON Web Keys, JWT, etc…)
 * COSE-related data structures (COSE Keys, CWT, etc…)
-* Serializability of all data classes for debugging
+* Serializability of all ASN.1 classes for debugging **AND ONLY FOR DEBUGGING!!!** *Seriously, do not try to deserialize ASN.1 classes through kotlinx.serialization! Use `decodeFromDer()` and its companions!*
 * 100% pure Kotlin BitSet
 * **ASN.1 Parser and Encoder including a DSL to generate ASN.1 structures**
 
