@@ -1,9 +1,10 @@
 package at.asitplus.crypto.datatypes.jws
 
+import at.asitplus.KmmResult
+import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.CryptoSignature
 import at.asitplus.crypto.datatypes.io.Base64UrlStrict
-import io.github.aakira.napier.Napier
-import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArrayOrNull
+import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 
 /**
@@ -49,29 +50,24 @@ data class JwsSigned(
 
 
     companion object {
-        fun parse(it: String): JwsSigned? {
+        fun parse(it: String): KmmResult<JwsSigned> = runCatching {
             val stringList = it.replace("[^A-Za-z0-9-_.]".toRegex(), "").split(".")
-            if (stringList.size != 3) return null.also { Napier.w("Could not parse JWS: $it") }
-            val headerInput = stringList[0].decodeToByteArrayOrNull(Base64UrlStrict)
-                ?: return null.also { Napier.w("Could not parse JWS: $it") }
-            val header = JwsHeader.deserialize(headerInput.decodeToString()).getOrNull()
-                ?: return null.also { Napier.w("Could not parse JWS: $it") }
-            val payload = stringList[1].decodeToByteArrayOrNull(Base64UrlStrict)
-                ?: return null.also { Napier.w("Could not parse JWS: $it") }
-            val signature = stringList[2].decodeToByteArrayOrNull(Base64UrlStrict)
-                ?.let { it1 ->
+            if (stringList.size != 3) throw IllegalArgumentException("not three parts in input: $it")
+            val headerInput = stringList[0].decodeToByteArray(Base64UrlStrict)
+            val header = JwsHeader.deserialize(headerInput.decodeToString()).getOrThrow()
+            val payload = stringList[1].decodeToByteArray(Base64UrlStrict)
+            val signature = stringList[2].decodeToByteArray(Base64UrlStrict)
+                .let { bytes ->
                     when (header.algorithm) {
-                        JwsAlgorithm.ES256, JwsAlgorithm.ES384, JwsAlgorithm.ES512 -> CryptoSignature.EC(it1)
-                        else -> CryptoSignature.RSAorHMAC(it1)
+                        JwsAlgorithm.ES256, JwsAlgorithm.ES384, JwsAlgorithm.ES512 -> CryptoSignature.EC(bytes)
+                        else -> CryptoSignature.RSAorHMAC(bytes)
                     }
-                } ?: return null.also { Napier.w("Could not parse JWS: $it") }
+                }
+            val plainSignatureInput = stringList[0] + "." + stringList[1]
+            JwsSigned(header, payload, signature, plainSignatureInput)
+        }.wrap()
 
-            return JwsSigned(header, payload, signature, stringList[0] + "." + stringList[1])
-        }
 
-
-        fun prepareJwsSignatureInput(header: JwsHeader, payload: ByteArray): String =
-            "${header.serialize().encodeToByteArray().encodeToString(Base64UrlStrict)}.${payload.encodeToString(Base64UrlStrict)}"
     }
 }
 
