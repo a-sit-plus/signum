@@ -1,5 +1,6 @@
 package at.asitplus.crypto.datatypes.jws
 
+import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.jws.io.jsonSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -16,12 +17,12 @@ data class JsonWebKeySet(
 
     fun serialize() = kotlin.runCatching {
         jsonSerializer.encodeToString(this)
-    }.getOrNull()
+    }.wrap()
 
     companion object {
         fun deserialize(it: String) = kotlin.runCatching {
             jsonSerializer.decodeFromString<JsonWebKeySet>(it)
-        }.getOrNull()
+        }.wrap()
     }
 
 }

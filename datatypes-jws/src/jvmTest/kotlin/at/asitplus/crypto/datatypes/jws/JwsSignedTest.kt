@@ -2,7 +2,6 @@ package at.asitplus.crypto.datatypes.jws
 
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.getJcaPublicKey
-import at.asitplus.crypto.datatypes.jws.JwsSigned
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.crypto.ECDSAVerifier
 import com.nimbusds.jose.crypto.RSASSAVerifier
@@ -19,11 +18,9 @@ class JwsSignedTest : FreeSpec({
             ?: throw Exception("TestVectors not found")
 
         withData(testvec) { input ->
-            val parsed = JwsSigned.parse(input)
-            parsed.shouldNotBeNull()
+            val parsed = JwsSigned.parse(input).getOrThrow()
 
-            val publicKey = parsed.header.publicKey
-            publicKey.shouldNotBeNull()
+            val publicKey = parsed.header.publicKey.shouldNotBeNull()
 
             val jvmVerifier =
                 if (publicKey is CryptoPublicKey.Ec) ECDSAVerifier(publicKey.getJcaPublicKey().getOrThrow())
