@@ -92,7 +92,6 @@ private constructor(private val extensions: List<Asn1Element>) {
         }.map { (it as Asn1Primitive).content.decodeToString() }
 
     override fun toString(): String {
-        //StringBuilder()
         val bld =
             StringBuilder("\notherNames=").append(otherNames.joinToString { it.prettyPrint() })
         bld.append("\nrfc822Names=").append(rfc822Names?.joinToString())
