@@ -7,6 +7,8 @@ import at.asitplus.crypto.datatypes.EcCurve
 import at.asitplus.crypto.datatypes.asn1.decodeFromDer
 import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
 import at.asitplus.crypto.datatypes.io.Base64Strict
+import at.asitplus.crypto.datatypes.io.Base64UrlStrict
+import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64UrlSerializer
 import at.asitplus.crypto.datatypes.jws.io.jsonSerializer
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -21,28 +23,159 @@ import okio.ByteString.Companion.toByteString
  */
 @Serializable
 data class JsonWebKey(
+    /**
+     * Set for EC keys only
+     */
     @SerialName("crv")
     val curve: EcCurve? = null,
+
+    /**
+     * The "kty" (key type) parameter identifies the cryptographic algorithm
+     * family used with the key, such as "RSA" or "EC".  "kty" values should
+     * either be registered in the IANA "JSON Web Key Types" registry
+     * established by (JWA) or be a value that contains a Collision-
+     * Resistant Name.  The "kty" value is a case-sensitive string.  This
+     * member MUST be present in a JWK.
+     */
     @SerialName("kty")
     val type: JwkType? = null,
+
+    /**
+     * The "kid" (key ID) parameter is used to match a specific key.  This
+     * is used, for instance, to choose among a set of keys within a JWK Set
+     * during key rollover.  The structure of the "kid" value is
+     * unspecified.  When "kid" values are used within a JWK Set, different
+     * keys within the JWK Set SHOULD use distinct "kid" values.  (One
+     * example in which different keys might use the same "kid" value is if
+     * they have different "kty" (key type) values but are considered to be
+     * equivalent alternatives by the application using them.)  The "kid"
+     * value is a case-sensitive string.  Use of this member is OPTIONAL.
+     * When used with JWS or JWE, the "kid" value is used to match a JWS or
+     * JWE "kid" Header Parameter value.
+     */
     @SerialName("kid")
     val keyId: String? = null,
+
+    /**
+     * Set for EC keys only
+     */
     @SerialName("x")
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val x: ByteArray? = null,
+
+    /**
+     * Set for EC keys only
+     */
     @SerialName("y")
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val y: ByteArray? = null,
+
+    /**
+     * Set for RSA keys only
+     */
     @SerialName("n")
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val n: ByteArray? = null,
+
+    /**
+     * Set for RSA keys only
+     */
     @SerialName("e")
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val e: ByteArray? = null,
-    //Symmetric Key
+
+    /**
+     * Set for symmetric keys only
+     */
     @SerialName("k")
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val k: ByteArray? = null,
+
+    /**
+     * The "use" (public key use) parameter identifies the intended use of
+     * the public key.  The "use" parameter is employed to indicate whether
+     * a public key is used for encrypting data or verifying the signature
+     * on data.
+     */
+    @SerialName("use")
+    val publicKeyUse: String? = null,
+
+    /**
+     * The "key_ops" (key operations) parameter identifies the operation(s)
+     * for which the key is intended to be used.  The "key_ops" parameter is
+     * intended for use cases in which public, private, or symmetric keys
+     * may be present.
+     */
+    @SerialName("key_ops")
+    val keyOperations: Set<String>? = null,
+
+    /**
+     * The "alg" (algorithm) parameter identifies the algorithm intended for
+     * use with the key.  The values used should either be registered in the
+     * IANA "JSON Web Signature and Encryption Algorithms" registry
+     * established by [JWA] or be a value that contains a Collision-
+     * Resistant Name.  The "alg" value is a case-sensitive ASCII string.
+     * Use of this member is OPTIONAL.
+     */
+    @SerialName("alg")
+    val algorithm: JwsAlgorithm? = null,
+
+    /**
+     * The "x5u" (X.509 URL) parameter is a URI (RFC3986) that refers to a
+     * resource for an X.509 public key certificate or certificate chain
+     * (RFC5280).  The identified resource MUST provide a representation of
+     * the certificate or certificate chain that conforms to RFC 5280
+     * (RFC5280) in PEM-encoded form, with each certificate delimited as
+     * specified in Section 6.1 of RFC 4945 (RFC4945).  The key in the first
+     * certificate MUST match the public key represented by other members of
+     * the JWK.  The protocol used to acquire the resource MUST provide
+     * integrity protection; an HTTP GET request to retrieve the certificate
+     * MUST use TLS (RFC2818) (RFC5246); the identity of the server MUST be
+     * validated, as per Section 6 of RFC 6125 (RFC6125).  Use of this
+     * member is OPTIONAL.
+     */
+    @SerialName("x5u")
+    val certificateUrl: String? = null,
+
+    /**
+     * The "x5c" (X.509 certificate chain) parameter contains a chain of one
+     * or more PKIX certificates (RFC5280).  The certificate chain is
+     * represented as a JSON array of certificate value strings.  Each
+     * string in the array is a base64-encoded (Section 4 of (RFC4648) --
+     * not base64url-encoded) DER (ITU.X690.1994) PKIX certificate value.
+     * The PKIX certificate containing the key value MUST be the first
+     * certificate.  This MAY be followed by additional certificates, with
+     * each subsequent certificate being the one used to certify the
+     * previous one.  The key in the first certificate MUST match the public
+     * key represented by other members of the JWK.  Use of this member is
+     * OPTIONAL.
+     */
+    @SerialName("x5c")
+    val certificateChain: List<@Serializable(with = ByteArrayBase64Serializer::class) ByteArray>? = null,
+
+    /**
+     * The "x5t" (X.509 certificate SHA-1 thumbprint) parameter is a
+     * base64url-encoded SHA-1 thumbprint (a.k.a. digest) of the DER
+     * encoding of an X.509 certificate (RFC5280).  Note that certificate
+     * thumbprints are also sometimes known as certificate fingerprints.
+     * The key in the certificate MUST match the public key represented by
+     * other members of the JWK.  Use of this member is OPTIONAL.
+     */
+    @SerialName("x5t")
+    @Serializable(with = ByteArrayBase64UrlSerializer::class)
+    val certificateSha1Thumbprint: ByteArray? = null,
+
+    /**
+     * The "x5t#S256" (X.509 certificate SHA-256 thumbprint) parameter is a
+     * base64url-encoded SHA-256 thumbprint (a.k.a. digest) of the DER
+     * encoding of an X.509 certificate (RFC5280).  Note that certificate
+     * thumbprints are also sometimes known as certificate fingerprints.
+     * The key in the certificate MUST match the public key represented by
+     * other members of the JWK.  Use of this member is OPTIONAL.
+     */
+    @SerialName("x5t#S256")
+    @Serializable(with = ByteArrayBase64UrlSerializer::class)
+    val certificateSha256Thumbprint: ByteArray? = null,
 ) {
 
     val jwkThumbprint: String by lazy {
@@ -53,17 +186,25 @@ data class JsonWebKey(
         keyId ?: "urn:ietf:params:oauth:jwk-thumbprint:sha256:${jwkThumbprint}"
     }
 
-    override fun toString() =
-        "JsonWebKey(" +
-                "type=$type, " +
-                "curve=$curve, " +
-                "keyId=$keyId," +
-                "x=${x?.encodeToString(Base64Strict)}," +
-                "y=${y?.encodeToString(Base64Strict)}" +
-                "n=${n?.encodeToString(Base64Strict)})" +
-                "e=${e?.encodeToString(Base64Strict)}" +
-                "k=${k?.encodeToString(Base64Strict)}" +
-                ")"
+    fun serialize() = jsonSerializer.encodeToString(this)
+
+    override fun toString(): String {
+        return "JsonWebKey(curve=$curve," +
+                " type=$type," +
+                " keyId=$keyId," +
+                " x=${x?.encodeToString(Base64UrlStrict)}," +
+                " y=${y?.encodeToString(Base64UrlStrict)}," +
+                " n=${n?.encodeToString(Base64UrlStrict)}," +
+                " e=${e?.encodeToString(Base64UrlStrict)}," +
+                " k=${k?.encodeToString(Base64UrlStrict)}," +
+                " publicKeyUse=$publicKeyUse," +
+                " keyOperations=$keyOperations," +
+                " algorithm=$algorithm," +
+                " certificateUrl=$certificateUrl," +
+                " certificateChain=${certificateChain?.joinToString { it.encodeToString(Base64Strict) }}," +
+                " certificateSha1Thumbprint=${certificateSha1Thumbprint?.encodeToString(Base64UrlStrict)}," +
+                " certificateSha256Thumbprint=${certificateSha256Thumbprint?.encodeToString(Base64UrlStrict)})"
+    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -71,8 +212,8 @@ data class JsonWebKey(
 
         other as JsonWebKey
 
-        if (type != other.type) return false
         if (curve != other.curve) return false
+        if (type != other.type) return false
         if (keyId != other.keyId) return false
         if (x != null) {
             if (other.x == null) return false
@@ -82,7 +223,6 @@ data class JsonWebKey(
             if (other.y == null) return false
             if (!y.contentEquals(other.y)) return false
         } else if (other.y != null) return false
-
         if (n != null) {
             if (other.n == null) return false
             if (!n.contentEquals(other.n)) return false
@@ -95,24 +235,45 @@ data class JsonWebKey(
             if (other.k == null) return false
             if (!k.contentEquals(other.k)) return false
         } else if (other.k != null) return false
+        if (publicKeyUse != other.publicKeyUse) return false
+        if (keyOperations != other.keyOperations) return false
+        if (algorithm != other.algorithm) return false
+        if (certificateUrl != other.certificateUrl) return false
+        if (certificateChain != other.certificateChain) return false
+        if (certificateSha1Thumbprint != null) {
+            if (other.certificateSha1Thumbprint == null) return false
+            if (!certificateSha1Thumbprint.contentEquals(other.certificateSha1Thumbprint)) return false
+        } else if (other.certificateSha1Thumbprint != null) return false
+        if (certificateSha256Thumbprint != null) {
+            if (other.certificateSha256Thumbprint == null) return false
+            if (!certificateSha256Thumbprint.contentEquals(other.certificateSha256Thumbprint)) return false
+        } else if (other.certificateSha256Thumbprint != null) return false
+
         return true
     }
 
     override fun hashCode(): Int {
-        var result = type?.hashCode() ?: 0
-        result = 31 * result + (curve?.hashCode() ?: 0)
+        var result = curve?.hashCode() ?: 0
+        result = 31 * result + (type?.hashCode() ?: 0)
         result = 31 * result + (keyId?.hashCode() ?: 0)
         result = 31 * result + (x?.contentHashCode() ?: 0)
         result = 31 * result + (y?.contentHashCode() ?: 0)
-        result = 31 * result + (n?.hashCode() ?: 0)
-        result = 31 * result + (e?.hashCode() ?: 0)
-        result = 31 * result + (k?.hashCode() ?: 0)
+        result = 31 * result + (n?.contentHashCode() ?: 0)
+        result = 31 * result + (e?.contentHashCode() ?: 0)
+        result = 31 * result + (k?.contentHashCode() ?: 0)
+        result = 31 * result + (publicKeyUse?.hashCode() ?: 0)
+        result = 31 * result + (keyOperations?.hashCode() ?: 0)
+        result = 31 * result + (algorithm?.hashCode() ?: 0)
+        result = 31 * result + (certificateUrl?.hashCode() ?: 0)
+        result = 31 * result + (certificateChain?.hashCode() ?: 0)
+        result = 31 * result + (certificateSha1Thumbprint?.contentHashCode() ?: 0)
+        result = 31 * result + (certificateSha256Thumbprint?.contentHashCode() ?: 0)
         return result
     }
 
     /**
-     * @return a KmmResult wrapped [CryptoPublicKey] equivalent if conversion is possible (i.e. if all key params are set)
-     * or the first error.
+     * @return a KmmResult wrapped [CryptoPublicKey] equivalent if conversion is possible
+     * (i.e. if all key params are set), or the first error.
      */
     fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
         runCatching {
@@ -136,8 +297,6 @@ data class JsonWebKey(
                 else -> throw IllegalArgumentException("Illegal key type")
             }
         }.wrap()
-
-    fun serialize() = jsonSerializer.encodeToString(this)
 
     /**
      * Contains convenience functions
