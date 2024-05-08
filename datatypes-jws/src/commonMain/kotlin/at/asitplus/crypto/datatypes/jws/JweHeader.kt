@@ -21,7 +21,7 @@ data class JweHeader(
     @SerialName("kid")
     val keyId: String? = null,
     @SerialName("typ")
-    val type: String?,
+    val type: String? = null,
     @SerialName("cty")
     val contentType: String? = null,
     @SerialName("jwk")

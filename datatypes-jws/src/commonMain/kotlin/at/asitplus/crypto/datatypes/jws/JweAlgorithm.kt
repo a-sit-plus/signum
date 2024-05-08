@@ -11,6 +11,9 @@ import kotlinx.serialization.encoding.Encoder
 @Serializable(with = JweAlgorithmSerializer::class)
 enum class JweAlgorithm(val text: String) {
     ECDH_ES("ECDH-ES"),
+    A128KW("A128KW"),
+    A192KW("A192KW"),
+    A256KW("A256KW"),
     RSA_OAEP_256("RSA-OAEP-256"),
     RSA_OAEP_384("RSA-OAEP-384"),
     RSA_OAEP_512("RSA-OAEP-512")

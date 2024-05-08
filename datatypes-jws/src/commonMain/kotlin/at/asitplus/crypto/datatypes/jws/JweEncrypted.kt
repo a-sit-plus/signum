@@ -1,9 +1,10 @@
 package at.asitplus.crypto.datatypes.jws
 
+import at.asitplus.KmmResult
+import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.io.Base64Strict
 import at.asitplus.crypto.datatypes.io.Base64UrlStrict
-import io.github.aakira.napier.Napier
-import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArrayOrNull
+import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 
 /**
@@ -61,19 +62,15 @@ data class JweEncrypted(
 
 
     companion object {
-        fun parse(it: String): JweEncrypted? {
+        fun parse(it: String): KmmResult<JweEncrypted> = runCatching {
             val stringList = it.replace("[^A-Za-z0-9-_.]".toRegex(), "").split(".")
-            if (stringList.size != 5) return null.also { Napier.w("Could not parse JWE: $it") }
-            val headerAsParsed = stringList[0].decodeToByteArrayOrNull(Base64Strict)
-                ?: return null.also { Napier.w("Could not parse JWE: $it") }
-            val encryptedKey = stringList[1].decodeToByteArrayOrNull(Base64Strict)
-            val iv = stringList[2].decodeToByteArrayOrNull(Base64Strict)
-                ?: return null.also { Napier.w("Could not parse JWE: $it") }
-            val ciphertext = stringList[3].decodeToByteArrayOrNull(Base64Strict)
-                ?: return null.also { Napier.w("Could not parse JWE: $it") }
-            val authTag = stringList[4].decodeToByteArrayOrNull(Base64Strict)
-                ?: return null.also { Napier.w("Could not parse JWE: $it") }
-            return JweEncrypted(headerAsParsed, encryptedKey, iv, ciphertext, authTag)
-        }
+            if (stringList.size != 5) throw IllegalArgumentException("not five parts in input: $it")
+            val headerAsParsed = stringList[0].decodeToByteArray(Base64Strict)
+            val encryptedKey = stringList[1].decodeToByteArray(Base64Strict)
+            val iv = stringList[2].decodeToByteArray(Base64Strict)
+            val ciphertext = stringList[3].decodeToByteArray(Base64Strict)
+            val authTag = stringList[4].decodeToByteArray(Base64Strict)
+            JweEncrypted(headerAsParsed, encryptedKey, iv, ciphertext, authTag)
+        }.wrap()
     }
 }
