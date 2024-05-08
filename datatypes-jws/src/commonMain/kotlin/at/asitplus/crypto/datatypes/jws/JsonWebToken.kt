@@ -4,6 +4,7 @@ package at.asitplus.crypto.datatypes.jws
 
 import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
+import at.asitplus.crypto.datatypes.jws.io.InstantLongSerializer
 import at.asitplus.crypto.datatypes.jws.io.jsonSerializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
