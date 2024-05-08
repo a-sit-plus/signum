@@ -93,6 +93,7 @@
  * Move class `JweDecrypted` from package `at.asitplus.wallet.lib.jws` to `at.asitplus.crypto.datatypes.jws`
  * Support more JWE algorithms, e.g. AES
  * Add `header` to constructor parameters of `JweEncrypted`
+ * Extend properties of `JsonWebKey`
  * Introduce `CertificateChain` typealias with `.leaf` and `.root` convenience properties
  * Use `CertificateChain` inside `JwsHeader` instead of `Array<ByteArray>'
  * Restructure and fix `RelativeDistinguishedName`. **THIS IS A BREAKING CHANGE**
