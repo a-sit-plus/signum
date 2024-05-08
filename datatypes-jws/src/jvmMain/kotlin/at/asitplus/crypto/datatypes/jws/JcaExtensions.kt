@@ -2,18 +2,17 @@ package at.asitplus.crypto.datatypes.jws
 
 val JweEncryption.jcaName
     get() = when (this) {
-        JweEncryption.A256GCM -> "AES/GCM/NoPadding"
+        JweEncryption.A128GCM, JweEncryption.A192GCM, JweEncryption.A256GCM -> "AES/GCM/NoPadding"
     }
 
 val JweEncryption.jcaKeySpecName
     get() = when (this) {
-        JweEncryption.A256GCM -> "AES"
+        JweEncryption.A128GCM, JweEncryption.A192GCM, JweEncryption.A256GCM -> "AES"
     }
 
 val JweAlgorithm.jcaName
     get() = when (this) {
         JweAlgorithm.ECDH_ES -> "ECDH"
-        JweAlgorithm.RSA_OAEP_256 -> "RSA-OAEP-256"
-        JweAlgorithm.RSA_OAEP_384 -> "RSA-OAEP-384"
-        JweAlgorithm.RSA_OAEP_512 -> "RSA-OAEP-512"
+        JweAlgorithm.A128KW, JweAlgorithm.A192KW, JweAlgorithm.A256KW -> "AES"
+        JweAlgorithm.RSA_OAEP_256, JweAlgorithm.RSA_OAEP_384, JweAlgorithm.RSA_OAEP_512 -> "RSA/ECB/OAEPPadding"
     }
