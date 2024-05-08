@@ -211,7 +211,7 @@ val signatureAlgorithm = JwsAlgorithm.ES256
 
 val tbsCsr = TbsCertificationRequest(
     version = 0,
-    subjectName = listOf(DistinguishedName.CommonName(Asn1String.UTF8(commonName))),
+    subjectName = listOf(DistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
     publicKey = cryptoPublicKey
 )
 val signed =  /* pass tbsCsr.encodeToDer() to platform code*/

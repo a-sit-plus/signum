@@ -86,4 +86,13 @@
  * Boolean ASN.1 decoding helper function
  * Certificate to/from JCA certificate conversion functions
 
-### NEXT
+## 3.0
+
+### 3.0.0
+- Introduce `CertificateChain` typealias with `.leaf` and `.root` convenience properties
+- Use `CertificateChain` inside `JwsHeader` instead of `Array<ByteArray>'
+- Restructure and fix `RelativeDistinguishedName`. **THIS IS A BREAKING CHANGE**
+- SubjectAltNames and IssuerAltNames:
+  - Perform some Structural validations on SAN and IAN
+  - Expose `TbsCertificate.issuerAltNames` and `TbsCertificte.subjectAltnames`, which contain (somewhat) parsed
+    `AlternativeNames` structures for easy access to `dnsName`. `iPAddress`, etc.
