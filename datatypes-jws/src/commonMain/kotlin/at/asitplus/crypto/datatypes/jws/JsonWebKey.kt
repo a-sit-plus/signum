@@ -11,6 +11,7 @@ import at.asitplus.crypto.datatypes.io.Base64UrlStrict
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64UrlSerializer
 import at.asitplus.crypto.datatypes.jws.io.jsonSerializer
+import at.asitplus.crypto.datatypes.pki.CertificateChain
 import at.asitplus.crypto.datatypes.pki.X509Certificate
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.SerialName
@@ -152,7 +153,7 @@ data class JsonWebKey(
      * OPTIONAL.
      */
     @SerialName("x5c")
-    val certificateChain: List<X509Certificate>? = null,
+    val certificateChain: CertificateChain? = null,
 
     /**
      * The "x5t" (X.509 certificate SHA-1 thumbprint) parameter is a
