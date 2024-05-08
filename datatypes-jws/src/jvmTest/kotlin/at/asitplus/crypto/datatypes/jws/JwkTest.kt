@@ -1,15 +1,22 @@
 package at.asitplus.crypto.datatypes.jws
 
+import at.asitplus.crypto.datatypes.CryptoAlgorithm
 import at.asitplus.crypto.datatypes.CryptoPublicKey
+import at.asitplus.crypto.datatypes.CryptoSignature
 import at.asitplus.crypto.datatypes.EcCurve
+import at.asitplus.crypto.datatypes.asn1.Asn1String
+import at.asitplus.crypto.datatypes.asn1.Asn1Time
 import at.asitplus.crypto.datatypes.fromJcaPublicKey
 import at.asitplus.crypto.datatypes.io.Base64Strict
+import at.asitplus.crypto.datatypes.pki.DistinguishedName
+import at.asitplus.crypto.datatypes.pki.TbsCertificate
+import at.asitplus.crypto.datatypes.pki.X509Certificate
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.datetime.Clock
 import java.security.KeyPairGenerator
 import java.security.interfaces.ECPublicKey
 import kotlin.random.Random
@@ -52,7 +59,7 @@ class JwkTest : FreeSpec({
             publicKeyUse = Random.nextBytes(16).encodeToString(Base64Strict),
             keyOperations = setOf(Random.nextBytes(16).encodeToString(Base64Strict)),
             certificateUrl = Random.nextBytes(16).encodeToString(Base64Strict),
-            certificateChain = listOf(Random.nextBytes(64)),
+            certificateChain = listOf(randomCertificate()),
             certificateSha1Thumbprint = Random.nextBytes(20),
             certificateSha256Thumbprint = Random.nextBytes(32),
         )
@@ -70,7 +77,7 @@ class JwkTest : FreeSpec({
             publicKeyUse = Random.nextBytes(16).encodeToString(Base64Strict),
             keyOperations = setOf(Random.nextBytes(16).encodeToString(Base64Strict)),
             certificateUrl = Random.nextBytes(16).encodeToString(Base64Strict),
-            certificateChain = listOf(Random.nextBytes(64)),
+            certificateChain = listOf(randomCertificate()),
             certificateSha1Thumbprint = Random.nextBytes(20),
             certificateSha256Thumbprint = Random.nextBytes(32),
         )
@@ -80,3 +87,18 @@ class JwkTest : FreeSpec({
         parsed shouldBe jwk
     }
 })
+
+private fun randomCertificate() = X509Certificate(
+    TbsCertificate(
+        serialNumber = Random.nextBytes(16),
+        issuerName = listOf(DistinguishedName.CommonName(Asn1String.Printable("Test"))),
+        publicKey = CryptoPublicKey.Ec.fromJcaPublicKey(KeyPairGenerator.getInstance("EC").apply { initialize(256) }
+            .genKeyPair().public as ECPublicKey).getOrThrow(),
+        signatureAlgorithm = CryptoAlgorithm.ES256,
+        subjectName = listOf(DistinguishedName.CommonName(Asn1String.Printable("Test"))),
+        validFrom = Asn1Time(Clock.System.now()),
+        validUntil = Asn1Time(Clock.System.now()),
+    ),
+    CryptoAlgorithm.ES256,
+    CryptoSignature.EC(Random.nextBytes(16), Random.nextBytes(16))
+)

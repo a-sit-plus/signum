@@ -59,6 +59,9 @@ class Asn1Time(val instant: Instant, formatOverride: Format? = null) : Asn1Encod
         return result
     }
 
+    override fun toString(): String {
+        return "Asn1Time(instant=$instant, format=$format)"
+    }
 
     /**
      * Enum of supported Time formats
