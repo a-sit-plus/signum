@@ -4,7 +4,7 @@ import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.asn1.BERTags.BIT_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.INTEGER
 import at.asitplus.crypto.datatypes.asn1.DERTags.DER_SEQUENCE
-import at.asitplus.crypto.datatypes.io.Base64UrlStrict
+import at.asitplus.crypto.datatypes.io.Base64Strict
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.Contextual
@@ -59,11 +59,11 @@ sealed class CryptoSignature(
             get() = PrimitiveSerialDescriptor("CryptoSignature", PrimitiveKind.STRING)
 
         override fun deserialize(decoder: Decoder): CryptoSignature {
-            return CryptoSignature.decodeFromDer(decoder.decodeString().decodeToByteArray(Base64UrlStrict))
+            return CryptoSignature.decodeFromDer(decoder.decodeString().decodeToByteArray(Base64Strict))
         }
 
         override fun serialize(encoder: Encoder, value: CryptoSignature) {
-            encoder.encodeString(value.encodeToDer().encodeToString(Base64UrlStrict))
+            encoder.encodeString(value.encodeToDer().encodeToString(Base64Strict))
         }
     }
 
