@@ -68,6 +68,14 @@ data class JwsSigned(
         }.wrap()
 
 
+        /**
+         * Called by JWS signing implementations to get the string that will be
+         * used as the input for signature calculation
+         */
+        @Suppress("unused")
+        fun prepareJwsSignatureInput(header: JwsHeader, payload: ByteArray): String =
+            "${header.serialize().encodeToByteArray().encodeToString(Base64UrlStrict)}" +
+                    ".${payload.encodeToString(Base64UrlStrict)}"
     }
 }
 
