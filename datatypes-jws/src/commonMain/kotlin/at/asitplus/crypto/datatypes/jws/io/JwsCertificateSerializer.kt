@@ -1,13 +1,15 @@
 package at.asitplus.crypto.datatypes.jws.io
 
+import at.asitplus.crypto.datatypes.io.Base64Strict
 import at.asitplus.crypto.datatypes.pki.X509Certificate
+import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 object JwsCertificateSerializer : KSerializer<X509Certificate> {
@@ -15,13 +17,11 @@ object JwsCertificateSerializer : KSerializer<X509Certificate> {
         PrimitiveSerialDescriptor(serialName = "X509Certificate (JWS)", PrimitiveKind.STRING)
 
     override fun deserialize(decoder: Decoder): X509Certificate {
-        @OptIn(ExperimentalEncodingApi::class)
-        return X509Certificate.decodeFromDer(Base64.decode(decoder.decodeString()))
+        return X509Certificate.decodeFromDer(decoder.decodeString().decodeToByteArray(Base64Strict))
     }
 
 
     override fun serialize(encoder: Encoder, value: X509Certificate) {
-        @OptIn(ExperimentalEncodingApi::class)
-        encoder.encodeString(Base64.encode(value.encodeToDer()))
+        encoder.encodeString(value.encodeToDer().encodeToString(Base64Strict))
     }
 }

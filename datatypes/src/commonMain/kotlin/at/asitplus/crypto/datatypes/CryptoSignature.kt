@@ -1,22 +1,11 @@
 package at.asitplus.crypto.datatypes
 
-import at.asitplus.crypto.datatypes.asn1.Asn1Decodable
-import at.asitplus.crypto.datatypes.asn1.Asn1Element
-import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
-import at.asitplus.crypto.datatypes.asn1.Asn1Exception
-import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
-import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
+import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.asn1.BERTags.BIT_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.INTEGER
 import at.asitplus.crypto.datatypes.asn1.DERTags.DER_SEQUENCE
-import at.asitplus.crypto.datatypes.asn1.asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.decode
-import at.asitplus.crypto.datatypes.asn1.encodeToTlvBitString
-import at.asitplus.crypto.datatypes.asn1.ensureSize
-import at.asitplus.crypto.datatypes.asn1.padWithZeroIfNeeded
-import at.asitplus.crypto.datatypes.asn1.runRethrowing
-import at.asitplus.crypto.datatypes.asn1.stripLeadingSignByte
 import at.asitplus.crypto.datatypes.io.Base64UrlStrict
+import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.KSerializer
@@ -46,8 +35,6 @@ sealed class CryptoSignature(
      */
     abstract val rawByteArray: ByteArray
 
-    fun serialize(): String = signature.derEncoded.encodeToString(Base64UrlStrict)
-
     abstract fun encodeToTlvBitString(): Asn1Element
 
     override fun equals(other: Any?): Boolean {
@@ -71,11 +58,12 @@ sealed class CryptoSignature(
         override val descriptor: SerialDescriptor
             get() = PrimitiveSerialDescriptor("CryptoSignature", PrimitiveKind.STRING)
 
-        override fun deserialize(decoder: Decoder): RSAorHMAC =
-            RSAorHMAC(decoder.decodeString().encodeToByteArray())
+        override fun deserialize(decoder: Decoder): CryptoSignature {
+            return CryptoSignature.decodeFromDer(decoder.decodeString().decodeToByteArray(Base64UrlStrict))
+        }
 
         override fun serialize(encoder: Encoder, value: CryptoSignature) {
-            encoder.encodeString(value.serialize())
+            encoder.encodeString(value.encodeToDer().encodeToString(Base64UrlStrict))
         }
     }
 
@@ -108,6 +96,14 @@ sealed class CryptoSignature(
         }
 
         override fun encodeToTlvBitString(): Asn1Element = encodeToDer().encodeToTlvBitString()
+
+        companion object {
+            @Throws(Asn1Exception::class)
+            fun decodeFromTlvBitString(src: Asn1Primitive): EC = runRethrowing {
+                CryptoSignature.decodeFromDer(src.readBitString().rawBytes) as EC
+            }
+        }
+
     }
 
     class RSAorHMAC(input: ByteArray) : CryptoSignature(
@@ -115,6 +111,13 @@ sealed class CryptoSignature(
     ) {
         override val rawByteArray by lazy { (signature as Asn1Primitive).decode(BIT_STRING) { it } }
         override fun encodeToTlvBitString(): Asn1Element = this.encodeToTlv()
+
+        companion object {
+            @Throws(Asn1Exception::class)
+            fun decodeFromTlvBitString(src: Asn1Primitive): RSAorHMAC = runRethrowing {
+                decodeFromTlv(src) as RSAorHMAC
+            }
+        }
     }
 
     companion object : Asn1Decodable<Asn1Element, CryptoSignature> {
@@ -135,6 +138,5 @@ sealed class CryptoSignature(
                 else -> throw IllegalArgumentException("Unknown Signature Format")
             }
         }
-
     }
 }

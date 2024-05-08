@@ -15,17 +15,14 @@ import kotlinx.serialization.encoding.Encoder
  * @param formatOverride to force either  GENERALIZED TIME or UTC TIME
  */
 @Serializable(with = CertTimeStampSerializer::class)
-class Asn1Time(val instant: Instant, formatOverride: Format? = null) : Asn1Encodable<Asn1Primitive> {
+class Asn1Time(instant: Instant, formatOverride: Format? = null) : Asn1Encodable<Asn1Primitive> {
+
+    val instant = Instant.fromEpochSeconds(instant.epochSeconds)
 
     /**
      * Indicates whether this timestamp uses UTC TIME or GENERALIZED TIME
      */
-    val format: Format
-
-    init {
-        format =
-            formatOverride ?: if (instant > THRESHOLD_GENERALIZED_TIME) Format.GENERALIZED else Format.UTC
-    }
+    val format: Format =  formatOverride ?: if (this.instant > THRESHOLD_GENERALIZED_TIME) Format.GENERALIZED else Format.UTC
 
     companion object : Asn1Decodable<Asn1Primitive, Asn1Time> {
         private val THRESHOLD_GENERALIZED_TIME = Instant.parse("2050-01-01T00:00:00Z")

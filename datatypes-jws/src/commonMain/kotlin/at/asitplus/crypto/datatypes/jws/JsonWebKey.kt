@@ -1,3 +1,4 @@
+@file:UseSerializers(JwsCertificateSerializer::class)
 package at.asitplus.crypto.datatypes.jws
 
 import at.asitplus.KmmResult
@@ -10,12 +11,14 @@ import at.asitplus.crypto.datatypes.io.Base64Strict
 import at.asitplus.crypto.datatypes.io.Base64UrlStrict
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64UrlSerializer
+import at.asitplus.crypto.datatypes.jws.io.JwsCertificateSerializer
 import at.asitplus.crypto.datatypes.jws.io.jsonSerializer
 import at.asitplus.crypto.datatypes.pki.CertificateChain
 import at.asitplus.crypto.datatypes.pki.X509Certificate
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okio.ByteString.Companion.toByteString

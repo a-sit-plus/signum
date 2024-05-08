@@ -89,15 +89,26 @@
 ## 3.0
 
 ### 3.0.0
- * Wrap exceptions during deserialization in `KmmResult`, i.e. changing all `deserialize()` methods in companion objects
- * Move class `JweDecrypted` from package `at.asitplus.wallet.lib.jws` to `at.asitplus.crypto.datatypes.jws`
+
+**Fixes**
+ * Restructure and fix `RelativeDistinguishedName`. **THIS IS A BREAKING CHANGE**
+ * Fix `Asn1Time` not truncating to seconds
+ * Fix parsing of CryptoSignature when decoding Certificates
+ * Remove bogus `serialize()` function from `CryptoSignature`  **THIS IS A BREAKING CHANGE**
+
+
+**Features**
+ * Wrap exceptions during deserialization in `KmmResult`, i.e. changing all `deserialize()` methods in companion objects  **THIS IS A BREAKING CHANGE**
+ * Move class `JweDecrypted` from package `at.asitplus.wallet.lib.jws` to `at.asitplus.crypto.datatypes.jws`  **THIS IS A BREAKING CHANGE**
  * Support more JWE algorithms, e.g. AES
  * Add `header` to constructor parameters of `JweEncrypted`
  * Extend properties of `JsonWebKey`
  * Introduce `CertificateChain` typealias with `.leaf` and `.root` convenience properties
  * Use `CertificateChain` inside `JwsHeader` instead of `Array<ByteArray>'
- * Restructure and fix `RelativeDistinguishedName`. **THIS IS A BREAKING CHANGE**
+ * Use `CertificateChain` inside `JsonWebKey` instead of `Array<ByteArray>'
+
  * SubjectAltNames and IssuerAltNames:
-    * Perform some Structural validations on SAN and IAN
+    * Perform some structural validations on SAN and IAN
     * Expose `TbsCertificate.issuerAltNames` and `TbsCertificte.subjectAltnames`, which contain (somewhat) parsed
       `AlternativeNames` structures for easy access to `dnsName`. `iPAddress`, etc.
+
