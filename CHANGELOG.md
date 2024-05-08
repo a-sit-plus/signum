@@ -90,6 +90,7 @@
 
 ### 3.0.0
 * Wrap exceptions during deserialization in `KmmResult`, i.e. changing all `deserialize()` methods in companion objects
+* Move class `JweDecrypted` from package `at.asitplus.wallet.lib.jws` to `at.asitplus.crypto.datatypes.jws`
 * Introduce `CertificateChain` typealias with `.leaf` and `.root` convenience properties
 * Use `CertificateChain` inside `JwsHeader` instead of `Array<ByteArray>'
 * Restructure and fix `RelativeDistinguishedName`. **THIS IS A BREAKING CHANGE**
