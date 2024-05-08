@@ -1,37 +1,45 @@
 package at.asitplus.crypto.datatypes.pki
 
-import at.asitplus.crypto.datatypes.asn1.Asn1Decodable
-import at.asitplus.crypto.datatypes.asn1.Asn1Element
-import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
-import at.asitplus.crypto.datatypes.asn1.Asn1Exception
-import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
-import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.Asn1Set
-import at.asitplus.crypto.datatypes.asn1.Asn1String
-import at.asitplus.crypto.datatypes.asn1.Asn1StructuralException
-import at.asitplus.crypto.datatypes.asn1.Identifiable
-import at.asitplus.crypto.datatypes.asn1.KnownOIDs
-import at.asitplus.crypto.datatypes.asn1.ObjectIdentifier
-import at.asitplus.crypto.datatypes.asn1.asn1Set
-import at.asitplus.crypto.datatypes.asn1.readOid
-import at.asitplus.crypto.datatypes.asn1.readString
-import at.asitplus.crypto.datatypes.asn1.runRethrowing
+import at.asitplus.crypto.datatypes.asn1.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
  * X.500 Name (used in X.509 Certificates)
  */
+@Serializable
+data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndValue>) : Asn1Encodable<Asn1Set> {
+
+    constructor(singleItem: AttributeTypeAndValue) : this(listOf(singleItem))
+
+    override fun encodeToTlv() = runRethrowing {
+        asn1Set {
+            attrsAndValues.forEach {
+                append(it)
+            }
+        }
+    }
+
+    companion object : Asn1Decodable<Asn1Set, RelativeDistinguishedName> {
+        override fun decodeFromTlv(src: Asn1Set): RelativeDistinguishedName = runRethrowing {
+            RelativeDistinguishedName(src.children.map { AttributeTypeAndValue.decodeFromTlv(it as Asn1Sequence) })
+        }
+    }
+
+    override fun toString() = "DistinguishedName(attrsAndValues=${attrsAndValues.joinToString()})"
+
+}
 
 //TODO: value should be Asn1Primitive???
 @Serializable
-sealed class DistinguishedName : Asn1Encodable<Asn1Set>, Identifiable {
+sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
     abstract val value: Asn1Element
 
+    override fun toString() = value.toString()
 
     @Serializable
     @SerialName("CN")
-    class CommonName(override val value: Asn1Element) : DistinguishedName() {
+    class CommonName(override val value: Asn1Element) : AttributeTypeAndValue() {
         override val oid = OID
 
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
@@ -43,7 +51,7 @@ sealed class DistinguishedName : Asn1Encodable<Asn1Set>, Identifiable {
 
     @Serializable
     @SerialName("C")
-    class Country(override val value: Asn1Element) : DistinguishedName() {
+    class Country(override val value: Asn1Element) : AttributeTypeAndValue() {
         override val oid = OID
 
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
@@ -55,7 +63,7 @@ sealed class DistinguishedName : Asn1Encodable<Asn1Set>, Identifiable {
 
     @Serializable
     @SerialName("O")
-    class Organization(override val value: Asn1Element) : DistinguishedName() {
+    class Organization(override val value: Asn1Element) : AttributeTypeAndValue() {
         override val oid = OID
 
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
@@ -67,7 +75,7 @@ sealed class DistinguishedName : Asn1Encodable<Asn1Set>, Identifiable {
 
     @Serializable
     @SerialName("OU")
-    class OrganizationalUnit(override val value: Asn1Element) : DistinguishedName() {
+    class OrganizationalUnit(override val value: Asn1Element) : AttributeTypeAndValue() {
         override val oid = OID
 
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
@@ -79,25 +87,24 @@ sealed class DistinguishedName : Asn1Encodable<Asn1Set>, Identifiable {
 
     @Serializable
     @SerialName("?")
-    class Other(override val oid: ObjectIdentifier, override val value: Asn1Element) : DistinguishedName() {
+    class Other(override val oid: ObjectIdentifier, override val value: Asn1Element) : AttributeTypeAndValue() {
         constructor(oid: ObjectIdentifier, str: Asn1String) : this(
             oid,
             Asn1Primitive(str.tag, str.value.encodeToByteArray())
         )
     }
 
-    override fun encodeToTlv() = asn1Set {
-        sequence {
-            append(oid)
-            append(value)
-        }
+    override fun encodeToTlv() = asn1Sequence {
+        append(oid)
+        append(value)
+
     }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
 
-        other as DistinguishedName
+        other as AttributeTypeAndValue
 
         if (value != other.value) return false
         if (oid != other.oid) return false
@@ -111,17 +118,15 @@ sealed class DistinguishedName : Asn1Encodable<Asn1Set>, Identifiable {
         return result
     }
 
-    companion object : Asn1Decodable<Asn1Set, DistinguishedName> {
+    companion object : Asn1Decodable<Asn1Sequence, AttributeTypeAndValue> {
 
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(src: Asn1Set): DistinguishedName = runRethrowing {
-            if (src.children.size != 1) throw Asn1StructuralException("Invalid Subject Structure")
-            val sequence = src.nextChild() as Asn1Sequence
-            val oid = (sequence.nextChild() as Asn1Primitive).readOid()
+        override fun decodeFromTlv(src: Asn1Sequence): AttributeTypeAndValue = runRethrowing {
+            val oid = (src.nextChild() as Asn1Primitive).readOid()
             if (oid.nodes.size >= 3 && oid.toString().startsWith("2.5.4.")) {
-                val asn1String = sequence.nextChild() as Asn1Primitive
+                val asn1String = src.nextChild() as Asn1Primitive
                 val str = runCatching { (asn1String).readString() }
-                if (sequence.hasMoreChildren()) throw Asn1StructuralException("Superfluous elements in RDN")
+                if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous elements in RDN")
                 return when (oid) {
                     CommonName.OID -> str.fold(onSuccess = { CommonName(it) }, onFailure = { CommonName(asn1String) })
                     Country.OID -> str.fold(onSuccess = { Country(it) }, onFailure = { Country(asn1String) })
@@ -136,8 +141,8 @@ sealed class DistinguishedName : Asn1Encodable<Asn1Set>, Identifiable {
                     else -> Other(oid, asn1String)
                 }
             }
-            return Other(oid, sequence.nextChild())
-                .also { if (sequence.hasMoreChildren()) throw Asn1StructuralException("Superfluous elements in RDN") }
+            return Other(oid, src.nextChild())
+                .also { if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous elements in RDN") }
         }
     }
 }

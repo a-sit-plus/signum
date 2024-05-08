@@ -60,8 +60,19 @@ class X509CertParserTest : FreeSpec({
         val certs = File("/etc/ssl/certs").listFiles { f: File -> f.name.endsWith(".pem") }.mapNotNull {
             runCatching { convertStringToX509Cert(FileReader(it).readText()) }.getOrNull()
         }
+
+        val macosCertsPem = kotlin.runCatching {
+            Runtime.getRuntime().exec("security find-certificate -a -p").let {
+                it.inputStream.reader().readText()
+            }
+        }.getOrNull()
+
         val pemEncodeCerts = runCatching {
-            File("/etc/ssl/certs/ca-certificates.crt").readText().split(Regex.fromLiteral("-\n-"))
+            ((kotlin.runCatching {
+                File("/etc/ssl/certs/ca-certificates.crt").readText().split(Regex.fromLiteral("-\n-"))
+            }.getOrNull() ?: emptyList())
+            + (macosCertsPem?.split(Regex.fromLiteral("-\n-")) ?: emptyList())
+                    )
                 .mapNotNull {
                     var pem = if (it.startsWith("-----")) it else "-$it"
                     pem = if (!pem.endsWith("-----")) "$pem-" else pem
@@ -69,7 +80,7 @@ class X509CertParserTest : FreeSpec({
                     runCatching { convertStringToX509Cert(pem) }.getOrNull()
                 }
         }.getOrElse {
-            println("W: could not load /etc/ssl/certs/ca-certificates.crt")
+            println("W: could not load System trust store")
             emptyList()
         }
         val uniqueCerts = (certs + pemEncodeCerts).distinctBy {
@@ -79,15 +90,19 @@ class X509CertParserTest : FreeSpec({
         println("Got ${certs.size} discrete certs and ${pemEncodeCerts.size} from trust store (${uniqueCerts.size} unique ones)")
 
         withData(
-            nameFn = { it.subjectX500Principal.name },
+            nameFn = { it.subjectX500Principal.name.let { name->
+                if(name.isBlank() || name.isEmpty())
+                    it.serialNumber.toString(16)
+                    else name
+            } },
             uniqueCerts.sortedBy { it.subjectX500Principal.name }) { crt ->
-            val own = X509Certificate.decodeFromTlv(Asn1Element.parse(crt.encoded) as Asn1Sequence)
-                .encodeToTlv().derEncoded
+            val parsed = X509Certificate.decodeFromTlv(Asn1Element.parse(crt.encoded) as Asn1Sequence)
+            val own = parsed.encodeToDer()
             withClue(
                 "Expect: ${crt.encoded.encodeToString(Base16)}\n" + "Actual: ${own.encodeToString(Base16)}"
             ) {
                 own shouldBe crt.encoded
-                own shouldBe X509Certificate.decodeFromByteArray(crt.encoded)
+                parsed shouldBe X509Certificate.decodeFromByteArray(crt.encoded)
             }
         }
     }

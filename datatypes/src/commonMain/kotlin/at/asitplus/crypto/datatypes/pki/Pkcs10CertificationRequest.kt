@@ -30,7 +30,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class TbsCertificationRequest(
     val version: Int = 0,
-    val subjectName: List<DistinguishedName>,
+    val subjectName: List<RelativeDistinguishedName>,
     val publicKey: CryptoPublicKey,
     val attributes: List<Pkcs10CertificationRequestAttribute>? = null
 ) : Asn1Encodable<Asn1Sequence> {
@@ -42,7 +42,7 @@ data class TbsCertificationRequest(
      */
     @Throws(IllegalArgumentException::class)
     constructor(
-        subjectName: List<DistinguishedName>,
+        subjectName: List<RelativeDistinguishedName>,
         publicKey: CryptoPublicKey,
         extensions: List<X509CertificateExtension>,
         version: Int = 0,
@@ -91,7 +91,7 @@ data class TbsCertificationRequest(
         override fun decodeFromTlv(src: Asn1Sequence) = runRethrowing {
             val version = (src.nextChild() as Asn1Primitive).readInt()
             val subject = (src.nextChild() as Asn1Sequence).children.map {
-                DistinguishedName.decodeFromTlv(it as Asn1Set)
+                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
             }
             val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val attributes = if (src.hasMoreChildren()) {

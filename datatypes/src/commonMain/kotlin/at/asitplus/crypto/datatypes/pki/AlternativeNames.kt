@@ -34,12 +34,12 @@ private constructor(private val extensions: List<Asn1Element>) {
         }
     }.map { (it as Asn1Primitive).content }
 
-    val directoryNames: List<List<DistinguishedName>> =
+    val directoryNames: List<List<RelativeDistinguishedName>> =
         extensions.filter { it.tag == SubjectAltNameImplicitTags.directoryName }.apply {
             forEach {
                 if (it !is Asn1Sequence) throw Asn1StructuralException("Invalid directoryName Alternative Name found: ${it.toDerHexString()}")
             }
-        }.map { (it as Asn1Sequence).children.map { DistinguishedName.decodeFromTlv(it as Asn1Set) } }
+        }.map { (it as Asn1Sequence).children.map { RelativeDistinguishedName.decodeFromTlv(it as Asn1Set) } }
 
     val otherNames: List<Asn1Sequence> =
         extensions.filter { it.tag == SubjectAltNameImplicitTags.otherName }.apply {
