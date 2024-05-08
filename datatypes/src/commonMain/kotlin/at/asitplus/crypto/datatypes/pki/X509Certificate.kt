@@ -253,7 +253,7 @@ data class X509Certificate(
         override fun decodeFromTlv(src: Asn1Sequence): X509Certificate = runRethrowing {
             val tbs = TbsCertificate.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val sigAlg = CryptoAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val signature = CryptoSignature.decodeFromTlv(src.nextChild())
+            val signature = if(sigAlg.isEc) CryptoSignature.EC.decodeFromTlvBitString(src.nextChild() as Asn1Primitive) else CryptoSignature.RSAorHMAC.decodeFromTlvBitString(src.nextChild() as Asn1Primitive)
             if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous structure in Certificate Structure")
             return X509Certificate(tbs, sigAlg, signature)
         }
