@@ -8,7 +8,8 @@ import at.asitplus.crypto.datatypes.asn1.Asn1String
 import at.asitplus.crypto.datatypes.asn1.Asn1Time
 import at.asitplus.crypto.datatypes.fromJcaPublicKey
 import at.asitplus.crypto.datatypes.io.Base64Strict
-import at.asitplus.crypto.datatypes.pki.DistinguishedName
+import at.asitplus.crypto.datatypes.pki.AttributeTypeAndValue
+import at.asitplus.crypto.datatypes.pki.RelativeDistinguishedName
 import at.asitplus.crypto.datatypes.pki.TbsCertificate
 import at.asitplus.crypto.datatypes.pki.X509Certificate
 import io.kotest.core.spec.style.FreeSpec
@@ -91,11 +92,11 @@ class JwkTest : FreeSpec({
 private fun randomCertificate() = X509Certificate(
     TbsCertificate(
         serialNumber = Random.nextBytes(16),
-        issuerName = listOf(DistinguishedName.CommonName(Asn1String.Printable("Test"))),
+        issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.Printable("Test")))),
         publicKey = CryptoPublicKey.Ec.fromJcaPublicKey(KeyPairGenerator.getInstance("EC").apply { initialize(256) }
             .genKeyPair().public as ECPublicKey).getOrThrow(),
         signatureAlgorithm = CryptoAlgorithm.ES256,
-        subjectName = listOf(DistinguishedName.CommonName(Asn1String.Printable("Test"))),
+        subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.Printable("Test")))),
         validFrom = Asn1Time(Clock.System.now()),
         validUntil = Asn1Time(Clock.System.now()),
     ),
