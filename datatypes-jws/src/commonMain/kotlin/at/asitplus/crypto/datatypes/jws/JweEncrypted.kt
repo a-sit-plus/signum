@@ -16,14 +16,13 @@ import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
  * @see [JweDecrypted]
  */
 data class JweEncrypted(
+    val header: JweHeader,
     val headerAsParsed: ByteArray,
     val encryptedKey: ByteArray? = null,
     val iv: ByteArray,
     val ciphertext: ByteArray,
     val authTag: ByteArray
 ) {
-    val header: JweHeader?
-        get() = JweHeader.deserialize(headerAsParsed.decodeToString()).getOrNull()
 
     fun serialize(): String {
         return headerAsParsed.encodeToString(Base64UrlStrict) +
@@ -65,12 +64,13 @@ data class JweEncrypted(
         fun parse(it: String): KmmResult<JweEncrypted> = runCatching {
             val stringList = it.replace("[^A-Za-z0-9-_.]".toRegex(), "").split(".")
             if (stringList.size != 5) throw IllegalArgumentException("not five parts in input: $it")
-            val headerAsParsed = stringList[0].decodeToByteArray(Base64Strict)
-            val encryptedKey = stringList[1].decodeToByteArray(Base64Strict)
-            val iv = stringList[2].decodeToByteArray(Base64Strict)
-            val ciphertext = stringList[3].decodeToByteArray(Base64Strict)
-            val authTag = stringList[4].decodeToByteArray(Base64Strict)
-            JweEncrypted(headerAsParsed, encryptedKey, iv, ciphertext, authTag)
+            val headerAsParsed = stringList[0].decodeToByteArray(Base64UrlStrict)
+            val encryptedKey = stringList[1].decodeToByteArray(Base64UrlStrict)
+            val iv = stringList[2].decodeToByteArray(Base64UrlStrict)
+            val ciphertext = stringList[3].decodeToByteArray(Base64UrlStrict)
+            val authTag = stringList[4].decodeToByteArray(Base64UrlStrict)
+            val header = JweHeader.deserialize(headerAsParsed.decodeToString()).getOrThrow()
+            JweEncrypted(header, headerAsParsed, encryptedKey, iv, ciphertext, authTag)
         }.wrap()
     }
 }
