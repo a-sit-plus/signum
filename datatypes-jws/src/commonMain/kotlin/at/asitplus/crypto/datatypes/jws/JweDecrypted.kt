@@ -1,6 +1,4 @@
-package at.asitplus.wallet.lib.jws
-
-import at.asitplus.crypto.datatypes.jws.JweHeader
+package at.asitplus.crypto.datatypes.jws
 
 /**
  * Representation of a decrypted JSON Web Encryption object, i.e. header and payload.
