@@ -1,8 +1,6 @@
 package at.asitplus.crypto.datatypes
 
-import at.asitplus.crypto.datatypes.asn1.Asn1Element
-import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.parse
+import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.pki.X509Certificate
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
@@ -52,6 +50,8 @@ class X509CertParserTest : FreeSpec({
                         "Actual: ${cert.encodeToDer().encodeToString(Base16)}"
             ) {
                 cert.encodeToTlv().derEncoded shouldBe jcaCert.encoded
+
+                cert shouldBe X509Certificate.decodeFromByteArray(certBytes)
             }
         }
     }
@@ -87,6 +87,7 @@ class X509CertParserTest : FreeSpec({
                 "Expect: ${crt.encoded.encodeToString(Base16)}\n" + "Actual: ${own.encodeToString(Base16)}"
             ) {
                 own shouldBe crt.encoded
+                own shouldBe X509Certificate.decodeFromByteArray(crt.encoded)
             }
         }
     }
@@ -101,7 +102,8 @@ class X509CertParserTest : FreeSpec({
 
             withData(nameFn = { it.first }, good) {
                 val src = Asn1Element.parse(it.second) as Asn1Sequence
-                X509Certificate.decodeFromTlv(src)
+                val decoded = X509Certificate.decodeFromTlv(src)
+                decoded shouldBe X509Certificate.decodeFromByteArray(it.second)
             }
         }
         "Faulty certs should glitch out" - {

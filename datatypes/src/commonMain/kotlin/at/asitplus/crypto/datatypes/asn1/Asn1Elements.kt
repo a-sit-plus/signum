@@ -210,6 +210,7 @@ class Asn1Sequence internal constructor(children: List<Asn1Element>) : Asn1Struc
  * ASN.1 OCTET STRING 0x04 ([BERTags.OCTET_STRING]) containing an [Asn1Element]
  * @param children the elements to put into this sequence
  */
+@Serializable(with = Asn1EncodableSerializer::class)
 class Asn1EncapsulatingOctetString(children: List<Asn1Element>) : Asn1Structure(BERTags.OCTET_STRING, children),
     Asn1OctetString<Asn1EncapsulatingOctetString> {
     override val content: ByteArray by lazy {

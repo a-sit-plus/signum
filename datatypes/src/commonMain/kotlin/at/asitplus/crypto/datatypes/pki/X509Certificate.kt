@@ -3,38 +3,25 @@ package at.asitplus.crypto.datatypes.pki
 import at.asitplus.crypto.datatypes.CryptoAlgorithm
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.CryptoSignature
-import at.asitplus.crypto.datatypes.asn1.Asn1BitString
-import at.asitplus.crypto.datatypes.asn1.Asn1Decodable
-import at.asitplus.crypto.datatypes.asn1.Asn1Element
-import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
-import at.asitplus.crypto.datatypes.asn1.Asn1Exception
-import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
-import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.Asn1Set
-import at.asitplus.crypto.datatypes.asn1.Asn1StructuralException
-import at.asitplus.crypto.datatypes.asn1.Asn1Tagged
-import at.asitplus.crypto.datatypes.asn1.Asn1Time
-import at.asitplus.crypto.datatypes.asn1.Asn1TreeBuilder
-import at.asitplus.crypto.datatypes.asn1.BERTags
+import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.asn1.DERTags.toImplicitTag
-import at.asitplus.crypto.datatypes.asn1.asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.decode
-import at.asitplus.crypto.datatypes.asn1.parse
-import at.asitplus.crypto.datatypes.asn1.readInt
-import at.asitplus.crypto.datatypes.asn1.runRethrowing
-import at.asitplus.crypto.datatypes.asn1.verifyTag
 import at.asitplus.crypto.datatypes.io.BitSet
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
+import at.asitplus.crypto.datatypes.pki.AlternativeNames.Companion.findIssuerAltNames
+import at.asitplus.crypto.datatypes.pki.AlternativeNames.Companion.findSubjectAltNames
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 /**
- * Very simple implementation of the meat of a X.509 Certificate:
+ * Very simple implementation of the meat of an X.509 Certificate:
  * The structure that gets signed
  */
 @Serializable
-data class TbsCertificate(
+data class TbsCertificate
+@Throws(Asn1Exception::class)
+constructor(
     val version: Int = 2,
     @Serializable(with = ByteArrayBase64Serializer::class) val serialNumber: ByteArray,
     val signatureAlgorithm: CryptoAlgorithm,
@@ -47,6 +34,28 @@ data class TbsCertificate(
     val subjectUniqueID: BitSet? = null,
     val extensions: List<X509CertificateExtension>? = null
 ) : Asn1Encodable<Asn1Sequence> {
+
+    init {
+        if (extensions?.distinctBy { it.oid }?.size != extensions?.size) throw Asn1StructuralException("Multiple extensions with the same OID found")
+    }
+
+    /**
+     * Contains `SubjectAlternativeName`s parsed from extensions. This property is initialized right away.
+     * This incurs *some* structural validation, but still allows for contents violating
+     * [RFC 5280](https://datatracker.ietf.org/doc/html/rfc5280), e.g. all UTF-8 strings are accepted, even though
+     * this is too lenient.
+     */
+    @Transient
+    val subjectAlternativeNames: AlternativeNames? = extensions?.findSubjectAltNames()
+
+    /**
+     * Contains `IssuerAlternativeName`s parsed from extensions. This property is initialized right away.
+     * This incurs *some* structural validation, but still allows for contents violating
+     * [RFC 5280](https://datatracker.ietf.org/doc/html/rfc5280), e.g. all UTF-8 strings are accepted, even though
+     * this is too lenient.
+     */
+    @Transient
+    val issuerAlternativeNames: AlternativeNames? = extensions?.findIssuerAltNames()
 
 
     private fun Asn1TreeBuilder.version(value: Int) {
@@ -269,3 +278,8 @@ data class X509Certificate(
 
     }
 }
+
+typealias CertificateChain = List<X509Certificate>
+
+val CertificateChain.leaf: X509Certificate get() = first()
+val CertificateChain.root: X509Certificate get() = last()

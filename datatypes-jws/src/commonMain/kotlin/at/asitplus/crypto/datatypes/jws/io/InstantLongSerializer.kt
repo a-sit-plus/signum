@@ -1,4 +1,4 @@
-package at.asitplus.crypto.datatypes.jws
+package at.asitplus.crypto.datatypes.jws.io
 
 import kotlinx.datetime.Instant
 import kotlinx.serialization.KSerializer

@@ -1,17 +1,16 @@
-@file:UseSerializers(ByteArrayBase64Serializer::class)
+@file:UseSerializers(ByteArrayBase64Serializer::class, JwsCertificateSerializer::class)
 
 package at.asitplus.crypto.datatypes.jws
 
 import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.asn1.Asn1Element
-import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.parse
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
+import at.asitplus.crypto.datatypes.jws.io.InstantLongSerializer
+import at.asitplus.crypto.datatypes.jws.io.JwsCertificateSerializer
 import at.asitplus.crypto.datatypes.jws.io.jsonSerializer
+import at.asitplus.crypto.datatypes.pki.CertificateChain
 import at.asitplus.crypto.datatypes.pki.X509Certificate
+import at.asitplus.crypto.datatypes.pki.leaf
 import io.github.aakira.napier.Napier
-import io.matthewnelson.encoding.base64.Base64
-import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -34,7 +33,7 @@ data class JwsHeader(
     @SerialName("cty")
     val contentType: String? = null,
     @SerialName("x5c")
-    val certificateChain: Array<ByteArray>? = null,
+    val certificateChain: CertificateChain? = null,
     @SerialName("nbf")
     @Serializable(with = InstantLongSerializer::class)
     val notBefore: Instant? = null,
@@ -65,7 +64,7 @@ data class JwsHeader(
     val publicKey: CryptoPublicKey? by lazy {
         jsonWebKey?.toCryptoPublicKey()?.getOrNull()
             ?: keyId?.let { runCatching { CryptoPublicKey.fromDid(it) } }?.getOrNull()
-            ?: certificateChain?.firstNotNullOfOrNull { X509Certificate.decodeFromByteArray(it)?.publicKey }
+            ?: certificateChain?.leaf?.publicKey
     }
 
 
@@ -81,7 +80,7 @@ data class JwsHeader(
         if (contentType != other.contentType) return false
         if (certificateChain != null) {
             if (other.certificateChain == null) return false
-            if (!certificateChain.contentDeepEquals(other.certificateChain)) return false
+            if (certificateChain != (other.certificateChain)) return false
         } else if (other.certificateChain != null) return false
         if (notBefore != other.notBefore) return false
         if (issuedAt != other.issuedAt) return false
@@ -98,7 +97,7 @@ data class JwsHeader(
         result = 31 * result + (type?.hashCode() ?: 0)
         result = 31 * result + algorithm.hashCode()
         result = 31 * result + (contentType?.hashCode() ?: 0)
-        result = 31 * result + (certificateChain?.contentDeepHashCode() ?: 0)
+        result = 31 * result + (certificateChain?.hashCode() ?: 0)
         result = 31 * result + (notBefore?.hashCode() ?: 0)
         result = 31 * result + (issuedAt?.hashCode() ?: 0)
         result = 31 * result + (expiration?.hashCode() ?: 0)
