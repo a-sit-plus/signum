@@ -70,10 +70,10 @@ sealed class CryptoSignature(
     /**
      * Input is expected to be `r` and `s` values
      */
-    class EC(private val rValue: ByteArray, private val sValue: ByteArray) : CryptoSignature(
+    class EC(val r: ByteArray, val s: ByteArray) : CryptoSignature(
         asn1Sequence {
-            append(Asn1Primitive(INTEGER, rValue.padWithZeroIfNeeded()))
-            append(Asn1Primitive(INTEGER, sValue.padWithZeroIfNeeded()))
+            append(Asn1Primitive(INTEGER, r.padWithZeroIfNeeded()))
+            append(Asn1Primitive(INTEGER, s.padWithZeroIfNeeded()))
         }
     ) {
         /**
@@ -90,9 +90,9 @@ sealed class CryptoSignature(
          * of an [EcCurve], for use in e.g. JWS signatures.
          */
         override val rawByteArray by lazy {
-            val maxLenValues = max(rValue.size, sValue.size).toUInt()
+            val maxLenValues = max(r.size, s.size).toUInt()
             val correctLen = EcCurve.entries.map { it.coordinateLengthBytes }.filter { maxLenValues <= it }.min()
-            rValue.ensureSize(correctLen) + sValue.ensureSize(correctLen)
+            r.ensureSize(correctLen) + s.ensureSize(correctLen)
         }
 
         override fun encodeToTlvBitString(): Asn1Element = encodeToDer().encodeToTlvBitString()

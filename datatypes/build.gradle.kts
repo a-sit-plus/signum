@@ -193,6 +193,11 @@ kotlin {
                 api(coroutines("jvm"))
             }
         }
+        jvmTest {
+            dependencies {
+                implementation(bouncycastle("bcprov"))
+            }
+        }
 
     }
 }
