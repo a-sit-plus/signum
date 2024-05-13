@@ -119,3 +119,6 @@
 
 **Features**
  * Support ASN.1 encoding/decoding for `BigInteger`
+ * Extend list of values in `JweAlgorithm` and `JweEncryption`
+ * Extend properties in `JweHeader`
+ * Extend properties in `JwsHeader`
