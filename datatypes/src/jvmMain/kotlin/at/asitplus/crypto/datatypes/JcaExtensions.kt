@@ -43,6 +43,7 @@ val CryptoAlgorithm.jcaName
         CryptoAlgorithm.PS384 -> "RSASSA-PSS"
         CryptoAlgorithm.PS512 -> "RSASSA-PSS"
         CryptoAlgorithm.RS1 -> "SHA1withRSA"
+        CryptoAlgorithm.ECDH_ES -> TODO()
     }
 
 val CryptoAlgorithm.jcaParams

@@ -54,7 +54,9 @@ data class JwsSigned(
             val stringList = it.replace("[^A-Za-z0-9-_.]".toRegex(), "").split(".")
             if (stringList.size != 3) throw IllegalArgumentException("not three parts in input: $it")
             val headerInput = stringList[0].decodeToByteArray(Base64UrlStrict)
-            val header = JwsHeader.deserialize(headerInput.decodeToString()).getOrThrow()
+            val header =
+                JwsHeader.deserialize(headerInput.decodeToString()).mapFailure { it.apply { printStackTrace() } }
+                    .getOrThrow()
             val payload = stringList[1].decodeToByteArray(Base64UrlStrict)
             val signature = stringList[2].decodeToByteArray(Base64UrlStrict)
                 .let { bytes ->

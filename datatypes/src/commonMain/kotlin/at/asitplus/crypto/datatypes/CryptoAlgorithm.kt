@@ -25,6 +25,15 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
+
+/**
+ * ECDH_ES (1.3.132.1.12) as per [draft-ietf-jose-json-web-algorithms-26](https://datatracker.ietf.org/doc/html/draft-ietf-jose-json-web-algorithms-26)
+ *
+ * This constant lives here, because we also need it in the commons module to be able to map this JWS Algorithm to a CryptoAlgorithm.
+ * (It cannot be put into the compilation, since it is needed for enum init).
+ */
+val OID_ECDH_ES = ObjectIdentifier("1.3.132.1.12")
+
 @Serializable(with = CryptoAlgorithmSerializer::class)
 enum class CryptoAlgorithm(override val oid: ObjectIdentifier, val isEc: Boolean = false) : Asn1Encodable<Asn1Sequence>, Identifiable {
 
@@ -32,6 +41,11 @@ enum class CryptoAlgorithm(override val oid: ObjectIdentifier, val isEc: Boolean
     ES256(KnownOIDs.ecdsaWithSHA256, true),
     ES384(KnownOIDs.ecdsaWithSHA384, true),
     ES512(KnownOIDs.ecdsaWithSHA512, true),
+
+    /**
+     * ECDH-ES as per [RFC 8037](https://datatracker.ietf.org/doc/html/rfc8037#section-3.2)
+     */
+    ECDH_ES(OID_ECDH_ES, true),
 
     // HMAC-size with SHA-size
     HS256(KnownOIDs.hmacWithSHA256),
@@ -84,7 +98,7 @@ enum class CryptoAlgorithm(override val oid: ObjectIdentifier, val isEc: Boolean
     }
 
     override fun encodeToTlv() = when (this) {
-        ES256, ES384, ES512 -> asn1Sequence { append(oid) }
+        ES256, ES384, ES512, ECDH_ES -> asn1Sequence { append(oid) }
 
         PS256 -> encodePSSParams(256)
 
@@ -109,7 +123,7 @@ enum class CryptoAlgorithm(override val oid: ObjectIdentifier, val isEc: Boolean
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Sequence): CryptoAlgorithm = runRethrowing {
             when (val oid = (src.nextChild() as Asn1Primitive).readOid()) {
-                ES512.oid, ES384.oid, ES256.oid -> fromOid(oid)
+                ES512.oid, ES384.oid, ES256.oid, ECDH_ES.oid -> fromOid(oid)
 
                 RS1.oid -> RS1
                 RS256.oid, RS384.oid, RS512.oid,
