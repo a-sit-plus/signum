@@ -1,6 +1,7 @@
 package at.asitplus.crypto.datatypes.jws
 
 import at.asitplus.crypto.datatypes.CryptoAlgorithm
+import at.asitplus.crypto.datatypes.OID_ECDH_ES
 import at.asitplus.crypto.datatypes.asn1.Asn1Decodable
 import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
 import at.asitplus.crypto.datatypes.asn1.Asn1Exception
@@ -39,6 +40,11 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
     ES384("ES384", KnownOIDs.ecdsaWithSHA384),
     ES512("ES512", KnownOIDs.ecdsaWithSHA512),
 
+    /**
+     * ECDH-ES as per [RFC 8037](https://datatracker.ietf.org/doc/html/rfc8037#section-3.2)
+     */
+    ECDH_ES("ECDH-ES", OID_ECDH_ES),
+
     HS256("HS256", KnownOIDs.hmacWithSHA256),
     HS384("HS384", KnownOIDs.hmacWithSHA384),
     HS512("HS512", KnownOIDs.hmacWithSHA512),
@@ -74,6 +80,7 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
         RS512 -> CryptoAlgorithm.RS512
 
         NON_JWS_SHA1_WITH_RSA -> CryptoAlgorithm.RS1
+        ECDH_ES -> TODO()
     }
 
     private fun encodePSSParams(bits: Int): Asn1Sequence {
@@ -109,7 +116,7 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
     }
 
     override fun encodeToTlv() = when (this) {
-        ES256, ES384, ES512 -> asn1Sequence { append(oid) }
+        ES256, ES384, ES512, ECDH_ES -> asn1Sequence { append(oid) }
 
         PS256 -> encodePSSParams(256)
 
@@ -209,6 +216,8 @@ fun CryptoAlgorithm.toJwsAlgorithm() = when (this) {
     CryptoAlgorithm.ES256 -> JwsAlgorithm.ES256
     CryptoAlgorithm.ES384 -> JwsAlgorithm.ES384
     CryptoAlgorithm.ES512 -> JwsAlgorithm.ES512
+
+    CryptoAlgorithm.ECDH_ES -> JwsAlgorithm.ECDH_ES
 
     CryptoAlgorithm.HS256 -> JwsAlgorithm.HS256
     CryptoAlgorithm.HS384 -> JwsAlgorithm.HS384

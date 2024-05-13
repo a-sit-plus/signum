@@ -91,4 +91,6 @@ fun CryptoAlgorithm.toCoseAlgorithm() = when(this) {
     CryptoAlgorithm.RS512 -> CoseAlgorithm.RS512
 
     CryptoAlgorithm.RS1 -> CoseAlgorithm.RS1
+
+    CryptoAlgorithm.ECDH_ES -> TODO()
 }
