@@ -142,7 +142,7 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Sequence): JwsAlgorithm = runRethrowing {
             when (val oid = (src.nextChild() as Asn1Primitive).readOid()) {
-                ES512.oid, ES384.oid, ES256.oid -> fromOid(oid)
+                ES512.oid, ES384.oid, ES256.oid, ECDH_ES.oid -> fromOid(oid)
 
                 NON_JWS_SHA1_WITH_RSA.oid -> NON_JWS_SHA1_WITH_RSA
                 RS256.oid, RS384.oid, RS512.oid,
