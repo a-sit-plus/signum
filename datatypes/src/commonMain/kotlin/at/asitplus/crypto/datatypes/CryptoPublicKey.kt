@@ -60,7 +60,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
 
     override fun encodeToTlv() = when (this) {
-        is Ec -> asn1Sequence {
+        is EC -> asn1Sequence {
             sequence {
                 append(oid)
                 append(curve.oid)
@@ -94,10 +94,10 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
             return when (codec) {
                 0x1200uL, 0x1201uL, 0x1202uL ->
-                    Ec.fromAnsiX963Bytes(decoded.drop(2).toByteArray())
+                    EC.fromAnsiX963Bytes(decoded.drop(2).toByteArray())
 
                 0x1290uL, 0x1291uL, 0x1292uL ->
-                    Ec.fromAnsiX963Bytes(decoded.drop(2).toByteArray())
+                    EC.fromAnsiX963Bytes(decoded.drop(2).toByteArray())
 
                 0x1205uL ->
                     Rsa.fromPKCS1encoded(decoded.drop(2).toByteArray())
@@ -115,9 +115,9 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             if (keyInfo.children.size != 2) throw Asn1StructuralException("Superfluous data in  SPKI!")
 
             when (val oid = (keyInfo.nextChild() as Asn1Primitive).readOid()) {
-                Ec.oid -> {
+                EC.oid -> {
                     val curveOid = (keyInfo.nextChild() as Asn1Primitive).readOid()
-                    val curve = EcCurve.entries.find { it.oid == curveOid }
+                    val curve = ECCurve.entries.find { it.oid == curveOid }
                         ?: throw Asn1Exception("Curve not supported: $curveOid")
 
                     val bitString = (src.nextChild() as Asn1Primitive).readBitString()
@@ -126,7 +126,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                     val coordLen = curve.coordinateLengthBytes.toInt()
                     val x = xAndY.take(coordLen).toByteArray()
                     val y = xAndY.drop(coordLen).take(coordLen).toByteArray()
-                    return Ec(curve, x, y)
+                    return EC(curve, x, y)
                 }
 
                 Rsa.oid -> {
@@ -150,7 +150,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         @Throws(Throwable::class)
         fun fromIosEncoded(it: ByteArray): CryptoPublicKey =
             when (it[0].toUByte()) {
-                ANSI_UNCOMPRESSED_PREFIX.toUByte() -> Ec.fromAnsiX963Bytes(it)
+                ANSI_UNCOMPRESSED_PREFIX.toUByte() -> EC.fromAnsiX963Bytes(it)
                 DERTags.DER_SEQUENCE -> Rsa.fromPKCS1encoded(it)
                 else -> throw IllegalArgumentException("Unsupported Key type")
             }
@@ -294,8 +294,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
      */
     @Serializable
     @SerialName("EC")
-    data class Ec private constructor(
-        val curve: EcCurve,
+    data class EC private constructor(
+        val curve: ECCurve,
         @Serializable(with = ByteArrayBase64Serializer::class) val x: ByteArray,
         @Serializable(with = ByteArrayBase64Serializer::class) val y: ByteArray,
         var useCompressedRepresentation: Boolean,
@@ -305,7 +305,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          * Constructor for compressed keys
          */
         constructor(
-            curve: EcCurve,
+            curve: ECCurve,
             x: ByteArray,
             yIndicator: Signum,
         ) : this(curve, x, decompressY(curve, x, yIndicator), true)
@@ -314,12 +314,12 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          * Constructor for uncompressed keys
          */
         constructor(
-            curve: EcCurve,
+            curve: ECCurve,
             x: ByteArray,
             y: ByteArray,
         ) : this(curve, x, y, false)
 
-        override val oid = Ec.oid
+        override val oid = EC.oid
 
         /**
          * ANSI X9.63 Encoding as used by iOS
@@ -359,9 +359,9 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          */
         override val didEncoded by lazy {
             val codec = (0x12 shl 8).toUInt() + when (curve) {
-                EcCurve.SECP_256_R_1 -> 0x00u + 0x90u * (1U - useCompressedRepresentation.toUInt())
-                EcCurve.SECP_384_R_1 -> 0x01u + 0x90u * (1U - useCompressedRepresentation.toUInt())
-                EcCurve.SECP_521_R_1 -> 0x02u + 0x90u * (1U - useCompressedRepresentation.toUInt())
+                ECCurve.SECP_256_R_1 -> 0x00u + 0x90u * (1U - useCompressedRepresentation.toUInt())
+                ECCurve.SECP_384_R_1 -> 0x01u + 0x90u * (1U - useCompressedRepresentation.toUInt())
+                ECCurve.SECP_521_R_1 -> 0x02u + 0x90u * (1U - useCompressedRepresentation.toUInt())
             }
             PREFIX_DID_KEY + ":" + MultiBase.encode(
                 MultiBase.Base.BASE58_BTC,
@@ -375,7 +375,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             if (this === other) return true
             if (other == null || this::class != other::class) return false
 
-            other as Ec
+            other as EC
 
             if (curve != other.curve) return false
             if (!iosEncoded.contentEquals(other.iosEncoded)) return false
@@ -392,7 +392,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
         companion object : Identifiable {
 
-            private fun getCurve(coordSize: Int) = EcCurve.entries
+            private fun getCurve(coordSize: Int) = ECCurve.entries
                 .find { it.coordinateLengthBytes.toInt() == coordSize }
                 ?: throw IllegalArgumentException("Unknown Curve")
 
@@ -401,7 +401,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
              */
             @Throws(Throwable::class)
             fun fromAnsiX963Bytes(src: ByteArray): CryptoPublicKey {
-                val curve: EcCurve
+                val curve: ECCurve
                 val numBytes: Int
                 val x: ByteArray
                 val y: ByteArray
@@ -424,7 +424,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                     else -> throw IllegalArgumentException("Invalid X9.63 EC key format")
                 }
 
-                return Ec(curve = curve, x = x, y = y)
+                return EC(curve = curve, x = x, y = y)
             }
 
             override val oid = KnownOIDs.ecPublicKey

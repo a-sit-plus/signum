@@ -113,3 +113,6 @@
       `AlternativeNames` structures for easy access to `dnsName`. `iPAddress`, etc.
 
 ### NEXT
+
+**Fixes**
+ * Standardize class names: `Ec` -> `EC` everywhere
