@@ -119,3 +119,4 @@
 
 **Features**
  * Support ASN.1 encoding/decoding for `BigInteger`
+ * Expose `generator`, `order` and `cofactor` of `ECCurve`

@@ -49,7 +49,7 @@ fun CryptoPublicKey.EC.compressY(): Signum = (y.last() and 1.toByte() == 1.toByt
 @Throws(Throwable::class)
 fun decompressY(curve: ECCurve, x: ByteArray, root: Signum): ByteArray {
     val mod4Creator = ModularBigInteger.creatorForModulo(4)
-    val xBigMod = curve.modCreator.fromBigInteger(BigInteger.fromByteArray(x, Sign.POSITIVE))
+    val xBigMod = curve.coordinateCreator.fromBigInteger(BigInteger.fromByteArray(x, Sign.POSITIVE))
     val alpha = xBigMod.pow(3) + curve.a * xBigMod + curve.b
 
     require(quadraticResidueTest(alpha))
@@ -62,7 +62,7 @@ fun decompressY(curve: ECCurve, x: ByteArray, root: Signum): ByteArray {
     return if (beta.residue.bitAt(0) == root) {
         beta.toByteArray()
     } else {
-        (curve.modCreator.ZERO - beta).toByteArray()
+        (curve.coordinateCreator.ZERO - beta).toByteArray()
     }
 }
 

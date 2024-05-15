@@ -33,4 +33,17 @@ class ECCurveTest: FreeSpec({
                         - 1.toBigInteger())
     }
 
+    "Calculated parameters test" {
+        ECCurve.SECP_256_R_1.keyLengthBits shouldBe 256u
+        ECCurve.SECP_384_R_1.keyLengthBits shouldBe 384u
+        ECCurve.SECP_521_R_1.keyLengthBits shouldBe 521u
+
+        ECCurve.SECP_256_R_1.signatureLengthBytes shouldBe 64u
+        ECCurve.SECP_384_R_1.signatureLengthBytes shouldBe 96u
+        ECCurve.SECP_521_R_1.signatureLengthBytes shouldBe 132u
+
+        ECCurve.SECP_256_R_1.coordinateLengthBytes shouldBe 32u
+        ECCurve.SECP_384_R_1.coordinateLengthBytes shouldBe 48u
+        ECCurve.SECP_521_R_1.coordinateLengthBytes shouldBe 66u
+    }
 })

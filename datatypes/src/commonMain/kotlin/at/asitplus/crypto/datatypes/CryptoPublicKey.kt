@@ -400,7 +400,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
              * Decodes a key from its ANSI X9.63 representation
              */
             @Throws(Throwable::class)
-            fun fromAnsiX963Bytes(src: ByteArray): CryptoPublicKey {
+            fun fromAnsiX963Bytes(src: ByteArray): EC {
                 val curve: ECCurve
                 val numBytes: Int
                 val x: ByteArray
