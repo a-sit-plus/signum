@@ -16,6 +16,8 @@ import at.asitplus.crypto.datatypes.asn1.BERTags.UTF8_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.VISIBLE_STRING
 import at.asitplus.crypto.datatypes.asn1.DERTags.isContainer
 import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
+import com.ionspin.kotlin.bignum.integer.BigInteger
+import com.ionspin.kotlin.bignum.integer.util.fromTwosComplementByteArray
 import kotlinx.datetime.Instant
 import kotlin.experimental.and
 
@@ -98,6 +100,18 @@ fun Asn1Primitive.readBool() = runRethrowing {
         }
     }
 }
+
+/**
+ * Decode the [Asn1Primitive] as a [BigInteger]
+ */
+@Throws(Asn1Exception::class)
+fun Asn1Primitive.readBigInteger() =
+    decode(INTEGER) { BigInteger.fromTwosComplementByteArray(it) }
+
+/**
+ * Exception-free version of [readBigInteger]
+ */
+inline fun Asn1Primitive.readBigIntegerOrNull() = runCatching { readBigInteger() }.getOrNull()
 
 /**
  * Exception-free version of [readInt]

@@ -116,3 +116,6 @@
 
 **Fixes**
  * Standardize class names: `Ec` -> `EC` everywhere
+
+**Features**
+ * Support ASN.1 encoding/decoding for `BigInteger`
