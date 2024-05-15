@@ -113,3 +113,8 @@
       `AlternativeNames` structures for easy access to `dnsName`. `iPAddress`, etc.
 
 ### NEXT
+
+**Features**
+ * Add utility extensions to convert to BouncyCastle EC classes
+ * Add curve subgroup generator, subgroup order, and subgroup cofactor to EcCurve
+ * Expose `r`/`s` values on `CryptoSignature`
