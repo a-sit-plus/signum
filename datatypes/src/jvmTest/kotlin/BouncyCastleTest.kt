@@ -13,11 +13,13 @@ import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.math.BigInteger
 import java.security.*
+import java.security.interfaces.ECPrivateKey
 
 private fun BigInteger.toUnsignedByteArray(): ByteArray =
     also { require(signum() == 1) }.toByteArray().stripLeadingSignByte()
 
 class BouncyCastleTest : FreeSpec({
+    Security.addProvider(BouncyCastleProvider())
     "BouncyCastle decoding" {
         val curve = EcCurve.SECP_256_R_1
         val xBytes = byteArrayOf(0x05).ensureSize(32u)
@@ -36,10 +38,24 @@ class BouncyCastleTest : FreeSpec({
         point.affineXCoord.encoded shouldBe xBytes
         point.affineYCoord.encoded shouldBe key.y
     }
+    "Generator validity test" {
+        for (curve in EcCurve.entries) {
+            val keyPair = KeyPairGenerator.getInstance("ECDSA", "BC").run {
+                initialize(ECNamedCurveTable.getParameterSpec(curve.oid.toString()))
+                generateKeyPair()
+            }
+            val publicKey = CryptoPublicKey.fromJcaPublicKey(keyPair.public).getOrThrow() as CryptoPublicKey.Ec
+            val privateKey = (keyPair.private as ECPrivateKey).s
+
+            publicKey.curve shouldBe curve
+
+            publicKey.bouncyCastlePublicPoint shouldBe
+                publicKey.curve.generator.bouncyCastlePublicPoint.multiply(privateKey)
+        }
+    }
     "SplitECDSA test".config(
         invocations = 512
     ) {
-        Security.addProvider(BouncyCastleProvider())
         val rng = SecureRandom.getInstanceStrong()
         val jcaKeyPair = KeyPairGenerator.getInstance("ECDSA", "BC").run {
             initialize(ECNamedCurveTable.getParameterSpec(SECObjectIdentifiers.secp256r1.id), rng)
