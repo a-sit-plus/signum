@@ -87,11 +87,11 @@ sealed class CryptoSignature(
 
         /**
          * Concatenates [rValue] and [sValue], padding each one to the next largest coordinate length
-         * of an [EcCurve], for use in e.g. JWS signatures.
+         * of an [ECCurve], for use in e.g. JWS signatures.
          */
         override val rawByteArray by lazy {
             val maxLenValues = max(rValue.size, sValue.size).toUInt()
-            val correctLen = EcCurve.entries.map { it.coordinateLengthBytes }.filter { maxLenValues <= it }.min()
+            val correctLen = ECCurve.entries.map { it.coordinateLengthBytes }.filter { maxLenValues <= it }.min()
             rValue.ensureSize(correctLen) + sValue.ensureSize(correctLen)
         }
 

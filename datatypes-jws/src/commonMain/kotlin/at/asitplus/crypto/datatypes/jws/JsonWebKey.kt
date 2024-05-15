@@ -4,17 +4,14 @@ package at.asitplus.crypto.datatypes.jws
 import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.EcCurve
+import at.asitplus.crypto.datatypes.ECCurve
 import at.asitplus.crypto.datatypes.asn1.decodeFromDer
 import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
-import at.asitplus.crypto.datatypes.io.Base64Strict
 import at.asitplus.crypto.datatypes.io.Base64UrlStrict
-import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64UrlSerializer
 import at.asitplus.crypto.datatypes.jws.io.JwsCertificateSerializer
 import at.asitplus.crypto.datatypes.jws.io.jsonSerializer
 import at.asitplus.crypto.datatypes.pki.CertificateChain
-import at.asitplus.crypto.datatypes.pki.X509Certificate
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -32,7 +29,7 @@ data class JsonWebKey(
      * Set for EC keys only
      */
     @SerialName("crv")
-    val curve: EcCurve? = null,
+    val curve: ECCurve? = null,
 
     /**
      * The "kty" (key type) parameter identifies the cryptographic algorithm
@@ -284,7 +281,7 @@ data class JsonWebKey(
         runCatching {
             when (type) {
                 JwkType.EC -> {
-                    CryptoPublicKey.Ec(
+                    CryptoPublicKey.EC(
                         curve = curve ?: throw IllegalArgumentException("Missing or invalid curve"),
                         x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
                         y = y ?: throw IllegalArgumentException("Missing y-coordinate")
@@ -316,8 +313,8 @@ data class JsonWebKey(
         fun fromIosEncoded(bytes: ByteArray): KmmResult<JsonWebKey> =
             runCatching { CryptoPublicKey.fromIosEncoded(bytes).toJsonWebKey() }.wrap()
 
-        fun fromCoordinates(curve: EcCurve, x: ByteArray, y: ByteArray): KmmResult<JsonWebKey> =
-            runCatching { CryptoPublicKey.Ec(curve, x, y).toJsonWebKey() }.wrap()
+        fun fromCoordinates(curve: ECCurve, x: ByteArray, y: ByteArray): KmmResult<JsonWebKey> =
+            runCatching { CryptoPublicKey.EC(curve, x, y).toJsonWebKey() }.wrap()
     }
 }
 
@@ -326,7 +323,7 @@ data class JsonWebKey(
  */
 fun CryptoPublicKey.toJsonWebKey(): JsonWebKey =
     when (this) {
-        is CryptoPublicKey.Ec ->
+        is CryptoPublicKey.EC ->
             JsonWebKey(
                 type = JwkType.EC,
                 keyId = jwkId,

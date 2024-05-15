@@ -1,7 +1,7 @@
 package at.asitplus.crypto.datatypes.misc
 
 import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.EcCurve
+import at.asitplus.crypto.datatypes.ECCurve
 import at.asitplus.crypto.datatypes.Signum
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -29,7 +29,7 @@ fun Signum.toUInt(): UInt = if (this) 1U else 0U
  * the compression bit is defined as 2 + (y mod 2) for all curves
  * We assume y is big-endian encoding of valid y coordinate!
  */
-fun CryptoPublicKey.Ec.compressY(): Signum = (y.last() and 1.toByte() == 1.toByte())
+fun CryptoPublicKey.EC.compressY(): Signum = (y.last() and 1.toByte() == 1.toByte())
 
 
 /**
@@ -47,7 +47,7 @@ fun CryptoPublicKey.Ec.compressY(): Signum = (y.last() and 1.toByte() == 1.toByt
  * @throws IllegalArgumentException if x does not permit a square root, i.e. is not a valid encoding
  */
 @Throws(Throwable::class)
-fun decompressY(curve: EcCurve, x: ByteArray, root: Signum): ByteArray {
+fun decompressY(curve: ECCurve, x: ByteArray, root: Signum): ByteArray {
     val mod4Creator = ModularBigInteger.creatorForModulo(4)
     val xBigMod = curve.modCreator.fromBigInteger(BigInteger.fromByteArray(x, Sign.POSITIVE))
     val alpha = xBigMod.pow(3) + curve.a * xBigMod + curve.b

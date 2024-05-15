@@ -3,7 +3,7 @@ package at.asitplus.crypto.datatypes.jws
 import at.asitplus.crypto.datatypes.CryptoAlgorithm
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.CryptoSignature
-import at.asitplus.crypto.datatypes.EcCurve
+import at.asitplus.crypto.datatypes.ECCurve
 import at.asitplus.crypto.datatypes.asn1.Asn1String
 import at.asitplus.crypto.datatypes.asn1.Asn1Time
 import at.asitplus.crypto.datatypes.fromJcaPublicKey
@@ -40,7 +40,7 @@ class JwkTest : FreeSpec({
                 keys
             ) { pubKey ->
 
-                val cryptoPubKey = CryptoPublicKey.Ec.fromJcaPublicKey(pubKey).getOrThrow()
+                val cryptoPubKey = CryptoPublicKey.EC.fromJcaPublicKey(pubKey).getOrThrow()
                 val own = cryptoPubKey.toJsonWebKey()
                 own.keyId shouldBe cryptoPubKey.jwkId
                 own.shouldNotBeNull()
@@ -53,7 +53,7 @@ class JwkTest : FreeSpec({
 
     "Serialize and deserialize EC" {
         val jwk = JsonWebKey(
-            curve = EcCurve.SECP_256_R_1,
+            curve = ECCurve.SECP_256_R_1,
             type = JwkType.EC,
             x = Random.nextBytes(32),
             y = Random.nextBytes(32),
@@ -93,7 +93,7 @@ private fun randomCertificate() = X509Certificate(
     TbsCertificate(
         serialNumber = Random.nextBytes(16),
         issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.Printable("Test")))),
-        publicKey = CryptoPublicKey.Ec.fromJcaPublicKey(KeyPairGenerator.getInstance("EC").apply { initialize(256) }
+        publicKey = CryptoPublicKey.EC.fromJcaPublicKey(KeyPairGenerator.getInstance("EC").apply { initialize(256) }
             .genKeyPair().public as ECPublicKey).getOrThrow(),
         signatureAlgorithm = CryptoAlgorithm.ES256,
         subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.Printable("Test")))),

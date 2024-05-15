@@ -18,8 +18,8 @@ import kotlinx.serialization.encoding.Encoder
 /**
  * EC Curve Class [jwkName] really does use established JWK curve names
  */
-@Serializable(with = EcCurveSerializer::class)
-enum class EcCurve(
+@Serializable(with = ECCurveSerializer::class)
+enum class ECCurve(
     val jwkName: String,
     val keyLengthBits: UInt,
     val coordinateLengthBytes: UInt = keyLengthBits / 8u,
@@ -102,18 +102,18 @@ enum class EcCurve(
 
 }
 
-object EcCurveSerializer : KSerializer<EcCurve> {
+object ECCurveSerializer : KSerializer<ECCurve> {
 
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("EcCurveSerializer", PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, value: EcCurve) {
+    override fun serialize(encoder: Encoder, value: ECCurve) {
         encoder.encodeString(value.jwkName)
     }
 
-    override fun deserialize(decoder: Decoder): EcCurve {
+    override fun deserialize(decoder: Decoder): ECCurve {
         val decoded = decoder.decodeString()
-        return EcCurve.entries.firstOrNull { it.jwkName == decoded }
+        return ECCurve.entries.firstOrNull { it.jwkName == decoded }
             ?: throw SerializationException("Unsupported EC Curve Type $decoded")
     }
 

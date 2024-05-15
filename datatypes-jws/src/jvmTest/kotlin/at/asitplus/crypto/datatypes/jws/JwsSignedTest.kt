@@ -23,7 +23,7 @@ class JwsSignedTest : FreeSpec({
             val publicKey = parsed.header.publicKey.shouldNotBeNull()
 
             val jvmVerifier =
-                if (publicKey is CryptoPublicKey.Ec) ECDSAVerifier(publicKey.getJcaPublicKey().getOrThrow())
+                if (publicKey is CryptoPublicKey.EC) ECDSAVerifier(publicKey.getJcaPublicKey().getOrThrow())
                 else RSASSAVerifier(publicKey.getJcaPublicKey().getOrThrow() as RSAPublicKey)
 
             val result = JWSObject.parse(parsed.serialize()).verify(jvmVerifier)
