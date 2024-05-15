@@ -2,7 +2,6 @@ package at.asitplus.crypto.datatypes
 
 import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.wrap
-import at.asitplus.crypto.datatypes.asn1.ensureSize
 import org.bouncycastle.asn1.sec.SECNamedCurves
 import org.bouncycastle.asn1.sec.SECObjectIdentifiers
 
@@ -19,10 +18,10 @@ fun EcCurve.Companion.fromBouncyCastleCurve(curve: org.bouncycastle.math.ec.ECCu
             throw IllegalArgumentException("Unsupported curve")
     }.wrap()
 
-val CryptoPublicKey.Ec.bouncyCastlePublicPoint
+val CryptoPublicKey.Ec.bouncyCastlePublicPoint: org.bouncycastle.math.ec.ECPoint
     get() = curve.bouncyCastleCurve.createPoint(
-        java.math.BigInteger(1, x.ensureSize(curve.coordinateLengthBytes)),
-        java.math.BigInteger(1, y.ensureSize(curve.coordinateLengthBytes)))
+        java.math.BigInteger(1, x),
+        java.math.BigInteger(1, y))
 
 fun CryptoPublicKey.Ec.Companion.fromBouncyCastlePublicPoint(p: org.bouncycastle.math.ec.ECPoint) =
     p.normalize().let { pN ->
