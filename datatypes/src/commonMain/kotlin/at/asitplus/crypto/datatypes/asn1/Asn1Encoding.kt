@@ -10,6 +10,8 @@ import at.asitplus.crypto.datatypes.asn1.BERTags.ASN1_NULL
 import at.asitplus.crypto.datatypes.asn1.BERTags.UTC_TIME
 import at.asitplus.crypto.datatypes.asn1.DERTags.toExplicitTag
 import at.asitplus.crypto.datatypes.io.BitSet
+import com.ionspin.kotlin.bignum.integer.BigInteger
+import com.ionspin.kotlin.bignum.integer.util.toTwosComplementByteArray
 import kotlinx.datetime.Instant
 
 /**
@@ -420,6 +422,11 @@ fun Boolean.encodeToTlv() = Asn1Primitive(BOOLEAN, byteArrayOf(if (this) 0xff.to
  * Produces an INTEGER as [Asn1Primitive]
  */
 fun Long.encodeToTlv() = Asn1Primitive(INTEGER, encodeToDer())
+
+/**
+ * Produces an INTEGER as [Asn1Primitive]
+ */
+fun BigInteger.encodeToTlv() = Asn1Primitive(INTEGER, toTwosComplementByteArray())
 
 /**
  * Produces an OCTET STRING as [Asn1Primitive]
