@@ -119,6 +119,7 @@
 
 **Features**
  * Support ASN.1 encoding/decoding for `BigInteger`
+ * Expose `generator`, `order` and `cofactor` of `ECCurve`
  * Extend list of values in `JweAlgorithm` and `JweEncryption`
  * Extend properties in `JweHeader`
  * Extend properties in `JwsHeader`
