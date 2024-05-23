@@ -2,9 +2,12 @@ package at.asitplus.crypto.datatypes
 
 import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.asn1.BERTags.BIT_STRING
-import at.asitplus.crypto.datatypes.asn1.BERTags.INTEGER
 import at.asitplus.crypto.datatypes.asn1.DERTags.DER_SEQUENCE
 import at.asitplus.crypto.datatypes.io.Base64Strict
+import at.asitplus.crypto.datatypes.misc.BitLength
+import at.asitplus.crypto.datatypes.misc.max
+import com.ionspin.kotlin.bignum.integer.BigInteger
+import com.ionspin.kotlin.bignum.integer.Sign
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.Contextual
@@ -15,7 +18,6 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlin.math.max
 
 
 /**
@@ -67,41 +69,121 @@ sealed class CryptoSignature(
         }
     }
 
-    /**
-     * Input is expected to be `r` and `s` values
-     */
-    class EC(private val rValue: ByteArray, private val sValue: ByteArray) : CryptoSignature(
-        asn1Sequence {
-            append(Asn1Primitive(INTEGER, rValue.padWithZeroIfNeeded()))
-            append(Asn1Primitive(INTEGER, sValue.padWithZeroIfNeeded()))
-        }
-    ) {
-        /**
-         * JWS encodes an EC signature as the `r` and `s` value concatenated,
-         * which may contain a padding (leading 0x00), which are dropped here
-         */
-        constructor(input: ByteArray) : this(
-            input.sliceArray(0 until (input.size / 2)).dropWhile { it == 0x00.toByte() }.toByteArray(),
-            input.sliceArray((input.size / 2) until input.size).dropWhile { it == 0x00.toByte() }.toByteArray()
-        )
 
-        /**
-         * Concatenates [rValue] and [sValue], padding each one to the next largest coordinate length
-         * of an [ECCurve], for use in e.g. JWS signatures.
-         */
-        override val rawByteArray by lazy {
-            val maxLenValues = max(rValue.size, sValue.size).toUInt()
-            val correctLen = ECCurve.entries.map { it.coordinateLengthBytes }.filter { maxLenValues <= it }.min()
-            rValue.ensureSize(correctLen) + sValue.ensureSize(correctLen)
-        }
+    sealed class EC private constructor (
+        /** r - ECDSA signature component */
+        val r: BigInteger,
+        /** s - ECDSA signature component */
+        val s: BigInteger)
+    : CryptoSignature(asn1Sequence { append(r.encodeToTlv()); append(s.encodeToTlv()); })
+    {
 
         override fun encodeToTlvBitString(): Asn1Element = encodeToDer().encodeToTlvBitString()
 
-        companion object {
-            @Throws(Asn1Exception::class)
-            fun decodeFromTlvBitString(src: Asn1Primitive): EC = runRethrowing {
-                CryptoSignature.decodeFromDer(src.readBitString().rawBytes) as EC
+        class IndefiniteLength internal constructor(
+            r: BigInteger, s:BigInteger
+        ) : EC(r,s) {
+            override val rawByteArray get() =
+                throw IllegalStateException("Cannot convert indefinite length signature to raw bytes")
+
+            /**
+             * specifies the curve's scalar byte length for this signature, allowing it to be converted to raw bytes
+             */
+            fun withScalarByteLength(l: UInt) =
+                EC.DefiniteLength(l, r, s)
+
+            /**
+             * specifies the curve context for this signature, allowing it to be converted to raw bytes
+             */
+            fun withCurve(c: ECCurve) =
+                withScalarByteLength(c.scalarLength.bytes)
+
+            /**
+             * tries to guess the curve from the bit length of the indefinite-length r/s values
+             * this will work well in the vast majority of cases, but may fail in pathological edge cases
+             * (when r/s have a very large number of leading zeroes)
+             */
+            fun guessCurve(): EC.DefiniteLength {
+                val minLength = max(BitLength.of(r), BitLength.of(s))
+                val idx = curvesByScalarLength.binarySearchBy(minLength) { it.scalarLength }
+
+                return withCurve(
+                    when {
+                        idx >= 0 -> curvesByScalarLength[idx]
+                        idx >= -curvesByScalarLength.size -> curvesByScalarLength[-1-idx]
+                        else -> throw IllegalArgumentException("No curve with bit length >= $minLength is supported")
+                    }
+                )
             }
+
+            companion object {
+                private val curvesByScalarLength by lazy { ECCurve.entries.sortedBy { it.scalarLength } }
+            }
+        }
+
+        class DefiniteLength internal constructor (
+            /**
+             * scalar byte length of the underlying curve;
+             * we do not know _which_ curve with this particular byte length
+             * since raw signatures do not carry this information
+             */
+            val scalarByteLength: UInt,
+            r: BigInteger, s: BigInteger
+        ) : EC(r,s) {
+            /**
+             * Concatenates [r] and [s], padding each one to the next largest coordinate length
+             * of an [ECCurve], for use in e.g. JWS signatures.
+             */
+            override val rawByteArray by lazy {
+                r.toByteArray().ensureSize(scalarByteLength) +
+                        s.toByteArray().ensureSize(scalarByteLength)
+            }
+
+            override fun equals(other: Any?): Boolean {
+                if (other !is DefiniteLength) return false
+                return (r == other.r) && (s == other.s) && (scalarByteLength == other.scalarByteLength)
+            }
+
+            override fun hashCode() =
+                rawByteArray.hashCode()
+        }
+
+        companion object : Asn1Decodable<Asn1Element, EC.IndefiniteLength> {
+
+            fun fromRS(r: BigInteger, s: BigInteger) =
+                EC.IndefiniteLength(r,s)
+
+            /** load CryptoSignature from raw byte array (r and s concatenated) */
+            fun fromRawBytes(input: ByteArray): EC.DefiniteLength {
+                require(input.size.rem(2) == 0) { "Raw signature has odd number of bytes" }
+                val sz = input.size.div(2)
+                return EC.DefiniteLength(sz.toUInt(),
+                    r = BigInteger.fromByteArray(input.copyOfRange(0, sz), Sign.POSITIVE),
+                    s = BigInteger.fromByteArray(input.copyOfRange(sz, 2*sz), Sign.POSITIVE))
+            }
+
+            /** load from raw byte array (r and s concatenated), asserting that the size fits this particular curve */
+            fun fromRawBytes(curve: ECCurve, input: ByteArray): EC.DefiniteLength {
+                val sz = curve.scalarLength.bytes.toInt()
+                require(input.size == sz * 2)
+                return fromRawBytes(input)
+            }
+
+            @Throws(Asn1Exception::class)
+            fun decodeFromTlvBitString(src: Asn1Primitive): EC.IndefiniteLength = runRethrowing {
+                decodeFromDer(src.readBitString().rawBytes)
+            }
+
+            override fun decodeFromTlv(src: Asn1Element): EC.IndefiniteLength {
+                src as Asn1Sequence
+                val r = (src.nextChild() as Asn1Primitive).readBigInteger()
+                val s = (src.nextChild() as Asn1Primitive).readBigInteger()
+                if (src.hasMoreChildren()) throw IllegalArgumentException("Illegal Signature Format")
+                return fromRS(r,s)
+            }
+
+            @Deprecated("use fromRawBytes", ReplaceWith("CryptoSignature.EC.fromRawBytes(input)"))
+            operator fun invoke(input: ByteArray): DefiniteLength = fromRawBytes(input)
         }
 
     }
@@ -125,15 +207,7 @@ sealed class CryptoSignature(
         override fun decodeFromTlv(src: Asn1Element): CryptoSignature = runRethrowing {
             when (src.tag) {
                 BIT_STRING -> RSAorHMAC((src as Asn1Primitive).decode(BIT_STRING) { it })
-                DER_SEQUENCE -> {
-                    src as Asn1Sequence
-                    val first =
-                        (src.nextChild() as Asn1Primitive).decode<ByteArray>(INTEGER) { it }.stripLeadingSignByte()
-                    val second =
-                        (src.nextChild() as Asn1Primitive).decode<ByteArray>(INTEGER) { it }.stripLeadingSignByte()
-                    if (src.hasMoreChildren()) throw IllegalArgumentException("Illegal Signature Format")
-                    EC(first, second)
-                }
+                DER_SEQUENCE -> EC.decodeFromTlv(src as Asn1Sequence)
 
                 else -> throw IllegalArgumentException("Unknown Signature Format")
             }

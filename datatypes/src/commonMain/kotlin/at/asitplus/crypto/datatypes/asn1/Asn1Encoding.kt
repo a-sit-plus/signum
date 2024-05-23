@@ -611,24 +611,6 @@ fun Int.encodeToByteArray(): ByteArray {
 }
 
 /**
- * Strips the leading 0x00 byte of an ASN.1-encoded Integer,
- * that will be there if the first bit of the value is set,
- * i.e. it is over 0x7F (or < 0 if it is signed)
- */
-fun ByteArray.stripLeadingSignByte() =
-    if (this[0] == 0.toByte() && this[1] < 0) drop(1).toByteArray() else this
-
-/**
- * Adds a leading 0x00 byte for ASN.1 encoding of unsigned Integers,
- * i.e. when the first byte is over 0x7F
- */
-fun ByteArray.padWithZeroIfNeeded() =
-    if (this.isNotEmpty() && this[0].toUByte() >= 0x80.toUByte())
-        byteArrayOf(0x00) + this
-    else
-        this
-
-/**
  * Drops or adds zero bytes at the start until the [size] is reached
  */
 fun ByteArray.ensureSize(size: Int): ByteArray = (this.size-size).let { toDrop -> when {

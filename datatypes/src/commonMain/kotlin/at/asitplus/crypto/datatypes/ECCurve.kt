@@ -51,6 +51,7 @@ enum class ECCurve(
     inline val signatureLengthBytes: UInt get() = scalarLength.bytes*2u
 
     internal val coordinateCreator by lazy { ModularBigInteger.creatorForModulo(this.modulus) }
+    internal val scalarCreator by lazy { ModularBigInteger.creatorForModulo(this.order) }
     
     /**
      * p: Prime modulus of the underlying prime field
