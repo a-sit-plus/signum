@@ -10,7 +10,7 @@ import at.asitplus.crypto.datatypes.cose.CoseKeySerializer.CompressedCompoundCos
 import at.asitplus.crypto.datatypes.cose.CoseKeySerializer.UncompressedCompoundCoseKeySerialContainer
 import at.asitplus.crypto.datatypes.cose.io.Base16Strict
 import at.asitplus.crypto.datatypes.cose.io.cborSerializer
-import at.asitplus.crypto.datatypes.misc.compressY
+import com.ionspin.kotlin.bignum.integer.Sign
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.*
 import kotlinx.serialization.builtins.ArraySerializer
@@ -150,14 +150,14 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseK
                 val keyParams = if (this.useCompressedRepresentation) {
                     CoseKeyParams.EcYBoolParams(
                         curve = curve.toCoseCurve(),
-                        x = x,
-                        y = this.compressY()
+                        x = xBytes,
+                        y = (this.yCompressed == Sign.POSITIVE)
                     )
                 } else
                     CoseKeyParams.EcYByteArrayParams(
                         curve = curve.toCoseCurve(),
-                        x = x,
-                        y = y
+                        x = xBytes,
+                        y = yBytes
                     )
                 runCatching {
                     CoseKey(

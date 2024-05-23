@@ -215,8 +215,8 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         (csr.tbsCsr.subjectName.first().attrsAndValues.first().value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
         val parsedPublicKey = csr.tbsCsr.publicKey
         parsedPublicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()
-        parsedPublicKey.x shouldBe keyX
-        parsedPublicKey.y shouldBe keyY
+        parsedPublicKey.xBytes shouldBe keyX
+        parsedPublicKey.yBytes shouldBe keyY
     }
 
     "Equals & hashCode" {
