@@ -67,9 +67,33 @@ class JwkTest : FreeSpec({
             certificateSha256Thumbprint = Random.nextBytes(32),
         )
 
-        val parsed = JsonWebKey.deserialize(jwk.serialize()).getOrThrow()
+        val serialized = jwk.serialize().also { println(it) }
+        val parsed = JsonWebKey.deserialize(serialized).getOrThrow()
 
         parsed shouldBe jwk
+    }
+
+    "Serialize and deserialize Algos" - {
+        withData(JsonWebAlgorithm.entries) { jwa ->
+            val jwk = JsonWebKey(
+                curve = ECCurve.SECP_256_R_1,
+                type = JwkType.EC,
+                algorithm = jwa,
+                x = Random.nextBytes(32),
+                y = Random.nextBytes(32),
+                publicKeyUse = Random.nextBytes(16).encodeToString(Base64Strict),
+                keyOperations = setOf(Random.nextBytes(16).encodeToString(Base64Strict)),
+                certificateUrl = Random.nextBytes(16).encodeToString(Base64Strict),
+                certificateChain = listOf(randomCertificate()),
+                certificateSha1Thumbprint = Random.nextBytes(20),
+                certificateSha256Thumbprint = Random.nextBytes(32),
+            )
+
+            val serialized = jwk.serialize().also { println(it) }
+            val parsed = JsonWebKey.deserialize(serialized).getOrThrow()
+
+            parsed shouldBe jwk
+        }
     }
 
     "Serialize and deserialize RSA" {
@@ -103,6 +127,8 @@ private fun randomCertificate() = X509Certificate(
         validUntil = Asn1Time(Clock.System.now()),
     ),
     CryptoAlgorithm.ES256,
-    CryptoSignature.EC.fromRS(BigInteger.fromByteArray(Random.nextBytes(16), Sign.POSITIVE),
-        BigInteger.fromByteArray(Random.nextBytes(16), Sign.POSITIVE))
+    CryptoSignature.EC.fromRS(
+        BigInteger.fromByteArray(Random.nextBytes(16), Sign.POSITIVE),
+        BigInteger.fromByteArray(Random.nextBytes(16), Sign.POSITIVE)
+    )
 )
