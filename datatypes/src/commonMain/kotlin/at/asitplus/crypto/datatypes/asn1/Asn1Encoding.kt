@@ -631,9 +631,9 @@ fun ByteArray.padWithZeroIfNeeded() =
 /**
  * Drops or adds zero bytes at the start until the [size] is reached
  */
-//TODO: This performs horribly!
-fun ByteArray.ensureSize(size: UInt): ByteArray = when {
-    this.size.toUInt() > size -> this.drop(1).toByteArray().ensureSize(size)
-    this.size.toUInt() < size -> (byteArrayOf(0) + this).ensureSize(size)
+fun ByteArray.ensureSize(size: Int): ByteArray = (this.size-size).let { toDrop -> when {
+    toDrop > 0 -> this.copyOfRange(toDrop, this.size)
+    toDrop < 0 -> ByteArray(-toDrop) + this
     else -> this
-}
+} }
+inline fun ByteArray.ensureSize(size: UInt) = ensureSize(size.toInt())
