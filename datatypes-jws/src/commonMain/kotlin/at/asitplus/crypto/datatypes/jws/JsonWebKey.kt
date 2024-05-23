@@ -120,7 +120,7 @@ data class JsonWebKey(
      * Use of this member is OPTIONAL.
      */
     @SerialName("alg")
-    val algorithm: JwsAlgorithm? = null,
+    val algorithm: JsonWebAlgorithm? = null,
 
     /**
      * The "x5u" (X.509 URL) parameter is a URI (RFC3986) that refers to a

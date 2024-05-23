@@ -1,24 +1,7 @@
 package at.asitplus.crypto.datatypes.jws
 
 import at.asitplus.crypto.datatypes.CryptoAlgorithm
-import at.asitplus.crypto.datatypes.OID_ECDH_ES
-import at.asitplus.crypto.datatypes.asn1.Asn1Decodable
-import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
-import at.asitplus.crypto.datatypes.asn1.Asn1Exception
-import at.asitplus.crypto.datatypes.asn1.Asn1OidException
-import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
-import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.Asn1TagMismatchException
-import at.asitplus.crypto.datatypes.asn1.Asn1Tagged
-import at.asitplus.crypto.datatypes.asn1.BERTags
-import at.asitplus.crypto.datatypes.asn1.Identifiable
-import at.asitplus.crypto.datatypes.asn1.KnownOIDs
-import at.asitplus.crypto.datatypes.asn1.ObjectIdentifier
-import at.asitplus.crypto.datatypes.asn1.asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.readInt
-import at.asitplus.crypto.datatypes.asn1.readOid
-import at.asitplus.crypto.datatypes.asn1.runRethrowing
-import at.asitplus.crypto.datatypes.asn1.verifyTag
+import at.asitplus.crypto.datatypes.asn1.*
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -32,18 +15,12 @@ import kotlinx.serialization.encoding.Encoder
  * Since we support only JWS algorithms (with one exception), this class is called what it's called.
  */
 @Serializable(with = JwsAlgorithmSerializer::class)
-enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifier) :
-    Asn1Encodable<Asn1Sequence>,
+enum class JwsAlgorithm(override val identifier: String, override val oid: ObjectIdentifier) : JsonWebAlgorithm, Asn1Encodable<Asn1Sequence>,
     Identifiable {
 
     ES256("ES256", KnownOIDs.ecdsaWithSHA256),
     ES384("ES384", KnownOIDs.ecdsaWithSHA384),
     ES512("ES512", KnownOIDs.ecdsaWithSHA512),
-
-    /**
-     * ECDH-ES as per [RFC 8037](https://datatracker.ietf.org/doc/html/rfc8037#section-3.2)
-     */
-    ECDH_ES("ECDH-ES", OID_ECDH_ES),
 
     HS256("HS256", KnownOIDs.hmacWithSHA256),
     HS384("HS384", KnownOIDs.hmacWithSHA384),
@@ -80,7 +57,6 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
         RS512 -> CryptoAlgorithm.RS512
 
         NON_JWS_SHA1_WITH_RSA -> CryptoAlgorithm.RS1
-        ECDH_ES -> TODO()
     }
 
     private fun encodePSSParams(bits: Int): Asn1Sequence {
@@ -116,7 +92,7 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
     }
 
     override fun encodeToTlv() = when (this) {
-        ES256, ES384, ES512, ECDH_ES -> asn1Sequence { append(oid) }
+        ES256, ES384, ES512 -> asn1Sequence { append(oid) }
 
         PS256 -> encodePSSParams(256)
 
@@ -142,7 +118,7 @@ enum class JwsAlgorithm(val identifier: String, override val oid: ObjectIdentifi
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Sequence): JwsAlgorithm = runRethrowing {
             when (val oid = (src.nextChild() as Asn1Primitive).readOid()) {
-                ES512.oid, ES384.oid, ES256.oid, ECDH_ES.oid -> fromOid(oid)
+                ES512.oid, ES384.oid, ES256.oid -> fromOid(oid)
 
                 NON_JWS_SHA1_WITH_RSA.oid -> NON_JWS_SHA1_WITH_RSA
                 RS256.oid, RS384.oid, RS512.oid,
@@ -202,9 +178,7 @@ object JwsAlgorithmSerializer : KSerializer<JwsAlgorithm> {
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("JwsAlgorithmSerializer", PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, value: JwsAlgorithm) {
-        value.let { encoder.encodeString(it.identifier) }
-    }
+    override fun serialize(encoder: Encoder, value: JwsAlgorithm) = JwaSerializer.serialize(encoder, value)
 
     override fun deserialize(decoder: Decoder): JwsAlgorithm {
         val decoded = decoder.decodeString()
@@ -217,7 +191,6 @@ fun CryptoAlgorithm.toJwsAlgorithm() = when (this) {
     CryptoAlgorithm.ES384 -> JwsAlgorithm.ES384
     CryptoAlgorithm.ES512 -> JwsAlgorithm.ES512
 
-    CryptoAlgorithm.ECDH_ES -> JwsAlgorithm.ECDH_ES
 
     CryptoAlgorithm.HS256 -> JwsAlgorithm.HS256
     CryptoAlgorithm.HS384 -> JwsAlgorithm.HS384

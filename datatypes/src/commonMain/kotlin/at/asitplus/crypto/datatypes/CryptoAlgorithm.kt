@@ -42,11 +42,6 @@ enum class CryptoAlgorithm(override val oid: ObjectIdentifier, val isEc: Boolean
     ES384(KnownOIDs.ecdsaWithSHA384, true),
     ES512(KnownOIDs.ecdsaWithSHA512, true),
 
-    /**
-     * ECDH-ES as per [RFC 8037](https://datatracker.ietf.org/doc/html/rfc8037#section-3.2)
-     */
-    ECDH_ES(OID_ECDH_ES, true),
-
     // HMAC-size with SHA-size
     HS256(KnownOIDs.hmacWithSHA256),
     HS384(KnownOIDs.hmacWithSHA384),
@@ -98,7 +93,7 @@ enum class CryptoAlgorithm(override val oid: ObjectIdentifier, val isEc: Boolean
     }
 
     override fun encodeToTlv() = when (this) {
-        ES256, ES384, ES512, ECDH_ES -> asn1Sequence { append(oid) }
+        ES256, ES384, ES512 -> asn1Sequence { append(oid) }
 
         PS256 -> encodePSSParams(256)
 
@@ -123,7 +118,7 @@ enum class CryptoAlgorithm(override val oid: ObjectIdentifier, val isEc: Boolean
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Sequence): CryptoAlgorithm = runRethrowing {
             when (val oid = (src.nextChild() as Asn1Primitive).readOid()) {
-                ES512.oid, ES384.oid, ES256.oid, ECDH_ES.oid -> fromOid(oid)
+                ES512.oid, ES384.oid, ES256.oid -> fromOid(oid)
 
                 RS1.oid -> RS1
                 RS256.oid, RS384.oid, RS512.oid,
