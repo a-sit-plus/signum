@@ -125,4 +125,5 @@
  * Extend properties in `JweHeader`
  * Extend properties in `JwsHeader`
  * Expose `r` and `s` of `CryptoSignature.EC`
+ * Add generic `ECPoint` class
 

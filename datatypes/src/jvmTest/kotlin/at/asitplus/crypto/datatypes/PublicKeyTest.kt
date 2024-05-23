@@ -52,7 +52,7 @@ class PublicKeyTest : FreeSpec({
                 withClue("Compressed Test") {
                     (own as CryptoPublicKey.EC).useCompressedRepresentation = true
                     val compressedPresentation = own.toAnsiX963Encoded()
-                    val fromCompressed = CryptoPublicKey.EC.fromAnsiX963Bytes(compressedPresentation)
+                    val fromCompressed = CryptoPublicKey.EC.fromAnsiX963Bytes(own.curve, compressedPresentation)
 
                     // bouncy castle compressed representation is calculated by exposing public coordinate from key and then encode that
                     compressedPresentation shouldBe (pubKey as BCECPublicKey).q.getEncoded(true)

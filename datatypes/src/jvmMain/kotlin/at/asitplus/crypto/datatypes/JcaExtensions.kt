@@ -4,6 +4,7 @@ import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.asn1.ensureSize
 import at.asitplus.crypto.datatypes.pki.X509Certificate
+import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -82,8 +83,8 @@ fun CryptoPublicKey.getJcaPublicKey() = when (this) {
 fun CryptoPublicKey.EC.getJcaPublicKey(): KmmResult<ECPublicKey> {
     return runCatching {
         val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.jwkName)
-        val x = BigInteger(1, x)
-        val y = BigInteger(1, y)
+        val x = x.residue.toJavaBigInteger()
+        val y = y.residue.toJavaBigInteger()
         val ecPoint = parameterSpec.curve.createPoint(x, y)
         val ecPublicKeySpec = ECPublicKeySpec(ecPoint, parameterSpec)
         JCEECPublicKey("EC", ecPublicKeySpec)
@@ -110,8 +111,8 @@ fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmRe
         ) ?: throw SerializationException("Unknown Jca name")
         CryptoPublicKey.EC(
             curve,
-            publicKey.w.affineX.toByteArray().ensureSize(curve.coordinateLengthBytes),
-            publicKey.w.affineY.toByteArray().ensureSize(curve.coordinateLengthBytes)
+            publicKey.w.affineX.toByteArray(),
+            publicKey.w.affineY.toByteArray()
         )
     }.wrap()
 

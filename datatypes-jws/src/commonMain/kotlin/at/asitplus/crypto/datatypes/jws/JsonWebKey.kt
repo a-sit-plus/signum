@@ -328,8 +328,8 @@ fun CryptoPublicKey.toJsonWebKey(): JsonWebKey =
                 type = JwkType.EC,
                 keyId = jwkId,
                 curve = curve,
-                x = x,
-                y = y
+                x = xBytes,
+                y = yBytes
             )
 
 

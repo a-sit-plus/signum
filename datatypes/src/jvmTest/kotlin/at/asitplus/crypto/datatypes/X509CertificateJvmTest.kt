@@ -176,8 +176,8 @@ class X509CertificateJvmTest : FreeSpec({
             .toKotlinInstant()
         val parsedPublicKey = x509Certificate.tbsCertificate.publicKey
         parsedPublicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()
-        parsedPublicKey.x shouldBe keyX
-        parsedPublicKey.y shouldBe keyY
+        parsedPublicKey.xBytes shouldBe keyX
+        parsedPublicKey.yBytes shouldBe keyY
     }
 
     "Certificate can be parsed to tree" {

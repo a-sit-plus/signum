@@ -5,6 +5,7 @@ import at.asitplus.crypto.datatypes.asn1.KnownOIDs
 import at.asitplus.crypto.datatypes.asn1.ObjectIdentifier
 import at.asitplus.crypto.datatypes.misc.BitLength
 import com.ionspin.kotlin.bignum.integer.BigInteger
+import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.integer.toBigInteger
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
 import kotlinx.serialization.KSerializer
@@ -51,6 +52,9 @@ enum class ECCurve(
     inline val signatureLengthBytes: UInt get() = scalarLength.bytes*2u
 
     internal val coordinateCreator by lazy { ModularBigInteger.creatorForModulo(this.modulus) }
+    internal fun coordinateFromMagnitude(v: ByteArray) =
+        coordinateCreator.fromBigInteger(BigInteger.fromByteArray(v, Sign.POSITIVE))
+
     internal val scalarCreator by lazy { ModularBigInteger.creatorForModulo(this.order) }
     
     /**
@@ -122,7 +126,7 @@ enum class ECCurve(
      * G: Generator of cyclic curve subgroup
      * See https://www.secg.org/sec2-v2.pdf
      */
-    val generator: CryptoPublicKey.EC by lazy {
+    val generator: ECPoint by lazy {
         when (this) {
             SECP_256_R_1 ->
                       "04 6B17D1F2 E12C4247 F8BCE6E5 63A440F2 77037D81 2DEB33A0" +
@@ -140,7 +144,7 @@ enum class ECCurve(
                "2C7D1BD9 98F54449 579B4468 17AFBD17 273E662C 97EE7299 5EF42640" +
                "C550B901 3FAD0761 353C7086 A272C240 88BE9476 9FD16650"
         }.replace(" ","").chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-            .let(CryptoPublicKey.EC::fromAnsiX963Bytes)
+            .let { CryptoPublicKey.EC.fromAnsiX963Bytes(this, it).publicPoint }
     }
 
     /**
