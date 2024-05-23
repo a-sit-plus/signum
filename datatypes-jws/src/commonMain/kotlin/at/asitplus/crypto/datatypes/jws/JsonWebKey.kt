@@ -1,4 +1,5 @@
 @file:UseSerializers(JwsCertificateSerializer::class)
+
 package at.asitplus.crypto.datatypes.jws
 
 import at.asitplus.KmmResult
@@ -347,8 +348,8 @@ private const val JWK_ID = "jwkIdentifier"
 /**
  * Holds [JsonWebKey.keyId] when transforming a [JsonWebKey] to a [CryptoPublicKey]
  */
-var CryptoPublicKey.jwkId: String
-    get() = additionalProperties[JWK_ID] ?: didEncoded
+var CryptoPublicKey.jwkId: String?
+    get() = additionalProperties[JWK_ID]
     set(value) {
-        additionalProperties[JWK_ID] = value
+        value?.also { additionalProperties[JWK_ID] = value } ?: additionalProperties.remove(JWK_ID)
     }
