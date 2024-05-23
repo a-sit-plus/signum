@@ -309,7 +309,7 @@ data class JsonWebKey(
             runCatching { jsonSerializer.decodeFromString<JsonWebKey>(it) }.wrap()
 
         fun fromDid(input: String): KmmResult<JsonWebKey> =
-            runCatching { CryptoPublicKey.fromDid(input).toJsonWebKey() }.wrap()
+            runCatching { CryptoPublicKey.fromDid(input).also { it.jwkId=input }.toJsonWebKey() }.wrap()
 
         fun fromIosEncoded(bytes: ByteArray): KmmResult<JsonWebKey> =
             runCatching { CryptoPublicKey.fromIosEncoded(bytes).toJsonWebKey() }.wrap()
