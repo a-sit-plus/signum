@@ -124,5 +124,7 @@
  * Extend list of values in `JweAlgorithm` and `JweEncryption`
  * Extend properties in `JweHeader`
  * Extend properties in `JwsHeader`
- * Expose `r` and `s` of `CryptoSignature.EC`
-
+ * Introduce common interface `JsonWebAlgorithm` for Jw{s,e}Algorithm
+ * JsonWebKey Changes:
+   * do not generate kid when there is none and allow removing it
+   * reference `JsonWebAlgorithm` instead of `JwsAlgorithm`

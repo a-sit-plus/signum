@@ -81,10 +81,7 @@ class JweEncryptedTest : FreeSpec({
         parsed.header.agreementPartyVInfo shouldBe apv
         parsed.header.jsonWebKeyUrl shouldBe jku
         val ourJwk = CryptoPublicKey.EC.fromJcaPublicKey(jwk.toECPublicKey()).getOrThrow().toJsonWebKey()
-        // TODO Can't directly compare jsonWebKey, because the parsed one contains a kid!?
-        parsed.header.jsonWebKey!!.x shouldBe ourJwk.x
-        parsed.header.jsonWebKey!!.y shouldBe ourJwk.y
-        parsed.header.jsonWebKey!!.curve shouldBe ourJwk.curve
+        parsed.header.jsonWebKey shouldBe ourJwk
         parsed.header.keyId shouldBe kid
         parsed.header.type shouldBe typ
         parsed.header.contentType shouldBe cty
