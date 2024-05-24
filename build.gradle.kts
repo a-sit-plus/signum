@@ -18,4 +18,11 @@ tasks.getByName("dokkaHtmlMultiModule") {
 allprojects {
     apply(plugin = "org.jetbrains.dokka")
     group = rootProject.group
+
+    repositories {
+        maven {
+            url = uri("https://oss.sonatype.org/content/repositories/snapshots")
+            name = "bigNum"
+        }
+    }
 }
