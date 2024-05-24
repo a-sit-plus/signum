@@ -38,9 +38,9 @@ enum class ECCurve(
     /** the number of bits/bytes needed to store point coordinates (such as public key coordinates) in unsigned form */
     inline val coordinateLength get() = BitLength.of(modulus)
 
-    @Deprecated("Use scalarLength to express private key lengths", ReplaceWith("scalarLength.bytes"))
+    @Deprecated("Use scalarLength to express private key lengths", ReplaceWith("scalarLength.bits"))
     /** the number of bits needed to store a private key in unsigned form */
-    inline val keyLengthBits: UInt get() = scalarLength.bytes
+    inline val keyLengthBits: UInt get() = scalarLength.bits
 
     @Deprecated("Use coordinateLength.bytes", ReplaceWith("coordinateLength.bytes"))
     /** the number of bytes needed to store a public key coordinate in unsigned form */
