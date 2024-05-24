@@ -12,6 +12,8 @@ import at.asitplus.crypto.datatypes.pki.AttributeTypeAndValue
 import at.asitplus.crypto.datatypes.pki.RelativeDistinguishedName
 import at.asitplus.crypto.datatypes.pki.TbsCertificate
 import at.asitplus.crypto.datatypes.pki.X509Certificate
+import com.ionspin.kotlin.bignum.integer.BigInteger
+import com.ionspin.kotlin.bignum.integer.Sign
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -101,5 +103,6 @@ private fun randomCertificate() = X509Certificate(
         validUntil = Asn1Time(Clock.System.now()),
     ),
     CryptoAlgorithm.ES256,
-    CryptoSignature.EC(Random.nextBytes(16), Random.nextBytes(16))
+    CryptoSignature.EC.fromRS(BigInteger.fromByteArray(Random.nextBytes(16), Sign.POSITIVE),
+        BigInteger.fromByteArray(Random.nextBytes(16), Sign.POSITIVE))
 )

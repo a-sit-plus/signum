@@ -56,10 +56,11 @@ class X509CertParserTest : FreeSpec({
         }
     }
 
-    "system trust store".config(enabled = "windows" !in System.getProperty("os.name").lowercase()) {
-        val certs = File("/etc/ssl/certs").listFiles { f: File -> f.name.endsWith(".pem") }.mapNotNull {
+    "system trust store" - {
+
+        val certs = File("/etc/ssl/certs").listFiles { f: File -> f.name.endsWith(".pem") }?.mapNotNull {
             runCatching { convertStringToX509Cert(FileReader(it).readText()) }.getOrNull()
-        }
+        } ?: emptyList()
 
         val macosCertsPem = kotlin.runCatching {
             Runtime.getRuntime().exec("security find-certificate -a -p").let {

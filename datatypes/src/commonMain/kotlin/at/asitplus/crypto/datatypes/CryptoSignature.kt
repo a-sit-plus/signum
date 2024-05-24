@@ -53,7 +53,7 @@ sealed class CryptoSignature(
     override fun encodeToTlv(): Asn1Element = signature
 
     override fun toString(): String {
-        return "CryptoSignature(signature=${signature.prettyPrint()})"
+        return "${this::class.simpleName ?: "CryptoSignature"}(signature=${signature.prettyPrint()})"
     }
 
     object CryptoSignatureSerializer : KSerializer<CryptoSignature> {
