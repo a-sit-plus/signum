@@ -20,6 +20,13 @@ plugins {
     id("at.asitplus.gradle.conventions")
 }
 
+repositories {
+    maven {
+        url = uri("https://oss.sonatype.org/content/repositories/snapshots")
+        name = "bigNum"
+    }
+}
+
 val artifactVersion: String by extra
 version = artifactVersion
 
