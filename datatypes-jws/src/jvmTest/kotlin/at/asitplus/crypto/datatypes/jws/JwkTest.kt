@@ -16,6 +16,7 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -42,7 +43,7 @@ class JwkTest : FreeSpec({
                 keys
             ) { pubKey ->
 
-                val cryptoPubKey = CryptoPublicKey.EC.fromJcaPublicKey(pubKey).getOrThrow()
+                val cryptoPubKey = CryptoPublicKey.EC.fromJcaPublicKey(pubKey).getOrThrow().also { it.jwkId=it.didEncoded }
                 val own = cryptoPubKey.toJsonWebKey()
                 own.keyId shouldBe cryptoPubKey.jwkId
                 own.shouldNotBeNull()
