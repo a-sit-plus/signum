@@ -1,22 +1,8 @@
 package at.asitplus.crypto.datatypes
 
-import at.asitplus.crypto.datatypes.asn1.Asn1Decodable
-import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
-import at.asitplus.crypto.datatypes.asn1.Asn1Exception
-import at.asitplus.crypto.datatypes.asn1.Asn1OidException
-import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
-import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.Asn1TagMismatchException
-import at.asitplus.crypto.datatypes.asn1.Asn1Tagged
-import at.asitplus.crypto.datatypes.asn1.BERTags
-import at.asitplus.crypto.datatypes.asn1.Identifiable
-import at.asitplus.crypto.datatypes.asn1.KnownOIDs
-import at.asitplus.crypto.datatypes.asn1.ObjectIdentifier
-import at.asitplus.crypto.datatypes.asn1.asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.readInt
-import at.asitplus.crypto.datatypes.asn1.readOid
-import at.asitplus.crypto.datatypes.asn1.runRethrowing
-import at.asitplus.crypto.datatypes.asn1.verifyTag
+import at.asitplus.crypto.datatypes.asn1.*
+import at.asitplus.crypto.datatypes.asn1.Asn1.Null
+import at.asitplus.crypto.datatypes.asn1.Asn1.Tagged
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -35,7 +21,8 @@ import kotlinx.serialization.encoding.Encoder
 val OID_ECDH_ES = ObjectIdentifier("1.3.132.1.12")
 
 @Serializable(with = CryptoAlgorithmSerializer::class)
-enum class CryptoAlgorithm(override val oid: ObjectIdentifier, val isEc: Boolean = false) : Asn1Encodable<Asn1Sequence>, Identifiable {
+enum class CryptoAlgorithm(override val oid: ObjectIdentifier, val isEc: Boolean = false) : Asn1Encodable<Asn1Sequence>,
+    Identifiable {
 
     // ECDSA with SHA-size
     ES256(KnownOIDs.ecdsaWithSHA256, true),
@@ -67,33 +54,33 @@ enum class CryptoAlgorithm(override val oid: ObjectIdentifier, val isEc: Boolean
             512 -> KnownOIDs.sha_512
             else -> TODO()
         }
-        return asn1Sequence {
-            append(oid)
-            sequence {
-                tagged(0.toUByte()) {
-                    sequence {
-                        append(shaOid)
-                        asn1null()
+        return Asn1.Sequence {
+            +oid
+            +Asn1.Sequence {
+                +Tagged(0.toUByte()) {
+                    +Asn1.Sequence {
+                        +shaOid
+                        +Null()
                     }
                 }
-                tagged(1.toUByte()) {
-                    sequence {
-                        append(KnownOIDs.pkcs1_MGF)
-                        sequence {
-                            append(shaOid)
-                            asn1null()
+                +Tagged(1.toUByte()) {
+                    +Asn1.Sequence {
+                        +KnownOIDs.pkcs1_MGF
+                        +Asn1.Sequence {
+                            +shaOid
+                            +Null()
                         }
                     }
                 }
-                tagged(2.toUByte()) {
-                    int(bits / 8)
+                +Tagged(2.toUByte()) {
+                    +Asn1.Int(bits / 8)
                 }
             }
         }
     }
 
     override fun encodeToTlv() = when (this) {
-        ES256, ES384, ES512 -> asn1Sequence { append(oid) }
+        ES256, ES384, ES512 -> Asn1.Sequence { +oid }
 
         PS256 -> encodePSSParams(256)
 
@@ -102,9 +89,9 @@ enum class CryptoAlgorithm(override val oid: ObjectIdentifier, val isEc: Boolean
         PS512 -> encodePSSParams(512)
 
         HS256, HS384, HS512,
-        RS256, RS384, RS512, RS1 -> asn1Sequence {
-            append(oid)
-            asn1null()
+        RS256, RS384, RS512, RS1 -> Asn1.Sequence {
+            +oid
+            +Null()
         }
     }
 

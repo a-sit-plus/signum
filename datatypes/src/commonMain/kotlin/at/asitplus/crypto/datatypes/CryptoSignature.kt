@@ -18,6 +18,7 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlin.math.max
 
 
 /**
@@ -75,7 +76,7 @@ sealed class CryptoSignature(
         val r: BigInteger,
         /** s - ECDSA signature component */
         val s: BigInteger)
-    : CryptoSignature(asn1Sequence { append(r.encodeToTlv()); append(s.encodeToTlv()); })
+    : CryptoSignature(Asn1.Sequence { +r.encodeToTlv(); +s.encodeToTlv() })
     {
 
         override fun encodeToTlvBitString(): Asn1Element = encodeToDer().encodeToTlvBitString()

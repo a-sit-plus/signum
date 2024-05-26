@@ -1,6 +1,15 @@
 package at.asitplus.crypto.datatypes
 
 import at.asitplus.crypto.datatypes.asn1.*
+import at.asitplus.crypto.datatypes.asn1.Asn1.BitString
+import at.asitplus.crypto.datatypes.asn1.Asn1.Bool
+import at.asitplus.crypto.datatypes.asn1.Asn1.Null
+import at.asitplus.crypto.datatypes.asn1.Asn1.OctetString
+import at.asitplus.crypto.datatypes.asn1.Asn1.OctetStringEncapsulating
+import at.asitplus.crypto.datatypes.asn1.Asn1.PrintableString
+import at.asitplus.crypto.datatypes.asn1.Asn1.Tagged
+import at.asitplus.crypto.datatypes.asn1.Asn1.UtcTime
+import at.asitplus.crypto.datatypes.asn1.Asn1.Utf8String
 import at.asitplus.crypto.datatypes.io.BitSet
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
@@ -19,7 +28,7 @@ class Asn1EncodingTest : FreeSpec({
 
     "Boolean" - {
         checkAll(Arb.boolean()) {
-            val seq = asn1Sequence { bool(it) }
+            val seq = Asn1.Sequence { +Bool(it) }
             val decoded = (seq.nextChild() as Asn1Primitive).readBool()
             decoded shouldBe it
         }
@@ -33,33 +42,31 @@ class Asn1EncodingTest : FreeSpec({
         fromBitSet.toBitSet().toBitString() shouldBe "011011100101110111"
         fromBitSet.toBitSet() shouldBe bitSet
 
-        Asn1BitString.decodeFromTlv(asn1Sequence { bitString(bitSet) }.children.first() as Asn1Primitive)
+        Asn1BitString.decodeFromTlv(Asn1.Sequence { +BitString(bitSet) }.children.first() as Asn1Primitive)
             .toBitSet() shouldBe bitSet
     }
 
     "OCTET STRING Test" {
-        val seq = asn1Sequence {
-            octetStringEncapsulated {
-                sequence { utf8String("foo") }
-                set { utf8String("bar") }
-                append(Asn1String.Printable("a").encodeToTlv())
+        val seq = Asn1.Sequence {
+            +OctetStringEncapsulating {
+                +Asn1.Sequence { +Utf8String("foo") }
+                +Asn1.Set { +Utf8String("bar") }
+                +PrintableString("a")
             }
-            octetString(byteArrayOf(17))
+            +OctetString(byteArrayOf(17))
 
-            octetString(
-                asn1Set {
-                    int(99)
-                    octetString(byteArrayOf(1, 2, 3))
-                    octetStringEncapsulated {
-                        append(
-                            Asn1EncapsulatingOctetString(
-                                listOf(
-                                    Asn1PrimitiveOctetString(
-                                        byteArrayOf(
-                                            7,
-                                            6,
-                                            3,
-                                        )
+            +OctetString(
+                Asn1.Set {
+                    +Asn1.Int(99)
+                    +OctetString(byteArrayOf(1, 2, 3))
+                    +OctetStringEncapsulating {
+                        +Asn1EncapsulatingOctetString(
+                            listOf(
+                                Asn1PrimitiveOctetString(
+                                    byteArrayOf(
+                                        7,
+                                        6,
+                                        3,
                                     )
                                 )
                             )
@@ -67,10 +74,10 @@ class Asn1EncodingTest : FreeSpec({
                     }
                 }.derEncoded
             )
-            tagged(9u) { append(Clock.System.now().encodeToAsn1UtcTime()) }
-            octetString(byteArrayOf(17, -43, 23, -12, 8, 65, 90))
-            bool(false)
-            bool(true)
+            +Tagged(9u) { +Clock.System.now().encodeToAsn1UtcTime() }
+            +OctetString(byteArrayOf(17, -43, 23, -12, 8, 65, 90))
+            +Bool(false)
+            +Bool(true)
         }
         val parsed = Asn1Element.parse(seq.derEncoded)
         parsed.shouldNotBeNull()
@@ -92,7 +99,7 @@ class Asn1EncodingTest : FreeSpec({
 
         "longs" - {
             checkAll(iterations = 15000, Arb.long()) {
-                val seq = asn1Sequence { long(it) }
+                val seq = Asn1.Sequence { +Asn1.Long(it) }
                 val decoded = (seq.nextChild() as Asn1Primitive).readLong()
                 decoded shouldBe it
             }
@@ -100,7 +107,7 @@ class Asn1EncodingTest : FreeSpec({
 
         "ints" - {
             checkAll(iterations = 15000, Arb.int()) {
-                val seq = asn1Sequence { int(it) }
+                val seq = Asn1.Sequence { +Asn1.Int(it) }
                 val decoded = (seq.nextChild() as Asn1Primitive).readInt()
                 decoded shouldBe it
             }
@@ -119,44 +126,41 @@ class Asn1EncodingTest : FreeSpec({
 
         val instant = Clock.System.now()
 
-        val sequence = asn1Sequence {
-            tagged(1u) {
-                append(Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00)))
-            }
-            set {
-                sequence {
-                    setOf {
-                        printableString("World")
-                        printableString("Hello")
+        val sequence = Asn1.Sequence {
+            +Tagged(1u) { +Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00))            }
+            +Asn1.Set {
+                +Asn1.Sequence {
+                    +Asn1.SetOf {
+                        +PrintableString("World")
+                        +PrintableString("Hello")
                     }
-                    set {
-                        printableString("World")
-                        printableString("Hello")
-                        utf8String("!!!")
+                    +Asn1.Set {
+                        +PrintableString("World")
+                        +PrintableString("Hello")
+                        +Utf8String("!!!")
                     }
 
                 }
             }
-            asn1null()
+            +Null()
 
-            append(ObjectIdentifier("1.2.603.624.97"))
+           +ObjectIdentifier("1.2.603.624.97")
 
-            utf8String("Foo")
-            printableString("Bar")
+            +Utf8String("Foo")
+            +PrintableString("Bar")
 
-            set {
-                int(3)
-                long(-65789876543L)
-                bool(false)
-                bool(true)
+            +Asn1.Set {
+                +Asn1.Int(3)
+                +Asn1.Long(-65789876543L)
+                +Bool(false)
+                +Bool(true)
             }
-            sequence {
-                asn1null()
-                append(Asn1String.Numeric("12345"))
-                utcTime(instant)
+            +Asn1.Sequence {
+                +Null()
+                +Asn1String.Numeric("12345")
+                +UtcTime(instant)
             }
         }
-
         Asn1Element.parse(sequence.derEncoded).derEncoded shouldBe sequence.derEncoded
     }
 })

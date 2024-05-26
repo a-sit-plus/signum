@@ -11,6 +11,7 @@ import at.asitplus.crypto.datatypes.asn1.encodeToTlv
 import at.asitplus.crypto.datatypes.asn1.ensureSize
 import at.asitplus.crypto.datatypes.asn1.parse
 import at.asitplus.crypto.datatypes.pki.*
+import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -37,6 +38,7 @@ import java.security.Signature
 import java.security.interfaces.ECPublicKey
 
 
+@OptIn(ExperimentalStdlibApi::class)
 class Pkcs10CertificationRequestJvmTest : FreeSpec({
 
     lateinit var ecCurve: ECCurve
@@ -125,7 +127,9 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         val jvmEncoded = bcCsr.encoded
         // CSR will never entirely match because of randomness in ECDSA signature
         //kotlinEncoded shouldBe jvmEncoded
-        kotlinEncoded.drop(6).take(172) shouldBe jvmEncoded.drop(6).take(172)
+        withClue("kotlinEncoded: ${csr.encodeToTlv().toDerHexString()}, jvmEncoded: ${bcCsr.encoded.toHexString(
+            HexFormat.UpperCase)}")
+        { kotlinEncoded.drop(6).take(172) shouldBe jvmEncoded.drop(6).take(172) }
 
         val parsedFromKotlinCsr = PKCS10CertificationRequest(kotlinEncoded)
         parsedFromKotlinCsr.isSignatureValid(JcaContentVerifierProviderBuilder().build(keyPair.public))

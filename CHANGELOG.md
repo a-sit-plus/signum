@@ -117,6 +117,7 @@
 **Fixes**
  * Standardize class names: `Ec` -> `EC` everywhere
  * Fix an edge case where very small `r`/`s` in `CryptoSignature.EC` would be corrupted
+ * Remove bogus ASN.1 encoding from JWS Algorithms
 
 **Features**
  * Support ASN.1 encoding/decoding for `BigInteger`
@@ -124,6 +125,9 @@
  * Extend list of values in `JweAlgorithm` and `JweEncryption`
  * Extend properties in `JweHeader`
  * Extend properties in `JwsHeader`
+ * **BREAKING CHANGE:** Completely revamp the ASN.1 builder DSL
+   * explicitly require `+` to add some ASN.1 element to a builder
+   * Make convenience functions like `Bool(<boolean value>)`work stand-alone
  * Introduce common interface `JsonWebAlgorithm` for Jw{s,e}Algorithm
  * JsonWebKey Changes:
    * do not generate kid when there is none and allow removing it
