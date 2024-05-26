@@ -1,25 +1,8 @@
 package at.asitplus.crypto.datatypes
 
-import at.asitplus.crypto.datatypes.asn1.Asn1Decodable
-import at.asitplus.crypto.datatypes.asn1.Asn1Element
-import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
-import at.asitplus.crypto.datatypes.asn1.Asn1Exception
-import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
-import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.Asn1StructuralException
-import at.asitplus.crypto.datatypes.asn1.BERTags
-import at.asitplus.crypto.datatypes.asn1.DERTags
-import at.asitplus.crypto.datatypes.asn1.Identifiable
-import at.asitplus.crypto.datatypes.asn1.KnownOIDs
-import at.asitplus.crypto.datatypes.asn1.asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.decode
-import at.asitplus.crypto.datatypes.asn1.ensureSize
-import at.asitplus.crypto.datatypes.asn1.parse
-import at.asitplus.crypto.datatypes.asn1.readBitString
-import at.asitplus.crypto.datatypes.asn1.readInt
-import at.asitplus.crypto.datatypes.asn1.readNull
-import at.asitplus.crypto.datatypes.asn1.readOid
-import at.asitplus.crypto.datatypes.asn1.runRethrowing
+import at.asitplus.crypto.datatypes.asn1.*
+import at.asitplus.crypto.datatypes.asn1.Asn1.BitString
+import at.asitplus.crypto.datatypes.asn1.Asn1.Null
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.io.MultiBase
 import at.asitplus.crypto.datatypes.misc.ANSI_COMPRESSED_PREFIX_1
@@ -60,21 +43,21 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
 
     override fun encodeToTlv() = when (this) {
-        is EC -> asn1Sequence {
-            sequence {
-                append(oid)
-                append(curve.oid)
+        is EC -> Asn1.Sequence {
+            +Asn1.Sequence {
+                +oid
+                +curve.oid
             }
-            bitString(iosEncoded)
+            +BitString(iosEncoded)
         }
 
         is Rsa -> {
-            asn1Sequence {
-                sequence {
-                    append(oid)
-                    asn1null()
+            Asn1.Sequence {
+                +Asn1.Sequence {
+                    +oid
+                    +Null()
                 }
-                bitString(iosEncoded)
+                +BitString(iosEncoded)
             }
         }
     }
@@ -123,7 +106,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                     val bitString = (src.nextChild() as Asn1Primitive).readBitString()
                     if (bitString.rawBytes.first() != ANSI_UNCOMPRESSED_PREFIX) throw Asn1Exception("EC key not prefixed with 0x04")
                     val xAndY = bitString.rawBytes.drop(1)
-                    val coordLen = curve.coordinateLengthBytes.toInt()
+                    val coordLen = curve.coordinateLength.bytes.toInt()
                     val x = xAndY.take(coordLen).toByteArray()
                     val y = xAndY.drop(coordLen).take(coordLen).toByteArray()
                     return EC(curve, x, y)
@@ -240,14 +223,13 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          * PKCS#1 encoded RSA Public Key
          */
         val pkcsEncoded by lazy {
-            asn1Sequence {
-                append(
-                    Asn1Primitive(
+           Asn1.Sequence {
+               +Asn1Primitive(
                         BERTags.INTEGER,
                         n.ensureSize(bits.number / 8u)
                             .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
-                )
-                int(e)
+
+                +Asn1.Int(e)
             }.derEncoded
         }
 
@@ -331,14 +313,14 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                         .also { require(it == ANSI_COMPRESSED_PREFIX_1 || it == ANSI_COMPRESSED_PREFIX_2) }
                     byteArrayOf(
                         prefix,
-                        *x.ensureSize(curve.coordinateLengthBytes)
+                        *x.ensureSize(curve.coordinateLength.bytes)
                     )
                 }
 
                 false -> byteArrayOf(
                     ANSI_UNCOMPRESSED_PREFIX,
-                    *x.ensureSize(curve.coordinateLengthBytes),
-                    *y.ensureSize(curve.coordinateLengthBytes)
+                    *x.ensureSize(curve.coordinateLength.bytes),
+                    *y.ensureSize(curve.coordinateLength.bytes)
                 )
             }
 
@@ -393,7 +375,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         companion object : Identifiable {
 
             private fun getCurve(coordSize: Int) = ECCurve.entries
-                .find { it.coordinateLengthBytes.toInt() == coordSize }
+                .find { it.coordinateLength.bytes.toInt() == coordSize }
                 ?: throw IllegalArgumentException("Unknown Curve")
 
             /**
@@ -409,14 +391,14 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                 when (src[0]) {
                     ANSI_UNCOMPRESSED_PREFIX -> {
                         curve = getCurve((src.size - 1) / 2)
-                        numBytes = curve.coordinateLengthBytes.toInt()
+                        numBytes = curve.coordinateLength.bytes.toInt()
                         x = src.drop(1).take(numBytes).toByteArray()
                         y = src.drop(1).drop(numBytes).take(numBytes).toByteArray()
                     }
 
                     ANSI_COMPRESSED_PREFIX_1, ANSI_COMPRESSED_PREFIX_2 -> {
                         curve = getCurve(src.size - 1)
-                        numBytes = curve.coordinateLengthBytes.toInt()
+                        numBytes = curve.coordinateLength.bytes.toInt()
                         x = src.drop(1).take(numBytes).toByteArray()
                         y = decompressY(curve, x, (src[0] - 2) == 1)
                     }

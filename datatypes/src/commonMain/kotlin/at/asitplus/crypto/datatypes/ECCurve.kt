@@ -174,7 +174,7 @@ enum class ECCurve(
         }
 
     companion object {
-        fun of(bits: UInt) = entries.find { it.keyLengthBits == bits }
+        fun of(bits: UInt) = entries.find { it.scalarLength.bits == bits }
     }
 
 }

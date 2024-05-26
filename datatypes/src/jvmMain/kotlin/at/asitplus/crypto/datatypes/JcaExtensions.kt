@@ -110,8 +110,8 @@ fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmRe
         ) ?: throw SerializationException("Unknown Jca name")
         CryptoPublicKey.EC(
             curve,
-            publicKey.w.affineX.toByteArray().ensureSize(curve.coordinateLengthBytes),
-            publicKey.w.affineY.toByteArray().ensureSize(curve.coordinateLengthBytes)
+            publicKey.w.affineX.toByteArray().ensureSize(curve.coordinateLength.bytes),
+            publicKey.w.affineY.toByteArray().ensureSize(curve.coordinateLength.bytes)
         )
     }.wrap()
 
