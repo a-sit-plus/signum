@@ -4,7 +4,8 @@ import at.asitplus.crypto.datatypes.ECPoint
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
 
-/** Algorithm 4 from https://eprint.iacr.org/2015/1060.pdf */
+/** adds `other` to `this` and returns the result */
+/* Algorithm 4 from https://eprint.iacr.org/2015/1060.pdf */
 operator fun ECPoint.plus(other: ECPoint): ECPoint {
     require(this.curve == other.curve)
     val b = this.curve.b
@@ -68,7 +69,8 @@ operator fun ECPoint.plus(other: ECPoint): ECPoint {
     return ECPoint.General.unsafeFromXYZ(curve, X3, Y3, Z3)
 }
 
-/** Algorithm 6 from the same */
+/** adds `this` to `this` and returns the result */
+/* Algorithm 6 from https://eprint.iacr.org/2015/1060.pdf */
 fun ECPoint.double(): ECPoint {
     val b = this.curve.b
     val X = this.homX

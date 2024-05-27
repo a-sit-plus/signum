@@ -23,12 +23,26 @@ private fun BigNumber.Creator<ModularBigInteger>.fromByteArray(v: ByteArray) =
 /**
  * elliptic curve point in homogeneous coordinates (X,Y,Z)
  * to access affine coordinates, normalize the point. the point at infinity cannot be normalized.
+ * @see normalize
+ * @see tryNormalize
  */
 sealed class ECPoint private constructor(
+    /** the curve on which this point lies */
     val curve: ECCurve,
-    /* homogeneous X */
+    /**
+     * homogeneous X coordinate of point (X : Y : Z)
+     * @see normalize
+     */
     val homX: ModularBigInteger,
+    /**
+     * homogeneous Y coordinate of point (X : Y : Z)
+     * @see normalize
+     */
     val homY: ModularBigInteger,
+    /**
+     * homogeneous Z coordinate of point (X : Y : Z)
+     * @see normalize
+     */
     val homZ: ModularBigInteger
 ) {
 
@@ -90,13 +104,15 @@ sealed class ECPoint private constructor(
 
     /** whether this is the additive identity (point at infinity). the point at infinity cannot be normalized. */
     val isPointAtInfinity inline get() = this.homZ.isZero()
-    /** normalizes this point, converting it to affine coordinates. throws for the point at infinity. */
+    /** normalizes this point, converting it to affine coordinates. throws for the point at infinity.
+     * @see tryNormalize */
     fun normalize(): Normalized {
         if (this is Normalized) return this
         if (this.isPointAtInfinity) throw IllegalStateException("Cannot normalize point at infinity")
         return Normalized.unsafeFromXY(curve, homX / homZ, homY / homZ)
     }
-    /** normalizes this point, converting it to affine coordinates. returns null for the point at infinity. */
+    /** normalizes this point, converting it to affine coordinates. returns null for the point at infinity.
+     * @see normalize */
     inline fun tryNormalize() = if (!this.isPointAtInfinity) normalize() else null
 
     companion object {
