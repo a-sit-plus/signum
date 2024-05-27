@@ -112,7 +112,7 @@
     * Expose `TbsCertificate.issuerAltNames` and `TbsCertificte.subjectAltnames`, which contain (somewhat) parsed
       `AlternativeNames` structures for easy access to `dnsName`. `iPAddress`, etc.
 
-### NEXT
+### 3.1.0
 
 **Fixes**
  * Standardize class names: `Ec` -> `EC` everywhere
