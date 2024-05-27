@@ -131,5 +131,5 @@ private fun randomCertificate() = X509Certificate(
     CryptoSignature.EC.fromRS(
         BigInteger.fromByteArray(Random.nextBytes(16), Sign.POSITIVE),
         BigInteger.fromByteArray(Random.nextBytes(16), Sign.POSITIVE)
-    )
+    ).withCurve(CryptoAlgorithm.ES256.curve!!)
 )

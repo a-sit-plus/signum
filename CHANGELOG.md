@@ -118,6 +118,7 @@
  * Standardize class names: `Ec` -> `EC` everywhere
  * Fix an edge case where very small `r`/`s` in `CryptoSignature.EC` would be corrupted
  * Remove bogus ASN.1 encoding from JWS Algorithms
+   * `CryptoSignature.EC` now requires specification of a curve or size when reading raw bytes
 
 **Features**
  * Support ASN.1 encoding/decoding for `BigInteger`
@@ -132,3 +133,6 @@
  * JsonWebKey Changes:
    * do not generate kid when there is none and allow removing it
    * reference `JsonWebAlgorithm` instead of `JwsAlgorithm`
+   * add `.didEncoded`, which may return null, if encoding fails
+ * add `.curve` to EC CryptoAlgorithms
+ * Change JweAlgorithm to sealed class to support unknown algorithms

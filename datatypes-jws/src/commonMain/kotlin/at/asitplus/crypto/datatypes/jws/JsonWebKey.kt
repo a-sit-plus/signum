@@ -36,8 +36,8 @@ data class JsonWebKey(
      * The "kty" (key type) parameter identifies the cryptographic algorithm
      * family used with the key, such as "RSA" or "EC".  "kty" values should
      * either be registered in the IANA "JSON Web Key Types" registry
-     * established by (JWA) or be a value that contains a Collision-
-     * Resistant Name.  The "kty" value is a case-sensitive string.  This
+     * established by (JWA) or be a value that contains a Collision-Resistant
+     * Name.  The "kty" value is a case-sensitive string.  This
      * member MUST be present in a JWK.
      */
     @SerialName("kty")
@@ -191,6 +191,8 @@ data class JsonWebKey(
 
     fun serialize() = jsonSerializer.encodeToString(this)
 
+    val didEncoded: String? by lazy { toCryptoPublicKey().getOrNull()?.didEncoded }
+
     override fun toString(): String {
         return "JsonWebKey(curve=$curve," +
                 " type=$type," +
@@ -309,7 +311,7 @@ data class JsonWebKey(
             runCatching { jsonSerializer.decodeFromString<JsonWebKey>(it) }.wrap()
 
         fun fromDid(input: String): KmmResult<JsonWebKey> =
-            runCatching { CryptoPublicKey.fromDid(input).also { it.jwkId=input }.toJsonWebKey() }.wrap()
+            runCatching { CryptoPublicKey.fromDid(input).also { it.jwkId = input }.toJsonWebKey() }.wrap()
 
         fun fromIosEncoded(bytes: ByteArray): KmmResult<JsonWebKey> =
             runCatching { CryptoPublicKey.fromIosEncoded(bytes).toJsonWebKey() }.wrap()

@@ -164,6 +164,7 @@ sealed class CryptoSignature(
             }
 
             /** load from raw byte array (r and s concatenated), asserting that the size fits this particular curve */
+            @Throws(IllegalArgumentException::class)
             fun fromRawBytes(curve: ECCurve, input: ByteArray): EC.DefiniteLength {
                 val sz = curve.scalarLength.bytes.toInt()
                 require(input.size == sz * 2)
