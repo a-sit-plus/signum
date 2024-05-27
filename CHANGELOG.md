@@ -138,3 +138,5 @@
  * Change JweAlgorithm to sealed class to support unknown algorithms
  * Add generic `ECPoint` class
  * Implement elliptic-curve arithmetic
+
+### NEXT
