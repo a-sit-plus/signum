@@ -10,8 +10,7 @@ import at.asitplus.crypto.datatypes.cose.CoseKeySerializer.CompressedCompoundCos
 import at.asitplus.crypto.datatypes.cose.CoseKeySerializer.UncompressedCompoundCoseKeySerialContainer
 import at.asitplus.crypto.datatypes.cose.io.Base16Strict
 import at.asitplus.crypto.datatypes.cose.io.cborSerializer
-import at.asitplus.crypto.datatypes.misc.compressY
-import io.matthewnelson.encoding.base16.Base16
+import com.ionspin.kotlin.bignum.integer.Sign
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.*
 import kotlinx.serialization.builtins.ArraySerializer
@@ -132,7 +131,7 @@ data class CoseKey(
             y: ByteArray
         ): KmmResult<CoseKey> =
             runCatching {
-                CryptoPublicKey.Ec(curve.toEcCurve(), x, y).toCoseKey()
+                CryptoPublicKey.EC(curve.toEcCurve(), x, y).toCoseKey()
                     .getOrThrow()
             }.wrap()
     }
@@ -144,21 +143,21 @@ data class CoseKey(
  */
 fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseKey> =
     when (this) {
-        is CryptoPublicKey.Ec ->
+        is CryptoPublicKey.EC ->
             if ((algorithm != null) && !(algorithm.toCryptoAlgorithm().isEc))
                 failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
             else {
                 val keyParams = if (this.useCompressedRepresentation) {
                     CoseKeyParams.EcYBoolParams(
                         curve = curve.toCoseCurve(),
-                        x = x,
-                        y = this.compressY()
+                        x = xBytes,
+                        y = (this.yCompressed == Sign.POSITIVE)
                     )
                 } else
                     CoseKeyParams.EcYByteArrayParams(
                         curve = curve.toCoseCurve(),
-                        x = x,
-                        y = y
+                        x = xBytes,
+                        y = yBytes
                     )
                 runCatching {
                     CoseKey(

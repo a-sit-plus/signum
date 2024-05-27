@@ -4,6 +4,7 @@ import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.asn1.ensureSize
 import at.asitplus.crypto.datatypes.pki.X509Certificate
+import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -64,26 +65,26 @@ val Digest.jcaName
         Digest.SHA1 -> "SHA-1"
     }
 
-val EcCurve.jcaName
+val ECCurve.jcaName
     get() = when (this) {
-        EcCurve.SECP_256_R_1 -> "secp256r1"
-        EcCurve.SECP_384_R_1 -> "secp384r1"
-        EcCurve.SECP_521_R_1 -> "secp521r1"
+        ECCurve.SECP_256_R_1 -> "secp256r1"
+        ECCurve.SECP_384_R_1 -> "secp384r1"
+        ECCurve.SECP_521_R_1 -> "secp521r1"
     }
 
-fun EcCurve.Companion.byJcaName(name: String): EcCurve? = EcCurve.entries.find { it.jcaName == name }
+fun ECCurve.Companion.byJcaName(name: String): ECCurve? = ECCurve.entries.find { it.jcaName == name }
 
 
 fun CryptoPublicKey.getJcaPublicKey() = when (this) {
-    is CryptoPublicKey.Ec -> getJcaPublicKey()
+    is CryptoPublicKey.EC -> getJcaPublicKey()
     is CryptoPublicKey.Rsa -> getJcaPublicKey()
 }
 
-fun CryptoPublicKey.Ec.getJcaPublicKey(): KmmResult<ECPublicKey> {
+fun CryptoPublicKey.EC.getJcaPublicKey(): KmmResult<ECPublicKey> {
     return runCatching {
         val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.jwkName)
-        val x = BigInteger(1, x)
-        val y = BigInteger(1, y)
+        val x = x.residue.toJavaBigInteger()
+        val y = y.residue.toJavaBigInteger()
         val ecPoint = parameterSpec.curve.createPoint(x, y)
         val ecPublicKeySpec = ECPublicKeySpec(ecPoint, parameterSpec)
         JCEECPublicKey("EC", ecPublicKeySpec)
@@ -99,19 +100,19 @@ fun CryptoPublicKey.Rsa.getJcaPublicKey(): KmmResult<RSAPublicKey> =
         ) as RSAPublicKey
     }.wrap()
 
-fun CryptoPublicKey.Ec.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey> =
+fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey> =
     runCatching {
-        val curve = EcCurve.byJcaName(
+        val curve = ECCurve.byJcaName(
             SECNamedCurves.getName(
                 SubjectPublicKeyInfo.getInstance(
                     ASN1Sequence.getInstance(publicKey.encoded)
                 ).algorithm.parameters as ASN1ObjectIdentifier
             )
         ) ?: throw SerializationException("Unknown Jca name")
-        CryptoPublicKey.Ec(
+        CryptoPublicKey.EC(
             curve,
-            publicKey.w.affineX.toByteArray().ensureSize(curve.coordinateLengthBytes),
-            publicKey.w.affineY.toByteArray().ensureSize(curve.coordinateLengthBytes)
+            publicKey.w.affineX.toByteArray(),
+            publicKey.w.affineY.toByteArray()
         )
     }.wrap()
 
@@ -121,7 +122,7 @@ fun CryptoPublicKey.Rsa.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): Kmm
 fun CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
     when (publicKey) {
         is RSAPublicKey -> CryptoPublicKey.Rsa.fromJcaPublicKey(publicKey)
-        is ECPublicKey -> CryptoPublicKey.Ec.fromJcaPublicKey(publicKey)
+        is ECPublicKey -> CryptoPublicKey.EC.fromJcaPublicKey(publicKey)
         else -> KmmResult.failure(IllegalArgumentException("Unsupported Key Type"))
     }
 
@@ -139,7 +140,7 @@ val CryptoSignature.jcaSignatureBytes: ByteArray
  */
 fun CryptoSignature.Companion.parseFromJca(input: ByteArray, algorithm: CryptoAlgorithm) =
     if (algorithm.isEc)
-        CryptoSignature.decodeFromDer(input)
+        CryptoSignature.EC.decodeFromDer(input).withCurve(algorithm.curve!!)
     else
         CryptoSignature.RSAorHMAC(input)
 

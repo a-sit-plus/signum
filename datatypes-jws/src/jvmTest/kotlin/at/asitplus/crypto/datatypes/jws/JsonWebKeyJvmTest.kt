@@ -1,12 +1,11 @@
 package at.asitplus.crypto.datatypes.jws
 
 import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.EcCurve
+import at.asitplus.crypto.datatypes.ECCurve
 import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
 import at.asitplus.crypto.datatypes.asn1.ensureSize
-import at.asitplus.crypto.datatypes.jws.JsonWebKey
-import at.asitplus.crypto.datatypes.jws.toJsonWebKey
 import io.kotest.core.spec.style.FreeSpec
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldHaveMinLength
@@ -17,12 +16,12 @@ import java.security.interfaces.RSAPublicKey
 
 class JsonWebKeyJvmTest : FreeSpec({
 
-    lateinit var ecCurve: EcCurve
+    lateinit var ecCurve: ECCurve
     lateinit var keyPair: KeyPair
     lateinit var keyPairRSA: KeyPair
 
     beforeTest {
-        ecCurve = EcCurve.SECP_256_R_1
+        ecCurve = ECCurve.SECP_256_R_1
         keyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair()
         keyPairRSA = KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }.genKeyPair()
     }
@@ -30,7 +29,7 @@ class JsonWebKeyJvmTest : FreeSpec({
     "JWK can be created from Coordinates" - {
         val xFromBc = (keyPair.public as ECPublicKey).w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
         val yFromBc = (keyPair.public as ECPublicKey).w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
-        val pubKey = CryptoPublicKey.Ec(ecCurve, xFromBc, yFromBc)
+        val pubKey = CryptoPublicKey.EC(ecCurve, xFromBc, yFromBc).also { it.jwkId=it.didEncoded }
         val jsonWebKey = pubKey.toJsonWebKey()
 
         jsonWebKey.shouldNotBeNull()
@@ -56,7 +55,7 @@ class JsonWebKeyJvmTest : FreeSpec({
     "JWK can be created from n and e" - {
         val nFromBc = (keyPairRSA.public as RSAPublicKey).modulus.toByteArray()
         val eFromBc = (keyPairRSA.public as RSAPublicKey).publicExponent.toInt()
-        val pubKey = CryptoPublicKey.Rsa(nFromBc, eFromBc)
+        val pubKey = CryptoPublicKey.Rsa(nFromBc, eFromBc).also { it.jwkId=it.didEncoded }
         val jwk = pubKey.toJsonWebKey()
 
         jwk.shouldNotBeNull()

@@ -19,20 +19,26 @@ enum class JweEncryption(val text: String) {
 
     A128GCM("A128GCM"),
     A192GCM("A192GCM"),
-    A256GCM("A256GCM");
+    A256GCM("A256GCM"),
+    A128CBC_HS256("A128CBC-HS256"),
+    A192CBC_HS384("A192CBC-HS384"),
+    A256CBC_HS512("A256CBC-HS512")
+    ;
 
     val encryptionKeyLength
         get() = when (this) {
             A128GCM -> 128
             A192GCM -> 192
             A256GCM -> 256
+            A128CBC_HS256 -> 256
+            A192CBC_HS384 -> 384
+            A256CBC_HS512 -> 512
         }
 
     val ivLengthBits
         get() = when (this) {
-            A128GCM -> 128
-            A192GCM -> 192
-            A256GCM -> 128
+            A128GCM, A192GCM, A256GCM -> 128 // all AES-based
+            A128CBC_HS256, A192CBC_HS384, A256CBC_HS512 -> 128 // all AES-based
         }
 }
 

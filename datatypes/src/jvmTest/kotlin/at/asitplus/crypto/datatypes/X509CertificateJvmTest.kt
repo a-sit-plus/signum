@@ -35,11 +35,11 @@ import kotlin.time.Duration.Companion.days
 
 class X509CertificateJvmTest : FreeSpec({
 
-    lateinit var ecCurve: EcCurve
+    lateinit var ecCurve: ECCurve
     lateinit var keyPair: KeyPair
 
     beforeTest {
-        ecCurve = EcCurve.SECP_256_R_1
+        ecCurve = ECCurve.SECP_256_R_1
         keyPair = KeyPairGenerator.getInstance("EC").also {
             it.initialize(256)
         }.genKeyPair()
@@ -47,7 +47,7 @@ class X509CertificateJvmTest : FreeSpec({
 
     "Certificates match" {
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaPublicKey(ecPublicKey).getOrThrow()
+        val cryptoPublicKey = CryptoPublicKey.EC.fromJcaPublicKey(ecPublicKey).getOrThrow()
 
         // create certificate with bouncycastle
         val notBeforeDate = Date.from(Instant.now())
@@ -82,7 +82,7 @@ class X509CertificateJvmTest : FreeSpec({
             initSign(keyPair.private)
             update(tbsCertificate.encodeToTlv().derEncoded)
         }.sign()
-        val test = CryptoSignature.decodeFromDer(signed)
+        val test = (CryptoSignature.decodeFromDer(signed) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
         val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, test)
 
         val kotlinEncoded = x509Certificate.encodeToDer()
@@ -103,7 +103,7 @@ class X509CertificateJvmTest : FreeSpec({
 
     "Certificates Conversions" {
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaPublicKey(ecPublicKey).getOrThrow()
+        val cryptoPublicKey = CryptoPublicKey.EC.fromJcaPublicKey(ecPublicKey).getOrThrow()
 
         // create certificate with bouncycastle
         val notBeforeDate = Date.from(Instant.now())
@@ -128,7 +128,7 @@ class X509CertificateJvmTest : FreeSpec({
             initSign(keyPair.private)
             update(tbsCertificate.encodeToTlv().derEncoded)
         }.sign()
-        val test = CryptoSignature.decodeFromDer(signed)
+        val test = (CryptoSignature.decodeFromDer(signed) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
         val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, test)
 
         repeat(500) { launch { x509Certificate.toJcaCertificate().getOrThrow().toKmpCertificate().getOrThrow().encodeToDer() shouldBe x509Certificate.encodeToDer() } }
@@ -136,8 +136,8 @@ class X509CertificateJvmTest : FreeSpec({
 
     "Certificate can be parsed" {
         val ecPublicKey = keyPair.public as ECPublicKey
-        val keyX = ecPublicKey.w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
-        val keyY = ecPublicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
+        val keyX = ecPublicKey.w.affineX.toByteArray().ensureSize(ecCurve.coordinateLength.bytes)
+        val keyY = ecPublicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLength.bytes)
 
         // create certificate with bouncycastle
         val notBeforeDate = Date.from(Instant.now())
@@ -175,16 +175,16 @@ class X509CertificateJvmTest : FreeSpec({
             .truncatedTo(ChronoUnit.SECONDS)
             .toKotlinInstant()
         val parsedPublicKey = x509Certificate.tbsCertificate.publicKey
-        parsedPublicKey.shouldBeInstanceOf<CryptoPublicKey.Ec>()
-        parsedPublicKey.x shouldBe keyX
-        parsedPublicKey.y shouldBe keyY
+        parsedPublicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()
+        parsedPublicKey.xBytes shouldBe keyX
+        parsedPublicKey.yBytes shouldBe keyY
     }
 
     "Certificate can be parsed to tree" {
         val ecPublicKey = keyPair.public as ECPublicKey
         val keyX = ecPublicKey.w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
         val keyY = ecPublicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
-        val cryptoPublicKey = CryptoPublicKey.Ec(curve = ecCurve, x = keyX, y = keyY)
+        val cryptoPublicKey = CryptoPublicKey.EC(curve = ecCurve, x = keyX, y = keyY)
 
         // create certificate with bouncycastle
         val notBeforeDate = Date.from(Instant.now())
@@ -253,7 +253,7 @@ class X509CertificateJvmTest : FreeSpec({
             TbsCertificate
         */
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaPublicKey(ecPublicKey).getOrThrow()
+        val cryptoPublicKey = CryptoPublicKey.EC.fromJcaPublicKey(ecPublicKey).getOrThrow()
 
         // create certificate with bouncycastle
         val notBeforeDate = Date.from(Instant.now())
@@ -348,9 +348,9 @@ class X509CertificateJvmTest : FreeSpec({
             initSign(keyPair.private)
             update(tbsCertificate3.encodeToTlv().derEncoded)
         }.sign()
-        val signature1 = CryptoSignature.decodeFromDer(signed1)
-        val signature2 = CryptoSignature.decodeFromDer(signed2)
-        val signature3 = CryptoSignature.decodeFromDer(signed3)
+        val signature1 = (CryptoSignature.decodeFromDer(signed1) as  CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
+        val signature2 = (CryptoSignature.decodeFromDer(signed2) as  CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
+        val signature3 = (CryptoSignature.decodeFromDer(signed3) as  CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_521_R_1)
         val x509Certificate1 = X509Certificate(tbsCertificate1, signatureAlgorithm256, signature1)
         val x509Certificate2 = X509Certificate(tbsCertificate2, signatureAlgorithm256, signature2)
         val x509Certificate3 = X509Certificate(tbsCertificate3, signatureAlgorithm512, signature3)

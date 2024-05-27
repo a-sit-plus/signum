@@ -2,20 +2,9 @@ package at.asitplus.crypto.datatypes.pki
 
 import at.asitplus.crypto.datatypes.CryptoAlgorithm
 import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.asn1.Asn1Decodable
-import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
-import at.asitplus.crypto.datatypes.asn1.Asn1Exception
-import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
-import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.Asn1Set
-import at.asitplus.crypto.datatypes.asn1.Asn1StructuralException
-import at.asitplus.crypto.datatypes.asn1.Asn1Tagged
-import at.asitplus.crypto.datatypes.asn1.KnownOIDs
-import at.asitplus.crypto.datatypes.asn1.asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.readBitString
-import at.asitplus.crypto.datatypes.asn1.readInt
-import at.asitplus.crypto.datatypes.asn1.runRethrowing
-import at.asitplus.crypto.datatypes.asn1.verifyTag
+import at.asitplus.crypto.datatypes.asn1.*
+import at.asitplus.crypto.datatypes.asn1.Asn1.BitString
+import at.asitplus.crypto.datatypes.asn1.Asn1.Tagged
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import kotlinx.serialization.Serializable
 
@@ -50,18 +39,18 @@ data class TbsCertificationRequest(
     ) : this(version, subjectName, publicKey, mutableListOf<Pkcs10CertificationRequestAttribute>().also { attrs ->
         if (extensions.isEmpty()) throw IllegalArgumentException("No extensions provided!")
         attributes?.let { attrs.addAll(it) }
-        attrs.add(Pkcs10CertificationRequestAttribute(KnownOIDs.extensionRequest, asn1Sequence {
-            extensions.forEach { append(it) }
+        attrs.add(Pkcs10CertificationRequestAttribute(KnownOIDs.extensionRequest, Asn1.Sequence {
+            extensions.forEach { +it }
         }))
     })
 
-    override fun encodeToTlv() = asn1Sequence {
-        int(version)
-        sequence { subjectName.forEach { append(it) } }
+    override fun encodeToTlv() = Asn1.Sequence {
+        +Asn1.Int(version)
+        +Asn1.Sequence { subjectName.forEach { +it } }
 
         //subject Public Key
-        append(publicKey)
-        tagged(0u) { attributes?.map { append(it) } }
+        +publicKey
+        +Tagged(0u) { attributes?.map { +it } }
     }
 
     override fun equals(other: Any?): Boolean {
@@ -125,10 +114,10 @@ data class Pkcs10CertificationRequest(
 
 
     @Throws(Asn1Exception::class)
-    override fun encodeToTlv() = asn1Sequence {
-        append(tbsCsr)
-        append(signatureAlgorithm)
-        bitString(signature)
+    override fun encodeToTlv() = Asn1.Sequence {
+        +tbsCsr
+        +signatureAlgorithm
+        +BitString(signature)
     }
 
     override fun equals(other: Any?): Boolean {

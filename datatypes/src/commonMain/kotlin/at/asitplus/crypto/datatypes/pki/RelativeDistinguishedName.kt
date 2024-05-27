@@ -13,10 +13,8 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
     constructor(singleItem: AttributeTypeAndValue) : this(listOf(singleItem))
 
     override fun encodeToTlv() = runRethrowing {
-        asn1Set {
-            attrsAndValues.forEach {
-                append(it)
-            }
+        Asn1.Set {
+            attrsAndValues.forEach { +it }
         }
     }
 
@@ -94,10 +92,9 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         )
     }
 
-    override fun encodeToTlv() = asn1Sequence {
-        append(oid)
-        append(value)
-
+    override fun encodeToTlv() = Asn1.Sequence {
+        +oid
+        +value
     }
 
     override fun equals(other: Any?): Boolean {

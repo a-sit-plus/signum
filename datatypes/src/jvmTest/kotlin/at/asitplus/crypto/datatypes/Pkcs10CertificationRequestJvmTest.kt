@@ -11,6 +11,7 @@ import at.asitplus.crypto.datatypes.asn1.encodeToTlv
 import at.asitplus.crypto.datatypes.asn1.ensureSize
 import at.asitplus.crypto.datatypes.asn1.parse
 import at.asitplus.crypto.datatypes.pki.*
+import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -37,14 +38,15 @@ import java.security.Signature
 import java.security.interfaces.ECPublicKey
 
 
+@OptIn(ExperimentalStdlibApi::class)
 class Pkcs10CertificationRequestJvmTest : FreeSpec({
 
-    lateinit var ecCurve: EcCurve
+    lateinit var ecCurve: ECCurve
     lateinit var keyPair: KeyPair
     lateinit var keyPair1: KeyPair
 
     beforeTest {
-        ecCurve = EcCurve.SECP_256_R_1
+        ecCurve = ECCurve.SECP_256_R_1
         keyPair = KeyPairGenerator.getInstance("EC").also {
             it.initialize(256)
         }.genKeyPair()
@@ -55,7 +57,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
 
     "CSR match" {
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaPublicKey(ecPublicKey).getOrThrow()
+        val cryptoPublicKey = CryptoPublicKey.EC.fromJcaPublicKey(ecPublicKey).getOrThrow()
 
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
@@ -90,7 +92,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
 
     "CSR with attributes match" {
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaPublicKey(ecPublicKey).getOrThrow()
+        val cryptoPublicKey = CryptoPublicKey.EC.fromJcaPublicKey(ecPublicKey).getOrThrow()
 
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
@@ -125,7 +127,9 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         val jvmEncoded = bcCsr.encoded
         // CSR will never entirely match because of randomness in ECDSA signature
         //kotlinEncoded shouldBe jvmEncoded
-        kotlinEncoded.drop(6).take(172) shouldBe jvmEncoded.drop(6).take(172)
+        withClue("kotlinEncoded: ${csr.encodeToTlv().toDerHexString()}, jvmEncoded: ${bcCsr.encoded.toHexString(
+            HexFormat.UpperCase)}")
+        { kotlinEncoded.drop(6).take(172) shouldBe jvmEncoded.drop(6).take(172) }
 
         val parsedFromKotlinCsr = PKCS10CertificationRequest(kotlinEncoded)
         parsedFromKotlinCsr.isSignatureValid(JcaContentVerifierProviderBuilder().build(keyPair.public))
@@ -133,7 +137,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
 
     "CSRs with extensionRequest match" {
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaPublicKey(ecPublicKey).getOrThrow()
+        val cryptoPublicKey = CryptoPublicKey.EC.fromJcaPublicKey(ecPublicKey).getOrThrow()
 
         // create CSR with bouncycastle
         val commonName = "localhost"
@@ -210,9 +214,9 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         csr.tbsCsr.version shouldBe 0
         (csr.tbsCsr.subjectName.first().attrsAndValues.first().value as Asn1Primitive).content shouldBe commonName.encodeToByteArray()
         val parsedPublicKey = csr.tbsCsr.publicKey
-        parsedPublicKey.shouldBeInstanceOf<CryptoPublicKey.Ec>()
-        parsedPublicKey.x shouldBe keyX
-        parsedPublicKey.y shouldBe keyY
+        parsedPublicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()
+        parsedPublicKey.xBytes shouldBe keyX
+        parsedPublicKey.yBytes shouldBe keyY
     }
 
     "Equals & hashCode" {
@@ -221,11 +225,11 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             TbsCertificationRequest
         */
         val ecPublicKey1 = keyPair.public as ECPublicKey
-        val cryptoPublicKey1 = CryptoPublicKey.Ec.fromJcaPublicKey(ecPublicKey1).getOrThrow()
+        val cryptoPublicKey1 = CryptoPublicKey.EC.fromJcaPublicKey(ecPublicKey1).getOrThrow()
         val ecPublicKey11 = keyPair.public as ECPublicKey
-        val cryptoPublicKey11 = CryptoPublicKey.Ec.fromJcaPublicKey(ecPublicKey11).getOrThrow()
+        val cryptoPublicKey11 = CryptoPublicKey.EC.fromJcaPublicKey(ecPublicKey11).getOrThrow()
         val ecPublicKey2 = keyPair1.public as ECPublicKey
-        val cryptoPublicKey2 = CryptoPublicKey.Ec.fromJcaPublicKey(ecPublicKey2).getOrThrow()
+        val cryptoPublicKey2 = CryptoPublicKey.EC.fromJcaPublicKey(ecPublicKey2).getOrThrow()
 
         val commonName = "DefaultCryptoService"
         val commonName1 = "DefaultCryptoService1"

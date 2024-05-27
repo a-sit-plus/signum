@@ -58,48 +58,44 @@ constructor(
     val issuerAlternativeNames: AlternativeNames? = extensions?.findIssuerAltNames()
 
 
-    private fun Asn1TreeBuilder.version(value: Int) {
-        tagged(0u) { int(value) }
-    }
+    private fun Asn1TreeBuilder.Version(value: Int) = Asn1.Tagged(0u) { +Asn1.Int(value) }
+
 
     @Throws(Asn1Exception::class)
     override fun encodeToTlv() = runRethrowing {
-        asn1Sequence {
-            version(version)
-            append(Asn1Primitive(BERTags.INTEGER, serialNumber))
-            append(signatureAlgorithm)
-            sequence { issuerName.forEach { append(it) } }
+        Asn1.Sequence {
+            +Version(version)
+            +Asn1Primitive(BERTags.INTEGER, serialNumber)
+            +signatureAlgorithm
+            +Asn1.Sequence { issuerName.forEach { +it } }
 
-            sequence {
-                append(validFrom)
-                append(validUntil)
+            +Asn1.Sequence {
+                +validFrom
+                +validUntil
             }
 
-            sequence { subjectName.forEach { append(it) } }
+            +Asn1.Sequence { subjectName.forEach { +it } }
 
             //subject public key
-            append(publicKey)
+            +publicKey
 
             issuerUniqueID?.let {
-                append(
-                    Asn1Primitive(
-                        1u.toImplicitTag(),
-                        Asn1BitString(it).let { byteArrayOf(it.numPaddingBits, *it.rawBytes) })
-                )
+                +Asn1Primitive(
+                    1u.toImplicitTag(),
+                    Asn1BitString(it).let { byteArrayOf(it.numPaddingBits, *it.rawBytes) })
             }
             subjectUniqueID?.let {
-                append(
-                    Asn1Primitive(
-                        1u.toImplicitTag(),
-                        Asn1BitString(it).let { byteArrayOf(it.numPaddingBits, *it.rawBytes) })
-                )
+                +Asn1Primitive(
+                    1u.toImplicitTag(),
+                    Asn1BitString(it).let { byteArrayOf(it.numPaddingBits, *it.rawBytes) })
+
             }
 
             extensions?.let {
                 if (it.isNotEmpty()) {
-                    tagged(3u) {
-                        sequence {
-                            it.forEach { ext -> append(ext) }
+                    +Asn1.Tagged(3u) {
+                        +Asn1.Sequence {
+                            it.forEach { ext -> +ext }
                         }
                     }
                 }
@@ -211,18 +207,24 @@ constructor(
  * Very simple implementation of an X.509 Certificate
  */
 @Serializable
-data class X509Certificate(
+data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     val tbsCertificate: TbsCertificate,
     val signatureAlgorithm: CryptoAlgorithm,
     val signature: CryptoSignature
 ) : Asn1Encodable<Asn1Sequence> {
 
 
+    init {
+        if (signature is CryptoSignature.EC.IndefiniteLength) {
+            throw IllegalArgumentException("Certificate Signatures must be well-defined!")
+        }
+    }
+
     @Throws(Asn1Exception::class)
-    override fun encodeToTlv() = asn1Sequence {
-        append(tbsCertificate)
-        append(signatureAlgorithm)
-        append(signature.encodeToTlvBitString())
+    override fun encodeToTlv() = Asn1.Sequence {
+        +tbsCertificate
+        +signatureAlgorithm
+        +signature.encodeToTlvBitString()
     }
 
     override fun equals(other: Any?): Boolean {
@@ -253,7 +255,8 @@ data class X509Certificate(
         override fun decodeFromTlv(src: Asn1Sequence): X509Certificate = runRethrowing {
             val tbs = TbsCertificate.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val sigAlg = CryptoAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val signature = if(sigAlg.isEc) CryptoSignature.EC.decodeFromTlvBitString(src.nextChild() as Asn1Primitive) else CryptoSignature.RSAorHMAC.decodeFromTlvBitString(src.nextChild() as Asn1Primitive)
+            val signature = if (sigAlg.isEc) CryptoSignature.EC.decodeFromTlvBitString(src.nextChild() as Asn1Primitive)
+                .withCurve(sigAlg.curve!!) else CryptoSignature.RSAorHMAC.decodeFromTlvBitString(src.nextChild() as Asn1Primitive)
             if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous structure in Certificate Structure")
             return X509Certificate(tbs, sigAlg, signature)
         }

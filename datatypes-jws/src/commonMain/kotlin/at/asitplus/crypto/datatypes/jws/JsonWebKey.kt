@@ -1,20 +1,18 @@
 @file:UseSerializers(JwsCertificateSerializer::class)
+
 package at.asitplus.crypto.datatypes.jws
 
 import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.EcCurve
+import at.asitplus.crypto.datatypes.ECCurve
 import at.asitplus.crypto.datatypes.asn1.decodeFromDer
 import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
-import at.asitplus.crypto.datatypes.io.Base64Strict
 import at.asitplus.crypto.datatypes.io.Base64UrlStrict
-import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64UrlSerializer
 import at.asitplus.crypto.datatypes.jws.io.JwsCertificateSerializer
 import at.asitplus.crypto.datatypes.jws.io.jsonSerializer
 import at.asitplus.crypto.datatypes.pki.CertificateChain
-import at.asitplus.crypto.datatypes.pki.X509Certificate
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -32,14 +30,14 @@ data class JsonWebKey(
      * Set for EC keys only
      */
     @SerialName("crv")
-    val curve: EcCurve? = null,
+    val curve: ECCurve? = null,
 
     /**
      * The "kty" (key type) parameter identifies the cryptographic algorithm
      * family used with the key, such as "RSA" or "EC".  "kty" values should
      * either be registered in the IANA "JSON Web Key Types" registry
-     * established by (JWA) or be a value that contains a Collision-
-     * Resistant Name.  The "kty" value is a case-sensitive string.  This
+     * established by (JWA) or be a value that contains a Collision-Resistant
+     * Name.  The "kty" value is a case-sensitive string.  This
      * member MUST be present in a JWK.
      */
     @SerialName("kty")
@@ -123,7 +121,7 @@ data class JsonWebKey(
      * Use of this member is OPTIONAL.
      */
     @SerialName("alg")
-    val algorithm: JwsAlgorithm? = null,
+    val algorithm: JsonWebAlgorithm? = null,
 
     /**
      * The "x5u" (X.509 URL) parameter is a URI (RFC3986) that refers to a
@@ -192,6 +190,8 @@ data class JsonWebKey(
     }
 
     fun serialize() = jsonSerializer.encodeToString(this)
+
+    val didEncoded: String? by lazy { toCryptoPublicKey().getOrNull()?.didEncoded }
 
     override fun toString(): String {
         return "JsonWebKey(curve=$curve," +
@@ -284,7 +284,7 @@ data class JsonWebKey(
         runCatching {
             when (type) {
                 JwkType.EC -> {
-                    CryptoPublicKey.Ec(
+                    CryptoPublicKey.EC(
                         curve = curve ?: throw IllegalArgumentException("Missing or invalid curve"),
                         x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
                         y = y ?: throw IllegalArgumentException("Missing y-coordinate")
@@ -311,13 +311,13 @@ data class JsonWebKey(
             runCatching { jsonSerializer.decodeFromString<JsonWebKey>(it) }.wrap()
 
         fun fromDid(input: String): KmmResult<JsonWebKey> =
-            runCatching { CryptoPublicKey.fromDid(input).toJsonWebKey() }.wrap()
+            runCatching { CryptoPublicKey.fromDid(input).also { it.jwkId = input }.toJsonWebKey() }.wrap()
 
         fun fromIosEncoded(bytes: ByteArray): KmmResult<JsonWebKey> =
             runCatching { CryptoPublicKey.fromIosEncoded(bytes).toJsonWebKey() }.wrap()
 
-        fun fromCoordinates(curve: EcCurve, x: ByteArray, y: ByteArray): KmmResult<JsonWebKey> =
-            runCatching { CryptoPublicKey.Ec(curve, x, y).toJsonWebKey() }.wrap()
+        fun fromCoordinates(curve: ECCurve, x: ByteArray, y: ByteArray): KmmResult<JsonWebKey> =
+            runCatching { CryptoPublicKey.EC(curve, x, y).toJsonWebKey() }.wrap()
     }
 }
 
@@ -326,13 +326,13 @@ data class JsonWebKey(
  */
 fun CryptoPublicKey.toJsonWebKey(): JsonWebKey =
     when (this) {
-        is CryptoPublicKey.Ec ->
+        is CryptoPublicKey.EC ->
             JsonWebKey(
                 type = JwkType.EC,
                 keyId = jwkId,
                 curve = curve,
-                x = x,
-                y = y
+                x = xBytes,
+                y = yBytes
             )
 
 
@@ -350,8 +350,8 @@ private const val JWK_ID = "jwkIdentifier"
 /**
  * Holds [JsonWebKey.keyId] when transforming a [JsonWebKey] to a [CryptoPublicKey]
  */
-var CryptoPublicKey.jwkId: String
-    get() = additionalProperties[JWK_ID] ?: didEncoded
+var CryptoPublicKey.jwkId: String?
+    get() = additionalProperties[JWK_ID]
     set(value) {
-        additionalProperties[JWK_ID] = value
+        value?.also { additionalProperties[JWK_ID] = value } ?: additionalProperties.remove(JWK_ID)
     }

@@ -29,7 +29,7 @@ private fun Byte.getBit(index: Int): Boolean =
  *
  * **Note:** The in-byte bit index and the global index (for iterating over the bytes contained in the list) run in opposing directions!
  *
- * The [toBitString] function print our the bits as they are accessible, disragarding byte-alignment and memory layout:
+ * The [toBitString] function print our the bits as they are accessible, disregarding byte-alignment and memory layout:
  *
  * ```kotlin
  * val bitSet = BitSet()

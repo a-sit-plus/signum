@@ -112,3 +112,29 @@
     * Expose `TbsCertificate.issuerAltNames` and `TbsCertificte.subjectAltnames`, which contain (somewhat) parsed
       `AlternativeNames` structures for easy access to `dnsName`. `iPAddress`, etc.
 
+### 3.1.0
+
+**Fixes**
+ * Standardize class names: `Ec` -> `EC` everywhere
+ * Fix an edge case where very small `r`/`s` in `CryptoSignature.EC` would be corrupted
+ * Remove bogus ASN.1 encoding from JWS Algorithms
+   * `CryptoSignature.EC` now requires specification of a curve or size when reading raw bytes
+
+**Features**
+ * Support ASN.1 encoding/decoding for `BigInteger`
+ * Expose `generator`, `order` and `cofactor` of `ECCurve`
+ * Extend list of values in `JweAlgorithm` and `JweEncryption`
+ * Extend properties in `JweHeader`
+ * Extend properties in `JwsHeader`
+ * **BREAKING CHANGE:** Completely revamp the ASN.1 builder DSL
+   * explicitly require `+` to add some ASN.1 element to a builder
+   * Make convenience functions like `Bool(<boolean value>)`work stand-alone
+ * Introduce common interface `JsonWebAlgorithm` for Jw{s,e}Algorithm
+ * JsonWebKey Changes:
+   * do not generate kid when there is none and allow removing it
+   * reference `JsonWebAlgorithm` instead of `JwsAlgorithm`
+   * add `.didEncoded`, which may return null, if encoding fails
+ * add `.curve` to EC CryptoAlgorithms
+ * Change JweAlgorithm to sealed class to support unknown algorithms
+ * Add generic `ECPoint` class
+ * Implement elliptic-curve arithmetic

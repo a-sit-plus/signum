@@ -122,7 +122,7 @@ private constructor(private val extensions: List<Asn1Element>) {
             val matches = filter { it.oid == oid }
             if (matches.size > 1) throw Asn1StructuralException("More than one extension with oid $oid found")
             return if (matches.isEmpty()) null
-            else ((matches.first().value as Asn1EncapsulatingOctetString).children?.firstOrNull() as Asn1Sequence?)?.children
+            else ((matches.first().value as Asn1EncapsulatingOctetString).children.firstOrNull() as Asn1Sequence?)?.children
         }
     }
 }

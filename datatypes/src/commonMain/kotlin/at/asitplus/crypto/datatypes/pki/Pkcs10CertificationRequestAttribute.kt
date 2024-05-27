@@ -1,17 +1,6 @@
 package at.asitplus.crypto.datatypes.pki
 
-import at.asitplus.crypto.datatypes.asn1.Asn1Decodable
-import at.asitplus.crypto.datatypes.asn1.Asn1Element
-import at.asitplus.crypto.datatypes.asn1.Asn1Encodable
-import at.asitplus.crypto.datatypes.asn1.Asn1Exception
-import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
-import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.Asn1Set
-import at.asitplus.crypto.datatypes.asn1.Identifiable
-import at.asitplus.crypto.datatypes.asn1.ObjectIdentifier
-import at.asitplus.crypto.datatypes.asn1.asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.readOid
-import at.asitplus.crypto.datatypes.asn1.runRethrowing
+import at.asitplus.crypto.datatypes.asn1.*
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -21,9 +10,9 @@ data class Pkcs10CertificationRequestAttribute(
 ) : Asn1Encodable<Asn1Sequence>, Identifiable {
     constructor(id: ObjectIdentifier, value: Asn1Element) : this(id, listOf(value))
 
-    override fun encodeToTlv() = asn1Sequence {
-        append(oid)
-        set { value.forEach { append(it) } }
+    override fun encodeToTlv() = Asn1.Sequence {
+        +oid
+        +Asn1.Set { value.forEach { +it } }
     }
 
     override fun equals(other: Any?): Boolean {

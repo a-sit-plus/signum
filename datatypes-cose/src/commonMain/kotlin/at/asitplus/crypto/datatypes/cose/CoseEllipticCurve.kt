@@ -1,6 +1,6 @@
 package at.asitplus.crypto.datatypes.cose
 
-import at.asitplus.crypto.datatypes.EcCurve
+import at.asitplus.crypto.datatypes.ECCurve
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -17,9 +17,9 @@ enum class CoseEllipticCurve(val value: Int) {
     P521(3);
 
     fun toEcCurve() = when (this) {
-        P256 -> EcCurve.SECP_256_R_1
-        P384 -> EcCurve.SECP_384_R_1
-        P521 -> EcCurve.SECP_521_R_1
+        P256 -> ECCurve.SECP_256_R_1
+        P384 -> ECCurve.SECP_384_R_1
+        P521 -> ECCurve.SECP_521_R_1
     }
     //X25519(4),
     //X448(5),
@@ -49,10 +49,10 @@ enum class CoseEllipticCurve(val value: Int) {
 
 }
 
-fun EcCurve.toCoseCurve(): CoseEllipticCurve = when (this) {
-    EcCurve.SECP_256_R_1 -> CoseEllipticCurve.P256
-    EcCurve.SECP_384_R_1 -> CoseEllipticCurve.P384
-    EcCurve.SECP_521_R_1 -> CoseEllipticCurve.P521
+fun ECCurve.toCoseCurve(): CoseEllipticCurve = when (this) {
+    ECCurve.SECP_256_R_1 -> CoseEllipticCurve.P256
+    ECCurve.SECP_384_R_1 -> CoseEllipticCurve.P384
+    ECCurve.SECP_521_R_1 -> CoseEllipticCurve.P521
 }
 
 

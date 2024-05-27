@@ -4,8 +4,9 @@ import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.failure
 import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.Signum
 import at.asitplus.crypto.datatypes.asn1.decodeFromDer
+import at.asitplus.crypto.datatypes.misc.ANSIECPrefix
+import com.ionspin.kotlin.bignum.integer.Sign
 
 /**
  * Wrapper to handle parameters for different COSE public key types.
@@ -89,7 +90,7 @@ sealed class CoseKeyParams {
 
         override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> {
             return runCatching {
-                CryptoPublicKey.Ec(
+                CryptoPublicKey.EC(
                     curve = curve?.toEcCurve() ?: throw IllegalArgumentException("Missing or invalid curve"),
                     x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
                     y = y ?: throw IllegalArgumentException("Missing y-coordinate")
@@ -101,7 +102,7 @@ sealed class CoseKeyParams {
     data class EcYBoolParams(
         override val curve: CoseEllipticCurve? = null,
         override val x: ByteArray? = null,
-        override val y: Signum? = null,
+        override val y: Boolean? = null,
         override val d: ByteArray? = null,
     ) : EcKeyParams<Boolean>() {
 
@@ -120,9 +121,11 @@ sealed class CoseKeyParams {
         override fun yHashCode(): Int = y?.hashCode() ?: 0
 
         override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = runCatching {
+            val curve = curve ?: throw Exception("Cannot determine Curve - Missing Curve")
+            val x = x ?: throw Exception("Cannot determine key - Missing x coordinate")
             val yFlag = y ?: throw Exception("Cannot determine key - Missing Indicator y")
-            x?.let { CryptoPublicKey.Ec(curve?.toEcCurve() ?: throw Exception("Cannot determine Curve - Missing Curve"), x, yFlag) }
-                ?: throw Exception("Cannot determine key - Missing x coordinate")
+            CryptoPublicKey.EC(curve.toEcCurve(), x, yFlag)
+
         }.wrap()
     }
 

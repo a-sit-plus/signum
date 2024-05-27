@@ -58,15 +58,18 @@ implementation("at.asitplus.crypto:datatypes-jws:$version")
 implementation("at.asitplus.crypto:datatypes-cose:$version")
 ```
 
-<!--
-```kotlin 
-implementation("at.asitplus.crypto:datatypes-jws:$version")
-```
+In addition, (while we're waiting for upstream to release new stable versions of `BigNum` and `kotlinx.serialization`,
+add the following repositories to your project:
 
-```kotlin 
-implementation("at.asitplus.crypto:datatypes.cose:$version")
+```kotlin
+repositories {
+  maven(uri("https://raw.githubusercontent.com/a-sit-plus/kotlinx.serialization/mvn/repo"))
+  maven {
+    url = uri("https://oss.sonatype.org/content/repositories/snapshots")
+    name = "bigNum"
+  }
+}
 ```
- -->
 
 <br>
 
@@ -281,41 +284,41 @@ While it is perfectly possible to manually construct a hierarchy of `Asn1Element
 DSL, which returns an `Asn1Structure`:
 
 ```kotlin
-asn1Sequence {
-    tagged(1u) {
-        append(Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00)))
+ASn1.Sequence {
+    +Tagged(1u) {
+        +Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00))
     }
-    set {
-        sequence {
-            setOf {
-                printableString("World")
-                printableString("Hello")
+    +Asn1.Set {
+      +Asn1.Sequence {
+        +Asn1.SetOf {
+                +PrintableString("World")
+                +PrintableString("Hello")
             }
-            set {
-                printableString("World")
-                printableString("Hello")
-                utf8String("!!!")
+        +Asn1.Set {
+                +PrintableString("World")
+                +PrintableString("Hello")
+                +Utf8String("!!!")
             }
 
         }
     }
-    asn1null()
+    +Asn1.Null()
 
-    append(ObjectIdentifier("1.2.603.624.97"))
+    +ObjectIdentifier("1.2.603.624.97")
 
-    utf8String("Foo")
-    printableString("Bar")
+    +Utf8String("Foo")
+    +PrintableString("Bar")
 
-    set {
-        int(3)
-        long(-65789876543L)
-        bool(false)
-        bool(true)
+    +Asn1.Set {
+        +Asn1.Int(3)
+        +Asn1.Long(-65789876543L)
+        +Asn1.Bool(false)
+        +Asn1.Bool(true)
     }
-    sequence {
-        asn1null()
-        append(Asn1String.Numeric("12345"))
-        utcTime(instant)
+    +Asn1.Sequence {
+        +Asn1.Null()
+        +Asn1String.Numeric("12345")
+        +UtcTime(instant)
     }
 }
 ```
