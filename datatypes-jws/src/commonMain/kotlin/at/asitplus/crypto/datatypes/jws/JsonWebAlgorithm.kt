@@ -15,6 +15,11 @@ interface JsonWebAlgorithm {
     companion object {
         val entries: List<JsonWebAlgorithm> = JwsAlgorithm.entries + JweAlgorithm.entries
     }
+
+    @Serializable(with = JwaSerializer::class)
+    class UNKNOWN(override val identifier: String) : JsonWebAlgorithm {
+        override fun toString() = "Unknown JWA (identifier='$identifier')"
+    }
 }
 
 object JwaSerializer : KSerializer<JsonWebAlgorithm> {
@@ -23,7 +28,11 @@ object JwaSerializer : KSerializer<JsonWebAlgorithm> {
     override fun deserialize(decoder: Decoder): JsonWebAlgorithm {
         val decoded = decoder.decodeString()
         return kotlin.runCatching { JwsAlgorithm.entries.first { it.identifier == decoded } }
-            .getOrElse { JweAlgorithm.entries.first { it.identifier == decoded } }
+            .getOrElse {
+                kotlin.runCatching {
+                    JweAlgorithm.entries.first { it.identifier == decoded }
+                }.getOrElse { JsonWebAlgorithm.UNKNOWN(decoded) }
+            }
     }
 
     override fun serialize(encoder: Encoder, value: JsonWebAlgorithm) {

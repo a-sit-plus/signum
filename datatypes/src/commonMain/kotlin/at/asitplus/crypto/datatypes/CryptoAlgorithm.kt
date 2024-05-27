@@ -21,13 +21,12 @@ import kotlinx.serialization.encoding.Encoder
 val OID_ECDH_ES = ObjectIdentifier("1.3.132.1.12")
 
 @Serializable(with = CryptoAlgorithmSerializer::class)
-enum class CryptoAlgorithm(override val oid: ObjectIdentifier, val isEc: Boolean = false) : Asn1Encodable<Asn1Sequence>,
-    Identifiable {
+enum class CryptoAlgorithm(override val oid: ObjectIdentifier, val curve: ECCurve?=null) : Asn1Encodable<Asn1Sequence>, Identifiable {
 
     // ECDSA with SHA-size
-    ES256(KnownOIDs.ecdsaWithSHA256, true),
-    ES384(KnownOIDs.ecdsaWithSHA384, true),
-    ES512(KnownOIDs.ecdsaWithSHA512, true),
+    ES256(KnownOIDs.ecdsaWithSHA256, ECCurve.SECP_256_R_1),
+    ES384(KnownOIDs.ecdsaWithSHA384, ECCurve.SECP_384_R_1),
+    ES512(KnownOIDs.ecdsaWithSHA512, ECCurve.SECP_521_R_1),
 
     // HMAC-size with SHA-size
     HS256(KnownOIDs.hmacWithSHA256),
@@ -46,6 +45,8 @@ enum class CryptoAlgorithm(override val oid: ObjectIdentifier, val isEc: Boolean
 
     // RSASSA-PKCS1-v1_5 using SHA-1
     RS1(KnownOIDs.sha1WithRSAEncryption);
+
+    val isEc = curve != null
 
     private fun encodePSSParams(bits: Int): Asn1Sequence {
         val shaOid = when (bits) {

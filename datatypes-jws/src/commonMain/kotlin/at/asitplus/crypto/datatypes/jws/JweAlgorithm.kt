@@ -1,6 +1,5 @@
 package at.asitplus.crypto.datatypes.jws
 
-import at.asitplus.crypto.datatypes.asn1.ObjectIdentifier
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -10,18 +9,62 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 @Serializable(with = JweAlgorithmSerializer::class)
-enum class JweAlgorithm(override val identifier: String) : JsonWebAlgorithm {
+sealed class JweAlgorithm(override val identifier: String) : JsonWebAlgorithm {
 
     /**
      * ECDH-ES as per [RFC 8037](https://datatracker.ietf.org/doc/html/rfc8037#section-3.2)
      */
-    ECDH_ES("ECDH-ES"),
-    A128KW("A128KW"),
-    A192KW("A192KW"),
-    A256KW("A256KW"),
-    RSA_OAEP_256("RSA-OAEP-256"),
-    RSA_OAEP_384("RSA-OAEP-384"),
-    RSA_OAEP_512("RSA-OAEP-512")
+    @Serializable(with = JweAlgorithmSerializer::class)
+    object ECDH_ES : JweAlgorithm("ECDH-ES")
+
+    @Serializable(with = JweAlgorithmSerializer::class)
+    object A128KW : JweAlgorithm("A128KW")
+
+    @Serializable(with = JweAlgorithmSerializer::class)
+    object A192KW : JweAlgorithm("A192KW")
+
+    @Serializable(with = JweAlgorithmSerializer::class)
+    object A256KW : JweAlgorithm("A256KW")
+
+    @Serializable(with = JweAlgorithmSerializer::class)
+    object RSA_OAEP_256 : JweAlgorithm("RSA-OAEP-256")
+
+    @Serializable(with = JweAlgorithmSerializer::class)
+    object RSA_OAEP_384 : JweAlgorithm("RSA-OAEP-384")
+
+    @Serializable(with = JweAlgorithmSerializer::class)
+    object RSA_OAEP_512 : JweAlgorithm("RSA-OAEP-512")
+
+    @Serializable(with = JweAlgorithmSerializer::class)
+    class UNKNOWN(identifier: String) : JweAlgorithm(identifier)
+
+    override fun toString() = "${this::class.simpleName}(identifier='$identifier')"
+
+    companion object {
+        val entries: Set<JweAlgorithm> by lazy {
+            setOf(
+                ECDH_ES,
+                A128KW,
+                A192KW,
+                A256KW,
+                RSA_OAEP_256,
+                RSA_OAEP_384,
+                RSA_OAEP_512,
+            )
+        }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is JweAlgorithm) return false
+        if (identifier != other.identifier) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return identifier.hashCode()
+    }
+
 }
 
 object JweAlgorithmSerializer : KSerializer<JweAlgorithm> {
@@ -33,7 +76,9 @@ object JweAlgorithmSerializer : KSerializer<JweAlgorithm> {
 
     override fun deserialize(decoder: Decoder): JweAlgorithm {
         val decoded = decoder.decodeString()
-        return JweAlgorithm.entries.first { it.identifier == decoded }
+        return kotlin.runCatching { JweAlgorithm.entries.first { it.identifier == decoded } }.getOrElse {
+            JweAlgorithm.UNKNOWN(decoded)
+        }
     }
 
 }
