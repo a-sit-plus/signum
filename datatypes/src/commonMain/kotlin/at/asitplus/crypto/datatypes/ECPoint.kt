@@ -71,7 +71,7 @@ sealed class ECPoint private constructor(
         if (isPointAtInfinity)
             "ECPoint[$curve]: Point at Infinity"
         else if (this is Normalized)
-            "ECPoint[$curve]: (${(homX/homZ).toString(16)} : ${(homY/homZ).toString(16)}) [normalized]"
+            "ECPoint[$curve]: (${homX.toString(16)} : ${homY.toString(16)}) [normalized]"
         else
             "ECPoint[$curve]: (${(homX/homZ).toString(16)} : ${(homY/homZ).toString(16)}) [with Z = ${homZ.toString(16)}]"
 
