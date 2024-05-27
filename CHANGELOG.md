@@ -136,3 +136,5 @@
    * add `.didEncoded`, which may return null, if encoding fails
  * add `.curve` to EC CryptoAlgorithms
  * Change JweAlgorithm to sealed class to support unknown algorithms
+ * Add generic `ECPoint` class
+ * Implement elliptic-curve arithmetic

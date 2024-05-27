@@ -1,27 +1,42 @@
 package at.asitplus.crypto.datatypes.misc
 
-import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.ECCurve
-import at.asitplus.crypto.datatypes.Signum
-import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
-import kotlin.experimental.and
-typealias Signum = Boolean
 
+enum class ANSIECPrefix(val prefixByte: Byte) {
+    COMPRESSED_MINUS(0x02),
+    COMPRESSED_PLUS(0x03),
+    UNCOMPRESSED(0x04);
 
-const val ANSI_COMPRESSED_PREFIX_1 = 0x02.toByte()
-const val ANSI_COMPRESSED_PREFIX_2 = 0x03.toByte()
-const val ANSI_UNCOMPRESSED_PREFIX = 0x04.toByte()
+    val isUncompressed inline get() = (this == UNCOMPRESSED)
+    val isCompressed inline get() = !isUncompressed
+    val compressionSign inline get() = when (this) {
+        COMPRESSED_MINUS -> Sign.NEGATIVE
+        COMPRESSED_PLUS -> Sign.POSITIVE
+        UNCOMPRESSED -> throw IllegalStateException("not compressed")
+    }
+    val prefixUByte inline get() = prefixByte.toUByte()
 
-/**
- * Signals which root of the polynomial is used for the y coordinate
- * `SIGNUM_POSITIVE` denotes the first root was selected
- * `SIGNUM_NEGATIVE` denotes the additive inverse
- */
-const val SIGNUM_POSITIVE: Signum = true
-const val SIGNUM_NEGATIVE: Signum = false
-fun Signum.toUInt(): UInt = if (this) 1U else 0U
+    inline operator fun plus(that: ByteArray) = byteArrayOf(prefixByte, *that)
+
+    companion object {
+        inline fun fromPrefixByte(byte: Byte) = when (byte) {
+            COMPRESSED_MINUS.prefixByte -> COMPRESSED_MINUS
+            COMPRESSED_PLUS.prefixByte -> COMPRESSED_PLUS
+            UNCOMPRESSED.prefixByte -> UNCOMPRESSED
+            else -> throw IllegalArgumentException("invalid prefix $byte")
+        }
+
+        inline fun forSign(sign: Sign) = when (sign) {
+            Sign.NEGATIVE -> COMPRESSED_MINUS
+            Sign.POSITIVE -> COMPRESSED_PLUS
+            Sign.ZERO -> throw IllegalArgumentException("Sign.ZERO")
+        }
+
+        inline fun ByteArray.hasPrefix(prefix: ANSIECPrefix) = (first() == prefix.prefixByte)
+    }
+}
 
 /**
  * According to https://www.secg.org/sec1-v2.pdf, https://www.secg.org/sec2-v2.pdf
@@ -29,7 +44,8 @@ fun Signum.toUInt(): UInt = if (this) 1U else 0U
  * the compression bit is defined as 2 + (y mod 2) for all curves
  * We assume y is big-endian encoding of valid y coordinate!
  */
-fun CryptoPublicKey.EC.compressY(): Signum = (y.last() and 1.toByte() == 1.toByte())
+internal fun compressY(curve: ECCurve, x: ModularBigInteger, y: ModularBigInteger): Sign =
+    if (y.residue.bitAt(0)) Sign.POSITIVE else Sign.NEGATIVE
 
 
 /**
@@ -47,22 +63,25 @@ fun CryptoPublicKey.EC.compressY(): Signum = (y.last() and 1.toByte() == 1.toByt
  * @throws IllegalArgumentException if x does not permit a square root, i.e. is not a valid encoding
  */
 @Throws(Throwable::class)
-fun decompressY(curve: ECCurve, x: ByteArray, root: Signum): ByteArray {
-    val mod4Creator = ModularBigInteger.creatorForModulo(4)
-    val xBigMod = curve.coordinateCreator.fromBigInteger(BigInteger.fromByteArray(x, Sign.POSITIVE))
-    val alpha = xBigMod.pow(3) + curve.a * xBigMod + curve.b
+internal fun decompressY(curve: ECCurve, x: ModularBigInteger, sign: Sign): ModularBigInteger {
+    require(sign != Sign.ZERO)
+    val alpha = x.pow(3) + curve.a * x + curve.b
 
     require(quadraticResidueTest(alpha))
-    val beta = if (mod4Creator.fromBigInteger(curve.modulus) == mod4Creator.fromInt(3))
-        alpha.pow((curve.modulus + 1) / 4) else throw IllegalArgumentException("Requires Tonelli-Shanks Algorithm")
+        { "Invalid compressed point (x=$x) on $curve"}
+    require(curve.modulus.bitAt(0) && curve.modulus.bitAt(1)) // (modulus % 4) == 3
+        { "Decompression on $curve requires Tonelli-Shanks Algorithm" }
+
+
+    val beta = alpha.pow((curve.modulus + 1) / 4)
 
     /**
      * Checks mod 2
      */
-    return if (beta.residue.bitAt(0) == root) {
-        beta.toByteArray()
+    return if (beta.residue.bitAt(0) == (sign == Sign.POSITIVE)) {
+        beta
     } else {
-        (curve.coordinateCreator.ZERO - beta).toByteArray()
+        (curve.coordinateCreator.ZERO - beta)
     }
 }
 
