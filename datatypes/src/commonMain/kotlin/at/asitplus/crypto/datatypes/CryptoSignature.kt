@@ -131,6 +131,10 @@ sealed class CryptoSignature(
             val scalarByteLength: UInt,
             r: BigInteger, s: BigInteger
         ) : EC(r,s) {
+            init {
+                require(r.bitLength() <= scalarByteLength.toInt()*8)
+                require(s.bitLength() <= scalarByteLength.toInt()*8)
+            }
             /**
              * Concatenates [r] and [s], padding each one to the next largest coordinate length
              * of an [ECCurve], for use in e.g. JWS signatures.
