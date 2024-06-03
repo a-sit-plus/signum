@@ -141,6 +141,13 @@
 
 ### NEXT
 
+* Kotlin 2.0
+* Gradle 8.8
+* Bouncy Castle 1.78.1
+* kotest 5.9.1 
+* Coroutines 1.8.1
+* Serialization 1.7.1-SNAPSHOT
+
 **Fixes**
  * Move `curve` from `CryptoAlgorithm` to `JwsAlgorithm`
  * Don't read curve information into the X.509 tea leaves where none exists
