@@ -140,3 +140,8 @@
  * Implement elliptic-curve arithmetic
 
 ### NEXT
+* Kotlin 2.0
+* Gradle 8.8
+* Bouncy Castle 1.78.1
+* kotest 5.8.1 
+* Coroutines 1.8.1
