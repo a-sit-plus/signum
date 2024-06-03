@@ -147,7 +147,7 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseK
             if ((algorithm != null) && !(algorithm.toCryptoAlgorithm().isEc))
                 failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
             else {
-                val keyParams = if (this.useCompressedRepresentation) {
+                val keyParams = if (this.preferCompressedRepresentation) {
                     CoseKeyParams.EcYBoolParams(
                         curve = curve.toCoseCurve(),
                         x = xBytes,

@@ -277,13 +277,13 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
     /**
      * EC public key representation
      * The properties and constructor params are exactly what their names suggest
-     * @param useCompressedRepresentation indicates whether to use point compression where applicable
+     * @param preferCompressedRepresentation indicates whether to use point compression where applicable
      */
     @Serializable
     @SerialName("EC")
     data class EC private constructor(
         val publicPoint: ECPoint.Normalized,
-        var useCompressedRepresentation: Boolean,
+        val preferCompressedRepresentation: Boolean = true
     ) : CryptoPublicKey() {
 
         val curve get() = publicPoint.curve
@@ -298,8 +298,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         /**
          * ANSI X9.63 Encoding as used by iOS
          */
-        fun toAnsiX963Encoded(): ByteArray =
-            when (useCompressedRepresentation) {
+        fun toAnsiX963Encoded(useCompressed: Boolean = preferCompressedRepresentation): ByteArray =
+            when (useCompressed) {
                 true -> ANSIECPrefix.forSign(yCompressed) + xBytes
                 false -> ANSIECPrefix.UNCOMPRESSED + xBytes + yBytes
             }
@@ -321,9 +321,9 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          */
         override val didEncoded by lazy {
             val codec = when (curve) {
-                ECCurve.SECP_256_R_1 -> if (useCompressedRepresentation) 0x1200u else 0x1290u
-                ECCurve.SECP_384_R_1 -> if (useCompressedRepresentation) 0x1201u else 0x1291u
-                ECCurve.SECP_521_R_1 -> if (useCompressedRepresentation) 0x1202u else 0x1292u
+                ECCurve.SECP_256_R_1 -> if (preferCompressedRepresentation) 0x1200u else 0x1290u
+                ECCurve.SECP_384_R_1 -> if (preferCompressedRepresentation) 0x1201u else 0x1291u
+                ECCurve.SECP_521_R_1 -> if (preferCompressedRepresentation) 0x1202u else 0x1292u
             }
             PREFIX_DID_KEY + ":" + MultiBase.encode(
                 MultiBase.Base.BASE58_BTC,
