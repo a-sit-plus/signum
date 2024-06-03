@@ -140,7 +140,7 @@ val CryptoSignature.jcaSignatureBytes: ByteArray
  */
 fun CryptoSignature.Companion.parseFromJca(input: ByteArray, algorithm: CryptoAlgorithm) =
     if (algorithm.isEc)
-        CryptoSignature.EC.decodeFromDer(input).withCurve(algorithm.curve!!)
+        CryptoSignature.EC.decodeFromDer(input)
     else
         CryptoSignature.RSAorHMAC(input)
 

@@ -60,9 +60,9 @@ data class JwsSigned(
             val payload = stringList[1].decodeToByteArray(Base64UrlStrict)
             val signature = stringList[2].decodeToByteArray(Base64UrlStrict)
                 .let { bytes ->
-                    when (header.algorithm) {
-                        JwsAlgorithm.ES256, JwsAlgorithm.ES384, JwsAlgorithm.ES512 -> CryptoSignature.EC.fromRawBytes(header.algorithm.toCryptoAlgorithm().curve!!,bytes)
-                        else -> CryptoSignature.RSAorHMAC(bytes)
+                    when (val curve = header.algorithm.ecCurve) {
+                        null -> CryptoSignature.RSAorHMAC(bytes)
+                        else -> CryptoSignature.EC.fromRawBytes(curve, bytes)
                     }
                 }
             val plainSignatureInput = stringList[0] + "." + stringList[1]

@@ -134,7 +134,6 @@
    * do not generate kid when there is none and allow removing it
    * reference `JsonWebAlgorithm` instead of `JwsAlgorithm`
    * add `.didEncoded`, which may return null, if encoding fails
- * add `.curve` to EC CryptoAlgorithms
  * Change JweAlgorithm to sealed class to support unknown algorithms
  * Add generic `ECPoint` class
  * Implement elliptic-curve arithmetic

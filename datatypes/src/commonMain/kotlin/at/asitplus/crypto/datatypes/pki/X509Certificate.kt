@@ -213,13 +213,6 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     val signature: CryptoSignature
 ) : Asn1Encodable<Asn1Sequence> {
 
-
-    init {
-        if (signature is CryptoSignature.EC.IndefiniteLength) {
-            throw IllegalArgumentException("Certificate Signatures must be well-defined!")
-        }
-    }
-
     @Throws(Asn1Exception::class)
     override fun encodeToTlv() = Asn1.Sequence {
         +tbsCertificate
@@ -255,8 +248,10 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         override fun decodeFromTlv(src: Asn1Sequence): X509Certificate = runRethrowing {
             val tbs = TbsCertificate.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val sigAlg = CryptoAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val signature = if (sigAlg.isEc) CryptoSignature.EC.decodeFromTlvBitString(src.nextChild() as Asn1Primitive)
-                .withCurve(sigAlg.curve!!) else CryptoSignature.RSAorHMAC.decodeFromTlvBitString(src.nextChild() as Asn1Primitive)
+            val signature = when {
+                sigAlg.isEc -> CryptoSignature.EC.decodeFromTlvBitString(src.nextChild() as Asn1Primitive)
+                else -> CryptoSignature.RSAorHMAC.decodeFromTlvBitString(src.nextChild() as Asn1Primitive)
+            }
             if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous structure in Certificate Structure")
             return X509Certificate(tbs, sigAlg, signature)
         }

@@ -1,6 +1,7 @@
 package at.asitplus.crypto.datatypes.jws
 
 import at.asitplus.crypto.datatypes.CryptoAlgorithm
+import at.asitplus.crypto.datatypes.ECCurve
 import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.asn1.Asn1.Null
 import at.asitplus.crypto.datatypes.asn1.Asn1.Tagged
@@ -58,6 +59,15 @@ enum class JwsAlgorithm(override val identifier: String):JsonWebAlgorithm {
         RS512 -> CryptoAlgorithm.RS512
 
         NON_JWS_SHA1_WITH_RSA -> CryptoAlgorithm.RS1
+    }
+
+    /** The curve to create signatures on.
+     * This is fixed by RFC7518, as opposed to X.509 where other combinations are possible. */
+    val ecCurve: ECCurve? get() = when (this) {
+        ES256 -> ECCurve.SECP_256_R_1
+        ES384 -> ECCurve.SECP_384_R_1
+        ES512 -> ECCurve.SECP_521_R_1
+        else -> null
     }
 }
 

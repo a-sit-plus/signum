@@ -81,6 +81,21 @@ sealed class CryptoSignature(
 
         override fun encodeToTlvBitString(): Asn1Element = encodeToDer().encodeToTlvBitString()
 
+        /**
+         * Two signatures are considered equal if `r` and `s` are equal.
+         * This is true even if they are of definite length, and the lengths differ.
+         *
+         * We chose this approach to allow definite and indefinite length encodings of the same signature
+         * to be equal, while preserving the transitivity contract of `equals`.
+         */
+        override fun equals(other: Any?): Boolean {
+            if (other !is CryptoSignature.EC) return false
+            return ((this.s == other.s) && (this.r == other.r))
+        }
+
+        /** @see equals */
+        override fun hashCode() = 31 * this.s.hashCode() + this.r.hashCode()
+
         class IndefiniteLength internal constructor(
             r: BigInteger, s:BigInteger
         ) : EC(r,s) {
@@ -132,8 +147,13 @@ sealed class CryptoSignature(
             r: BigInteger, s: BigInteger
         ) : EC(r,s) {
             init {
-                require(r.bitLength() <= scalarByteLength.toInt()*8)
-                require(s.bitLength() <= scalarByteLength.toInt()*8)
+                val max = scalarByteLength.toInt()*8
+
+                require(r.bitLength() <= max) {
+                    "r is ${r.bitLength()} bits long, expected at most ${scalarByteLength.toInt()} bytes (${max} bits)"}
+
+                require(s.bitLength() <= scalarByteLength.toInt()*8) {
+                    "s is ${s.bitLength()} bits long, expected at most ${scalarByteLength.toInt()} bytes (${max} bits)"}
             }
             /**
              * Concatenates [r] and [s], padding each one to the next largest coordinate length
@@ -143,14 +163,6 @@ sealed class CryptoSignature(
                 r.toByteArray().ensureSize(scalarByteLength) +
                         s.toByteArray().ensureSize(scalarByteLength)
             }
-
-            override fun equals(other: Any?): Boolean {
-                if (other !is DefiniteLength) return false
-                return (r == other.r) && (s == other.s) && (scalarByteLength == other.scalarByteLength)
-            }
-
-            override fun hashCode() =
-                rawByteArray.hashCode()
         }
 
         companion object : Asn1Decodable<Asn1Element, EC.IndefiniteLength> {
