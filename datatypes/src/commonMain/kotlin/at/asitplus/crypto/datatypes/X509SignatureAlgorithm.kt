@@ -157,6 +157,10 @@ enum class X509SignatureAlgorithm(override val oid: ObjectIdentifier, val isEc: 
     }
 }
 
+@Deprecated("Will likely be replaced with a more general type in the future",
+    replaceWith = ReplaceWith("X509SignatureAlgorithm"))
+typealias CryptoAlgorithm = X509SignatureAlgorithm
+
 object X509SignatureAlgorithmSerializer : KSerializer<X509SignatureAlgorithm> {
 
     override val descriptor: SerialDescriptor =
