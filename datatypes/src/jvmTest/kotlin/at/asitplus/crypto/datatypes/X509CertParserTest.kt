@@ -137,13 +137,13 @@ class X509CertParserTest : FreeSpec({
 
     "From attestation collector" - {
         val json = File("./src/jvmTest/resources/results").listFiles()
-            ?.map { Json.parseToJsonElement(it.readText()).jsonObject }
+            ?.map { Pair(it.nameWithoutExtension, Json.parseToJsonElement(it.readText()).jsonObject) }
             .shouldNotBeNull()
-        val certs = json.mapIndexed { i, collected ->
-            (collected["device"]!!.jsonPrimitive.toString() + " ($i)") to collected.get("attestationProof")!!.jsonArray.map {
+        val certs = json.associate { (name, collected) ->
+            (collected["device"]!!.jsonPrimitive.toString() + " ($name)") to collected.get("attestationProof")!!.jsonArray.map {
                 it.jsonPrimitive.toString().replace("\\n", "").replace("\\r", "").replace("\"", "")
             }
-        }.toMap()
+        }
 
         withData(certs) {
             withData(it) {

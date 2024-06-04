@@ -45,9 +45,9 @@ class CryptoSignatureTest : FreeSpec({
             val ec4 = ec3.guessCurve()
             ec4.scalarByteLength shouldBe ECCurve.values().minOf { it.scalarLength.bytes }
             ec4 shouldBe ec4
-            ec4 shouldNotBe ec3
+            ec4 shouldBe ec3
             ec4.hashCode() shouldBe ec4.hashCode()
-            ec4.hashCode() shouldNotBe ec3.hashCode()
+            ec4.hashCode() shouldBe ec3.hashCode()
         }
     }
 
@@ -62,7 +62,7 @@ class CryptoSignatureTest : FreeSpec({
         shouldThrow<IllegalStateException> { sig.rawByteArray }
 
         val sig1 = sig.guessCurve()
-        sig1 shouldNotBe sig
+        sig1 shouldBe sig
         sig1.r shouldBe sig.r
         sig1.s shouldBe sig.s
         sig1.scalarByteLength shouldBe ECCurve.SECP_521_R_1.scalarLength.bytes
@@ -70,7 +70,7 @@ class CryptoSignatureTest : FreeSpec({
 
         val sig2 = sig.withCurve(ECCurve.SECP_521_R_1)
         sig2 shouldBe sig1
-        sig2 shouldNotBe sig
+        sig2 shouldBe sig
         sig2.r shouldBe sig.r
         sig2.s shouldBe sig.s
         sig2.scalarByteLength shouldBe sig1.scalarByteLength
@@ -78,7 +78,7 @@ class CryptoSignatureTest : FreeSpec({
 
         val sig3 = CryptoSignature.EC.fromRawBytes(encoded)
         sig3 shouldBe sig2
-        sig3 shouldNotBe sig
+        sig3 shouldBe sig
         sig3.r shouldBe sig.r
         sig3.s shouldBe sig.s
         sig3.scalarByteLength shouldBe sig1.scalarByteLength

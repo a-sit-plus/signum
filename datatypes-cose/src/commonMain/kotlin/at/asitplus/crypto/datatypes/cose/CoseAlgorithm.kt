@@ -1,6 +1,6 @@
 package at.asitplus.crypto.datatypes.cose
 
-import at.asitplus.crypto.datatypes.CryptoAlgorithm
+import at.asitplus.crypto.datatypes.X509SignatureAlgorithm
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -37,23 +37,23 @@ enum class CoseAlgorithm(val value: Int) {
 
 
     fun toCryptoAlgorithm() = when(this) {
-        ES256 -> CryptoAlgorithm.ES256
-        ES384 -> CryptoAlgorithm.ES384
-        ES512 -> CryptoAlgorithm.ES512
+        ES256 -> X509SignatureAlgorithm.ES256
+        ES384 -> X509SignatureAlgorithm.ES384
+        ES512 -> X509SignatureAlgorithm.ES512
 
-        HS256 -> CryptoAlgorithm.HS256
-        HS384 -> CryptoAlgorithm.HS384
-        HS512 -> CryptoAlgorithm.HS512
+        HS256 -> X509SignatureAlgorithm.HS256
+        HS384 -> X509SignatureAlgorithm.HS384
+        HS512 -> X509SignatureAlgorithm.HS512
 
-        PS256 -> CryptoAlgorithm.PS256
-        PS384 -> CryptoAlgorithm.PS384
-        PS512 -> CryptoAlgorithm.PS512
+        PS256 -> X509SignatureAlgorithm.PS256
+        PS384 -> X509SignatureAlgorithm.PS384
+        PS512 -> X509SignatureAlgorithm.PS512
 
-        RS256 -> CryptoAlgorithm.RS256
-        RS384 -> CryptoAlgorithm.RS384
-        RS512 -> CryptoAlgorithm.RS512
+        RS256 -> X509SignatureAlgorithm.RS256
+        RS384 -> X509SignatureAlgorithm.RS384
+        RS512 -> X509SignatureAlgorithm.RS512
 
-        RS1 -> CryptoAlgorithm.RS1
+        RS1 -> X509SignatureAlgorithm.RS1
     }
 }
 
@@ -73,22 +73,22 @@ object CoseAlgorithmSerializer : KSerializer<CoseAlgorithm> {
 
 }
 
-fun CryptoAlgorithm.toCoseAlgorithm() = when(this) {
-    CryptoAlgorithm.ES256 -> CoseAlgorithm.ES256
-    CryptoAlgorithm.ES384 -> CoseAlgorithm.ES384
-    CryptoAlgorithm.ES512 -> CoseAlgorithm.ES512
+fun X509SignatureAlgorithm.toCoseAlgorithm() = when(this) {
+    X509SignatureAlgorithm.ES256 -> CoseAlgorithm.ES256
+    X509SignatureAlgorithm.ES384 -> CoseAlgorithm.ES384
+    X509SignatureAlgorithm.ES512 -> CoseAlgorithm.ES512
 
-    CryptoAlgorithm.HS256 -> CoseAlgorithm.HS256
-    CryptoAlgorithm.HS384 -> CoseAlgorithm.HS384
-    CryptoAlgorithm.HS512 -> CoseAlgorithm.HS512
+    X509SignatureAlgorithm.HS256 -> CoseAlgorithm.HS256
+    X509SignatureAlgorithm.HS384 -> CoseAlgorithm.HS384
+    X509SignatureAlgorithm.HS512 -> CoseAlgorithm.HS512
 
-    CryptoAlgorithm.PS256 -> CoseAlgorithm.PS256
-    CryptoAlgorithm.PS384 -> CoseAlgorithm.PS384
-    CryptoAlgorithm.PS512 -> CoseAlgorithm.PS512
+    X509SignatureAlgorithm.PS256 -> CoseAlgorithm.PS256
+    X509SignatureAlgorithm.PS384 -> CoseAlgorithm.PS384
+    X509SignatureAlgorithm.PS512 -> CoseAlgorithm.PS512
 
-    CryptoAlgorithm.RS256 -> CoseAlgorithm.RS256
-    CryptoAlgorithm.RS384 -> CoseAlgorithm.RS384
-    CryptoAlgorithm.RS512 -> CoseAlgorithm.RS512
+    X509SignatureAlgorithm.RS256 -> CoseAlgorithm.RS256
+    X509SignatureAlgorithm.RS384 -> CoseAlgorithm.RS384
+    X509SignatureAlgorithm.RS512 -> CoseAlgorithm.RS512
 
-    CryptoAlgorithm.RS1 -> CoseAlgorithm.RS1
+    X509SignatureAlgorithm.RS1 -> CoseAlgorithm.RS1
 }

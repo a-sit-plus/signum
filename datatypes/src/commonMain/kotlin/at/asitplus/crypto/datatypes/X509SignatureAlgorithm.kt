@@ -20,13 +20,14 @@ import kotlinx.serialization.encoding.Encoder
  */
 val OID_ECDH_ES = ObjectIdentifier("1.3.132.1.12")
 
-@Serializable(with = CryptoAlgorithmSerializer::class)
-enum class CryptoAlgorithm(override val oid: ObjectIdentifier, val curve: ECCurve?=null) : Asn1Encodable<Asn1Sequence>, Identifiable {
+@Serializable(with = X509SignatureAlgorithmSerializer::class)
+enum class X509SignatureAlgorithm(override val oid: ObjectIdentifier, val isEc: Boolean = false)
+    : Asn1Encodable<Asn1Sequence>, Identifiable {
 
     // ECDSA with SHA-size
-    ES256(KnownOIDs.ecdsaWithSHA256, ECCurve.SECP_256_R_1),
-    ES384(KnownOIDs.ecdsaWithSHA384, ECCurve.SECP_384_R_1),
-    ES512(KnownOIDs.ecdsaWithSHA512, ECCurve.SECP_521_R_1),
+    ES256(KnownOIDs.ecdsaWithSHA256, true),
+    ES384(KnownOIDs.ecdsaWithSHA384, true),
+    ES512(KnownOIDs.ecdsaWithSHA512, true),
 
     // HMAC-size with SHA-size
     HS256(KnownOIDs.hmacWithSHA256),
@@ -45,8 +46,6 @@ enum class CryptoAlgorithm(override val oid: ObjectIdentifier, val curve: ECCurv
 
     // RSASSA-PKCS1-v1_5 using SHA-1
     RS1(KnownOIDs.sha1WithRSAEncryption);
-
-    val isEc = curve != null
 
     private fun encodePSSParams(bits: Int): Asn1Sequence {
         val shaOid = when (bits) {
@@ -96,7 +95,7 @@ enum class CryptoAlgorithm(override val oid: ObjectIdentifier, val curve: ECCurv
         }
     }
 
-    companion object : Asn1Decodable<Asn1Sequence, CryptoAlgorithm> {
+    companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithm> {
 
         @Throws(Asn1OidException::class)
         private fun fromOid(oid: ObjectIdentifier) = runCatching { entries.first { it.oid == oid } }.getOrElse {
@@ -104,7 +103,7 @@ enum class CryptoAlgorithm(override val oid: ObjectIdentifier, val curve: ECCurv
         }
 
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(src: Asn1Sequence): CryptoAlgorithm = runRethrowing {
+        override fun decodeFromTlv(src: Asn1Sequence): X509SignatureAlgorithm = runRethrowing {
             when (val oid = (src.nextChild() as Asn1Primitive).readOid()) {
                 ES512.oid, ES384.oid, ES256.oid -> fromOid(oid)
 
@@ -122,7 +121,7 @@ enum class CryptoAlgorithm(override val oid: ObjectIdentifier, val curve: ECCurv
         }
 
         @Throws(Asn1Exception::class)
-        private fun parsePssParams(src: Asn1Sequence): CryptoAlgorithm = runRethrowing {
+        private fun parsePssParams(src: Asn1Sequence): X509SignatureAlgorithm = runRethrowing {
             val seq = src.nextChild() as Asn1Sequence
             val first = (seq.nextChild() as Asn1Tagged).verifyTag(0.toUByte()).single() as Asn1Sequence
 
@@ -158,17 +157,21 @@ enum class CryptoAlgorithm(override val oid: ObjectIdentifier, val curve: ECCurv
     }
 }
 
-object CryptoAlgorithmSerializer : KSerializer<CryptoAlgorithm> {
+@Deprecated("Will likely be replaced with a more general type in the future",
+    replaceWith = ReplaceWith("X509SignatureAlgorithm"))
+typealias CryptoAlgorithm = X509SignatureAlgorithm
+
+object X509SignatureAlgorithmSerializer : KSerializer<X509SignatureAlgorithm> {
 
     override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor("CryptoAlgorithmSerializer", PrimitiveKind.STRING)
+        PrimitiveSerialDescriptor("X509SignatureAlgorithmSerializer", PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, value: CryptoAlgorithm) {
+    override fun serialize(encoder: Encoder, value: X509SignatureAlgorithm) {
         value.let { encoder.encodeString(it.name) }
     }
 
-    override fun deserialize(decoder: Decoder): CryptoAlgorithm {
+    override fun deserialize(decoder: Decoder): X509SignatureAlgorithm {
         val decoded = decoder.decodeString()
-        return CryptoAlgorithm.entries.first { it.name == decoded }
+        return X509SignatureAlgorithm.entries.first { it.name == decoded }
     }
 }

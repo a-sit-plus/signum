@@ -1,9 +1,7 @@
 package at.asitplus.crypto.datatypes.jws
 
-import at.asitplus.crypto.datatypes.CryptoAlgorithm
-import at.asitplus.crypto.datatypes.asn1.*
-import at.asitplus.crypto.datatypes.asn1.Asn1.Null
-import at.asitplus.crypto.datatypes.asn1.Asn1.Tagged
+import at.asitplus.crypto.datatypes.X509SignatureAlgorithm
+import at.asitplus.crypto.datatypes.ECCurve
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -41,23 +39,32 @@ enum class JwsAlgorithm(override val identifier: String):JsonWebAlgorithm {
     NON_JWS_SHA1_WITH_RSA("RS1");
 
     fun toCryptoAlgorithm() = when (this) {
-        ES256 -> CryptoAlgorithm.ES256
-        ES384 -> CryptoAlgorithm.ES384
-        ES512 -> CryptoAlgorithm.ES512
+        ES256 -> X509SignatureAlgorithm.ES256
+        ES384 -> X509SignatureAlgorithm.ES384
+        ES512 -> X509SignatureAlgorithm.ES512
 
-        HS256 -> CryptoAlgorithm.HS256
-        HS384 -> CryptoAlgorithm.HS384
-        HS512 -> CryptoAlgorithm.HS512
+        HS256 -> X509SignatureAlgorithm.HS256
+        HS384 -> X509SignatureAlgorithm.HS384
+        HS512 -> X509SignatureAlgorithm.HS512
 
-        PS256 -> CryptoAlgorithm.PS256
-        PS384 -> CryptoAlgorithm.PS384
-        PS512 -> CryptoAlgorithm.PS512
+        PS256 -> X509SignatureAlgorithm.PS256
+        PS384 -> X509SignatureAlgorithm.PS384
+        PS512 -> X509SignatureAlgorithm.PS512
 
-        RS256 -> CryptoAlgorithm.RS256
-        RS384 -> CryptoAlgorithm.RS384
-        RS512 -> CryptoAlgorithm.RS512
+        RS256 -> X509SignatureAlgorithm.RS256
+        RS384 -> X509SignatureAlgorithm.RS384
+        RS512 -> X509SignatureAlgorithm.RS512
 
-        NON_JWS_SHA1_WITH_RSA -> CryptoAlgorithm.RS1
+        NON_JWS_SHA1_WITH_RSA -> X509SignatureAlgorithm.RS1
+    }
+
+    /** The curve to create signatures on.
+     * This is fixed by RFC7518, as opposed to X.509 where other combinations are possible. */
+    val ecCurve: ECCurve? get() = when (this) {
+        ES256 -> ECCurve.SECP_256_R_1
+        ES384 -> ECCurve.SECP_384_R_1
+        ES512 -> ECCurve.SECP_521_R_1
+        else -> null
     }
 }
 
@@ -74,22 +81,22 @@ object JwsAlgorithmSerializer : KSerializer<JwsAlgorithm> {
     }
 }
 
-fun CryptoAlgorithm.toJwsAlgorithm() = when (this) {
-    CryptoAlgorithm.ES256 -> JwsAlgorithm.ES256
-    CryptoAlgorithm.ES384 -> JwsAlgorithm.ES384
-    CryptoAlgorithm.ES512 -> JwsAlgorithm.ES512
+fun X509SignatureAlgorithm.toJwsAlgorithm() = when (this) {
+    X509SignatureAlgorithm.ES256 -> JwsAlgorithm.ES256
+    X509SignatureAlgorithm.ES384 -> JwsAlgorithm.ES384
+    X509SignatureAlgorithm.ES512 -> JwsAlgorithm.ES512
 
-    CryptoAlgorithm.HS256 -> JwsAlgorithm.HS256
-    CryptoAlgorithm.HS384 -> JwsAlgorithm.HS384
-    CryptoAlgorithm.HS512 -> JwsAlgorithm.HS512
+    X509SignatureAlgorithm.HS256 -> JwsAlgorithm.HS256
+    X509SignatureAlgorithm.HS384 -> JwsAlgorithm.HS384
+    X509SignatureAlgorithm.HS512 -> JwsAlgorithm.HS512
 
-    CryptoAlgorithm.PS256 -> JwsAlgorithm.PS256
-    CryptoAlgorithm.PS384 -> JwsAlgorithm.PS384
-    CryptoAlgorithm.PS512 -> JwsAlgorithm.PS512
+    X509SignatureAlgorithm.PS256 -> JwsAlgorithm.PS256
+    X509SignatureAlgorithm.PS384 -> JwsAlgorithm.PS384
+    X509SignatureAlgorithm.PS512 -> JwsAlgorithm.PS512
 
-    CryptoAlgorithm.RS256 -> JwsAlgorithm.RS256
-    CryptoAlgorithm.RS384 -> JwsAlgorithm.RS384
-    CryptoAlgorithm.RS512 -> JwsAlgorithm.RS512
+    X509SignatureAlgorithm.RS256 -> JwsAlgorithm.RS256
+    X509SignatureAlgorithm.RS384 -> JwsAlgorithm.RS384
+    X509SignatureAlgorithm.RS512 -> JwsAlgorithm.RS512
 
-    CryptoAlgorithm.RS1 -> JwsAlgorithm.NON_JWS_SHA1_WITH_RSA
+    X509SignatureAlgorithm.RS1 -> JwsAlgorithm.NON_JWS_SHA1_WITH_RSA
 }
