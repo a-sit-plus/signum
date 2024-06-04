@@ -1,6 +1,6 @@
 package at.asitplus.crypto.datatypes.pki
 
-import at.asitplus.crypto.datatypes.CryptoAlgorithm
+import at.asitplus.crypto.datatypes.X509SignatureAlgorithm
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.asn1.Asn1.BitString
@@ -107,7 +107,7 @@ data class TbsCertificationRequest(
 @Serializable
 data class Pkcs10CertificationRequest(
     val tbsCsr: TbsCertificationRequest,
-    val signatureAlgorithm: CryptoAlgorithm,
+    val signatureAlgorithm: X509SignatureAlgorithm,
     @Serializable(with = ByteArrayBase64Serializer::class)
     val signature: ByteArray
 ) : Asn1Encodable<Asn1Sequence> {
@@ -145,7 +145,7 @@ data class Pkcs10CertificationRequest(
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Sequence): Pkcs10CertificationRequest = runRethrowing {
             val tbsCsr = TbsCertificationRequest.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val sigAlg = CryptoAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
+            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val signature = (src.nextChild() as Asn1Primitive).readBitString()
             if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous structure in CSR Structure")
             return Pkcs10CertificationRequest(tbsCsr, sigAlg, signature.rawBytes)

@@ -1,6 +1,6 @@
 package at.asitplus.crypto.datatypes.pki
 
-import at.asitplus.crypto.datatypes.CryptoAlgorithm
+import at.asitplus.crypto.datatypes.X509SignatureAlgorithm
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.CryptoSignature
 import at.asitplus.crypto.datatypes.asn1.*
@@ -24,7 +24,7 @@ data class TbsCertificate
 constructor(
     val version: Int = 2,
     @Serializable(with = ByteArrayBase64Serializer::class) val serialNumber: ByteArray,
-    val signatureAlgorithm: CryptoAlgorithm,
+    val signatureAlgorithm: X509SignatureAlgorithm,
     val issuerName: List<RelativeDistinguishedName>,
     val validFrom: Asn1Time,
     val validUntil: Asn1Time,
@@ -147,7 +147,7 @@ constructor(
                 ((it as Asn1Tagged).verifyTag(0u).single() as Asn1Primitive).readInt()
             }
             val serialNumber = (src.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
-            val sigAlg = CryptoAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
+            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val issuerNames = (src.nextChild() as Asn1Sequence).children.map {
                 RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
             }
@@ -209,7 +209,7 @@ constructor(
 @Serializable
 data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     val tbsCertificate: TbsCertificate,
-    val signatureAlgorithm: CryptoAlgorithm,
+    val signatureAlgorithm: X509SignatureAlgorithm,
     val signature: CryptoSignature
 ) : Asn1Encodable<Asn1Sequence> {
 
@@ -247,7 +247,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Sequence): X509Certificate = runRethrowing {
             val tbs = TbsCertificate.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val sigAlg = CryptoAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
+            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val signature = when {
                 sigAlg.isEc -> CryptoSignature.EC.decodeFromTlvBitString(src.nextChild() as Asn1Primitive)
                 else -> CryptoSignature.RSAorHMAC.decodeFromTlvBitString(src.nextChild() as Asn1Primitive)

@@ -2,7 +2,6 @@ package at.asitplus.crypto.datatypes
 
 import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.wrap
-import at.asitplus.crypto.datatypes.asn1.ensureSize
 import at.asitplus.crypto.datatypes.pki.X509Certificate
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
@@ -29,30 +28,30 @@ import java.security.spec.RSAPublicKeySpec
 private val certificateFactoryMutex = Mutex()
 private val certFactory = CertificateFactory.getInstance("X.509")
 
-val CryptoAlgorithm.jcaName
+val X509SignatureAlgorithm.jcaName
     get() = when (this) {
-        CryptoAlgorithm.ES256 -> "SHA256withECDSA"
-        CryptoAlgorithm.ES384 -> "SHA384withECDSA"
-        CryptoAlgorithm.ES512 -> "SHA512withECDSA"
-        CryptoAlgorithm.HS256 -> "HmacSHA256"
-        CryptoAlgorithm.HS384 -> "HmacSHA384"
-        CryptoAlgorithm.HS512 -> "HmacSHA512"
-        CryptoAlgorithm.RS256 -> "SHA256withRSA"
-        CryptoAlgorithm.RS384 -> "SHA384withRSA"
-        CryptoAlgorithm.RS512 -> "SHA512withRSA"
-        CryptoAlgorithm.PS256 -> "RSASSA-PSS"
-        CryptoAlgorithm.PS384 -> "RSASSA-PSS"
-        CryptoAlgorithm.PS512 -> "RSASSA-PSS"
-        CryptoAlgorithm.RS1 -> "SHA1withRSA"
+        X509SignatureAlgorithm.ES256 -> "SHA256withECDSA"
+        X509SignatureAlgorithm.ES384 -> "SHA384withECDSA"
+        X509SignatureAlgorithm.ES512 -> "SHA512withECDSA"
+        X509SignatureAlgorithm.HS256 -> "HmacSHA256"
+        X509SignatureAlgorithm.HS384 -> "HmacSHA384"
+        X509SignatureAlgorithm.HS512 -> "HmacSHA512"
+        X509SignatureAlgorithm.RS256 -> "SHA256withRSA"
+        X509SignatureAlgorithm.RS384 -> "SHA384withRSA"
+        X509SignatureAlgorithm.RS512 -> "SHA512withRSA"
+        X509SignatureAlgorithm.PS256 -> "RSASSA-PSS"
+        X509SignatureAlgorithm.PS384 -> "RSASSA-PSS"
+        X509SignatureAlgorithm.PS512 -> "RSASSA-PSS"
+        X509SignatureAlgorithm.RS1 -> "SHA1withRSA"
     }
 
-val CryptoAlgorithm.jcaParams
+val X509SignatureAlgorithm.jcaParams
     get() = when (this) {
-        CryptoAlgorithm.PS256 -> PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 32, 1)
+        X509SignatureAlgorithm.PS256 -> PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 32, 1)
 
-        CryptoAlgorithm.PS384 -> PSSParameterSpec("SHA-384", "MGF1", MGF1ParameterSpec.SHA384, 48, 1)
+        X509SignatureAlgorithm.PS384 -> PSSParameterSpec("SHA-384", "MGF1", MGF1ParameterSpec.SHA384, 48, 1)
 
-        CryptoAlgorithm.PS512 -> PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 64, 1)
+        X509SignatureAlgorithm.PS512 -> PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 64, 1)
 
         else -> null
     }
@@ -138,7 +137,7 @@ val CryptoSignature.jcaSignatureBytes: ByteArray
 /**
  * In Java EC signatures are returned as DER-encoded, RSA signatures however are raw bytearrays
  */
-fun CryptoSignature.Companion.parseFromJca(input: ByteArray, algorithm: CryptoAlgorithm) =
+fun CryptoSignature.Companion.parseFromJca(input: ByteArray, algorithm: X509SignatureAlgorithm) =
     if (algorithm.isEc)
         CryptoSignature.EC.decodeFromDer(input)
     else
