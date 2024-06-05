@@ -15,14 +15,14 @@ operator fun ECPoint.plus(other: ECPoint): ECPoint {
     val X2 = other.homX
     val Y2 = other.homY
     val Z2 = other.homZ
-    lateinit var t0: ModularBigInteger
-    lateinit var t1: ModularBigInteger
-    lateinit var t2: ModularBigInteger
-    lateinit var t3: ModularBigInteger
-    lateinit var t4: ModularBigInteger
-    lateinit var X3: ModularBigInteger
-    lateinit var Y3: ModularBigInteger
-    lateinit var Z3: ModularBigInteger
+    var t0: ModularBigInteger
+    var t1: ModularBigInteger
+    var t2: ModularBigInteger
+    var t3: ModularBigInteger
+    var t4: ModularBigInteger
+    var X3: ModularBigInteger
+    var Y3: ModularBigInteger
+    var Z3: ModularBigInteger
     /*  1. */ t0 = X1 * X2
     /*  2. */ t1 = Y1 * Y2
     /*  3. */ t2 = Z1 * Z2
@@ -76,13 +76,13 @@ fun ECPoint.double(): ECPoint {
     val X = this.homX
     val Y = this.homY
     val Z = this.homZ
-    lateinit var t0: ModularBigInteger
-    lateinit var t1: ModularBigInteger
-    lateinit var t2: ModularBigInteger
-    lateinit var t3: ModularBigInteger
-    lateinit var X3: ModularBigInteger
-    lateinit var Y3: ModularBigInteger
-    lateinit var Z3: ModularBigInteger
+    var t0: ModularBigInteger
+    var t1: ModularBigInteger
+    var t2: ModularBigInteger
+    var t3: ModularBigInteger
+    var X3: ModularBigInteger
+    var Y3: ModularBigInteger
+    var Z3: ModularBigInteger
     /*  1. */ t0 = X * X
     /*  2. */ t1 = Y * Y
     /*  3. */ t2 = Z * Z

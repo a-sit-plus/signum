@@ -71,11 +71,11 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             val keyBytes = decoded.copyOfRange(2, decoded.size)
 
             return when (codec) {
-                0x1200uL, 0x1290uL ->
+                0x1200uL ->
                     EC.fromAnsiX963Bytes(ECCurve.SECP_256_R_1, keyBytes)
-                0x1201uL, 0x1291uL ->
+                0x1201uL ->
                     EC.fromAnsiX963Bytes(ECCurve.SECP_384_R_1, keyBytes)
-                0x1202uL, 0x1292uL ->
+                0x1202uL ->
                     EC.fromAnsiX963Bytes(ECCurve.SECP_521_R_1, keyBytes)
 
                 0x1205uL ->
@@ -277,13 +277,13 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
     /**
      * EC public key representation
      * The properties and constructor params are exactly what their names suggest
-     * @param useCompressedRepresentation indicates whether to use point compression where applicable
+     * @param preferCompressedRepresentation indicates whether to use point compression where applicable
      */
     @Serializable
     @SerialName("EC")
     data class EC private constructor(
         val publicPoint: ECPoint.Normalized,
-        var useCompressedRepresentation: Boolean,
+        val preferCompressedRepresentation: Boolean = true
     ) : CryptoPublicKey() {
 
         val curve get() = publicPoint.curve
@@ -298,36 +298,31 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         /**
          * ANSI X9.63 Encoding as used by iOS
          */
-        fun toAnsiX963Encoded(): ByteArray =
-            when (useCompressedRepresentation) {
+        fun toAnsiX963Encoded(useCompressed: Boolean = preferCompressedRepresentation): ByteArray =
+            when (useCompressed) {
                 true -> ANSIECPrefix.forSign(yCompressed) + xBytes
                 false -> ANSIECPrefix.UNCOMPRESSED + xBytes + yBytes
             }
 
         /**
          * Returns `did:key:$MULTIBASE_ENCODING_IDENTIFIER$MULTICODEC_ALGORITHM_IDENTIFIER$BYTES` with all bytes after MULTIBASE_ENCODING_IDENTIFIER in the assigned encoding
-         * We use '0x129x' to identify uncompressed EC keys of their respective size, these are not officially used identifiers.
          * Multicodec identifiers '0x120x' are draft identifiers for P-xxx keys with point compression
          *
          * 0x1200 P-256
          * 0x1201 P-384
          * 0x1202 P-512
          *
-         * 0x1290 P-256
-         * 0x1291 P-384
-         * 0x1292 P-512
-         *
          * The keybytes are ANSI X9.63 encoded (important for compression)
          */
         override val didEncoded by lazy {
             val codec = when (curve) {
-                ECCurve.SECP_256_R_1 -> if (useCompressedRepresentation) 0x1200u else 0x1290u
-                ECCurve.SECP_384_R_1 -> if (useCompressedRepresentation) 0x1201u else 0x1291u
-                ECCurve.SECP_521_R_1 -> if (useCompressedRepresentation) 0x1202u else 0x1292u
+                ECCurve.SECP_256_R_1 -> 0x1200u
+                ECCurve.SECP_384_R_1 -> 0x1201u
+                ECCurve.SECP_521_R_1 -> 0x1202u
             }
             PREFIX_DID_KEY + ":" + MultiBase.encode(
                 MultiBase.Base.BASE58_BTC,
-                UVarInt(codec).encodeToByteArray() + this.toAnsiX963Encoded()
+                UVarInt(codec).encodeToByteArray() + this.toAnsiX963Encoded(useCompressed = true)
             )
         }
 
