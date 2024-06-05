@@ -306,16 +306,11 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
         /**
          * Returns `did:key:$MULTIBASE_ENCODING_IDENTIFIER$MULTICODEC_ALGORITHM_IDENTIFIER$BYTES` with all bytes after MULTIBASE_ENCODING_IDENTIFIER in the assigned encoding
-         * We use '0x129x' to identify uncompressed EC keys of their respective size, these are not officially used identifiers.
          * Multicodec identifiers '0x120x' are draft identifiers for P-xxx keys with point compression
          *
          * 0x1200 P-256
          * 0x1201 P-384
          * 0x1202 P-512
-         *
-         * 0x1290 P-256
-         * 0x1291 P-384
-         * 0x1292 P-512
          *
          * The keybytes are ANSI X9.63 encoded (important for compression)
          */
