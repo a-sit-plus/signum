@@ -12,15 +12,6 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-
-/**
- * ECDH_ES (1.3.132.1.12) as per [draft-ietf-jose-json-web-algorithms-26](https://datatracker.ietf.org/doc/html/draft-ietf-jose-json-web-algorithms-26)
- *
- * This constant lives here, because we also need it in the commons module to be able to map this JWS Algorithm to a CryptoAlgorithm.
- * (It cannot be put into the compilation, since it is needed for enum init).
- */
-val OID_ECDH_ES = ObjectIdentifier("1.3.132.1.12")
-
 @Serializable(with = X509SignatureAlgorithmSerializer::class)
 enum class X509SignatureAlgorithm(override val oid: ObjectIdentifier, val isEc: Boolean = false) :
     Asn1Encodable<Asn1Sequence>, Identifiable {

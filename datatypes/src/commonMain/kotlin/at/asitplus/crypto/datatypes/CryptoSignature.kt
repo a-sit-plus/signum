@@ -10,7 +10,6 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -18,42 +17,33 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlin.math.max
 
 
 /**
- * Data class which holds Asn1 Encoding of a signature of a specified algorithm
+ * Interface which holds Asn1 Encoding of a signature of a specified algorithm
  * Allows simple ASN1 - Raw transformation of signature values
- * Does not check for anything!
  */
 
 @Serializable(with = CryptoSignature.CryptoSignatureSerializer::class)
-sealed class CryptoSignature(
-    @Contextual
-    protected val signature: Asn1Element,
-) : Asn1Encodable<Asn1Element> {
+sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
+    val signature: Asn1Element
 
-    /**
-     * Removes ASN1 Structure and returns the value(s) as ByteArray
-     */
-    abstract val rawByteArray: ByteArray
+    sealed interface Defined : CryptoSignature {
+        sealed interface Ill : Defined
 
-    abstract fun encodeToTlvBitString(): Asn1Element
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-
-        other as CryptoSignature
-
-        return signature == other.signature
+        sealed interface Well : Defined {
+            /**
+             * Removes ASN1 Structure and returns the value(s) as ByteArray
+             */
+            val rawByteArray: ByteArray
+        }
     }
 
-    override fun hashCode(): Int = signature.hashCode()
+    fun encodeToTlvBitString(): Asn1Element
 
     override fun encodeToTlv(): Asn1Element = signature
 
-    override fun toString(): String {
+    fun str(): String {
         return "${this::class.simpleName ?: "CryptoSignature"}(signature=${signature.prettyPrint()})"
     }
 
@@ -76,7 +66,9 @@ sealed class CryptoSignature(
         val r: BigInteger,
         /** s - ECDSA signature component */
         val s: BigInteger
-    ) : CryptoSignature(Asn1.Sequence { +r.encodeToTlv(); +s.encodeToTlv() }) {
+    ) : CryptoSignature {
+
+        override val signature: Asn1Element = Asn1.Sequence { +r.encodeToTlv(); +s.encodeToTlv() }
 
         override fun encodeToTlvBitString(): Asn1Element = encodeToDer().encodeToTlvBitString()
 
@@ -88,19 +80,18 @@ sealed class CryptoSignature(
          * to be equal, while preserving the transitivity contract of `equals`.
          */
         override fun equals(other: Any?): Boolean {
-            if (other !is CryptoSignature.EC) return false
+            if (other !is EC) return false
             return ((this.s == other.s) && (this.r == other.r))
         }
+
+        override fun toString() = str()
 
         /** @see equals */
         override fun hashCode() = 31 * this.s.hashCode() + this.r.hashCode()
 
         class IndefiniteLength internal constructor(
             r: BigInteger, s: BigInteger
-        ) : EC(r, s) {
-            override val rawByteArray
-                get() =
-                    throw IllegalStateException("Cannot convert indefinite length signature to raw bytes")
+        ) : EC(r, s), Defined.Ill {
 
             /**
              * specifies the curve's scalar byte length for this signature, allowing it to be converted to raw bytes
@@ -145,7 +136,7 @@ sealed class CryptoSignature(
              */
             val scalarByteLength: UInt,
             r: BigInteger, s: BigInteger
-        ) : EC(r, s) {
+        ) : EC(r, s), Defined.Well {
             init {
                 val max = scalarByteLength.toInt() * 8
 
@@ -211,11 +202,23 @@ sealed class CryptoSignature(
 
     }
 
-    class RSAorHMAC(input: ByteArray) : CryptoSignature(
-        Asn1Primitive(BIT_STRING, input)
-    ) {
+    class RSAorHMAC(input: ByteArray) : CryptoSignature, Defined.Well {
+
+        override val signature: Asn1Element = Asn1Primitive(BIT_STRING, input)
+
         override val rawByteArray by lazy { (signature as Asn1Primitive).decode(BIT_STRING) { it } }
         override fun encodeToTlvBitString(): Asn1Element = this.encodeToTlv()
+
+        override fun hashCode(): Int = signature.hashCode()
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other == null || this::class != other::class) return false
+
+            other as RSAorHMAC
+
+            return signature == other.signature
+        }
 
         companion object {
             @Throws(Asn1Exception::class)
@@ -225,9 +228,9 @@ sealed class CryptoSignature(
         }
     }
 
-    companion object : Asn1Decodable<Asn1Element, CryptoSignature> {
+    companion object : Asn1Decodable<Asn1Element, CryptoSignature.Defined> {
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(src: Asn1Element): CryptoSignature = runRethrowing {
+        override fun decodeFromTlv(src: Asn1Element): CryptoSignature.Defined = runRethrowing {
             when (src.tag) {
                 BIT_STRING -> RSAorHMAC((src as Asn1Primitive).decode(BIT_STRING) { it })
                 DER_SEQUENCE -> EC.decodeFromTlv(src as Asn1Sequence)
