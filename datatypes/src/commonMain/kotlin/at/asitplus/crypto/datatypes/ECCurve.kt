@@ -17,6 +17,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
+@Suppress("NOTHING_TO_INLINE")
 inline fun UInt.ceilDiv(other: UInt) =
     (floorDiv(other)) + (if (rem(other) != 0u) 1u else 0u)
 
