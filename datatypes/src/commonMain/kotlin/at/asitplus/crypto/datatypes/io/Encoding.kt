@@ -1,5 +1,6 @@
 package at.asitplus.crypto.datatypes.io
 
+import at.asitplus.catching
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.base64.Base64ConfigBuilder
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -50,7 +51,7 @@ object ByteArrayBase64Serializer : KSerializer<ByteArray> {
      * @throws SerializationException on error
      */
     override fun deserialize(decoder: Decoder): ByteArray {
-        return kotlin.runCatching { decoder.decodeString().decodeToByteArray(Base64Strict) }
+        return catching { decoder.decodeString().decodeToByteArray(Base64Strict) }
             .getOrElse { throw SerializationException("Base64 decoding failed", it) }
     }
 
@@ -74,7 +75,7 @@ object ByteArrayBase64UrlSerializer : KSerializer<ByteArray> {
      * @throws SerializationException on error
      */
     override fun deserialize(decoder: Decoder): ByteArray {
-        return kotlin.runCatching { decoder.decodeString().decodeToByteArray(Base64UrlStrict) }
+        return catching { decoder.decodeString().decodeToByteArray(Base64UrlStrict) }
             .getOrElse { throw SerializationException("Base64 decoding failed", it) }
     }
 }

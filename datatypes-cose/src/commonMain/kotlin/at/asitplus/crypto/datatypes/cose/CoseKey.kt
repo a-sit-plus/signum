@@ -2,7 +2,7 @@ package at.asitplus.crypto.datatypes.cose
 
 import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.failure
-import at.asitplus.KmmResult.Companion.wrap
+import at.asitplus.catching
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
 import at.asitplus.crypto.datatypes.cose.CoseKey.Companion.deserialize
@@ -110,30 +110,30 @@ data class CoseKey(
     companion object {
 
         fun deserialize(it: ByteArray) =
-            runCatching { cborSerializer.decodeFromByteArray<CoseKey>(it) }.wrap()
+            catching { cborSerializer.decodeFromByteArray<CoseKey>(it) }
 
         fun fromDid(input: String): KmmResult<CoseKey> =
-            runCatching {
+            catching {
                 CryptoPublicKey.fromDid(input).toCoseKey().getOrThrow()
-            }.wrap()
+            }
 
         /**
          * iOS encoded is currently only supporting uncompressed keys. Might change in the future
          */
         fun fromIosEncoded(bytes: ByteArray): KmmResult<CoseKey> =
-            runCatching {
+            catching {
                 CryptoPublicKey.fromIosEncoded(bytes).toCoseKey().getOrThrow()
-            }.wrap()
+            }
 
         fun fromCoordinates(
             curve: CoseEllipticCurve,
             x: ByteArray,
             y: ByteArray
         ): KmmResult<CoseKey> =
-            runCatching {
+            catching {
                 CryptoPublicKey.EC.fromUncompressed(curve.toEcCurve(), x, y).toCoseKey()
                     .getOrThrow()
-            }.wrap()
+            }
     }
 }
 
@@ -159,14 +159,14 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseK
                         x = xBytes,
                         y = yBytes
                     )
-                runCatching {
+                catching {
                     CoseKey(
                         keyParams = keyParams,
                         type = CoseKeyType.EC2,
                         keyId = didEncoded.encodeToByteArray(),
                         algorithm = algorithm
                     )
-                }.wrap()
+                }
             }
 
         is CryptoPublicKey.Rsa ->
@@ -179,7 +179,7 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseK
                     CoseAlgorithm.RS512
                 ))
             ) failure(IllegalArgumentException("Algorithm and Key Type mismatch"))
-            else runCatching {
+            else catching {
                 CoseKey(
                     keyParams = CoseKeyParams.RsaParams(
                         n = n,
@@ -189,7 +189,7 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseK
                     keyId = didEncoded.encodeToByteArray(),
                     algorithm = algorithm
                 )
-            }.wrap()
+            }
     }
 
 private const val COSE_KID = "coseKid"
@@ -536,7 +536,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                             ByteArraySerializer()
                         )
 
-                    labels["y"] -> kotlin.runCatching {
+                    labels["y"] -> catching {
                         y = decodeNullableSerializableElement(
                             ByteArraySerializer().descriptor,
                             index,

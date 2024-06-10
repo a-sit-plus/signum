@@ -1,5 +1,6 @@
 package at.asitplus.crypto.datatypes
 
+import at.asitplus.crypto.datatypes.CryptoPublicKey.EC.Companion.fromUncompressed
 import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.pki.*
 import io.kotest.core.spec.style.FreeSpec
@@ -82,7 +83,8 @@ class X509CertificateJvmTest : FreeSpec({
             initSign(keyPair.private)
             update(tbsCertificate.encodeToTlv().derEncoded)
         }.sign()
-        val test = (CryptoSignature.decodeFromDer(signed) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
+        val test =
+            (CryptoSignature.decodeFromDer(signed) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
         val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, test)
 
         val kotlinEncoded = x509Certificate.encodeToDer()
@@ -128,10 +130,16 @@ class X509CertificateJvmTest : FreeSpec({
             initSign(keyPair.private)
             update(tbsCertificate.encodeToTlv().derEncoded)
         }.sign()
-        val test = (CryptoSignature.decodeFromDer(signed) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
+        val test =
+            (CryptoSignature.decodeFromDer(signed) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
         val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, test)
 
-        repeat(500) { launch { x509Certificate.toJcaCertificate().getOrThrow().toKmpCertificate().getOrThrow().encodeToDer() shouldBe x509Certificate.encodeToDer() } }
+        repeat(500) {
+            launch {
+                x509Certificate.toJcaCertificate().getOrThrow().toKmpCertificate().getOrThrow()
+                    .encodeToDer() shouldBe x509Certificate.encodeToDer()
+            }
+        }
     }
 
     "Certificate can be parsed" {
@@ -182,9 +190,9 @@ class X509CertificateJvmTest : FreeSpec({
 
     "Certificate can be parsed to tree" {
         val ecPublicKey = keyPair.public as ECPublicKey
-        val keyX = ecPublicKey.w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
-        val keyY = ecPublicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
-        val cryptoPublicKey = CryptoPublicKey.EC(curve = ecCurve, x = keyX, y = keyY)
+        val keyX = ecPublicKey.w.affineX.toByteArray().ensureSize(ecCurve.coordinateLength.bytes)
+        val keyY = ecPublicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLength.bytes)
+        val cryptoPublicKey = fromUncompressed(curve = ecCurve, x = keyX, y = keyY)
 
         // create certificate with bouncycastle
         val notBeforeDate = Date.from(Instant.now())
@@ -348,9 +356,12 @@ class X509CertificateJvmTest : FreeSpec({
             initSign(keyPair.private)
             update(tbsCertificate3.encodeToTlv().derEncoded)
         }.sign()
-        val signature1 = (CryptoSignature.decodeFromDer(signed1) as  CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
-        val signature2 = (CryptoSignature.decodeFromDer(signed2) as  CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
-        val signature3 = (CryptoSignature.decodeFromDer(signed3) as  CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_521_R_1)
+        val signature1 =
+            (CryptoSignature.decodeFromDer(signed1) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
+        val signature2 =
+            (CryptoSignature.decodeFromDer(signed2) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
+        val signature3 =
+            (CryptoSignature.decodeFromDer(signed3) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_521_R_1)
         val x509Certificate1 = X509Certificate(tbsCertificate1, signatureAlgorithm256, signature1)
         val x509Certificate2 = X509Certificate(tbsCertificate2, signatureAlgorithm256, signature2)
         val x509Certificate3 = X509Certificate(tbsCertificate3, signatureAlgorithm512, signature3)

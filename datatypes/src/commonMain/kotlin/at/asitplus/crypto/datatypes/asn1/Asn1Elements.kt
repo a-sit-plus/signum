@@ -1,5 +1,6 @@
 package at.asitplus.crypto.datatypes.asn1
 
+import at.asitplus.catching
 import at.asitplus.crypto.datatypes.asn1.DERTags.isExplicitTag
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -155,12 +156,12 @@ sealed class Asn1Structure(tag: UByte, children: List<Asn1Element>?) :
      */
     @Throws(Asn1StructuralException::class)
     fun nextChild() =
-        runCatching { children[index++] }.getOrElse { throw Asn1StructuralException("No more content left") }
+        catching { children[index++] }.getOrElse { throw Asn1StructuralException("No more content left") }
 
     /**
      * Exception-free version of [nextChild]
      */
-    fun nextChildOrNull() = runCatching { nextChild() }.getOrNull()
+    fun nextChildOrNull() = catching { nextChild() }.getOrNull()
 
     /**
      * Returns `true` if more children can be retrieved by [nextChild]. `false` otherwise
@@ -210,6 +211,7 @@ class Asn1Sequence internal constructor(children: List<Asn1Element>) : Asn1Struc
  * ASN.1 OCTET STRING 0x04 ([BERTags.OCTET_STRING]) containing an [Asn1Element]
  * @param children the elements to put into this sequence
  */
+@Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(with = Asn1EncodableSerializer::class)
 class Asn1EncapsulatingOctetString(children: List<Asn1Element>) : Asn1Structure(BERTags.OCTET_STRING, children),
     Asn1OctetString<Asn1EncapsulatingOctetString> {

@@ -1,25 +1,20 @@
 package at.asitplus.crypto.datatypes.cose
 
-import at.asitplus.KmmResult.Companion.wrap
+import at.asitplus.catching
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.CryptoSignature
 import at.asitplus.crypto.datatypes.cose.io.Base16Strict
 import at.asitplus.crypto.datatypes.cose.io.cborSerializer
 import at.asitplus.crypto.datatypes.pki.X509Certificate
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import kotlinx.serialization.*
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.ByteStringWrapper
 import kotlinx.serialization.cbor.CborArray
-import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
@@ -87,9 +82,9 @@ data class CoseSigned(
     }
 
     companion object {
-        fun deserialize(it: ByteArray) = kotlin.runCatching {
+        fun deserialize(it: ByteArray) = catching {
             cborSerializer.decodeFromByteArray<CoseSigned>(it)
-        }.wrap()
+        }
     }
 }
 
@@ -148,9 +143,9 @@ data class CoseSignatureInput(
 
 
     companion object {
-        fun deserialize(it: ByteArray) = kotlin.runCatching {
+        fun deserialize(it: ByteArray) = catching {
             cborSerializer.decodeFromByteArray<CoseSignatureInput>(it)
-        }.wrap()
+        }
     }
 }
 

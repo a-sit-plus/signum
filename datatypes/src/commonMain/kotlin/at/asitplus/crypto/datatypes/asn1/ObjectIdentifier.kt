@@ -1,5 +1,6 @@
 package at.asitplus.crypto.datatypes.asn1
 
+import at.asitplus.catching
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -182,7 +183,7 @@ private fun ByteArray.toSeptets(): ByteArray {
 @Suppress("NOTHING_TO_INLINE")
 private inline fun ByteArray.getBit(index: Int): Boolean =
     if (index < 0) throw IndexOutOfBoundsException("index = $index")
-    else kotlin.runCatching {
+    else catching {
         this[getByteIndex(index)].getBit(getBitIndex(index))
     }.getOrElse { false }
 
@@ -193,8 +194,10 @@ private inline fun ByteArray.setBit(i: Int) {
 
 @Suppress("NOTHING_TO_INLINE")
 private inline fun Byte.setBit(i: Int) = ((1 shl getBitIndex(i)).toByte() or this)
+
 @Suppress("NOTHING_TO_INLINE")
 private inline fun getByteIndex(i: Int) = (i / 8)
+
 @Suppress("NOTHING_TO_INLINE")
 private inline fun getBitIndex(i: Int) = (i % 8)
 

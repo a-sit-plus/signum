@@ -1,5 +1,6 @@
 package at.asitplus.crypto.datatypes
 
+import at.asitplus.catching
 import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.asn1.Asn1.Null
 import at.asitplus.crypto.datatypes.asn1.Asn1.Tagged
@@ -21,8 +22,8 @@ import kotlinx.serialization.encoding.Encoder
 val OID_ECDH_ES = ObjectIdentifier("1.3.132.1.12")
 
 @Serializable(with = X509SignatureAlgorithmSerializer::class)
-enum class X509SignatureAlgorithm(override val oid: ObjectIdentifier, val isEc: Boolean = false)
-    : Asn1Encodable<Asn1Sequence>, Identifiable {
+enum class X509SignatureAlgorithm(override val oid: ObjectIdentifier, val isEc: Boolean = false) :
+    Asn1Encodable<Asn1Sequence>, Identifiable {
 
     // ECDSA with SHA-size
     ES256(KnownOIDs.ecdsaWithSHA256, true),
@@ -98,7 +99,7 @@ enum class X509SignatureAlgorithm(override val oid: ObjectIdentifier, val isEc: 
     companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithm> {
 
         @Throws(Asn1OidException::class)
-        private fun fromOid(oid: ObjectIdentifier) = runCatching { entries.first { it.oid == oid } }.getOrElse {
+        private fun fromOid(oid: ObjectIdentifier) = catching { entries.first { it.oid == oid } }.getOrElse {
             throw Asn1OidException("Unsupported OID: $oid", oid)
         }
 
@@ -157,8 +158,10 @@ enum class X509SignatureAlgorithm(override val oid: ObjectIdentifier, val isEc: 
     }
 }
 
-@Deprecated("Will likely be replaced with a more general type in the future",
-    replaceWith = ReplaceWith("X509SignatureAlgorithm"))
+@Deprecated(
+    "Will likely be replaced with a more general type in the future",
+    replaceWith = ReplaceWith("X509SignatureAlgorithm")
+)
 typealias CryptoAlgorithm = X509SignatureAlgorithm
 
 object X509SignatureAlgorithmSerializer : KSerializer<X509SignatureAlgorithm> {

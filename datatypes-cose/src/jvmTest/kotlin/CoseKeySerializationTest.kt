@@ -28,14 +28,15 @@ class CoseKeySerializationTest : FreeSpec({
 
     "Serializing" - {
         "Manual" - {
-            val compressed = cborSerializer.encodeToByteArray( CryptoPublicKey.fromJcaPublicKey(
+            val compressed = cborSerializer.encodeToByteArray(CryptoPublicKey.fromJcaPublicKey(
                 KeyPairGenerator.getInstance("EC").apply {
                     initialize(256)
                 }.genKeyPair().public
             ).getOrThrow().run {
                 this as CryptoPublicKey.EC
                 this.copy(preferCompressedRepresentation = true)
-            }.toCoseKey(CoseAlgorithm.ES256).getOrThrow())
+            }.toCoseKey(CoseAlgorithm.ES256).getOrThrow()
+            )
             val coseUncompressed = CryptoPublicKey.fromJcaPublicKey(
                 KeyPairGenerator.getInstance("EC").apply {
                     initialize(256)
@@ -107,8 +108,8 @@ class CoseKeySerializationTest : FreeSpec({
                         decoded.toCryptoPublicKey().getOrThrow()
                             .getJcaPublicKey()
                             .getOrThrow().encoded.encodeToString(
-                            Base64Strict
-                        ) shouldBe pubKey.encoded.encodeToString(Base64Strict)
+                                Base64Strict
+                            ) shouldBe pubKey.encoded.encodeToString(Base64Strict)
                     }
 
                     withClue("Compressed")
@@ -131,8 +132,8 @@ class CoseKeySerializationTest : FreeSpec({
                         decoded.toCryptoPublicKey().getOrThrow()
                             .getJcaPublicKey()
                             .getOrThrow().encoded.encodeToString(
-                            Base64Strict
-                        ) shouldBe pubKey.encoded.encodeToString(Base64Strict)
+                                Base64Strict
+                            ) shouldBe pubKey.encoded.encodeToString(Base64Strict)
                     }
                 }
             }

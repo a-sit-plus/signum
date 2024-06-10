@@ -2,11 +2,9 @@ package at.asitplus.crypto.datatypes.cose
 
 import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.failure
-import at.asitplus.KmmResult.Companion.wrap
+import at.asitplus.catching
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.asn1.decodeFromDer
-import at.asitplus.crypto.datatypes.misc.ANSIECPrefix
-import com.ionspin.kotlin.bignum.integer.Sign
 
 /**
  * Wrapper to handle parameters for different COSE public key types.
@@ -89,13 +87,13 @@ sealed class CoseKeyParams {
         override fun yHashCode(): Int = y?.contentHashCode() ?: 0
 
         override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> {
-            return runCatching {
+            return catching {
                 CryptoPublicKey.EC.fromUncompressed(
                     curve = curve?.toEcCurve() ?: throw IllegalArgumentException("Missing or invalid curve"),
                     x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
                     y = y ?: throw IllegalArgumentException("Missing y-coordinate")
                 )
-            }.wrap()
+            }
         }
     }
 
@@ -120,12 +118,12 @@ sealed class CoseKeyParams {
 
         override fun yHashCode(): Int = y?.hashCode() ?: 0
 
-        override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = runCatching {
+        override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = catching {
             val curve = curve ?: throw Exception("Cannot determine Curve - Missing Curve")
             val x = x ?: throw Exception("Cannot determine key - Missing x coordinate")
             val yFlag = y ?: throw Exception("Cannot determine key - Missing Indicator y")
             CryptoPublicKey.EC.fromCompressed(curve.toEcCurve(), x, yFlag)
-        }.wrap()
+        }
     }
 
     /**
@@ -166,13 +164,13 @@ sealed class CoseKeyParams {
         }
 
         override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> {
-            return runCatching {
+            return catching {
                 CryptoPublicKey.Rsa(
                     n = n ?: throw IllegalArgumentException("Missing modulus n"),
                     e = e?.let { bytes -> Int.decodeFromDer(bytes) }
                         ?: throw IllegalArgumentException("Missing or invalid exponent e")
                 )
-            }.wrap()
+            }
         }
     }
 

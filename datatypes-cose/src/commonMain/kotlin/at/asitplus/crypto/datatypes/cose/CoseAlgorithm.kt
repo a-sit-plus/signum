@@ -36,7 +36,7 @@ enum class CoseAlgorithm(val value: Int) {
     RS1(-65535);
 
 
-    fun toCryptoAlgorithm() = when(this) {
+    fun toCryptoAlgorithm() = when (this) {
         ES256 -> X509SignatureAlgorithm.ES256
         ES384 -> X509SignatureAlgorithm.ES384
         ES512 -> X509SignatureAlgorithm.ES512
@@ -73,7 +73,7 @@ object CoseAlgorithmSerializer : KSerializer<CoseAlgorithm> {
 
 }
 
-fun X509SignatureAlgorithm.toCoseAlgorithm() = when(this) {
+fun X509SignatureAlgorithm.toCoseAlgorithm() = when (this) {
     X509SignatureAlgorithm.ES256 -> CoseAlgorithm.ES256
     X509SignatureAlgorithm.ES384 -> CoseAlgorithm.ES384
     X509SignatureAlgorithm.ES512 -> CoseAlgorithm.ES512

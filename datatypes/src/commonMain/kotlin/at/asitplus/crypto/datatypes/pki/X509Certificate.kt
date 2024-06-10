@@ -1,5 +1,6 @@
 package at.asitplus.crypto.datatypes.pki
 
+import at.asitplus.catching
 import at.asitplus.crypto.datatypes.X509SignatureAlgorithm
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.CryptoSignature
@@ -261,11 +262,11 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
          * or by decoding from Base64, or by decoding to a String, stripping PEM headers
          * (`-----BEGIN CERTIFICATE-----`) and then decoding from Base64.
          */
-        fun decodeFromByteArray(src: ByteArray): X509Certificate? = runCatching {
+        fun decodeFromByteArray(src: ByteArray): X509Certificate? = catching {
             X509Certificate.decodeFromTlv(Asn1Element.parse(src) as Asn1Sequence)
-        }.getOrNull() ?: runCatching {
+        }.getOrNull() ?: catching {
             X509Certificate.decodeFromTlv(Asn1Element.parse(src.decodeToByteArray(Base64())) as Asn1Sequence)
-        }.getOrNull() ?: runCatching {
+        }.getOrNull() ?: catching {
             X509Certificate.decodeFromTlv(Asn1Element.parse(src.decodeX5c()) as Asn1Sequence)
         }.getOrNull()
 

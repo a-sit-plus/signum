@@ -1,15 +1,6 @@
 package at.asitplus.crypto.datatypes
 
-import at.asitplus.crypto.datatypes.asn1.Asn1Element
-import at.asitplus.crypto.datatypes.asn1.Asn1EncapsulatingOctetString
-import at.asitplus.crypto.datatypes.asn1.Asn1Primitive
-import at.asitplus.crypto.datatypes.asn1.Asn1Sequence
-import at.asitplus.crypto.datatypes.asn1.Asn1String
-import at.asitplus.crypto.datatypes.asn1.KnownOIDs
-import at.asitplus.crypto.datatypes.asn1.ObjectIdentifier
-import at.asitplus.crypto.datatypes.asn1.encodeToTlv
-import at.asitplus.crypto.datatypes.asn1.ensureSize
-import at.asitplus.crypto.datatypes.asn1.parse
+import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.pki.*
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
@@ -21,12 +12,7 @@ import org.bouncycastle.asn1.ASN1Integer
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers
 import org.bouncycastle.asn1.x500.X500Name
-import org.bouncycastle.asn1.x509.ExtendedKeyUsage
-import org.bouncycastle.asn1.x509.Extension
-import org.bouncycastle.asn1.x509.ExtensionsGenerator
-import org.bouncycastle.asn1.x509.KeyPurposeId
-import org.bouncycastle.asn1.x509.KeyUsage
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
+import org.bouncycastle.asn1.x509.*
 import org.bouncycastle.operator.ContentSigner
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder
@@ -66,7 +52,17 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
 
         val tbsCsr = TbsCertificationRequest(
             version = 0,
-            subjectName = listOf( RelativeDistinguishedName(listOf(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
+            subjectName = listOf(
+                RelativeDistinguishedName(
+                    listOf(
+                        AttributeTypeAndValue.CommonName(
+                            Asn1String.UTF8(
+                                commonName
+                            )
+                        )
+                    )
+                )
+            ),
             publicKey = cryptoPublicKey
         )
         val signed = Signature.getInstance(signatureAlgorithm.jcaName).apply {
@@ -107,7 +103,17 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             .build(contentSigner)
         val tbsCsr = TbsCertificationRequest(
             version = 0,
-            subjectName = listOf(RelativeDistinguishedName( listOf(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
+            subjectName = listOf(
+                RelativeDistinguishedName(
+                    listOf(
+                        AttributeTypeAndValue.CommonName(
+                            Asn1String.UTF8(
+                                commonName
+                            )
+                        )
+                    )
+                )
+            ),
             publicKey = cryptoPublicKey,
             attributes = listOf(
                 Pkcs10CertificationRequestAttribute(KnownOIDs.keyUsage, Asn1Element.parse(keyUsage.encoded)),
@@ -127,8 +133,13 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         val jvmEncoded = bcCsr.encoded
         // CSR will never entirely match because of randomness in ECDSA signature
         //kotlinEncoded shouldBe jvmEncoded
-        withClue("kotlinEncoded: ${csr.encodeToTlv().toDerHexString()}, jvmEncoded: ${bcCsr.encoded.toHexString(
-            HexFormat.UpperCase)}")
+        withClue(
+            "kotlinEncoded: ${csr.encodeToTlv().toDerHexString()}, jvmEncoded: ${
+                bcCsr.encoded.toHexString(
+                    HexFormat.UpperCase
+                )
+            }"
+        )
         { kotlinEncoded.drop(6).take(172) shouldBe jvmEncoded.drop(6).take(172) }
 
         val parsedFromKotlinCsr = PKCS10CertificationRequest(kotlinEncoded)
@@ -196,8 +207,8 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
 
     "CSR can be parsed" {
         val ecPublicKey = keyPair.public as ECPublicKey
-        val keyX = ecPublicKey.w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
-        val keyY = ecPublicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
+        val keyX = ecPublicKey.w.affineX.toByteArray().ensureSize(ecCurve.coordinateLength.bytes)
+        val keyY = ecPublicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLength.bytes)
 
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"

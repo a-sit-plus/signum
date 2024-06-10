@@ -1,5 +1,6 @@
 package at.asitplus.crypto.datatypes.io
 
+import at.asitplus.catching
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -15,7 +16,7 @@ private fun getBitIndex(i: Long) = (i % 8).toInt()
 
 private fun List<Byte>.getBit(index: Long): Boolean =
     if (index < 0) throw IndexOutOfBoundsException("index = $index")
-    else kotlin.runCatching {
+    else catching {
         this[getByteIndex(index)].getBit(getBitIndex(index))
     }.getOrElse { false }
 
@@ -243,7 +244,7 @@ class BitSet private constructor(private val buffer: MutableList<Byte>) : Iterab
         /**
          * Exception-free version of [fromBitString]
          */
-        fun fromBitStringOrNull(bitString: String) = runCatching { fromBitString(bitString) }.getOrNull()
+        fun fromBitStringOrNull(bitString: String) = catching { fromBitString(bitString) }.getOrNull()
     }
 }
 

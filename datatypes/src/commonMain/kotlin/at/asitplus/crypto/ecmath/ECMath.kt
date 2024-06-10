@@ -122,15 +122,17 @@ fun ECPoint.double(): ECPoint {
 
 @Suppress("NOTHING_TO_INLINE")
 inline operator fun ECPoint.unaryPlus() = this
+
 @Suppress("NOTHING_TO_INLINE")
 inline operator fun ECPoint.unaryMinus() =
     ECPoint.General.unsafeFromXYZ(curve, homX, -homY, homZ)
+
 @Suppress("NOTHING_TO_INLINE")
 inline operator fun ECPoint.Normalized.unaryMinus() =
     ECPoint.Normalized.unsafeFromXY(curve, x, -y)
 
 @Suppress("NOTHING_TO_INLINE")
-inline operator fun ECPoint.minus(other: ECPoint) = this+(-other)
+inline operator fun ECPoint.minus(other: ECPoint) = this + (-other)
 
 // TODO: i'm sure this could be smarter (keyword: "comb")
 // i'm also sure this isn't resistant to timing side channels if that is something you care about
@@ -150,12 +152,15 @@ operator fun BigInteger.times(point: ECPoint): ECPoint {
 @Suppress("NOTHING_TO_INLINE")
 inline operator fun Int.times(point: ECPoint) =
     BigInteger.fromInt(this).times(point)
+
 @Suppress("NOTHING_TO_INLINE")
 inline operator fun Long.times(point: ECPoint) =
     BigInteger.fromLong(this).times(point)
+
 @Suppress("NOTHING_TO_INLINE")
 inline operator fun UInt.times(point: ECPoint) =
     BigInteger.fromUInt(this).times(point)
+
 @Suppress("NOTHING_TO_INLINE")
 inline operator fun ULong.times(point: ECPoint) =
     BigInteger.fromULong(this).times(point)
@@ -169,13 +174,18 @@ inline operator fun ModularBigInteger.times(point: ECPoint): ECPoint {
 /* these are intentionally not operator functions! */
 @Suppress("NOTHING_TO_INLINE")
 inline fun ECPoint.times(v: BigInteger) = v * this
+
 @Suppress("NOTHING_TO_INLINE")
 inline fun ECPoint.times(v: ModularBigInteger) = v * this
+
 @Suppress("NOTHING_TO_INLINE")
 inline fun ECPoint.times(v: Int) = v * this
+
 @Suppress("NOTHING_TO_INLINE")
 inline fun ECPoint.times(v: UInt) = v * this
+
 @Suppress("NOTHING_TO_INLINE")
 inline fun ECPoint.times(v: Long) = v * this
+
 @Suppress("NOTHING_TO_INLINE")
 inline fun ECPoint.times(v: ULong) = v * this

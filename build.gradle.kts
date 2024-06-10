@@ -1,7 +1,7 @@
 import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
 
 plugins {
-    id("at.asitplus.gradle.conventions") version "2.0.0+20240607"
+    id("at.asitplus.gradle.conventions") version "2.0.0+20240610"
 }
 group = "at.asitplus.crypto"
 
@@ -18,11 +18,4 @@ tasks.getByName("dokkaHtmlMultiModule") {
 allprojects {
     apply(plugin = "org.jetbrains.dokka")
     group = rootProject.group
-
-    repositories {
-        maven {
-            url = uri("https://oss.sonatype.org/content/repositories/snapshots")
-            name = "bigNum"
-        }
-    }
 }

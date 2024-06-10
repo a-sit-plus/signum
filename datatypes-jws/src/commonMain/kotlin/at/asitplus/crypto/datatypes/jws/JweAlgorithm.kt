@@ -1,5 +1,6 @@
 package at.asitplus.crypto.datatypes.jws
 
+import at.asitplus.catching
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -8,6 +9,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
+@Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(with = JweAlgorithmSerializer::class)
 sealed class JweAlgorithm(override val identifier: String) : JsonWebAlgorithm {
 
@@ -76,7 +78,7 @@ object JweAlgorithmSerializer : KSerializer<JweAlgorithm> {
 
     override fun deserialize(decoder: Decoder): JweAlgorithm {
         val decoded = decoder.decodeString()
-        return kotlin.runCatching { JweAlgorithm.entries.first { it.identifier == decoded } }.getOrElse {
+        return catching { JweAlgorithm.entries.first { it.identifier == decoded } }.getOrElse {
             JweAlgorithm.UNKNOWN(decoded)
         }
     }

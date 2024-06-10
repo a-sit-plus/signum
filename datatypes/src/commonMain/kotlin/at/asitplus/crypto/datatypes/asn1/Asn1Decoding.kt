@@ -53,7 +53,7 @@ private class Asn1Reader(input: ByteArray) {
                 )
             )
             else if (tlv.tag == OCTET_STRING) {
-                runCatching {
+                catching {
                     result.add(Asn1EncapsulatingOctetString(Asn1Reader(tlv.content).doParse()))
                 }.getOrElse { result.add(Asn1PrimitiveOctetString(tlv.content)) }
             } else result.add(Asn1Primitive(tlv.tag, tlv.content))
@@ -156,7 +156,7 @@ fun Asn1Primitive.readString(): Asn1String = runRethrowing {
 /**
  * Exception-free version of [readString]
  */
-fun Asn1Primitive.readStringOrNull() = runCatching { readString() }.getOrNull()
+fun Asn1Primitive.readStringOrNull() = catching { readString() }.getOrNull()
 
 
 /**
@@ -173,7 +173,7 @@ fun Asn1Primitive.readInstant() =
 /**
  * Exception-free version of [readInstant]
  */
-fun Asn1Primitive.readInstantOrNull() = runCatching { readInstant() }.getOrNull()
+fun Asn1Primitive.readInstantOrNull() = catching { readInstant() }.getOrNull()
 
 
 /**
@@ -187,7 +187,7 @@ fun Asn1Primitive.readBitString() = Asn1BitString.decodeFromTlv(this)
 /**
  * Exception-free version of [readBitString]
  */
-fun Asn1Primitive.readBitStringOrNull() = runCatching { readBitString() }.getOrNull()
+fun Asn1Primitive.readBitStringOrNull() = catching { readBitString() }.getOrNull()
 
 
 /**
@@ -201,7 +201,7 @@ fun Asn1Primitive.readNull() = decode(ASN1_NULL) {}
 /**
  * Name seems odd, but this is just an exception-free version of [readNull]
  */
-fun Asn1Primitive.readNullOrNull() = runCatching { readNull() }.getOrNull()
+fun Asn1Primitive.readNullOrNull() = catching { readNull() }.getOrNull()
 
 
 /**
@@ -218,7 +218,7 @@ fun Asn1Tagged.verifyTag(tag: UByte): List<Asn1Element> {
 /**
  * Exception-free version of [verifyTag]
  */
-fun Asn1Tagged.verifyTagOrNull(tag: UByte) = runCatching { verifyTag(tag) }.getOrNull()
+fun Asn1Tagged.verifyTagOrNull(tag: UByte) = catching { verifyTag(tag) }.getOrNull()
 
 
 /**
@@ -236,7 +236,7 @@ inline fun <reified T> Asn1Primitive.decode(tag: UByte, transform: (content: Byt
  * Exception-free version of [decode]
  */
 inline fun <reified T> Asn1Primitive.decodeOrNull(tag: UByte, transform: (content: ByteArray) -> T) =
-    runCatching { decode(tag, transform) }.getOrNull()
+    catching { decode(tag, transform) }.getOrNull()
 
 @Throws(Asn1Exception::class)
 private fun Instant.Companion.decodeUtcTimeFromDer(input: ByteArray): Instant = runRethrowing {

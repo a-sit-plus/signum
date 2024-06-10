@@ -11,11 +11,12 @@ enum class ANSIECPrefix(val prefixByte: Byte) {
 
     val isUncompressed inline get() = (this == UNCOMPRESSED)
     val isCompressed inline get() = !isUncompressed
-    val compressionSign inline get() = when (this) {
-        COMPRESSED_MINUS -> Sign.NEGATIVE
-        COMPRESSED_PLUS -> Sign.POSITIVE
-        UNCOMPRESSED -> throw IllegalStateException("not compressed")
-    }
+    val compressionSign
+        inline get() = when (this) {
+            COMPRESSED_MINUS -> Sign.NEGATIVE
+            COMPRESSED_PLUS -> Sign.POSITIVE
+            UNCOMPRESSED -> throw IllegalStateException("not compressed")
+        }
     val prefixUByte inline get() = prefixByte.toUByte()
 
     @Suppress("NOTHING_TO_INLINE")
@@ -81,9 +82,9 @@ internal fun decompressY(curve: ECCurve, x: ModularBigInteger, sign: Sign): Modu
     val alpha = x.pow(3) + curve.a * x + curve.b
 
     require(quadraticResidueTest(alpha))
-        { "Invalid compressed point (x=$x) on $curve"}
+    { "Invalid compressed point (x=$x) on $curve" }
     require(curve.modulus.bitAt(0) && curve.modulus.bitAt(1)) // (modulus % 4) == 3
-        { "Decompression on $curve requires Tonelli-Shanks Algorithm" }
+    { "Decompression on $curve requires Tonelli-Shanks Algorithm" }
 
 
     val beta = alpha.pow((curve.modulus + 1) / 4)

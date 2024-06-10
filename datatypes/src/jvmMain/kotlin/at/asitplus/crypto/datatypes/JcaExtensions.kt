@@ -1,7 +1,7 @@
 package at.asitplus.crypto.datatypes
 
 import at.asitplus.KmmResult
-import at.asitplus.KmmResult.Companion.wrap
+import at.asitplus.catching
 import at.asitplus.crypto.datatypes.pki.X509Certificate
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
@@ -80,27 +80,27 @@ fun CryptoPublicKey.getJcaPublicKey() = when (this) {
 }
 
 fun CryptoPublicKey.EC.getJcaPublicKey(): KmmResult<ECPublicKey> {
-    return runCatching {
+    return catching {
         val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.jwkName)
         val x = x.residue.toJavaBigInteger()
         val y = y.residue.toJavaBigInteger()
         val ecPoint = parameterSpec.curve.createPoint(x, y)
         val ecPublicKeySpec = ECPublicKeySpec(ecPoint, parameterSpec)
         JCEECPublicKey("EC", ecPublicKeySpec)
-    }.wrap()
+    }
 }
 
 private val rsaFactory = KeyFactory.getInstance("RSA")
 
 fun CryptoPublicKey.Rsa.getJcaPublicKey(): KmmResult<RSAPublicKey> =
-    runCatching {
+    catching {
         rsaFactory.generatePublic(
             RSAPublicKeySpec(BigInteger(1, n), BigInteger.valueOf(e.toLong()))
         ) as RSAPublicKey
-    }.wrap()
+    }
 
 fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey> =
-    runCatching {
+    catching {
         val curve = ECCurve.byJcaName(
             SECNamedCurves.getName(
                 SubjectPublicKeyInfo.getInstance(
@@ -108,15 +108,15 @@ fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmRe
                 ).algorithm.parameters as ASN1ObjectIdentifier
             )
         ) ?: throw SerializationException("Unknown Jca name")
-        CryptoPublicKey.EC(
+        fromUncompressed(
             curve,
             publicKey.w.affineX.toByteArray(),
             publicKey.w.affineY.toByteArray()
         )
-    }.wrap()
+    }
 
 fun CryptoPublicKey.Rsa.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey> =
-    runCatching { CryptoPublicKey.Rsa(publicKey.modulus.toByteArray(), publicKey.publicExponent.toInt()) }.wrap()
+    catching { CryptoPublicKey.Rsa(publicKey.modulus.toByteArray(), publicKey.publicExponent.toInt()) }
 
 fun CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
     when (publicKey) {
@@ -147,11 +147,11 @@ fun CryptoSignature.Companion.parseFromJca(input: ByteArray, algorithm: X509Sign
  * Converts this [X509Certificate] to a [java.security.cert.X509Certificate].
  * This function is suspending, because it uses a mutex to lock the underlying certificate factory (which is reused for performance reasons
  */
-suspend fun X509Certificate.toJcaCertificate(): KmmResult<java.security.cert.X509Certificate> = runCatching {
+suspend fun X509Certificate.toJcaCertificate(): KmmResult<java.security.cert.X509Certificate> = catching {
     certificateFactoryMutex.withLock {
         certFactory.generateCertificate(encodeToDer().inputStream()) as java.security.cert.X509Certificate
     }
-}.wrap()
+}
 
 /**
  * blocking implementation of [toJcaCertificate]
@@ -163,4 +163,4 @@ fun X509Certificate.toJcaCertificateBlocking(): KmmResult<java.security.cert.X50
  * Converts this [java.security.cert.X509Certificate] to an [X509Certificate]
  */
 fun java.security.cert.X509Certificate.toKmpCertificate() =
-    runCatching { X509Certificate.decodeFromDer(encoded) }.wrap()
+    catching { X509Certificate.decodeFromDer(encoded) }

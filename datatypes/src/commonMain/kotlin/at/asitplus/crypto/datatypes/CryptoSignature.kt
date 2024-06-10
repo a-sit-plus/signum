@@ -71,13 +71,12 @@ sealed class CryptoSignature(
     }
 
 
-    sealed class EC private constructor (
+    sealed class EC private constructor(
         /** r - ECDSA signature component */
         val r: BigInteger,
         /** s - ECDSA signature component */
-        val s: BigInteger)
-        : CryptoSignature(Asn1.Sequence { +r.encodeToTlv(); +s.encodeToTlv() })
-    {
+        val s: BigInteger
+    ) : CryptoSignature(Asn1.Sequence { +r.encodeToTlv(); +s.encodeToTlv() }) {
 
         override fun encodeToTlvBitString(): Asn1Element = encodeToDer().encodeToTlvBitString()
 
@@ -97,10 +96,11 @@ sealed class CryptoSignature(
         override fun hashCode() = 31 * this.s.hashCode() + this.r.hashCode()
 
         class IndefiniteLength internal constructor(
-            r: BigInteger, s:BigInteger
-        ) : EC(r,s) {
-            override val rawByteArray get() =
-                throw IllegalStateException("Cannot convert indefinite length signature to raw bytes")
+            r: BigInteger, s: BigInteger
+        ) : EC(r, s) {
+            override val rawByteArray
+                get() =
+                    throw IllegalStateException("Cannot convert indefinite length signature to raw bytes")
 
             /**
              * specifies the curve's scalar byte length for this signature, allowing it to be converted to raw bytes
@@ -126,7 +126,7 @@ sealed class CryptoSignature(
                 return withCurve(
                     when {
                         idx >= 0 -> curvesByScalarLength[idx]
-                        idx >= -curvesByScalarLength.size -> curvesByScalarLength[-1-idx]
+                        idx >= -curvesByScalarLength.size -> curvesByScalarLength[-1 - idx]
                         else -> throw IllegalArgumentException("No curve with bit length >= $minLength is supported")
                     }
                 )
@@ -137,7 +137,7 @@ sealed class CryptoSignature(
             }
         }
 
-        class DefiniteLength internal constructor (
+        class DefiniteLength internal constructor(
             /**
              * scalar byte length of the underlying curve;
              * we do not know _which_ curve with this particular byte length
@@ -145,16 +145,19 @@ sealed class CryptoSignature(
              */
             val scalarByteLength: UInt,
             r: BigInteger, s: BigInteger
-        ) : EC(r,s) {
+        ) : EC(r, s) {
             init {
-                val max = scalarByteLength.toInt()*8
+                val max = scalarByteLength.toInt() * 8
 
                 require(r.bitLength() <= max) {
-                    "r is ${r.bitLength()} bits long, expected at most ${scalarByteLength.toInt()} bytes (${max} bits)"}
+                    "r is ${r.bitLength()} bits long, expected at most ${scalarByteLength.toInt()} bytes (${max} bits)"
+                }
 
-                require(s.bitLength() <= scalarByteLength.toInt()*8) {
-                    "s is ${s.bitLength()} bits long, expected at most ${scalarByteLength.toInt()} bytes (${max} bits)"}
+                require(s.bitLength() <= scalarByteLength.toInt() * 8) {
+                    "s is ${s.bitLength()} bits long, expected at most ${scalarByteLength.toInt()} bytes (${max} bits)"
+                }
             }
+
             /**
              * Concatenates [r] and [s], padding each one to the next largest coordinate length
              * of an [ECCurve], for use in e.g. JWS signatures.
@@ -168,15 +171,17 @@ sealed class CryptoSignature(
         companion object : Asn1Decodable<Asn1Element, EC.IndefiniteLength> {
 
             fun fromRS(r: BigInteger, s: BigInteger) =
-                EC.IndefiniteLength(r,s)
+                EC.IndefiniteLength(r, s)
 
             /** load CryptoSignature from raw byte array (r and s concatenated) */
             fun fromRawBytes(input: ByteArray): EC.DefiniteLength {
                 require(input.size.rem(2) == 0) { "Raw signature has odd number of bytes" }
                 val sz = input.size.div(2)
-                return EC.DefiniteLength(sz.toUInt(),
+                return EC.DefiniteLength(
+                    sz.toUInt(),
                     r = BigInteger.fromByteArray(input.copyOfRange(0, sz), Sign.POSITIVE),
-                    s = BigInteger.fromByteArray(input.copyOfRange(sz, 2*sz), Sign.POSITIVE))
+                    s = BigInteger.fromByteArray(input.copyOfRange(sz, 2 * sz), Sign.POSITIVE)
+                )
             }
 
             /** load from raw byte array (r and s concatenated), asserting that the size fits this particular curve */
@@ -197,7 +202,7 @@ sealed class CryptoSignature(
                 val r = (src.nextChild() as Asn1Primitive).readBigInteger()
                 val s = (src.nextChild() as Asn1Primitive).readBigInteger()
                 if (src.hasMoreChildren()) throw IllegalArgumentException("Illegal Signature Format")
-                return fromRS(r,s)
+                return fromRS(r, s)
             }
 
             @Deprecated("use fromRawBytes", ReplaceWith("CryptoSignature.EC.fromRawBytes(input)"))

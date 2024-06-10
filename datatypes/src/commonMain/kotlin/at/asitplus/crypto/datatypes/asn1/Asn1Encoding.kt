@@ -2,6 +2,7 @@ package at.asitplus.crypto.datatypes.asn1
 
 import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.wrap
+import at.asitplus.catching
 import at.asitplus.crypto.datatypes.asn1.BERTags.ASN1_NULL
 import at.asitplus.crypto.datatypes.asn1.BERTags.BIT_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.BOOLEAN
@@ -104,13 +105,13 @@ object Asn1 {
      * Exception-free version of [Sequence]
      */
     fun SequenceOrNull(root: Asn1TreeBuilder.() -> Unit) =
-        runCatching { Sequence(root) }.getOrNull()
+        catching { Sequence(root) }.getOrNull()
 
 
     /**
      * Safe version of [Sequence], wrapping the result into a [KmmResult]
      */
-    fun SequenceSafe(root: Asn1TreeBuilder.() -> Unit) = runCatching { Sequence(root) }.wrap()
+    fun SequenceSafe(root: Asn1TreeBuilder.() -> Unit) = catching { Sequence(root) }
 
 
     /**
@@ -135,13 +136,13 @@ object Asn1 {
     /**
      * Exception-free version of [Set]
      */
-    fun SetOrNull(root: Asn1TreeBuilder.() -> Unit) = runCatching { Set(root) }.getOrNull()
+    fun SetOrNull(root: Asn1TreeBuilder.() -> Unit) = catching { Set(root) }.getOrNull()
 
 
     /**
      * Safe version of [Set], wrapping the result into a [KmmResult]
      */
-    fun SetSafe(root: Asn1TreeBuilder.() -> Unit) = runCatching { Set(root) }.wrap()
+    fun SetSafe(root: Asn1TreeBuilder.() -> Unit) = catching { Set(root) }
 
 
     /**
@@ -168,13 +169,13 @@ object Asn1 {
     /**
      * Exception-free version of [SetOf]
      */
-    fun SetOfOrNull(root: Asn1TreeBuilder.() -> Unit) = runCatching { SetOf(root) }.getOrNull()
+    fun SetOfOrNull(root: Asn1TreeBuilder.() -> Unit) = catching { SetOf(root) }.getOrNull()
 
 
     /**
      * Safe version of [SetOf], wrapping the result into a [KmmResult]
      */
-    fun SetOfSafe(root: Asn1TreeBuilder.() -> Unit) = runCatching { SetOf(root) }.wrap()
+    fun SetOfSafe(root: Asn1TreeBuilder.() -> Unit) = catching { SetOf(root) }
 
 
     /**
@@ -202,14 +203,13 @@ object Asn1 {
      * Exception-free version of [Tagged]
      */
     fun TaggedOrNull(tag: UByte, root: Asn1TreeBuilder.() -> Unit) =
-        runCatching { Tagged(tag, root) }.getOrNull()
+        catching { Tagged(tag, root) }.getOrNull()
 
     /**
      * Safe version on [Tagged], wrapping the result into a [KmmResult]
      */
     fun TaggedSafe(tag: UByte, root: Asn1TreeBuilder.() -> Unit) =
-        runCatching { Tagged(tag, root) }.wrap()
-
+        catching { Tagged(tag, root) }
 
 
     /**
@@ -509,11 +509,13 @@ fun Int.encodeToByteArray(): ByteArray {
 /**
  * Drops or adds zero bytes at the start until the [size] is reached
  */
-fun ByteArray.ensureSize(size: Int): ByteArray = (this.size-size).let { toDrop -> when {
-    toDrop > 0 -> this.copyOfRange(toDrop, this.size)
-    toDrop < 0 -> ByteArray(-toDrop) + this
-    else -> this
-} }
+fun ByteArray.ensureSize(size: Int): ByteArray = (this.size - size).let { toDrop ->
+    when {
+        toDrop > 0 -> this.copyOfRange(toDrop, this.size)
+        toDrop < 0 -> ByteArray(-toDrop) + this
+        else -> this
+    }
+}
 
 @Suppress("NOTHING_TO_INLINE")
 inline fun ByteArray.ensureSize(size: UInt) = ensureSize(size.toInt())

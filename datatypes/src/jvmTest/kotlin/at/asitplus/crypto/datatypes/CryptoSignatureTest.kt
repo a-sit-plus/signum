@@ -1,14 +1,12 @@
 package at.asitplus.crypto.datatypes
 
 import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
-import at.asitplus.crypto.datatypes.asn1.ensureSize
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.toBigInteger
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
 
 class CryptoSignatureTest : FreeSpec({
 
@@ -52,11 +50,11 @@ class CryptoSignatureTest : FreeSpec({
     }
 
     "Length handling & Curve guessing" {
-        val r = BigInteger.ONE.shl(ECCurve.SECP_521_R_1.scalarLength.bits.toInt()-1)
+        val r = BigInteger.ONE.shl(ECCurve.SECP_521_R_1.scalarLength.bits.toInt() - 1)
         val s = BigInteger.ONE
         val encoded =
             ByteArray(66) { if (it == 0) 0x01 else 0x00 } +
-            ByteArray(66) { if (it == 65) 0x01 else 0x00 }
+                    ByteArray(66) { if (it == 65) 0x01 else 0x00 }
 
         val sig = CryptoSignature.EC.fromRS(r, s)
         shouldThrow<IllegalStateException> { sig.rawByteArray }
@@ -84,7 +82,7 @@ class CryptoSignatureTest : FreeSpec({
         sig3.scalarByteLength shouldBe sig1.scalarByteLength
         sig3.rawByteArray shouldBe encoded
 
-        val r2 = BigInteger.ONE.shl(ECCurve.values().maxOf { it.scalarLength.bits }.toInt()+1)
+        val r2 = BigInteger.ONE.shl(ECCurve.values().maxOf { it.scalarLength.bits }.toInt() + 1)
         shouldThrow<IllegalArgumentException> { CryptoSignature.EC.fromRS(r2, s).guessCurve() }
     }
 })
