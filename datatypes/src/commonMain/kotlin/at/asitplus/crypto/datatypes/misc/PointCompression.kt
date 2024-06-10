@@ -18,9 +18,16 @@ enum class ANSIECPrefix(val prefixByte: Byte) {
     }
     val prefixUByte inline get() = prefixByte.toUByte()
 
+    @Suppress("NOTHING_TO_INLINE")
     inline operator fun plus(that: ByteArray) = byteArrayOf(prefixByte, *that)
 
     companion object {
+
+        /**
+         * Gets the ANSI prefix for [byte].
+         * @throws IllegalArgumentException for ZERO
+         */
+        @Suppress("NOTHING_TO_INLINE")
         inline fun fromPrefixByte(byte: Byte) = when (byte) {
             COMPRESSED_MINUS.prefixByte -> COMPRESSED_MINUS
             COMPRESSED_PLUS.prefixByte -> COMPRESSED_PLUS
@@ -28,12 +35,18 @@ enum class ANSIECPrefix(val prefixByte: Byte) {
             else -> throw IllegalArgumentException("invalid prefix $byte")
         }
 
+        /**
+         * Gets the ANSI prefix for [sign].
+         * @throws IllegalArgumentException for ZERO
+         */
+        @Suppress("NOTHING_TO_INLINE")
         inline fun forSign(sign: Sign) = when (sign) {
             Sign.NEGATIVE -> COMPRESSED_MINUS
             Sign.POSITIVE -> COMPRESSED_PLUS
             Sign.ZERO -> throw IllegalArgumentException("Sign.ZERO")
         }
 
+        @Suppress("NOTHING_TO_INLINE")
         inline fun ByteArray.hasPrefix(prefix: ANSIECPrefix) = (first() == prefix.prefixByte)
     }
 }

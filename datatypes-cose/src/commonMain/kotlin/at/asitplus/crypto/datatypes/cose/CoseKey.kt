@@ -131,7 +131,7 @@ data class CoseKey(
             y: ByteArray
         ): KmmResult<CoseKey> =
             runCatching {
-                CryptoPublicKey.EC(curve.toEcCurve(), x, y).toCoseKey()
+                CryptoPublicKey.EC.fromUncompressed(curve.toEcCurve(), x, y).toCoseKey()
                     .getOrThrow()
             }.wrap()
     }

@@ -1,5 +1,6 @@
 package at.asitplus.crypto.datatypes.asn1
 
+import at.asitplus.catching
 import at.asitplus.crypto.datatypes.asn1.BERTags.ASN1_NULL
 import at.asitplus.crypto.datatypes.asn1.BERTags.BMP_STRING
 import at.asitplus.crypto.datatypes.asn1.BERTags.BOOLEAN
@@ -111,12 +112,13 @@ fun Asn1Primitive.readBigInteger() =
 /**
  * Exception-free version of [readBigInteger]
  */
-inline fun Asn1Primitive.readBigIntegerOrNull() = runCatching { readBigInteger() }.getOrNull()
+@Suppress("NOTHING_TO_INLINE")
+inline fun Asn1Primitive.readBigIntegerOrNull() = catching { readBigInteger() }.getOrNull()
 
 /**
  * Exception-free version of [readInt]
  */
-fun Asn1Primitive.readIntOrNull() = runCatching { readInt() }.getOrNull()
+fun Asn1Primitive.readIntOrNull() = catching { readInt() }.getOrNull()
 
 
 /**
@@ -130,7 +132,7 @@ fun Asn1Primitive.readLong() = runRethrowing { decode(INTEGER) { Long.decodeFrom
 /**
  * Exception-free version of [readLong]
  */
-fun Asn1Primitive.readLongOrNull() = runCatching { readLong() }.getOrNull()
+fun Asn1Primitive.readLongOrNull() = catching { readLong() }.getOrNull()
 
 
 /**

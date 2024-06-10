@@ -90,7 +90,7 @@ sealed class CoseKeyParams {
 
         override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> {
             return runCatching {
-                CryptoPublicKey.EC(
+                CryptoPublicKey.EC.fromUncompressed(
                     curve = curve?.toEcCurve() ?: throw IllegalArgumentException("Missing or invalid curve"),
                     x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
                     y = y ?: throw IllegalArgumentException("Missing y-coordinate")
@@ -124,8 +124,7 @@ sealed class CoseKeyParams {
             val curve = curve ?: throw Exception("Cannot determine Curve - Missing Curve")
             val x = x ?: throw Exception("Cannot determine key - Missing x coordinate")
             val yFlag = y ?: throw Exception("Cannot determine key - Missing Indicator y")
-            CryptoPublicKey.EC(curve.toEcCurve(), x, yFlag)
-
+            CryptoPublicKey.EC.fromCompressed(curve.toEcCurve(), x, yFlag)
         }.wrap()
     }
 

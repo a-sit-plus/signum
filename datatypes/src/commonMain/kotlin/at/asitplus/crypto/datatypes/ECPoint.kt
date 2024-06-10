@@ -104,6 +104,7 @@ sealed class ECPoint private constructor(
 
     /** whether this is the additive identity (point at infinity). the point at infinity cannot be normalized. */
     val isPointAtInfinity inline get() = this.homZ.isZero()
+
     /** normalizes this point, converting it to affine coordinates. throws for the point at infinity.
      * @see tryNormalize */
     fun normalize(): Normalized {
@@ -113,6 +114,7 @@ sealed class ECPoint private constructor(
     }
     /** normalizes this point, converting it to affine coordinates. returns null for the point at infinity.
      * @see normalize */
+    @Suppress("NOTHING_TO_INLINE")
     inline fun tryNormalize() = if (!this.isPointAtInfinity) normalize() else null
 
     companion object {

@@ -139,12 +139,13 @@
  * Add generic `ECPoint` class
  * Implement elliptic-curve arithmetic
 
-### NEXT
+
+### 3.2.0
 
 * Kotlin 2.0
 * Gradle 8.8
 * Bouncy Castle 1.78.1
-* kotest 5.9.1 
+* Kotest 5.9.1 
 * Coroutines 1.8.1
 * Serialization 1.7.1-SNAPSHOT
 

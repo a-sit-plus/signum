@@ -1,5 +1,7 @@
 package at.asitplus.crypto.datatypes.asn1
 
+import at.asitplus.catching
+
 open class Asn1Exception(message: String?, cause: Throwable?) : Throwable(message, cause) {
     constructor(message: String) : this(message, null)
     constructor(throwable: Throwable) : this(null, throwable)
@@ -17,4 +19,4 @@ class Asn1OidException(message: String, val oid: ObjectIdentifier) : Asn1Excepti
  */
 @Throws(Asn1Exception::class)
 inline fun <reified R> runRethrowing(block: () -> R) =
-    runCatching(block).getOrElse { throw if (it is Asn1Exception) it else Asn1Exception(it.message, it) }
+    catching(block).getOrElse { throw if (it is Asn1Exception) it else Asn1Exception(it.message, it) }

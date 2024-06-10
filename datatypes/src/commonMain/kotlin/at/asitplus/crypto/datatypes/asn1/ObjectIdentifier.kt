@@ -179,20 +179,26 @@ private fun ByteArray.toSeptets(): ByteArray {
     return chunks.toByteArray()
 }
 
+@Suppress("NOTHING_TO_INLINE")
 private inline fun ByteArray.getBit(index: Int): Boolean =
     if (index < 0) throw IndexOutOfBoundsException("index = $index")
     else kotlin.runCatching {
         this[getByteIndex(index)].getBit(getBitIndex(index))
     }.getOrElse { false }
 
+@Suppress("NOTHING_TO_INLINE")
 private inline fun ByteArray.setBit(i: Int) {
     this[getByteIndex(i)] = this[getByteIndex(i)].setBit(getBitIndex(i))
 }
 
+@Suppress("NOTHING_TO_INLINE")
 private inline fun Byte.setBit(i: Int) = ((1 shl getBitIndex(i)).toByte() or this)
+@Suppress("NOTHING_TO_INLINE")
 private inline fun getByteIndex(i: Int) = (i / 8)
+@Suppress("NOTHING_TO_INLINE")
 private inline fun getBitIndex(i: Int) = (i % 8)
 
+@Suppress("NOTHING_TO_INLINE")
 private inline fun Byte.getBit(index: Int): Boolean = (((1 shl index).toByte() and this) != 0.toByte())
 
 private fun UInt.toCompactByteArray(): ByteArray =

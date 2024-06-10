@@ -514,4 +514,6 @@ fun ByteArray.ensureSize(size: Int): ByteArray = (this.size-size).let { toDrop -
     toDrop < 0 -> ByteArray(-toDrop) + this
     else -> this
 } }
+
+@Suppress("NOTHING_TO_INLINE")
 inline fun ByteArray.ensureSize(size: UInt) = ensureSize(size.toInt())

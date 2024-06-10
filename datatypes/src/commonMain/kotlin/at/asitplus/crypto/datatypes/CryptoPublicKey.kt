@@ -347,24 +347,29 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             }
 
             /** Decodes key from big-endian X and sign of Y */
+            @Suppress("NOTHING_TO_INLINE")
             inline fun fromCompressed(curve: ECCurve, x: ByteArray, sign: Sign) =
                 ECPoint.fromCompressed(curve, x, sign).asPublicKey(true)
 
             /** Decodes key from big-endian X and sign of Y */
+            @Suppress("NOTHING_TO_INLINE")
             inline fun fromCompressed(curve: ECCurve, x: ByteArray, usePositiveY: Boolean) =
                 ECPoint.fromCompressed(curve, x, usePositiveY).asPublicKey(true)
 
             /** Decodes key from big-endian X and big-endian Y */
+            @Suppress("NOTHING_TO_INLINE")
             inline fun fromUncompressed(curve: ECCurve, x: ByteArray, y: ByteArray) =
                 ECPoint.fromUncompressed(curve, x, y).asPublicKey(false)
 
             @Deprecated("Explicitly specify what you want",
                 ReplaceWith("fromCompressed(curve, x, usePositiveY)"))
+            @Suppress("NOTHING_TO_INLINE")
             inline operator fun invoke(curve: ECCurve, x: ByteArray, usePositiveY: Boolean) =
                 fromCompressed(curve, x, usePositiveY)
 
             @Deprecated("Explicitly specify what you want", ReplaceWith(
                 "fromUncompressed(curve, x, y)"))
+            @Suppress("NOTHING_TO_INLINE")
             inline operator fun invoke(curve: ECCurve, x: ByteArray, y: ByteArray) =
                 fromUncompressed(curve, x, y)
 
