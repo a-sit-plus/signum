@@ -57,7 +57,6 @@ class CryptoSignatureTest : FreeSpec({
                     ByteArray(66) { if (it == 65) 0x01 else 0x00 }
 
         val sig = CryptoSignature.EC.fromRS(r, s)
-        shouldThrow<IllegalStateException> { sig.rawByteArray }
 
         val sig1 = sig.guessCurve()
         sig1 shouldBe sig

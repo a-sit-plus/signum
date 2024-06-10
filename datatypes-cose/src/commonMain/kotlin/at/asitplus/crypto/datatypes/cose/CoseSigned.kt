@@ -40,7 +40,7 @@ data class CoseSigned(
         protectedHeader: ByteStringWrapper<CoseHeader>,
         unprotectedHeader: CoseHeader?,
         payload: ByteArray?,
-        signature: CryptoSignature
+        signature: CryptoSignature.Defined.Well
     ) : this(protectedHeader, unprotectedHeader, payload, signature.rawByteArray)
 
     val signature: CryptoSignature by lazy {

@@ -330,7 +330,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             )
         }
 
-        override val iosEncoded by lazy { toAnsiX963Encoded() }
+        override val iosEncoded by lazy { toAnsiX963Encoded(useCompressed = false) }
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
