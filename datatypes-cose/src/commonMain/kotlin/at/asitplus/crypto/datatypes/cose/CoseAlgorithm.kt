@@ -36,7 +36,7 @@ enum class CoseAlgorithm(val value: Int) {
     RS1(-65535);
 
 
-    fun toCryptoAlgorithm() = when (this) {
+    fun toX509SignatureAlgorithm() = when (this) {
         ES256 -> X509SignatureAlgorithm.ES256
         ES384 -> X509SignatureAlgorithm.ES384
         ES512 -> X509SignatureAlgorithm.ES512
