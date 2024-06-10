@@ -38,7 +38,7 @@ enum class JwsAlgorithm(override val identifier: String) : JsonWebAlgorithm {
      */
     NON_JWS_SHA1_WITH_RSA("RS1");
 
-    fun toCryptoAlgorithm() = when (this) {
+    fun toX509SignatureAlgorithm() = when (this) {
         ES256 -> X509SignatureAlgorithm.ES256
         ES384 -> X509SignatureAlgorithm.ES384
         ES512 -> X509SignatureAlgorithm.ES512

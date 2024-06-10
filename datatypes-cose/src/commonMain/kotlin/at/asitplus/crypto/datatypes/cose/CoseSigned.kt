@@ -89,7 +89,7 @@ data class CoseSigned(
 }
 
 fun CoseHeader.usesEC(): Boolean? {
-    algorithm?.toCryptoAlgorithm()?.isEc?.let { return it }
+    algorithm?.toX509SignatureAlgorithm()?.isEc?.let { return it }
     certificateChain?.let { return X509Certificate.decodeFromDerOrNull(it)?.publicKey is CryptoPublicKey.EC }
     return null
 }
