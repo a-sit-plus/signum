@@ -127,7 +127,7 @@ class Asn1EncodingTest : FreeSpec({
         val instant = Clock.System.now()
 
         val sequence = Asn1.Sequence {
-            +Tagged(1u) { +Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00))            }
+            +Tagged(1u) { +Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00)) }
             +Asn1.Set {
                 +Asn1.Sequence {
                     +Asn1.SetOf {
@@ -144,7 +144,7 @@ class Asn1EncodingTest : FreeSpec({
             }
             +Null()
 
-           +ObjectIdentifier("1.2.603.624.97")
+            +ObjectIdentifier("1.2.603.624.97")
 
             +Utf8String("Foo")
             +PrintableString("Bar")

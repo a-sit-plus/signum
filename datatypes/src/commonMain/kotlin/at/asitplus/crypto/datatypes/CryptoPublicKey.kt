@@ -1,5 +1,6 @@
 package at.asitplus.crypto.datatypes
 
+import at.asitplus.catching
 import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.asn1.Asn1.BitString
 import at.asitplus.crypto.datatypes.asn1.Asn1.Null
@@ -73,8 +74,10 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             return when (codec) {
                 0x1200uL ->
                     EC.fromAnsiX963Bytes(ECCurve.SECP_256_R_1, keyBytes)
+
                 0x1201uL ->
                     EC.fromAnsiX963Bytes(ECCurve.SECP_384_R_1, keyBytes)
+
                 0x1202uL ->
                     EC.fromAnsiX963Bytes(ECCurve.SECP_521_R_1, keyBytes)
 
@@ -139,6 +142,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                     }
                     EC.fromAnsiX963Bytes(curve, it)
                 }
+
                 DERTags.DER_SEQUENCE -> Rsa.fromPKCS1encoded(it)
                 else -> throw IllegalArgumentException("Unsupported Key type")
             }
@@ -228,11 +232,11 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          * PKCS#1 encoded RSA Public Key
          */
         val pkcsEncoded by lazy {
-           Asn1.Sequence {
-               +Asn1Primitive(
-                        BERTags.INTEGER,
-                        n.ensureSize(bits.number / 8u)
-                            .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
+            Asn1.Sequence {
+                +Asn1Primitive(
+                    BERTags.INTEGER,
+                    n.ensureSize(bits.number / 8u)
+                        .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
 
                 +Asn1.Int(e)
             }.derEncoded
@@ -361,14 +365,19 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             inline fun fromUncompressed(curve: ECCurve, x: ByteArray, y: ByteArray) =
                 ECPoint.fromUncompressed(curve, x, y).asPublicKey(false)
 
-            @Deprecated("Explicitly specify what you want",
-                ReplaceWith("fromCompressed(curve, x, usePositiveY)"))
+            @Deprecated(
+                "Explicitly specify what you want",
+                ReplaceWith("fromCompressed(curve, x, usePositiveY)")
+            )
             @Suppress("NOTHING_TO_INLINE")
             inline operator fun invoke(curve: ECCurve, x: ByteArray, usePositiveY: Boolean) =
                 fromCompressed(curve, x, usePositiveY)
 
-            @Deprecated("Explicitly specify what you want", ReplaceWith(
-                "fromUncompressed(curve, x, y)"))
+            @Deprecated(
+                "Explicitly specify what you want", ReplaceWith(
+                    "fromUncompressed(curve, x, y)"
+                )
+            )
             @Suppress("NOTHING_TO_INLINE")
             inline operator fun invoke(curve: ECCurve, x: ByteArray, y: ByteArray) =
                 fromUncompressed(curve, x, y)
@@ -378,13 +387,13 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             fun fromAnsiX963Bytes(curve: ECCurve, src: ByteArray): EC {
                 val numBytes = curve.coordinateLength.bytes.toInt()
 
-                val prefix = runCatching { ANSIECPrefix.fromPrefixByte(src[0]) }
+                val prefix = catching { ANSIECPrefix.fromPrefixByte(src[0]) }
                     .getOrElse { throw IllegalArgumentException("Invalid X9.63 EC key format") }
 
                 if (prefix.isUncompressed) {
-                    require(src.size == (2*numBytes + 1))
-                    val x = src.copyOfRange(1, numBytes+1)
-                    val y = src.copyOfRange(numBytes+1, 2*numBytes+1)
+                    require(src.size == (2 * numBytes + 1))
+                    val x = src.copyOfRange(1, numBytes + 1)
+                    val y = src.copyOfRange(numBytes + 1, 2 * numBytes + 1)
                     return fromUncompressed(curve, x, y)
                 } else {
                     require(src.size == (numBytes + 1))
@@ -417,6 +426,7 @@ private fun sanitizeRsaInputs(n: ByteArray, e: Int): RsaParams = n.dropWhile { i
 
 
 private val PREFIX_DID_KEY = "did:key"
+
 @Throws(Throwable::class)
 private fun multiKeyRemovePrefix(keyId: String): String =
     keyId.takeIf { it.startsWith("$PREFIX_DID_KEY:") }?.removePrefix("$PREFIX_DID_KEY:")

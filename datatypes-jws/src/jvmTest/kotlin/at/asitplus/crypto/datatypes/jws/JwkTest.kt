@@ -1,12 +1,8 @@
 package at.asitplus.crypto.datatypes.jws
 
-import at.asitplus.crypto.datatypes.X509SignatureAlgorithm
-import at.asitplus.crypto.datatypes.CryptoPublicKey
-import at.asitplus.crypto.datatypes.CryptoSignature
-import at.asitplus.crypto.datatypes.ECCurve
+import at.asitplus.crypto.datatypes.*
 import at.asitplus.crypto.datatypes.asn1.Asn1String
 import at.asitplus.crypto.datatypes.asn1.Asn1Time
-import at.asitplus.crypto.datatypes.fromJcaPublicKey
 import at.asitplus.crypto.datatypes.io.Base64Strict
 import at.asitplus.crypto.datatypes.pki.AttributeTypeAndValue
 import at.asitplus.crypto.datatypes.pki.RelativeDistinguishedName
@@ -42,7 +38,8 @@ class JwkTest : FreeSpec({
                 keys
             ) { pubKey ->
 
-                val cryptoPubKey = CryptoPublicKey.EC.fromJcaPublicKey(pubKey).getOrThrow().also { it.jwkId=it.didEncoded }
+                val cryptoPubKey =
+                    CryptoPublicKey.EC.fromJcaPublicKey(pubKey).getOrThrow().also { it.jwkId = it.didEncoded }
                 val own = cryptoPubKey.toJsonWebKey()
                 own.keyId shouldBe cryptoPubKey.jwkId
                 own.shouldNotBeNull()

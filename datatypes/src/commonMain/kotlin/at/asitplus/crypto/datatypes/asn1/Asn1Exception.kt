@@ -15,7 +15,7 @@ class Asn1StructuralException(message: String) : Asn1Exception(message)
 class Asn1OidException(message: String, val oid: ObjectIdentifier) : Asn1Exception(message)
 
 /**
- * Runs [block] inside [runCatching] and encapsulates any thrown exception in an [Asn1Exception] unless it already is one
+ * Runs [block] inside [catching] and encapsulates any thrown exception in an [Asn1Exception] unless it already is one
  */
 @Throws(Asn1Exception::class)
 inline fun <reified R> runRethrowing(block: () -> R) =

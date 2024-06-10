@@ -46,11 +46,12 @@ sealed class ECPoint private constructor(
     val homZ: ModularBigInteger
 ) {
 
-    class General private constructor (
+    class General private constructor(
         c: ECCurve, hX: ModularBigInteger, hY: ModularBigInteger, hZ: ModularBigInteger
     ) : ECPoint(c, hX, hY, hZ) {
         companion object {
-            @PublishedApi @JvmSynthetic
+            @PublishedApi
+            @JvmSynthetic
             internal fun unsafeFromXYZ(c: ECCurve, x: ModularBigInteger, y: ModularBigInteger, z: ModularBigInteger) =
                 General(c, x, y, z)
         }
@@ -65,6 +66,7 @@ sealed class ECPoint private constructor(
     ) : ECPoint(curve, x, y, curve.coordinateCreator.ONE) {
         /** x coordinate of the point (x,y) */
         val x inline get() = homX
+
         /** y coordinate of the point (x,y) */
         val y inline get() = homY
 
@@ -75,7 +77,8 @@ sealed class ECPoint private constructor(
         override fun hashCode() = (31 * (31 * curve.hashCode()) + x.hashCode()) + y.hashCode()
 
         companion object {
-            @PublishedApi @JvmSynthetic
+            @PublishedApi
+            @JvmSynthetic
             internal fun unsafeFromXY(curve: ECCurve, x: ModularBigInteger, y: ModularBigInteger) =
                 Normalized(curve, x, y)
         }
@@ -87,7 +90,11 @@ sealed class ECPoint private constructor(
         else if (this is Normalized)
             "ECPoint[$curve]: (${homX.toString(16)} : ${homY.toString(16)}) [normalized]"
         else
-            "ECPoint[$curve]: (${(homX/homZ).toString(16)} : ${(homY/homZ).toString(16)}) [with Z = ${homZ.toString(16)}]"
+            "ECPoint[$curve]: (${(homX / homZ).toString(16)} : ${(homY / homZ).toString(16)}) [with Z = ${
+                homZ.toString(
+                    16
+                )
+            }]"
 
     override fun equals(other: Any?): Boolean {
         if (other !is ECPoint) return false
@@ -112,6 +119,7 @@ sealed class ECPoint private constructor(
         if (this.isPointAtInfinity) throw IllegalStateException("Cannot normalize point at infinity")
         return Normalized.unsafeFromXY(curve, homX / homZ, homY / homZ)
     }
+
     /** normalizes this point, converting it to affine coordinates. returns null for the point at infinity.
      * @see normalize */
     @Suppress("NOTHING_TO_INLINE")

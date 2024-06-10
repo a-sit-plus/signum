@@ -1,8 +1,7 @@
 package at.asitplus.crypto.datatypes.jws
 
 import at.asitplus.KmmResult
-import at.asitplus.KmmResult.Companion.wrap
-import at.asitplus.crypto.datatypes.io.Base64Strict
+import at.asitplus.catching
 import at.asitplus.crypto.datatypes.io.Base64UrlStrict
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -61,7 +60,7 @@ data class JweEncrypted(
 
 
     companion object {
-        fun parse(it: String): KmmResult<JweEncrypted> = runCatching {
+        fun parse(it: String): KmmResult<JweEncrypted> = catching {
             val stringList = it.replace("[^A-Za-z0-9-_.]".toRegex(), "").split(".")
             if (stringList.size != 5) throw IllegalArgumentException("not five parts in input: $it")
             val headerAsParsed = stringList[0].decodeToByteArray(Base64UrlStrict)
@@ -71,6 +70,6 @@ data class JweEncrypted(
             val authTag = stringList[4].decodeToByteArray(Base64UrlStrict)
             val header = JweHeader.deserialize(headerAsParsed.decodeToString()).getOrThrow()
             JweEncrypted(header, headerAsParsed, encryptedKey, iv, ciphertext, authTag)
-        }.wrap()
+        }
     }
 }

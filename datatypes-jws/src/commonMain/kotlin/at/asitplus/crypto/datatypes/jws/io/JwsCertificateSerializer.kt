@@ -10,7 +10,6 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlin.io.encoding.ExperimentalEncodingApi
 
 object JwsCertificateSerializer : KSerializer<X509Certificate> {
     override val descriptor: SerialDescriptor =

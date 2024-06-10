@@ -8,7 +8,7 @@ import io.kotest.matchers.shouldBe
  * Verifies the hard coded field modulus versus its functional definition
  * See https://www.secg.org/sec2-v2.pdf chapter 2
  */
-class ECCurveTest: FreeSpec({
+class ECCurveTest : FreeSpec({
     "SECP256 modulus correct" {
         ECCurve.SECP_256_R_1.modulus shouldBe
                 (2.toBigInteger().shl(223)
@@ -35,8 +35,8 @@ class ECCurveTest: FreeSpec({
 
     "Calculated parameters test" {
         ECCurve.SECP_256_R_1.scalarLength.bits shouldBe 256u
-        ECCurve.SECP_384_R_1.scalarLength.bits  shouldBe 384u
-        ECCurve.SECP_521_R_1.scalarLength.bits  shouldBe 521u
+        ECCurve.SECP_384_R_1.scalarLength.bits shouldBe 384u
+        ECCurve.SECP_521_R_1.scalarLength.bits shouldBe 521u
 
         ECCurve.SECP_256_R_1.scalarLength.bytes * 2u shouldBe 64u
         ECCurve.SECP_384_R_1.scalarLength.bytes * 2u shouldBe 96u

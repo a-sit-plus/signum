@@ -1,5 +1,6 @@
 package at.asitplus.crypto.datatypes.pki
 
+import at.asitplus.catching
 import at.asitplus.crypto.datatypes.asn1.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -122,7 +123,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
             val oid = (src.nextChild() as Asn1Primitive).readOid()
             if (oid.nodes.size >= 3 && oid.toString().startsWith("2.5.4.")) {
                 val asn1String = src.nextChild() as Asn1Primitive
-                val str = runCatching { (asn1String).readString() }
+                val str = catching { (asn1String).readString() }
                 if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous elements in RDN")
                 return when (oid) {
                     CommonName.OID -> str.fold(onSuccess = { CommonName(it) }, onFailure = { CommonName(asn1String) })

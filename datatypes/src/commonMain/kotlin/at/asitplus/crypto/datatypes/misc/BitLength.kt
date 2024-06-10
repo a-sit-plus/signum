@@ -8,9 +8,10 @@ import kotlin.jvm.JvmInline
  *
  * Should be a value class, but the Swift export becomes impossible.
  */
-data class BitLength (val bits: UInt): Comparable<BitLength> {
-    inline val bytes: UInt get() =
-        bits.floorDiv(8u) + (if(bits.rem(8u) != 0u) 1u else 0u)
+data class BitLength(val bits: UInt) : Comparable<BitLength> {
+    inline val bytes: UInt
+        get() =
+            bits.floorDiv(8u) + (if (bits.rem(8u) != 0u) 1u else 0u)
 
     companion object {
         @Suppress("NOTHING_TO_INLINE")

@@ -1,6 +1,6 @@
 package at.asitplus.crypto.datatypes.jws
 
-import at.asitplus.KmmResult.Companion.wrap
+import at.asitplus.catching
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64UrlSerializer
 import at.asitplus.crypto.datatypes.jws.io.jsonSerializer
 import at.asitplus.crypto.datatypes.pki.CertificateChain
@@ -283,8 +283,8 @@ data class JweHeader(
     }
 
     companion object {
-        fun deserialize(it: String) = kotlin.runCatching {
+        fun deserialize(it: String) = catching {
             jsonSerializer.decodeFromString<JweHeader>(it)
-        }.wrap()
+        }
     }
 }

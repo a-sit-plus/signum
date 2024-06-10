@@ -1,11 +1,7 @@
 import at.asitplus.crypto.datatypes.ECCurve
 import at.asitplus.crypto.datatypes.ECPoint
-import at.asitplus.crypto.ecmath.plus
-import at.asitplus.crypto.ecmath.times
-import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
-import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
@@ -61,15 +57,15 @@ class ECPointTest : FreeSpec({
             shouldNotThrowAny { ECPoint.fromXY(curve, g.x.residue, (-g.y).residue) }
 
             fun wrongMod(v: ModularBigInteger) =
-                ModularBigInteger.creatorForModulo(v.modulus+1).fromBigInteger(v.residue)
+                ModularBigInteger.creatorForModulo(v.modulus + 1).fromBigInteger(v.residue)
 
             shouldThrow<IllegalArgumentException> { ECPoint.fromXY(curve, wrongMod(g.x), g.y) }
             shouldThrow<IllegalArgumentException> { ECPoint.fromXY(curve, g.x, wrongMod(g.y)) }
             shouldThrow<IllegalArgumentException> { ECPoint.fromXY(curve, wrongMod(g.x), wrongMod(g.y)) }
 
-            shouldThrow<IllegalArgumentException> { ECPoint.fromXY(curve, g.x+1, g.y) }
-            shouldThrow<IllegalArgumentException> { ECPoint.fromXY(curve, g.x, g.y+1) }
-            shouldThrow<IllegalArgumentException> { ECPoint.fromXY(curve, g.x.residue+1, g.y.residue) }
+            shouldThrow<IllegalArgumentException> { ECPoint.fromXY(curve, g.x + 1, g.y) }
+            shouldThrow<IllegalArgumentException> { ECPoint.fromXY(curve, g.x, g.y + 1) }
+            shouldThrow<IllegalArgumentException> { ECPoint.fromXY(curve, g.x.residue + 1, g.y.residue) }
 
             shouldNotThrowAny { ECPoint.fromUncompressed(curve, g.xBytes, g.yBytes) }
             shouldThrow<IllegalArgumentException> { ECPoint.fromUncompressed(curve, g.xBytes, byteArrayOf(0)) }

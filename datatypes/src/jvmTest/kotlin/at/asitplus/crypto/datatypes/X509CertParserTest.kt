@@ -72,7 +72,7 @@ class X509CertParserTest : FreeSpec({
             ((kotlin.runCatching {
                 File("/etc/ssl/certs/ca-certificates.crt").readText().split(Regex.fromLiteral("-\n-"))
             }.getOrNull() ?: emptyList())
-            + (macosCertsPem?.split(Regex.fromLiteral("-\n-")) ?: emptyList())
+                    + (macosCertsPem?.split(Regex.fromLiteral("-\n-")) ?: emptyList())
                     )
                 .mapNotNull {
                     var pem = if (it.startsWith("-----")) it else "-$it"
@@ -91,11 +91,13 @@ class X509CertParserTest : FreeSpec({
         println("Got ${certs.size} discrete certs and ${pemEncodeCerts.size} from trust store (${uniqueCerts.size} unique ones)")
 
         withData(
-            nameFn = { it.subjectX500Principal.name.let { name->
-                if(name.isBlank() || name.isEmpty())
-                    it.serialNumber.toString(16)
+            nameFn = {
+                it.subjectX500Principal.name.let { name ->
+                    if (name.isBlank() || name.isEmpty())
+                        it.serialNumber.toString(16)
                     else name
-            } },
+                }
+            },
             uniqueCerts.sortedBy { it.subjectX500Principal.name }) { crt ->
             val parsed = X509Certificate.decodeFromTlv(Asn1Element.parse(crt.encoded) as Asn1Sequence)
             val own = parsed.encodeToDer()

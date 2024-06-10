@@ -20,12 +20,17 @@ import kotlin.random.Random
 
 private fun ECCurve.randomScalar(): ModularBigInteger =
     scalarCreator.fromBigInteger(BigInteger.fromByteArray(Random.nextBytes(scalarLength.bytes.toInt()), Sign.POSITIVE))
+
 private fun ECCurve.randomPoint(): ECPoint =
-    generateSequence { runCatching {
-        ECPoint.fromCompressed(
-            this, Random.nextBytes(coordinateLength.bytes.toInt()), Random.nextBoolean())
-    }}.firstNotNullOf { it.getOrNull() }
-class ECMathTest: FreeSpec({
+    generateSequence {
+        runCatching {
+            ECPoint.fromCompressed(
+                this, Random.nextBytes(coordinateLength.bytes.toInt()), Random.nextBoolean()
+            )
+        }
+    }.firstNotNullOf { it.getOrNull() }
+
+class ECMathTest : FreeSpec({
     "Assumption: All implemented curves are prime order Weierstrass curves with a = -3" - {
         withData(ECCurve.entries) { curve ->
             // if new curves are ever added that violate this assumption,
@@ -38,26 +43,27 @@ class ECMathTest: FreeSpec({
         withData(ECCurve.entries) { curve ->
             withData(generateSequence {
                 Triple(curve.randomPoint(), curve.randomPoint(), curve.randomPoint())
-            }.take(50)) { (a,b,c) ->
-                a+b shouldBe b+a
-                (a+b)+c shouldBe a+(b+c)
-                a+(-a) shouldBe curve.IDENTITY
-                a+b+(-a) shouldBe b
-                (-c)+a+b+c shouldBe a+b
-                (-b)+a shouldBe a-b
+            }.take(50)) { (a, b, c) ->
+                a + b shouldBe b + a
+                (a + b) + c shouldBe a + (b + c)
+                a + (-a) shouldBe curve.IDENTITY
+                a + b + (-a) shouldBe b
+                (-c) + a + b + c shouldBe a + b
+                (-b) + a shouldBe a - b
             }
         }
     }
     "Multiplication: axioms" - {
         withData(ECCurve.entries) { curve ->
-            withData(nameFn = { (a,b,x,y) -> "(a=$a, b=$b, x=$x, y=$y)" },
-            generateSequence {
-                Quadruple(curve.randomScalar(), curve.randomScalar(), curve.randomPoint(), curve.randomPoint())
-            }.take(10)) { (a,b,x,y) ->
+            withData(nameFn = { (a, b, x, y) -> "(a=$a, b=$b, x=$x, y=$y)" },
+                generateSequence {
+                    Quadruple(curve.randomScalar(), curve.randomScalar(), curve.randomPoint(), curve.randomPoint())
+                }.take(10)
+            ) { (a, b, x, y) ->
                 0 * x shouldBe curve.IDENTITY
-                a * (x+y) shouldBe (a*x) + (a*y)
-                (a*b) * x shouldBe a * (b*x)
-                b.inverse()*(a*(b*x)) shouldBe a*x
+                a * (x + y) shouldBe (a * x) + (a * y)
+                (a * b) * x shouldBe a * (b * x)
+                b.inverse() * (a * (b * x)) shouldBe a * x
             }
         }
     }
@@ -65,7 +71,9 @@ class ECMathTest: FreeSpec({
     "Multiplication: PaI test suite" - {
         withData(nameFn = { (curve, _) -> curve.name },
             sequence {
-            yield(Pair(ECCurve.SECP_256_R_1, """
+                yield(
+                    Pair(
+                        ECCurve.SECP_256_R_1, """
                 k = 1
                 x = 6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296
                 y = 4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5
@@ -274,9 +282,13 @@ class ECMathTest: FreeSpec({
                 k = 115792089210356248762697446949407573529996955224135760342422259061068512044368
                 x = 6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296
                 y = B01CBD1C01E58065711814B583F061E9D431CCA994CEA1313449BF97C840AE0A
-            """.trimIndent()))
+            """.trimIndent()
+                    )
+                )
 
-            yield(Pair(ECCurve.SECP_384_R_1, """
+                yield(
+                    Pair(
+                        ECCurve.SECP_384_R_1, """
                 k = 1
                 x = AA87CA22BE8B05378EB1C71EF320AD746E1D3B628BA79B9859F741E082542A385502F25DBF55296C3A545E3872760AB7
                 y = 3617DE4A96262C6F5D9E98BF9292DC29F8F41DBD289A147CE9DA3113B5F0B8C00A60B1CE1D7E819D7A431D7C90EA0E5F
@@ -484,9 +496,13 @@ class ECMathTest: FreeSpec({
                 k = 39402006196394479212279040100143613805079739270465446667946905279627659399113263569398956308152294913554433653942642
                 x = AA87CA22BE8B05378EB1C71EF320AD746E1D3B628BA79B9859F741E082542A385502F25DBF55296C3A545E3872760AB7
                 y = C9E821B569D9D390A26167406D6D23D6070BE242D765EB831625CEEC4A0F473EF59F4E30E2817E6285BCE2846F15F1A0
-            """.trimIndent()))
+            """.trimIndent()
+                    )
+                )
 
-            yield(Pair(ECCurve.SECP_521_R_1, """
+                yield(
+                    Pair(
+                        ECCurve.SECP_521_R_1, """
                 k = 1
                 x = 00C6858E06B70404E9CD9E3ECB662395B4429C648139053FB521F828AF606B4D3DBAA14B5E77EFE75928FE1DC127A2FFA8DE3348B3C1856A429BF97E7E31C2E5BD66
                 y = 011839296A789A3BC0045C8A5FB42C7D1BD998F54449579B446817AFBD17273E662C97EE72995EF42640C550B9013FAD0761353C7086A272C24088BE94769FD16650
@@ -694,17 +710,20 @@ class ECMathTest: FreeSpec({
                 k = 6864797660130609714981900799081393217269435300143305409394463459185543183397655394245057746333217197532963996371363321113864768612440380340372808892707005448
                 x = 00C6858E06B70404E9CD9E3ECB662395B4429C648139053FB521F828AF606B4D3DBAA14B5E77EFE75928FE1DC127A2FFA8DE3348B3C1856A429BF97E7E31C2E5BD66
                 y = 00E7C6D6958765C43FFBA375A04BD382E426670ABBB6A864BB97E85042E8D8C199D368118D66A10BD9BF3AAF46FEC052F89ECAC38F795D8D3DBF77416B89602E99AF
-            """.trimIndent()))
-        }) { (curve, testInfo) ->
+            """.trimIndent()
+                    )
+                )
+            }) { (curve, testInfo) ->
             val pattern = Regex("k = ([0-9]+)\\s+x = ([0-9A-F]+)\\s+y = ([0-9A-F]+)")
-            withData(nameFn = { (k,_,_) -> "k = $k" },
+            withData(nameFn = { (k, _, _) -> "k = $k" },
                 pattern.findAll(testInfo).map {
                     Triple(
                         BigInteger.parseString(it.groupValues[1], 10),
                         BigInteger.parseString(it.groupValues[2], 16),
-                        BigInteger.parseString(it.groupValues[3], 16))
+                        BigInteger.parseString(it.groupValues[3], 16)
+                    )
                 }
-            ) { (k,x,y) ->
+            ) { (k, x, y) ->
                 val ourResult = curve.generator.times(k).normalize()
                 ourResult.x.residue shouldBe x
                 ourResult.y.residue shouldBe y
@@ -722,8 +741,8 @@ class ECMathTest: FreeSpec({
                 val w = (keyPair.public as ECPublicKey).w.let {
                     ECPoint.fromUncompressed(curve, it.affineX.toByteArray(), it.affineY.toByteArray())
                 }
-                Pair(s,w)
-            }.take(10)) { (s,w) ->
+                Pair(s, w)
+            }.take(10)) { (s, w) ->
                 (s * curve.generator) shouldBe w
             }
         }

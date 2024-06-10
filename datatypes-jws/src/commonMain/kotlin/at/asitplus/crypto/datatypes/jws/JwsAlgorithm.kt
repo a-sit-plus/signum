@@ -1,7 +1,7 @@
 package at.asitplus.crypto.datatypes.jws
 
-import at.asitplus.crypto.datatypes.X509SignatureAlgorithm
 import at.asitplus.crypto.datatypes.ECCurve
+import at.asitplus.crypto.datatypes.X509SignatureAlgorithm
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -15,7 +15,7 @@ import kotlinx.serialization.encoding.Encoder
  * Since we support only JWS algorithms (with one exception), this class is called what it's called.
  */
 @Serializable(with = JwsAlgorithmSerializer::class)
-enum class JwsAlgorithm(override val identifier: String):JsonWebAlgorithm {
+enum class JwsAlgorithm(override val identifier: String) : JsonWebAlgorithm {
 
     ES256("ES256"),
     ES384("ES384"),
@@ -60,12 +60,13 @@ enum class JwsAlgorithm(override val identifier: String):JsonWebAlgorithm {
 
     /** The curve to create signatures on.
      * This is fixed by RFC7518, as opposed to X.509 where other combinations are possible. */
-    val ecCurve: ECCurve? get() = when (this) {
-        ES256 -> ECCurve.SECP_256_R_1
-        ES384 -> ECCurve.SECP_384_R_1
-        ES512 -> ECCurve.SECP_521_R_1
-        else -> null
-    }
+    val ecCurve: ECCurve?
+        get() = when (this) {
+            ES256 -> ECCurve.SECP_256_R_1
+            ES384 -> ECCurve.SECP_384_R_1
+            ES512 -> ECCurve.SECP_521_R_1
+            else -> null
+        }
 }
 
 object JwsAlgorithmSerializer : KSerializer<JwsAlgorithm> {

@@ -1,11 +1,7 @@
 package at.asitplus.crypto.datatypes
 
 import at.asitplus.crypto.datatypes.asn1.KnownOIDs
-import at.asitplus.crypto.datatypes.pki.AttributeTypeAndValue.CommonName
-import at.asitplus.crypto.datatypes.pki.AttributeTypeAndValue.Country
-import at.asitplus.crypto.datatypes.pki.AttributeTypeAndValue.Organization
-import at.asitplus.crypto.datatypes.pki.AttributeTypeAndValue.OrganizationalUnit
-import at.asitplus.crypto.datatypes.pki.AttributeTypeAndValue.Other
+import at.asitplus.crypto.datatypes.pki.AttributeTypeAndValue.*
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe

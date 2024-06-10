@@ -1,16 +1,12 @@
 package at.asitplus.crypto.datatypes.cose
 
-import at.asitplus.KmmResult.Companion.wrap
+import at.asitplus.catching
 import at.asitplus.crypto.datatypes.cose.io.Base16Strict
 import at.asitplus.crypto.datatypes.cose.io.cborSerializer
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import kotlinx.serialization.*
 import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.CborLabel
-import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.encodeToByteArray
 
 /**
  * Protected header of a [CoseSigned].
@@ -100,8 +96,8 @@ data class CoseHeader(
     }
 
     companion object {
-        fun deserialize(it: ByteArray) = kotlin.runCatching {
+        fun deserialize(it: ByteArray) = catching {
             cborSerializer.decodeFromByteArray<CoseHeader>(it)
-        }.wrap()
+        }
     }
 }

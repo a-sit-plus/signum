@@ -1,11 +1,11 @@
 package at.asitplus.crypto.datatypes.jws
 
 import at.asitplus.crypto.datatypes.CryptoPublicKey
+import at.asitplus.crypto.datatypes.CryptoPublicKey.EC.Companion.fromUncompressed
 import at.asitplus.crypto.datatypes.ECCurve
 import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
 import at.asitplus.crypto.datatypes.asn1.ensureSize
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldHaveMinLength
@@ -27,9 +27,9 @@ class JsonWebKeyJvmTest : FreeSpec({
     }
 
     "JWK can be created from Coordinates" - {
-        val xFromBc = (keyPair.public as ECPublicKey).w.affineX.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
-        val yFromBc = (keyPair.public as ECPublicKey).w.affineY.toByteArray().ensureSize(ecCurve.coordinateLengthBytes)
-        val pubKey = CryptoPublicKey.EC(ecCurve, xFromBc, yFromBc).also { it.jwkId=it.didEncoded }
+        val xFromBc = (keyPair.public as ECPublicKey).w.affineX.toByteArray().ensureSize(ecCurve.coordinateLength.bytes)
+        val yFromBc = (keyPair.public as ECPublicKey).w.affineY.toByteArray().ensureSize(ecCurve.coordinateLength.bytes)
+        val pubKey = fromUncompressed(ecCurve, xFromBc, yFromBc).also { it.jwkId = it.didEncoded }
         val jsonWebKey = pubKey.toJsonWebKey()
 
         jsonWebKey.shouldNotBeNull()
@@ -55,7 +55,7 @@ class JsonWebKeyJvmTest : FreeSpec({
     "JWK can be created from n and e" - {
         val nFromBc = (keyPairRSA.public as RSAPublicKey).modulus.toByteArray()
         val eFromBc = (keyPairRSA.public as RSAPublicKey).publicExponent.toInt()
-        val pubKey = CryptoPublicKey.Rsa(nFromBc, eFromBc).also { it.jwkId=it.didEncoded }
+        val pubKey = CryptoPublicKey.Rsa(nFromBc, eFromBc).also { it.jwkId = it.didEncoded }
         val jwk = pubKey.toJsonWebKey()
 
         jwk.shouldNotBeNull()

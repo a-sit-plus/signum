@@ -12,7 +12,7 @@ val JweEncryption.jcaKeySpecName
         JweEncryption.A128CBC_HS256, JweEncryption.A192CBC_HS384, JweEncryption.A256CBC_HS512 -> "AES"
     }
 
-val JweAlgorithm.jcaName:String?
+val JweAlgorithm.jcaName: String?
     get() = when (this) {
         JweAlgorithm.ECDH_ES -> "ECDH"
         JweAlgorithm.A128KW, JweAlgorithm.A192KW, JweAlgorithm.A256KW -> "AES"

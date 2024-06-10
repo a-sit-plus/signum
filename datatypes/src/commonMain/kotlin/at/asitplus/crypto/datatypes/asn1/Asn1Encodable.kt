@@ -4,6 +4,7 @@ package at.asitplus.crypto.datatypes.asn1
 
 import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.wrap
+import at.asitplus.catching
 import at.asitplus.crypto.datatypes.asn1.DERTags.toImplicitTag
 
 /**
@@ -21,12 +22,12 @@ interface Asn1Encodable<A : Asn1Element> {
     /**
      * Exception-free version of [encodeToTlv]
      */
-    fun encodeToTlvOrNull() = runCatching { encodeToTlv() }.getOrNull()
+    fun encodeToTlvOrNull() = catching { encodeToTlv() }.getOrNull()
 
     /**
      * Safe version of [encodeToTlv], wrapping the result into a [KmmResult]
      */
-    fun encodeToTlvSafe() = kotlin.runCatching { encodeToTlv() }.wrap()
+    fun encodeToTlvSafe() = catching { encodeToTlv() }
 
     /**
      * Convenience function to directly get the DER-encoded representation of the implementing object
@@ -37,12 +38,12 @@ interface Asn1Encodable<A : Asn1Element> {
     /**
      * Exception-free version of [encodeToDer]
      */
-    fun encodeToDerOrNull() = runCatching { encodeToDer() }.getOrNull()
+    fun encodeToDerOrNull() = catching { encodeToDer() }.getOrNull()
 
     /**
      * Safe version of [encodeToDer], wrapping the result into a [KmmResult]
      */
-    fun encodeToDerSafe() = kotlin.runCatching { encodeToDer() }.wrap()
+    fun encodeToDerSafe() = catching { encodeToDer() }
 }
 
 /**
@@ -60,12 +61,12 @@ interface Asn1Decodable<A : Asn1Element, T : Asn1Encodable<A>> {
     /**
      * Exception-free version of [decodeFromTlv]
      */
-    fun decodeFromTlvOrNull(src: A) = runCatching { decodeFromTlv(src) }.getOrNull()
+    fun decodeFromTlvOrNull(src: A) = catching { decodeFromTlv(src) }.getOrNull()
 
     /**
      * Safe version of [decodeFromTlv], wrapping the result into a [KmmResult]
      */
-    fun decodeFromTlvSafe(src: A) = kotlin.runCatching { decodeFromTlv(src) }.wrap()
+    fun decodeFromTlvSafe(src: A) = catching { decodeFromTlv(src) }
 
     /**
      * Convenience method, directly DER-decoding a byte array to [T]
@@ -77,12 +78,12 @@ interface Asn1Decodable<A : Asn1Element, T : Asn1Encodable<A>> {
     /**
      * Exception-free version of [decodeFromDer]
      */
-    fun decodeFromDerOrNull(src: ByteArray) = runCatching { decodeFromDer(src) }.getOrNull()
+    fun decodeFromDerOrNull(src: ByteArray) = catching { decodeFromDer(src) }.getOrNull()
 
     /**
      * Safe version of [decodeFromDer], wrapping the result into a [KmmResult]
      */
-    fun decodeFromDerSafe(src: ByteArray) = runCatching { decodeFromDer(src) }.wrap()
+    fun decodeFromDerSafe(src: ByteArray) = catching { decodeFromDer(src) }
 }
 
 interface Asn1TagVerifyingDecodable<T : Asn1Encodable<Asn1Primitive>> :
@@ -100,13 +101,13 @@ interface Asn1TagVerifyingDecodable<T : Asn1Encodable<Asn1Primitive>> :
      * Exception-free version of [decodeFromTlv]
      */
     fun decodeFromTlvOrNull(src: Asn1Primitive, tagOverride: UByte?) =
-        runCatching { decodeFromTlv(src, tagOverride) }.getOrNull()
+        catching { decodeFromTlv(src, tagOverride) }.getOrNull()
 
     /**
      * Safe version of [decodeFromTlv], wrapping the result into a [KmmResult]
      */
     fun decodeFromTlvSafe(src: Asn1Primitive, tagOverride: UByte?) =
-        kotlin.runCatching { decodeFromTlv(src, tagOverride) }.wrap()
+        catching { decodeFromTlv(src, tagOverride) }
 
 
     /**
@@ -121,10 +122,10 @@ interface Asn1TagVerifyingDecodable<T : Asn1Encodable<Asn1Primitive>> :
      * Exception-free version of [decodeFromDer]
      */
     fun decodeFromDerOrNull(src: ByteArray, tagOverride: UByte?) =
-        runCatching { decodeFromDer(src, tagOverride) }.getOrNull()
+        catching { decodeFromDer(src, tagOverride) }.getOrNull()
 
     /**
      * Safe version of [decodeFromDer], wrapping the result into a [KmmResult]
      */
-    fun decodeFromDerSafe(src: ByteArray, tagOverride: UByte?)= runCatching { decodeFromDer(src, tagOverride) }.wrap()
+    fun decodeFromDerSafe(src: ByteArray, tagOverride: UByte?) = catching { decodeFromDer(src, tagOverride) }
 }

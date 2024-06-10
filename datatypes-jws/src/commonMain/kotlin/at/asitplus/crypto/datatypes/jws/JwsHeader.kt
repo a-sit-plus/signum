@@ -2,7 +2,7 @@
 
 package at.asitplus.crypto.datatypes.jws
 
-import at.asitplus.KmmResult.Companion.wrap
+import at.asitplus.catching
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64UrlSerializer
@@ -271,15 +271,15 @@ data class JwsHeader(
      */
     val publicKey: CryptoPublicKey? by lazy {
         jsonWebKey?.toCryptoPublicKey()?.getOrNull()
-            ?: keyId?.let { runCatching { CryptoPublicKey.fromDid(it) } }?.getOrNull()
+            ?: keyId?.let { catching { CryptoPublicKey.fromDid(it) } }?.getOrNull()
             ?: certificateChain?.leaf?.publicKey
     }
 
 
     companion object {
-        fun deserialize(it: String) = kotlin.runCatching {
+        fun deserialize(it: String) = catching {
             jsonSerializer.decodeFromString<JwsHeader>(it)
-        }.wrap()
+        }
 
     }
 }
