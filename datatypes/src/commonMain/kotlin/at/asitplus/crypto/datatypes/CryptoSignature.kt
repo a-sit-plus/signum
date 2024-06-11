@@ -163,7 +163,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
                     "r is ${r.bitLength()} bits long, expected at most ${scalarByteLength.toInt()} bytes (${max} bits)"
                 }
 
-                require(s.bitLength() <= scalarByteLength.toInt() * 8) {
+                require(s.bitLength() <= max) {
                     "s is ${s.bitLength()} bits long, expected at most ${scalarByteLength.toInt()} bytes (${max} bits)"
                 }
             }
