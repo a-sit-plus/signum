@@ -91,9 +91,7 @@ sealed class ECPoint private constructor(
             "ECPoint[$curve]: (${homX.toString(16)} : ${homY.toString(16)}) [normalized]"
         else
             "ECPoint[$curve]: (${(homX / homZ).toString(16)} : ${(homY / homZ).toString(16)}) [with Z = ${
-                homZ.toString(
-                    16
-                )
+                homZ.toString(16)
             }]"
 
     override fun equals(other: Any?): Boolean {

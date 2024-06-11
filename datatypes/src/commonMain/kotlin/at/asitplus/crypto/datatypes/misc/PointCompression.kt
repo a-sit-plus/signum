@@ -25,8 +25,8 @@ enum class ANSIECPrefix(val prefixByte: Byte) {
     companion object {
 
         /**
-         * Gets the ANSI prefix for [byte].
-         * @throws IllegalArgumentException for ZERO
+         * Gets the [ANSIECPrefix] for [byte].
+         * @throws IllegalArgumentException for bytes that don't map to a valid prefix
          */
         @Suppress("NOTHING_TO_INLINE")
         inline fun fromPrefixByte(byte: Byte) = when (byte) {
@@ -37,8 +37,8 @@ enum class ANSIECPrefix(val prefixByte: Byte) {
         }
 
         /**
-         * Gets the ANSI prefix for [sign].
-         * @throws IllegalArgumentException for ZERO
+         * Gets the [ANSIECPrefix] for [sign].
+         * @throws IllegalArgumentException for [Sign.ZERO]
          */
         @Suppress("NOTHING_TO_INLINE")
         inline fun forSign(sign: Sign) = when (sign) {
@@ -82,9 +82,9 @@ internal fun decompressY(curve: ECCurve, x: ModularBigInteger, sign: Sign): Modu
     val alpha = x.pow(3) + curve.a * x + curve.b
 
     require(quadraticResidueTest(alpha))
-    { "Invalid compressed point (x=$x) on $curve" }
+        { "Invalid compressed point (x=$x) on $curve" }
     require(curve.modulus.bitAt(0) && curve.modulus.bitAt(1)) // (modulus % 4) == 3
-    { "Decompression on $curve requires Tonelli-Shanks Algorithm" }
+        { "Decompression on $curve requires Tonelli-Shanks Algorithm" }
 
 
     val beta = alpha.pow((curve.modulus + 1) / 4)
