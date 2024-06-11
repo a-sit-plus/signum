@@ -154,9 +154,11 @@
  * Move `curve` from `CryptoAlgorithm` to `JwsAlgorithm`
  * Don't assume curve information for the X.509 signature when, in fact, none exists
    * `CryptoSignature`s in X.509 are now indefinite length
- * Changes
-   * Rename `CryptoAlgorithm` to `X509SignatureAlgorithm` to better describe what it is
-     * Rename `toCryptoAlgorithm` to `toX509SignatureAlgorithm` accordingly
-   * Rework CryptoSignature to two-dimensional interface:
-     * CryptoSignature <- {EC <- {IndefiniteLength, DefiniteLength}, RsaOrHmac}
-     * CryptoSignature <- {Defined <- {Ill <- EC.IndefiniteLength, Well <- {EC.DefiniteLength, RsaOrHmac}}
+
+**Changes**
+* Drop support for did-encoding uncompressed keys (but keep decoding support)
+* Rename `CryptoAlgorithm` to `X509SignatureAlgorithm` to better describe what it is
+  * Rename `toCryptoAlgorithm` to `toX509SignatureAlgorithm` accordingly
+* Rework CryptoSignature to two-dimensional interface:
+  * CryptoSignature <- {EC <- {IndefiniteLength, DefiniteLength}, RsaOrHmac}
+  * CryptoSignature <- {Defined <- {Ill <- EC.IndefiniteLength, Well <- {EC.DefiniteLength, RsaOrHmac}}

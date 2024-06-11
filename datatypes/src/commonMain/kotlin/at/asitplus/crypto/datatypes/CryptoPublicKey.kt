@@ -72,13 +72,13 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             val keyBytes = decoded.copyOfRange(2, decoded.size)
 
             return when (codec) {
-                0x1200uL ->
+                0x1200uL, 0x1290uL ->
                     EC.fromAnsiX963Bytes(ECCurve.SECP_256_R_1, keyBytes)
 
-                0x1201uL ->
+                0x1201uL, 0x1291uL ->
                     EC.fromAnsiX963Bytes(ECCurve.SECP_384_R_1, keyBytes)
 
-                0x1202uL ->
+                0x1202uL, 0x1292uL ->
                     EC.fromAnsiX963Bytes(ECCurve.SECP_521_R_1, keyBytes)
 
                 0x1205uL ->
