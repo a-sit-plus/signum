@@ -6,6 +6,7 @@ import at.asitplus.crypto.datatypes.asn1.DERTags.DER_SEQUENCE
 import at.asitplus.crypto.datatypes.io.Base64Strict
 import at.asitplus.crypto.datatypes.misc.BitLength
 import at.asitplus.crypto.datatypes.misc.max
+import at.asitplus.crypto.datatypes.pki.X509Certificate
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -28,9 +29,23 @@ import kotlinx.serialization.encoding.Encoder
 sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
     val signature: Asn1Element
 
+
+    /**
+     * Allows classifying CryptoSignatures into two classes
+     */
     sealed interface Defined : CryptoSignature {
+        /**
+         * Ill-defined CryptoSignatures cannot be encoded into raw byte arrays,
+         * since not all properties required to do so are known. For example, EC signatures parsed from an
+         * [X509Certificate] do not specify a curve.
+         */
         sealed interface Ill : Defined
 
+        /**
+         * Well-defined CryptoSignatures can be encoded into raw byte arrays,
+         * since all the information to do so is present. RSA Signatures and EC Signatures with a known curve fall into
+         * this category.
+         */
         sealed interface Well : Defined {
             /**
              * Removes ASN1 Structure and returns the value(s) as ByteArray

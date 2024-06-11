@@ -83,8 +83,7 @@ class X509CertificateJvmTest : FreeSpec({
             initSign(keyPair.private)
             update(tbsCertificate.encodeToTlv().derEncoded)
         }.sign()
-        val test =
-            (CryptoSignature.decodeFromDer(signed) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
+        val test =            CryptoSignature.decodeFromDer(signed)
         val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, test)
 
         val kotlinEncoded = x509Certificate.encodeToDer()
@@ -130,8 +129,7 @@ class X509CertificateJvmTest : FreeSpec({
             initSign(keyPair.private)
             update(tbsCertificate.encodeToTlv().derEncoded)
         }.sign()
-        val test =
-            (CryptoSignature.decodeFromDer(signed) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
+        val test = CryptoSignature.decodeFromDer(signed)
         val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, test)
 
         repeat(500) {
