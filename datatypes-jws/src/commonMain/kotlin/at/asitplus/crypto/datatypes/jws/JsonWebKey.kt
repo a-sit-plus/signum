@@ -281,28 +281,27 @@ data class JsonWebKey(
      * @return a KmmResult wrapped [CryptoPublicKey] equivalent if conversion is possible
      * (i.e. if all key params are set), or the first error.
      */
-    fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
-        catching {
-            when (type) {
-                JwkType.EC -> {
-                    fromUncompressed(
-                        curve = curve ?: throw IllegalArgumentException("Missing or invalid curve"),
-                        x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
-                        y = y ?: throw IllegalArgumentException("Missing y-coordinate")
-                    ).apply { jwkId = identifier }
-                }
-
-                JwkType.RSA -> {
-                    CryptoPublicKey.Rsa(
-                        n = n ?: throw IllegalArgumentException("Missing modulus n"),
-                        e = e?.let { bytes -> Int.decodeFromDer(bytes) }
-                            ?: throw IllegalArgumentException("Missing or invalid exponent e")
-                    ).apply { jwkId = identifier }
-                }
-
-                else -> throw IllegalArgumentException("Illegal key type")
+    fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = catching {
+        when (type) {
+            JwkType.EC -> {
+                fromUncompressed(
+                    curve = curve ?: throw IllegalArgumentException("Missing or invalid curve"),
+                    x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
+                    y = y ?: throw IllegalArgumentException("Missing y-coordinate")
+                ).apply { jwkId = identifier }
             }
+
+            JwkType.RSA -> {
+                CryptoPublicKey.Rsa(
+                    n = n ?: throw IllegalArgumentException("Missing modulus n"),
+                    e = e?.let { bytes -> Int.decodeFromDer(bytes) }
+                        ?: throw IllegalArgumentException("Missing or invalid exponent e")
+                ).apply { jwkId = identifier }
+            }
+
+            else -> throw IllegalArgumentException("Illegal key type")
         }
+    }
 
     /**
      * Contains convenience functions

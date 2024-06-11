@@ -6,8 +6,9 @@ import at.asitplus.crypto.datatypes.asn1.Asn1.BitString
 import at.asitplus.crypto.datatypes.asn1.Asn1.Null
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
 import at.asitplus.crypto.datatypes.io.MultiBase
-import at.asitplus.crypto.datatypes.misc.*
+import at.asitplus.crypto.datatypes.misc.ANSIECPrefix
 import at.asitplus.crypto.datatypes.misc.ANSIECPrefix.Companion.hasPrefix
+import at.asitplus.crypto.datatypes.misc.UVarInt
 import com.ionspin.kotlin.bignum.integer.Sign
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -373,11 +374,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             inline operator fun invoke(curve: ECCurve, x: ByteArray, usePositiveY: Boolean) =
                 fromCompressed(curve, x, usePositiveY)
 
-            @Deprecated(
-                "Explicitly specify what you want", ReplaceWith(
-                    "fromUncompressed(curve, x, y)"
-                )
-            )
+            @Deprecated("Explicitly specify what you want", ReplaceWith("fromUncompressed(curve, x, y)"))
             @Suppress("NOTHING_TO_INLINE")
             inline operator fun invoke(curve: ECCurve, x: ByteArray, y: ByteArray) =
                 fromUncompressed(curve, x, y)

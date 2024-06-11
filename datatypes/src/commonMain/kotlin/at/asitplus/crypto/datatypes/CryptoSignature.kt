@@ -58,9 +58,8 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
 
     override fun encodeToTlv(): Asn1Element = signature
 
-    fun str(): String {
-        return "${this::class.simpleName ?: "CryptoSignature"}(signature=${signature.prettyPrint()})"
-    }
+    val humanReadableString: String get() = "${this::class.simpleName ?: "CryptoSignature"}(signature=${signature.prettyPrint()})"
+
 
     object CryptoSignatureSerializer : KSerializer<CryptoSignature> {
         override val descriptor: SerialDescriptor
@@ -99,7 +98,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
             return ((this.s == other.s) && (this.r == other.r))
         }
 
-        override fun toString() = str()
+        override fun toString() = humanReadableString
 
         /** @see equals */
         override fun hashCode() = 31 * this.s.hashCode() + this.r.hashCode()
@@ -225,6 +224,8 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
         override fun encodeToTlvBitString(): Asn1Element = this.encodeToTlv()
 
         override fun hashCode(): Int = signature.hashCode()
+
+        override fun toString() = humanReadableString
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true

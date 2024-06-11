@@ -74,8 +74,8 @@ object ByteArrayBase64UrlSerializer : KSerializer<ByteArray> {
     /**
      * @throws SerializationException on error
      */
-    override fun deserialize(decoder: Decoder): ByteArray {
-        return catching { decoder.decodeString().decodeToByteArray(Base64UrlStrict) }
+    override fun deserialize(decoder: Decoder): ByteArray =
+        catching { decoder.decodeString().decodeToByteArray(Base64UrlStrict) }
             .getOrElse { throw SerializationException("Base64 decoding failed", it) }
-    }
+
 }
