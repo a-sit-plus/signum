@@ -15,7 +15,7 @@ import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 data class JwsSigned(
     val header: JwsHeader,
     val payload: ByteArray,
-    val signature: CryptoSignature.Defined.Well,
+    val signature: CryptoSignature.RawByteEncodable,
     val plainSignatureInput: String,
 ) {
 

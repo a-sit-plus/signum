@@ -40,10 +40,10 @@ data class CoseSigned(
         protectedHeader: ByteStringWrapper<CoseHeader>,
         unprotectedHeader: CoseHeader?,
         payload: ByteArray?,
-        signature: CryptoSignature.Defined.Well
+        signature: CryptoSignature.RawByteEncodable
     ) : this(protectedHeader, unprotectedHeader, payload, signature.rawByteArray)
 
-    val signature: CryptoSignature.Defined by lazy {
+    val signature: CryptoSignature by lazy {
         if (protectedHeader.value.usesEC() ?: unprotectedHeader?.usesEC() ?: (rawSignature.size < 2048))
             CryptoSignature.EC.fromRawBytes(rawSignature)
         else CryptoSignature.RSAorHMAC(rawSignature)

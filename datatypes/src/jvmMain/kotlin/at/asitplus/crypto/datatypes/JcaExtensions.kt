@@ -137,7 +137,7 @@ val CryptoSignature.jcaSignatureBytes: ByteArray
 fun CryptoSignature.Companion.parseFromJca(
     input: ByteArray,
     algorithm: X509SignatureAlgorithm
-): CryptoSignature.Defined =
+): CryptoSignature =
     if (algorithm.isEc)
         CryptoSignature.EC.decodeFromDer(input)
     else

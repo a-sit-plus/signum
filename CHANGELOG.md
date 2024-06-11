@@ -161,4 +161,4 @@
   * Rename `toCryptoAlgorithm` to `toX509SignatureAlgorithm` accordingly
 * Rework CryptoSignature to two-dimensional interface:
   * CryptoSignature <- {EC <- {IndefiniteLength, DefiniteLength}, RsaOrHmac}
-  * CryptoSignature <- {Defined <- {Ill <- EC.IndefiniteLength, Well <- {EC.DefiniteLength, RsaOrHmac}}
+  * CryptoSignature <- {RawByteEncodable <- {EC.DefiniteLength, RsaOrHmac}, NotRawByteEncodable <- EC.IndefiniteLength}
