@@ -152,7 +152,7 @@
 
 **Fixes**
  * Move `curve` from `CryptoAlgorithm` to `JwsAlgorithm`
- * Don't read curve information into the X.509 tea leaves where none exists
+ * Don't assume curve information for the X.509 signature when, in fact, none exists
    * `CryptoSignature`s in X.509 are now indefinite length
  * Changes
    * Rename `CryptoAlgorithm` to `X509SignatureAlgorithm` to better describe what it is
