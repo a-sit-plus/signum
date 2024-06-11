@@ -86,15 +86,14 @@ sealed class CoseKeyParams {
 
         override fun yHashCode(): Int = y?.contentHashCode() ?: 0
 
-        override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> {
-            return catching {
-                CryptoPublicKey.EC.fromUncompressed(
-                    curve = curve?.toEcCurve() ?: throw IllegalArgumentException("Missing or invalid curve"),
-                    x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
-                    y = y ?: throw IllegalArgumentException("Missing y-coordinate")
-                )
-            }
+        override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = catching {
+            CryptoPublicKey.EC.fromUncompressed(
+                curve = curve?.toEcCurve() ?: throw IllegalArgumentException("Missing or invalid curve"),
+                x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
+                y = y ?: throw IllegalArgumentException("Missing y-coordinate")
+            )
         }
+
     }
 
     data class EcYBoolParams(
@@ -163,21 +162,33 @@ sealed class CoseKeyParams {
             return result
         }
 
-        override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> {
-            return catching {
-                CryptoPublicKey.Rsa(
-                    n = n ?: throw IllegalArgumentException("Missing modulus n"),
-                    e = e?.let { bytes -> Int.decodeFromDer(bytes) }
-                        ?: throw IllegalArgumentException("Missing or invalid exponent e")
-                )
-            }
+        override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = catching {
+            CryptoPublicKey.Rsa(
+                n = n ?: throw IllegalArgumentException("Missing modulus n"),
+                e = e?.let { bytes -> Int.decodeFromDer(bytes) }
+                    ?: throw IllegalArgumentException("Missing or invalid exponent e")
+            )
         }
     }
+
 
     data class SymmKeyParams(
         val k: ByteArray,
     ) : CoseKeyParams() {
         override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
             failure(IllegalArgumentException("Symmetric keys do not have public component"))
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is SymmKeyParams) return false
+
+            if (!k.contentEquals(other.k)) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return k.contentHashCode()
+        }
     }
 }

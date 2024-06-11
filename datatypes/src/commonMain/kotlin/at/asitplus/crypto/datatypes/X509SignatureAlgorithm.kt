@@ -13,8 +13,10 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 @Serializable(with = X509SignatureAlgorithmSerializer::class)
-enum class X509SignatureAlgorithm(override val oid: ObjectIdentifier, val isEc: Boolean = false) :
-    Asn1Encodable<Asn1Sequence>, Identifiable {
+enum class X509SignatureAlgorithm(
+    override val oid: ObjectIdentifier,
+    val isEc: Boolean = false
+) : Asn1Encodable<Asn1Sequence>, Identifiable {
 
     // ECDSA with SHA-size
     ES256(KnownOIDs.ecdsaWithSHA256, true),

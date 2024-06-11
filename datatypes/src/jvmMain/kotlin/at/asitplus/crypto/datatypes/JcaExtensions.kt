@@ -79,41 +79,38 @@ fun CryptoPublicKey.getJcaPublicKey() = when (this) {
     is CryptoPublicKey.Rsa -> getJcaPublicKey()
 }
 
-fun CryptoPublicKey.EC.getJcaPublicKey(): KmmResult<ECPublicKey> {
-    return catching {
-        val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.jwkName)
-        val x = x.residue.toJavaBigInteger()
-        val y = y.residue.toJavaBigInteger()
-        val ecPoint = parameterSpec.curve.createPoint(x, y)
-        val ecPublicKeySpec = ECPublicKeySpec(ecPoint, parameterSpec)
-        JCEECPublicKey("EC", ecPublicKeySpec)
-    }
+fun CryptoPublicKey.EC.getJcaPublicKey(): KmmResult<ECPublicKey> = catching {
+    val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.jwkName)
+    val x = x.residue.toJavaBigInteger()
+    val y = y.residue.toJavaBigInteger()
+    val ecPoint = parameterSpec.curve.createPoint(x, y)
+    val ecPublicKeySpec = ECPublicKeySpec(ecPoint, parameterSpec)
+    JCEECPublicKey("EC", ecPublicKeySpec)
+
 }
 
 private val rsaFactory = KeyFactory.getInstance("RSA")
 
-fun CryptoPublicKey.Rsa.getJcaPublicKey(): KmmResult<RSAPublicKey> =
-    catching {
-        rsaFactory.generatePublic(
-            RSAPublicKeySpec(BigInteger(1, n), BigInteger.valueOf(e.toLong()))
-        ) as RSAPublicKey
-    }
+fun CryptoPublicKey.Rsa.getJcaPublicKey(): KmmResult<RSAPublicKey> = catching {
+    rsaFactory.generatePublic(
+        RSAPublicKeySpec(BigInteger(1, n), BigInteger.valueOf(e.toLong()))
+    ) as RSAPublicKey
+}
 
-fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey> =
-    catching {
-        val curve = ECCurve.byJcaName(
-            SECNamedCurves.getName(
-                SubjectPublicKeyInfo.getInstance(
-                    ASN1Sequence.getInstance(publicKey.encoded)
-                ).algorithm.parameters as ASN1ObjectIdentifier
-            )
-        ) ?: throw SerializationException("Unknown Jca name")
-        fromUncompressed(
-            curve,
-            publicKey.w.affineX.toByteArray(),
-            publicKey.w.affineY.toByteArray()
+fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey> = catching {
+    val curve = ECCurve.byJcaName(
+        SECNamedCurves.getName(
+            SubjectPublicKeyInfo.getInstance(
+                ASN1Sequence.getInstance(publicKey.encoded)
+            ).algorithm.parameters as ASN1ObjectIdentifier
         )
-    }
+    ) ?: throw SerializationException("Unknown Jca name")
+    fromUncompressed(
+        curve,
+        publicKey.w.affineX.toByteArray(),
+        publicKey.w.affineY.toByteArray()
+    )
+}
 
 fun CryptoPublicKey.Rsa.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey> =
     catching { CryptoPublicKey.Rsa(publicKey.modulus.toByteArray(), publicKey.publicExponent.toInt()) }

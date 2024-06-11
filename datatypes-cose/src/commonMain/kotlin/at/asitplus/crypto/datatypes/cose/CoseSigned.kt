@@ -88,11 +88,9 @@ data class CoseSigned(
     }
 }
 
-fun CoseHeader.usesEC(): Boolean? {
-    algorithm?.toX509SignatureAlgorithm()?.isEc?.let { return it }
-    certificateChain?.let { return X509Certificate.decodeFromDerOrNull(it)?.publicKey is CryptoPublicKey.EC }
-    return null
-}
+fun CoseHeader.usesEC(): Boolean? = algorithm?.toX509SignatureAlgorithm()?.isEc
+    ?: certificateChain?.let { X509Certificate.decodeFromDerOrNull(it)?.publicKey is CryptoPublicKey.EC }
+
 
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
