@@ -31,13 +31,18 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
 
 
     /**
-     * Allows classifying CryptoSignatures into two classes
+     * Allows separating [CryptoSignature]s into two **mutually exclusive** classes:
+     *  * [Ill]-defined signatures, which lack the information to be encoded into raw bytes
+     *  * [Well]-defined signatures, which can be freely encoded/decoded from/to raw bytes
      */
     sealed interface Defined : CryptoSignature {
         /**
          * Ill-defined CryptoSignatures cannot be encoded into raw byte arrays,
          * since not all properties required to do so are known. For example, EC signatures parsed from an
-         * [X509Certificate] do not specify a curve.
+         * [X509Certificate] do not specify a curve. Hence, it is impossible to know how the components should be padded
+         * before encoding it into raw bytes.
+         *
+         * **This is the opposite of a [Well]-defined signature**
          */
         sealed interface Ill : Defined
 
@@ -45,6 +50,8 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
          * Well-defined CryptoSignatures can be encoded into raw byte arrays,
          * since all the information to do so is present. RSA Signatures and EC Signatures with a known curve fall into
          * this category.
+         *
+         * **This is the opposite of an [Ill]-defined signature**
          */
         sealed interface Well : Defined {
             /**
