@@ -30,36 +30,34 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
     val signature: Asn1Element
 
 
-    /**
-     * Allows separating [CryptoSignature]s into two **mutually exclusive** classes:
-     *  * [Ill]-defined signatures, which lack the information to be encoded into raw bytes
-     *  * [Well]-defined signatures, which can be freely encoded/decoded from/to raw bytes
-     */
-    sealed interface Defined : CryptoSignature {
         /**
-         * Ill-defined CryptoSignatures cannot be encoded into raw byte arrays,
-         * since not all properties required to do so are known. For example, EC signatures parsed from an
-         * [X509Certificate] do not specify a curve. Hence, it is impossible to know how the components should be padded
-         * before encoding it into raw bytes.
+         * Well-defined CryptoSignatures, which can also be encoded to raw bytes, in addition to the DER encoding
+         * specified in the X.509 profile.
+         * RSA Signatures and EC Signatures with a known curve fall into this category.
          *
-         * **This is the opposite of a [Well]-defined signature**
+         * **This is the opposite of a [NotRawByteEncodable] signature**
          */
-        sealed interface Ill : Defined
-
-        /**
-         * Well-defined CryptoSignatures can be encoded into raw byte arrays,
-         * since all the information to do so is present. RSA Signatures and EC Signatures with a known curve fall into
-         * this category.
-         *
-         * **This is the opposite of an [Ill]-defined signature**
-         */
-        sealed interface Well : Defined {
+        sealed interface RawByteEncodable : CryptoSignature {
             /**
-             * Removes ASN1 Structure and returns the value(s) as ByteArray
+             * Removes ASN1 Structure and returns the signature value(s) as ByteArray
              */
             val rawByteArray: ByteArray
         }
-    }
+
+        /**
+         * **This is the opposite of a [RawByteEncodable] signature**
+         *
+         * This inverse "non-trait" is required to group [CryptoSignature] subtypes which cannot be encoded into raw byte arrays,
+         * since not all properties required to do so are known. For example, EC signatures parsed from an
+         * [X509Certificate] do not specify a curve. For signatures obtained this way, it is impossible to know
+         * how the components should be padded before encoding it into raw bytes.
+         *
+         * The reason this interface exists, is that it allows for grouping all such signatures in the same manner
+         * as the [RawByteEncodable] ones, to allow for exhaustive `when` clauses
+         *
+         */
+        sealed interface NotRawByteEncodable : CryptoSignature
+
 
     fun encodeToTlvBitString(): Asn1Element
 
@@ -112,7 +110,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
 
         class IndefiniteLength internal constructor(
             r: BigInteger, s: BigInteger
-        ) : EC(r, s), Defined.Ill {
+        ) : EC(r, s), NotRawByteEncodable {
 
             /**
              * specifies the curve's scalar byte length for this signature, allowing it to be converted to raw bytes
@@ -157,7 +155,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
              */
             val scalarByteLength: UInt,
             r: BigInteger, s: BigInteger
-        ) : EC(r, s), Defined.Well {
+        ) : EC(r, s), RawByteEncodable {
             init {
                 val max = scalarByteLength.toInt() * 8
 
@@ -223,7 +221,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
 
     }
 
-    class RSAorHMAC(input: ByteArray) : CryptoSignature, Defined.Well {
+    class RSAorHMAC(input: ByteArray) : CryptoSignature, RawByteEncodable {
 
         override val signature: Asn1Element = Asn1Primitive(BIT_STRING, input)
 
@@ -251,14 +249,14 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
         }
     }
 
-    companion object : Asn1Decodable<Asn1Element, CryptoSignature.Defined> {
+    companion object : Asn1Decodable<Asn1Element, CryptoSignature> {
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(src: Asn1Element): CryptoSignature.Defined = runRethrowing {
+        override fun decodeFromTlv(src: Asn1Element): CryptoSignature = runRethrowing {
             when (src.tag) {
                 BIT_STRING -> RSAorHMAC((src as Asn1Primitive).decode(BIT_STRING) { it })
                 DER_SEQUENCE -> EC.decodeFromTlv(src as Asn1Sequence)
 
-                else -> throw IllegalArgumentException("Unknown Signature Format")
+                else -> throw Asn1Exception("Unknown Signature Format")
             }
         }
     }
