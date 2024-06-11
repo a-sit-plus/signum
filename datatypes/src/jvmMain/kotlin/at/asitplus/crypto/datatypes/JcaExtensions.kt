@@ -137,7 +137,10 @@ val CryptoSignature.jcaSignatureBytes: ByteArray
 /**
  * In Java EC signatures are returned as DER-encoded, RSA signatures however are raw bytearrays
  */
-fun CryptoSignature.Companion.parseFromJca(input: ByteArray, algorithm: X509SignatureAlgorithm) :CryptoSignature.Defined =
+fun CryptoSignature.Companion.parseFromJca(
+    input: ByteArray,
+    algorithm: X509SignatureAlgorithm
+): CryptoSignature.Defined =
     if (algorithm.isEc)
         CryptoSignature.EC.decodeFromDer(input)
     else
