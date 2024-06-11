@@ -4,6 +4,7 @@ okio = "3.5.0"
 bignum = "0.3.10-SNAPSHOT"
 jose = "9.31"
 kotlinpoet = "1.16.0"
+kmmresult = "1.6.2"
 
 [libraries]
 base16 = { group = "io.matthewnelson.kotlin-components", name = "encoding-base16", version.ref = "encoding" }
