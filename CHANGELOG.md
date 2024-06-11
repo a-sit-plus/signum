@@ -156,7 +156,7 @@
    * `CryptoSignature`s in X.509 are now indefinite length
 
 **Changes**
-* Drop support for did-encoding uncompressed keys (but keep decoding support)
+* Always DID-encode keys in compressed form (but keep decoding support)
 * Rename `CryptoAlgorithm` to `X509SignatureAlgorithm` to better describe what it is
   * Rename `toCryptoAlgorithm` to `toX509SignatureAlgorithm` accordingly
 * Rework CryptoSignature to two-dimensional interface:
