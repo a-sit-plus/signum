@@ -165,8 +165,8 @@ sealed class CoseKeyParams {
         override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = catching {
             CryptoPublicKey.Rsa(
                 n = n ?: throw IllegalArgumentException("Missing modulus n"),
-                e = e?.let { bytes -> Int.decodeFromDer(bytes) }
-                    ?: throw IllegalArgumentException("Missing or invalid exponent e")
+                e = Int.decodeFromDer(e ?:
+                    throw IllegalArgumentException("Missing or invalid exponent e"))
             )
         }
     }
