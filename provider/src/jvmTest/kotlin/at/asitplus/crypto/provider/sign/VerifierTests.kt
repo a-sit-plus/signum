@@ -40,12 +40,12 @@ class VerifierTests: FreeSpec({
                     Triple(publicKey, data, sig)
                 }.take(5)) { (key, data, sig) ->
                     val verifier = factory(SignatureAlgorithm.ECDSA(digest, null), key)
-                    verifier.verify(byteArrayOf(), sig).getOrThrow() shouldBe false
+                    verifier.verify(byteArrayOf(), sig).isSuccess shouldBe false
                     if (digest != null) {
-                        verifier.verify(data.copyOfRange(0, 128), sig).getOrThrow() shouldBe false
-                        verifier.verify(data + Random.nextBytes(8), sig).getOrThrow() shouldBe false
+                        verifier.verify(data.copyOfRange(0, 128), sig).isSuccess shouldBe false
+                        verifier.verify(data + Random.nextBytes(8), sig).isSuccess shouldBe false
                     }
-                    verifier.verify(data, sig).getOrThrow() shouldBe true
+                    verifier.verify(data, sig).isSuccess shouldBe true
                 }
             }
         }
