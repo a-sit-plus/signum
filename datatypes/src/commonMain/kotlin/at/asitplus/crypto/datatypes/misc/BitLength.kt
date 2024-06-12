@@ -17,6 +17,7 @@ data class BitLength(val bits: UInt) : Comparable<BitLength> {
         bits.rem(8u).let { if (it != 0u) (8u-it) else 0u }
 
     companion object {
+        // inline function to avoid platform clashes since uint is a value class
         inline operator fun invoke(bits: Int) = BitLength(bits.toUInt())
         inline fun of(v: BigInteger) = BitLength(v.bitLength().toUInt())
     }
@@ -33,3 +34,6 @@ inline fun min(a: BitLength, b: BitLength) =
 @Suppress("NOTHING_TO_INLINE")
 inline fun max(a: BitLength, b: BitLength) =
     if (a.bits < b.bits) b else a
+
+val Int.bit inline get() = BitLength(this)
+val UInt.bit inline get() = BitLength(this)

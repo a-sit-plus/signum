@@ -80,18 +80,20 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
     }
 
 
-    sealed class EC private constructor(
+    sealed class EC
+    @Throws(IllegalArgumentException::class) private constructor(
         /** r - ECDSA signature component */
         val r: BigInteger,
         /** s - ECDSA signature component */
         val s: BigInteger
     ) : CryptoSignature {
 
-        override val signature: Asn1Element = Asn1.Sequence { +r.encodeToTlv(); +s.encodeToTlv() }
         init {
             require(r.isPositive) { "r must be positive" }
             require(s.isPositive) { "s must be positive" }
         }
+
+        override val signature: Asn1Element = Asn1.Sequence { +r.encodeToTlv(); +s.encodeToTlv() }
 
         override fun encodeToTlvBitString(): Asn1Element = encodeToDer().encodeToTlvBitString()
 
@@ -151,7 +153,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
             }
         }
 
-        class DefiniteLength internal constructor(
+        class DefiniteLength @Throws(IllegalArgumentException::class) internal constructor(
             /**
              * scalar byte length of the underlying curve;
              * we do not know _which_ curve with this particular byte length
@@ -188,6 +190,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
                 EC.IndefiniteLength(r, s)
 
             /** load CryptoSignature from raw byte array (r and s concatenated) */
+            @Throws(IllegalArgumentException::class)
             fun fromRawBytes(input: ByteArray): EC.DefiniteLength {
                 require(input.size.rem(2) == 0) { "Raw signature has odd number of bytes" }
                 val sz = input.size.div(2)
@@ -215,7 +218,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
                 src as Asn1Sequence
                 val r = (src.nextChild() as Asn1Primitive).readBigInteger()
                 val s = (src.nextChild() as Asn1Primitive).readBigInteger()
-                if (src.hasMoreChildren()) throw IllegalArgumentException("Illegal Signature Format")
+                if (src.hasMoreChildren()) throw Asn1Exception("Illegal Signature Format")
                 return fromRS(r, s)
             }
 
