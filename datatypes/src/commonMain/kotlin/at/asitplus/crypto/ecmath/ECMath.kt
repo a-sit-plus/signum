@@ -3,6 +3,7 @@ package at.asitplus.crypto.ecmath
 import at.asitplus.crypto.datatypes.ECPoint
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
+import kotlin.math.max
 
 /** adds `other` to `this` and returns the result */
 /* Algorithm 4 from https://eprint.iacr.org/2015/1060.pdf */
