@@ -13,7 +13,7 @@ sealed interface Verifier {
     val signatureAlgorithm: SignatureAlgorithm
     val publicKey: CryptoPublicKey
 
-    fun verify(data: SignatureInput, sig: CryptoSignature): KmmResult<Boolean>
+    fun verify(data: SignatureInput, sig: CryptoSignature): KmmResult<Unit>
 
     sealed class EC
     @Throws(IllegalArgumentException::class)
@@ -44,7 +44,7 @@ sealed interface PlatformVerifier: Verifier
 /** A distinguishing interface for verifiers that are implemented in pure Kotlin */
 sealed interface KotlinVerifier: Verifier
 
-internal expect fun verifyECDSAImpl(signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC, data: SignatureInput, signature: CryptoSignature.EC): Boolean
+internal expect fun verifyECDSAImpl(signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC, data: SignatureInput, signature: CryptoSignature.EC)
 class PlatformECDSAVerifier(signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC)
     : Verifier.EC(signatureAlgorithm, publicKey), PlatformVerifier {
     override fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
@@ -54,8 +54,8 @@ class PlatformECDSAVerifier(signatureAlgorithm: SignatureAlgorithm.ECDSA, public
     }
 }
 
-/** data is guaranteed to be in RAW_BYTES format */
-internal expect fun verifyRSAImpl(signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa, data: SignatureInput, signature: CryptoSignature.RSAorHMAC): Boolean
+/** data is guaranteed to be in RAW_BYTES format. failure should throw. */
+internal expect fun verifyRSAImpl(signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa, data: SignatureInput, signature: CryptoSignature.RSAorHMAC)
 class PlatformRSAVerifier(signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa)
     : Verifier.RSA(signatureAlgorithm, publicKey), PlatformVerifier {
     override fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
@@ -78,20 +78,20 @@ class KotlinECDSAVerifier(signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKe
             is CryptoSignature.EC.IndefiniteLength -> sig.withCurve(curve)
         }
         if (!((sig.r > 0) && (sig.r < curve.order))) {
-            // r is not in [1,n-1] (r=${sig.r}, n=${curve.order})
-            return@catching false
+            throw InvalidSignature("r is not in [1,n-1] (r=${sig.r}, n=${curve.order})")
         }
         if (!((sig.s > 0) && (sig.s < curve.order))) {
-            // s is not in [1,n-1] (s=${sig.s}, n=${curve.order})
-            return@catching false
+            throw InvalidSignature("s is not in [1,n-1] (s=${sig.s}, n=${curve.order})")
         }
 
-        val z = data.convertTo(signatureAlgorithm.digest).asBigInteger(curve.scalarLength)
+        val z = data.convertTo(signatureAlgorithm.digest).getOrThrow().asBigInteger(curve.scalarLength)
         val sInv = sig.s.modInverse(curve.order)
         val u1 = z * sInv
         val u2 = sig.r * sInv
         val point = straussShamir(u1, curve.generator, u2, publicKey.publicPoint).run {
             tryNormalize() ?: throw InvalidSignature("(x1,y1) = additive zero") }
-        return@catching (point.x.residue.mod(curve.order) == sig.r.mod(curve.order))
+        if (point.x.residue.mod(curve.order) != sig.r.mod(curve.order)) {
+            throw InvalidSignature("Signature is invalid: r != s")
+        }
     }
 }

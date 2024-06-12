@@ -48,9 +48,11 @@ kotlin {
         implementation(kotlincrypto.hash.sha2)
         implementation(kotlincrypto.secureRandom)
     }
+    /*
     sourceSets.androidMain.dependencies {
         implementation("androidx.biometric:biometric:1.2.0-alpha05")
     }
+    */
 }
 
 /*swiftklib {

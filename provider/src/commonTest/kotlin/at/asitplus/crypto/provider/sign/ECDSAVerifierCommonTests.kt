@@ -388,11 +388,11 @@ class ECDSAVerifierCommonTests : FreeSpec({
             withData(byCurve) { byDigest ->
                 withData(nameFn = TestInfo::b64msg, byDigest) { test ->
                     val verifier = factory(SignatureAlgorithm.ECDSA(test.digest, null), test.key)
-                    verifier.verify(test.msg, test.sig).getOrThrow() shouldBe true
+                    verifier.verify(test.msg, test.sig).isSuccess shouldBe true
                     Random.of(byDigest).let {
                         if (it !== test) {
-                            verifier.verify(it.msg, test.sig).getOrThrow() shouldBe false
-                            verifier.verify(it.msg, it.sig).getOrThrow() shouldBe false
+                            verifier.verify(it.msg, test.sig).isSuccess shouldBe false
+                            verifier.verify(it.msg, it.sig).isSuccess shouldBe false
                         }
                     }
                 }

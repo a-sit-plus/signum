@@ -149,12 +149,12 @@ fun main() {
         withData(byPadding) { byDigest ->
             withData(nameFn = TestInfo::b64msg, byDigest) { test ->
                 val verifier = PlatformRSAVerifier(SignatureAlgorithm.RSA(test.digest, test.padding), test.key)
-                verifier.verify(test.msg, test.sig).getOrThrow() shouldBe true
-                verifier.verify(test.msg.copyOfRange(0, test.msg.size/2), test.sig).getOrThrow() shouldBe false
+                verifier.verify(test.msg, test.sig).isSuccess shouldBe true
+                verifier.verify(test.msg.copyOfRange(0, test.msg.size/2), test.sig).isSuccess shouldBe false
                 Random.of(byDigest).let {
                     if (it !== test) {
-                        verifier.verify(it.msg, test.sig).getOrThrow() shouldBe false
-                        verifier.verify(it.msg, it.sig).getOrThrow() shouldBe false
+                        verifier.verify(it.msg, test.sig).isSuccess shouldBe false
+                        verifier.verify(it.msg, it.sig).isSuccess shouldBe false
                     }
                 }
             }

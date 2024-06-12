@@ -1,5 +1,6 @@
 package at.asitplus.crypto.provider.sign
 
+import at.asitplus.catching
 import at.asitplus.crypto.datatypes.Digest
 import at.asitplus.crypto.datatypes.asn1.ensureSize
 import at.asitplus.crypto.datatypes.misc.BitLength
@@ -24,11 +25,11 @@ class SignatureInput private constructor (
         }
     }
 
-    fun convertTo(format: SignatureInputFormat): SignatureInput {
-        if (this.format == format) return this
+    fun convertTo(format: SignatureInputFormat) = catching {
+        if (this.format == format) return@catching this
         if (this.format != RAW_BYTES) throw IllegalStateException("Cannot convert from ${this.format} to $format")
         format!! /* RAW_BYTES is null; this is for the compiler */
-        return SignatureInput(sequenceOf(format.digest(this.data)), format)
+        SignatureInput(sequenceOf(format.digest(this.data)), format)
     }
 
     constructor(data: ByteArray) : this(sequenceOf(data), RAW_BYTES)

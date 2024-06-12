@@ -6,8 +6,8 @@ import at.asitplus.crypto.datatypes.SignatureAlgorithm
 
 internal actual fun verifyECDSAImpl
     (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
-     data: SignatureInput, signature: CryptoSignature.EC) : Boolean = TODO()
+     data: SignatureInput, signature: CryptoSignature.EC): Unit = TODO()
 
 internal actual fun verifyRSAImpl
             (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
-             data: SignatureInput, signature: CryptoSignature.RSAorHMAC): Boolean = TODO()
+             data: SignatureInput, signature: CryptoSignature.RSAorHMAC): Unit = TODO()
