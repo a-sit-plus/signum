@@ -23,6 +23,12 @@ import java.security.KeyPairGenerator
 import java.security.Signature
 import java.security.interfaces.ECPublicKey
 
+internal val X509SignatureAlgorithm.jcaName get() = when(this) {
+    X509SignatureAlgorithm.ES256 -> "SHA256withECDSA"
+    X509SignatureAlgorithm.ES384 -> "SHA384withECDSA"
+    X509SignatureAlgorithm.ES512 -> "SHA512withECDSA"
+    else -> throw IllegalArgumentException(this.name)
+}
 
 @OptIn(ExperimentalStdlibApi::class)
 class Pkcs10CertificationRequestJvmTest : FreeSpec({
