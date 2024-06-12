@@ -28,32 +28,12 @@ import java.security.spec.RSAPublicKeySpec
 private val certificateFactoryMutex = Mutex()
 private val certFactory = CertificateFactory.getInstance("X.509")
 
-val X509SignatureAlgorithm.jcaName
+val Digest.jcaPSSParams
     get() = when (this) {
-        X509SignatureAlgorithm.ES256 -> "SHA256withECDSA"
-        X509SignatureAlgorithm.ES384 -> "SHA384withECDSA"
-        X509SignatureAlgorithm.ES512 -> "SHA512withECDSA"
-        X509SignatureAlgorithm.HS256 -> "HmacSHA256"
-        X509SignatureAlgorithm.HS384 -> "HmacSHA384"
-        X509SignatureAlgorithm.HS512 -> "HmacSHA512"
-        X509SignatureAlgorithm.RS256 -> "SHA256withRSA"
-        X509SignatureAlgorithm.RS384 -> "SHA384withRSA"
-        X509SignatureAlgorithm.RS512 -> "SHA512withRSA"
-        X509SignatureAlgorithm.PS256 -> "RSASSA-PSS"
-        X509SignatureAlgorithm.PS384 -> "RSASSA-PSS"
-        X509SignatureAlgorithm.PS512 -> "RSASSA-PSS"
-        X509SignatureAlgorithm.RS1 -> "SHA1withRSA"
-    }
-
-val X509SignatureAlgorithm.jcaParams
-    get() = when (this) {
-        X509SignatureAlgorithm.PS256 -> PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 32, 1)
-
-        X509SignatureAlgorithm.PS384 -> PSSParameterSpec("SHA-384", "MGF1", MGF1ParameterSpec.SHA384, 48, 1)
-
-        X509SignatureAlgorithm.PS512 -> PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 64, 1)
-
-        else -> null
+        Digest.SHA1 -> PSSParameterSpec("SHA-1", "MGF1", MGF1ParameterSpec.SHA1, 20, 1)
+        Digest.SHA256 -> PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 32, 1)
+        Digest.SHA384 -> PSSParameterSpec("SHA-384", "MGF1", MGF1ParameterSpec.SHA384, 48, 1)
+        Digest.SHA512 -> PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 64, 1)
     }
 
 val Digest.jcaName

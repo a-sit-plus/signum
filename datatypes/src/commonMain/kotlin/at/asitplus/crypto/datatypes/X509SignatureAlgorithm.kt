@@ -96,6 +96,13 @@ enum class X509SignatureAlgorithm(
         ES512, HS512, PS512, RS512 -> Digest.SHA512
     }
 
+    val algorithm: SignatureAlgorithm get() = when(this) {
+        ES256, ES384, ES512 -> SignatureAlgorithm.ECDSA(this.digest, null)
+        HS256, HS384, HS512 -> SignatureAlgorithm.HMAC(this.digest)
+        PS256, PS384, PS512 -> SignatureAlgorithm.RSA(this.digest, RSAPadding.PSS)
+        RS1, RS256, RS384, RS512 -> SignatureAlgorithm.RSA(this.digest, RSAPadding.PKCS1)
+    }
+
     companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithm> {
 
         @Throws(Asn1OidException::class)
@@ -157,12 +164,6 @@ enum class X509SignatureAlgorithm(
         }
     }
 }
-
-@Deprecated(
-    "Will likely be replaced with a more general type in the future",
-    replaceWith = ReplaceWith("X509SignatureAlgorithm")
-)
-typealias CryptoAlgorithm = X509SignatureAlgorithm
 
 object X509SignatureAlgorithmSerializer : KSerializer<X509SignatureAlgorithm> {
 
