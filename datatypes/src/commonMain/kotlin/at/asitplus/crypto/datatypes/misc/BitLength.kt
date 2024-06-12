@@ -12,9 +12,12 @@ data class BitLength(val bits: UInt) : Comparable<BitLength> {
     inline val bytes: UInt
         get() =
             bits.floorDiv(8u) + (if (bits.rem(8u) != 0u) 1u else 0u)
+    /** how many bits are unused padding to get to the next full byte */
+    inline val bitSpacing: UInt get() =
+        bits.rem(8u).let { if (it != 0u) (8u-it) else 0u }
 
     companion object {
-        @Suppress("NOTHING_TO_INLINE")
+        inline operator fun invoke(bits: Int) = BitLength(bits.toUInt())
         inline fun of(v: BigInteger) = BitLength(v.bitLength().toUInt())
     }
 

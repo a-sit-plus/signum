@@ -88,6 +88,10 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
     ) : CryptoSignature {
 
         override val signature: Asn1Element = Asn1.Sequence { +r.encodeToTlv(); +s.encodeToTlv() }
+        init {
+            require(r.isPositive) { "r must be positive" }
+            require(s.isPositive) { "s must be positive" }
+        }
 
         override fun encodeToTlvBitString(): Asn1Element = encodeToDer().encodeToTlvBitString()
 
