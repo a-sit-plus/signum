@@ -1,4 +1,5 @@
 pluginManagement {
+    includeBuild("swift-klib-plugin")
     repositories {
         mavenCentral()
         gradlePluginPortal()
