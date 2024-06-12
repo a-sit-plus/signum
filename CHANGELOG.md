@@ -148,7 +148,7 @@
 * Kotest 5.9.1 
 * Coroutines 1.8.1
 * Serialization 1.7.1-SNAPSHOT
-* KmmResult 1.6.1
+* KmmResult 1.6.2
 
 **Fixes**
  * Move `curve` from `CryptoAlgorithm` to `JwsAlgorithm`
@@ -162,3 +162,6 @@
 * Rework CryptoSignature to two-dimensional interface:
   * CryptoSignature <- {EC <- {IndefiniteLength, DefiniteLength}, RsaOrHmac}
   * CryptoSignature <- {RawByteEncodable <- {EC.DefiniteLength, RsaOrHmac}, NotRawByteEncodable <- EC.IndefiniteLength}
+
+### NEXT
+
