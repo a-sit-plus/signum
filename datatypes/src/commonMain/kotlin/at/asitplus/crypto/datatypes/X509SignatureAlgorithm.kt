@@ -89,6 +89,13 @@ enum class X509SignatureAlgorithm(
         }
     }
 
+    val digest: Digest get() = when(this) {
+        RS1 -> Digest.SHA1
+        ES256, HS256, PS256, RS256 -> Digest.SHA256
+        ES384, HS384, PS384, RS384 -> Digest.SHA384
+        ES512, HS512, PS512, RS512 -> Digest.SHA512
+    }
+
     companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithm> {
 
         @Throws(Asn1OidException::class)

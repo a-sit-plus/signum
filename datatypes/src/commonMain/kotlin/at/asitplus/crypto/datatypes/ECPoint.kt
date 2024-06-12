@@ -90,9 +90,7 @@ sealed class ECPoint private constructor(
         else if (this is Normalized)
             "ECPoint[$curve]: (${homX.toString(16)} : ${homY.toString(16)}) [normalized]"
         else
-            "ECPoint[$curve]: (${(homX / homZ).toString(16)} : ${(homY / homZ).toString(16)}) [with Z = ${
-                homZ.toString(16)
-            }]"
+            "ECPoint[$curve]: (${(homX/homZ).toString(16)} : ${(homY/homZ).toString(16)}) [with Z = ${homZ.toString(16)}]"
 
     override fun equals(other: Any?): Boolean {
         if (other !is ECPoint) return false
@@ -115,7 +113,8 @@ sealed class ECPoint private constructor(
     fun normalize(): Normalized {
         if (this is Normalized) return this
         if (this.isPointAtInfinity) throw IllegalStateException("Cannot normalize point at infinity")
-        return Normalized.unsafeFromXY(curve, homX / homZ, homY / homZ)
+        val zInv = homZ.inverse()
+        return Normalized.unsafeFromXY(curve, homX * zInv, homY * zInv)
     }
 
     /** normalizes this point, converting it to affine coordinates. returns null for the point at infinity.
