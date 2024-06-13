@@ -55,13 +55,13 @@ kotlin {
     */
 }
 
-/*swiftklib {
+swiftklib {
     create("Krypto") {
         minIos = 14
         path = file("src/swift")
         packageName("at.asitplus.swift.krypto")
     }
-}*/
+}
 
 android {
     namespace = "at.asitplus.crypto.android"

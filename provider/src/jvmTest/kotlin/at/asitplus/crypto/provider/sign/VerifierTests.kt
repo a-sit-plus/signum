@@ -8,8 +8,6 @@ import at.asitplus.crypto.datatypes.SignatureAlgorithm
 import at.asitplus.crypto.datatypes.fromJcaPublicKey
 import at.asitplus.crypto.datatypes.jcaAlgorithmComponent
 import at.asitplus.crypto.datatypes.jcaName
-import io.kotest.assertions.throwables.shouldNotThrowAny
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
@@ -18,7 +16,6 @@ import java.security.KeyPairGenerator
 import java.security.Security
 import java.security.Signature
 import java.security.spec.ECGenParameterSpec
-import java.security.spec.RSAKeyGenParameterSpec
 import kotlin.random.Random
 
 class VerifierTests: FreeSpec({
