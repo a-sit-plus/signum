@@ -9,15 +9,25 @@ import at.asitplus.crypto.datatypes.ECCurve
 import at.asitplus.crypto.datatypes.SignatureAlgorithm
 import at.asitplus.crypto.provider.DSL
 import at.asitplus.crypto.provider.at.asitplus.crypto.provider.CryptoOperationFailed
+import at.asitplus.crypto.provider.swiftcall
 import at.asitplus.crypto.provider.toNSData
 import at.asitplus.swift.krypto.Krypto
+import kotlinx.cinterop.BetaInteropApi
+import kotlinx.cinterop.CPointerVar
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.ObjCObject
+import kotlinx.cinterop.ObjCObjectVar
+import kotlinx.cinterop.alloc
+import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.ptr
+import kotlinx.cinterop.value
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
+import platform.Foundation.NSError
 
 actual class PlatformVerifierConfiguration internal constructor() : DSL.Data()
 
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 internal actual fun verifyECDSAImpl
     (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
      data: SignatureInput, signature: CryptoSignature.EC,
@@ -33,12 +43,15 @@ internal actual fun verifyECDSAImpl
         else -> throw UnsupportedOperationException("$curve with $digest is not supported on iOS")
     }
 
-    val success = Krypto.verify(
-        algString,
-        publicKey.encodeToDer().toNSData(),
-        signature.encodeToDer().toNSData(),
-        data.data.fold(byteArrayOf(), ByteArray::plus).toNSData()
-    )
+    val success = swiftcall {
+        Krypto.verifyECDSA(
+            algString,
+            publicKey.encodeToDer().toNSData(),
+            signature.encodeToDer().toNSData(),
+            data.data.fold(byteArrayOf(), ByteArray::plus).toNSData(),
+            error
+        )
+    }
     if (success != "true") throw InvalidSignature("Signature failed to verify")
 }
 
