@@ -22,7 +22,9 @@ import java.security.spec.RSAKeyGenParameterSpec
 import kotlin.random.Random
 
 class VerifierTests: FreeSpec({
-    withData(mapOf("BC -> PlatformVerifier" to ::PlatformECDSAVerifier, "BC -> KotlinVerifier" to ::KotlinECDSAVerifier)) { factory ->
+    withData(mapOf<String, (SignatureAlgorithm.ECDSA, CryptoPublicKey.EC)->Verifier.EC>(
+        "BC -> PlatformVerifier" to { a,k -> PlatformECDSAVerifier(a,k) },
+        "BC -> KotlinVerifier" to ::KotlinECDSAVerifier)) { factory ->
         withData(ECCurve.entries) { curve ->
             withData(nameFn = SignatureInputFormat::jcaAlgorithmComponent, listOf<Digest?>(null) + Digest.entries) { digest ->
                 withData(nameFn = { (key,_,_) -> key.publicPoint.toString() }, generateSequence {

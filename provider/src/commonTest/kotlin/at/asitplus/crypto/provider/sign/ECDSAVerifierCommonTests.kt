@@ -383,7 +383,9 @@ class ECDSAVerifierCommonTests : FreeSpec({
         .groupBy(RawTestInfo::crv)
         .mapValues { it.value.groupBy(RawTestInfo::dig).mapValues { (_,v) -> v.map(::TestInfo) } }
 
-    withData(mapOf("Kotlin" to ::KotlinECDSAVerifier, "Platform" to ::PlatformECDSAVerifier)) { factory ->
+    withData(mapOf<String, (SignatureAlgorithm.ECDSA, CryptoPublicKey.EC) -> Verifier.EC>(
+        "Kotlin" to ::KotlinECDSAVerifier,
+        "Platform" to {a,k -> PlatformECDSAVerifier(a,k) })) { factory ->
         withData(tests) { byCurve ->
             withData(byCurve) { byDigest ->
                 withData(nameFn = TestInfo::b64msg, byDigest) { test ->

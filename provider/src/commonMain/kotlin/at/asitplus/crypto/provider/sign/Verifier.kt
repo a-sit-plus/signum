@@ -6,6 +6,7 @@ import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.CryptoSignature
 import at.asitplus.crypto.datatypes.SignatureAlgorithm
 import at.asitplus.crypto.ecmath.straussShamir
+import at.asitplus.crypto.provider.DSL
 
 class InvalidSignature(message: String): Throwable(message)
 
@@ -39,31 +40,41 @@ sealed interface Verifier {
 fun Verifier.verify(data: ByteArray, sig: CryptoSignature) =
     verify(SignatureInput(data), sig)
 
+expect class PlatformVerifierConfiguration: DSL.Data
+
 /** A distinguishing interface for verifiers that delegate to the underlying platform (JCA, CryptoKit, ...) */
 sealed interface PlatformVerifier: Verifier
 /** A distinguishing interface for verifiers that are implemented in pure Kotlin */
 sealed interface KotlinVerifier: Verifier
 
-internal expect fun verifyECDSAImpl(signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC, data: SignatureInput, signature: CryptoSignature.EC)
-class PlatformECDSAVerifier(signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC)
+internal expect fun verifyECDSAImpl
+            (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
+             data: SignatureInput, signature: CryptoSignature.EC,
+             configure: (PlatformVerifierConfiguration.() -> Unit)?)
+class PlatformECDSAVerifier(signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
+                            private val configure: (PlatformVerifierConfiguration.()->Unit)? = null)
     : Verifier.EC(signatureAlgorithm, publicKey), PlatformVerifier {
     override fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
         require (sig is CryptoSignature.EC)
             { "Attempted to validate non-EC signature using EC public key" }
-        return@catching verifyECDSAImpl(signatureAlgorithm, publicKey, data, sig)
+        return@catching verifyECDSAImpl(signatureAlgorithm, publicKey, data, sig, configure)
     }
 }
 
 /** data is guaranteed to be in RAW_BYTES format. failure should throw. */
-internal expect fun verifyRSAImpl(signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa, data: SignatureInput, signature: CryptoSignature.RSAorHMAC)
-class PlatformRSAVerifier(signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa)
+internal expect fun verifyRSAImpl
+            (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
+             data: SignatureInput, signature: CryptoSignature.RSAorHMAC,
+             configure: (PlatformVerifierConfiguration.() -> Unit)?)
+class PlatformRSAVerifier(signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
+                          private val configure: (PlatformVerifierConfiguration.()->Unit)? = null)
     : Verifier.RSA(signatureAlgorithm, publicKey), PlatformVerifier {
     override fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
         require (sig is CryptoSignature.RSAorHMAC)
             { "Attempted to validate non-RSA signature using RSA public key" }
         if (data.format != null)
             throw UnsupportedOperationException("RSA with pre-hashed input is unsupported")
-        return@catching verifyRSAImpl(signatureAlgorithm, publicKey, data, sig)
+        return@catching verifyRSAImpl(signatureAlgorithm, publicKey, data, sig, configure)
     }
 }
 
