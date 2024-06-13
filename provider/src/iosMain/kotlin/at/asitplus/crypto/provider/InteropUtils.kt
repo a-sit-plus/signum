@@ -1,9 +1,6 @@
 package at.asitplus.crypto.provider
 
-import kotlinx.cinterop.BetaInteropApi
-import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.allocArrayOf
-import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.*
 import platform.Foundation.CFBridgingRelease
 import platform.Foundation.NSData
 import platform.Foundation.create

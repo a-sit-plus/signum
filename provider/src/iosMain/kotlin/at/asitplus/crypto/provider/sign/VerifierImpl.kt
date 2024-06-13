@@ -32,38 +32,13 @@ internal actual fun verifyECDSAImpl
         else -> throw UnsupportedOperationException("$curve with $digest is not supported on iOS")
     }
 
-    lateinit var result: KmmResult<Unit>
-    val barrier = Mutex(locked = true)
-
-    /* asynchronous swift call */
-    Krypto.verify(
+    val success = Krypto.verify(
         algString,
         publicKey.encodeToDer().toNSData(),
         signature.encodeToDer().toNSData(),
         data.data.fold(byteArrayOf(), ByteArray::plus).toNSData()
-    ) { bool, err ->
-        /* asynchronous callback from swift interop */
-        result = catching {
-            when {
-                (bool != null) && (err == null) -> {
-                    if (bool) return@catching
-                    else throw InvalidSignature("Signature failed to validate")
-                }
-                (bool == null) && (err != null) -> {
-                    throw CryptoOperationFailed(err.localizedDescription)
-                }
-                else -> {
-                    throw IllegalStateException("Illegal return state from Swift interop")
-                }
-            }
-        }
-        barrier.unlock()
-    }
-    /* main function execution continues here */
-    runBlocking {
-        barrier.lock()
-        result.getOrThrow()
-    }
+    )
+    if (!success) throw InvalidSignature("Signature failed to verify")
 }
 
 internal actual fun verifyRSAImpl
