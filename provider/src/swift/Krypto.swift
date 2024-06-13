@@ -30,9 +30,9 @@ import Foundation
             _ sigDER: Data, _ data: Data) throws -> String
     {
         switch alg {
-            case "ECDSA_P256_SHA256": return try verifyECDSA_P256SHA256(pubkeyDER, sigDER, data)
-            case "ECDSA_P384_SHA384": return try verifyECDSA_P384SHA384(pubkeyDER, sigDER, data)
-            case "ECDSA_P521_SHA512": return try verifyECDSA_P521SHA512(pubkeyDER, sigDER, data)
+            case "ECDSA_P256_SHA256": return try String(verifyECDSA_P256SHA256(pubkeyDER, sigDER, data))
+            case "ECDSA_P384_SHA384": return try String(verifyECDSA_P384SHA384(pubkeyDER, sigDER, data))
+            case "ECDSA_P521_SHA512": return try String(verifyECDSA_P521SHA512(pubkeyDER, sigDER, data))
             default: throw RuntimeError("Unsupported algorithm \(alg)")
         }
     }
