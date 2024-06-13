@@ -3,6 +3,9 @@
 //  SwiftCrypto
 //
 
+import CryptoKit
+import Foundation
+
 @objc public class Krypto: NSObject {
 
     fileprivate static func verifyECDSA_P256SHA256(_ pubkeyDER: Data, _ sigDER: Data, _ data: Data) throws -> Bool {
