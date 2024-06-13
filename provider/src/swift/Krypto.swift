@@ -27,7 +27,7 @@ import Foundation
     }
 
     @objc public class func verifyECDSA(_ alg: String, _ pubkeyDER: Data,
-            _ sigDER: Data, _ data: Data) throws -> Bool
+            _ sigDER: Data, _ data: Data) throws -> String
     {
         switch alg {
             case "ECDSA_P256_SHA256": return try verifyECDSA_P256SHA256(pubkeyDER, sigDER, data)

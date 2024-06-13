@@ -38,7 +38,7 @@ internal actual fun verifyECDSAImpl
         signature.encodeToDer().toNSData(),
         data.data.fold(byteArrayOf(), ByteArray::plus).toNSData()
     )
-    if (!success) throw InvalidSignature("Signature failed to verify")
+    if (success != "true") throw InvalidSignature("Signature failed to verify")
 }
 
 internal actual fun verifyRSAImpl
