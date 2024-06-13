@@ -10,6 +10,7 @@ import at.asitplus.crypto.datatypes.SignatureAlgorithm
 import at.asitplus.crypto.provider.DSL
 import at.asitplus.crypto.provider.at.asitplus.crypto.provider.CryptoOperationFailed
 import at.asitplus.crypto.provider.toNSData
+import at.asitplus.swift.krypto.Krypto
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
