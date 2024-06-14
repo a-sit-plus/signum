@@ -386,19 +386,15 @@ class ECDSAVerifierCommonTests : FreeSpec({
         .groupBy(RawTestInfo::crv)
         .mapValues { it.value.groupBy(RawTestInfo::dig).mapValues { (_,v) -> v.map(::TestInfo) } }
 
-    withData(mapOf<String, (SignatureAlgorithm.ECDSA, CryptoPublicKey.EC) -> Verifier.EC>(
-        /*"Kotlin" to ::KotlinECDSAVerifier,*/
-        "Platform" to {a,k -> PlatformECDSAVerifier(a,k) })) { factory ->
-        withData(tests) { byCurve ->
-            withData(byCurve) { byDigest ->
-                withData(nameFn = TestInfo::b64msg, byDigest) { test ->
-                    val verifier = factory(SignatureAlgorithm.ECDSA(test.digest, null), test.key)
-                    verifier.verify(test.msg, test.sig) should succeed
-                    Random.of(byDigest).let {
-                        if (it !== test) {
-                            verifier.verify(it.msg, test.sig) shouldNot succeed
-                            verifier.verify(it.msg, it.sig) shouldNot succeed
-                        }
+    withData(tests) { byCurve ->
+        withData(byCurve) { byDigest ->
+            withData(nameFn = TestInfo::b64msg, byDigest) { test ->
+                val verifier = SignatureAlgorithm.ECDSA(test.digest, null).verifierFor(test.key).getOrThrow()
+                verifier.verify(test.msg, test.sig) should succeed
+                Random.of(byDigest).let {
+                    if (it !== test) {
+                        verifier.verify(it.msg, test.sig) shouldNot succeed
+                        verifier.verify(it.msg, it.sig) shouldNot succeed
                     }
                 }
             }

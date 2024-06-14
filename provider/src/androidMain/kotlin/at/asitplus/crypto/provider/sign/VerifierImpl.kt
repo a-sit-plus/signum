@@ -15,6 +15,18 @@ actual class PlatformVerifierConfiguration internal constructor() : DSL.Data() {
     var provider: String = "AndroidKeyStore"
 }
 
+internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
+            (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
+             configure: (PlatformVerifierConfiguration.()->Unit)?)
+{
+}
+
+internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
+            (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
+             configure: (PlatformVerifierConfiguration.()->Unit)?)
+{
+}
+
 @JvmSynthetic
 internal actual fun verifyECDSAImpl
     (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
