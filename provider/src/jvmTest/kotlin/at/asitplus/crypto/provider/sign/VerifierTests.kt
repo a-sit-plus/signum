@@ -8,9 +8,12 @@ import at.asitplus.crypto.datatypes.SignatureAlgorithm
 import at.asitplus.crypto.datatypes.fromJcaPublicKey
 import at.asitplus.crypto.datatypes.jcaAlgorithmComponent
 import at.asitplus.crypto.datatypes.jcaName
+import at.asitplus.crypto.provider.succeed
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNot
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.KeyPairGenerator
 import java.security.Security
@@ -39,12 +42,12 @@ class VerifierTests: FreeSpec({
                     Triple(publicKey, data, sig)
                 }.take(5)) { (key, data, sig) ->
                     val verifier = factory(SignatureAlgorithm.ECDSA(digest, null), key)
-                    verifier.verify(byteArrayOf(), sig).isSuccess shouldBe false
+                    verifier.verify(byteArrayOf(), sig) shouldNot succeed
                     if (digest != null) {
-                        verifier.verify(data.copyOfRange(0, 128), sig).isSuccess shouldBe false
-                        verifier.verify(data + Random.nextBytes(8), sig).isSuccess shouldBe false
+                        verifier.verify(data.copyOfRange(0, 128), sig) shouldNot succeed
+                        verifier.verify(data + Random.nextBytes(8), sig) shouldNot succeed
                     }
-                    verifier.verify(data, sig).isSuccess shouldBe true
+                    verifier.verify(data, sig) should succeed
                 }
             }
         }

@@ -6,10 +6,13 @@ import at.asitplus.crypto.datatypes.Digest
 import at.asitplus.crypto.datatypes.ECCurve
 import at.asitplus.crypto.datatypes.RSAPadding
 import at.asitplus.crypto.datatypes.SignatureAlgorithm
+import at.asitplus.crypto.provider.succeed
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNot
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.io.encoding.Base64
@@ -149,12 +152,12 @@ fun main() {
         withData(byPadding) { byDigest ->
             withData(nameFn = TestInfo::b64msg, byDigest) { test ->
                 val verifier = PlatformRSAVerifier(SignatureAlgorithm.RSA(test.digest, test.padding), test.key)
-                verifier.verify(test.msg, test.sig).isSuccess shouldBe true
-                verifier.verify(test.msg.copyOfRange(0, test.msg.size/2), test.sig).isSuccess shouldBe false
+                verifier.verify(test.msg, test.sig) should succeed
+                verifier.verify(test.msg.copyOfRange(0, test.msg.size/2), test.sig) shouldNot succeed
                 Random.of(byDigest).let {
                     if (it !== test) {
-                        verifier.verify(it.msg, test.sig).isSuccess shouldBe false
-                        verifier.verify(it.msg, it.sig).isSuccess shouldBe false
+                        verifier.verify(it.msg, test.sig) shouldNot succeed
+                        verifier.verify(it.msg, it.sig) shouldNot succeed
                     }
                 }
             }

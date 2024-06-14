@@ -36,16 +36,23 @@ internal actual fun verifyECDSAImpl
 
     val digest = signatureAlgorithm.digest
     val curve = publicKey.curve
-    val algString = when {
-        ((digest == Digest.SHA256) && (curve == ECCurve.SECP_256_R_1)) -> "ECDSA_P256_SHA256"
-        ((digest == Digest.SHA384) && (curve == ECCurve.SECP_384_R_1)) -> "ECDSA_P384_SHA384"
-        ((digest == Digest.SHA512) && (curve == ECCurve.SECP_521_R_1)) -> "ECDSA_P521_SHA512"
-        else -> throw UnsupportedOperationException("$curve with $digest is not supported on iOS")
+    var curveString = when (curve) {
+        ECCurve.SECP_256_R_1 -> "P256"
+        ECCurve.SECP_384_R_1 -> "P384"
+        ECCurve.SECP_521_R_1 -> "P521"
+        else -> throw UnsupportedOperationException("Unsupported curve $curve")
+    }
+    val digestString = when (digest) {
+        Digest.SHA256 -> "SHA256"
+        Digest.SHA384 -> "SHA384"
+        Digest.SHA512 -> "SHA512"
+        else -> throw UnsupportedOperationException("Unsupported digest $digest")
     }
 
     val success = swiftcall {
         Krypto.verifyECDSA(
-            algString,
+            curveString,
+            digestString,
             publicKey.encodeToDer().toNSData(),
             signature.encodeToDer().toNSData(),
             data.data.fold(byteArrayOf(), ByteArray::plus).toNSData(),
