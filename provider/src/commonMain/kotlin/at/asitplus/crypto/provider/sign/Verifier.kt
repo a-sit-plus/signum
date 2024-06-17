@@ -6,8 +6,8 @@ import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.CryptoSignature
 import at.asitplus.crypto.datatypes.SignatureAlgorithm
 import at.asitplus.crypto.ecmath.straussShamir
-import at.asitplus.crypto.provider.DSL
-import at.asitplus.crypto.provider.at.asitplus.crypto.provider.UnsupportedCryptoException
+import at.asitplus.crypto.provider.dsl.DSL
+import at.asitplus.crypto.provider.UnsupportedCryptoException
 
 class InvalidSignature(message: String): Throwable(message)
 

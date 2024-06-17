@@ -1,4 +1,4 @@
-package at.asitplus.crypto.provider.at.asitplus.crypto.provider
+package at.asitplus.crypto.provider
 
 sealed class CryptoException(message: String? = null, cause: Throwable? = null) : Throwable(message, cause)
 class CryptoOperationFailed(message: String) : CryptoException(message)

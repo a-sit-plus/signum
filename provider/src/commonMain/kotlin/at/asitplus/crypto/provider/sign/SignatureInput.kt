@@ -2,7 +2,6 @@ package at.asitplus.crypto.provider.sign
 
 import at.asitplus.catching
 import at.asitplus.crypto.datatypes.Digest
-import at.asitplus.crypto.datatypes.asn1.ensureSize
 import at.asitplus.crypto.datatypes.misc.BitLength
 import at.asitplus.crypto.provider.hash.digest
 import com.ionspin.kotlin.bignum.integer.BigInteger

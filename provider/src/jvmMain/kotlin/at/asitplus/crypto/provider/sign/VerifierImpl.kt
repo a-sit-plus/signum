@@ -2,16 +2,14 @@ package at.asitplus.crypto.provider.sign
 
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.CryptoSignature
-import at.asitplus.crypto.datatypes.Digest
-import at.asitplus.crypto.datatypes.ECCurve
 import at.asitplus.crypto.datatypes.RSAPadding
 import at.asitplus.crypto.datatypes.SignatureAlgorithm
 import at.asitplus.crypto.datatypes.getJcaPublicKey
 import at.asitplus.crypto.datatypes.jcaAlgorithmComponent
 import at.asitplus.crypto.datatypes.jcaPSSParams
 import at.asitplus.crypto.datatypes.jcaSignatureBytes
-import at.asitplus.crypto.provider.DSL
-import at.asitplus.crypto.provider.at.asitplus.crypto.provider.UnsupportedCryptoException
+import at.asitplus.crypto.provider.dsl.DSL
+import at.asitplus.crypto.provider.UnsupportedCryptoException
 import java.security.Signature
 
 actual class PlatformVerifierConfiguration internal constructor() : DSL.Data() {

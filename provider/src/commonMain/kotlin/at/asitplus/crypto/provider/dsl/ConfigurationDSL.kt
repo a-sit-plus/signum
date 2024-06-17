@@ -1,4 +1,4 @@
-package at.asitplus.crypto.provider
+package at.asitplus.crypto.provider.dsl
 
 object DSL {
     fun <S: DSL.Data, T: S> resolve(factory: ()->T, config: (S.()->Unit)?): T =

@@ -6,8 +6,8 @@ import at.asitplus.crypto.datatypes.Digest
 import at.asitplus.crypto.datatypes.ECCurve
 import at.asitplus.crypto.datatypes.RSAPadding
 import at.asitplus.crypto.datatypes.SignatureAlgorithm
-import at.asitplus.crypto.provider.DSL
-import at.asitplus.crypto.provider.at.asitplus.crypto.provider.UnsupportedCryptoException
+import at.asitplus.crypto.provider.dsl.DSL
+import at.asitplus.crypto.provider.UnsupportedCryptoException
 import at.asitplus.crypto.provider.swiftcall
 import at.asitplus.crypto.provider.toNSData
 import at.asitplus.swift.krypto.Krypto
