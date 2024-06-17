@@ -18,12 +18,14 @@ actual class PlatformVerifierConfiguration internal constructor() : DSL.Data() {
     var provider: String = "BC"
 }
 
+@Throws(UnsupportedCryptoException::class)
 internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
             (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
              configure: (PlatformVerifierConfiguration.()->Unit)?)
 {
 }
 
+@Throws(UnsupportedCryptoException::class)
 internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
             (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
              configure: (PlatformVerifierConfiguration.()->Unit)?)

@@ -3,16 +3,16 @@ package at.asitplus.crypto.provider.sign
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.CryptoSignature
 import at.asitplus.crypto.datatypes.Digest
-import at.asitplus.crypto.datatypes.ECCurve
 import at.asitplus.crypto.datatypes.RSAPadding
 import at.asitplus.crypto.datatypes.SignatureAlgorithm
 import at.asitplus.crypto.provider.succeed
-import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.should
-import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNot
+import io.kotest.property.Arb
+import io.kotest.property.arbitrary.of
+import io.kotest.property.checkAll
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.io.encoding.Base64
@@ -159,6 +159,14 @@ fun main() {
                         verifier.verify(it.msg, test.sig) shouldNot succeed
                         verifier.verify(it.msg, it.sig) shouldNot succeed
                     }
+                }
+                checkAll(Arb.of(Digest.entries.filter { it != test.digest })) {
+                    PlatformRSAVerifier(SignatureAlgorithm.RSA(it, test.padding), test.key)
+                        .verify(test.msg, test.sig) shouldNot succeed
+                }
+                checkAll(Arb.of(RSAPadding.entries.filter{ it != test.padding })) {
+                    PlatformRSAVerifier(SignatureAlgorithm.RSA(test.digest, it), test.key)
+                        .verify(test.msg, test.sig) shouldNot succeed
                 }
             }
         }

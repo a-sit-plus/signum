@@ -42,6 +42,43 @@ import Foundation
             default: throw RuntimeError("Unsupported curve \(curve)")
         }
     }
+
+    fileprivate static func getRSAAlgorithm(_ padding: String, _ digest: String)
+        throws -> SecKeyAlgorithm
+    {
+        switch padding {
+            case "PKCS1": switch digest {
+                case "SHA1": return .rsaSignatureMessagePKCS1v15SHA1
+                case "SHA256": return .rsaSignatureMessagePKCS1v15SHA256
+                case "SHA384": return .rsaSignatureMessagePKCS1v15SHA384
+                case "SHA512": return .rsaSignatureMessagePKCS1v15SHA512
+                default: throw RuntimeError("Unsupported digest \(digest) for padding \(padding)")
+            }
+            case "PSS": switch digest {
+                case "SHA1": return .rsaSignatureMessagePSSSHA1
+                case "SHA256": return .rsaSignatureMessagePSSSHA256
+                case "SHA384": return .rsaSignatureMessagePSSSHA384
+                case "SHA512": return .rsaSignatureMessagePSSSHA512
+                default: throw RuntimeError("Unsupported digest \(digest) for padding \(padding)")
+            }
+            default: throw RuntimeError("Unsupported padding \(padding)")
+        }
+    }
+
+    @objc public class func verifyRSA(_ padding: String, _ digest: String, _ pubkeyPKCS1: Data,
+        _ sigDER: Data, _ data: Data) throws -> String
+    {
+        let algorithm = try getRSAAlgorithm(padding, digest)
+        let options: [String: Any] = [kSecAttrKeyType as String: kSecAttrKeyTypeRSA,
+                                      kSecAttrKeyClass as String: kSecAttrKeyClassPublic]
+        var error: Unmanaged<CFError>?
+        guard let pubkey = SecKeyCreateWithData(pubkeyPKCS1 as CFData, options as CFDictionary, &error)
+                            else { throw error!.takeRetainedValue() as Error }
+
+        guard SecKeyVerifySignature(pubkey, algorithm, data as CFData, sigDER as CFData, &error)
+            else { throw error!.takeRetainedValue() as Error }
+        return "true"
+    }
 }
 
 struct RuntimeError: LocalizedError {
