@@ -73,7 +73,7 @@ internal actual fun verifyRSAImpl
         RSAPadding.PSS -> getSigInstance("RSASSA-PSS").apply {
             setParameter(signatureAlgorithm.digest.jcaPSSParams)
         }
-    }.apply {
+    }.run {
         initVerify(publicKey.getJcaPublicKey().getOrThrow())
         data.data.forEach(this::update)
         val success = verify(signature.jcaSignatureBytes)
