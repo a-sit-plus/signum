@@ -13,7 +13,7 @@ import at.asitplus.crypto.provider.UnsupportedCryptoException
 import java.security.Signature
 
 actual class PlatformVerifierConfiguration internal constructor() : DSL.Data() {
-    var provider: String = "AndroidKeyStore"
+    var provider: String? = null
 }
 
 @Throws(UnsupportedCryptoException::class)
@@ -37,9 +37,19 @@ internal actual fun verifyECDSAImpl
      configure: (PlatformVerifierConfiguration.() -> Unit)?)
 {
     val config = DSL.resolve(::PlatformVerifierConfiguration, configure)
-    Signature.getInstance("NonewithECDSA", config.provider).run {
+
+    val (input, alg) = when {
+        (data.format == null) -> /* input data is not hashed, let JCA do hashing */
+            Pair(data, "${signatureAlgorithm.digest.jcaAlgorithmComponent}withECDSA")
+        else -> /* input data is already hashed, request raw sig from JCA */
+            Pair(data.convertTo(signatureAlgorithm.digest).getOrThrow(), "NONEwithECDSA")
+    }
+    when (val p = config.provider) {
+        null -> Signature.getInstance(alg)
+        else -> Signature.getInstance(alg, p)
+    }.run {
         initVerify(publicKey.getJcaPublicKey().getOrThrow())
-        data.convertTo(signatureAlgorithm.digest).getOrThrow().data.forEach(this::update)
+        input.data.forEach(this::update)
         val success = verify(signature.jcaSignatureBytes)
         if (!success)
             throw InvalidSignature("Signature is cryptographically invalid")
@@ -53,13 +63,15 @@ internal actual fun verifyRSAImpl
      configure: (PlatformVerifierConfiguration.() -> Unit)?)
 {
     val config = DSL.resolve(::PlatformVerifierConfiguration, configure)
-    when (signatureAlgorithm.padding) {
-        RSAPadding.PKCS1 -> Signature.getInstance(
-            "${signatureAlgorithm.digest.jcaAlgorithmComponent}withRSA", config.provider)
-        RSAPadding.PSS -> Signature.getInstance("RSASSA-PSS", config.provider).apply {
-            setParameter(signatureAlgorithm.digest.jcaPSSParams)
-        }
-    }.apply {
+
+    val alg = when (signatureAlgorithm.padding) {
+        RSAPadding.PKCS1 -> "${signatureAlgorithm.digest.jcaAlgorithmComponent}withRSA"
+        RSAPadding.PSS -> "${signatureAlgorithm.digest.jcaAlgorithmComponent}withRSA/PSS"
+    }
+    when (val p = config.provider) {
+        null -> Signature.getInstance(alg)
+        else-> Signature.getInstance(alg, p)
+    }.run {
         initVerify(publicKey.getJcaPublicKey().getOrThrow())
         data.data.forEach(this::update)
         val success = verify(signature.jcaSignatureBytes)

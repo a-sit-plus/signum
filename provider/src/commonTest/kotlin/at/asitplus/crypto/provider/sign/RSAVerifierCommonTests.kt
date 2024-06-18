@@ -151,7 +151,7 @@ fun main() {
     withData(tests) { byPadding ->
         withData(byPadding) { byDigest ->
             withData(nameFn = TestInfo::b64msg, byDigest) { test ->
-                val verifier = PlatformRSAVerifier(SignatureAlgorithm.RSA(test.digest, test.padding), test.key)
+                val verifier = SignatureAlgorithm.RSA(test.digest, test.padding).verifierFor(test.key).getOrThrow()
                 verifier.verify(test.msg, test.sig) should succeed
                 verifier.verify(test.msg.copyOfRange(0, test.msg.size/2), test.sig) shouldNot succeed
                 Random.of(byDigest).let {
@@ -160,13 +160,13 @@ fun main() {
                         verifier.verify(it.msg, it.sig) shouldNot succeed
                     }
                 }
-                checkAll(Arb.of(Digest.entries.filter { it != test.digest })) {
-                    PlatformRSAVerifier(SignatureAlgorithm.RSA(it, test.padding), test.key)
-                        .verify(test.msg, test.sig) shouldNot succeed
+                checkAll(Arb.of(Digest.entries.filter { it != test.digest })) { dig ->
+                    SignatureAlgorithm.RSA(dig, test.padding).verifierFor(test.key)
+                        .transform { it.verify(test.msg, test.sig) } shouldNot succeed
                 }
-                checkAll(Arb.of(RSAPadding.entries.filter{ it != test.padding })) {
-                    PlatformRSAVerifier(SignatureAlgorithm.RSA(test.digest, it), test.key)
-                        .verify(test.msg, test.sig) shouldNot succeed
+                checkAll(Arb.of(RSAPadding.entries.filter{ it != test.padding })) { pad ->
+                    SignatureAlgorithm.RSA(test.digest, pad).verifierFor(test.key)
+                        .transform { it.verify(test.msg, test.sig) } shouldNot succeed
                 }
             }
         }

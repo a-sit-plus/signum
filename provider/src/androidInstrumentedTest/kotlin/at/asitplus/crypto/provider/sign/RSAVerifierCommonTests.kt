@@ -154,7 +154,7 @@ fun main() {
     withData(tests) { byPadding ->
         withData(byPadding) { byDigest ->
             withData(nameFn = TestInfo::b64msg, byDigest) { test ->
-                val verifier = PlatformRSAVerifier(SignatureAlgorithm.RSA(test.digest, test.padding), test.key)
+                val verifier = SignatureAlgorithm.RSA(test.digest, test.padding), test.key)
                 verifier.verify(test.msg, test.sig) should succeed
                 verifier.verify(test.msg.copyOfRange(0, test.msg.size/2), test.sig) shouldNot succeed
                 Random.of(byDigest).let {

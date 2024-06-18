@@ -46,7 +46,7 @@ val Digest.jcaName
 
 
 val Digest?.jcaAlgorithmComponent get() = when (this) {
-    null -> "None"
+    null -> "NONE"
     Digest.SHA1 -> "SHA1"
     Digest.SHA256 -> "SHA256"
     Digest.SHA384 -> "SHA384"
