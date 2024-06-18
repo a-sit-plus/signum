@@ -29,7 +29,7 @@ private class Settings: DSL.Data() {
     }
 }
 
-class DSLVarianceDemonstration : FreeSpec({
+open class DSLVarianceDemonstration : FreeSpec({
     "\uD83D\uDE0A" {
 
         doWithConfiguration {

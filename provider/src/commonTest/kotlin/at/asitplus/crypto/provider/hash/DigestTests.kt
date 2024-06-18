@@ -6,7 +6,7 @@ import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 
-class DigestTests: FreeSpec({
+open class DigestTests: FreeSpec({
     data class TestSpec(val data: String, val reps: Int, val note: String, val ref: (Digest)->String)
     withData(nameFn=TestSpec::note, listOf(
         TestSpec("abc",1,"'abc', the bit string (0x)616263 of length 24 bits") { when(it) {

@@ -1,6 +1,15 @@
 import at.asitplus.gradle.*
+import com.squareup.kotlinpoet.AnnotationSpec
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeSpec
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree.Companion.instrumentedTest
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree.Companion.test
+import java.io.FileInputStream
+import java.util.regex.Pattern
 
 
 plugins {
@@ -13,11 +22,19 @@ plugins {
     id("at.asitplus.gradle.conventions")
 }
 
+buildscript {
+    dependencies {
+        classpath(libs.kotlinpoet)
+    }
+}
+
 
 val kmp_crypto: String by project
 
 
 version = "0.0.4-SNAPSHOT"
+
+wireAndroidInstrumentedTests()
 
 kotlin {
     jvm()
@@ -70,7 +87,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    dependencies{
+
+    dependencies {
         androidTestImplementation(libs.runner)
         androidTestImplementation(libs.core)
         androidTestImplementation(libs.rules)
@@ -169,4 +187,73 @@ signing {
     val signingPassword: String? by project
     useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
     sign(publishing.publications)
+}
+
+
+fun wireAndroidInstrumentedTests() {
+    logger.lifecycle("  Wiring up Android Instrumented Tests")
+
+    project.layout.projectDirectory.dir("src").dir("commonTest")
+        .dir("kotlin").asFileTree.filter { it.extension == "kt" }.forEach { file ->
+            FileInputStream(file).bufferedReader().use { reader ->
+                val source = reader.readText()
+
+                val pacakgeName =
+                    Pattern.compile("package\\s+.+\\s", Pattern.UNICODE_CHARACTER_CLASS)
+                        .matcher(source).run {
+                            if (find()) {
+                                group().replaceFirst("package", "").trim()
+                            } else null
+                        }
+                val pattern = Pattern.compile(
+                    "open\\s+class\\s+.+\\s*FreeSpec",
+                    Pattern.UNICODE_CHARACTER_CLASS
+                )
+                val matcher = pattern.matcher(source)
+
+                while (matcher.find()) {
+                    logger.lifecycle("Found Test class in file ${file.name}")
+                    val match = matcher.group().replace(":", "")
+                    val extractPAttern = Pattern.compile(
+                        "open\\s+class\\s+[^\\s-]+",
+                        Pattern.UNICODE_CHARACTER_CLASS
+                    )
+                    val extractMatcher = extractPAttern.matcher(match).also { it.find() }
+                    val extracted = extractMatcher.group()
+
+                    val deletePattern =
+                        Pattern.compile("open\\s+class\\s+", Pattern.UNICODE_CHARACTER_CLASS)
+                    val deleteMatcher = deletePattern.matcher(extracted).also { it.find() }
+
+                    val className = extracted.substring(deleteMatcher.end())
+
+                    FileSpec.builder(pacakgeName ?: "", "Android$className")
+                        .addType(
+                            TypeSpec.classBuilder("Android$className")
+                                .apply {
+                                    this.superclass(ClassName(pacakgeName ?: "", className))
+                                    annotations += AnnotationSpec.builder(
+                                        ClassName(
+                                            "org.junit.runner",
+                                            "RunWith"
+                                        )
+                                    )
+                                        .addMember(
+                                            "%L",
+                                            "br.com.colman.kotest.KotestRunnerAndroid::class"
+                                        )
+                                        .build()
+                                }.build()
+                        ).build().apply {
+                            project.layout.projectDirectory.dir("src")
+                                .dir("androidInstrumentedTest").dir("kotlin")
+                                .dir("generated").asFile.also { file ->
+                                    file.mkdirs()
+                                    writeTo(file)
+                                }
+                        }
+
+                }
+            }
+        }
 }

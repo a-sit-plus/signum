@@ -6,12 +6,9 @@ import at.asitplus.crypto.datatypes.Digest
 import at.asitplus.crypto.datatypes.ECCurve
 import at.asitplus.crypto.datatypes.SignatureAlgorithm
 import at.asitplus.crypto.provider.succeed
-import io.kotest.assertions.throwables.shouldNotThrowAny
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.should
-import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNot
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.of
@@ -25,7 +22,7 @@ import kotlin.random.Random
 internal fun <T> Random.of(v: Collection<T>) = v.random(this)
 
 @OptIn(ExperimentalEncodingApi::class)
-class ECDSAVerifierCommonTests : FreeSpec({
+open class ECDSAVerifierCommonTests : FreeSpec({
     @Serializable data class RawTestInfo(
         val crv: String, val dig: String, val key: String, val msg: String, val sig: String)
     class TestInfo(test: RawTestInfo) {

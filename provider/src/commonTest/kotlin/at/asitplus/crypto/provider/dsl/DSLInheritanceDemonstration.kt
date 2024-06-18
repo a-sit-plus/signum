@@ -29,7 +29,7 @@ private class SpecificOptions internal constructor(): GenericOptions() {
     override val subValue = child(::SpecificSubOptions)
 }
 
-class DSLInheritanceDemonstration : FreeSpec({
+open class DSLInheritanceDemonstration : FreeSpec({
     "\uD83D\uDE0A" {
         /* if we have the necessary type information, we know that it's a specific DSL subclass... */
         doWithConfiguration {

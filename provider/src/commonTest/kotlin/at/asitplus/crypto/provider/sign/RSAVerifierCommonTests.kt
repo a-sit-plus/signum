@@ -20,7 +20,7 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 
 @OptIn(ExperimentalEncodingApi::class)
-class RSAVerifierCommonTests : FreeSpec({
+open class RSAVerifierCommonTests : FreeSpec({
     @Serializable
     data class RawTestInfo(
         val dig: String, val pad: String, val key: String, val msg: String, val sig: String)
