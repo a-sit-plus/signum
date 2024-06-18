@@ -1,10 +1,4 @@
-import at.asitplus.gradle.coroutines
-import at.asitplus.gradle.napier
-import at.asitplus.gradle.datetime
-import at.asitplus.gradle.exportIosFramework
-import at.asitplus.gradle.kmmresult
-import at.asitplus.gradle.serialization
-import at.asitplus.gradle.setupDokka
+import at.asitplus.gradle.*
 
 
 plugins {
@@ -53,6 +47,7 @@ kotlin {
         implementation("androidx.biometric:biometric:1.2.0-alpha05")
     }
     */
+
 }
 
 swiftklib {
@@ -69,6 +64,12 @@ android {
     defaultConfig {
         minSdk = 33
     }
+
+    dependencies{
+        testImplementation(kotest("runner-junit5"))
+    }
+
+    testOptions.unitTests.all { it.useJUnitPlatform() }
 }
 
 exportIosFramework(
