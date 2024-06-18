@@ -7,7 +7,7 @@ package at.asitplus.crypto.provider.dsl
  */
 object DSL {
     /** Resolve a DSL lambda to a concrete configuration */
-    fun <S: DSL.Data, T: S> resolve(factory: ()->T, config: (S.()->Unit)?): T =
+    fun <S: DSL.Data, T: S> resolve(factory: ()->T, config: DSLConfigureFn<S>): T =
         (if (config == null) factory() else factory().apply(config)).also(DSL.Data::validate)
 
     sealed interface Holder<out T> {
@@ -122,3 +122,5 @@ object DSL {
         internal open fun validate() {}
     }
 }
+
+typealias DSLConfigureFn<T> = (T.()->Unit)?

@@ -6,48 +6,51 @@ import at.asitplus.crypto.datatypes.RSAPadding
 import at.asitplus.crypto.datatypes.SignatureAlgorithm
 import at.asitplus.crypto.datatypes.getJcaPublicKey
 import at.asitplus.crypto.datatypes.jcaAlgorithmComponent
-import at.asitplus.crypto.datatypes.jcaPSSParams
 import at.asitplus.crypto.datatypes.jcaSignatureBytes
 import at.asitplus.crypto.provider.dsl.DSL
 import at.asitplus.crypto.provider.UnsupportedCryptoException
+import at.asitplus.wrapping
 import java.security.Signature
 
-actual class PlatformVerifierConfiguration internal constructor() : DSL.Data() {
+/**
+ * Configures JVM-specific properties.
+ * @see provider
+ */
+actual class PlatformVerifierConfiguration internal actual constructor() : DSL.Data() {
+    /** The JCA provider to use, or none. */
     var provider: String? = null
 }
+
+private fun getSigInstance(alg: String, p: String?) =
+    when (p) {
+        null -> Signature.getInstance(alg)
+        else -> Signature.getInstance(alg, p)
+    }
 
 @Throws(UnsupportedCryptoException::class)
 internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
             (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
-             configure: (PlatformVerifierConfiguration.()->Unit)?)
+             config: PlatformVerifierConfiguration)
 {
-}
-
-@Throws(UnsupportedCryptoException::class)
-internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
-            (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
-             configure: (PlatformVerifierConfiguration.()->Unit)?)
-{
+    wrapping(asA=::UnsupportedCryptoException) {
+        getSigInstance("${signatureAlgorithm.digest.jcaAlgorithmComponent}withECDSA", config.provider)
+            .initVerify(publicKey.getJcaPublicKey().getOrThrow())
+    }.getOrThrow()
 }
 
 @JvmSynthetic
 internal actual fun verifyECDSAImpl
     (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
      data: SignatureInput, signature: CryptoSignature.EC,
-     configure: (PlatformVerifierConfiguration.() -> Unit)?)
+     config: PlatformVerifierConfiguration)
 {
-    val config = DSL.resolve(::PlatformVerifierConfiguration, configure)
-
     val (input, alg) = when {
         (data.format == null) -> /* input data is not hashed, let JCA do hashing */
             Pair(data, "${signatureAlgorithm.digest.jcaAlgorithmComponent}withECDSA")
         else -> /* input data is already hashed, request raw sig from JCA */
             Pair(data.convertTo(signatureAlgorithm.digest).getOrThrow(), "NONEwithECDSA")
     }
-    when (val p = config.provider) {
-        null -> Signature.getInstance(alg)
-        else -> Signature.getInstance(alg, p)
-    }.run {
+    getSigInstance(alg, config.provider).run {
         initVerify(publicKey.getJcaPublicKey().getOrThrow())
         input.data.forEach(this::update)
         val success = verify(signature.jcaSignatureBytes)
@@ -56,22 +59,30 @@ internal actual fun verifyECDSAImpl
     }
 }
 
+private fun getRSAInstance(alg: SignatureAlgorithm.RSA, config: PlatformVerifierConfiguration) =
+    getSigInstance(when (alg.padding) {
+        RSAPadding.PKCS1 -> "${alg.digest.jcaAlgorithmComponent}withRSA"
+        RSAPadding.PSS -> "${alg.digest.jcaAlgorithmComponent}withRSA/PSS"
+    }, config.provider)
+
+@Throws(UnsupportedCryptoException::class)
+internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
+            (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
+             config: PlatformVerifierConfiguration)
+{
+    wrapping(asA=::UnsupportedCryptoException) {
+        getRSAInstance(signatureAlgorithm, config)
+            .initVerify(publicKey.getJcaPublicKey().getOrThrow())
+    }.getOrThrow()
+}
+
 @JvmSynthetic
 internal actual fun verifyRSAImpl
     (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
      data: SignatureInput, signature: CryptoSignature.RSAorHMAC,
-     configure: (PlatformVerifierConfiguration.() -> Unit)?)
+     config: PlatformVerifierConfiguration)
 {
-    val config = DSL.resolve(::PlatformVerifierConfiguration, configure)
-
-    val alg = when (signatureAlgorithm.padding) {
-        RSAPadding.PKCS1 -> "${signatureAlgorithm.digest.jcaAlgorithmComponent}withRSA"
-        RSAPadding.PSS -> "${signatureAlgorithm.digest.jcaAlgorithmComponent}withRSA/PSS"
-    }
-    when (val p = config.provider) {
-        null -> Signature.getInstance(alg)
-        else-> Signature.getInstance(alg, p)
-    }.run {
+    getRSAInstance(signatureAlgorithm, config).run {
         initVerify(publicKey.getJcaPublicKey().getOrThrow())
         data.data.forEach(this::update)
         val success = verify(signature.jcaSignatureBytes)

@@ -1,5 +1,6 @@
 package at.asitplus.crypto.provider.sign
 
+import at.asitplus.catching
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.CryptoSignature
 import at.asitplus.crypto.datatypes.Digest
@@ -12,7 +13,12 @@ import at.asitplus.crypto.provider.succeed
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.should
+import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNot
+import io.kotest.matchers.types.shouldBeInstanceOf
+import io.kotest.property.Arb
+import io.kotest.property.arbitrary.of
+import io.kotest.property.checkAll
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.KeyPairGenerator
 import java.security.Security
@@ -22,7 +28,9 @@ import kotlin.random.Random
 
 class VerifierTests: FreeSpec({
     withData(mapOf<String, (SignatureAlgorithm.ECDSA, CryptoPublicKey.EC)->Verifier.EC>(
-        "BC -> PlatformVerifier" to { a,k -> PlatformECDSAVerifier(a,k) },
+        "BC -> PlatformVerifier" to { a,k ->
+            a.verifierFor(k).getOrThrow().also { it.shouldBeInstanceOf<PlatformECDSAVerifier>() }
+        },
         "BC -> KotlinVerifier" to ::KotlinECDSAVerifier)) { factory ->
         withData(ECCurve.entries) { curve ->
             withData(nameFn = SignatureInputFormat::jcaAlgorithmComponent, listOf<Digest?>(null) + Digest.entries) { digest ->
@@ -47,6 +55,10 @@ class VerifierTests: FreeSpec({
                         verifier.verify(data + Random.nextBytes(8), sig) shouldNot succeed
                     }
                     verifier.verify(data, sig) should succeed
+                    checkAll(Arb.of(Digest.entries.filter { it != digest })) { dig ->
+                        catching { factory(SignatureAlgorithm.ECDSA(dig, null), key) }
+                            .transform { it.verify(data, sig) } shouldNot succeed
+                    }
                 }
             }
         }

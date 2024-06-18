@@ -13,12 +13,15 @@ import at.asitplus.crypto.provider.toNSData
 import at.asitplus.swift.krypto.Krypto
 import kotlinx.cinterop.ExperimentalForeignApi
 
-actual class PlatformVerifierConfiguration internal constructor() : DSL.Data()
+/**
+ * Configures iOS-specific properties.
+ */
+actual class PlatformVerifierConfiguration internal actual constructor() : DSL.Data()
 
 @Throws(UnsupportedCryptoException::class)
 internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
             (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
-             configure: (PlatformVerifierConfiguration.()->Unit)?)
+             config: PlatformVerifierConfiguration)
 {
     when (publicKey.curve) {
         ECCurve.SECP_256_R_1, ECCurve.SECP_384_R_1, ECCurve.SECP_521_R_1 -> {}
@@ -33,7 +36,7 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
 @Throws(UnsupportedCryptoException::class)
 internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
             (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
-             configure: (PlatformVerifierConfiguration.()->Unit)?)
+             config: PlatformVerifierConfiguration)
 {
 
 }
@@ -42,8 +45,7 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
 internal actual fun verifyECDSAImpl
     (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
      data: SignatureInput, signature: CryptoSignature.EC,
-     configure: (PlatformVerifierConfiguration.() -> Unit)?) {
-    val config = DSL.resolve(::PlatformVerifierConfiguration, configure)
+     config: PlatformVerifierConfiguration) {
 
     val digest = signatureAlgorithm.digest
     val curve = publicKey.curve
@@ -77,9 +79,7 @@ internal actual fun verifyECDSAImpl
 internal actual fun verifyRSAImpl
             (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
              data: SignatureInput, signature: CryptoSignature.RSAorHMAC,
-             configure: (PlatformVerifierConfiguration.() -> Unit)?) {
-    val config = DSL.resolve(::PlatformVerifierConfiguration, configure)
-
+             config: PlatformVerifierConfiguration) {
     val padding = signatureAlgorithm.padding
     val digest = signatureAlgorithm.digest
 
