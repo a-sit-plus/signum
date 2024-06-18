@@ -1,4 +1,6 @@
 import at.asitplus.gradle.*
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree.Companion.test
 
 
 plugins {
@@ -21,6 +23,8 @@ kotlin {
     jvm()
     androidTarget {
         publishLibraryVariants("release")
+        @OptIn(ExperimentalKotlinGradlePluginApi::class)
+        instrumentedTestVariant.sourceSetTree.set(test)
     }
     listOf(
         iosX64(),
@@ -63,13 +67,36 @@ android {
     compileSdk = 34
     defaultConfig {
         minSdk = 33
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     dependencies{
-        testImplementation(kotest("runner-junit5"))
+        androidTestImplementation(libs.runner)
+        androidTestImplementation(libs.core)
+        androidTestImplementation(libs.rules)
+        androidTestImplementation(libs.kotest.runner.android)
+        testImplementation(libs.kotest.extensions.android)
     }
 
-    testOptions.unitTests.all { it.useJUnitPlatform() }
+    packaging {
+        resources.excludes.add("/META-INF/{AL2.0,LGPL2.1}")
+        resources.excludes.add("win32-x86-64/attach_hotspot_windows.dll")
+        resources.excludes.add("win32-x86/attach_hotspot_windows.dll")
+        resources.excludes.add("META-INF/versions/9/OSGI-INF/MANIFEST.MF")
+        resources.excludes.add("META-INF/licenses/*")
+    }
+
+    testOptions {
+        managedDevices {
+            localDevices {
+                create("pixel2api33") {
+                    device = "Pixel 2"
+                    apiLevel = 33
+                    systemImageSource = "aosp-atd"
+                }
+            }
+        }
+    }
 }
 
 exportIosFramework(
@@ -86,6 +113,9 @@ val javadocJar = setupDokka(
     multiModuleDoc = true
 )
 
+repositories {
+    maven("https://repo1.maven.org/maven2")
+}
 
 publishing {
     publications {
