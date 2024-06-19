@@ -112,6 +112,29 @@ val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Certificate looks trustworthy: $isValid")
 ```
 
+#### Platform Verifiers
+
+Not every platform supports every algorithm parameter. For example, iOS does not support raw ECDSA verification (of pre-hashed data).
+If you use `.verifierFor`, and this happens, the library will transparently substitute a pure-Kotlin implementation.
+
+If this is not desired, you can specifically enforce a platform verifier by using `.platformVerifierFor`.
+That way, the library will only ever act as a forwarded to platform APIs (JCA, CryptoKit, etc.), and will not use its own implementations.
+
+You can also further configure the verifier, for example to specify the `provider` to use.
+To do this, pass a DSL configuration lambda to `verifierFor`/`platformVerifierFor`.
+
+```kotlin
+val publicKey: CryptoPublicKey.EC = TODO("You have this.")
+val plaintext: ByteArray = TODO("This is the message.")
+val signature: CryptoSignature.EC = TODO("And this is the signature.")
+    
+val verifier = SignatureAlgorithm.ECDSAwithSHA512
+    .platformVerifierFor(publicKey) { provider = "BC"} /* specify BouncyCastle */
+    .getOrThrow()
+val isValid = verifier.verify(plaintext, signature).isSuccess
+println("Is it trustworthy? $isValid")
+```
+
 ### Certificate Parsing
 
 ```kotlin
