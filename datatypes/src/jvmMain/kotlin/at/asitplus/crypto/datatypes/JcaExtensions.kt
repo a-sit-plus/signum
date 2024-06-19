@@ -128,9 +128,24 @@ fun CryptoSignature.Companion.parseFromJca(
     algorithm: X509SignatureAlgorithm
 ): CryptoSignature =
     if (algorithm.isEc)
-        CryptoSignature.EC.decodeFromDer(input)
+        CryptoSignature.EC.parseFromJca(input)
     else
-        CryptoSignature.RSAorHMAC(input)
+        CryptoSignature.RSAorHMAC.parseFromJca(input)
+
+/**
+ * Parses a signature produced by the JCA digestwithECDSA algorithm.
+ */
+fun CryptoSignature.EC.Companion.parseFromJca(input: ByteArray) =
+    CryptoSignature.EC.decodeFromDer(input)
+
+/**
+ * Parses a signature produced by the JCA digestWithECDSAinP1363Format algorithm.
+ */
+fun CryptoSignature.EC.Companion.parseFromJcaP1363(input: ByteArray) =
+    CryptoSignature.EC.fromRawBytes(input)
+
+fun CryptoSignature.RSAorHMAC.Companion.parseFromJca(input: ByteArray) =
+    CryptoSignature.RSAorHMAC(input)
 
 /**
  * Converts this [X509Certificate] to a [java.security.cert.X509Certificate].
