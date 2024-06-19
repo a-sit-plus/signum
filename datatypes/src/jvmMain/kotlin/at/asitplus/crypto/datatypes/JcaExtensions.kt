@@ -18,6 +18,7 @@ import org.bouncycastle.jce.spec.ECPublicKeySpec
 import java.math.BigInteger
 import java.security.KeyFactory
 import java.security.PublicKey
+import java.security.Signature
 import java.security.cert.CertificateFactory
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPublicKey
@@ -35,6 +36,32 @@ val Digest.jcaPSSParams
         Digest.SHA384 -> PSSParameterSpec("SHA-384", "MGF1", MGF1ParameterSpec.SHA384, 48, 1)
         Digest.SHA512 -> PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 64, 1)
     }
+
+private fun sigGetInstance(alg: String, provider: String?) =
+    when (provider) {
+        null -> Signature.getInstance(alg)
+        else -> Signature.getInstance(alg, provider)
+    }
+/** Get a pre-configured JCA instance for this algorithm */
+fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) = catching {
+    when (this) {
+        is SignatureAlgorithm.ECDSA ->
+            sigGetInstance("${this.digest.jcaAlgorithmComponent}withECDSA", provider)
+        is SignatureAlgorithm.HMAC ->
+            sigGetInstance("Hmac${this.digest.jcaAlgorithmComponent}", provider)
+        is SignatureAlgorithm.RSA -> when (this.padding) {
+            RSAPadding.PKCS1 ->
+                sigGetInstance("${this.digest.jcaAlgorithmComponent}withRSA", provider)
+            RSAPadding.PSS ->
+                sigGetInstance("RSASSA-PSS", provider).also {
+                    it.setParameter(this.digest.jcaPSSParams)
+                }
+        }
+    }
+}
+/** Get a pre-configured JCA instance for this algorithm */
+fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =
+    this.algorithm.getJCASignatureInstance(provider)
 
 val Digest.jcaName
     get() = when (this) {

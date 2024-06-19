@@ -20,15 +20,14 @@ import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.bouncycastle.pkcs.PKCS10CertificationRequestBuilder
 import java.security.KeyPair
 import java.security.KeyPairGenerator
+import java.security.PrivateKey
 import java.security.Signature
 import java.security.interfaces.ECPublicKey
 
-internal val X509SignatureAlgorithm.jcaName get() = when(this) {
-    X509SignatureAlgorithm.ES256 -> "SHA256withECDSA"
-    X509SignatureAlgorithm.ES384 -> "SHA384withECDSA"
-    X509SignatureAlgorithm.ES512 -> "SHA512withECDSA"
-    else -> throw IllegalArgumentException(this.name)
-}
+internal fun X509SignatureAlgorithm.getContentSigner(key: PrivateKey) =
+    getJCASignatureInstance().getOrThrow().algorithm.let {
+        JcaContentSignerBuilder(it).build(key)
+    }
 
 @OptIn(ExperimentalStdlibApi::class)
 class Pkcs10CertificationRequestJvmTest : FreeSpec({
@@ -71,7 +70,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             ),
             publicKey = cryptoPublicKey
         )
-        val signed = Signature.getInstance(signatureAlgorithm.jcaName).apply {
+        val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
             initSign(keyPair.private)
             update(tbsCsr.encodeToDer())
         }.sign()
@@ -79,7 +78,8 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
 
         val kotlinEncoded = csr.encodeToDer()
 
-        val contentSigner: ContentSigner = JcaContentSignerBuilder(signatureAlgorithm.jcaName).build(keyPair.private)
+        val contentSigner: ContentSigner =
+            signatureAlgorithm.getContentSigner(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         val bcCsr = PKCS10CertificationRequestBuilder(X500Name("CN=$commonName"), spki).build(contentSigner)
 
@@ -99,7 +99,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
         val signatureAlgorithm = X509SignatureAlgorithm.ES256
-        val contentSigner: ContentSigner = JcaContentSignerBuilder(signatureAlgorithm.jcaName).build(keyPair.private)
+        val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         val keyUsage = KeyUsage(KeyUsage.digitalSignature)
         val extendedKeyUsage = ExtendedKeyUsage(KeyPurposeId.anyExtendedKeyUsage)
@@ -124,12 +124,12 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             attributes = listOf(
                 Pkcs10CertificationRequestAttribute(KnownOIDs.keyUsage, Asn1Element.parse(keyUsage.encoded)),
                 Pkcs10CertificationRequestAttribute(
-                    KnownOIDs.`extKeyUsage`,
+                    KnownOIDs.extKeyUsage,
                     Asn1Element.parse(extendedKeyUsage.encoded)
                 )
             )
         )
-        val signed = Signature.getInstance(signatureAlgorithm.jcaName).apply {
+        val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
             initSign(keyPair.private)
             update(tbsCsr.encodeToTlv().derEncoded)
         }.sign()
@@ -159,7 +159,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         // create CSR with bouncycastle
         val commonName = "localhost"
         val signatureAlgorithm = X509SignatureAlgorithm.ES256
-        val contentSigner: ContentSigner = JcaContentSignerBuilder(signatureAlgorithm.jcaName).build(keyPair.private)
+        val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         val keyUsage = KeyUsage(KeyUsage.digitalSignature)
         val extendedKeyUsage = ExtendedKeyUsage(KeyPurposeId.anyExtendedKeyUsage)
@@ -183,7 +183,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
                     critical = true
                 ),
                 X509CertificateExtension(
-                    KnownOIDs.`extKeyUsage`,
+                    KnownOIDs.extKeyUsage,
                     value = Asn1EncapsulatingOctetString(listOf(Asn1Element.parse(extendedKeyUsage.encoded))),
                     critical = true
                 )
@@ -195,7 +195,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
                 )
             )
         )
-        val signed = Signature.getInstance(signatureAlgorithm.jcaName).apply {
+        val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
             initSign(keyPair.private)
             update(tbsCsr.encodeToTlv().derEncoded)
         }.sign()
@@ -219,7 +219,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
         val signatureAlgorithm = X509SignatureAlgorithm.ES256
-        val contentSigner: ContentSigner = JcaContentSignerBuilder(signatureAlgorithm.jcaName).build(keyPair.private)
+        val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         val bcCsr = PKCS10CertificationRequestBuilder(X500Name("CN=$commonName"), spki).build(contentSigner)
 
@@ -312,19 +312,19 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         val signatureAlgorithm1 = X509SignatureAlgorithm.ES256
         val signatureAlgorithm2 = X509SignatureAlgorithm.ES512
 
-        val signed = Signature.getInstance(signatureAlgorithm1.jcaName).apply {
+        val signed = signatureAlgorithm1.getJCASignatureInstance().getOrThrow().apply {
             initSign(keyPair.private)
             update(tbsCsr1.encodeToDer())
         }.sign()
-        val signed1 = Signature.getInstance(signatureAlgorithm1.jcaName).apply {
+        val signed1 = signatureAlgorithm1.getJCASignatureInstance().getOrThrow().apply {
             initSign(keyPair.private)
             update(tbsCsr1.encodeToDer())
         }.sign()
-        val signed11 = Signature.getInstance(signatureAlgorithm2.jcaName).apply {
+        val signed11 = signatureAlgorithm2.getJCASignatureInstance().getOrThrow().apply {
             initSign(keyPair.private)
             update(tbsCsr1.encodeToDer())
         }.sign()
-        val signed2 = Signature.getInstance(signatureAlgorithm1.jcaName).apply {
+        val signed2 = signatureAlgorithm1.getJCASignatureInstance().getOrThrow().apply {
             initSign(keyPair1.private)
             update(tbsCsr2.encodeToDer())
         }.sign()
