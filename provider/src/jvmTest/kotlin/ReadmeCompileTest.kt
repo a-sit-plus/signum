@@ -1,6 +1,8 @@
 import at.asitplus.crypto.datatypes.CryptoPublicKey
+import at.asitplus.crypto.datatypes.CryptoSignature
 import at.asitplus.crypto.datatypes.SignatureAlgorithm
 import at.asitplus.crypto.datatypes.pki.X509Certificate
+import at.asitplus.crypto.provider.sign.platformVerifierFor
 import at.asitplus.crypto.provider.sign.verifierFor
 import at.asitplus.crypto.provider.sign.verify
 import io.kotest.core.spec.style.FreeSpec
@@ -11,7 +13,7 @@ class ReadmeCompileTest : FreeSpec({
 """
 val publicKey: CryptoPublicKey.EC = TODO("You have this and trust it.")
 val plaintext = "You want to trust this.".encodeToByteArray()
-val signature = TODO("This was sent alongside the plaintext.")
+val signature: CryptoSignature.EC = TODO("This was sent alongside the plaintext.")
 val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey).getOrThrow()
 val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Looks good? %isValid")
@@ -27,6 +29,19 @@ val plaintext = untrustedCert.tbsCertificate.encodeToDer()
 val signature = untrustedCert.signature
 val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Certificate looks trustworthy: %isValid")
+""".replace('%','$').shouldCompile()
+    }
+    "Platform Verifiers" {
+"""
+val publicKey: CryptoPublicKey.EC = TODO("You have this.")
+val plaintext: ByteArray = TODO("This is the message.")
+val signature: CryptoSignature.EC = TODO("And this is the signature.")
+    
+val verifier = SignatureAlgorithm.ECDSAwithSHA512
+    .platformVerifierFor(publicKey) { provider = "BC"} /* specify BouncyCastle */
+    .getOrThrow()
+val isValid = verifier.verify(plaintext, signature).isSuccess
+println("Is it trustworthy? %isValid")
 """.replace('%','$').shouldCompile()
     }
 })
