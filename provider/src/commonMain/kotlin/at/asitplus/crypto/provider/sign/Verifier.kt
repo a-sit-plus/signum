@@ -5,6 +5,7 @@ import at.asitplus.catching
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.CryptoSignature
 import at.asitplus.crypto.datatypes.SignatureAlgorithm
+import at.asitplus.crypto.datatypes.SpecializedSignatureAlgorithm
 import at.asitplus.crypto.ecmath.straussShamir
 import at.asitplus.crypto.provider.dsl.DSL
 import at.asitplus.crypto.provider.UnsupportedCryptoException
@@ -251,3 +252,13 @@ private fun SignatureAlgorithm.RSA.verifierForImpl
             (publicKey: CryptoPublicKey.Rsa, configure: ConfigurePlatformVerifier,
              allowKotlin: Boolean): KmmResult<out Verifier.RSA> =
     catching { PlatformRSAVerifier(this, publicKey, configure) }
+
+/** @see [SignatureAlgorithm.verifierFor] */
+fun SpecializedSignatureAlgorithm.verifierFor
+            (publicKey: CryptoPublicKey, configure: ConfigurePlatformVerifier = null) =
+    this.algorithm.verifierFor(publicKey, configure)
+
+/** @see [SignatureAlgorithm.platformVerifierFor] */
+fun SpecializedSignatureAlgorithm.platformVerifierFor
+            (publicKey: CryptoPublicKey, configure: ConfigurePlatformVerifier = null) =
+    this.algorithm.platformVerifierFor(publicKey, configure)

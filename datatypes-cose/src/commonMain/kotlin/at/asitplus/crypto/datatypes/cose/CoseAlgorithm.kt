@@ -1,5 +1,10 @@
 package at.asitplus.crypto.datatypes.cose
 
+import at.asitplus.crypto.datatypes.Digest
+import at.asitplus.crypto.datatypes.ECCurve
+import at.asitplus.crypto.datatypes.RSAPadding
+import at.asitplus.crypto.datatypes.SignatureAlgorithm
+import at.asitplus.crypto.datatypes.SpecializedSignatureAlgorithm
 import at.asitplus.crypto.datatypes.X509SignatureAlgorithm
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -10,7 +15,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 @Serializable(with = CoseAlgorithmSerializer::class)
-enum class CoseAlgorithm(val value: Int) {
+enum class CoseAlgorithm(val value: Int): SpecializedSignatureAlgorithm {
 
     // ECDSA with SHA-size
     ES256(-7),
@@ -35,7 +40,7 @@ enum class CoseAlgorithm(val value: Int) {
     // RSASSA-PKCS1-v1_5 using SHA-1
     RS1(-65535);
 
-
+    @Deprecated("COSE EC algorithms carry curve restrictions", ReplaceWith("algorithm"))
     fun toX509SignatureAlgorithm() = when (this) {
         ES256 -> X509SignatureAlgorithm.ES256
         ES384 -> X509SignatureAlgorithm.ES384
@@ -54,6 +59,23 @@ enum class CoseAlgorithm(val value: Int) {
         RS512 -> X509SignatureAlgorithm.RS512
 
         RS1 -> X509SignatureAlgorithm.RS1
+    }
+
+    val digest: Digest get() = when(this) {
+        RS1 -> Digest.SHA1
+        ES256, HS256, PS256, RS256 -> Digest.SHA256
+        ES384, HS384, PS384, RS384 -> Digest.SHA384
+        ES512, HS512, PS512, RS512 -> Digest.SHA512
+    }
+
+    override val algorithm: SignatureAlgorithm get() = when (this) {
+        ES256 -> SignatureAlgorithm.ECDSA(Digest.SHA256, ECCurve.SECP_256_R_1)
+        ES384 -> SignatureAlgorithm.ECDSA(Digest.SHA384, ECCurve.SECP_384_R_1)
+        ES512 -> SignatureAlgorithm.ECDSA(Digest.SHA512, ECCurve.SECP_521_R_1)
+
+        HS256, HS384, HS512 -> SignatureAlgorithm.HMAC(this.digest)
+        PS256, PS384, PS512 -> SignatureAlgorithm.RSA(this. digest, RSAPadding.PKCS1)
+        RS1, RS256, RS384, RS512 -> SignatureAlgorithm.RSA(this.digest, RSAPadding.PKCS1)
     }
 }
 
