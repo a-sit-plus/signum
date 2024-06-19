@@ -152,12 +152,17 @@ val CryptoSignature.jcaSignatureBytes: ByteArray
  */
 fun CryptoSignature.Companion.parseFromJca(
     input: ByteArray,
-    algorithm: X509SignatureAlgorithm
+    algorithm: SignatureAlgorithm
 ): CryptoSignature =
-    if (algorithm.isEc)
+    if (algorithm is SignatureAlgorithm.ECDSA)
         CryptoSignature.EC.parseFromJca(input)
     else
         CryptoSignature.RSAorHMAC.parseFromJca(input)
+
+fun CryptoSignature.Companion.parseFromJca(
+    input: ByteArray,
+    algorithm: SpecializedSignatureAlgorithm
+) = parseFromJca(input, algorithm.algorithm)
 
 /**
  * Parses a signature produced by the JCA digestwithECDSA algorithm.
