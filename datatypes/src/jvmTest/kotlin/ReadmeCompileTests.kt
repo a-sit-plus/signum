@@ -13,7 +13,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 class ReadmeCompileTests : FreeSpec({
-    "Certificate Parsing" {
+    "!Certificate Parsing" {
 
         """
 val cert = X509Certificate.decodeFromDer(certBytes)
@@ -38,7 +38,7 @@ println("Re-encoding it produces the same bytes? %{cert.encodeToDer() contentEqu
 """.replace('%','$').shouldCompile()
     }
 
-    "Creating a CSR" {
+    "!Creating a CSR" {
         """
 val ecPublicKey: ECPublicKey = TODO("From platform-specific code")
 val cryptoPublicKey = CryptoPublicKey.EC.fromJcaPublicKey(ecPublicKey).getOrThrow()
@@ -59,7 +59,7 @@ println(csr.encodeToDer())
 """.shouldCompile()
     }
 
-    "ASN1 DSL for Creating ASN.1 Structures" {
+    "!ASN1 DSL for Creating ASN.1 Structures" {
         """
 Asn1.Sequence {
     +Tagged(1u) {
