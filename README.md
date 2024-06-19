@@ -13,6 +13,7 @@ _(We are not doing the Prince thing; the emojis are not part of the project name
 This [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html) library provides platform-independent data
 types and functionality related to crypto and PKI applications:
 
+* Multiplatform ECDSA and RSA verification
 * Public Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)
 * X509 Certificate Class (create, encode, decode)
@@ -37,10 +38,10 @@ the JVM/Android and iOS.
 
 This library consists of three modules, each of which is published on maven central:
 
-| Name           |                               | `datatypes`                                                                                                                  | `datatypes-jws`                                                                                                                                                                                                                       | `datatypes-cose`                                                                                                                                                                                                                    |
-|----------------|-------------------------------|------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| _Info_         | KMP Crypto Provider           | Base module containing the public key class (`CryptoPublicKey`), algorithm identifiers, the ASN.1 parser, X.509 certificate. | JWS/JWE/JWT module containing JWS/E/T-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. | COSE module containing all COSE/CWT-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. |
-| _Maven Coords_ | `at.asitplus.crypto:provider` | `at.asitplus.crypto:datatypes`                                                                                               | `at.asitplus.crypto:datatypes-jws`                                                                                           | `at.asitplus.crypto:datatypes-cose`                                                                                                                                                                                                 |
+| Name           | `datatypes` | `provider` | `datatypes-jws` | `datatypes-cose` |
+|----------------|-------------|------------|-----------------|------------------|
+| _Info_         | Base module containing the public key class (`CryptoPublicKey`), algorithm identifiers, the ASN.1 parser, X.509 certificate. | Add-on module containing the actual cryptographic operations. | JWS/JWE/JWT add-on module containing JWS/E/T-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. | COSE add-on module containing all COSE/CWT-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. |
+| _Maven Coords_ | `at.asitplus.crypto:datatypes` | `at.asitplus.crypto:provider` | `at.asitplus.crypto:datatypes-jws` | `at.asitplus.crypto:datatypes-cose` |
 
 ### Using it in your Projects
 
@@ -48,6 +49,10 @@ Simply declare the desired dependency to get going:
 
 ```kotlin 
 implementation("at.asitplus.crypto:datatypes:$version")
+```
+
+```kotlin 
+implementation("at.asitplus.crypto:provider:$version")
 ```
 
 ```kotlin 
@@ -80,21 +85,48 @@ material._
 
 <br>
 
+### Signature Verification
+
+To verify a signature, obtain a `Verifier` instance using `verifierFor(k: PublicKey)` on `SignatureAlgorithm`.
+`SignatureAlgorithm`s can be obtained from an `algorithm` member on a variety of specialized algorithms. A variety of constants, resembling the well-known JCA names, are also available on `SignatureAlgorithm`'s companion.
+
+As an example, here's how to verify a basic signature using a public key:
+```kotlin
+val publicKey: CryptoPublicKey.EC = TODO("You have this and trust it.")
+val plaintext = "You want to trust this.".encodeToByteArray()
+val signature = TODO("This was sent alongside the plaintext.")
+val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey).getOrThrow()
+val isValid = verifier.verify(plaintext, signature).isSuccess
+println("Looks good? $isValid")
+```
+
+Or here's how to validate a X.509 certificate:
+```kotlin
+val rootCert: X509Certificate = TODO("You have this and trust it.")
+val untrustedCert: X509Certificate = TODO("You want to verify that this is trustworthy.")
+
+val verifier = untrustedCert.signatureAlgorithm.verifierFor(rootCert.publicKey).getOrThrow()
+val plaintext = untrustedCert.tbsCertificate.encodeToDer()
+val signature = untrustedCert.signature
+val isValid = verifier.verify(plaintext, signature).isSuccess
+println("Certificate looks trustworthy: $isValid")
+```
+
 ### Certificate Parsing
 
 ```kotlin
-val cert = X509Certificate.decodefromDer(certBytes)
+val cert = X509Certificate.decodeFromDer(certBytes)
 
 when (val pk = cert.publicKey) {
-    is CryptoPublicKey.Ec -> println(
+    is CryptoPublicKey.EC -> println(
         "Certificate with serial no. ${
-            cert.tbsCertificate.serialNumber.encodeToString(Base16)
+            cert.tbsCertificate.serialNumber
         } contains an EC public key using curve ${pk.curve}"
     )
 
     is CryptoPublicKey.Rsa -> println(
         "Certificate with serial no. ${
-            cert.tbsCertificate.serialNumber.encodeToString(Base16)
+            cert.tbsCertificate.serialNumber
         } contains a ${pk.bits.number} bit RSA public key"
     )
 }
@@ -206,19 +238,20 @@ Which produces the following output:
 ### Creating a CSR
 
 ```kotlin
-val cryptoPublicKey = CryptoPublicKey.Ec.fromJcaKey(ecPublicKey /*from platform-specific code*/)
+val ecPublicKey: ECPublicKey = TODO("From platform-specific code")
+val cryptoPublicKey = CryptoPublicKey.EC.fromJcaPublicKey(ecPublicKey).getOrThrow()
 
 val commonName = "DefaultCryptoService"
-val signatureAlgorithm = JwsAlgorithm.ES256
+val signatureAlgorithm = X509SignatureAlgorithm.ES256
 
 
 val tbsCsr = TbsCertificationRequest(
     version = 0,
-    subjectName = listOf(DistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
     publicKey = cryptoPublicKey
 )
-val signed =  /* pass tbsCsr.encodeToDer() to platform code*/
-val csr = CertificationRequest(tbsCsr, signatureAlgorithm, signed)
+val signed: ByteArray = TODO("pass tbsCsr.encodeToDer() to platform code")
+val csr = Pkcs10CertificationRequest(tbsCsr, signatureAlgorithm, signed)
 
 println(csr.encodeToDer())
 ```
@@ -284,17 +317,17 @@ While it is perfectly possible to manually construct a hierarchy of `Asn1Element
 DSL, which returns an `Asn1Structure`:
 
 ```kotlin
-ASn1.Sequence {
+Asn1.Sequence {
     +Tagged(1u) {
         +Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00))
     }
     +Asn1.Set {
-      +Asn1.Sequence {
-        +Asn1.SetOf {
+        +Asn1.Sequence {
+            +Asn1.SetOf {
                 +PrintableString("World")
                 +PrintableString("Hello")
             }
-        +Asn1.Set {
+            +Asn1.Set {
                 +PrintableString("World")
                 +PrintableString("Hello")
                 +Utf8String("!!!")
@@ -318,7 +351,7 @@ ASn1.Sequence {
     +Asn1.Sequence {
         +Asn1.Null()
         +Asn1String.Numeric("12345")
-        +UtcTime(instant)
+        +UtcTime(Clock.System.now())
     }
 }
 ```
@@ -354,15 +387,6 @@ SEQUENCE (8 elem)
 ```
 
 ## Limitations
-
-As this library provides multiplatform data types to help interop with platform-specific crypto functionality, it does
-not provide any functionality to carry out the actual cryptographic operations.
-Also, it provides no abstractions for private keys, because those should never leave a system in the first place.
-
-While a multiplatform crypto provider would be awesome, this sort of things also needs a careful design phase before
-even entertaining the thought of implementing such functionality. It therefore not planned at the time of this writing (
-2023-10)
-
 * While the ASN.1 parser will happily parse any valid **DER-encoded** ASN.1 structure you throw at it and the encoder will
   write it back correctly too. (No, we don't care for BER, since we want to transport cryptographic material)
 * Higher-level abstractions (such as `X509Certificate`) are too lenient in some aspects and
@@ -375,5 +399,5 @@ even entertaining the thought of implementing such functionality. It therefore n
 * We do need more comprehensive tests. Currently, me mostly focused on some delicate encoding aspects and tried to read
   and write-back certificates without mangling them.
 * We don't yet know how compliant everything really is, but so far it could parse and re-encode every certificate we
-  threw at it without braking anything
+  threw at it without breaking anything
 * Number of supported Algorithms is limited to the usual suspects (sorry, no Bernstein curves )-:)
