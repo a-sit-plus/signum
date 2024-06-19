@@ -13,7 +13,7 @@ _(We are not doing the Prince thing; the emojis are not part of the project name
 This [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html) library provides platform-independent data
 types and functionality related to crypto and PKI applications:
 
-* Multiplatform ECDSA and RSA verification
+* **Multiplatform ECDSA and RSA verification**
 * Public Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)
 * X509 Certificate Class (create, encode, decode)
@@ -27,21 +27,26 @@ types and functionality related to crypto and PKI applications:
 * **ASN.1 Parser and Encoder including a DSL to generate ASN.1 structures**
 
 This last bit means that
-**you can work with X509 Certificates, public keys, CSRs and arbitrary ASN.1 structures on iOS.**
+**you can work with X509 Certificates, public keys, CSRs and arbitrary ASN.1 structures on iOS.**  
+The last bit means that you can verify signatures on the JVM, Android and on iOS.
 
 **Do check out the full API docs [here](https://a-sit-plus.github.io/kmp-crypto/)**!
 
 ## Usage
 
 This library was built for [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html). Currently, it targets
-the JVM/Android and iOS.
+the JVM, Android and iOS.
 
-This library consists of three modules, each of which is published on maven central:
+This library consists of four modules, each of which is published on maven central:
 
-| Name           | `datatypes` | `provider` | `datatypes-jws` | `datatypes-cose` |
-|----------------|-------------|------------|-----------------|------------------|
-| _Info_         | Base module containing the public key class (`CryptoPublicKey`), algorithm identifiers, the ASN.1 parser, X.509 certificate. | Add-on module containing the actual cryptographic operations. | JWS/JWE/JWT add-on module containing JWS/E/T-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. | COSE add-on module containing all COSE/CWT-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. |
-| _Maven Coords_ | `at.asitplus.crypto:datatypes` | `at.asitplus.crypto:provider` | `at.asitplus.crypto:datatypes-jws` | `at.asitplus.crypto:datatypes-cose` |
+| Name | Info                                                                                                                         | Maven Coordinates                   |
+|------|------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|
+|   `provider`    | KMP module implementing the actual cryptographic operations.                                                                 | `at.asitplus.crypto:provider`       |
+|   `datatypes`   | Base module containing the cryptographic data strucures, algorithm identifiers, the ASN.1 parser, OIDs, X.509 certificate, … | `at.asitplus.crypto:datatypes`      |
+|   `datatypes-jws`   | JWS/JWE/JWT add-on module containing JWS/E/T-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization.                                                                                                                              | `at.asitplus.crypto:datatypes-jws`  |
+|`datatypes-cose` |     COSE add-on module containing all COSE/CWT-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization.                                                                                                                         | `at.asitplus.crypto:datatypes-cose` |
+
+This separation keeps dependencies to a minimum, i.e. it enables including only JWT-related functionality, if COSE is irrelevant.
 
 ### Using it in your Projects
 
@@ -87,8 +92,9 @@ material._
 
 ### Signature Verification
 
-To verify a signature, obtain a `Verifier` instance using `verifierFor(k: PublicKey)` on `SignatureAlgorithm`.
-`SignatureAlgorithm`s can be obtained from an `algorithm` member on a variety of specialized algorithms. A variety of constants, resembling the well-known JCA names, are also available on `SignatureAlgorithm`'s companion.
+To verify a signature, obtain a `Verifier` instance using `SignatureAlgorithm.verifierFor(k: PublicKey)`.
+`SignatureAlgorithm`s can be obtained from an `algorithm` member on a variety of specialized algorithms.
+A variety of constants, resembling the well-known JCA names, are also available in `SignatureAlgorithm`'s companion.
 
 As an example, here's how to verify a basic signature using a public key:
 ```kotlin
@@ -118,9 +124,9 @@ Not every platform supports every algorithm parameter. For example, iOS does not
 If you use `.verifierFor`, and this happens, the library will transparently substitute a pure-Kotlin implementation.
 
 If this is not desired, you can specifically enforce a platform verifier by using `.platformVerifierFor`.
-That way, the library will only ever act as a forwarded to platform APIs (JCA, CryptoKit, etc.), and will not use its own implementations.
+That way, the library will only ever act as a proxy to platform APIs (JCA, CryptoKit, etc.), and will not use its own implementations.
 
-You can also further configure the verifier, for example to specify the `provider` to use.
+You can also further configure the verifier, for example to specify the `provider` to use on the JVM.
 To do this, pass a DSL configuration lambda to `verifierFor`/`platformVerifierFor`.
 
 ```kotlin
@@ -411,16 +417,16 @@ SEQUENCE (8 elem)
 
 ## Limitations
 * While the ASN.1 parser will happily parse any valid **DER-encoded** ASN.1 structure you throw at it and the encoder will
-  write it back correctly too. (No, we don't care for BER, since we want to transport cryptographic material)
+  write it back correctly too. (No, we don't care for BER, since we want to transport cryptographic material!)
 * Higher-level abstractions (such as `X509Certificate`) are too lenient in some aspects and
   too strict in others.
   For example: DSA-signed certificates will not parse to an instance of `X509Certificate`.
-  At the same time, certificates containing the same extension multiple times will work fine, even though the violate
+  At the same time, certificates containing the same extension multiple times will work fine, even though they violate
   the spec.
   This is irrelevant in practice, since platform-specific code will perform the actual cryptographic operations on these
   data structures and complain anyway, if something is off.
-* We do need more comprehensive tests. Currently, me mostly focused on some delicate encoding aspects and tried to read
-  and write-back certificates without mangling them.
-* We don't yet know how compliant everything really is, but so far it could parse and re-encode every certificate we
-  threw at it without breaking anything
+* We do need more comprehensive tests, but we're getting there, mostly thanks to [@iaik-jheher](https://github.com/iaik-jheher)
+  and [@n0900](https://github.com/n0900).
+* We don't yet know how compliant everything really is, but this code has been successfully handling cryptographic material
+  for a couple of months now and we're improving whenever we hit an issue.
 * Number of supported Algorithms is limited to the usual suspects (sorry, no Bernstein curves )-:)
