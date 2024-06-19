@@ -29,7 +29,7 @@ import kotlin.random.Random
 class VerifierTests: FreeSpec({
     withData(mapOf<String, (SignatureAlgorithm.ECDSA, CryptoPublicKey.EC)->Verifier.EC>(
         "BC -> PlatformVerifier" to { a,k ->
-            a.verifierFor(k).getOrThrow().also { it.shouldBeInstanceOf<PlatformECDSAVerifier>() }
+            a.verifierFor(k) { provider = "BC" }.getOrThrow().also { it.shouldBeInstanceOf<PlatformECDSAVerifier>() }
         },
         "BC -> KotlinVerifier" to ::KotlinECDSAVerifier)) { factory ->
         withData(ECCurve.entries) { curve ->
