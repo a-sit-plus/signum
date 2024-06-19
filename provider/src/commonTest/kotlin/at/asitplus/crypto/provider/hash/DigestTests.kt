@@ -3,6 +3,7 @@ package at.asitplus.crypto.provider.hash
 import at.asitplus.crypto.datatypes.Digest
 import at.asitplus.crypto.provider.hash.digest
 import io.kotest.core.spec.style.FreeSpec
+import io.kotest.core.test.config.enabledOrReasonIf
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 
@@ -39,7 +40,8 @@ open class DigestTests: FreeSpec({
             Digest.SHA384 -> "9d0e1809716474cb086e834e310a4a1ced149e9c00f248527972cec5704c2a5b07b8b3dc38ecc4ebae97ddd87f3d8985"
             Digest.SHA512 -> "e718483d0ce769644e2e42c7bc15b4638e1f98b13b2044285632a803afa973ebde0ff244877ea60a4cb0432ce577c31beb009c5c2c49aa2e4eadb217ad8cc09b"
         } },
-        TestSpec("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmno", 16777216, "the extremely-long message 'abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmno' repeated 16,777,216 times: a bit string of length 2^{33} bits (~1 GB)") { when(it) {
+        TestSpec("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmno", 16777216, "the extremely-long message 'abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmno' repeated 16,777,216 times: a bit string of length 2^{33} bits (~1 GB)",
+        ) { when(it) {
             Digest.SHA1 -> "7789f0c9ef7bfc40d93311143dfbe69e2017f592"
             Digest.SHA256 -> "50e72a0e26442fe2552dc3938ac58658228c0cbfb1d2ca872ae435266fcd055e"
             Digest.SHA384 -> "5441235cc0235341ed806a64fb354742b5e5c02a3c5cb71b5f63fb793458d8fdae599c8cd8884943c04f11b31b89f023"
