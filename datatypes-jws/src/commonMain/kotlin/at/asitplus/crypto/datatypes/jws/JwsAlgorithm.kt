@@ -1,11 +1,11 @@
 package at.asitplus.crypto.datatypes.jws
 
+import at.asitplus.catching
 import at.asitplus.crypto.datatypes.Digest
 import at.asitplus.crypto.datatypes.ECCurve
 import at.asitplus.crypto.datatypes.RSAPadding
 import at.asitplus.crypto.datatypes.SignatureAlgorithm
 import at.asitplus.crypto.datatypes.SpecializedSignatureAlgorithm
-import at.asitplus.crypto.datatypes.X509SignatureAlgorithm
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -49,31 +49,10 @@ enum class JwsAlgorithm(override val identifier: String) : JsonWebAlgorithm, Spe
         ES512, HS512, PS512, RS512 -> Digest.SHA512
     }
 
-    @Deprecated("JWS EC algorithms carry curve restrictions", ReplaceWith("algorithm"))
-    fun toX509SignatureAlgorithm() = when (this) {
-        ES256 -> X509SignatureAlgorithm.ES256
-        ES384 -> X509SignatureAlgorithm.ES384
-        ES512 -> X509SignatureAlgorithm.ES512
-
-        HS256 -> X509SignatureAlgorithm.HS256
-        HS384 -> X509SignatureAlgorithm.HS384
-        HS512 -> X509SignatureAlgorithm.HS512
-
-        PS256 -> X509SignatureAlgorithm.PS256
-        PS384 -> X509SignatureAlgorithm.PS384
-        PS512 -> X509SignatureAlgorithm.PS512
-
-        RS256 -> X509SignatureAlgorithm.RS256
-        RS384 -> X509SignatureAlgorithm.RS384
-        RS512 -> X509SignatureAlgorithm.RS512
-
-        NON_JWS_SHA1_WITH_RSA -> X509SignatureAlgorithm.RS1
-    }
-
     override val algorithm: SignatureAlgorithm get() = when (this) {
         ES256, ES384, ES512 -> SignatureAlgorithm.ECDSA(this.digest, this.ecCurve!!)
         HS256, HS384, HS512 -> SignatureAlgorithm.HMAC(this.digest)
-        PS256, PS384, PS512 -> SignatureAlgorithm.RSA(this. digest, RSAPadding.PKCS1)
+        PS256, PS384, PS512 -> SignatureAlgorithm.RSA(this. digest, RSAPadding.PSS)
         NON_JWS_SHA1_WITH_RSA, RS256, RS384, RS512 -> SignatureAlgorithm.RSA(this.digest, RSAPadding.PKCS1)
     }
 
@@ -100,23 +79,40 @@ object JwsAlgorithmSerializer : KSerializer<JwsAlgorithm> {
     }
 }
 
-@Deprecated("X509 and JWS are not equivalent; JWS carries curve restrictions.", ReplaceWith("algorithm"))
-fun X509SignatureAlgorithm.toJwsAlgorithm() = when (this) {
-    X509SignatureAlgorithm.ES256 -> JwsAlgorithm.ES256
-    X509SignatureAlgorithm.ES384 -> JwsAlgorithm.ES384
-    X509SignatureAlgorithm.ES512 -> JwsAlgorithm.ES512
-
-    X509SignatureAlgorithm.HS256 -> JwsAlgorithm.HS256
-    X509SignatureAlgorithm.HS384 -> JwsAlgorithm.HS384
-    X509SignatureAlgorithm.HS512 -> JwsAlgorithm.HS512
-
-    X509SignatureAlgorithm.PS256 -> JwsAlgorithm.PS256
-    X509SignatureAlgorithm.PS384 -> JwsAlgorithm.PS384
-    X509SignatureAlgorithm.PS512 -> JwsAlgorithm.PS512
-
-    X509SignatureAlgorithm.RS256 -> JwsAlgorithm.RS256
-    X509SignatureAlgorithm.RS384 -> JwsAlgorithm.RS384
-    X509SignatureAlgorithm.RS512 -> JwsAlgorithm.RS512
-
-    X509SignatureAlgorithm.RS1 -> JwsAlgorithm.NON_JWS_SHA1_WITH_RSA
+/** Tries to find a matching JWS algorithm. Note that JWS imposes curve restrictions on ECDSA based on the digest. */
+fun SignatureAlgorithm.toJwsAlgorithm() = catching {
+    when (this) {
+        is SignatureAlgorithm.ECDSA -> when (this.digest) {
+            Digest.SHA256 -> JwsAlgorithm.ES256
+            Digest.SHA384 -> JwsAlgorithm.ES384
+            Digest.SHA512 -> JwsAlgorithm.ES512
+            else -> throw IllegalArgumentException("ECDSA with ${this.digest} is unsupported by JWS")
+        }
+        is SignatureAlgorithm.RSA -> when (this.padding) {
+            RSAPadding.PKCS1 -> when (this.digest) {
+                Digest.SHA1 -> JwsAlgorithm.NON_JWS_SHA1_WITH_RSA
+                Digest.SHA256 -> JwsAlgorithm.RS256
+                Digest.SHA384 -> JwsAlgorithm.RS384
+                Digest.SHA512 -> JwsAlgorithm.RS512
+            }
+            RSAPadding.PSS -> when (this.digest) {
+                Digest.SHA256 -> JwsAlgorithm.PS256
+                Digest.SHA384 -> JwsAlgorithm.PS384
+                Digest.SHA512 -> JwsAlgorithm.PS512
+                else -> throw IllegalArgumentException("RSA-PSS with ${this.digest} is unsupported by JWS")
+            }
+        }
+        is SignatureAlgorithm.HMAC -> when (this.digest) {
+            Digest.SHA256 -> JwsAlgorithm.HS256
+            Digest.SHA384 -> JwsAlgorithm.HS384
+            Digest.SHA512 -> JwsAlgorithm.HS512
+            else -> throw IllegalArgumentException("HMAC with ${this.digest} is unsupported by JWS")
+        }
+    }
 }
+
+/** Tries to find a matching JWS algorithm. Note that JWS imposes curve restrictions on ECDSA based on the digest. */
+fun SpecializedSignatureAlgorithm.toJwsAlgorithm() =
+    this.algorithm.toJwsAlgorithm()
+
+

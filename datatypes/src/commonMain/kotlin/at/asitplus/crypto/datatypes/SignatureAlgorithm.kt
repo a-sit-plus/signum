@@ -39,7 +39,6 @@ sealed interface SignatureAlgorithm {
     ) : SignatureAlgorithm
 
     companion object {
-        val ECDSAwithNONE = ECDSA(null, null)
         val ECDSAwithSHA256 = ECDSA(Digest.SHA256, null)
         val ECDSAwithSHA384 = ECDSA(Digest.SHA384, null)
         val ECDSAwithSHA512 = ECDSA(Digest.SHA512, null)
