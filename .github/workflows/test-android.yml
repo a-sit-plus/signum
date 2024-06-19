@@ -18,9 +18,16 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: run tests
+      - name: Connected Check
         uses: reactivecircus/android-emulator-runner@v2
         with:
           arch: x86_64
           api-level: 33
           script: ./gradlew connectedCheck
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: success() || failure()
+        with:
+          name: Provider Android Connected Tests
+          path: provider/build/outputs/androidTest-results/connected/**/TEST*.xml
+          reporter: java-junit
