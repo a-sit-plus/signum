@@ -10,9 +10,6 @@ import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldNot
-import io.kotest.property.Arb
-import io.kotest.property.arbitrary.of
-import io.kotest.property.checkAll
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.io.encoding.Base64
@@ -397,8 +394,8 @@ open class ECDSAVerifierCommonTests : FreeSpec({
                         verifier.verify(it.msg, it.sig) shouldNot succeed
                     }
                 }
-                checkAll(Arb.of(Digest.entries.filter { it != test.digest })) {
-                    SignatureAlgorithm.ECDSA(it, null).verifierFor(test.key)
+                Random.of(Digest.entries.filter { it != test.digest }).let { dig ->
+                    SignatureAlgorithm.ECDSA(dig, null).verifierFor(test.key)
                         .transform { it.verify(test.msg, test.sig) } shouldNot succeed
                 }
             }

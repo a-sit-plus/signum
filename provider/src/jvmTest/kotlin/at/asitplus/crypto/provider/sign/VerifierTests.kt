@@ -13,12 +13,8 @@ import at.asitplus.crypto.provider.succeed
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.should
-import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNot
 import io.kotest.matchers.types.shouldBeInstanceOf
-import io.kotest.property.Arb
-import io.kotest.property.arbitrary.of
-import io.kotest.property.checkAll
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.KeyPairGenerator
 import java.security.Security
@@ -55,7 +51,7 @@ class VerifierTests: FreeSpec({
                         verifier.verify(data + Random.nextBytes(8), sig) shouldNot succeed
                     }
                     verifier.verify(data, sig) should succeed
-                    checkAll(Arb.of(Digest.entries.filter { it != digest })) { dig ->
+                    Random.of(Digest.entries.filter { it != digest }).let { dig ->
                         catching { factory(SignatureAlgorithm.ECDSA(dig, null), key) }
                             .transform { it.verify(data, sig) } shouldNot succeed
                     }
