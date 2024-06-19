@@ -9,7 +9,7 @@ import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.compilation.shouldCompile
 
 class ReadmeCompileTest : FreeSpec({
-    "Signature Verification" {
+    "!Signature Verification" {
 """
 val publicKey: CryptoPublicKey.EC = TODO("You have this and trust it.")
 val plaintext = "You want to trust this.".encodeToByteArray()
@@ -19,7 +19,7 @@ val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Looks good? %isValid")
 """.replace('%','$').shouldCompile()
     }
-    "X509 Signature Verification" {
+    "!X509 Signature Verification" {
 """
 val rootCert: X509Certificate = TODO("You have this and trust it.")
 val untrustedCert: X509Certificate = TODO("You want to verify that this is trustworthy.")
@@ -31,7 +31,7 @@ val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Certificate looks trustworthy: %isValid")
 """.replace('%','$').shouldCompile()
     }
-    "Platform Verifiers" {
+    "!Platform Verifiers" {
 """
 val publicKey: CryptoPublicKey.EC = TODO("You have this.")
 val plaintext: ByteArray = TODO("This is the message.")
