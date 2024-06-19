@@ -145,7 +145,7 @@ class KotlinECDSAVerifier
  * @see PlatformVerifierConfiguration
  */
 fun SignatureAlgorithm.verifierFor
-            (publicKey: CryptoPublicKey, configure: ConfigurePlatformVerifier) =
+            (publicKey: CryptoPublicKey, configure: ConfigurePlatformVerifier = null) =
     verifierForImpl(publicKey, configure, allowKotlin = true)
 
 /**
@@ -158,7 +158,7 @@ fun SignatureAlgorithm.verifierFor
  * @see PlatformVerifierConfiguration
  */
 fun SignatureAlgorithm.platformVerifierFor
-            (publicKey: CryptoPublicKey, configure: ConfigurePlatformVerifier) =
+            (publicKey: CryptoPublicKey, configure: ConfigurePlatformVerifier = null) =
     verifierForImpl(publicKey, configure, allowKotlin = false)
 
 private fun SignatureAlgorithm.verifierForImpl
