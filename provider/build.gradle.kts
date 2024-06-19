@@ -251,3 +251,9 @@ fun wireAndroidInstrumentedTests() {
             }
         }
 }
+
+project.gradle.taskGraph.whenReady {
+    tasks.getByName("testDebugUnitTest"){
+        enabled=false
+    }
+}

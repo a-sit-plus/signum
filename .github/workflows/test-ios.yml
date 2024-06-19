@@ -20,6 +20,6 @@ jobs:
         uses: dorny/test-reporter@v1
         if: success() || failure()
         with:
-          name: datatypes Tests
+          name: iOS Tests
           path: datatypes/build/test-results/**/TEST*.xml,datatypes-cose/build/test-results/**/TEST*.xml,datatypes-jws/build/test-results/**/TEST*.xml,provider/build/test-results/**/TEST*.xml
           reporter: java-junit
