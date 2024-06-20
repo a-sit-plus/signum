@@ -199,37 +199,26 @@ fun wireAndroidInstrumentedTests() {
     val packagePattern = Pattern.compile("package\\s+(\\S+)", Pattern.UNICODE_CHARACTER_CLASS)
     val searchPattern =
         Pattern.compile("open\\s+class\\s+(\\S+)\\s*:\\s*FreeSpec", Pattern.UNICODE_CHARACTER_CLASS)
-    val classPattern =
-        Pattern.compile("open\\s+class\\s+[^\\s-]+", Pattern.UNICODE_CHARACTER_CLASS)
-    val deletePattern =
-        Pattern.compile("open\\s+class\\s+", Pattern.UNICODE_CHARACTER_CLASS)
     project.layout.projectDirectory.dir("src").dir("commonTest")
         .dir("kotlin").asFileTree.filter { it.extension == "kt" }.forEach { file ->
             FileInputStream(file).bufferedReader().use { reader ->
                 val source = reader.readText()
 
-                val pacakgeName = packagePattern.matcher(source).run {
+                val packageName = packagePattern.matcher(source).run {
                     if (find()) group(1) else null
                 }
 
                 val matcher = searchPattern.matcher(source)
 
                 while (matcher.find()) {
-                    logger.lifecycle("Found Test class in file ${file.name}")
-                    val match = matcher.group().replace(":", "")
+                    val className = matcher.group(1)
+                    logger.lifecycle("Found Test class $className in file ${file.name}")
 
-                    val extractMatcher = classPattern.matcher(match).also { it.find() }
-                    val extracted = extractMatcher.group()
-
-                    val deleteMatcher = deletePattern.matcher(extracted).also { it.find() }
-
-                    val className = extracted.substring(deleteMatcher.end())
-
-                    FileSpec.builder(pacakgeName ?: "", "Android$className")
+                    FileSpec.builder(packageName ?: "", "Android$className")
                         .addType(
                             TypeSpec.classBuilder("Android$className")
                                 .apply {
-                                    this.superclass(ClassName(pacakgeName ?: "", className))
+                                    this.superclass(ClassName(packageName ?: "", className))
                                     annotations += AnnotationSpec.builder(
                                         ClassName(
                                             "org.junit.runner",
