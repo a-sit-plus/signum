@@ -29,7 +29,7 @@ types and functionality related to crypto and PKI applications:
 
 This last bit means that
 **you can work with X509 Certificates, public keys, CSRs and arbitrary ASN.1 structures on iOS.**  
-The last bit means that you can verify signatures on the JVM, Android and on iOS.
+The very first bit means that you can verify signatures on the JVM, Android and on iOS.
 
 **Do check out the full API docs [here](https://a-sit-plus.github.io/kmp-crypto/)**!
 
