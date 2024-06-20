@@ -19,22 +19,21 @@ enum class RSAPadding {
 }
 
 sealed interface SignatureAlgorithm {
-    val digest: Digest?
     data class HMAC(
         /** The digest to use */
-        override val digest: Digest?
+        val digest: Digest
     ) : SignatureAlgorithm
 
     data class ECDSA(
         /** The digest to apply to the data, or `null` to directly process the raw data. */
-       override val digest: Digest?,
+        val digest: Digest?,
         /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
         val requiredCurve: ECCurve?
     ) : SignatureAlgorithm
 
     data class RSA(
         /** The digest to apply to the data. */
-      override  val digest: Digest,
+        val digest: Digest,
         /** The padding to apply to the data. */
         val padding: RSAPadding
     ) : SignatureAlgorithm
