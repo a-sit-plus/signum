@@ -68,7 +68,7 @@ implementation("at.asitplus.crypto:datatypes-jws:$version")
 implementation("at.asitplus.crypto:datatypes-cose:$version")
 ```
 
-In addition, (while we're waiting for upstream to release new stable versions of `BigNum` and `kotlinx.serialization`,
+In addition, (while we're waiting for upstream to release new stable versions of `BigNum` and `kotlinx.serialization`),
 add the following repositories to your project:
 
 ```kotlin
@@ -327,7 +327,7 @@ allows for
 
 #### Decoding Values
 
-Various helper functions exist to facilitate decoging the values contained in `Asn1Primitives`, such as `decodeIn()`,
+Various helper functions exist to facilitate decoging the values contained in `Asn1Primitives`, such as `decodeInt()`,
 for example.
 However, anything can be decoded and tagged at will. Therefore, a generic decoding function exists, which has the
 following signature:
@@ -425,6 +425,7 @@ SEQUENCE (8 elem)
   the spec.
   This is irrelevant in practice, since platform-specific code will perform the actual cryptographic operations on these
   data structures and complain anyway, if something is off.
+* No OCSP and CRL Checks (though it is perfectly possible to parse this data from a certificate and implement the checks)
 * We do need more comprehensive tests, but we're getting there, mostly thanks to [@iaik-jheher](https://github.com/iaik-jheher)
   and [@n0900](https://github.com/n0900).
 * We don't yet know how compliant everything really is, but this code has been successfully handling cryptographic material
