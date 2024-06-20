@@ -18,6 +18,7 @@ import org.bouncycastle.jce.spec.ECPublicKeySpec
 import java.math.BigInteger
 import java.security.KeyFactory
 import java.security.PublicKey
+import java.security.Signature
 import java.security.cert.CertificateFactory
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPublicKey
@@ -28,33 +29,39 @@ import java.security.spec.RSAPublicKeySpec
 private val certificateFactoryMutex = Mutex()
 private val certFactory = CertificateFactory.getInstance("X.509")
 
-val X509SignatureAlgorithm.jcaName
+val Digest.jcaPSSParams
     get() = when (this) {
-        X509SignatureAlgorithm.ES256 -> "SHA256withECDSA"
-        X509SignatureAlgorithm.ES384 -> "SHA384withECDSA"
-        X509SignatureAlgorithm.ES512 -> "SHA512withECDSA"
-        X509SignatureAlgorithm.HS256 -> "HmacSHA256"
-        X509SignatureAlgorithm.HS384 -> "HmacSHA384"
-        X509SignatureAlgorithm.HS512 -> "HmacSHA512"
-        X509SignatureAlgorithm.RS256 -> "SHA256withRSA"
-        X509SignatureAlgorithm.RS384 -> "SHA384withRSA"
-        X509SignatureAlgorithm.RS512 -> "SHA512withRSA"
-        X509SignatureAlgorithm.PS256 -> "RSASSA-PSS"
-        X509SignatureAlgorithm.PS384 -> "RSASSA-PSS"
-        X509SignatureAlgorithm.PS512 -> "RSASSA-PSS"
-        X509SignatureAlgorithm.RS1 -> "SHA1withRSA"
+        Digest.SHA1 -> PSSParameterSpec("SHA-1", "MGF1", MGF1ParameterSpec.SHA1, 20, 1)
+        Digest.SHA256 -> PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 32, 1)
+        Digest.SHA384 -> PSSParameterSpec("SHA-384", "MGF1", MGF1ParameterSpec.SHA384, 48, 1)
+        Digest.SHA512 -> PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 64, 1)
     }
 
-val X509SignatureAlgorithm.jcaParams
-    get() = when (this) {
-        X509SignatureAlgorithm.PS256 -> PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 32, 1)
-
-        X509SignatureAlgorithm.PS384 -> PSSParameterSpec("SHA-384", "MGF1", MGF1ParameterSpec.SHA384, 48, 1)
-
-        X509SignatureAlgorithm.PS512 -> PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 64, 1)
-
-        else -> null
+private fun sigGetInstance(alg: String, provider: String?) =
+    when (provider) {
+        null -> Signature.getInstance(alg)
+        else -> Signature.getInstance(alg, provider)
     }
+/** Get a pre-configured JCA instance for this algorithm */
+fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) = catching {
+    when (this) {
+        is SignatureAlgorithm.ECDSA ->
+            sigGetInstance("${this.digest.jcaAlgorithmComponent}withECDSA", provider)
+        is SignatureAlgorithm.HMAC ->
+            sigGetInstance("Hmac${this.digest.jcaAlgorithmComponent}", provider)
+        is SignatureAlgorithm.RSA -> when (this.padding) {
+            RSAPadding.PKCS1 ->
+                sigGetInstance("${this.digest.jcaAlgorithmComponent}withRSA", provider)
+            RSAPadding.PSS ->
+                sigGetInstance("RSASSA-PSS", provider).also {
+                    it.setParameter(this.digest.jcaPSSParams)
+                }
+        }
+    }
+}
+/** Get a pre-configured JCA instance for this algorithm */
+fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =
+    this.algorithm.getJCASignatureInstance(provider)
 
 val Digest.jcaName
     get() = when (this) {
@@ -66,7 +73,7 @@ val Digest.jcaName
 
 
 val Digest?.jcaAlgorithmComponent get() = when (this) {
-    null -> "None"
+    null -> "NONE"
     Digest.SHA1 -> "SHA1"
     Digest.SHA256 -> "SHA256"
     Digest.SHA384 -> "SHA384"
@@ -145,12 +152,32 @@ val CryptoSignature.jcaSignatureBytes: ByteArray
  */
 fun CryptoSignature.Companion.parseFromJca(
     input: ByteArray,
-    algorithm: X509SignatureAlgorithm
+    algorithm: SignatureAlgorithm
 ): CryptoSignature =
-    if (algorithm.isEc)
-        CryptoSignature.EC.decodeFromDer(input)
+    if (algorithm is SignatureAlgorithm.ECDSA)
+        CryptoSignature.EC.parseFromJca(input)
     else
-        CryptoSignature.RSAorHMAC(input)
+        CryptoSignature.RSAorHMAC.parseFromJca(input)
+
+fun CryptoSignature.Companion.parseFromJca(
+    input: ByteArray,
+    algorithm: SpecializedSignatureAlgorithm
+) = parseFromJca(input, algorithm.algorithm)
+
+/**
+ * Parses a signature produced by the JCA digestwithECDSA algorithm.
+ */
+fun CryptoSignature.EC.Companion.parseFromJca(input: ByteArray) =
+    CryptoSignature.EC.decodeFromDer(input)
+
+/**
+ * Parses a signature produced by the JCA digestWithECDSAinP1363Format algorithm.
+ */
+fun CryptoSignature.EC.Companion.parseFromJcaP1363(input: ByteArray) =
+    CryptoSignature.EC.fromRawBytes(input)
+
+fun CryptoSignature.RSAorHMAC.Companion.parseFromJca(input: ByteArray) =
+    CryptoSignature.RSAorHMAC(input)
 
 /**
  * Converts this [X509Certificate] to a [java.security.cert.X509Certificate].

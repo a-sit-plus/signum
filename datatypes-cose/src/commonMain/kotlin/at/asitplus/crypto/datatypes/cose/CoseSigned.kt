@@ -3,6 +3,7 @@ package at.asitplus.crypto.datatypes.cose
 import at.asitplus.catching
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.CryptoSignature
+import at.asitplus.crypto.datatypes.SignatureAlgorithm
 import at.asitplus.crypto.datatypes.cose.io.Base16Strict
 import at.asitplus.crypto.datatypes.cose.io.cborSerializer
 import at.asitplus.crypto.datatypes.pki.X509Certificate
@@ -88,7 +89,7 @@ data class CoseSigned(
     }
 }
 
-fun CoseHeader.usesEC(): Boolean? = algorithm?.toX509SignatureAlgorithm()?.isEc
+fun CoseHeader.usesEC(): Boolean? = algorithm?.algorithm?.let { it is SignatureAlgorithm.ECDSA }
     ?: certificateChain?.let { X509Certificate.decodeFromDerOrNull(it)?.publicKey is CryptoPublicKey.EC }
 
 

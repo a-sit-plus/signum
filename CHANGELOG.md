@@ -172,3 +172,8 @@
 * KmmResult 1.7.0
 * Bignum 0.3.10 stable
 * okio 3.9.0
+* 
+### NEXT
+
+**Changes**
+* Add `provider` module that actually implements cryptography!

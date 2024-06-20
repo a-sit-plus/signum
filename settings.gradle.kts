@@ -1,6 +1,7 @@
 pluginManagement {
     includeBuild("swift-klib-plugin")
     repositories {
+        google()
         mavenCentral()
         gradlePluginPortal()
         maven {
@@ -10,7 +11,21 @@ pluginManagement {
     }
 }
 
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    versionCatalogs {
+        create("kotlincrypto") {
+            // https://github.com/KotlinCrypto/version-catalog/blob/master/gradle/kotlincrypto.versions.toml
+            from("org.kotlincrypto:version-catalog:0.5.2")
+        }
+    }
+}
+
 include(":datatypes")
 include(":datatypes-jws")
 include(":datatypes-cose")
+include(":provider")
 rootProject.name = "kmp-crypto"

@@ -16,7 +16,7 @@ import kotlinx.serialization.encoding.Encoder
 enum class X509SignatureAlgorithm(
     override val oid: ObjectIdentifier,
     val isEc: Boolean = false
-) : Asn1Encodable<Asn1Sequence>, Identifiable {
+) : Asn1Encodable<Asn1Sequence>, Identifiable, SpecializedSignatureAlgorithm {
 
     // ECDSA with SHA-size
     ES256(KnownOIDs.ecdsaWithSHA256, true),
@@ -96,6 +96,13 @@ enum class X509SignatureAlgorithm(
         ES512, HS512, PS512, RS512 -> Digest.SHA512
     }
 
+    override val algorithm: SignatureAlgorithm get() = when(this) {
+        ES256, ES384, ES512 -> SignatureAlgorithm.ECDSA(this.digest, null)
+        HS256, HS384, HS512 -> SignatureAlgorithm.HMAC(this.digest)
+        PS256, PS384, PS512 -> SignatureAlgorithm.RSA(this.digest, RSAPadding.PSS)
+        RS1, RS256, RS384, RS512 -> SignatureAlgorithm.RSA(this.digest, RSAPadding.PKCS1)
+    }
+
     companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithm> {
 
         @Throws(Asn1OidException::class)
@@ -158,11 +165,40 @@ enum class X509SignatureAlgorithm(
     }
 }
 
-@Deprecated(
-    "Will likely be replaced with a more general type in the future",
-    replaceWith = ReplaceWith("X509SignatureAlgorithm")
-)
-typealias CryptoAlgorithm = X509SignatureAlgorithm
+/** Finds a X.509 signature algorithm matching this algorithm. Curve restrictions are not preserved. */
+fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
+    when (this) {
+        is SignatureAlgorithm.ECDSA -> when (this.digest) {
+            Digest.SHA256 -> X509SignatureAlgorithm.ES256
+            Digest.SHA384 -> X509SignatureAlgorithm.ES384
+            Digest.SHA512 -> X509SignatureAlgorithm.ES512
+            else -> throw IllegalArgumentException("Digest ${this.digest} is unsupported by X.509 EC")
+        }
+        is SignatureAlgorithm.RSA -> when (this.padding) {
+            RSAPadding.PKCS1 -> when (this.digest) {
+                Digest.SHA1 -> X509SignatureAlgorithm.RS1
+                Digest.SHA256 -> X509SignatureAlgorithm.RS256
+                Digest.SHA384 -> X509SignatureAlgorithm.RS384
+                Digest.SHA512 -> X509SignatureAlgorithm.RS512
+            }
+            RSAPadding.PSS -> when (this.digest) {
+                Digest.SHA256 -> X509SignatureAlgorithm.PS256
+                Digest.SHA384 -> X509SignatureAlgorithm.PS384
+                Digest.SHA512 -> X509SignatureAlgorithm.PS512
+                else -> throw IllegalArgumentException("Digest ${this.digest} is unsupported by X.509 RSA-PSS")
+            }
+        }
+        is SignatureAlgorithm.HMAC -> when (this.digest) {
+            Digest.SHA256 -> X509SignatureAlgorithm.HS256
+            Digest.SHA384 -> X509SignatureAlgorithm.HS384
+            Digest.SHA512 -> X509SignatureAlgorithm.HS512
+            else -> throw IllegalArgumentException("Digest ${this.digest} is unsupported by X.509 HMAC")
+        }
+    }
+}
+/** Finds a X.509 signature algorithm matching this algorithm. Curve restrictions are not preserved. */
+fun SpecializedSignatureAlgorithm.toX509SignatureAlgorithm() =
+    this.algorithm.toX509SignatureAlgorithm()
 
 object X509SignatureAlgorithmSerializer : KSerializer<X509SignatureAlgorithm> {
 
