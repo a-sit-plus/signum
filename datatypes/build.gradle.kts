@@ -193,6 +193,12 @@ kotlin {
             }
         }
 
+        jvmTest {
+            dependencies {
+                implementation("io.kotest.extensions:kotest-assertions-compiler:1.0.0")
+            }
+        }
+
     }
 }
 

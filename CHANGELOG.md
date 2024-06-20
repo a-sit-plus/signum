@@ -165,3 +165,5 @@
 
 ### NEXT
 
+**Changes**
+* Add `provider` module that actually implements cryptography!
