@@ -14,6 +14,9 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
+/**
+ * See [COSE Algorithm Registry](https://www.iana.org/assignments/cose/cose.xhtml)
+ */
 @Serializable(with = CoseAlgorithmSerializer::class)
 enum class CoseAlgorithm(val value: Int): SpecializedSignatureAlgorithm {
 
