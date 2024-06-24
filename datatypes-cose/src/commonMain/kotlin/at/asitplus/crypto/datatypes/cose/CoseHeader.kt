@@ -39,6 +39,9 @@ data class CoseHeader(
     @SerialName("Partial IV")
     @ByteString
     val partialIv: ByteArray? = null,
+    @SerialName("COSE_Key")
+    @ByteString
+    val coseKey: ByteArray? = null,
     @CborLabel(33)
     @SerialName("x5chain")
     @ByteString
@@ -69,6 +72,10 @@ data class CoseHeader(
             if (other.partialIv == null) return false
             if (!partialIv.contentEquals(other.partialIv)) return false
         } else if (other.partialIv != null) return false
+        if (coseKey != null) {
+            if (other.coseKey == null) return false
+            if (!coseKey.contentEquals(other.coseKey)) return false
+        } else if (other.coseKey != null) return false
         if (certificateChain != null) {
             if (other.certificateChain == null) return false
             if (!certificateChain.contentEquals(other.certificateChain)) return false
@@ -84,6 +91,7 @@ data class CoseHeader(
         result = 31 * result + (kid?.contentHashCode() ?: 0)
         result = 31 * result + (iv?.contentHashCode() ?: 0)
         result = 31 * result + (partialIv?.contentHashCode() ?: 0)
+        result = 31 * result + (coseKey?.contentHashCode() ?: 0)
         result = 31 * result + (certificateChain?.contentHashCode() ?: 0)
         return result
     }
@@ -95,8 +103,10 @@ data class CoseHeader(
                 " kid=${kid?.encodeToString(Base16Strict)}," +
                 " iv=${iv?.encodeToString(Base16Strict)}," +
                 " partialIv=${partialIv?.encodeToString(Base16Strict)}," +
+                " coseKey=${coseKey?.encodeToString(Base16Strict)}," +
                 " certificateChain=${certificateChain?.encodeToString(Base16Strict)})"
     }
+
 
     companion object {
         fun deserialize(it: ByteArray) = catching {
