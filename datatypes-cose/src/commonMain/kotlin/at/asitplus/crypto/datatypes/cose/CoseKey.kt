@@ -28,13 +28,13 @@ import kotlinx.serialization.encoding.decodeStructure
  * COSE public key as per [RFC 8152](https://www.rfc-editor.org/rfc/rfc8152.html#page-33).
  * Since this is used as part of a COSE-specific DTO, every property is nullable
  *
- * Deserializing involves guess-work since the COSE specification uses overlapping [CborLabel]s for compressed and uncompressed EC keys
- * and generally overlapping labels for various params regardless of key type.
+ * Deserializing involves guess-work since the COSE specification uses overlapping [CborLabel]s for compressed and
+ * uncompressed EC keys and generally overlapping labels for various params regardless of key type.
  *
  * [RFC 8152](https://www.rfc-editor.org/rfc/rfc8152.html#page-33) really is a marvel in its own right:
- * Rarely a spec comes a long that highlights the harder bounds
- * of any natural language quite like it, as written forms of human communication lack the fluid semantics required to truly
- * capture the unique challenges of parsing COSE keys and the lack of any redeeming qualities of the design decisions embodied by RFC 8152.
+ * Rarely a spec comes a long that highlights the harder bounds of any natural language quite like it, as written forms
+ * of human communication lack the fluid semantics required to truly capture the unique challenges of parsing COSE keys
+ * and the lack of any redeeming qualities of the design decisions embodied by RFC 8152.
  *
  * See [serialize] and [deserialize] for details.
  *
