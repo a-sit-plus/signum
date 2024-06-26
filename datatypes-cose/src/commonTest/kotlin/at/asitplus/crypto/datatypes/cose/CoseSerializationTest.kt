@@ -11,6 +11,7 @@ import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.cbor.ByteStringWrapper
+import kotlin.random.Random
 
 class CoseSerializationTest : FreeSpec({
 
@@ -49,6 +50,18 @@ class CoseSerializationTest : FreeSpec({
 
         println(cose)
         cose.shouldNotBeNull()
+    }
+
+    "CoseSignatureInput is correct" {
+        val signatureInput = CoseSignatureInput(
+            contextString = "Signature1",
+            protectedHeader = ByteStringWrapper(CoseHeader(algorithm = CoseAlgorithm.ES256)),
+            externalAad = byteArrayOf(),
+            payload = Random.nextBytes(32)
+        ).serialize().encodeToString(Base16())
+            .also { println(it) }
+
+        signatureInput.shouldContain("Signature1".encodeToByteArray().encodeToString(Base16()))
     }
 
 })
