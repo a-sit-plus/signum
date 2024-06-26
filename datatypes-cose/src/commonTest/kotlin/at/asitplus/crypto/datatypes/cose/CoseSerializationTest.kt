@@ -11,6 +11,7 @@ import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.cbor.ByteStringWrapper
+import kotlin.random.Random
 
 val Base16Strict = Base16(strict = true)
 
@@ -65,9 +66,23 @@ class CoseSerializationTest : FreeSpec({
                 "91aef0b0117e2af9a291aa32e14ab834dc56ed2a223444547e01f11d3b09" +
                 "16e5a4c345cacb36"
         val cose = CoseSigned.deserialize(input.uppercase().decodeToByteArray(Base16Strict))
+            .also { println(it) }
 
-        println(cose)
         cose.shouldNotBeNull()
     }
+
+
+    "CoseSignatureInput is correct" {
+        val signatureInput = CoseSignatureInput(
+            contextString = "Signature1",
+            protectedHeader = ByteStringWrapper(CoseHeader(algorithm = CoseAlgorithm.ES256)),
+            externalAad = byteArrayOf(),
+            payload = Random.nextBytes(32)
+        ).serialize().encodeToString(Base16())
+            .also { println(it) }
+
+        signatureInput.shouldContain("Signature1".encodeToByteArray().encodeToString(Base16()))
+    }
+
 
 })
