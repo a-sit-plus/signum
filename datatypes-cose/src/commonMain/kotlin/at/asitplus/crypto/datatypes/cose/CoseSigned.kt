@@ -104,7 +104,7 @@ fun CoseHeader.usesEC(): Boolean? = algorithm?.algorithm?.let { it is SignatureA
 @Serializable
 @CborArray
 data class CoseSignatureInput(
-    val contextString: String = "Signature1",
+    val contextString: String,
     @Serializable(with = ByteStringWrapperCoseHeaderSerializer::class)
     @ByteString
     val protectedHeader: ByteStringWrapper<CoseHeader>,

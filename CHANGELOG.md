@@ -168,3 +168,4 @@
 **Changes**
 * Add `provider` module that actually implements cryptography!
 * Add `COSE_Key` header to `CoseHeader`, defined in OpenID for Verifiable Credential Issuance draft 13
+* Fix serialization of COSE signature structures
