@@ -1,11 +1,12 @@
 */generated
 .gradle
+demoapp/build
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
 .kotlin
-provider/src/androidInstrumentedTest/kotlin/generated
+*/src/androidInstrumentedTest/kotlin/generated
 
 ### IntelliJ IDEA ###
 .idea

@@ -122,9 +122,9 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             ),
             publicKey = cryptoPublicKey,
             attributes = listOf(
-                Pkcs10CertificationRequestAttribute(at.asitplus.signum.indispensable.asn1.KnownOIDs.keyUsage, Asn1Element.parse(keyUsage.encoded)),
+                Pkcs10CertificationRequestAttribute(KnownOIDs.keyUsage, Asn1Element.parse(keyUsage.encoded)),
                 Pkcs10CertificationRequestAttribute(
-                    at.asitplus.signum.indispensable.asn1.KnownOIDs.extKeyUsage,
+                    KnownOIDs.extKeyUsage,
                     Asn1Element.parse(extendedKeyUsage.encoded)
                 )
             )
@@ -178,12 +178,12 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             publicKey = cryptoPublicKey,
             extensions = listOf(
                 X509CertificateExtension(
-                    at.asitplus.signum.indispensable.asn1.KnownOIDs.keyUsage,
+                    KnownOIDs.keyUsage,
                     value = Asn1EncapsulatingOctetString(listOf(Asn1Element.parse(keyUsage.encoded))),
                     critical = true
                 ),
                 X509CertificateExtension(
-                    at.asitplus.signum.indispensable.asn1.KnownOIDs.extKeyUsage,
+                    KnownOIDs.extKeyUsage,
                     value = Asn1EncapsulatingOctetString(listOf(Asn1Element.parse(extendedKeyUsage.encoded))),
                     critical = true
                 )
@@ -363,9 +363,9 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             Pkcs10CertificationRequestAttribute(ObjectIdentifier("1.2.1840.13549.1.9.16.1337.27"), 1337.encodeToTlv())
         val attr13 =
             Pkcs10CertificationRequestAttribute(ObjectIdentifier("1.2.1840.13549.1.9.16.1337.26"), 1338.encodeToTlv())
-        val attr2 = Pkcs10CertificationRequestAttribute(at.asitplus.signum.indispensable.asn1.KnownOIDs.keyUsage, Asn1Element.parse(keyUsage.encoded))
+        val attr2 = Pkcs10CertificationRequestAttribute(KnownOIDs.keyUsage, Asn1Element.parse(keyUsage.encoded))
         val attr3 =
-            Pkcs10CertificationRequestAttribute(at.asitplus.signum.indispensable.asn1.KnownOIDs.extKeyUsage, Asn1Element.parse(extendedKeyUsage.encoded))
+            Pkcs10CertificationRequestAttribute(KnownOIDs.extKeyUsage, Asn1Element.parse(extendedKeyUsage.encoded))
 
         attr1 shouldBe attr1
         attr1 shouldBe attr11

@@ -44,7 +44,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
-            val OID = at.asitplus.signum.indispensable.asn1.KnownOIDs.commonName
+            val OID = KnownOIDs.commonName
         }
     }
 
@@ -56,7 +56,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
-            val OID = at.asitplus.signum.indispensable.asn1.KnownOIDs.countryName
+            val OID = KnownOIDs.countryName
         }
     }
 
@@ -68,7 +68,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
-            val OID = at.asitplus.signum.indispensable.asn1.KnownOIDs.organizationName
+            val OID = KnownOIDs.organizationName
         }
     }
 
@@ -80,7 +80,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
-            val OID = at.asitplus.signum.indispensable.asn1.KnownOIDs.organizationalUnitName
+            val OID = KnownOIDs.organizationalUnitName
         }
     }
 

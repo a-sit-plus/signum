@@ -3,8 +3,6 @@ package at.asitplus.signum.supreme
 import at.asitplus.KmmResult
 import io.kotest.matchers.Matcher
 import io.kotest.matchers.MatcherResult
-import kotlinx.coroutines.Runnable
-import kotlin.reflect.KClass
 
 internal object succeed: Matcher<KmmResult<*>> {
     override fun test(value: KmmResult<*>) =

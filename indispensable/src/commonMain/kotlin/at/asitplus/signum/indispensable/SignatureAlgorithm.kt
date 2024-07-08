@@ -1,18 +1,5 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.indispensable.asn1.Identifiable
-import at.asitplus.signum.indispensable.asn1.KnownOIDs
-import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
-import at.asitplus.signum.indispensable.misc.BitLength
-import at.asitplus.signum.indispensable.misc.bit
-
-enum class Digest(val outputLength: BitLength, override val oid: ObjectIdentifier) : Identifiable {
-    SHA1(160.bit, at.asitplus.signum.indispensable.asn1.KnownOIDs.sha1),
-    SHA256(256.bit, at.asitplus.signum.indispensable.asn1.KnownOIDs.sha_256),
-    SHA384(384.bit, at.asitplus.signum.indispensable.asn1.KnownOIDs.sha_384),
-    SHA512(512.bit, at.asitplus.signum.indispensable.asn1.KnownOIDs.sha_512);
-}
-
 enum class RSAPadding {
     PKCS1,
     PSS;

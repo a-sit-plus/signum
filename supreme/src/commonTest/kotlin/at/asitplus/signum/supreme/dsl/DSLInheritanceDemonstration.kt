@@ -1,6 +1,5 @@
 package at.asitplus.signum.supreme.dsl
 
-import at.asitplus.signum.supreme.dsl.DSL
 import io.kotest.assertions.fail
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
@@ -13,7 +12,7 @@ private open class GenericOptions internal constructor(): DSL.Data() {
         var genericSubValue: Int = 42
     }
     /* expose GenericSubOptions as a nested DSL child */
-    open val subValue = child(GenericOptions::GenericSubOptions)
+    open val subValue = childOrDefault(::GenericSubOptions)
 }
 
 /* This is a more specific version of GenericOptions */
@@ -27,7 +26,7 @@ private class SpecificOptions internal constructor(): GenericOptions() {
         var anotherSpecificSubValue: String? = null
     }
     /* this shadows the subValue member on the superclass with a more specific version */
-    override val subValue = child(SpecificOptions::SpecificSubOptions)
+    override val subValue = childOrDefault(::SpecificSubOptions)
 }
 
 open class DSLInheritanceDemonstration : FreeSpec({

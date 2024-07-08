@@ -7,8 +7,8 @@ package at.asitplus.signum.supreme.dsl
  */
 object DSL {
     /** Resolve a DSL lambda to a concrete configuration */
-    fun <S: Data, T: S> resolve(factory: ()->T, config: DSLConfigureFn<S>): T =
-        (if (config == null) factory() else factory().apply(config)).also(Data::validate)
+    fun <S: DSL.Data, T: S> resolve(factory: ()->T, config: DSLConfigureFn<S>): T =
+        (if (config == null) factory() else factory().apply(config)).also(DSL.Data::validate)
 
     sealed interface Holder<out T> {
         val v: T
@@ -19,8 +19,8 @@ object DSL {
     }
 
     /** Constructed by: [DSL.Data.child]. */
-    class DirectHolder<out T: Data?> internal constructor(default: T, private val factory: ()->(T & Any))
-        : Invokable<T, T & Any> {
+    class DirectHolder<out T: DSL.Data?> internal constructor(default: T, private val factory: ()->(T & Any))
+        : Invokable<T,T&Any> {
         private var _v: T = default
         override val v: T get() = _v
 
@@ -28,7 +28,7 @@ object DSL {
     }
 
     /** Constructed by: [DSL.Data.subclassOf]. */
-    class Generalized<out T: Data?> internal constructor(default: T): Holder<T> {
+    class Generalized<out T: DSL.Data?> internal constructor(default: T): Holder<T> {
         private var _v: T = default
         override val v: T get() = _v
 
@@ -41,14 +41,14 @@ object DSL {
          * This constructs a new specialized child, configures it using the specified block,
          * and stores it in the underlying generalized storage.
          */
-        internal constructor(private val factory: ()->S) : Invokable<T, S> {
+        internal constructor(private val factory: ()->S) : Invokable<T,S> {
             override val v: T get() = this@Generalized.v
             override operator fun invoke(configure: S.()->Unit) { _v = resolve(factory, configure) }
         }
     }
 
     /** Constructed by: [DSL.Data.integratedReceiver]. */
-    class Integrated<T: Any> internal constructor(): Invokable<(T.() -> Unit)?, T> {
+    class Integrated<T: Any> internal constructor(): Invokable<(T.()->Unit)?, T> {
         private var _v: (T.()->Unit)? = null
         override val v: (T.()->Unit)? get() = _v
         override operator fun invoke(configure: T.()->Unit) { _v = configure }
@@ -61,24 +61,25 @@ object DSL {
     @Marker
     open class Data {
         /**
-         * Embeds a child; use as `val sub = child(::TypeOfSub)`.
-         * Defaults to a default-constructed child.
-         *
-         * User code will invoke as `child { }`.
-         * This constructs a new child and configures it using the specified block.
-         */
-        protected fun <T: Data> child(factory: ()->T): Invokable<T, T> =
-            DirectHolder<T>(factory(), factory)
-
-        /**
          * Embeds an optional child. Use as `val sub = childOrNull(::TypeOfSub)`.
          * Defaults to `null`.
          *
-         * User code will invoke as `child { }`
+         * User code will invoke as `sub { }`
          * This constructs a new child and configures it using the specified block.
          */
-        protected fun <T: Data> childOrNull(factory: ()->T): Invokable<T?, T> =
+        protected fun <T: DSL.Data> childOrNull(factory: ()->T): Invokable<T?,T> =
             DirectHolder<T?>(null, factory)
+
+        /**
+         * Embeds an optional child. Use as `val sub = childOrDefault(::TypeOfSub) { ... }
+         * Defaults to a child configured using the specified default block.
+         *
+         * User code will invoke as `sub { }`
+         * This constructs a new child and configures it using the specified block.
+         * Note that the specified default block is **not** applied if user code configures the child.
+         */
+        protected fun <T: DSL.Data> childOrDefault(factory: ()->T, default: (T.()->Unit)? = null): Invokable<T,T> =
+            DirectHolder<T>(factory().also{ default?.invoke(it) }, factory)
 
         /**
          * Specifies a generalized holder of type T.
@@ -90,7 +91,7 @@ object DSL {
          * Specialized invokable accessors can be spun off via `.option(::SpecializedClass)`.
          * @see DSL.Generalized.option
          */
-        protected fun <T: Data> subclassOf(): Generalized<T?> =
+        protected fun <T: DSL.Data> subclassOf(): Generalized<T?> =
             Generalized<T?>(null)
         /**
          * Specifies a generalized holder of type T.
@@ -102,7 +103,7 @@ object DSL {
          * Specialized invokable accessors can be spun off via `.option(::SpecializedClass)`.
          * @see DSL.Generalized.option
          */
-        protected fun <T: Data> subclassOf(default: T): Generalized<T> =
+        protected fun <T: DSL.Data> subclassOf(default: T): Generalized<T> =
             Generalized<T>(default)
 
         /**

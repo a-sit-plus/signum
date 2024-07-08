@@ -109,12 +109,12 @@ private constructor(private val extensions: List<Asn1Element>) {
     companion object {
         @Throws(Asn1Exception::class)
         fun List<X509CertificateExtension>.findSubjectAltNames() = runRethrowing {
-            find(at.asitplus.signum.indispensable.asn1.KnownOIDs.subjectAltName_2_5_29_17)?.let { AlternativeNames(it) }
+            find(KnownOIDs.subjectAltName_2_5_29_17)?.let { AlternativeNames(it) }
         }
 
         @Throws(Asn1Exception::class)
         fun List<X509CertificateExtension>.findIssuerAltNames() = runRethrowing {
-            find(at.asitplus.signum.indispensable.asn1.KnownOIDs.issuerAltName_2_5_29_18)?.let { AlternativeNames(it) }
+            find(KnownOIDs.issuerAltName_2_5_29_18)?.let { AlternativeNames(it) }
         }
 
         /**not for public use, since it forces [Asn1EncapsulatingOctetString]*/

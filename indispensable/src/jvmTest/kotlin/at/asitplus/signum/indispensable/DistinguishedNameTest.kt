@@ -10,9 +10,9 @@ import io.kotest.matchers.shouldNotBe
 class DistinguishedNameTest : FreeSpec({
     "DistinguishedName test equals and hashCode" - {
         val oids = listOf(
-            at.asitplus.signum.indispensable.asn1.KnownOIDs.countryName, at.asitplus.signum.indispensable.asn1.KnownOIDs.country, at.asitplus.signum.indispensable.asn1.KnownOIDs.houseIdentifier,
-            at.asitplus.signum.indispensable.asn1.KnownOIDs.organizationName, at.asitplus.signum.indispensable.asn1.KnownOIDs.organization, at.asitplus.signum.indispensable.asn1.KnownOIDs.organizationalUnit,
-            at.asitplus.signum.indispensable.asn1.KnownOIDs.organizationalPerson, at.asitplus.signum.indispensable.asn1.KnownOIDs.brainpoolP512r1
+            KnownOIDs.countryName, KnownOIDs.country, KnownOIDs.houseIdentifier,
+            KnownOIDs.organizationName, KnownOIDs.organization, KnownOIDs.organizationalUnit,
+            KnownOIDs.organizationalPerson, KnownOIDs.brainpoolP512r1
         )
         withData(oids) { first ->
             withData(oids) { second ->
