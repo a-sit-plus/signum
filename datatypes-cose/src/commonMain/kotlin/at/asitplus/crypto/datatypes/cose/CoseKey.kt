@@ -11,7 +11,10 @@ import at.asitplus.crypto.datatypes.cose.CoseKeySerializer.CompressedCompoundCos
 import at.asitplus.crypto.datatypes.cose.CoseKeySerializer.UncompressedCompoundCoseKeySerialContainer
 import at.asitplus.crypto.datatypes.cose.io.Base16Strict
 import at.asitplus.crypto.datatypes.cose.io.cborSerializer
+import at.asitplus.crypto.datatypes.io.Base64UrlStrict
+import at.asitplus.crypto.datatypes.io.ByteArrayBase64UrlSerializer
 import com.ionspin.kotlin.bignum.integer.Sign
+import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.*
 import kotlinx.serialization.builtins.ArraySerializer
@@ -99,7 +102,7 @@ data class CoseKey(
      * [CoseKeyParams.EcYBoolParams.toCryptoPublicKey] or [CoseKeyParams.EcYByteArrayParams.toCryptoPublicKey]
      */
     fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
-        keyParams?.toCryptoPublicKey()
+        keyParams?.toCryptoPublicKey()?.map { it.coseKid = this.keyId; it }
             ?: failure(IllegalArgumentException("No public key parameters!"))
 
 
@@ -142,7 +145,7 @@ data class CoseKey(
  * Converts [CryptoPublicKey] into a KmmResult wrapped [CoseKey]
  * If [algorithm] is not set then key can be used for any algorithm with same kty (RFC 8152), returns [IllegalArgumentException] for invalid kty/algorithm pairs
  */
-fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseKey> =
+fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null, keyId: ByteArray? = this.coseKid): KmmResult<CoseKey> =
     when (this) {
         is CryptoPublicKey.EC ->
             if ((algorithm != null) && (algorithm.algorithm !is SignatureAlgorithm.ECDSA))
@@ -164,7 +167,7 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseK
                     CoseKey(
                         keyParams = keyParams,
                         type = CoseKeyType.EC2,
-                        keyId = didEncoded.encodeToByteArray(),
+                        keyId = keyId,
                         algorithm = algorithm
                     )
                 }
@@ -193,11 +196,12 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null): KmmResult<CoseK
             }
     }
 
+
 private const val COSE_KID = "coseKid"
-var CryptoPublicKey.coseKid: String
-    get() = additionalProperties[COSE_KID] ?: didEncoded
+var CryptoPublicKey.coseKid: ByteArray?
+    get() = additionalProperties[COSE_KID]?.decodeToByteArray(Base64UrlStrict)
     set(value) {
-        additionalProperties[COSE_KID] = value
+        value?.also { additionalProperties[COSE_KID] = value.encodeToString(Base64UrlStrict) } ?: additionalProperties.remove(COSE_KID)
     }
 
 /**
