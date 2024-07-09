@@ -288,7 +288,7 @@ data class JsonWebKey(
                     curve = curve ?: throw IllegalArgumentException("Missing or invalid curve"),
                     x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
                     y = y ?: throw IllegalArgumentException("Missing y-coordinate")
-                ).apply { jwkId = identifier }
+                ).apply { jwkId = keyId }
             }
 
             JwkType.RSA -> {
@@ -296,7 +296,7 @@ data class JsonWebKey(
                     n = n ?: throw IllegalArgumentException("Missing modulus n"),
                     e = e?.let { bytes -> Int.decodeFromDer(bytes) }
                         ?: throw IllegalArgumentException("Missing or invalid exponent e")
-                ).apply { jwkId = identifier }
+                ).apply { jwkId = keyId }
             }
 
             else -> throw IllegalArgumentException("Illegal key type")
@@ -324,12 +324,12 @@ data class JsonWebKey(
 /**
  * Converts a [CryptoPublicKey] to a [JsonWebKey]
  */
-fun CryptoPublicKey.toJsonWebKey(): JsonWebKey =
+fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
     when (this) {
         is CryptoPublicKey.EC ->
             JsonWebKey(
                 type = JwkType.EC,
-                keyId = jwkId,
+                keyId = keyId,
                 curve = curve,
                 x = xBytes,
                 y = yBytes
@@ -339,7 +339,7 @@ fun CryptoPublicKey.toJsonWebKey(): JsonWebKey =
         is CryptoPublicKey.Rsa ->
             JsonWebKey(
                 type = JwkType.RSA,
-                keyId = jwkId,
+                keyId = keyId,
                 n = n,
                 e = e.encodeToByteArray()
             )
