@@ -14,6 +14,7 @@ import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.property.azstring
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Clock
 import java.security.KeyPairGenerator
@@ -109,6 +110,15 @@ class JwkTest : FreeSpec({
         val parsed = JsonWebKey.deserialize(jwk.serialize()).getOrThrow()
 
         parsed shouldBe jwk
+    }
+
+    "Regression test: JWK (no keyId) -> CryptoPublicKey -> JWK (no keyId)" {
+        val key = randomCertificate().publicKey.toJsonWebKey()
+        key.keyId shouldBe null
+        val cpk = key.toCryptoPublicKey().getOrThrow()
+        cpk.toJsonWebKey().keyId shouldBe null
+        val kid = Random.azstring(16)
+        cpk.toJsonWebKey(keyId = kid).keyId shouldBe kid
     }
 })
 
