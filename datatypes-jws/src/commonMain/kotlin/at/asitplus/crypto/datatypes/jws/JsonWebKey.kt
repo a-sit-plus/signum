@@ -182,15 +182,26 @@ data class JsonWebKey(
     val certificateSha256Thumbprint: ByteArray? = null,
 ) {
 
+    /**
+     * Thumbprint in the form of `urn:ietf:params:oauth:jwk-thumbprint:sha256:DEADBEEF`
+     *
+     * See [RFC9278](https://www.rfc-editor.org/rfc/rfc9278.html)
+     */
     val jwkThumbprint: String by lazy {
-        Json.encodeToString(this).encodeToByteArray().toByteString().sha256().base64Url()
-    }
-
-    val identifier: String by lazy {
-        keyId ?: "urn:ietf:params:oauth:jwk-thumbprint:sha256:${jwkThumbprint}"
+        val thumbprint = Json.encodeToString(this).encodeToByteArray().toByteString().sha256().base64Url()
+        "urn:ietf:params:oauth:jwk-thumbprint:sha256:${thumbprint}"
     }
 
     fun serialize() = jsonSerializer.encodeToString(this)
+
+    fun equalsCryptographically(other: JsonWebKey) =
+        curve == other.curve &&
+                type == other.type &&
+                x.contentEquals(other.x) &&
+                y.contentEquals(other.y) &&
+                n.contentEquals(other.n) &&
+                e.contentEquals(other.e) &&
+                k.contentEquals(other.k)
 
     val didEncoded: String? by lazy { toCryptoPublicKey().getOrNull()?.didEncoded }
 
