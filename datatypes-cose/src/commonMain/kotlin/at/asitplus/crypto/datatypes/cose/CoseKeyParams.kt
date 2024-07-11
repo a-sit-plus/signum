@@ -4,14 +4,13 @@ import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.failure
 import at.asitplus.catching
 import at.asitplus.crypto.datatypes.CryptoPublicKey
+import at.asitplus.crypto.datatypes.SpecializedCryptoPublicKey
 import at.asitplus.crypto.datatypes.asn1.decodeFromDer
 
 /**
  * Wrapper to handle parameters for different COSE public key types.
  */
-sealed class CoseKeyParams {
-
-    abstract fun toCryptoPublicKey(): KmmResult<CryptoPublicKey>
+sealed class CoseKeyParams : SpecializedCryptoPublicKey {
 
     /**
      * COSE EC public key parameters
