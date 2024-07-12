@@ -5,6 +5,7 @@ import at.asitplus.KmmResult.Companion.failure
 import at.asitplus.catching
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.SignatureAlgorithm
+import at.asitplus.crypto.datatypes.SpecializedCryptoPublicKey
 import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
 import at.asitplus.crypto.datatypes.cose.CoseKey.Companion.deserialize
 import at.asitplus.crypto.datatypes.cose.CoseKeySerializer.CompressedCompoundCoseKeySerialContainer
@@ -51,7 +52,7 @@ data class CoseKey(
     val operations: Array<CoseKeyOperation>? = null,
     val baseIv: ByteArray? = null,
     val keyParams: CoseKeyParams?,
-) {
+) : SpecializedCryptoPublicKey {
     override fun toString(): String {
         return "CoseKey(type=$type," +
                 " keyId=${keyId?.encodeToString(Base16Strict)}," +
@@ -101,7 +102,7 @@ data class CoseKey(
      * or the first error. More details in either [CoseKeyParams.RsaParams.toCryptoPublicKey],
      * [CoseKeyParams.EcYBoolParams.toCryptoPublicKey] or [CoseKeyParams.EcYByteArrayParams.toCryptoPublicKey]
      */
-    fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
+    override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
         keyParams?.toCryptoPublicKey()?.map { it.coseKid = this.keyId; it }
             ?: failure(IllegalArgumentException("No public key parameters!"))
 
