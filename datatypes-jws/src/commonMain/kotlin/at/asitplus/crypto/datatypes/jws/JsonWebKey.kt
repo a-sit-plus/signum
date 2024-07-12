@@ -7,6 +7,7 @@ import at.asitplus.catching
 import at.asitplus.crypto.datatypes.CryptoPublicKey
 import at.asitplus.crypto.datatypes.CryptoPublicKey.EC.Companion.fromUncompressed
 import at.asitplus.crypto.datatypes.ECCurve
+import at.asitplus.crypto.datatypes.SpecializedCryptoPublicKey
 import at.asitplus.crypto.datatypes.asn1.decodeFromDer
 import at.asitplus.crypto.datatypes.asn1.encodeToByteArray
 import at.asitplus.crypto.datatypes.io.Base64UrlStrict
@@ -180,7 +181,7 @@ data class JsonWebKey(
     @SerialName("x5t#S256")
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val certificateSha256Thumbprint: ByteArray? = null,
-) {
+) : SpecializedCryptoPublicKey {
 
     /**
      * Thumbprint in the form of `urn:ietf:params:oauth:jwk-thumbprint:sha256:DEADBEEF`
@@ -193,15 +194,6 @@ data class JsonWebKey(
     }
 
     fun serialize() = jsonSerializer.encodeToString(this)
-
-    fun equalsCryptographically(other: JsonWebKey) =
-        curve == other.curve &&
-                type == other.type &&
-                x.contentEquals(other.x) &&
-                y.contentEquals(other.y) &&
-                n.contentEquals(other.n) &&
-                e.contentEquals(other.e) &&
-                k.contentEquals(other.k)
 
     val didEncoded: String? by lazy { toCryptoPublicKey().getOrNull()?.didEncoded }
 
@@ -292,7 +284,7 @@ data class JsonWebKey(
      * @return a KmmResult wrapped [CryptoPublicKey] equivalent if conversion is possible
      * (i.e. if all key params are set), or the first error.
      */
-    fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = catching {
+    override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = catching {
         when (type) {
             JwkType.EC -> {
                 fromUncompressed(
