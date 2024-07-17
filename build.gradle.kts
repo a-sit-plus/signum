@@ -1,7 +1,7 @@
 import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
 
 plugins {
-    id("at.asitplus.gradle.conventions") version "2.0.0+20240610"
+    id("at.asitplus.gradle.conventions") version "2.0.0+20240717"
 }
 group = "at.asitplus.crypto"
 
