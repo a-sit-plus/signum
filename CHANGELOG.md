@@ -166,13 +166,13 @@
 ### 3.2.1
 
 **Fixes**
- * Correct serialization of COSE signature structures
+* Correct serialization of COSE signature structures
 
 ### 3.2.2
 * KmmResult 1.7.0
 * Bignum 0.3.10 stable
 * okio 3.9.0
-* 
+
 ### NEXT
 
 **Changes**
@@ -180,5 +180,5 @@
 * Add `COSE_Key` header to `CoseHeader`, defined in OpenID for Verifiable Credential Issuance draft 13
 * Fix serialization of COSE signature structures
 * Refactor `JsonWebKey`:
-  * Remove `identifier`, please use `keyId` or `jwkThumbprint` directly
-  * Add `equalsCryptographically()` to compare two keys by their cryptographic properties only
+    * Remove `identifier`, please use `keyId` or `jwkThumbprint` directly
+    * Add `equalsCryptographically()` to compare two keys by their cryptographic properties only
