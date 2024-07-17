@@ -1,13 +1,9 @@
 [versions]
-core = "1.5.0"
 encoding = "1.2.3"
-kotestExtensionsAndroid = "0.1.3"
-kotestRunnerAndroid = "1.1.1"
-okio = "3.5.0"
-bignum = "0.3.10-SNAPSHOT"
+okio = "3.9.0"
+bignum = "0.3.10"
 jose = "9.31"
 kotlinpoet = "1.16.0"
-kmmresult = "1.6.2"
 runner = "1.5.2"
 
 [libraries]
