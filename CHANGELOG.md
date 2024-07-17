@@ -167,3 +167,8 @@
 
 **Fixes**
  * Correct serialization of COSE signature structures
+
+### 3.2.2
+* KmmResult 1.7.0
+* Bignum 0.3.10 stable
+* okio 3.9.0
