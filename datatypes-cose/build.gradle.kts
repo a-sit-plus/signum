@@ -30,8 +30,7 @@ kotlin {
                 api(project(":datatypes"))
                 api(serialization("cbor"))
                 implementation(napier())
-                implementation(libs.base16)
-                implementation(libs.base64)
+                implementation(libs.multibase)
                 implementation(libs.bignum) //Intellij bug work-around
             }
         }

@@ -6,10 +6,14 @@ import at.asitplus.crypto.datatypes.asn1.*
 import at.asitplus.crypto.datatypes.asn1.Asn1.BitString
 import at.asitplus.crypto.datatypes.asn1.Asn1.Null
 import at.asitplus.crypto.datatypes.io.ByteArrayBase64Serializer
-import at.asitplus.crypto.datatypes.io.MultiBase
 import at.asitplus.crypto.datatypes.misc.ANSIECPrefix
 import at.asitplus.crypto.datatypes.misc.ANSIECPrefix.Companion.hasPrefix
 import at.asitplus.crypto.datatypes.misc.UVarInt
+import at.asitplus.io.BaseN
+import at.asitplus.io.MultiBase
+import at.asitplus.io.multibaseDecode
+import at.asitplus.io.multibaseEncode
+import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -68,15 +72,23 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         @Throws(Throwable::class)
         fun fromDid(input: String): CryptoPublicKey {
             val bytes = multiKeyRemovePrefix(input)
-            val decoded = MultiBase.decode(bytes)
-            val codec = UVarInt.fromByteArray(decoded.sliceArray(0..1)).toULong()
+            var decoded = catching { bytes.multibaseDecode() }.getOrThrow()
+                ?: throw IndexOutOfBoundsException("Unsupported multibase encoding")
+            val codec = UVarInt.fromByteArray(decoded.sliceArray(0..1)).toULong().let { codec ->
+                //workaround our blursed encoding of legacy DID-encoded keys
+                if (codec < 0x1200uL) {
+                    decoded = BaseN.decode(MultiBase.Base.BASE64.alphabet, BigInteger(64), bytes.substring(1))
+                    UVarInt.fromByteArray(decoded.sliceArray(0..1)).toULong()
+                } else codec
+            }
+
             val keyBytes = decoded.copyOfRange(2, decoded.size)
 
             return when (codec) {
                 0x1200uL, 0x1290uL ->
                     EC.fromAnsiX963Bytes(ECCurve.SECP_256_R_1, keyBytes)
 
-                0x1201uL, 0x1291uL ->
+                0x1201uL, 0x1291uL, 8uL ->
                     EC.fromAnsiX963Bytes(ECCurve.SECP_384_R_1, keyBytes)
 
                 0x1202uL, 0x1292uL ->
@@ -221,10 +233,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          * The Multicodec identifier for RSA is `0x1205` and the key bytes are represented as PKCS#1 encoding.
          */
         override val didEncoded by lazy {
-            PREFIX_DID_KEY + ":" + MultiBase.encode(
-                MultiBase.Base.BASE58_BTC,
-                UVarInt(0x1205u).encodeToByteArray() + this.pkcsEncoded
-            )
+            "$PREFIX_DID_KEY:" +
+                    (UVarInt(0x1205u).encodeToByteArray() + this.pkcsEncoded).multibaseEncode(MultiBase.Base.BASE58_BTC)
         }
 
         override val iosEncoded by lazy { pkcsEncoded }
