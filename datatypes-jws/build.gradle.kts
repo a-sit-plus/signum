@@ -29,8 +29,7 @@ kotlin {
             dependencies {
                 api(project(":datatypes"))
                 implementation(libs.okio)
-                implementation(libs.base16)
-                implementation(libs.base64)
+                api(libs.multibase)
                 implementation(napier())
                 implementation(libs.bignum) //Intellij bug work-around
             }

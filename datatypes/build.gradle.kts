@@ -174,8 +174,7 @@ kotlin {
                 api(kmmresult())
                 api(serialization("json"))
                 api(datetime())
-                implementation(libs.base16)
-                implementation(libs.base64)
+                api(libs.multibase)
                 api(libs.bignum)
             }
         }
