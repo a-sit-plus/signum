@@ -182,3 +182,4 @@
 * Refactor `JsonWebKey`:
     * Remove `identifier`, please use `keyId` or `jwkThumbprint` directly
     * Add `equalsCryptographically()` to compare two keys by their cryptographic properties only
+* Externalise Mullbase implementation
