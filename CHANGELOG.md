@@ -175,6 +175,9 @@
 
 ### NEXT
 
+**Fixes**
+ * Fix calculation of JWK thumbprints according to [RFC7638](https://www.rfc-editor.org/rfc/rfc7638.html)
+
 **Changes**
 * Add `provider` module that actually implements cryptography!
 * Add `COSE_Key` header to `CoseHeader`, defined in OpenID for Verifiable Credential Issuance draft 13
