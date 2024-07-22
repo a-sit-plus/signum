@@ -173,16 +173,16 @@
 * Bignum 0.3.10 stable
 * okio 3.9.0
 
-### NEXT
+### 3.5.0
 
 **Fixes**
  * Fix calculation of JWK thumbprints according to [RFC7638](https://www.rfc-editor.org/rfc/rfc7638.html)
 
 **Changes**
-* Add `provider` module that actually implements cryptography!
+* Add `provider` module that actually implements cryptography! (Currently in preview, signature verification only)
 * Add `COSE_Key` header to `CoseHeader`, defined in OpenID for Verifiable Credential Issuance draft 13
 * Fix serialization of COSE signature structures
 * Refactor `JsonWebKey`:
     * Remove `identifier`, please use `keyId` or `jwkThumbprint` directly
     * Add `equalsCryptographically()` to compare two keys by their cryptographic properties only
-* Externalise Mullbase implementation
+* Externalise multibase implementation

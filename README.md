@@ -7,7 +7,7 @@
 [![Java](https://img.shields.io/badge/java-17+-blue.svg?logo=OPENJDK)](https://www.oracle.com/java/technologies/downloads/#java11)
 [![Maven Central](https://img.shields.io/maven-central/v/at.asitplus.crypto/datatypes)](https://mvnrepository.com/artifact/at.asitplus.crypto/datatypes/)
 
-## Kotlin Multiplatform Crypto/PKI Library and ASN1 Parser + Encoder
+## Kotlin Multiplatform Crypto/PKI Library with ASN1 Parser + Encoder
 
 _(We are not doing the Prince thing; the emojis are not part of the project name)_
 
@@ -25,6 +25,7 @@ types and functionality related to crypto and PKI applications:
 * COSE-related data structures (COSE Keys, CWT, etc…)
 * Serializability of all ASN.1 classes for debugging **AND ONLY FOR DEBUGGING!!!** *Seriously, do not try to deserialize ASN.1 classes through kotlinx.serialization! Use `decodeFromDer()` and its companions!*
 * 100% pure Kotlin BitSet
+* Exposes Multibase Encoder/Decoder as an API dependency including [Matthew Nelson's smashing Base16, Base32, and Base64 encoders](https://github.com/05nelsonm/encoding)
 * **ASN.1 Parser and Encoder including a DSL to generate ASN.1 structures**
 
 This last bit means that
@@ -40,12 +41,12 @@ the JVM, Android and iOS.
 
 This library consists of four modules, each of which is published on maven central:
 
-| Name | Info                                                                                                                         | Maven Coordinates                   |
-|------|------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|
-|   `provider`    | KMP module implementing the actual cryptographic operations.                                                                 | `at.asitplus.crypto:provider`       |
-|   `datatypes`   | Base module containing the cryptographic data strucures, algorithm identifiers, the ASN.1 parser, OIDs, X.509 certificate, … | `at.asitplus.crypto:datatypes`      |
-|   `datatypes-jws`   | JWS/JWE/JWT add-on module containing JWS/E/T-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization.                                                                                                                              | `at.asitplus.crypto:datatypes-jws`  |
-|`datatypes-cose` |     COSE add-on module containing all COSE/CWT-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization.                                                                                                                         | `at.asitplus.crypto:datatypes-cose` |
+| Name             | Info                                                                                                                                                                                                                                         | Maven Coordinates                   |
+|------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|
+| `provider`       | **Preview** KMP module implementing signature verification across platforms.                                                                                                                                                                 | `at.asitplus.crypto:provider`       |
+| `datatypes`      | Base module containing the cryptographic data strucures, algorithm identifiers, the ASN.1 parser, OIDs, X.509 certificate, …                                                                                                                 | `at.asitplus.crypto:datatypes`      |
+| `datatypes-jws`  | JWS/JWE/JWT add-on module containing JWS/E/T-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. | `at.asitplus.crypto:datatypes-jws`  |
+| `datatypes-cose` | COSE add-on module containing all COSE/CWT-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization.   | `at.asitplus.crypto:datatypes-cose` |
 
 This separation keeps dependencies to a minimum, i.e. it enables including only JWT-related functionality, if COSE is irrelevant.
 
@@ -58,7 +59,7 @@ implementation("at.asitplus.crypto:datatypes:$version")
 ```
 
 ```kotlin 
-implementation("at.asitplus.crypto:provider:$version")
+implementation("at.asitplus.crypto:provider:0.1.0-PRE")
 ```
 
 ```kotlin 
@@ -416,6 +417,8 @@ SEQUENCE (8 elem)
 ```
 
 ## Limitations
+
+* Multiplatform signature verification **only** based on platform verifiers (and a fallback 100% KMP verifier) ist included as a prerelease. signature creation is on its way.
 * While the ASN.1 parser will happily parse any valid **DER-encoded** ASN.1 structure you throw at it and the encoder will
   write it back correctly too. (No, we don't care for BER, since we want to transport cryptographic material!)
 * Higher-level abstractions (such as `X509Certificate`) are too lenient in some aspects and
@@ -432,10 +435,13 @@ SEQUENCE (8 elem)
   for a couple of months now and we're improving whenever we hit an issue.
 * Number of supported Algorithms is limited to the usual suspects (sorry, no Bernstein curves )-:)
 
+
 <br>
 
 ---
+
 <p align="center">
 The Apache License does not apply to the A-SIT logo, as it is the sole property of
 A-SIT/A-SIT Plus GmbH and may not be used without explicit permission!
 </p>
+
