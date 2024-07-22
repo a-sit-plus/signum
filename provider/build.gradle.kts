@@ -29,7 +29,7 @@ buildscript {
 val kmp_crypto: String by project
 
 
-version = "0.0.4-SNAPSHOT"
+version = "0.1.0-PRE"
 
 wireAndroidInstrumentedTests()
 
