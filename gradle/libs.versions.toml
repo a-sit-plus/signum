@@ -10,7 +10,6 @@ kotlinpoet = "1.16.0"
 runner = "1.5.2"
 
 [libraries]
-base16 = { group = "io.matthewnelson.kotlin-components", name = "encoding-base16", version.ref = "encoding" }
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }
 core = { module = "androidx.test:core", version.ref = "core" }
 kotest-extensions-android = { module = "br.com.colman:kotest-extensions-android", version.ref = "kotestExtensionsAndroid" }
