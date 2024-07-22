@@ -21,13 +21,28 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
 import okio.ByteString.Companion.toByteString
 
 /**
- * JSON Web Key as per [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517#section-4)
+ * JSON Web Key as per [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517#section-4).
+ *
+ * Note that the members are ordered lexicographically, as required for JWK Thumbprint calculation,
+ * see [RFC7638 s3](https://www.rfc-editor.org/rfc/rfc7638.html#section-3)
  */
 @Serializable
 data class JsonWebKey(
+    /**
+     * The "alg" (algorithm) parameter identifies the algorithm intended for
+     * use with the key.  The values used should either be registered in the
+     * IANA "JSON Web Signature and Encryption Algorithms" registry
+     * established by [JWA] or be a value that contains a Collision-
+     * Resistant Name.  The "alg" value is a case-sensitive ASCII string.
+     * Use of this member is OPTIONAL.
+     */
+    @SerialName("alg")
+    val algorithm: JsonWebAlgorithm? = null,
+
     /**
      * Set for EC keys only
      */
@@ -35,15 +50,27 @@ data class JsonWebKey(
     val curve: ECCurve? = null,
 
     /**
-     * The "kty" (key type) parameter identifies the cryptographic algorithm
-     * family used with the key, such as "RSA" or "EC".  "kty" values should
-     * either be registered in the IANA "JSON Web Key Types" registry
-     * established by (JWA) or be a value that contains a Collision-Resistant
-     * Name.  The "kty" value is a case-sensitive string.  This
-     * member MUST be present in a JWK.
+     * Set for RSA keys only
      */
-    @SerialName("kty")
-    val type: JwkType? = null,
+    @SerialName("e")
+    @Serializable(with = ByteArrayBase64UrlSerializer::class)
+    val e: ByteArray? = null,
+
+    /**
+     * Set for symmetric keys only
+     */
+    @SerialName("k")
+    @Serializable(with = ByteArrayBase64UrlSerializer::class)
+    val k: ByteArray? = null,
+
+    /**
+     * The "key_ops" (key operations) parameter identifies the operation(s)
+     * for which the key is intended to be used.  The "key_ops" parameter is
+     * intended for use cases in which public, private, or symmetric keys
+     * may be present.
+     */
+    @SerialName("key_ops")
+    val keyOperations: Set<String>? = null,
 
     /**
      * The "kid" (key ID) parameter is used to match a specific key.  This
@@ -62,18 +89,15 @@ data class JsonWebKey(
     val keyId: String? = null,
 
     /**
-     * Set for EC keys only
+     * The "kty" (key type) parameter identifies the cryptographic algorithm
+     * family used with the key, such as "RSA" or "EC".  "kty" values should
+     * either be registered in the IANA "JSON Web Key Types" registry
+     * established by (JWA) or be a value that contains a Collision-Resistant
+     * Name.  The "kty" value is a case-sensitive string.  This
+     * member MUST be present in a JWK.
      */
-    @SerialName("x")
-    @Serializable(with = ByteArrayBase64UrlSerializer::class)
-    val x: ByteArray? = null,
-
-    /**
-     * Set for EC keys only
-     */
-    @SerialName("y")
-    @Serializable(with = ByteArrayBase64UrlSerializer::class)
-    val y: ByteArray? = null,
+    @SerialName("kty")
+    val type: JwkType? = null,
 
     /**
      * Set for RSA keys only
@@ -81,20 +105,6 @@ data class JsonWebKey(
     @SerialName("n")
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val n: ByteArray? = null,
-
-    /**
-     * Set for RSA keys only
-     */
-    @SerialName("e")
-    @Serializable(with = ByteArrayBase64UrlSerializer::class)
-    val e: ByteArray? = null,
-
-    /**
-     * Set for symmetric keys only
-     */
-    @SerialName("k")
-    @Serializable(with = ByteArrayBase64UrlSerializer::class)
-    val k: ByteArray? = null,
 
     /**
      * The "use" (public key use) parameter identifies the intended use of
@@ -106,41 +116,11 @@ data class JsonWebKey(
     val publicKeyUse: String? = null,
 
     /**
-     * The "key_ops" (key operations) parameter identifies the operation(s)
-     * for which the key is intended to be used.  The "key_ops" parameter is
-     * intended for use cases in which public, private, or symmetric keys
-     * may be present.
+     * Set for EC keys only
      */
-    @SerialName("key_ops")
-    val keyOperations: Set<String>? = null,
-
-    /**
-     * The "alg" (algorithm) parameter identifies the algorithm intended for
-     * use with the key.  The values used should either be registered in the
-     * IANA "JSON Web Signature and Encryption Algorithms" registry
-     * established by [JWA] or be a value that contains a Collision-
-     * Resistant Name.  The "alg" value is a case-sensitive ASCII string.
-     * Use of this member is OPTIONAL.
-     */
-    @SerialName("alg")
-    val algorithm: JsonWebAlgorithm? = null,
-
-    /**
-     * The "x5u" (X.509 URL) parameter is a URI (RFC3986) that refers to a
-     * resource for an X.509 public key certificate or certificate chain
-     * (RFC5280).  The identified resource MUST provide a representation of
-     * the certificate or certificate chain that conforms to RFC 5280
-     * (RFC5280) in PEM-encoded form, with each certificate delimited as
-     * specified in Section 6.1 of RFC 4945 (RFC4945).  The key in the first
-     * certificate MUST match the public key represented by other members of
-     * the JWK.  The protocol used to acquire the resource MUST provide
-     * integrity protection; an HTTP GET request to retrieve the certificate
-     * MUST use TLS (RFC2818) (RFC5246); the identity of the server MUST be
-     * validated, as per Section 6 of RFC 6125 (RFC6125).  Use of this
-     * member is OPTIONAL.
-     */
-    @SerialName("x5u")
-    val certificateUrl: String? = null,
+    @SerialName("x")
+    @Serializable(with = ByteArrayBase64UrlSerializer::class)
+    val x: ByteArray? = null,
 
     /**
      * The "x5c" (X.509 certificate chain) parameter contains a chain of one
@@ -171,6 +151,23 @@ data class JsonWebKey(
     val certificateSha1Thumbprint: ByteArray? = null,
 
     /**
+     * The "x5u" (X.509 URL) parameter is a URI (RFC3986) that refers to a
+     * resource for an X.509 public key certificate or certificate chain
+     * (RFC5280).  The identified resource MUST provide a representation of
+     * the certificate or certificate chain that conforms to RFC 5280
+     * (RFC5280) in PEM-encoded form, with each certificate delimited as
+     * specified in Section 6.1 of RFC 4945 (RFC4945).  The key in the first
+     * certificate MUST match the public key represented by other members of
+     * the JWK.  The protocol used to acquire the resource MUST provide
+     * integrity protection; an HTTP GET request to retrieve the certificate
+     * MUST use TLS (RFC2818) (RFC5246); the identity of the server MUST be
+     * validated, as per Section 6 of RFC 6125 (RFC6125).  Use of this
+     * member is OPTIONAL.
+     */
+    @SerialName("x5u")
+    val certificateUrl: String? = null,
+
+    /**
      * The "x5t#S256" (X.509 certificate SHA-256 thumbprint) parameter is a
      * base64url-encoded SHA-256 thumbprint (a.k.a. digest) of the DER
      * encoding of an X.509 certificate (RFC5280).  Note that certificate
@@ -181,6 +178,13 @@ data class JsonWebKey(
     @SerialName("x5t#S256")
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val certificateSha256Thumbprint: ByteArray? = null,
+
+    /**
+     * Set for EC keys only
+     */
+    @SerialName("y")
+    @Serializable(with = ByteArrayBase64UrlSerializer::class)
+    val y: ByteArray? = null,
 ) : SpecializedCryptoPublicKey {
 
     /**
@@ -189,7 +193,10 @@ data class JsonWebKey(
      * See [RFC9278](https://www.rfc-editor.org/rfc/rfc9278.html)
      */
     val jwkThumbprint: String by lazy {
-        val thumbprint = Json.encodeToString(this).encodeToByteArray().toByteString().sha256().base64Url()
+        val jsonEncoded = Json.encodeToString(this.toMinimalJsonWebKey().getOrNull() ?: this)
+            .also { println(it) }
+        val thumbprint = jsonEncoded
+            .encodeToByteArray().toByteString().sha256().toByteArray().encodeToString(Base64UrlStrict)
         "urn:ietf:params:oauth:jwk-thumbprint:sha256:${thumbprint}"
     }
 
@@ -302,6 +309,19 @@ data class JsonWebKey(
                 ).apply { jwkId = keyId }
             }
 
+            else -> throw IllegalArgumentException("Illegal key type")
+        }
+    }
+
+    /**
+     * @return a copy of this key with the minimal required members as listed in
+     * [RFC7638 3.2](https://www.rfc-editor.org/rfc/rfc7638.html#section-3.2)
+     */
+    fun toMinimalJsonWebKey(): KmmResult<JsonWebKey> = catching {
+        when (type) {
+            JwkType.EC -> JsonWebKey(type = JwkType.EC, curve = curve, x = x, y = y)
+            JwkType.RSA -> JsonWebKey(type = JwkType.RSA, n = n, e = e)
+            JwkType.SYM -> JsonWebKey(type = JwkType.SYM, k = k)
             else -> throw IllegalArgumentException("Illegal key type")
         }
     }
