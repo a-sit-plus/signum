@@ -1,6 +1,7 @@
 package at.asitplus.crypto.datatypes.cose
 
 import at.asitplus.crypto.datatypes.CryptoSignature
+import at.asitplus.crypto.datatypes.cose.io.ByteStringWrapper
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
 import io.kotest.core.spec.style.FreeSpec
@@ -10,7 +11,6 @@ import io.kotest.matchers.string.shouldContain
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.serialization.cbor.ByteStringWrapper
 import kotlin.random.Random
 
 val Base16Strict = Base16(strict = true)

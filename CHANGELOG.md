@@ -186,3 +186,18 @@
     * Remove `identifier`, please use `keyId` or `jwkThumbprint` directly
     * Add `equalsCryptographically()` to compare two keys by their cryptographic properties only
 * Externalise multibase implementation
+
+
+### 3.5.1
+
+** Fixes **
+
+* Publish provider pre-release to maven central
+
+** Changes **
+
+* Depend on newer conventions, which don't pull serialization snapshots in:
+  * `datatypes`, `datatypes-jws`, and `provider` depend on stable serialization **WITHOUT COSE SUPPORT**
+  *  `datatypes-cose` pulls in latest 1.8.0 serialization SNAPSHOT from upstream
+* `ByteStringWrapper` is not part of upstream snapshot cose serialization anymore,
+but implemented as part of `datatypes-cose` in package `at.asitplus.crypto.datatypes.cose.io` 

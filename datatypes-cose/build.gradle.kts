@@ -28,7 +28,8 @@ kotlin {
          commonMain {
             dependencies {
                 api(project(":datatypes"))
-                api(serialization("cbor"))
+                //noinspection UseTomlInstead
+                api("org.jetbrains.kotlinx:kotlinx-serialization-cbor:1.8.0-SNAPSHOT!!")
                 implementation(napier())
                 implementation(libs.multibase)
                 implementation(libs.bignum) //Intellij bug work-around

@@ -17,7 +17,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Publish to Maven Local
-        run: ./gradlew clean datatypes:publishToMavenLocal datatypes-jws:publishToMavenLocal datatypes-cose:publishToMavenLocal
+        run: ./gradlew clean datatypes:publishToMavenLocal datatypes-jws:publishToMavenLocal datatypes-cose:publishToMavenLocal provider:publishToMavenLocal
         env:
           ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.PUBLISH_SIGNING_KEYID }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.PUBLISH_SIGNING_KEY }}
