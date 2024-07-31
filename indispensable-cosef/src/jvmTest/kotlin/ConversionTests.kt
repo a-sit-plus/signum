@@ -18,7 +18,7 @@ infix fun <T> KmmResult<T>.shouldSucceedWith(b: T) : T =
 class ConversionTests : FreeSpec({
     "COSE -> SigAlg -> COSE is stable" - {
         withData(CoseAlgorithm.entries) {
-            at.asitplus.signum.indispensable.cosef.toCoseAlgorithm() shouldSucceedWith  it
+            it.toCoseAlgorithm() shouldSucceedWith  it
             it.algorithm.toCoseAlgorithm() shouldSucceedWith it
         }
     }
