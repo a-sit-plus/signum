@@ -126,7 +126,7 @@ repositories {
 publishing {
     publications {
         withType<MavenPublication> {
-            artifact(javadocJar)
+            if (this.name != "relocation") artifact(javadocJar)
             pom {
                 name.set("Signum Supreme")
                 description.set("Kotlin Multiplatform Crypto Provider")

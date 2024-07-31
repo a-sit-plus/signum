@@ -56,7 +56,7 @@ val javadocJar = setupDokka(
 publishing {
     publications {
         withType<MavenPublication> {
-            artifact(javadocJar)
+            if (this.name != "relocation") artifact(javadocJar)
             pom {
                 name.set("Indispensable COSEF")
                 description.set("Kotlin Multiplatform Crypto Library - COSE Addons")

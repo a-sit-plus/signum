@@ -217,7 +217,7 @@ val javadocJar = setupDokka(
 publishing {
     publications {
         withType<MavenPublication> {
-            artifact(javadocJar)
+            if (this.name != "relocation") artifact(javadocJar)
             pom {
                 name.set("Indispensable")
                 description.set("Kotlin Multiplatform Crypto Core Library, Datatypes and ASN.1 Parser+Encoder")
