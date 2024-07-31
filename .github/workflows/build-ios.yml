@@ -15,40 +15,40 @@ jobs:
       - name: Build klibs
         run: ./gradlew iosArm64MainKlibrary iosX64MainKlibrary
       - name: Build XCFrameworks
-        run: ./gradlew assembleKmpCryptoXCFramework assembleKmpCryptoJwsXCFramework assembleKmpCryptoCoseXCFramework
-      - name: Upload debug XCFramework KmpCrypto
+        run: ./gradlew assembleIndispensableXCFramework assembleIndispensableJosefXCFramework assembleIndispensableCosefXCFramework
+      - name: Upload debug XCFramework Indispensable
         uses: actions/upload-artifact@v3
         with:
-          name: KmpCrypto-debug.xcframework
+          name: Indispensable-debug.xcframework
           path: |
-            datatypes/build/XCFrameworks/debug/
-      - name: Upload debug XCFramework KmpCryptoJws
+            indispensable/build/XCFrameworks/debug/
+      - name: Upload debug XCFramework IndispensableJosef
         uses: actions/upload-artifact@v3
         with:
-          name: KmpCryptoJws-debug.xcframework
+          name: IndispensableJosef-debug.xcframework
           path: |
-            datatypes-jws/build/XCFrameworks/debug/
-      - name: Upload debug XCFramework KmpCryptoCose
+            indispensable-josef/build/XCFrameworks/debug/
+      - name: Upload debug XCFramework IndispensableCosef
         uses: actions/upload-artifact@v3
         with:
-          name: KmpCryptoCose-debug.xcframework
+          name: IndispensableCosef-debug.xcframework
           path: |
-            datatypes-cose/build/XCFrameworks/debug/
-      - name: Upload release XCFramework KmpCrypto
+            indispensable-cosef/build/XCFrameworks/debug/
+      - name: Upload release XCFramework Indispensable
         uses: actions/upload-artifact@v3
         with:
-          name: KmpCrypto-release.xcframework
+          name: Indispensable-release.xcframework
           path: |
-            datatypes/build/XCFrameworks/release/
-      - name: Upload release XCFramework KmpCryptoJws
+            indispensable/build/XCFrameworks/release/
+      - name: Upload release XCFramework IndispensableJosef
         uses: actions/upload-artifact@v3
         with:
-          name: KmpCryptoJws-release.xcframework
+          name: IndispensableJosef-release.xcframework
           path: |
-            datatypes-jws/build/XCFrameworks/release/
-      - name: Upload release XCFramework KmpCryptoCose
+            indispensable-josef/build/XCFrameworks/release/
+      - name: Upload release XCFramework IndispensableCosef
         uses: actions/upload-artifact@v3
         with:
-          name: KmpCryptoCose-release.xcframework
+          name: IndispensableCosef-release.xcframework
           path: |
-            datatypes-cose/build/XCFrameworks/release/
+            indispensable-cosef/build/XCFrameworks/release/

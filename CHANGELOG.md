@@ -1,5 +1,138 @@
 # Changelog
 
+
+## 3.0
+
+### 3.5.2
+* Rebranding to Signum
+  * maven coordinates: `at.asitplus.signum:$module`
+  * modules
+    * datatypes -> indispensable
+    * datatypes-jws -> indispensable-josef
+    * datatypes-cose -> indispensable-cosef
+    * provider -> supreme
+  * package renames
+  * `crypto` -> `signum`
+  * `datatypes` -> `indispensable`
+  * `jws` -> `josef`
+  * `cose` -> `cosef`
+  * `provider` -> `supreme`
+
+### 3.5.1
+
+** Fixes **
+
+* Publish provider pre-release to maven central
+
+** Changes **
+
+* Depend on newer conventions, which don't pull serialization snapshots in:
+    * `datatypes`, `datatypes-jws`, and `provider` depend on stable serialization **WITHOUT COSE SUPPORT**
+    *  `datatypes-cose` pulls in latest 1.8.0 serialization SNAPSHOT from upstream
+* `ByteStringWrapper` is not part of upstream snapshot cose serialization anymore,
+  but implemented as part of `datatypes-cose` in package `at.asitplus.crypto.datatypes.cose.io`
+
+
+### 3.5.0
+
+**Fixes**
+* Fix calculation of JWK thumbprints according to [RFC7638](https://www.rfc-editor.org/rfc/rfc7638.html)
+
+**Changes**
+* Add `provider` module that actually implements cryptography! (Currently in preview, signature verification only)
+* Add `COSE_Key` header to `CoseHeader`, defined in OpenID for Verifiable Credential Issuance draft 13
+* Fix serialization of COSE signature structures
+* Refactor `JsonWebKey`:
+    * Remove `identifier`, please use `keyId` or `jwkThumbprint` directly
+    * Add `equalsCryptographically()` to compare two keys by their cryptographic properties only
+* Externalise multibase implementation
+
+### 3.2.2
+* KmmResult 1.7.0
+* Bignum 0.3.10 stable
+* okio 3.9.0
+
+### 3.2.1
+
+**Fixes**
+* Correct serialization of COSE signature structures
+
+### 3.2.0
+
+* Kotlin 2.0
+* Gradle 8.8
+* Bouncy Castle 1.78.1
+* Kotest 5.9.1
+* Coroutines 1.8.1
+* Serialization 1.7.1-SNAPSHOT
+* KmmResult 1.6.2
+
+**Fixes**
+* Move `curve` from `CryptoAlgorithm` to `JwsAlgorithm`
+* Don't assume curve information for the X.509 signature when, in fact, none exists
+    * `CryptoSignature`s in X.509 are now indefinite length
+
+**Changes**
+* Always DID-encode keys in compressed form (but keep decoding support)
+* Rename `CryptoAlgorithm` to `X509SignatureAlgorithm` to better describe what it is
+    * Rename `toCryptoAlgorithm` to `toX509SignatureAlgorithm` accordingly
+* Rework CryptoSignature to two-dimensional interface:
+    * CryptoSignature <- {EC <- {IndefiniteLength, DefiniteLength}, RsaOrHmac}
+    * CryptoSignature <- {RawByteEncodable <- {EC.DefiniteLength, RsaOrHmac}, NotRawByteEncodable <- EC.IndefiniteLength}
+
+### 3.1.0
+
+**Fixes**
+* Standardize class names: `Ec` -> `EC` everywhere
+* Fix an edge case where very small `r`/`s` in `CryptoSignature.EC` would be corrupted
+* Remove bogus ASN.1 encoding from JWS Algorithms
+    * `CryptoSignature.EC` now requires specification of a curve or size when reading raw bytes
+
+**Features**
+* Support ASN.1 encoding/decoding for `BigInteger`
+* Expose `generator`, `order` and `cofactor` of `ECCurve`
+* Extend list of values in `JweAlgorithm` and `JweEncryption`
+* Extend properties in `JweHeader`
+* Extend properties in `JwsHeader`
+* **BREAKING CHANGE:** Completely revamp the ASN.1 builder DSL
+    * explicitly require `+` to add some ASN.1 element to a builder
+    * Make convenience functions like `Bool(<boolean value>)`work stand-alone
+* Introduce common interface `JsonWebAlgorithm` for Jw{s,e}Algorithm
+* JsonWebKey Changes:
+    * do not generate kid when there is none and allow removing it
+    * reference `JsonWebAlgorithm` instead of `JwsAlgorithm`
+    * add `.didEncoded`, which may return null, if encoding fails
+* add `.curve` to EC CryptoAlgorithms
+* Change JweAlgorithm to sealed class to support unknown algorithms
+* Add generic `ECPoint` class
+* Implement elliptic-curve arithmetic
+
+
+### 3.0.0
+
+**Fixes**
+* Restructure and fix `RelativeDistinguishedName`. **THIS IS A BREAKING CHANGE**
+* Fix `Asn1Time` not truncating to seconds
+* Fix parsing of CryptoSignature when decoding Certificates
+* Remove bogus `serialize()` function from `CryptoSignature`  **THIS IS A BREAKING CHANGE**
+
+
+**Features**
+* Wrap exceptions during deserialization in `KmmResult`, i.e. changing all `deserialize()` methods in companion objects  **THIS IS A BREAKING CHANGE**
+* Move class `JweDecrypted` from package `at.asitplus.wallet.lib.jws` to `at.asitplus.crypto.datatypes.jws`  **THIS IS A BREAKING CHANGE**
+* Support more JWE algorithms, e.g. AES
+* Add `header` to constructor parameters of `JweEncrypted`
+* Extend properties of `JsonWebKey`
+* Introduce `CertificateChain` typealias with `.leaf` and `.root` convenience properties
+* Use `CertificateChain` inside `JwsHeader` instead of `Array<ByteArray>'
+* Use `CertificateChain` inside `JsonWebKey` instead of `Array<ByteArray>'
+
+* SubjectAltNames and IssuerAltNames:
+    * Perform some structural validations on SAN and IAN
+    * Expose `TbsCertificate.issuerAltNames` and `TbsCertificte.subjectAltnames`, which contain (somewhat) parsed
+      `AlternativeNames` structures for easy access to `dnsName`. `iPAddress`, etc.
+
+
 ## 1.0
 
 ### 1.0.0
@@ -85,119 +218,3 @@
  * Implement `CborWebToken` (RFC 8392)
  * Boolean ASN.1 decoding helper function
  * Certificate to/from JCA certificate conversion functions
-
-## 3.0
-
-### 3.0.0
-
-**Fixes**
- * Restructure and fix `RelativeDistinguishedName`. **THIS IS A BREAKING CHANGE**
- * Fix `Asn1Time` not truncating to seconds
- * Fix parsing of CryptoSignature when decoding Certificates
- * Remove bogus `serialize()` function from `CryptoSignature`  **THIS IS A BREAKING CHANGE**
-
-
-**Features**
- * Wrap exceptions during deserialization in `KmmResult`, i.e. changing all `deserialize()` methods in companion objects  **THIS IS A BREAKING CHANGE**
- * Move class `JweDecrypted` from package `at.asitplus.wallet.lib.jws` to `at.asitplus.crypto.datatypes.jws`  **THIS IS A BREAKING CHANGE**
- * Support more JWE algorithms, e.g. AES
- * Add `header` to constructor parameters of `JweEncrypted`
- * Extend properties of `JsonWebKey`
- * Introduce `CertificateChain` typealias with `.leaf` and `.root` convenience properties
- * Use `CertificateChain` inside `JwsHeader` instead of `Array<ByteArray>'
- * Use `CertificateChain` inside `JsonWebKey` instead of `Array<ByteArray>'
-
- * SubjectAltNames and IssuerAltNames:
-    * Perform some structural validations on SAN and IAN
-    * Expose `TbsCertificate.issuerAltNames` and `TbsCertificte.subjectAltnames`, which contain (somewhat) parsed
-      `AlternativeNames` structures for easy access to `dnsName`. `iPAddress`, etc.
-
-### 3.1.0
-
-**Fixes**
- * Standardize class names: `Ec` -> `EC` everywhere
- * Fix an edge case where very small `r`/`s` in `CryptoSignature.EC` would be corrupted
- * Remove bogus ASN.1 encoding from JWS Algorithms
-   * `CryptoSignature.EC` now requires specification of a curve or size when reading raw bytes
-
-**Features**
- * Support ASN.1 encoding/decoding for `BigInteger`
- * Expose `generator`, `order` and `cofactor` of `ECCurve`
- * Extend list of values in `JweAlgorithm` and `JweEncryption`
- * Extend properties in `JweHeader`
- * Extend properties in `JwsHeader`
- * **BREAKING CHANGE:** Completely revamp the ASN.1 builder DSL
-   * explicitly require `+` to add some ASN.1 element to a builder
-   * Make convenience functions like `Bool(<boolean value>)`work stand-alone
- * Introduce common interface `JsonWebAlgorithm` for Jw{s,e}Algorithm
- * JsonWebKey Changes:
-   * do not generate kid when there is none and allow removing it
-   * reference `JsonWebAlgorithm` instead of `JwsAlgorithm`
-   * add `.didEncoded`, which may return null, if encoding fails
- * add `.curve` to EC CryptoAlgorithms
- * Change JweAlgorithm to sealed class to support unknown algorithms
- * Add generic `ECPoint` class
- * Implement elliptic-curve arithmetic
-
-
-### 3.2.0
-
-* Kotlin 2.0
-* Gradle 8.8
-* Bouncy Castle 1.78.1
-* Kotest 5.9.1 
-* Coroutines 1.8.1
-* Serialization 1.7.1-SNAPSHOT
-* KmmResult 1.6.2
-
-**Fixes**
- * Move `curve` from `CryptoAlgorithm` to `JwsAlgorithm`
- * Don't assume curve information for the X.509 signature when, in fact, none exists
-   * `CryptoSignature`s in X.509 are now indefinite length
-
-**Changes**
-* Always DID-encode keys in compressed form (but keep decoding support)
-* Rename `CryptoAlgorithm` to `X509SignatureAlgorithm` to better describe what it is
-  * Rename `toCryptoAlgorithm` to `toX509SignatureAlgorithm` accordingly
-* Rework CryptoSignature to two-dimensional interface:
-  * CryptoSignature <- {EC <- {IndefiniteLength, DefiniteLength}, RsaOrHmac}
-  * CryptoSignature <- {RawByteEncodable <- {EC.DefiniteLength, RsaOrHmac}, NotRawByteEncodable <- EC.IndefiniteLength}
-
-### 3.2.1
-
-**Fixes**
-* Correct serialization of COSE signature structures
-
-### 3.2.2
-* KmmResult 1.7.0
-* Bignum 0.3.10 stable
-* okio 3.9.0
-
-### 3.5.0
-
-**Fixes**
- * Fix calculation of JWK thumbprints according to [RFC7638](https://www.rfc-editor.org/rfc/rfc7638.html)
-
-**Changes**
-* Add `provider` module that actually implements cryptography! (Currently in preview, signature verification only)
-* Add `COSE_Key` header to `CoseHeader`, defined in OpenID for Verifiable Credential Issuance draft 13
-* Fix serialization of COSE signature structures
-* Refactor `JsonWebKey`:
-    * Remove `identifier`, please use `keyId` or `jwkThumbprint` directly
-    * Add `equalsCryptographically()` to compare two keys by their cryptographic properties only
-* Externalise multibase implementation
-
-
-### 3.5.1
-
-** Fixes **
-
-* Publish provider pre-release to maven central
-
-** Changes **
-
-* Depend on newer conventions, which don't pull serialization snapshots in:
-  * `datatypes`, `datatypes-jws`, and `provider` depend on stable serialization **WITHOUT COSE SUPPORT**
-  *  `datatypes-cose` pulls in latest 1.8.0 serialization SNAPSHOT from upstream
-* `ByteStringWrapper` is not part of upstream snapshot cose serialization anymore,
-but implemented as part of `datatypes-cose` in package `at.asitplus.crypto.datatypes.cose.io` 

@@ -30,6 +30,6 @@ jobs:
         uses: dorny/test-reporter@v1
         if: success() || failure()
         with:
-          name: Provider Android Connected Tests
-          path: provider/build/outputs/androidTest-results/connected/**/TEST*.xml
+          name: Supreme Android Connected Tests
+          path: supreme/build/outputs/androidTest-results/connected/**/TEST*.xml
           reporter: java-junit

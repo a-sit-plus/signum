@@ -24,8 +24,8 @@ dependencyResolutionManagement {
     }
 }
 
-include(":datatypes")
-include(":datatypes-jws")
-include(":datatypes-cose")
-include(":provider")
-rootProject.name = "kmp-crypto"
+include(":indispensable")
+include(":indispensable-josef")
+include(":indispensable-cosef")
+include(":supreme")
+rootProject.name = "Signum"
