@@ -2,8 +2,8 @@ package at.asitplus.signum.supreme.dsl
 
 /**
  * The meta functionality that enables us to easily create DSLs.
- * @see at.asitplus.signum.provider.dsl.DSLInheritanceDemonstration
- * @see at.asitplus.signum.provider.dsl.DSLVarianceDemonstration
+ * @see at.asitplus.signum.supreme.dsl.DSLInheritanceDemonstration
+ * @see at.asitplus.signum.supreme.dsl.DSLVarianceDemonstration
  */
 object DSL {
     /** Resolve a DSL lambda to a concrete configuration */

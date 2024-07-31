@@ -1,4 +1,4 @@
-package at.asitplus.signum.provider.sign
+package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey

@@ -97,6 +97,26 @@ publishing {
                 }
             }
         }
+
+        //REMOVE ME AFTER REBRANDED ARTIFACT HAS BEEN PUBLISHED
+        create<MavenPublication>("relocation") {
+            pom {
+                // Old artifact coordinates
+                groupId = "at.asitplus.crypto"
+                artifactId = "datatypes-jws"
+                version = "$version"
+
+                distributionManagement {
+                    relocation {
+                        // New artifact coordinates
+                        groupId = "at.asitplus.signum"
+                        artifactId = "indispensable-josef"
+                        version = "$version"
+                        message = " groupId and artifactId have been changed"
+                    }
+                }
+            }
+        }
     }
     repositories {
         mavenLocal {

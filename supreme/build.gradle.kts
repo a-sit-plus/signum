@@ -77,7 +77,7 @@ swiftklib {
 }
 
 android {
-    namespace = "at.asitplus.signum.android"
+    namespace = "at.asitplus.signum.supreme"
     compileSdk = 34
     defaultConfig {
         minSdk = 33
@@ -158,6 +158,26 @@ publishing {
                     connection.set("scm:git:git@github.com:a-sit-plus/signum.git")
                     developerConnection.set("scm:git:git@github.com:a-sit-plus/signum.git")
                     url.set("https://github.com/a-sit-plus/kmp-crypto")
+                }
+            }
+        }
+
+        //REMOVE ME AFTER REBRANDED ARTIFACT HAS BEEN PUBLISHED
+        create<MavenPublication>("relocation") {
+            pom {
+                // Old artifact coordinates
+                groupId = "at.asitplus.crypto"
+                artifactId = "provider"
+                version = "$version"
+
+                distributionManagement {
+                    relocation {
+                        // New artifact coordinates
+                        groupId = "at.asitplus.signum"
+                        artifactId = "supreme"
+                        version = "$version"
+                        message = " groupId and artifactId have been changed"
+                    }
                 }
             }
         }
