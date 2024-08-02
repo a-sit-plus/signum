@@ -14,7 +14,7 @@
 [![Kotlin](https://img.shields.io/badge/kotlin-multiplatform-orange.svg?logo=kotlin)](http://kotlinlang.org)
 [![Kotlin](https://img.shields.io/badge/kotlin-2.0.0-blue.svg?logo=kotlin)](http://kotlinlang.org)
 [![Java](https://img.shields.io/badge/java-17+-blue.svg?logo=OPENJDK)](https://www.oracle.com/java/technologies/downloads/#java11)
-[![Maven Central](https://img.shields.io/maven-central/v/at.asitplus.signum/datatypes)](https://mvnrepository.com/artifact/at.asitplus.signum/datatypes/)
+[![Maven Central](https://img.shields.io/maven-central/v/at.asitplus.signum/indispensable)](https://mvnrepository.com/artifact/at.asitplus.signum/)
 
 </div>
 

@@ -3,7 +3,7 @@
 
 ## 3.0
 
-### 3.5.2
+### 3.6.0
 * Rebranding to Signum
   * maven coordinates: `at.asitplus.signum:$module`
   * modules
@@ -132,6 +132,8 @@
     * Expose `TbsCertificate.issuerAltNames` and `TbsCertificte.subjectAltnames`, which contain (somewhat) parsed
       `AlternativeNames` structures for easy access to `dnsName`. `iPAddress`, etc.
 
+
+---
 
 ## 1.0
 
