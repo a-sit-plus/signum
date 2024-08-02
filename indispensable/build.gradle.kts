@@ -259,14 +259,14 @@ publishing {
                 // Old artifact coordinates
                 groupId = "at.asitplus.crypto"
                 artifactId = "datatypes"
-                version = "$version"
+                version = artifactVersion
 
                 distributionManagement {
                     relocation {
                         // New artifact coordinates
                         groupId = "at.asitplus.signum"
                         artifactId = "indispensable"
-                        version = "$version"
+                        version = artifactVersion
                         message = " groupId and artifactId have been changed"
                     }
                 }
