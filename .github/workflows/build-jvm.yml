@@ -17,18 +17,18 @@ jobs:
       - name: Upload jar datatypes
         uses: actions/upload-artifact@v3
         with:
-          name: datatypes
+          name: indispensable
           path: |
-            datatypes/build/libs/*jar
-      - name: Upload jar datatypes-jws
+            indispensable/build/libs/*jar
+      - name: Upload jar indispensable-josef
         uses: actions/upload-artifact@v3
         with:
-          name: datatypes-jws
+          name: indispensable-josef
           path: |
-            datatypes-jws/build/libs/*jar
-      - name: Upload jar datatypes-crypto
+            indispensable-josef/build/libs/*jar
+      - name: Upload jar indispensable-cosef
         uses: actions/upload-artifact@v3
         with:
-          name: datatypes-crypto
+          name: indispensable-cosef
           path: |
-            datatypes-crypto/build/libs/*jar
+            indispensable-cosef/build/libs/*jar
