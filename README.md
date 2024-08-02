@@ -1,14 +1,25 @@
-# 🔥🔥🔥KMP Crypto🔥🔥🔥
+<div align="center">
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="signum-light-large.png">
+  <source media="(prefers-color-scheme: light)" srcset="signum-dark-large.png">
+  <img alt="Signum – Kotlin Multiplatform Crypto/PKI Library and ASN1 Parser + Encoder" src="signum-dark-large.png">
+</picture>
+
+
+# Signum – Kotlin Multiplatform Crypto/PKI Library and ASN1 Parser + Encoder
+
+[![A-SIT Plus Official](https://img.shields.io/badge/A--SIT_Plus-official-005b79?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNDMuNzYyODYgMTg0LjgxOTk5Ij48ZGVmcz48Y2xpcFBhdGggaWQ9ImEiIGNsaXBQYXRoVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNMCA1OTUuMjhoODQxLjg5VjBIMFoiLz48L2NsaXBQYXRoPjwvZGVmcz48ZyBjbGlwLXBhdGg9InVybCgjYSkiIHRyYW5zZm9ybT0ibWF0cml4KDEuMzMzMzMzMyAwIDAgLTEuMzMzMzMzMyAtNDgyLjI1IDUxNy41MykiPjxwYXRoIGZpbGw9IiMwMDViNzkiIGQ9Ik00MTUuNjcgMjQ5LjUzYy03LjE1LjA4LTEzLjk0IDEtMjAuMTcgMi43NWE1Mi4zMyA1Mi4zMyAwIDAgMC0xNy40OCA4LjQ2IDQwLjQzIDQwLjQzIDAgMCAwLTExLjk2IDE0LjU2Yy0yLjY4IDUuNDEtNC4xNCAxMS44NC00LjM1IDE5LjA5bC0uMDIgNi4xMnYyLjE3YS43MS43MSAwIDAgMCAuNy43M2gxNi41MmMuMzkgMCAuNy0uMzIuNzEtLjdsLjAxLTIuMmMwLTIuNi4wMi01LjgyLjAzLTYuMDcuMi00LjYgMS4yNC04LjY2IDMuMDgtMTIuMDZhMjguNTIgMjguNTIgMCAwIDEgOC4yMy05LjU4IDM1LjI1IDM1LjI1IDAgMCAxIDExLjk2LTUuNTggNTUuMzggNTUuMzggMCAwIDEgMTIuNTgtMS43NmM0LjMyLjEgOC42LjcgMTIuNzQgMS44YTM1LjA3IDM1LjA3IDAgMCAxIDExLjk2IDUuNTcgMjguNTQgMjguNTQgMCAwIDEgOC4yNCA5LjU3YzEuOTYgMy42NCAzIDguMDIgMy4xMiAxMy4wMnYyNC4wOUgzNjIuNGEuNy43IDAgMCAwLS43MS43VjMzNWMwIDguNDMuMDEgOC4wNS4wMSA4LjE0LjIgNy4zIDEuNjcgMTMuNzcgNC4zNiAxOS4yMmE0MC40MyA0MC40MyAwIDAgMCAxMS45NiAxNC41N2M1IDMuNzYgMTAuODcgNi42MSAxNy40OCA4LjQ2YTc3LjUgNzcuNSAwIDAgMCAyMC4wMiAyLjc3YzcuMTUtLjA3IDEzLjk0LTEgMjAuMTctMi43NGE1Mi4zIDUyLjMgMCAwIDAgMTcuNDgtOC40NiA0MC40IDQwLjQgMCAwIDAgMTEuOTUtMTQuNTdjMS42Mi0zLjI2IDMuNzctMTAuMDQgMy43Ny0xNC42OCAwLS4zOC0uMTctLjc0LS41NC0uODJsLTE2Ljg5LS40Yy0uMi0uMDQtLjM0LjM0LS4zNC41NCAwIC4yNy0uMDMuNC0uMDYuNi0uNSAyLjgyLTEuMzggNS40LTIuNjEgNy42OWEyOC41MyAyOC41MyAwIDAgMS04LjI0IDkuNTggMzUuMDEgMzUuMDEgMCAwIDEtMTEuOTYgNS41NyA1NS4yNSA1NS4yNSAwIDAgMS0xMi41NyAxLjc3Yy00LjMyLS4xLTguNjEtLjcxLTEyLjc1LTEuOGEzNS4wNSAzNS4wNSAwIDAgMS0xMS45Ni01LjU3IDI4LjUyIDI4LjUyIDAgMCAxLTguMjMtOS41OGMtMS44Ni0zLjQ0LTIuOS03LjU1LTMuMDktMTIuMmwtLjAxLTcuNDdoODkuMTZhLjcuNyAwIDAgMCAuNy0uNzJ2LTM5LjVjLS4xLTcuNjUtMS41OC0xNC40LTQuMzgtMjAuMDZhNDAuNCA0MC40IDAgMCAwLTExLjk1LTE0LjU2IDUyLjM3IDUyLjM3IDAgMCAwLTE3LjQ4LTguNDcgNzcuNTYgNzcuNTYgMCAwIDAtMjAuMDEtMi43N1oiLz48cGF0aCBmaWxsPSIjY2U0OTJlIiBkPSJNNDE5LjM4IDI4MC42M2gtNy41N2EuNy43IDAgMCAwLS43MS43MXYxNS40MmE4LjE3IDguMTcgMCAwIDAtMy43OCA2LjkgOC4yOCA4LjI4IDAgMCAwIDE2LjU0IDAgOC4yOSA4LjI5IDAgMCAwLTMuNzYtNi45di0xNS40MmEuNy43IDAgMCAwLS43Mi0uNzEiLz48L2c%2BPC9zdmc%2B&logoColor=white&labelColor=white)](https://a-sit-plus.github.io)
 [![GitHub license](https://img.shields.io/badge/license-Apache%20License%202.0-brightgreen.svg?style=flat)](http://www.apache.org/licenses/LICENSE-2.0)
 [![Kotlin](https://img.shields.io/badge/kotlin-multiplatform-orange.svg?logo=kotlin)](http://kotlinlang.org)
 [![Kotlin](https://img.shields.io/badge/kotlin-2.0.0-blue.svg?logo=kotlin)](http://kotlinlang.org)
 [![Java](https://img.shields.io/badge/java-17+-blue.svg?logo=OPENJDK)](https://www.oracle.com/java/technologies/downloads/#java11)
-[![Maven Central](https://img.shields.io/maven-central/v/at.asitplus.crypto/datatypes)](https://mvnrepository.com/artifact/at.asitplus.crypto/datatypes/)
+[![Maven Central](https://img.shields.io/maven-central/v/at.asitplus.signum/indispensable)](https://mvnrepository.com/artifact/at.asitplus.signum/)
 
-## Kotlin Multiplatform Crypto/PKI Library and ASN1 Parser + Encoder
+</div>
 
-_(We are not doing the Prince thing; the emojis are not part of the project name)_
+## Kotlin Multiplatform Crypto/PKI Library with ASN1 Parser + Encoder
+
 
 This [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html) library provides platform-independent data
 types and functionality related to crypto and PKI applications:
@@ -24,6 +35,7 @@ types and functionality related to crypto and PKI applications:
 * COSE-related data structures (COSE Keys, CWT, etc…)
 * Serializability of all ASN.1 classes for debugging **AND ONLY FOR DEBUGGING!!!** *Seriously, do not try to deserialize ASN.1 classes through kotlinx.serialization! Use `decodeFromDer()` and its companions!*
 * 100% pure Kotlin BitSet
+* Exposes Multibase Encoder/Decoder as an API dependency including [Matthew Nelson's smashing Base16, Base32, and Base64 encoders](https://github.com/05nelsonm/encoding)
 * **ASN.1 Parser and Encoder including a DSL to generate ASN.1 structures**
 
 This last bit means that
@@ -39,12 +51,13 @@ the JVM, Android and iOS.
 
 This library consists of four modules, each of which is published on maven central:
 
-| Name | Info                                                                                                                         | Maven Coordinates                   |
-|------|------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|
-|   `provider`    | KMP module implementing the actual cryptographic operations.                                                                 | `at.asitplus.crypto:provider`       |
-|   `datatypes`   | Base module containing the cryptographic data strucures, algorithm identifiers, the ASN.1 parser, OIDs, X.509 certificate, … | `at.asitplus.crypto:datatypes`      |
-|   `datatypes-jws`   | JWS/JWE/JWT add-on module containing JWS/E/T-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization.                                                                                                                              | `at.asitplus.crypto:datatypes-jws`  |
-|`datatypes-cose` |     COSE add-on module containing all COSE/CWT-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization.                                                                                                                         | `at.asitplus.crypto:datatypes-cose` |
+
+| Name                                                                                                                                                                                                                        | Info                                                                                                                                                                                                                                                               |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <picture> <source media="(prefers-color-scheme: dark)" srcset="core-light.png">   <source media="(prefers-color-scheme: light)" srcset="core-dark.png">   <img alt="Indispensable" src="indispensable-dark.png"> </picture> | **Indispensable** base module containing the cryptographic data structures, algorithm identifiers, the ASN.1 parser, OIDs, X.509 certificate, …                                                                                                                    | 
+| <picture> <source media="(prefers-color-scheme: dark)" srcset="josef-light.png">   <source media="(prefers-color-scheme: light)" srcset="josef-dark.png">   <img alt="Indispensable Josef" src="josef-dark.png"> </picture> | **Indispensable Josef** JOSE add-on module containing JWS/E/T-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization.      | 
+| <picture> <source media="(prefers-color-scheme: dark)" srcset="cosef-light.png">   <source media="(prefers-color-scheme: light)" srcset="cosef-dark.png">   <img alt="Indispensable Cosef" src="cosef-dark.png"> </picture> | **Indispensable Cosef** COSE add-on module containing all COSE/CWT-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. |
+| <picture> <source media="(prefers-color-scheme: dark)" srcset="supreme-light.png">   <source media="(prefers-color-scheme: light)" srcset="supreme-dark.png">   <img alt="Supreme" src="supreme-dark.png"> </picture>       | *(Preview)* **Supreme** KMP crypto provider implementing signature verification across platforms. Signature creation using platform-native functionality across JVM, Android (read: HW-Backed AndroidKeyStore) and iOS (read KeyChain + Secure Enclave) are WIP.   | 
 
 This separation keeps dependencies to a minimum, i.e. it enables including only JWT-related functionality, if COSE is irrelevant.
 
@@ -53,31 +66,27 @@ This separation keeps dependencies to a minimum, i.e. it enables including only 
 Simply declare the desired dependency to get going:
 
 ```kotlin 
-implementation("at.asitplus.crypto:datatypes:$version")
+implementation("at.asitplus.signum:indispensable:$version")
 ```
 
 ```kotlin 
-implementation("at.asitplus.crypto:provider:$version")
+implementation("at.asitplus.signum:indispensable-josef:$version")
 ```
 
 ```kotlin 
-implementation("at.asitplus.crypto:datatypes-jws:$version")
+implementation("at.asitplus.signum:indispensable-cosef:$version")
 ```
 
 ```kotlin 
-implementation("at.asitplus.crypto:datatypes-cose:$version")
+implementation("at.asitplus.signum:supreme:0.1.1-PRE")
 ```
 
-In addition, (while we're waiting for upstream to release new stable versions of `BigNum` and `kotlinx.serialization`),
-add the following repositories to your project:
+In addition, (while we're waiting for upstream to release new a stable version of `kotlinx.serialization`),
+add the following repository to your project, if you want to use the COSE functionality provided by Indispensable Cosef
 
 ```kotlin
 repositories {
   maven(uri("https://raw.githubusercontent.com/a-sit-plus/kotlinx.serialization/mvn/repo"))
-  maven {
-    url = uri("https://oss.sonatype.org/content/repositories/snapshots")
-    name = "bigNum"
-  }
 }
 ```
 
@@ -415,6 +424,8 @@ SEQUENCE (8 elem)
 ```
 
 ## Limitations
+
+* Multiplatform signature verification **only** based on platform verifiers (and a fallback 100% KMP verifier) ist included as a prerelease. signature creation is on its way.
 * While the ASN.1 parser will happily parse any valid **DER-encoded** ASN.1 structure you throw at it and the encoder will
   write it back correctly too. (No, we don't care for BER, since we want to transport cryptographic material!)
 * Higher-level abstractions (such as `X509Certificate`) are too lenient in some aspects and
@@ -430,3 +441,14 @@ SEQUENCE (8 elem)
 * We don't yet know how compliant everything really is, but this code has been successfully handling cryptographic material
   for a couple of months now and we're improving whenever we hit an issue.
 * Number of supported Algorithms is limited to the usual suspects (sorry, no Bernstein curves )-:)
+
+
+<br>
+
+---
+
+<p align="center">
+The Apache License does not apply to the logos, (including the A-SIT logo) and the project/module name(s), as these are the sole property of
+A-SIT/A-SIT Plus GmbH and may not be used in derivative works without explicit permission!
+</p>
+

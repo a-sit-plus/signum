@@ -17,7 +17,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Publish to Sonatype
-        run: ./gradlew clean datatypes:publishToSonatype datatypes-jws:publishToSonatype datatypes-cose:publishToSonatype closeSonatypeStagingRepository
+        run: ./gradlew clean publishToSonatype closeSonatypeStagingRepository
         env:
           ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.PUBLISH_SIGNING_KEYID }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.PUBLISH_SIGNING_KEY }}
