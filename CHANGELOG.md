@@ -3,6 +3,8 @@
 
 ## 3.0
 
+### NEXT
+
 ### 3.6.0
 * Rebranding to Signum
   * maven coordinates: `at.asitplus.signum:$module`
