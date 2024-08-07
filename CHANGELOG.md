@@ -4,6 +4,7 @@
 ## 3.0
 
 ### NEXT
+* Externalise `UVarInt` to  multibase
 
 ### 3.6.0
 * Rebranding to Signum
