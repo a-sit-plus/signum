@@ -3,7 +3,7 @@
 
 ## 3.0
 
-### NEXT
+### 3.6.1
 * Externalise `UVarInt` to  multibase
 
 ### 3.6.0
