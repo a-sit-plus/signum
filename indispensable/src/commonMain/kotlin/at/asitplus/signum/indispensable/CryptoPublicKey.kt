@@ -8,9 +8,9 @@ import at.asitplus.signum.indispensable.asn1.Asn1.Null
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix.Companion.hasPrefix
-import at.asitplus.signum.indispensable.misc.UVarInt
 import at.asitplus.io.BaseN
 import at.asitplus.io.MultiBase
+import at.asitplus.io.UVarInt
 import at.asitplus.io.multibaseDecode
 import at.asitplus.io.multibaseEncode
 import com.ionspin.kotlin.bignum.integer.BigInteger

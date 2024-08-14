@@ -443,6 +443,12 @@ SEQUENCE (8 elem)
 * Number of supported Algorithms is limited to the usual suspects (sorry, no Bernstein curves )-:)
 
 
+
+## Contributing
+External contributions are greatly appreciated! Be sure to observe the contribution guidelines (see [CONTRIBUTING.md](CONTRIBUTING.md)).
+In particular, external contributions to this project are subject to the A-SIT Plus Contributor License Agreement (see also [CONTRIBUTING.md](CONTRIBUTING.md)).
+
+
 <br>
 
 ---

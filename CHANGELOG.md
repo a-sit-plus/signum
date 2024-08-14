@@ -3,6 +3,9 @@
 
 ## 3.0
 
+### 3.6.1
+* Externalise `UVarInt` to  multibase
+
 ### 3.6.0
 * Rebranding to Signum
   * maven coordinates: `at.asitplus.signum:$module`
