@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.KmmResult
+import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
@@ -11,6 +12,8 @@ import at.asitplus.signum.supreme.os.Attestation
 interface Signer {
     val signatureAlgorithm: SignatureAlgorithm
     val publicKey: CryptoPublicKey
+    /** Whether the signer may ask for user interaction when [sign] is called */
+    val mayRequireUserUnlock: Boolean
 
     /** Any [Signer] instantiation must be [ECDSA] or [RSA] */
     sealed interface AlgTrait : Signer
@@ -32,47 +35,23 @@ interface Signer {
         val attestation: AttestationT?
     }
 
-    /** Any [Signer] is either [Unlocked] or [Unlockable] */
-    sealed interface UnlockTrait: Signer
-
-    /**
-     * This signer either does not require unlock, or is already unlocked.
-     * Signing operations immediately complete.
-     */
-    interface Unlocked: Signer.UnlockTrait {
-        /**
-         * Signs the input.
-         * This operation never suspends.
-         */
-        fun sign(data: SignatureInput): KmmResult<CryptoSignature>
-    }
-
-    /**
-     * This signer might require unlock.
-     * Signing operations might suspend while the user is prompted for confirmation.
-     *
-     * Some signers of this type are [TemporarilyUnlockable].
-     */
-    interface Unlockable: Signer.UnlockTrait {
-        /**
-         * Unlocks this signer, and signs the message once unlocked.
-         * This operation might suspend and request unlock from the user.
-         */
-        suspend fun sign(data: SignatureInput): KmmResult<CryptoSignature>
-    }
+    suspend fun sign(data: SignatureInput): KmmResult<CryptoSignature>
 
     /**
      * A handle to a [TemporarilyUnlockable] signer that is temporarily unlocked.
      * The handle is only guaranteed to be valid within the scope of the block.
      */
     @OptIn(ExperimentalStdlibApi::class)
-    interface UnlockedHandle: AutoCloseable, Signer.Unlocked
+    interface UnlockedHandle: AutoCloseable, Signer {
+        override val mayRequireUserUnlock: Boolean get() = false
+    }
 
     /**
-     * An [Unlockable] signer that can be temporarily unlocked.
+     * A signer that can be temporarily unlocked.
      * Once unlocked, multiple signing operations can be performed with a single unlock.
      */
-    abstract class TemporarilyUnlockable<Handle: UnlockedHandle> : Signer.Unlockable {
+    abstract class TemporarilyUnlockable<Handle: UnlockedHandle> : Signer {
+        final override val mayRequireUserUnlock: Boolean get() = true
         protected abstract suspend fun unlock(): KmmResult<Handle>
 
         /**
@@ -81,8 +60,19 @@ interface Signer {
          * The handle's validity is only guaranteed in the block scope.
          */
         @OptIn(ExperimentalStdlibApi::class)
-        suspend fun <T> withUnlock(fn: Handle.()->T): KmmResult<T> =
-            unlock().mapCatching { it.use(fn) }
+        suspend fun <T> withUnlock(fn: suspend Handle.()->T): KmmResult<T> =
+            /** this is .use() but for suspend functions */
+            unlock().transform { h ->
+                val v = runCatching { fn(h) }
+                try {
+                    h.close()
+                } catch (y: Throwable) {
+                    (v.exceptionOrNull()
+                        ?: return@transform KmmResult.failure(y))
+                        .addSuppressed(y)
+                }
+                v.wrap()
+            }
 
         final override suspend fun sign(data: SignatureInput): KmmResult<CryptoSignature> =
             withUnlock { sign(data).getOrThrow() }
@@ -103,28 +93,18 @@ fun Signer.makePlatformVerifier(configure: ConfigurePlatformVerifier = null) = s
 
 val Signer.ECDSA.curve get() = publicKey.curve
 
-/** Sign without caring what type of signer this is. Might suspend. */
-suspend fun Signer.sign(data: SignatureInput): KmmResult<CryptoSignature> {
-    this as Signer.UnlockTrait
-    return when (this) {
-        is Signer.Unlocked -> sign(data)
-        is Signer.Unlockable -> sign(data)
-    }
-}
-
 /**
  * Try to batch sign with this signer.
  * Might fail for unlockable signers that cannot be temporarily unlocked.
  */
-suspend fun <T> Signer.withUnlock(fn: Signer.Unlocked.()->T) = catching {
-    this as Signer.UnlockTrait
-    when (this) {
-        is Signer.Unlocked -> this.fn()
-        is Signer.TemporarilyUnlockable<*> -> this.withUnlock(fn).getOrThrow()
-        is Signer.Unlockable -> throw UnlockFailed("This signer needs authentication for every use")
+suspend fun <T> Signer.withUnlock(fn: suspend Signer.()->T) =
+    when (this.mayRequireUserUnlock) {
+        true ->
+            if (this is Signer.TemporarilyUnlockable<*>)
+                this.withUnlock(fn)
+            else
+                KmmResult.failure(UnlockFailed("This signer needs authentication for every use"))
+        false -> catching { fn(this) }
     }
-}
 
 suspend inline fun Signer.sign(data: ByteArray) = sign(SignatureInput(data))
-inline fun <T: Signer.Unlocked> T.sign(data: ByteArray) = sign(SignatureInput(data))
-suspend inline fun <T: Signer.Unlockable> T.sign(data: ByteArray) = sign(SignatureInput(data))

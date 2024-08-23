@@ -126,9 +126,7 @@ val SIGNER_CONFIG: (SignerConfiguration.()->Unit) = {
         message = "We're signing a thing!"
         cancelText = "No! Stop!"
     }
-    rsa {
-        padding = RSAPadding.PKCS1
-    }
+    rsa {}
 }
 
 val context = newSingleThreadContext("crypto").also { Napier.base(DebugAntilog()) }
@@ -352,7 +350,7 @@ internal fun App() {
                                             bits = 1024
                                         }
                                     }
-                                    else -> TODO("unreachable")
+                                    else -> error("unreachable")
                                 }
 
                                 val timeout = runCatching {

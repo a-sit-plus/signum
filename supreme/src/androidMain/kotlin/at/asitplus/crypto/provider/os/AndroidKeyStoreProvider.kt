@@ -89,18 +89,21 @@ inline fun <reified E> resolveOption(what: String, valid: Array<String>, possibl
         true -> {
             val vStr = nameMap(v)
             if (!valid.any { it.equals(vStr, ignoreCase=true) })
-                throw IllegalArgumentException("Key does not suppport $what $v; supported: $valid")
+                throw IllegalArgumentException("Key does not support $what $v; supported: ${valid.joinToString(", ")}")
             v
         }
         false -> {
             if (valid.size != 1)
-                throw IllegalArgumentException("Key supports multiple ${what}s ($valid). You need to specify $what in signer configuration.")
+                throw IllegalArgumentException("Key supports multiple ${what}s (${valid.joinToString(", ")}). You need to specify $what in signer configuration.")
             val only = valid.first()
             possible.find {
                 nameMap(it).equals(only, ignoreCase=true)
             } ?: throw UnsupportedCryptoException("Unsupported $what $only")
         }
     }
+
+private fun attestationFor(chain: CertificateChain) =
+    if (chain.size > 1) AndroidKeystoreAttestation(chain) else null
 
 sealed class AndroidKeyStoreProviderImpl<SignerT: AndroidKeystoreSigner> private constructor() :
     SigningProviderI<SignerT, AndroidSignerConfiguration, AndroidSigningKeyConfiguration>
@@ -244,11 +247,11 @@ sealed class AndroidKeyStoreProviderImpl<SignerT: AndroidKeystoreSigner> private
             when (val publicKey = certificateChain.leaf.publicKey) {
                 is CryptoPublicKey.EC ->
                     UnlockedAndroidKeystoreSigner.ECDSA(
-                        jcaSig, keyInfo, AndroidKeystoreAttestation(certificateChain), publicKey,
+                        jcaSig, keyInfo, attestationFor(certificateChain), publicKey,
                         algorithm as SignatureAlgorithm.ECDSA)
                 is CryptoPublicKey.Rsa ->
                     UnlockedAndroidKeystoreSigner.RSA(
-                        jcaSig, keyInfo, AndroidKeystoreAttestation(certificateChain), publicKey,
+                        jcaSig, keyInfo, attestationFor(certificateChain), publicKey,
                         algorithm as SignatureAlgorithm.RSA)
             }
         }
@@ -265,30 +268,30 @@ typealias AndroidKeyStoreProvider = AndroidKeyStoreProviderImpl<*>
 
 interface AndroidKeystoreSigner : SignerI.Attestable<AndroidKeystoreAttestation> {
     val keyInfo: KeyInfo
-    override val attestation: AndroidKeystoreAttestation
+    override val attestation: AndroidKeystoreAttestation?
 }
 
 sealed class UnlockedAndroidKeystoreSigner private constructor(
     private val jcaSig: JCASignatureObject,
     override val keyInfo: KeyInfo,
-    override val attestation: AndroidKeystoreAttestation
+    override val attestation: AndroidKeystoreAttestation?
 ): SignerI.UnlockedHandle, AndroidKeystoreSigner {
 
     class ECDSA internal constructor(jcaSig: JCASignatureObject,
                                      keyInfo: KeyInfo,
-                                     certificateChain: AndroidKeystoreAttestation,
+                                     certificateChain: AndroidKeystoreAttestation?,
                                      override val publicKey: CryptoPublicKey.EC,
                                      override val signatureAlgorithm: SignatureAlgorithm.ECDSA
     ) : UnlockedAndroidKeystoreSigner(jcaSig, keyInfo, certificateChain), SignerI.ECDSA
 
     class RSA internal constructor(jcaSig: JCASignatureObject,
                                    keyInfo: KeyInfo,
-                                   certificateChain: AndroidKeystoreAttestation,
+                                   certificateChain: AndroidKeystoreAttestation?,
                                    override val publicKey: CryptoPublicKey.Rsa,
                                    override val signatureAlgorithm: SignatureAlgorithm.RSA
     ) : UnlockedAndroidKeystoreSigner(jcaSig, keyInfo, certificateChain), SignerI.RSA
 
-    final override fun sign(data: SignatureInput) = catching {
+    final override suspend fun sign(data: SignatureInput) = catching {
         require(data.format == null)
         data.data.forEach(jcaSig::update)
         val jcaSignature = jcaSig.sign()
@@ -310,7 +313,7 @@ sealed class LockedAndroidKeystoreSigner private constructor(
     certificateChain: CertificateChain
 ) : SignerI.TemporarilyUnlockable<UnlockedAndroidKeystoreSigner>(), AndroidKeystoreSigner {
 
-    override val attestation = AndroidKeystoreAttestation(certificateChain)
+    override val attestation = attestationFor(certificateChain)
     private sealed interface AuthResult {
         @JvmInline value class Success(val result: AuthenticationResult): AuthResult
         data class Error(val code: Int, val message: String): AuthResult
