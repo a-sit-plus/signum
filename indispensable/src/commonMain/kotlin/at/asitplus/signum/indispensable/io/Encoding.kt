@@ -39,7 +39,7 @@ sealed class TemplateSerializer<T>(serialName: String = "") : KSerializer<T> {
             ?: throw IllegalArgumentException("Anonymous classes must specify a serialName explicitly") }
 }
 
-sealed class TransformingSerializerTemplate<ValueT, EncodedT>
+open class TransformingSerializerTemplate<ValueT, EncodedT>
     (private val parent: KSerializer<EncodedT>, private val encodeAs: (ValueT)->EncodedT,
      private val decodeAs: (EncodedT)->ValueT, serialName: String = "")
     : TemplateSerializer<ValueT>(serialName) {
