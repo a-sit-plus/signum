@@ -157,7 +157,8 @@ sealed class unlockedIosSigner(private val ownedArena: Arena, private val privat
     }
 
     protected abstract fun bytesToSignature(sigBytes: ByteArray): CryptoSignature
-    override fun sign(data: SignatureInput): KmmResult<CryptoSignature> = catching {
+    override suspend fun sign(data: SignatureInput): KmmResult<CryptoSignature> =
+    withContext(keychainThreads) { catching {
         if (!usable) throw IllegalStateException("Scoping violation; using key after it has been freed")
         require(data.format == null) { "Pre-hashed data is unsupported on iOS" }
         val algorithm = signatureAlgorithm.secKeyAlgorithm
@@ -166,7 +167,7 @@ sealed class unlockedIosSigner(private val ownedArena: Arena, private val privat
             SecKeyCreateSignature(privateKeyRef, algorithm, plaintext.giveToCF(), error)
         }.let { it.takeFromCF<NSData>().toByteArray() }
         return@catching bytesToSignature(signatureBytes)
-    }
+    }}
 
     class ECDSA(ownedArena: Arena,
                 privateKeyRef: SecKeyRef,
@@ -321,7 +322,7 @@ object IosKeychainProvider:  SigningProviderI<iosSigner<*>, iosSignerConfigurati
     override suspend fun createSigningKey(
         alias: String,
         configure: DSLConfigureFn<iosSigningKeyConfiguration>
-    ): KmmResult<iosSigner<*>> = catching {
+    ): KmmResult<iosSigner<*>> = withContext(keychainThreads) { catching {
         memScoped {
             if (getPublicKey(alias) != null)
                 throw NoSuchElementException("Key with alias $alias already exists")
@@ -433,16 +434,17 @@ object IosKeychainProvider:  SigningProviderI<iosSigner<*>, iosSignerConfigurati
                     service.generateKeyWithCompletionHandler(callback)
                 }
                 Napier.v { "created attestation key (keyId = $keyId)" }
+
+                val clientData = iosHomebrewAttestation.ClientData(
+                    publicKey = publicKey, challenge = attestationConfig.challenge)
+                val clientDataJSON = Json.encodeToString(clientData).encodeToByteArray()
+
                 val assertionKeyAttestation = swiftasync {
-                    service.attestKey(keyId, Digest.SHA256.digest(attestationConfig.challenge).toNSData(), callback)
+                    service.attestKey(keyId, Digest.SHA256.digest(clientDataJSON).toNSData(), callback)
                 }.toByteArray()
                 Napier.v { "attested key ($assertionKeyAttestation)" }
-                val keyAssertion = swiftasync {
-                    service.generateAssertion(keyId, Digest.SHA256.digest(publicKeyBytes).toNSData(), callback)
-                }.toByteArray()
-                Napier.v { "asserted underlying public key for $alias ($keyAssertion)" }
 
-                val attestation = iosHomebrewAttestation(attestation = assertionKeyAttestation, assertion = keyAssertion)
+                val attestation = iosHomebrewAttestation(attestation = assertionKeyAttestation, clientDataJSON = clientDataJSON)
                 storeKeyAttestation(alias, attestation)
                 return@let attestation
             }
@@ -459,31 +461,31 @@ object IosKeychainProvider:  SigningProviderI<iosSigner<*>, iosSignerConfigurati
         }
     }.also {
         val e = it.exceptionOrNull()
-        if (e != null && e !is NoSuchElementException)
+        if (e != null && e !is NoSuchElementException) {
+            // get rid of any "partial" keys
             runCatching { deleteSigningKey(alias) }
-    }
+        }
+    }}
 
     override suspend fun getSignerForKey(
         alias: String,
         configure: DSLConfigureFn<iosSignerConfiguration>
-    ): KmmResult<iosSigner<*>> = catching {
+    ): KmmResult<iosSigner<*>> = withContext(keychainThreads) { catching {
         val config = DSL.resolve(::iosSignerConfiguration, configure)
-        return@catching withContext(keychainThreads) {
-            val publicKeyBytes: ByteArray = memScoped {
-                val publicKey = getPublicKey(alias)
-                    ?: throw NoSuchElementException("No key for alias $alias exists")
-                return@memScoped corecall {
-                    SecKeyCopyExternalRepresentation(publicKey, error)
-                }.let { it.takeFromCF<NSData>() }.toByteArray()
-            }
-            val attestation = getKeyAttestation(alias)
-            return@withContext when (val publicKey =
-                CryptoPublicKey.fromIosEncoded(publicKeyBytes)) {
-                is CryptoPublicKey.EC -> iosSigner.ECDSA(alias, attestation, config, publicKey)
-                is CryptoPublicKey.Rsa -> iosSigner.RSA(alias, attestation, config, publicKey)
-            }
+        val publicKeyBytes: ByteArray = memScoped {
+            val publicKey = getPublicKey(alias)
+                ?: throw NoSuchElementException("No key for alias $alias exists")
+            return@memScoped corecall {
+                SecKeyCopyExternalRepresentation(publicKey, error)
+            }.let { it.takeFromCF<NSData>() }.toByteArray()
         }
-    }
+        val attestation = getKeyAttestation(alias)
+        return@catching when (val publicKey =
+            CryptoPublicKey.fromIosEncoded(publicKeyBytes)) {
+            is CryptoPublicKey.EC -> iosSigner.ECDSA(alias, attestation, config, publicKey)
+            is CryptoPublicKey.Rsa -> iosSigner.RSA(alias, attestation, config, publicKey)
+        }
+    }}
 
     override suspend fun deleteSigningKey(alias: String) = withContext(keychainThreads) {
         memScoped {
