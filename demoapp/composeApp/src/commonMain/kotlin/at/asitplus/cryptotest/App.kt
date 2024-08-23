@@ -58,6 +58,7 @@ import at.asitplus.signum.supreme.sign.sign
 import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.cryptotest.theme.AppTheme
 import at.asitplus.cryptotest.theme.LocalThemeIsDark
+import at.asitplus.signum.supreme.os.jsonEncoded
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
 import io.ktor.util.decodeBase64Bytes
@@ -126,7 +127,9 @@ val SIGNER_CONFIG: (SignerConfiguration.()->Unit) = {
         message = "We're signing a thing!"
         cancelText = "No! Stop!"
     }
-    rsa {}
+    rsa {
+        padding = RSAPadding.PKCS1
+    }
 }
 
 val context = newSingleThreadContext("crypto").also { Napier.base(DebugAntilog()) }
@@ -347,6 +350,7 @@ internal fun App() {
                                     is SignatureAlgorithm.RSA -> {
                                         this@createSigningKey.rsa {
                                             digests = setOf(alg.digest)
+                                            paddings = RSAPadding.entries.toSet()
                                             bits = 1024
                                         }
                                     }

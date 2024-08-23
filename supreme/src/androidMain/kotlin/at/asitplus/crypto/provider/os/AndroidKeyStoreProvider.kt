@@ -203,7 +203,8 @@ sealed class AndroidKeyStoreProviderImpl<SignerT: AndroidKeystoreSigner> private
         alias: String,
         configure: DSLConfigureFn<AndroidSignerConfiguration>
     ): KmmResult<SignerT> = catching {
-        val jcaPrivateKey = ks.getKey(alias, null) as PrivateKey
+        val jcaPrivateKey = ks.getKey(alias, null) as? PrivateKey
+            ?: throw NoSuchElementException("No key for alias $alias exists")
         val config = DSL.resolve(::AndroidSignerConfiguration, configure)
         val certificateChain =
             ks.getCertificateChain(alias).map { X509Certificate.decodeFromDer(it.encoded) }

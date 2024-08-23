@@ -1,21 +1,22 @@
 package at.asitplus.signum.indispensable.io
 
-import at.asitplus.catching
+import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.base64.Base64ConfigBuilder
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.listSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-/**
- * Strict Base64 URL encode
- */
+/** Strict Base64 URL encode */
 val Base64UrlStrict = Base64(config = Base64ConfigBuilder().apply {
     lineBreakInterval = 0
     encodeToUrlSafe = true
@@ -24,9 +25,7 @@ val Base64UrlStrict = Base64(config = Base64ConfigBuilder().apply {
 }.build())
 
 
-/**
- * Strict Base64 encoder
- */
+/** Strict Base64 encoder */
 val Base64Strict = Base64(config = Base64ConfigBuilder().apply {
     lineBreakInterval = 0
     encodeToUrlSafe = false
@@ -34,48 +33,72 @@ val Base64Strict = Base64(config = Base64ConfigBuilder().apply {
     padEncoded = true
 }.build())
 
+sealed class TemplateSerializer<T>(serialName: String = "") : KSerializer<T> {
+    protected val realSerialName =
+        serialName.ifEmpty { this::class.simpleName
+            ?: throw IllegalArgumentException("Anonymous classes must specify a serialName explicitly") }
+}
 
-/**
- * De-/serializes Base64 strings to/from [ByteArray]
- */
-object ByteArrayBase64Serializer : KSerializer<ByteArray> {
+sealed class TransformingSerializerTemplate<ValueT, EncodedT>
+    (private val parent: KSerializer<EncodedT>, private val encodeAs: (ValueT)->EncodedT,
+     private val decodeAs: (EncodedT)->ValueT, serialName: String = "")
+    : TemplateSerializer<ValueT>(serialName) {
 
     override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor("ByteArrayBase64Serializer", PrimitiveKind.STRING)
+        when (val kind = parent.descriptor.kind) {
+            is PrimitiveKind -> PrimitiveSerialDescriptor(realSerialName, kind)
+            else -> SerialDescriptor(realSerialName, parent.descriptor)
+        }
 
-    override fun serialize(encoder: Encoder, value: ByteArray) {
-        encoder.encodeString(value.encodeToString(Base64Strict))
+    override fun serialize(encoder: Encoder, value: ValueT) {
+        val v = try { encodeAs(value) }
+        catch (x: Throwable) { throw SerializationException("Encoding failed", x) }
+        encoder.encodeSerializableValue(parent, v)
     }
 
-    /**
-     * @throws SerializationException on error
-     */
-    override fun deserialize(decoder: Decoder): ByteArray {
-        return catching { decoder.decodeString().decodeToByteArray(Base64Strict) }
-            .getOrElse { throw SerializationException("Base64 decoding failed", it) }
+    override fun deserialize(decoder: Decoder): ValueT {
+        val v = decoder.decodeSerializableValue(parent)
+        try { return decodeAs(v) }
+        catch (x: Throwable) { throw SerializationException("Decoding failed", x) }
     }
+}
+
+/** De-/serializes Base64 strings to/from [ByteArray] */
+object ByteArrayBase64Serializer: TransformingSerializerTemplate<ByteArray, String>(
+    parent = String.serializer(),
+    encodeAs = { it.encodeToString(Base64Strict) },
+    decodeAs = { it.decodeToByteArray(Base64Strict) }
+)
+
+/** De-/serializes Base64Url strings to/from [ByteArray] */
+object ByteArrayBase64UrlSerializer: TransformingSerializerTemplate<ByteArray, String>(
+    parent = String.serializer(),
+    encodeAs = { it.encodeToString(Base64UrlStrict) },
+    decodeAs = { it.decodeToByteArray(Base64UrlStrict) }
+)
+
+/** De-/serializes X509Certificate as Base64Url-encoded String */
+object X509CertificateBase64UrlSerializer: TransformingSerializerTemplate<X509Certificate, ByteArray>(
+    parent = ByteArrayBase64UrlSerializer,
+    encodeAs = X509Certificate::encodeToDer,
+    decodeAs = X509Certificate::decodeFromDer
+)
+
+sealed class ListSerializerTemplate<ValueT>(
+    using: KSerializer<ValueT>, serialName: String = "")
+    : TemplateSerializer<List<ValueT>>(serialName) {
+
+    override val descriptor: SerialDescriptor =
+        SerialDescriptor(realSerialName, listSerialDescriptor(using.descriptor))
+
+    private val realSerializer = ListSerializer(using)
+    override fun serialize(encoder: Encoder, value: List<ValueT>) =
+        encoder.encodeSerializableValue(realSerializer, value)
+
+    override fun deserialize(decoder: Decoder): List<ValueT> =
+        decoder.decodeSerializableValue(realSerializer)
 
 }
 
-
-/**
- * De-/serializes Base64Url strings to/from [ByteArray]
- */
-object ByteArrayBase64UrlSerializer : KSerializer<ByteArray> {
-
-    override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor("ByteArrayBase64UrlSerializer", PrimitiveKind.STRING)
-
-    override fun serialize(encoder: Encoder, value: ByteArray) {
-        encoder.encodeString(value.encodeToString(Base64UrlStrict))
-    }
-
-    //cannot be annotated with @Throws here because interfaces do not have annotations
-    /**
-     * @throws SerializationException on error
-     */
-    override fun deserialize(decoder: Decoder): ByteArray =
-        catching { decoder.decodeString().decodeToByteArray(Base64UrlStrict) }
-            .getOrElse { throw SerializationException("Base64 decoding failed", it) }
-
-}
+object CertificateChainBase64UrlSerializer: ListSerializerTemplate<X509Certificate>(
+    using = X509CertificateBase64UrlSerializer)
