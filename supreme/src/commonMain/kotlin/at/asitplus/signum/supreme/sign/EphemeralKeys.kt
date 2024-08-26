@@ -10,8 +10,17 @@ import at.asitplus.signum.supreme.os.SignerConfiguration
 
 internal expect fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey
 
-expect class EphemeralSigningKeyConfiguration internal constructor(): SigningKeyConfiguration
-expect class EphemeralSignerConfiguration internal constructor(): SignerConfiguration
+class EphemeralSigningKeyConfiguration internal constructor(): SigningKeyConfiguration() {
+    class ECConfiguration internal constructor(): SigningKeyConfiguration.ECConfiguration() {
+        init { digests = (Digest.entries.asSequence() + sequenceOf<Digest?>(null)).toSet() }
+    }
+    override val ec = _algSpecific.option(::ECConfiguration)
+    class RSAConfiguration internal constructor(): SigningKeyConfiguration.RSAConfiguration() {
+        init { digests = Digest.entries.toSet(); paddings = RSAPadding.entries.toSet() }
+    }
+    override val rsa = _algSpecific.option(::RSAConfiguration)
+}
+typealias EphemeralSignerConfiguration = SignerConfiguration
 
 sealed interface EphemeralKey {
     val publicKey: CryptoPublicKey
@@ -40,7 +49,19 @@ internal sealed class EphemeralKeyBase <PrivateKeyT>
 
         override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): SignerT {
             val config = DSL.resolve(::EphemeralSignerConfiguration, configure).ec.v
-            val digest = resolveOption("digest", digests, Digest.entries.asSequence() + sequenceOf<Digest?>(null), config.digestSpecified, config.digest) { it?.name ?: "<none>" }
+            val digest = when (config.digestSpecified) {
+                true -> {
+                    require (digests.contains(config.digest))
+                    { "Digest ${config.digest} unsupported (supported: ${digests.joinToString(",")}" }
+                    config.digest
+                }
+                false -> when {
+                    digests.contains(Digest.SHA256) -> Digest.SHA256
+                    digests.contains(Digest.SHA384) -> Digest.SHA384
+                    digests.contains(Digest.SHA512) -> Digest.SHA512
+                    else -> digests.first()
+                }
+            }
             return signerFactory(privateKey, publicKey, SignatureAlgorithm.ECDSA(digest, publicKey.curve))
         }
     }
@@ -52,8 +73,31 @@ internal sealed class EphemeralKeyBase <PrivateKeyT>
 
         override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): SignerT {
             val config = DSL.resolve(::EphemeralSignerConfiguration, configure).rsa.v
-            val digest = resolveOption("digest", digests, Digest.entries.asSequence(), config.digestSpecified, config.digest, Digest::name)
-            val padding = resolveOption("padding", paddings, RSAPadding.entries.asSequence(), config.paddingSpecified, config.padding, RSAPadding::name)
+            val digest = when (config.digestSpecified) {
+                true -> {
+                    require (digests.contains(config.digest))
+                    { "Digest ${config.digest} unsupported (supported: ${digests.joinToString(", ")}" }
+                    config.digest
+                }
+                false -> when {
+                    digests.contains(Digest.SHA256) -> Digest.SHA256
+                    digests.contains(Digest.SHA384) -> Digest.SHA384
+                    digests.contains(Digest.SHA512) -> Digest.SHA512
+                    else -> digests.first()
+                }
+            }
+            val padding = when (config.paddingSpecified) {
+                true -> {
+                    require (paddings.contains(config.padding))
+                    { "Padding ${config.padding} unsupported (supported: ${paddings.joinToString(", ")}" }
+                    config.padding
+                }
+                false -> when {
+                    paddings.contains(RSAPadding.PSS) -> RSAPadding.PSS
+                    paddings.contains(RSAPadding.PKCS1) -> RSAPadding.PKCS1
+                    else -> paddings.first()
+                }
+            }
             return signerFactory(privateKey, publicKey, SignatureAlgorithm.RSA(digest, padding))
         }
     }

@@ -16,9 +16,6 @@ import java.security.PrivateKey
 import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
 
-actual class EphemeralSigningKeyConfiguration internal actual constructor(): SigningKeyConfiguration()
-actual class EphemeralSignerConfiguration internal actual constructor(): SignerConfiguration()
-
 sealed class AndroidEphemeralSigner (private val privateKey: PrivateKey) : Signer {
     override val mayRequireUserUnlock = false
     override suspend fun sign(data: SignatureInput) = catching {

@@ -42,9 +42,6 @@ import platform.Security.kSecPublicKeyAttrs
 import kotlin.experimental.ExperimentalNativeApi
 import kotlin.native.ref.createCleaner
 
-actual class EphemeralSigningKeyConfiguration internal actual constructor(): SigningKeyConfiguration()
-actual class EphemeralSignerConfiguration internal actual constructor(): SignerConfiguration()
-
 sealed class EphemeralSigner(private val privateKey: EphemeralKeyRef): Signer {
     final override val mayRequireUserUnlock: Boolean get() = false
     final override suspend fun sign(data: SignatureInput) = catching {

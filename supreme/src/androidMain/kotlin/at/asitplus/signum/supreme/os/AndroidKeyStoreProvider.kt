@@ -34,7 +34,6 @@ import at.asitplus.signum.supreme.dsl.PREFERRED
 import at.asitplus.signum.supreme.dsl.REQUIRED
 import at.asitplus.signum.supreme.sign.SignatureInput
 import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
-import at.asitplus.signum.supreme.sign.resolveOption
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import at.asitplus.signum.supreme.sign.Signer as SignerI
 import kotlinx.coroutines.CoroutineScope
@@ -78,6 +77,30 @@ class AndroidSignerConfiguration: PlatformSignerConfiguration() {
     }
     override val unlockPrompt = childOrDefault(::AuthnPrompt)
 }
+
+/**
+ * Resolve [what] differently based on whether the [v]alue was [spec]ified.
+ *
+ * * [spec] = `true`: Check if [valid] contains [nameMap] applied to [v], return [v] if yes, throw otherwise
+ * * [spec] = `false`: Check if [valid] contains exactly one element, if yes, return the [E] from [possible] for which [nameMap] returns that element, throw otherwise
+ */
+internal inline fun <reified E> resolveOption(what: String, valid: Array<String>, possible: Sequence<E>, spec: Boolean, v: E, crossinline nameMap: (E)->String): E =
+    when (spec) {
+        true -> {
+            val vStr = nameMap(v)
+            if (!valid.any { it.equals(vStr, ignoreCase=true) })
+                throw IllegalArgumentException("Key does not support $what $v; supported: ${valid.joinToString(", ")}")
+            v
+        }
+        false -> {
+            if (valid.size != 1)
+                throw IllegalArgumentException("Key supports multiple ${what}s (${valid.joinToString(", ")}). You need to specify $what in signer configuration.")
+            val only = valid.first()
+            possible.find {
+                nameMap(it).equals(only, ignoreCase=true)
+            } ?: throw UnsupportedCryptoException("Unsupported $what $only")
+        }
+    }
 
 private fun attestationFor(chain: CertificateChain) =
     if (chain.size > 1) AndroidKeystoreAttestation(chain) else null
