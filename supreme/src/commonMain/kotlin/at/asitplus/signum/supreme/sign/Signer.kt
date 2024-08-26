@@ -5,9 +5,40 @@ import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.supreme.UnlockFailed
+import at.asitplus.signum.supreme.dsl.DSL
+import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.os.Attestation
+import com.ionspin.kotlin.bignum.integer.BigInteger
+
+open class SigningKeyConfiguration internal constructor(): DSL.Data() {
+    sealed class AlgorithmSpecific: DSL.Data()
+    internal val _algSpecific = subclassOf<AlgorithmSpecific>(default = ECConfiguration())
+    open class ECConfiguration internal constructor() : AlgorithmSpecific() {
+        var curve: ECCurve = ECCurve.SECP_256_R_1
+
+        private var _digests: Set<Digest?>? = null
+        /** Specify the digests supported by the key. If not specified, supports the curve's native digest only. */
+        open var digests: Set<Digest?>
+            get() = _digests ?: setOf(curve.nativeDigest)
+            set(v) { _digests = v }
+    }
+    open val ec = _algSpecific.option(::ECConfiguration)
+
+    open class RSAConfiguration internal constructor(): AlgorithmSpecific() {
+        companion object { val F0 = BigInteger(3); val F4 = BigInteger(65537) }
+        open var digests: Set<Digest> = setOf(Digest.SHA256)
+        open var paddings: Set<RSAPadding> = setOf(RSAPadding.PSS)
+        var bits: Int = 4096
+        var publicExponent: BigInteger = F4
+    }
+    open val rsa = _algSpecific.option(::RSAConfiguration)
+}
 
 interface Signer {
     val signatureAlgorithm: SignatureAlgorithm
@@ -76,6 +107,11 @@ interface Signer {
 
         final override suspend fun sign(data: SignatureInput): KmmResult<CryptoSignature> =
             withUnlock { sign(data).getOrThrow() }
+    }
+
+    companion object {
+        operator fun invoke(configure: DSLConfigureFn<EphemeralSigningKeyConfiguration> = null) =
+            EphemeralKey(configure).signer()
     }
 }
 

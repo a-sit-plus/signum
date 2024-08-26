@@ -2,44 +2,18 @@ package at.asitplus.signum.supreme.os
 
 import at.asitplus.KmmResult
 import at.asitplus.signum.indispensable.Digest
-import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.RSAPadding
-import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.supreme.dsl.DISCOURAGED
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.dsl.FeaturePreference
 import at.asitplus.signum.supreme.dsl.REQUIRED
 import at.asitplus.signum.supreme.sign.Signer
-import com.ionspin.kotlin.bignum.integer.BigInteger
+import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-open class SigningKeyConfiguration internal constructor(): DSL.Data() {
-    sealed class AlgorithmSpecific: DSL.Data()
-    internal val _algSpecific = subclassOf<AlgorithmSpecific>(default = ECConfiguration())
-    open class ECConfiguration internal constructor() : AlgorithmSpecific() {
-        var curve: ECCurve = ECCurve.SECP_256_R_1
-
-        private var _digests: Set<Digest?>? = null
-        /** Specify the digests supported by the key. If not specified, supports the curve's native digest only. */
-        var digests: Set<Digest?>
-            get() = _digests ?: setOf(curve.nativeDigest)
-            set(v) { _digests = v }
-    }
-    open val ec = _algSpecific.option(::ECConfiguration)
-
-    open class RSAConfiguration internal constructor(): AlgorithmSpecific() {
-        companion object { val F0 = BigInteger(3); val F4 = BigInteger(65537)}
-        var digests: Set<Digest> = setOf(Digest.SHA1, Digest.SHA256, Digest.SHA384, Digest.SHA512)
-        var paddings: Set<RSAPadding> = setOf(RSAPadding.PSS)
-        var bits: Int = 4096
-        var publicExponent: BigInteger = F4
-    }
-    open val rsa = _algSpecific.option(::RSAConfiguration)
-}
-
-open class PlatformSigningKeyConfiguration<PlatformSignerConfiguration: SignerConfiguration> internal constructor(): SigningKeyConfiguration() {
+open class PlatformSigningKeyConfiguration<SignerConfigurationT: PlatformSignerConfiguration> internal constructor(): SigningKeyConfiguration() {
     open class AttestationConfiguration internal constructor(): DSL.Data() {
         /** The server-provided attestation challenge */
         lateinit var challenge: ByteArray
@@ -82,7 +56,7 @@ open class PlatformSigningKeyConfiguration<PlatformSignerConfiguration: SignerCo
 
     open val hardware = childOrNull(::SecureHardwareConfiguration)
 
-    open val signer = integratedReceiver<PlatformSignerConfiguration>()
+    open val signer = integratedReceiver<SignerConfigurationT>()
 
     // TODO: figure out a reasonable common interface for biometry requirements
 }
@@ -119,6 +93,11 @@ open class RSASignerConfiguration internal constructor(): DSL.Data() {
 
 }
 open class SignerConfiguration internal constructor(): DSL.Data() {
+    open val ec = childOrDefault(::ECSignerConfiguration)
+    open val rsa = childOrDefault(::RSASignerConfiguration)
+}
+
+open class PlatformSignerConfiguration internal constructor(): SignerConfiguration() {
     open class AuthnPrompt: DSL.Data() {
         /** The prompt message to show to the user when asking for unlock */
         var message: String = "Please authorize cryptographic signature"
@@ -126,13 +105,10 @@ open class SignerConfiguration internal constructor(): DSL.Data() {
         var cancelText: String = "Abort"
     }
     open val unlockPrompt = childOrDefault(::AuthnPrompt)
-
-    open val ec = childOrDefault(::ECSignerConfiguration)
-    open val rsa = childOrDefault(::RSASignerConfiguration)
 }
 
 interface SigningProviderI<out SignerT: Signer,
-        out SignerConfigT: SignerConfiguration,
+        out SignerConfigT: PlatformSignerConfiguration,
         out KeyConfigT: PlatformSigningKeyConfiguration<*>> {
     suspend fun createSigningKey(alias: String, configure: DSLConfigureFn<KeyConfigT> = null) : KmmResult<SignerT>
     suspend fun getSignerForKey(alias: String, configure: DSLConfigureFn<SignerConfigT> = null) : KmmResult<SignerT>

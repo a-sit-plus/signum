@@ -100,6 +100,7 @@ import platform.Security.kSecUseAuthenticationContext
 import platform.Security.kSecUseAuthenticationUI
 import platform.Security.kSecUseAuthenticationUIAllow
 import at.asitplus.signum.indispensable.secKeyAlgorithm
+import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
 
 
 val keychainThreads = newFixedThreadPoolContext(nThreads = 4, name = "iOS Keychain Operations")
@@ -135,7 +136,7 @@ class iosSigningKeyConfiguration internal constructor(): PlatformSigningKeyConfi
     }
 }
 
-class iosSignerConfiguration internal constructor(): SignerConfiguration() {
+class iosSignerConfiguration internal constructor(): PlatformSignerConfiguration() {
 }
 
 sealed class unlockedIosSigner(private val ownedArena: Arena, private val privateKeyRef: SecKeyRef) : Signer.UnlockedHandle {

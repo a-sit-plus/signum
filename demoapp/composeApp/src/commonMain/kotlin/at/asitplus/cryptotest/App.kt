@@ -50,7 +50,6 @@ import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.supreme.dsl.PREFERRED
-import at.asitplus.signum.supreme.os.SignerConfiguration
 import at.asitplus.signum.supreme.os.SigningProvider
 import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.supreme.sign.makeVerifier
@@ -58,6 +57,7 @@ import at.asitplus.signum.supreme.sign.sign
 import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.cryptotest.theme.AppTheme
 import at.asitplus.cryptotest.theme.LocalThemeIsDark
+import at.asitplus.signum.supreme.os.PlatformSignerConfiguration
 import at.asitplus.signum.supreme.os.jsonEncoded
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
@@ -122,7 +122,7 @@ val SAMPLE_CERT_CHAIN = listOf(
 
 
 const val ALIAS = "Bartschlüssel"
-val SIGNER_CONFIG: (SignerConfiguration.()->Unit) = {
+val SIGNER_CONFIG: (PlatformSignerConfiguration.()->Unit) = {
     unlockPrompt {
         message = "We're signing a thing!"
         cancelText = "No! Stop!"
