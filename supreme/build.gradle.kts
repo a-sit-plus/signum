@@ -52,10 +52,6 @@ kotlin {
         implementation(coroutines())
         implementation(napier())
         api(project(":indispensable"))
-        api(kotlincrypto.core.digest)
-        implementation(kotlincrypto.hash.sha1)
-        implementation(kotlincrypto.hash.sha2)
-        implementation(kotlincrypto.secureRandom)
     }
     sourceSets.jvmTest.dependencies {
         implementation("io.kotest.extensions:kotest-assertions-compiler:1.0.0")

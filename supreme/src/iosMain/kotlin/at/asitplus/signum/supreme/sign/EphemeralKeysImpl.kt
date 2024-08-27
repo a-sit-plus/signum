@@ -4,15 +4,13 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.secKeyAlgorithm
+import at.asitplus.signum.indispensable.secKeyAlgorithmPreHashed
 import at.asitplus.signum.supreme.CFCryptoOperationFailed
 import at.asitplus.signum.supreme.cfDictionaryOf
 import at.asitplus.signum.supreme.corecall
 import at.asitplus.signum.supreme.createCFDictionary
 import at.asitplus.signum.supreme.giveToCF
-import at.asitplus.signum.supreme.os.SignerConfiguration
 import at.asitplus.signum.supreme.takeFromCF
 import at.asitplus.signum.supreme.toByteArray
 import at.asitplus.signum.supreme.toNSData
@@ -33,10 +31,6 @@ import platform.Security.kSecAttrKeySizeInBits
 import platform.Security.kSecAttrKeyType
 import platform.Security.kSecAttrKeyTypeEC
 import platform.Security.kSecAttrKeyTypeRSA
-import platform.Security.kSecKeyAlgorithmECDSASignatureDigestX962SHA1
-import platform.Security.kSecKeyAlgorithmECDSASignatureDigestX962SHA256
-import platform.Security.kSecKeyAlgorithmECDSASignatureDigestX962SHA384
-import platform.Security.kSecKeyAlgorithmECDSASignatureDigestX962SHA512
 import platform.Security.kSecPrivateKeyAttrs
 import platform.Security.kSecPublicKeyAttrs
 import kotlin.experimental.ExperimentalNativeApi
@@ -45,20 +39,13 @@ import kotlin.native.ref.createCleaner
 sealed class EphemeralSigner(private val privateKey: EphemeralKeyRef): Signer {
     final override val mayRequireUserUnlock: Boolean get() = false
     final override suspend fun sign(data: SignatureInput) = catching {
-        if (data.format != null) {
-            (signatureAlgorithm as? SignatureAlgorithm.ECDSA).let {
-                require (it != null && it.digest == data.format)
-                { "Pre-hashed data (format ${data.format}) is unsupported by algorithm $signatureAlgorithm"}
-            }
-        }
-        val algorithm = when (data.format) {
-            Digest.SHA1 -> kSecKeyAlgorithmECDSASignatureDigestX962SHA1
-            Digest.SHA256 -> kSecKeyAlgorithmECDSASignatureDigestX962SHA256
-            Digest.SHA384 -> kSecKeyAlgorithmECDSASignatureDigestX962SHA384
-            Digest.SHA512 -> kSecKeyAlgorithmECDSASignatureDigestX962SHA512
-            null -> signatureAlgorithm.secKeyAlgorithm
-        }
-        val input = data.data.fold(byteArrayOf(), ByteArray::plus).toNSData()
+        val inputData = data.convertTo(when (val alg = signatureAlgorithm) {
+            is SignatureAlgorithm.RSA -> alg.digest
+            is SignatureAlgorithm.ECDSA -> alg.digest
+            else -> TODO("hmac unsupported")
+        }).getOrThrow()
+        val algorithm = signatureAlgorithm.secKeyAlgorithmPreHashed
+        val input = inputData.data.single().toNSData()
         val signatureBytes = corecall {
             SecKeyCreateSignature(privateKey.key.value, algorithm, input.giveToCF(), error)
         }.let { it.takeFromCF<NSData>().toByteArray() }
