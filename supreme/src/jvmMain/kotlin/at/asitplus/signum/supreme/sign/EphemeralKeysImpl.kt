@@ -63,7 +63,8 @@ internal fun getKPGInstance(alg: String, provider: String? = null) =
         else -> KeyPairGenerator.getInstance(alg, provider)
     }
 
-internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey =
+actual typealias PlatformEphemeralKey = PrivateKey
+internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey<PrivateKey> =
     when (val alg = configuration._algSpecific.v) {
         is SigningKeyConfiguration.ECConfiguration -> {
             getKPGInstance("EC", configuration.provider).run {

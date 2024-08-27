@@ -66,14 +66,15 @@ sealed class EphemeralSigner(private val privateKey: EphemeralKeyRef): Signer {
         : EphemeralSigner(privateKey), Signer.RSA
 }
 
-class EphemeralKeyRef {
+class EphemeralKeyRef: PlatformEphemeralKey {
     private val arena = Arena()
     @OptIn(ExperimentalNativeApi::class)
     private val cleaner = createCleaner(arena, Arena::clear)
-    val key = arena.alloc<SecKeyRefVar>()
+    override val key = arena.alloc<SecKeyRefVar>()
 }
 
-internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey {
+actual interface PlatformEphemeralKey { val key: SecKeyRefVar }
+internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey<PlatformEphemeralKey> {
     val key = EphemeralKeyRef()
     memScoped {
         val attr = createCFDictionary {

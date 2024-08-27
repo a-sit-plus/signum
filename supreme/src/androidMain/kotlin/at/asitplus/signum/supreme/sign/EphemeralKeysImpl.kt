@@ -45,7 +45,8 @@ sealed class AndroidEphemeralSigner (private val privateKey: PrivateKey) : Signe
         : AndroidEphemeralSigner(privateKey), Signer.RSA
 }
 
-internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey =
+actual typealias PlatformEphemeralKey = PrivateKey
+internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey<PrivateKey> =
     when (val alg = configuration._algSpecific.v) {
         is SigningKeyConfiguration.ECConfiguration -> {
             KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_EC).run {
