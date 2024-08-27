@@ -64,8 +64,30 @@ fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null, isAndro
     }
 }
 /** Get a pre-configured JCA instance for this algorithm */
-fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =
-    this.algorithm.getJCASignatureInstance(provider)
+fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = null, isAndroid: Boolean = false) =
+    this.algorithm.getJCASignatureInstance(provider, isAndroid)
+
+/** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
+fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null, isAndroid: Boolean = false) = catching {
+    when (this) {
+        is SignatureAlgorithm.ECDSA -> sigGetInstance("NONEwithECDSA", provider)
+        is SignatureAlgorithm.RSA -> when (this.padding) {
+            RSAPadding.PKCS1 -> when (isAndroid) {
+                true -> sigGetInstance("NONEwithRSA", provider)
+                false -> throw UnsupportedOperationException("Pre-hashed RSA input is unsupported on JVM")
+            }
+            RSAPadding.PSS -> when (isAndroid) {
+                true -> sigGetInstance("NONEwithRSA/PSS", provider)
+                false -> throw UnsupportedOperationException("Pre-hashed RSA input is unsupported on JVM")
+            }
+        }
+        else -> TODO("$this is unsupported with pre-hashed data")
+    }
+}
+
+/** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
+fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null, isAndroid: Boolean = false) =
+    this.algorithm.getJCASignatureInstancePreHashed(provider, isAndroid)
 
 val Digest.jcaName
     get() = when (this) {

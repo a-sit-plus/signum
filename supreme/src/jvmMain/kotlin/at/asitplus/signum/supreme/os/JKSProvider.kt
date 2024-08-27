@@ -38,11 +38,12 @@ import java.security.interfaces.RSAPrivateKey
 import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
 
 class JKSSigningKeyConfiguration: PlatformSigningKeyConfiguration<JKSSignerConfiguration>() {
     var provider: String? = null
     var privateKeyPassword: CharArray? = null
-    var certificateValidityPeriod: Duration = Duration.INFINITE
+    var certificateValidityPeriod: Duration = 100.days
 }
 
 class JKSSignerConfiguration: PlatformSignerConfiguration(), JvmEphemeralSignerCompatibleConfiguration {
@@ -96,7 +97,7 @@ class JKSProvider(private val ks: KeyStore): SigningProviderI<JKSSigner, JKSSign
             validUntil = Asn1Time(Clock.System.now() + config.certificateValidityPeriod),
             publicKey = publicKey
         )
-        val cert = certAlg.getJCASignatureInstance(config.provider).getOrThrow().run {
+        val cert = certAlg.getJCASignatureInstance(provider = config.provider, isAndroid = false).getOrThrow().run {
             initSign(keyPair.private)
             update(tbsCert.encodeToDer())
             sign()
@@ -107,7 +108,7 @@ class JKSProvider(private val ks: KeyStore): SigningProviderI<JKSSigner, JKSSign
         return@catching getSigner(DSL.resolve(::JKSSignerConfiguration, config.signer.v), keyPair.private, cert)
     }
 
-    private suspend fun getSigner(
+    private fun getSigner(
         config: JKSSignerConfiguration,
         privateKey: PrivateKey,
         certificate: X509Certificate
@@ -137,5 +138,12 @@ class JKSProvider(private val ks: KeyStore): SigningProviderI<JKSSigner, JKSSign
     override suspend fun deleteSigningKey(alias: String) {
         if (ks.containsAlias(alias))
             ks.deleteEntry(alias)
+    }
+
+    companion object {
+        fun Ephemeral(provider: String? = null) = JKSProvider(when (provider) {
+            null -> KeyStore.getInstance(KeyStore.getDefaultType())
+            else -> KeyStore.getInstance(KeyStore.getDefaultType(), provider)
+        }.apply { load(null) })
     }
 }

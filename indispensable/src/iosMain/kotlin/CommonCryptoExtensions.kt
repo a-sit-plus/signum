@@ -56,6 +56,8 @@ val SignatureAlgorithm.secKeyAlgorithm : SecKeyAlgorithm get() = when (this) {
     }
     is SignatureAlgorithm.HMAC -> TODO("HMAC is unsupported")
 }!!
+val SpecializedSignatureAlgorithm.secKeyAlgorithm get() =
+    this.algorithm.secKeyAlgorithm
 
 val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm get() = when (this) {
     is SignatureAlgorithm.ECDSA -> {
@@ -85,3 +87,6 @@ val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm get() = when (t
     }
     is SignatureAlgorithm.HMAC -> TODO("HMAC is unsupported")
 }!!
+
+val SpecializedSignatureAlgorithm.secKeyAlgorithmPreHashed get() =
+    this.algorithm.secKeyAlgorithmPreHashed

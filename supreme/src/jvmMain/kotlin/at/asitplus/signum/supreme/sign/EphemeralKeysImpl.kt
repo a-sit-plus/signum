@@ -6,13 +6,12 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.fromJcaPublicKey
 import at.asitplus.signum.indispensable.getJCASignatureInstance
+import at.asitplus.signum.indispensable.getJCASignatureInstancePreHashed
 import at.asitplus.signum.indispensable.jcaName
 import at.asitplus.signum.indispensable.parseFromJca
-import at.asitplus.signum.supreme.os.SignerConfiguration
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
-import java.security.Provider
 import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
 
@@ -29,18 +28,23 @@ actual class EphemeralSignerConfiguration internal actual constructor(): Ephemer
 sealed class EphemeralSigner (private val privateKey: PrivateKey, private val provider: String?) : Signer {
     override val mayRequireUserUnlock = false
     override suspend fun sign(data: SignatureInput) = catching {
-        val alg = if (data.format != null) {
-            (signatureAlgorithm as? SignatureAlgorithm.ECDSA).let {
-                require (it != null && it.digest == data.format)
-                { "Pre-hashed data (format ${data.format}) unsupported for algorithm $signatureAlgorithm" }
-            }
-            SignatureAlgorithm.ECDSA(digest = null, requiredCurve = null)
-        } else signatureAlgorithm
-        alg.getJCASignatureInstance(provider = null, isAndroid = false).getOrThrow().run {
+        val preHashed = (data.format != null)
+        if (preHashed) {
+            require (data.format == when (val alg = signatureAlgorithm) {
+                is SignatureAlgorithm.ECDSA -> alg.digest
+                is SignatureAlgorithm.RSA -> alg.digest
+                else -> TODO("HMAC is unsupported")
+            }) { "Pre-hashed data (format ${data.format}) unsupported for algorithm $signatureAlgorithm" }
+        }
+        (if (preHashed)
+            signatureAlgorithm.getJCASignatureInstancePreHashed(provider = provider, isAndroid = false).getOrThrow()
+        else
+            signatureAlgorithm.getJCASignatureInstance(provider = provider, isAndroid = false).getOrThrow())
+        .run {
             initSign(privateKey)
             data.data.forEach { update(it) }
             sign().let {
-                CryptoSignature.parseFromJca(it, alg)
+                CryptoSignature.parseFromJca(it, signatureAlgorithm)
             }
         }
     }

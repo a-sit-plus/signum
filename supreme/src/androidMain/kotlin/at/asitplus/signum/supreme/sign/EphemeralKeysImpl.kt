@@ -7,6 +7,7 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.fromJcaPublicKey
 import at.asitplus.signum.indispensable.getJCASignatureInstance
+import at.asitplus.signum.indispensable.getJCASignatureInstancePreHashed
 import at.asitplus.signum.indispensable.jcaName
 import at.asitplus.signum.indispensable.parseFromJca
 import at.asitplus.signum.supreme.os.SignerConfiguration
@@ -22,18 +23,16 @@ actual class EphemeralSignerConfiguration internal actual constructor(): Ephemer
 sealed class AndroidEphemeralSigner (private val privateKey: PrivateKey) : Signer {
     override val mayRequireUserUnlock = false
     override suspend fun sign(data: SignatureInput) = catching {
-        val alg = if (data.format != null) {
-            (signatureAlgorithm as? SignatureAlgorithm.ECDSA).let {
-                require (it != null && it.digest == data.format)
-                { "Pre-hashed data (format ${data.format}) unsupported for algorithm $signatureAlgorithm" }
-            }
-            SignatureAlgorithm.ECDSA(digest = null, requiredCurve = null)
-        } else signatureAlgorithm
-        alg.getJCASignatureInstance(provider = null, isAndroid = true).getOrThrow().run {
+        val inputData = data.convertTo(when (val alg = signatureAlgorithm) {
+            is SignatureAlgorithm.RSA -> alg.digest
+            is SignatureAlgorithm.ECDSA -> alg.digest
+            else -> TODO("hmac unsupported")
+        }).getOrThrow()
+        signatureAlgorithm.getJCASignatureInstancePreHashed(provider = null, isAndroid = true).getOrThrow().run {
             initSign(privateKey)
-            data.data.forEach { update(it) }
+            inputData.data.forEach { update(it) }
             sign().let {
-                CryptoSignature.parseFromJca(it, alg)
+                CryptoSignature.parseFromJca(it, signatureAlgorithm)
             }
         }
     }

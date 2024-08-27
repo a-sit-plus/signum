@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.sign
 
+import at.asitplus.catching
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.RSAPadding
@@ -8,6 +9,7 @@ import com.ionspin.kotlin.bignum.integer.Quadruple
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.should
+import kotlinx.coroutines.cancel
 import kotlin.random.Random
 
 class EphemeralSignerCommonTests : FreeSpec({
@@ -26,9 +28,14 @@ class EphemeralSignerCommonTests : FreeSpec({
                 }
             }
         }) { (padding, digest, keySize, preHashed) ->
-            val signer = Signer { rsa { digests = setOf(digest); paddings = setOf(padding); bits = keySize } }
             val data = Random.Default.nextBytes(64)
-            val signature = signer.sign(SignatureInput(data).let { if (preHashed) it.convertTo(digest).getOrThrow() else it }).getOrThrow()
+            val signer: Signer
+            val signature = try {
+                signer = Signer { rsa { digests = setOf(digest); paddings = setOf(padding); bits = keySize } }
+                signer.sign(SignatureInput(data).let { if (preHashed) it.convertTo(digest).getOrThrow() else it }).getOrThrow()
+            } catch (x: UnsupportedOperationException) {
+                return@withData
+            }
 
             val verifier = signer.makeVerifier().getOrThrow()
             verifier.verify(data, signature) should succeed
