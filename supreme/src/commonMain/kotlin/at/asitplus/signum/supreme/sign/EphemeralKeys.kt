@@ -4,6 +4,7 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.supreme.FootGunsAbound
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.os.SignerConfiguration
@@ -43,7 +44,7 @@ sealed interface EphemeralKey {
 }
 
 internal sealed class EphemeralKeyBase <PrivateKeyT>
-    (protected val privateKey: PrivateKeyT): EphemeralKey {
+    (@property:FootGunsAbound val privateKey: PrivateKeyT): EphemeralKey {
 
     class EC<PrivateKeyT, SignerT: Signer.ECDSA>(
         private val signerFactory: (EphemeralSignerConfiguration, PrivateKeyT, CryptoPublicKey.EC, SignatureAlgorithm.ECDSA)->SignerT,
