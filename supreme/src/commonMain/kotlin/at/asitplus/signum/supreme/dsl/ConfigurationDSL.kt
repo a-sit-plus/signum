@@ -1,5 +1,7 @@
 package at.asitplus.signum.supreme.dsl
 
+import kotlin.reflect.KProperty
+
 /**
  * The meta functionality that enables us to easily create DSLs.
  * @see at.asitplus.signum.supreme.dsl.DSLInheritanceDemonstration
@@ -18,7 +20,7 @@ object DSL {
         operator fun invoke(configure: Target.()->Unit)
     }
 
-    /** Constructed by: [DSL.Data.child]. */
+    /** Constructed by: [DSL.Data.childOrDefault] and [DSL.Data.childOrNull]. */
     class DirectHolder<out T: DSL.Data?> internal constructor(default: T, private val factory: ()->(T & Any))
         : Invokable<T,T&Any> {
         private var _v: T = default
@@ -52,6 +54,15 @@ object DSL {
         private var _v: (T.()->Unit)? = null
         override val v: (T.()->Unit)? get() = _v
         override operator fun invoke(configure: T.()->Unit) { _v = configure }
+    }
+
+    /** Constructed by: [DSL.Data.unsupported]. */
+    class Unsupported<T: Any> internal constructor(val error: String): Invokable<Unit, T> {
+        override val v: Unit get() = Unit
+        override fun invoke(configure: T.() -> Unit) { throw UnsupportedOperationException(error); }
+
+        operator fun getValue(thisRef: Any?, property: KProperty<*>): Nothing { throw UnsupportedOperationException(error) }
+        operator fun setValue(thisRef: Any?, property: KProperty<*>, value: Any) { throw UnsupportedOperationException(error) }
     }
 
     @DslMarker
@@ -115,6 +126,12 @@ object DSL {
          */
         protected fun <T: Any> integratedReceiver(): Integrated<T> =
             Integrated<T>()
+
+        /**
+         * Marks a DSL substructure as unsupported.
+         */
+        protected fun <T: Any> unsupported(why: String): Unsupported<T> =
+            Unsupported<T>(why)
 
         /**
          * Invoked by `DSL.resolve()` after the configuration block runs.

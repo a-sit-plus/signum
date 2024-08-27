@@ -10,7 +10,7 @@ import at.asitplus.signum.supreme.os.SignerConfiguration
 
 internal expect fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey
 
-class EphemeralSigningKeyConfiguration internal constructor(): SigningKeyConfiguration() {
+open class EphemeralSigningKeyConfigurationBase internal constructor(): SigningKeyConfiguration() {
     class ECConfiguration internal constructor(): SigningKeyConfiguration.ECConfiguration() {
         init { digests = (Digest.entries.asSequence() + sequenceOf<Digest?>(null)).toSet() }
     }
@@ -20,7 +20,10 @@ class EphemeralSigningKeyConfiguration internal constructor(): SigningKeyConfigu
     }
     override val rsa = _algSpecific.option(::RSAConfiguration)
 }
-typealias EphemeralSignerConfiguration = SignerConfiguration
+expect class EphemeralSigningKeyConfiguration internal constructor(): EphemeralSigningKeyConfigurationBase
+
+typealias EphemeralSignerConfigurationBase = SignerConfiguration
+expect class EphemeralSignerConfiguration internal constructor(): SignerConfiguration
 
 sealed interface EphemeralKey {
     val publicKey: CryptoPublicKey
@@ -43,17 +46,18 @@ internal sealed class EphemeralKeyBase <PrivateKeyT>
     (protected val privateKey: PrivateKeyT): EphemeralKey {
 
     class EC<PrivateKeyT, SignerT: Signer.ECDSA>(
-        private val signerFactory: (PrivateKeyT, CryptoPublicKey.EC, SignatureAlgorithm.ECDSA)->SignerT,
+        private val signerFactory: (EphemeralSignerConfiguration, PrivateKeyT, CryptoPublicKey.EC, SignatureAlgorithm.ECDSA)->SignerT,
         privateKey: PrivateKeyT, override val publicKey: CryptoPublicKey.EC,
         val digests: Set<Digest?>) : EphemeralKeyBase<PrivateKeyT>(privateKey), EphemeralKey.EC {
 
         override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): SignerT {
-            val config = DSL.resolve(::EphemeralSignerConfiguration, configure).ec.v
-            val digest = when (config.digestSpecified) {
+            val config = DSL.resolve(::EphemeralSignerConfiguration, configure)
+            val alg = config.ec.v
+            val digest = when (alg.digestSpecified) {
                 true -> {
-                    require (digests.contains(config.digest))
-                    { "Digest ${config.digest} unsupported (supported: ${digests.joinToString(",")}" }
-                    config.digest
+                    require (digests.contains(alg.digest))
+                    { "Digest ${alg.digest} unsupported (supported: ${digests.joinToString(",")}" }
+                    alg.digest
                 }
                 false -> when {
                     digests.contains(Digest.SHA256) -> Digest.SHA256
@@ -62,22 +66,23 @@ internal sealed class EphemeralKeyBase <PrivateKeyT>
                     else -> digests.first()
                 }
             }
-            return signerFactory(privateKey, publicKey, SignatureAlgorithm.ECDSA(digest, publicKey.curve))
+            return signerFactory(config, privateKey, publicKey, SignatureAlgorithm.ECDSA(digest, publicKey.curve))
         }
     }
 
     class RSA<PrivateKeyT, SignerT: Signer.RSA>(
-        private val signerFactory: (PrivateKeyT, CryptoPublicKey.Rsa, SignatureAlgorithm.RSA)->SignerT,
+        private val signerFactory: (EphemeralSignerConfiguration, PrivateKeyT, CryptoPublicKey.Rsa, SignatureAlgorithm.RSA)->SignerT,
         privateKey: PrivateKeyT, override val publicKey: CryptoPublicKey.Rsa,
         val digests: Set<Digest>, val paddings: Set<RSAPadding>) : EphemeralKeyBase<PrivateKeyT>(privateKey), EphemeralKey.RSA {
 
         override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): SignerT {
-            val config = DSL.resolve(::EphemeralSignerConfiguration, configure).rsa.v
-            val digest = when (config.digestSpecified) {
+            val config = DSL.resolve(::EphemeralSignerConfiguration, configure)
+            val alg = config.rsa.v
+            val digest = when (alg.digestSpecified) {
                 true -> {
-                    require (digests.contains(config.digest))
-                    { "Digest ${config.digest} unsupported (supported: ${digests.joinToString(", ")}" }
-                    config.digest
+                    require (digests.contains(alg.digest))
+                    { "Digest ${alg.digest} unsupported (supported: ${digests.joinToString(", ")}" }
+                    alg.digest
                 }
                 false -> when {
                     digests.contains(Digest.SHA256) -> Digest.SHA256
@@ -86,11 +91,11 @@ internal sealed class EphemeralKeyBase <PrivateKeyT>
                     else -> digests.first()
                 }
             }
-            val padding = when (config.paddingSpecified) {
+            val padding = when (alg.paddingSpecified) {
                 true -> {
-                    require (paddings.contains(config.padding))
-                    { "Padding ${config.padding} unsupported (supported: ${paddings.joinToString(", ")}" }
-                    config.padding
+                    require (paddings.contains(alg.padding))
+                    { "Padding ${alg.padding} unsupported (supported: ${paddings.joinToString(", ")}" }
+                    alg.padding
                 }
                 false -> when {
                     paddings.contains(RSAPadding.PSS) -> RSAPadding.PSS
@@ -98,7 +103,7 @@ internal sealed class EphemeralKeyBase <PrivateKeyT>
                     else -> paddings.first()
                 }
             }
-            return signerFactory(privateKey, publicKey, SignatureAlgorithm.RSA(digest, padding))
+            return signerFactory(config, privateKey, publicKey, SignatureAlgorithm.RSA(digest, padding))
         }
     }
 }

@@ -36,6 +36,9 @@ import platform.Security.kSecPublicKeyAttrs
 import kotlin.experimental.ExperimentalNativeApi
 import kotlin.native.ref.createCleaner
 
+actual class EphemeralSigningKeyConfiguration internal actual constructor(): EphemeralSigningKeyConfigurationBase()
+actual class EphemeralSignerConfiguration internal actual constructor(): EphemeralSignerConfigurationBase()
+
 sealed class EphemeralSigner(private val privateKey: EphemeralKeyRef): Signer {
     final override val mayRequireUserUnlock: Boolean get() = false
     final override suspend fun sign(data: SignatureInput) = catching {
@@ -54,11 +57,13 @@ sealed class EphemeralSigner(private val privateKey: EphemeralKeyRef): Signer {
             is CryptoPublicKey.Rsa -> CryptoSignature.RSAorHMAC(signatureBytes)
         }
     }
-    class EC(privateKey: EphemeralKeyRef, override val publicKey: CryptoPublicKey.EC,
-             override val signatureAlgorithm: SignatureAlgorithm.ECDSA): EphemeralSigner(privateKey), Signer.ECDSA
+    class EC(config: EphemeralSignerConfiguration, privateKey: EphemeralKeyRef,
+             override val publicKey: CryptoPublicKey.EC, override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
+        : EphemeralSigner(privateKey), Signer.ECDSA
 
-    class RSA(privateKey: EphemeralKeyRef, override val publicKey: CryptoPublicKey.Rsa,
-              override val signatureAlgorithm: SignatureAlgorithm.RSA): EphemeralSigner(privateKey), Signer.RSA
+    class RSA(config: EphemeralSignerConfiguration, privateKey: EphemeralKeyRef,
+              override val publicKey: CryptoPublicKey.Rsa, override val signatureAlgorithm: SignatureAlgorithm.RSA)
+        : EphemeralSigner(privateKey), Signer.RSA
 }
 
 class EphemeralKeyRef {
