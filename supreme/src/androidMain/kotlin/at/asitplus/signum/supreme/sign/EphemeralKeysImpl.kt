@@ -6,11 +6,9 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.fromJcaPublicKey
-import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.indispensable.getJCASignatureInstancePreHashed
 import at.asitplus.signum.indispensable.jcaName
 import at.asitplus.signum.indispensable.parseFromJca
-import at.asitplus.signum.supreme.os.SignerConfiguration
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
@@ -44,6 +42,10 @@ sealed class AndroidEphemeralSigner (private val privateKey: PrivateKey) : Signe
                override val publicKey: CryptoPublicKey.Rsa, override val signatureAlgorithm: SignatureAlgorithm.RSA)
         : AndroidEphemeralSigner(privateKey), Signer.RSA
 }
+
+actual interface EphemeralKeyPlatformSpecifics { val jcaPrivateKey: PrivateKey }
+actual val EphemeralKey.platformSpecifics: EphemeralKeyPlatformSpecifics get() =
+    object : EphemeralKeyPlatformSpecifics { override val jcaPrivateKey get() = (this@platformSpecifics as EphemeralKeyBase<*>).privateKey as PrivateKey }
 
 internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey =
     when (val alg = configuration._algSpecific.v) {

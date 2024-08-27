@@ -63,6 +63,10 @@ internal fun getKPGInstance(alg: String, provider: String? = null) =
         else -> KeyPairGenerator.getInstance(alg, provider)
     }
 
+actual interface EphemeralKeyPlatformSpecifics { val jcaPrivateKey: PrivateKey }
+actual val EphemeralKey.platformSpecifics: EphemeralKeyPlatformSpecifics get() =
+    object : EphemeralKeyPlatformSpecifics { override val jcaPrivateKey get() = (this@platformSpecifics as EphemeralKeyBase<*>).privateKey as PrivateKey }
+
 internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey =
     when (val alg = configuration._algSpecific.v) {
         is SigningKeyConfiguration.ECConfiguration -> {

@@ -43,8 +43,12 @@ sealed interface EphemeralKey {
     }
 }
 
+expect interface EphemeralKeyPlatformSpecifics
+@HazardousMaterials
+expect val EphemeralKey.platformSpecifics: EphemeralKeyPlatformSpecifics
+
 internal sealed class EphemeralKeyBase <PrivateKeyT>
-    (@property:HazardousMaterials val privateKey: PrivateKeyT): EphemeralKey {
+    (val privateKey: PrivateKeyT): EphemeralKey {
 
     class EC<PrivateKeyT, SignerT: Signer.ECDSA>(
         private val signerFactory: (EphemeralSignerConfiguration, PrivateKeyT, CryptoPublicKey.EC, SignatureAlgorithm.ECDSA)->SignerT,
@@ -67,7 +71,6 @@ internal sealed class EphemeralKeyBase <PrivateKeyT>
                     else -> digests.first()
                 }
             }
-            @OptIn(HazardousMaterials::class)
             return signerFactory(config, privateKey, publicKey, SignatureAlgorithm.ECDSA(digest, publicKey.curve))
         }
     }
@@ -105,7 +108,6 @@ internal sealed class EphemeralKeyBase <PrivateKeyT>
                     else -> paddings.first()
                 }
             }
-            @OptIn(HazardousMaterials::class)
             return signerFactory(config, privateKey, publicKey, SignatureAlgorithm.RSA(digest, padding))
         }
     }
