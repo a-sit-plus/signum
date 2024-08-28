@@ -108,9 +108,11 @@ open class PlatformSignerConfigurationBase internal constructor(): SignerConfigu
 }
 
 open class PlatformSigningProviderConfigurationBase internal constructor(): DSL.Data()
+expect interface PlatformSigningProviderSigner: Signer.WithAlias
 expect class PlatformSigningProviderConfiguration internal constructor(): PlatformSigningProviderConfigurationBase
 expect class PlatformSigningProviderSignerConfiguration: PlatformSignerConfigurationBase
-expect class PlatformSigningProvider : SigningProviderI<Signer.WithAlias,PlatformSigningProviderSignerConfiguration,PlatformSigningKeyConfigurationBase<PlatformSigningProviderSignerConfiguration>>
+expect class PlatformSigningProviderSigningKeyConfiguration: PlatformSigningKeyConfigurationBase<PlatformSigningProviderSignerConfiguration>
+expect class PlatformSigningProvider : SigningProviderI<PlatformSigningProviderSigner,PlatformSigningProviderSignerConfiguration,PlatformSigningProviderSigningKeyConfiguration>
 internal expect fun makePlatformSigningProvider(config: PlatformSigningProviderConfiguration): KmmResult<PlatformSigningProvider>
 
 interface SigningProviderI<out SignerT: Signer.WithAlias,

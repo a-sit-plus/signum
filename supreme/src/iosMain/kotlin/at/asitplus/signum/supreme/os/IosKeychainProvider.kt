@@ -194,11 +194,13 @@ sealed class unlockedIosSigner(private val ownedArena: Arena, internal val priva
 
 }
 
+interface iosSignerI : Signer.Attestable<iosHomebrewAttestation>, Signer.WithAlias, Signer.TemporarilyUnlockable<unlockedIosSigner>
+
 sealed class iosSigner<H : unlockedIosSigner>(
     final override val alias: String,
     final override val attestation: iosHomebrewAttestation?,
     private val config: iosSignerConfiguration
-) : Signer.TemporarilyUnlockable<H>(), Signer.Attestable<iosHomebrewAttestation>, Signer.WithAlias {
+) : Signer.TemporarilyUnlockable<H>(), Signer.Attestable<iosHomebrewAttestation>, Signer.WithAlias, iosSignerI {
 
     final override suspend fun unlock(): KmmResult<H> = withContext(keychainThreads) { catching {
         val arena = Arena()
@@ -516,7 +518,9 @@ object IosKeychainProvider: SigningProviderI<iosSigner<*>, iosSignerConfiguratio
     }
 }
 
+actual typealias PlatformSigningProviderSigner = iosSignerI
 actual typealias PlatformSigningProviderSignerConfiguration = iosSignerConfiguration
+actual typealias PlatformSigningProviderSigningKeyConfiguration = iosSigningKeyConfiguration
 actual typealias PlatformSigningProvider = IosKeychainProvider
 actual typealias PlatformSigningProviderConfiguration = PlatformSigningProviderConfigurationBase
 internal actual fun makePlatformSigningProvider(config: PlatformSigningProviderConfiguration) =

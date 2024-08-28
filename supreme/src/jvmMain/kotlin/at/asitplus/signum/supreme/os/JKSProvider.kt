@@ -176,6 +176,8 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
     }
 
     companion object {
+        operator fun invoke(configure: DSLConfigureFn<JKSProviderConfiguration> = null) =
+            makePlatformSigningProvider(DSL.resolve(::JKSProviderConfiguration, configure))
         fun Ephemeral(type: String = KeyStore.getDefaultType(), provider: String? = null) =
             JKSProvider(DummyJKSAccessor(keystoreGetInstance(type, provider).apply { load(null) }))
     }
@@ -280,19 +282,6 @@ internal class JKSFileAccessor(opt: JKSProviderConfiguration.KeyStoreFile) : JKS
     override fun forWriting() = WriteAccessor()
 }
 
-actual typealias PlatformSigningProviderSignerConfiguration = JKSSignerConfiguration
-actual typealias PlatformSigningProvider = JKSProvider
-actual typealias PlatformSigningProviderConfiguration = JKSProviderConfiguration
-internal actual fun makePlatformSigningProvider(config: JKSProviderConfiguration): KmmResult<PlatformSigningProvider> = catching {
-    when (val opt = config._keystore.v) {
-        is JKSProviderConfiguration.EphemeralKeyStore ->
-            JKSProvider.Ephemeral(opt.storeType, opt.provider)
-        is JKSProviderConfiguration.KeyStoreObject ->
-            JKSProvider(opt.flushCallback?.let { CallbackJKSAccessor(opt.store, it) } ?: DummyJKSAccessor(opt.store))
-        is JKSProviderConfiguration.KeyStoreFile ->
-            JKSProvider(JKSFileAccessor(opt))
-    }
-}
 class JKSProviderConfiguration internal constructor(): PlatformSigningProviderConfigurationBase() {
     sealed class KeyStoreConfiguration constructor(): DSL.Data()
     internal val _keystore = subclassOf<KeyStoreConfiguration>(default = EphemeralKeyStore())
@@ -344,3 +333,20 @@ class JKSProviderConfiguration internal constructor(): PlatformSigningProviderCo
      */
     val keystoreFile = _keystore.option(::KeyStoreFile)
 }
+
+internal actual fun makePlatformSigningProvider(config: JKSProviderConfiguration): KmmResult<JKSProvider> = catching {
+    when (val opt = config._keystore.v) {
+        is JKSProviderConfiguration.EphemeralKeyStore ->
+            JKSProvider.Ephemeral(opt.storeType, opt.provider)
+        is JKSProviderConfiguration.KeyStoreObject ->
+            JKSProvider(opt.flushCallback?.let { CallbackJKSAccessor(opt.store, it) } ?: DummyJKSAccessor(opt.store))
+        is JKSProviderConfiguration.KeyStoreFile ->
+            JKSProvider(JKSFileAccessor(opt))
+    }
+}
+
+actual typealias PlatformSigningProviderSigner = JKSSigner
+actual typealias PlatformSigningProviderSignerConfiguration = JKSSignerConfiguration
+actual typealias PlatformSigningProviderSigningKeyConfiguration = JKSSigningKeyConfiguration
+actual typealias PlatformSigningProvider = JKSProvider
+actual typealias PlatformSigningProviderConfiguration = JKSProviderConfiguration

@@ -390,7 +390,9 @@ val AndroidKeystoreSigner.needsAuthenticationWithTimeout inline get() =
     keyInfo.isUserAuthenticationRequired &&
             (keyInfo.userAuthenticationValidityDurationSeconds > 0)
 
+actual typealias PlatformSigningProviderSigner = AndroidKeystoreSigner
 actual typealias PlatformSigningProviderSignerConfiguration = AndroidSignerConfiguration
+actual typealias PlatformSigningProviderSigningKeyConfiguration = AndroidSigningKeyConfiguration
 actual typealias PlatformSigningProvider = AndroidKeyStoreProvider
 actual typealias PlatformSigningProviderConfiguration = PlatformSigningProviderConfigurationBase
 internal actual fun makePlatformSigningProvider(config: PlatformSigningProviderConfiguration) =
