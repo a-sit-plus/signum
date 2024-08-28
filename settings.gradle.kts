@@ -1,6 +1,8 @@
 pluginManagement {
     includeBuild("swift-klib-plugin")
     repositories {
+
+        maven("https://s01.oss.sonatype.org/content/repositories/snapshots") //KOTEST snapshot
         google()
         mavenCentral()
         gradlePluginPortal()
