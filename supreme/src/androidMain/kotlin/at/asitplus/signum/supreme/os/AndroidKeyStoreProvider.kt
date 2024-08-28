@@ -24,6 +24,7 @@ import at.asitplus.signum.indispensable.parseFromJca
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.leaf
+import at.asitplus.signum.supreme.AppLifecycleMonitor
 import at.asitplus.signum.supreme.UnlockFailed
 import at.asitplus.signum.supreme.UnsupportedCryptoException
 import at.asitplus.signum.supreme.dsl.DISCOURAGED
@@ -68,8 +69,14 @@ class AndroidSigningKeyConfiguration internal constructor(): PlatformSigningKeyC
 
 class AndroidSignerConfiguration: PlatformSignerConfigurationBase() {
     class AuthnPrompt: PlatformSignerConfigurationBase.AuthnPrompt() {
+        /** Explicitly specify the FragmentActivity to use for authentication prompts.
+         * You will not need to set this in most cases; the default is the current activity. */
         lateinit var activity: FragmentActivity
+
+        /** Explicitly set the Fragment to base authentication prompts on.
+         * You will not need to set this in most cases; the default is the current activity.*/
         lateinit var fragment: Fragment
+
         internal val context: FragmentContext? get() = when {
             this::activity.isInitialized -> FragmentContext.OfActivity(activity)
             this::fragment.isInitialized -> FragmentContext.OfFragment(fragment)
@@ -287,7 +294,6 @@ sealed class LockedAndroidKeystoreSigner private constructor(
 ) : SignerI.TemporarilyUnlockable<UnlockedAndroidKeystoreSigner>(), AndroidKeystoreSigner {
 
     private val context = config.unlockPrompt.v.context
-        ?: throw UnsupportedCryptoException("The requested key with alias $alias requires unlock. Pass either { fragment = } or { activity = } inside authPrompt {}.")
 
     final override val attestation = attestationFor(certificateChain)
     private sealed interface AuthResult {
@@ -297,7 +303,11 @@ sealed class LockedAndroidKeystoreSigner private constructor(
 
     private suspend fun attemptBiometry(config: AndroidSignerConfiguration.AuthnPrompt, forSpecificKey: CryptoObject?) {
         val channel = Channel<AuthResult>(capacity = Channel.RENDEZVOUS)
-        val executor = when (context) {
+        val effectiveContext = context ?:
+            (AppLifecycleMonitor.currentActivity as? FragmentActivity)?.let(FragmentContext::OfActivity)
+                ?: throw UnsupportedOperationException("The requested key with alias $alias requires unlock, but the current activity is not a FragmentActivity or could not be determined. " +
+                "Pass either { fragment = } or { activity = } inside authPrompt {}.")
+        val executor = when (effectiveContext) {
             is FragmentContext.OfActivity -> ContextCompat.getMainExecutor(context.activity)
             is FragmentContext.OfFragment -> ContextCompat.getMainExecutor(context.fragment.context)
         }
@@ -324,7 +334,7 @@ sealed class LockedAndroidKeystoreSigner private constructor(
                     config.invalidBiometryCallback?.invoke()
                 }
             }
-            val prompt = when (context) {
+            val prompt = when (effectiveContext) {
                 is FragmentContext.OfActivity -> BiometricPrompt(context.activity, executor, siphon)
                 is FragmentContext.OfFragment -> BiometricPrompt(context.fragment, executor, siphon)
             }
