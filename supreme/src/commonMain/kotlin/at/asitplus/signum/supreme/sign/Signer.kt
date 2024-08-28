@@ -1,7 +1,6 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.KmmResult
-import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
@@ -10,6 +9,7 @@ import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.nativeDigest
+import at.asitplus.signum.supreme.HazardousMaterials
 import at.asitplus.signum.supreme.UnlockFailed
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
@@ -88,30 +88,22 @@ interface Signer {
      */
     abstract class TemporarilyUnlockable<Handle: UnlockedHandle> : Signer {
         final override val mayRequireUserUnlock: Boolean get() = true
-        protected abstract suspend fun unlock(): KmmResult<Handle>
+
+        @HazardousMaterials
+        abstract suspend fun unlock(): KmmResult<Handle>
 
         /**
          * Unlocks the signer, then executes the block with the [UnlockedHandle] as its receiver.
          *
          * The handle's validity is only guaranteed in the block scope.
          */
-        @OptIn(ExperimentalStdlibApi::class)
-        suspend fun <T> withUnlock(fn: suspend Handle.()->T): KmmResult<T> =
-            /** this is .use() but for suspend functions */
-            unlock().transform { h ->
-                val v = runCatching { fn(h) }
-                try {
-                    h.close()
-                } catch (y: Throwable) {
-                    (v.exceptionOrNull()
-                        ?: return@transform KmmResult.failure(y))
-                        .addSuppressed(y)
-                }
-                v.wrap()
-            }
+        @OptIn(ExperimentalStdlibApi::class, HazardousMaterials::class)
+        suspend inline fun <reified T> withUnlock(fn: Handle.()->T): KmmResult<T> =
+            unlock().mapCatching { it.use(fn) }
 
+        @OptIn(ExperimentalStdlibApi::class, HazardousMaterials::class)
         final override suspend fun sign(data: SignatureInput): KmmResult<CryptoSignature> =
-            withUnlock { sign(data).getOrThrow() }
+            unlock().transform { h -> h.use { it.sign(data) } }
     }
 
     companion object {
@@ -138,7 +130,7 @@ val Signer.ECDSA.curve get() = publicKey.curve
  * Try to batch sign with this signer.
  * Might fail for unlockable signers that cannot be temporarily unlocked.
  */
-suspend fun <T> Signer.withUnlock(fn: suspend Signer.()->T) =
+suspend inline fun <reified T> Signer.withUnlock(fn: Signer.()->T) =
     when (this.mayRequireUserUnlock) {
         true ->
             if (this is Signer.TemporarilyUnlockable<*>)

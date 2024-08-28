@@ -2,7 +2,7 @@
 package at.asitplus.signum.supreme.hazmat
 
 import at.asitplus.signum.supreme.HazardousMaterials
-import at.asitplus.signum.supreme.os.unlockedIosSigner
+import at.asitplus.signum.supreme.os.UnlockedIosSigner
 import at.asitplus.signum.supreme.sign.EphemeralKey
 import at.asitplus.signum.supreme.sign.EphemeralKeyBase
 import at.asitplus.signum.supreme.sign.EphemeralKeyRef
@@ -16,6 +16,6 @@ val EphemeralKey.secKeyRef get() = ((this as? EphemeralKeyBase<*>)?.privateKey a
 @HazardousMaterials
 val Signer.secKeyRef get() = when (this) {
     is EphemeralSigner -> this.privateKey.key.value
-    is unlockedIosSigner -> this.privateKeyRef
+    is UnlockedIosSigner -> this.privateKeyRef
     else -> null
 }

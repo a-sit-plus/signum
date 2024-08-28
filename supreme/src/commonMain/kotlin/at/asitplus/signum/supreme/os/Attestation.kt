@@ -35,14 +35,14 @@ data class AndroidKeystoreAttestation (
 
 @Serializable
 @SerialName("ios-appattest-assertion")
-data class iosLegacyHomebrewAttestation(
+data class IosLegacyHomebrewAttestation(
     @Serializable(with=ByteArrayBase64UrlSerializer::class)
     val attestation: ByteArray,
     @Serializable(with=ByteArrayBase64UrlSerializer::class)
     val assertion: ByteArray): Attestation {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is iosLegacyHomebrewAttestation) return false
+        if (other !is IosLegacyHomebrewAttestation) return false
 
         if (!attestation.contentEquals(other.attestation)) return false
         return assertion.contentEquals(other.assertion)
@@ -59,7 +59,7 @@ val StrictJson = Json { ignoreUnknownKeys = true; isLenient = false }
 
 @Serializable
 @SerialName("ios-appattest")
-data class iosHomebrewAttestation(
+data class IosHomebrewAttestation(
     @Serializable(with=ByteArrayBase64UrlSerializer::class)
     val attestation: ByteArray,
     @Serializable(with=ByteArrayBase64UrlSerializer::class)
@@ -106,7 +106,7 @@ data class iosHomebrewAttestation(
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is iosHomebrewAttestation) return false
+        if (other !is IosHomebrewAttestation) return false
 
         if (!attestation.contentEquals(other.attestation)) return false
         return clientDataJSON.contentEquals(other.clientDataJSON)
