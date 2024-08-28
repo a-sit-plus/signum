@@ -131,6 +131,9 @@ class AndroidKeyStoreProvider:
         alias: String,
         configure: DSLConfigureFn<AndroidSigningKeyConfiguration>
     ) = catching {
+        if (ks.containsAlias(alias)) {
+            throw NoSuchElementException("Key with alias $alias already exists")
+        }
         val config = DSL.resolve(::AndroidSigningKeyConfiguration, configure)
         val spec = KeyGenParameterSpec.Builder(
             alias,
