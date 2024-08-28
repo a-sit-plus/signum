@@ -26,7 +26,7 @@ buildscript {
 }
 
 
-version = "0.1.1-PRE"
+version = "0.2.0-SNAPSHOT"
 
 wireAndroidInstrumentedTests()
 
