@@ -39,7 +39,7 @@ import kotlin.native.ref.createCleaner
 actual class EphemeralSigningKeyConfiguration internal actual constructor(): EphemeralSigningKeyConfigurationBase()
 actual class EphemeralSignerConfiguration internal actual constructor(): EphemeralSignerConfigurationBase()
 
-sealed class EphemeralSigner(private val privateKey: EphemeralKeyRef): Signer {
+sealed class EphemeralSigner(internal val privateKey: EphemeralKeyRef): Signer {
     final override val mayRequireUserUnlock: Boolean get() = false
     final override suspend fun sign(data: SignatureInput) = catching {
         val inputData = data.convertTo(when (val alg = signatureAlgorithm) {
@@ -66,15 +66,12 @@ sealed class EphemeralSigner(private val privateKey: EphemeralKeyRef): Signer {
         : EphemeralSigner(privateKey), Signer.RSA
 }
 
-class EphemeralKeyRef: EphemeralKeyPlatformSpecifics {
+class EphemeralKeyRef {
     private val arena = Arena()
     @OptIn(ExperimentalNativeApi::class)
     private val cleaner = createCleaner(arena, Arena::clear)
-    override val key = arena.alloc<SecKeyRefVar>()
+    val key = arena.alloc<SecKeyRefVar>()
 }
-
-actual interface EphemeralKeyPlatformSpecifics { val key: SecKeyRefVar }
-actual val EphemeralKey.platformSpecifics: EphemeralKeyPlatformSpecifics get() = (this as EphemeralKeyBase<*>).privateKey as EphemeralKeyRef
 
 internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey {
     val key = EphemeralKeyRef()

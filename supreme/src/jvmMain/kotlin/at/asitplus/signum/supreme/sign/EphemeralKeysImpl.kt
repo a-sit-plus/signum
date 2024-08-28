@@ -25,7 +25,7 @@ actual class EphemeralSignerConfiguration internal actual constructor(): Ephemer
     override var provider: String? = null
 }
 
-sealed class EphemeralSigner (private val privateKey: PrivateKey, private val provider: String?) : Signer {
+sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val provider: String?) : Signer {
     override val mayRequireUserUnlock = false
     override suspend fun sign(data: SignatureInput) = catching {
         val preHashed = (data.format != null)
@@ -62,10 +62,6 @@ internal fun getKPGInstance(alg: String, provider: String? = null) =
         null -> KeyPairGenerator.getInstance(alg)
         else -> KeyPairGenerator.getInstance(alg, provider)
     }
-
-actual interface EphemeralKeyPlatformSpecifics { val jcaPrivateKey: PrivateKey }
-actual val EphemeralKey.platformSpecifics: EphemeralKeyPlatformSpecifics get() =
-    object : EphemeralKeyPlatformSpecifics { override val jcaPrivateKey get() = (this@platformSpecifics as EphemeralKeyBase<*>).privateKey as PrivateKey }
 
 internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey =
     when (val alg = configuration._algSpecific.v) {

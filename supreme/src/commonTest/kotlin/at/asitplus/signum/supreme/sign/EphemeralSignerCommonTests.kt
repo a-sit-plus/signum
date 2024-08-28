@@ -4,11 +4,15 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.RSAPadding
+import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.supreme.succeed
 import com.ionspin.kotlin.bignum.integer.Quadruple
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
+import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.should
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.cancel
 import kotlin.random.Random
 
@@ -36,6 +40,10 @@ class EphemeralSignerCommonTests : FreeSpec({
             } catch (x: UnsupportedOperationException) {
                 return@withData
             }
+            signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.RSA>().let {
+                it.digest shouldBe digest
+                it.padding shouldBe padding
+            }
 
             val verifier = signer.makeVerifier().getOrThrow()
             verifier.verify(data, signature) should succeed
@@ -50,12 +58,16 @@ class EphemeralSignerCommonTests : FreeSpec({
                  }
              }
          }) { (crv, digest, preHashed) ->
-            val signer = Signer { ec { curve = crv; digests = setOf(digest) } }
-            val data = Random.Default.nextBytes(64)
-            val signature = signer.sign(SignatureInput(data).let { if (preHashed) it.convertTo(digest).getOrThrow() else it }).getOrThrow()
+             val signer = Signer { ec { curve = crv; digests = setOf(digest) } }
+             signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.ECDSA>().let {
+                 it.digest shouldBe digest
+                 it.requiredCurve shouldBeIn setOf(null, crv)
+             }
+             val data = Random.Default.nextBytes(64)
+             val signature = signer.sign(SignatureInput(data).let { if (preHashed) it.convertTo(digest).getOrThrow() else it }).getOrThrow()
 
-            val verifier = signer.makeVerifier().getOrThrow()
-            verifier.verify(data, signature) should succeed
+             val verifier = signer.makeVerifier().getOrThrow()
+             verifier.verify(data, signature) should succeed
         }
     }
 })

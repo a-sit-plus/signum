@@ -18,7 +18,7 @@ import java.security.spec.RSAKeyGenParameterSpec
 actual class EphemeralSigningKeyConfiguration internal actual constructor(): EphemeralSigningKeyConfigurationBase()
 actual class EphemeralSignerConfiguration internal actual constructor(): EphemeralSignerConfigurationBase()
 
-sealed class AndroidEphemeralSigner (private val privateKey: PrivateKey) : Signer {
+sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Signer {
     override val mayRequireUserUnlock = false
     override suspend fun sign(data: SignatureInput) = catching {
         val inputData = data.convertTo(when (val alg = signatureAlgorithm) {
@@ -42,10 +42,6 @@ sealed class AndroidEphemeralSigner (private val privateKey: PrivateKey) : Signe
                override val publicKey: CryptoPublicKey.Rsa, override val signatureAlgorithm: SignatureAlgorithm.RSA)
         : AndroidEphemeralSigner(privateKey), Signer.RSA
 }
-
-actual interface EphemeralKeyPlatformSpecifics { val jcaPrivateKey: PrivateKey }
-actual val EphemeralKey.platformSpecifics: EphemeralKeyPlatformSpecifics get() =
-    object : EphemeralKeyPlatformSpecifics { override val jcaPrivateKey get() = (this@platformSpecifics as EphemeralKeyBase<*>).privateKey as PrivateKey }
 
 internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey =
     when (val alg = configuration._algSpecific.v) {

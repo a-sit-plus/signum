@@ -4,6 +4,7 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.supreme.HazardousMaterials
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
@@ -43,12 +44,8 @@ sealed interface EphemeralKey {
     }
 }
 
-expect interface EphemeralKeyPlatformSpecifics
-@HazardousMaterials
-expect val EphemeralKey.platformSpecifics: EphemeralKeyPlatformSpecifics
-
 internal sealed class EphemeralKeyBase <PrivateKeyT>
-    (val privateKey: PrivateKeyT): EphemeralKey {
+    (internal val privateKey: PrivateKeyT): EphemeralKey {
 
     class EC<PrivateKeyT, SignerT: Signer.ECDSA>(
         private val signerFactory: (EphemeralSignerConfiguration, PrivateKeyT, CryptoPublicKey.EC, SignatureAlgorithm.ECDSA)->SignerT,
@@ -64,12 +61,9 @@ internal sealed class EphemeralKeyBase <PrivateKeyT>
                     { "Digest ${alg.digest} unsupported (supported: ${digests.joinToString(",")}" }
                     alg.digest
                 }
-                false -> when {
-                    digests.contains(Digest.SHA256) -> Digest.SHA256
-                    digests.contains(Digest.SHA384) -> Digest.SHA384
-                    digests.contains(Digest.SHA512) -> Digest.SHA512
-                    else -> digests.first()
-                }
+                false ->
+                    sequenceOf(publicKey.curve.nativeDigest, Digest.SHA256, Digest.SHA384, Digest.SHA512)
+                        .firstOrNull(digests::contains) ?: digests.first()
             }
             return signerFactory(config, privateKey, publicKey, SignatureAlgorithm.ECDSA(digest, publicKey.curve))
         }

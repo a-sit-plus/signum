@@ -308,7 +308,7 @@ sealed class UnlockedAndroidKeystoreSigner private constructor(
 
 sealed class LockedAndroidKeystoreSigner private constructor(
     private val context: FragmentContext,
-    private val jcaPrivateKey: PrivateKey,
+    internal val jcaPrivateKey: PrivateKey,
     override val keyInfo: KeyInfo,
     private val config: AndroidSignerConfiguration,
     certificateChain: CertificateChain

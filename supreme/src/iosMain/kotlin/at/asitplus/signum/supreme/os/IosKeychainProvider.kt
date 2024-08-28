@@ -139,7 +139,7 @@ class iosSigningKeyConfiguration internal constructor(): PlatformSigningKeyConfi
 class iosSignerConfiguration internal constructor(): PlatformSignerConfiguration() {
 }
 
-sealed class unlockedIosSigner(private val ownedArena: Arena, private val privateKeyRef: SecKeyRef) : Signer.UnlockedHandle {
+sealed class unlockedIosSigner(private val ownedArena: Arena, internal val privateKeyRef: SecKeyRef) : Signer.UnlockedHandle {
     abstract val parent: iosSigner<*>
     val alias get() = parent.alias
 
