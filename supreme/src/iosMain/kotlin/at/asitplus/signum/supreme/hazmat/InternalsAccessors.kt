@@ -9,6 +9,7 @@ import at.asitplus.signum.supreme.sign.EphemeralKeyRef
 import at.asitplus.signum.supreme.sign.EphemeralSigner
 import at.asitplus.signum.supreme.sign.Signer
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.value
 
 @HazardousMaterials
 val EphemeralKey.secKeyRef get() = ((this as? EphemeralKeyBase<*>)?.privateKey as? EphemeralKeyRef)?.key?.value
