@@ -37,9 +37,9 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
             }) { "Pre-hashed data (format ${data.format}) unsupported for algorithm $signatureAlgorithm" }
         }
         (if (preHashed)
-            signatureAlgorithm.getJCASignatureInstancePreHashed(provider = provider, isAndroid = false).getOrThrow()
+            signatureAlgorithm.getJCASignatureInstancePreHashed(provider = provider).getOrThrow()
         else
-            signatureAlgorithm.getJCASignatureInstance(provider = provider, isAndroid = false).getOrThrow())
+            signatureAlgorithm.getJCASignatureInstance(provider = provider).getOrThrow())
         .run {
             initSign(privateKey)
             data.data.forEach { update(it) }

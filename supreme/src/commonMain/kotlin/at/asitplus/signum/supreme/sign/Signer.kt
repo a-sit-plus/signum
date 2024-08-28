@@ -61,6 +61,11 @@ interface Signer {
         override val publicKey: CryptoPublicKey.Rsa
     }
 
+    /** Some [Signer]s are retrieved from a signing provider, such as a key store, and have a string alias. */
+    interface WithAlias: Signer {
+        val alias: String
+    }
+
     /** Some [Signer]s might have an attestation of some sort */
     interface Attestable<AttestationT: Attestation>: Signer {
         val attestation: AttestationT?

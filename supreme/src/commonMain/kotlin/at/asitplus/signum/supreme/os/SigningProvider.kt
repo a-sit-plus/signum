@@ -13,7 +13,7 @@ import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-open class PlatformSigningKeyConfiguration<SignerConfigurationT: PlatformSignerConfiguration> internal constructor(): SigningKeyConfiguration() {
+open class PlatformSigningKeyConfigurationBase<SignerConfigurationT: PlatformSignerConfigurationBase> internal constructor(): SigningKeyConfiguration() {
     open class AttestationConfiguration internal constructor(): DSL.Data() {
         /** The server-provided attestation challenge */
         lateinit var challenge: ByteArray
@@ -97,7 +97,7 @@ open class SignerConfiguration internal constructor(): DSL.Data() {
     open val rsa = childOrDefault(::RSASignerConfiguration)
 }
 
-open class PlatformSignerConfiguration internal constructor(): SignerConfiguration() {
+open class PlatformSignerConfigurationBase internal constructor(): SignerConfiguration() {
     open class AuthnPrompt: DSL.Data() {
         /** The prompt message to show to the user when asking for unlock */
         var message: String = "Please authorize cryptographic signature"
@@ -107,11 +107,22 @@ open class PlatformSignerConfiguration internal constructor(): SignerConfigurati
     open val unlockPrompt = childOrDefault(::AuthnPrompt)
 }
 
-interface SigningProviderI<out SignerT: Signer,
-        out SignerConfigT: PlatformSignerConfiguration,
-        out KeyConfigT: PlatformSigningKeyConfiguration<*>> {
+open class PlatformSigningProviderConfigurationBase internal constructor(): DSL.Data()
+expect class PlatformSigningProviderConfiguration internal constructor(): PlatformSigningProviderConfigurationBase
+expect class PlatformSigningProviderSignerConfiguration: PlatformSignerConfigurationBase
+expect class PlatformSigningProvider : SigningProviderI<Signer.WithAlias,PlatformSigningProviderSignerConfiguration,PlatformSigningKeyConfigurationBase<PlatformSigningProviderSignerConfiguration>>
+internal expect fun makePlatformSigningProvider(config: PlatformSigningProviderConfiguration): KmmResult<PlatformSigningProvider>
+
+interface SigningProviderI<out SignerT: Signer.WithAlias,
+        out SignerConfigT: PlatformSignerConfigurationBase,
+        out KeyConfigT: PlatformSigningKeyConfigurationBase<*>> {
     suspend fun createSigningKey(alias: String, configure: DSLConfigureFn<KeyConfigT> = null) : KmmResult<SignerT>
     suspend fun getSignerForKey(alias: String, configure: DSLConfigureFn<SignerConfigT> = null) : KmmResult<SignerT>
     suspend fun deleteSigningKey(alias: String)
+
+    companion object {
+        operator fun invoke(configure: DSLConfigureFn<PlatformSigningProviderConfiguration> = null) =
+            makePlatformSigningProvider(DSL.resolve(::PlatformSigningProviderConfiguration, configure))
+    }
 }
 typealias SigningProvider = SigningProviderI<*,*,*>

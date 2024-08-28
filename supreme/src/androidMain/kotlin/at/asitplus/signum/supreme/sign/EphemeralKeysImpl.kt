@@ -26,7 +26,7 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
             is SignatureAlgorithm.ECDSA -> alg.digest
             else -> TODO("hmac unsupported")
         }).getOrThrow()
-        signatureAlgorithm.getJCASignatureInstancePreHashed(provider = null, isAndroid = true).getOrThrow().run {
+        signatureAlgorithm.getJCASignatureInstancePreHashed(provider = null).getOrThrow().run {
             initSign(privateKey)
             inputData.data.forEach { update(it) }
             sign().let {

@@ -128,7 +128,7 @@ object DSL {
             Integrated<T>()
 
         /**
-         * Marks a DSL substructure as unsupported.
+         * Marks an inherited DSL substructure as unsupported. Attempts to use it throw [UnsupportedOperationException]. Use very sparingly.
          */
         protected fun <T: Any> unsupported(why: String): Unsupported<T> =
             Unsupported<T>(why)

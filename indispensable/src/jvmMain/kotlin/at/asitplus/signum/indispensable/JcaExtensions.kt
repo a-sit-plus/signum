@@ -37,13 +37,17 @@ val Digest.jcaPSSParams
         Digest.SHA512 -> PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 64, 1)
     }
 
+internal val isAndroid by lazy {
+    try { Class.forName("android.os.Build"); true } catch (_: ClassNotFoundException) { false }
+}
+
 private fun sigGetInstance(alg: String, provider: String?) =
     when (provider) {
         null -> Signature.getInstance(alg)
         else -> Signature.getInstance(alg, provider)
     }
 /** Get a pre-configured JCA instance for this algorithm */
-fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null, isAndroid: Boolean = false) = catching {
+fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) = catching {
     when (this) {
         is SignatureAlgorithm.ECDSA ->
             sigGetInstance("${this.digest.jcaAlgorithmComponent}withECDSA", provider)
@@ -64,11 +68,11 @@ fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null, isAndro
     }
 }
 /** Get a pre-configured JCA instance for this algorithm */
-fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = null, isAndroid: Boolean = false) =
-    this.algorithm.getJCASignatureInstance(provider, isAndroid)
+fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =
+    this.algorithm.getJCASignatureInstance(provider)
 
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
-fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null, isAndroid: Boolean = false) = catching {
+fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) = catching {
     when (this) {
         is SignatureAlgorithm.ECDSA -> sigGetInstance("NONEwithECDSA", provider)
         is SignatureAlgorithm.RSA -> when (this.padding) {
@@ -86,8 +90,8 @@ fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null
 }
 
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
-fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null, isAndroid: Boolean = false) =
-    this.algorithm.getJCASignatureInstancePreHashed(provider, isAndroid)
+fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) =
+    this.algorithm.getJCASignatureInstancePreHashed(provider)
 
 val Digest.jcaName
     get() = when (this) {

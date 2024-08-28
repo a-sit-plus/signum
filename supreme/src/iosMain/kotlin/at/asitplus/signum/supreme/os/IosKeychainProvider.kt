@@ -123,20 +123,20 @@ private object KeychainTags {
     val PUBLIC_KEYS get() = tags.second
 }
 
-class iosSecureEnclaveConfiguration internal constructor() : PlatformSigningKeyConfiguration.SecureHardwareConfiguration() {
+class iosSecureEnclaveConfiguration internal constructor() : PlatformSigningKeyConfigurationBase.SecureHardwareConfiguration() {
     /** Set to true to allow this key to be backed up. */
     var allowBackup = false
     enum class Availability { ALWAYS, AFTER_FIRST_UNLOCK, WHILE_UNLOCKED }
     /** Specify when this key should be available */
     var availability = Availability.ALWAYS
 }
-class iosSigningKeyConfiguration internal constructor(): PlatformSigningKeyConfiguration<iosSignerConfiguration>() {
+class iosSigningKeyConfiguration internal constructor(): PlatformSigningKeyConfigurationBase<iosSignerConfiguration>() {
     override val hardware = childOrDefault(::iosSecureEnclaveConfiguration) {
         backing = DISCOURAGED
     }
 }
 
-class iosSignerConfiguration internal constructor(): PlatformSignerConfiguration() {
+class iosSignerConfiguration internal constructor(): PlatformSignerConfigurationBase() {
 }
 
 sealed class unlockedIosSigner(private val ownedArena: Arena, internal val privateKeyRef: SecKeyRef) : Signer.UnlockedHandle {
@@ -158,7 +158,7 @@ sealed class unlockedIosSigner(private val ownedArena: Arena, internal val priva
     }
 
     protected abstract fun bytesToSignature(sigBytes: ByteArray): CryptoSignature
-    override suspend fun sign(data: SignatureInput): KmmResult<CryptoSignature> =
+    final override suspend fun sign(data: SignatureInput): KmmResult<CryptoSignature> =
     withContext(keychainThreads) { catching {
         if (!usable) throw IllegalStateException("Scoping violation; using key after it has been freed")
         require(data.format == null) { "Pre-hashed data is unsupported on iOS" }
@@ -195,12 +195,12 @@ sealed class unlockedIosSigner(private val ownedArena: Arena, internal val priva
 }
 
 sealed class iosSigner<H : unlockedIosSigner>(
-    val alias: String,
-    override val attestation: iosHomebrewAttestation?,
+    final override val alias: String,
+    final override val attestation: iosHomebrewAttestation?,
     private val config: iosSignerConfiguration
-) : Signer.TemporarilyUnlockable<H>(), Signer.Attestable<iosHomebrewAttestation> {
+) : Signer.TemporarilyUnlockable<H>(), Signer.Attestable<iosHomebrewAttestation>, Signer.WithAlias {
 
-    override suspend fun unlock(): KmmResult<H> = withContext(keychainThreads) { catching {
+    final override suspend fun unlock(): KmmResult<H> = withContext(keychainThreads) { catching {
         val arena = Arena()
         val privateKey = arena.alloc<SecKeyRefVar>()
         try {
@@ -266,7 +266,7 @@ sealed class iosSigner<H : unlockedIosSigner>(
 }
 
 @OptIn(ExperimentalForeignApi::class)
-object IosKeychainProvider:  SigningProviderI<iosSigner<*>, iosSignerConfiguration, iosSigningKeyConfiguration> {
+object IosKeychainProvider: SigningProviderI<iosSigner<*>, iosSignerConfiguration, iosSigningKeyConfiguration> {
     private fun MemScope.getPublicKey(alias: String): SecKeyRef? {
         val it = alloc<SecKeyRefVar>()
         val query = cfDictionaryOf(
@@ -514,5 +514,10 @@ object IosKeychainProvider:  SigningProviderI<iosSigner<*>, iosSignerConfigurati
             }
         }
     }
-
 }
+
+actual typealias PlatformSigningProviderSignerConfiguration = iosSignerConfiguration
+actual typealias PlatformSigningProvider = IosKeychainProvider
+actual typealias PlatformSigningProviderConfiguration = PlatformSigningProviderConfigurationBase
+internal actual fun makePlatformSigningProvider(config: PlatformSigningProviderConfiguration) =
+    IosKeychainProvider
