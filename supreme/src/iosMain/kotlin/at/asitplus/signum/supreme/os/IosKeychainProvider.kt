@@ -194,8 +194,6 @@ sealed class unlockedIosSigner(private val ownedArena: Arena, internal val priva
 
 }
 
-interface iosSignerI : Signer.Attestable<iosHomebrewAttestation>, Signer.WithAlias, Signer.TemporarilyUnlockable<unlockedIosSigner>
-
 sealed class iosSigner<H : unlockedIosSigner>(
     final override val alias: String,
     final override val attestation: iosHomebrewAttestation?,
@@ -518,10 +516,10 @@ object IosKeychainProvider: SigningProviderI<iosSigner<*>, iosSignerConfiguratio
     }
 }
 
-actual typealias PlatformSigningProviderSigner = iosSignerI
+/*actual typealias PlatformSigningProviderSigner = iosSigner<*>
 actual typealias PlatformSigningProviderSignerConfiguration = iosSignerConfiguration
 actual typealias PlatformSigningProviderSigningKeyConfiguration = iosSigningKeyConfiguration
 actual typealias PlatformSigningProvider = IosKeychainProvider
 actual typealias PlatformSigningProviderConfiguration = PlatformSigningProviderConfigurationBase
 internal actual fun makePlatformSigningProvider(config: PlatformSigningProviderConfiguration) =
-    IosKeychainProvider
+    IosKeychainProvider*/

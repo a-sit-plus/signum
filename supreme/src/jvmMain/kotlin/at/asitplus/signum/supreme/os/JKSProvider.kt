@@ -334,7 +334,7 @@ class JKSProviderConfiguration internal constructor(): PlatformSigningProviderCo
     val keystoreFile = _keystore.option(::KeyStoreFile)
 }
 
-internal actual fun makePlatformSigningProvider(config: JKSProviderConfiguration): KmmResult<JKSProvider> = catching {
+internal /*actual*/ fun makePlatformSigningProvider(config: JKSProviderConfiguration): KmmResult<JKSProvider> = catching {
     when (val opt = config._keystore.v) {
         is JKSProviderConfiguration.EphemeralKeyStore ->
             JKSProvider.Ephemeral(opt.storeType, opt.provider)
@@ -345,8 +345,8 @@ internal actual fun makePlatformSigningProvider(config: JKSProviderConfiguration
     }
 }
 
-actual typealias PlatformSigningProviderSigner = JKSSigner
+/*actual typealias PlatformSigningProviderSigner = JKSSigner
 actual typealias PlatformSigningProviderSignerConfiguration = JKSSignerConfiguration
 actual typealias PlatformSigningProviderSigningKeyConfiguration = JKSSigningKeyConfiguration
 actual typealias PlatformSigningProvider = JKSProvider
-actual typealias PlatformSigningProviderConfiguration = JKSProviderConfiguration
+actual typealias PlatformSigningProviderConfiguration = JKSProviderConfiguration*/

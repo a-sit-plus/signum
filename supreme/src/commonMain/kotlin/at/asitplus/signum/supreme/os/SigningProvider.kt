@@ -108,12 +108,13 @@ open class PlatformSignerConfigurationBase internal constructor(): SignerConfigu
 }
 
 open class PlatformSigningProviderConfigurationBase internal constructor(): DSL.Data()
-expect interface PlatformSigningProviderSigner: Signer.WithAlias
+// BLOCKED BY KT-71036
+/*expect interface PlatformSigningProviderSigner: Signer.WithAlias
 expect class PlatformSigningProviderConfiguration internal constructor(): PlatformSigningProviderConfigurationBase
 expect class PlatformSigningProviderSignerConfiguration: PlatformSignerConfigurationBase
 expect class PlatformSigningProviderSigningKeyConfiguration: PlatformSigningKeyConfigurationBase<PlatformSigningProviderSignerConfiguration>
 expect class PlatformSigningProvider : SigningProviderI<PlatformSigningProviderSigner,PlatformSigningProviderSignerConfiguration,PlatformSigningProviderSigningKeyConfiguration>
-internal expect fun makePlatformSigningProvider(config: PlatformSigningProviderConfiguration): KmmResult<PlatformSigningProvider>
+internal expect fun makePlatformSigningProvider(config: PlatformSigningProviderConfiguration): KmmResult<PlatformSigningProvider>*/
 
 interface SigningProviderI<out SignerT: Signer.WithAlias,
         out SignerConfigT: PlatformSignerConfigurationBase,
@@ -123,8 +124,8 @@ interface SigningProviderI<out SignerT: Signer.WithAlias,
     suspend fun deleteSigningKey(alias: String)
 
     companion object {
-        operator fun invoke(configure: DSLConfigureFn<PlatformSigningProviderConfiguration> = null) =
-            makePlatformSigningProvider(DSL.resolve(::PlatformSigningProviderConfiguration, configure))
+        /*operator fun invoke(configure: DSLConfigureFn<PlatformSigningProviderConfiguration> = null) =
+            makePlatformSigningProvider(DSL.resolve(::PlatformSigningProviderConfiguration, configure))*/
     }
 }
 typealias SigningProvider = SigningProviderI<*,*,*>

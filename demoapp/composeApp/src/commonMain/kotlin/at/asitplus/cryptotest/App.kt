@@ -57,7 +57,7 @@ import at.asitplus.signum.supreme.sign.sign
 import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.cryptotest.theme.AppTheme
 import at.asitplus.cryptotest.theme.LocalThemeIsDark
-import at.asitplus.signum.supreme.os.PlatformSignerConfiguration
+import at.asitplus.signum.supreme.os.PlatformSignerConfigurationBase
 import at.asitplus.signum.supreme.os.jsonEncoded
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
@@ -122,7 +122,7 @@ val SAMPLE_CERT_CHAIN = listOf(
 
 
 const val ALIAS = "Bartschlüssel"
-val SIGNER_CONFIG: (PlatformSignerConfiguration.()->Unit) = {
+val SIGNER_CONFIG: (PlatformSignerConfigurationBase.()->Unit) = {
     unlockPrompt {
         message = "We're signing a thing!"
         cancelText = "No! Stop!"

@@ -308,8 +308,8 @@ sealed class LockedAndroidKeystoreSigner private constructor(
                 ?: throw UnsupportedOperationException("The requested key with alias $alias requires unlock, but the current activity is not a FragmentActivity or could not be determined. " +
                 "Pass either { fragment = } or { activity = } inside authPrompt {}.")
         val executor = when (effectiveContext) {
-            is FragmentContext.OfActivity -> ContextCompat.getMainExecutor(context.activity)
-            is FragmentContext.OfFragment -> ContextCompat.getMainExecutor(context.fragment.context)
+            is FragmentContext.OfActivity -> ContextCompat.getMainExecutor(effectiveContext.activity)
+            is FragmentContext.OfFragment -> ContextCompat.getMainExecutor(effectiveContext.fragment.context)
         }
         executor.asCoroutineDispatcher().let(::CoroutineScope).launch {
             val promptInfo = BiometricPrompt.PromptInfo.Builder().apply {
@@ -335,8 +335,8 @@ sealed class LockedAndroidKeystoreSigner private constructor(
                 }
             }
             val prompt = when (effectiveContext) {
-                is FragmentContext.OfActivity -> BiometricPrompt(context.activity, executor, siphon)
-                is FragmentContext.OfFragment -> BiometricPrompt(context.fragment, executor, siphon)
+                is FragmentContext.OfActivity -> BiometricPrompt(effectiveContext.activity, executor, siphon)
+                is FragmentContext.OfFragment -> BiometricPrompt(effectiveContext.fragment, executor, siphon)
             }
             when (forSpecificKey) {
                 null -> prompt.authenticate(promptInfo)
@@ -400,10 +400,10 @@ val AndroidKeystoreSigner.needsAuthenticationWithTimeout inline get() =
     keyInfo.isUserAuthenticationRequired &&
             (keyInfo.userAuthenticationValidityDurationSeconds > 0)
 
-actual typealias PlatformSigningProviderSigner = AndroidKeystoreSigner
+/*actual typealias PlatformSigningProviderSigner = AndroidKeystoreSigner
 actual typealias PlatformSigningProviderSignerConfiguration = AndroidSignerConfiguration
 actual typealias PlatformSigningProviderSigningKeyConfiguration = AndroidSigningKeyConfiguration
 actual typealias PlatformSigningProvider = AndroidKeyStoreProvider
 actual typealias PlatformSigningProviderConfiguration = PlatformSigningProviderConfigurationBase
 internal actual fun makePlatformSigningProvider(config: PlatformSigningProviderConfiguration) =
-    AndroidKeyStoreProvider()
+    AndroidKeyStoreProvider()*/
