@@ -25,6 +25,7 @@ import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.supreme.AppLifecycleMonitor
+import at.asitplus.signum.supreme.HazardousMaterials
 import at.asitplus.signum.supreme.UnlockFailed
 import at.asitplus.signum.supreme.UnsupportedCryptoException
 import at.asitplus.signum.supreme.dsl.DISCOURAGED
@@ -354,6 +355,7 @@ sealed class LockedAndroidKeystoreSigner private constructor(
 
     protected abstract fun toUnlocked(jcaSig: JCASignatureObject): UnlockedAndroidKeystoreSigner
 
+    @HazardousMaterials
     final override suspend fun unlock(): KmmResult<UnlockedAndroidKeystoreSigner> =
         signatureAlgorithm.getJCASignatureInstance().onSuccess {
             if (needsAuthenticationForEveryUse) {

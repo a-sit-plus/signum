@@ -25,11 +25,10 @@ kotlin {
             languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
         }
 
-         commonMain {
+        commonMain {
             dependencies {
                 api(project(":indispensable"))
-                //noinspection UseTomlInstead
-                api("org.jetbrains.kotlinx:kotlinx-serialization-cbor:1.8.0-SNAPSHOT!!")
+                api(serialization("cbor"))
                 implementation(napier())
                 implementation(libs.multibase)
                 implementation(libs.bignum) //Intellij bug work-around

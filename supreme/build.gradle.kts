@@ -26,7 +26,8 @@ buildscript {
 }
 
 
-version = "0.2.0-SNAPSHOT"
+val supremeVersion: String by extra
+version = supremeVersion
 
 wireAndroidInstrumentedTests()
 
