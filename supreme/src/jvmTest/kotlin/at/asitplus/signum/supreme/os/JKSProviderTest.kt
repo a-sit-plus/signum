@@ -30,7 +30,7 @@ class JKSProviderTest : FreeSpec({
         try {
             val alias = "Elfenbeinturm"
 
-            val ks1 = SigningProvider {
+            val ks1 = JKSProvider {
                 keystoreFile {
                     file = tempfile
                     password = "Schwertfischfilet".toCharArray()
@@ -45,7 +45,7 @@ class JKSProviderTest : FreeSpec({
                 it.createSigningKey(alias) should succeed
             }
 
-            SigningProvider {
+            JKSProvider {
                 keystoreFile {
                     file = tempfile
                     password = "Bartfischfilet".toCharArray()
@@ -55,7 +55,7 @@ class JKSProviderTest : FreeSpec({
                 it.getSignerForKey(alias) shouldNot succeed
             }
 
-            SigningProvider {
+            JKSProvider {
                 keystoreFile {
                     file = tempfile
                     password = "Schwertfischfilet".toCharArray()
