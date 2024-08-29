@@ -54,9 +54,7 @@ kotlin {
         implementation(napier())
         api(project(":indispensable"))
     }
-    sourceSets.jvmTest.dependencies {
-        implementation("io.kotest.extensions:kotest-assertions-compiler:1.0.0")
-    }
+
     sourceSets.androidMain.dependencies {
         implementation("androidx.biometric:biometric:1.2.0-alpha05")
     }

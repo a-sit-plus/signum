@@ -36,7 +36,7 @@ kotlin {
             }
         }
         commonMain.dependencies {
-            implementation("at.asitplus.signum:supreme:0.0.2-SNAPSHOT") {
+            implementation("at.asitplus.signum:supreme:0.2.0-SNAPSHOT") {
                 isChanging = true
             }
             implementation(compose.runtime)
