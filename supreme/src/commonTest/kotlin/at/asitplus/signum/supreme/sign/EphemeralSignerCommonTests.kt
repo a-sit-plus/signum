@@ -35,7 +35,7 @@ class EphemeralSignerCommonTests : FreeSpec({
             val data = Random.Default.nextBytes(64)
             val signer: Signer
             val signature = try {
-                signer = Signer { rsa { digests = setOf(digest); paddings = setOf(padding); bits = keySize } }
+                signer = Signer.Ephemeral { rsa { digests = setOf(digest); paddings = setOf(padding); bits = keySize } }.getOrThrow()
                 signer.sign(SignatureInput(data).let { if (preHashed) it.convertTo(digest).getOrThrow() else it }).getOrThrow()
             } catch (x: UnsupportedOperationException) {
                 return@withData
@@ -58,7 +58,7 @@ class EphemeralSignerCommonTests : FreeSpec({
                  }
              }
          }) { (crv, digest, preHashed) ->
-             val signer = Signer { ec { curve = crv; digests = setOf(digest) } }
+             val signer = Signer.Ephemeral { ec { curve = crv; digests = setOf(digest) } }.getOrThrow()
              signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.ECDSA>().let {
                  it.digest shouldBe digest
                  it.requiredCurve shouldBeIn setOf(null, crv)

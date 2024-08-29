@@ -14,7 +14,7 @@ import kotlin.random.Random
 
 class JKSProviderTest : FreeSpec({
     "Ephemeral" {
-        val ks = JKSProvider.Ephemeral()
+        val ks = JKSProvider.Ephemeral().getOrThrow()
         val alias = "Elfenbeinschloss"
         ks.getSignerForKey(alias) shouldNot succeed
         val signer = ks.createSigningKey(alias).getOrThrow()
@@ -31,7 +31,7 @@ class JKSProviderTest : FreeSpec({
             val alias = "Elfenbeinturm"
 
             val ks1 = JKSProvider {
-                keystoreFile {
+                file {
                     file = tempfile
                     password = "Schwertfischfilet".toCharArray()
                 }
@@ -46,7 +46,7 @@ class JKSProviderTest : FreeSpec({
             }
 
             JKSProvider {
-                keystoreFile {
+                file {
                     file = tempfile
                     password = "Bartfischfilet".toCharArray()
                 }
@@ -56,7 +56,7 @@ class JKSProviderTest : FreeSpec({
             }
 
             JKSProvider {
-                keystoreFile {
+                file {
                     file = tempfile
                     password = "Schwertfischfilet".toCharArray()
                 }

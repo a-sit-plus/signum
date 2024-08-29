@@ -214,7 +214,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
     }
 }
 
-internal class DummyJKSAccessor(override val ks: KeyStore): JKSAccessor, WriteAccessorBase() {
+internal class DummyJKSAccessor(override val ks: KeyStore): JKSAccessor, ReadAccessorBase, WriteAccessorBase() {
     override fun forReading() = this
     override fun forWriting() = this
     override fun close() {}
