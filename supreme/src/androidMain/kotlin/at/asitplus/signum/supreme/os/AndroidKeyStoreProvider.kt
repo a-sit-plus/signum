@@ -209,7 +209,7 @@ class AndroidKeyStoreProvider:
             is CryptoPublicKey.Rsa -> {
                 val rsaConfig = config.rsa.v
                 val digest = resolveOption<Digest>("digest", keyInfo.digests, Digest.entries.asSequence(), rsaConfig.digestSpecified, rsaConfig.digest, Digest::jcaName)
-                val padding = resolveOption<RSAPadding>("padding", keyInfo.signaturePaddings, RSAPadding.entries.asSequence(), rsaConfig::padding) {
+                val padding = resolveOption<RSAPadding>("padding", keyInfo.signaturePaddings, RSAPadding.entries.asSequence(), rsaConfig.paddingSpecified, rsaConfig.padding) {
                     when (it) {
                         RSAPadding.PKCS1 -> KeyProperties.SIGNATURE_PADDING_RSA_PKCS1
                         RSAPadding.PSS -> KeyProperties.SIGNATURE_PADDING_RSA_PSS
