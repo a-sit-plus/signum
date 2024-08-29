@@ -9,12 +9,9 @@ plugins {
 allprojects {
     repositories {
         maven(rootProject.projectDir.absolutePath+"/kmp-crypto/repo")
+        maven("https://s01.oss.sonatype.org/content/repositories/snapshots")
         maven(uri("https://raw.githubusercontent.com/a-sit-plus/kotlinx.serialization/mvn/repo"))
         mavenCentral()
         google()
-        maven {
-            url = uri("https://oss.sonatype.org/content/repositories/snapshots")
-            name = "bigNum"
-        }
     }
 }
