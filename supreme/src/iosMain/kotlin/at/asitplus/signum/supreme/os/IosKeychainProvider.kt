@@ -110,9 +110,9 @@ import kotlin.time.Duration
 import kotlin.time.TimeSource
 
 
-val keychainThreads = newFixedThreadPoolContext(nThreads = 4, name = "iOS Keychain Operations")
+private val keychainThreads = newFixedThreadPoolContext(nThreads = 4, name = "iOS Keychain Operations")
 
-private fun isSecureEnclaveSupportedCurve(c: SigningKeyConfiguration.AlgorithmSpecific): Boolean {
+private fun isSecureEnclaveSupportedConfiguration(c: SigningKeyConfiguration.AlgorithmSpecific): Boolean {
     if (c !is SigningKeyConfiguration.ECConfiguration) return false
     return when (c.curve) {
         ECCurve.SECP_256_R_1 -> true
@@ -143,8 +143,7 @@ class IosSigningKeyConfiguration internal constructor(): PlatformSigningKeyConfi
     }
 }
 
-class IosSignerConfiguration internal constructor(): PlatformSignerConfigurationBase() {
-}
+class IosSignerConfiguration internal constructor(): PlatformSignerConfigurationBase()
 
 sealed class UnlockedIosSigner(private val ownedArena: Arena, internal val privateKeyRef: SecKeyRef) : Signer.UnlockedHandle {
     abstract val parent: IosSigner<*>
@@ -173,7 +172,7 @@ sealed class UnlockedIosSigner(private val ownedArena: Arena, internal val priva
         val plaintext = data.data.fold(byteArrayOf(), ByteArray::plus).toNSData()
         val signatureBytes = corecall {
             SecKeyCreateSignature(privateKeyRef, algorithm, plaintext.giveToCF(), error)
-        }.let { it.takeFromCF<NSData>().toByteArray() }
+        }.takeFromCF<NSData>().toByteArray()
         return@catching bytesToSignature(signatureBytes)
     }}
 
@@ -386,7 +385,7 @@ object IosKeychainProvider: SigningProviderI<IosSigner<*>, IosSignerConfiguratio
 
         val useSecureEnclave = when (config.hardware.v.backing) {
             is REQUIRED -> true
-            is PREFERRED -> isSecureEnclaveSupportedCurve(config._algSpecific.v)
+            is PREFERRED -> isSecureEnclaveSupportedConfiguration(config._algSpecific.v)
             is DISCOURAGED -> false
         }
 
@@ -452,7 +451,7 @@ object IosKeychainProvider: SigningProviderI<IosSigner<*>, IosSignerConfiguratio
                 val x = CFCryptoOperationFailed(thing = "generate key", osStatus = status)
                 if ((status == -50) &&
                     useSecureEnclave &&
-                    !isSecureEnclaveSupportedCurve(config._algSpecific.v)) {
+                    !isSecureEnclaveSupportedConfiguration(config._algSpecific.v)) {
                     throw UnsupportedCryptoException("iOS Secure Enclave does not support this configuration.", x)
                 }
                 throw x

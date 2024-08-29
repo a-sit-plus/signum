@@ -17,28 +17,45 @@ import at.asitplus.signum.supreme.os.Attestation
 import at.asitplus.signum.supreme.os.SigningProvider
 import com.ionspin.kotlin.bignum.integer.BigInteger
 
+/** DSL for configuring a signing key.
+ *
+ * Defaults to an elliptic-curve key with a reasonable default configuration.
+ *
+ * @see ec
+ * @see rsa
+ */
 open class SigningKeyConfiguration internal constructor(): DSL.Data() {
     sealed class AlgorithmSpecific: DSL.Data()
+
     internal val _algSpecific = subclassOf<AlgorithmSpecific>(default = ECConfiguration())
+    /** Generates an elliptic-curve key. */
+    open val ec = _algSpecific.option(::ECConfiguration)
+    /** Generates an RSA key. */
+    open val rsa = _algSpecific.option(::RSAConfiguration)
+
     open class ECConfiguration internal constructor() : AlgorithmSpecific() {
+        /** The [ECCurve] on which to generate the key. Defaults to [P-256][ECCurve.SECP_256_R_1] */
         var curve: ECCurve = ECCurve.SECP_256_R_1
 
         private var _digests: Set<Digest?>? = null
-        /** Specify the digests supported by the key. If not specified, supports the curve's native digest only. */
+        /** The digests supported by the key. If not specified, supports the curve's native digest only. */
         open var digests: Set<Digest?>
             get() = _digests ?: setOf(curve.nativeDigest)
             set(v) { _digests = v }
     }
-    open val ec = _algSpecific.option(::ECConfiguration)
 
     open class RSAConfiguration internal constructor(): AlgorithmSpecific() {
         companion object { val F0 = BigInteger(3); val F4 = BigInteger(65537) }
+        /** The digests supported by the key. If not specified, defaults to [SHA256][Digest.SHA256]. */
         open var digests: Set<Digest> = setOf(Digest.SHA256)
+        /** The paddings supported by the key. If not specified, defaults to [RSA-PSS][RSAPadding.PSS]. */
         open var paddings: Set<RSAPadding> = setOf(RSAPadding.PSS)
-        var bits: Int = 4096
+        /** The bit size of the generated key. If not specified, defaults to 3072 bits. */
+        var bits: Int = 3072
+        /** The public exponent to use. Defaults to F4.
+         * This is treated as advisory, and may be ignored by some platforms. */
         var publicExponent: BigInteger = F4
     }
-    open val rsa = _algSpecific.option(::RSAConfiguration)
 }
 
 /**
@@ -114,7 +131,7 @@ interface Signer {
      * @see withUnlock
      */
     abstract class TemporarilyUnlockable<Handle: UnlockedHandle> : Signer {
-        final override val mayRequireUserUnlock: Boolean get() = true
+        override val mayRequireUserUnlock: Boolean get() = true
 
         /** Obtains a raw unlock handle. This is public because [withUnlock] needs to be inline.
          * If you use it directly, closing the returned handle is your responsibility! */

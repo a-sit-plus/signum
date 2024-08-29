@@ -336,7 +336,7 @@ internal fun App() {
                         CoroutineScope(context).launch {
                             canGenerate = false
                             genTextOverride = "Creating…"
-                            currentSigner = getSystemKeyStore().createSigningKey(ALIAS) {
+                            currentSigner = SigningProvider{}.transform { it.createSigningKey(ALIAS) {
                                 signer(SIGNER_CONFIG)
 
                                 when (val alg = keyAlgorithm.algorithm) {
@@ -381,7 +381,7 @@ internal fun App() {
                                         }
                                     }
                                 }
-                            }
+                            }}
                             verifyState = null
 
                             Napier.w { "created signing key! $currentSigner" }
@@ -401,11 +401,11 @@ internal fun App() {
                         CoroutineScope(context).launch {
                             canGenerate = false
                             genTextOverride = "Loading…"
-                            getSystemKeyStore().getSignerForKey(ALIAS, SIGNER_CONFIG).let {
+                            SigningProvider{}.transform { it.getSignerForKey(ALIAS, SIGNER_CONFIG).let {
                                 Napier.w { "Priv retrieved from native: $it" }
                                 currentSigner = it
                                 verifyState = null
-                            }
+                            }}
 
                             //just to check
                             //loadPubKey().let { Napier.w { "PubKey retrieved from native: $it" } }
@@ -424,11 +424,8 @@ internal fun App() {
                         CoroutineScope(context).launch {
                             canGenerate = false
                             genTextOverride = "Deleting…"
-                            try {
-                                getSystemKeyStore().deleteSigningKey(ALIAS)
-                            } catch (e: Throwable) {
-                                Napier.e("Failed to delete key", e)
-                            }
+                            SigningProvider{}.transform { it.deleteSigningKey(ALIAS) }
+                                .onFailure { Napier.e("Failed to delete key", it) }
                             currentSigner = null
                             signatureData = null
                             verifyState = null
@@ -529,8 +526,6 @@ internal fun App() {
         }
     }
 }
-
-internal expect fun getSystemKeyStore(): SigningProvider
 
 /*internal expect suspend fun generateKey(
     alg: CryptoAlgorithm,

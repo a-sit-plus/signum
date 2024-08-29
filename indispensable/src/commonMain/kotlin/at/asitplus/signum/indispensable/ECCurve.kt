@@ -29,9 +29,11 @@ enum class ECCurve(
     val jwkName: String,
     override val oid: ObjectIdentifier,
 ) : Identifiable {
-
+    /** NIST curve [secp256r1](https://neuromancer.sk/std/nist/P-256) */
     SECP_256_R_1("P-256", KnownOIDs.prime256v1),
+    /** NIST curve [secp384r1](https://neuromancer.sk/std/nist/P-384) */
     SECP_384_R_1("P-384", KnownOIDs.secp384r1),
+    /** NIST curve [secp521r1](https://neuromancer.sk/std/nist/P-521) */
     SECP_521_R_1("P-521", KnownOIDs.secp521r1);
 
     val IDENTITY: ECPoint by lazy {

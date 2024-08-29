@@ -14,7 +14,7 @@ class AndroidKeyStoreProviderTests: FreeSpec({
     "Create attested keypair" {
         val alias = Random.azstring(32)
         val attestChallenge = Random.nextBytes(32)
-        val hardwareSigner = AndroidKeyStoreProvider().createSigningKey(alias) {
+        val hardwareSigner = AndroidKeyStoreProvider.createSigningKey(alias) {
             hardware {
                 attestation {
                     challenge = attestChallenge

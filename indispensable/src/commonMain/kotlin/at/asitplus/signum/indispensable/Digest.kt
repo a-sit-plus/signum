@@ -13,6 +13,7 @@ enum class Digest(val outputLength: BitLength, override val oid: ObjectIdentifie
     SHA512(512.bit, KnownOIDs.sha_512);
 }
 
+/** A digest well-suited to operations on this curve, with output length near the curve's coordinate length. */
 val ECCurve.nativeDigest get() = when (this) {
     ECCurve.SECP_256_R_1 -> Digest.SHA256
     ECCurve.SECP_384_R_1 -> Digest.SHA384

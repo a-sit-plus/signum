@@ -78,11 +78,12 @@ class AndroidSignerConfiguration: PlatformSignerConfigurationBase() {
          * You will not need to set this in most cases; the default is the current activity.*/
         lateinit var fragment: Fragment
 
-        internal val context: FragmentContext? get() = when {
-            this::activity.isInitialized -> FragmentContext.OfActivity(activity)
+        internal val explicitContext: FragmentContext? get() = when {
             this::fragment.isInitialized -> FragmentContext.OfFragment(fragment)
+            this::activity.isInitialized -> FragmentContext.OfActivity(activity)
             else -> null
         }
+
         /** @see [BiometricPrompt.PromptInfo.Builder.setSubtitle] */
         var subtitle: String? = null
         /** @see [BiometricPrompt.PromptInfo.Builder.setDescription] */
@@ -124,11 +125,14 @@ internal inline fun <reified E> resolveOption(what: String, valid: Array<String>
 private fun attestationFor(chain: CertificateChain) =
     if (chain.size > 1) AndroidKeystoreAttestation(chain) else null
 
-class AndroidKeyStoreProvider:
+/**
+ * A provider that manages keys in the [Android Key Store](https://developer.android.com/privacy-and-security/keystore).
+ */
+object AndroidKeyStoreProvider:
     SigningProviderI<AndroidKeystoreSigner, AndroidSignerConfiguration, AndroidSigningKeyConfiguration>
 {
 
-    private val ks: KeyStore =
+    private val ks: KeyStore get() =
         KeyStore.getInstance("AndroidKeyStore").apply { load(null, null) }
 
     @SuppressLint("WrongConstant")
@@ -193,11 +197,13 @@ class AndroidKeyStoreProvider:
         alias: String,
         configure: DSLConfigureFn<AndroidSignerConfiguration>
     ): KmmResult<AndroidKeystoreSigner> = catching {
-        val jcaPrivateKey = ks.getKey(alias, null) as? PrivateKey
-            ?: throw NoSuchElementException("No key for alias $alias exists")
         val config = DSL.resolve(::AndroidSignerConfiguration, configure)
-        val certificateChain =
-            ks.getCertificateChain(alias).map { X509Certificate.decodeFromDer(it.encoded) }
+        val (jcaPrivateKey, certificateChain) = ks.let {
+            Pair(it.getKey(alias, null) as? PrivateKey
+                ?: throw NoSuchElementException("No key for alias $alias exists"),
+                it.getCertificateChain(alias).map { X509Certificate.decodeFromDer(it.encoded) })
+        }
+
         val keyInfo = KeyFactory.getInstance(jcaPrivateKey.algorithm)
             .getKeySpec(jcaPrivateKey, KeyInfo::class.java)
         val algorithm = when (val publicKey = certificateChain.leaf.publicKey) {
@@ -251,13 +257,14 @@ class AndroidKeyStoreProvider:
     }
 }
 
-interface AndroidKeystoreSigner : SignerI.Attestable<AndroidKeystoreAttestation>, SignerI.WithAlias {
+sealed interface AndroidKeystoreSigner : SignerI.Attestable<AndroidKeystoreAttestation>, SignerI.WithAlias {
+    /** @see KeyInfo */
     val keyInfo: KeyInfo
     override val attestation: AndroidKeystoreAttestation?
 }
 
 sealed class UnlockedAndroidKeystoreSigner private constructor(
-    private val jcaSig: JCASignatureObject,
+    internal val jcaSig: JCASignatureObject,
     override val alias: String,
     override val keyInfo: KeyInfo,
     override val attestation: AndroidKeystoreAttestation?
@@ -301,7 +308,9 @@ sealed class LockedAndroidKeystoreSigner private constructor(
     certificateChain: CertificateChain
 ) : SignerI.TemporarilyUnlockable<UnlockedAndroidKeystoreSigner>(), AndroidKeystoreSigner {
 
-    private val context = config.unlockPrompt.v.context
+    final override val mayRequireUserUnlock: Boolean get() = this.needsAuthentication
+
+    private val explicitContext = config.unlockPrompt.v.explicitContext
 
     final override val attestation = attestationFor(certificateChain)
     private sealed interface AuthResult {
@@ -311,7 +320,7 @@ sealed class LockedAndroidKeystoreSigner private constructor(
 
     private suspend fun attemptBiometry(config: AndroidSignerConfiguration.AuthnPrompt, forSpecificKey: CryptoObject?) {
         val channel = Channel<AuthResult>(capacity = Channel.RENDEZVOUS)
-        val effectiveContext = context ?:
+        val effectiveContext = explicitContext ?:
             (AppLifecycleMonitor.currentActivity as? FragmentActivity)?.let(FragmentContext::OfActivity)
                 ?: throw UnsupportedOperationException("The requested key with alias $alias requires unlock, but the current activity is not a FragmentActivity or could not be determined. " +
                 "Pass either { fragment = } or { activity = } inside authPrompt {}.")
@@ -405,9 +414,6 @@ val AndroidKeystoreSigner.needsAuthentication inline get() =
 val AndroidKeystoreSigner.needsAuthenticationForEveryUse inline get() =
     keyInfo.isUserAuthenticationRequired &&
             (keyInfo.userAuthenticationValidityDurationSeconds <= 0)
-val AndroidKeystoreSigner.needsAuthenticationWithTimeout inline get() =
-    keyInfo.isUserAuthenticationRequired &&
-            (keyInfo.userAuthenticationValidityDurationSeconds > 0)
 
 /*actual typealias PlatformSigningProviderSigner = AndroidKeystoreSigner
 actual typealias PlatformSigningProviderSignerConfiguration = AndroidSignerConfiguration
@@ -415,4 +421,4 @@ actual typealias PlatformSigningProviderSigningKeyConfiguration = AndroidSigning
 actual typealias PlatformSigningProvider = AndroidKeyStoreProvider
 actual typealias PlatformSigningProviderConfiguration = PlatformSigningProviderConfigurationBase*/
 internal actual fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): SigningProvider =
-    AndroidKeyStoreProvider()
+    AndroidKeyStoreProvider
