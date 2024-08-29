@@ -3,6 +3,7 @@ import com.android.build.api.dsl.Packaging
 plugins {
     alias(libs.plugins.multiplatform)
     alias(libs.plugins.compose)
+    alias(libs.plugins.compose.runtime)
     alias(libs.plugins.android.application)
     alias(libs.plugins.buildConfig)
 }
