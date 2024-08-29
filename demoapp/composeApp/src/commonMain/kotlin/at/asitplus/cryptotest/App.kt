@@ -401,11 +401,11 @@ internal fun App() {
                         CoroutineScope(context).launch {
                             canGenerate = false
                             genTextOverride = "Loading…"
-                            SigningProvider{}.transform { it.getSignerForKey(ALIAS, SIGNER_CONFIG).let {
+                            SigningProvider{}.transform { it.getSignerForKey(ALIAS, SIGNER_CONFIG) }.let {
                                 Napier.w { "Priv retrieved from native: $it" }
                                 currentSigner = it
                                 verifyState = null
-                            }}
+                            }
 
                             //just to check
                             //loadPubKey().let { Napier.w { "PubKey retrieved from native: $it" } }

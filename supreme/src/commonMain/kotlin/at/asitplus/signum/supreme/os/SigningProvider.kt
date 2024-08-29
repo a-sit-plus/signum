@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.os
 
 import at.asitplus.KmmResult
+import at.asitplus.catching
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.supreme.dsl.DISCOURAGED
@@ -137,8 +138,9 @@ interface SigningProviderI<out SignerT: Signer.WithAlias,
     suspend fun deleteSigningKey(alias: String): KmmResult<Unit>
 
     companion object {
-        operator fun invoke(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase> = null) =
+        operator fun invoke(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase> = null) = catching {
             getPlatformSigningProvider(configure)
+        }
     }
 }
 /**
