@@ -21,11 +21,7 @@ actual class EphemeralSignerConfiguration internal actual constructor(): Ephemer
 sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Signer {
     override val mayRequireUserUnlock = false
     override suspend fun sign(data: SignatureInput) = catching {
-        val inputData = data.convertTo(when (val alg = signatureAlgorithm) {
-            is SignatureAlgorithm.RSA -> alg.digest
-            is SignatureAlgorithm.ECDSA -> alg.digest
-            else -> TODO("hmac unsupported")
-        }).getOrThrow()
+        val inputData = data.convertTo(signatureAlgorithm.preHashedSignatureFormat).getOrThrow()
         signatureAlgorithm.getJCASignatureInstancePreHashed(provider = null).getOrThrow().run {
             initSign(privateKey)
             inputData.data.forEach { update(it) }

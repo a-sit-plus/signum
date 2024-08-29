@@ -42,11 +42,7 @@ actual class EphemeralSignerConfiguration internal actual constructor(): Ephemer
 sealed class EphemeralSigner(internal val privateKey: EphemeralKeyRef): Signer {
     final override val mayRequireUserUnlock: Boolean get() = false
     final override suspend fun sign(data: SignatureInput) = catching {
-        val inputData = data.convertTo(when (val alg = signatureAlgorithm) {
-            is SignatureAlgorithm.RSA -> alg.digest
-            is SignatureAlgorithm.ECDSA -> alg.digest
-            else -> TODO("hmac unsupported")
-        }).getOrThrow()
+        val inputData = data.convertTo(signatureAlgorithm.preHashedSignatureFormat).getOrThrow()
         val algorithm = signatureAlgorithm.secKeyAlgorithmPreHashed
         val input = inputData.data.single().toNSData()
         val signatureBytes = corecall {

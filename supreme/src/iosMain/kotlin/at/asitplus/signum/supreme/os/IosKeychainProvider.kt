@@ -98,8 +98,11 @@ import platform.Security.kSecUseAuthenticationContext
 import platform.Security.kSecUseAuthenticationUI
 import platform.Security.kSecUseAuthenticationUIAllow
 import at.asitplus.signum.indispensable.secKeyAlgorithm
+import at.asitplus.signum.indispensable.secKeyAlgorithmPreHashed
 import at.asitplus.signum.supreme.HazardousMaterials
 import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
+import at.asitplus.signum.supreme.sign.preHashedSignatureFormat
+import at.asitplus.signum.supreme.sign.sign
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.contracts.ExperimentalContracts
@@ -168,11 +171,13 @@ sealed class UnlockedIosSigner(private val ownedArena: Arena, internal val priva
     withContext(keychainThreads) { catching {
         if (!usable) throw IllegalStateException("Scoping violation; using key after it has been freed")
         require(data.format == null) { "Pre-hashed data is unsupported on iOS" }
-        val algorithm = signatureAlgorithm.secKeyAlgorithm
-        val plaintext = data.data.fold(byteArrayOf(), ByteArray::plus).toNSData()
+        val algorithm = signatureAlgorithm.secKeyAlgorithmPreHashed
+        val plaintext = data.convertTo(signatureAlgorithm.preHashedSignatureFormat).getOrThrow().data.first().toNSData()
+        Napier.v { "before sign" }
         val signatureBytes = corecall {
             SecKeyCreateSignature(privateKeyRef, algorithm, plaintext.giveToCF(), error)
         }.takeFromCF<NSData>().toByteArray()
+        Napier.v { "after sign" }
         return@catching bytesToSignature(signatureBytes)
     }}
 
@@ -229,19 +234,23 @@ private object LAContextManager {
         val authenticationTime: TimeSource.Monotonic.ValueTimeMark)
     private var previousAuthentication: PreviousAuthentication? = null
     @OptIn(ExperimentalContracts::class)
-    inline fun <reified T> withLAContext(keyMetadata: IosKeyMetadata,
+    inline fun <T> withLAContext(keyMetadata: IosKeyMetadata,
              signerConfig: IosSignerConfiguration, body: (LAContext)->T): T {
         contract { callsInPlace(body, InvocationKind.AT_MOST_ONCE) }
 
         val reusable = previousAuthentication?.takeIf {
             it.authenticationTime.elapsedNow() <= keyMetadata.unlockTimeout
         }
-        if (reusable != null)
+        if (reusable != null) {
+            Napier.v { "Re-using previous authentication context" }
             return body(reusable.authenticatedContext.apply {
                 /** Configure it to suit this signer just in case something has gone wrong */
                 localizedReason = signerConfig.unlockPrompt.v.message
                 localizedCancelTitle = signerConfig.unlockPrompt.v.cancelText
             })
+        }
+
+        Napier.v { "Requesting user authentication..." }
 
         val newContext = LAContext().apply {
             localizedReason = signerConfig.unlockPrompt.v.message
@@ -249,10 +258,11 @@ private object LAContextManager {
             touchIDAuthenticationAllowableReuseDuration = min(10L,keyMetadata.unlockTimeout.inWholeSeconds).toDouble()
         }
 
-        return body(newContext).also {
+        return runCatching { body(newContext) }.also {
+            Napier.v { "Authentication succeeded? ${it.isSuccess}" }
             // if this did not throw (e.g., succeeded)...
             previousAuthentication = PreviousAuthentication(newContext, TimeSource.Monotonic.markNow())
-        }
+        }.getOrThrow()
     }
 }
 
@@ -306,7 +316,7 @@ sealed class IosSigner<H : UnlockedIosSigner>(
                     )
                     val status = SecItemCopyMatching(query, privateKey.ptr.reinterpret())
                     if ((status == errSecSuccess) && (privateKey.value != null)) {
-                        return@withLAContext /* continue below try/catch */
+                        return@memScoped /* continue below try/catch */
                     } else {
                         throw CFCryptoOperationFailed(
                             thing = "retrieve private key",
