@@ -374,7 +374,7 @@ object IosKeychainProvider: SigningProviderI<IosSigner<*>, IosSignerConfiguratio
             if (getPublicKey(alias) != null)
                 throw NoSuchElementException("Key with alias $alias already exists")
         }
-        deleteSigningKey(alias) /* make sure there are no leftover private keys */
+        deleteSigningKey(alias).getOrThrow() /* make sure there are no leftover private keys */
 
         val config = DSL.resolve(::IosSigningKeyConfiguration, configure)
 
@@ -513,7 +513,7 @@ object IosKeychainProvider: SigningProviderI<IosSigner<*>, IosSignerConfiguratio
         val e = it.exceptionOrNull()
         if (e != null && e !is NoSuchElementException) {
             // get rid of any "partial" keys
-            runCatching { deleteSigningKey(alias) }
+            deleteSigningKey(alias)
         }
     }}
 
@@ -537,7 +537,7 @@ object IosKeychainProvider: SigningProviderI<IosSigner<*>, IosSignerConfiguratio
         }
     }}
 
-    override suspend fun deleteSigningKey(alias: String) = withContext(keychainThreads) {
+    override suspend fun deleteSigningKey(alias: String) = withContext(keychainThreads) { catching {
         memScoped {
             mapOf(
                 "public key" to cfDictionaryOf(
@@ -562,13 +562,13 @@ object IosKeychainProvider: SigningProviderI<IosSigner<*>, IosSignerConfiguratio
                     throw CryptoOperationFailed(it.joinToString(","))
             }
         }
-    }
+    } }
 }
 
 /*actual typealias PlatformSigningProviderSigner = iosSigner<*>
 actual typealias PlatformSigningProviderSignerConfiguration = iosSignerConfiguration
 actual typealias PlatformSigningProviderSigningKeyConfiguration = iosSigningKeyConfiguration
 actual typealias PlatformSigningProvider = IosKeychainProvider
-actual typealias PlatformSigningProviderConfiguration = PlatformSigningProviderConfigurationBase
-internal actual fun makePlatformSigningProvider(config: PlatformSigningProviderConfiguration) =
-    IosKeychainProvider*/
+actual typealias PlatformSigningProviderConfiguration = PlatformSigningProviderConfigurationBase*/
+internal actual fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): SigningProvider =
+    IosKeychainProvider

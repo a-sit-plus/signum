@@ -20,8 +20,10 @@ import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.indispensable.toJcaCertificate
+import at.asitplus.signum.supreme.UnsupportedCryptoException
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
+import at.asitplus.signum.supreme.dsl.REQUIRED
 import at.asitplus.signum.supreme.sign.EphemeralSigner
 import at.asitplus.signum.supreme.sign.JvmEphemeralSignerCompatibleConfiguration
 import at.asitplus.signum.supreme.sign.Signer
@@ -45,13 +47,18 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 
 class JKSSigningKeyConfiguration: PlatformSigningKeyConfigurationBase<JKSSignerConfiguration>() {
+    /** The registered JCA provider to use. */
     var provider: String? = null
+    /** The password with which to protect the private key. */
     var privateKeyPassword: CharArray? = null
-    var certificateValidityPeriod: Duration = 100.days
+    /** The lifetime of the private key's certificate. */
+    var certificateValidityPeriod: Duration = (365*100).days
 }
 
 class JKSSignerConfiguration: PlatformSignerConfigurationBase(), JvmEphemeralSignerCompatibleConfiguration {
+    /** The registered JCA provider to use. */
     override var provider: String? = null
+    /** The password protecting the stored private key. */
     var privateKeyPassword: CharArray? = null
 }
 
@@ -76,17 +83,37 @@ private fun keystoreGetInstance(type: String, provider: String?) = when (provide
     else -> KeyStore.getInstance(type, provider)
 }
 
-sealed interface ReadAccessorBase: AutoCloseable {
+/** Read handle, [requested][JKSAccessor.forReading] whenever the provider needs to perform a read operation.
+ * This handle should serve as a shared lock on the underlying data to avoid data races. */
+interface ReadAccessorBase: AutoCloseable {
+    /** An ephemeral JCA [KeyStore] object which the provider may read from within the lifetime of the [ReadAccessorBase]. */
     val ks: KeyStore
 }
 
-abstract class WriteAccessorBase: ReadAccessorBase {
+/** Write handle, [requested][JKSAccessor.forWriting] whenever the provider needs to perform a write operation.
+ * This handle should serve as an exclusive lock on the underlying data to avoid data races. */
+abstract class WriteAccessorBase: AutoCloseable {
+    /** An ephemeral JCA [KeyStore] object which the provider may read from and write to within the lifetime of the [WriteAccessorBase]. */
+    abstract val ks: KeyStore
+    /** If the provider has made changes to the keystore data, this is set to `true` before calling `.close()`. */
     protected var dirty = false; private set
     fun markAsDirty() { dirty = true }
 }
 
-sealed interface JKSAccessor {
+/**
+ * Interface for advanced domain-specific keystore access.
+ * Allows for concurrency via [AutoCloseable] locking.
+ *
+ * @see forReading
+ * @see forWriting
+ */
+interface JKSAccessor {
+    /** Obtains an accessor handle for reading from the KeyStore.
+     * The handle will be closed when the provider is done reading from the KeyStore. */
     fun forReading(): ReadAccessorBase
+    /** Obtains an accessor handle for reading from and writing to the KeyStore.
+     * The handle will be closed when the provider is done.
+     * Check the [dirty][WriteAccessorBase.dirty] flag to see if changes were made to the data. */
     fun forWriting(): WriteAccessorBase
 }
 
@@ -97,10 +124,12 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
         alias: String,
         configure: DSLConfigureFn<JKSSigningKeyConfiguration>
     ): KmmResult<JKSSigner> = catching {
+        val config = DSL.resolve(::JKSSigningKeyConfiguration, configure)
+        if (config.hardware.v?.backing == REQUIRED)
+            throw UnsupportedCryptoException("Hardware storage is unsupported on the JVM")
         access.forWriting().use { ctx ->
             if (ctx.ks.containsAlias(alias))
                 throw NoSuchElementException("Key with alias $alias already exists")
-            val config = DSL.resolve(::JKSSigningKeyConfiguration, configure)
 
             val (jcaAlg,jcaSpec,certAlg) = when (val algSpec = config._algSpecific.v) {
                 is SigningKeyConfiguration.RSAConfiguration ->
@@ -166,7 +195,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
         }
     }
 
-    override suspend fun deleteSigningKey(alias: String) {
+    override suspend fun deleteSigningKey(alias: String) = catching {
         access.forWriting().use { ctx ->
             if (ctx.ks.containsAlias(alias)) {
                 ctx.ks.deleteEntry(alias)
@@ -176,10 +205,12 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
     }
 
     companion object {
-        operator fun invoke(configure: DSLConfigureFn<JKSProviderConfiguration> = null) =
+        operator fun invoke(configure: DSLConfigureFn<JKSProviderConfiguration> = null) = catching {
             makePlatformSigningProvider(DSL.resolve(::JKSProviderConfiguration, configure))
-        fun Ephemeral(type: String = KeyStore.getDefaultType(), provider: String? = null) =
+        }
+        fun Ephemeral(type: String = KeyStore.getDefaultType(), provider: String? = null) = catching {
             JKSProvider(DummyJKSAccessor(keystoreGetInstance(type, provider).apply { load(null) }))
+        }
     }
 }
 
@@ -282,21 +313,34 @@ internal class JKSFileAccessor(opt: JKSProviderConfiguration.KeyStoreFile) : JKS
     override fun forWriting() = WriteAccessor()
 }
 
+/**
+ * Specifies what the keystore should be backed by.
+ *
+ * Options are:
+ * * [ephemeral] (the default)
+ * * [file] (backed by a file on disk)
+ * * [withBackingObject] (backed by the specified [KeyStore] object)
+ * * [customAccessor] (backed by a custom [JKSAccessor] object)
+ */
 class JKSProviderConfiguration internal constructor(): PlatformSigningProviderConfigurationBase() {
     sealed class KeyStoreConfiguration constructor(): DSL.Data()
     internal val _keystore = subclassOf<KeyStoreConfiguration>(default = EphemeralKeyStore())
 
+    /** Constructs an ephemeral keystore. This is the default. */
+    val ephemeral = _keystore.option(::EphemeralKeyStore)
     class EphemeralKeyStore internal constructor(): KeyStoreConfiguration() {
-        /** The KeyStore type to use */
+        /** The KeyStore type to use. */
         var storeType: String = KeyStore.getDefaultType()
         /** The JCA provider to use. Leave `null` to not care. */
         var provider: String? = null
     }
 
+    /** Constructs a keystore that accesses the provided Java [KeyStore] object. Use `withBackingObject { store = ... }`. */
+    val withBackingObject = _keystore.option(::KeyStoreObject)
     class KeyStoreObject internal constructor(): KeyStoreConfiguration() {
         /** The KeyStore object to use */
         lateinit var store: KeyStore
-        /** The function to be called when the keystore is modified. Can be `null`. */
+        /** The function to be called after the keystore has been modified. Can be `null`. */
         var flushCallback: ((KeyStore)->Unit)? = null
         override fun validate() {
             super.validate()
@@ -304,11 +348,8 @@ class JKSProviderConfiguration internal constructor(): PlatformSigningProviderCo
         }
     }
 
-    /**
-     * Constructs a keystore from a java KeyStore object. Use `keystoreObject { store = ... }`.
-     */
-    val keystoreObject = _keystore.option(::KeyStoreObject)
-
+    /** Accesses a keystore on disk. Automatically flushes back to disk. Use `file { path = ... }.`*/
+    val file = _keystore.option(::KeyStoreFile)
     class KeyStoreFile internal constructor(): KeyStoreConfiguration() {
         /** The KeyStore type to use */
         var storeType = KeyStore.getDefaultType()
@@ -328,25 +369,36 @@ class JKSProviderConfiguration internal constructor(): PlatformSigningProviderCo
             require(this::file.isInitialized)
         }
     }
-    /**
-     * Accesses a keystore on disk. Automatically flushes back to disk.
-     */
-    val keystoreFile = _keystore.option(::KeyStoreFile)
+
+    /** Accesses a keystore via a custom [JKSAccessor]. Use `keystoreCustomAccessor { accessor = ... }` */
+    val customAccessor = _keystore.option(::KeyStoreAccessor)
+    class KeyStoreAccessor internal constructor(): KeyStoreConfiguration() {
+        /** A custom [JKSAccessor] to use. */
+        lateinit var accessor: JKSAccessor
+
+        override fun validate() {
+            super.validate()
+            require(this::accessor.isInitialized)
+        }
+    }
 }
 
-internal /*actual*/ fun makePlatformSigningProvider(config: JKSProviderConfiguration): KmmResult<JKSProvider> = catching {
+internal /*actual*/ fun makePlatformSigningProvider(config: JKSProviderConfiguration): JKSProvider =
     when (val opt = config._keystore.v) {
         is JKSProviderConfiguration.EphemeralKeyStore ->
-            JKSProvider.Ephemeral(opt.storeType, opt.provider)
+            JKSProvider.Ephemeral(opt.storeType, opt.provider).getOrThrow()
         is JKSProviderConfiguration.KeyStoreObject ->
             JKSProvider(opt.flushCallback?.let { CallbackJKSAccessor(opt.store, it) } ?: DummyJKSAccessor(opt.store))
         is JKSProviderConfiguration.KeyStoreFile ->
             JKSProvider(JKSFileAccessor(opt))
+        is JKSProviderConfiguration.KeyStoreAccessor ->
+            JKSProvider(opt.accessor)
     }
-}
 
 /*actual typealias PlatformSigningProviderSigner = JKSSigner
 actual typealias PlatformSigningProviderSignerConfiguration = JKSSignerConfiguration
 actual typealias PlatformSigningProviderSigningKeyConfiguration = JKSSigningKeyConfiguration
 actual typealias PlatformSigningProvider = JKSProvider
 actual typealias PlatformSigningProviderConfiguration = JKSProviderConfiguration*/
+internal actual fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): SigningProvider =
+    makePlatformSigningProvider(DSL.resolve(::JKSProviderConfiguration, configure))

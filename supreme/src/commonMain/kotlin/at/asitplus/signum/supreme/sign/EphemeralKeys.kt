@@ -1,5 +1,7 @@
 package at.asitplus.signum.supreme.sign
 
+import at.asitplus.KmmResult
+import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.RSAPadding
@@ -27,20 +29,37 @@ expect class EphemeralSigningKeyConfiguration internal constructor(): EphemeralS
 typealias EphemeralSignerConfigurationBase = SignerConfiguration
 expect class EphemeralSignerConfiguration internal constructor(): SignerConfiguration
 
+/**
+ * An ephemeral keypair, not stored in any kind of persistent storage.
+ * Can be either [EC] or [RSA]. Has a [CryptoPublicKey], and you can obtain a [Signer] from it.
+ *
+ * To generate a key, use
+ * ```
+ * EphemeralKey {
+ *  /* optional configuration */
+ * }
+ * ```
+ */
 sealed interface EphemeralKey {
     val publicKey: CryptoPublicKey
-    fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration> = null): Signer
+
+    /** Create a signer that signs using this [EphemeralKey].
+     * @see EphemeralSignerConfiguration */
+    fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration> = null): KmmResult<Signer>
+
+    /** An [EphemeralKey] suitable for ECDSA operations. */
     interface EC: EphemeralKey {
         override val publicKey: CryptoPublicKey.EC
-        override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): Signer.ECDSA
+        override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): KmmResult<Signer.ECDSA>
     }
+    /** An [EphemeralKey] suitable for RSA operations. */
     interface RSA: EphemeralKey {
         override val publicKey: CryptoPublicKey.Rsa
-        override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): Signer.RSA
+        override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): KmmResult<Signer.RSA>
     }
     companion object {
         operator fun invoke(configure: DSLConfigureFn<EphemeralSigningKeyConfiguration> = null) =
-            makeEphemeralKey(DSL.resolve(::EphemeralSigningKeyConfiguration, configure))
+            catching { makeEphemeralKey(DSL.resolve(::EphemeralSigningKeyConfiguration, configure)) }
     }
 }
 
@@ -52,7 +71,7 @@ internal sealed class EphemeralKeyBase <PrivateKeyT>
         privateKey: PrivateKeyT, override val publicKey: CryptoPublicKey.EC,
         val digests: Set<Digest?>) : EphemeralKeyBase<PrivateKeyT>(privateKey), EphemeralKey.EC {
 
-        override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): SignerT {
+        override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): KmmResult<SignerT> = catching {
             val config = DSL.resolve(::EphemeralSignerConfiguration, configure)
             val alg = config.ec.v
             val digest = when (alg.digestSpecified) {
@@ -65,7 +84,7 @@ internal sealed class EphemeralKeyBase <PrivateKeyT>
                     sequenceOf(publicKey.curve.nativeDigest, Digest.SHA256, Digest.SHA384, Digest.SHA512)
                         .firstOrNull(digests::contains) ?: digests.first()
             }
-            return signerFactory(config, privateKey, publicKey, SignatureAlgorithm.ECDSA(digest, publicKey.curve))
+            return@catching signerFactory(config, privateKey, publicKey, SignatureAlgorithm.ECDSA(digest, publicKey.curve))
         }
     }
 
@@ -74,7 +93,7 @@ internal sealed class EphemeralKeyBase <PrivateKeyT>
         privateKey: PrivateKeyT, override val publicKey: CryptoPublicKey.Rsa,
         val digests: Set<Digest>, val paddings: Set<RSAPadding>) : EphemeralKeyBase<PrivateKeyT>(privateKey), EphemeralKey.RSA {
 
-        override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): SignerT {
+        override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): KmmResult<SignerT> = catching {
             val config = DSL.resolve(::EphemeralSignerConfiguration, configure)
             val alg = config.rsa.v
             val digest = when (alg.digestSpecified) {
@@ -102,7 +121,7 @@ internal sealed class EphemeralKeyBase <PrivateKeyT>
                     else -> paddings.first()
                 }
             }
-            return signerFactory(config, privateKey, publicKey, SignatureAlgorithm.RSA(digest, padding))
+            return@catching signerFactory(config, privateKey, publicKey, SignatureAlgorithm.RSA(digest, padding))
         }
     }
 }

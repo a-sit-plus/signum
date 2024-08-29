@@ -14,6 +14,7 @@ import at.asitplus.signum.supreme.UnlockFailed
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.os.Attestation
+import at.asitplus.signum.supreme.os.SigningProvider
 import com.ionspin.kotlin.bignum.integer.BigInteger
 
 open class SigningKeyConfiguration internal constructor(): DSL.Data() {
@@ -40,6 +41,29 @@ open class SigningKeyConfiguration internal constructor(): DSL.Data() {
     open val rsa = _algSpecific.option(::RSAConfiguration)
 }
 
+/**
+ * Shared interface of all objects that can sign data.
+ * Signatures are created using the [signatureAlgorithm], and can be verified using [publicKey], potentially with a [verifierFor] this object.
+ *
+ * Signers for your platform can be accessed using your platform's [SigningProvider].
+ *
+ * Ephemeral signers can be obtained using
+ * ```
+ * Signer.Ephemeral {
+ *   /* optional key configuration */
+ * }
+ * ```
+ * This will generate a throwaway [EphemeralKey] and return a Signer for it.
+ *
+ * Any actual instantiation will have a [AlgTrait], which will be either [ECDSA] or [RSA].
+ * Instantiations may also be [WithAlias], usually because they come from a [SigningProvider].
+ * They may also be [Attestable].
+ *
+ * Some signers [mayRequireUserUnlock]. If needed, they will ask for user interaction when you try to [sign] data.
+ * Of these signers, some are also [Signer.TemporarilyUnlockable].
+ * These signers can be used to sign multiple times in rapid succession with only a single user interaction.
+ *
+ */
 interface Signer {
     val signatureAlgorithm: SignatureAlgorithm
     val publicKey: CryptoPublicKey
@@ -49,19 +73,19 @@ interface Signer {
     /** Any [Signer] instantiation must be [ECDSA] or [RSA] */
     sealed interface AlgTrait : Signer
 
-    /** ECDSA signer */
+    /** A [Signer] that signs using ECDSA. */
     interface ECDSA : Signer.AlgTrait {
         override val signatureAlgorithm: SignatureAlgorithm.ECDSA
         override val publicKey: CryptoPublicKey.EC
     }
 
-    /** RSA signer */
+    /** A [Signer] that signs using RSA. */
     interface RSA : Signer.AlgTrait {
         override val signatureAlgorithm: SignatureAlgorithm.RSA
         override val publicKey: CryptoPublicKey.Rsa
     }
 
-    /** Some [Signer]s are retrieved from a signing provider, such as a key store, and have a string alias. */
+    /** Some [Signer]s are retrieved from a signing provider, such as a key store, and have a string [alias]. */
     interface WithAlias: Signer {
         val alias: String
     }
@@ -71,11 +95,12 @@ interface Signer {
         val attestation: AttestationT?
     }
 
+    /** Signs data. Might ask for user confirmation first if this [Signer] [mayRequireUserUnlock]. */
     suspend fun sign(data: SignatureInput): KmmResult<CryptoSignature>
 
     /**
      * A handle to a [TemporarilyUnlockable] signer that is temporarily unlocked.
-     * The handle is only guaranteed to be valid within the scope of the block.
+     * The handle is only guaranteed to be valid within the scope of the [withUnlock] block.
      */
     @OptIn(ExperimentalStdlibApi::class)
     interface UnlockedHandle: AutoCloseable, Signer {
@@ -85,10 +110,14 @@ interface Signer {
     /**
      * A signer that can be temporarily unlocked.
      * Once unlocked, multiple signing operations can be performed with a single unlock.
+     *
+     * @see withUnlock
      */
     abstract class TemporarilyUnlockable<Handle: UnlockedHandle> : Signer {
         final override val mayRequireUserUnlock: Boolean get() = true
 
+        /** Obtains a raw unlock handle. This is public because [withUnlock] needs to be inline.
+         * If you use it directly, closing the returned handle is your responsibility! */
         @HazardousMaterials
         abstract suspend fun unlock(): KmmResult<Handle>
 
@@ -107,8 +136,8 @@ interface Signer {
     }
 
     companion object {
-        operator fun invoke(configure: DSLConfigureFn<EphemeralSigningKeyConfiguration> = null) =
-            EphemeralKey(configure).signer()
+        fun Ephemeral(configure: DSLConfigureFn<EphemeralSigningKeyConfiguration> = null) =
+            EphemeralKey(configure).transform(EphemeralKey::signer)
     }
 }
 
@@ -127,8 +156,8 @@ fun Signer.makePlatformVerifier(configure: ConfigurePlatformVerifier = null) = s
 val Signer.ECDSA.curve get() = publicKey.curve
 
 /**
- * Try to batch sign with this signer.
- * Might fail for unlockable signers that cannot be temporarily unlocked.
+ * Try to batch sign with this [Signer].
+ * Might fail for locked [Signer]s that are not [Signer.TemporarilyUnlockable].
  */
 suspend inline fun <reified T> Signer.withUnlock(fn: Signer.()->T) =
     when (this.mayRequireUserUnlock) {
@@ -140,4 +169,5 @@ suspend inline fun <reified T> Signer.withUnlock(fn: Signer.()->T) =
         false -> catching { fn(this) }
     }
 
+/** Sign the data. */
 suspend inline fun Signer.sign(data: ByteArray) = sign(SignatureInput(data))

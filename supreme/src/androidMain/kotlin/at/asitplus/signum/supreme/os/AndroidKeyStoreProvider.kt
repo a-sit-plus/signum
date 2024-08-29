@@ -83,9 +83,13 @@ class AndroidSignerConfiguration: PlatformSignerConfigurationBase() {
             this::fragment.isInitialized -> FragmentContext.OfFragment(fragment)
             else -> null
         }
+        /** @see [BiometricPrompt.PromptInfo.Builder.setSubtitle] */
         var subtitle: String? = null
+        /** @see [BiometricPrompt.PromptInfo.Builder.setDescription] */
         var description: String? = null
+        /** @see [BiometricPrompt.PromptInfo.Builder.setConfirmationRequired] */
         var confirmationRequired: Boolean? = null
+        /** @see [BiometricPrompt.PromptInfo.Builder.setAllowedAuthenticators] */
         var allowedAuthenticators: Int? = null
         /** if the provided fingerprint could not be matched, but the user will be allowed to retry */
         var invalidBiometryCallback: (()->Unit)? = null
@@ -205,7 +209,7 @@ class AndroidKeyStoreProvider:
             is CryptoPublicKey.Rsa -> {
                 val rsaConfig = config.rsa.v
                 val digest = resolveOption<Digest>("digest", keyInfo.digests, Digest.entries.asSequence(), rsaConfig.digestSpecified, rsaConfig.digest, Digest::jcaName)
-                val padding = resolveOption<RSAPadding>("padding", keyInfo.signaturePaddings, RSAPadding.entries.asSequence(), rsaConfig.paddingSpecified, rsaConfig.padding) {
+                val padding = resolveOption<RSAPadding>("padding", keyInfo.signaturePaddings, RSAPadding.entries.asSequence(), rsaConfig::padding) {
                     when (it) {
                         RSAPadding.PKCS1 -> KeyProperties.SIGNATURE_PADDING_RSA_PKCS1
                         RSAPadding.PSS -> KeyProperties.SIGNATURE_PADDING_RSA_PSS
@@ -242,7 +246,7 @@ class AndroidKeyStoreProvider:
         }
     }
 
-    override suspend fun deleteSigningKey(alias: String) {
+    override suspend fun deleteSigningKey(alias: String) = catching {
         ks.deleteEntry(alias)
     }
 }
@@ -409,6 +413,6 @@ val AndroidKeystoreSigner.needsAuthenticationWithTimeout inline get() =
 actual typealias PlatformSigningProviderSignerConfiguration = AndroidSignerConfiguration
 actual typealias PlatformSigningProviderSigningKeyConfiguration = AndroidSigningKeyConfiguration
 actual typealias PlatformSigningProvider = AndroidKeyStoreProvider
-actual typealias PlatformSigningProviderConfiguration = PlatformSigningProviderConfigurationBase
-internal actual fun makePlatformSigningProvider(config: PlatformSigningProviderConfiguration) =
-    AndroidKeyStoreProvider()*/
+actual typealias PlatformSigningProviderConfiguration = PlatformSigningProviderConfigurationBase*/
+internal actual fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): SigningProvider =
+    AndroidKeyStoreProvider()
