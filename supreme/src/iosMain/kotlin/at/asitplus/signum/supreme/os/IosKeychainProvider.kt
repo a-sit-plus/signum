@@ -9,7 +9,6 @@ import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.supreme.CFCryptoOperationFailed
 import at.asitplus.signum.supreme.CryptoOperationFailed
 import at.asitplus.signum.supreme.UnsupportedCryptoException
@@ -101,6 +100,7 @@ import platform.Security.kSecUseAuthenticationUIAllow
 import at.asitplus.signum.indispensable.secKeyAlgorithm
 import at.asitplus.signum.supreme.HazardousMaterials
 import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
@@ -201,9 +201,26 @@ sealed class UnlockedIosSigner(private val ownedArena: Arena, internal val priva
 }
 
 @Serializable
-data class IosKeyMetadata(
-    internal val attestation: IosHomebrewAttestation?,
-    internal val unlockTimeout: Duration
+internal sealed interface IosKeyAlgSpecificMetadata {
+    @Serializable
+    @SerialName("ecdsa")
+    data class ECDSA(
+        val supportedDigests: Set<Digest?>
+    ) : IosKeyAlgSpecificMetadata
+
+    @Serializable
+    @SerialName("rsa")
+    data class RSA(
+        val supportedDigests: Set<Digest>,
+        val supportedPaddings: Set<RSAPadding>
+    ): IosKeyAlgSpecificMetadata
+}
+
+@Serializable
+internal data class IosKeyMetadata(
+    val attestation: IosHomebrewAttestation?,
+    val unlockTimeout: Duration,
+    val algSpecific: IosKeyAlgSpecificMetadata
 )
 
 private object LAContextManager {
@@ -238,6 +255,26 @@ private object LAContextManager {
         }
     }
 }
+
+/**
+ * Resolve [what] differently based on whether the [v]alue was [spec]ified.
+ *
+ * * [spec] = `true`: Check if [valid] contains [nameMap] applied to [v], return [v] if yes, throw otherwise
+ * * [spec] = `false`: Check if [valid] contains exactly one element, if yes, return it, throw otherwise
+ */
+private inline fun <reified E> resolveOption(what: String, valid: Set<E>, spec: Boolean, v: E): E =
+    when (spec) {
+        true -> {
+            if (!valid.contains(v))
+                throw IllegalArgumentException("Key does not support $what $v; supported: ${valid.joinToString(", ")}")
+            v
+        }
+        false -> {
+            if (valid.size != 1)
+                throw IllegalArgumentException("Key supports multiple ${what}s (${valid.joinToString(", ")}). You need to specify $what in signer configuration.")
+            valid.first()
+        }
+    }
 
 sealed class IosSigner<H : UnlockedIosSigner>(
     final override val alias: String,
@@ -287,26 +324,42 @@ sealed class IosSigner<H : UnlockedIosSigner>(
     }}
 
     protected abstract fun toUnlocked(arena: Arena, key: SecKeyRef): H
-    class ECDSA(alias: String, metadata: IosKeyMetadata, config: IosSignerConfiguration,
+    class ECDSA internal constructor(alias: String, metadata: IosKeyMetadata, config: IosSignerConfiguration,
                 override val publicKey: CryptoPublicKey.EC)
         : IosSigner<UnlockedIosSigner.ECDSA>(alias, metadata, config), Signer.ECDSA
     {
-        override val signatureAlgorithm = when (val digest = if (config.ec.v.digestSpecified) config.ec.v.digest else publicKey.curve.nativeDigest){
-            Digest.SHA256, Digest.SHA384, Digest.SHA512 -> SignatureAlgorithm.ECDSA(digest, publicKey.curve)
-            else -> throw UnsupportedCryptoException("ECDSA with $digest is not supported on iOS")
+        override val signatureAlgorithm: SignatureAlgorithm.ECDSA
+        init {
+            check (metadata.algSpecific is IosKeyAlgSpecificMetadata.ECDSA)
+            { "Metadata type mismatch (ECDSA key, metadata not ECDSA)" }
+
+            signatureAlgorithm = when (
+                val digest = resolveOption("digest", metadata.algSpecific.supportedDigests, config.ec.v.digestSpecified, config.ec.v.digest)
+            ){
+                Digest.SHA256, Digest.SHA384, Digest.SHA512 -> SignatureAlgorithm.ECDSA(digest, publicKey.curve)
+                else -> throw UnsupportedCryptoException("ECDSA with $digest is not supported on iOS")
+            }
         }
 
         override fun toUnlocked(arena: Arena, key: SecKeyRef) =
             UnlockedIosSigner.ECDSA(arena, key, this)
     }
 
-    class RSA(alias: String, metadata: IosKeyMetadata, config: IosSignerConfiguration,
+    class RSA internal constructor (alias: String, metadata: IosKeyMetadata, config: IosSignerConfiguration,
               override val publicKey: CryptoPublicKey.Rsa)
         : IosSigner<UnlockedIosSigner.RSA>(alias, metadata, config), Signer.RSA
     {
-        override val signatureAlgorithm = SignatureAlgorithm.RSA(
-            digest = if (config.rsa.v.digestSpecified) config.rsa.v.digest else Digest.SHA512,
-            padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else RSAPadding.PSS)
+        override val signatureAlgorithm: SignatureAlgorithm.RSA
+
+        init {
+            check (metadata.algSpecific is IosKeyAlgSpecificMetadata.RSA)
+            { "Metadata type mismatch (RSA key, metadata not RSA) "}
+
+            signatureAlgorithm = SignatureAlgorithm.RSA(
+                digest = resolveOption("digest", metadata.algSpecific.supportedDigests, config.rsa.v.digestSpecified, config.rsa.v.digest),
+                padding = resolveOption("padding", metadata.algSpecific.supportedPaddings, config.rsa.v.paddingSpecified, config.rsa.v.padding)
+            )
+        }
 
         override fun toUnlocked(arena: Arena, key: SecKeyRef) =
             UnlockedIosSigner.RSA(arena, key, this)
@@ -344,7 +397,7 @@ object IosKeychainProvider: SigningProviderI<IosSigner<*>, IosSignerConfiguratio
                 kSecAttrLabel to Json.encodeToString(metadata)
             ))
         if (status != errSecSuccess) {
-            throw CFCryptoOperationFailed(thing = "store key attestation", osStatus = status)
+            throw CFCryptoOperationFailed(thing = "store key metadata", osStatus = status)
         }
     }
     private fun getKeyMetadata(alias: String): IosKeyMetadata = memScoped {
@@ -360,7 +413,7 @@ object IosKeychainProvider: SigningProviderI<IosSigner<*>, IosSignerConfiguratio
         return when (status) {
             errSecSuccess -> it.value!!.get<String>(kSecAttrLabel).let(Json::decodeFromString)
             else -> {
-                throw CFCryptoOperationFailed(thing = "retrieve attestation info", osStatus = status)
+                throw CFCryptoOperationFailed(thing = "retrieve key metadata", osStatus = status)
             }
         }
     }
@@ -496,7 +549,11 @@ object IosKeychainProvider: SigningProviderI<IosSigner<*>, IosSignerConfiguratio
 
         val metadata = IosKeyMetadata(
             attestation = attestation,
-            unlockTimeout = config.hardware.v.protection.v?.timeout ?: Duration.ZERO
+            unlockTimeout = config.hardware.v.protection.v?.timeout ?: Duration.ZERO,
+            algSpecific = when (val alg = config._algSpecific.v) {
+                is SigningKeyConfiguration.ECConfiguration -> IosKeyAlgSpecificMetadata.ECDSA(alg.digests)
+                is SigningKeyConfiguration.RSAConfiguration -> IosKeyAlgSpecificMetadata.RSA(alg.digests, alg.paddings)
+            }
         ).also { storeKeyMetadata(alias, it) }
 
         Napier.v { "key $alias metadata stored (has attestation? ${attestation != null})" }
