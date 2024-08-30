@@ -183,7 +183,7 @@ sealed class IosSigner(final override val alias: String,
     val needsAuthentication get() = metadata.needsUnlock
     val needsAuthenticationForEveryUse get() = metadata.needsUnlock && (metadata.unlockTimeout == Duration.ZERO)
 
-    interface PrivateKeyManager { fun get(signingConfig: IosSignerSigningConfiguration): AutofreeVariable<SecKeyRef> }
+    internal interface PrivateKeyManager { fun get(signingConfig: IosSignerSigningConfiguration): AutofreeVariable<SecKeyRef> }
     internal val privateKeyManager = object : PrivateKeyManager {
         private var storedKey: AutofreeVariable<SecKeyRef>? = null
         override fun get(signingConfig: IosSignerSigningConfiguration): AutofreeVariable<SecKeyRef> {
@@ -268,7 +268,9 @@ sealed class IosSigner(final override val alias: String,
                     authnContext = ctx, authnTime = TimeSource.Monotonic.markNow())
                 Napier.v { "Successfully recorded LAContext for future re-use" }
             }
-            storedKey = newPrivateKey
+            if (!needsAuthenticationForEveryUse) {
+                storedKey = newPrivateKey
+            }
             return newPrivateKey
         }
     }

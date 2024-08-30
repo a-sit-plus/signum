@@ -165,6 +165,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
      * RSA Public key
      */
     @Serializable
+    @ConsistentCopyVisibility
     data class Rsa
     @Throws(IllegalArgumentException::class)
     private constructor(
@@ -296,6 +297,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
      */
     @Serializable
     @SerialName("EC")
+    @ConsistentCopyVisibility
     data class EC private constructor(
         val publicPoint: ECPoint.Normalized,
         val preferCompressedRepresentation: Boolean = true

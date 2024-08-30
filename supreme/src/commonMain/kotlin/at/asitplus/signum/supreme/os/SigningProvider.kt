@@ -113,12 +113,14 @@ open class SignerConfiguration internal constructor(): DSL.Data() {
 }
 
 open class UnlockPromptConfiguration: DSL.Data() {
+
+    internal val _message = Stackable<String>()
     /** The prompt message to show to the user when asking for unlock */
-    lateinit var message: String
-    internal val messageSpecified get() = this::message.isInitialized
+    var message by _message
+
+    internal val _cancelText = Stackable<String>()
     /** The message to show on the cancellation button */
-    lateinit var cancelText: String
-    internal val cancelTextSpecified get() = this::cancelText.isInitialized
+    var cancelText by _cancelText
 
     companion object {
         const val defaultMessage = "Please authorize cryptographic signature"

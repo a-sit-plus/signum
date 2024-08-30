@@ -14,12 +14,18 @@ object DSL {
 
     /** A collection of equivalent DSL configuration structures which shadow each other.
      * @see getProperty */
-    class ConfigStack<S: DSL.Data>(private vararg val stackedData: S) {
+    internal class ConfigStack<S: DSL.Data>(private vararg val stackedData: S): Iterable<S> by stackedData.asIterable() {
         /** Retrieve a property from a stack of (partially-)configured DSL data.
          * Each element of the stack should have an indication of whether the property is set, and a value of the property (which is only accessed if the property is set).
          * This is commonly implemented using `lateinit var`s (with `internal val .. get() = this::prop.isInitialized` as the property checker).*/
-        fun <T> getProperty(getter: (S)->T, checker: (S)->Boolean, default: T): T =
-            when (val it = stackedData.firstOrNull(checker)) { null -> default; else -> getter(it) }
+        fun <T> getProperty(getter: (S)->T, checker: (S)->Boolean, default: ()->T): T =
+            try { getter(stackedData.first(checker)) } catch (_: NoSuchElementException) { default() }
+        fun <T> getProperty(getter: (S)->T, checker: (S)->Boolean, default: T) =
+            try { getter(stackedData.first(checker)) } catch (_: NoSuchElementException) { default }
+        fun <T> getProperty(getter: (S)->Data.Stackable<T>, default: ()->T) : T {
+            for (e in stackedData) { val d = getter(e); if (d.isSet) return d.value }; return default() }
+        fun <T> getProperty(getter: (S)->Data.Stackable<T>, default: T): T {
+            for (e in stackedData) { val d = getter(e); if (d.isSet) return d.value }; return default }
     }
 
     sealed interface Holder<out T> {
@@ -142,6 +148,22 @@ object DSL {
          */
         protected fun <T: Any> unsupported(why: String): Unsupported<T> =
             Unsupported<T>(why)
+
+        /**
+         * Convenience delegate for multiple points of configuration DSLs.
+         * It keeps track of whether the value has been explicitly set, and is compatible with [ConfigStack.getProperty].
+         *
+         * Use as `internal val _foo = Stackable<Int>(); var foo by _foo`, then access as `stack.getProperty(DSLType::_foo, default = 42)`.
+         */
+        internal class Stackable<T>() {
+            private var _storage: T? = null
+            @Suppress("UNCHECKED_CAST")
+            internal val value: T get() { check(isSet); return _storage as T }
+            internal var isSet: Boolean = false
+            operator fun getValue(thisRef: Data, property: KProperty<*>): T { return value }
+            operator fun setValue(thisRef: Data, property: KProperty<*>, v: T) { _storage = v; isSet = true; }
+
+        }
 
         /**
          * Invoked by `DSL.resolve()` after the configuration block runs.

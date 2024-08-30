@@ -18,6 +18,7 @@ import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubje
  * See [RFC 5280, Section 4.2.1.6](https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.6)
  * for details on the properties of this container class, as they are named accordingly.
  */
+@ConsistentCopyVisibility
 data class AlternativeNames
 @Throws(Throwable::class)
 private constructor(private val extensions: List<Asn1Element>) {

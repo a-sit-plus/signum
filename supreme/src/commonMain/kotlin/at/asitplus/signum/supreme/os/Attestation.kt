@@ -68,6 +68,7 @@ data class IosHomebrewAttestation(
     companion object { const val THE_PURPOSE = "ios app-attest: secure enclave protected key" }
 
     @Serializable
+    @ConsistentCopyVisibility
     data class ClientData private constructor(
         private val purpose: String,
         @Serializable(with=IosPublicKeySerializer::class)
