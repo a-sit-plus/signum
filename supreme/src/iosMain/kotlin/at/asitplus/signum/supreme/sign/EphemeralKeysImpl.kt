@@ -6,6 +6,7 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.secKeyAlgorithmPreHashed
+import at.asitplus.signum.supreme.AutofreeVariable
 import at.asitplus.signum.supreme.CFCryptoOperationFailed
 import at.asitplus.signum.supreme.cfDictionaryOf
 import at.asitplus.signum.supreme.corecall
@@ -14,7 +15,6 @@ import at.asitplus.signum.supreme.giveToCF
 import at.asitplus.signum.supreme.takeFromCF
 import at.asitplus.signum.supreme.toByteArray
 import at.asitplus.signum.supreme.toNSData
-import kotlinx.cinterop.Arena
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
@@ -24,6 +24,7 @@ import platform.Foundation.NSData
 import platform.Security.SecKeyCopyExternalRepresentation
 import platform.Security.SecKeyCreateSignature
 import platform.Security.SecKeyGeneratePair
+import platform.Security.SecKeyRef
 import platform.Security.SecKeyRefVar
 import platform.Security.errSecSuccess
 import platform.Security.kSecAttrIsPermanent
@@ -33,12 +34,11 @@ import platform.Security.kSecAttrKeyTypeEC
 import platform.Security.kSecAttrKeyTypeRSA
 import platform.Security.kSecPrivateKeyAttrs
 import platform.Security.kSecPublicKeyAttrs
-import kotlin.experimental.ExperimentalNativeApi
-import kotlin.native.ref.createCleaner
 
 actual class EphemeralSigningKeyConfiguration internal actual constructor(): EphemeralSigningKeyConfigurationBase()
 actual class EphemeralSignerConfiguration internal actual constructor(): EphemeralSignerConfigurationBase()
 
+private typealias EphemeralKeyRef = AutofreeVariable<SecKeyRef>
 sealed class EphemeralSigner(internal val privateKey: EphemeralKeyRef): Signer {
     final override val mayRequireUserUnlock: Boolean get() = false
     final override suspend fun sign(data: SignatureInput) = catching {
@@ -46,7 +46,7 @@ sealed class EphemeralSigner(internal val privateKey: EphemeralKeyRef): Signer {
         val algorithm = signatureAlgorithm.secKeyAlgorithmPreHashed
         val input = inputData.data.single().toNSData()
         val signatureBytes = corecall {
-            SecKeyCreateSignature(privateKey.key.value, algorithm, input.giveToCF(), error)
+            SecKeyCreateSignature(privateKey.value, algorithm, input.giveToCF(), error)
         }.let { it.takeFromCF<NSData>().toByteArray() }
         return@catching when (val pubkey = publicKey) {
             is CryptoPublicKey.EC -> CryptoSignature.EC.decodeFromDer(signatureBytes).withCurve(pubkey.curve)
@@ -62,15 +62,8 @@ sealed class EphemeralSigner(internal val privateKey: EphemeralKeyRef): Signer {
         : EphemeralSigner(privateKey), Signer.RSA
 }
 
-class EphemeralKeyRef {
-    private val arena = Arena()
-    @OptIn(ExperimentalNativeApi::class)
-    private val cleaner = createCleaner(arena, Arena::clear)
-    val key = arena.alloc<SecKeyRefVar>()
-}
-
 internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey {
-    val key = EphemeralKeyRef()
+    val key = AutofreeVariable<SecKeyRef>()
     memScoped {
         val attr = createCFDictionary {
             when (val alg = configuration._algSpecific.v) {
@@ -87,7 +80,7 @@ internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfigura
             kSecPublicKeyAttrs mapsTo cfDictionaryOf(kSecAttrIsPermanent to false)
         }
         val pubkey = alloc<SecKeyRefVar>()
-        val status = SecKeyGeneratePair(attr, pubkey.ptr, key.key.ptr)
+        val status = SecKeyGeneratePair(attr, pubkey.ptr, key.ptr)
         if (status != errSecSuccess) {
             throw CFCryptoOperationFailed(thing = "generate ephemeral key", osStatus = status)
         }

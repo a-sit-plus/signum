@@ -16,6 +16,7 @@ import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.os.Attestation
 import at.asitplus.signum.supreme.os.SigningProvider
 import com.ionspin.kotlin.bignum.integer.BigInteger
+import io.matthewnelson.encoding.base16.Base16
 
 /** DSL for configuring a signing key.
  *
@@ -85,19 +86,19 @@ interface Signer {
     val signatureAlgorithm: SignatureAlgorithm
     val publicKey: CryptoPublicKey
     /** Whether the signer may ask for user interaction when [sign] is called */
-    val mayRequireUserUnlock: Boolean
+    val mayRequireUserUnlock: Boolean get() = true
 
     /** Any [Signer] instantiation must be [ECDSA] or [RSA] */
-    sealed interface AlgTrait : Signer
+    sealed interface AlgTrait: Signer
 
     /** A [Signer] that signs using ECDSA. */
-    interface ECDSA : Signer.AlgTrait {
+    interface ECDSA: AlgTrait {
         override val signatureAlgorithm: SignatureAlgorithm.ECDSA
         override val publicKey: CryptoPublicKey.EC
     }
 
     /** A [Signer] that signs using RSA. */
-    interface RSA : Signer.AlgTrait {
+    interface RSA: AlgTrait {
         override val signatureAlgorithm: SignatureAlgorithm.RSA
         override val publicKey: CryptoPublicKey.Rsa
     }
@@ -112,45 +113,16 @@ interface Signer {
         val attestation: AttestationT?
     }
 
+    /** Try to ensure that the Signer is ready to immediately sign data, on a best-effort basis.
+     * For example, if user authorization allows signing for a given timeframe, this will prompts for authorization now.
+     *
+     * If ahead-of-time authorization makes no sense for this [Signer], does nothing. */
+    suspend fun trySetupUninterruptedSigning(): KmmResult<Unit> = KmmResult.success(Unit)
+
     /** Signs data. Might ask for user confirmation first if this [Signer] [mayRequireUserUnlock]. */
     suspend fun sign(data: SignatureInput): KmmResult<CryptoSignature>
-
-    /**
-     * A handle to a [TemporarilyUnlockable] signer that is temporarily unlocked.
-     * The handle is only guaranteed to be valid within the scope of the [withUnlock] block.
-     */
-    @OptIn(ExperimentalStdlibApi::class)
-    interface UnlockedHandle: AutoCloseable, Signer {
-        override val mayRequireUserUnlock: Boolean get() = false
-    }
-
-    /**
-     * A signer that can be temporarily unlocked.
-     * Once unlocked, multiple signing operations can be performed with a single unlock.
-     *
-     * @see withUnlock
-     */
-    abstract class TemporarilyUnlockable<Handle: UnlockedHandle> : Signer {
-        override val mayRequireUserUnlock: Boolean get() = true
-
-        /** Obtains a raw unlock handle. This is public because [withUnlock] needs to be inline.
-         * If you use it directly, closing the returned handle is your responsibility! */
-        @HazardousMaterials
-        abstract suspend fun unlock(): KmmResult<Handle>
-
-        /**
-         * Unlocks the signer, then executes the block with the [UnlockedHandle] as its receiver.
-         *
-         * The handle's validity is only guaranteed in the block scope.
-         */
-        @OptIn(ExperimentalStdlibApi::class, HazardousMaterials::class)
-        suspend inline fun <reified T> withUnlock(fn: Handle.()->T): KmmResult<T> =
-            unlock().mapCatching { it.use(fn) }
-
-        @OptIn(ExperimentalStdlibApi::class, HazardousMaterials::class)
-        final override suspend fun sign(data: SignatureInput): KmmResult<CryptoSignature> =
-            unlock().transform { h -> h.use { it.sign(data) } }
-    }
+    suspend fun sign(data: ByteArray) = sign(SignatureInput(data))
+    suspend fun sign(data: Sequence<ByteArray>) = sign(SignatureInput(data))
 
     companion object {
         fun Ephemeral(configure: DSLConfigureFn<EphemeralSigningKeyConfiguration> = null) =
@@ -171,20 +143,3 @@ fun Signer.makeVerifier(configure: ConfigurePlatformVerifier = null) = signature
 fun Signer.makePlatformVerifier(configure: ConfigurePlatformVerifier = null) = signatureAlgorithm.platformVerifierFor(publicKey, configure)
 
 val Signer.ECDSA.curve get() = publicKey.curve
-
-/**
- * Try to batch sign with this [Signer].
- * Might fail for locked [Signer]s that are not [Signer.TemporarilyUnlockable].
- */
-suspend inline fun <reified T> Signer.withUnlock(fn: Signer.()->T) =
-    when (this.mayRequireUserUnlock) {
-        true ->
-            if (this is Signer.TemporarilyUnlockable<*>)
-                this.withUnlock(fn)
-            else
-                KmmResult.failure(UnlockFailed("This signer needs authentication for every use"))
-        false -> catching { fn(this) }
-    }
-
-/** Sign the data. */
-suspend inline fun Signer.sign(data: ByteArray) = sign(SignatureInput(data))

@@ -1,29 +1,27 @@
 @file:OptIn(ExperimentalForeignApi::class)
 package at.asitplus.signum.supreme.hazmat
 
+import at.asitplus.signum.supreme.AutofreeVariable
 import at.asitplus.signum.supreme.HazardousMaterials
-import at.asitplus.signum.supreme.os.UnlockedIosSigner
+import at.asitplus.signum.supreme.os.IosSigner
+import at.asitplus.signum.supreme.os.IosSignerSigningConfiguration
 import at.asitplus.signum.supreme.sign.EphemeralKey
 import at.asitplus.signum.supreme.sign.EphemeralKeyBase
-import at.asitplus.signum.supreme.sign.EphemeralKeyRef
 import at.asitplus.signum.supreme.sign.EphemeralSigner
 import at.asitplus.signum.supreme.sign.Signer
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.value
+import platform.Security.SecKeyRef
 
-/** The underlying SecKeyRef referencing the ephemeral key's private key.
- *
- * **⚠️ Must not be used beyond the EphemeralKey's lifetime. ⚠️** */
+/** The underlying SecKeyRef referencing the ephemeral key's private key. */
 @HazardousMaterials
-val EphemeralKey.secKeyRef get() = ((this as? EphemeralKeyBase<*>)?.privateKey as? EphemeralKeyRef)?.key?.value
+@Suppress("UNCHECKED_CAST")
+val EphemeralKey.secKeyRef get() = (this as? EphemeralKeyBase<*>)?.privateKey as? AutofreeVariable<SecKeyRef>
 
-/** The underlying SecKeyRef referencing the signer's private key. Only available on ephemeral signers or unlocked signers.
- * Not available on locked signers. (The ref isn't retrieved from the keychain until unlock time.)
- *
- * **⚠️ Must not be used beyond the signer's lifetime/scope. ⚠️** */
+/** The underlying SecKeyRef referencing the signer's private key.
+ * **⚠️ If returned from a keychain signer, must be used immediately. Do not store long term. ⚠️** */
 @HazardousMaterials
 val Signer.secKeyRef get() = when (this) {
-    is EphemeralSigner -> this.privateKey.key.value
-    is UnlockedIosSigner -> this.privateKeyRef
+    is EphemeralSigner -> this.privateKey
+    is IosSigner -> this.privateKeyManager.get(IosSignerSigningConfiguration())
     else -> null
 }

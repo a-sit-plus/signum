@@ -24,6 +24,24 @@ import platform.Foundation.create
 import platform.Security.SecCopyErrorMessageString
 import platform.darwin.OSStatus
 import platform.posix.memcpy
+import kotlin.experimental.ExperimentalNativeApi
+import kotlin.native.ref.createCleaner
+
+@OptIn(ExperimentalNativeApi::class)
+class AutofreeVariable<T: CPointer<*>> internal constructor(
+    private val arena: Arena,
+    private val variable: CPointerVarOf<T>) {
+    companion object {
+        internal inline operator fun <reified T: CPointer<*>> invoke(): AutofreeVariable<T> {
+            val arena = Arena()
+            val variable = arena.alloc<CPointerVarOf<T>>()
+            return AutofreeVariable<T>(arena, variable)
+        }
+    }
+    private val cleaner = createCleaner(arena, Arena::clear)
+    internal val ptr get() = variable.ptr
+    internal val value get() = variable.value
+}
 
 internal fun NSData.toByteArray(): ByteArray = ByteArray(length.toInt()).apply {
     usePinned {

@@ -12,6 +12,16 @@ object DSL {
     fun <S: DSL.Data, T: S> resolve(factory: ()->T, config: DSLConfigureFn<S>): T =
         (if (config == null) factory() else factory().apply(config)).also(DSL.Data::validate)
 
+    /** A collection of equivalent DSL configuration structures which shadow each other.
+     * @see getProperty */
+    class ConfigStack<S: DSL.Data>(private vararg val stackedData: S) {
+        /** Retrieve a property from a stack of (partially-)configured DSL data.
+         * Each element of the stack should have an indication of whether the property is set, and a value of the property (which is only accessed if the property is set).
+         * This is commonly implemented using `lateinit var`s (with `internal val .. get() = this::prop.isInitialized` as the property checker).*/
+        fun <T> getProperty(getter: (S)->T, checker: (S)->Boolean, default: T): T =
+            when (val it = stackedData.firstOrNull(checker)) { null -> default; else -> getter(it) }
+    }
+
     sealed interface Holder<out T> {
         val v: T
     }

@@ -50,14 +50,14 @@ import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.supreme.dsl.PREFERRED
-import at.asitplus.signum.supreme.os.SigningProvider
 import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.supreme.sign.makeVerifier
-import at.asitplus.signum.supreme.sign.sign
 import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.cryptotest.theme.AppTheme
 import at.asitplus.cryptotest.theme.LocalThemeIsDark
 import at.asitplus.signum.supreme.os.PlatformSignerConfigurationBase
+import at.asitplus.signum.supreme.os.PlatformSigningProvider
+import at.asitplus.signum.supreme.os.SigningProvider
 import at.asitplus.signum.supreme.os.jsonEncoded
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
@@ -336,7 +336,7 @@ internal fun App() {
                         CoroutineScope(context).launch {
                             canGenerate = false
                             genTextOverride = "Creating…"
-                            currentSigner = SigningProvider{}.transform { it.createSigningKey(ALIAS) {
+                            currentSigner = PlatformSigningProvider{}.transform { it.createSigningKey(ALIAS) {
                                 signer(SIGNER_CONFIG)
 
                                 when (val alg = keyAlgorithm.algorithm) {
@@ -401,7 +401,7 @@ internal fun App() {
                         CoroutineScope(context).launch {
                             canGenerate = false
                             genTextOverride = "Loading…"
-                            SigningProvider{}.transform { it.getSignerForKey(ALIAS, SIGNER_CONFIG) }.let {
+                            PlatformSigningProvider{}.transform { it.getSignerForKey(ALIAS, SIGNER_CONFIG) }.let {
                                 Napier.w { "Priv retrieved from native: $it" }
                                 currentSigner = it
                                 verifyState = null
@@ -424,7 +424,7 @@ internal fun App() {
                         CoroutineScope(context).launch {
                             canGenerate = false
                             genTextOverride = "Deleting…"
-                            SigningProvider{}.transform { it.deleteSigningKey(ALIAS) }
+                            PlatformSigningProvider{}.transform { it.deleteSigningKey(ALIAS) }
                                 .onFailure { Napier.e("Failed to delete key", it) }
                             currentSigner = null
                             signatureData = null
