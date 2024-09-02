@@ -29,7 +29,7 @@ import kotlin.native.ref.createCleaner
 
 @OptIn(ExperimentalNativeApi::class)
 class AutofreeVariable<T: CPointer<*>> internal constructor(
-    private val arena: Arena,
+    arena: Arena,
     private val variable: CPointerVarOf<T>) {
     companion object {
         internal inline operator fun <reified T: CPointer<*>> invoke(): AutofreeVariable<T> {
@@ -38,6 +38,7 @@ class AutofreeVariable<T: CPointer<*>> internal constructor(
             return AutofreeVariable<T>(arena, variable)
         }
     }
+    @Suppress("UNUSED")
     private val cleaner = createCleaner(arena, Arena::clear)
     internal val ptr get() = variable.ptr
     internal val value get() = variable.value
@@ -55,14 +56,14 @@ internal fun ByteArray.toNSData(): NSData = memScoped {
 }
 
 private fun NSError.toNiceString(): String {
-    val sb = StringBuilder("[Code $code] $localizedDescription\n")
+    val sb = StringBuilder("[${if(domain != null) "$domain error, " else ""}code $code] $localizedDescription\n")
     localizedFailureReason?.let { sb.append("Because: $it") }
     localizedRecoverySuggestion?.let { sb.append("Try: $it") }
     localizedRecoveryOptions?.let { sb.append("Try also:\n - ${it.joinToString("\n - ")}\n") }
     return sb.toString()
 }
 
-class CFCryptoOperationFailed(thing: String, osStatus: OSStatus) : CryptoOperationFailed(buildMessage(thing, osStatus)) {
+class CFCryptoOperationFailed(thing: String, val osStatus: OSStatus) : CryptoOperationFailed(buildMessage(thing, osStatus)) {
     companion object {
         private fun buildMessage(thing: String, osStatus: OSStatus): String {
             val errorMessage = SecCopyErrorMessageString(osStatus, null).takeFromCF<String?>()
@@ -71,7 +72,7 @@ class CFCryptoOperationFailed(thing: String, osStatus: OSStatus) : CryptoOperati
     }
 }
 
-class CoreFoundationException(message: String): Throwable(message)
+class CoreFoundationException(val nsError: NSError): Throwable(nsError.toNiceString())
 internal class corecall private constructor(val error: CPointer<CFErrorRefVar>) {
     /** Helper for calling Core Foundation functions, and bridging exceptions across.
      *
@@ -92,7 +93,7 @@ internal class corecall private constructor(val error: CPointer<CFErrorRefVar>) 
                 when {
                     (result != null) && (error == null) -> return result
                     (result == null) && (error != null) ->
-                        throw CoreFoundationException(error.takeFromCF<NSError>().toNiceString())
+                        throw CoreFoundationException(error.takeFromCF<NSError>())
                     else -> throw IllegalStateException("Invalid state returned by Core Foundation call")
                 }
             }

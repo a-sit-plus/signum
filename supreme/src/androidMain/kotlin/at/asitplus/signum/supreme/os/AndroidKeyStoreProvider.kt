@@ -113,14 +113,15 @@ class AndroidSignerSigningConfiguration: PlatformSigningProviderSignerSigningCon
 }
 
 /**
- * Resolve [what] differently based on whether the [v]alue was [spec]ified.
+ * Resolve [what] differently based on whether the [vA]lue was [spec]ified.
  *
- * * [spec] = `true`: Check if [valid] contains [nameMap] applied to [v], return [v] if yes, throw otherwise
+ * * [spec] = `true`: Check if [valid] contains [nameMap] applied to [vA()][vA], return [vA()][vA] if yes, throw otherwise
  * * [spec] = `false`: Check if [valid] contains exactly one element, if yes, return the [E] from [possible] for which [nameMap] returns that element, throw otherwise
  */
-internal inline fun <reified E> resolveOption(what: String, valid: Array<String>, possible: Sequence<E>, spec: Boolean, v: E, crossinline nameMap: (E)->String): E =
+internal inline fun <reified E> resolveOption(what: String, valid: Array<String>, possible: Sequence<E>, spec: Boolean, vA: ()->E, crossinline nameMap: (E)->String): E =
     when (spec) {
         true -> {
+            val v = vA()
             val vStr = nameMap(v)
             if (!valid.any { it.equals(vStr, ignoreCase=true) })
                 throw IllegalArgumentException("Key does not support $what $v; supported: ${valid.joinToString(", ")}")
@@ -223,13 +224,13 @@ object AndroidKeyStoreProvider:
         val algorithm = when (val publicKey = certificateChain.leaf.publicKey) {
             is CryptoPublicKey.EC -> {
                 val ecConfig = config.ec.v
-                val digest = resolveOption("digest", keyInfo.digests, Digest.entries.asSequence() + sequenceOf<Digest?>(null), ecConfig.digestSpecified, ecConfig.digest) { it?.jcaName ?: KeyProperties.DIGEST_NONE }
+                val digest = resolveOption("digest", keyInfo.digests, Digest.entries.asSequence() + sequenceOf<Digest?>(null), ecConfig.digestSpecified, { ecConfig.digest }) { it?.jcaName ?: KeyProperties.DIGEST_NONE }
                 SignatureAlgorithm.ECDSA(digest, publicKey.curve)
             }
             is CryptoPublicKey.Rsa -> {
                 val rsaConfig = config.rsa.v
-                val digest = resolveOption<Digest>("digest", keyInfo.digests, Digest.entries.asSequence(), rsaConfig.digestSpecified, rsaConfig.digest, Digest::jcaName)
-                val padding = resolveOption<RSAPadding>("padding", keyInfo.signaturePaddings, RSAPadding.entries.asSequence(), rsaConfig.paddingSpecified, rsaConfig.padding) {
+                val digest = resolveOption<Digest>("digest", keyInfo.digests, Digest.entries.asSequence(), rsaConfig.digestSpecified, { rsaConfig.digest }, Digest::jcaName)
+                val padding = resolveOption<RSAPadding>("padding", keyInfo.signaturePaddings, RSAPadding.entries.asSequence(), rsaConfig.paddingSpecified, { rsaConfig.padding }) {
                     when (it) {
                         RSAPadding.PKCS1 -> KeyProperties.SIGNATURE_PADDING_RSA_PKCS1
                         RSAPadding.PSS -> KeyProperties.SIGNATURE_PADDING_RSA_PSS

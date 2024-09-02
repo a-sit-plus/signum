@@ -96,19 +96,24 @@ import platform.Security.kSecReturnRef
 import platform.Security.kSecUseAuthenticationContext
 import platform.Security.kSecUseAuthenticationUI
 import platform.Security.kSecUseAuthenticationUIAllow
-import at.asitplus.signum.indispensable.secKeyAlgorithm
 import at.asitplus.signum.indispensable.secKeyAlgorithmPreHashed
 import at.asitplus.signum.supreme.AutofreeVariable
+import at.asitplus.signum.supreme.CoreFoundationException
 import at.asitplus.signum.supreme.SignatureResult
+import at.asitplus.signum.supreme.UnlockFailed
 import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
 import at.asitplus.signum.supreme.sign.preHashedSignatureFormat
 import at.asitplus.signum.supreme.signCatching
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import platform.LocalAuthentication.LAErrorAuthenticationFailed
+import platform.LocalAuthentication.LAErrorBiometryLockout
+import platform.LocalAuthentication.LAErrorDomain
+import platform.LocalAuthentication.LAErrorUserCancel
+import platform.Security.errSecAuthFailed
+import platform.Security.errSecUnsupportedKeyFormat
+import platform.Security.errSecUserCanceled
 import platform.Security.kSecUseAuthenticationUIFail
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.InvocationKind
-import kotlin.contracts.contract
 import kotlin.math.min
 import kotlin.time.Duration
 import kotlin.time.TimeSource
@@ -148,14 +153,15 @@ class IosSigningKeyConfiguration internal constructor(): PlatformSigningKeyConfi
 }
 
 /**
- * Resolve [what] differently based on whether the [v]alue was [spec]ified.
+ * Resolve [what] differently based on whether the [vA]lue was [spec]ified.
  *
- * * [spec] = `true`: Check if [valid] contains [v], return [v] if yes, throw otherwise
+ * * [spec] = `true`: Check if [valid] contains [vA()][vA], return [vA()][vA] if yes, throw otherwise
  * * [spec] = `false`: Check if [valid] contains exactly one element, if yes, return it, throw otherwise
  */
-private inline fun <reified E> resolveOption(what: String, valid: Set<E>, spec: Boolean, v: E): E =
+private inline fun <reified E> resolveOption(what: String, valid: Set<E>, spec: Boolean, vA: ()->E): E =
     when (spec) {
         true -> {
+            val v = vA()
             if (!valid.contains(v))
                 throw IllegalArgumentException("Key does not support $what $v; supported: ${valid.joinToString(", ")}")
             v
@@ -212,10 +218,10 @@ sealed class IosSigner(final override val alias: String,
                 }
                 ctx.apply {
                     val stack = DSL.ConfigStack(signingConfig.unlockPrompt.v, signerConfig.unlockPrompt.v)
-                    localizedReason = stack.getProperty(UnlockPromptConfiguration::message,
-                        checker = UnlockPromptConfiguration::messageSpecified, default = UnlockPromptConfiguration.defaultMessage)
-                    localizedCancelTitle = stack.getProperty(UnlockPromptConfiguration::cancelText,
-                        checker = UnlockPromptConfiguration::cancelTextSpecified, default = UnlockPromptConfiguration.defaultCancelText)
+                    localizedReason = stack.getProperty(UnlockPromptConfiguration::_message,
+                        default = UnlockPromptConfiguration.defaultMessage)
+                    localizedCancelTitle = stack.getProperty(UnlockPromptConfiguration::_cancelText,
+                        default = UnlockPromptConfiguration.defaultCancelText)
                 }
             } else {
                 recordable = false
@@ -292,9 +298,21 @@ sealed class IosSigner(final override val alias: String,
         val signingConfig = DSL.resolve(::IosSignerSigningConfiguration, configure)
         val algorithm = signatureAlgorithm.secKeyAlgorithmPreHashed
         val plaintext = data.convertTo(signatureAlgorithm.preHashedSignatureFormat).getOrThrow().data.first().toNSData()
-        val signatureBytes = corecall {
-            SecKeyCreateSignature(privateKeyManager.get(signingConfig).value, algorithm, plaintext.giveToCF(), error)
-        }.takeFromCF<NSData>().toByteArray()
+        val signatureBytes = try {
+            corecall {
+                SecKeyCreateSignature(privateKeyManager.get(signingConfig).value, algorithm, plaintext.giveToCF(), error)
+            }.takeFromCF<NSData>().toByteArray()
+        } catch (x: CoreFoundationException) { /* secure enclave failure */
+            if (x.nsError.domain == LAErrorDomain) when (x.nsError.code) {
+                LAErrorUserCancel, LAErrorAuthenticationFailed, LAErrorBiometryLockout -> throw UnlockFailed(x.nsError.localizedDescription, x)
+                else -> throw x
+            } else throw x
+        } catch (x: CFCryptoOperationFailed) { /* keychain failure */
+            when (x.osStatus) {
+                errSecUserCanceled, errSecAuthFailed -> throw UnlockFailed(x.message, x)
+                else -> throw x
+            }
+        }
         return@signCatching bytesToSignature(signatureBytes)
     }}
 
@@ -308,7 +326,7 @@ sealed class IosSigner(final override val alias: String,
             { "Metadata type mismatch (ECDSA key, metadata not ECDSA)" }
 
             signatureAlgorithm = when (
-                val digest = resolveOption("digest", metadata.algSpecific.supportedDigests, config.ec.v.digestSpecified, config.ec.v.digest)
+                val digest = resolveOption("digest", metadata.algSpecific.supportedDigests, config.ec.v.digestSpecified, { config.ec.v.digest })
             ){
                 Digest.SHA256, Digest.SHA384, Digest.SHA512 -> SignatureAlgorithm.ECDSA(digest, publicKey.curve)
                 else -> throw UnsupportedCryptoException("ECDSA with $digest is not supported on iOS")
@@ -328,8 +346,8 @@ sealed class IosSigner(final override val alias: String,
             { "Metadata type mismatch (RSA key, metadata not RSA) "}
 
             signatureAlgorithm = SignatureAlgorithm.RSA(
-                digest = resolveOption("digest", metadata.algSpecific.supportedDigests, config.rsa.v.digestSpecified, config.rsa.v.digest),
-                padding = resolveOption("padding", metadata.algSpecific.supportedPaddings, config.rsa.v.paddingSpecified, config.rsa.v.padding)
+                digest = resolveOption("digest", metadata.algSpecific.supportedDigests, config.rsa.v.digestSpecified, { config.rsa.v.digest }),
+                padding = resolveOption("padding", metadata.algSpecific.supportedPaddings, config.rsa.v.paddingSpecified, { config.rsa.v.padding })
             )
         }
         override fun bytesToSignature(sigBytes: ByteArray) =
@@ -501,7 +519,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 }.let { it.takeFromCF<NSData>() }.toByteArray()
             } else {
                 val x = CFCryptoOperationFailed(thing = "generate key", osStatus = status)
-                if ((status == -50) &&
+                if ((status == errSecUnsupportedKeyFormat) &&
                     useSecureEnclave &&
                     !isSecureEnclaveSupportedConfiguration(config._algSpecific.v)) {
                     throw UnsupportedCryptoException("iOS Secure Enclave does not support this configuration.", x)

@@ -1,23 +1,18 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.nativeDigest
-import at.asitplus.signum.supreme.HazardousMaterials
 import at.asitplus.signum.supreme.SignatureResult
-import at.asitplus.signum.supreme.UnlockFailed
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.os.Attestation
 import at.asitplus.signum.supreme.os.SigningProvider
 import com.ionspin.kotlin.bignum.integer.BigInteger
-import io.matthewnelson.encoding.base16.Base16
 
 /** DSL for configuring a signing key.
  *
@@ -74,13 +69,13 @@ open class SigningKeyConfiguration internal constructor(): DSL.Data() {
  * ```
  * This will generate a throwaway [EphemeralKey] and return a Signer for it.
  *
- * Any actual instantiation will have a [AlgTrait], which will be either [ECDSA] or [RSA].
+ * Any actual instantiation will have an [AlgTrait], which will be either [ECDSA] or [RSA].
  * Instantiations may also be [WithAlias], usually because they come from a [SigningProvider].
  * They may also be [Attestable].
  *
  * Some signers [mayRequireUserUnlock]. If needed, they will ask for user interaction when you try to [sign] data.
- * Of these signers, some are also [Signer.TemporarilyUnlockable].
- * These signers can be used to sign multiple times in rapid succession with only a single user interaction.
+ * You can try to authenticate a signer ahead of time using [trySetupUninterruptedSigning]; but it might do nothing for some Signers.
+ * There is never a guarantee that signing is uninterrupted if [mayRequireUserUnlock] is true.
  *
  */
 interface Signer {

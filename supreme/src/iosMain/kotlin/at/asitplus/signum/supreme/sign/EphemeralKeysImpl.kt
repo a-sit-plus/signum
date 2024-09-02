@@ -1,7 +1,6 @@
 @file:OptIn(ExperimentalForeignApi::class)
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
@@ -12,6 +11,7 @@ import at.asitplus.signum.supreme.cfDictionaryOf
 import at.asitplus.signum.supreme.corecall
 import at.asitplus.signum.supreme.createCFDictionary
 import at.asitplus.signum.supreme.giveToCF
+import at.asitplus.signum.supreme.signCatching
 import at.asitplus.signum.supreme.takeFromCF
 import at.asitplus.signum.supreme.toByteArray
 import at.asitplus.signum.supreme.toNSData
@@ -41,14 +41,14 @@ actual class EphemeralSignerConfiguration internal actual constructor(): Ephemer
 private typealias EphemeralKeyRef = AutofreeVariable<SecKeyRef>
 sealed class EphemeralSigner(internal val privateKey: EphemeralKeyRef): Signer {
     final override val mayRequireUserUnlock: Boolean get() = false
-    final override suspend fun sign(data: SignatureInput) = catching {
+    final override suspend fun sign(data: SignatureInput) = signCatching {
         val inputData = data.convertTo(signatureAlgorithm.preHashedSignatureFormat).getOrThrow()
         val algorithm = signatureAlgorithm.secKeyAlgorithmPreHashed
         val input = inputData.data.single().toNSData()
         val signatureBytes = corecall {
             SecKeyCreateSignature(privateKey.value, algorithm, input.giveToCF(), error)
         }.let { it.takeFromCF<NSData>().toByteArray() }
-        return@catching when (val pubkey = publicKey) {
+        return@signCatching when (val pubkey = publicKey) {
             is CryptoPublicKey.EC -> CryptoSignature.EC.decodeFromDer(signatureBytes).withCurve(pubkey.curve)
             is CryptoPublicKey.Rsa -> CryptoSignature.RSAorHMAC(signatureBytes)
         }
