@@ -43,6 +43,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import java.security.KeyFactory
 import java.security.KeyPairGenerator
 import java.security.KeyStore
@@ -52,6 +54,7 @@ import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
 import java.time.Instant
 import java.util.Date
+import java.util.concurrent.Executors
 import javax.security.auth.x500.X500Principal
 
 internal sealed interface FragmentContext {
@@ -59,6 +62,7 @@ internal sealed interface FragmentContext {
     @JvmInline value class OfFragment(val fragment: Fragment): FragmentContext
 }
 
+private val keystoreContext = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
 class AndroidKeymasterConfiguration internal constructor(): PlatformSigningKeyConfigurationBase.SecureHardwareConfiguration() {
     /** Whether a StrongBox TPM is required. */
@@ -154,7 +158,7 @@ object AndroidKeyStoreProvider:
     override suspend fun createSigningKey(
         alias: String,
         configure: DSLConfigureFn<AndroidSigningKeyConfiguration>
-    ) = catching {
+    ) = withContext(keystoreContext) { catching {
         if (ks.containsAlias(alias)) {
             throw NoSuchElementException("Key with alias $alias already exists")
         }
@@ -206,12 +210,12 @@ object AndroidKeyStoreProvider:
             initialize(spec)
         }.generateKeyPair()
         return@catching getSignerForKey(alias, config.signer.v).getOrThrow()
-    }
+    }}
 
     override suspend fun getSignerForKey(
         alias: String,
         configure: DSLConfigureFn<AndroidSignerConfiguration>
-    ): KmmResult<AndroidKeystoreSigner> = catching {
+    ): KmmResult<AndroidKeystoreSigner> = withContext(keystoreContext) { catching {
         val config = DSL.resolve(::AndroidSignerConfiguration, configure)
         val (jcaPrivateKey, certificateChain) = ks.let {
             Pair(it.getKey(alias, null) as? PrivateKey
@@ -250,11 +254,11 @@ object AndroidKeyStoreProvider:
                     jcaPrivateKey, alias, keyInfo, config, certificateChain,
                     algorithm as SignatureAlgorithm.RSA)
         }
-    }
+    }}
 
-    override suspend fun deleteSigningKey(alias: String) = catching {
+    override suspend fun deleteSigningKey(alias: String) = catching { withContext(keystoreContext) {
         ks.deleteEntry(alias)
-    }
+    }}
 }
 
 sealed class AndroidKeystoreSigner private constructor(
@@ -342,23 +346,23 @@ sealed class AndroidKeystoreSigner private constructor(
 
     final override suspend fun trySetupUninterruptedSigning(configure: DSLConfigureFn<AndroidSignerSigningConfiguration>) = catching {
         if (needsAuthentication && !needsAuthenticationForEveryUse) {
-            getJCASignature(DSL.resolve(::AndroidSignerSigningConfiguration, configure))
+            withContext(keystoreContext) { getJCASignature(DSL.resolve(::AndroidSignerSigningConfiguration, configure)) }
         }
     }
 
     final override suspend fun sign(
         data: SignatureInput,
         configure: DSLConfigureFn<AndroidSignerSigningConfiguration>
-    ): SignatureResult = signCatching {
+    ): SignatureResult = withContext(keystoreContext) { signCatching {
         require(data.format == null)
         val jcaSig = getJCASignature(DSL.resolve(::AndroidSignerSigningConfiguration, configure))
             .let { data.data.forEach(it::update); it.sign() }
 
-        return@signCatching when (this) {
+        return@signCatching when (this@AndroidKeystoreSigner) {
             is ECDSA -> CryptoSignature.EC.parseFromJca(jcaSig).withCurve(publicKey.curve)
             is RSA -> CryptoSignature.RSAorHMAC.parseFromJca(jcaSig)
         }
-    }
+    }}
 
     class ECDSA internal constructor(jcaPrivateKey: PrivateKey,
                                      alias: String,

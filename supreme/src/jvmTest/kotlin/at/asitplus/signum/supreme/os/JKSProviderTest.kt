@@ -1,7 +1,6 @@
 package at.asitplus.signum.supreme.os
 
 import at.asitplus.signum.supreme.sign.makeVerifier
-import at.asitplus.signum.supreme.sign.sign
 import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.signum.supreme.signature
 import at.asitplus.signum.supreme.succeed
