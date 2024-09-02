@@ -153,7 +153,7 @@ interface PlatformSigningProviderSigner<SigningConfiguration: PlatformSigningPro
 }
 
 open class PlatformSigningProviderConfigurationBase internal constructor(): DSL.Data()
-internal expect fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProvider
+internal expect fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProviderI<*,*,*>
 
 /** KT-71089 workaround
  * @see PlatformSigningProvider */
@@ -167,6 +167,23 @@ interface PlatformSigningProviderI<out SignerT: PlatformSigningProviderSigner<*>
             catching { getPlatformSigningProvider(configure) }
     }
 }
+/**
+ * An interface to some underlying persistent storage for private key material. Stored keys are identified by a unique string "alias" for each key.
+ * You can [create signing keys][createSigningKey], [get signers for existing keys][getSignerForKey], or [delete signing keys][deleteSigningKey].
+ *
+ * To obtain a platform signing provider in platform-agnostic code, use `PlatformSigningProvider`.
+ * In platform-specific code, it is currently recommended to directly interface with your platform signing provider to get platform-specific functionality.
+ * (Platform-specific types for `PlatformSigningProvider` are currently blocked by KT-71036.)
+ *
+ * Created keys can be configured using the [SigningKeyConfiguration] DSL.
+ * Signers can be configured using the [SignerConfiguration] DSL.
+ * When creating a key, the returned signer's configuration is embedded in the signing key configuration as `signer {}`.
+ *
+ * @see JKSProvider
+ * @see AndroidKeyStoreProvider
+ * @see IosKeychainProvider
+ */
+val PlatformSigningProvider get() = getPlatformSigningProvider(null)
 
 /** KT-71089 workaround
  * @see SigningProvider */
@@ -179,26 +196,9 @@ interface SigningProviderI<out SignerT: Signer.WithAlias,
 
     companion object {
         fun Platform(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase> = null) =
-            PlatformSigningProvider(configure)
+            getPlatformSigningProvider(configure)
     }
 }
-/**
- * An interface to some underlying persistent storage for private key material. Stored keys are identified by a unique string "alias" for each key.
- * You can [create signing keys][createSigningKey], [get signers for existing keys][getSignerForKey], or [delete signing keys][deleteSigningKey].
- *
- * To obtain a platform signing provider in platform-agnostic code, use `PlatformSigningProvider()`.
- * In platform-specific code, it is currently recommended to directly interface with your platform signing provider to get platform-specific functionality.
- * (Platform-specific return types from `PlatformSigningProvider()` are currently blocked by KT-71036.)
- *
- * Created keys can be configured using the [SigningKeyConfiguration] DSL.
- * Signers can be configured using the [SignerConfiguration] DSL.
- * When creating a key, the returned signer's configuration is embedded in the signing key configuration as `signer {}`.
- *
- * @see JKSProvider
- * @see AndroidKeyStoreProvider
- * @see IosKeychainProvider
- */
-typealias PlatformSigningProvider = PlatformSigningProviderI<*,*,*>
 
 /** @see PlatformSigningProvider */
 typealias SigningProvider = SigningProviderI<*,*,*>

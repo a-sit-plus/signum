@@ -144,9 +144,7 @@ internal inline fun <reified E> resolveOption(what: String, valid: Array<String>
 private fun attestationFor(chain: CertificateChain) =
     if (chain.size > 1) AndroidKeystoreAttestation(chain) else null
 
-/**
- * A provider that manages keys in the [Android Key Store](https://developer.android.com/privacy-and-security/keystore).
- */
+/** A provider that manages keys in the [Android Key Store](https://developer.android.com/privacy-and-security/keystore). */
 object AndroidKeyStoreProvider:
     PlatformSigningProviderI<AndroidKeystoreSigner, AndroidSignerConfiguration, AndroidSigningKeyConfiguration>
 {
@@ -391,5 +389,5 @@ val AndroidKeystoreSigner.needsAuthenticationForEveryUse inline get() =
     keyInfo.isUserAuthenticationRequired &&
             (keyInfo.userAuthenticationValidityDurationSeconds <= 0)
 
-internal actual fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProvider =
+internal actual fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProviderI<*,*,*> =
     AndroidKeyStoreProvider

@@ -336,7 +336,7 @@ internal fun App() {
                         CoroutineScope(context).launch {
                             canGenerate = false
                             genTextOverride = "Creating…"
-                            currentSigner = PlatformSigningProvider{}.transform { it.createSigningKey(ALIAS) {
+                            currentSigner = PlatformSigningProvider.createSigningKey(ALIAS) {
                                 signer(SIGNER_CONFIG)
 
                                 when (val alg = keyAlgorithm.algorithm) {
@@ -381,7 +381,7 @@ internal fun App() {
                                         }
                                     }
                                 }
-                            }}
+                            }
                             verifyState = null
 
                             Napier.w { "created signing key! $currentSigner" }
@@ -401,7 +401,7 @@ internal fun App() {
                         CoroutineScope(context).launch {
                             canGenerate = false
                             genTextOverride = "Loading…"
-                            PlatformSigningProvider{}.transform { it.getSignerForKey(ALIAS, SIGNER_CONFIG) }.let {
+                            PlatformSigningProvider.getSignerForKey(ALIAS, SIGNER_CONFIG).let {
                                 Napier.w { "Priv retrieved from native: $it" }
                                 currentSigner = it
                                 verifyState = null
@@ -424,7 +424,7 @@ internal fun App() {
                         CoroutineScope(context).launch {
                             canGenerate = false
                             genTextOverride = "Deleting…"
-                            PlatformSigningProvider{}.transform { it.deleteSigningKey(ALIAS) }
+                            PlatformSigningProvider.deleteSigningKey(ALIAS)
                                 .onFailure { Napier.e("Failed to delete key", it) }
                             currentSigner = null
                             signatureData = null

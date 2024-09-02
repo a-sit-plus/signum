@@ -638,5 +638,5 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
     } }
 }
 
-internal actual fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProvider =
+internal actual fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProviderI<*,*,*> =
     IosKeychainProvider
