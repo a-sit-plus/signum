@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.hazmat
 
+import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.supreme.HazardousMaterials
 import at.asitplus.signum.supreme.os.AndroidKeystoreSigner
 import at.asitplus.signum.supreme.sign.AndroidEphemeralSigner
@@ -12,7 +13,7 @@ import java.security.PrivateKey
 @HazardousMaterials
 val EphemeralKey.jcaPrivateKey get() = (this as? EphemeralKeyBase<*>)?.privateKey as? PrivateKey
 
-/** The underlying JCA [PrivateKey] object. Not available for unlocked KeyStore signers; see [jcaSignatureInstance]. */
+/** The underlying JCA [PrivateKey] object. */
 @HazardousMaterials
 val Signer.jcaPrivateKey get() = when (this) {
     is AndroidEphemeralSigner -> this.privateKey

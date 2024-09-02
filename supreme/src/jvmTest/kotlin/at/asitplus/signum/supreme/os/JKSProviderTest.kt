@@ -3,6 +3,7 @@ package at.asitplus.signum.supreme.os
 import at.asitplus.signum.supreme.sign.makeVerifier
 import at.asitplus.signum.supreme.sign.sign
 import at.asitplus.signum.supreme.sign.verify
+import at.asitplus.signum.supreme.signature
 import at.asitplus.signum.supreme.succeed
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.should
@@ -22,18 +23,20 @@ class JKSProviderTest : FreeSpec({
         otherSigner.attestation shouldBe signer.attestation
 
         val data = Random.Default.nextBytes(64)
-        val signature = signer.sign(data).getOrThrow()
+        val signature = signer.sign(data).signature
         otherSigner.makeVerifier().getOrThrow().verify(data, signature) should succeed
     }
     "File-based persistence" {
         val tempfile = Files.createTempFile(Random.azstring(16),null).also { Files.delete(it) }
         try {
             val alias = "Elfenbeinturm"
+            val correctPassword = "Schwertfischfilet".toCharArray()
+            val wrongPassword = "Bartfischfilet".toCharArray()
 
             val ks1 = JKSProvider {
                 file {
                     file = tempfile
-                    password = "Schwertfischfilet".toCharArray()
+                    password = correctPassword
                 }
             }.getOrThrow().also {
                 it.getSignerForKey(alias) shouldNot succeed
@@ -48,7 +51,7 @@ class JKSProviderTest : FreeSpec({
             JKSProvider {
                 file {
                     file = tempfile
-                    password = "Bartfischfilet".toCharArray()
+                    password = wrongPassword
                 }
             }.getOrThrow().let {
                 // wrong password should fail
@@ -58,13 +61,14 @@ class JKSProviderTest : FreeSpec({
             JKSProvider {
                 file {
                     file = tempfile
-                    password = "Schwertfischfilet".toCharArray()
+                    password = correctPassword
                 }
             }.getOrThrow().let {
                 it.getSignerForKey(alias) should succeed
                 it.deleteSigningKey(alias)
             }
 
+            // check that ks1 "sees" the deletion that was made by ks3
             ks1.getSignerForKey(alias) shouldNot succeed
         } finally { Files.deleteIfExists(tempfile) }
     }

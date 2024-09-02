@@ -1,10 +1,10 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.catching
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.supreme.signature
 import at.asitplus.signum.supreme.succeed
 import com.ionspin.kotlin.bignum.integer.Quadruple
 import io.kotest.core.spec.style.FreeSpec
@@ -13,7 +13,6 @@ import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
-import kotlinx.coroutines.cancel
 import kotlin.random.Random
 
 class EphemeralSignerCommonTests : FreeSpec({
@@ -36,7 +35,7 @@ class EphemeralSignerCommonTests : FreeSpec({
             val signer: Signer
             val signature = try {
                 signer = Signer.Ephemeral { rsa { digests = setOf(digest); paddings = setOf(padding); bits = keySize } }.getOrThrow()
-                signer.sign(SignatureInput(data).let { if (preHashed) it.convertTo(digest).getOrThrow() else it }).getOrThrow()
+                signer.sign(SignatureInput(data).let { if (preHashed) it.convertTo(digest).getOrThrow() else it }).signature
             } catch (x: UnsupportedOperationException) {
                 return@withData
             }
@@ -64,7 +63,7 @@ class EphemeralSignerCommonTests : FreeSpec({
                  it.requiredCurve shouldBeIn setOf(null, crv)
              }
              val data = Random.Default.nextBytes(64)
-             val signature = signer.sign(SignatureInput(data).let { if (preHashed) it.convertTo(digest).getOrThrow() else it }).getOrThrow()
+             val signature = signer.sign(SignatureInput(data).let { if (preHashed) it.convertTo(digest).getOrThrow() else it }).signature
 
              val verifier = signer.makeVerifier().getOrThrow()
              verifier.verify(data, signature) should succeed

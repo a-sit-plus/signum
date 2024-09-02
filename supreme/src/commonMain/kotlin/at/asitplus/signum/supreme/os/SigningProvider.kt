@@ -5,6 +5,7 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.RSAPadding
+import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.dsl.DISCOURAGED
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
@@ -142,7 +143,7 @@ interface PlatformSigningProviderSigner<SigningConfiguration: PlatformSigningPro
     suspend fun trySetupUninterruptedSigning(configure: DSLConfigureFn<SigningConfiguration> = null) : KmmResult<Unit> = KmmResult.success(Unit)
     override suspend fun trySetupUninterruptedSigning() = trySetupUninterruptedSigning(null)
 
-    suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<SigningConfiguration> = null) : KmmResult<CryptoSignature>
+    suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<SigningConfiguration> = null) : SignatureResult
     suspend fun sign(data: ByteArray, configure: DSLConfigureFn<SigningConfiguration> = null) =
         sign(SignatureInput(data), configure)
     suspend fun sign(data: Sequence<ByteArray>, configure: DSLConfigureFn<SigningConfiguration> = null) =
@@ -153,13 +154,6 @@ interface PlatformSigningProviderSigner<SigningConfiguration: PlatformSigningPro
 }
 
 open class PlatformSigningProviderConfigurationBase internal constructor(): DSL.Data()
-// BLOCKED BY KT-71036
-/*expect interface PlatformSigningProviderSigner: Signer.WithAlias
-expect class PlatformSigningProviderConfiguration internal constructor(): PlatformSigningProviderConfigurationBase
-expect class PlatformSigningProviderSignerConfiguration: PlatformSignerConfigurationBase
-expect class PlatformSigningProviderSigningKeyConfiguration: PlatformSigningKeyConfigurationBase<PlatformSigningProviderSignerConfiguration>
-expect class PlatformSigningProvider : SigningProviderI<PlatformSigningProviderSigner,PlatformSigningProviderSignerConfiguration,PlatformSigningProviderSigningKeyConfiguration>
-internal expect fun makePlatformSigningProvider(config: PlatformSigningProviderConfiguration): KmmResult<PlatformSigningProvider>*/
 internal expect fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProvider
 
 /** KT-71089 workaround

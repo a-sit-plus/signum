@@ -59,6 +59,7 @@ import at.asitplus.signum.supreme.os.PlatformSignerConfigurationBase
 import at.asitplus.signum.supreme.os.PlatformSigningProvider
 import at.asitplus.signum.supreme.os.SigningProvider
 import at.asitplus.signum.supreme.os.jsonEncoded
+import at.asitplus.signum.supreme.wrap
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
 import io.ktor.util.decodeBase64Bytes
@@ -464,7 +465,7 @@ internal fun App() {
                     CoroutineScope(context).launch {
                         val data = inputData.encodeToByteArray()
                         currentSigner!!
-                            .transform { it.sign(data) }
+                            .transform { it.sign(data).wrap() }
                             .also { signatureData = it; verifyState = null }
                     }
 

@@ -395,10 +395,5 @@ internal /*actual*/ fun makePlatformSigningProvider(config: JKSProviderConfigura
             JKSProvider(opt.accessor)
     }
 
-/*actual typealias PlatformSigningProviderSigner = JKSSigner
-actual typealias PlatformSigningProviderSignerConfiguration = JKSSignerConfiguration
-actual typealias PlatformSigningProviderSigningKeyConfiguration = JKSSigningKeyConfiguration
-actual typealias PlatformSigningProvider = JKSProvider
-actual typealias PlatformSigningProviderConfiguration = JKSProviderConfiguration*/
 internal actual fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProvider =
     throw UnsupportedOperationException("No default persistence mode is available on the JVM. Use JKSProvider {file {}} or similar. This will be natively available from the getPlatformSigningProvider {} DSL in a future release. (Blocked by KT-71036.)")

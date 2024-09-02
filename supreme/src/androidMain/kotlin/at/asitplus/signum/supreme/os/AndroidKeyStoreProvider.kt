@@ -25,6 +25,7 @@ import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.supreme.AppLifecycleMonitor
+import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.UnlockFailed
 import at.asitplus.signum.supreme.UnsupportedCryptoException
 import at.asitplus.signum.supreme.dsl.DISCOURAGED
@@ -35,6 +36,7 @@ import at.asitplus.signum.supreme.dsl.PREFERRED
 import at.asitplus.signum.supreme.dsl.REQUIRED
 import at.asitplus.signum.supreme.sign.SignatureInput
 import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
+import at.asitplus.signum.supreme.signCatching
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import at.asitplus.signum.supreme.sign.Signer as SignerI
 import kotlinx.coroutines.CoroutineScope
@@ -346,12 +348,12 @@ sealed class AndroidKeystoreSigner private constructor(
     final override suspend fun sign(
         data: SignatureInput,
         configure: DSLConfigureFn<AndroidSignerSigningConfiguration>
-    ): KmmResult<CryptoSignature> = catching {
+    ): SignatureResult = signCatching {
         require(data.format == null)
         val jcaSig = getJCASignature(DSL.resolve(::AndroidSignerSigningConfiguration, configure))
             .let { data.data.forEach(it::update); it.sign() }
 
-        return@catching when (this) {
+        return@signCatching when (this) {
             is ECDSA -> CryptoSignature.EC.parseFromJca(jcaSig).withCurve(publicKey.curve)
             is RSA -> CryptoSignature.RSAorHMAC.parseFromJca(jcaSig)
         }
@@ -384,10 +386,5 @@ val AndroidKeystoreSigner.needsAuthenticationForEveryUse inline get() =
     keyInfo.isUserAuthenticationRequired &&
             (keyInfo.userAuthenticationValidityDurationSeconds <= 0)
 
-/*actual typealias PlatformSigningProviderSigner = AndroidKeystoreSigner
-actual typealias PlatformSigningProviderSignerConfiguration = AndroidSignerConfiguration
-actual typealias PlatformSigningProviderSigningKeyConfiguration = AndroidSigningKeyConfiguration
-actual typealias PlatformSigningProvider = AndroidKeyStoreProvider
-actual typealias PlatformSigningProviderConfiguration = PlatformSigningProviderConfigurationBase*/
 internal actual fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProvider =
     AndroidKeyStoreProvider

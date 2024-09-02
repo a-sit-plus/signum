@@ -10,6 +10,7 @@ import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.supreme.HazardousMaterials
+import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.UnlockFailed
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
@@ -120,7 +121,7 @@ interface Signer {
     suspend fun trySetupUninterruptedSigning(): KmmResult<Unit> = KmmResult.success(Unit)
 
     /** Signs data. Might ask for user confirmation first if this [Signer] [mayRequireUserUnlock]. */
-    suspend fun sign(data: SignatureInput): KmmResult<CryptoSignature>
+    suspend fun sign(data: SignatureInput): SignatureResult
     suspend fun sign(data: ByteArray) = sign(SignatureInput(data))
     suspend fun sign(data: Sequence<ByteArray>) = sign(SignatureInput(data))
 

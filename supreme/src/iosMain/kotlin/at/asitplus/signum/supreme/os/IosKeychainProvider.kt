@@ -99,8 +99,10 @@ import platform.Security.kSecUseAuthenticationUIAllow
 import at.asitplus.signum.indispensable.secKeyAlgorithm
 import at.asitplus.signum.indispensable.secKeyAlgorithmPreHashed
 import at.asitplus.signum.supreme.AutofreeVariable
+import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
 import at.asitplus.signum.supreme.sign.preHashedSignatureFormat
+import at.asitplus.signum.supreme.signCatching
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import platform.Security.kSecUseAuthenticationUIFail
@@ -284,8 +286,8 @@ sealed class IosSigner(final override val alias: String,
     } }
 
     protected abstract fun bytesToSignature(sigBytes: ByteArray): CryptoSignature
-    final override suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<IosSignerSigningConfiguration>): KmmResult<CryptoSignature> =
-    withContext(keychainThreads) { catching {
+    final override suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<IosSignerSigningConfiguration>): SignatureResult =
+    withContext(keychainThreads) { signCatching {
         require(data.format == null) { "Pre-hashed data is unsupported on iOS" }
         val signingConfig = DSL.resolve(::IosSignerSigningConfiguration, configure)
         val algorithm = signatureAlgorithm.secKeyAlgorithmPreHashed
@@ -293,7 +295,7 @@ sealed class IosSigner(final override val alias: String,
         val signatureBytes = corecall {
             SecKeyCreateSignature(privateKeyManager.get(signingConfig).value, algorithm, plaintext.giveToCF(), error)
         }.takeFromCF<NSData>().toByteArray()
-        return@catching bytesToSignature(signatureBytes)
+        return@signCatching bytesToSignature(signatureBytes)
     }}
 
     class ECDSA internal constructor
@@ -619,10 +621,5 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
     } }
 }
 
-/*actual typealias PlatformSigningProviderSigner = iosSigner<*>
-actual typealias PlatformSigningProviderSignerConfiguration = iosSignerConfiguration
-actual typealias PlatformSigningProviderSigningKeyConfiguration = iosSigningKeyConfiguration
-actual typealias PlatformSigningProvider = IosKeychainProvider
-actual typealias PlatformSigningProviderConfiguration = PlatformSigningProviderConfigurationBase*/
 internal actual fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProvider =
     IosKeychainProvider
