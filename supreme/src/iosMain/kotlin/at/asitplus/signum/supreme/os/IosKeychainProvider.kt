@@ -111,7 +111,6 @@ import platform.LocalAuthentication.LAErrorBiometryLockout
 import platform.LocalAuthentication.LAErrorDomain
 import platform.LocalAuthentication.LAErrorUserCancel
 import platform.Security.errSecAuthFailed
-import platform.Security.errSecUnsupportedKeyFormat
 import platform.Security.errSecUserCanceled
 import platform.Security.kSecUseAuthenticationUIFail
 import kotlin.math.min
@@ -519,10 +518,10 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 }.let { it.takeFromCF<NSData>() }.toByteArray()
             } else {
                 val x = CFCryptoOperationFailed(thing = "generate key", osStatus = status)
-                if ((status == errSecUnsupportedKeyFormat) &&
+                if ((status == -50) &&
                     useSecureEnclave &&
                     !isSecureEnclaveSupportedConfiguration(config._algSpecific.v)) {
-                    throw UnsupportedCryptoException("iOS Secure Enclave does not support this configuration.", x)
+                    throw UnsupportedCryptoException("The iOS Secure Enclave does not support this configuration.", x)
                 }
                 throw x
             }
