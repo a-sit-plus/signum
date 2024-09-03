@@ -112,6 +112,7 @@ import platform.LocalAuthentication.LAErrorDomain
 import platform.LocalAuthentication.LAErrorUserCancel
 import platform.Security.errSecAuthFailed
 import platform.Security.errSecUserCanceled
+import platform.Security.kSecAccessControlBiometryCurrentSet
 import platform.Security.kSecUseAuthenticationUIFail
 import kotlin.math.min
 import kotlin.time.Duration
@@ -487,7 +488,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                                     null, availability,
                                     when {
                                         (factors.biometry && factors.deviceLock) -> kSecAccessControlUserPresence
-                                        factors.biometry -> kSecAccessControlBiometryAny
+                                        factors.biometry -> if (factors.biometryWithNewFactors) kSecAccessControlBiometryAny else kSecAccessControlBiometryCurrentSet
                                         else -> kSecAccessControlDevicePasscode
                                     }.let {
                                         if (useSecureEnclave) it or kSecAccessControlPrivateKeyUsage else it
