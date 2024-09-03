@@ -384,7 +384,7 @@ sealed class AndroidKeystoreSigner private constructor(
     final override suspend fun sign(
         data: SignatureInput,
         configure: DSLConfigureFn<AndroidSignerSigningConfiguration>
-    ): SignatureResult = withContext(keystoreContext) { signCatching {
+    ): SignatureResult<*> = withContext(keystoreContext) { signCatching {
         require(data.format == null)
         val jcaSig = getJCASignature(DSL.resolve(::AndroidSignerSigningConfiguration, configure))
             .let { data.data.forEach(it::update); it.sign() }

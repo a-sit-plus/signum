@@ -145,7 +145,7 @@ interface PlatformSigningProviderSigner<SigningConfiguration: PlatformSigningPro
     suspend fun trySetupUninterruptedSigning(configure: DSLConfigureFn<SigningConfiguration> = null) : KmmResult<Unit> = KmmResult.success(Unit)
     override suspend fun trySetupUninterruptedSigning() = trySetupUninterruptedSigning(null)
 
-    suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<SigningConfiguration> = null) : SignatureResult
+    suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<SigningConfiguration> = null) : SignatureResult<*>
     suspend fun sign(data: ByteArray, configure: DSLConfigureFn<SigningConfiguration> = null) =
         sign(SignatureInput(data), configure)
     suspend fun sign(data: Sequence<ByteArray>, configure: DSLConfigureFn<SigningConfiguration> = null) =

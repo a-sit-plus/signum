@@ -116,7 +116,7 @@ interface Signer {
     suspend fun trySetupUninterruptedSigning(): KmmResult<Unit> = KmmResult.success(Unit)
 
     /** Signs data. Might ask for user confirmation first if this [Signer] [mayRequireUserUnlock]. */
-    suspend fun sign(data: SignatureInput): SignatureResult
+    suspend fun sign(data: SignatureInput): SignatureResult<*>
     suspend fun sign(data: ByteArray) = sign(SignatureInput(data))
     suspend fun sign(data: Sequence<ByteArray>) = sign(SignatureInput(data))
 

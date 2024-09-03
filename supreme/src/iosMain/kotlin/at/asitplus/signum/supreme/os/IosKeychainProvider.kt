@@ -292,7 +292,7 @@ sealed class IosSigner(final override val alias: String,
     } }
 
     protected abstract fun bytesToSignature(sigBytes: ByteArray): CryptoSignature
-    final override suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<IosSignerSigningConfiguration>): SignatureResult =
+    final override suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<IosSignerSigningConfiguration>): SignatureResult<*> =
     withContext(keychainThreads) { signCatching {
         require(data.format == null) { "Pre-hashed data is unsupported on iOS" }
         val signingConfig = DSL.resolve(::IosSignerSigningConfiguration, configure)
