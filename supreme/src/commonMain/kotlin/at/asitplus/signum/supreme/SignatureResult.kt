@@ -25,7 +25,7 @@ sealed interface SignatureResult<out T: CryptoSignature> {
 }
 val SignatureResult<*>.isSuccess get() = (this is SignatureResult.Success)
 /** Retrieves the contained signature, asserting it exists. If it does not exist, throws the contained problem. */
-val <T: CryptoSignature> SignatureResult<T>.signature: T @Throws(Throwable::class) get() = when (this) {
+val <T: CryptoSignature> SignatureResult<T>.signature: T get() = when (this) {
     is SignatureResult.Success -> this.signature
     is SignatureResult.Failure -> throw this.problem
     is SignatureResult.Error -> throw this.exception
