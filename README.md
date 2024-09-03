@@ -137,6 +137,7 @@ PlatformSigningProvider.createSigningKey(alias = "Swordfish") {
     curve = ECCurve.SECP_256_R_1
     // you could specify the supported digests explicity - if you do not, the curve's native digest (for P256, this is SHA256) is supported
   }
+  // see https://a-sit-plus.github.io/signum/supreme/at.asitplus.signum.supreme.sign/-platform-signing-key-configuration-base/-secure-hardware-configuration/index.html
   hardware {
     // you could use PREFERRED if you want the operation to succeed (without hardware backing) on devices that do not support it
     backing = REQUIRED
