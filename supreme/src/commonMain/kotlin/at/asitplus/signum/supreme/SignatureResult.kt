@@ -39,7 +39,7 @@ val <T: CryptoSignature> SignatureResult<T>.signatureOrNull: T? get() = when (th
 fun <T: CryptoSignature> SignatureResult<T>.asKmmResult(): KmmResult<T> = catching { this.signature }
 
 /** Modifies the contained [CryptoSignature], usually in order to reinterpret it as a more narrow type. */
-inline fun <T: CryptoSignature, S: CryptoSignature> SignatureResult<T>.modify(block: (T)->S) =
+inline fun <T: CryptoSignature, S: CryptoSignature> SignatureResult<T>.map(block: (T)->S) =
     when (this) {
         is SignatureResult.Success -> SignatureResult.Success(block(this.signature))
         is SignatureResult.Failure -> this
