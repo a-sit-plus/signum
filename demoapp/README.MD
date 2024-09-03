@@ -3,19 +3,13 @@
 
 ![img.png](img.png)
 
-This app showcases the KMP Crypto provider on the desktop, on Android and on iOS.
+This app showcases the _Supreme_ KMP Crypto provider on Android and on iOS. Demoing the JVM target would require additional configuration due to limitations of Kotlin.
+It was decided to avoid this clutter for the demo app, since the Supreme test suite already showcases the JVM provider usage.
+
 It is possible to generate key pairs, sign data, and verify the signature.
 
-On iOS, only P-256 keys can be attested.
-The JVM does not support attestation.
-
-`*** TODO CLEANUP BELOW THIS LINE ***`
-
-Android and iOS support mandatory authentication for key usage. While somewhat similar functionality can be achieved on both platforms, iOS comes with some peculiarities.
-Most prominently: It is possible to specify a max validity duration of an authentication context. This property, however, has jwf semantics, since a once authenticated LAContext will remain in this state for eternety.
-Hence, reauthentication needs to be implemented manually.
-
-The BiometricAuthAdapter on Android requires some more polishing, but it should clearly convey the underlying idea even in its current state.
+Generation of attestation statements is also supported, although on iOS, only P-256 keys can be attested due to platform constreaints.
+The default JVM provider does not natively support the creation of attestation statements.
 
 ## Before running!
  - check your system with [KDoctor](https://github.com/Kotlin/kdoctor)
