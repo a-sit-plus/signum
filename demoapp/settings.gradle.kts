@@ -7,9 +7,9 @@ pluginManagement {
         gradlePluginPortal()
         mavenCentral()
 
-        //required for indispensable modules
+        //required for indispensable modules composite build
         maven("https://s01.oss.sonatype.org/content/repositories/snapshots")
-        //required for indispensable modules
+        //required for indispensable modules composite build
         maven {
             url =
                 uri("https://raw.githubusercontent.com/a-sit-plus/gradle-conventions-plugin/mvn/repo")
