@@ -73,7 +73,7 @@ android {
     namespace = "at.asitplus.signum.supreme"
     compileSdk = 34
     defaultConfig {
-        minSdk = 33
+        minSdk = 30
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -95,11 +95,12 @@ android {
     }
 
     testOptions {
+        targetSdk=30
         managedDevices {
             localDevices {
                 create("pixel2api33") {
                     device = "Pixel 2"
-                    apiLevel = 33
+                    apiLevel = 30
                     systemImageSource = "aosp-atd"
                 }
             }

@@ -37,7 +37,7 @@ kotlin {
             }
         }
         commonMain.dependencies {
-            implementation("at.asitplus.signum:supreme:0.2.0-SNAPSHOT") {
+            implementation("at.asitplus.signum:supreme:+") {
                 isChanging = true
             }
             implementation(compose.runtime)
@@ -76,8 +76,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        minSdk = 33
-        targetSdk = 34
+        minSdk = 30
 
         applicationId = "at.asitplus.cryptotest.androidApp"
         versionCode = 1
@@ -94,9 +93,6 @@ android {
     }
     buildFeatures {
         compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.4"
     }
 
    packaging {
