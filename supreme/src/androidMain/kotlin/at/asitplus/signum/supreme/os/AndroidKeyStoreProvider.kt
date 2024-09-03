@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.os
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyInfo
 import android.security.keystore.KeyProperties
@@ -18,10 +19,11 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
+import at.asitplus.signum.indispensable.fromJcaPublicKey
 import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.indispensable.jcaName
 import at.asitplus.signum.indispensable.parseFromJca
-import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.supreme.AppLifecycleMonitor
@@ -38,24 +40,26 @@ import at.asitplus.signum.supreme.sign.SignatureInput
 import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
 import at.asitplus.signum.supreme.signCatching
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
+import io.github.aakira.napier.Napier
 import at.asitplus.signum.supreme.sign.Signer as SignerI
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.security.KeyFactory
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.PrivateKey
 import java.security.Signature
+import java.security.cert.CertificateFactory
 import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
 import java.time.Instant
 import java.util.Date
 import java.util.concurrent.Executors
 import javax.security.auth.x500.X500Principal
+import kotlin.math.max
 
 internal sealed interface FragmentContext {
     @JvmInline value class OfActivity(val activity: FragmentActivity): FragmentContext
@@ -141,9 +145,6 @@ internal inline fun <reified E> resolveOption(what: String, valid: Array<String>
         }
     }
 
-private fun attestationFor(chain: CertificateChain) =
-    if (chain.size > 1) AndroidKeystoreAttestation(chain) else null
-
 /** A provider that manages keys in the [Android Key Store](https://developer.android.com/privacy-and-security/keystore). */
 object AndroidKeyStoreProvider:
     PlatformSigningProviderI<AndroidKeystoreSigner, AndroidSignerConfiguration, AndroidSigningKeyConfiguration>
@@ -194,10 +195,25 @@ object AndroidKeyStoreProvider:
                     setAttestationChallenge(it.challenge)
                 }
                 hw.protection.v?.let {
+                    setInvalidatedByBiometricEnrollment(it.factors.v.biometry &&
+                            !it.factors.v.biometryWithNewFactors)
                     setUserAuthenticationRequired(true)
-                    setUserAuthenticationParameters(it.timeout.inWholeSeconds.toInt(),
-                        (if (it.factors.v.biometry) KeyProperties.AUTH_BIOMETRIC_STRONG else 0) or
-                        (if (it.factors.v.deviceLock) KeyProperties.AUTH_DEVICE_CREDENTIAL else 0))
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        setUserAuthenticationParameters(it.timeout.inWholeSeconds.toInt(),
+                            (if (it.factors.v.biometry) KeyProperties.AUTH_BIOMETRIC_STRONG else 0) or
+                            (if (it.factors.v.deviceLock) KeyProperties.AUTH_DEVICE_CREDENTIAL else 0))
+                    } else {
+                        it.factors.v.let { factors -> when {
+                            factors.biometry && !factors.deviceLock -> {
+                                @Suppress("DEPRECATION")
+                                setUserAuthenticationValidityDurationSeconds(-1)
+                            }
+                            else -> {
+                                @Suppress("DEPRECATION")
+                                setUserAuthenticationValidityDurationSeconds(max(1, it.timeout.inWholeSeconds.toInt()))
+                            }
+                        }}
+                    }
                 }
             }
         }.build()
@@ -215,15 +231,33 @@ object AndroidKeyStoreProvider:
         configure: DSLConfigureFn<AndroidSignerConfiguration>
     ): KmmResult<AndroidKeystoreSigner> = withContext(keystoreContext) { catching {
         val config = DSL.resolve(::AndroidSignerConfiguration, configure)
-        val (jcaPrivateKey, certificateChain) = ks.let {
-            Pair(it.getKey(alias, null) as? PrivateKey
-                ?: throw NoSuchElementException("No key for alias $alias exists"),
-                it.getCertificateChain(alias).map { X509Certificate.decodeFromDer(it.encoded) })
+        val jcaPrivateKey = ks.getKey(alias, null) as? PrivateKey
+            ?: throw NoSuchElementException("No key for alias $alias exists")
+        val publicKey: CryptoPublicKey
+        val attestation: AndroidKeystoreAttestation?
+        ks.getCertificateChain(alias).let { chain ->
+            runCatching { chain.map { X509Certificate.decodeFromDer(it.encoded) } }.let { r ->
+                if (r.isSuccess) r.getOrThrow().let {
+                    publicKey = it.leaf.publicKey
+                    attestation = if (it.size > 1) AndroidKeystoreAttestation(it) else null
+                } else r.exceptionOrNull()!!.let {
+                    if ((it is Asn1StructuralException) &&
+                        (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) &&
+                        (chain.size == 1) &&
+                        (chain.first().encoded.takeLast(5) == listOf(0x03,0x03,0x00,0x30,0x00).map(Int::toByte))) {
+                        Napier.v { "Correcting Android 10 AKS signature bug" }
+                        publicKey = CertificateFactory.getInstance("X.509")
+                            .generateCertificate(chain.first().encoded.inputStream())
+                            .publicKey.let(CryptoPublicKey::fromJcaPublicKey).getOrThrow()
+                        attestation = null
+                    } else throw it
+                }
+            }
         }
 
         val keyInfo = KeyFactory.getInstance(jcaPrivateKey.algorithm)
             .getKeySpec(jcaPrivateKey, KeyInfo::class.java)
-        val algorithm = when (val publicKey = certificateChain.leaf.publicKey) {
+        val algorithm = when (publicKey) {
             is CryptoPublicKey.EC -> {
                 val ecConfig = config.ec.v
                 val digest = resolveOption("digest", keyInfo.digests, Digest.entries.asSequence() + sequenceOf<Digest?>(null), ecConfig.digestSpecified, { ecConfig.digest }) { it?.jcaName ?: KeyProperties.DIGEST_NONE }
@@ -242,15 +276,15 @@ object AndroidKeyStoreProvider:
             }
         }
 
-        return@catching when (certificateChain.leaf.publicKey) {
+        return@catching when (publicKey) {
             is CryptoPublicKey.EC ->
                 AndroidKeystoreSigner.ECDSA(
-                    jcaPrivateKey, alias, keyInfo, config, certificateChain,
-                    algorithm as SignatureAlgorithm.ECDSA)
+                    jcaPrivateKey, alias, keyInfo, config, publicKey,
+                    attestation, algorithm as SignatureAlgorithm.ECDSA)
             is CryptoPublicKey.Rsa ->
                 AndroidKeystoreSigner.RSA(
-                    jcaPrivateKey, alias, keyInfo, config, certificateChain,
-                    algorithm as SignatureAlgorithm.RSA)
+                    jcaPrivateKey, alias, keyInfo, config, publicKey,
+                    attestation, algorithm as SignatureAlgorithm.RSA)
         }
     }}
 
@@ -264,12 +298,11 @@ sealed class AndroidKeystoreSigner private constructor(
     final override val alias: String,
     val keyInfo: KeyInfo,
     private val config: AndroidSignerConfiguration,
-    certificateChain: CertificateChain
+    final override val attestation: AndroidKeystoreAttestation?
 ) : PlatformSigningProviderSigner<AndroidSignerSigningConfiguration>, SignerI.Attestable<AndroidKeystoreAttestation> {
 
     final override val mayRequireUserUnlock: Boolean get() = this.needsAuthentication
 
-    final override val attestation = attestationFor(certificateChain)
     private sealed interface AuthResult {
         @JvmInline value class Success(val result: AuthenticationResult): AuthResult
         data class Error(val code: Int, val message: String): AuthResult
@@ -366,21 +399,19 @@ sealed class AndroidKeystoreSigner private constructor(
                                      alias: String,
                                      keyInfo: KeyInfo,
                                      config: AndroidSignerConfiguration,
-                                     certificateChain: CertificateChain,
+                                     override val publicKey: CryptoPublicKey.EC,
+                                     attestation: AndroidKeystoreAttestation?,
                                      override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
-        : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, config, certificateChain), SignerI.ECDSA {
-        override val publicKey = certificateChain.leaf.publicKey as CryptoPublicKey.EC
-    }
+        : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, config, attestation), SignerI.ECDSA
 
     class RSA internal constructor(jcaPrivateKey: PrivateKey,
                                    alias: String,
                                    keyInfo: KeyInfo,
                                    config: AndroidSignerConfiguration,
-                                   certificateChain: CertificateChain,
+                                   override val publicKey: CryptoPublicKey.Rsa,
+                                   attestation: AndroidKeystoreAttestation?,
                                    override val signatureAlgorithm: SignatureAlgorithm.RSA)
-        : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, config, certificateChain), SignerI.RSA {
-        override val publicKey = certificateChain.leaf.publicKey as CryptoPublicKey.Rsa
-    }
+        : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, config, attestation), SignerI.RSA
 }
 
 val AndroidKeystoreSigner.needsAuthentication inline get() =

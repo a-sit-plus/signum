@@ -32,11 +32,14 @@ open class PlatformSigningKeyConfigurationBase<SignerConfigurationT: PlatformSig
     open class ProtectionFactorConfiguration internal constructor(): DSL.Data() {
         /** Whether a biometric factor (fingerprint, facial recognition, ...) can authorize this key */
         var biometry = true
+        /** Whether additional biometric factors can be added without invalidating the key */
+        var biometryWithNewFactors = false; set(v) { field = v; if (v) biometry = true }
         /** Whether a device unlock code, PIN, etc. can authorize this key */
         var deviceLock = true
 
         override fun validate() {
             require(biometry || deviceLock) { "At least one authentication factor must be permissible" }
+            require (biometry || !biometryWithNewFactors) { "You cannot allow future biometric factors but disallow current ones" }
         }
     }
 
