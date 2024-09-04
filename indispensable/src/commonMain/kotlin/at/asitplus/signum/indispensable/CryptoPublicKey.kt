@@ -165,6 +165,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
      * RSA Public key
      */
     @Serializable
+    @ConsistentCopyVisibility
     data class Rsa
     @Throws(IllegalArgumentException::class)
     private constructor(
@@ -224,7 +225,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                         ?: throw IllegalArgumentException("Unsupported key size $nTruncSize")
                 }
 
-                override val oid = at.asitplus.signum.indispensable.asn1.KnownOIDs.rsaEncryption
+                override val oid = KnownOIDs.rsaEncryption
             }
         }
 
@@ -285,7 +286,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                 return Rsa(Size.of(n), n, e)
             }
 
-            override val oid = at.asitplus.signum.indispensable.asn1.KnownOIDs.rsaEncryption
+            override val oid = KnownOIDs.rsaEncryption
         }
     }
 
@@ -296,6 +297,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
      */
     @Serializable
     @SerialName("EC")
+    @ConsistentCopyVisibility
     data class EC private constructor(
         val publicPoint: ECPoint.Normalized,
         val preferCompressedRepresentation: Boolean = true
@@ -409,7 +411,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                 }
             }
 
-            override val oid = at.asitplus.signum.indispensable.asn1.KnownOIDs.ecPublicKey
+            override val oid = KnownOIDs.ecPublicKey
         }
     }
 }

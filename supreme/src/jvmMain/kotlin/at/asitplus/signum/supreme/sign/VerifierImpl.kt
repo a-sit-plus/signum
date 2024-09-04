@@ -34,8 +34,7 @@ private fun getSigInstance(alg: String, p: String?) =
 @Throws(UnsupportedCryptoException::class)
 internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
             (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
-             config: PlatformVerifierConfiguration
-)
+             config: PlatformVerifierConfiguration)
 {
     wrapping(asA=::UnsupportedCryptoException) {
         getSigInstance("${signatureAlgorithm.digest.jcaAlgorithmComponent}withECDSA", config.provider)
@@ -47,8 +46,7 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
 internal actual fun verifyECDSAImpl
             (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
              data: SignatureInput, signature: CryptoSignature.EC,
-             config: PlatformVerifierConfiguration
-)
+             config: PlatformVerifierConfiguration)
 {
     val (input, alg) = when {
         (data.format == null) -> /* input data is not hashed, let JCA do hashing */
@@ -77,8 +75,7 @@ private fun getRSAInstance(alg: SignatureAlgorithm.RSA, config: PlatformVerifier
 @Throws(UnsupportedCryptoException::class)
 internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
             (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
-             config: PlatformVerifierConfiguration
-) {
+             config: PlatformVerifierConfiguration) {
     wrapping(asA=::UnsupportedCryptoException) {
         getRSAInstance(signatureAlgorithm, config)
             .initVerify(publicKey.getJcaPublicKey().getOrThrow())
@@ -89,8 +86,7 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
 internal actual fun verifyRSAImpl
             (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
              data: SignatureInput, signature: CryptoSignature.RSAorHMAC,
-             config: PlatformVerifierConfiguration
-)
+             config: PlatformVerifierConfiguration)
 {
     getRSAInstance(signatureAlgorithm, config).run {
         initVerify(publicKey.getJcaPublicKey().getOrThrow())

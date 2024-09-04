@@ -386,27 +386,27 @@ class X509CertificateJvmTest : FreeSpec({
         val extendedKeyUsage = ExtendedKeyUsage(KeyPurposeId.anyExtendedKeyUsage)
 
         val ext1 = X509CertificateExtension(
-            at.asitplus.signum.indispensable.asn1.KnownOIDs.keyUsage,
+            KnownOIDs.keyUsage,
             value = Asn1EncapsulatingOctetString(listOf(Asn1Element.parse(keyUsage.encoded))),
             critical = true
         )
         val ext2 = X509CertificateExtension(
-            at.asitplus.signum.indispensable.asn1.KnownOIDs.keyUsage,
+            KnownOIDs.keyUsage,
             value = Asn1EncapsulatingOctetString(listOf(Asn1Element.parse(keyUsage.encoded))),
             critical = true
         )
         val ext3 = X509CertificateExtension(
-            at.asitplus.signum.indispensable.asn1.KnownOIDs.extKeyUsage,
+            KnownOIDs.extKeyUsage,
             value = Asn1EncapsulatingOctetString(listOf(Asn1Element.parse(extendedKeyUsage.encoded))),
             critical = true
         )
         val ext4 = X509CertificateExtension(
-            at.asitplus.signum.indispensable.asn1.KnownOIDs.keyUsage,
+            KnownOIDs.keyUsage,
             value = Asn1EncapsulatingOctetString(listOf(Asn1Element.parse(extendedKeyUsage.encoded))),
             critical = true
         )
         val ext5 = X509CertificateExtension(
-            at.asitplus.signum.indispensable.asn1.KnownOIDs.keyUsage,
+            KnownOIDs.keyUsage,
             value = Asn1EncapsulatingOctetString(listOf(Asn1Element.parse(keyUsage.encoded))),
             critical = false
         )

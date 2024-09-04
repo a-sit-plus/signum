@@ -1,6 +1,6 @@
 # Development
 
-Development happens in branch [development](https://github.com/a-sit-plus/kmp-crypto/tree/development). The main branch always tracks the latest release.
+Development happens in branch [development](https://github.com/a-sit-plus/signum/tree/development). The main branch always tracks the latest release.
 Hence, create PRs against `development`. Use dedicated `release/x.y.z` branches to prepare releases and create release PRs against `main`, which will then be merged back into `development`.
 
 **Clone recursively, since we depend on a forked swift-klib plugin which is includes ad a git submodule"
@@ -53,4 +53,4 @@ To publish locally for testing, one can skip the signing tasks:
 
 ## Creating a new release
 
-Create a release branch and do the usual commits, i.e. setting the version number and so on. Push it to Github. Run the workflow "Build iOS Framework", and attach the artefacts to the release info page on GitHub. Use the link from there to update the [Swift Package](https://github.com/a-sit-plus/swift-package-kmp-crypto), modifying `Package.swift` and entering the URLs. The checksum is the output of `sha256sum *framework.zip`.
+Create a release branch and do the usual commits, i.e. setting the version number and so on. Push it to Github. Run the workflow "Build iOS Framework", and attach the artefacts to the release info page on GitHub. Use the link from there to update the [Swift Package](https://github.com/a-sit-plus/swift-package-signum), modifying `Package.swift` and entering the URLs. The checksum is the output of `sha256sum *framework.zip`.

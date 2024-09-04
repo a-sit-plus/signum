@@ -1,6 +1,5 @@
 package at.asitplus.signum.supreme.dsl
 
-import at.asitplus.signum.supreme.dsl.DSL
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
@@ -21,8 +20,8 @@ private class Settings: DSL.Data() {
     /* this is null by default; a default could be explicitly specified, making this non-nullable */
     internal val _flavor = subclassOf<SmoothieFlavor>()
     /* and then we define user-visible accessors for the different flavors */
-    val banana = _flavor.option(Settings::BananaFlavor)
-    val strawberry = _flavor.option(Settings::StrawberryFlavor)
+    val banana = _flavor.option(::BananaFlavor)
+    val strawberry = _flavor.option(::StrawberryFlavor)
 
     override fun validate() {
         require(_flavor.v != null)

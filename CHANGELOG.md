@@ -3,7 +3,13 @@
 
 ## 3.0
 
-### NEXT
+### 3.7.0 (Supreme 0.2.0)
+* Implement supreme signing capabilities
+* Introduce Attestation Data Structure
+* Dependency Updates:
+  * Kotlin 2.0.20
+  * kotlinx.serialization 1.7.2 stable (bye, bye unofficial snapshot dependency!)
+  * kotlinx-datetime 0.6.1
 
 ### 3.6.1
 * Externalise `UVarInt` to  multibase

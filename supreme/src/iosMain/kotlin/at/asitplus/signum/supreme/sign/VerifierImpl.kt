@@ -24,8 +24,7 @@ actual class PlatformVerifierConfiguration internal actual constructor() : DSL.D
 @Throws(UnsupportedCryptoException::class)
 internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
             (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
-             config: PlatformVerifierConfiguration
-)
+             config: PlatformVerifierConfiguration)
 {
     when (publicKey.curve) {
         ECCurve.SECP_256_R_1, ECCurve.SECP_384_R_1, ECCurve.SECP_521_R_1 -> {}
@@ -40,18 +39,16 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
 @Throws(UnsupportedCryptoException::class)
 internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
             (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
-             config: PlatformVerifierConfiguration
-)
+             config: PlatformVerifierConfiguration)
 {
 
 }
 
 @OptIn(ExperimentalForeignApi::class)
 internal actual fun verifyECDSAImpl
-    (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
-     data: SignatureInput, signature: CryptoSignature.EC,
-     config: PlatformVerifierConfiguration
-) {
+            (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
+             data: SignatureInput, signature: CryptoSignature.EC,
+             config: PlatformVerifierConfiguration) {
 
     val digest = signatureAlgorithm.digest
     val curve = publicKey.curve
@@ -85,8 +82,7 @@ internal actual fun verifyECDSAImpl
 internal actual fun verifyRSAImpl
             (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
              data: SignatureInput, signature: CryptoSignature.RSAorHMAC,
-             config: PlatformVerifierConfiguration
-) {
+             config: PlatformVerifierConfiguration) {
     val padding = signatureAlgorithm.padding
     val digest = signatureAlgorithm.digest
 

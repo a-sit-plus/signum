@@ -23,19 +23,23 @@ import java.security.Security
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPublicKey
 
+private fun CryptoPublicKey.EC.withCompressionPreference(v: Boolean) =
+    if (v) CryptoPublicKey.EC.fromCompressed(curve, xBytes, yCompressed)
+    else CryptoPublicKey.EC.fromUncompressed(curve, xBytes, yBytes)
 class CoseKeySerializationTest : FreeSpec({
     Security.addProvider(BouncyCastleProvider())
 
     "Serializing" - {
         "Manual" - {
-            val compressed = coseCompliantSerializer.encodeToByteArray(CryptoPublicKey.fromJcaPublicKey(
-                KeyPairGenerator.getInstance("EC").apply {
-                    initialize(256)
-                }.genKeyPair().public
-            ).getOrThrow().run {
-                this as CryptoPublicKey.EC
-                this.copy(preferCompressedRepresentation = true)
-            }.toCoseKey(CoseAlgorithm.ES256).getOrThrow()
+            val compressed = coseCompliantSerializer.encodeToByteArray(
+                CryptoPublicKey.fromJcaPublicKey(
+                    KeyPairGenerator.getInstance("EC").apply {
+                        initialize(256)
+                    }.genKeyPair().public
+                ).getOrThrow().run {
+                    this as CryptoPublicKey.EC
+                    this.withCompressionPreference(true)
+                }.toCoseKey(CoseAlgorithm.ES256).getOrThrow()
             )
             val coseUncompressed = CryptoPublicKey.fromJcaPublicKey(
                 KeyPairGenerator.getInstance("EC").apply {
@@ -119,7 +123,7 @@ class CoseKeySerializationTest : FreeSpec({
                                 .getOrThrow()
                                 .run {
                                     this as CryptoPublicKey.EC
-                                    this.copy(preferCompressedRepresentation = true)
+                                    this.withCompressionPreference(true)
                                 }.toCoseKey()
                                 .getOrThrow()
 

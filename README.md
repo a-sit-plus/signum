@@ -42,7 +42,7 @@ This last bit means that
 **you can work with X509 Certificates, public keys, CSRs and arbitrary ASN.1 structures on iOS.**  
 The very first bit means that you can verify signatures on the JVM, Android and on iOS.
 
-**Do check out the full API docs [here](https://a-sit-plus.github.io/kmp-crypto/)**!
+**Do check out the full API docs [here](https://a-sit-plus.github.io/signum/)**!
 
 ## Usage
 
@@ -99,6 +99,88 @@ material._
 
 <br>
 
+### Signature Creation
+
+To create a signature, obtain a `Signer` instance.
+You can do this using `Signer.Ephemeral` to create a signer for a throwaway keypair:
+```kotlin
+val signer = Signer.Ephemeral {}.getOrThrow()
+val plaintext = "You have this.".encodeToByteArray()
+val signature = signer.sign(plaintext).signature
+println("Signed using ${signer.signatureAlgorithm}: $signature")
+```
+
+If you want to create multiple signatures using the same ephemeral key, you can obtain an `EphemeralKey` instance, then create signers from it:
+```kotlin
+val key = EphemeralKey { rsa {} }.getOrThrow()
+val sha256Signer = key.getSigner { rsa { digest = Digests.SHA256 } }.getOrThrow()
+val sha384Signer = key.getSigner { rsa { digest = Digests.SHA384 } }.getOrThrow()
+```
+
+The instances can be configured using the configuration DSL.
+Any unspecified parameters use sensible, secure defaults.
+
+#### Platform Signers
+
+On Android and iOS, signers using the systems' secure key storage can be retrieved.
+To do this, use `PlatformSigningProvider` (in common code), or interact with `AndroidKeystoreProvider`/`IosKeychainProvider` (in platform-specific code).
+
+New keys can be created using `createSigningKey(alias: String) { /* configuration */ }`,
+and signers for existing keys can be retrieved using `getSignerForKey(alias: String) { /* configuration */ }`.
+
+For example, creating an elliptic-curve key over P256, stored in secure hardware, and with key attestation using a random challenge provided by your server, might be done like this:
+```kotlin
+val serverChallenge: ByteArray = TODO("This was unpredictably chosen by your server.")
+PlatformSigningProvider.createSigningKey(alias = "Swordfish") {
+  ec {
+    // you don't even need to specify the curve (P256 is the default) but we'll do it for demonstration purposes
+    curve = ECCurve.SECP_256_R_1
+    // you could specify the supported digests explicity - if you do not, the curve's native digest (for P256, this is SHA256) is supported
+  }
+  // see https://a-sit-plus.github.io/signum/supreme/at.asitplus.signum.supreme.sign/-platform-signing-key-configuration-base/-secure-hardware-configuration/index.html
+  hardware {
+    // you could use PREFERRED if you want the operation to succeed (without hardware backing) on devices that do not support it
+    backing = REQUIRED
+    attestation { challenge = serverChallenge }
+    protection { 
+      timeout = 5.seconds
+      factors {
+        biometry = true
+        deviceLock = false
+      }  
+    }
+  }
+}
+```
+
+If this operation succeeds, it returns a `Signer`. The same `Signer` could later be retrieved using `PlatformSigningProvider.getSignerForKey(alias: String)`.
+
+When you use this `Signer` to sign data, the user would be prompted to authorize the signature using an enrolled fingerprint, because that's what you specified when creating the key.
+You can configure the authentication prompt:
+```kotlin
+val plaintext = "A message".encodeToByteArray()
+val signature = signer.sign(plaintext) { 
+  unlockPrompt {
+    message = "Signing a message to Bobby"
+  }
+}.signature
+```
+... but you cannot change the fact that you configured this key to need biometry. Consider this when creating your keys.
+
+On the JVM, no native secure hardware storage is available.
+File-based keystores can be accessed using [`JKSProvider { file { /* ... */ } }`](https://a-sit-plus.github.io/signum/supreme/at.asitplus.signum.supreme.os/-j-k-s-provider/.index.html).
+Other keystores can be accessed using `JKSProvider { withBackingObject{ /* ... */ } }` or `JksProvider { customAccessor{ /* ... */ } }`.
+
+#### Key Attestation
+
+The Android KeyStore offers key attestation certificates for hardware-backed keys.
+These certificates are exposed by the signer's `.attestation` property.
+
+For iOS, Apple does not provide this capability.
+We instead piggy-back onto iOS App Attestation to provide a home-brew "key attestation" scheme.
+The guarantees are different: you are trusting the OS, not the actual secure hardware; and you are trusting that our library properly interfaces with the OS.
+Attestation types are serializable for transfer, and correspond to those in Indispensable's attestation module.
+
 ### Signature Verification
 
 To verify a signature, obtain a `Verifier` instance using `verifierFor(k: PublicKey)`, either directly on a `SignatureAlgorithm`, or on one of the specialized algorithms (`X509SignatureAlgorithm`, `CoseAlgorithm`, ...).
@@ -108,7 +190,7 @@ As an example, here's how to verify a basic signature using a public key:
 ```kotlin
 val publicKey: CryptoPublicKey.EC = TODO("You have this and trust it.")
 val plaintext = "You want to trust this.".encodeToByteArray()
-val signature = TODO("This was sent alongside the plaintext.")
+val signature: CryptoSignature = TODO("This was sent alongside the plaintext.")
 val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey).getOrThrow()
 val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Looks good? $isValid")

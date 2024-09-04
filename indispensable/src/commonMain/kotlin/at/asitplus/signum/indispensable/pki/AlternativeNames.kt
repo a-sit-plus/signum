@@ -18,6 +18,7 @@ import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubje
  * See [RFC 5280, Section 4.2.1.6](https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.6)
  * for details on the properties of this container class, as they are named accordingly.
  */
+@ConsistentCopyVisibility
 data class AlternativeNames
 @Throws(Throwable::class)
 private constructor(private val extensions: List<Asn1Element>) {
@@ -109,12 +110,12 @@ private constructor(private val extensions: List<Asn1Element>) {
     companion object {
         @Throws(Asn1Exception::class)
         fun List<X509CertificateExtension>.findSubjectAltNames() = runRethrowing {
-            find(at.asitplus.signum.indispensable.asn1.KnownOIDs.subjectAltName_2_5_29_17)?.let { AlternativeNames(it) }
+            find(KnownOIDs.subjectAltName_2_5_29_17)?.let { AlternativeNames(it) }
         }
 
         @Throws(Asn1Exception::class)
         fun List<X509CertificateExtension>.findIssuerAltNames() = runRethrowing {
-            find(at.asitplus.signum.indispensable.asn1.KnownOIDs.issuerAltName_2_5_29_18)?.let { AlternativeNames(it) }
+            find(KnownOIDs.issuerAltName_2_5_29_18)?.let { AlternativeNames(it) }
         }
 
         /**not for public use, since it forces [Asn1EncapsulatingOctetString]*/

@@ -1,11 +1,12 @@
 */generated
 .gradle
+demoapp/build
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
 .kotlin
-provider/src/androidInstrumentedTest/kotlin/generated
+*/src/androidInstrumentedTest/kotlin/generated
 
 ### IntelliJ IDEA ###
 .idea
@@ -40,6 +41,21 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+.Trashes
+*.swp
+*~.nib
+DerivedData/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+!default.pbxuser
+!default.mode1v3
+!default.mode2v3
+!default.perspectivev3
+*.xccheckout
+xcuserdata/
+*.moved-aside
 
 ### Gradle ###
 local.properties

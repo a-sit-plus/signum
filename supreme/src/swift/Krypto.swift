@@ -8,6 +8,8 @@ import Foundation
 
 @objc public class Krypto: NSObject {
 
+    // =========== VERIFICATION
+
     fileprivate static func verifyECDSA_P256(_ pubkeyDER: Data, _ sigDER: Data, _ data: any Digest) throws -> Bool {
         let pubKey = try P256.Signing.PublicKey(derRepresentation: pubkeyDER)
         let sig = try P256.Signing.ECDSASignature(derRepresentation: sigDER)
@@ -65,7 +67,7 @@ import Foundation
         }
     }
 
-    @objc public class func verifyRSA(_ padding: String, _ digest: String, _ pubkeyPKCS1: Data,
+    @objc public static func verifyRSA(_ padding: String, _ digest: String, _ pubkeyPKCS1: Data,
         _ sigDER: Data, _ data: Data) throws -> String
     {
         let algorithm = try getRSAAlgorithm(padding, digest)

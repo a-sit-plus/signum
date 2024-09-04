@@ -26,7 +26,8 @@ buildscript {
 }
 
 
-version = "0.1.1-PRE"
+val supremeVersion: String by extra
+version = supremeVersion
 
 wireAndroidInstrumentedTests()
 
@@ -52,19 +53,11 @@ kotlin {
         implementation(coroutines())
         implementation(napier())
         api(project(":indispensable"))
-        api(kotlincrypto.core.digest)
-        implementation(kotlincrypto.hash.sha1)
-        implementation(kotlincrypto.hash.sha2)
-        implementation(kotlincrypto.secureRandom)
     }
-    sourceSets.jvmTest.dependencies {
-        implementation("io.kotest.extensions:kotest-assertions-compiler:1.0.0")
-    }
-    /*
+
     sourceSets.androidMain.dependencies {
         implementation("androidx.biometric:biometric:1.2.0-alpha05")
     }
-    */
 
 }
 
@@ -80,7 +73,7 @@ android {
     namespace = "at.asitplus.signum.supreme"
     compileSdk = 34
     defaultConfig {
-        minSdk = 33
+        minSdk = 30
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -102,11 +95,12 @@ android {
     }
 
     testOptions {
+        targetSdk=30
         managedDevices {
             localDevices {
                 create("pixel2api33") {
                     device = "Pixel 2"
-                    apiLevel = 33
+                    apiLevel = 30
                     systemImageSource = "aosp-atd"
                 }
             }
@@ -157,7 +151,7 @@ publishing {
                 scm {
                     connection.set("scm:git:git@github.com:a-sit-plus/signum.git")
                     developerConnection.set("scm:git:git@github.com:a-sit-plus/signum.git")
-                    url.set("https://github.com/a-sit-plus/kmp-crypto")
+                    url.set("https://github.com/a-sit-plus/signum")
                 }
             }
         }

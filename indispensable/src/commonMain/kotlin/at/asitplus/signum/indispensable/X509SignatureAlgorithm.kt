@@ -19,33 +19,33 @@ enum class X509SignatureAlgorithm(
 ) : Asn1Encodable<Asn1Sequence>, Identifiable, SpecializedSignatureAlgorithm {
 
     // ECDSA with SHA-size
-    ES256(at.asitplus.signum.indispensable.asn1.KnownOIDs.ecdsaWithSHA256, true),
-    ES384(at.asitplus.signum.indispensable.asn1.KnownOIDs.ecdsaWithSHA384, true),
-    ES512(at.asitplus.signum.indispensable.asn1.KnownOIDs.ecdsaWithSHA512, true),
+    ES256(KnownOIDs.ecdsaWithSHA256, true),
+    ES384(KnownOIDs.ecdsaWithSHA384, true),
+    ES512(KnownOIDs.ecdsaWithSHA512, true),
 
     // HMAC-size with SHA-size
-    HS256(at.asitplus.signum.indispensable.asn1.KnownOIDs.hmacWithSHA256),
-    HS384(at.asitplus.signum.indispensable.asn1.KnownOIDs.hmacWithSHA384),
-    HS512(at.asitplus.signum.indispensable.asn1.KnownOIDs.hmacWithSHA512),
+    HS256(KnownOIDs.hmacWithSHA256),
+    HS384(KnownOIDs.hmacWithSHA384),
+    HS512(KnownOIDs.hmacWithSHA512),
 
     // RSASSA-PSS with SHA-size
-    PS256(at.asitplus.signum.indispensable.asn1.KnownOIDs.rsaPSS),
-    PS384(at.asitplus.signum.indispensable.asn1.KnownOIDs.rsaPSS),
-    PS512(at.asitplus.signum.indispensable.asn1.KnownOIDs.rsaPSS),
+    PS256(KnownOIDs.rsaPSS),
+    PS384(KnownOIDs.rsaPSS),
+    PS512(KnownOIDs.rsaPSS),
 
     // RSASSA-PKCS1-v1_5 with SHA-size
-    RS256(at.asitplus.signum.indispensable.asn1.KnownOIDs.sha256WithRSAEncryption),
-    RS384(at.asitplus.signum.indispensable.asn1.KnownOIDs.sha384WithRSAEncryption),
-    RS512(at.asitplus.signum.indispensable.asn1.KnownOIDs.sha512WithRSAEncryption),
+    RS256(KnownOIDs.sha256WithRSAEncryption),
+    RS384(KnownOIDs.sha384WithRSAEncryption),
+    RS512(KnownOIDs.sha512WithRSAEncryption),
 
     // RSASSA-PKCS1-v1_5 using SHA-1
-    RS1(at.asitplus.signum.indispensable.asn1.KnownOIDs.sha1WithRSAEncryption);
+    RS1(KnownOIDs.sha1WithRSAEncryption);
 
     private fun encodePSSParams(bits: Int): Asn1Sequence {
         val shaOid = when (bits) {
-            256 -> at.asitplus.signum.indispensable.asn1.KnownOIDs.sha_256
-            384 -> at.asitplus.signum.indispensable.asn1.KnownOIDs.sha_384
-            512 -> at.asitplus.signum.indispensable.asn1.KnownOIDs.sha_512
+            256 -> KnownOIDs.sha_256
+            384 -> KnownOIDs.sha_384
+            512 -> KnownOIDs.sha_512
             else -> TODO()
         }
         return Asn1.Sequence {
@@ -59,7 +59,7 @@ enum class X509SignatureAlgorithm(
                 }
                 +Tagged(1.toUByte()) {
                     +Asn1.Sequence {
-                        +at.asitplus.signum.indispensable.asn1.KnownOIDs.pkcs1_MGF
+                        +KnownOIDs.pkcs1_MGF
                         +Asn1.Sequence {
                             +shaOid
                             +Null()
@@ -140,7 +140,7 @@ enum class X509SignatureAlgorithm(
 
             val second = (seq.nextChild() as Asn1Tagged).verifyTag(1.toUByte()).single() as Asn1Sequence
             val mgf = (second.nextChild() as Asn1Primitive).readOid()
-            if (mgf != at.asitplus.signum.indispensable.asn1.KnownOIDs.pkcs1_MGF) throw IllegalArgumentException("Illegal OID: $mgf")
+            if (mgf != KnownOIDs.pkcs1_MGF) throw IllegalArgumentException("Illegal OID: $mgf")
             val inner = second.nextChild() as Asn1Sequence
             val innerHash = (inner.nextChild() as Asn1Primitive).readOid()
             if (innerHash != sigAlg) throw IllegalArgumentException("HashFunction mismatch! Expected: $sigAlg, is: $innerHash")
@@ -154,9 +154,9 @@ enum class X509SignatureAlgorithm(
 
             return sigAlg.let {
                 when (it) {
-                    at.asitplus.signum.indispensable.asn1.KnownOIDs.sha_256 -> PS256.also { if (saltLen != 256 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
-                    at.asitplus.signum.indispensable.asn1.KnownOIDs.sha_384 -> PS384.also { if (saltLen != 384 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
-                    at.asitplus.signum.indispensable.asn1.KnownOIDs.sha_512 -> PS512.also { if (saltLen != 512 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
+                    KnownOIDs.sha_256 -> PS256.also { if (saltLen != 256 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
+                    KnownOIDs.sha_384 -> PS384.also { if (saltLen != 384 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
+                    KnownOIDs.sha_512 -> PS512.also { if (saltLen != 512 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
 
                     else -> throw IllegalArgumentException("Unsupported OID: $it")
                 }

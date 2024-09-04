@@ -37,6 +37,10 @@ val Digest.jcaPSSParams
         Digest.SHA512 -> PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 64, 1)
     }
 
+internal val isAndroid by lazy {
+    try { Class.forName("android.os.Build"); true } catch (_: ClassNotFoundException) { false }
+}
+
 private fun sigGetInstance(alg: String, provider: String?) =
     when (provider) {
         null -> Signature.getInstance(alg)
@@ -52,16 +56,42 @@ fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) = catch
         is SignatureAlgorithm.RSA -> when (this.padding) {
             RSAPadding.PKCS1 ->
                 sigGetInstance("${this.digest.jcaAlgorithmComponent}withRSA", provider)
-            RSAPadding.PSS ->
-                sigGetInstance("RSASSA-PSS", provider).also {
-                    it.setParameter(this.digest.jcaPSSParams)
-                }
+            RSAPadding.PSS -> when (isAndroid) {
+                true ->
+                    sigGetInstance("${this.digest.jcaAlgorithmComponent}withRSA/PSS", provider)
+                false ->
+                    sigGetInstance("RSASSA-PSS", provider).also {
+                        it.setParameter(this.digest.jcaPSSParams)
+                    }
+            }
         }
     }
 }
 /** Get a pre-configured JCA instance for this algorithm */
 fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =
     this.algorithm.getJCASignatureInstance(provider)
+
+/** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
+fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) = catching {
+    when (this) {
+        is SignatureAlgorithm.ECDSA -> sigGetInstance("NONEwithECDSA", provider)
+        is SignatureAlgorithm.RSA -> when (this.padding) {
+            RSAPadding.PKCS1 -> when (isAndroid) {
+                true -> sigGetInstance("NONEwithRSA", provider)
+                false -> throw UnsupportedOperationException("Pre-hashed RSA input is unsupported on JVM")
+            }
+            RSAPadding.PSS -> when (isAndroid) {
+                true -> sigGetInstance("NONEwithRSA/PSS", provider)
+                false -> throw UnsupportedOperationException("Pre-hashed RSA input is unsupported on JVM")
+            }
+        }
+        else -> TODO("$this is unsupported with pre-hashed data")
+    }
+}
+
+/** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
+fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) =
+    this.algorithm.getJCASignatureInstancePreHashed(provider)
 
 val Digest.jcaName
     get() = when (this) {

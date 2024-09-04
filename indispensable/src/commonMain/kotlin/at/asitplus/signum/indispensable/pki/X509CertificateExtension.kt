@@ -8,6 +8,7 @@ import kotlinx.serialization.Serializable
  * X.509 Certificate Extension
  */
 @Serializable
+@ConsistentCopyVisibility
 data class X509CertificateExtension @Throws(Asn1Exception::class) private constructor(
     override val oid: ObjectIdentifier,
     val value: Asn1Element,
