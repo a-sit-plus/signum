@@ -62,20 +62,16 @@ class JKSSignerConfiguration: PlatformSignerConfigurationBase(), JvmEphemeralSig
     var privateKeyPassword: CharArray? = null
 }
 
-interface JKSSigner: Signer, Signer.Attestable<SelfAttestation>, Signer.WithAlias {
+interface JKSSigner: Signer, Signer.WithAlias {
     class EC internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
                                    publicKey: CryptoPublicKey.EC, signatureAlgorithm: SignatureAlgorithm.ECDSA,
-                                   certificate: X509Certificate, override val alias: String)
-        : EphemeralSigner.EC(config, privateKey, publicKey, signatureAlgorithm), JKSSigner {
-        override val attestation = SelfAttestation(certificate)
-    }
+                                   override val alias: String)
+        : EphemeralSigner.EC(config, privateKey, publicKey, signatureAlgorithm), JKSSigner
 
     class RSA internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
                                     publicKey: CryptoPublicKey.Rsa, signatureAlgorithm: SignatureAlgorithm.RSA,
-                                    certificate: X509Certificate, override val alias: String)
-        : EphemeralSigner.RSA(config, privateKey, publicKey, signatureAlgorithm), JKSSigner {
-        override val attestation = SelfAttestation(certificate)
-    }
+                                    override val alias: String)
+        : EphemeralSigner.RSA(config, privateKey, publicKey, signatureAlgorithm), JKSSigner
 }
 
 private fun keystoreGetInstance(type: String, provider: String?) = when (provider) {
@@ -175,12 +171,12 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
             SignatureAlgorithm.ECDSA(
                 digest = if (config.ec.v.digestSpecified) config.ec.v.digest else Digest.SHA256,
                 requiredCurve = publicKey.curve),
-            certificate, alias)
+            alias)
         is CryptoPublicKey.Rsa -> JKSSigner.RSA(config, privateKey as RSAPrivateKey, publicKey,
             SignatureAlgorithm.RSA(
                 digest = if (config.rsa.v.digestSpecified) config.rsa.v.digest else Digest.SHA256,
                 padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else RSAPadding.PSS),
-            certificate, alias)
+            alias)
     }
 
     override suspend fun getSignerForKey(
