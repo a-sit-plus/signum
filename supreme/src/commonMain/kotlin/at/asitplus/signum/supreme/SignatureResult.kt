@@ -10,14 +10,16 @@ sealed class UserInitiatedCancellationReason(message: String?, cause: Throwable?
 class UnlockFailed(message: String? = null, cause: Throwable? = null) : UserInitiatedCancellationReason(message, cause)
 
 sealed interface SignatureResult<out T: CryptoSignature> {
-    @JvmInline
-    value class Success<T: CryptoSignature>(val signature: T): SignatureResult<T>
-    @JvmInline
-    value class Failure(val problem: UserInitiatedCancellationReason): SignatureResult<Nothing>
-    @JvmInline
-    value class Error(val exception: Throwable): SignatureResult<Nothing>
+    /** The signature succeeded. A signature is contained. */
+    @JvmInline value class Success<T: CryptoSignature>(val signature: T): SignatureResult<T>
+    /** The signature failed for expected reasons. Typically, this is because the user cancelled the operation. */
+    @JvmInline value class Failure(val problem: UserInitiatedCancellationReason): SignatureResult<Nothing>
+    /** The signature failed for an unexpected reason. The thrown exception is contained. */
+    @JvmInline value class Error(val exception: Throwable): SignatureResult<Nothing>
     companion object {
-        fun <T: CryptoSignature> FromException(x: Throwable): SignatureResult<T> = when (x) {
+        /** Constructs a suitable failed SignatureResult from the exception.
+         * [UserInitiatedCancellationReason] and subclasses map to [Failure], anything else maps to [Error]. */
+        fun FromException(x: Throwable): SignatureResult<Nothing> = when (x) {
             is UserInitiatedCancellationReason -> SignatureResult.Failure(x)
             else -> SignatureResult.Error(x)
         }
@@ -52,6 +54,8 @@ inline fun <T: CryptoSignature, S: CryptoSignature> SignatureResult<T>.modify(bl
         onSuccess = { SignatureResult.Success(it) },
         onFailure = { SignatureResult.FromException(it) })
 
+/** Runs the block, catches exceptions, and maps to [SignatureResult].
+ * @see SignatureResult.FromException */
 internal inline fun signCatching(fn: ()->CryptoSignature): SignatureResult<CryptoSignature> =
     runCatching { fn() }.fold(
         onSuccess = { SignatureResult.Success(it) },

@@ -167,6 +167,9 @@ val signature = signer.sign(plaintext) {
 ```
 ... but you cannot change the fact that you configured this key to need biometry. Consider this when creating your keys.
 
+On the JVM, no native secure hardware storage is available.
+File-based keystores can be accessed using [`JKSProvider { file {} }`](https://a-sit-plus.github.io/signum/supreme/at.asitplus.signum.supreme.os/-j-k-s-provider/.index.html).
+
 #### Key Attestation
 
 The Android KeyStore offers key attestation certificates for hardware-backed keys.
