@@ -1,5 +1,4 @@
 pluginManagement {
-    includeBuild("swift-klib-plugin")
     repositories {
         google()
         mavenCentral()

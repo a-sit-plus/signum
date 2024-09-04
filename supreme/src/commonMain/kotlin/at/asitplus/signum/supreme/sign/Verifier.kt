@@ -12,7 +12,7 @@ import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.UnsupportedCryptoException
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 
-class InvalidSignature(message: String): Throwable(message)
+class InvalidSignature(message: String, cause: Throwable? = null): Throwable(message, cause)
 
 sealed interface Verifier {
     val signatureAlgorithm: SignatureAlgorithm
@@ -125,7 +125,7 @@ class KotlinECDSAVerifier
             throw InvalidSignature("s is not in [1,n-1] (s=${sig.s}, n=${curve.order})")
         }
 
-        val z = data.convertTo(signatureAlgorithm.digest).getOrThrow().asBigInteger(curve.scalarLength)
+        val z = data.convertTo(signatureAlgorithm.digest).getOrThrow().asECDSABigInteger(curve.scalarLength)
         val sInv = sig.s.modInverse(curve.order)
         val u1 = z * sInv
         val u2 = sig.r * sInv

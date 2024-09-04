@@ -90,3 +90,8 @@ val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm get() = when (t
 
 val SpecializedSignatureAlgorithm.secKeyAlgorithmPreHashed get() =
     this.algorithm.secKeyAlgorithmPreHashed
+
+val CryptoSignature.iosEncoded get() = when (this) {
+    is CryptoSignature.EC -> this.encodeToDer()
+    is CryptoSignature.RSAorHMAC -> this.rawByteArray
+}

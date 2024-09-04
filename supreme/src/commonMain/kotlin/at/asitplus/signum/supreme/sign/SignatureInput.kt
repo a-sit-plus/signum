@@ -40,7 +40,7 @@ class SignatureInput private constructor (
      *
      * (This matches the ECDSA spec.)
      */
-    internal fun asBigInteger(length: BitLength): BigInteger {
+    internal fun asECDSABigInteger(length: BitLength): BigInteger {
         val target = length.bytes.toInt()
         val dataIt = data.iterator()
         var resultBytes = if(dataIt.hasNext()) dataIt.next() else byteArrayOf()

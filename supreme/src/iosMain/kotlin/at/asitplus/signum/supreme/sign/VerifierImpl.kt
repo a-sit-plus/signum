@@ -1,20 +1,45 @@
+@file:OptIn(ExperimentalForeignApi::class)
 package at.asitplus.signum.supreme.sign
 
+import arrow.core.Invalid
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.asn1.ensureSize
+import at.asitplus.signum.indispensable.iosEncoded
+import at.asitplus.signum.indispensable.misc.BitLength
+import at.asitplus.signum.indispensable.nativeDigest
+import at.asitplus.signum.indispensable.secKeyAlgorithmPreHashed
+import at.asitplus.signum.supreme.CoreFoundationException
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.UnsupportedCryptoException
+import at.asitplus.signum.supreme.cfDictionaryOf
+import at.asitplus.signum.supreme.corecall
+import at.asitplus.signum.supreme.createCFDictionary
+import at.asitplus.signum.supreme.giveToCF
 import at.asitplus.signum.supreme.swiftcall
 import at.asitplus.signum.supreme.toNSData
-import at.asitplus.signum.supreme.sign.InvalidSignature
-import at.asitplus.signum.supreme.sign.PlatformVerifierConfiguration
-import at.asitplus.signum.supreme.sign.SignatureInput
-import at.asitplus.swift.krypto.Krypto
+import kotlinx.cinterop.AutofreeScope
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.MemScope
+import kotlinx.cinterop.alloc
+import kotlinx.cinterop.memScoped
+import platform.CoreFoundation.CFRelease
+import platform.CoreFoundation.kCFErrorDomainOSStatus
+import platform.Foundation.NSOSStatusErrorDomain
+import platform.Security.SecKeyCreateWithData
+import platform.Security.SecKeyRef
+import platform.Security.SecKeyRefVar
+import platform.Security.SecKeyVerifySignature
+import platform.Security.errSecVerifyFailed
+import platform.Security.kSecAttrKeyClass
+import platform.Security.kSecAttrKeyClassPublic
+import platform.Security.kSecAttrKeyType
+import platform.Security.kSecAttrKeyTypeEC
+import platform.Security.kSecAttrKeyTypeRSA
 
 /**
  * Configures iOS-specific properties.
@@ -26,14 +51,8 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
             (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
              config: PlatformVerifierConfiguration)
 {
-    when (publicKey.curve) {
-        ECCurve.SECP_256_R_1, ECCurve.SECP_384_R_1, ECCurve.SECP_521_R_1 -> {}
-        else -> throw UnsupportedCryptoException("Curve ${publicKey.curve} is not supported on iOS")
-    }
-    when (signatureAlgorithm.digest) {
-        Digest.SHA256, Digest.SHA384, Digest.SHA512 -> {}
-        else -> throw UnsupportedCryptoException("Digest ${signatureAlgorithm.digest} is not supported on iOS")
-    }
+    if (publicKey.curve == ECCurve.SECP_521_R_1 && signatureAlgorithm.digest == null)
+        throw UnsupportedCryptoException("Raw signing over P521 is unsupported on iOS")
 }
 
 @Throws(UnsupportedCryptoException::class)
@@ -41,73 +60,56 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
             (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
              config: PlatformVerifierConfiguration)
 {
-
 }
 
-@OptIn(ExperimentalForeignApi::class)
+private fun MemScope.toSecKey(key: CryptoPublicKey): SecKeyRef =
+    corecall {
+        SecKeyCreateWithData(key.iosEncoded.toNSData().giveToCF(), cfDictionaryOf(
+            kSecAttrKeyClass to kSecAttrKeyClassPublic,
+            kSecAttrKeyType to when (key) {
+                is CryptoPublicKey.EC -> kSecAttrKeyTypeEC
+                is CryptoPublicKey.Rsa -> kSecAttrKeyTypeRSA
+            }), error)
+    }.also { defer { CFRelease(it) }}
+
+private fun verifyImpl(signatureAlgorithm: SignatureAlgorithm, publicKey: CryptoPublicKey,
+                       data: SignatureInput, signature: CryptoSignature,
+                       config: PlatformVerifierConfiguration) {
+    memScoped {
+        val key = toSecKey(publicKey)
+        val inputData = data.convertTo(signatureAlgorithm.preHashedSignatureFormat).getOrThrow().data.single()
+        try {
+            corecall {
+                SecKeyVerifySignature(key, signatureAlgorithm.secKeyAlgorithmPreHashed,
+                    inputData.toNSData().giveToCF(), signature.iosEncoded.toNSData().giveToCF(), error).takeIf { it }
+            }
+        } catch (x: CoreFoundationException) {
+            if ((x.nsError.domain == NSOSStatusErrorDomain) && (x.nsError.code == errSecVerifyFailed.toLong()))
+                throw InvalidSignature("Signature failed to verify", x)
+            throw x
+        }
+    }
+}
+
 internal actual fun verifyECDSAImpl
             (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
              data: SignatureInput, signature: CryptoSignature.EC,
-             config: PlatformVerifierConfiguration) {
+             config: PlatformVerifierConfiguration) = when (signatureAlgorithm.digest) {
+    null -> {
+        val targetDigest = publicKey.curve.nativeDigest
+        check(publicKey.curve.scalarLength == targetDigest.outputLength)
+        val processed = SignatureInput.unsafeCreate(
+            data.asECDSABigInteger(targetDigest.outputLength).toByteArray().ensureSize(targetDigest.outputLength.bytes),
+            targetDigest)
 
-    val digest = signatureAlgorithm.digest
-    val curve = publicKey.curve
-    val curveString = when (curve) {
-        ECCurve.SECP_256_R_1 -> "P256"
-        ECCurve.SECP_384_R_1 -> "P384"
-        ECCurve.SECP_521_R_1 -> "P521"
-        //else -> throw UnsupportedOperationException("Unsupported curve $curve")
+        verifyImpl(SignatureAlgorithm.ECDSA(targetDigest, null), publicKey, processed, signature, config)
     }
-    val digestString = when (digest) {
-        Digest.SHA256 -> "SHA256"
-        Digest.SHA384 -> "SHA384"
-        Digest.SHA512 -> "SHA512"
-        null, Digest.SHA1 -> throw UnsupportedOperationException("Unsupported digest $digest")
-    }
+    else -> verifyImpl(signatureAlgorithm, publicKey, data, signature, config)
+ }
 
-    val success = swiftcall {
-        Krypto.verifyECDSA(
-            curveString,
-            digestString,
-            publicKey.encodeToDer().toNSData(),
-            signature.encodeToDer().toNSData(),
-            data.data.fold(byteArrayOf(), ByteArray::plus).toNSData(),
-            error
-        )
-    }
-    if (success != "true") throw InvalidSignature("Signature failed to verify")
-}
 
-@OptIn(ExperimentalForeignApi::class)
 internal actual fun verifyRSAImpl
             (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
              data: SignatureInput, signature: CryptoSignature.RSAorHMAC,
-             config: PlatformVerifierConfiguration) {
-    val padding = signatureAlgorithm.padding
-    val digest = signatureAlgorithm.digest
-
-    val paddingString = when(padding) {
-        RSAPadding.PKCS1 -> "PKCS1"
-        RSAPadding.PSS -> "PSS"
-        //else -> throw UnsupportedOperationException("Unsupported padding $padding")
-    }
-    val digestString = when (digest) {
-        Digest.SHA1 -> "SHA1"
-        Digest.SHA256 -> "SHA256"
-        Digest.SHA384 -> "SHA384"
-        Digest.SHA512 -> "SHA512"
-        //else -> throw UnsupportedOperationException("Unsupported digest $digest")
-    }
-
-    val success = swiftcall {
-        Krypto.verifyRSA(
-            paddingString,
-            digestString,
-            publicKey.pkcsEncoded.toNSData(),
-            signature.rawByteArray.toNSData(),
-            data.data.fold(byteArrayOf(), ByteArray::plus).toNSData(),
-            error
-        )
-    }
-    if (success != "true") throw InvalidSignature("Signature failed to verify")
-}
+             config: PlatformVerifierConfiguration) =
+verifyImpl(signatureAlgorithm, publicKey, data, signature, config)
