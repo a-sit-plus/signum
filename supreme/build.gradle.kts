@@ -151,7 +151,7 @@ publishing {
                 scm {
                     connection.set("scm:git:git@github.com:a-sit-plus/signum.git")
                     developerConnection.set("scm:git:git@github.com:a-sit-plus/signum.git")
-                    url.set("https://github.com/a-sit-plus/kmp-crypto")
+                    url.set("https://github.com/a-sit-plus/signum")
                 }
             }
         }

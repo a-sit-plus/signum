@@ -204,7 +204,7 @@ internal fun App() {
                 horizontalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = "KMP Crypto Demo",
+                    text = "Supreme Demo",
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(
                         top = 16.dp,

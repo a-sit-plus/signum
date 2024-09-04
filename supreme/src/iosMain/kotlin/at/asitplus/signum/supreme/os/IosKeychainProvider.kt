@@ -133,7 +133,7 @@ private object KeychainTags {
     private val tags by lazy {
         val bundleId = NSBundle.mainBundle.bundleIdentifier
             ?: throw UnsupportedCryptoException("Keychain access is unsupported outside of a Bundle")
-        Pair("kmp-crypto-privatekey-$bundleId", "kmp-crypto.publickey-$bundleId")
+        Pair("supreme.privatekey-$bundleId", "supreme.publickey-$bundleId")
     }
     val PRIVATE_KEYS get() = tags.first
     val PUBLIC_KEYS get() = tags.second

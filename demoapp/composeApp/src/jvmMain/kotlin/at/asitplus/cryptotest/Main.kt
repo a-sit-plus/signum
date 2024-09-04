@@ -8,7 +8,7 @@ import at.asitplus.signum.supreme.os.SigningProvider
 actual val Provider: SigningProvider = JKSProvider.Ephemeral().getOrThrow()
 
 fun main() = application {
-    Window(onCloseRequest = ::exitApplication, title = "KMP-Crypto Demo") {
+    Window(onCloseRequest = ::exitApplication, title = "Supreme Demo") {
         App()
     }
 }

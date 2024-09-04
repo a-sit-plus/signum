@@ -1,4 +1,4 @@
-# KMP Crypto Demo Multiplatform (iOS, Android JVM) App
+# Supreme Multiplatform (JVM, Android, iOS) Demo App
 
 
 ![img.png](img.png)
