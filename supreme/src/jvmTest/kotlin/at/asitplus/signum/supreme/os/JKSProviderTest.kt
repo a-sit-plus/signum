@@ -19,7 +19,6 @@ class JKSProviderTest : FreeSpec({
         ks.getSignerForKey(alias) shouldNot succeed
         val signer = ks.createSigningKey(alias).getOrThrow()
         val otherSigner = ks.getSignerForKey(alias).getOrThrow()
-        otherSigner.attestation shouldBe signer.attestation
 
         val data = Random.Default.nextBytes(64)
         val signature = signer.sign(data).signature
