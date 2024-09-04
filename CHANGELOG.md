@@ -1,7 +1,9 @@
 # Changelog
 
-
 ## 3.0
+
+### Next
+* Remove Swift verifier logic to obtain a general speed-up
 
 ### 3.7.0 (Supreme 0.2.0)
 * Implement supreme signing capabilities

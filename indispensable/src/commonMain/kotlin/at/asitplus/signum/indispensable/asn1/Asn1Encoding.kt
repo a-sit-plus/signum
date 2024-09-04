@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.KmmResult
-import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.asn1.BERTags.ASN1_NULL
 import at.asitplus.signum.indispensable.asn1.BERTags.BIT_STRING

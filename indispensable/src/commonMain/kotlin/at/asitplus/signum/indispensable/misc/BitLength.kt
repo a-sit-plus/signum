@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.misc
 
 import com.ionspin.kotlin.bignum.integer.BigInteger
-import kotlin.jvm.JvmInline
 
 /**
  * Utility class to represent the bit length of curves and signatures.
@@ -18,6 +17,10 @@ data class BitLength(val bits: UInt) : Comparable<BitLength> {
     companion object {
         @Suppress("NOTHING_TO_INLINE")
         inline fun of(v: BigInteger) = BitLength(v.bitLength().toUInt())
+        inline fun fromBits(bits: UInt) = BitLength(bits)
+        inline fun fromBits(bits: Int) = BitLength(bits.toUInt())
+        inline fun fromBytes(bytes: UInt) = BitLength(bytes*8u)
+        inline fun fromBytes(bytes: Int) = BitLength(bytes.toUInt()*8u)
     }
 
     @Suppress("NOTHING_TO_INLINE", "OVERRIDE_BY_INLINE")

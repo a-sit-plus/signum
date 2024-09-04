@@ -15,7 +15,6 @@ plugins {
     kotlin("plugin.serialization")
     id("org.jetbrains.dokka")
     id("signing")
-    id("io.github.ttypic.swiftklib") version "0.5.2"
     id("at.asitplus.gradle.conventions")
 }
 
@@ -38,17 +37,10 @@ kotlin {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         instrumentedTestVariant.sourceSetTree.set(test)
     }
-    listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64(),
-    ).forEach { iosTarget -> //Hella inefficient, but reliable
-        iosTarget.compilations.getByName("main") {
-            cinterops {
-                create("Krypto")
-            }
-        }
-    }
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
+
     sourceSets.commonMain.dependencies {
         implementation(coroutines())
         implementation(napier())
@@ -59,14 +51,6 @@ kotlin {
         implementation("androidx.biometric:biometric:1.2.0-alpha05")
     }
 
-}
-
-swiftklib {
-    create("Krypto") {
-        minIos = 14
-        path = file("src/swift")
-        packageName("at.asitplus.swift.krypto")
-    }
 }
 
 android {
