@@ -40,18 +40,25 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
         .run {
             initSign(privateKey)
             data.data.forEach { update(it) }
-            sign().let {
-                CryptoSignature.parseFromJca(it, signatureAlgorithm)
-            }
+            sign().let(::parseFromJca)
         }
     }
+
+    protected abstract fun parseFromJca(bytes: ByteArray): CryptoSignature.RawByteEncodable
+
     open class EC internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
               override val publicKey: CryptoPublicKey.EC, override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
-        : EphemeralSigner(privateKey, config.provider), Signer.ECDSA
+        : EphemeralSigner(privateKey, config.provider), Signer.ECDSA {
+
+        override fun parseFromJca(bytes: ByteArray) = CryptoSignature.EC.parseFromJca(bytes).withCurve(publicKey.curve)
+    }
 
     open class RSA internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
                override val publicKey: CryptoPublicKey.Rsa, override val signatureAlgorithm: SignatureAlgorithm.RSA)
-        : EphemeralSigner(privateKey, config.provider), Signer.RSA
+        : EphemeralSigner(privateKey, config.provider), Signer.RSA {
+
+        override fun parseFromJca(bytes: ByteArray) = CryptoSignature.RSAorHMAC.parseFromJca(bytes)
+    }
 }
 
 internal fun getKPGInstance(alg: String, provider: String? = null) =

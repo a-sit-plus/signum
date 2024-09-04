@@ -291,7 +291,7 @@ sealed class IosSigner(final override val alias: String,
         }
     } }
 
-    protected abstract fun bytesToSignature(sigBytes: ByteArray): CryptoSignature
+    protected abstract fun bytesToSignature(sigBytes: ByteArray): CryptoSignature.RawByteEncodable
     final override suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<IosSignerSigningConfiguration>): SignatureResult<*> =
     withContext(keychainThreads) { signCatching {
         require(data.format == null) { "Pre-hashed data is unsupported on iOS" }
