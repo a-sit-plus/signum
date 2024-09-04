@@ -1,16 +1,12 @@
 @file:OptIn(ExperimentalForeignApi::class)
 package at.asitplus.signum.supreme.sign
 
-import arrow.core.Invalid
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.ensureSize
 import at.asitplus.signum.indispensable.iosEncoded
-import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.indispensable.secKeyAlgorithmPreHashed
 import at.asitplus.signum.supreme.CoreFoundationException
@@ -18,21 +14,15 @@ import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.UnsupportedCryptoException
 import at.asitplus.signum.supreme.cfDictionaryOf
 import at.asitplus.signum.supreme.corecall
-import at.asitplus.signum.supreme.createCFDictionary
 import at.asitplus.signum.supreme.giveToCF
-import at.asitplus.signum.supreme.swiftcall
 import at.asitplus.signum.supreme.toNSData
-import kotlinx.cinterop.AutofreeScope
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.MemScope
-import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
 import platform.CoreFoundation.CFRelease
-import platform.CoreFoundation.kCFErrorDomainOSStatus
 import platform.Foundation.NSOSStatusErrorDomain
 import platform.Security.SecKeyCreateWithData
 import platform.Security.SecKeyRef
-import platform.Security.SecKeyRefVar
 import platform.Security.SecKeyVerifySignature
 import platform.Security.errSecVerifyFailed
 import platform.Security.kSecAttrKeyClass

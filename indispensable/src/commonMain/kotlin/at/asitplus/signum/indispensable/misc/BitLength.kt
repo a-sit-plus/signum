@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.misc
 
 import com.ionspin.kotlin.bignum.integer.BigInteger
-import kotlin.jvm.JvmInline
 
 /**
  * Utility class to represent the bit length of curves and signatures.
