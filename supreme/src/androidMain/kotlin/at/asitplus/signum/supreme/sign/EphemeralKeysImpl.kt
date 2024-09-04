@@ -25,18 +25,25 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
         signatureAlgorithm.getJCASignatureInstancePreHashed(provider = null).getOrThrow().run {
             initSign(privateKey)
             inputData.data.forEach { update(it) }
-            sign().let {
-                CryptoSignature.parseFromJca(it, signatureAlgorithm)
-            }
+            sign().let(::parseFromJca)
         }
     }
+
+    protected abstract fun parseFromJca(bytes: ByteArray): CryptoSignature.RawByteEncodable
+
     class EC (config: EphemeralSignerConfiguration, privateKey: PrivateKey,
               override val publicKey: CryptoPublicKey.EC, override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
-        : AndroidEphemeralSigner(privateKey), Signer.ECDSA
+        : AndroidEphemeralSigner(privateKey), Signer.ECDSA {
+
+        override fun parseFromJca(bytes: ByteArray) = CryptoSignature.EC.parseFromJca(bytes).withCurve(publicKey.curve)
+    }
 
     class RSA (config: EphemeralSignerConfiguration, privateKey: PrivateKey,
                override val publicKey: CryptoPublicKey.Rsa, override val signatureAlgorithm: SignatureAlgorithm.RSA)
-        : AndroidEphemeralSigner(privateKey), Signer.RSA
+        : AndroidEphemeralSigner(privateKey), Signer.RSA {
+
+        override fun parseFromJca(bytes: ByteArray) = CryptoSignature.RSAorHMAC.parseFromJca(bytes)
+    }
 }
 
 internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey =
