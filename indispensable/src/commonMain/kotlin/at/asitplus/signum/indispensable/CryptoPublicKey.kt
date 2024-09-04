@@ -433,7 +433,7 @@ fun SpecializedCryptoPublicKey.equalsCryptographically(other: SpecializedCryptoP
     toCryptoPublicKey().map { other.equalsCryptographically(it) }.getOrElse { false }
 
 /** Whether the actual underlying key (irrespective of any format-specific metadata) is equal */
-fun CryptoPublicKey.equalsCryptograpically(other: SpecializedCryptoPublicKey) =
+fun CryptoPublicKey.equalsCryptographically(other: SpecializedCryptoPublicKey) =
     other.equalsCryptographically(this)
 
 
