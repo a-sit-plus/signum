@@ -191,7 +191,7 @@ val PlatformSigningProvider get() = getPlatformSigningProvider(null)
 /** KT-71089 workaround
  * @see SigningProvider */
 interface SigningProviderI<out SignerT: Signer.WithAlias,
-        out SignerConfigT: DSL.Data,
+        out SignerConfigT: SignerConfiguration,
         out KeyConfigT: PlatformSigningKeyConfigurationBase<*>> {
     suspend fun createSigningKey(alias: String, configure: DSLConfigureFn<KeyConfigT> = null): KmmResult<SignerT>
     suspend fun getSignerForKey(alias: String, configure: DSLConfigureFn<SignerConfigT> = null): KmmResult<SignerT>

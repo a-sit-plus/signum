@@ -55,10 +55,13 @@ import at.asitplus.signum.supreme.sign.makeVerifier
 import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.cryptotest.theme.AppTheme
 import at.asitplus.cryptotest.theme.LocalThemeIsDark
+import at.asitplus.signum.supreme.asKmmResult
 import at.asitplus.signum.supreme.os.PlatformSignerConfigurationBase
+import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.supreme.os.PlatformSigningProvider
+import at.asitplus.signum.supreme.os.SignerConfiguration
+import at.asitplus.signum.supreme.os.SigningProvider
 import at.asitplus.signum.supreme.os.jsonEncoded
-import at.asitplus.signum.supreme.wrap
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
 import io.ktor.util.decodeBase64Bytes
@@ -120,12 +123,17 @@ val SAMPLE_CERT_CHAIN = listOf(
             "/q4AaOeMSQ+2b1tbFfLn"
 ).map { X509Certificate.decodeFromDer(it.replace("\n", "").decodeBase64Bytes()) }
 
+/* because we also want it to work on the jvm;
+you don't need this workaround for ios/android, just use PlatformSigningProvider directly */
+expect val Provider: SigningProvider
 
 const val ALIAS = "Bartschlüssel"
-val SIGNER_CONFIG: (PlatformSignerConfigurationBase.()->Unit) = {
-    unlockPrompt {
-        message = "We're signing a thing!"
-        cancelText = "No! Stop!"
+val SIGNER_CONFIG: (SignerConfiguration.()->Unit) = {
+    if (this is PlatformSignerConfigurationBase) {
+        unlockPrompt {
+            message = "We're signing a thing!"
+            cancelText = "No! Stop!"
+        }
     }
     rsa {
         padding = RSAPadding.PKCS1
@@ -336,9 +344,7 @@ internal fun App() {
                         CoroutineScope(context).launch {
                             canGenerate = false
                             genTextOverride = "Creating…"
-                            currentSigner = PlatformSigningProvider.createSigningKey(ALIAS) {
-                                signer(SIGNER_CONFIG)
-
+                            currentSigner = Provider.createSigningKey(ALIAS) {
                                 when (val alg = keyAlgorithm.algorithm) {
                                     is SignatureAlgorithm.ECDSA -> {
                                         this@createSigningKey.ec {
@@ -357,25 +363,29 @@ internal fun App() {
                                     else -> error("unreachable")
                                 }
 
-                                val timeout = runCatching {
-                                    biometricAuth.substringBefore("s").trim().toInt()
-                                }.getOrNull()
+                                if (this is PlatformSigningKeyConfigurationBase) {
+                                    signer(SIGNER_CONFIG)
 
-                                if (attestation || timeout != null) {
-                                    hardware {
-                                        backing = PREFERRED
-                                        if (attestation) {
-                                            attestation {
-                                                challenge = Random.nextBytes(16)
+                                    val timeout = runCatching {
+                                        biometricAuth.substringBefore("s").trim().toInt()
+                                    }.getOrNull()
+
+                                    if (attestation || timeout != null) {
+                                        hardware {
+                                            backing = PREFERRED
+                                            if (attestation) {
+                                                attestation {
+                                                    challenge = Random.nextBytes(16)
+                                                }
                                             }
-                                        }
 
-                                        if (timeout != null) {
-                                            protection {
-                                                this.timeout = timeout.seconds
-                                                factors {
-                                                    biometry = true
-                                                    deviceLock = true
+                                            if (timeout != null) {
+                                                protection {
+                                                    this.timeout = timeout.seconds
+                                                    factors {
+                                                        biometry = true
+                                                        deviceLock = true
+                                                    }
                                                 }
                                             }
                                         }
@@ -401,7 +411,7 @@ internal fun App() {
                         CoroutineScope(context).launch {
                             canGenerate = false
                             genTextOverride = "Loading…"
-                            PlatformSigningProvider.getSignerForKey(ALIAS, SIGNER_CONFIG).let {
+                            Provider.getSignerForKey(ALIAS, SIGNER_CONFIG).let {
                                 Napier.w { "Priv retrieved from native: $it" }
                                 currentSigner = it
                                 verifyState = null
@@ -424,7 +434,7 @@ internal fun App() {
                         CoroutineScope(context).launch {
                             canGenerate = false
                             genTextOverride = "Deleting…"
-                            PlatformSigningProvider.deleteSigningKey(ALIAS)
+                            Provider.deleteSigningKey(ALIAS)
                                 .onFailure { Napier.e("Failed to delete key", it) }
                             currentSigner = null
                             signatureData = null
@@ -464,7 +474,7 @@ internal fun App() {
                     CoroutineScope(context).launch {
                         val data = inputData.encodeToByteArray()
                         currentSigner!!
-                            .transform { it.sign(data).wrap() }
+                            .transform { it.sign(data).asKmmResult() }
                             .also { signatureData = it; verifyState = null }
                     }
 
@@ -526,23 +536,3 @@ internal fun App() {
         }
     }
 }
-
-/*internal expect suspend fun generateKey(
-    alg: CryptoAlgorithm,
-    attestation: ByteArray?,
-    withBiometricAuth: Duration?,
-
-    ): KmmResult<TbaKey>
-
-internal expect suspend fun sign(
-    data: ByteArray,
-    alg: CryptoAlgorithm,
-    signingKey: CryptoPrivateKey
-): KmmResult<CryptoSignature>
-
-internal expect suspend fun loadPubKey(): KmmResult<CryptoPublicKey>
-
-internal expect suspend fun loadPrivateKey(): KmmResult<CryptoKeyPair>
-
-internal expect suspend fun storeCertChain(): KmmResult<Unit>
-internal expect suspend fun getCertChain(): KmmResult<List<X509Certificate>>*/
