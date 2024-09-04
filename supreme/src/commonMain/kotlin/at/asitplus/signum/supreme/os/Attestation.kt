@@ -21,6 +21,8 @@ sealed interface Attestation {
     }
 }
 
+@Serializable
+@SerialName("self")
 data class SelfAttestation (
     @Serializable(with=X509CertificateBase64UrlSerializer::class)
     @SerialName("x5c")

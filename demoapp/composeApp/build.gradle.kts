@@ -100,6 +100,12 @@ android {
    }
 }
 
+
+compose.desktop {
+    application {
+        mainClass = "at.asitplus.cryptotest.MainKt"
+    }
+}
 buildConfig {
     // BuildConfig configuration here.
     // https://github.com/gmazzo/gradle-buildconfig-plugin#usage-in-kts
