@@ -2,10 +2,8 @@
 
 ## 3.0
 
-### Next
-* Remove Swift verifier logic to obtain a general speed-up
-
 ### 3.7.0 (Supreme 0.2.0)
+* Remove Swift verifier logic to obtain a general speed-up
 * Implement supreme signing capabilities
 * Introduce Attestation Data Structure
 * Dependency Updates:

@@ -14,7 +14,8 @@
 [![Kotlin](https://img.shields.io/badge/kotlin-multiplatform-orange.svg?logo=kotlin)](http://kotlinlang.org)
 [![Kotlin](https://img.shields.io/badge/kotlin-2.0.0-blue.svg?logo=kotlin)](http://kotlinlang.org)
 [![Java](https://img.shields.io/badge/java-17+-blue.svg?logo=OPENJDK)](https://www.oracle.com/java/technologies/downloads/#java11)
-[![Maven Central](https://img.shields.io/maven-central/v/at.asitplus.signum/indispensable)](https://mvnrepository.com/artifact/at.asitplus.signum/)
+[![Maven Central (indispensable)](https://img.shields.io/maven-central/v/at.asitplus.signum/indispensable?label=maven-central%20%28indispensable%29)](https://mvnrepository.com/artifact/at.asitplus.signum/)
+[![Maven Central (Supreme)](https://img.shields.io/maven-central/v/at.asitplus.signum/supreme?label=maven-central%20%28Supreme%29)](https://mvnrepository.com/artifact/at.asitplus.signum/supreme)
 
 </div>
 
@@ -24,7 +25,9 @@
 This [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html) library provides platform-independent data
 types and functionality related to crypto and PKI applications:
 
-* **Multiplatform ECDSA and RSA verification**
+* **Multiplatform ECDSA and RSA Signer and Verifier** &rarr; Check out the included [CMP demo App](demoapp) to see it in action
+  * **Supports Attestation on iOS and Android**
+  * **Biometric Authentication on Android and iOS without Callbacks or Activity Passing** (✨Magic!✨)
 * Public Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)
 * X509 Certificate Class (create, encode, decode)
@@ -78,16 +81,7 @@ implementation("at.asitplus.signum:indispensable-cosef:$version")
 ```
 
 ```kotlin 
-implementation("at.asitplus.signum:supreme:0.1.1-PRE")
-```
-
-In addition, (while we're waiting for upstream to release new a stable version of `kotlinx.serialization`),
-add the following repository to your project, if you want to use the COSE functionality provided by Indispensable Cosef
-
-```kotlin
-repositories {
-  maven(uri("https://raw.githubusercontent.com/a-sit-plus/kotlinx.serialization/mvn/repo"))
-}
+implementation("at.asitplus.signum:supreme:0.2.0")
 ```
 
 <br>
@@ -168,8 +162,9 @@ val signature = signer.sign(plaintext) {
 ... but you cannot change the fact that you configured this key to need biometry. Consider this when creating your keys.
 
 On the JVM, no native secure hardware storage is available.
-File-based keystores can be accessed using [`JKSProvider { file { /* ... */ } }`](https://a-sit-plus.github.io/signum/supreme/at.asitplus.signum.supreme.os/-j-k-s-provider/.index.html).
+File-based keystores can be accessed using `JKSProvider { file { /* ... */ } }`.
 Other keystores can be accessed using `JKSProvider { withBackingObject{ /* ... */ } }` or `JksProvider { customAccessor{ /* ... */ } }`.
+For more details, please refer to the provider's [configuration options](https://a-sit-plus.github.io/signum/supreme/at.asitplus.signum.supreme.os/-j-k-s-provider-configuration/index.html).
 
 #### Key Attestation
 
@@ -520,8 +515,6 @@ SEQUENCE (8 elem)
 * No OCSP and CRL Checks (though it is perfectly possible to parse this data from a certificate and implement the checks)
 * We do need more comprehensive tests, but we're getting there, mostly thanks to [@iaik-jheher](https://github.com/iaik-jheher)
   and [@n0900](https://github.com/n0900).
-* We don't yet know how compliant everything really is, but this code has been successfully handling cryptographic material
-  for a couple of months now and we're improving whenever we hit an issue.
 * Number of supported Algorithms is limited to the usual suspects (sorry, no Bernstein curves )-:)
 
 

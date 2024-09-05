@@ -73,55 +73,6 @@ import kotlin.random.Random
 import kotlin.reflect.KProperty
 import kotlin.time.Duration.Companion.seconds
 
-val SAMPLE_CERT_CHAIN = listOf(
-    "MIIDljCCAxygAwIBAgISBAkE/SHlMi5J8uQGoGCZBnhSMAoGCCqGSM49BAMDMDIx\n" +
-            "CzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MQswCQYDVQQDEwJF\n" +
-            "MTAeFw0yNDAzMTMyMDQ2MjZaFw0yNDA2MTEyMDQ2MjVaMBwxGjAYBgNVBAMTEXN0\n" +
-            "YWNrb3ZlcmZsb3cuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAENMSrkEQf\n" +
-            "2x8dEAh73snPfgxMIK+VYUyIIYA+NuRhhyZuL2ZV9N4ZUibe/eEad3Y8HND3Kuz/\n" +
-            "2vxFzJvR8nlKSqOCAiYwggIiMA4GA1UdDwEB/wQEAwIHgDAdBgNVHSUEFjAUBggr\n" +
-            "BgEFBQcDAQYIKwYBBQUHAwIwDAYDVR0TAQH/BAIwADAdBgNVHQ4EFgQUeQJ7DtZq\n" +
-            "02WUcs0cMmOa/eJEuxcwHwYDVR0jBBgwFoAUWvPtK/w2wjd5uVIw6lRvz1XLLqww\n" +
-            "VQYIKwYBBQUHAQEESTBHMCEGCCsGAQUFBzABhhVodHRwOi8vZTEuby5sZW5jci5v\n" +
-            "cmcwIgYIKwYBBQUHMAKGFmh0dHA6Ly9lMS5pLmxlbmNyLm9yZy8wMQYDVR0RBCow\n" +
-            "KIITKi5zdGFja292ZXJmbG93LmNvbYIRc3RhY2tvdmVyZmxvdy5jb20wEwYDVR0g\n" +
-            "BAwwCjAIBgZngQwBAgEwggECBgorBgEEAdZ5AgQCBIHzBIHwAO4AdQA7U3d1Pi25\n" +
-            "gE6LMFsG/kA7Z9hPw/THvQANLXJv4frUFwAAAY45x+icAAAEAwBGMEQCICqwZ2ic\n" +
-            "dHGogPX6/nRhsJ2AMWROA2MkZ+zZ/8dvzaCoAiBDqexmj0syXLpaCAhZ7Jjps+QN\n" +
-            "UHsHX8F/VE2eQ4fmdAB1AEiw42vapkc0D+VqAvqdMOscUgHLVt0sgdm7v6s52IRz\n" +
-            "AAABjjnH6KcAAAQDAEYwRAIgRB4bHal+3msYGbblbfHhWcVm+95f7fkEWQabASE2\n" +
-            "qycCIFJ/P1mixU1zSN6L/hZSvP8RTgUxy/xvbfrcF8giDNA/MAoGCCqGSM49BAMD\n" +
-            "A2gAMGUCMDe8nbCNF3evyvyGNxKOaScHhZ9ScGi5zeEo4ogiY6f25FV3wzfE2enB\n" +
-            "3QUOvZLJbgIxAIc//kc6UgMSKC+FNL3LM3c4avx9jaKZwUvlcOvxrSExYvnmxqrA\n" +
-            "jC2PPx8F/hF+ww==",
-    "MIICxjCCAk2gAwIBAgIRALO93/inhFu86QOgQTWzSkUwCgYIKoZIzj0EAwMwTzEL\n" +
-            "MAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2VhcmNo\n" +
-            "IEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDIwHhcNMjAwOTA0MDAwMDAwWhcN\n" +
-            "MjUwOTE1MTYwMDAwWjAyMQswCQYDVQQGEwJVUzEWMBQGA1UEChMNTGV0J3MgRW5j\n" +
-            "cnlwdDELMAkGA1UEAxMCRTEwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAAQkXC2iKv0c\n" +
-            "S6Zdl3MnMayyoGli72XoprDwrEuf/xwLcA/TmC9N/A8AmzfwdAVXMpcuBe8qQyWj\n" +
-            "+240JxP2T35p0wKZXuskR5LBJJvmsSGPwSSB/GjMH2m6WPUZIvd0xhajggEIMIIB\n" +
-            "BDAOBgNVHQ8BAf8EBAMCAYYwHQYDVR0lBBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMB\n" +
-            "MBIGA1UdEwEB/wQIMAYBAf8CAQAwHQYDVR0OBBYEFFrz7Sv8NsI3eblSMOpUb89V\n" +
-            "yy6sMB8GA1UdIwQYMBaAFHxClq7eS0g7+pL4nozPbYupcjeVMDIGCCsGAQUFBwEB\n" +
-            "BCYwJDAiBggrBgEFBQcwAoYWaHR0cDovL3gyLmkubGVuY3Iub3JnLzAnBgNVHR8E\n" +
-            "IDAeMBygGqAYhhZodHRwOi8veDIuYy5sZW5jci5vcmcvMCIGA1UdIAQbMBkwCAYG\n" +
-            "Z4EMAQIBMA0GCysGAQQBgt8TAQEBMAoGCCqGSM49BAMDA2cAMGQCMHt01VITjWH+\n" +
-            "Dbo/AwCd89eYhNlXLr3pD5xcSAQh8suzYHKOl9YST8pE9kLJ03uGqQIwWrGxtO3q\n" +
-            "YJkgsTgDyj2gJrjubi1K9sZmHzOa25JK1fUpE8ZwYii6I4zPPS/Lgul/",
-    "MIICGzCCAaGgAwIBAgIQQdKd0XLq7qeAwSxs6S+HUjAKBggqhkjOPQQDAzBPMQsw\n" +
-            "CQYDVQQGEwJVUzEpMCcGA1UEChMgSW50ZXJuZXQgU2VjdXJpdHkgUmVzZWFyY2gg\n" +
-            "R3JvdXAxFTATBgNVBAMTDElTUkcgUm9vdCBYMjAeFw0yMDA5MDQwMDAwMDBaFw00\n" +
-            "MDA5MTcxNjAwMDBaME8xCzAJBgNVBAYTAlVTMSkwJwYDVQQKEyBJbnRlcm5ldCBT\n" +
-            "ZWN1cml0eSBSZXNlYXJjaCBHcm91cDEVMBMGA1UEAxMMSVNSRyBSb290IFgyMHYw\n" +
-            "EAYHKoZIzj0CAQYFK4EEACIDYgAEzZvVn4CDCuwJSvMWSj5cz3es3mcFDR0HttwW\n" +
-            "+1qLFNvicWDEukWVEYmO6gbf9yoWHKS5xcUy4APgHoIYOIvXRdgKam7mAHf7AlF9\n" +
-            "ItgKbppbd9/w+kHsOdx1ymgHDB/qo0IwQDAOBgNVHQ8BAf8EBAMCAQYwDwYDVR0T\n" +
-            "AQH/BAUwAwEB/zAdBgNVHQ4EFgQUfEKWrt5LSDv6kviejM9ti6lyN5UwCgYIKoZI\n" +
-            "zj0EAwMDaAAwZQIwe3lORlCEwkSHRhtFcP9Ymd70/aTSVaYgLXTWNLxBo1BfASdW\n" +
-            "tL4ndQavEi51mI38AjEAi/V3bNTIZargCyzuFJ0nN6T5U6VR5CmD1/iQMVtCnwr1\n" +
-            "/q4AaOeMSQ+2b1tbFfLn"
-).map { X509Certificate.decodeFromDer(it.replace("\n", "").decodeBase64Bytes()) }
 
 /* because we also want it to work on the jvm;
 you don't need this workaround for ios/android, just use PlatformSigningProvider directly */
