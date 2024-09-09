@@ -2,24 +2,18 @@ package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.asn1.BERTags.ASN1_NULL
-import at.asitplus.signum.indispensable.asn1.BERTags.BIT_STRING
-import at.asitplus.signum.indispensable.asn1.BERTags.BOOLEAN
-import at.asitplus.signum.indispensable.asn1.BERTags.GENERALIZED_TIME
-import at.asitplus.signum.indispensable.asn1.BERTags.INTEGER
-import at.asitplus.signum.indispensable.asn1.BERTags.UTC_TIME
-import at.asitplus.signum.indispensable.asn1.DERTags.toExplicitTag
 import at.asitplus.signum.indispensable.io.BitSet
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.util.toTwosComplementByteArray
 import kotlinx.datetime.Instant
+import kotlin.experimental.or
 
 /**
  * Class Providing a DSL for creating arbitrary ASN.1 structures. You will almost certainly never use it directly, but rather use it as follows:
  * ```kotlin
  * Sequence {
- *     +Tagged(1u) {
- *         +Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00))
+ *     +Tagged(1uL) {
+ *         +Asn1Primitive(BERTags.BOOLEAN.toUlong(), byteArrayOf(0x00))
  *     }
  *     +Set {
  *         +Sequence {
@@ -129,7 +123,7 @@ object Asn1 {
     fun Set(root: Asn1TreeBuilder.() -> Unit): Asn1Set {
         val seq = Asn1TreeBuilder()
         seq.root()
-        return Asn1Set(seq.elements.sortedBy { it.tag })
+        return Asn1Set(seq.elements)
     }
 
     /**
@@ -180,34 +174,32 @@ object Asn1 {
     /**
      * Creates a new EXPLICITLY TAGGED ASN.1 structure as [Asn1Tagged] using [tag].
      *
-     * * **NOTE:** automatically calls [at.asitplus.signum.indispensable.asn1.DERTags.toExplicitTag] on [tag]
-     *
      * Use as follows:
      *
      * ```kotlin
-     * Tagged(2u) {
+     * Tagged(2uL) {
      *   +PrintableString("World World")
      *   +Null()
      *   +Int(1337)
      * }
      *  ```
      */
-    fun Tagged(tag: UByte, root: Asn1TreeBuilder.() -> Unit): Asn1Tagged {
+    fun Tagged(tag: ULong, root: Asn1TreeBuilder.() -> Unit): Asn1Tagged {
         val seq = Asn1TreeBuilder()
         seq.root()
-        return Asn1Tagged(tag.toExplicitTag(), seq.elements)
+        return Asn1Tagged(tag, seq.elements)
     }
 
     /**
      * Exception-free version of [Tagged]
      */
-    fun TaggedOrNull(tag: UByte, root: Asn1TreeBuilder.() -> Unit) =
+    fun TaggedOrNull(tag: ULong, root: Asn1TreeBuilder.() -> Unit) =
         catching { Tagged(tag, root) }.getOrNull()
 
     /**
      * Safe version on [Tagged], wrapping the result into a [KmmResult]
      */
-    fun TaggedSafe(tag: UByte, root: Asn1TreeBuilder.() -> Unit) =
+    fun TaggedSafe(tag: ULong, root: Asn1TreeBuilder.() -> Unit) =
         catching { Tagged(tag, root) }
 
 
@@ -217,16 +209,16 @@ object Asn1 {
     fun Bool(value: Boolean) = value.encodeToTlv()
 
 
-    /**
-     * Adds an INTEGER [Asn1Primitive] to this ASN.1 structure
-     */
+    /** Adds an INTEGER [Asn1Primitive] to this ASN.1 structure */
     fun Int(value: Int) = value.encodeToTlv()
-
-
-    /**
-     * Adds an INTEGER [Asn1Primitive] to this ASN.1 structure
-     */
-    fun Long(value: Long) = value.encodeToTlv()
+    /** Adds an INTEGER [Asn1Primitive] to this ASN.1 structure */
+    fun Int(value: Long) = value.encodeToTlv()
+    /** Adds an INTEGER [Asn1Primitive] to this ASN.1 structure */
+    fun Int(value: UInt) = value.encodeToTlv()
+    /** Adds an INTEGER [Asn1Primitive] to this ASN.1 structure */
+    fun Int(value: ULong) = value.encodeToTlv()
+    /** Adds an INTEGER [Asn1Primitive] to this ASN.1 structure */
+    fun Int(value: BigInteger) = value.encodeToTlv()
 
 
     /**
@@ -265,7 +257,7 @@ object Asn1 {
     /**
      * Adds a NULL [Asn1Primitive] to this ASN.1 structure
      */
-    fun Null() = Asn1Primitive(ASN1_NULL, byteArrayOf())
+    fun Null() = Asn1Primitive(Asn1Element.Tag.NULL, byteArrayOf())
 
 
     /**
@@ -303,25 +295,20 @@ object Asn1 {
 }
 
 /**
- * Produces an INTEGER as [Asn1Primitive]
- */
-fun Int.encodeToTlv() = Asn1Primitive(INTEGER, encodeToDer())
-
-
-/**
  * Produces a BOOLEAN as [Asn1Primitive]
  */
-fun Boolean.encodeToTlv() = Asn1Primitive(BOOLEAN, byteArrayOf(if (this) 0xff.toByte() else 0))
+fun Boolean.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.BOOL, byteArrayOf(if (this) 0xff.toByte() else 0))
 
-/**
- * Produces an INTEGER as [Asn1Primitive]
- */
-fun Long.encodeToTlv() = Asn1Primitive(INTEGER, encodeToDer())
-
-/**
- * Produces an INTEGER as [Asn1Primitive]
- */
-fun BigInteger.encodeToTlv() = Asn1Primitive(INTEGER, toTwosComplementByteArray())
+/** Produces an INTEGER as [Asn1Primitive] */
+fun Int.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.INT, encodeToDer())
+/** Produces an INTEGER as [Asn1Primitive] */
+fun Long.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.INT, encodeToDer())
+/** Produces an INTEGER as [Asn1Primitive] */
+fun UInt.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.INT, encodeToDer())
+/** Produces an INTEGER as [Asn1Primitive] */
+fun ULong.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.INT, encodeToDer())
+/** Produces an INTEGER as [Asn1Primitive] */
+fun BigInteger.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.INT, encodeToDer())
 
 /**
  * Produces an OCTET STRING as [Asn1Primitive]
@@ -331,30 +318,30 @@ fun ByteArray.encodeToTlvOctetString() = Asn1PrimitiveOctetString(this)
 /**
  * Produces a BIT STRING as [Asn1Primitive]
  */
-fun ByteArray.encodeToTlvBitString() = Asn1Primitive(BIT_STRING, encodeToBitString())
+fun ByteArray.encodeToTlvBitString() = Asn1Primitive(Asn1Element.Tag.BIT_STRING, encodeToBitString())
 
 /**
  * Prepends 0x00 to this ByteArray for encoding it into a BIT STRING. Useful for implicit tagging
  */
 fun ByteArray.encodeToBitString() = byteArrayOf(0x00) + this
 
-private fun Int.encodeToDer() = if (this == 0) byteArrayOf(0) else
-    encodeToByteArray()
-
-private fun Long.encodeToDer() = if (this == 0L) byteArrayOf(0) else
-    encodeToByteArray()
+private fun Int.encodeToDer() = toTwosComplementByteArray()
+private fun Long.encodeToDer() = toTwosComplementByteArray()
+private fun UInt.encodeToDer() = toTwosComplementByteArray()
+private fun ULong.encodeToDer() = toTwosComplementByteArray()
+private fun BigInteger.encodeToDer() = toTwosComplementByteArray()
 
 /**
  * Produces a UTC TIME as [Asn1Primitive]
  */
 fun Instant.encodeToAsn1UtcTime() =
-    Asn1Primitive(UTC_TIME, encodeToAsn1Time().drop(2).encodeToByteArray())
+    Asn1Primitive(Asn1Element.Tag.TIME_UTC, encodeToAsn1Time().drop(2).encodeToByteArray())
 
 /**
  * Produces a GENERALIZED TIME as [Asn1Primitive]
  */
 fun Instant.encodeToAsn1GeneralizedTime() =
-    Asn1Primitive(GENERALIZED_TIME, encodeToAsn1Time().encodeToByteArray())
+    Asn1Primitive(Asn1Element.Tag.TIME_GENERALIZED, encodeToAsn1Time().encodeToByteArray())
 
 private fun Instant.encodeToAsn1Time(): String {
     val value = this.toString()
@@ -402,111 +389,143 @@ fun Long.encodeTo8Bytes(): ByteArray = byteArrayOf(
     (this).toByte()
 )
 
-/**
- * Encodes a signed Long correctly to a compact byte array
- */
-fun Long.encodeToByteArray(): ByteArray {
-    //fast case
-    if (this >= Byte.MIN_VALUE && this <= Byte.MAX_VALUE) return byteArrayOf(this.toByte())
-    if (this >= Short.MIN_VALUE && this <= Short.MAX_VALUE) return byteArrayOf(
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
-    if (this >= -(0x80 shl 16) && this < (0x80 shl 16)) return byteArrayOf(
-        (this ushr 16).toByte(),
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
-    if (this >= -((0x80L shl 24)) && this < (0x80L shl 24)) return byteArrayOf(
-        (this ushr 24).toByte(),
-        (this ushr 16).toByte(),
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
-    if (this >= Int.MIN_VALUE && this <= Int.MAX_VALUE) return byteArrayOf(
-        (this ushr 32).toByte(),
-        (this ushr 24).toByte(),
-        (this ushr 16).toByte(),
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
-
-    if (this >= -((0x80L shl 40)) && this < (0x80L shl 40)) return byteArrayOf(
-        (this ushr 40).toByte(),
-        (this ushr 32).toByte(),
-        (this ushr 24).toByte(),
-        (this ushr 16).toByte(),
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
-    if (this >= -((0x80L shl 48)) && this < (0x80L shl 48)) return byteArrayOf(
-        (this ushr 48).toByte(),
-        (this ushr 40).toByte(),
-        (this ushr 32).toByte(),
-        (this ushr 24).toByte(),
-        (this ushr 16).toByte(),
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
-    //-Overflow FTW!
-    @Suppress("INTEGER_OVERFLOW")
-    if (this >= ((0x80L shl 56)) && this < ((0x80L shl 56) - 1)) return byteArrayOf(
-        (this ushr 56).toByte(),
-        (this ushr 48).toByte(),
-        (this ushr 40).toByte(),
-        (this ushr 32).toByte(),
-        (this ushr 24).toByte(),
-        (this ushr 16).toByte(),
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
-    return byteArrayOf(
-        (this ushr 64).toByte(),
-        (this ushr 56).toByte(),
-        (this ushr 48).toByte(),
-        (this ushr 40).toByte(),
-        (this ushr 32).toByte(),
-        (this ushr 24).toByte(),
-        (this ushr 16).toByte(),
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
+/** Encodes an unsigned Long to a minimum-size twos-complement byte array */
+fun ULong.toTwosComplementByteArray() = when {
+    this >= 0x8000000000000000UL ->
+        byteArrayOf(
+            0x00,
+            (this shr 56).toByte(),
+            (this shr 48).toByte(),
+            (this shr 40).toByte(),
+            (this shr 32).toByte(),
+            (this shr 24).toByte(),
+            (this shr 16).toByte(),
+            (this shr 8).toByte(),
+            this.toByte())
+    else -> this.toLong().toTwosComplementByteArray()
 }
 
-/**
- * Encodes a signed Long correctly to a compact byte array
- */
-fun Int.encodeToByteArray(): ByteArray {
-    if (this >= Byte.MIN_VALUE && this <= Byte.MAX_VALUE) return byteArrayOf(this.toByte())
-    if (this >= Short.MIN_VALUE && this <= Short.MAX_VALUE) return byteArrayOf(
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
-    if (this >= -(0x80 shl 16) && this < (0x80 shl 16)) return byteArrayOf(
-        (this ushr 16).toByte(),
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
-    //-Overflow FTW!
-    @Suppress("INTEGER_OVERFLOW")
-    if (this >= ((0x80 shl 24)) && this < ((0x80 shl 24) - 1)) return byteArrayOf(
-        (this ushr 24).toByte(),
-        (this ushr 16).toByte(),
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
-    return byteArrayOf(
-        (this ushr 32).toByte(),
-        (this ushr 24).toByte(),
-        (this ushr 16).toByte(),
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
+/** Encodes an unsigned Int to a minimum-size twos-complement byte array */
+fun UInt.toTwosComplementByteArray() = toLong().toTwosComplementByteArray()
 
+/** Encodes a signed Long to a minimum-size twos-complement byte array */
+fun Long.toTwosComplementByteArray() = when {
+    (this >= -0x80L && this <= 0x7FL) ->
+        byteArrayOf(
+            this.toByte())
+    (this >= -0x8000L && this <= 0x7FFFL) ->
+        byteArrayOf(
+            (this ushr 8).toByte(),
+            this.toByte())
+    (this >= -0x800000L && this <= 0x7FFFFFL) ->
+        byteArrayOf(
+            (this ushr 16).toByte(),
+            (this ushr 8).toByte(),
+            this.toByte())
+    (this >= -0x80000000L && this <= 0x7FFFFFFFL) ->
+        byteArrayOf(
+            (this ushr 24).toByte(),
+            (this ushr 16).toByte(),
+            (this ushr 8).toByte(),
+            this.toByte())
+    (this >= -0x8000000000L && this <= 0x7FFFFFFFFFL) ->
+        byteArrayOf(
+            (this ushr 32).toByte(),
+            (this ushr 24).toByte(),
+            (this ushr 16).toByte(),
+            (this ushr 8).toByte(),
+            this.toByte())
+    (this >= -0x800000000000L && this <= 0x7FFFFFFFFFFFL) ->
+        byteArrayOf(
+            (this ushr 40).toByte(),
+            (this ushr 32).toByte(),
+            (this ushr 24).toByte(),
+            (this ushr 16).toByte(),
+            (this ushr 8).toByte(),
+            this.toByte())
+    (this >= -0x80000000000000L && this <= 0x7FFFFFFFFFFFFFL) ->
+        byteArrayOf(
+            (this ushr 48).toByte(),
+            (this ushr 40).toByte(),
+            (this ushr 32).toByte(),
+            (this ushr 24).toByte(),
+            (this ushr 16).toByte(),
+            (this ushr 8).toByte(),
+            this.toByte())
+    else ->
+        byteArrayOf(
+            (this ushr 56).toByte(),
+            (this ushr 48).toByte(),
+            (this ushr 40).toByte(),
+            (this ushr 32).toByte(),
+            (this ushr 24).toByte(),
+            (this ushr 16).toByte(),
+            (this ushr 8).toByte(),
+            this.toByte())
 }
 
+/** Encodes a signed Int to a minimum-size twos-complement byte array */
+fun Int.toTwosComplementByteArray() = toLong().toTwosComplementByteArray()
+
+fun Int.Companion.fromTwosComplementByteArray(it: ByteArray) = when (it.size) {
+    4 -> (it[0].toInt() shl 24) or (it[1].toUByte().toInt() shl 16) or (it[2].toUByte().toInt() shl 8) or (it[3].toUByte().toInt())
+    3 -> (it[0].toInt() shl 16) or (it[1].toUByte().toInt() shl 8) or (it[2].toUByte().toInt())
+    2 -> (it[0].toInt() shl 8) or (it[1].toUByte().toInt() shl 0)
+    1 -> (it[0].toInt())
+    else -> throw IllegalArgumentException("Input with size $it is out of bounds for Int")
+}
+
+fun UInt.Companion.fromTwosComplementByteArray(it: ByteArray) =
+    Long.fromTwosComplementByteArray(it).let {
+        require ((0 <= it) && (it <= 0xFFFFFFFFL)) { "Value $it is out of bounds for UInt" }
+        it.toUInt()
+    }
+
+fun Long.Companion.fromTwosComplementByteArray(it: ByteArray) = when (it.size) {
+    8 -> (it[0].toLong() shl 56) or (it[1].toUByte().toLong() shl 48) or (it[2].toUByte().toLong() shl 40) or
+            (it[3].toUByte().toLong() shl 32) or (it[4].toUByte().toLong() shl 24) or
+            (it[5].toUByte().toLong() shl 16) or (it[6].toUByte().toLong() shl 8) or (it[7].toUByte().toLong())
+    7 -> (it[0].toLong() shl 48) or (it[1].toUByte().toLong() shl 40) or (it[2].toUByte().toLong() shl 32) or
+            (it[3].toUByte().toLong() shl 24) or (it[4].toUByte().toLong() shl 16) or
+            (it[5].toUByte().toLong() shl 8) or (it[6].toUByte().toLong())
+    6 -> (it[0].toLong() shl 40) or (it[1].toUByte().toLong() shl 32) or (it[2].toUByte().toLong() shl 24) or
+            (it[3].toUByte().toLong() shl 16) or (it[4].toUByte().toLong() shl 8) or (it[5].toUByte().toLong())
+    5 -> (it[0].toLong() shl 32) or (it[1].toUByte().toLong() shl 24) or (it[2].toUByte().toLong() shl 16) or
+            (it[3].toUByte().toLong() shl 8) or (it[4].toUByte().toLong())
+    4 -> (it[0].toLong() shl 24) or (it[1].toUByte().toLong() shl 16) or (it[2].toUByte().toLong() shl 8) or
+            (it[3].toUByte().toLong())
+    3 -> (it[0].toLong() shl 16) or (it[1].toUByte().toLong() shl 8) or (it[2].toUByte().toLong())
+    2 -> (it[0].toLong() shl 8) or (it[1].toUByte().toLong() shl 0)
+    1 -> (it[0].toLong())
+    else -> throw IllegalArgumentException("Input with size $it is out of bounds for Long")
+}
+
+fun ULong.Companion.fromTwosComplementByteArray(it: ByteArray) = when {
+    ((it.size == 9) && (it[0] == 0.toByte())) ->
+        (it[1].toUByte().toULong() shl 56) or (it[2].toUByte().toULong() shl 48) or (it[3].toUByte().toULong() shl 40) or
+                (it[4].toUByte().toULong() shl 32) or (it[5].toUByte().toULong() shl 24) or
+                (it[6].toUByte().toULong() shl 16) or (it[7].toUByte().toULong() shl 8) or
+                (it[8].toUByte().toULong())
+    else -> Long.fromTwosComplementByteArray(it).let {
+        require (it >= 0) { "Value $it is out of bounds for ULong" }
+        it.toULong()
+    }
+}
+
+/** Encodes an unsigned Long to a minimum-size unsigned byte array */
+fun Long.toUnsignedByteArray(): ByteArray {
+    require(this >= 0)
+    return this.toTwosComplementByteArray().let {
+        if (it[0] == 0.toByte()) it.copyOfRange(1, it.size)
+        else it
+    }
+}
+
+/** Encodes an unsigned Int to a minimum-size unsigned byte array */
+fun Int.toUnsignedByteArray() = toLong().toUnsignedByteArray()
+
 /**
- * Drops or adds zero bytes at the start until the [size] is reached
+ * Drops bytes at the start, or adds zero bytes at the start, until the [size] is reached
  */
 fun ByteArray.ensureSize(size: Int): ByteArray = (this.size - size).let { toDrop ->
     when {
@@ -518,3 +537,54 @@ fun ByteArray.ensureSize(size: Int): ByteArray = (this.size - size).let { toDrop
 
 @Suppress("NOTHING_TO_INLINE")
 inline fun ByteArray.ensureSize(size: UInt) = ensureSize(size.toInt())
+
+/**
+ * Encodes this number using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
+ * while the highest bit indicates if more bytes are to come
+ */
+fun ULong.toAsn1VarInt(): ByteArray {
+    if (this < 128u) return byteArrayOf(this.toByte()) //Fast case
+    var offset = 0
+    var result = mutableListOf<Byte>()
+
+    var b0 = (this shr offset and 0x7FuL).toByte()
+    while ((this shr offset > 0uL) || offset == 0) {
+        result += b0
+        offset += 7
+        if (offset > (ULong.SIZE_BITS - 1)) break //End of Fahnenstange
+        b0 = (this shr offset and 0x7FuL).toByte()
+    }
+
+    return with(result) {
+        ByteArray(size) { fromBack(it) or asn1VarIntByteMask(it) }
+    }
+}
+
+//TODO: how to not duplicate this withut wasting bytes?
+/**
+ * Encodes this number using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
+ * while the highest bit indicates if more bytes are to come
+ */
+fun UInt.toAsn1VarInt(): ByteArray {
+    if (this < 128u) return byteArrayOf(this.toByte()) //Fast case
+    var offset = 0
+    var result = mutableListOf<Byte>()
+
+    var b0 = (this shr offset and 0x7Fu).toByte()
+    while ((this shr offset > 0u) || offset == 0) {
+        result += b0
+        offset += 7
+        if (offset > (UInt.SIZE_BITS - 1)) break //End of Fahnenstange
+        b0 = (this shr offset and 0x7Fu).toByte()
+    }
+
+    return with(result) {
+        ByteArray(size) { fromBack(it) or asn1VarIntByteMask(it) }
+    }
+}
+
+private fun MutableList<Byte>.asn1VarIntByteMask(it: Int) = (if (isLastIndex(it)) 0x00 else 0x80).toByte()
+
+private fun MutableList<Byte>.isLastIndex(it: Int) = it == size - 1
+
+private fun MutableList<Byte>.fromBack(it: Int) = this[size - 1 - it]

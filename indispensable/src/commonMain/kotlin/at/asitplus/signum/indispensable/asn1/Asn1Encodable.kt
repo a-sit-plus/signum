@@ -3,9 +3,8 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.KmmResult
-import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.asn1.DERTags.toImplicitTag
+import at.asitplus.signum.indispensable.asn1.toImplicitTag
 
 /**
  * Interface providing methods to encode to ASN.1
@@ -95,18 +94,18 @@ interface Asn1TagVerifyingDecodable<T : Asn1Encodable<Asn1Primitive>> :
      * @throws Asn1Exception
      */
     @Throws(Asn1Exception::class)
-    fun decodeFromTlv(src: Asn1Primitive, tagOverride: UByte?): T
+    fun decodeFromTlv(src: Asn1Primitive, tagOverride: Asn1Element.Tag?): T
 
     /**
      * Exception-free version of [decodeFromTlv]
      */
-    fun decodeFromTlvOrNull(src: Asn1Primitive, tagOverride: UByte?) =
+    fun decodeFromTlvOrNull(src: Asn1Primitive, tagOverride: Asn1Element.Tag?) =
         catching { decodeFromTlv(src, tagOverride) }.getOrNull()
 
     /**
      * Safe version of [decodeFromTlv], wrapping the result into a [KmmResult]
      */
-    fun decodeFromTlvSafe(src: Asn1Primitive, tagOverride: UByte?) =
+    fun decodeFromTlvSafe(src: Asn1Primitive, tagOverride: Asn1Element.Tag?) =
         catching { decodeFromTlv(src, tagOverride) }
 
 
@@ -115,17 +114,17 @@ interface Asn1TagVerifyingDecodable<T : Asn1Encodable<Asn1Primitive>> :
      * Useful for implicit tagging.
      */
     @Throws(Asn1Exception::class)
-    fun decodeFromDer(src: ByteArray, tagOverride: UByte?): T =
+    fun decodeFromDer(src: ByteArray, tagOverride: Asn1Element.Tag?): T =
         decodeFromTlv(Asn1Element.parse(src) as Asn1Primitive, tagOverride)
 
     /**
      * Exception-free version of [decodeFromDer]
      */
-    fun decodeFromDerOrNull(src: ByteArray, tagOverride: UByte?) =
+    fun decodeFromDerOrNull(src: ByteArray, tagOverride: Asn1Element.Tag?) =
         catching { decodeFromDer(src, tagOverride) }.getOrNull()
 
     /**
      * Safe version of [decodeFromDer], wrapping the result into a [KmmResult]
      */
-    fun decodeFromDerSafe(src: ByteArray, tagOverride: UByte?) = catching { decodeFromDer(src, tagOverride) }
+    fun decodeFromDerSafe(src: ByteArray, tagOverride: Asn1Element.Tag?) = catching { decodeFromDer(src, tagOverride) }
 }

@@ -1,5 +1,8 @@
 package at.asitplus.signum.indispensable.asn1
 
+import at.asitplus.KmmResult
+import at.asitplus.catching
+
 //Based on https://github.com/bcgit/bc-java/blob/main/core/src/main/java/org/bouncycastle/asn1/BERTags.java
 object BERTags {
     // 0x00: Reserved for use by the encoding rules
@@ -47,29 +50,45 @@ object BERTags {
     const val CONSTRUCTED: UByte = 0x20u // decimal 32
     const val UNIVERSAL: UByte = 0x00u // decimal 32
     const val APPLICATION: UByte = 0x40u // decimal 64
-    const val TAGGED: UByte = 0x80u // decimal 128 - maybe should deprecate this.
     const val CONTEXT_SPECIFIC: UByte = 0x80u // decimal 128
     const val PRIVATE: UByte = 0xC0u // decimal 192
     const val FLAGS: UByte = 0xE0u
 
 }
 
-object DERTags {
-    val DER_SEQUENCE: UByte = BERTags.CONSTRUCTED or BERTags.SEQUENCE
-    val DER_SET: UByte = BERTags.CONSTRUCTED or BERTags.SET
-    fun UByte.toExplicitTag() = BERTags.CONSTRUCTED or BERTags.TAGGED or this
+/**
+ * Convenience helper to easily construct implicitly tagged elements. Can be CONSTRUCTED or PRIMITIVE
+ * @param constructed whether to set the constructed bit
+ */
+fun ULong.toImplicitTag(constructed: Boolean = false) =
+    Asn1Element.Tag(this, constructed = constructed, tagClass = TagClass.CONTEXT_SPECIFIC)
 
-    val UByte.isExplicitTag get() = ((this and BERTags.CONSTRUCTED) != 0.toUByte()) && ((this and BERTags.TAGGED) != 0.toUByte())
+internal fun UByte.isConstructed() = this and BERTags.CONSTRUCTED != 0.toUByte()
 
-    fun UInt.toExplicitTag() = toUByte().toExplicitTag()
 
-    @Throws(Asn1Exception::class)
-    fun UInt.toImplicitTag() = runRethrowing { toUByte().toImplicitTag() }
+enum class TagClass(val byteValue: UByte, val berTag: UByte) {
+    /**
+     * 00
+     */
+    UNIVERSAL(0u, BERTags.UNIVERSAL),
 
-    @Throws(Asn1Exception::class)
-    fun UByte.toImplicitTag() = runRethrowing {
-        if (isContainer()) throw IllegalArgumentException("Implicit tag $this would result in CONSTRUCTED bit set") else BERTags.TAGGED or this
+    /**
+     * 01
+     */
+    APPLICATION(1u, BERTags.APPLICATION),
+
+    /**
+     * 10
+     */
+    CONTEXT_SPECIFIC(2u, BERTags.CONTEXT_SPECIFIC),
+
+    /**
+     * 11
+     */
+    PRIVATE(3u, BERTags.PRIVATE);
+    companion object {
+        fun fromByte(byteValue: Byte): KmmResult<TagClass> =
+            catching { entries.first { it.byteValue == ((byteValue byteMask 0xC0).toUInt().toInt() ushr 6).toUByte()  } }
     }
 
-    fun UByte.isContainer() = this and BERTags.CONSTRUCTED != 0.toUByte()
 }

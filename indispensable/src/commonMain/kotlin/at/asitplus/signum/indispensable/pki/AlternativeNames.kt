@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.DERTags.toImplicitTag
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
 
@@ -50,7 +49,7 @@ private constructor(private val extensions: List<Asn1Element>) {
         }.map {
             (it as Asn1Sequence).also {
                 if (it.children.size != 2) throw Asn1StructuralException("Invalid otherName Alternative Name found (!=2 children): ${it.toDerHexString()}")
-                if (it.children.last().tag != 0u.toImplicitTag()) throw Asn1StructuralException("Invalid otherName Alternative Name found (implicit tag != 0): ${it.toDerHexString()}")
+                if (it.children.last().tag != 0uL.toImplicitTag()) throw Asn1StructuralException("Invalid otherName Alternative Name found (implicit tag != 0): ${it.toDerHexString()}")
                 ObjectIdentifier.parse((it.children.first() as Asn1Primitive).content) //this throws if something is off
             }
         }
@@ -62,7 +61,7 @@ private constructor(private val extensions: List<Asn1Element>) {
         }.map {
             (it as Asn1Sequence).also {
                 if (it.children.size > 2) throw Asn1StructuralException("Invalid partyName Alternative Name found (>2 children): ${it.toDerHexString()}")
-                if (it.children.find { it.tag != 0u.toImplicitTag() && it.tag != 1u.toImplicitTag() } != null) throw Asn1StructuralException(
+                if (it.children.find { it.tag != 0uL.toImplicitTag() && it.tag != 1uL.toImplicitTag() } != null) throw Asn1StructuralException(
                     "Invalid partyName Alternative Name found (illegal implicit tag): ${it.toDerHexString()}"
                 )
                 //TODO: strict string parsing
@@ -87,7 +86,7 @@ private constructor(private val extensions: List<Asn1Element>) {
             }
         }.map { ObjectIdentifier.parse((it as Asn1Primitive).content) }
 
-    private fun parseStringSANs(implicitTag: UByte) =
+    private fun parseStringSANs(implicitTag: Asn1Element.Tag) =
         extensions.filter { it.tag == implicitTag }.apply {
             forEach { if (it !is Asn1Primitive) throw Asn1StructuralException("Invalid dnsName Alternative Name found: ${it.toDerHexString()}") }
         }.map { (it as Asn1Primitive).content.decodeToString() }
@@ -132,13 +131,13 @@ private constructor(private val extensions: List<Asn1Element>) {
  * Enumeration of implicit tags used to indicate different `SubjectAltName`s
  */
 object SubjectAltNameImplicitTags {
-    val otherName = 0u.toImplicitTag()
-    val rfc822Name = 1u.toImplicitTag()
-    val dNSName = 2u.toImplicitTag()
-    val x400Address = 3u.toImplicitTag()
-    val directoryName = 4u.toImplicitTag()
-    val ediPartyName = 5u.toImplicitTag()
-    val uniformResourceIdentifier = 6u.toImplicitTag()
-    val iPAddress = 7u.toImplicitTag()
-    val registeredID = 8u.toImplicitTag()
+    val otherName = 0uL.toImplicitTag()
+    val rfc822Name = 1uL.toImplicitTag()
+    val dNSName = 2uL.toImplicitTag()
+    val x400Address = 3uL.toImplicitTag()
+    val directoryName = 4uL.toImplicitTag()
+    val ediPartyName = 5uL.toImplicitTag()
+    val uniformResourceIdentifier = 6uL.toImplicitTag()
+    val iPAddress = 7uL.toImplicitTag()
+    val registeredID = 8uL.toImplicitTag()
 }

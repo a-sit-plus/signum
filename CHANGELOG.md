@@ -1,12 +1,34 @@
 # Changelog
 
-## 3.0
+## 4.0
 
-### NEXT
+### 4.0.0 (Supreme 0.3.0) Breaking Changes Ahead!
+* Completely revamped ASN.1 Tag Handling
+  * Properly handle multi-byte tags
+  * Introduce a new data structure `TLV.Tag` with an accompanying `TagClass` enum and a `constructed` flag to accurately represent arbitrary tags up to `ULong.MAX_VALUE`
+  * Make all `tag` parameters `ULong` to reflect support for multi-byte tags
+  * Remove `DERTags`
+  * Revamp implicit tagging (there is still work to be done, but at least it supports CONSTRUCTED ASN.1 elements)
+* Refactor `Int.Companion.decodeFromDer` -> `Int.Companion.decodeFromDerValue()`
+* Refactor `Long.Companion.decodeFromDer` -> `Long.Companion.decodeFromDerValue()`
+* Introduce `ULong.Companion.decodeFromDer` which can handle overlong inputs, as long as they start with a valid ULong encoding
 * Changed return type of `Verifier::verify` from `KmmResult<Unit>` to `KmmResult<Success>`. Usage is unchanged.
 * Add `ConfirmationClaim` to represent [Proof-of-Possesion Key Semantics for JWTs](https://datatracker.ietf.org/doc/html/rfc7800)
 * Add claims to `JsonWebToken` to implement [Demonstrating Proof of Possession](https://datatracker.ietf.org/doc/html/rfc9449)
 * Replace `JsonWebToken.confirmationKey` by `JsonWebToken.confirmationClaim`, the implementation was wrong
+* Introduce `ULong.toAsn1VarInt()` to encode ULongs into ASN.1 unsigned VarInts (**not to be confused with
+  multi^2_base's`UVarInt`!**)
+* Introduce `decodeAsn1VarULong()` and `decodeAsn1VarUInt()` which can handle overlong inputs, as long as they start with a valid unsigned number encoding.
+    * Comes in three ULong flavours:
+        * `Iterator<Byte>.decodeAsn1VarULong()`
+        * `Iterable<Byte>.decodeAsn1VarULong()`
+        * `ByteArray.decodeAsn1VarULong()`
+    * and three UInt flavours:
+        * `Iterator<Byte>.decodeAsn1VarUInt()`
+        * `Iterable<Byte>.decodeAsn1VarUInt()`
+        * `ByteArray.decodeAsn1VarUInt()`
+
+## 3.0
 
 ### 3.7.0 (Supreme 0.2.0)
 * Remove Swift verifier logic to obtain a general speed-up

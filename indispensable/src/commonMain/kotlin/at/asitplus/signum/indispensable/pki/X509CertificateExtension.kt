@@ -16,7 +16,7 @@ data class X509CertificateExtension @Throws(Asn1Exception::class) private constr
 ) : Asn1Encodable<Asn1Sequence>, Identifiable {
 
     init {
-        if (value.tag != BERTags.OCTET_STRING) throw Asn1TagMismatchException(BERTags.OCTET_STRING, value.tag)
+        if (value.tag != Asn1Element.Tag.OCTET_STRING) throw Asn1TagMismatchException(Asn1Element.Tag.OCTET_STRING, value.tag)
     }
 
     constructor(
@@ -44,7 +44,7 @@ data class X509CertificateExtension @Throws(Asn1Exception::class) private constr
 
             val id = (src.children[0] as Asn1Primitive).readOid()
             val critical =
-                if (src.children[1].tag == BERTags.BOOLEAN) (src.children[1] as Asn1Primitive).content[0] == 0xff.toByte() else false
+                if (src.children[1].tag == Asn1Element.Tag.BOOL) (src.children[1] as Asn1Primitive).content[0] == 0xff.toByte() else false
 
             val value = src.children.last()
             return X509CertificateExtension(id, value, critical)
