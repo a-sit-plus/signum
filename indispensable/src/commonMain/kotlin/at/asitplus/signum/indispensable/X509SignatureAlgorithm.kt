@@ -51,13 +51,13 @@ enum class X509SignatureAlgorithm(
         return Asn1.Sequence {
             +oid
             +Asn1.Sequence {
-                +Tagged(0.toUByte()) {
+                +Tagged(0u) {
                     +Asn1.Sequence {
                         +shaOid
                         +Null()
                     }
                 }
-                +Tagged(1.toUByte()) {
+                +Tagged(1u) {
                     +Asn1.Sequence {
                         +KnownOIDs.pkcs1_MGF
                         +Asn1.Sequence {
@@ -66,7 +66,7 @@ enum class X509SignatureAlgorithm(
                         }
                     }
                 }
-                +Tagged(2.toUByte()) {
+                +Tagged(2u) {
                     +Asn1.Int(bits / 8)
                 }
             }
@@ -119,8 +119,8 @@ enum class X509SignatureAlgorithm(
                 RS256.oid, RS384.oid, RS512.oid,
                 HS256.oid, HS384.oid, HS512.oid -> fromOid(oid).also {
                     val tag = src.nextChild().tag
-                    if (tag != BERTags.ASN1_NULL)
-                        throw Asn1TagMismatchException(BERTags.ASN1_NULL, tag, "RSA Params not allowed.")
+                    if (tag.tagValue != BERTags.ASN1_NULL.toUInt())
+                        throw Asn1TagMismatchException(TLV.Tag(BERTags.ASN1_NULL.toUInt(), constructed = false), tag, "RSA Params not allowed.")
                 }
 
                 PS256.oid, PS384.oid, PS512.oid -> parsePssParams(src)
@@ -131,25 +131,25 @@ enum class X509SignatureAlgorithm(
         @Throws(Asn1Exception::class)
         private fun parsePssParams(src: Asn1Sequence): X509SignatureAlgorithm = runRethrowing {
             val seq = src.nextChild() as Asn1Sequence
-            val first = (seq.nextChild() as Asn1Tagged).verifyTag(0.toUByte()).single() as Asn1Sequence
+            val first = (seq.nextChild() as Asn1Tagged).verifyTag(0u).single() as Asn1Sequence
 
             val sigAlg = (first.nextChild() as Asn1Primitive).readOid()
             val tag = first.nextChild().tag
-            if (tag != BERTags.ASN1_NULL)
-                throw Asn1TagMismatchException(BERTags.ASN1_NULL, tag, "PSS Params not supported yet")
+            if (tag.tagValue != BERTags.ASN1_NULL.toUInt())
+                throw Asn1TagMismatchException(TLV.Tag(BERTags.ASN1_NULL.toUInt(), constructed = false), tag, "PSS Params not supported yet")
 
-            val second = (seq.nextChild() as Asn1Tagged).verifyTag(1.toUByte()).single() as Asn1Sequence
+            val second = (seq.nextChild() as Asn1Tagged).verifyTag(1u).single() as Asn1Sequence
             val mgf = (second.nextChild() as Asn1Primitive).readOid()
             if (mgf != KnownOIDs.pkcs1_MGF) throw IllegalArgumentException("Illegal OID: $mgf")
             val inner = second.nextChild() as Asn1Sequence
             val innerHash = (inner.nextChild() as Asn1Primitive).readOid()
             if (innerHash != sigAlg) throw IllegalArgumentException("HashFunction mismatch! Expected: $sigAlg, is: $innerHash")
 
-            if (inner.nextChild().tag != BERTags.ASN1_NULL) throw IllegalArgumentException(
+            if (inner.nextChild().tag.tagValue != BERTags.ASN1_NULL.toUInt()) throw IllegalArgumentException(
                 "PSS Params not supported yet"
             )
 
-            val last = (seq.nextChild() as Asn1Tagged).verifyTag(2.toUByte()).single() as Asn1Primitive
+            val last = (seq.nextChild() as Asn1Tagged).verifyTag(2u).single() as Asn1Primitive
             val saltLen = last.readInt()
 
             return sigAlg.let {

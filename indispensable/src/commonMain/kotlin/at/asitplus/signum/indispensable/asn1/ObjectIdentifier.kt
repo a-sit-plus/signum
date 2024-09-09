@@ -76,7 +76,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transient vara
     /**
      * @return an OBJECT IDENTIFIER [Asn1Primitive]
      */
-    override fun encodeToTlv() = Asn1Primitive(BERTags.OBJECT_IDENTIFIER, bytes)
+    override fun encodeToTlv() = Asn1Primitive(BERTags.OBJECT_IDENTIFIER.toUInt(), bytes)
 
     companion object : Asn1Decodable<Asn1Primitive, ObjectIdentifier> {
 
@@ -86,7 +86,12 @@ class ObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transient vara
          */
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Primitive): ObjectIdentifier {
-            if (src.tag != BERTags.OBJECT_IDENTIFIER) throw Asn1TagMismatchException(BERTags.OBJECT_IDENTIFIER, src.tag)
+            if (src.tag.tagValue != BERTags.OBJECT_IDENTIFIER.toUInt()) throw Asn1TagMismatchException(
+                TLV.Tag(
+                    BERTags.OBJECT_IDENTIFIER.toUInt(),
+                    constructed = false
+                ), src.tag
+            )
             if (src.length < 1) throw Asn1StructuralException("Empty OIDs are not supported")
 
             return parse(src.content)
@@ -157,7 +162,7 @@ interface Identifiable {
  */
 @Throws(Asn1Exception::class)
 fun Asn1Primitive.readOid() = runRethrowing {
-    decode(BERTags.OBJECT_IDENTIFIER) { ObjectIdentifier.parse(it) }
+    decode(BERTags.OBJECT_IDENTIFIER.toUInt()) { ObjectIdentifier.parse(it) }
 }
 
 

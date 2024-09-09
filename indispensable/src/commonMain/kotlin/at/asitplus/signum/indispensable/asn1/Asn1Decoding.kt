@@ -1,6 +1,8 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.catching
+import at.asitplus.io.UVarInt
+import at.asitplus.io.varIntDecode
 import at.asitplus.signum.indispensable.asn1.BERTags.ASN1_NULL
 import at.asitplus.signum.indispensable.asn1.BERTags.BMP_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.BOOLEAN
@@ -15,8 +17,6 @@ import at.asitplus.signum.indispensable.asn1.BERTags.UNIVERSAL_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.UTC_TIME
 import at.asitplus.signum.indispensable.asn1.BERTags.UTF8_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.VISIBLE_STRING
-import at.asitplus.signum.indispensable.asn1.DERTags.isContainer
-import at.asitplus.signum.indispensable.asn1.DERTags.toExplicitTag
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.util.fromTwosComplementByteArray
 import kotlinx.datetime.Instant
@@ -48,24 +48,25 @@ private class Asn1Reader(input: ByteArray) {
             else if (tlv.isSet()) result.add(Asn1Set(Asn1Reader(tlv.content).doParse()))
             else if (tlv.isExplicitlyTagged()) result.add(
                 Asn1Tagged(
-                    tlv.tag,
+                    tlv.tag.tagValue,
                     Asn1Reader(tlv.content).doParse()
                 )
             )
-            else if (tlv.tag == OCTET_STRING) {
-                catching {
+            else if (tlv.tag.tagValue == OCTET_STRING.toUInt()) {
+                kotlin.runCatching { //TODO: make catching again, not runCatching
                     result.add(Asn1EncapsulatingOctetString(Asn1Reader(tlv.content).doParse()))
-                }.getOrElse { result.add(Asn1PrimitiveOctetString(tlv.content)) }
+                }.getOrElse {
+                    result.add(Asn1PrimitiveOctetString(tlv.content))
+                }
             } else result.add(Asn1Primitive(tlv.tag, tlv.content))
 
         }
         return result
     }
 
-    private fun TLV.isSet() = tag == DERTags.DER_SET
-    private fun TLV.isSequence() = tag == DERTags.DER_SEQUENCE
-    private fun TLV.isExplicitlyTagged() =
-        tag.isContainer() //yes, this includes sequences and set, so we need to check this last!
+    private fun TLV.isSet() = tag.tagValue == BERTags.SET.toUInt() && tag.isConstructed
+    private fun TLV.isSequence() = tag.tagValue == BERTags.SEQUENCE.toUInt() && tag.isConstructed
+    private fun TLV.isExplicitlyTagged() = tag.isExplicitlyTagged
 
     @Throws(Asn1Exception::class)
     private fun read(): TLV = runRethrowing {
@@ -83,7 +84,7 @@ private class Asn1Reader(input: ByteArray) {
  * @throws [Throwable] all sorts of exceptions on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readInt() = runRethrowing { decode(INTEGER) { Int.decodeFromDer(it) } }
+fun Asn1Primitive.readInt() = runRethrowing { decode(INTEGER.toUInt()) { Int.decodeFromDer(it) } }
 
 /**
  * decodes this [Asn1Primitive]'s content into an [Boolean]
@@ -92,7 +93,7 @@ fun Asn1Primitive.readInt() = runRethrowing { decode(INTEGER) { Int.decodeFromDe
  */
 @Throws(Asn1Exception::class)
 fun Asn1Primitive.readBool() = runRethrowing {
-    decode(BOOLEAN) {
+    decode(BOOLEAN.toUInt()) {
         if (it.size != 1) throw Asn1Exception("Not a Boolean!")
         when (it.first().toUByte()) {
             0.toUByte() -> false
@@ -107,7 +108,7 @@ fun Asn1Primitive.readBool() = runRethrowing {
  */
 @Throws(Asn1Exception::class)
 fun Asn1Primitive.readBigInteger() =
-    decode(INTEGER) { BigInteger.fromTwosComplementByteArray(it) }
+    decode(INTEGER.toUInt()) { BigInteger.fromTwosComplementByteArray(it) }
 
 /**
  * Exception-free version of [readBigInteger]
@@ -127,7 +128,7 @@ fun Asn1Primitive.readIntOrNull() = catching { readInt() }.getOrNull()
  * @throws [Throwable] all sorts of exceptions on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readLong() = runRethrowing { decode(INTEGER) { Long.decodeFromDer(it) } }
+fun Asn1Primitive.readLong() = runRethrowing { decode(INTEGER.toUInt()) { Long.decodeFromDer(it) } }
 
 /**
  * Exception-free version of [readLong]
@@ -142,14 +143,14 @@ fun Asn1Primitive.readLongOrNull() = catching { readLong() }.getOrNull()
  */
 @Throws(Throwable::class)
 fun Asn1Primitive.readString(): Asn1String = runRethrowing {
-    if (tag == UTF8_STRING) Asn1String.UTF8(content.decodeToString())
-    else if (tag == UNIVERSAL_STRING) Asn1String.Universal(content.decodeToString())
-    else if (tag == IA5_STRING) Asn1String.IA5(content.decodeToString())
-    else if (tag == BMP_STRING) Asn1String.BMP(content.decodeToString())
-    else if (tag == T61_STRING) Asn1String.Teletex(content.decodeToString())
-    else if (tag == PRINTABLE_STRING) Asn1String.Printable(content.decodeToString())
-    else if (tag == NUMERIC_STRING) Asn1String.Numeric(content.decodeToString())
-    else if (tag == VISIBLE_STRING) Asn1String.Visible(content.decodeToString())
+    if (tag.tagValue == UTF8_STRING.toUInt()) Asn1String.UTF8(content.decodeToString())
+    else if (tag.tagValue == UNIVERSAL_STRING.toUInt()) Asn1String.Universal(content.decodeToString())
+    else if (tag.tagValue == IA5_STRING.toUInt()) Asn1String.IA5(content.decodeToString())
+    else if (tag.tagValue == BMP_STRING.toUInt()) Asn1String.BMP(content.decodeToString())
+    else if (tag.tagValue == T61_STRING.toUInt()) Asn1String.Teletex(content.decodeToString())
+    else if (tag.tagValue == PRINTABLE_STRING.toUInt()) Asn1String.Printable(content.decodeToString())
+    else if (tag.tagValue == NUMERIC_STRING.toUInt()) Asn1String.Numeric(content.decodeToString())
+    else if (tag.tagValue == VISIBLE_STRING.toUInt()) Asn1String.Visible(content.decodeToString())
     else TODO("Support other string tag $tag")
 }
 
@@ -166,8 +167,11 @@ fun Asn1Primitive.readStringOrNull() = catching { readString() }.getOrNull()
  */
 @Throws(Asn1Exception::class)
 fun Asn1Primitive.readInstant() =
-    if (tag == UTC_TIME) decode(UTC_TIME, Instant.Companion::decodeUtcTimeFromDer)
-    else if (tag == GENERALIZED_TIME) decode(GENERALIZED_TIME, Instant.Companion::decodeGeneralizedTimeFromDer)
+    if (tag.tagValue == UTC_TIME.toUInt()) decode(UTC_TIME.toUInt(), Instant.Companion::decodeUtcTimeFromDer)
+    else if (tag.tagValue == GENERALIZED_TIME.toUInt()) decode(
+        GENERALIZED_TIME.toUInt(),
+        Instant.Companion::decodeGeneralizedTimeFromDer
+    )
     else TODO("Support time tag $tag")
 
 /**
@@ -196,7 +200,7 @@ fun Asn1Primitive.readBitStringOrNull() = catching { readBitString() }.getOrNull
  * @throws Asn1Exception  on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readNull() = decode(ASN1_NULL) {}
+fun Asn1Primitive.readNull() = decode(ASN1_NULL.toUInt()) {}
 
 /**
  * Name seems odd, but this is just an exception-free version of [readNull]
@@ -210,15 +214,16 @@ fun Asn1Primitive.readNullOrNull() = catching { readNull() }.getOrNull()
  * @throws Asn1TagMismatchException if the tag does not match
  */
 @Throws(Asn1TagMismatchException::class)
-fun Asn1Tagged.verifyTag(tag: UByte): List<Asn1Element> {
-    if (this.tag != tag.toExplicitTag()) throw Asn1TagMismatchException(tag.toExplicitTag(), this.tag)
+fun Asn1Tagged.verifyTag(tag: UInt): List<Asn1Element> {
+    val explicitTag= TLV.Tag(tag,constructed = true,TagClass.CONTEXT_SPECIFIC)
+    if (this.tag != explicitTag) throw Asn1TagMismatchException(explicitTag, this.tag)
     return this.children
 }
 
 /**
  * Exception-free version of [verifyTag]
  */
-fun Asn1Tagged.verifyTagOrNull(tag: UByte) = catching { verifyTag(tag) }.getOrNull()
+fun Asn1Tagged.verifyTagOrNull(tag: UInt) = catching { verifyTag(tag) }.getOrNull()
 
 
 /**
@@ -227,15 +232,15 @@ fun Asn1Tagged.verifyTagOrNull(tag: UByte) = catching { verifyTag(tag) }.getOrNu
  * @throws Asn1Exception all sorts of exceptions on invalid input
  */
 @Throws(Asn1Exception::class)
-inline fun <reified T> Asn1Primitive.decode(tag: UByte, transform: (content: ByteArray) -> T) = runRethrowing {
-    if (tag != this.tag) throw Asn1TagMismatchException(tag, this.tag)
+inline fun <reified T> Asn1Primitive.decode(tag: UInt, transform: (content: ByteArray) -> T) = runRethrowing {
+    if (tag != this.tag.tagValue) throw Asn1TagMismatchException(TLV.Tag(tag, constructed = false), this.tag)
     transform(content)
 }
 
 /**
  * Exception-free version of [decode]
  */
-inline fun <reified T> Asn1Primitive.decodeOrNull(tag: UByte, transform: (content: ByteArray) -> T) =
+inline fun <reified T> Asn1Primitive.decodeOrNull(tag: UInt, transform: (content: ByteArray) -> T) =
     catching { decode(tag, transform) }.getOrNull()
 
 @Throws(Asn1Exception::class)
@@ -294,31 +299,70 @@ fun Long.Companion.decodeFromDer(bytes: ByteArray): Long = runRethrowing {
     return result
 }
 
+fun UInt.Companion.decodeFromDer(bytes: ByteArray): UInt = runRethrowing {
+    val input = if (bytes.size == 8) bytes else {
+        if (bytes.size > 5) throw IllegalArgumentException("Absolute value too large!")
+        val padding = 0x00.toByte()
+        ByteArray(9 - bytes.size) { padding } + bytes
+    }
+    var result = 0L
+    for (i in input.indices) {
+        result = (result shl Byte.SIZE_BITS) or (input[i].toUByte().toLong())
+    }
+    return result.toUInt()
+}
 
 @Throws(Asn1Exception::class)
 private fun ByteArray.readTlv(): TLV = runRethrowing {
     if (this.isEmpty()) throw IllegalArgumentException("Can't read TLV, input empty")
-    val tag = this[0].toUByte()
-    if (this.size == 1) return TLV(tag, byteArrayOf())
-    val firstLength = this[1]
+    if (this.size == 1) return TLV(TLV.Tag(byteArrayOf(this[0])), byteArrayOf())
+
+    val decodedTag = decodeTag()
+    val tagLength = decodedTag.encodedTagLength
+    val tagBytes = sliceArray(0..<tagLength)
+
+    // TODO Extract length
+    val offset = tagLength
+    val firstLength = this[offset]
     if (firstLength == 0x82.toByte()) {
-        if (this.size < 4) throw IllegalArgumentException("Can't decode length")
-        val length = (this[2].toUByte().toInt() shl 8) + this[3].toUByte().toInt()
-        if (this.size < 4 + length) throw IllegalArgumentException("Out of bytes")
-        val value = this.drop(4).take(length).toByteArray()
-        return TLV(tag, value)
+        if (this.size < offset + 3)
+            throw IllegalArgumentException("Can't decode length")
+        val length = (this[offset + 1].toUByte().toInt() shl 8) + this[offset + 2].toUByte().toInt()
+        if (this.size < offset + 3 + length)
+            throw IllegalArgumentException("Out of bytes")
+        val value = this.drop(offset + 3).take(length).toByteArray()
+        return TLV(TLV.Tag(tagBytes), value)
     }
     if (firstLength == 0x81.toByte()) {
-        if (this.size < 3) throw IllegalArgumentException("Can't decode length")
-        val length = this[2].toUByte().toInt()
-        if (this.size < 3 + length) throw IllegalArgumentException("Out of bytes")
-        val value = this.drop(3).take(length).toByteArray()
-        return TLV(tag, value)
+        if (this.size < offset + 2)
+            throw IllegalArgumentException("Can't decode length")
+        val length = this[offset + 1].toUByte().toInt()
+        if (this.size < offset + 2 + length)
+            throw IllegalArgumentException("Out of bytes")
+        val value = this.drop(offset + 2).take(length).toByteArray()
+        return TLV(TLV.Tag(tagBytes), value)
     }
     val length = firstLength.toUByte().toInt()
-    if (this.size < 2 + length)
+    if (this.size < offset + 1 + length)
         throw IllegalArgumentException("Out of bytes")
-    val value = this.drop(2).take(length).toByteArray()
-    return TLV(tag, value)
+
+    val value = this.drop(offset + 1).take(length).toByteArray()
+    // TODO end
+
+    return TLV(TLV.Tag(tagBytes), value)
 }
 
+private infix fun UByte.ushr(bits: Int) = toInt() ushr bits
+
+internal infix fun Byte.byteMask(mask: Int) = (this and mask.toUInt().toByte()).toUByte()
+
+internal fun ByteArray.decodeTag(): UVarInt {
+    val tagNumber = this[0] byteMask 0x1F
+    return if (tagNumber <= 30U) {
+        UVarInt(tagNumber.toUInt())
+    } else {
+        drop(1).toByteArray().varIntDecode()
+    }
+}
+
+internal val UVarInt.encodedTagLength: Int get() = encodeToByteArray().size.let { if (it > 1) 1 + it else 1 }

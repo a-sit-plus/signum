@@ -66,7 +66,7 @@ constructor(
     override fun encodeToTlv() = runRethrowing {
         Asn1.Sequence {
             +Version(version)
-            +Asn1Primitive(BERTags.INTEGER, serialNumber)
+            +Asn1Primitive(BERTags.INTEGER.toUInt(), serialNumber)
             +signatureAlgorithm
             +Asn1.Sequence { issuerName.forEach { +it } }
 
@@ -147,7 +147,7 @@ constructor(
             val version = src.nextChild().let {
                 ((it as Asn1Tagged).verifyTag(0u).single() as Asn1Primitive).readInt()
             }
-            val serialNumber = (src.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
+            val serialNumber = (src.nextChild() as Asn1Primitive).decode(BERTags.INTEGER.toUInt()) { it }
             val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val issuerNames = (src.nextChild() as Asn1Sequence).children.map {
                 RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)

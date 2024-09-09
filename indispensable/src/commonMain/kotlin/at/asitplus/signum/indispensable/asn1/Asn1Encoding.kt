@@ -8,7 +8,6 @@ import at.asitplus.signum.indispensable.asn1.BERTags.BOOLEAN
 import at.asitplus.signum.indispensable.asn1.BERTags.GENERALIZED_TIME
 import at.asitplus.signum.indispensable.asn1.BERTags.INTEGER
 import at.asitplus.signum.indispensable.asn1.BERTags.UTC_TIME
-import at.asitplus.signum.indispensable.asn1.DERTags.toExplicitTag
 import at.asitplus.signum.indispensable.io.BitSet
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.util.toTwosComplementByteArray
@@ -129,7 +128,7 @@ object Asn1 {
     fun Set(root: Asn1TreeBuilder.() -> Unit): Asn1Set {
         val seq = Asn1TreeBuilder()
         seq.root()
-        return Asn1Set(seq.elements.sortedBy { it.tag })
+        return Asn1Set(seq.elements)
     }
 
     /**
@@ -192,22 +191,22 @@ object Asn1 {
      * }
      *  ```
      */
-    fun Tagged(tag: UByte, root: Asn1TreeBuilder.() -> Unit): Asn1Tagged {
+    fun Tagged(tag: UInt, root: Asn1TreeBuilder.() -> Unit): Asn1Tagged {
         val seq = Asn1TreeBuilder()
         seq.root()
-        return Asn1Tagged(tag.toExplicitTag(), seq.elements)
+        return Asn1Tagged(tag, seq.elements)
     }
 
     /**
      * Exception-free version of [Tagged]
      */
-    fun TaggedOrNull(tag: UByte, root: Asn1TreeBuilder.() -> Unit) =
+    fun TaggedOrNull(tag: UInt, root: Asn1TreeBuilder.() -> Unit) =
         catching { Tagged(tag, root) }.getOrNull()
 
     /**
      * Safe version on [Tagged], wrapping the result into a [KmmResult]
      */
-    fun TaggedSafe(tag: UByte, root: Asn1TreeBuilder.() -> Unit) =
+    fun TaggedSafe(tag: UInt, root: Asn1TreeBuilder.() -> Unit) =
         catching { Tagged(tag, root) }
 
 
@@ -265,7 +264,7 @@ object Asn1 {
     /**
      * Adds a NULL [Asn1Primitive] to this ASN.1 structure
      */
-    fun Null() = Asn1Primitive(ASN1_NULL, byteArrayOf())
+    fun Null() = Asn1Primitive(ASN1_NULL.toUInt(), byteArrayOf())
 
 
     /**
@@ -305,23 +304,23 @@ object Asn1 {
 /**
  * Produces an INTEGER as [Asn1Primitive]
  */
-fun Int.encodeToTlv() = Asn1Primitive(INTEGER, encodeToDer())
+fun Int.encodeToTlv() = Asn1Primitive(INTEGER.toUInt(), encodeToDer())
 
 
 /**
  * Produces a BOOLEAN as [Asn1Primitive]
  */
-fun Boolean.encodeToTlv() = Asn1Primitive(BOOLEAN, byteArrayOf(if (this) 0xff.toByte() else 0))
+fun Boolean.encodeToTlv() = Asn1Primitive(BOOLEAN.toUInt(), byteArrayOf(if (this) 0xff.toByte() else 0))
 
 /**
  * Produces an INTEGER as [Asn1Primitive]
  */
-fun Long.encodeToTlv() = Asn1Primitive(INTEGER, encodeToDer())
+fun Long.encodeToTlv() = Asn1Primitive(INTEGER.toUInt(), encodeToDer())
 
 /**
  * Produces an INTEGER as [Asn1Primitive]
  */
-fun BigInteger.encodeToTlv() = Asn1Primitive(INTEGER, toTwosComplementByteArray())
+fun BigInteger.encodeToTlv() = Asn1Primitive(INTEGER.toUInt(), toTwosComplementByteArray())
 
 /**
  * Produces an OCTET STRING as [Asn1Primitive]
@@ -331,14 +330,14 @@ fun ByteArray.encodeToTlvOctetString() = Asn1PrimitiveOctetString(this)
 /**
  * Produces a BIT STRING as [Asn1Primitive]
  */
-fun ByteArray.encodeToTlvBitString() = Asn1Primitive(BIT_STRING, encodeToBitString())
+fun ByteArray.encodeToTlvBitString() = Asn1Primitive(BIT_STRING.toUInt(), encodeToBitString())
 
 /**
  * Prepends 0x00 to this ByteArray for encoding it into a BIT STRING. Useful for implicit tagging
  */
 fun ByteArray.encodeToBitString() = byteArrayOf(0x00) + this
 
-private fun Int.encodeToDer() = if (this == 0) byteArrayOf(0) else
+internal fun Int.encodeToDer() = if (this == 0) byteArrayOf(0) else
     encodeToByteArray()
 
 private fun Long.encodeToDer() = if (this == 0L) byteArrayOf(0) else
@@ -348,13 +347,13 @@ private fun Long.encodeToDer() = if (this == 0L) byteArrayOf(0) else
  * Produces a UTC TIME as [Asn1Primitive]
  */
 fun Instant.encodeToAsn1UtcTime() =
-    Asn1Primitive(UTC_TIME, encodeToAsn1Time().drop(2).encodeToByteArray())
+    Asn1Primitive(UTC_TIME.toUInt(), encodeToAsn1Time().drop(2).encodeToByteArray())
 
 /**
  * Produces a GENERALIZED TIME as [Asn1Primitive]
  */
 fun Instant.encodeToAsn1GeneralizedTime() =
-    Asn1Primitive(GENERALIZED_TIME, encodeToAsn1Time().encodeToByteArray())
+    Asn1Primitive(GENERALIZED_TIME.toUInt(), encodeToAsn1Time().encodeToByteArray())
 
 private fun Instant.encodeToAsn1Time(): String {
     val value = this.toString()

@@ -87,7 +87,7 @@ private constructor(private val extensions: List<Asn1Element>) {
             }
         }.map { ObjectIdentifier.parse((it as Asn1Primitive).content) }
 
-    private fun parseStringSANs(implicitTag: UByte) =
+    private fun parseStringSANs(implicitTag: TLV.Tag) =
         extensions.filter { it.tag == implicitTag }.apply {
             forEach { if (it !is Asn1Primitive) throw Asn1StructuralException("Invalid dnsName Alternative Name found: ${it.toDerHexString()}") }
         }.map { (it as Asn1Primitive).content.decodeToString() }

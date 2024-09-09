@@ -11,6 +11,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1.Tagged
 import at.asitplus.signum.indispensable.asn1.Asn1.UtcTime
 import at.asitplus.signum.indispensable.asn1.Asn1.Utf8String
 import at.asitplus.signum.indispensable.io.BitSet
+import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -20,6 +21,8 @@ import io.kotest.property.arbitrary.boolean
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.long
 import io.kotest.property.checkAll
+import io.matthewnelson.encoding.base16.Base16
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Clock
 import org.bouncycastle.asn1.ASN1Integer
 import java.util.*
@@ -119,8 +122,11 @@ class Asn1EncodingTest : FreeSpec({
         val certBytes = Base64.getMimeDecoder()
             .decode(javaClass.classLoader.getResourceAsStream("github-com.pem").reader().readText())
         val tree = Asn1Element.parse(certBytes)
-        tree.derEncoded shouldBe certBytes
-    }
+        println(tree.prettyPrint())
+
+            tree.derEncoded shouldBe certBytes
+        }
+
 
     "Old and new encoder produce the same bytes" {
 

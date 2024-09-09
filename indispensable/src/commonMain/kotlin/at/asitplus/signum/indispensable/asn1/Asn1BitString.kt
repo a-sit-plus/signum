@@ -81,9 +81,10 @@ class Asn1BitString private constructor(
         }
 
         @Throws(Asn1Exception::class)
-        private fun decode(src: Asn1Primitive, tagOverride: UByte? = null): Asn1BitString {
-            if (src.tag != (tagOverride ?: BERTags.BIT_STRING))
-                throw Asn1TagMismatchException(tagOverride ?: BERTags.BIT_STRING, src.tag)
+        private fun decode(src: Asn1Primitive, tagOverride: TLV.Tag? = null): Asn1BitString {
+            val expected = tagOverride ?: TLV.Tag(BERTags.BIT_STRING.toUInt(), constructed = false)
+            if (src.tag != expected)
+                throw Asn1TagMismatchException(expected, src.tag)
             if (src.length == 0) return Asn1BitString(0, byteArrayOf())
             if (src.content.first() > 7) throw Asn1Exception("Number of padding bits < 7")
             return Asn1BitString(src.content[0], src.content.sliceArray(1..<src.content.size))
@@ -93,10 +94,10 @@ class Asn1BitString private constructor(
         override fun decodeFromTlv(src: Asn1Primitive) = decodeFromTlv(src, null)
 
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(src: Asn1Primitive, tagOverride: UByte?) = decode(src, tagOverride)
+        override fun decodeFromTlv(src: Asn1Primitive, tagOverride: TLV.Tag?) = decode(src, tagOverride)
     }
 
-    override fun encodeToTlv() = Asn1Primitive(BERTags.BIT_STRING, byteArrayOf(numPaddingBits, *rawBytes))
+    override fun encodeToTlv() = Asn1Primitive(BERTags.BIT_STRING.toUInt(), byteArrayOf(numPaddingBits, *rawBytes))
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
