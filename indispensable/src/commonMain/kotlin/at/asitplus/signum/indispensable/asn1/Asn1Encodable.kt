@@ -95,18 +95,18 @@ interface Asn1TagVerifyingDecodable<T : Asn1Encodable<Asn1Primitive>> :
      * @throws Asn1Exception
      */
     @Throws(Asn1Exception::class)
-    fun decodeFromTlv(src: Asn1Primitive, tagOverride: UByte?): T
+    fun decodeFromTlv(src: Asn1Primitive, tagOverride: TLV.Tag?): T
 
     /**
      * Exception-free version of [decodeFromTlv]
      */
-    fun decodeFromTlvOrNull(src: Asn1Primitive, tagOverride: UByte?) =
+    fun decodeFromTlvOrNull(src: Asn1Primitive, tagOverride: TLV.Tag?) =
         catching { decodeFromTlv(src, tagOverride) }.getOrNull()
 
     /**
      * Safe version of [decodeFromTlv], wrapping the result into a [KmmResult]
      */
-    fun decodeFromTlvSafe(src: Asn1Primitive, tagOverride: UByte?) =
+    fun decodeFromTlvSafe(src: Asn1Primitive, tagOverride: TLV.Tag?) =
         catching { decodeFromTlv(src, tagOverride) }
 
 
@@ -115,17 +115,17 @@ interface Asn1TagVerifyingDecodable<T : Asn1Encodable<Asn1Primitive>> :
      * Useful for implicit tagging.
      */
     @Throws(Asn1Exception::class)
-    fun decodeFromDer(src: ByteArray, tagOverride: UByte?): T =
+    fun decodeFromDer(src: ByteArray, tagOverride: TLV.Tag?): T =
         decodeFromTlv(Asn1Element.parse(src) as Asn1Primitive, tagOverride)
 
     /**
      * Exception-free version of [decodeFromDer]
      */
-    fun decodeFromDerOrNull(src: ByteArray, tagOverride: UByte?) =
+    fun decodeFromDerOrNull(src: ByteArray, tagOverride: TLV.Tag?) =
         catching { decodeFromDer(src, tagOverride) }.getOrNull()
 
     /**
      * Safe version of [decodeFromDer], wrapping the result into a [KmmResult]
      */
-    fun decodeFromDerSafe(src: ByteArray, tagOverride: UByte?) = catching { decodeFromDer(src, tagOverride) }
+    fun decodeFromDerSafe(src: ByteArray, tagOverride: TLV.Tag?) = catching { decodeFromDer(src, tagOverride) }
 }

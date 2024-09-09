@@ -456,8 +456,8 @@ fun List<Asn1Element>.expect(init: SequenceReader.() -> Unit): Boolean {
 class SequenceReader(var asn1Elements: List<Asn1Element>) {
     var matches: Boolean = true
 
-    fun sequence(function: SequenceReader.() -> Unit) = container(0x30u, function)
-    fun set(function: SequenceReader.() -> Unit) = container(0x31u, function)
+    fun sequence(function: SequenceReader.() -> Unit) = container(BERTags.SEQUENCE, function)
+    fun set(function: SequenceReader.() -> Unit) = container(BERTags.SET, function)
 
     fun integer() = tag(0x02u)
     fun long() = tag(0x02u)
@@ -468,13 +468,13 @@ class SequenceReader(var asn1Elements: List<Asn1Element>) {
 
     fun container(tag: UByte, function: SequenceReader.() -> Unit) {
         val first = takeAndDrop()
-        if (first.tag != tag)
+        if (first.tag != TLV.Tag(tag.toUInt(), constructed = true))
             matches = false
         matches = matches and (first as Asn1Structure).children.expect(function)
     }
 
-    fun tag(tag: UByte) {
-        if (takeAndDrop().tag != tag)
+    fun tag(tag: UInt) {
+        if (takeAndDrop().tag != TLV.Tag(tag.toUInt(), constructed = false))
             matches = false
     }
 

@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
-    abstract val tag: UByte
+    abstract val tag: UInt
     abstract val value: String
 
     /**
@@ -18,7 +18,7 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
     @Serializable
     @SerialName("UTF8String")
     class UTF8(override val value: String) : Asn1String() {
-        override val tag = BERTags.UTF8_STRING
+        override val tag = BERTags.UTF8_STRING.toUInt()
     }
 
     /**
@@ -27,7 +27,7 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
     @Serializable
     @SerialName("UniversalString")
     class Universal(override val value: String) : Asn1String() {
-        override val tag = BERTags.UNIVERSAL_STRING
+        override val tag = BERTags.UNIVERSAL_STRING.toUInt()
     }
 
     /**
@@ -36,7 +36,7 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
     @Serializable
     @SerialName("VisibleString")
     class Visible(override val value: String) : Asn1String() {
-        override val tag = BERTags.VISIBLE_STRING
+        override val tag = BERTags.VISIBLE_STRING.toUInt()
     }
 
     /**
@@ -45,7 +45,7 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
     @Serializable
     @SerialName("IA5String")
     class IA5(override val value: String) : Asn1String() {
-        override val tag = BERTags.IA5_STRING
+        override val tag = BERTags.IA5_STRING.toUInt()
     }
 
     /**
@@ -54,7 +54,7 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
     @Serializable
     @SerialName("TeletexString")
     class Teletex(override val value: String) : Asn1String() {
-        override val tag = BERTags.T61_STRING
+        override val tag = BERTags.T61_STRING.toUInt()
     }
 
     /**
@@ -63,7 +63,7 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
     @Serializable
     @SerialName("BMPString")
     class BMP(override val value: String) : Asn1String() {
-        override val tag = BERTags.BMP_STRING
+        override val tag = BERTags.BMP_STRING.toUInt()
     }
 
     /**
@@ -79,7 +79,7 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
                 ?: throw Asn1Exception("Input contains invalid chars: '$value'")
         }
 
-        override val tag = BERTags.PRINTABLE_STRING
+        override val tag = BERTags.PRINTABLE_STRING.toUInt()
     }
 
     /**
@@ -94,7 +94,7 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
                 ?: throw Asn1Exception("Input contains invalid chars: '$value'")
         }
 
-        override val tag = BERTags.NUMERIC_STRING
+        override val tag = BERTags.NUMERIC_STRING.toUInt()
     }
 
     override fun encodeToTlv() = Asn1Primitive(tag, value.encodeToByteArray())

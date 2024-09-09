@@ -2,7 +2,6 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.BERTags.BIT_STRING
-import at.asitplus.signum.indispensable.asn1.DERTags.DER_SEQUENCE
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.max
@@ -230,9 +229,9 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
 
     class RSAorHMAC(input: ByteArray) : CryptoSignature, RawByteEncodable {
 
-        override val signature: Asn1Element = Asn1Primitive(BIT_STRING, input)
+        override val signature: Asn1Element = Asn1Primitive(BIT_STRING.toUInt(), input)
 
-        override val rawByteArray by lazy { (signature as Asn1Primitive).decode(BIT_STRING) { it } }
+        override val rawByteArray by lazy { (signature as Asn1Primitive).decode(BIT_STRING.toUInt()) { it } }
         override fun encodeToTlvBitString(): Asn1Element = this.encodeToTlv()
 
         override fun hashCode(): Int = signature.hashCode()
@@ -259,9 +258,9 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
     companion object : Asn1Decodable<Asn1Element, CryptoSignature> {
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Element): CryptoSignature = runRethrowing {
-            when (src.tag) {
-                BIT_STRING -> RSAorHMAC((src as Asn1Primitive).decode(BIT_STRING) { it })
-                DER_SEQUENCE -> EC.decodeFromTlv(src as Asn1Sequence)
+            when (src.tag.tagValue) {
+                BIT_STRING.toUInt() -> RSAorHMAC((src as Asn1Primitive).decode(BIT_STRING.toUInt()) { it })
+                (BERTags.SEQUENCE).toUInt() -> EC.decodeFromTlv(src as Asn1Sequence)
 
                 else -> throw Asn1Exception("Unknown Signature Format")
             }

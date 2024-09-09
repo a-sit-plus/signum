@@ -1,5 +1,8 @@
 package at.asitplus.signum.indispensable.asn1
 
+import at.asitplus.KmmResult
+import at.asitplus.catching
+
 //Based on https://github.com/bcgit/bc-java/blob/main/core/src/main/java/org/bouncycastle/asn1/BERTags.java
 object BERTags {
     // 0x00: Reserved for use by the encoding rules
@@ -55,21 +58,35 @@ object BERTags {
 }
 
 object DERTags {
-    val DER_SEQUENCE: UByte = BERTags.CONSTRUCTED or BERTags.SEQUENCE
-    val DER_SET: UByte = BERTags.CONSTRUCTED or BERTags.SET
-    fun UByte.toExplicitTag() = BERTags.CONSTRUCTED or BERTags.TAGGED or this
+   /* fun UByte.toExplicitTag() = BERTags.CONSTRUCTED or BERTags.TAGGED or this
 
     val UByte.isExplicitTag get() = ((this and BERTags.CONSTRUCTED) != 0.toUByte()) && ((this and BERTags.TAGGED) != 0.toUByte())
 
-    fun UInt.toExplicitTag() = toUByte().toExplicitTag()
+    fun UInt.toExplicitTag(): UInt {
+        val bytes = toInt().encodeToDer().dropWhile { it == 0.toByte() }.toMutableList()
+        bytes[0] = bytes.first().toUByte().toExplicitTag().toByte()
+        return UInt.decodeFromDer(bytes.toByteArray())
+    }*/
 
-    @Throws(Asn1Exception::class)
-    fun UInt.toImplicitTag() = runRethrowing { toUByte().toImplicitTag() }
-
+    fun UInt.toImplicitTag() = TLV.Tag(this, constructed = false, tagClass = TagClass.CONTEXT_SPECIFIC)
+    //TODO: rework completely
+    /*
     @Throws(Asn1Exception::class)
     fun UByte.toImplicitTag() = runRethrowing {
-        if (isContainer()) throw IllegalArgumentException("Implicit tag $this would result in CONSTRUCTED bit set") else BERTags.TAGGED or this
+        if (isConstructed()) throw IllegalArgumentException("Implicit tag $this would result in CONSTRUCTED bit set") else BERTags.TAGGED or this
+    }*/
+
+    fun UByte.isConstructed() = this and BERTags.CONSTRUCTED != 0.toUByte()
+}
+
+enum class TagClass(val byteValue:UByte) {
+    UNIVERSAL(0u),
+    APPLICATION(1u),
+    CONTEXT_SPECIFIC(2u),
+    PRIVATE(3u);
+    companion object {
+        fun fromByte(byteValue: Byte): KmmResult<TagClass> =
+            catching { entries.first { it.byteValue == ((byteValue byteMask 0xC0).toUInt().toInt() ushr 6).toUByte()  } }
     }
 
-    fun UByte.isContainer() = this and BERTags.CONSTRUCTED != 0.toUByte()
 }
