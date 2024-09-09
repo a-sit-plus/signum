@@ -5,7 +5,6 @@ import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.DERTags.toImplicitTag
 import at.asitplus.signum.indispensable.io.BitSet
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
@@ -66,7 +65,7 @@ constructor(
     override fun encodeToTlv() = runRethrowing {
         Asn1.Sequence {
             +Version(version)
-            +Asn1Primitive(BERTags.INTEGER, serialNumber)
+            +Asn1Primitive(Asn1Element.Tag.INT, serialNumber)
             +signatureAlgorithm
             +Asn1.Sequence { issuerName.forEach { +it } }
 
@@ -82,12 +81,12 @@ constructor(
 
             issuerUniqueID?.let {
                 +Asn1Primitive(
-                    1u.toImplicitTag(),
+                    1uL.toImplicitTag(),
                     Asn1BitString(it).let { byteArrayOf(it.numPaddingBits, *it.rawBytes) })
             }
             subjectUniqueID?.let {
                 +Asn1Primitive(
-                    1u.toImplicitTag(),
+                    1uL.toImplicitTag(),
                     Asn1BitString(it).let { byteArrayOf(it.numPaddingBits, *it.rawBytes) })
 
             }
@@ -147,7 +146,7 @@ constructor(
             val version = src.nextChild().let {
                 ((it as Asn1Tagged).verifyTag(0u).single() as Asn1Primitive).readInt()
             }
-            val serialNumber = (src.nextChild() as Asn1Primitive).decode(BERTags.INTEGER) { it }
+            val serialNumber = (src.nextChild() as Asn1Primitive).decode(Asn1Element.Tag.INT) { it }
             val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val issuerNames = (src.nextChild() as Asn1Sequence).children.map {
                 RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
@@ -161,14 +160,14 @@ constructor(
             val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(src.nextChild() as Asn1Sequence)
 
             val issuerUniqueID = src.peek()?.let { next ->
-                if (next.tag == 1u.toImplicitTag()) {
-                    (src.nextChild() as Asn1Primitive).let { Asn1BitString.decodeFromTlv(it, 1u.toImplicitTag()) }
+                if (next.tag == 1uL.toImplicitTag()) {
+                    (src.nextChild() as Asn1Primitive).let { Asn1BitString.decodeFromTlv(it, 1uL.toImplicitTag()) }
                 } else null
             }
 
             val subjectUniqueID = src.peek()?.let { next ->
-                if (next.tag == 2u.toImplicitTag()) {
-                    (src.nextChild() as Asn1Primitive).let { Asn1BitString.decodeFromTlv(it, 2u.toImplicitTag()) }
+                if (next.tag == 2uL.toImplicitTag()) {
+                    (src.nextChild() as Asn1Primitive).let { Asn1BitString.decodeFromTlv(it, 2uL.toImplicitTag()) }
                 } else null
             }
             val extensions = if (src.hasMoreChildren()) {

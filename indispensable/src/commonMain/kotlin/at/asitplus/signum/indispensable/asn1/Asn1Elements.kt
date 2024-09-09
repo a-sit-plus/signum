@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.asn1.DERTags.isExplicitTag
+import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -17,7 +17,7 @@ import kotlinx.serialization.encoding.Encoder
  */
 @Serializable(with = Asn1EncodableSerializer::class)
 sealed class Asn1Element(
-    protected val tlv: TLV,
+    internal val tlv: TLV,
     protected open val children: List<Asn1Element>?
 ) {
 
@@ -44,7 +44,8 @@ sealed class Asn1Element(
          * @throws [Throwable] all sorts of errors on invalid input
          */
         @Throws(Throwable::class)
-        fun decodeFromDerHexString(derEncoded: String) = Asn1Element.parse(derEncoded.decodeToByteArray(Base16))
+        fun decodeFromDerHexString(derEncoded: String) =
+            Asn1Element.parse(derEncoded.replace(Regex("\\s"), "").trim().decodeToByteArray(Base16))
     }
 
     /**
@@ -60,13 +61,13 @@ sealed class Asn1Element(
      * For a structure, it is the sum of the number of bytes needed to encode all held child nodes.
      */
     val length: Int by lazy {
-        children?.fold(0) { acc, extendedTlv -> acc + extendedTlv.overallLength } ?: tlv.length
+        children?.fold(0) { acc, extendedTlv -> acc + extendedTlv.overallLength } ?: tlv.contentLength
     }
 
     /**
      * Total number of bytes required to represent the ths element, when encoding to ASN.1.
      */
-    val overallLength by lazy { length + 1 + encodedLength.size }
+    val overallLength by lazy { length + tlv.tag.encodedTagLength + encodedLength.size }
 
     protected open val content by lazy { tlv.content }
 
@@ -74,11 +75,11 @@ sealed class Asn1Element(
 
     val derEncoded: ByteArray by lazy {
         children?.fold(byteArrayOf()) { acc, extendedTlv -> acc + extendedTlv.derEncoded }
-            ?.let { byteArrayOf(tlv.tag.toByte(), *it.size.encodeLength(), *it) }
-            ?: byteArrayOf(tlv.tag.toByte(), *encodedLength, *tlv.content)
+            ?.let { byteArrayOf(*tlv.tag.encodedTag, *it.size.encodeLength(), *it) }
+            ?: byteArrayOf(*tlv.tag.encodedTag, *encodedLength, *tlv.content)
     }
 
-    override fun toString(): String = "(tag=0x${byteArrayOf(tag.toByte()).encodeToString(Base16)}" +
+    override fun toString(): String = "(tag=${tlv.tag}" +
             ", length=${length}" +
             ", overallLength=${overallLength}" +
             (children?.let { ", children=$children" } ?: ", content=${
@@ -91,7 +92,7 @@ sealed class Asn1Element(
 
     fun prettyPrint() = prettyPrint(0)
 
-    protected open fun prettyPrint(indent: Int): String = "(tag=0x${byteArrayOf(tag.toByte()).encodeToString(Base16)}" +
+    protected open fun prettyPrint(indent: Int): String = "(tag=${tlv.tag}" +
             ", length=${length}" +
             ", overallLength=${overallLength}" +
             ((children?.joinToString(
@@ -125,6 +126,114 @@ sealed class Asn1Element(
         result = 31 * result + (children?.hashCode() ?: 0)
         return result
     }
+
+    @Serializable
+    @ConsistentCopyVisibility
+    data class Tag private constructor(
+        val tagValue: ULong, val encodedTagLength: Int,
+        @Serializable(with = ByteArrayBase64Serializer::class) val encodedTag: ByteArray
+    ) : Comparable<Tag> {
+        private constructor(values: Triple<ULong, Int, ByteArray>) : this(values.first, values.second, values.third)
+        constructor(derEncoded: ByteArray) : this(
+            derEncoded.iterator().decodeTag().let { Triple(it.first, it.second.size, derEncoded) }
+        )
+
+        constructor(tagValue: ULong, constructed: Boolean, tagClass: TagClass = TagClass.UNIVERSAL) : this(
+            encode(
+                tagClass,
+                constructed,
+                tagValue
+            )
+        )
+
+        companion object {
+            private fun encode(tagClass: TagClass, constructed: Boolean, tagValue: ULong): ByteArray {
+                val derEncoded: ByteArray =
+                    if (tagValue <= 30u) {
+                        byteArrayOf(tagValue.toUByte().toByte())
+                    } else {
+                        byteArrayOf(0b11111, *tagValue.toAsn1VarInt())
+                    }
+
+                derEncoded[0] = derEncoded[0].toUByte()
+                    .let { if (constructed) (it or BERTags.CONSTRUCTED) else it }
+                    .let { it or tagClass.berTag }
+                    .toByte()
+                return derEncoded
+            }
+
+            val SET = Tag(tagValue = BERTags.SET.toULong(), constructed = true)
+            val ASN1_SEQUENCE = Tag(tagValue = BERTags.SEQUENCE.toULong(), constructed = true)
+
+            val NULL = Tag(tagValue = BERTags.ASN1_NULL.toULong(), constructed = false)
+            val BOOL = Tag(tagValue = BERTags.BOOLEAN.toULong(), constructed = false)
+            val INT = Tag(tagValue = BERTags.INTEGER.toULong(), constructed = false)
+            val OID = Tag(tagValue = BERTags.OBJECT_IDENTIFIER.toULong(), constructed = false)
+
+            val OCTET_STRING = Tag(tagValue = BERTags.OCTET_STRING.toULong(), constructed = false)
+            val BIT_STRING = Tag(tagValue = BERTags.BIT_STRING.toULong(), constructed = false)
+
+            val STRING_UTF8 = Tag(tagValue = BERTags.UTF8_STRING.toULong(), constructed = false)
+            val STRING_UNIVERSAL = Tag(tagValue = BERTags.UNIVERSAL_STRING.toULong(), constructed = false)
+            val STRING_IA5 = Tag(tagValue = BERTags.IA5_STRING.toULong(), constructed = false)
+            val STRING_BMP = Tag(tagValue = BERTags.BMP_STRING.toULong(), constructed = false)
+            val STRING_T61 = Tag(tagValue = BERTags.T61_STRING.toULong(), constructed = false)
+            val STRING_PRINTABLE = Tag(tagValue = BERTags.PRINTABLE_STRING.toULong(), constructed = false)
+            val STRING_NUMERIC = Tag(tagValue = BERTags.NUMERIC_STRING.toULong(), constructed = false)
+            val STRING_VISIBLE = Tag(tagValue = BERTags.VISIBLE_STRING.toULong(), constructed = false)
+
+            val TIME_GENERALIZED = Tag(tagValue = BERTags.GENERALIZED_TIME.toULong(), constructed = false)
+            val TIME_UTC = Tag(tagValue = BERTags.UTC_TIME.toULong(), constructed = false)
+
+
+        }
+
+        val tagClass by lazy {
+            checkNotNull(TagClass.fromByte(encodedTag.first()).getOrNull()) {
+                "An Illegal Tag class has been found. This should be impossible!"
+            }
+        }
+
+        val isConstructed by lazy { encodedTag.first().toUByte().isConstructed() }
+
+        val isExplicitlyTagged by lazy { isConstructed && tagClass == TagClass.CONTEXT_SPECIFIC }
+
+        override fun toString(): String =
+            "${tagClass.let { if (it == TagClass.UNIVERSAL) "" else it.name + " " }}${tagValue}${if (isConstructed) " CONSTRUCTED" else ""}" +
+                    (" (=${encodedTag.encodeToString(Base16)})")
+
+        /**
+         * As per ITU-T X.680 8824-1 8.6
+         *
+         */
+        override fun compareTo(other: Tag) = EncodedTagComparator.compare(this, other)
+
+        private object EncodedTagComparator : Comparator<Tag> {
+            override fun compare(a: Tag, b: Tag): Int {
+                val lenCompare = a.encodedTagLength.compareTo(b.encodedTagLength)
+                if (lenCompare != 0) return lenCompare
+
+                val firstCompare =
+                    a.encodedTag.first().toUByte().toUShort().compareTo(b.encodedTag.first().toUByte().toUShort())
+                if (firstCompare != 0) return firstCompare
+
+
+                //now, we're down to numbers
+                return a.tagValue.compareTo(b.tagValue)
+            }
+
+        }
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is Tag) return false
+            if (!encodedTag.contentEquals(other.encodedTag)) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int = encodedTag.contentHashCode()
+    }
 }
 
 object Asn1EncodableSerializer : KSerializer<Asn1Element> {
@@ -143,8 +252,10 @@ object Asn1EncodableSerializer : KSerializer<Asn1Element> {
 /**
  * ASN.1 structure. Contains no data itself, but holds zero or more [children]
  */
-sealed class Asn1Structure(tag: UByte, children: List<Asn1Element>?) :
+sealed class Asn1Structure(tag: Tag, children: List<Asn1Element>?) :
     Asn1Element(TLV(tag, byteArrayOf()), children) {
+
+
     public override val children: List<Asn1Element>
         get() = super.children!!
 
@@ -179,32 +290,86 @@ sealed class Asn1Structure(tag: UByte, children: List<Asn1Element>?) :
  */
 class Asn1Tagged
 /**
- * @param tag the ASN.1 Tag to be used (assumed to have [BERTags.CONSTRUCTED] and [BERTags.TAGGED] bits set)
+ * @param tag the ASN.1 Tag to be used will be properly encoded to have [BERTags.CONSTRUCTED] and
+ * [BERTags.CONTEXT_SPECIFIC] bits set)
  * @param children the child nodes to be contained in this tag
  *
- * @throws Asn1Exception is [tag] does not have [BERTags.CONSTRUCTED] and [BERTags.TAGGED] bits set
  */
-@Throws(Asn1Exception::class)
-internal constructor(tag: UByte, children: List<Asn1Element>) : Asn1Structure(tag, children) {
-
-    init {
-        if (!tag.isExplicitTag) throw Asn1Exception(
-            "Tag 0x${byteArrayOf(tag.toByte()).encodeToString(Base16)} " +
-                    "is not an explicit tag"
-        )
-    }
-
+internal constructor(tag: ULong, children: List<Asn1Element>) :
+    Asn1Structure(Tag(tag, constructed = true, tagClass = TagClass.CONTEXT_SPECIFIC), children) {
     override fun toString() = "Tagged" + super.toString()
     override fun prettyPrint(indent: Int) = (" " * indent) + "Tagged" + super.prettyPrint(indent + 2)
 }
 
 /**
- * ASN.1 SEQUENCE 0x30 ([DERTags.DER_SEQUENCE])
+ * ASN.1 SEQUENCE 0x30 ([BERTags.SEQUENCE] OR [BERTags.CONSTRUCTED])
  * @param children the elements to put into this sequence
  */
-class Asn1Sequence internal constructor(children: List<Asn1Element>) : Asn1Structure(DERTags.DER_SEQUENCE, children) {
+class Asn1Sequence internal constructor(children: List<Asn1Element>) :
+    Asn1Structure(Tag.ASN1_SEQUENCE, children) {
+
+    init {
+        if (!tag.isConstructed) throw IllegalArgumentException("An ASN.1 Structure must have a CONSTRUCTED tag")
+
+    }
+
     override fun toString() = "Sequence" + super.toString()
     override fun prettyPrint(indent: Int) = (" " * indent) + "Sequence" + super.prettyPrint(indent + 2)
+}
+
+/**
+ * ASN1 structure (i.e. containing child nodes) with custom tag
+ */
+class Asn1CustomStructure private constructor(
+    tag: Tag, children: List<Asn1Element>
+) :
+    Asn1Structure(tag, children) {
+    /**
+     * ASN.1 CONSTRUCTED with custom tag
+     * @param children the elements to put into this sequence
+     * @param tag the custom tag to use
+     * @param tagClass the tag class to use for this custom tag. defaults to [TagClass.UNIVERSAL]
+     */
+    constructor(
+        children: List<Asn1Element>,
+        tag: ULong,
+        tagClass: TagClass = TagClass.UNIVERSAL
+    ) : this(Tag(tag, constructed = true, tagClass), children)
+
+    /**
+     * ASN.1 CONSTRUCTED with custom tag
+     * @param children the elements to put into this sequence
+     * @param tag the custom tag to use
+     * @param tagClass the tag class to use for this custom tag. defaults to [TagClass.UNIVERSAL]
+     */
+    constructor(
+        children: List<Asn1Element>,
+        tag: UByte,
+        tagClass: TagClass = TagClass.UNIVERSAL
+    ) : this(children, tag.toULong(), tagClass)
+
+
+    override val content: ByteArray by lazy {
+        if (!tag.isConstructed)
+            children.fold(byteArrayOf()) { acc, asn1Element -> acc + asn1Element.derEncoded }
+        else super.content
+    }
+
+    override fun toString() = "${tag.tagClass}" + super.toString()
+
+    override fun prettyPrint(indent: Int) =
+        (" " * indent) + tag.tagClass + " ${tag.tagValue} " + super.prettyPrint(indent + 2)
+
+    companion object {
+        /**
+         * ASN.1 Structure encoded as an ASN.1 Primitive (similar to OCTET STRING containing a valid ASN.1 Structure) with custom tag
+         * @param children the elements to put into this sequence
+         * @param tag the custom tag to use
+         * @param tagClass the tag class to use for this custom tag. defaults to [TagClass.UNIVERSAL]
+         */
+        fun asPrimitive(children: List<Asn1Element>, tag: ULong, tagClass: TagClass = TagClass.UNIVERSAL) =
+            Asn1CustomStructure(Tag(tag, constructed = false, tagClass), children)
+    }
 }
 
 /**
@@ -213,7 +378,8 @@ class Asn1Sequence internal constructor(children: List<Asn1Element>) : Asn1Struc
  */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(with = Asn1EncodableSerializer::class)
-class Asn1EncapsulatingOctetString(children: List<Asn1Element>) : Asn1Structure(BERTags.OCTET_STRING, children),
+class Asn1EncapsulatingOctetString(children: List<Asn1Element>) :
+    Asn1Structure(Tag.OCTET_STRING, children),
     Asn1OctetString<Asn1EncapsulatingOctetString> {
     override val content: ByteArray by lazy {
         children.fold(byteArrayOf()) { acc, asn1Element -> acc + asn1Element.derEncoded }
@@ -232,7 +398,7 @@ class Asn1EncapsulatingOctetString(children: List<Asn1Element>) : Asn1Structure(
  * ASN.1 OCTET STRING 0x04 ([BERTags.OCTET_STRING]) containing data, which does not decode to an [Asn1Element]
  * @param content the data to hold
  */
-class Asn1PrimitiveOctetString(content: ByteArray) : Asn1Primitive(BERTags.OCTET_STRING, content),
+class Asn1PrimitiveOctetString(content: ByteArray) : Asn1Primitive(Tag.OCTET_STRING, content),
     Asn1OctetString<Asn1PrimitiveOctetString> {
 
     override val content: ByteArray get() = super.content
@@ -246,35 +412,59 @@ class Asn1PrimitiveOctetString(content: ByteArray) : Asn1Primitive(BERTags.OCTET
 
 
 /**
- * ASN.1 SET 0x31 ([DERTags.DER_SET])
- * @param children the elements to put into this set. will be automatically sorted by tag
+ * ASN.1 SET 0x31 ([BERTags.SET] OR [BERTags.CONSTRUCTED])
  */
-open class Asn1Set internal constructor(children: List<Asn1Element>?) :
-    Asn1Structure(DERTags.DER_SET, children?.sortedBy { it.tag }) {
+open class Asn1Set private constructor(children: List<Asn1Element>?, dontSort: Boolean) :
+    Asn1Structure(Tag.SET, if (dontSort) children else children?.sortedBy { it.tag }) {
+
+    /**
+     * @param children the elements to put into this set. will be automatically sorted by tag
+     */
+    internal constructor(children: List<Asn1Element>?) : this(children, false)
+
+    init {
+        if (!tag.isConstructed) throw IllegalArgumentException("An ASN.1 Structure must have a CONSTRUCTED tag")
+
+    }
+
     override fun toString() = "Set" + super.toString()
 
 
     override fun prettyPrint(indent: Int) = (" " * indent) + "Set" + super.prettyPrint(indent + 2)
+
+    companion object {
+        /**
+         * Explicitly discard DER requirements and DON'T sort children. Useful when parsing Structures which might not
+         * conform to DER
+         */
+        internal fun fromPresorted(children: List<Asn1Element>) = Asn1Set(children, true)
+    }
 }
 
 /**
- * ASN.1 SET OF 0x31 ([DERTags.DER_SET])
+ * ASN.1 SET OF 0x31 ([BERTags.SET] OR [BERTags.CONSTRUCTED])
  * @param children the elements to put into this set. will be automatically checked to have the same tag and sorted by value
  * @throws Asn1Exception if children are using different tags
  */
 class Asn1SetOf @Throws(Asn1Exception::class) internal constructor(children: List<Asn1Element>?) :
     Asn1Set(children?.let {
         if (it.any { elem -> elem.tag != it.first().tag }) throw Asn1Exception("SET OF must only contain elements of the same tag")
-        it.sortedBy { it.derEncoded.encodeToString(Base16) } //TODO this is inefficient
-
+        it.sortedBy { it.tag.encodedTag.encodeToString(Base16) } //TODO this is inefficient
     })
 
 /**
  * ASN.1 primitive. Hold o children, but [content] under [tag]
  */
-open class Asn1Primitive(tag: UByte, content: ByteArray) : Asn1Element(TLV(tag, content), null) {
+open class Asn1Primitive(tag: Tag, content: ByteArray) : Asn1Element(TLV(tag, content), null) {
+    init {
+        if (tag.isConstructed) throw IllegalArgumentException("A primitive cannot have a CONSTRUCTED tag")
+    }
+
     override fun toString() = "Primitive" + super.toString()
 
+    constructor(tagValue: ULong, content: ByteArray) : this(Tag(tagValue, false), content)
+
+    constructor(tagValue: UByte, content: ByteArray) : this(tagValue.toULong(), content)
 
     override fun prettyPrint(indent: Int) = (" " * indent) + "Primitive" + super.prettyPrint(indent)
 
@@ -313,49 +503,16 @@ interface Asn1OctetString<T : Asn1Element> {
 }
 
 
-data class TLV(val tag: UByte, val content: ByteArray) {
-
-    val encodedLength by lazy { length.encodeLength() }
-    val length by lazy { content.size }
-    val overallLength by lazy { length + 1 + encodedLength.size }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null) return false
-        if (this::class != other::class) return false
-
-        other as TLV
-
-        if (tag != other.tag) return false
-        if (!content.contentEquals(other.content)) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = tag.toInt()
-        result = 31 * result + content.contentHashCode()
-        return result
-    }
-
-    override fun toString(): String {
-        return "TLV(tag=0x${byteArrayOf(tag.toByte()).encodeToString(Base16)}" +
-                ", length=$length" +
-                ", overallLength=$overallLength" +
-                ", content=${content.encodeToString(Base16)})"
-    }
-}
-
 @Throws(IllegalArgumentException::class)
-private fun Int.encodeLength(): ByteArray {
-    if (this < 128) {
-        return byteArrayOf(this.toByte())
+internal fun Int.encodeLength(): ByteArray {
+    require(this >= 0)
+    return when {
+        (this < 0x80) -> byteArrayOf(this.toByte()) /* short form */
+        else -> { /* long form */
+            val length = this.toUnsignedByteArray()
+            val lengthLength = length.size
+            check(lengthLength < 0x80)
+            byteArrayOf((lengthLength or 0x80).toByte(), *length)
+        }
     }
-    if (this < 0x100) {
-        return byteArrayOf(0x81.toByte(), this.toByte())
-    }
-    if (this < 0x8000) {
-        return byteArrayOf(0x82.toByte(), (this ushr 8).toByte(), this.toByte())
-    }
-    throw IllegalArgumentException("length $this")
 }

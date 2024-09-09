@@ -30,7 +30,7 @@ class Asn1Time(instant: Instant, formatOverride: Format? = null) : Asn1Encodable
 
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Primitive) =
-            Asn1Time(src.readInstant(), if (src.tag == BERTags.UTC_TIME) Format.UTC else Format.GENERALIZED)
+            Asn1Time(src.readInstant(), if (src.tag == Asn1Element.Tag.TIME_UTC) Format.UTC else Format.GENERALIZED)
     }
 
     override fun encodeToTlv(): Asn1Primitive =

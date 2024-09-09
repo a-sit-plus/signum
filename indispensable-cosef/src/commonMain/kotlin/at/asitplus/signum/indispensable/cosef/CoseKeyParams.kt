@@ -5,7 +5,7 @@ import at.asitplus.KmmResult.Companion.failure
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
-import at.asitplus.signum.indispensable.asn1.decodeFromDer
+import at.asitplus.signum.indispensable.asn1.decodeFromDerValue
 
 /**
  * Wrapper to handle parameters for different COSE public key types.
@@ -164,7 +164,7 @@ sealed class CoseKeyParams : SpecializedCryptoPublicKey {
         override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = catching {
             CryptoPublicKey.Rsa(
                 n = n ?: throw IllegalArgumentException("Missing modulus n"),
-                e = Int.decodeFromDer(e ?:
+                e = Int.decodeFromDerValue(e ?:
                     throw IllegalArgumentException("Missing or invalid exponent e"))
             )
         }
