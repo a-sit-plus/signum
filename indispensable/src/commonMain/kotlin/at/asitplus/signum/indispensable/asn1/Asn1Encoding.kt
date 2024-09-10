@@ -17,8 +17,8 @@ import kotlinx.datetime.Instant
  * Class Providing a DSL for creating arbitrary ASN.1 structures. You will almost certainly never use it directly, but rather use it as follows:
  * ```kotlin
  * Sequence {
- *     +Tagged(1u) {
- *         +Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00))
+ *     +Tagged(1uL) {
+ *         +Asn1Primitive(BERTags.BOOLEAN.toUlong(), byteArrayOf(0x00))
  *     }
  *     +Set {
  *         +Sequence {
@@ -178,8 +178,6 @@ object Asn1 {
 
     /**
      * Creates a new EXPLICITLY TAGGED ASN.1 structure as [Asn1Tagged] using [tag].
-     *
-     * * **NOTE:** automatically calls [at.asitplus.signum.indispensable.asn1.DERTags.toExplicitTag] on [tag]
      *
      * Use as follows:
      *

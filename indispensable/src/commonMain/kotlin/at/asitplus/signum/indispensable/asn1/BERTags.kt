@@ -50,35 +50,21 @@ object BERTags {
     const val CONSTRUCTED: UByte = 0x20u // decimal 32
     const val UNIVERSAL: UByte = 0x00u // decimal 32
     const val APPLICATION: UByte = 0x40u // decimal 64
-    const val TAGGED: UByte = 0x80u // decimal 128 - maybe should deprecate this.
     const val CONTEXT_SPECIFIC: UByte = 0x80u // decimal 128
     const val PRIVATE: UByte = 0xC0u // decimal 192
     const val FLAGS: UByte = 0xE0u
 
 }
 
-object DERTags {
-   /* fun UByte.toExplicitTag() = BERTags.CONSTRUCTED or BERTags.TAGGED or this
+/**
+ * Convenience helper to easily construct implicitly tagged elements. Can be CONSTRUCTED or PRIMITIVE
+ * @param constructed whether to set the constructed bit
+ */
+fun ULong.toImplicitTag(constructed: Boolean = false) =
+    TLV.Tag(this, constructed = constructed, tagClass = TagClass.CONTEXT_SPECIFIC)
 
-    val UByte.isExplicitTag get() = ((this and BERTags.CONSTRUCTED) != 0.toUByte()) && ((this and BERTags.TAGGED) != 0.toUByte())
+fun UByte.isConstructed() = this and BERTags.CONSTRUCTED != 0.toUByte()
 
-    fun UInt.toExplicitTag(): UInt {
-        val bytes = toInt().encodeToDer().dropWhile { it == 0.toByte() }.toMutableList()
-        bytes[0] = bytes.first().toUByte().toExplicitTag().toByte()
-        return UInt.decodeFromDer(bytes.toByteArray())
-    }*/
-
-    fun ULong.toImplicitTag(constructed: Boolean = false) =
-        TLV.Tag(this, constructed = constructed, tagClass = TagClass.CONTEXT_SPECIFIC)
-    //TODO: rework completely
-    /*
-    @Throws(Asn1Exception::class)
-    fun UByte.toImplicitTag() = runRethrowing {
-        if (isConstructed()) throw IllegalArgumentException("Implicit tag $this would result in CONSTRUCTED bit set") else BERTags.TAGGED or this
-    }*/
-
-    fun UByte.isConstructed() = this and BERTags.CONSTRUCTED != 0.toUByte()
-}
 
 enum class TagClass(val byteValue:UByte) {
     UNIVERSAL(0u),

@@ -84,7 +84,7 @@ private class Asn1Reader(input: ByteArray) {
  * @throws [Throwable] all sorts of exceptions on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readInt() = runRethrowing { decode(INTEGER.toULong()) { Int.decodeFromDer(it) } }
+fun Asn1Primitive.readInt() = runRethrowing { decode(INTEGER.toULong()) { Int.decodeFromDerValue(it) } }
 
 /**
  * decodes this [Asn1Primitive]'s content into an [Boolean]
@@ -128,7 +128,7 @@ fun Asn1Primitive.readIntOrNull() = catching { readInt() }.getOrNull()
  * @throws [Throwable] all sorts of exceptions on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readLong() = runRethrowing { decode(INTEGER.toULong()) { Long.decodeFromDer(it) } }
+fun Asn1Primitive.readLong() = runRethrowing { decode(INTEGER.toULong()) { Long.decodeFromDerValue(it) } }
 
 /**
  * Exception-free version of [readLong]
@@ -277,16 +277,16 @@ private fun Instant.Companion.decodeGeneralizedTimeFromDer(input: ByteArray): In
  * @throws Asn1Exception if the byte array is too long to be parsed to an int (note that only rudimentary checking happens)
  */
 @Throws(Asn1Exception::class)
-fun Int.Companion.decodeFromDer(input: ByteArray): Int = runRethrowing {
+fun Int.Companion.decodeFromDerValue(input: ByteArray): Int = runRethrowing {
     if (input.size > 5) throw IllegalArgumentException("Absolute value too large!")
-    return Long.decodeFromDer(input).toInt()
+    return Long.decodeFromDerValue(input).toInt()
 }
 
 /**
  * @throws IllegalArgumentException if the byte array is too long to be parsed to a long (note that only rudimentary checking happens)
  */
 @Throws(Asn1Exception::class)
-fun Long.Companion.decodeFromDer(bytes: ByteArray): Long = runRethrowing {
+fun Long.Companion.decodeFromDerValue(bytes: ByteArray): Long = runRethrowing {
     val input = if (bytes.size == 8) bytes else {
         if (bytes.size > 9) throw IllegalArgumentException("Absolute value too large!")
         val padding = if (bytes.first() and 0x80.toByte() != 0.toByte()) 0xFF.toByte() else 0x00.toByte()
@@ -299,8 +299,13 @@ fun Long.Companion.decodeFromDer(bytes: ByteArray): Long = runRethrowing {
     return result
 }
 
+/**
+ * Decodes an ULong from a value of an DER-encoded ASN.1 Primitive. Can be fed a much larger byte array as long as
+ * it starts with a valid encoded ULong. Discards the remainder of the passed array.
+ * @return the decoded value and the underlying bytes (useful if a longer array is passed)
+ */
 @Throws(Asn1Exception::class)
-fun ULong.Companion.decodeFromDer(input: ByteArray): Pair<ULong, ByteArray> = runRethrowing {
+fun ULong.Companion.decodeFromDerValue(input: ByteArray): Pair<ULong, ByteArray> = runRethrowing {
     var last = 0
     input.iterator().let { while (it.hasNext() && it.next().toUByte() >= 0x80.toUByte()) last++ }
     val bytes = input.sliceArray(0..last)
@@ -314,19 +319,6 @@ fun ULong.Companion.decodeFromDer(input: ByteArray): Pair<ULong, ByteArray> = ru
         result = (result shl Byte.SIZE_BITS) or (input[i].toUByte().toULong())
     }
     return result to bytes
-}
-
-fun UInt.Companion.decodeFromDer(bytes: ByteArray): UInt = runRethrowing {
-    val input = if (bytes.size == 8) bytes else {
-        if (bytes.size > 5) throw IllegalArgumentException("Absolute value too large!")
-        val padding = 0x00.toByte()
-        ByteArray(9 - bytes.size) { padding } + bytes
-    }
-    var result = 0L
-    for (i in input.indices) {
-        result = (result shl Byte.SIZE_BITS) or (input[i].toUByte().toLong())
-    }
-    return result.toUInt()
 }
 
 @Throws(Asn1Exception::class)
@@ -369,6 +361,6 @@ internal fun ByteArray.decodeTag(): Pair<ULong, ByteArray> {
     return if (tagNumber <= 30U) {
         tagNumber.toULong() to byteArrayOf(this[0])
     } else {
-        ULong.decodeFromDer(drop(1).toByteArray()).let { (l,b)->l to byteArrayOf(first(),*b) }
+        ULong.decodeFromDerValue(drop(1).toByteArray()).let { (l,b)->l to byteArrayOf(first(),*b) }
     }
 }

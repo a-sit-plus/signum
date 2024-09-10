@@ -11,7 +11,6 @@ import at.asitplus.signum.indispensable.asn1.Asn1.Tagged
 import at.asitplus.signum.indispensable.asn1.Asn1.UtcTime
 import at.asitplus.signum.indispensable.asn1.Asn1.Utf8String
 import at.asitplus.signum.indispensable.io.BitSet
-import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -21,8 +20,6 @@ import io.kotest.property.arbitrary.boolean
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.long
 import io.kotest.property.checkAll
-import io.matthewnelson.encoding.base16.Base16
-import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.datetime.Clock
 import org.bouncycastle.asn1.ASN1Integer
 import java.util.*
@@ -92,7 +89,7 @@ class Asn1EncodingTest : FreeSpec({
             val bytes = (it).encodeToByteArray()
 
             val fromBC = ASN1Integer(it).encoded
-            val long = Long.decodeFromDer(bytes)
+            val long = Long.decodeFromDerValue(bytes)
 
             val encoded = Asn1Primitive(BERTags.INTEGER, bytes).derEncoded
             encoded shouldBe fromBC
