@@ -215,7 +215,7 @@ fun Asn1Primitive.readNullOrNull() = catching { readNull() }.getOrNull()
  */
 @Throws(Asn1TagMismatchException::class)
 fun Asn1Tagged.verifyTag(tag: UInt): List<Asn1Element> {
-    val explicitTag= TLV.Tag(tag,constructed = true,TagClass.CONTEXT_SPECIFIC)
+    val explicitTag = TLV.Tag(tag, constructed = true, TagClass.CONTEXT_SPECIFIC)
     if (this.tag != explicitTag) throw Asn1TagMismatchException(explicitTag, this.tag)
     return this.children
 }
@@ -332,8 +332,7 @@ private fun ByteArray.readTlv(): TLV = runRethrowing {
             throw IllegalArgumentException("Out of bytes")
         val value = this.drop(offset + 3).take(length).toByteArray()
         return TLV(TLV.Tag(tagBytes), value)
-    }
-    if (firstLength == 0x81.toByte()) {
+    } else if (firstLength == 0x81.toByte()) {
         if (this.size < offset + 2)
             throw IllegalArgumentException("Can't decode length")
         val length = this[offset + 1].toUByte().toInt()
@@ -341,15 +340,14 @@ private fun ByteArray.readTlv(): TLV = runRethrowing {
             throw IllegalArgumentException("Out of bytes")
         val value = this.drop(offset + 2).take(length).toByteArray()
         return TLV(TLV.Tag(tagBytes), value)
+    } else {
+        val length = firstLength.toUByte().toInt()
+        if (this.size < offset + 1 + length)
+            throw IllegalArgumentException("Out of bytes")
+        val value = this.drop(offset + 1).take(length).toByteArray()
+        // TODO end
+        return TLV(TLV.Tag(tagBytes), value)
     }
-    val length = firstLength.toUByte().toInt()
-    if (this.size < offset + 1 + length)
-        throw IllegalArgumentException("Out of bytes")
-
-    val value = this.drop(offset + 1).take(length).toByteArray()
-    // TODO end
-
-    return TLV(TLV.Tag(tagBytes), value)
 }
 
 private infix fun UByte.ushr(bits: Int) = toInt() ushr bits
