@@ -321,34 +321,30 @@ private fun ByteArray.readTlv(): TLV = runRethrowing {
     val tagLength = decodedTag.encodedTagLength
     val tagBytes = sliceArray(0..<tagLength)
 
-    // TODO Extract length
-    val offset = tagLength
-    val firstLength = this[offset]
-    if (firstLength == 0x82.toByte()) {
-        if (this.size < offset + 3)
-            throw IllegalArgumentException("Can't decode length")
-        val length = (this[offset + 1].toUByte().toInt() shl 8) + this[offset + 2].toUByte().toInt()
-        if (this.size < offset + 3 + length)
-            throw IllegalArgumentException("Out of bytes")
-        val value = this.drop(offset + 3).take(length).toByteArray()
-        return TLV(TLV.Tag(tagBytes), value)
-    } else if (firstLength == 0x81.toByte()) {
-        if (this.size < offset + 2)
-            throw IllegalArgumentException("Can't decode length")
-        val length = this[offset + 1].toUByte().toInt()
-        if (this.size < offset + 2 + length)
-            throw IllegalArgumentException("Out of bytes")
-        val value = this.drop(offset + 2).take(length).toByteArray()
-        return TLV(TLV.Tag(tagBytes), value)
+    val value = this.drop(tagLength).decodeLengthAndValue()
+    return TLV(TLV.Tag(tagBytes), value.toByteArray())
+}
+
+@Throws(IllegalArgumentException::class)
+private fun List<Byte>.decodeLengthAndValue(): List<Byte> {
+    if (this[0] == 0x82.toByte()) {
+        require(size >= 3) { "Can't decode length" }
+        val length = (getInt(1) shl 8) + getInt(2)
+        require(size >= 3 + length) { "Out of bytes" }
+        return drop(3).take(length)
+    } else if (this[0] == 0x81.toByte()) {
+        require(size >= 2) { "Can't decode length" }
+        val length = getInt(1)
+        require(size >= 2 + length) { "Out of bytes" }
+        return drop(2).take(length)
     } else {
-        val length = firstLength.toUByte().toInt()
-        if (this.size < offset + 1 + length)
-            throw IllegalArgumentException("Out of bytes")
-        val value = this.drop(offset + 1).take(length).toByteArray()
-        // TODO end
-        return TLV(TLV.Tag(tagBytes), value)
+        val length = getInt(0)
+        require(size >= 1 + length) { "Out of bytes" }
+        return drop(1).take(length)
     }
 }
+
+private fun List<Byte>.getInt(i: Int) = this[i].toUByte().toInt()
 
 private infix fun UByte.ushr(bits: Int) = toInt() ushr bits
 
