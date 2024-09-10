@@ -325,27 +325,21 @@ private fun ByteArray.readTlv(): TLV = runRethrowing {
 }
 
 @Throws(IllegalArgumentException::class)
-private fun List<Byte>.decodeValue() = when {
-    this[0] == 0x82.toByte() -> {
-        require(size >= 3) { "Can't decode length" }
-        val length = (getInt(1) shl 8) + getInt(2)
-        require(size >= 3 + length) { "Out of bytes" }
-        drop(3).take(length)
-    }
-
-    this[0] == 0x81.toByte() -> {
-        require(size >= 2) { "Can't decode length" }
-        val length = getInt(1)
-        require(size >= 2 + length) { "Out of bytes" }
-        drop(2).take(length)
-    }
-
-    else -> {
+private fun List<Byte>.decodeValue() =
+    if (this[0].isBerShortForm()) {
         val length = getInt(0)
         require(size >= 1 + length) { "Out of bytes" }
         drop(1).take(length)
+    } else { // its BER long form!
+        val numberOfLengthOctets = (this[0] byteMask 0x7F).toInt()
+        require(size >= numberOfLengthOctets + 1) { "Can't decode length" }
+        val length = (numberOfLengthOctets downTo 1).fold(0) { acc, index ->
+            acc + (getInt(index) shl Byte.SIZE_BITS * (numberOfLengthOctets - index))
+        }
+        drop(1 + numberOfLengthOctets).take(length)
     }
-}
+
+private fun Byte.isBerShortForm() = this byteMask 0x80 == 0x00.toUByte()
 
 private fun List<Byte>.getInt(i: Int) = this[i].toUByte().toInt()
 
