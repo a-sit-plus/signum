@@ -68,7 +68,8 @@ object DERTags {
         return UInt.decodeFromDer(bytes.toByteArray())
     }*/
 
-    fun UInt.toImplicitTag() = TLV.Tag(this, constructed = false, tagClass = TagClass.CONTEXT_SPECIFIC)
+    fun ULong.toImplicitTag(constructed: Boolean = false) =
+        TLV.Tag(this, constructed = constructed, tagClass = TagClass.CONTEXT_SPECIFIC)
     //TODO: rework completely
     /*
     @Throws(Asn1Exception::class)

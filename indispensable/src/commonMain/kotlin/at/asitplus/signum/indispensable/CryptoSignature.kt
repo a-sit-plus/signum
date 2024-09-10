@@ -229,9 +229,9 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
 
     class RSAorHMAC(input: ByteArray) : CryptoSignature, RawByteEncodable {
 
-        override val signature: Asn1Element = Asn1Primitive(BIT_STRING.toUInt(), input)
+        override val signature: Asn1Element = Asn1Primitive(BIT_STRING.toULong(), input)
 
-        override val rawByteArray by lazy { (signature as Asn1Primitive).decode(BIT_STRING.toUInt()) { it } }
+        override val rawByteArray by lazy { (signature as Asn1Primitive).decode(BIT_STRING.toULong()) { it } }
         override fun encodeToTlvBitString(): Asn1Element = this.encodeToTlv()
 
         override fun hashCode(): Int = signature.hashCode()
@@ -259,8 +259,8 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Element): CryptoSignature = runRethrowing {
             when (src.tag.tagValue) {
-                BIT_STRING.toUInt() -> RSAorHMAC((src as Asn1Primitive).decode(BIT_STRING.toUInt()) { it })
-                (BERTags.SEQUENCE).toUInt() -> EC.decodeFromTlv(src as Asn1Sequence)
+                BIT_STRING.toULong() -> RSAorHMAC((src as Asn1Primitive).decode(BIT_STRING.toULong()) { it })
+                (BERTags.SEQUENCE).toULong() -> EC.decodeFromTlv(src as Asn1Sequence)
 
                 else -> throw Asn1Exception("Unknown Signature Format")
             }

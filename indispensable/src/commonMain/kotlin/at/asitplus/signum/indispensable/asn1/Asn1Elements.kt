@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.catching
-import at.asitplus.io.UVarInt
 import at.asitplus.signum.indispensable.asn1.DERTags.isConstructed
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -189,10 +188,11 @@ class Asn1Tagged
  * @throws Asn1Exception is [tag] does not have [BERTags.CONSTRUCTED] and [BERTags.TAGGED] bits set
  */
 @Throws(Asn1Exception::class)
-internal constructor(tag: UInt, children: List<Asn1Element>) : Asn1Structure(TLV.Tag(tag, constructed = true, tagClass = TagClass.CONTEXT_SPECIFIC), children) {
+internal constructor(tag: ULong, children: List<Asn1Element>) :
+    Asn1Structure(TLV.Tag(tag, constructed = true, tagClass = TagClass.CONTEXT_SPECIFIC), children) {
 
     init {
-        if (tag == BERTags.SET.toUInt() || tag == BERTags.SEQUENCE.toUInt()) throw Asn1Exception(
+        if (tag == BERTags.SET.toULong() || tag == BERTags.SEQUENCE.toULong()) throw Asn1Exception(
             "Tag ${tlv.tag} shadows SET or SEQUENCE encoding!"
         )
     }
@@ -206,7 +206,7 @@ internal constructor(tag: UInt, children: List<Asn1Element>) : Asn1Structure(TLV
  * @param children the elements to put into this sequence
  */
 class Asn1Sequence internal constructor(children: List<Asn1Element>) :
-    Asn1Structure(TLV.Tag(BERTags.SEQUENCE.toUInt(), constructed = true), children)/*TODO check for conflicts*/ {
+    Asn1Structure(TLV.Tag(BERTags.SEQUENCE.toULong(), constructed = true), children)/*TODO check for conflicts*/ {
     override fun toString() = "Sequence" + super.toString()
     override fun prettyPrint(indent: Int) = (" " * indent) + "Sequence" + super.prettyPrint(indent + 2)
 }
@@ -217,13 +217,13 @@ class Asn1Sequence internal constructor(children: List<Asn1Element>) :
  */
 class Asn1CustomStructure internal constructor(
     children: List<Asn1Element>,
-    tag: UInt,
+    tag: ULong,
     tagClass: TagClass = TagClass.UNIVERSAL
 ) :
     Asn1Structure(TLV.Tag(tag, constructed = true, tagClass), children)/*TODO check for conflicts*/ {
     override fun toString() = "${tag.tagClass}" + super.toString()
     override fun prettyPrint(indent: Int) =
-        (" " * indent) + tag.tagClass + " ${tag.tagValue} " + super.prettyPrint(indent + 2)
+        (" " * indent) + tag.tagClass + " 0x${tag.encodedTag.encodeToString(Base16)} " + super.prettyPrint(indent + 2)
 }
 
 /**
@@ -232,7 +232,8 @@ class Asn1CustomStructure internal constructor(
  */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(with = Asn1EncodableSerializer::class)
-class Asn1EncapsulatingOctetString(children: List<Asn1Element>) : Asn1Structure(TLV.Tag(BERTags.OCTET_STRING.toUInt(), constructed = false), children),
+class Asn1EncapsulatingOctetString(children: List<Asn1Element>) :
+    Asn1Structure(TLV.Tag(BERTags.OCTET_STRING.toULong(), constructed = false), children),
     Asn1OctetString<Asn1EncapsulatingOctetString> {
     override val content: ByteArray by lazy {
         children.fold(byteArrayOf()) { acc, asn1Element -> acc + asn1Element.derEncoded }
@@ -251,7 +252,7 @@ class Asn1EncapsulatingOctetString(children: List<Asn1Element>) : Asn1Structure(
  * ASN.1 OCTET STRING 0x04 ([BERTags.OCTET_STRING]) containing data, which does not decode to an [Asn1Element]
  * @param content the data to hold
  */
-class Asn1PrimitiveOctetString(content: ByteArray) : Asn1Primitive(BERTags.OCTET_STRING.toUInt(), content),
+class Asn1PrimitiveOctetString(content: ByteArray) : Asn1Primitive(BERTags.OCTET_STRING.toULong(), content),
     Asn1OctetString<Asn1PrimitiveOctetString> {
 
     override val content: ByteArray get() = super.content
@@ -270,7 +271,7 @@ class Asn1PrimitiveOctetString(content: ByteArray) : Asn1Primitive(BERTags.OCTET
  */
 open class Asn1Set internal constructor(children: List<Asn1Element>?, dontSort: Boolean = false) :
     Asn1Structure(
-        TLV.Tag(BERTags.SET.toUInt(), constructed = true),
+        TLV.Tag(BERTags.SET.toULong(), constructed = true),
         if (dontSort) children else children?.sortedBy { it.tag.encodedTag.encodeToString(Base16) }) /*TODO check sorting!!!*/ {
     override fun toString() = "Set" + super.toString()
 
@@ -296,9 +297,9 @@ class Asn1SetOf @Throws(Asn1Exception::class) internal constructor(children: Lis
 open class Asn1Primitive(tag: TLV.Tag, content: ByteArray) : Asn1Element(TLV(tag, content), null) {
     override fun toString() = "Primitive" + super.toString()
 
-    constructor(tagValue: UInt, content: ByteArray) : this(TLV.Tag(tagValue, false), content)
+    constructor(tagValue: ULong, content: ByteArray) : this(TLV.Tag(tagValue, false), content)
 
-    constructor(tagValue: UByte, content: ByteArray):this(tagValue.toUInt(), content)
+    constructor(tagValue: UByte, content: ByteArray) : this(tagValue.toULong(), content)
 
     override fun prettyPrint(indent: Int) = (" " * indent) + "Primitive" + super.prettyPrint(indent)
 
@@ -375,12 +376,12 @@ data class TLV(val tag: Tag, val content: ByteArray) {
                 ", content=${content.encodeToString(Base16)})"
     }
 
-    data class Tag private constructor(val tagValue: UInt, val encodedTagLength: Int, val encodedTag: ByteArray) {
-        private constructor(values: Triple<UInt, Int, ByteArray>) : this(values.first, values.second, values.third)
+    data class Tag private constructor(val tagValue: ULong, val encodedTagLength: Int, val encodedTag: ByteArray) {
+        private constructor(values: Triple<ULong, Int, ByteArray>) : this(values.first, values.second, values.third)
         constructor(derEncoded: ByteArray) : this(
-            derEncoded.decodeTag().let { Triple(it.toULong().toUInt(), it.encodedTagLength, derEncoded) })
+            derEncoded.decodeTag().let { Triple(it.first, it.second.size, derEncoded) })
 
-        constructor(tagValue: UInt, constructed: Boolean, tagClass: TagClass = TagClass.UNIVERSAL) : this(
+        constructor(tagValue: ULong, constructed: Boolean, tagClass: TagClass = TagClass.UNIVERSAL) : this(
             encode(
                 tagClass,
                 constructed,
@@ -389,11 +390,14 @@ data class TLV(val tag: Tag, val content: ByteArray) {
         )
 
         companion object {
-            private fun encode(tagClass: TagClass, constructed: Boolean, tagValue: UInt): ByteArray {
+            private fun encode(tagClass: TagClass, constructed: Boolean, tagValue: ULong): ByteArray {
                 val derEncoded: ByteArray =
                     if (tagValue <= 30u) {
                         byteArrayOf(tagValue.toUByte().toByte())
-                    } else byteArrayOf(0b11111, *UVarInt(tagValue).encodeToByteArray())
+                    } else byteArrayOf(
+                        0b11111,
+                        *tagValue.toLong().encodeToByteArray().dropWhile { it == 0.toByte() }.toByteArray()
+                    )
 
                 var encoded = derEncoded.first().toUByte()
                 if (constructed) encoded = encoded or BERTags.CONSTRUCTED
@@ -409,18 +413,16 @@ data class TLV(val tag: Tag, val content: ByteArray) {
             }
         }
 
-        val tagClass by lazy { runRethrowing { TagClass.fromByte(encodedTag.first()) }
-            .onFailure {
-                println("Foo")
-            }
-            .getOrThrow() } //yes, this shall crash!!!
+        val tagClass by lazy { runRethrowing { TagClass.fromByte(encodedTag.first()) }.getOrThrow() } //yes, this shall crash!!!
 
         val isConstructed by lazy { encodedTag.first().toUByte().isConstructed() }
 
         val isExplicitlyTagged by lazy { isConstructed && tagClass == TagClass.CONTEXT_SPECIFIC }
 
         override fun toString(): String =
-            "${tagClass.let { if (it == TagClass.UNIVERSAL) "" else it.name + " " }}0x${tagValue.toString(16)}${if (isConstructed) " CONSTRUCTED" else ""}"
+            "${tagClass.let { if (it == TagClass.UNIVERSAL) "" else it.name + " " }}0x${
+                tagValue.toString(16).uppercase()
+            }${if (isConstructed) " CONSTRUCTED" else ""}"
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
