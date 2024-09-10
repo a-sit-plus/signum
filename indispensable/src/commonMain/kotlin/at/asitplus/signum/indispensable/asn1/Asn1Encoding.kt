@@ -12,6 +12,7 @@ import at.asitplus.signum.indispensable.io.BitSet
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.util.toTwosComplementByteArray
 import kotlinx.datetime.Instant
+import kotlin.experimental.or
 
 /**
  * Class Providing a DSL for creating arbitrary ASN.1 structures. You will almost certainly never use it directly, but rather use it as follows:
@@ -182,7 +183,7 @@ object Asn1 {
      * Use as follows:
      *
      * ```kotlin
-     * Tagged(2u) {
+     * Tagged(2uL) {
      *   +PrintableString("World World")
      *   +Null()
      *   +Int(1337)
@@ -515,3 +516,48 @@ fun ByteArray.ensureSize(size: Int): ByteArray = (this.size - size).let { toDrop
 
 @Suppress("NOTHING_TO_INLINE")
 inline fun ByteArray.ensureSize(size: UInt) = ensureSize(size.toInt())
+
+/**
+ * Encodes this number using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
+ * while the highest bit indicates if more bytes are to come
+ */
+fun ULong.toAsn1VarInt(): ByteArray {
+    if (this < 128u) return byteArrayOf(this.toByte()) //Fast case
+    var offset = 0
+    var result= mutableListOf<Byte>()
+
+    var b0 = (this shr offset and 0x7FuL).toByte()
+    while ((this shr offset > 0uL) || offset == 0) {
+        result += b0
+        offset += 7
+        if (offset > (ULong.SIZE_BITS - 1)) break //End of Fahnenstange
+        b0 = (this shr offset and 0x7FuL).toByte()
+    }
+
+    return ByteArray(result.size){
+        result[result.size-1-it] or  (if (it < result.size-1) 0x80 else 0x00).toByte()
+    }
+}
+
+//TODO: how to not duplicate this withut wasting bytes?
+/**
+ * Encodes this number using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
+ * while the highest bit indicates if more bytes are to come
+ */
+fun UInt.toAsn1VarInt(): ByteArray {
+    if (this < 128u) return byteArrayOf(this.toByte()) //Fast case
+    var offset = 0
+    var result= mutableListOf<Byte>()
+
+    var b0 = (this shr offset and 0x7Fu).toByte()
+    while ((this shr offset > 0u) || offset == 0) {
+        result += b0
+        offset += 7
+        if (offset > (UInt.SIZE_BITS - 1)) break //End of Fahnenstange
+        b0 = (this shr offset and 0x7Fu).toByte()
+    }
+
+    return ByteArray(result.size){
+        result[result.size-1-it] or  (if (it < result.size-1) 0x80 else 0x00).toByte()
+    }
+}

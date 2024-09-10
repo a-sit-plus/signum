@@ -9,9 +9,19 @@
   * Make all `tag` parameters `ULong` to reflect support for multi-byte tags
   * Remove `DERTags`
   * Revamp implicit tagging (there is still work to be done, but at least it supports CONSTRUCTED ASN.1 elements)
-* Refactor `Int.Companion.decodeFromDer` -> `Int.Companion.decodeFromDerValue`
-* Refactor `Long.Companion.decodeFromDer` -> `Long.Companion.decodeFromDerValue`
-* Introduce `ULong.Companion.decodeFromDer` which can handle overlong inputs, as long as they start with a valid ULong encoding
+* Refactor `Int.Companion.decodeFromDer()` -> `Int.Companion.decodeFromDerValue()`
+* Refactor `Long.Companion.decodeFromDer()` -> `Long.Companion.decodeFromDerValue()`
+* Introduce `ULong.toAsn1VarInt()` to encode ULongs into ASN.1 unsigned VarInts (**not to be confused with
+  multi^2_base's`UVarInt`!**)
+* Introduce `decodeAsn1VarULong()` and `decodeAsn1VarUInt()` which can handle overlong inputs, as long as they start with a valid unsigned number encoding.
+  * Comes in three ULong flavours:
+    * `Iterator<Byte>.decodeAsn1VarULong()`
+    * `Iterable<Byte>.decodeAsn1VarULong()`
+    * `ByteArray.decodeAsn1VarULong()`
+  * and three UInt flavours:
+      * `Iterator<Byte>.decodeAsn1VarUInt()`
+      * `Iterable<Byte>.decodeAsn1VarUInt()`
+      * `ByteArray.decodeAsn1VarUInt()`
 
 ## 3.0
 

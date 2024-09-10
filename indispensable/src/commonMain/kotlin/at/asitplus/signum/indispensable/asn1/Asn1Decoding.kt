@@ -19,6 +19,7 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.util.fromTwosComplementByteArray
 import kotlinx.datetime.Instant
 import kotlin.experimental.and
+import kotlin.math.ceil
 
 
 /**
@@ -299,27 +300,6 @@ fun Long.Companion.decodeFromDerValue(bytes: ByteArray): Long = runRethrowing {
     return result
 }
 
-/**
- * Decodes an ULong from a value of an DER-encoded ASN.1 Primitive. Can be fed a much larger byte array as long as
- * it starts with a valid encoded ULong. Discards the remainder of the passed array.
- * @return the decoded value and the underlying bytes (useful if a longer array is passed)
- */
-@Throws(Asn1Exception::class)
-fun ULong.Companion.decodeFromDerValue(input: ByteArray): Pair<ULong, ByteArray> = runRethrowing {
-    var last = 0
-    input.iterator().let { while (it.hasNext() && it.next().toUByte() >= 0x80.toUByte()) last++ }
-    val bytes = input.sliceArray(0..last)
-    val input = if (bytes.size == 8) bytes else {
-        if (bytes.size > 9) throw IllegalArgumentException("Absolute value too large!")
-        val padding = 0x00.toByte()
-        ByteArray(9 - bytes.size) { padding } + bytes
-    }
-    var result = 0uL
-    for (i in input.indices) {
-        result = (result shl Byte.SIZE_BITS) or (input[i].toUByte().toULong())
-    }
-    return result to bytes
-}
 
 @Throws(Asn1Exception::class)
 private fun ByteArray.readTlv(): TLV = runRethrowing {
@@ -352,8 +332,6 @@ private fun Byte.isBerShortForm() = this byteMask 0x80 == 0x00.toUByte()
 
 private fun List<Byte>.getInt(i: Int) = this[i].toUByte().toInt()
 
-private infix fun UByte.ushr(bits: Int) = toInt() ushr bits
-
 internal infix fun Byte.byteMask(mask: Int) = (this and mask.toUInt().toByte()).toUByte()
 
 internal fun ByteArray.decodeTag(): Pair<ULong, ByteArray> {
@@ -361,6 +339,99 @@ internal fun ByteArray.decodeTag(): Pair<ULong, ByteArray> {
     return if (tagNumber <= 30U) {
         tagNumber.toULong() to byteArrayOf(this[0])
     } else {
-        ULong.decodeFromDerValue(drop(1).toByteArray()).let { (l,b)->l to byteArrayOf(first(),*b) }
+        drop(1).decodeAsn1VarULong().let { (l, b) -> l to byteArrayOf(first(), *b) }
     }
+}
+
+
+/**
+ * Decodes an ULong from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
+ * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
+ *
+ * @return the decoded ULong and the underlying varint-encoded bytes as `ByteArray`
+ * @throws IllegalArgumentException if the number is larger than [ULong.MAX_VALUE]
+ */
+inline fun Iterable<Byte>.decodeAsn1VarULong(): Pair<ULong, ByteArray> = iterator().decodeAsn1VarULong()
+
+/**
+ * Decodes an ULong from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
+ * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
+ *
+ * @return the decoded ULong and the underlying varint-encoded bytes as `ByteArray`
+ * @throws IllegalArgumentException if the number is larger than [ULong.MAX_VALUE]
+ */
+inline fun ByteArray.decodeAsn1VarULong(): Pair<ULong, ByteArray> = iterator().decodeAsn1VarULong()
+
+/**
+ * Decodes an ULong from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
+ * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
+ *
+ * @return the decoded ULong and the underlying varint-encoded bytes as `ByteArray`
+ * @throws IllegalArgumentException if the number is larger than [ULong.MAX_VALUE]
+ */
+fun Iterator<Byte>.decodeAsn1VarULong(): Pair<ULong, ByteArray> {
+    var offset = 0
+    var result = 0uL
+    val accumulator = mutableListOf<Byte>()
+    while (hasNext()) {
+        val current = next().toUByte()
+        accumulator += current.toByte()
+        if (offset == 0) result = (current and 0x7F.toUByte()).toULong()
+        else if (current >= 0x80.toUByte()) {
+            result = (current and 0x7F.toUByte()).toULong() or (result shl 7)
+        } else {
+            result = (current and 0x7F.toUByte()).toULong() or (result shl 7)
+            break
+        }
+        if (++offset > ceil(ULong.SIZE_BYTES.toFloat() * 8f / 7f)) throw IllegalArgumentException("Tag number too Large do decode into ULong!")
+    }
+
+    return result to accumulator.toByteArray()
+}
+
+
+//TOOD: how to not duplicate all this???
+/**
+ * Decodes an UInt from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
+ * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
+ *
+ * @return the decoded UInt and the underlying varint-encoded bytes as `ByteArray`
+ * @throws IllegalArgumentException if the number is larger than [UInt.MAX_VALUE]
+ */
+inline fun Iterable<Byte>.decodeAsn1VarUInt(): Pair<UInt, ByteArray> = iterator().decodeAsn1VarUInt()
+
+/**
+ * Decodes an UInt from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
+ * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
+ *
+ * @return the decoded UInt and the underlying varint-encoded bytes as `ByteArray`
+ * @throws IllegalArgumentException if the number is larger than [UInt.MAX_VALUE]
+ */
+inline fun ByteArray.decodeAsn1VarUInt(): Pair<UInt, ByteArray> = iterator().decodeAsn1VarUInt()
+
+/**
+ * Decodes an UInt from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
+ * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
+ *
+ * @return the decoded UInt and the underlying varint-encoded bytes as `ByteArray`
+ * @throws IllegalArgumentException if the number is larger than [UInt.MAX_VALUE]
+ */
+fun Iterator<Byte>.decodeAsn1VarUInt(): Pair<UInt, ByteArray> {
+    var offset = 0
+    var result = 0u
+    val accumulator = mutableListOf<Byte>()
+    while (hasNext()) {
+        val current = next().toUByte()
+        accumulator += current.toByte()
+        if (offset == 0) result = (current and 0x7F.toUByte()).toUInt()
+        else if (current >= 0x80.toUByte()) {
+            result = (current and 0x7F.toUByte()).toUInt() or (result shl 7)
+        } else {
+            result = (current and 0x7F.toUByte()).toUInt() or (result shl 7)
+            break
+        }
+        if (++offset > ceil(UInt.SIZE_BYTES.toFloat() * 8f / 7f)) throw IllegalArgumentException("Tag number too Large do decode into UInt!")
+    }
+
+    return result to accumulator.toByteArray()
 }
