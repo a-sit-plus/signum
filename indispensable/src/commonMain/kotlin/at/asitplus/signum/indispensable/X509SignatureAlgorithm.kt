@@ -119,8 +119,8 @@ enum class X509SignatureAlgorithm(
                 RS256.oid, RS384.oid, RS512.oid,
                 HS256.oid, HS384.oid, HS512.oid -> fromOid(oid).also {
                     val tag = src.nextChild().tag
-                    if (tag.tagValue != BERTags.ASN1_NULL.toUInt())
-                        throw Asn1TagMismatchException(TLV.Tag(BERTags.ASN1_NULL.toUInt(), constructed = false), tag, "RSA Params not allowed.")
+                    if (tag.tagValue != BERTags.ASN1_NULL.toULong())
+                        throw Asn1TagMismatchException(TLV.Tag(BERTags.ASN1_NULL.toULong(), constructed = false), tag, "RSA Params not allowed.")
                 }
 
                 PS256.oid, PS384.oid, PS512.oid -> parsePssParams(src)
@@ -135,8 +135,8 @@ enum class X509SignatureAlgorithm(
 
             val sigAlg = (first.nextChild() as Asn1Primitive).readOid()
             val tag = first.nextChild().tag
-            if (tag.tagValue != BERTags.ASN1_NULL.toUInt())
-                throw Asn1TagMismatchException(TLV.Tag(BERTags.ASN1_NULL.toUInt(), constructed = false), tag, "PSS Params not supported yet")
+            if (tag.tagValue != BERTags.ASN1_NULL.toULong())
+                throw Asn1TagMismatchException(TLV.Tag(BERTags.ASN1_NULL.toULong(), constructed = false), tag, "PSS Params not supported yet")
 
             val second = (seq.nextChild() as Asn1Tagged).verifyTag(1u).single() as Asn1Sequence
             val mgf = (second.nextChild() as Asn1Primitive).readOid()
@@ -145,7 +145,7 @@ enum class X509SignatureAlgorithm(
             val innerHash = (inner.nextChild() as Asn1Primitive).readOid()
             if (innerHash != sigAlg) throw IllegalArgumentException("HashFunction mismatch! Expected: $sigAlg, is: $innerHash")
 
-            if (inner.nextChild().tag.tagValue != BERTags.ASN1_NULL.toUInt()) throw IllegalArgumentException(
+            if (inner.nextChild().tag.tagValue != BERTags.ASN1_NULL.toULong()) throw IllegalArgumentException(
                 "PSS Params not supported yet"
             )
 
