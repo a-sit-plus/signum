@@ -320,27 +320,30 @@ private fun ByteArray.readTlv(): TLV = runRethrowing {
     val decodedTag = decodeTag()
     val tagLength = decodedTag.encodedTagLength
     val tagBytes = sliceArray(0..<tagLength)
-
-    val value = this.drop(tagLength).decodeLengthAndValue()
+    val value = drop(tagLength).decodeValue()
     return TLV(TLV.Tag(tagBytes), value.toByteArray())
 }
 
 @Throws(IllegalArgumentException::class)
-private fun List<Byte>.decodeLengthAndValue(): List<Byte> {
-    if (this[0] == 0x82.toByte()) {
+private fun List<Byte>.decodeValue() = when {
+    this[0] == 0x82.toByte() -> {
         require(size >= 3) { "Can't decode length" }
         val length = (getInt(1) shl 8) + getInt(2)
         require(size >= 3 + length) { "Out of bytes" }
-        return drop(3).take(length)
-    } else if (this[0] == 0x81.toByte()) {
+        drop(3).take(length)
+    }
+
+    this[0] == 0x81.toByte() -> {
         require(size >= 2) { "Can't decode length" }
         val length = getInt(1)
         require(size >= 2 + length) { "Out of bytes" }
-        return drop(2).take(length)
-    } else {
+        drop(2).take(length)
+    }
+
+    else -> {
         val length = getInt(0)
         require(size >= 1 + length) { "Out of bytes" }
-        return drop(1).take(length)
+        drop(1).take(length)
     }
 }
 
