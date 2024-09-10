@@ -45,7 +45,7 @@ private class Asn1Reader(input: ByteArray) {
         while (rest.isNotEmpty()) {
             val tlv = read()
             if (tlv.isSequence()) result.add(Asn1Sequence(Asn1Reader(tlv.content).doParse()))
-            else if (tlv.isSet()) result.add(Asn1Set(Asn1Reader(tlv.content).doParse()))
+            else if (tlv.isSet()) result.add(Asn1Set(Asn1Reader(tlv.content).doParse(), dontSort = true))
             else if (tlv.isExplicitlyTagged()) result.add(
                 Asn1Tagged(
                     tlv.tag.tagValue,
@@ -58,6 +58,8 @@ private class Asn1Reader(input: ByteArray) {
                 }.getOrElse {
                     result.add(Asn1PrimitiveOctetString(tlv.content))
                 }
+            } else if (tlv.tag.isConstructed) { //custom tags, we don't know if it is a SET OF, SET, SEQUENCE,… so we default to sequence semantics
+                result.add(Asn1CustomStructure(Asn1Reader(tlv.content).doParse(), tlv.tag.tagValue, tlv.tagClass))
             } else result.add(Asn1Primitive(tlv.tag, tlv.content))
 
         }

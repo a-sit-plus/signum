@@ -45,7 +45,8 @@ sealed class Asn1Element(
          * @throws [Throwable] all sorts of errors on invalid input
          */
         @Throws(Throwable::class)
-        fun decodeFromDerHexString(derEncoded: String) = Asn1Element.parse(derEncoded.replace(" ","").trim().decodeToByteArray(Base16))
+        fun decodeFromDerHexString(derEncoded: String) =
+            Asn1Element.parse(derEncoded.replace(Regex("\\s"), "").trim().decodeToByteArray(Base16))
     }
 
     /**
@@ -201,13 +202,28 @@ internal constructor(tag: UInt, children: List<Asn1Element>) : Asn1Structure(TLV
 }
 
 /**
- * ASN.1 SEQUENCE 0x30 ([DERTags.DER_SEQUENCE])
+ * ASN.1 SEQUENCE 0x30 ([BERTags.SEQUENCE] OR [BERTags.CONSTRUCTED])
  * @param children the elements to put into this sequence
  */
-class Asn1Sequence internal constructor(children: List<Asn1Element>, tagOverride: UInt? = null) :
-    Asn1Structure(TLV.Tag(tagOverride ?: BERTags.SEQUENCE.toUInt(), constructed = true), children)/*TODO check for conflicts*/ {
+class Asn1Sequence internal constructor(children: List<Asn1Element>) :
+    Asn1Structure(TLV.Tag(BERTags.SEQUENCE.toUInt(), constructed = true), children)/*TODO check for conflicts*/ {
     override fun toString() = "Sequence" + super.toString()
     override fun prettyPrint(indent: Int) = (" " * indent) + "Sequence" + super.prettyPrint(indent + 2)
+}
+
+/**
+ * ASN.1 SEQUENCE 0x30  ([BERTags.SEQUENCE] OR [BERTags.CONSTRUCTED])
+ * @param children the elements to put into this sequence
+ */
+class Asn1CustomStructure internal constructor(
+    children: List<Asn1Element>,
+    tag: UInt,
+    tagClass: TagClass = TagClass.UNIVERSAL
+) :
+    Asn1Structure(TLV.Tag(tag, constructed = true, tagClass), children)/*TODO check for conflicts*/ {
+    override fun toString() = "${tag.tagClass}" + super.toString()
+    override fun prettyPrint(indent: Int) =
+        (" " * indent) + tag.tagClass + " ${tag.tagValue} " + super.prettyPrint(indent + 2)
 }
 
 /**
@@ -249,11 +265,13 @@ class Asn1PrimitiveOctetString(content: ByteArray) : Asn1Primitive(BERTags.OCTET
 
 
 /**
- * ASN.1 SET 0x31 ([DERTags.DER_SET])
+ * ASN.1 SET 0x31 ([BERTags.SET] OR [BERTags.CONSTRUCTED])
  * @param children the elements to put into this set. will be automatically sorted by tag
  */
-open class Asn1Set internal constructor(children: List<Asn1Element>?) :
-    Asn1Structure(TLV.Tag(BERTags.SET.toUInt(), constructed = true), children?.sortedBy { it.tag.tagValue }) /*TODO check sorting!!!*/ {
+open class Asn1Set internal constructor(children: List<Asn1Element>?, dontSort: Boolean = false) :
+    Asn1Structure(
+        TLV.Tag(BERTags.SET.toUInt(), constructed = true),
+        if (dontSort) children else children?.sortedBy { it.tag.encodedTag.encodeToString(Base16) }) /*TODO check sorting!!!*/ {
     override fun toString() = "Set" + super.toString()
 
 
@@ -261,7 +279,7 @@ open class Asn1Set internal constructor(children: List<Asn1Element>?) :
 }
 
 /**
- * ASN.1 SET OF 0x31 ([DERTags.DER_SET])
+ * ASN.1 SET OF 0x31 ([BERTags.SET] OR [BERTags.CONSTRUCTED])
  * @param children the elements to put into this set. will be automatically checked to have the same tag and sorted by value
  * @throws Asn1Exception if children are using different tags
  */
