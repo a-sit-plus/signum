@@ -3,9 +3,8 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.KmmResult
-import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.asn1.DERTags.toImplicitTag
+import at.asitplus.signum.indispensable.asn1.toImplicitTag
 
 /**
  * Interface providing methods to encode to ASN.1
@@ -76,12 +75,12 @@ interface Asn1Decodable<A : Asn1Element, T : Asn1Encodable<A>> {
     fun decodeFromDer(src: ByteArray): T = decodeFromTlv(Asn1Element.parse(src) as A)
 
     /**
-     * Exception-free version of [decodeFromDer]
+     * Exception-free version of [decodeFromDerValue]
      */
     fun decodeFromDerOrNull(src: ByteArray) = catching { decodeFromDer(src) }.getOrNull()
 
     /**
-     * Safe version of [decodeFromDer], wrapping the result into a [KmmResult]
+     * Safe version of [decodeFromDerValue], wrapping the result into a [KmmResult]
      */
     fun decodeFromDerSafe(src: ByteArray) = catching { decodeFromDer(src) }
 }
@@ -119,13 +118,13 @@ interface Asn1TagVerifyingDecodable<T : Asn1Encodable<Asn1Primitive>> :
         decodeFromTlv(Asn1Element.parse(src) as Asn1Primitive, tagOverride)
 
     /**
-     * Exception-free version of [decodeFromDer]
+     * Exception-free version of [decodeFromDerValue]
      */
     fun decodeFromDerOrNull(src: ByteArray, tagOverride: TLV.Tag?) =
         catching { decodeFromDer(src, tagOverride) }.getOrNull()
 
     /**
-     * Safe version of [decodeFromDer], wrapping the result into a [KmmResult]
+     * Safe version of [decodeFromDerValue], wrapping the result into a [KmmResult]
      */
     fun decodeFromDerSafe(src: ByteArray, tagOverride: TLV.Tag?) = catching { decodeFromDer(src, tagOverride) }
 }

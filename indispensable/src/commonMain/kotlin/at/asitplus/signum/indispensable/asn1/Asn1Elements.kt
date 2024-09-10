@@ -1,7 +1,8 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.asn1.DERTags.isConstructed
+import at.asitplus.signum.indispensable.asn1.isConstructed
+import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -182,21 +183,13 @@ sealed class Asn1Structure(tag: TLV.Tag, children: List<Asn1Element>?) :
  */
 class Asn1Tagged
 /**
- * @param tag the ASN.1 Tag to be used (assumed to have [BERTags.CONSTRUCTED] and [BERTags.TAGGED] bits set)
+ * @param tag the ASN.1 Tag to be used will be properly encoded to have [BERTags.CONSTRUCTED] and
+ * [BERTags.CONTEXT_SPECIFIC] bits set)
  * @param children the child nodes to be contained in this tag
  *
- * @throws Asn1Exception is [tag] does not have [BERTags.CONSTRUCTED] and [BERTags.TAGGED] bits set
  */
-@Throws(Asn1Exception::class)
 internal constructor(tag: ULong, children: List<Asn1Element>) :
     Asn1Structure(TLV.Tag(tag, constructed = true, tagClass = TagClass.CONTEXT_SPECIFIC), children) {
-
-    init {
-        if (tag == BERTags.SET.toULong() || tag == BERTags.SEQUENCE.toULong()) throw Asn1Exception(
-            "Tag ${tlv.tag} shadows SET or SEQUENCE encoding!"
-        )
-    }
-
     override fun toString() = "Tagged" + super.toString()
     override fun prettyPrint(indent: Int) = (" " * indent) + "Tagged" + super.prettyPrint(indent + 2)
 }
@@ -206,21 +199,23 @@ internal constructor(tag: ULong, children: List<Asn1Element>) :
  * @param children the elements to put into this sequence
  */
 class Asn1Sequence internal constructor(children: List<Asn1Element>) :
-    Asn1Structure(TLV.Tag(BERTags.SEQUENCE.toULong(), constructed = true), children)/*TODO check for conflicts*/ {
+    Asn1Structure(TLV.Tag(BERTags.SEQUENCE.toULong(), constructed = true), children) {
     override fun toString() = "Sequence" + super.toString()
     override fun prettyPrint(indent: Int) = (" " * indent) + "Sequence" + super.prettyPrint(indent + 2)
 }
 
 /**
- * ASN.1 SEQUENCE 0x30  ([BERTags.SEQUENCE] OR [BERTags.CONSTRUCTED])
+ * ASN.1 CONSTRUCTED with custom tag
  * @param children the elements to put into this sequence
+ * @param tag the custom tag to use
+ * @param tagClass the tag class to use for this custom tag. defaults to [TagClass.UNIVERSAL]
  */
 class Asn1CustomStructure internal constructor(
     children: List<Asn1Element>,
     tag: ULong,
     tagClass: TagClass = TagClass.UNIVERSAL
 ) :
-    Asn1Structure(TLV.Tag(tag, constructed = true, tagClass), children)/*TODO check for conflicts*/ {
+    Asn1Structure(TLV.Tag(tag, constructed = true, tagClass), children) {
     override fun toString() = "${tag.tagClass}" + super.toString()
     override fun prettyPrint(indent: Int) =
         (" " * indent) + tag.tagClass + " 0x${tag.encodedTag.encodeToString(Base16)} " + super.prettyPrint(indent + 2)
@@ -272,7 +267,7 @@ class Asn1PrimitiveOctetString(content: ByteArray) : Asn1Primitive(BERTags.OCTET
 open class Asn1Set internal constructor(children: List<Asn1Element>?, dontSort: Boolean = false) :
     Asn1Structure(
         TLV.Tag(BERTags.SET.toULong(), constructed = true),
-        if (dontSort) children else children?.sortedBy { it.tag.encodedTag.encodeToString(Base16) }) /*TODO check sorting!!!*/ {
+        if (dontSort) children else children?.sortedBy { it.tag.encodedTag.encodeToString(Base16) }) /*TODO this is inefficient*/ {
     override fun toString() = "Set" + super.toString()
 
 
@@ -287,7 +282,7 @@ open class Asn1Set internal constructor(children: List<Asn1Element>?, dontSort: 
 class Asn1SetOf @Throws(Asn1Exception::class) internal constructor(children: List<Asn1Element>?) :
     Asn1Set(children?.let {
         if (it.any { elem -> elem.tag != it.first().tag }) throw Asn1Exception("SET OF must only contain elements of the same tag")
-        it.sortedBy { it.derEncoded.encodeToString(Base16) } //TODO this is inefficient
+        it.sortedBy { it.tag.encodedTag.encodeToString(Base16) } //TODO this is inefficient
 
     })
 
@@ -376,7 +371,11 @@ data class TLV(val tag: Tag, val content: ByteArray) {
                 ", content=${content.encodeToString(Base16)})"
     }
 
-    data class Tag private constructor(val tagValue: ULong, val encodedTagLength: Int, val encodedTag: ByteArray) {
+    @Serializable
+    data class Tag private constructor(
+        val tagValue: ULong, val encodedTagLength: Int,
+        @Serializable(with = ByteArrayBase64Serializer::class) val encodedTag: ByteArray
+    ) {
         private constructor(values: Triple<ULong, Int, ByteArray>) : this(values.first, values.second, values.third)
         constructor(derEncoded: ByteArray) : this(
             derEncoded.decodeTag().let { Triple(it.first, it.second.size, derEncoded) })
