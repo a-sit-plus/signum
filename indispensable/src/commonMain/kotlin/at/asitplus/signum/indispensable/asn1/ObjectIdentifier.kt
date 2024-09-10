@@ -52,21 +52,12 @@ class ObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transient vara
         return nodes.hashCode()
     }
 
-    //based on the very concise explanation found on SO: https://stackoverflow.com/a/25786793
-    private fun UInt.encodeOidNode(): ByteArray {
-        if (this < 128u) return byteArrayOf(this.toByte())
-        val septets = toCompactByteArray().toSeptets()
-        for (i in 1..<septets.size) {
-            septets[i] = septets[i].setBit(7)
-        }
-        return septets.reversedArray()
-    }
 
     /**
      * Cursed encoding of OID nodes. A sacrifice of pristine numbers requested by past gods of the netherrealm
      */
     val bytes: ByteArray by lazy {
-        nodes.slice(2..<nodes.size).map { it.encodeOidNode() }.fold(
+        nodes.slice(2..<nodes.size).map { it.toAsn1VarInt() }.fold(
             byteArrayOf(
                 (nodes[0] * 40u + nodes[1]).toUByte().toByte()
             )
@@ -127,7 +118,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transient vara
                     }
                     currentNode += rawValue[index]
                     index++
-                    collected += currentNode.septetsToUInt()
+                    collected += currentNode.decodeAsn1VarUInt().first
                 }
             }
             return ObjectIdentifier(*collected.toUIntArray())
@@ -163,74 +154,4 @@ interface Identifiable {
 @Throws(Asn1Exception::class)
 fun Asn1Primitive.readOid() = runRethrowing {
     decode(BERTags.OBJECT_IDENTIFIER.toULong()) { ObjectIdentifier.parse(it) }
-}
-
-
-private fun ByteArray.toSeptets(): ByteArray {
-    var pos = 0
-    val chunks = mutableListOf<Byte>()
-    while (pos < this.size * 8) {
-        var chunk = 0.toByte()
-
-        var fresh = true
-        while (fresh || (pos % 7 != 0)) {
-            fresh = false
-            if (this.getBit(pos)) chunk = chunk.setBit(pos % 7)
-            pos++
-        }
-        if ((pos >= this.size * 8)) {
-            if (chunk != 0.toByte()) chunks += chunk
-        } else chunks += chunk
-    }
-    return chunks.toByteArray()
-}
-
-@Suppress("NOTHING_TO_INLINE")
-private inline fun ByteArray.getBit(index: Int): Boolean =
-    if (index < 0) throw IndexOutOfBoundsException("index = $index")
-    else catching {
-        this[getByteIndex(index)].getBit(getBitIndex(index))
-    }.getOrElse { false }
-
-@Suppress("NOTHING_TO_INLINE")
-private inline fun ByteArray.setBit(i: Int) {
-    this[getByteIndex(i)] = this[getByteIndex(i)].setBit(getBitIndex(i))
-}
-
-@Suppress("NOTHING_TO_INLINE")
-private inline fun Byte.setBit(i: Int) = ((1 shl getBitIndex(i)).toByte() or this)
-
-@Suppress("NOTHING_TO_INLINE")
-private inline fun getByteIndex(i: Int) = (i / 8)
-
-@Suppress("NOTHING_TO_INLINE")
-private inline fun getBitIndex(i: Int) = (i % 8)
-
-@Suppress("NOTHING_TO_INLINE")
-private inline fun Byte.getBit(index: Int): Boolean = (((1 shl index).toByte() and this) != 0.toByte())
-
-private fun UInt.toCompactByteArray(): ByteArray =
-    if (this < 256u) byteArrayOf(this.toUByte().toByte())
-    else if (this < 65535u) byteArrayOf((this).toByte(), (this shr 8).toByte())
-    else if (this < 16777216u) byteArrayOf((this).toByte(), (this shr 8).toByte(), (this shr 16).toByte())
-    else byteArrayOf((this).toByte(), (this shr 8).toByte(), (this shr 16).toByte(), (this shr 24).toByte())
-
-private fun UInt.Companion.decodeFrom(input: ByteArray): UInt {
-    var result = 0u
-    for (i in input.indices.reversed()) {
-        result = (result shl Byte.SIZE_BITS) or (input[i].toUByte().toUInt())
-    }
-    return result
-}
-
-private fun MutableList<Byte>.septetsToUInt(): UInt {
-    val result = ByteArray(ceil(size.toFloat() * 7f / 8f).toInt())
-    var globalIndex = 0
-    for (index in indices.reversed()) {
-        for (i in 0..<7) {
-            if (this[index].getBit(i)) result.setBit(globalIndex)
-            globalIndex++
-        }
-    }
-    return UInt.decodeFrom(result)
 }

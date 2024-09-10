@@ -1,8 +1,11 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.catching
+import at.asitplus.io.UVarInt
 import at.asitplus.signum.indispensable.asn1.isConstructed
+import at.asitplus.signum.indispensable.io.BitSet
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
+import at.asitplus.signum.indispensable.io.toBitSet
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -218,7 +221,7 @@ class Asn1CustomStructure internal constructor(
     Asn1Structure(TLV.Tag(tag, constructed = true, tagClass), children) {
     override fun toString() = "${tag.tagClass}" + super.toString()
     override fun prettyPrint(indent: Int) =
-        (" " * indent) + tag.tagClass + " 0x${tag.encodedTag.encodeToString(Base16)} " + super.prettyPrint(indent + 2)
+        (" " * indent) + tag.tagClass + " ${tag.tagValue} " + super.prettyPrint(indent + 2)
 }
 
 /**
@@ -393,10 +396,12 @@ data class TLV(val tag: Tag, val content: ByteArray) {
                 val derEncoded: ByteArray =
                     if (tagValue <= 30u) {
                         byteArrayOf(tagValue.toUByte().toByte())
-                    } else byteArrayOf(
-                        0b11111,
-                        *tagValue.toLong().encodeToByteArray().dropWhile { it == 0.toByte() }.toByteArray()
-                    )
+                    } else {
+                        byteArrayOf(
+                            0b11111,
+                            *tagValue.toAsn1VarInt()
+                        )
+                    }
 
                 var encoded = derEncoded.first().toUByte()
                 if (constructed) encoded = encoded or BERTags.CONSTRUCTED
