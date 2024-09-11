@@ -316,7 +316,8 @@ private fun ByteArray.readTlv(): TLV = runRethrowing {
     if (this.isEmpty()) throw IllegalArgumentException("Can't read TLV, input empty")
     if (this.size == 1) return TLV(Asn1Element.Tag(byteArrayOf(this[0])), byteArrayOf())
 
-    val decodedTag = decodeTag()
+    val iterator = iterator()
+    val decodedTag = iterator.decodeTag()
     val tagLength = decodedTag.second.size
     val tagBytes = decodedTag.second
     val value = drop(tagLength).decodeValue()
@@ -344,12 +345,14 @@ private fun List<Byte>.getInt(i: Int) = this[i].toUByte().toInt()
 
 internal infix fun Byte.byteMask(mask: Int) = (this and mask.toUInt().toByte()).toUByte()
 
-internal fun ByteArray.decodeTag(): Pair<ULong, ByteArray> =
-    (this[0] byteMask 0x1F).let { tagNumber ->
-        if (tagNumber <= 30U) {
-            tagNumber.toULong() to byteArrayOf(this[0])
-        } else {
-            drop(1).decodeAsn1VarULong().let { (l, b) -> l to byteArrayOf(first(), *b) }
+internal fun ByteIterator.decodeTag(): Pair<ULong, ByteArray> =
+    next().let { firstByte ->
+        (firstByte byteMask 0x1F).let { tagNumber ->
+            if (tagNumber <= 30U) {
+                tagNumber.toULong() to byteArrayOf(firstByte)
+            } else {
+                decodeAsn1VarULong().let { (l, b) -> l to byteArrayOf(firstByte, *b) }
+            }
         }
     }
 
