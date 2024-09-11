@@ -1,5 +1,10 @@
 # Changelog
 
+## NEXT
+
+* Add `ConfirmationClaim` to represent [Proof-of-Possesion Key Semantics for JWTs](https://datatracker.ietf.org/doc/html/rfc7800)
+* Add claims to `JsonWebToken` to implement [Demonstrating Proof of Possession](https://datatracker.ietf.org/doc/html/rfc9449)
+* Replace `JsonWebToken.confirmationKey` by `JsonWebToken.confirmationClaim`, the implementation was wrong
 
 ## 3.0
 
