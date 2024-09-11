@@ -48,10 +48,30 @@ data class JsonWebToken(
      * attestation.
      */
     @SerialName("cnf")
-    val confirmationKey: JsonWebKey? = null,
+    val confirmationClaim: ConfirmationClaim? = null,
+    /**
+     * RFC 9449: The value of the HTTP method (Section 9.1 of [RFC9110](https://datatracker.ietf.org/doc/html/rfc9110))
+     * of the request to which the JWT is attached.
+     */
+    @SerialName("htm")
+    val httpMethod: String? = null,
+    /**
+     * RFC 9449: The HTTP target URI (Section 7.1 of [RFC9110](https://datatracker.ietf.org/doc/html/rfc9110)) of the
+     * request to which the JWT is attached, without query and fragment parts.
+     */
+    @SerialName("htu")
+    val httpTargetUrl: String? = null,
+    /**
+     * RFC 9449: Hash of the access token. The value MUST be the result of a base64url encoding (as defined in Section
+     * 2 of [RFC7515](https://datatracker.ietf.org/doc/html/rfc7515) the SHA-256 hash of the ASCII encoding of the
+     * associated access token's value.
+     */
+    @SerialName("ath")
+    val accessTokenHash: String? = null,
 ) {
 
     fun serialize() = joseCompliantSerializer.encodeToString(this)
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -66,7 +86,10 @@ data class JsonWebToken(
         if (issuedAt != other.issuedAt) return false
         if (expiration != other.expiration) return false
         if (jwtId != other.jwtId) return false
-        if (confirmationKey != other.confirmationKey) return false
+        if (confirmationClaim != other.confirmationClaim) return false
+        if (httpMethod != other.httpMethod) return false
+        if (httpTargetUrl != other.httpTargetUrl) return false
+        if (accessTokenHash != other.accessTokenHash) return false
 
         return true
     }
@@ -80,7 +103,10 @@ data class JsonWebToken(
         result = 31 * result + (issuedAt?.hashCode() ?: 0)
         result = 31 * result + (expiration?.hashCode() ?: 0)
         result = 31 * result + (jwtId?.hashCode() ?: 0)
-        result = 31 * result + (confirmationKey?.hashCode() ?: 0)
+        result = 31 * result + (confirmationClaim?.hashCode() ?: 0)
+        result = 31 * result + (httpMethod?.hashCode() ?: 0)
+        result = 31 * result + (httpTargetUrl?.hashCode() ?: 0)
+        result = 31 * result + (accessTokenHash?.hashCode() ?: 0)
         return result
     }
 
