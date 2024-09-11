@@ -4,6 +4,9 @@
 
 ### NEXT
 * Changed return type of `Verifier::verify` from `KmmResult<Unit>` to `KmmResult<Success>`. Usage is unchanged.
+* Add `ConfirmationClaim` to represent [Proof-of-Possesion Key Semantics for JWTs](https://datatracker.ietf.org/doc/html/rfc7800)
+* Add claims to `JsonWebToken` to implement [Demonstrating Proof of Possession](https://datatracker.ietf.org/doc/html/rfc9449)
+* Replace `JsonWebToken.confirmationKey` by `JsonWebToken.confirmationClaim`, the implementation was wrong
 
 ### 3.7.0 (Supreme 0.2.0)
 * Remove Swift verifier logic to obtain a general speed-up
