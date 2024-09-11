@@ -1,18 +1,12 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.asn1.BERTags.ASN1_NULL
 import at.asitplus.signum.indispensable.asn1.BERTags.BMP_STRING
-import at.asitplus.signum.indispensable.asn1.BERTags.BOOLEAN
-import at.asitplus.signum.indispensable.asn1.BERTags.GENERALIZED_TIME
 import at.asitplus.signum.indispensable.asn1.BERTags.IA5_STRING
-import at.asitplus.signum.indispensable.asn1.BERTags.INTEGER
 import at.asitplus.signum.indispensable.asn1.BERTags.NUMERIC_STRING
-import at.asitplus.signum.indispensable.asn1.BERTags.OCTET_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.PRINTABLE_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.T61_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.UNIVERSAL_STRING
-import at.asitplus.signum.indispensable.asn1.BERTags.UTC_TIME
 import at.asitplus.signum.indispensable.asn1.BERTags.UTF8_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.VISIBLE_STRING
 import com.ionspin.kotlin.bignum.integer.BigInteger
@@ -51,8 +45,8 @@ private class Asn1Reader(input: ByteArray) {
                     Asn1Reader(tlv.content).doParse()
                 )
             )
-            else if (tlv.tag.tagValue == OCTET_STRING.toULong()) {
-                kotlin.runCatching { //TODO: make catching again, not runCatching
+            else if (tlv.tag == Asn1Element.Tag.OCTET_STRING) {
+               catching{
                     result.add(Asn1EncapsulatingOctetString(Asn1Reader(tlv.content).doParse()))
                 }.getOrElse {
                     result.add(Asn1PrimitiveOctetString(tlv.content))
@@ -65,8 +59,8 @@ private class Asn1Reader(input: ByteArray) {
         return result
     }
 
-    private fun TLV.isSet() = tag.tagValue == BERTags.SET.toULong() && tag.isConstructed
-    private fun TLV.isSequence() = tag.tagValue == BERTags.SEQUENCE.toULong() && tag.isConstructed
+    private fun TLV.isSet() = tag == Asn1Element.Tag.SET
+    private fun TLV.isSequence() = tag== Asn1Element.Tag.ASN1_SEQUENCE
     private fun TLV.isExplicitlyTagged() = tag.isExplicitlyTagged
 
     @Throws(Asn1Exception::class)
@@ -85,7 +79,7 @@ private class Asn1Reader(input: ByteArray) {
  * @throws [Throwable] all sorts of exceptions on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readInt() = runRethrowing { decode(INTEGER.toULong()) { Int.decodeFromDerValue(it) } }
+fun Asn1Primitive.readInt() = runRethrowing { decode(Asn1Element.Tag.INT) { Int.decodeFromDerValue(it) } }
 
 /**
  * decodes this [Asn1Primitive]'s content into an [Boolean]
@@ -94,7 +88,7 @@ fun Asn1Primitive.readInt() = runRethrowing { decode(INTEGER.toULong()) { Int.de
  */
 @Throws(Asn1Exception::class)
 fun Asn1Primitive.readBool() = runRethrowing {
-    decode(BOOLEAN.toULong()) {
+    decode(Asn1Element.Tag.BOOL) {
         if (it.size != 1) throw Asn1Exception("Not a Boolean!")
         when (it.first().toUByte()) {
             0.toUByte() -> false
@@ -109,7 +103,7 @@ fun Asn1Primitive.readBool() = runRethrowing {
  */
 @Throws(Asn1Exception::class)
 fun Asn1Primitive.readBigInteger() =
-    decode(INTEGER.toULong()) { BigInteger.fromTwosComplementByteArray(it) }
+    decode(Asn1Element.Tag.INT) { BigInteger.fromTwosComplementByteArray(it) }
 
 /**
  * Exception-free version of [readBigInteger]
@@ -129,7 +123,7 @@ fun Asn1Primitive.readIntOrNull() = catching { readInt() }.getOrNull()
  * @throws [Throwable] all sorts of exceptions on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readLong() = runRethrowing { decode(INTEGER.toULong()) { Long.decodeFromDerValue(it) } }
+fun Asn1Primitive.readLong() = runRethrowing { decode(Asn1Element.Tag.INT) { Long.decodeFromDerValue(it) } }
 
 /**
  * Exception-free version of [readLong]
@@ -168,9 +162,9 @@ fun Asn1Primitive.readStringOrNull() = catching { readString() }.getOrNull()
  */
 @Throws(Asn1Exception::class)
 fun Asn1Primitive.readInstant() =
-    if (tag.tagValue == UTC_TIME.toULong()) decode(UTC_TIME.toULong(), Instant.Companion::decodeUtcTimeFromDer)
-    else if (tag.tagValue == GENERALIZED_TIME.toULong()) decode(
-        GENERALIZED_TIME.toULong(),
+    if (tag == Asn1Element.Tag.TIME_UTC) decode(Asn1Element.Tag.TIME_UTC, Instant.Companion::decodeUtcTimeFromDer)
+    else if (tag == Asn1Element.Tag.TIME_GENERALIZED) decode(
+        Asn1Element.Tag.TIME_GENERALIZED,
         Instant.Companion::decodeGeneralizedTimeFromDer
     )
     else TODO("Support time tag $tag")
@@ -201,7 +195,7 @@ fun Asn1Primitive.readBitStringOrNull() = catching { readBitString() }.getOrNull
  * @throws Asn1Exception  on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readNull() = decode(ASN1_NULL.toULong()) {}
+fun Asn1Primitive.readNull() = decode(Asn1Element.Tag.NULL) {}
 
 /**
  * Name seems odd, but this is just an exception-free version of [readNull]
@@ -216,7 +210,7 @@ fun Asn1Primitive.readNullOrNull() = catching { readNull() }.getOrNull()
  */
 @Throws(Asn1TagMismatchException::class)
 fun Asn1Tagged.verifyTag(tag: ULong): List<Asn1Element> {
-    val explicitTag = TLV.Tag(tag, constructed = true, TagClass.CONTEXT_SPECIFIC)
+    val explicitTag = Asn1Element.Tag(tag, constructed = true, TagClass.CONTEXT_SPECIFIC)
     if (this.tag != explicitTag) throw Asn1TagMismatchException(explicitTag, this.tag)
     return this.children
 }
@@ -234,7 +228,18 @@ fun Asn1Tagged.verifyTagOrNull(tag: ULong) = catching { verifyTag(tag) }.getOrNu
  */
 @Throws(Asn1Exception::class)
 inline fun <reified T> Asn1Primitive.decode(tag: ULong, transform: (content: ByteArray) -> T) = runRethrowing {
-    if (tag != this.tag.tagValue) throw Asn1TagMismatchException(TLV.Tag(tag, constructed = false), this.tag)
+    if (tag != this.tag.tagValue) throw Asn1TagMismatchException(Asn1Element.Tag(tag, constructed = false), this.tag)
+    transform(content)
+}
+/**
+ * Generic decoding function. Verifies that this [Asn1Primitive]'s tag matches [tag]
+ * and transforms its content as per [transform]
+ * @throws Asn1Exception all sorts of exceptions on invalid input
+ */
+@Throws(Asn1Exception::class)
+inline fun <reified T> Asn1Primitive.decode(tag: Asn1Element.Tag, transform: (content: ByteArray) -> T) = runRethrowing {
+    if(tag.isConstructed) throw IllegalArgumentException("A primitive cannot have a CONSTRUCTED tag")
+    if (tag != this.tag) throw Asn1TagMismatchException(tag, this.tag)
     transform(content)
 }
 
@@ -304,13 +309,13 @@ fun Long.Companion.decodeFromDerValue(bytes: ByteArray): Long = runRethrowing {
 @Throws(Asn1Exception::class)
 private fun ByteArray.readTlv(): TLV = runRethrowing {
     if (this.isEmpty()) throw IllegalArgumentException("Can't read TLV, input empty")
-    if (this.size == 1) return TLV(TLV.Tag(byteArrayOf(this[0])), byteArrayOf())
+    if (this.size == 1) return TLV(Asn1Element.Tag(byteArrayOf(this[0])), byteArrayOf())
 
     val decodedTag = decodeTag()
     val tagLength = decodedTag.second.size
     val tagBytes = decodedTag.second
     val value = drop(tagLength).decodeValue()
-    return TLV(TLV.Tag(tagBytes), value.toByteArray())
+    return TLV(Asn1Element.Tag(tagBytes), value.toByteArray())
 }
 
 @Throws(IllegalArgumentException::class)

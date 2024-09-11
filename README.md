@@ -433,7 +433,7 @@ DSL, which returns an `Asn1Structure`:
 ```kotlin
 Asn1.Sequence {
     +Tagged(1uL) {
-        +Asn1Primitive(BERTags.BOOLEAN.toUlong(), byteArrayOf(0x00))
+        +Asn1Primitive(Asn1Element.Tag.BOOL, byteArrayOf(0x00)) //or +Asn1.Bool(false)
     }
     +Asn1.Set {
         +Asn1.Sequence {

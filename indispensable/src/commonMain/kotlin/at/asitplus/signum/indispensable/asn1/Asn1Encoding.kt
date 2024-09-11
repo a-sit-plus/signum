@@ -2,12 +2,6 @@ package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.asn1.BERTags.ASN1_NULL
-import at.asitplus.signum.indispensable.asn1.BERTags.BIT_STRING
-import at.asitplus.signum.indispensable.asn1.BERTags.BOOLEAN
-import at.asitplus.signum.indispensable.asn1.BERTags.GENERALIZED_TIME
-import at.asitplus.signum.indispensable.asn1.BERTags.INTEGER
-import at.asitplus.signum.indispensable.asn1.BERTags.UTC_TIME
 import at.asitplus.signum.indispensable.io.BitSet
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.util.toTwosComplementByteArray
@@ -263,7 +257,7 @@ object Asn1 {
     /**
      * Adds a NULL [Asn1Primitive] to this ASN.1 structure
      */
-    fun Null() = Asn1Primitive(ASN1_NULL.toULong(), byteArrayOf())
+    fun Null() = Asn1Primitive(Asn1Element.Tag.NULL, byteArrayOf())
 
 
     /**
@@ -303,23 +297,23 @@ object Asn1 {
 /**
  * Produces an INTEGER as [Asn1Primitive]
  */
-fun Int.encodeToTlv() = Asn1Primitive(INTEGER.toULong(), encodeToDer())
+fun Int.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.INT, encodeToDer())
 
 
 /**
  * Produces a BOOLEAN as [Asn1Primitive]
  */
-fun Boolean.encodeToTlv() = Asn1Primitive(BOOLEAN.toULong(), byteArrayOf(if (this) 0xff.toByte() else 0))
+fun Boolean.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.BOOL, byteArrayOf(if (this) 0xff.toByte() else 0))
 
 /**
  * Produces an INTEGER as [Asn1Primitive]
  */
-fun Long.encodeToTlv() = Asn1Primitive(INTEGER.toULong(), encodeToDer())
+fun Long.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.INT, encodeToDer())
 
 /**
  * Produces an INTEGER as [Asn1Primitive]
  */
-fun BigInteger.encodeToTlv() = Asn1Primitive(INTEGER.toULong(), toTwosComplementByteArray())
+fun BigInteger.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.INT, toTwosComplementByteArray())
 
 /**
  * Produces an OCTET STRING as [Asn1Primitive]
@@ -329,7 +323,7 @@ fun ByteArray.encodeToTlvOctetString() = Asn1PrimitiveOctetString(this)
 /**
  * Produces a BIT STRING as [Asn1Primitive]
  */
-fun ByteArray.encodeToTlvBitString() = Asn1Primitive(BIT_STRING.toULong(), encodeToBitString())
+fun ByteArray.encodeToTlvBitString() = Asn1Primitive(Asn1Element.Tag.BIT_STRING, encodeToBitString())
 
 /**
  * Prepends 0x00 to this ByteArray for encoding it into a BIT STRING. Useful for implicit tagging
@@ -346,13 +340,13 @@ private fun Long.encodeToDer() = if (this == 0L) byteArrayOf(0) else
  * Produces a UTC TIME as [Asn1Primitive]
  */
 fun Instant.encodeToAsn1UtcTime() =
-    Asn1Primitive(UTC_TIME.toULong(), encodeToAsn1Time().drop(2).encodeToByteArray())
+    Asn1Primitive(Asn1Element.Tag.TIME_UTC, encodeToAsn1Time().drop(2).encodeToByteArray())
 
 /**
  * Produces a GENERALIZED TIME as [Asn1Primitive]
  */
 fun Instant.encodeToAsn1GeneralizedTime() =
-    Asn1Primitive(GENERALIZED_TIME.toULong(), encodeToAsn1Time().encodeToByteArray())
+    Asn1Primitive(Asn1Element.Tag.TIME_GENERALIZED, encodeToAsn1Time().encodeToByteArray())
 
 private fun Instant.encodeToAsn1Time(): String {
     val value = this.toString()
