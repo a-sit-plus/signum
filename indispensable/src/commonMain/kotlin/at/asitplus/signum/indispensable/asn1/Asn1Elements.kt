@@ -128,6 +128,7 @@ sealed class Asn1Element(
     }
 
     @Serializable
+    @ConsistentCopyVisibility
     data class Tag private constructor(
         val tagValue: ULong, val encodedTagLength: Int,
         @Serializable(with = ByteArrayBase64Serializer::class) val encodedTag: ByteArray

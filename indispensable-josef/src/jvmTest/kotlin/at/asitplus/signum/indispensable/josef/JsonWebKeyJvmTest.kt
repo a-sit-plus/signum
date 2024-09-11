@@ -4,6 +4,7 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.fromUncompressed
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.asn1.ensureSize
+import at.asitplus.signum.indispensable.asn1.toTwosComplementByteArray
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -59,7 +60,7 @@ class JsonWebKeyJvmTest : FreeSpec({
 
         jwk.shouldNotBeNull()
         jwk.n shouldBe nFromBc
-        jwk.e shouldBe eFromBc.encodeToTwosComplementByteArray()
+        jwk.e shouldBe eFromBc.toTwosComplementByteArray()
         jwk.keyId.shouldNotBeNull()
 
         "it can be converted back to CryptoPublicKey" {

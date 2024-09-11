@@ -6,6 +6,7 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
+import at.asitplus.signum.indispensable.asn1.toTwosComplementByteArray
 import at.asitplus.signum.indispensable.cosef.CoseKey.Companion.deserialize
 import at.asitplus.signum.indispensable.cosef.CoseKeySerializer.CompressedCompoundCoseKeySerialContainer
 import at.asitplus.signum.indispensable.cosef.CoseKeySerializer.UncompressedCompoundCoseKeySerialContainer
@@ -186,7 +187,7 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null, keyId: ByteArray
                 CoseKey(
                     keyParams = CoseKeyParams.RsaParams(
                         n = n,
-                        e = e.encodeToTwosComplementByteArray()
+                        e = e.toTwosComplementByteArray()
                     ),
                     type = CoseKeyType.RSA,
                     keyId = didEncoded.encodeToByteArray(),
