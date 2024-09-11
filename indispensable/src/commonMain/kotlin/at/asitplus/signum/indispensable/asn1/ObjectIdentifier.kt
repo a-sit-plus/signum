@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.catching
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -8,9 +7,6 @@ import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlin.experimental.and
-import kotlin.experimental.or
-import kotlin.math.ceil
 
 /**
  * ASN.1 OBJECT IDENTIFIER featuring the most cursed encoding of numbers known to man, which probably surfaced due to an ungodly combination
@@ -67,7 +63,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transient vara
     /**
      * @return an OBJECT IDENTIFIER [Asn1Primitive]
      */
-    override fun encodeToTlv() = Asn1Primitive(BERTags.OBJECT_IDENTIFIER.toULong(), bytes)
+    override fun encodeToTlv() = Asn1Primitive(Asn1Element.Tag.OID, bytes)
 
     companion object : Asn1Decodable<Asn1Primitive, ObjectIdentifier> {
 
@@ -77,11 +73,8 @@ class ObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transient vara
          */
         @Throws(Asn1Exception::class)
         override fun decodeFromTlv(src: Asn1Primitive): ObjectIdentifier {
-            if (src.tag.tagValue != BERTags.OBJECT_IDENTIFIER.toULong()) throw Asn1TagMismatchException(
-                TLV.Tag(
-                    BERTags.OBJECT_IDENTIFIER.toULong(),
-                    constructed = false
-                ), src.tag
+            if (src.tag != Asn1Element.Tag.OID) throw Asn1TagMismatchException(
+               Asn1Element.Tag.OID, src.tag
             )
             if (src.length < 1) throw Asn1StructuralException("Empty OIDs are not supported")
 
@@ -153,5 +146,5 @@ interface Identifiable {
  */
 @Throws(Asn1Exception::class)
 fun Asn1Primitive.readOid() = runRethrowing {
-    decode(BERTags.OBJECT_IDENTIFIER.toULong()) { ObjectIdentifier.parse(it) }
+    decode(Asn1Element.Tag.OID) { ObjectIdentifier.parse(it) }
 }

@@ -81,8 +81,8 @@ class Asn1BitString private constructor(
         }
 
         @Throws(Asn1Exception::class)
-        private fun decode(src: Asn1Primitive, tagOverride: TLV.Tag? = null): Asn1BitString {
-            val expected = tagOverride ?: TLV.Tag(BERTags.BIT_STRING.toULong(), constructed = false)
+        private fun decode(src: Asn1Primitive, tagOverride: Asn1Element.Tag? = null): Asn1BitString {
+            val expected = tagOverride ?: Asn1Element.Tag.BIT_STRING
             if (src.tag != expected)
                 throw Asn1TagMismatchException(expected, src.tag)
             if (src.length == 0) return Asn1BitString(0, byteArrayOf())
@@ -94,10 +94,10 @@ class Asn1BitString private constructor(
         override fun decodeFromTlv(src: Asn1Primitive) = decodeFromTlv(src, null)
 
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(src: Asn1Primitive, tagOverride: TLV.Tag?) = decode(src, tagOverride)
+        override fun decodeFromTlv(src: Asn1Primitive, tagOverride: Asn1Element.Tag?) = decode(src, tagOverride)
     }
 
-    override fun encodeToTlv() = Asn1Primitive(BERTags.BIT_STRING.toULong(), byteArrayOf(numPaddingBits, *rawBytes))
+    override fun encodeToTlv() = Asn1Primitive(Asn1Element.Tag.BIT_STRING, byteArrayOf(numPaddingBits, *rawBytes))
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false

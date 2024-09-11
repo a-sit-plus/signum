@@ -20,7 +20,7 @@ class TagEncodingTest : FreeSpec({
     "Manual" -{
         withData(207692171uL, 128uL, 36uL, 16088548868045964978uL, 15871772363588580035uL) {
             it.toAsn1VarInt().decodeAsn1VarULong().first shouldBe it
-            val tag = TLV.Tag(it, constructed = it % 2uL == 0uL)
+            val tag = Asn1Element.Tag(it, constructed = it % 2uL == 0uL)
             tag.tagValue shouldBe it
 
         }
@@ -29,12 +29,12 @@ class TagEncodingTest : FreeSpec({
     "Automated" - {
         checkAll(iterations = 100000, Arb.uLong()) {
             it.toAsn1VarInt().decodeAsn1VarULong().first shouldBe it
-            TLV.Tag(it,constructed = it %2uL==0uL).tagValue shouldBe it
+            Asn1Element.Tag(it, constructed = it % 2uL == 0uL).tagValue shouldBe it
         }
     }
     "Against BC" - {
         checkAll(iterations = 1000000, Arb.int(min=0)) {
-            val tag = TLV.Tag(it.toULong(), constructed = false)
+            val tag = Asn1Element.Tag(it.toULong(), constructed = false)
             tag.tagValue shouldBe it.toULong()
 
             val bc = DERTaggedObject(true, it, ASN1Integer(1337))
@@ -56,7 +56,7 @@ class TagEncodingTest : FreeSpec({
 
     "Manual against BC" - {
         withData(207692171, 1337) {
-            val tag = TLV.Tag(it.toULong(), constructed = false)
+            val tag = Asn1Element.Tag(it.toULong(), constructed = false)
             tag.tagValue shouldBe it.toULong()
 
             val bc = DERTaggedObject(true, it, ASN1Integer(1337))

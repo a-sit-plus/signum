@@ -61,7 +61,7 @@ object BERTags {
  * @param constructed whether to set the constructed bit
  */
 fun ULong.toImplicitTag(constructed: Boolean = false) =
-    TLV.Tag(this, constructed = constructed, tagClass = TagClass.CONTEXT_SPECIFIC)
+    Asn1Element.Tag(this, constructed = constructed, tagClass = TagClass.CONTEXT_SPECIFIC)
 
 fun UByte.isConstructed() = this and BERTags.CONSTRUCTED != 0.toUByte()
 

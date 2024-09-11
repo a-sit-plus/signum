@@ -128,7 +128,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                     (keyInfo.nextChild() as Asn1Primitive).readNull()
                     val bitString = (src.nextChild() as Asn1Primitive).readBitString()
                     val rsaSequence = Asn1Element.parse(bitString.rawBytes) as Asn1Sequence
-                    val n = (rsaSequence.nextChild() as Asn1Primitive).decode(BERTags.INTEGER.toULong()) { it }
+                    val n = (rsaSequence.nextChild() as Asn1Primitive).decode(Asn1Element.Tag.INT) { it }
                     val e = (rsaSequence.nextChild() as Asn1Primitive).readInt()
                     if (rsaSequence.hasMoreChildren()) throw Asn1StructuralException("Superfluous data in SPKI!")
                     return Rsa(n, e)
@@ -156,6 +156,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                     EC.fromAnsiX963Bytes(curve, it)
                 }
 
+                //TODO: this could be nicer, maybe?
                 (BERTags.SEQUENCE or BERTags.CONSTRUCTED) -> Rsa.fromPKCS1encoded(it)
                 else -> throw IllegalArgumentException("Unsupported Key type")
             }
@@ -246,7 +247,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         val pkcsEncoded by lazy {
             Asn1.Sequence {
                 +Asn1Primitive(
-                    BERTags.INTEGER.toULong(),
+                    Asn1Element.Tag.INT,
                     n.ensureSize(bits.number / 8u)
                         .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
 
@@ -280,7 +281,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             @Throws(Asn1Exception::class)
             fun fromPKCS1encoded(input: ByteArray): Rsa = runRethrowing {
                 val conv = Asn1Element.parse(input) as Asn1Sequence
-                val n = (conv.nextChild() as Asn1Primitive).decode(BERTags.INTEGER.toULong()) { it }
+                val n = (conv.nextChild() as Asn1Primitive).decode(Asn1Element.Tag.INT) { it }
                 val e = (conv.nextChild() as Asn1Primitive).readInt()
                 if (conv.hasMoreChildren()) throw Asn1StructuralException("Superfluous bytes")
                 return Rsa(Size.of(n), n, e)

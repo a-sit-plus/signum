@@ -91,7 +91,7 @@ class Asn1EncodingTest : FreeSpec({
             val fromBC = ASN1Integer(it).encoded
             val long = Long.decodeFromDerValue(bytes)
 
-            val encoded = Asn1Primitive(BERTags.INTEGER, bytes).derEncoded
+            val encoded = Asn1Primitive(Asn1Element.Tag.INT, bytes).derEncoded
             encoded shouldBe fromBC
             long shouldBe it
         }
