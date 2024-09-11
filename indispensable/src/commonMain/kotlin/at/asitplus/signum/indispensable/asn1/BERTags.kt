@@ -63,10 +63,10 @@ object BERTags {
 fun ULong.toImplicitTag(constructed: Boolean = false) =
     Asn1Element.Tag(this, constructed = constructed, tagClass = TagClass.CONTEXT_SPECIFIC)
 
-fun UByte.isConstructed() = this and BERTags.CONSTRUCTED != 0.toUByte()
+internal fun UByte.isConstructed() = this and BERTags.CONSTRUCTED != 0.toUByte()
 
 
-enum class TagClass(val byteValue:UByte) {
+enum class TagClass(val byteValue: UByte) {
     UNIVERSAL(0u),
     APPLICATION(1u),
     CONTEXT_SPECIFIC(2u),

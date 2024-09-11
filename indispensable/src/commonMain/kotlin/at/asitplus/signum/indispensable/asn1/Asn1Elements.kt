@@ -17,7 +17,7 @@ import kotlinx.serialization.encoding.Encoder
  */
 @Serializable(with = Asn1EncodableSerializer::class)
 sealed class Asn1Element(
-    protected val tlv: TLV,
+    internal val tlv: TLV,
     protected open val children: List<Asn1Element>?
 ) {
 
@@ -189,7 +189,7 @@ sealed class Asn1Element(
 
         }
 
-        val tagClass by lazy { runRethrowing { TagClass.fromByte(encodedTag.first()) }.getOrThrow() } //yes, this shall crash!!!
+        val tagClass by lazy { TagClass.fromByte(encodedTag.first()).getOrThrow() } //yes, this shall crash!!!
 
         val isConstructed by lazy { encodedTag.first().toUByte().isConstructed() }
 
@@ -469,48 +469,8 @@ interface Asn1OctetString<T : Asn1Element> {
 }
 
 
-data class TLV(val tag: Asn1Element.Tag, val content: ByteArray) {
-
-    val encodedContentLength by lazy { contentLength.encodeLength() }
-    val contentLength: Int by lazy { content.size }
-    val overallLength: Int by lazy { contentLength + tag.encodedTagLength + encodedContentLength.size }
-
-    val tagClass: TagClass by lazy { tag.tagClass }
-
-    val isConstructed: Boolean by lazy { tag.isConstructed }
-
-    val encodedTag by lazy { tag.encodedTag }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null) return false
-        if (this::class != other::class) return false
-
-        other as TLV
-
-        if (tag == other.tag) return false
-        if (!content.contentEquals(other.content)) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = tag.hashCode()
-        result = 31 * result + content.contentHashCode()
-        return result
-    }
-
-    override fun toString(): String {
-        return "TLV(tag=$tag" +
-                ", length=$contentLength" +
-                ", overallLength=$overallLength" +
-                ", content=${content.encodeToString(Base16)})"
-    }
-
-}
-
 @Throws(IllegalArgumentException::class)
-private fun Int.encodeLength(): ByteArray {
+internal fun Int.encodeLength(): ByteArray {
     if (this < 128) {
         return byteArrayOf(this.toByte())
     }

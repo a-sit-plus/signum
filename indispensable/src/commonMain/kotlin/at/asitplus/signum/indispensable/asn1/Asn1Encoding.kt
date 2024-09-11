@@ -518,7 +518,7 @@ inline fun ByteArray.ensureSize(size: UInt) = ensureSize(size.toInt())
 fun ULong.toAsn1VarInt(): ByteArray {
     if (this < 128u) return byteArrayOf(this.toByte()) //Fast case
     var offset = 0
-    var result= mutableListOf<Byte>()
+    var result = mutableListOf<Byte>()
 
     var b0 = (this shr offset and 0x7FuL).toByte()
     while ((this shr offset > 0uL) || offset == 0) {
@@ -541,7 +541,7 @@ fun ULong.toAsn1VarInt(): ByteArray {
 fun UInt.toAsn1VarInt(): ByteArray {
     if (this < 128u) return byteArrayOf(this.toByte()) //Fast case
     var offset = 0
-    var result= mutableListOf<Byte>()
+    var result = mutableListOf<Byte>()
 
     var b0 = (this shr offset and 0x7Fu).toByte()
     while ((this shr offset > 0u) || offset == 0) {
