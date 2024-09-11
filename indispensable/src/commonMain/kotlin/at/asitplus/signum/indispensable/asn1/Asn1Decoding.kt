@@ -46,7 +46,7 @@ private class Asn1Reader(input: ByteArray) {
                 )
             )
             else if (tlv.tag == Asn1Element.Tag.OCTET_STRING) {
-               catching{
+                catching {
                     result.add(Asn1EncapsulatingOctetString(Asn1Reader(tlv.content).doParse()))
                 }.getOrElse {
                     result.add(Asn1PrimitiveOctetString(tlv.content))
@@ -234,17 +234,19 @@ fun Asn1Tagged.verifyTagOrNull(tag: ULong) = catching { verifyTag(tag) }.getOrNu
 @Throws(Asn1Exception::class)
 inline fun <reified T> Asn1Primitive.decode(tag: ULong, transform: (content: ByteArray) -> T): T =
     decode(Asn1Element.Tag(tag, constructed = false), transform)
+
 /**
  * Generic decoding function. Verifies that this [Asn1Primitive]'s tag matches [tag]
  * and transforms its content as per [transform]
  * @throws Asn1Exception all sorts of exceptions on invalid input
  */
 @Throws(Asn1Exception::class)
-inline fun <reified T> Asn1Primitive.decode(tag: Asn1Element.Tag, transform: (content: ByteArray) -> T) = runRethrowing {
-    if(tag.isConstructed) throw IllegalArgumentException("A primitive cannot have a CONSTRUCTED tag")
-    if (tag != this.tag) throw Asn1TagMismatchException(tag, this.tag)
-    transform(content)
-}
+inline fun <reified T> Asn1Primitive.decode(tag: Asn1Element.Tag, transform: (content: ByteArray) -> T) =
+    runRethrowing {
+        if (tag.isConstructed) throw IllegalArgumentException("A primitive cannot have a CONSTRUCTED tag")
+        if (tag != this.tag) throw Asn1TagMismatchException(tag, this.tag)
+        transform(content)
+    }
 
 /**
  * Exception-free version of [decode]
