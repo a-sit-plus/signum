@@ -135,7 +135,8 @@ sealed class Asn1Element(
     ) {
         private constructor(values: Triple<ULong, Int, ByteArray>) : this(values.first, values.second, values.third)
         constructor(derEncoded: ByteArray) : this(
-            derEncoded.decodeTag().let { Triple(it.first, it.second.size, derEncoded) })
+            derEncoded.iterator().decodeTag().let { Triple(it.first, it.second.size, derEncoded) }
+        )
 
         constructor(tagValue: ULong, constructed: Boolean, tagClass: TagClass = TagClass.UNIVERSAL) : this(
             encode(
@@ -151,10 +152,7 @@ sealed class Asn1Element(
                     if (tagValue <= 30u) {
                         byteArrayOf(tagValue.toUByte().toByte())
                     } else {
-                        byteArrayOf(
-                            0b11111,
-                            *tagValue.toAsn1VarInt()
-                        )
+                        byteArrayOf(0b11111, *tagValue.toAsn1VarInt())
                     }
 
                 derEncoded[0] = derEncoded[0].toUByte()
@@ -439,6 +437,7 @@ open class Asn1Primitive(tag: Tag, content: ByteArray) : Asn1Element(TLV(tag, co
     init {
         if (tag.isConstructed) throw IllegalArgumentException("A primitive cannot have a CONSTRUCTED tag")
     }
+
     override fun toString() = "Primitive" + super.toString()
 
     constructor(tagValue: ULong, content: ByteArray) : this(Tag(tagValue, false), content)
@@ -486,7 +485,7 @@ interface Asn1OctetString<T : Asn1Element> {
 internal fun Int.encodeLength(): ByteArray {
     require(this >= 0)
     return when {
-        (this < 0x80) ->  byteArrayOf(this.toByte()) /* short form */
+        (this < 0x80) -> byteArrayOf(this.toByte()) /* short form */
         else -> { /* long form */
             val length = this.toUnsignedByteArray()
             val lengthLength = length.size
