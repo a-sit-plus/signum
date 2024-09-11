@@ -395,7 +395,7 @@ fun Long.encodeTo8Bytes(): ByteArray = byteArrayOf(
 )
 
 /** Encodes a signed Long to a minimum-size twos-complement byte array */
-internal fun Long.toTwosComplementByteArray(): ByteArray {
+fun Long.toTwosComplementByteArray(): ByteArray {
     //fast case
     if (this >= Byte.MIN_VALUE && this <= Byte.MAX_VALUE) return byteArrayOf(this.toByte())
     if (this >= Short.MIN_VALUE && this <= Short.MAX_VALUE) return byteArrayOf(
@@ -451,10 +451,10 @@ internal fun Long.toTwosComplementByteArray(): ByteArray {
 }
 
 /** Encodes a signed Int to a minimum-size twos-complement byte array */
-internal fun Int.toTwosComplementByteArray() = toLong().toTwosComplementByteArray()
+fun Int.toTwosComplementByteArray() = toLong().toTwosComplementByteArray()
 
 /** Encodes an unsigned Long to a minimum-size unsigned byte array */
-internal fun Long.toUnsignedByteArray(): ByteArray {
+fun Long.toUnsignedByteArray(): ByteArray {
     require(this >= 0)
     return this.toTwosComplementByteArray().let {
         if (it[0] == 0.toByte()) it.copyOfRange(1, it.size)
@@ -463,7 +463,7 @@ internal fun Long.toUnsignedByteArray(): ByteArray {
 }
 
 /** Encodes an unsigned Int to a minimum-size unsigned byte array */
-internal fun Int.toUnsignedByteArray() = toLong().toUnsignedByteArray()
+fun Int.toUnsignedByteArray() = toLong().toUnsignedByteArray()
 
 /**
  * Drops bytes at the start, or adds zero bytes at the start, until the [size] is reached
