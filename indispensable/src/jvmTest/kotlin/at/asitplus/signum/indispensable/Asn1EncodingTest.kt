@@ -83,10 +83,10 @@ class Asn1EncodingTest : FreeSpec({
         parsed.shouldNotBeNull()
     }
 
-    "Ans1 Number encoding" - {
+    "Asn1 Number encoding" - {
 
         withData(15253481L, -1446230472L, 0L, 1L, -1L, -2L, -9994587L, 340281555L) {
-            val bytes = (it).encodeToByteArray()
+            val bytes = (it).toTwosComplementByteArray()
 
             val fromBC = ASN1Integer(it).encoded
             val long = Long.decodeFromDerValue(bytes)
@@ -98,18 +98,22 @@ class Asn1EncodingTest : FreeSpec({
 
 
         "longs" - {
-            checkAll(iterations = 15000, Arb.long()) {
-                val seq = Asn1.Sequence { +Asn1.Long(it) }
+            checkAll(iterations = 150000, Arb.long()) {
+                val seq = Asn1.Sequence { +Asn1.Int(it) }
                 val decoded = (seq.nextChild() as Asn1Primitive).readLong()
                 decoded shouldBe it
+
+                Asn1.Int(it).derEncoded shouldBe ASN1Integer(it).encoded
             }
         }
 
         "ints" - {
-            checkAll(iterations = 15000, Arb.int()) {
+            checkAll(iterations = 150000, Arb.int()) {
                 val seq = Asn1.Sequence { +Asn1.Int(it) }
                 val decoded = (seq.nextChild() as Asn1Primitive).readInt()
                 decoded shouldBe it
+
+                Asn1.Int(it).derEncoded shouldBe ASN1Integer(it.toLong()).encoded
             }
         }
 
@@ -152,7 +156,7 @@ class Asn1EncodingTest : FreeSpec({
 
             +Asn1.Set {
                 +Asn1.Int(3)
-                +Asn1.Long(-65789876543L)
+                +Asn1.Int(-65789876543L)
                 +Bool(false)
                 +Bool(true)
             }

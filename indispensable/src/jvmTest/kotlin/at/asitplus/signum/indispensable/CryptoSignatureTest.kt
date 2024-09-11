@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.indispensable.asn1.encodeToByteArray
+import at.asitplus.signum.indispensable.asn1.toTwosComplementByteArray
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.toBigInteger
 import io.kotest.assertions.throwables.shouldThrow
@@ -20,9 +20,9 @@ class CryptoSignatureTest : FreeSpec({
             val ec1 = CryptoSignature.EC.fromRS(first.toBigInteger(), second.toBigInteger())
             val ec2 = CryptoSignature.EC.fromRS(first.toBigInteger(), second.toBigInteger())
             val ec3 = CryptoSignature.EC.fromRS(second.toBigInteger(), first.toBigInteger())
-            val rsa1 = CryptoSignature.RSAorHMAC(first.encodeToByteArray())
-            val rsa2 = CryptoSignature.RSAorHMAC(first.encodeToByteArray())
-            val rsa3 = CryptoSignature.RSAorHMAC(second.encodeToByteArray())
+            val rsa1 = CryptoSignature.RSAorHMAC(first.toTwosComplementByteArray())
+            val rsa2 = CryptoSignature.RSAorHMAC(first.toTwosComplementByteArray())
+            val rsa3 = CryptoSignature.RSAorHMAC(second.toTwosComplementByteArray())
 
             ec1 shouldBe ec1
             ec1 shouldBe ec2

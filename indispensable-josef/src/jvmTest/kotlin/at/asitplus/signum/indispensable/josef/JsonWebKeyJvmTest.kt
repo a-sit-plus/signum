@@ -3,7 +3,6 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.fromUncompressed
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.asn1.encodeToByteArray
 import at.asitplus.signum.indispensable.asn1.ensureSize
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -60,7 +59,7 @@ class JsonWebKeyJvmTest : FreeSpec({
 
         jwk.shouldNotBeNull()
         jwk.n shouldBe nFromBc
-        jwk.e shouldBe eFromBc.encodeToByteArray()
+        jwk.e shouldBe eFromBc.encodeToTwosComplementByteArray()
         jwk.keyId.shouldNotBeNull()
 
         "it can be converted back to CryptoPublicKey" {
