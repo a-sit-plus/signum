@@ -391,12 +391,16 @@ class Asn1PrimitiveOctetString(content: ByteArray) : Asn1Primitive(Tag.OCTET_STR
 
 /**
  * ASN.1 SET 0x31 ([BERTags.SET] OR [BERTags.CONSTRUCTED])
- * @param children the elements to put into this set. will be automatically sorted by tag
  */
-open class Asn1Set internal constructor(children: List<Asn1Element>?, dontSort: Boolean = false) :
+open class Asn1Set private constructor(children: List<Asn1Element>?, dontSort: Boolean) :
     Asn1Structure(
         Tag.SET,
         if (dontSort) children else children?.sortedBy { it.tag.encodedTag.encodeToString(Base16) }) /*TODO this is inefficient*/ {
+
+    /**
+     * @param children the elements to put into this set. will be automatically sorted by tag
+     */
+    internal constructor(children: List<Asn1Element>?) : this(children, false)
 
     init {
         if (!tag.isConstructed) throw IllegalArgumentException("An ASN.1 Structure must have a CONSTRUCTED tag")
@@ -407,6 +411,14 @@ open class Asn1Set internal constructor(children: List<Asn1Element>?, dontSort: 
 
 
     override fun prettyPrint(indent: Int) = (" " * indent) + "Set" + super.prettyPrint(indent + 2)
+
+    companion object {
+        /**
+         * Explicitly discard DER requirements and DON'T sort children. Useful when parsing Structures which might not
+         * conform to DER
+         */
+        internal fun fromPresorted(children: List<Asn1Element>) = Asn1Set(children, true)
+    }
 }
 
 /**

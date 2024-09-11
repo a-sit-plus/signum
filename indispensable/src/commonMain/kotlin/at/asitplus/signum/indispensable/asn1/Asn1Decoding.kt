@@ -38,7 +38,7 @@ private class Asn1Reader(input: ByteArray) {
         while (rest.isNotEmpty()) {
             val tlv = read()
             if (tlv.isSequence()) result.add(Asn1Sequence(Asn1Reader(tlv.content).doParse()))
-            else if (tlv.isSet()) result.add(Asn1Set(Asn1Reader(tlv.content).doParse(), dontSort = true))
+            else if (tlv.isSet()) result.add(Asn1Set.fromPresorted(Asn1Reader(tlv.content).doParse()))
             else if (tlv.isExplicitlyTagged()) result.add(
                 Asn1Tagged(
                     tlv.tag.tagValue,
