@@ -471,14 +471,14 @@ interface Asn1OctetString<T : Asn1Element> {
 
 @Throws(IllegalArgumentException::class)
 internal fun Int.encodeLength(): ByteArray {
-    if (this < 128) {
-        return byteArrayOf(this.toByte())
+    require(this >= 0)
+    return when {
+        (this < 0x80) ->  byteArrayOf(this.toByte()) /* short form */
+        else -> { /* long form */
+            val length = this.toUnsignedByteArray()
+            val lengthLength = length.size
+            check(lengthLength < 0x80)
+            byteArrayOf((lengthLength or 0x80).toByte(), *length)
+        }
     }
-    if (this < 0x100) {
-        return byteArrayOf(0x81.toByte(), this.toByte())
-    }
-    if (this < 0x8000) {
-        return byteArrayOf(0x82.toByte(), (this ushr 8).toByte(), this.toByte())
-    }
-    throw IllegalArgumentException("length $this")
 }

@@ -9,7 +9,6 @@ import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.fromUncompr
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
 import at.asitplus.signum.indispensable.asn1.decodeFromDerValue
-import at.asitplus.signum.indispensable.asn1.encodeToByteArray
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.josef.io.JwsCertificateSerializer
@@ -363,7 +362,7 @@ fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
                 type = JwkType.RSA,
                 keyId = keyId,
                 n = n,
-                e = e.encodeToByteArray()
+                e = e.encodeToTwosComplementByteArray()
             )
     }
 

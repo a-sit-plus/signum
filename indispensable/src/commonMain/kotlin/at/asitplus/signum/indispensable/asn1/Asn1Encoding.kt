@@ -218,7 +218,7 @@ object Asn1 {
     /**
      * Adds an INTEGER [Asn1Primitive] to this ASN.1 structure
      */
-    fun Long(value: Long) = value.encodeToTlv()
+    fun Int(value: Long) = value.encodeToTlv()
 
 
     /**
@@ -331,10 +331,10 @@ fun ByteArray.encodeToTlvBitString() = Asn1Primitive(Asn1Element.Tag.BIT_STRING,
 fun ByteArray.encodeToBitString() = byteArrayOf(0x00) + this
 
 internal fun Int.encodeToDer() = if (this == 0) byteArrayOf(0) else
-    encodeToByteArray()
+    toTwosComplementByteArray()
 
 private fun Long.encodeToDer() = if (this == 0L) byteArrayOf(0) else
-    encodeToByteArray()
+    toTwosComplementByteArray()
 
 /**
  * Produces a UTC TIME as [Asn1Primitive]
@@ -394,10 +394,8 @@ fun Long.encodeTo8Bytes(): ByteArray = byteArrayOf(
     (this).toByte()
 )
 
-/**
- * Encodes a signed Long correctly to a compact byte array
- */
-fun Long.encodeToByteArray(): ByteArray {
+/** Encodes a signed Long to a minimum-size twos-complement byte array */
+internal fun Long.toTwosComplementByteArray(): ByteArray {
     //fast case
     if (this >= Byte.MIN_VALUE && this <= Byte.MAX_VALUE) return byteArrayOf(this.toByte())
     if (this >= Short.MIN_VALUE && this <= Short.MAX_VALUE) return byteArrayOf(
@@ -440,20 +438,7 @@ fun Long.encodeToByteArray(): ByteArray {
         (this ushr 8).toByte(),
         this.toByte()
     )
-    //-Overflow FTW!
-    @Suppress("INTEGER_OVERFLOW")
-    if (this >= ((0x80L shl 56)) && this < ((0x80L shl 56) - 1)) return byteArrayOf(
-        (this ushr 56).toByte(),
-        (this ushr 48).toByte(),
-        (this ushr 40).toByte(),
-        (this ushr 32).toByte(),
-        (this ushr 24).toByte(),
-        (this ushr 16).toByte(),
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
     return byteArrayOf(
-        (this ushr 64).toByte(),
         (this ushr 56).toByte(),
         (this ushr 48).toByte(),
         (this ushr 40).toByte(),
@@ -465,40 +450,23 @@ fun Long.encodeToByteArray(): ByteArray {
     )
 }
 
-/**
- * Encodes a signed Long correctly to a compact byte array
- */
-fun Int.encodeToByteArray(): ByteArray {
-    if (this >= Byte.MIN_VALUE && this <= Byte.MAX_VALUE) return byteArrayOf(this.toByte())
-    if (this >= Short.MIN_VALUE && this <= Short.MAX_VALUE) return byteArrayOf(
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
-    if (this >= -(0x80 shl 16) && this < (0x80 shl 16)) return byteArrayOf(
-        (this ushr 16).toByte(),
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
-    //-Overflow FTW!
-    @Suppress("INTEGER_OVERFLOW")
-    if (this >= ((0x80 shl 24)) && this < ((0x80 shl 24) - 1)) return byteArrayOf(
-        (this ushr 24).toByte(),
-        (this ushr 16).toByte(),
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
-    return byteArrayOf(
-        (this ushr 32).toByte(),
-        (this ushr 24).toByte(),
-        (this ushr 16).toByte(),
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
+/** Encodes a signed Int to a minimum-size twos-complement byte array */
+internal fun Int.toTwosComplementByteArray() = toLong().toTwosComplementByteArray()
 
+/** Encodes an unsigned Long to a minimum-size unsigned byte array */
+internal fun Long.toUnsignedByteArray(): ByteArray {
+    require(this >= 0)
+    return this.toTwosComplementByteArray().let {
+        if (it[0] == 0.toByte()) it.copyOfRange(1, it.size)
+        else it
+    }
 }
 
+/** Encodes an unsigned Int to a minimum-size unsigned byte array */
+internal fun Int.toUnsignedByteArray() = toLong().toUnsignedByteArray()
+
 /**
- * Drops or adds zero bytes at the start until the [size] is reached
+ * Drops bytes at the start, or adds zero bytes at the start, until the [size] is reached
  */
 fun ByteArray.ensureSize(size: Int): ByteArray = (this.size - size).let { toDrop ->
     when {
