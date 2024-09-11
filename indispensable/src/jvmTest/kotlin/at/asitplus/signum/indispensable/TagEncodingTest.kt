@@ -17,7 +17,7 @@ import org.bouncycastle.asn1.DERTaggedObject
 
 class TagEncodingTest : FreeSpec({
 
-    "Manual" -{
+    "Manual" - {
         withData(207692171uL, 128uL, 36uL, 16088548868045964978uL, 15871772363588580035uL) {
             it.toAsn1VarInt().decodeAsn1VarULong().first shouldBe it
             val tag = Asn1Element.Tag(it, constructed = it % 2uL == 0uL)
@@ -33,7 +33,7 @@ class TagEncodingTest : FreeSpec({
         }
     }
     "Against BC" - {
-        checkAll(iterations = 1000000, Arb.int(min=0)) {
+        checkAll(iterations = 1000000, Arb.int(min = 0)) {
             val tag = Asn1Element.Tag(it.toULong(), constructed = false)
             tag.tagValue shouldBe it.toULong()
 

@@ -41,14 +41,14 @@ enum class X509SignatureAlgorithm(
     // RSASSA-PKCS1-v1_5 using SHA-1
     RS1(KnownOIDs.sha1WithRSAEncryption);
 
-    private fun encodePSSParams(bits: Int): Asn1Sequence {
-        val shaOid = when (bits) {
+    private fun encodePSSParams(bits: Int): Asn1Sequence =
+        when (bits) {
             256 -> KnownOIDs.sha_256
             384 -> KnownOIDs.sha_384
             512 -> KnownOIDs.sha_512
             else -> TODO()
-        }
-        return Asn1.Sequence {
+        }.let { shaOid ->
+            Asn1.Sequence {
             +oid
             +Asn1.Sequence {
                 +Tagged(0u) {

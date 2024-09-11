@@ -60,7 +60,7 @@ private class Asn1Reader(input: ByteArray) {
     }
 
     private fun TLV.isSet() = tag == Asn1Element.Tag.SET
-    private fun TLV.isSequence() = tag== Asn1Element.Tag.ASN1_SEQUENCE
+    private fun TLV.isSequence() = (tag == Asn1Element.Tag.ASN1_SEQUENCE)
     private fun TLV.isExplicitlyTagged() = tag.isExplicitlyTagged
 
     @Throws(Asn1Exception::class)
@@ -138,15 +138,17 @@ fun Asn1Primitive.readLongOrNull() = catching { readLong() }.getOrNull()
  */
 @Throws(Throwable::class)
 fun Asn1Primitive.readString(): Asn1String = runRethrowing {
-    if (tag.tagValue == UTF8_STRING.toULong()) Asn1String.UTF8(content.decodeToString())
-    else if (tag.tagValue == UNIVERSAL_STRING.toULong()) Asn1String.Universal(content.decodeToString())
-    else if (tag.tagValue == IA5_STRING.toULong()) Asn1String.IA5(content.decodeToString())
-    else if (tag.tagValue == BMP_STRING.toULong()) Asn1String.BMP(content.decodeToString())
-    else if (tag.tagValue == T61_STRING.toULong()) Asn1String.Teletex(content.decodeToString())
-    else if (tag.tagValue == PRINTABLE_STRING.toULong()) Asn1String.Printable(content.decodeToString())
-    else if (tag.tagValue == NUMERIC_STRING.toULong()) Asn1String.Numeric(content.decodeToString())
-    else if (tag.tagValue == VISIBLE_STRING.toULong()) Asn1String.Visible(content.decodeToString())
-    else TODO("Support other string tag $tag")
+    when (tag.tagValue) {
+        UTF8_STRING.toULong() -> Asn1String.UTF8(content.decodeToString())
+        UNIVERSAL_STRING.toULong() -> Asn1String.Universal(content.decodeToString())
+        IA5_STRING.toULong() -> Asn1String.IA5(content.decodeToString())
+        BMP_STRING.toULong() -> Asn1String.BMP(content.decodeToString())
+        T61_STRING.toULong() -> Asn1String.Teletex(content.decodeToString())
+        PRINTABLE_STRING.toULong() -> Asn1String.Printable(content.decodeToString())
+        NUMERIC_STRING.toULong() -> Asn1String.Numeric(content.decodeToString())
+        VISIBLE_STRING.toULong() -> Asn1String.Visible(content.decodeToString())
+        else -> TODO("Support other string tag $tag")
+    }
 }
 
 /**
@@ -162,12 +164,15 @@ fun Asn1Primitive.readStringOrNull() = catching { readString() }.getOrNull()
  */
 @Throws(Asn1Exception::class)
 fun Asn1Primitive.readInstant() =
-    if (tag == Asn1Element.Tag.TIME_UTC) decode(Asn1Element.Tag.TIME_UTC, Instant.Companion::decodeUtcTimeFromDer)
-    else if (tag == Asn1Element.Tag.TIME_GENERALIZED) decode(
-        Asn1Element.Tag.TIME_GENERALIZED,
-        Instant.Companion::decodeGeneralizedTimeFromDer
-    )
-    else TODO("Support time tag $tag")
+    when (tag) {
+        Asn1Element.Tag.TIME_UTC -> decode(Asn1Element.Tag.TIME_UTC, Instant.Companion::decodeUtcTimeFromDer)
+        Asn1Element.Tag.TIME_GENERALIZED -> decode(
+            Asn1Element.Tag.TIME_GENERALIZED,
+            Instant.Companion::decodeGeneralizedTimeFromDer
+        )
+
+        else -> TODO("Support time tag $tag")
+    }
 
 /**
  * Exception-free version of [readInstant]
@@ -227,10 +232,8 @@ fun Asn1Tagged.verifyTagOrNull(tag: ULong) = catching { verifyTag(tag) }.getOrNu
  * @throws Asn1Exception all sorts of exceptions on invalid input
  */
 @Throws(Asn1Exception::class)
-inline fun <reified T> Asn1Primitive.decode(tag: ULong, transform: (content: ByteArray) -> T) = runRethrowing {
-    if (tag != this.tag.tagValue) throw Asn1TagMismatchException(Asn1Element.Tag(tag, constructed = false), this.tag)
-    transform(content)
-}
+inline fun <reified T> Asn1Primitive.decode(tag: ULong, transform: (content: ByteArray) -> T): T =
+    decode(Asn1Element.Tag(tag, constructed = false), transform)
 /**
  * Generic decoding function. Verifies that this [Asn1Primitive]'s tag matches [tag]
  * and transforms its content as per [transform]

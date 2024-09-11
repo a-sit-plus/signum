@@ -75,12 +75,12 @@ interface Asn1Decodable<A : Asn1Element, T : Asn1Encodable<A>> {
     fun decodeFromDer(src: ByteArray): T = decodeFromTlv(Asn1Element.parse(src) as A)
 
     /**
-     * Exception-free version of [decodeFromDerValue]
+     * Exception-free version of [decodeFromDer]
      */
     fun decodeFromDerOrNull(src: ByteArray) = catching { decodeFromDer(src) }.getOrNull()
 
     /**
-     * Safe version of [decodeFromDerValue], wrapping the result into a [KmmResult]
+     * Safe version of [decodeFromDer], wrapping the result into a [KmmResult]
      */
     fun decodeFromDerSafe(src: ByteArray) = catching { decodeFromDer(src) }
 }
@@ -118,13 +118,13 @@ interface Asn1TagVerifyingDecodable<T : Asn1Encodable<Asn1Primitive>> :
         decodeFromTlv(Asn1Element.parse(src) as Asn1Primitive, tagOverride)
 
     /**
-     * Exception-free version of [decodeFromDerValue]
+     * Exception-free version of [decodeFromDer]
      */
     fun decodeFromDerOrNull(src: ByteArray, tagOverride: Asn1Element.Tag?) =
         catching { decodeFromDer(src, tagOverride) }.getOrNull()
 
     /**
-     * Safe version of [decodeFromDerValue], wrapping the result into a [KmmResult]
+     * Safe version of [decodeFromDer], wrapping the result into a [KmmResult]
      */
     fun decodeFromDerSafe(src: ByteArray, tagOverride: Asn1Element.Tag?) = catching { decodeFromDer(src, tagOverride) }
 }

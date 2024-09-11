@@ -119,8 +119,6 @@ class Asn1EncodingTest : FreeSpec({
         val certBytes = Base64.getMimeDecoder()
             .decode(javaClass.classLoader.getResourceAsStream("github-com.pem").reader().readText())
         val tree = Asn1Element.parse(certBytes)
-        println(tree.prettyPrint())
-
             tree.derEncoded shouldBe certBytes
         }
 
