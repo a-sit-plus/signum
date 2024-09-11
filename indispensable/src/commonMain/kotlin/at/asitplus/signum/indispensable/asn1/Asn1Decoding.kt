@@ -344,14 +344,14 @@ private fun List<Byte>.getInt(i: Int) = this[i].toUByte().toInt()
 
 internal infix fun Byte.byteMask(mask: Int) = (this and mask.toUInt().toByte()).toUByte()
 
-internal fun ByteArray.decodeTag(): Pair<ULong, ByteArray> {
-    val tagNumber = this[0] byteMask 0x1F
-    return if (tagNumber <= 30U) {
-        tagNumber.toULong() to byteArrayOf(this[0])
-    } else {
-        drop(1).decodeAsn1VarULong().let { (l, b) -> l to byteArrayOf(first(), *b) }
+internal fun ByteArray.decodeTag(): Pair<ULong, ByteArray> =
+    (this[0] byteMask 0x1F).let { tagNumber ->
+        if (tagNumber <= 30U) {
+            tagNumber.toULong() to byteArrayOf(this[0])
+        } else {
+            drop(1).decodeAsn1VarULong().let { (l, b) -> l to byteArrayOf(first(), *b) }
+        }
     }
-}
 
 
 /**
