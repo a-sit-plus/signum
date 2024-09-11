@@ -132,7 +132,7 @@ sealed class Asn1Element(
     data class Tag private constructor(
         val tagValue: ULong, val encodedTagLength: Int,
         @Serializable(with = ByteArrayBase64Serializer::class) val encodedTag: ByteArray
-    ) {
+    ) : Comparable<Tag> {
         private constructor(values: Triple<ULong, Int, ByteArray>) : this(values.first, values.second, values.third)
         constructor(derEncoded: ByteArray) : this(
             derEncoded.iterator().decodeTag().let { Triple(it.first, it.second.size, derEncoded) }
@@ -198,6 +198,26 @@ sealed class Asn1Element(
             "${tagClass.let { if (it == TagClass.UNIVERSAL) "" else it.name + " " }}0x${
                 tagValue.toString(16).uppercase()
             }${if (isConstructed) " CONSTRUCTED" else ""}"
+
+        /**
+         * As per ITU-T X.680 8824-1 8.6
+         *
+         */
+        override fun compareTo(other: Tag) = EncodedTagComparator.compare(this, other)
+
+        private object EncodedTagComparator : Comparator<Tag> {
+            override fun compare(a: Tag, b: Tag): Int {
+                if (a.encodedTag.size < b.encodedTag.size) return -1
+                else if (a.encodedTag.size > b.encodedTag.size) return +1
+
+                if (a.encodedTag.size == 1 || a.encodedTag.first() != b.encodedTag.first())
+                    return a.encodedTag.first().toUByte().compareTo(b.encodedTag.first().toUByte())
+
+                //now, we're down to numbers
+                return a.tagValue.compareTo(b.tagValue)
+            }
+
+        }
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -391,9 +411,7 @@ class Asn1PrimitiveOctetString(content: ByteArray) : Asn1Primitive(Tag.OCTET_STR
  * ASN.1 SET 0x31 ([BERTags.SET] OR [BERTags.CONSTRUCTED])
  */
 open class Asn1Set private constructor(children: List<Asn1Element>?, dontSort: Boolean) :
-    Asn1Structure(
-        Tag.SET,
-        if (dontSort) children else children?.sortedBy { it.tag.encodedTag.encodeToString(Base16) }) /*TODO this is inefficient*/ {
+    Asn1Structure(Tag.SET, if (dontSort) children else children?.sortedBy { it.tag }) {
 
     /**
      * @param children the elements to put into this set. will be automatically sorted by tag
