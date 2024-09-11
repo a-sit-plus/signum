@@ -66,11 +66,11 @@ fun ULong.toImplicitTag(constructed: Boolean = false) =
 internal fun UByte.isConstructed() = this and BERTags.CONSTRUCTED != 0.toUByte()
 
 
-enum class TagClass(val byteValue: UByte) {
-    UNIVERSAL(0u),
-    APPLICATION(1u),
-    CONTEXT_SPECIFIC(2u),
-    PRIVATE(3u);
+enum class TagClass(val byteValue: UByte, val berTag: UByte) {
+    UNIVERSAL(0u, BERTags.UNIVERSAL),
+    APPLICATION(1u, BERTags.APPLICATION),
+    CONTEXT_SPECIFIC(2u, BERTags.CONTEXT_SPECIFIC),
+    PRIVATE(3u, BERTags.PRIVATE);
     companion object {
         fun fromByte(byteValue: Byte): KmmResult<TagClass> =
             catching { entries.first { it.byteValue == ((byteValue byteMask 0xC0).toUInt().toInt() ushr 6).toUByte()  } }
