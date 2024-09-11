@@ -156,16 +156,10 @@ sealed class Asn1Element(
                         )
                     }
 
-                var encoded = derEncoded.first().toUByte()
-                if (constructed) encoded = encoded or BERTags.CONSTRUCTED
-                when (tagClass) {
-                    TagClass.UNIVERSAL -> encoded = encoded or BERTags.UNIVERSAL
-                    TagClass.APPLICATION -> encoded = encoded or BERTags.APPLICATION
-                    TagClass.CONTEXT_SPECIFIC -> encoded = encoded or BERTags.CONTEXT_SPECIFIC
-                    TagClass.PRIVATE -> encoded = encoded or BERTags.PRIVATE
-
-                }
-                derEncoded[0] = encoded.toByte()
+                derEncoded[0] = derEncoded[0].toUByte()
+                    .let { if (constructed) (it or BERTags.CONSTRUCTED) else it }
+                    .let { it or tagClass.berTag }
+                    .toByte()
                 return derEncoded
             }
 
