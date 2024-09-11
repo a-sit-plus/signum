@@ -317,31 +317,33 @@ private fun ByteArray.readTlv(): TLV = runRethrowing {
     if (this.size == 1) return TLV(Asn1Element.Tag(byteArrayOf(this[0])), byteArrayOf())
 
     val iterator = iterator()
-    val decodedTag = iterator.decodeTag()
-    val tagLength = decodedTag.second.size
-    val tagBytes = decodedTag.second
-    val value = drop(tagLength).decodeValue()
-    return TLV(Asn1Element.Tag(tagBytes), value.toByteArray())
+    val tag = iterator.decodeTag()
+    val length = iterator.decodeLength()
+    require(length < 1024 * 1024) { "Heap space" }
+    val value = with(iterator) {
+        ByteArray(length) {
+            require(hasNext()) { "Out of bytes to decode" }
+            next()
+        }
+    }
+    return TLV(Asn1Element.Tag(tag.second), value)
 }
 
 @Throws(IllegalArgumentException::class)
-private fun List<Byte>.decodeValue() =
-    if (this[0].isBerShortForm()) {
-        val length = getInt(0)
-        require(size >= 1 + length) { "Out of bytes" }
-        drop(1).take(length)
-    } else { // its BER long form!
-        val numberOfLengthOctets = (this[0] byteMask 0x7F).toInt()
-        require(size >= numberOfLengthOctets + 1) { "Can't decode length" }
-        val length = (numberOfLengthOctets downTo 1).fold(0) { acc, index ->
-            acc + (getInt(index) shl Byte.SIZE_BITS * (numberOfLengthOctets - index))
+private fun ByteIterator.decodeLength() =
+    next().let { firstByte ->
+        if (firstByte.isBerShortForm()) {
+            firstByte.toUByte().toInt()
+        } else { // its BER long form!
+            val numberOfLengthOctets = (firstByte byteMask 0x7F).toInt()
+            (0 until numberOfLengthOctets).fold(0) { acc, index ->
+                require(hasNext()) { "Can't decode length" }
+                acc + (next().toUByte().toInt() shl Byte.SIZE_BITS * (numberOfLengthOctets - index - 1))
+            }
         }
-        drop(1 + numberOfLengthOctets).take(length)
     }
 
 private fun Byte.isBerShortForm() = this byteMask 0x80 == 0x00.toUByte()
-
-private fun List<Byte>.getInt(i: Int) = this[i].toUByte().toInt()
 
 internal infix fun Byte.byteMask(mask: Int) = (this and mask.toUInt().toByte()).toUByte()
 
