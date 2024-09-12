@@ -126,12 +126,12 @@ class Asn1EncodingTest : FreeSpec({
 
         "ints" - {
             "failures: too small" - {
-                checkAll(iterations = 5000, Arb.long(Int.MAX_VALUE.toLong()+1..<Long.MAX_VALUE)) {
+                checkAll(iterations = 5000, Arb.long(Long.MIN_VALUE..<Int.MIN_VALUE.toLong())) {
                     shouldThrow<Asn1Exception> { Asn1.Int(it).readInt() }
                 }
             }
             "failures: too large" - {
-                checkAll(iterations = 5000, Arb.long(Int.MAX_VALUE.toLong()..Long.MAX_VALUE)) {
+                checkAll(iterations = 5000, Arb.long(Int.MAX_VALUE.toLong()+1..<Long.MAX_VALUE)) {
                     shouldThrow<Asn1Exception> { Asn1.Int(it).readInt() }
                 }
             }
