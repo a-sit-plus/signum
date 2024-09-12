@@ -102,14 +102,14 @@ class Asn1EncodingTest : FreeSpec({
 
         "longs" - {
             "failures: too small" - {
-                checkAll(iterations = 5000, Arb.bigInt(64, 128)) {
-                    val v = BigInteger.fromTwosComplementByteArray(it.toByteArray()).plus(1).unaryMinus()
+                checkAll(iterations = 5000, Arb.bigInt(128)) {
+                    val v = BigInteger.fromLong(Long.MIN_VALUE).minus(1).minus(BigInteger.fromTwosComplementByteArray(it.toByteArray()))
                     shouldThrow<Asn1Exception> { Asn1.Int(v).readLong() }
                 }
             }
             "failures: too large" - {
-                checkAll(iterations = 5000, Arb.bigInt(64, 128)) {
-                    val v = BigInteger.fromTwosComplementByteArray(it.toByteArray())
+                checkAll(iterations = 5000, Arb.bigInt(128)) {
+                    val v = BigInteger.fromLong(Long.MAX_VALUE).plus(1).plus(BigInteger.fromTwosComplementByteArray(it.toByteArray()))
                     shouldThrow<Asn1Exception> { Asn1.Int(v).readLong() }
                 }
             }
