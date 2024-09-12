@@ -101,22 +101,48 @@ class Asn1EncodingTest : FreeSpec({
 
 
         "longs" - {
-            checkAll(iterations = 150000, Arb.long()) {
-                val seq = Asn1.Sequence { +Asn1.Int(it) }
-                val decoded = (seq.nextChild() as Asn1Primitive).readLong()
-                decoded shouldBe it
+            "failures: too small" - {
+                checkAll(iterations = 5000, Arb.bigInt(64, 128)) {
+                    val v = BigInteger.fromTwosComplementByteArray(it.toByteArray()).plus(1).unaryMinus()
+                    shouldThrow<Asn1Exception> { Asn1.Int(v).readLong() }
+                }
+            }
+            "failures: too large" - {
+                checkAll(iterations = 5000, Arb.bigInt(64, 128)) {
+                    val v = BigInteger.fromTwosComplementByteArray(it.toByteArray())
+                    shouldThrow<Asn1Exception> { Asn1.Int(v).readLong() }
+                }
+            }
+            "successes" - {
+                checkAll(iterations = 150000, Arb.long()) {
+                    val seq = Asn1.Sequence { +Asn1.Int(it) }
+                    val decoded = (seq.nextChild() as Asn1Primitive).readLong()
+                    decoded shouldBe it
 
-                Asn1.Int(it).derEncoded shouldBe ASN1Integer(it).encoded
+                    Asn1.Int(it).derEncoded shouldBe ASN1Integer(it).encoded
+                }
             }
         }
 
         "ints" - {
-            checkAll(iterations = 150000, Arb.int()) {
-                val seq = Asn1.Sequence { +Asn1.Int(it) }
-                val decoded = (seq.nextChild() as Asn1Primitive).readInt()
-                decoded shouldBe it
+            "failures: too small" - {
+                checkAll(iterations = 5000, Arb.long(Int.MAX_VALUE.toLong()+1..<Long.MAX_VALUE)) {
+                    shouldThrow<Asn1Exception> { Asn1.Int(it).readInt() }
+                }
+            }
+            "failures: too large" - {
+                checkAll(iterations = 5000, Arb.long(Int.MAX_VALUE.toLong()..Long.MAX_VALUE)) {
+                    shouldThrow<Asn1Exception> { Asn1.Int(it).readInt() }
+                }
+            }
+            "successes" - {
+                checkAll(iterations = 75000, Arb.int()) {
+                    val seq = Asn1.Sequence { +Asn1.Int(it) }
+                    val decoded = (seq.nextChild() as Asn1Primitive).readInt()
+                    decoded shouldBe it
 
-                Asn1.Int(it).derEncoded shouldBe ASN1Integer(it.toLong()).encoded
+                    Asn1.Int(it).derEncoded shouldBe ASN1Integer(it.toLong()).encoded
+                }
             }
         }
 
