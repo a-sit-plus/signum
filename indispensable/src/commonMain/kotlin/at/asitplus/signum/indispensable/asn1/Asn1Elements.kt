@@ -188,7 +188,11 @@ sealed class Asn1Element(
 
         }
 
-        val tagClass by lazy { TagClass.fromByte(encodedTag.first()).getOrThrow() } //yes, this shall crash!!!
+        val tagClass by lazy {
+            checkNotNull(TagClass.fromByte(encodedTag.first()).getOrNull()) {
+                "An Illegal Tag class has been found. This should be impossible!"
+            }
+        }
 
         val isConstructed by lazy { encodedTag.first().toUByte().isConstructed() }
 
