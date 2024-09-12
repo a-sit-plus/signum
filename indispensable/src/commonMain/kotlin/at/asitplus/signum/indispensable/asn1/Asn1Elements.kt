@@ -361,7 +361,6 @@ class Asn1CustomStructure private constructor(
 
     companion object {
         /**
-         * **UNTESTED!!!**
          * ASN.1 Structure encoded as an ASN.1 Primitive (similar to OCTET STRING containing a valid ASN.1 Structure) with custom tag
          * @param children the elements to put into this sequence
          * @param tag the custom tag to use
