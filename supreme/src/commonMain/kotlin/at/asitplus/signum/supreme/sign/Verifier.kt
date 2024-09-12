@@ -18,7 +18,16 @@ sealed interface Verifier {
     val signatureAlgorithm: SignatureAlgorithm
     val publicKey: CryptoPublicKey
 
-    fun verify(data: SignatureInput, sig: CryptoSignature): KmmResult<Unit>
+    /**
+     * Works around the pathological behavior of KmmResult<Unit> with .map, which would make
+     * ```
+     * val proxyVerify(...): KmmResult<Unit> = getVerifier().map { it.verify(...) }
+     * ```
+     * silently succeed (with the programmer confusing `map` and `transform`).
+     */
+    data object Success
+
+    fun verify(data: SignatureInput, sig: CryptoSignature): KmmResult<Success>
 
     sealed class EC
     @Throws(IllegalArgumentException::class)
@@ -74,7 +83,7 @@ class PlatformECDSAVerifier
     override fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
         require (sig is CryptoSignature.EC)
             { "Attempted to validate non-EC signature using EC public key" }
-        return@catching verifyECDSAImpl(signatureAlgorithm, publicKey, data, sig, config)
+        return@catching verifyECDSAImpl(signatureAlgorithm, publicKey, data, sig, config).let { Verifier.Success }
     }
 }
 
@@ -103,7 +112,7 @@ class PlatformRSAVerifier
             { "Attempted to validate non-RSA signature using RSA public key" }
         if (data.format != null)
             throw UnsupportedOperationException("RSA with pre-hashed input is unsupported")
-        return@catching verifyRSAImpl(signatureAlgorithm, publicKey, data, sig, config)
+        return@catching verifyRSAImpl(signatureAlgorithm, publicKey, data, sig, config).let { Verifier.Success }
     }
 }
 
@@ -134,6 +143,7 @@ class KotlinECDSAVerifier
         if (point.x.residue.mod(curve.order) != sig.r.mod(curve.order)) {
             throw InvalidSignature("Signature is invalid: r != s")
         }
+        return@catching Verifier.Success
     }
 }
 
