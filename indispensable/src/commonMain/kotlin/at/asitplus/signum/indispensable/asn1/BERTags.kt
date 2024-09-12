@@ -67,9 +67,24 @@ internal fun UByte.isConstructed() = this and BERTags.CONSTRUCTED != 0.toUByte()
 
 
 enum class TagClass(val byteValue: UByte, val berTag: UByte) {
+    /**
+     * 00
+     */
     UNIVERSAL(0u, BERTags.UNIVERSAL),
+
+    /**
+     * 01
+     */
     APPLICATION(1u, BERTags.APPLICATION),
+
+    /**
+     * 10
+     */
     CONTEXT_SPECIFIC(2u, BERTags.CONTEXT_SPECIFIC),
+
+    /**
+     * 11
+     */
     PRIVATE(3u, BERTags.PRIVATE);
     companion object {
         fun fromByte(byteValue: Byte): KmmResult<TagClass> =

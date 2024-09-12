@@ -209,16 +209,16 @@ object Asn1 {
     fun Bool(value: Boolean) = value.encodeToTlv()
 
 
-    /**
-     * Adds an INTEGER [Asn1Primitive] to this ASN.1 structure
-     */
+    /** Adds an INTEGER [Asn1Primitive] to this ASN.1 structure */
     fun Int(value: Int) = value.encodeToTlv()
-
-
-    /**
-     * Adds an INTEGER [Asn1Primitive] to this ASN.1 structure
-     */
+    /** Adds an INTEGER [Asn1Primitive] to this ASN.1 structure */
     fun Int(value: Long) = value.encodeToTlv()
+    /** Adds an INTEGER [Asn1Primitive] to this ASN.1 structure */
+    fun Int(value: UInt) = value.encodeToTlv()
+    /** Adds an INTEGER [Asn1Primitive] to this ASN.1 structure */
+    fun Int(value: ULong) = value.encodeToTlv()
+    /** Adds an INTEGER [Asn1Primitive] to this ASN.1 structure */
+    fun Int(value: BigInteger) = value.encodeToTlv()
 
 
     /**
@@ -295,25 +295,20 @@ object Asn1 {
 }
 
 /**
- * Produces an INTEGER as [Asn1Primitive]
- */
-fun Int.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.INT, encodeToDer())
-
-
-/**
  * Produces a BOOLEAN as [Asn1Primitive]
  */
 fun Boolean.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.BOOL, byteArrayOf(if (this) 0xff.toByte() else 0))
 
-/**
- * Produces an INTEGER as [Asn1Primitive]
- */
+/** Produces an INTEGER as [Asn1Primitive] */
+fun Int.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.INT, encodeToDer())
+/** Produces an INTEGER as [Asn1Primitive] */
 fun Long.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.INT, encodeToDer())
-
-/**
- * Produces an INTEGER as [Asn1Primitive]
- */
-fun BigInteger.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.INT, toTwosComplementByteArray())
+/** Produces an INTEGER as [Asn1Primitive] */
+fun UInt.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.INT, encodeToDer())
+/** Produces an INTEGER as [Asn1Primitive] */
+fun ULong.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.INT, encodeToDer())
+/** Produces an INTEGER as [Asn1Primitive] */
+fun BigInteger.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.INT, encodeToDer())
 
 /**
  * Produces an OCTET STRING as [Asn1Primitive]
@@ -330,11 +325,11 @@ fun ByteArray.encodeToTlvBitString() = Asn1Primitive(Asn1Element.Tag.BIT_STRING,
  */
 fun ByteArray.encodeToBitString() = byteArrayOf(0x00) + this
 
-internal fun Int.encodeToDer() = if (this == 0) byteArrayOf(0) else
-    toTwosComplementByteArray()
-
-private fun Long.encodeToDer() = if (this == 0L) byteArrayOf(0) else
-    toTwosComplementByteArray()
+private fun Int.encodeToDer() = toTwosComplementByteArray()
+private fun Long.encodeToDer() = toTwosComplementByteArray()
+private fun UInt.encodeToDer() = toTwosComplementByteArray()
+private fun ULong.encodeToDer() = toTwosComplementByteArray()
+private fun BigInteger.encodeToDer() = toTwosComplementByteArray()
 
 /**
  * Produces a UTC TIME as [Asn1Primitive]
@@ -394,64 +389,128 @@ fun Long.encodeTo8Bytes(): ByteArray = byteArrayOf(
     (this).toByte()
 )
 
-/** Encodes a signed Long to a minimum-size twos-complement byte array */
-fun Long.toTwosComplementByteArray(): ByteArray {
-    //fast case
-    if (this >= Byte.MIN_VALUE && this <= Byte.MAX_VALUE) return byteArrayOf(this.toByte())
-    if (this >= Short.MIN_VALUE && this <= Short.MAX_VALUE) return byteArrayOf(
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
-    if (this >= -(0x80 shl 16) && this < (0x80 shl 16)) return byteArrayOf(
-        (this ushr 16).toByte(),
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
-    if (this >= -((0x80L shl 24)) && this < (0x80L shl 24)) return byteArrayOf(
-        (this ushr 24).toByte(),
-        (this ushr 16).toByte(),
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
-    if (this >= Int.MIN_VALUE && this <= Int.MAX_VALUE) return byteArrayOf(
-        (this ushr 32).toByte(),
-        (this ushr 24).toByte(),
-        (this ushr 16).toByte(),
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
+/** Encodes an unsigned Long to a minimum-size twos-complement byte array */
+fun ULong.toTwosComplementByteArray() = when {
+    this >= 0x8000000000000000UL ->
+        byteArrayOf(
+            0x00,
+            (this shr 56).toByte(),
+            (this shr 48).toByte(),
+            (this shr 40).toByte(),
+            (this shr 32).toByte(),
+            (this shr 24).toByte(),
+            (this shr 16).toByte(),
+            (this shr 8).toByte(),
+            this.toByte())
+    else -> this.toLong().toTwosComplementByteArray()
+}
 
-    if (this >= -((0x80L shl 40)) && this < (0x80L shl 40)) return byteArrayOf(
-        (this ushr 40).toByte(),
-        (this ushr 32).toByte(),
-        (this ushr 24).toByte(),
-        (this ushr 16).toByte(),
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
-    if (this >= -((0x80L shl 48)) && this < (0x80L shl 48)) return byteArrayOf(
-        (this ushr 48).toByte(),
-        (this ushr 40).toByte(),
-        (this ushr 32).toByte(),
-        (this ushr 24).toByte(),
-        (this ushr 16).toByte(),
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
-    return byteArrayOf(
-        (this ushr 56).toByte(),
-        (this ushr 48).toByte(),
-        (this ushr 40).toByte(),
-        (this ushr 32).toByte(),
-        (this ushr 24).toByte(),
-        (this ushr 16).toByte(),
-        (this ushr 8).toByte(),
-        this.toByte()
-    )
+/** Encodes an unsigned Int to a minimum-size twos-complement byte array */
+fun UInt.toTwosComplementByteArray() = toLong().toTwosComplementByteArray()
+
+/** Encodes a signed Long to a minimum-size twos-complement byte array */
+fun Long.toTwosComplementByteArray() = when {
+    (this >= -0x80L && this <= 0x7FL) ->
+        byteArrayOf(
+            this.toByte())
+    (this >= -0x8000L && this <= 0x7FFFL) ->
+        byteArrayOf(
+            (this ushr 8).toByte(),
+            this.toByte())
+    (this >= -0x800000L && this <= 0x7FFFFFL) ->
+        byteArrayOf(
+            (this ushr 16).toByte(),
+            (this ushr 8).toByte(),
+            this.toByte())
+    (this >= -0x80000000L && this <= 0x7FFFFFFFL) ->
+        byteArrayOf(
+            (this ushr 24).toByte(),
+            (this ushr 16).toByte(),
+            (this ushr 8).toByte(),
+            this.toByte())
+    (this >= -0x8000000000L && this <= 0x7FFFFFFFFFL) ->
+        byteArrayOf(
+            (this ushr 32).toByte(),
+            (this ushr 24).toByte(),
+            (this ushr 16).toByte(),
+            (this ushr 8).toByte(),
+            this.toByte())
+    (this >= -0x800000000000L && this <= 0x7FFFFFFFFFFFL) ->
+        byteArrayOf(
+            (this ushr 40).toByte(),
+            (this ushr 32).toByte(),
+            (this ushr 24).toByte(),
+            (this ushr 16).toByte(),
+            (this ushr 8).toByte(),
+            this.toByte())
+    (this >= -0x80000000000000L && this <= 0x7FFFFFFFFFFFFFL) ->
+        byteArrayOf(
+            (this ushr 48).toByte(),
+            (this ushr 40).toByte(),
+            (this ushr 32).toByte(),
+            (this ushr 24).toByte(),
+            (this ushr 16).toByte(),
+            (this ushr 8).toByte(),
+            this.toByte())
+    else ->
+        byteArrayOf(
+            (this ushr 56).toByte(),
+            (this ushr 48).toByte(),
+            (this ushr 40).toByte(),
+            (this ushr 32).toByte(),
+            (this ushr 24).toByte(),
+            (this ushr 16).toByte(),
+            (this ushr 8).toByte(),
+            this.toByte())
 }
 
 /** Encodes a signed Int to a minimum-size twos-complement byte array */
 fun Int.toTwosComplementByteArray() = toLong().toTwosComplementByteArray()
+
+fun Int.Companion.fromTwosComplementByteArray(it: ByteArray) = when (it.size) {
+    4 -> (it[0].toInt() shl 24) or (it[1].toUByte().toInt() shl 16) or (it[2].toUByte().toInt() shl 8) or (it[3].toUByte().toInt())
+    3 -> (it[0].toInt() shl 16) or (it[1].toUByte().toInt() shl 8) or (it[2].toUByte().toInt())
+    2 -> (it[0].toInt() shl 8) or (it[1].toUByte().toInt() shl 0)
+    1 -> (it[0].toInt())
+    else -> throw IllegalArgumentException("Input with size $it is out of bounds for Int")
+}
+
+fun UInt.Companion.fromTwosComplementByteArray(it: ByteArray) =
+    Long.fromTwosComplementByteArray(it).let {
+        require ((0 <= it) && (it <= 0xFFFFFFFFL)) { "Value $it is out of bounds for UInt" }
+        it.toUInt()
+    }
+
+fun Long.Companion.fromTwosComplementByteArray(it: ByteArray) = when (it.size) {
+    8 -> (it[0].toLong() shl 56) or (it[1].toUByte().toLong() shl 48) or (it[2].toUByte().toLong() shl 40) or
+            (it[3].toUByte().toLong() shl 32) or (it[4].toUByte().toLong() shl 24) or
+            (it[5].toUByte().toLong() shl 16) or (it[6].toUByte().toLong() shl 8) or (it[7].toUByte().toLong())
+    7 -> (it[0].toLong() shl 48) or (it[1].toUByte().toLong() shl 40) or (it[2].toUByte().toLong() shl 32) or
+            (it[3].toUByte().toLong() shl 24) or (it[4].toUByte().toLong() shl 16) or
+            (it[5].toUByte().toLong() shl 8) or (it[6].toUByte().toLong())
+    6 -> (it[0].toLong() shl 40) or (it[1].toUByte().toLong() shl 32) or (it[2].toUByte().toLong() shl 24) or
+            (it[3].toUByte().toLong() shl 16) or (it[4].toUByte().toLong() shl 8) or (it[5].toUByte().toLong())
+    5 -> (it[0].toLong() shl 32) or (it[1].toUByte().toLong() shl 24) or (it[2].toUByte().toLong() shl 16) or
+            (it[3].toUByte().toLong() shl 8) or (it[4].toUByte().toLong())
+    4 -> (it[0].toLong() shl 24) or (it[1].toUByte().toLong() shl 16) or (it[2].toUByte().toLong() shl 8) or
+            (it[3].toUByte().toLong())
+    3 -> (it[0].toLong() shl 16) or (it[1].toUByte().toLong() shl 8) or (it[2].toUByte().toLong())
+    2 -> (it[0].toLong() shl 8) or (it[1].toUByte().toLong() shl 0)
+    1 -> (it[0].toLong())
+    else -> throw IllegalArgumentException("Input with size $it is out of bounds for Long")
+}
+
+fun ULong.Companion.fromTwosComplementByteArray(it: ByteArray) = when {
+    ((it.size == 9) && (it[0] == 0.toByte())) ->
+        (it[1].toUByte().toULong() shl 56) or (it[2].toUByte().toULong() shl 48) or (it[3].toUByte().toULong() shl 40) or
+                (it[4].toUByte().toULong() shl 32) or (it[5].toUByte().toULong() shl 24) or
+                (it[6].toUByte().toULong() shl 16) or (it[7].toUByte().toULong() shl 8) or
+                (it[8].toUByte().toULong())
+    else -> Long.fromTwosComplementByteArray(it).let {
+        require (it >= 0) { "Value $it is out of bounds for ULong" }
+        it.toULong()
+    }
+}
 
 /** Encodes an unsigned Long to a minimum-size unsigned byte array */
 fun Long.toUnsignedByteArray(): ByteArray {

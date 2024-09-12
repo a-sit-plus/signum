@@ -74,17 +74,8 @@ private class Asn1Reader(input: ByteArray) {
 }
 
 /**
- * decodes this [Asn1Primitive]'s content into an [Int]
- *
- * @throws [Throwable] all sorts of exceptions on invalid input
- */
-@Throws(Asn1Exception::class)
-fun Asn1Primitive.readInt() = runRethrowing { decode(Asn1Element.Tag.INT) { Int.decodeFromDerValue(it) } }
-
-/**
  * decodes this [Asn1Primitive]'s content into an [Boolean]
- *
- * @throws [Throwable] all sorts of exceptions on invalid input
+ * @throws [Asn1Exception] all sorts of exceptions on invalid input
  */
 @Throws(Asn1Exception::class)
 fun Asn1Primitive.readBool() = runRethrowing {
@@ -99,44 +90,59 @@ fun Asn1Primitive.readBool() = runRethrowing {
 }
 
 /**
- * Decode the [Asn1Primitive] as a [BigInteger]
+ * decodes this [Asn1Primitive]'s content into an [Int]
+ * @throws [Asn1Exception] on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readBigInteger() =
-    decode(Asn1Element.Tag.INT) { BigInteger.fromTwosComplementByteArray(it) }
+fun Asn1Primitive.readInt() = runRethrowing { decode(Asn1Element.Tag.INT) { Int.decodeFromDerValue(it) } }
 
-/**
- * Exception-free version of [readBigInteger]
- */
-@Suppress("NOTHING_TO_INLINE")
-inline fun Asn1Primitive.readBigIntegerOrNull() = catching { readBigInteger() }.getOrNull()
-
-/**
- * Exception-free version of [readInt]
- */
-fun Asn1Primitive.readIntOrNull() = catching { readInt() }.getOrNull()
-
+/** Exception-free version of [readInt] */
+fun Asn1Primitive.readIntOrNull() = runCatching { readInt() }.getOrNull()
 
 /**
  * decodes this [Asn1Primitive]'s content into a [Long]
- *
- * @throws [Throwable] all sorts of exceptions on invalid input
+ * @throws [Asn1Exception] on invalid input
  */
 @Throws(Asn1Exception::class)
 fun Asn1Primitive.readLong() = runRethrowing { decode(Asn1Element.Tag.INT) { Long.decodeFromDerValue(it) } }
 
-/**
- * Exception-free version of [readLong]
- */
-fun Asn1Primitive.readLongOrNull() = catching { readLong() }.getOrNull()
+/** Exception-free version of [readLong] */
+inline fun Asn1Primitive.readLongOrNull() = runCatching { readLong() }.getOrNull()
 
+/**
+ * decodes this [Asn1Primitive]'s content into an [UInt]
+ * @throws [Asn1Exception] on invalid input
+ */
+@Throws(Asn1Exception::class)
+fun Asn1Primitive.readUInt() = runRethrowing { decode(Asn1Element.Tag.INT) { UInt.decodeFromDerValue(it) } }
+
+/** Exception-free version of [readUInt] */
+inline fun Asn1Primitive.readUIntOrNull() = runCatching { readUInt() }.getOrNull()
+
+/**
+ * decodes this [Asn1Primitive]'s content into an [ULong]
+ * @throws [Asn1Exception] on invalid input
+ */
+@Throws(Asn1Exception::class)
+fun Asn1Primitive.readULong() = runRethrowing { decode(Asn1Element.Tag.INT) { ULong.decodeFromDerValue(it) } }
+
+/** Exception-free version of [readULong] */
+inline fun Asn1Primitive.readULongOrNull() = runCatching { readULong() }.getOrNull()
+
+/** Decode the [Asn1Primitive] as a [BigInteger]
+ * @throws [Asn1Exception] on invalid input */
+@Throws(Asn1Exception::class)
+fun Asn1Primitive.readBigInteger() = runRethrowing { decode(Asn1Element.Tag.INT) { BigInteger.decodeFromDerValue(it) } }
+
+/** Exception-free version of [readBigInteger] */
+inline fun Asn1Primitive.readBigIntegerOrNull() = runCatching { readBigInteger() }.getOrNull()
 
 /**
  * decodes this [Asn1Primitive]'s content into an [Asn1String]
  *
- * @throws [Throwable] all sorts of exceptions on invalid input
+ * @throws [Asn1Exception] all sorts of exceptions on invalid input
  */
-@Throws(Throwable::class)
+@Throws(Asn1Exception::class)
 fun Asn1Primitive.readString(): Asn1String = runRethrowing {
     when (tag.tagValue) {
         UTF8_STRING.toULong() -> Asn1String.UTF8(content.decodeToString())
@@ -284,31 +290,24 @@ private fun Instant.Companion.decodeGeneralizedTimeFromDer(input: ByteArray): In
     return parse(isoString)
 }
 
-/**
- * @throws Asn1Exception if the byte array is too long to be parsed to an int (note that only rudimentary checking happens)
- */
+/** @throws Asn1Exception if the byte array is out of bounds for a signed int */
 @Throws(Asn1Exception::class)
-fun Int.Companion.decodeFromDerValue(input: ByteArray): Int = runRethrowing {
-    if (input.size > 5) throw IllegalArgumentException("Absolute value too large!")
-    return Long.decodeFromDerValue(input).toInt()
-}
+fun Int.Companion.decodeFromDerValue(bytes: ByteArray): Int = runRethrowing { fromTwosComplementByteArray(bytes) }
 
-/**
- * @throws IllegalArgumentException if the byte array is too long to be parsed to a long (note that only rudimentary checking happens)
- */
+/** @throws Asn1Exception if the byte array is out of bounds for a signed long */
 @Throws(Asn1Exception::class)
-fun Long.Companion.decodeFromDerValue(bytes: ByteArray): Long = runRethrowing {
-    val input = if (bytes.size == 8) bytes else {
-        if (bytes.size > 9) throw IllegalArgumentException("Absolute value too large!")
-        val padding = if (bytes.first() and 0x80.toByte() != 0.toByte()) 0xFF.toByte() else 0x00.toByte()
-        ByteArray(9 - bytes.size) { padding } + bytes
-    }
-    var result = 0L
-    for (i in input.indices) {
-        result = (result shl Byte.SIZE_BITS) or (input[i].toUByte().toLong())
-    }
-    return result
-}
+fun Long.Companion.decodeFromDerValue(bytes: ByteArray): Long = runRethrowing { fromTwosComplementByteArray(bytes) }
+
+/** @throws Asn1Exception if the byte array is out of bounds for an unsigned int */
+@Throws(Asn1Exception::class)
+fun UInt.Companion.decodeFromDerValue(bytes: ByteArray): UInt = runRethrowing { fromTwosComplementByteArray(bytes) }
+
+/** @throws Asn1Exception if the byte array is out of bounds for an unsigned long */
+@Throws(Asn1Exception::class)
+fun ULong.Companion.decodeFromDerValue(bytes: ByteArray): ULong = runRethrowing { fromTwosComplementByteArray(bytes) }
+
+@Throws(Asn1Exception::class)
+fun BigInteger.Companion.decodeFromDerValue(bytes: ByteArray): BigInteger = runRethrowing { fromTwosComplementByteArray(bytes) }
 
 
 @Throws(Asn1Exception::class)

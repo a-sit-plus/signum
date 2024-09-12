@@ -199,9 +199,8 @@ sealed class Asn1Element(
         val isExplicitlyTagged by lazy { isConstructed && tagClass == TagClass.CONTEXT_SPECIFIC }
 
         override fun toString(): String =
-            "${tagClass.let { if (it == TagClass.UNIVERSAL) "" else it.name + " " }}0x${
-                tagValue.toString(16).uppercase()
-            }${if (isConstructed) " CONSTRUCTED" else ""}"
+            "${tagClass.let { if (it == TagClass.UNIVERSAL) "" else it.name + " " }}${tagValue}${if (isConstructed) " CONSTRUCTED" else ""}" +
+                    (" (=${encodedTag.encodeToString(Base16)})")
 
         /**
          * As per ITU-T X.680 8824-1 8.6
@@ -211,11 +210,13 @@ sealed class Asn1Element(
 
         private object EncodedTagComparator : Comparator<Tag> {
             override fun compare(a: Tag, b: Tag): Int {
-                if (a.encodedTag.size < b.encodedTag.size) return -1
-                else if (a.encodedTag.size > b.encodedTag.size) return +1
+                val lenCompare = a.encodedTagLength.compareTo(b.encodedTagLength)
+                if (lenCompare != 0) return lenCompare
 
-                if (a.encodedTag.size == 1 || a.encodedTag.first() != b.encodedTag.first())
-                    return a.encodedTag.first().toUByte().compareTo(b.encodedTag.first().toUByte())
+                val firstCompare =
+                    a.encodedTag.first().toUByte().toUShort().compareTo(b.encodedTag.first().toUByte().toUShort())
+                if (firstCompare != 0) return firstCompare
+
 
                 //now, we're down to numbers
                 return a.tagValue.compareTo(b.tagValue)
