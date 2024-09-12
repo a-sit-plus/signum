@@ -175,8 +175,8 @@ class Asn1EncodingTest : FreeSpec({
                 }
             }
             "failures: too large" - {
-                checkAll(iterations = 5000, Arb.bigInt(65, 128)) {
-                    val v = BigInteger.fromTwosComplementByteArray(it.toByteArray())
+                checkAll(iterations = 5000, Arb.bigInt(128)) {
+                    val v = BigInteger.fromULong(ULong.MAX_VALUE).plus(1).plus(BigInteger.fromTwosComplementByteArray(it.toByteArray()))
                     shouldThrow<Asn1Exception> { Asn1.Int(v).readULong() }
                 }
             }
