@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.signum.supreme.signature
+import at.asitplus.signum.supreme.succeed
 import br.com.colman.kotest.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -28,8 +29,8 @@ class AndroidKeyStoreProviderTests : FreeSpec({
         val plaintext = Random.nextBytes(64)
         val signature = hardwareSigner.sign(plaintext).signature
 
-        SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey).getOrThrow()
-            .verify(plaintext, signature).getOrThrow() shouldBe Unit //no errors reported
+        SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey).transform {
+            it.verify(plaintext, signature) } should succeed
 
     }
 })
