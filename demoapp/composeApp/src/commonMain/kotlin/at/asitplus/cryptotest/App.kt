@@ -136,7 +136,7 @@ internal fun App() {
             } ?: ""
         }
         val verifyPossible by getter { signatureData?.isSuccess == true }
-        var verifyState by remember { mutableStateOf<KmmResult<Unit>?>(null) }
+        var verifyState by remember { mutableStateOf<KmmResult<Success>?>(null) }
         val verifySucceededStr by getter {
             verifyState?.fold(onSuccess = {
                 "Verify OK!"

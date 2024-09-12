@@ -3,6 +3,7 @@
 ## 3.0
 
 ### NEXT
+* Changed return type of `Verifier::verify` from `KmmResult<Unit>` to `KmmResult<Success>`. Usage is unchanged.
 
 ### 3.7.0 (Supreme 0.2.0)
 * Remove Swift verifier logic to obtain a general speed-up
