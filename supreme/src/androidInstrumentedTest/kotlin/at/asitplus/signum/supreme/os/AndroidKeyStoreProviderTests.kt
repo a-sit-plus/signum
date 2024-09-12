@@ -7,6 +7,7 @@ import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.signum.supreme.signature
 import at.asitplus.signum.supreme.succeed
 import br.com.colman.kotest.FreeSpec
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.azstring
