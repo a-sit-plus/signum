@@ -17,6 +17,16 @@ import org.bouncycastle.asn1.DERTaggedObject
 
 class TagEncodingTest : FreeSpec({
 
+    "fails" {
+        val it = 2204309167L
+        val bytes = (it).toTwosComplementByteArray()
+        val fromBC = ASN1Integer(it).encoded
+        val long = Long.decodeFromDerValue(bytes)
+        val encoded = Asn1.Int(it).derEncoded
+        encoded shouldBe fromBC
+        long shouldBe it
+    }
+
     "Manual" - {
         withData(207692171uL, 128uL, 36uL, 16088548868045964978uL, 15871772363588580035uL) {
             it.toAsn1VarInt().decodeAsn1VarULong().first shouldBe it

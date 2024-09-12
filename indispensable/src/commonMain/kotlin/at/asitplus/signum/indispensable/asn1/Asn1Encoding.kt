@@ -496,8 +496,8 @@ fun ULong.toAsn1VarInt(): ByteArray {
         b0 = (this shr offset and 0x7FuL).toByte()
     }
 
-    return ByteArray(result.size){
-        result[result.size-1-it] or  (if (it < result.size-1) 0x80 else 0x00).toByte()
+    return with(result) {
+        ByteArray(size) { fromBack(it) or asn1VarIntByteMask(it) }
     }
 }
 
@@ -519,7 +519,13 @@ fun UInt.toAsn1VarInt(): ByteArray {
         b0 = (this shr offset and 0x7Fu).toByte()
     }
 
-    return ByteArray(result.size){
-        result[result.size-1-it] or  (if (it < result.size-1) 0x80 else 0x00).toByte()
+    return with(result) {
+        ByteArray(size) { fromBack(it) or asn1VarIntByteMask(it) }
     }
 }
+
+private fun MutableList<Byte>.asn1VarIntByteMask(it: Int) = (if (isLastIndex(it)) 0x00 else 0x80).toByte()
+
+private fun MutableList<Byte>.isLastIndex(it: Int) = it == size - 1
+
+private fun MutableList<Byte>.fromBack(it: Int) = this[size - 1 - it]
