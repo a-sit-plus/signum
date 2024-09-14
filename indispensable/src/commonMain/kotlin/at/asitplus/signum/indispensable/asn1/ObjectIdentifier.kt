@@ -72,10 +72,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transient vara
          * @throws Asn1Exception  all sorts of errors on invalid input
          */
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(src: Asn1Primitive): ObjectIdentifier {
-            if (src.tag != Asn1Element.Tag.OID) throw Asn1TagMismatchException(
-               Asn1Element.Tag.OID, src.tag
-            )
+        override fun doDecode(src: Asn1Primitive): ObjectIdentifier {
             if (src.length < 1) throw Asn1StructuralException("Empty OIDs are not supported")
 
             return parse(src.content)
@@ -116,6 +113,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transient vara
             }
             return ObjectIdentifier(*collected.toUIntArray())
         }
+
     }
 
 }

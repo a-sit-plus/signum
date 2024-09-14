@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.catching
+import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Companion.toExplicitTag
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -181,6 +182,63 @@ sealed class Asn1Element(
         (this as? T)
             ?: throw Asn1StructuralException("${this::class.simpleName} cannot be reinterpreted as ${T::class.simpleName}.")
 
+
+    /**
+     * Creates a new implicitly tagged ASN.1 Element from this ASN.1 Element.
+     * NOTE: The [TagClass] of the provided [tag] will be used! If you want the result to have [TagClass.CONTEXT_SPECIFIC],
+     * also invoke `tag withClass TagClass.CONTEXT_SPECIFIC`!. If a CONSTRUCTED Tag is applied to an ASN.1 Primitive,
+     *  the CONSTRUCTED bit is overridden and set to zero.
+     */
+    inline infix fun withImplicitTag(tag: Tag): Asn1Element = when (this) {
+        is Asn1Structure -> {
+            if (tag.isConstructed) Asn1CustomStructure(
+                children,
+                tag.tagValue,
+                tag.tagClass,
+                sort = isSorted
+            ) else Asn1CustomStructure.asPrimitive(children, tag.tagValue, tag.tagClass)
+        }
+
+        is Asn1Primitive -> Asn1Primitive(tag without CONSTRUCTED, content)
+    }
+
+    /**
+     * Creates a new implicitly tagged ASN.1 Element from this ASN.1 Element.
+     * Sets the class of the resulting structure to [TagClass.CONTEXT_SPECIFIC]
+     */
+    inline infix fun withImplicitTag(tagValue: ULong) = when (this) {
+        is Asn1Structure -> (this as Asn1Structure).withImplicitTag(
+            Tag(
+                tagValue = tagValue,
+                tagClass = TagClass.CONTEXT_SPECIFIC,
+                constructed = this.tag.isConstructed
+            )
+        )
+
+        is Asn1Primitive -> Asn1Primitive(Tag(tagValue, tagClass = TagClass.CONTEXT_SPECIFIC, constructed = false), content)
+    }
+
+    /**
+     * Creates a new implicitly tagged ASN.1 Element from this ASN.1 Structure.
+     * If the provided [template]'s tagClass is not set, the class of the resulting structure defaults to [TagClass.CONTEXT_SPECIFIC].
+     * If a CONSTRUCTED Tag is applied to an ASN.1 Primitive, the CONSTRUCTED bit is overridden and set to zero.
+     */
+    inline infix fun withImplicitTag(template: Tag.Template) = when (this) {
+        is Asn1Structure -> (this as Asn1Structure).withImplicitTag(
+            Tag(
+                tagValue = template.tagValue,
+                tagClass = template.tagClass ?: TagClass.CONTEXT_SPECIFIC,
+                constructed = template.constructed ?: tag.isConstructed
+            )
+        )
+
+        is Asn1Primitive -> Asn1Primitive(
+            Tag(template.tagValue, tagClass = template.tagClass ?: TagClass.CONTEXT_SPECIFIC, constructed = false),
+            content
+        )
+    }
+
+
     @Serializable
     @ConsistentCopyVisibility
     data class Tag private constructor(
@@ -216,8 +274,22 @@ sealed class Asn1Element(
                 return derEncoded
             }
 
+            /**
+             * Convenience helper to easily construct implicitly tagged elements.
+             * Shorthand for `Tag(tagValue, constructed=false, tagClass= TagClass.CONTEXT_SPECIFIC)
+             */
+            fun ULong.toImplicitTag() =
+                Asn1Element.Tag(this, constructed = false, tagClass = TagClass.CONTEXT_SPECIFIC)
+
+            /**
+             * Convenience helper to easily construct implicitly tagged elements.
+             * Shorthand for `Tag(tagValue, constructed=true, tagClass= TagClass.CONTEXT_SPECIFIC)
+             */
+            fun ULong.toExplicitTag() =
+                Asn1Element.Tag(this, constructed = true, tagClass = TagClass.CONTEXT_SPECIFIC)
+
             val SET = Tag(tagValue = BERTags.SET.toULong(), constructed = true)
-            val ASN1_SEQUENCE = Tag(tagValue = BERTags.SEQUENCE.toULong(), constructed = true)
+            val SEQUENCE = Tag(tagValue = BERTags.SEQUENCE.toULong(), constructed = true)
 
             val NULL = Tag(tagValue = BERTags.ASN1_NULL.toULong(), constructed = false)
             val BOOL = Tag(tagValue = BERTags.BOOLEAN.toULong(), constructed = false)
@@ -239,7 +311,6 @@ sealed class Asn1Element(
             val TIME_GENERALIZED = Tag(tagValue = BERTags.GENERALIZED_TIME.toULong(), constructed = false)
             val TIME_UTC = Tag(tagValue = BERTags.UTC_TIME.toULong(), constructed = false)
 
-
         }
 
         val tagClass by lazy {
@@ -250,7 +321,7 @@ sealed class Asn1Element(
 
         val isConstructed by lazy { encodedTag.first().toUByte().isConstructed() }
 
-        val isExplicitlyTagged by lazy { isConstructed && tagClass == TagClass.CONTEXT_SPECIFIC }
+        internal val isExplicitlyTagged by lazy { isConstructed && tagClass == TagClass.CONTEXT_SPECIFIC }
 
         override fun toString(): String =
             "${tagClass.let { if (it == TagClass.UNIVERSAL) "" else it.name + " " }}${tagValue}${if (isConstructed) " CONSTRUCTED" else ""}" +
@@ -287,6 +358,50 @@ sealed class Asn1Element(
         }
 
         override fun hashCode(): Int = encodedTag.contentHashCode()
+
+        /**
+         * creates a new Tag from this object, overriding the class. Useful for implicitTagging (see [Asn1Structure.withImplicitTag])
+         */
+        infix fun withClass(tagClass: TagClass) =
+            Tag(this.tagValue, tagClass = tagClass, constructed = this.isConstructed)
+
+        /**
+         * creates a new Tag from this object, negating the passed property. Useful for implicitTagging (see [Asn1Structure.withImplicitTag]).
+         * This is a NOOP for tag that don't have this bit set.
+         */
+        infix fun without(negated: TagProperty): Tag = when (negated) {
+            CONSTRUCTED -> Tag(this.tagValue, tagClass = this.tagClass, constructed = false)
+        }
+
+        /**
+         * A tag with optional tagClass and optional constructed indicator. Used for ASN.1 builder DSL
+         */
+        class Template(val tagValue: ULong, val tagClass: TagClass?, val constructed: Boolean?) {
+
+            /**
+             * Creates a new tag template from this template, negating the passed property
+             */
+            inline infix fun without(negated: TagProperty) = when (negated) {
+                is CONSTRUCTED -> Template(this.tagValue, this.tagClass, false)
+            }
+
+            companion object {
+                /**
+                 * Convenience function to construct a tag template from an ULong tag value and class
+                 */
+                inline infix fun ULong.withClass(tagClass: TagClass) =
+                    Template(tagValue = this, tagClass = tagClass, constructed = null)
+
+                /**
+                 * Convenience function to construct a tag from an ULong tag value and property
+                 */
+                inline infix fun ULong.without(negated: TagProperty) = when (negated) {
+                    is CONSTRUCTED -> Template(tagValue = this, tagClass = null, constructed = false)
+                }
+
+            }
+
+        }
     }
 }
 
@@ -306,9 +421,16 @@ object Asn1EncodableSerializer : KSerializer<Asn1Element> {
 /**
  * ASN.1 structure. Contains no data itself, but holds zero or more [children]
  */
-sealed class Asn1Structure(tag: Tag, children: List<Asn1Element>?) :
-    Asn1Element(TLV(tag, byteArrayOf()), children) {
+sealed class Asn1Structure(tag: Tag, children: List<Asn1Element>?, sort: Boolean = false) :
+    Asn1Element(TLV(tag, byteArrayOf()), if (!sort) children else children?.sortedBy { it.tag }) {
 
+    /**
+     * Whether this structure sorts child nodes or keeps them as-is.
+     * This **should** be true for SET and SET OF, but is set to false for SET and SET OF elements parsed
+     * from DER-encoded structures, because this has a chance of altering the structure for non-conforming DER-encoded
+     * structures.
+     */
+    val isSorted: Boolean = sort
 
     public override val children: List<Asn1Element>
         get() = super.children!!
@@ -337,6 +459,7 @@ sealed class Asn1Structure(tag: Tag, children: List<Asn1Element>?) :
      * Returns the current child (useful when iterating over this structure's children)
      */
     fun peek() = if (!hasMoreChildren()) null else children[index]
+
 }
 
 /**
@@ -351,6 +474,37 @@ class Asn1Tagged
  */
 internal constructor(tag: ULong, children: List<Asn1Element>) :
     Asn1Structure(Tag(tag, constructed = true, tagClass = TagClass.CONTEXT_SPECIFIC), children) {
+
+
+    /**
+     * Returns this [Asn1Tagged] children, if its tag matches [tag]
+     *
+     * @throws Asn1TagMismatchException if the tag does not match
+     */
+    @Throws(Asn1TagMismatchException::class)
+    fun verifyTag(explicitTag: Tag): List<Asn1Element> {
+        if (this.tag != explicitTag) throw Asn1TagMismatchException(explicitTag, this.tag)
+        return this.children
+    }
+
+    /**
+     * Returns this [Asn1Tagged] children, if its tag matches [tagNumber]
+     *
+     * @throws Asn1TagMismatchException if the tag does not match
+     */
+    @Throws(Asn1TagMismatchException::class)
+    fun verifyTag(tagNumber: ULong): List<Asn1Element> = verifyTag(tagNumber.toExplicitTag())
+
+    /**
+     * Exception-free version of [verifyTag]
+     */
+    fun verifyTagOrNull(tagNumber: ULong) = catching { verifyTag(tagNumber) }.getOrNull()
+
+    /**
+     * Exception-free version of [verifyTag]
+     */
+    fun verifyTagOrNull(explicitTag: Tag) = catching { verifyTag(explicitTag) }.getOrNull()
+
     override fun toString() = "Tagged" + super.toString()
     override fun prettyPrint(indent: Int) = (" " * indent) + "Tagged" + super.prettyPrint(indent + 2)
 }
@@ -360,7 +514,7 @@ internal constructor(tag: ULong, children: List<Asn1Element>) :
  * @param children the elements to put into this sequence
  */
 class Asn1Sequence internal constructor(children: List<Asn1Element>) :
-    Asn1Structure(Tag.ASN1_SEQUENCE, children) {
+    Asn1Structure(Tag.SEQUENCE, children) {
 
     init {
         if (!tag.isConstructed) throw IllegalArgumentException("An ASN.1 Structure must have a CONSTRUCTED tag")
@@ -375,7 +529,7 @@ class Asn1Sequence internal constructor(children: List<Asn1Element>) :
  * ASN1 structure (i.e. containing child nodes) with custom tag
  */
 class Asn1CustomStructure private constructor(
-    tag: Tag, children: List<Asn1Element>
+    tag: Tag, children: List<Asn1Element>, sort: Boolean
 ) :
     Asn1Structure(tag, children) {
     /**
@@ -383,24 +537,28 @@ class Asn1CustomStructure private constructor(
      * @param children the elements to put into this sequence
      * @param tag the custom tag to use
      * @param tagClass the tag class to use for this custom tag. defaults to [TagClass.UNIVERSAL]
+     * @param sort whether to sort the passed childr nodes. defautls to false
      */
     constructor(
         children: List<Asn1Element>,
         tag: ULong,
-        tagClass: TagClass = TagClass.UNIVERSAL
-    ) : this(Tag(tag, constructed = true, tagClass), children)
+        tagClass: TagClass = TagClass.UNIVERSAL,
+        sort: Boolean = false
+    ) : this(Tag(tag, constructed = true, tagClass), children, sort)
 
     /**
      * ASN.1 CONSTRUCTED with custom tag
      * @param children the elements to put into this sequence
      * @param tag the custom tag to use
      * @param tagClass the tag class to use for this custom tag. defaults to [TagClass.UNIVERSAL]
+     * @param sort whether to sort the passed childr nodes. defaults to false
      */
     constructor(
         children: List<Asn1Element>,
         tag: UByte,
-        tagClass: TagClass = TagClass.UNIVERSAL
-    ) : this(children, tag.toULong(), tagClass)
+        tagClass: TagClass = TagClass.UNIVERSAL,
+        sort: Boolean = false
+    ) : this(children, tag.toULong(), tagClass, sort)
 
 
     override val content: ByteArray by lazy {
@@ -420,9 +578,15 @@ class Asn1CustomStructure private constructor(
          * @param children the elements to put into this sequence
          * @param tag the custom tag to use
          * @param tagClass the tag class to use for this custom tag. defaults to [TagClass.UNIVERSAL]
+         * @param sort whether to sort the passed childr nodes. defaults to false
          */
-        fun asPrimitive(children: List<Asn1Element>, tag: ULong, tagClass: TagClass = TagClass.UNIVERSAL) =
-            Asn1CustomStructure(Tag(tag, constructed = false, tagClass), children)
+        fun asPrimitive(
+            children: List<Asn1Element>,
+            tag: ULong,
+            tagClass: TagClass = TagClass.UNIVERSAL,
+            sort: Boolean = false
+        ) =
+            Asn1CustomStructure(Tag(tag, constructed = false, tagClass), children, sort)
     }
 }
 
@@ -469,7 +633,7 @@ class Asn1PrimitiveOctetString(content: ByteArray) : Asn1Primitive(Tag.OCTET_STR
  * ASN.1 SET 0x31 ([BERTags.SET] OR [BERTags.CONSTRUCTED])
  */
 open class Asn1Set private constructor(children: List<Asn1Element>?, dontSort: Boolean) :
-    Asn1Structure(Tag.SET, if (dontSort) children else children?.sortedBy { it.tag }) {
+    Asn1Structure(Tag.SET, children, !dontSort) {
 
     /**
      * @param children the elements to put into this set. will be automatically sorted by tag

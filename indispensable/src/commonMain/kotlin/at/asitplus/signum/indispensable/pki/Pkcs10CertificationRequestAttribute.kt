@@ -36,10 +36,11 @@ data class Pkcs10CertificationRequestAttribute(
 
     companion object : Asn1Decodable<Asn1Sequence, Pkcs10CertificationRequestAttribute> {
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(src: Asn1Sequence): Pkcs10CertificationRequestAttribute = runRethrowing {
+        override fun doDecode(src: Asn1Sequence): Pkcs10CertificationRequestAttribute = runRethrowing {
             val id = (src.children[0] as Asn1Primitive).readOid()
             val value = (src.children.last() as Asn1Set).children
             return Pkcs10CertificationRequestAttribute(id, value)
         }
+
     }
 }

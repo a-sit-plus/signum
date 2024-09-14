@@ -56,13 +56,6 @@ object BERTags {
 
 }
 
-/**
- * Convenience helper to easily construct implicitly tagged elements. Can be CONSTRUCTED or PRIMITIVE
- * @param constructed whether to set the constructed bit
- */
-fun ULong.toImplicitTag(constructed: Boolean = false) =
-    Asn1Element.Tag(this, constructed = constructed, tagClass = TagClass.CONTEXT_SPECIFIC)
-
 internal fun UByte.isConstructed() = this and BERTags.CONSTRUCTED != 0.toUByte()
 
 
@@ -92,3 +85,6 @@ enum class TagClass(val byteValue: UByte, val berTag: UByte) {
     }
 
 }
+
+sealed interface TagProperty
+object CONSTRUCTED : TagProperty

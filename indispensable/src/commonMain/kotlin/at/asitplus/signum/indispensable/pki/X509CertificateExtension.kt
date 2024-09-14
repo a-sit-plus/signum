@@ -40,7 +40,7 @@ data class X509CertificateExtension @Throws(Asn1Exception::class) private constr
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
 
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(src: Asn1Sequence): X509CertificateExtension = runRethrowing {
+        override fun doDecode(src: Asn1Sequence): X509CertificateExtension = runRethrowing {
 
             val id = (src.children[0] as Asn1Primitive).readOid()
             val critical =

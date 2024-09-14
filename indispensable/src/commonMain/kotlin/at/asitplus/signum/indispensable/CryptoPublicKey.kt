@@ -104,7 +104,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
 
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(src: Asn1Sequence): CryptoPublicKey = runRethrowing {
+        override fun doDecode(src: Asn1Sequence): CryptoPublicKey = runRethrowing {
             if (src.children.size != 2) throw Asn1StructuralException("Invalid SPKI Structure!")
             val keyInfo = src.nextChild() as Asn1Sequence
             if (keyInfo.children.size != 2) throw Asn1StructuralException("Superfluous data in  SPKI!")
@@ -160,6 +160,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                 (BERTags.SEQUENCE or BERTags.CONSTRUCTED) -> Rsa.fromPKCS1encoded(it)
                 else -> throw IllegalArgumentException("Unsupported Key type")
             }
+
     }
 
     /**

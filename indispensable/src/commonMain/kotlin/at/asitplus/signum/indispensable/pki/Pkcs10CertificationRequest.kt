@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.Asn1.BitString
 import at.asitplus.signum.indispensable.asn1.Asn1.Tagged
@@ -53,6 +53,7 @@ data class TbsCertificationRequest(
         +Tagged(0u) { attributes?.map { +it } }
     }
 
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -77,7 +78,7 @@ data class TbsCertificationRequest(
 
     companion object : Asn1Decodable<Asn1Sequence, TbsCertificationRequest> {
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(src: Asn1Sequence) = runRethrowing {
+        override fun doDecode(src: Asn1Sequence) = runRethrowing {
             val version = (src.nextChild() as Asn1Primitive).readInt()
             val subject = (src.nextChild() as Asn1Sequence).children.map {
                 RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
@@ -97,6 +98,7 @@ data class TbsCertificationRequest(
                 attributes = attributes,
             )
         }
+
     }
 }
 
@@ -143,12 +145,13 @@ data class Pkcs10CertificationRequest(
     companion object : Asn1Decodable<Asn1Sequence, Pkcs10CertificationRequest> {
 
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(src: Asn1Sequence): Pkcs10CertificationRequest = runRethrowing {
+        override fun doDecode(src: Asn1Sequence): Pkcs10CertificationRequest = runRethrowing {
             val tbsCsr = TbsCertificationRequest.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val signature = (src.nextChild() as Asn1Primitive).readBitString()
             if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous structure in CSR Structure")
             return Pkcs10CertificationRequest(tbsCsr, sigAlg, signature.rawBytes)
         }
+
     }
 }

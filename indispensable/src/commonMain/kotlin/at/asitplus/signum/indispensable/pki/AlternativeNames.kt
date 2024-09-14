@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Companion.toImplicitTag
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
 
@@ -49,7 +50,7 @@ private constructor(private val extensions: List<Asn1Element>) {
         }.map {
             (it as Asn1Sequence).also {
                 if (it.children.size != 2) throw Asn1StructuralException("Invalid otherName Alternative Name found (!=2 children): ${it.toDerHexString()}")
-                if (it.children.last().tag != 0uL.toImplicitTag()) throw Asn1StructuralException("Invalid otherName Alternative Name found (implicit tag != 0): ${it.toDerHexString()}")
+                if (it.children.last().tag != SubjectAltNameImplicitTags.otherName) throw Asn1StructuralException("Invalid otherName Alternative Name found (implicit tag != 0): ${it.toDerHexString()}")
                 ObjectIdentifier.parse((it.children.first() as Asn1Primitive).content) //this throws if something is off
             }
         }
@@ -61,7 +62,7 @@ private constructor(private val extensions: List<Asn1Element>) {
         }.map {
             (it as Asn1Sequence).also {
                 if (it.children.size > 2) throw Asn1StructuralException("Invalid partyName Alternative Name found (>2 children): ${it.toDerHexString()}")
-                if (it.children.find { it.tag != 0uL.toImplicitTag() && it.tag != 1uL.toImplicitTag() } != null) throw Asn1StructuralException(
+                if (it.children.find { it.tag != SubjectAltNameImplicitTags.otherName && it.tag != SubjectAltNameImplicitTags.rfc822Name } != null) throw Asn1StructuralException(
                     "Invalid partyName Alternative Name found (illegal implicit tag): ${it.toDerHexString()}"
                 )
                 //TODO: strict string parsing

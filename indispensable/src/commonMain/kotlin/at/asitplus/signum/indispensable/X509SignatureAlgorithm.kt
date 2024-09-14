@@ -111,7 +111,7 @@ enum class X509SignatureAlgorithm(
         }
 
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(src: Asn1Sequence): X509SignatureAlgorithm = runRethrowing {
+        override fun doDecode(src: Asn1Sequence): X509SignatureAlgorithm = runRethrowing {
             when (val oid = (src.nextChild() as Asn1Primitive).readOid()) {
                 ES512.oid, ES384.oid, ES256.oid -> fromOid(oid)
 
@@ -162,6 +162,7 @@ enum class X509SignatureAlgorithm(
                 }
             }
         }
+
     }
 }
 
