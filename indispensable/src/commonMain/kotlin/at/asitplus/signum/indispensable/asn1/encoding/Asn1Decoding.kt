@@ -1,6 +1,7 @@
-package at.asitplus.signum.indispensable.asn1
+package at.asitplus.signum.indispensable.asn1.encoding
 
 import at.asitplus.catching
+import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.BERTags.BMP_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.IA5_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.NUMERIC_STRING
@@ -105,23 +106,14 @@ private class Asn1Reader(private val input: ByteArray) {
  * @throws [Asn1Exception] all sorts of exceptions on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readBool() = runRethrowing {
-    decode(Asn1Element.Tag.BOOL) {
-        if (it.size != 1) throw Asn1Exception("Not a Boolean!")
-        when (it.first().toUByte()) {
-            0.toUByte() -> false
-            0xff.toUByte() -> true
-            else -> throw Asn1Exception("${it.first().toString(16).uppercase()} is not a value!")
-        }
-    }
-}
+fun Asn1Primitive.readBool() = runRethrowing { decode(Asn1Element.Tag.BOOL) { Boolean.decodeFromAsn1ContentBytes(it) } }
 
 /**
  * decodes this [Asn1Primitive]'s content into an [Int]
  * @throws [Asn1Exception] on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readInt() = runRethrowing { decode(Asn1Element.Tag.INT) { Int.decodeFromDerValue(it) } }
+fun Asn1Primitive.readInt() = runRethrowing { decode(Asn1Element.Tag.INT) { Int.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [readInt] */
 fun Asn1Primitive.readIntOrNull() = runCatching { readInt() }.getOrNull()
@@ -131,7 +123,7 @@ fun Asn1Primitive.readIntOrNull() = runCatching { readInt() }.getOrNull()
  * @throws [Asn1Exception] on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readLong() = runRethrowing { decode(Asn1Element.Tag.INT) { Long.decodeFromDerValue(it) } }
+fun Asn1Primitive.readLong() = runRethrowing { decode(Asn1Element.Tag.INT) { Long.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [readLong] */
 inline fun Asn1Primitive.readLongOrNull() = runCatching { readLong() }.getOrNull()
@@ -141,7 +133,7 @@ inline fun Asn1Primitive.readLongOrNull() = runCatching { readLong() }.getOrNull
  * @throws [Asn1Exception] on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readUInt() = runRethrowing { decode(Asn1Element.Tag.INT) { UInt.decodeFromDerValue(it) } }
+fun Asn1Primitive.readUInt() = runRethrowing { decode(Asn1Element.Tag.INT) { UInt.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [readUInt] */
 inline fun Asn1Primitive.readUIntOrNull() = runCatching { readUInt() }.getOrNull()
@@ -151,7 +143,7 @@ inline fun Asn1Primitive.readUIntOrNull() = runCatching { readUInt() }.getOrNull
  * @throws [Asn1Exception] on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readULong() = runRethrowing { decode(Asn1Element.Tag.INT) { ULong.decodeFromDerValue(it) } }
+fun Asn1Primitive.readULong() = runRethrowing { decode(Asn1Element.Tag.INT) { ULong.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [readULong] */
 inline fun Asn1Primitive.readULongOrNull() = runCatching { readULong() }.getOrNull()
@@ -159,35 +151,42 @@ inline fun Asn1Primitive.readULongOrNull() = runCatching { readULong() }.getOrNu
 /** Decode the [Asn1Primitive] as a [BigInteger]
  * @throws [Asn1Exception] on invalid input */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readBigInteger() = runRethrowing { decode(Asn1Element.Tag.INT) { BigInteger.decodeFromDerValue(it) } }
+fun Asn1Primitive.readBigInteger() =
+    runRethrowing { decode(Asn1Element.Tag.INT) { BigInteger.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [readBigInteger] */
 inline fun Asn1Primitive.readBigIntegerOrNull() = runCatching { readBigInteger() }.getOrNull()
 
 /**
- * decodes this [Asn1Primitive]'s content into an [Asn1String]
+ * transforms this [Asn1Primitive] into an [Asn1String] subtype based on its tag
  *
  * @throws [Asn1Exception] all sorts of exceptions on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readString(): Asn1String = runRethrowing {
+fun Asn1Primitive.readAsn1String(): Asn1String = runRethrowing {
     when (tag.tagValue) {
-        UTF8_STRING.toULong() -> Asn1String.UTF8(content.decodeToString())
-        UNIVERSAL_STRING.toULong() -> Asn1String.Universal(content.decodeToString())
-        IA5_STRING.toULong() -> Asn1String.IA5(content.decodeToString())
-        BMP_STRING.toULong() -> Asn1String.BMP(content.decodeToString())
-        T61_STRING.toULong() -> Asn1String.Teletex(content.decodeToString())
-        PRINTABLE_STRING.toULong() -> Asn1String.Printable(content.decodeToString())
-        NUMERIC_STRING.toULong() -> Asn1String.Numeric(content.decodeToString())
-        VISIBLE_STRING.toULong() -> Asn1String.Visible(content.decodeToString())
+        UTF8_STRING.toULong() -> Asn1String.UTF8(String.decodeFromAsn1ContentBytes(content))
+        UNIVERSAL_STRING.toULong() -> Asn1String.Universal(String.decodeFromAsn1ContentBytes(content))
+        IA5_STRING.toULong() -> Asn1String.IA5(String.decodeFromAsn1ContentBytes(content))
+        BMP_STRING.toULong() -> Asn1String.BMP(String.decodeFromAsn1ContentBytes(content))
+        T61_STRING.toULong() -> Asn1String.Teletex(String.decodeFromAsn1ContentBytes(content))
+        PRINTABLE_STRING.toULong() -> Asn1String.Printable(String.decodeFromAsn1ContentBytes(content))
+        NUMERIC_STRING.toULong() -> Asn1String.Numeric(String.decodeFromAsn1ContentBytes(content))
+        VISIBLE_STRING.toULong() -> Asn1String.Visible(String.decodeFromAsn1ContentBytes(content))
         else -> TODO("Support other string tag $tag")
     }
 }
 
 /**
- * Exception-free version of [readString]
+ * Decodes this [Asn1Primitive]'s content into a String.
+ * @throws [Asn1Exception] all sorts of exceptions on invalid input
  */
-fun Asn1Primitive.readStringOrNull() = catching { readString() }.getOrNull()
+fun Asn1Primitive.readString() = runRethrowing {readAsn1String().value}
+
+/**
+ * Exception-free version of [readAsn1String]
+ */
+fun Asn1Primitive.readAsn1StringOrNull() = catching { readAsn1String() }.getOrNull()
 
 
 /**
@@ -198,10 +197,10 @@ fun Asn1Primitive.readStringOrNull() = catching { readString() }.getOrNull()
 @Throws(Asn1Exception::class)
 fun Asn1Primitive.readInstant() =
     when (tag) {
-        Asn1Element.Tag.TIME_UTC -> decode(Asn1Element.Tag.TIME_UTC, Instant.Companion::decodeUtcTimeFromDer)
+        Asn1Element.Tag.TIME_UTC -> decode(Asn1Element.Tag.TIME_UTC, Instant.Companion::decodeUtcTimeFromAsn1ContentBytes)
         Asn1Element.Tag.TIME_GENERALIZED -> decode(
             Asn1Element.Tag.TIME_GENERALIZED,
-            Instant.Companion::decodeGeneralizedTimeFromDer
+            Instant.Companion::decodeGeneralizedTimeFromAsn1ContentBytes
         )
 
         else -> TODO("Support time tag $tag")
@@ -214,17 +213,16 @@ fun Asn1Primitive.readInstantOrNull() = catching { readInstant() }.getOrNull()
 
 
 /**
- * decodes this [Asn1Primitive]'s content into a [ByteArray], assuming it was encoded as BIT STRING
- *
+ * Transforms this [Asn1Primitive]' into an [Asn1BitString], assuming it was encoded as BIT STRING
  * @throws Asn1Exception  on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readBitString() = Asn1BitString.decodeFromTlv(this)
+fun Asn1Primitive.readAsn1BitString() = Asn1BitString.decodeFromTlv(this, Asn1Element.Tag.BIT_STRING)
 
 /**
- * Exception-free version of [readBitString]
+ * Exception-free version of [readAsn1BitString]
  */
-fun Asn1Primitive.readBitStringOrNull() = catching { readBitString() }.getOrNull()
+fun Asn1Primitive.readAsn1BitStringOrNull() = catching { readAsn1BitString() }.getOrNull()
 
 
 /**
@@ -239,7 +237,6 @@ fun Asn1Primitive.readNull() = decode(Asn1Element.Tag.NULL) {}
  * Name seems odd, but this is just an exception-free version of [readNull]
  */
 fun Asn1Primitive.readNullOrNull() = catching { readNull() }.getOrNull()
-
 
 
 /**
@@ -270,8 +267,12 @@ inline fun <reified T> Asn1Primitive.decode(tag: Asn1Element.Tag, transform: (co
 inline fun <reified T> Asn1Primitive.decodeOrNull(tag: ULong, transform: (content: ByteArray) -> T) =
     catching { decode(tag, transform) }.getOrNull()
 
+/**
+ * Decodes an [Instant] from [bytes] assuming the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 UTC TIME
+ * @throws Asn1Exception if the input does not parse
+ */
 @Throws(Asn1Exception::class)
-private fun Instant.Companion.decodeUtcTimeFromDer(input: ByteArray): Instant = runRethrowing {
+fun Instant.Companion.decodeUtcTimeFromAsn1ContentBytes(input: ByteArray): Instant = runRethrowing {
     val s = input.decodeToString()
     if (s.length != 13) throw IllegalArgumentException("Input too short: $input")
     val year = "${s[0]}${s[1]}".toInt()
@@ -286,10 +287,14 @@ private fun Instant.Companion.decodeUtcTimeFromDer(input: ByteArray): Instant = 
     return parse(isoString)
 }
 
+/**
+ * Decodes an [Instant] from [bytes] assuming the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 GENERALIZED TIME
+ * @throws Asn1Exception if the input does not parse
+ */
 @Throws(Asn1Exception::class)
-private fun Instant.Companion.decodeGeneralizedTimeFromDer(input: ByteArray): Instant = runRethrowing {
-    val s = input.decodeToString()
-    if (s.length != 15) throw IllegalArgumentException("Input too short: $input")
+fun Instant.Companion.decodeGeneralizedTimeFromAsn1ContentBytes(bytes: ByteArray): Instant = runRethrowing {
+    val s = bytes.decodeToString()
+    if (s.length != 15) throw IllegalArgumentException("Input too short: $bytes")
     val isoString = "${s[0]}${s[1]}${s[2]}${s[3]}" + // year
             "-${s[4]}${s[5]}" + // month
             "-${s[6]}${s[7]}" + // day
@@ -300,25 +305,62 @@ private fun Instant.Companion.decodeGeneralizedTimeFromDer(input: ByteArray): In
     return parse(isoString)
 }
 
-/** @throws Asn1Exception if the byte array is out of bounds for a signed int */
+/**
+ * Decodes a signed [Int] from [bytes] assuming the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 INTEGER
+ * @throws Asn1Exception if the byte array is out of bounds for a signed int
+ */
 @Throws(Asn1Exception::class)
-fun Int.Companion.decodeFromDerValue(bytes: ByteArray): Int = runRethrowing { fromTwosComplementByteArray(bytes) }
-
-/** @throws Asn1Exception if the byte array is out of bounds for a signed long */
-@Throws(Asn1Exception::class)
-fun Long.Companion.decodeFromDerValue(bytes: ByteArray): Long = runRethrowing { fromTwosComplementByteArray(bytes) }
-
-/** @throws Asn1Exception if the byte array is out of bounds for an unsigned int */
-@Throws(Asn1Exception::class)
-fun UInt.Companion.decodeFromDerValue(bytes: ByteArray): UInt = runRethrowing { fromTwosComplementByteArray(bytes) }
-
-/** @throws Asn1Exception if the byte array is out of bounds for an unsigned long */
-@Throws(Asn1Exception::class)
-fun ULong.Companion.decodeFromDerValue(bytes: ByteArray): ULong = runRethrowing { fromTwosComplementByteArray(bytes) }
-
-@Throws(Asn1Exception::class)
-fun BigInteger.Companion.decodeFromDerValue(bytes: ByteArray): BigInteger =
+fun Int.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): Int =
     runRethrowing { fromTwosComplementByteArray(bytes) }
+
+/**
+ * Decodes a signed [Long] from [bytes] assuming the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 INTEGER
+ * @throws Asn1Exception if the byte array is out of bounds for a signed long
+ */
+@Throws(Asn1Exception::class)
+fun Long.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): Long =
+    runRethrowing { fromTwosComplementByteArray(bytes) }
+
+/**
+ * Decodes a [UInt] from [bytes] assuming the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 INTEGER
+ * @throws Asn1Exception if the byte array is out of bounds for an unsigned int
+ */
+@Throws(Asn1Exception::class)
+fun UInt.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): UInt =
+    runRethrowing { fromTwosComplementByteArray(bytes) }
+
+/**
+ * Decodes a [ULong] from [bytes] assuming the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 INTEGER
+ * @throws Asn1Exception if the byte array is out of bounds for an unsigned long
+ */
+@Throws(Asn1Exception::class)
+fun ULong.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): ULong =
+    runRethrowing { fromTwosComplementByteArray(bytes) }
+
+/**
+ * Decodes a [BigInteger] from [bytes] assuming the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 INTEGER
+ */
+@Throws(Asn1Exception::class)
+fun BigInteger.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): BigInteger =
+    runRethrowing { fromTwosComplementByteArray(bytes) }
+
+/**
+ * Decodes a [Boolean] from [bytes] assuming the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 BOOLEAN
+ */
+fun Boolean.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): Boolean {
+    if (bytes.size != 1) throw Asn1Exception("Not a Boolean!")
+    return when (bytes.first().toUByte()) {
+        0.toUByte() -> false
+        0xff.toUByte() -> true
+        else -> throw Asn1Exception("${bytes.first().toString(16).uppercase()} is not a boolean value!")
+    }
+}
+
+
+/**
+ * Decodes a [String] from [bytes] assuming the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 STRING (any kind)
+ */
+fun String.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray) = bytes.decodeToString()
 
 
 @Throws(Asn1Exception::class)
@@ -367,94 +409,3 @@ internal fun ByteIterator.decodeTag(): Pair<ULong, ByteArray> =
             }
         }
     }
-
-
-/**
- * Decodes an ULong from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
- * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
- *
- * @return the decoded ULong and the underlying varint-encoded bytes as `ByteArray`
- * @throws IllegalArgumentException if the number is larger than [ULong.MAX_VALUE]
- */
-inline fun Iterable<Byte>.decodeAsn1VarULong(): Pair<ULong, ByteArray> = iterator().decodeAsn1VarULong()
-
-/**
- * Decodes an ULong from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
- * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
- *
- * @return the decoded ULong and the underlying varint-encoded bytes as `ByteArray`
- * @throws IllegalArgumentException if the number is larger than [ULong.MAX_VALUE]
- */
-inline fun ByteArray.decodeAsn1VarULong(): Pair<ULong, ByteArray> = iterator().decodeAsn1VarULong()
-
-/**
- * Decodes an ULong from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
- * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
- *
- * @return the decoded ULong and the underlying varint-encoded bytes as `ByteArray`
- * @throws IllegalArgumentException if the number is larger than [ULong.MAX_VALUE]
- */
-fun Iterator<Byte>.decodeAsn1VarULong(): Pair<ULong, ByteArray> {
-    var offset = 0
-    var result = 0uL
-    val accumulator = mutableListOf<Byte>()
-    while (hasNext()) {
-        val current = next().toUByte()
-        accumulator += current.toByte()
-        if (current >= 0x80.toUByte()) {
-            result = (current and 0x7F.toUByte()).toULong() or (result shl 7)
-        } else {
-            result = (current and 0x7F.toUByte()).toULong() or (result shl 7)
-            break
-        }
-        if (++offset > ceil(ULong.SIZE_BYTES.toFloat() * 8f / 7f)) throw IllegalArgumentException("Tag number too Large do decode into ULong!")
-    }
-
-    return result to accumulator.toByteArray()
-}
-
-
-//TOOD: how to not duplicate all this???
-/**
- * Decodes an UInt from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
- * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
- *
- * @return the decoded UInt and the underlying varint-encoded bytes as `ByteArray`
- * @throws IllegalArgumentException if the number is larger than [UInt.MAX_VALUE]
- */
-inline fun Iterable<Byte>.decodeAsn1VarUInt(): Pair<UInt, ByteArray> = iterator().decodeAsn1VarUInt()
-
-/**
- * Decodes an UInt from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
- * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
- *
- * @return the decoded UInt and the underlying varint-encoded bytes as `ByteArray`
- * @throws IllegalArgumentException if the number is larger than [UInt.MAX_VALUE]
- */
-inline fun ByteArray.decodeAsn1VarUInt(): Pair<UInt, ByteArray> = iterator().decodeAsn1VarUInt()
-
-/**
- * Decodes an UInt from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
- * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
- *
- * @return the decoded UInt and the underlying varint-encoded bytes as `ByteArray`
- * @throws IllegalArgumentException if the number is larger than [UInt.MAX_VALUE]
- */
-fun Iterator<Byte>.decodeAsn1VarUInt(): Pair<UInt, ByteArray> {
-    var offset = 0
-    var result = 0u
-    val accumulator = mutableListOf<Byte>()
-    while (hasNext()) {
-        val current = next().toUByte()
-        accumulator += current.toByte()
-        if (current >= 0x80.toUByte()) {
-            result = (current and 0x7F.toUByte()).toUInt() or (result shl 7)
-        } else {
-            result = (current and 0x7F.toUByte()).toUInt() or (result shl 7)
-            break
-        }
-        if (++offset > ceil(UInt.SIZE_BYTES.toFloat() * 8f / 7f)) throw IllegalArgumentException("Tag number too Large do decode into UInt!")
-    }
-
-    return result to accumulator.toByteArray()
-}

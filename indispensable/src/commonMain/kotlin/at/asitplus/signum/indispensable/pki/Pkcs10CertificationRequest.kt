@@ -3,8 +3,11 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.Asn1.BitString
-import at.asitplus.signum.indispensable.asn1.Asn1.ExplicitlyTagged
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.BitString
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
+import at.asitplus.signum.indispensable.asn1.encoding.readAsn1BitString
+import at.asitplus.signum.indispensable.asn1.encoding.readInt
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import kotlinx.serialization.Serializable
 
@@ -147,7 +150,7 @@ data class Pkcs10CertificationRequest(
         override fun doDecode(src: Asn1Sequence): Pkcs10CertificationRequest = runRethrowing {
             val tbsCsr = TbsCertificationRequest.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val signature = (src.nextChild() as Asn1Primitive).readBitString()
+            val signature = (src.nextChild() as Asn1Primitive).readAsn1BitString()
             if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous structure in CSR Structure")
             return Pkcs10CertificationRequest(tbsCsr, sigAlg, signature.rawBytes)
         }

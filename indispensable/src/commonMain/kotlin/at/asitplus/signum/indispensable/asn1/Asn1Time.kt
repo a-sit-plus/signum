@@ -1,5 +1,8 @@
 package at.asitplus.signum.indispensable.asn1
 
+import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1GeneralizedTimePrimitive
+import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1UtcTimePrimitive
+import at.asitplus.signum.indispensable.asn1.encoding.readInstant
 import kotlinx.datetime.Instant
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -35,8 +38,8 @@ class Asn1Time(instant: Instant, formatOverride: Format? = null) : Asn1Encodable
 
     override fun encodeToTlv(): Asn1Primitive =
         when (format) {
-            Format.UTC -> instant.encodeToAsn1UtcTime()
-            Format.GENERALIZED -> instant.encodeToAsn1GeneralizedTime()
+            Format.UTC -> instant.encodeToAsn1UtcTimePrimitive()
+            Format.GENERALIZED -> instant.encodeToAsn1GeneralizedTimePrimitive()
         }
 
     override fun equals(other: Any?): Boolean {

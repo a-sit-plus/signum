@@ -3,8 +3,8 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.fromUncompressed
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.asn1.ensureSize
-import at.asitplus.signum.indispensable.asn1.toTwosComplementByteArray
+import at.asitplus.signum.indispensable.io.ensureSize
+import at.asitplus.signum.indispensable.asn1.encoding.toTwosComplementByteArray
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe

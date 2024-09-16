@@ -3,7 +3,7 @@ package at.asitplus.signum.indispensable
 import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
-import at.asitplus.signum.indispensable.asn1.parse
+import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.io.Base64Strict
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec

@@ -422,20 +422,34 @@ Both encoding and decoding functions come in two _safe_ (i.e. non-throwing) vari
 * `…Safe()` which returns a [KmmResult](https://github.com/a-sit-plus/kmmresult)
 * `…orNull()` which returns null on error
 
+A tandem of helper functions is available for primitives (numbers, booleans, string, bigints):
+
+* `encodeToAsn1Primitive` to produce an `Asn1Primitive` that can directly be DER-encoded
+* `encodeToAsn1ContentBytes` to produce the content bytes of a TLV primitive (the _V_ in TLV)
+
+Variations of these exist for `Instant` and `ByteArray`.
+
+Check out [Asn1Encoding.kt](indispensable/src/commonMain/kotlin/at/asitplus/signum/indispensable/asn1/encoding/Asn1Encoding.kt) for a full
+list of helper functions.
+
 #### Decoding Values
 
-Various helper functions exist to facilitate decoding the values contained in `Asn1Primitives`, such as `decodeInt()`,
+Various helper functions exist to facilitate decoding the values contained in `Asn1Primitives`, such as `readInt()`,
 for example.
+
+Similarly to encoding, a tandem of decoding functions exists for primitives:
+* `readXXX` to be invoked on an `Asn1Primitive` to decode a DER-encoded primitive into the target type
+* `decodeFromAsn1ContentBytes` to be invoked on the companion of the target type to decode the content bytes of a TLV primitive (the _V_ in TLV)
+
 However, anything can be decoded and tagged at will. Therefore, a generic decoding function exists, which has the
 following signature:
 
 ```kotlin
-inline fun <reified T> Asn1Primitive.decode(tag: UByte, decode: (content: ByteArray) -> T) 
+inline fun <reified T> Asn1Primitive.decode(tag: Asn1Element.Tag, decode: (content: ByteArray) -> T) 
 ```
 
-Check out [Asn1Reader.kt](datatypes/src/commonMain/kotlin/at/asitplus/crypto/datatypes/asn1/Asn1Reader.kt) for a full
-list
-of helper functions.
+Check out [Asn1Decoding.kt](indispensable/src/commonMain/kotlin/at/asitplus/signum/indispensable/asn1/encoding/Asn1Decoding.kt) for a full
+list of helper functions.
 
 #### ASN1 DSL for Creating ASN.1 Structures
 
