@@ -127,6 +127,60 @@ sealed class Asn1Element(
         return result
     }
 
+    /**
+     * Convenience function to cast this element to an [Asn1Primitive]
+     * @throws Asn1StructuralException if this element is not a primitive
+     */
+    @Throws(Asn1StructuralException::class)
+    fun asPrimitive() = thisAs<Asn1Primitive>()
+
+    /**
+     * Convenience function to cast this element to an [Asn1Structure]
+     * @throws Asn1StructuralException if this element is not a structure
+     */
+    @Throws(Asn1StructuralException::class)
+    fun asStructure() = thisAs<Asn1Structure>()
+
+    /**
+     * Convenience function to cast this element to an [Asn1Sequence]
+     * @throws Asn1StructuralException if this element is not a sequence
+     */
+    @Throws(Asn1StructuralException::class)
+    fun asSequence() = thisAs<Asn1Sequence>()
+
+    /**
+     * Convenience function to cast this element to an [Asn1Set]
+     * @throws Asn1StructuralException if this element is not a set
+     */
+    @Throws(Asn1StructuralException::class)
+    fun asSet() = thisAs<Asn1Set>()
+
+    /**
+     * Convenience function to cast this element to an [Asn1Tagged]
+     * @throws Asn1StructuralException if this element is not an explicitly tagged structure
+     */
+    @Throws(Asn1StructuralException::class)
+    fun asTagged() = thisAs<Asn1Tagged>()
+
+    /**
+     * Convenience function to cast this element to an [Asn1EncapsulatingOctetString]
+     * @throws Asn1StructuralException if this element is not an octet string containing a valid ASN.1 structure
+     */
+    @Throws(Asn1StructuralException::class)
+    fun asEncapsulatingOctetString() = thisAs<Asn1EncapsulatingOctetString>()
+
+    /**
+     * Convenience function to cast this element to an [Asn1PrimitiveOctetString]
+     * @throws Asn1StructuralException if this element is not an octet string containing raw data
+     */
+    @Throws(Asn1StructuralException::class)
+    fun asPrimitiveOctetString() = thisAs<Asn1PrimitiveOctetString>()
+
+    @Throws(Asn1StructuralException::class)
+    private inline fun <reified T : Asn1Element> thisAs(): T =
+        (this as? T)
+            ?: throw Asn1StructuralException("${this::class.simpleName} cannot be reinterpreted as ${T::class.simpleName}.")
+
     @Serializable
     @ConsistentCopyVisibility
     data class Tag private constructor(
