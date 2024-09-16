@@ -211,13 +211,13 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
 
             @Throws(Asn1Exception::class)
             fun decodeFromTlvBitString(src: Asn1Primitive): EC.IndefiniteLength = runRethrowing {
-                decodeFromDer(src.readAsn1BitString().rawBytes)
+                decodeFromDer(src.asAsn1BitString().rawBytes)
             }
 
             override fun doDecode(src: Asn1Element): EC.IndefiniteLength {
                 src as Asn1Sequence
-                val r = (src.nextChild() as Asn1Primitive).readBigInteger()
-                val s = (src.nextChild() as Asn1Primitive).readBigInteger()
+                val r = (src.nextChild() as Asn1Primitive).decodeToBigInteger()
+                val s = (src.nextChild() as Asn1Primitive).decodeToBigInteger()
                 if (src.hasMoreChildren()) throw Asn1Exception("Illegal Signature Format")
                 return fromRS(r, s)
             }

@@ -33,7 +33,7 @@ class Asn1EncodingTest : FreeSpec({
     "Boolean" - {
         checkAll(Arb.boolean()) {
             val seq = Asn1.Sequence { +Bool(it) }
-            val decoded = (seq.nextChild() as Asn1Primitive).readBool()
+            val decoded = (seq.nextChild() as Asn1Primitive).decodeToBoolean()
             decoded shouldBe it
         }
     }
@@ -105,19 +105,19 @@ class Asn1EncodingTest : FreeSpec({
             "failures: too small" - {
                 checkAll(iterations = 5000, Arb.bigInt(128)) {
                     val v = BigInteger.fromLong(Long.MIN_VALUE).minus(1).minus(BigInteger.fromTwosComplementByteArray(it.toByteArray()))
-                    shouldThrow<Asn1Exception> { Asn1.Int(v).readLong() }
+                    shouldThrow<Asn1Exception> { Asn1.Int(v).decodeToLong() }
                 }
             }
             "failures: too large" - {
                 checkAll(iterations = 5000, Arb.bigInt(128)) {
                     val v = BigInteger.fromLong(Long.MAX_VALUE).plus(1).plus(BigInteger.fromTwosComplementByteArray(it.toByteArray()))
-                    shouldThrow<Asn1Exception> { Asn1.Int(v).readLong() }
+                    shouldThrow<Asn1Exception> { Asn1.Int(v).decodeToLong() }
                 }
             }
             "successes" - {
                 checkAll(iterations = 150000, Arb.long()) {
                     val seq = Asn1.Sequence { +Asn1.Int(it) }
-                    val decoded = (seq.nextChild() as Asn1Primitive).readLong()
+                    val decoded = (seq.nextChild() as Asn1Primitive).decodeToLong()
                     decoded shouldBe it
 
                     Asn1.Int(it).derEncoded shouldBe ASN1Integer(it).encoded
@@ -128,18 +128,18 @@ class Asn1EncodingTest : FreeSpec({
         "ints" - {
             "failures: too small" - {
                 checkAll(iterations = 5000, Arb.long(Long.MIN_VALUE..<Int.MIN_VALUE.toLong())) {
-                    shouldThrow<Asn1Exception> { Asn1.Int(it).readInt() }
+                    shouldThrow<Asn1Exception> { Asn1.Int(it).decodeToInt() }
                 }
             }
             "failures: too large" - {
                 checkAll(iterations = 5000, Arb.long(Int.MAX_VALUE.toLong()+1..<Long.MAX_VALUE)) {
-                    shouldThrow<Asn1Exception> { Asn1.Int(it).readInt() }
+                    shouldThrow<Asn1Exception> { Asn1.Int(it).decodeToInt() }
                 }
             }
             "successes" - {
                 checkAll(iterations = 75000, Arb.int()) {
                     val seq = Asn1.Sequence { +Asn1.Int(it) }
-                    val decoded = (seq.nextChild() as Asn1Primitive).readInt()
+                    val decoded = (seq.nextChild() as Asn1Primitive).decodeToInt()
                     decoded shouldBe it
 
                     Asn1.Int(it).derEncoded shouldBe ASN1Integer(it.toLong()).encoded
@@ -150,18 +150,18 @@ class Asn1EncodingTest : FreeSpec({
         "unsigned ints" - {
             "failures: negative" - {
                 checkAll(iterations = 5000, Arb.long(Long.MIN_VALUE..<0)) {
-                    shouldThrow<Asn1Exception> { Asn1.Int(it).readUInt() }
+                    shouldThrow<Asn1Exception> { Asn1.Int(it).decodeToUInt() }
                 }
             }
             "failures: too large" - {
                 checkAll(iterations = 5000, Arb.long(UInt.MAX_VALUE.toLong() + 1..Long.MAX_VALUE)) {
-                    shouldThrow<Asn1Exception> { Asn1.Int(it).readUInt() }
+                    shouldThrow<Asn1Exception> { Asn1.Int(it).decodeToUInt() }
                 }
             }
             "successes" - {
                 checkAll(iterations = 75000, Arb.uInt()) {
                     val seq = Asn1.Sequence { +Asn1.Int(it) }
-                    val decoded = (seq.nextChild() as Asn1Primitive).readUInt()
+                    val decoded = (seq.nextChild() as Asn1Primitive).decodeToUInt()
                     decoded shouldBe it
 
                     Asn1.Int(it).derEncoded shouldBe ASN1Integer(it.toBigInteger().toJavaBigInteger()).encoded
@@ -172,19 +172,19 @@ class Asn1EncodingTest : FreeSpec({
         "unsigned longs" - {
             "failures: negative" - {
                 checkAll(iterations = 5000, Arb.long(Long.MIN_VALUE..<0)) {
-                    shouldThrow<Asn1Exception> { Asn1.Int(it).readULong() }
+                    shouldThrow<Asn1Exception> { Asn1.Int(it).decodeToULong() }
                 }
             }
             "failures: too large" - {
                 checkAll(iterations = 5000, Arb.bigInt(128)) {
                     val v = BigInteger.fromULong(ULong.MAX_VALUE).plus(1).plus(BigInteger.fromTwosComplementByteArray(it.toByteArray()))
-                    shouldThrow<Asn1Exception> { Asn1.Int(v).readULong() }
+                    shouldThrow<Asn1Exception> { Asn1.Int(v).decodeToULong() }
                 }
             }
             "successes" - {
                 checkAll(iterations = 75000, Arb.uLong()) {
                     val seq = Asn1.Sequence { +Asn1.Int(it) }
-                    val decoded = (seq.nextChild() as Asn1Primitive).readULong()
+                    val decoded = (seq.nextChild() as Asn1Primitive).decodeToULong()
                     decoded shouldBe it
 
                     Asn1.Int(it).derEncoded shouldBe ASN1Integer(it.toBigInteger().toJavaBigInteger()).encoded
