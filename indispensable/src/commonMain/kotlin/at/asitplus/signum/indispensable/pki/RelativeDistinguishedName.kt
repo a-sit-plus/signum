@@ -3,7 +3,7 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.encoding.readAsn1String
+import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -125,7 +125,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
             val oid = (src.nextChild() as Asn1Primitive).readOid()
             if (oid.nodes.size >= 3 && oid.toString().startsWith("2.5.4.")) {
                 val asn1String = src.nextChild() as Asn1Primitive
-                val str = catching { (asn1String).readAsn1String() }
+                val str = catching { (asn1String).asAsn1String() }
                 if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous elements in RDN")
                 return when (oid) {
                     CommonName.OID -> str.fold(onSuccess = { CommonName(it) }, onFailure = { CommonName(asn1String) })

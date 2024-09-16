@@ -146,7 +146,7 @@ constructor(
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence) = runRethrowing {
             val version = src.nextChild().let {
-                ((it as Asn1ExplicitlyTagged).verifyTag(Tags.VERSION).single() as Asn1Primitive).readInt()
+                ((it as Asn1ExplicitlyTagged).verifyTag(Tags.VERSION).single() as Asn1Primitive).decodeToInt()
             }
             val serialNumber = (src.nextChild() as Asn1Primitive).decode(Asn1Element.Tag.INT) { it }
             val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)

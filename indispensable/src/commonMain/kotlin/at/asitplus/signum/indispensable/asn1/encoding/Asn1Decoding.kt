@@ -14,7 +14,6 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.util.fromTwosComplementByteArray
 import kotlinx.datetime.Instant
 import kotlin.experimental.and
-import kotlin.math.ceil
 
 
 /**
@@ -79,56 +78,59 @@ private class Asn1Reader(input: ByteArray) {
  * @throws [Asn1Exception] all sorts of exceptions on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readBool() = runRethrowing { decode(Asn1Element.Tag.BOOL) { Boolean.decodeFromAsn1ContentBytes(it) } }
+fun Asn1Primitive.decodeToBoolean() = runRethrowing { decode(Asn1Element.Tag.BOOL) { Boolean.decodeFromAsn1ContentBytes(it) } }
+
+/** Exception-free version of [decodeToBoolean] */
+fun Asn1Primitive.decodeToBooleanOrNull() = runCatching { decodeToBoolean() }.getOrNull()
 
 /**
  * decodes this [Asn1Primitive]'s content into an [Int]
  * @throws [Asn1Exception] on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readInt() = runRethrowing { decode(Asn1Element.Tag.INT) { Int.decodeFromAsn1ContentBytes(it) } }
+fun Asn1Primitive.decodeToInt() = runRethrowing { decode(Asn1Element.Tag.INT) { Int.decodeFromAsn1ContentBytes(it) } }
 
-/** Exception-free version of [readInt] */
-fun Asn1Primitive.readIntOrNull() = runCatching { readInt() }.getOrNull()
+/** Exception-free version of [decodeToInt] */
+fun Asn1Primitive.decodeToIntOrNull() = runCatching { decodeToInt() }.getOrNull()
 
 /**
  * decodes this [Asn1Primitive]'s content into a [Long]
  * @throws [Asn1Exception] on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readLong() = runRethrowing { decode(Asn1Element.Tag.INT) { Long.decodeFromAsn1ContentBytes(it) } }
+fun Asn1Primitive.decodeToLong() = runRethrowing { decode(Asn1Element.Tag.INT) { Long.decodeFromAsn1ContentBytes(it) } }
 
-/** Exception-free version of [readLong] */
-inline fun Asn1Primitive.readLongOrNull() = runCatching { readLong() }.getOrNull()
+/** Exception-free version of [decodeToLong] */
+inline fun Asn1Primitive.decodeToLongOrNull() = runCatching { decodeToLong() }.getOrNull()
 
 /**
  * decodes this [Asn1Primitive]'s content into an [UInt]
  * @throws [Asn1Exception] on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readUInt() = runRethrowing { decode(Asn1Element.Tag.INT) { UInt.decodeFromAsn1ContentBytes(it) } }
+fun Asn1Primitive.decodeToUInt() = runRethrowing { decode(Asn1Element.Tag.INT) { UInt.decodeFromAsn1ContentBytes(it) } }
 
-/** Exception-free version of [readUInt] */
-inline fun Asn1Primitive.readUIntOrNull() = runCatching { readUInt() }.getOrNull()
+/** Exception-free version of [decodeToUInt] */
+inline fun Asn1Primitive.decodeToUIntOrNull() = runCatching { decodeToUInt() }.getOrNull()
 
 /**
  * decodes this [Asn1Primitive]'s content into an [ULong]
  * @throws [Asn1Exception] on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readULong() = runRethrowing { decode(Asn1Element.Tag.INT) { ULong.decodeFromAsn1ContentBytes(it) } }
+fun Asn1Primitive.decodeToULong() = runRethrowing { decode(Asn1Element.Tag.INT) { ULong.decodeFromAsn1ContentBytes(it) } }
 
-/** Exception-free version of [readULong] */
-inline fun Asn1Primitive.readULongOrNull() = runCatching { readULong() }.getOrNull()
+/** Exception-free version of [decodeToULong] */
+inline fun Asn1Primitive.decodeToULongOrNull() = runCatching { decodeToULong() }.getOrNull()
 
 /** Decode the [Asn1Primitive] as a [BigInteger]
  * @throws [Asn1Exception] on invalid input */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readBigInteger() =
+fun Asn1Primitive.decodeToBigInteger() =
     runRethrowing { decode(Asn1Element.Tag.INT) { BigInteger.decodeFromAsn1ContentBytes(it) } }
 
-/** Exception-free version of [readBigInteger] */
-inline fun Asn1Primitive.readBigIntegerOrNull() = runCatching { readBigInteger() }.getOrNull()
+/** Exception-free version of [decodeToBigInteger] */
+inline fun Asn1Primitive.decodeToBigIntegerOrNull() = runCatching { decodeToBigInteger() }.getOrNull()
 
 /**
  * transforms this [Asn1Primitive] into an [Asn1String] subtype based on its tag
@@ -136,7 +138,7 @@ inline fun Asn1Primitive.readBigIntegerOrNull() = runCatching { readBigInteger()
  * @throws [Asn1Exception] all sorts of exceptions on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readAsn1String(): Asn1String = runRethrowing {
+fun Asn1Primitive.asAsn1String(): Asn1String = runRethrowing {
     when (tag.tagValue) {
         UTF8_STRING.toULong() -> Asn1String.UTF8(String.decodeFromAsn1ContentBytes(content))
         UNIVERSAL_STRING.toULong() -> Asn1String.Universal(String.decodeFromAsn1ContentBytes(content))
@@ -154,12 +156,11 @@ fun Asn1Primitive.readAsn1String(): Asn1String = runRethrowing {
  * Decodes this [Asn1Primitive]'s content into a String.
  * @throws [Asn1Exception] all sorts of exceptions on invalid input
  */
-fun Asn1Primitive.readString() = runRethrowing {readAsn1String().value}
+fun Asn1Primitive.decodeToString() = runRethrowing {asAsn1String().value}
 
-/**
- * Exception-free version of [readAsn1String]
- */
-fun Asn1Primitive.readAsn1StringOrNull() = catching { readAsn1String() }.getOrNull()
+/** Exception-free version of [decodeToString] */
+fun Asn1Primitive.decodeToStringOrNull() = runCatching { decodeToString() }.getOrNull()
+
 
 
 /**
@@ -168,7 +169,7 @@ fun Asn1Primitive.readAsn1StringOrNull() = catching { readAsn1String() }.getOrNu
  * @throws Asn1Exception on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readInstant() =
+fun Asn1Primitive.decodeToInstant() =
     when (tag) {
         Asn1Element.Tag.TIME_UTC -> decode(Asn1Element.Tag.TIME_UTC, Instant.Companion::decodeUtcTimeFromAsn1ContentBytes)
         Asn1Element.Tag.TIME_GENERALIZED -> decode(
@@ -180,9 +181,9 @@ fun Asn1Primitive.readInstant() =
     }
 
 /**
- * Exception-free version of [readInstant]
+ * Exception-free version of [decodeToInstant]
  */
-fun Asn1Primitive.readInstantOrNull() = catching { readInstant() }.getOrNull()
+fun Asn1Primitive.decodeToInstantOrNull() = catching { decodeToInstant() }.getOrNull()
 
 
 /**
@@ -190,13 +191,7 @@ fun Asn1Primitive.readInstantOrNull() = catching { readInstant() }.getOrNull()
  * @throws Asn1Exception  on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.readAsn1BitString() = Asn1BitString.decodeFromTlv(this, Asn1Element.Tag.BIT_STRING)
-
-/**
- * Exception-free version of [readAsn1BitString]
- */
-fun Asn1Primitive.readAsn1BitStringOrNull() = catching { readAsn1BitString() }.getOrNull()
-
+fun Asn1Primitive.asAsn1BitString() = Asn1BitString.decodeFromTlv(this, Asn1Element.Tag.BIT_STRING)
 
 /**
  * decodes this [Asn1Primitive] to null (i.e. verifies the tag to be [BERTags.ASN1_NULL] and the content to be empty

@@ -426,7 +426,7 @@ Various helper functions exist to facilitate decoding the values contained in `A
 for example.
 
 Similarly to encoding, a tandem of decoding functions exists for primitives:
-* `readXXX` to be invoked on an `Asn1Primitive` to decode a DER-encoded primitive into the target type
+* `decodeToXXX` to be invoked on an `Asn1Primitive` to decode a DER-encoded primitive into the target type
 * `decodeFromAsn1ContentBytes` to be invoked on the companion of the target type to decode the content bytes of a TLV primitive (the _V_ in TLV)
 
 However, anything can be decoded and tagged at will. Therefore, a generic decoding function exists, which has the
