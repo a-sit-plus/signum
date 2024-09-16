@@ -129,53 +129,54 @@ sealed class Asn1Element(
 
     /**
      * Convenience function to cast this element to an [Asn1Primitive]
-     * @throws ClassCastException if this element is not a primitive
+     * @throws Asn1StructuralException if this element is not a primitive
      */
-    @Throws(ClassCastException::class)
+    @Throws(Asn1StructuralException::class)
     fun asPrimitive(): Asn1Primitive = casting { this as Asn1Primitive }
 
     /**
      * Convenience function to cast this element to an [Asn1Structure]
-     * @throws ClassCastException if this element is not a structure
+     * @throws Asn1StructuralException if this element is not a structure
      */
-    @Throws(ClassCastException::class)
+    @Throws(Asn1StructuralException::class)
     fun asStructure(): Asn1Structure = casting { this as Asn1Structure }
 
     /**
      * Convenience function to cast this element to an [Asn1Sequence]
-     * @throws ClassCastException if this element is not a sequence
+     * @throws Asn1StructuralException if this element is not a sequence
      */
-    @Throws(ClassCastException::class)
+    @Throws(Asn1StructuralException::class)
     fun asSequence(): Asn1Sequence = casting { this as Asn1Sequence }
 
     /**
      * Convenience function to cast this element to an [Asn1Set]
-     * @throws ClassCastException if this element is not a set
+     * @throws Asn1StructuralException if this element is not a set
      */
-    @Throws(ClassCastException::class)
+    @Throws(Asn1StructuralException::class)
     fun asSet(): Asn1Set = casting { this as Asn1Set }
 
     /**
      * Convenience function to cast this element to an [Asn1Tagged]
-     * @throws ClassCastException if this element is not an explicitly tagged structure
+     * @throws Asn1StructuralException if this element is not an explicitly tagged structure
      */
-    @Throws(ClassCastException::class)
+    @Throws(Asn1StructuralException::class)
     fun asTagged(): Asn1Tagged = casting { this as Asn1Tagged }
 
     /**
      * Convenience function to cast this element to an [Asn1EncapsulatingOctetString]
-     * @throws ClassCastException if this element is not an octet string containing a valid ASN.1 structure
+     * @throws Asn1StructuralException if this element is not an octet string containing a valid ASN.1 structure
      */
-    @Throws(ClassCastException::class)
+    @Throws(Asn1StructuralException::class)
     fun asEncapsulatingOctetString(): Asn1EncapsulatingOctetString = casting { this as Asn1EncapsulatingOctetString }
 
     /**
      * Convenience function to cast this element to an [Asn1PrimitiveOctetString]
-     * @throws ClassCastException if this element is not an octet string containing raw data
+     * @throws Asn1StructuralException if this element is not an octet string containing raw data
      */
-    @Throws(ClassCastException::class)
+    @Throws(Asn1StructuralException::class)
     fun asPrimitiveOctetString(): Asn1PrimitiveOctetString = casting { this as Asn1PrimitiveOctetString }
 
+    @Throws(Asn1StructuralException::class)
     private inline fun <reified T> casting(block: () -> T) = kotlin.runCatching { block() }.getOrElse {
         throw Asn1StructuralException(
             it.message ?: "Cast from ${this::class.simpleName}to ${T::class.simpleName} is impossible", it
