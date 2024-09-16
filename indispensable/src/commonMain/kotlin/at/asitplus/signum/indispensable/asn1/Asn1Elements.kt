@@ -182,7 +182,9 @@ sealed class Asn1Element(
             it.message ?: "Cast from ${this::class.simpleName}to ${T::class.simpleName} is impossible", it
         )
     }
-
+    private inline fun <reified T: Asn1Element> thisAs(): T =
+        (this as? T) ?:
+            throw Asn1StructuralException("${this::class.simpleName} cannot be reinterpreted as ${T::class.simpleName}.
 
     @Serializable
     @ConsistentCopyVisibility
