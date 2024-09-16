@@ -157,11 +157,11 @@ sealed class Asn1Element(
     fun asSet() = thisAs<Asn1Set>()
 
     /**
-     * Convenience function to cast this element to an [Asn1Tagged]
+     * Convenience function to cast this element to an [Asn1ExplicitlyTagged]
      * @throws Asn1StructuralException if this element is not an explicitly tagged structure
      */
     @Throws(Asn1StructuralException::class)
-    fun asTagged() = thisAs<Asn1Tagged>()
+    fun asExplicitlyTagged() = thisAs<Asn1ExplicitlyTagged>()
 
     /**
      * Convenience function to cast this element to an [Asn1EncapsulatingOctetString]
