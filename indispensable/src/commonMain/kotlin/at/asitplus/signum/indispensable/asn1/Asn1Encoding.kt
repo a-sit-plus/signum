@@ -467,13 +467,16 @@ fun Long.toTwosComplementByteArray() = when {
 /** Encodes a signed Int to a minimum-size twos-complement byte array */
 fun Int.toTwosComplementByteArray() = toLong().toTwosComplementByteArray()
 
-fun Int.Companion.fromTwosComplementByteArray(it: ByteArray) = when (it.size) {
-    4 -> (it[0].toInt() shl 24) or (it[1].toUByte().toInt() shl 16) or (it[2].toUByte().toInt() shl 8) or (it[3].toUByte().toInt())
-    3 -> (it[0].toInt() shl 16) or (it[1].toUByte().toInt() shl 8) or (it[2].toUByte().toInt())
-    2 -> (it[0].toInt() shl 8) or (it[1].toUByte().toInt() shl 0)
-    1 -> (it[0].toInt())
-    else -> throw IllegalArgumentException("Input with size $it is out of bounds for Int")
-}
+fun Int.Companion.fromTwosComplementByteArray(it: ByteArray) =
+    if (it.isEmpty() || it.size > Int.SIZE_BYTES) {
+        throw IllegalArgumentException("Input with size $it is out of bounds for Int")
+    } else {
+        (0..<it.size).fold(0) { acc, idx ->
+            acc or (it.getInt(idx) shl (idx.shiftBytes(it) * Byte.SIZE_BITS))
+        }
+    }
+
+private fun ByteArray.getInt(idx: Int) = if (idx == 0) this[idx].toInt() else this[idx].toUByte().toInt()
 
 fun UInt.Companion.fromTwosComplementByteArray(it: ByteArray) =
     Long.fromTwosComplementByteArray(it).let {
@@ -481,33 +484,27 @@ fun UInt.Companion.fromTwosComplementByteArray(it: ByteArray) =
         it.toUInt()
     }
 
-fun Long.Companion.fromTwosComplementByteArray(it: ByteArray) = when (it.size) {
-    8 -> (it[0].toLong() shl 56) or (it[1].toUByte().toLong() shl 48) or (it[2].toUByte().toLong() shl 40) or
-            (it[3].toUByte().toLong() shl 32) or (it[4].toUByte().toLong() shl 24) or
-            (it[5].toUByte().toLong() shl 16) or (it[6].toUByte().toLong() shl 8) or (it[7].toUByte().toLong())
-    7 -> (it[0].toLong() shl 48) or (it[1].toUByte().toLong() shl 40) or (it[2].toUByte().toLong() shl 32) or
-            (it[3].toUByte().toLong() shl 24) or (it[4].toUByte().toLong() shl 16) or
-            (it[5].toUByte().toLong() shl 8) or (it[6].toUByte().toLong())
-    6 -> (it[0].toLong() shl 40) or (it[1].toUByte().toLong() shl 32) or (it[2].toUByte().toLong() shl 24) or
-            (it[3].toUByte().toLong() shl 16) or (it[4].toUByte().toLong() shl 8) or (it[5].toUByte().toLong())
-    5 -> (it[0].toLong() shl 32) or (it[1].toUByte().toLong() shl 24) or (it[2].toUByte().toLong() shl 16) or
-            (it[3].toUByte().toLong() shl 8) or (it[4].toUByte().toLong())
-    4 -> (it[0].toLong() shl 24) or (it[1].toUByte().toLong() shl 16) or (it[2].toUByte().toLong() shl 8) or
-            (it[3].toUByte().toLong())
-    3 -> (it[0].toLong() shl 16) or (it[1].toUByte().toLong() shl 8) or (it[2].toUByte().toLong())
-    2 -> (it[0].toLong() shl 8) or (it[1].toUByte().toLong() shl 0)
-    1 -> (it[0].toLong())
-    else -> throw IllegalArgumentException("Input with size $it is out of bounds for Long")
-}
+fun Long.Companion.fromTwosComplementByteArray(it: ByteArray) =
+    if (it.isEmpty() || it.size > Long.SIZE_BYTES) {
+        throw IllegalArgumentException("Input with size $it is out of bounds for Long")
+    } else {
+        (0..<it.size).fold(0L) { acc, idx ->
+            acc or (it.getLong(idx) shl (idx.shiftBytes(it) * Byte.SIZE_BITS))
+        }
+    }
+
+private fun ByteArray.getLong(idx: Int) = if (idx == 0) this[idx].toLong() else this[idx].toUByte().toLong()
+
+private fun Int.shiftBytes(it: ByteArray) = (it.size - 1 - this)
 
 fun ULong.Companion.fromTwosComplementByteArray(it: ByteArray) = when {
-    ((it.size == 9) && (it[0] == 0.toByte())) ->
-        (it[1].toUByte().toULong() shl 56) or (it[2].toUByte().toULong() shl 48) or (it[3].toUByte().toULong() shl 40) or
-                (it[4].toUByte().toULong() shl 32) or (it[5].toUByte().toULong() shl 24) or
-                (it[6].toUByte().toULong() shl 16) or (it[7].toUByte().toULong() shl 8) or
-                (it[8].toUByte().toULong())
+    ((it.size == ULong.SIZE_BYTES + 1) && (it[0] == 0.toByte())) ->
+        (1..<it.size).fold(0uL) { acc, idx ->
+            acc or (it[idx].toUByte().toULong() shl (idx.shiftBytes(it) * Byte.SIZE_BITS))
+        }
+
     else -> Long.fromTwosComplementByteArray(it).let {
-        require (it >= 0) { "Value $it is out of bounds for ULong" }
+        require(it >= 0) { "Value $it is out of bounds for ULong" }
         it.toULong()
     }
 }
