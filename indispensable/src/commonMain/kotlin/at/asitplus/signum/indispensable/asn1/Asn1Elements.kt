@@ -132,7 +132,7 @@ sealed class Asn1Element(
      * @throws Asn1StructuralException if this element is not a primitive
      */
     @Throws(Asn1StructuralException::class)
-    fun asPrimitive(): Asn1Primitive = casting { this as Asn1Primitive }
+    fun asPrimitive() = thisAs<Asn1Primitive>()
 
     /**
      * Convenience function to cast this element to an [Asn1Structure]
@@ -175,10 +175,11 @@ sealed class Asn1Element(
      */
     @Throws(Asn1StructuralException::class)
     fun asPrimitiveOctetString() = thisAs<Asn1PrimitiveOctetString>()
-    
-    private inline fun <reified T: Asn1Element> thisAs(): T =
-        (this as? T) ?:
-            throw Asn1StructuralException("${this::class.simpleName} cannot be reinterpreted as ${T::class.simpleName}.)
+
+    @Throws(Asn1StructuralException::class)
+    private inline fun <reified T : Asn1Element> thisAs(): T =
+        (this as? T)
+            ?: throw Asn1StructuralException("${this::class.simpleName} cannot be reinterpreted as ${T::class.simpleName}.")
 
     @Serializable
     @ConsistentCopyVisibility
