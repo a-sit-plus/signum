@@ -28,33 +28,33 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
     val signature: Asn1Element
 
 
-    /**
-     * Well-defined CryptoSignatures, which can also be encoded to raw bytes, in addition to the DER encoding
-     * specified in the X.509 profile.
-     * RSA Signatures and EC Signatures with a known curve fall into this category.
-     *
-     * **This is the opposite of a [NotRawByteEncodable] signature**
-     */
-    sealed interface RawByteEncodable : CryptoSignature {
         /**
-         * Removes ASN1 Structure and returns the signature value(s) as ByteArray
+         * Well-defined CryptoSignatures, which can also be encoded to raw bytes, in addition to the DER encoding
+         * specified in the X.509 profile.
+         * RSA Signatures and EC Signatures with a known curve fall into this category.
+         *
+         * **This is the opposite of a [NotRawByteEncodable] signature**
          */
-        val rawByteArray: ByteArray
-    }
+        sealed interface RawByteEncodable : CryptoSignature {
+            /**
+             * Removes ASN1 Structure and returns the signature value(s) as ByteArray
+             */
+            val rawByteArray: ByteArray
+        }
 
-    /**
-     * **This is the opposite of a [RawByteEncodable] signature**
-     *
-     * This inverse "non-trait" is required to group [CryptoSignature] subtypes which cannot be encoded into raw byte arrays,
-     * since not all properties required to do so are known. For example, EC signatures parsed from an
-     * [X509Certificate] do not specify a curve. For signatures obtained this way, it is impossible to know
-     * how the components should be padded before encoding it into raw bytes.
-     *
-     * The reason this interface exists, is that it allows for grouping all such signatures in the same manner
-     * as the [RawByteEncodable] ones, to allow for exhaustive `when` clauses
-     *
-     */
-    sealed interface NotRawByteEncodable : CryptoSignature
+        /**
+         * **This is the opposite of a [RawByteEncodable] signature**
+         *
+         * This inverse "non-trait" is required to group [CryptoSignature] subtypes which cannot be encoded into raw byte arrays,
+         * since not all properties required to do so are known. For example, EC signatures parsed from an
+         * [X509Certificate] do not specify a curve. For signatures obtained this way, it is impossible to know
+         * how the components should be padded before encoding it into raw bytes.
+         *
+         * The reason this interface exists, is that it allows for grouping all such signatures in the same manner
+         * as the [RawByteEncodable] ones, to allow for exhaustive `when` clauses
+         *
+         */
+        sealed interface NotRawByteEncodable : CryptoSignature
 
 
     fun encodeToTlvBitString(): Asn1Element

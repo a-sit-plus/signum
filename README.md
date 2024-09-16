@@ -432,72 +432,77 @@ DSL, which returns an `Asn1Structure`:
 
 ```kotlin
 Asn1.Sequence {
-    +Tagged(1uL) {
-        +Asn1Primitive(Asn1Element.Tag.BOOL, byteArrayOf(0x00)) //or +Asn1.Bool(false)
-    }
-    +Asn1.Set {
-        +Asn1.Sequence {
-            +Asn1.SetOf {
-                +PrintableString("World")
-                +PrintableString("Hello")
-            }
-            +Asn1.Set {
-                +PrintableString("World")
-                +PrintableString("Hello")
-                +Utf8String("!!!")
-            }
-
-        }
-    }
-    +Asn1.Null()
-
-    +ObjectIdentifier("1.2.603.624.97")
-
-    +Utf8String("Foo")
-    +PrintableString("Bar")
-
-    +Asn1.Set {
-        +Asn1.Int(3)
-        +Asn1.Long(-65789876543L)
-        +Asn1.Bool(false)
-        +Asn1.Bool(true)
-    }
+  +Tagged(1uL) {
+    +Asn1Primitive(Asn1Element.Tag.BOOL, byteArrayOf(0x00)) //or +Asn1.Bool(false)
+  }
+  +Asn1.Set {
     +Asn1.Sequence {
-        +Asn1.Null()
-        +Asn1String.Numeric("12345")
-        +UtcTime(Clock.System.now())
+      +Asn1.SetOf {
+        +PrintableString("World")
+        +PrintableString("Hello")
+      }
+      +Asn1.Set {
+        +PrintableString("World")
+        +PrintableString("Hello")
+        +Utf8String("!!!")
+      }
+
     }
-}
+  }
+  +Asn1.Null()
+
+  +ObjectIdentifier("1.2.603.624.97")
+
+  +(Utf8String("Foo") withImplicitTag (0xCAFEuL withClass TagClass.PRIVATE))
+  +PrintableString("Bar")
+
+  //fake Primitive
+  +(Asn1.Sequence { +Asn1.Int(42) } withImplicitTag (0x5EUL without CONSTRUCTED))
+
+  +Asn1.Set {
+    +Asn1.Int(3)
+    +Asn1.Int(-65789876543L)
+    +Asn1.Bool(false)
+    +Asn1.Bool(true)
+  }
+  +Asn1.Sequence {
+    +Asn1.Null()
+    +Asn1String.Numeric("12345")
+    +UtcTime(Clock.System.now())
+  }
+} withImplicitTag (1337uL withClass TagClass.APPLICATION)
 ```
 
 In accordance with DER-Encoding, this produces the following ASN.1 structure:
 
 ```
-SEQUENCE (8 elem)
-  [1] (1 elem)
-    BOOLEAN false
-  SET (1 elem)
-    SEQUENCE (2 elem)
-      SET (2 elem)
-        PrintableString Hello
-        PrintableString World
-      SET (3 elem)
-        UTF8String !!!
-        PrintableString World
-        PrintableString Hello
-  NULL
-  OBJECT IDENTIFIER 1.2.603.624.97
-  UTF8String Foo
-  PrintableString Bar
-  SET (4 elem)
-    BOOLEAN false
-    BOOLEAN true
-    INTEGER 3
-    INTEGER (36 bit) -65789876543
-  SEQUENCE (3 elem)
+Application 1337 (9 elem)
+
+    [1] (1 elem)
+        BOOLEAN false
+    SET (1 elem)
+        SEQUENCE (2 elem)
+            SET (2 elem)
+                PrintableString World
+                PrintableString Hello
+            SET (3 elem)
+                UTF8String !!!
+                PrintableString World
+                PrintableString Hello
     NULL
-    NumericString 12345
-    UTCTime 2023-10-21 21:14:49 UTC
+    OBJECT IDENTIFIER 1.2.603.624.97
+    Private 51966 (3 byte) Foo
+    PrintableString Bar
+    [94] (3 byte) 02012A
+    SET (4 elem)
+        BOOLEAN false
+        BOOLEAN true
+        INTEGER 3
+        INTEGER (36 bit) -65789876543
+    SEQUENCE (3 elem)
+        NULL
+        NumericString 12345
+        UTCTime 2024-09-16 11:53:51 UTC
 ```
 
 ## Limitations

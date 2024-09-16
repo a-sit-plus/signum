@@ -98,7 +98,6 @@ data class TbsCertificationRequest(
                 attributes = attributes,
             )
         }
-
     }
 }
 
@@ -152,6 +151,5 @@ data class Pkcs10CertificationRequest(
             if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous structure in CSR Structure")
             return Pkcs10CertificationRequest(tbsCsr, sigAlg, signature.rawBytes)
         }
-
     }
 }

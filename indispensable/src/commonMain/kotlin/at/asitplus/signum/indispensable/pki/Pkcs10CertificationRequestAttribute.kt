@@ -41,6 +41,5 @@ data class Pkcs10CertificationRequestAttribute(
             val value = (src.children.last() as Asn1Set).children
             return Pkcs10CertificationRequestAttribute(id, value)
         }
-
     }
 }

@@ -187,7 +187,7 @@ sealed class Asn1Element(
      * Creates a new implicitly tagged ASN.1 Element from this ASN.1 Element.
      * NOTE: The [TagClass] of the provided [tag] will be used! If you want the result to have [TagClass.CONTEXT_SPECIFIC],
      * also invoke `tag withClass TagClass.CONTEXT_SPECIFIC`!. If a CONSTRUCTED Tag is applied to an ASN.1 Primitive,
-     *  the CONSTRUCTED bit is overridden and set to zero.
+     * the CONSTRUCTED bit is overridden and set to zero.
      */
     inline infix fun withImplicitTag(tag: Tag): Asn1Element = when (this) {
         is Asn1Structure -> {
@@ -276,14 +276,14 @@ sealed class Asn1Element(
 
             /**
              * Convenience helper to easily construct implicitly tagged elements.
-             * Shorthand for `Tag(tagValue, constructed=false, tagClass= TagClass.CONTEXT_SPECIFIC)
+             * Shorthand for `Tag(tagValue, constructed=false, tagClass=TagClass.CONTEXT_SPECIFIC)
              */
             fun ULong.toImplicitTag() =
                 Asn1Element.Tag(this, constructed = false, tagClass = TagClass.CONTEXT_SPECIFIC)
 
             /**
              * Convenience helper to easily construct implicitly tagged elements.
-             * Shorthand for `Tag(tagValue, constructed=true, tagClass= TagClass.CONTEXT_SPECIFIC)
+             * Shorthand for `Tag(tagValue, constructed=true, tagClass=TagClass.CONTEXT_SPECIFIC)
              */
             fun ULong.toExplicitTag() =
                 Asn1Element.Tag(this, constructed = true, tagClass = TagClass.CONTEXT_SPECIFIC)

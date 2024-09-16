@@ -113,9 +113,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transient vara
             }
             return ObjectIdentifier(*collected.toUIntArray())
         }
-
     }
-
 }
 
 object ObjectIdSerializer : KSerializer<ObjectIdentifier> {

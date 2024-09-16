@@ -23,7 +23,6 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
         override fun doDecode(src: Asn1Set): RelativeDistinguishedName = runRethrowing {
             RelativeDistinguishedName(src.children.map { AttributeTypeAndValue.decodeFromTlv(it as Asn1Sequence) })
         }
-
     }
 
     override fun toString() = "DistinguishedName(attrsAndValues=${attrsAndValues.joinToString()})"
@@ -42,7 +41,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
     class CommonName(override val value: Asn1Element) : AttributeTypeAndValue() {
         override val oid = OID
 
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tagNum, str.value.encodeToByteArray()))
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
             val OID = KnownOIDs.commonName
@@ -54,7 +53,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
     class Country(override val value: Asn1Element) : AttributeTypeAndValue() {
         override val oid = OID
 
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tagNum, str.value.encodeToByteArray()))
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
             val OID = KnownOIDs.countryName
@@ -66,7 +65,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
     class Organization(override val value: Asn1Element) : AttributeTypeAndValue() {
         override val oid = OID
 
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tagNum, str.value.encodeToByteArray()))
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
             val OID = KnownOIDs.organizationName
@@ -78,7 +77,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
     class OrganizationalUnit(override val value: Asn1Element) : AttributeTypeAndValue() {
         override val oid = OID
 
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tagNum, str.value.encodeToByteArray()))
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
             val OID = KnownOIDs.organizationalUnitName
@@ -90,7 +89,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
     class Other(override val oid: ObjectIdentifier, override val value: Asn1Element) : AttributeTypeAndValue() {
         constructor(oid: ObjectIdentifier, str: Asn1String) : this(
             oid,
-            Asn1Primitive(str.tagNum, str.value.encodeToByteArray())
+            Asn1Primitive(str.tag, str.value.encodeToByteArray())
         )
     }
 

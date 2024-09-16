@@ -68,7 +68,6 @@ class Asn1TreeBuilder {
     operator fun Asn1Encodable<*>.unaryPlus() {
         +encodeToTlv()
     }
-
 }
 
 /**
