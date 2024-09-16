@@ -15,6 +15,20 @@ import kotlinx.datetime.Instant
 import kotlin.experimental.and
 import kotlin.math.ceil
 
+/**
+ * Result of parsing a single, toplevel [Asn1Element] from a bytearray
+ */
+typealias Asn1Parsed = Pair<Asn1Element, ByteArray>
+
+/**
+ * The parsed [Asn1Element]
+ */
+val Asn1Parsed.element get() = first
+
+/**
+ *  The remainder of the underlying bytearray (empty if, everything was consumed)
+ */
+val Asn1Parsed.remainingBytes get() = second
 
 /**
  * Parses the provides [input] into a single [Asn1Element]
@@ -23,17 +37,30 @@ import kotlin.math.ceil
  * @throws Asn1Exception on invalid input or if more than a single root structure was contained in the [input]
  */
 @Throws(Asn1Exception::class)
-fun Asn1Element.Companion.parse(input: ByteArray) = Asn1Reader(input).doParse().let {
+fun Asn1Element.Companion.parse(input: ByteArray): Asn1Element = Asn1Reader(input).doParse(single = true).let {
     if (it.size != 1) throw Asn1StructuralException("Multiple ASN.1 structures found")
     it.first()
 }
 
-private class Asn1Reader(input: ByteArray) {
+/**
+ * Parses the provides [input] into a single [Asn1Element]
+ * @return the [Asn1Parsed] containing an element and remaining bytes
+ *
+ * @throws Asn1Exception on invalid input or if more than a single root structure was contained in the [input]
+ */
+//this only makes sense until we switch to kotlinx.io
+@Throws(Asn1Exception::class)
+fun Asn1Element.Companion.parseWithRemainder(input: ByteArray): Asn1Parsed = parse(input).let {
+    it to input.drop(it.overallLength).toByteArray()
+}
+
+
+private class Asn1Reader(private val input: ByteArray) {
 
     private var rest = input
 
     @Throws(Asn1Exception::class)
-    fun doParse(): List<Asn1Element> = runRethrowing {
+    fun doParse(single: Boolean = false): List<Asn1Element> = runRethrowing {
         val result = mutableListOf<Asn1Element>()
         while (rest.isNotEmpty()) {
             val tlv = read()
@@ -54,7 +81,7 @@ private class Asn1Reader(input: ByteArray) {
             } else if (tlv.tag.isConstructed) { //custom tags, we don't know if it is a SET OF, SET, SEQUENCE,… so we default to sequence semantics
                 result.add(Asn1CustomStructure(Asn1Reader(tlv.content).doParse(), tlv.tag.tagValue, tlv.tagClass))
             } else result.add(Asn1Primitive(tlv.tag, tlv.content))
-
+            if (single) return result
         }
         return result
     }

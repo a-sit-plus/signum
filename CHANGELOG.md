@@ -28,6 +28,8 @@
         * `Iterable<Byte>.decodeAsn1VarUInt()`
         * `ByteArray.decodeAsn1VarUInt()`
 * Revamp implicit tagging
+* Consume only the first `Asn1Element.parse()` only consumes the first parsable element and
+  `Asn1Element.parserWithRemainder()` additionally returns the remaining bytes for convenience
 
 ## 3.0
 
