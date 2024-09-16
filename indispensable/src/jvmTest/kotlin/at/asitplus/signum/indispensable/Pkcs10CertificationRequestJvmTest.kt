@@ -1,6 +1,9 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
+import at.asitplus.signum.indispensable.io.ensureSize
+import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.pki.*
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
@@ -21,7 +24,6 @@ import org.bouncycastle.pkcs.PKCS10CertificationRequestBuilder
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
-import java.security.Signature
 import java.security.interfaces.ECPublicKey
 
 internal fun X509SignatureAlgorithm.getContentSigner(key: PrivateKey) =
@@ -191,7 +193,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             attributes = listOf(
                 Pkcs10CertificationRequestAttribute(
                     ObjectIdentifier("1.2.1840.13549.1.9.16.1337.26"),
-                    1337.encodeToTlv()
+                    1337.encodeToAsn1Primitive()
                 )
             )
         )
@@ -356,13 +358,13 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         val extendedKeyUsage = ExtendedKeyUsage(KeyPurposeId.anyExtendedKeyUsage)
 
         val attr1 =
-            Pkcs10CertificationRequestAttribute(ObjectIdentifier("1.2.1840.13549.1.9.16.1337.26"), 1337.encodeToTlv())
+            Pkcs10CertificationRequestAttribute(ObjectIdentifier("1.2.1840.13549.1.9.16.1337.26"), 1337.encodeToAsn1Primitive())
         val attr11 =
-            Pkcs10CertificationRequestAttribute(ObjectIdentifier("1.2.1840.13549.1.9.16.1337.26"), 1337.encodeToTlv())
+            Pkcs10CertificationRequestAttribute(ObjectIdentifier("1.2.1840.13549.1.9.16.1337.26"), 1337.encodeToAsn1Primitive())
         val attr12 =
-            Pkcs10CertificationRequestAttribute(ObjectIdentifier("1.2.1840.13549.1.9.16.1337.27"), 1337.encodeToTlv())
+            Pkcs10CertificationRequestAttribute(ObjectIdentifier("1.2.1840.13549.1.9.16.1337.27"), 1337.encodeToAsn1Primitive())
         val attr13 =
-            Pkcs10CertificationRequestAttribute(ObjectIdentifier("1.2.1840.13549.1.9.16.1337.26"), 1338.encodeToTlv())
+            Pkcs10CertificationRequestAttribute(ObjectIdentifier("1.2.1840.13549.1.9.16.1337.26"), 1338.encodeToAsn1Primitive())
         val attr2 = Pkcs10CertificationRequestAttribute(KnownOIDs.keyUsage, Asn1Element.parse(keyUsage.encoded))
         val attr3 =
             Pkcs10CertificationRequestAttribute(KnownOIDs.extKeyUsage, Asn1Element.parse(extendedKeyUsage.encoded))

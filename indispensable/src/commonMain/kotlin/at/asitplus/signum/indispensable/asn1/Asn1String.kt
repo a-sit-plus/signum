@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.asn1
 
+import at.asitplus.signum.indispensable.asn1.encoding.readAsn1String
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -119,6 +120,6 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
     companion object : Asn1Decodable<Asn1Primitive, Asn1String> {
 
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Primitive): Asn1String = src.readString()
+        override fun doDecode(src: Asn1Primitive): Asn1String = src.readAsn1String()
     }
 }

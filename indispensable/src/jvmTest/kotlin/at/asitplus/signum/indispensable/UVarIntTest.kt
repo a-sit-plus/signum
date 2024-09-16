@@ -1,8 +1,8 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.indispensable.asn1.decodeAsn1VarUInt
-import at.asitplus.signum.indispensable.asn1.decodeAsn1VarULong
-import at.asitplus.signum.indispensable.asn1.toAsn1VarInt
+import at.asitplus.signum.indispensable.asn1.encoding.decodeAsn1VarUInt
+import at.asitplus.signum.indispensable.asn1.encoding.decodeAsn1VarULong
+import at.asitplus.signum.indispensable.asn1.encoding.toAsn1VarInt
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
