@@ -20,7 +20,7 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
     }
 
     companion object : Asn1Decodable<Asn1Set, RelativeDistinguishedName> {
-        override fun decodeFromTlv(src: Asn1Set): RelativeDistinguishedName = runRethrowing {
+        override fun doDecode(src: Asn1Set): RelativeDistinguishedName = runRethrowing {
             RelativeDistinguishedName(src.children.map { AttributeTypeAndValue.decodeFromTlv(it as Asn1Sequence) })
         }
     }
@@ -119,7 +119,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
     companion object : Asn1Decodable<Asn1Sequence, AttributeTypeAndValue> {
 
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(src: Asn1Sequence): AttributeTypeAndValue = runRethrowing {
+        override fun doDecode(src: Asn1Sequence): AttributeTypeAndValue = runRethrowing {
             val oid = (src.nextChild() as Asn1Primitive).readOid()
             if (oid.nodes.size >= 3 && oid.toString().startsWith("2.5.4.")) {
                 val asn1String = src.nextChild() as Asn1Primitive
@@ -142,5 +142,6 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
             return Other(oid, src.nextChild())
                 .also { if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous elements in RDN") }
         }
+
     }
 }

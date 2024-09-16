@@ -119,6 +119,6 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
     companion object : Asn1Decodable<Asn1Primitive, Asn1String> {
 
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(src: Asn1Primitive): Asn1String = src.readString()
+        override fun doDecode(src: Asn1Primitive): Asn1String = src.readString()
     }
 }

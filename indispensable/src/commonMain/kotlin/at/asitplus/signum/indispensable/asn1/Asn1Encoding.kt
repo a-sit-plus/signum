@@ -12,42 +12,45 @@ import kotlin.experimental.or
  * Class Providing a DSL for creating arbitrary ASN.1 structures. You will almost certainly never use it directly, but rather use it as follows:
  * ```kotlin
  * Sequence {
- *     +Tagged(1uL) {
- *         +Asn1Primitive(BERTags.BOOLEAN.toUlong(), byteArrayOf(0x00))
- *     }
- *     +Set {
- *         +Sequence {
- *             +SetOf {
- *                 +PrintableString("World")
- *                 +PrintableString("Hello")
- *             }
- *             +Set {
- *                 +PrintableString("World")
- *                 +PrintableString("Hello")
- *                 +Utf8String("!!!")
- *             }
+ *   +ExplicitlyTagged(1uL) {
+ *     +Asn1Primitive(Asn1Element.Tag.BOOL, byteArrayOf(0x00)) //or +Asn1.Bool(false)
+ *   }
+ *   +Asn1.Set {
+ *     +Asn1.Sequence {
+ *       +Asn1.SetOf {
+ *         +PrintableString("World")
+ *         +PrintableString("Hello")
+ *       }
+ *       +Asn1.Set {
+ *         +PrintableString("World")
+ *         +PrintableString("Hello")
+ *         +Utf8String("!!!")
+ *       }
  *
- *         }
  *     }
- *     +Null()
+ *   }
+ *   +Asn1.Null()
  *
- *     +ObjectIdentifier("1.2.603.624.97")
+ *   +ObjectIdentifier("1.2.603.624.97")
  *
- *     +Utf8String("Foo")
- *     +PrintableString("Bar")
+ *   +(Utf8String("Foo") withImplicitTag (0xCAFEuL withClass TagClass.PRIVATE))
+ *   +PrintableString("Bar")
  *
- *     +Set {
- *         +Int(3)
- *         +Long(-65789876543L)
- *         +Bool(false)
- *         +Bool(true)
- *     }
- *     +Sequence {
- *         +Null()
- *         +Asn1String.Numeric("12345")
- *         +UtcTime(instant)
- *     }
- * }
+ *   //fake Primitive
+ *   +(Asn1.Sequence { +Asn1.Int(42) } withImplicitTag (0x5EUL without CONSTRUCTED))
+ *
+ *   +Asn1.Set {
+ *     +Asn1.Int(3)
+ *     +Asn1.Int(-65789876543L)
+ *     +Asn1.Bool(false)
+ *     +Asn1.Bool(true)
+ *   }
+ *   +Asn1.Sequence {
+ *     +Asn1.Null()
+ *     +Asn1String.Numeric("12345")
+ *     +UtcTime(Clock.System.now())
+ *   }
+ * } withImplicitTag (1337uL withClass TagClass.APPLICATION)
  * ```
  */
 class Asn1TreeBuilder {
@@ -172,35 +175,35 @@ object Asn1 {
 
 
     /**
-     * Creates a new EXPLICITLY TAGGED ASN.1 structure as [Asn1Tagged] using [tag].
+     * Creates a new EXPLICITLY TAGGED ASN.1 structure as [Asn1ExplicitlyTagged] using [tag].
      *
      * Use as follows:
      *
      * ```kotlin
-     * Tagged(2uL) {
+     * ExplicitlyTagged(2uL) {
      *   +PrintableString("World World")
      *   +Null()
      *   +Int(1337)
      * }
      *  ```
      */
-    fun Tagged(tag: ULong, root: Asn1TreeBuilder.() -> Unit): Asn1Tagged {
+    fun ExplicitlyTagged(tag: ULong, root: Asn1TreeBuilder.() -> Unit): Asn1ExplicitlyTagged {
         val seq = Asn1TreeBuilder()
         seq.root()
-        return Asn1Tagged(tag, seq.elements)
+        return Asn1ExplicitlyTagged(tag, seq.elements)
     }
 
     /**
-     * Exception-free version of [Tagged]
+     * Exception-free version of [ExplicitlyTagged]
      */
-    fun TaggedOrNull(tag: ULong, root: Asn1TreeBuilder.() -> Unit) =
-        catching { Tagged(tag, root) }.getOrNull()
+    fun ExplicitlyTaggedOrNull(tag: ULong, root: Asn1TreeBuilder.() -> Unit) =
+        catching { ExplicitlyTagged(tag, root) }.getOrNull()
 
     /**
-     * Safe version on [Tagged], wrapping the result into a [KmmResult]
+     * Safe version on [ExplicitlyTagged], wrapping the result into a [KmmResult]
      */
-    fun TaggedSafe(tag: ULong, root: Asn1TreeBuilder.() -> Unit) =
-        catching { Tagged(tag, root) }
+    fun ExplicitlyTaggedSafe(tag: ULong, root: Asn1TreeBuilder.() -> Unit) =
+        catching { ExplicitlyTagged(tag, root) }
 
 
     /**
@@ -211,12 +214,16 @@ object Asn1 {
 
     /** Adds an INTEGER [Asn1Primitive] to this ASN.1 structure */
     fun Int(value: Int) = value.encodeToTlv()
+
     /** Adds an INTEGER [Asn1Primitive] to this ASN.1 structure */
     fun Int(value: Long) = value.encodeToTlv()
+
     /** Adds an INTEGER [Asn1Primitive] to this ASN.1 structure */
     fun Int(value: UInt) = value.encodeToTlv()
+
     /** Adds an INTEGER [Asn1Primitive] to this ASN.1 structure */
     fun Int(value: ULong) = value.encodeToTlv()
+
     /** Adds an INTEGER [Asn1Primitive] to this ASN.1 structure */
     fun Int(value: BigInteger) = value.encodeToTlv()
 
@@ -292,6 +299,20 @@ object Asn1 {
         return Asn1EncapsulatingOctetString(seq.elements)
     }
 
+    /**
+     * Convenience helper to easily construct implicitly tagged elements.
+     * Shorthand for `Tag(tagValue, constructed=false, tagClass=TagClass.CONTEXT_SPECIFIC)
+     */
+    fun ImplicitTag(tagNum: ULong, tagClass: TagClass = TagClass.CONTEXT_SPECIFIC) =
+        Asn1Element.Tag(tagNum, constructed = false, tagClass = tagClass)
+
+    /**
+     * Convenience helper to easily construct implicitly tagged elements.
+     * Shorthand for `Tag(tagValue, constructed=true, tagClass=TagClass.CONTEXT_SPECIFIC)
+     */
+    fun ExplicitTag(tagNum: ULong) =
+        Asn1Element.Tag(tagNum, constructed = true, tagClass = TagClass.CONTEXT_SPECIFIC)
+
 }
 
 /**
@@ -301,12 +322,16 @@ fun Boolean.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.BOOL, byteArrayOf(if (
 
 /** Produces an INTEGER as [Asn1Primitive] */
 fun Int.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.INT, encodeToDer())
+
 /** Produces an INTEGER as [Asn1Primitive] */
 fun Long.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.INT, encodeToDer())
+
 /** Produces an INTEGER as [Asn1Primitive] */
 fun UInt.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.INT, encodeToDer())
+
 /** Produces an INTEGER as [Asn1Primitive] */
 fun ULong.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.INT, encodeToDer())
+
 /** Produces an INTEGER as [Asn1Primitive] */
 fun BigInteger.encodeToTlv() = Asn1Primitive(Asn1Element.Tag.INT, encodeToDer())
 
@@ -401,7 +426,9 @@ fun ULong.toTwosComplementByteArray() = when {
             (this shr 24).toByte(),
             (this shr 16).toByte(),
             (this shr 8).toByte(),
-            this.toByte())
+            this.toByte()
+        )
+
     else -> this.toLong().toTwosComplementByteArray()
 }
 
@@ -412,29 +439,39 @@ fun UInt.toTwosComplementByteArray() = toLong().toTwosComplementByteArray()
 fun Long.toTwosComplementByteArray() = when {
     (this >= -0x80L && this <= 0x7FL) ->
         byteArrayOf(
-            this.toByte())
+            this.toByte()
+        )
+
     (this >= -0x8000L && this <= 0x7FFFL) ->
         byteArrayOf(
             (this ushr 8).toByte(),
-            this.toByte())
+            this.toByte()
+        )
+
     (this >= -0x800000L && this <= 0x7FFFFFL) ->
         byteArrayOf(
             (this ushr 16).toByte(),
             (this ushr 8).toByte(),
-            this.toByte())
+            this.toByte()
+        )
+
     (this >= -0x80000000L && this <= 0x7FFFFFFFL) ->
         byteArrayOf(
             (this ushr 24).toByte(),
             (this ushr 16).toByte(),
             (this ushr 8).toByte(),
-            this.toByte())
+            this.toByte()
+        )
+
     (this >= -0x8000000000L && this <= 0x7FFFFFFFFFL) ->
         byteArrayOf(
             (this ushr 32).toByte(),
             (this ushr 24).toByte(),
             (this ushr 16).toByte(),
             (this ushr 8).toByte(),
-            this.toByte())
+            this.toByte()
+        )
+
     (this >= -0x800000000000L && this <= 0x7FFFFFFFFFFFL) ->
         byteArrayOf(
             (this ushr 40).toByte(),
@@ -442,7 +479,9 @@ fun Long.toTwosComplementByteArray() = when {
             (this ushr 24).toByte(),
             (this ushr 16).toByte(),
             (this ushr 8).toByte(),
-            this.toByte())
+            this.toByte()
+        )
+
     (this >= -0x80000000000000L && this <= 0x7FFFFFFFFFFFFFL) ->
         byteArrayOf(
             (this ushr 48).toByte(),
@@ -451,7 +490,9 @@ fun Long.toTwosComplementByteArray() = when {
             (this ushr 24).toByte(),
             (this ushr 16).toByte(),
             (this ushr 8).toByte(),
-            this.toByte())
+            this.toByte()
+        )
+
     else ->
         byteArrayOf(
             (this ushr 56).toByte(),
@@ -461,14 +502,17 @@ fun Long.toTwosComplementByteArray() = when {
             (this ushr 24).toByte(),
             (this ushr 16).toByte(),
             (this ushr 8).toByte(),
-            this.toByte())
+            this.toByte()
+        )
 }
 
 /** Encodes a signed Int to a minimum-size twos-complement byte array */
 fun Int.toTwosComplementByteArray() = toLong().toTwosComplementByteArray()
 
 fun Int.Companion.fromTwosComplementByteArray(it: ByteArray) = when (it.size) {
-    4 -> (it[0].toInt() shl 24) or (it[1].toUByte().toInt() shl 16) or (it[2].toUByte().toInt() shl 8) or (it[3].toUByte().toInt())
+    4 -> (it[0].toInt() shl 24) or (it[1].toUByte().toInt() shl 16) or (it[2].toUByte()
+        .toInt() shl 8) or (it[3].toUByte().toInt())
+
     3 -> (it[0].toInt() shl 16) or (it[1].toUByte().toInt() shl 8) or (it[2].toUByte().toInt())
     2 -> (it[0].toInt() shl 8) or (it[1].toUByte().toInt() shl 0)
     1 -> (it[0].toInt())
@@ -477,7 +521,7 @@ fun Int.Companion.fromTwosComplementByteArray(it: ByteArray) = when (it.size) {
 
 fun UInt.Companion.fromTwosComplementByteArray(it: ByteArray) =
     Long.fromTwosComplementByteArray(it).let {
-        require ((0 <= it) && (it <= 0xFFFFFFFFL)) { "Value $it is out of bounds for UInt" }
+        require((0 <= it) && (it <= 0xFFFFFFFFL)) { "Value $it is out of bounds for UInt" }
         it.toUInt()
     }
 
@@ -485,15 +529,20 @@ fun Long.Companion.fromTwosComplementByteArray(it: ByteArray) = when (it.size) {
     8 -> (it[0].toLong() shl 56) or (it[1].toUByte().toLong() shl 48) or (it[2].toUByte().toLong() shl 40) or
             (it[3].toUByte().toLong() shl 32) or (it[4].toUByte().toLong() shl 24) or
             (it[5].toUByte().toLong() shl 16) or (it[6].toUByte().toLong() shl 8) or (it[7].toUByte().toLong())
+
     7 -> (it[0].toLong() shl 48) or (it[1].toUByte().toLong() shl 40) or (it[2].toUByte().toLong() shl 32) or
             (it[3].toUByte().toLong() shl 24) or (it[4].toUByte().toLong() shl 16) or
             (it[5].toUByte().toLong() shl 8) or (it[6].toUByte().toLong())
+
     6 -> (it[0].toLong() shl 40) or (it[1].toUByte().toLong() shl 32) or (it[2].toUByte().toLong() shl 24) or
             (it[3].toUByte().toLong() shl 16) or (it[4].toUByte().toLong() shl 8) or (it[5].toUByte().toLong())
+
     5 -> (it[0].toLong() shl 32) or (it[1].toUByte().toLong() shl 24) or (it[2].toUByte().toLong() shl 16) or
             (it[3].toUByte().toLong() shl 8) or (it[4].toUByte().toLong())
+
     4 -> (it[0].toLong() shl 24) or (it[1].toUByte().toLong() shl 16) or (it[2].toUByte().toLong() shl 8) or
             (it[3].toUByte().toLong())
+
     3 -> (it[0].toLong() shl 16) or (it[1].toUByte().toLong() shl 8) or (it[2].toUByte().toLong())
     2 -> (it[0].toLong() shl 8) or (it[1].toUByte().toLong() shl 0)
     1 -> (it[0].toLong())
@@ -502,12 +551,14 @@ fun Long.Companion.fromTwosComplementByteArray(it: ByteArray) = when (it.size) {
 
 fun ULong.Companion.fromTwosComplementByteArray(it: ByteArray) = when {
     ((it.size == 9) && (it[0] == 0.toByte())) ->
-        (it[1].toUByte().toULong() shl 56) or (it[2].toUByte().toULong() shl 48) or (it[3].toUByte().toULong() shl 40) or
+        (it[1].toUByte().toULong() shl 56) or (it[2].toUByte().toULong() shl 48) or (it[3].toUByte()
+            .toULong() shl 40) or
                 (it[4].toUByte().toULong() shl 32) or (it[5].toUByte().toULong() shl 24) or
                 (it[6].toUByte().toULong() shl 16) or (it[7].toUByte().toULong() shl 8) or
                 (it[8].toUByte().toULong())
+
     else -> Long.fromTwosComplementByteArray(it).let {
-        require (it >= 0) { "Value $it is out of bounds for ULong" }
+        require(it >= 0) { "Value $it is out of bounds for ULong" }
         it.toULong()
     }
 }

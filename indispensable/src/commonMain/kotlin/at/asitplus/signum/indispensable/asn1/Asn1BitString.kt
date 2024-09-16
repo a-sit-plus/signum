@@ -18,8 +18,8 @@ class Asn1BitString private constructor(
      * The overall [Asn1Primitive.content] resulting from [encodeToTlv] is `byteArrayOf(numPaddingBits, *rawBytes)`
      */
     val rawBytes: ByteArray,
-) :
-    Asn1Encodable<Asn1Primitive> {
+
+) : Asn1Encodable<Asn1Primitive> {
 
 
     /**
@@ -68,7 +68,7 @@ class Asn1BitString private constructor(
         return bitset
     }
 
-    companion object : Asn1TagVerifyingDecodable<Asn1BitString> {
+    companion object : Asn1Decodable<Asn1Primitive, Asn1BitString> {
         private fun fromBitSet(bitSet: BitSet): Pair<Byte, ByteArray> {
             val rawBytes = bitSet.bytes.map {
                 var res = 0
@@ -81,20 +81,12 @@ class Asn1BitString private constructor(
         }
 
         @Throws(Asn1Exception::class)
-        private fun decode(src: Asn1Primitive, tagOverride: Asn1Element.Tag? = null): Asn1BitString {
-            val expected = tagOverride ?: Asn1Element.Tag.BIT_STRING
-            if (src.tag != expected)
-                throw Asn1TagMismatchException(expected, src.tag)
+        override fun doDecode(src: Asn1Primitive): Asn1BitString {
             if (src.length == 0) return Asn1BitString(0, byteArrayOf())
             if (src.content.first() > 7) throw Asn1Exception("Number of padding bits < 7")
             return Asn1BitString(src.content[0], src.content.sliceArray(1..<src.content.size))
         }
 
-        @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(src: Asn1Primitive) = decodeFromTlv(src, null)
-
-        @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(src: Asn1Primitive, tagOverride: Asn1Element.Tag?) = decode(src, tagOverride)
     }
 
     override fun encodeToTlv() = Asn1Primitive(Asn1Element.Tag.BIT_STRING, byteArrayOf(numPaddingBits, *rawBytes))
