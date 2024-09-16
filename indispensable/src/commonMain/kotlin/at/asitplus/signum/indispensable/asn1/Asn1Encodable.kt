@@ -74,13 +74,12 @@ interface Asn1Decodable<A : Asn1Element, T : Asn1Encodable<A>> {
     /**
      * Processes an [A], parsing it into an instance of [T]
      * @throws Asn1Exception if invalid data is provided.
-     * Allows overriding the tag, if it deviates from the element's default tag.
-     * Specify [tagOverride] for verifying implicitly tagged elements (and better not override this function).
+     * Specify [assertTag] for verifying implicitly tagged elements' tags (and better not override this function).
      * @throws Asn1Exception
      */
     @Throws(Asn1Exception::class)
-    fun decodeFromTlv(src: A, tagOverride: Asn1Element.Tag? = null): T {
-        verifyTag(src, tagOverride)
+    fun decodeFromTlv(src: A, assertTag: Asn1Element.Tag? = null): T {
+        verifyTag(src, assertTag)
         return doDecode(src)
     }
 
@@ -91,9 +90,13 @@ interface Asn1Decodable<A : Asn1Element, T : Asn1Encodable<A>> {
     @Throws(Asn1Exception::class)
     fun doDecode(src: A): T
 
+    /**
+     * Specify [assertTag] for verifying implicitly tagged elements' tags (and better not override this function).
+     * @throws Asn1TagMismatchException
+     */
     @Throws(Asn1TagMismatchException::class)
-    fun verifyTag(src: A, tagOverride: Asn1Element.Tag?) {
-        val expected = tagOverride ?: return
+    fun verifyTag(src: A, assertTag: Asn1Element.Tag?) {
+        val expected = assertTag ?: return
         if (src.tag != expected)
             throw Asn1TagMismatchException(expected, src.tag)
     }
@@ -101,32 +104,32 @@ interface Asn1Decodable<A : Asn1Element, T : Asn1Encodable<A>> {
     /**
      * Exception-free version of [decodeFromTlv]
      */
-    fun decodeFromTlvOrNull(src: A, tagOverride: Asn1Element.Tag? = null) =
-        catching { decodeFromTlv(src, tagOverride) }.getOrNull()
+    fun decodeFromTlvOrNull(src: A, assertTag: Asn1Element.Tag? = null) =
+        catching { decodeFromTlv(src, assertTag) }.getOrNull()
 
     /**
      * Safe version of [decodeFromTlv], wrapping the result into a [KmmResult]
      */
-    fun decodeFromTlvSafe(src: A, tagOverride: Asn1Element.Tag? = null) =
-        catching { decodeFromTlv(src, tagOverride) }
+    fun decodeFromTlvSafe(src: A, assertTag: Asn1Element.Tag? = null) =
+        catching { decodeFromTlv(src, assertTag) }
 
     /**
      * Convenience method, directly DER-decoding a byte array to [T]
      * @throws Asn1Exception if invalid data is provided
      */
     @Throws(Asn1Exception::class)
-    fun decodeFromDer(src: ByteArray, tagOverride: Asn1Element.Tag? = null): T =
-        decodeFromTlv(Asn1Element.parse(src) as A, tagOverride)
+    fun decodeFromDer(src: ByteArray, assertTag: Asn1Element.Tag? = null): T =
+        decodeFromTlv(Asn1Element.parse(src) as A, assertTag)
 
     /**
      * Exception-free version of [decodeFromDer]
      */
-    fun decodeFromDerOrNull(src: ByteArray, tagOverride: Asn1Element.Tag? = null) =
-        catching { decodeFromDer(src, tagOverride) }.getOrNull()
+    fun decodeFromDerOrNull(src: ByteArray, assertTag: Asn1Element.Tag? = null) =
+        catching { decodeFromDer(src, assertTag) }.getOrNull()
 
     /**
      * Safe version of [decodeFromDer], wrapping the result into a [KmmResult]
      */
-    fun decodeFromDerSafe(src: ByteArray, tagOverride: Asn1Element.Tag? = null) =
-        catching { decodeFromDer(src, tagOverride) }
+    fun decodeFromDerSafe(src: ByteArray, assertTag: Asn1Element.Tag? = null) =
+        catching { decodeFromDer(src, assertTag) }
 }
