@@ -195,10 +195,9 @@ sealed class Asn1Element(
                 children,
                 tag.tagValue,
                 tag.tagClass,
-                sort = isSorted
+                sortChildren = isSorted
             ) else Asn1CustomStructure.asPrimitive(children, tag.tagValue, tag.tagClass)
         }
-
         is Asn1Primitive -> Asn1Primitive(tag without CONSTRUCTED, content)
     }
 
@@ -398,16 +397,26 @@ object Asn1EncodableSerializer : KSerializer<Asn1Element> {
 /**
  * ASN.1 structure. Contains no data itself, but holds zero or more [children]
  */
-sealed class Asn1Structure(tag: Tag, children: List<Asn1Element>?, sort: Boolean = false) :
-    Asn1Element(TLV(tag, byteArrayOf()), if (!sort) children else children?.sortedBy { it.tag }) {
+sealed class Asn1Structure(
+    /**
+     * The tag identifying this structure
+     */
+    tag: Tag,
 
+    /**
+     * This structure's child elements
+     */
+    children: List<Asn1Element>,
     /**
      * Whether this structure sorts child nodes or keeps them as-is.
      * This **should** be true for SET and SET OF, but is set to false for SET and SET OF elements parsed
      * from DER-encoded structures, because this has a chance of altering the structure for non-conforming DER-encoded
      * structures.
      */
-    val isSorted: Boolean = sort
+    val isSorted: Boolean = false
+) :
+    Asn1Element(TLV(tag, byteArrayOf()), if (!isSorted) children else children.sortedBy { it.tag }) {
+
 
     public override val children: List<Asn1Element>
         get() = super.children!!
@@ -506,36 +515,36 @@ class Asn1Sequence internal constructor(children: List<Asn1Element>) :
  * ASN1 structure (i.e. containing child nodes) with custom tag
  */
 class Asn1CustomStructure private constructor(
-    tag: Tag, children: List<Asn1Element>, sort: Boolean
+    tag: Tag, children: List<Asn1Element>, sortChildren: Boolean
 ) :
-    Asn1Structure(tag, children) {
+    Asn1Structure(tag, children, sortChildren) {
     /**
      * ASN.1 CONSTRUCTED with custom tag
      * @param children the elements to put into this sequence
      * @param tag the custom tag to use
      * @param tagClass the tag class to use for this custom tag. defaults to [TagClass.UNIVERSAL]
-     * @param sort whether to sort the passed child nodes. defaults to false
+     * @param sortChildren whether to sort the passed child nodes. defaults to false
      */
     constructor(
         children: List<Asn1Element>,
         tag: ULong,
         tagClass: TagClass = TagClass.UNIVERSAL,
-        sort: Boolean = false
-    ) : this(Tag(tag, constructed = true, tagClass), children, sort)
+        sortChildren: Boolean = false
+    ) : this(Tag(tag, constructed = true, tagClass), children, sortChildren)
 
     /**
      * ASN.1 CONSTRUCTED with custom tag
      * @param children the elements to put into this sequence
      * @param tag the custom tag to use
      * @param tagClass the tag class to use for this custom tag. defaults to [TagClass.UNIVERSAL]
-     * @param sort whether to sort the passed child nodes. defaults to false
+     * @param sortChildren whether to sort the passed child nodes. defaults to false
      */
     constructor(
         children: List<Asn1Element>,
         tag: UByte,
         tagClass: TagClass = TagClass.UNIVERSAL,
-        sort: Boolean = false
-    ) : this(children, tag.toULong(), tagClass, sort)
+        sortChildren: Boolean = false
+    ) : this(children, tag.toULong(), tagClass, sortChildren)
 
 
     override val content: ByteArray by lazy {
@@ -609,13 +618,13 @@ class Asn1PrimitiveOctetString(content: ByteArray) : Asn1Primitive(Tag.OCTET_STR
 /**
  * ASN.1 SET 0x31 ([BERTags.SET] OR [BERTags.CONSTRUCTED])
  */
-open class Asn1Set private constructor(children: List<Asn1Element>?, dontSort: Boolean) :
+open class Asn1Set private constructor(children: List<Asn1Element>, dontSort: Boolean) :
     Asn1Structure(Tag.SET, children, !dontSort) {
 
     /**
      * @param children the elements to put into this set. will be automatically sorted by tag
      */
-    internal constructor(children: List<Asn1Element>?) : this(children, false)
+    internal constructor(children: List<Asn1Element>) : this(children, false)
 
     init {
         if (!tag.isConstructed) throw IllegalArgumentException("An ASN.1 Structure must have a CONSTRUCTED tag")
@@ -641,10 +650,9 @@ open class Asn1Set private constructor(children: List<Asn1Element>?, dontSort: B
  * @param children the elements to put into this set. will be automatically checked to have the same tag and sorted by value
  * @throws Asn1Exception if children are using different tags
  */
-class Asn1SetOf @Throws(Asn1Exception::class) internal constructor(children: List<Asn1Element>?) :
-    Asn1Set(children?.let {
+class Asn1SetOf @Throws(Asn1Exception::class) internal constructor(children: List<Asn1Element>) :
+    Asn1Set(children.also { it ->
         if (it.any { elem -> elem.tag != it.first().tag }) throw Asn1Exception("SET OF must only contain elements of the same tag")
-        it.sortedBy { it.tag.encodedTag.encodeToString(Base16) } //TODO this is inefficient
     })
 
 /**
