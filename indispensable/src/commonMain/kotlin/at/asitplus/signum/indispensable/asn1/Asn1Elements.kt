@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Companion.toExplicitTag
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import io.matthewnelson.encoding.base16.Base16
@@ -266,20 +265,6 @@ sealed class Asn1Element(
                 return derEncoded
             }
 
-            /**
-             * Convenience helper to easily construct implicitly tagged elements.
-             * Shorthand for `Tag(tagValue, constructed=false, tagClass=TagClass.CONTEXT_SPECIFIC)
-             */
-            fun ULong.toImplicitTag() =
-                Asn1Element.Tag(this, constructed = false, tagClass = TagClass.CONTEXT_SPECIFIC)
-
-            /**
-             * Convenience helper to easily construct implicitly tagged elements.
-             * Shorthand for `Tag(tagValue, constructed=true, tagClass=TagClass.CONTEXT_SPECIFIC)
-             */
-            fun ULong.toExplicitTag() =
-                Asn1Element.Tag(this, constructed = true, tagClass = TagClass.CONTEXT_SPECIFIC)
-
             val SET = Tag(tagValue = BERTags.SET.toULong(), constructed = true)
             val SEQUENCE = Tag(tagValue = BERTags.SEQUENCE.toULong(), constructed = true)
 
@@ -485,7 +470,7 @@ internal constructor(tag: ULong, children: List<Asn1Element>) :
      * @throws Asn1TagMismatchException if the tag does not match
      */
     @Throws(Asn1TagMismatchException::class)
-    fun verifyTag(tagNumber: ULong): List<Asn1Element> = verifyTag(tagNumber.toExplicitTag())
+    fun verifyTag(tagNumber: ULong): List<Asn1Element> = verifyTag(Asn1.ExplicitTag(tagNumber))
 
     /**
      * Exception-free version of [verifyTag]

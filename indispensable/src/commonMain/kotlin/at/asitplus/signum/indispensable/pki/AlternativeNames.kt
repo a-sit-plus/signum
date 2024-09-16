@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Companion.toImplicitTag
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
 
@@ -132,13 +131,13 @@ private constructor(private val extensions: List<Asn1Element>) {
  * Enumeration of implicit tags used to indicate different `SubjectAltName`s
  */
 object SubjectAltNameImplicitTags {
-    val otherName = 0uL.toImplicitTag()
-    val rfc822Name = 1uL.toImplicitTag()
-    val dNSName = 2uL.toImplicitTag()
-    val x400Address = 3uL.toImplicitTag()
-    val directoryName = 4uL.toImplicitTag()
-    val ediPartyName = 5uL.toImplicitTag()
-    val uniformResourceIdentifier = 6uL.toImplicitTag()
-    val iPAddress = 7uL.toImplicitTag()
-    val registeredID = 8uL.toImplicitTag()
+    val otherName = Asn1.ImplicitTag(0uL)
+    val rfc822Name = Asn1.ImplicitTag(1uL)
+    val dNSName = Asn1.ImplicitTag(2uL)
+    val x400Address = Asn1.ImplicitTag(3uL)
+    val directoryName = Asn1.ImplicitTag(4uL)
+    val ediPartyName = Asn1.ImplicitTag(5uL)
+    val uniformResourceIdentifier = Asn1.ImplicitTag(6uL)
+    val iPAddress = Asn1.ImplicitTag(7uL)
+    val registeredID = Asn1.ImplicitTag(8uL)
 }

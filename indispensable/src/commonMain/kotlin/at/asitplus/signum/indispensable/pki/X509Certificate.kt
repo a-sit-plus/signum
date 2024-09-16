@@ -5,8 +5,6 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Companion.toExplicitTag
-import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Companion.toImplicitTag
 import at.asitplus.signum.indispensable.io.BitSet
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
@@ -138,10 +136,10 @@ constructor(
     companion object : Asn1Decodable<Asn1Sequence, TbsCertificate> {
 
         object Tags {
-            val ISSUER_UID = 1uL.toImplicitTag()
-            val SUBJECT_UID = 2uL.toImplicitTag()
-            val EXTENSIONS = 3uL.toExplicitTag()
-            val VERSION = 0uL.toExplicitTag()
+            val ISSUER_UID = Asn1.ImplicitTag(1uL)
+            val SUBJECT_UID = Asn1.ImplicitTag(2uL)
+            val EXTENSIONS = Asn1.ExplicitTag(3uL)
+            val VERSION = Asn1.ExplicitTag(0uL)
         }
 
         @Throws(Asn1Exception::class)
