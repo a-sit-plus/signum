@@ -3,7 +3,7 @@ package at.asitplus.signum.indispensable
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.Asn1.Null
-import at.asitplus.signum.indispensable.asn1.Asn1.Tagged
+import at.asitplus.signum.indispensable.asn1.Asn1.ExplicitlyTagged
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -51,13 +51,13 @@ enum class X509SignatureAlgorithm(
             Asn1.Sequence {
             +oid
             +Asn1.Sequence {
-                +Tagged(0u) {
+                +ExplicitlyTagged(0u) {
                     +Asn1.Sequence {
                         +shaOid
                         +Null()
                     }
                 }
-                +Tagged(1u) {
+                +ExplicitlyTagged(1u) {
                     +Asn1.Sequence {
                         +KnownOIDs.pkcs1_MGF
                         +Asn1.Sequence {
@@ -66,7 +66,7 @@ enum class X509SignatureAlgorithm(
                         }
                     }
                 }
-                +Tagged(2u) {
+                +ExplicitlyTagged(2u) {
                     +Asn1.Int(bits / 8)
                 }
             }
@@ -131,14 +131,14 @@ enum class X509SignatureAlgorithm(
         @Throws(Asn1Exception::class)
         private fun parsePssParams(src: Asn1Sequence): X509SignatureAlgorithm = runRethrowing {
             val seq = src.nextChild() as Asn1Sequence
-            val first = (seq.nextChild() as Asn1Tagged).verifyTag(0u).single() as Asn1Sequence
+            val first = (seq.nextChild() as Asn1ExplicitlyTagged).verifyTag(0u).single() as Asn1Sequence
 
             val sigAlg = (first.nextChild() as Asn1Primitive).readOid()
             val tag = first.nextChild().tag
             if (tag != Asn1Element.Tag.NULL)
                 throw Asn1TagMismatchException(Asn1Element.Tag.NULL, tag, "PSS Params not supported yet")
 
-            val second = (seq.nextChild() as Asn1Tagged).verifyTag(1u).single() as Asn1Sequence
+            val second = (seq.nextChild() as Asn1ExplicitlyTagged).verifyTag(1u).single() as Asn1Sequence
             val mgf = (second.nextChild() as Asn1Primitive).readOid()
             if (mgf != KnownOIDs.pkcs1_MGF) throw IllegalArgumentException("Illegal OID: $mgf")
             val inner = second.nextChild() as Asn1Sequence
@@ -149,7 +149,7 @@ enum class X509SignatureAlgorithm(
                 "PSS Params not supported yet"
             )
 
-            val last = (seq.nextChild() as Asn1Tagged).verifyTag(2u).single() as Asn1Primitive
+            val last = (seq.nextChild() as Asn1ExplicitlyTagged).verifyTag(2u).single() as Asn1Primitive
             val saltLen = last.readInt()
 
             return sigAlg.let {

@@ -12,42 +12,45 @@ import kotlin.experimental.or
  * Class Providing a DSL for creating arbitrary ASN.1 structures. You will almost certainly never use it directly, but rather use it as follows:
  * ```kotlin
  * Sequence {
- *     +Tagged(1uL) {
- *         +Asn1Primitive(BERTags.BOOLEAN.toUlong(), byteArrayOf(0x00))
- *     }
- *     +Set {
- *         +Sequence {
- *             +SetOf {
- *                 +PrintableString("World")
- *                 +PrintableString("Hello")
- *             }
- *             +Set {
- *                 +PrintableString("World")
- *                 +PrintableString("Hello")
- *                 +Utf8String("!!!")
- *             }
+ *   +ExplicitlyTagged(1uL) {
+ *     +Asn1Primitive(Asn1Element.Tag.BOOL, byteArrayOf(0x00)) //or +Asn1.Bool(false)
+ *   }
+ *   +Asn1.Set {
+ *     +Asn1.Sequence {
+ *       +Asn1.SetOf {
+ *         +PrintableString("World")
+ *         +PrintableString("Hello")
+ *       }
+ *       +Asn1.Set {
+ *         +PrintableString("World")
+ *         +PrintableString("Hello")
+ *         +Utf8String("!!!")
+ *       }
  *
- *         }
  *     }
- *     +Null()
+ *   }
+ *   +Asn1.Null()
  *
- *     +ObjectIdentifier("1.2.603.624.97")
+ *   +ObjectIdentifier("1.2.603.624.97")
  *
- *     +Utf8String("Foo")
- *     +PrintableString("Bar")
+ *   +(Utf8String("Foo") withImplicitTag (0xCAFEuL withClass TagClass.PRIVATE))
+ *   +PrintableString("Bar")
  *
- *     +Set {
- *         +Int(3)
- *         +Long(-65789876543L)
- *         +Bool(false)
- *         +Bool(true)
- *     }
- *     +Sequence {
- *         +Null()
- *         +Asn1String.Numeric("12345")
- *         +UtcTime(instant)
- *     }
- * }
+ *   //fake Primitive
+ *   +(Asn1.Sequence { +Asn1.Int(42) } withImplicitTag (0x5EUL without CONSTRUCTED))
+ *
+ *   +Asn1.Set {
+ *     +Asn1.Int(3)
+ *     +Asn1.Int(-65789876543L)
+ *     +Asn1.Bool(false)
+ *     +Asn1.Bool(true)
+ *   }
+ *   +Asn1.Sequence {
+ *     +Asn1.Null()
+ *     +Asn1String.Numeric("12345")
+ *     +UtcTime(Clock.System.now())
+ *   }
+ * } withImplicitTag (1337uL withClass TagClass.APPLICATION)
  * ```
  */
 class Asn1TreeBuilder {
@@ -172,35 +175,35 @@ object Asn1 {
 
 
     /**
-     * Creates a new EXPLICITLY TAGGED ASN.1 structure as [Asn1Tagged] using [tag].
+     * Creates a new EXPLICITLY TAGGED ASN.1 structure as [Asn1ExplicitlyTagged] using [tag].
      *
      * Use as follows:
      *
      * ```kotlin
-     * Tagged(2uL) {
+     * ExplicitlyTagged(2uL) {
      *   +PrintableString("World World")
      *   +Null()
      *   +Int(1337)
      * }
      *  ```
      */
-    fun Tagged(tag: ULong, root: Asn1TreeBuilder.() -> Unit): Asn1Tagged {
+    fun ExplicitlyTagged(tag: ULong, root: Asn1TreeBuilder.() -> Unit): Asn1ExplicitlyTagged {
         val seq = Asn1TreeBuilder()
         seq.root()
-        return Asn1Tagged(tag, seq.elements)
+        return Asn1ExplicitlyTagged(tag, seq.elements)
     }
 
     /**
-     * Exception-free version of [Tagged]
+     * Exception-free version of [ExplicitlyTagged]
      */
-    fun TaggedOrNull(tag: ULong, root: Asn1TreeBuilder.() -> Unit) =
-        catching { Tagged(tag, root) }.getOrNull()
+    fun ExplicitlyTaggedOrNull(tag: ULong, root: Asn1TreeBuilder.() -> Unit) =
+        catching { ExplicitlyTagged(tag, root) }.getOrNull()
 
     /**
-     * Safe version on [Tagged], wrapping the result into a [KmmResult]
+     * Safe version on [ExplicitlyTagged], wrapping the result into a [KmmResult]
      */
-    fun TaggedSafe(tag: ULong, root: Asn1TreeBuilder.() -> Unit) =
-        catching { Tagged(tag, root) }
+    fun ExplicitlyTaggedSafe(tag: ULong, root: Asn1TreeBuilder.() -> Unit) =
+        catching { ExplicitlyTagged(tag, root) }
 
 
     /**

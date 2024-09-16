@@ -442,7 +442,7 @@ sealed class Asn1Structure(tag: Tag, children: List<Asn1Element>?, sort: Boolean
 /**
  * Explicit ASN.1 Tag. Can contain any number of [children]
  */
-class Asn1Tagged
+class Asn1ExplicitlyTagged
 /**
  * @param tag the ASN.1 Tag to be used will be properly encoded to have [BERTags.CONSTRUCTED] and
  * [BERTags.CONTEXT_SPECIFIC] bits set)
@@ -454,7 +454,7 @@ internal constructor(tag: ULong, children: List<Asn1Element>) :
 
 
     /**
-     * Returns this [Asn1Tagged] children, if its tag matches [tag]
+     * Returns this [Asn1ExplicitlyTagged] children, if its tag matches [tag]
      *
      * @throws Asn1TagMismatchException if the tag does not match
      */
@@ -465,7 +465,7 @@ internal constructor(tag: ULong, children: List<Asn1Element>) :
     }
 
     /**
-     * Returns this [Asn1Tagged] children, if its tag matches [tagNumber]
+     * Returns this [Asn1ExplicitlyTagged] children, if its tag matches [tagNumber]
      *
      * @throws Asn1TagMismatchException if the tag does not match
      */

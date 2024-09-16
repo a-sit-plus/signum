@@ -40,7 +40,7 @@ private class Asn1Reader(input: ByteArray) {
             if (tlv.isSequence()) result.add(Asn1Sequence(Asn1Reader(tlv.content).doParse()))
             else if (tlv.isSet()) result.add(Asn1Set.fromPresorted(Asn1Reader(tlv.content).doParse()))
             else if (tlv.isExplicitlyTagged()) result.add(
-                Asn1Tagged(
+                Asn1ExplicitlyTagged(
                     tlv.tag.tagValue,
                     Asn1Reader(tlv.content).doParse()
                 )

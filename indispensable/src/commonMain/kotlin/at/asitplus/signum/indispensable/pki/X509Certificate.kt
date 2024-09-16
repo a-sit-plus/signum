@@ -61,7 +61,7 @@ constructor(
     val issuerAlternativeNames: AlternativeNames? = extensions?.findIssuerAltNames()
 
 
-    private fun Asn1TreeBuilder.Version(value: Int) = Asn1.Tagged(Tags.VERSION.tagValue) { +Asn1.Int(value) }
+    private fun Asn1TreeBuilder.Version(value: Int) = Asn1.ExplicitlyTagged(Tags.VERSION.tagValue) { +Asn1.Int(value) }
 
 
     @Throws(Asn1Exception::class)
@@ -87,7 +87,7 @@ constructor(
 
             extensions?.let {
                 if (it.isNotEmpty()) {
-                    +Asn1.Tagged(EXTENSIONS.tagValue) {
+                    +Asn1.ExplicitlyTagged(EXTENSIONS.tagValue) {
                         +Asn1.Sequence {
                             it.forEach { ext -> +ext }
                         }
@@ -145,7 +145,7 @@ constructor(
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence) = runRethrowing {
             val version = src.nextChild().let {
-                ((it as Asn1Tagged).verifyTag(Tags.VERSION).single() as Asn1Primitive).readInt()
+                ((it as Asn1ExplicitlyTagged).verifyTag(Tags.VERSION).single() as Asn1Primitive).readInt()
             }
             val serialNumber = (src.nextChild() as Asn1Primitive).decode(Asn1Element.Tag.INT) { it }
             val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
@@ -172,7 +172,7 @@ constructor(
                 } else null
             }
             val extensions = if (src.hasMoreChildren()) {
-                ((src.nextChild() as Asn1Tagged).verifyTag(EXTENSIONS.tagValue).single() as Asn1Sequence).children.map {
+                ((src.nextChild() as Asn1ExplicitlyTagged).verifyTag(EXTENSIONS.tagValue).single() as Asn1Sequence).children.map {
                     X509CertificateExtension.decodeFromTlv(it as Asn1Sequence)
                 }
             } else null

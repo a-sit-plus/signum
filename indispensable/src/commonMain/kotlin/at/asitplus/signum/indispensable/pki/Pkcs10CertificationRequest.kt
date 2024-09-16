@@ -4,7 +4,7 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.Asn1.BitString
-import at.asitplus.signum.indispensable.asn1.Asn1.Tagged
+import at.asitplus.signum.indispensable.asn1.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import kotlinx.serialization.Serializable
 
@@ -50,7 +50,7 @@ data class TbsCertificationRequest(
 
         //subject Public Key
         +publicKey
-        +Tagged(0u) { attributes?.map { +it } }
+        +ExplicitlyTagged(0u) { attributes?.map { +it } }
     }
 
 
@@ -85,7 +85,7 @@ data class TbsCertificationRequest(
             }
             val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val attributes = if (src.hasMoreChildren()) {
-                (src.nextChild() as Asn1Tagged).verifyTag(0u)
+                (src.nextChild() as Asn1ExplicitlyTagged).verifyTag(0u)
                     .map { Pkcs10CertificationRequestAttribute.decodeFromTlv(it as Asn1Sequence) }
             } else null
 

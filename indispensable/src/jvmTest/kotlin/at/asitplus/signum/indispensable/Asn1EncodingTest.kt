@@ -7,7 +7,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.Asn1.OctetString
 import at.asitplus.signum.indispensable.asn1.Asn1.OctetStringEncapsulating
 import at.asitplus.signum.indispensable.asn1.Asn1.PrintableString
-import at.asitplus.signum.indispensable.asn1.Asn1.Tagged
+import at.asitplus.signum.indispensable.asn1.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.Asn1.UtcTime
 import at.asitplus.signum.indispensable.asn1.Asn1.Utf8String
 import at.asitplus.signum.indispensable.io.BitSet
@@ -77,7 +77,7 @@ class Asn1EncodingTest : FreeSpec({
                     }
                 }.derEncoded
             )
-            +Tagged(9u) { +Clock.System.now().encodeToAsn1UtcTime() }
+            +ExplicitlyTagged(9u) { +Clock.System.now().encodeToAsn1UtcTime() }
             +OctetString(byteArrayOf(17, -43, 23, -12, 8, 65, 90))
             +Bool(false)
             +Bool(true)
@@ -206,7 +206,7 @@ class Asn1EncodingTest : FreeSpec({
         val instant = Clock.System.now()
 
         val sequence = Asn1.Sequence {
-            +Tagged(1u) { +Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00)) }
+            +ExplicitlyTagged(1u) { +Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00)) }
             +Asn1.Set {
                 +Asn1.Sequence {
                     +Asn1.SetOf {

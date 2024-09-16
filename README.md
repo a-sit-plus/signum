@@ -412,7 +412,7 @@ allows for
 
 #### Decoding Values
 
-Various helper functions exist to facilitate decoging the values contained in `Asn1Primitives`, such as `decodeInt()`,
+Various helper functions exist to facilitate decoding the values contained in `Asn1Primitives`, such as `decodeInt()`,
 for example.
 However, anything can be decoded and tagged at will. Therefore, a generic decoding function exists, which has the
 following signature:
@@ -432,7 +432,7 @@ DSL, which returns an `Asn1Structure`:
 
 ```kotlin
 Asn1.Sequence {
-  +Tagged(1uL) {
+  +ExplicitlyTagged(1uL) {
     +Asn1Primitive(Asn1Element.Tag.BOOL, byteArrayOf(0x00)) //or +Asn1.Bool(false)
   }
   +Asn1.Set {
