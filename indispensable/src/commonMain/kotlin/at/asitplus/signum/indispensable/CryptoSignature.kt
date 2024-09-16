@@ -212,7 +212,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
                 decodeFromDer(src.readBitString().rawBytes)
             }
 
-            override fun decodeFromTlv(src: Asn1Element): EC.IndefiniteLength {
+            override fun doDecode(src: Asn1Element): EC.IndefiniteLength {
                 src as Asn1Sequence
                 val r = (src.nextChild() as Asn1Primitive).readBigInteger()
                 val s = (src.nextChild() as Asn1Primitive).readBigInteger()
@@ -222,6 +222,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
 
             @Deprecated("use fromRawBytes", ReplaceWith("CryptoSignature.EC.fromRawBytes(input)"))
             operator fun invoke(input: ByteArray): DefiniteLength = fromRawBytes(input)
+
         }
 
     }
@@ -256,13 +257,14 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
 
     companion object : Asn1Decodable<Asn1Element, CryptoSignature> {
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(src: Asn1Element): CryptoSignature = runRethrowing {
+        override fun doDecode(src: Asn1Element): CryptoSignature = runRethrowing {
             when (src.tag) {
                 Asn1Element.Tag.BIT_STRING -> RSAorHMAC((src as Asn1Primitive).decode(Asn1Element.Tag.BIT_STRING) { it })
-                Asn1Element.Tag.ASN1_SEQUENCE -> EC.decodeFromTlv(src as Asn1Sequence)
+                Asn1Element.Tag.SEQUENCE -> EC.decodeFromTlv(src as Asn1Sequence)
 
                 else -> throw Asn1Exception("Unknown Signature Format")
             }
         }
+
     }
 }

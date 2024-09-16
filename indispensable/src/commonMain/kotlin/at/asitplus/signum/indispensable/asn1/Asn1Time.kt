@@ -29,7 +29,7 @@ class Asn1Time(instant: Instant, formatOverride: Format? = null) : Asn1Encodable
         private val THRESHOLD_GENERALIZED_TIME = Instant.parse("2050-01-01T00:00:00Z")
 
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(src: Asn1Primitive) =
+        override fun doDecode(src: Asn1Primitive) =
             Asn1Time(src.readInstant(), if (src.tag == Asn1Element.Tag.TIME_UTC) Format.UTC else Format.GENERALIZED)
     }
 

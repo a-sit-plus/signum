@@ -1,14 +1,17 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.io.BitSet
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
+import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.EXTENSIONS
+import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.ISSUER_UID
+import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.SUBJECT_UID
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.serialization.Serializable
@@ -58,7 +61,7 @@ constructor(
     val issuerAlternativeNames: AlternativeNames? = extensions?.findIssuerAltNames()
 
 
-    private fun Asn1TreeBuilder.Version(value: Int) = Asn1.Tagged(0u) { +Asn1.Int(value) }
+    private fun Asn1TreeBuilder.Version(value: Int) = Asn1.ExplicitlyTagged(Tags.VERSION.tagValue) { +Asn1.Int(value) }
 
 
     @Throws(Asn1Exception::class)
@@ -79,21 +82,12 @@ constructor(
             //subject public key
             +publicKey
 
-            issuerUniqueID?.let {
-                +Asn1Primitive(
-                    1uL.toImplicitTag(),
-                    Asn1BitString(it).let { byteArrayOf(it.numPaddingBits, *it.rawBytes) })
-            }
-            subjectUniqueID?.let {
-                +Asn1Primitive(
-                    1uL.toImplicitTag(),
-                    Asn1BitString(it).let { byteArrayOf(it.numPaddingBits, *it.rawBytes) })
-
-            }
+            issuerUniqueID?.let { +(Asn1BitString(it) withImplicitTag ISSUER_UID) }
+            subjectUniqueID?.let { +(Asn1BitString(it) withImplicitTag SUBJECT_UID) }
 
             extensions?.let {
                 if (it.isNotEmpty()) {
-                    +Asn1.Tagged(3u) {
+                    +Asn1.ExplicitlyTagged(EXTENSIONS.tagValue) {
                         +Asn1.Sequence {
                             it.forEach { ext -> +ext }
                         }
@@ -140,11 +134,18 @@ constructor(
     }
 
     companion object : Asn1Decodable<Asn1Sequence, TbsCertificate> {
+
+        object Tags {
+            val ISSUER_UID = Asn1.ImplicitTag(1uL)
+            val SUBJECT_UID = Asn1.ImplicitTag(2uL)
+            val EXTENSIONS = Asn1.ExplicitTag(3uL)
+            val VERSION = Asn1.ExplicitTag(0uL)
+        }
+
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(src: Asn1Sequence) = runRethrowing {
-            //TODO make sure to always check for superfluous data
+        override fun doDecode(src: Asn1Sequence) = runRethrowing {
             val version = src.nextChild().let {
-                ((it as Asn1Tagged).verifyTag(0u).single() as Asn1Primitive).readInt()
+                ((it as Asn1ExplicitlyTagged).verifyTag(Tags.VERSION).single() as Asn1Primitive).readInt()
             }
             val serialNumber = (src.nextChild() as Asn1Primitive).decode(Asn1Element.Tag.INT) { it }
             val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
@@ -160,18 +161,18 @@ constructor(
             val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(src.nextChild() as Asn1Sequence)
 
             val issuerUniqueID = src.peek()?.let { next ->
-                if (next.tag == 1uL.toImplicitTag()) {
-                    (src.nextChild() as Asn1Primitive).let { Asn1BitString.decodeFromTlv(it, 1uL.toImplicitTag()) }
+                if (next.tag == ISSUER_UID) {
+                    (src.nextChild() as Asn1Primitive).let { Asn1BitString.decodeFromTlv(it, ISSUER_UID) }
                 } else null
             }
 
             val subjectUniqueID = src.peek()?.let { next ->
-                if (next.tag == 2uL.toImplicitTag()) {
-                    (src.nextChild() as Asn1Primitive).let { Asn1BitString.decodeFromTlv(it, 2uL.toImplicitTag()) }
+                if (next.tag == SUBJECT_UID) {
+                    (src.nextChild() as Asn1Primitive).let { Asn1BitString.decodeFromTlv(it, SUBJECT_UID) }
                 } else null
             }
             val extensions = if (src.hasMoreChildren()) {
-                ((src.nextChild() as Asn1Tagged).verifyTag(3u).single() as Asn1Sequence).children.map {
+                ((src.nextChild() as Asn1ExplicitlyTagged).verifyTag(EXTENSIONS.tagValue).single() as Asn1Sequence).children.map {
                     X509CertificateExtension.decodeFromTlv(it as Asn1Sequence)
                 }
             } else null
@@ -245,7 +246,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     companion object : Asn1Decodable<Asn1Sequence, X509Certificate> {
 
         @Throws(Asn1Exception::class)
-        override fun decodeFromTlv(src: Asn1Sequence): X509Certificate = runRethrowing {
+        override fun doDecode(src: Asn1Sequence): X509Certificate = runRethrowing {
             val tbs = TbsCertificate.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val signature = when {

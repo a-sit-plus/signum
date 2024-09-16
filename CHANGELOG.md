@@ -27,6 +27,7 @@
         * `Iterator<Byte>.decodeAsn1VarUInt()`
         * `Iterable<Byte>.decodeAsn1VarUInt()`
         * `ByteArray.decodeAsn1VarUInt()`
+* Revamp implicit tagging
 
 ## 3.0
 

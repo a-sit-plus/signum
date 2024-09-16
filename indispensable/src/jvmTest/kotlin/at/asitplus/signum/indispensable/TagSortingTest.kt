@@ -2,6 +2,7 @@
 
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.indispensable.asn1.Asn1
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.TagClass
 import io.kotest.core.spec.style.FreeSpec

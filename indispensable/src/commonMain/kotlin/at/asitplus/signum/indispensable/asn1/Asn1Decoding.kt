@@ -40,7 +40,7 @@ private class Asn1Reader(input: ByteArray) {
             if (tlv.isSequence()) result.add(Asn1Sequence(Asn1Reader(tlv.content).doParse()))
             else if (tlv.isSet()) result.add(Asn1Set.fromPresorted(Asn1Reader(tlv.content).doParse()))
             else if (tlv.isExplicitlyTagged()) result.add(
-                Asn1Tagged(
+                Asn1ExplicitlyTagged(
                     tlv.tag.tagValue,
                     Asn1Reader(tlv.content).doParse()
                 )
@@ -60,7 +60,7 @@ private class Asn1Reader(input: ByteArray) {
     }
 
     private fun TLV.isSet() = tag == Asn1Element.Tag.SET
-    private fun TLV.isSequence() = (tag == Asn1Element.Tag.ASN1_SEQUENCE)
+    private fun TLV.isSequence() = (tag == Asn1Element.Tag.SEQUENCE)
     private fun TLV.isExplicitlyTagged() = tag.isExplicitlyTagged
 
     @Throws(Asn1Exception::class)
@@ -187,7 +187,7 @@ fun Asn1Primitive.readInstantOrNull() = catching { readInstant() }.getOrNull()
 
 
 /**
- * decodes this [Asn1Primitive]'s content into an [ByteArray], assuming it was encoded as BIT STRING
+ * decodes this [Asn1Primitive]'s content into a [ByteArray], assuming it was encoded as BIT STRING
  *
  * @throws Asn1Exception  on invalid input
  */
@@ -213,23 +213,6 @@ fun Asn1Primitive.readNull() = decode(Asn1Element.Tag.NULL) {}
  */
 fun Asn1Primitive.readNullOrNull() = catching { readNull() }.getOrNull()
 
-
-/**
- * Returns this [Asn1Tagged] children, if its tag matches [tag]
- *
- * @throws Asn1TagMismatchException if the tag does not match
- */
-@Throws(Asn1TagMismatchException::class)
-fun Asn1Tagged.verifyTag(tag: ULong): List<Asn1Element> {
-    val explicitTag = Asn1Element.Tag(tag, constructed = true, TagClass.CONTEXT_SPECIFIC)
-    if (this.tag != explicitTag) throw Asn1TagMismatchException(explicitTag, this.tag)
-    return this.children
-}
-
-/**
- * Exception-free version of [verifyTag]
- */
-fun Asn1Tagged.verifyTagOrNull(tag: ULong) = catching { verifyTag(tag) }.getOrNull()
 
 
 /**

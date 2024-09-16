@@ -48,7 +48,7 @@ class TagEncodingTest : FreeSpec({
             tag.tagValue shouldBe it.toULong()
 
             val bc = DERTaggedObject(true, it, ASN1Integer(1337))
-            val own = Asn1.Tagged(it.toULong()) {
+            val own = Asn1.ExplicitlyTagged(it.toULong()) {
                 +Asn1.Int(1337)
             }
             withClue(
@@ -70,7 +70,7 @@ class TagEncodingTest : FreeSpec({
             tag.tagValue shouldBe it.toULong()
 
             val bc = DERTaggedObject(true, it, ASN1Integer(1337))
-            val own = Asn1.Tagged(it.toULong()) {
+            val own = Asn1.ExplicitlyTagged(it.toULong()) {
                 +Asn1.Int(1337)
             }
             withClue(

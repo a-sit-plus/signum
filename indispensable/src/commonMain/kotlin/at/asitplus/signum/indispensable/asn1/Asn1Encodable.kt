@@ -4,7 +4,7 @@ package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.asn1.toImplicitTag
+import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag
 
 /**
  * Interface providing methods to encode to ASN.1
@@ -43,6 +43,27 @@ interface Asn1Encodable<A : Asn1Element> {
      * Safe version of [encodeToDer], wrapping the result into a [KmmResult]
      */
     fun encodeToDerSafe() = catching { encodeToDer() }
+
+    /**
+     * Creates a new implicitly tagged ASN.1 Element from this ASN.1 Element.
+     * NOTE: The [TagClass] of the provided [tag] will be used! If you want the result to have [TagClass.CONTEXT_SPECIFIC],
+     * also invoke `tag withClass TagClass.CONTEXT_SPECIFIC`!. If a CONSTRUCTED Tag is applied to an ASN.1 Primitive,
+     * the CONSTRUCTED bit is overridden and set to zero
+     */
+    infix fun withImplicitTag(tag: Tag) = encodeToTlv().withImplicitTag(tag)
+
+    /**
+     * Creates a new implicitly tagged  ASN.1 Element from this ASN.1 Element.
+     * Sets the class of the resulting structure to [TagClass.CONTEXT_SPECIFIC]
+     */
+    infix fun withImplicitTag(tagValue: ULong) = encodeToTlv().withImplicitTag(tagValue)
+
+    /**
+     * Creates a new implicitly tagged ASN.1 Element from this ASN.1 Structure.
+     * If the provided [template]'s tagClass is not set, the class of the resulting structure defaults to [TagClass.CONTEXT_SPECIFIC].
+     * If a CONSTRUCTED Tag is applied to an ASN.1 Primitive, the CONSTRUCTED bit is overridden and set to zero
+     */
+    infix fun withImplicitTag(template: Tag.Template) = encodeToTlv().withImplicitTag(template)
 }
 
 /**
@@ -52,79 +73,63 @@ interface Asn1Encodable<A : Asn1Element> {
 interface Asn1Decodable<A : Asn1Element, T : Asn1Encodable<A>> {
     /**
      * Processes an [A], parsing it into an instance of [T]
-     * @throws Asn1Exception if invalid data is provided
+     * @throws Asn1Exception if invalid data is provided.
+     * Specify [assertTag] for verifying implicitly tagged elements' tags (and better not override this function).
+     * @throws Asn1Exception
      */
     @Throws(Asn1Exception::class)
-    fun decodeFromTlv(src: A): T
+    fun decodeFromTlv(src: A, assertTag: Asn1Element.Tag? = null): T {
+        verifyTag(src, assertTag)
+        return doDecode(src)
+    }
+
+    /**
+     * Actual element-specific decoding function. By default, this is invoked after [verifyTag]
+     * @throws Asn1Exception
+     */
+    @Throws(Asn1Exception::class)
+    fun doDecode(src: A): T
+
+    /**
+     * Specify [assertTag] for verifying implicitly tagged elements' tags (and better not override this function).
+     * @throws Asn1TagMismatchException
+     */
+    @Throws(Asn1TagMismatchException::class)
+    fun verifyTag(src: A, assertTag: Asn1Element.Tag?) {
+        val expected = assertTag ?: return
+        if (src.tag != expected)
+            throw Asn1TagMismatchException(expected, src.tag)
+    }
 
     /**
      * Exception-free version of [decodeFromTlv]
      */
-    fun decodeFromTlvOrNull(src: A) = catching { decodeFromTlv(src) }.getOrNull()
+    fun decodeFromTlvOrNull(src: A, assertTag: Asn1Element.Tag? = null) =
+        catching { decodeFromTlv(src, assertTag) }.getOrNull()
 
     /**
      * Safe version of [decodeFromTlv], wrapping the result into a [KmmResult]
      */
-    fun decodeFromTlvSafe(src: A) = catching { decodeFromTlv(src) }
+    fun decodeFromTlvSafe(src: A, assertTag: Asn1Element.Tag? = null) =
+        catching { decodeFromTlv(src, assertTag) }
 
     /**
      * Convenience method, directly DER-decoding a byte array to [T]
      * @throws Asn1Exception if invalid data is provided
      */
     @Throws(Asn1Exception::class)
-    fun decodeFromDer(src: ByteArray): T = decodeFromTlv(Asn1Element.parse(src) as A)
+    fun decodeFromDer(src: ByteArray, assertTag: Asn1Element.Tag? = null): T =
+        decodeFromTlv(Asn1Element.parse(src) as A, assertTag)
 
     /**
      * Exception-free version of [decodeFromDer]
      */
-    fun decodeFromDerOrNull(src: ByteArray) = catching { decodeFromDer(src) }.getOrNull()
+    fun decodeFromDerOrNull(src: ByteArray, assertTag: Asn1Element.Tag? = null) =
+        catching { decodeFromDer(src, assertTag) }.getOrNull()
 
     /**
      * Safe version of [decodeFromDer], wrapping the result into a [KmmResult]
      */
-    fun decodeFromDerSafe(src: ByteArray) = catching { decodeFromDer(src) }
-}
-
-interface Asn1TagVerifyingDecodable<T : Asn1Encodable<Asn1Primitive>> :
-    Asn1Decodable<Asn1Primitive, T> {
-
-    /**
-     * Same as [Asn1Decodable.decodeFromTlv], but allows overriding the tag, should the implementing class verify it.
-     * Useful for implicit tagging, in which case you will want to call [at.asitplus.signum.indispensable.asn1.DERTags.toImplicitTag] on [tagOverride].
-     * @throws Asn1Exception
-     */
-    @Throws(Asn1Exception::class)
-    fun decodeFromTlv(src: Asn1Primitive, tagOverride: Asn1Element.Tag?): T
-
-    /**
-     * Exception-free version of [decodeFromTlv]
-     */
-    fun decodeFromTlvOrNull(src: Asn1Primitive, tagOverride: Asn1Element.Tag?) =
-        catching { decodeFromTlv(src, tagOverride) }.getOrNull()
-
-    /**
-     * Safe version of [decodeFromTlv], wrapping the result into a [KmmResult]
-     */
-    fun decodeFromTlvSafe(src: Asn1Primitive, tagOverride: Asn1Element.Tag?) =
-        catching { decodeFromTlv(src, tagOverride) }
-
-
-    /**
-     * Same as [Asn1Decodable.decodeFromDer], but allows overriding the tag, should the implementing class verify it.
-     * Useful for implicit tagging.
-     */
-    @Throws(Asn1Exception::class)
-    fun decodeFromDer(src: ByteArray, tagOverride: Asn1Element.Tag?): T =
-        decodeFromTlv(Asn1Element.parse(src) as Asn1Primitive, tagOverride)
-
-    /**
-     * Exception-free version of [decodeFromDer]
-     */
-    fun decodeFromDerOrNull(src: ByteArray, tagOverride: Asn1Element.Tag?) =
-        catching { decodeFromDer(src, tagOverride) }.getOrNull()
-
-    /**
-     * Safe version of [decodeFromDer], wrapping the result into a [KmmResult]
-     */
-    fun decodeFromDerSafe(src: ByteArray, tagOverride: Asn1Element.Tag?) = catching { decodeFromDer(src, tagOverride) }
+    fun decodeFromDerSafe(src: ByteArray, assertTag: Asn1Element.Tag? = null) =
+        catching { decodeFromDer(src, assertTag) }
 }
