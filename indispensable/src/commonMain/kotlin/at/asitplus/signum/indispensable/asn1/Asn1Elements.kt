@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Companion.toExplicitTag
+import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -206,20 +207,8 @@ sealed class Asn1Element(
      * Creates a new implicitly tagged ASN.1 Element from this ASN.1 Element.
      * Sets the class of the resulting structure to [TagClass.CONTEXT_SPECIFIC]
      */
-    inline infix fun withImplicitTag(tagValue: ULong) = when (this) {
-        is Asn1Structure -> (this as Asn1Structure).withImplicitTag(
-            Tag(
-                tagValue = tagValue,
-                tagClass = TagClass.CONTEXT_SPECIFIC,
-                constructed = this.tag.isConstructed
-            )
-        )
+    inline infix fun withImplicitTag(tagValue: ULong) = withImplicitTag(tagValue withClass TagClass.CONTEXT_SPECIFIC)
 
-        is Asn1Primitive -> Asn1Primitive(
-            Tag(tagValue, tagClass = TagClass.CONTEXT_SPECIFIC, constructed = false),
-            content
-        )
-    }
 
     /**
      * Creates a new implicitly tagged ASN.1 Element from this ASN.1 Structure.
