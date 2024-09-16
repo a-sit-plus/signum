@@ -186,7 +186,7 @@ sealed class Asn1Element(
     /**
      * Creates a new implicitly tagged ASN.1 Element from this ASN.1 Element.
      * NOTE: The [TagClass] of the provided [tag] will be used! If you want the result to have [TagClass.CONTEXT_SPECIFIC],
-     * also invoke `tag withClass TagClass.CONTEXT_SPECIFIC`!. If a CONSTRUCTED Tag is applied to an ASN.1 Primitive,
+     * use `element withImplicitTag (tag withClass TagClass.CONTEXT_SPECIFIC)`!. If a CONSTRUCTED Tag is applied to an ASN.1 Primitive,
      * the CONSTRUCTED bit is overridden and set to zero.
      */
     inline infix fun withImplicitTag(tag: Tag): Asn1Element = when (this) {
@@ -215,7 +215,10 @@ sealed class Asn1Element(
             )
         )
 
-        is Asn1Primitive -> Asn1Primitive(Tag(tagValue, tagClass = TagClass.CONTEXT_SPECIFIC, constructed = false), content)
+        is Asn1Primitive -> Asn1Primitive(
+            Tag(tagValue, tagClass = TagClass.CONTEXT_SPECIFIC, constructed = false),
+            content
+        )
     }
 
     /**
@@ -319,9 +322,9 @@ sealed class Asn1Element(
             }
         }
 
-        val isConstructed by lazy { encodedTag.first().toUByte().isConstructed() }
+        val isConstructed get() = encodedTag.first().toUByte().isConstructed()
 
-        internal val isExplicitlyTagged by lazy { isConstructed && tagClass == TagClass.CONTEXT_SPECIFIC }
+        internal val isExplicitlyTagged get() = isConstructed && tagClass == TagClass.CONTEXT_SPECIFIC
 
         override fun toString(): String =
             "${tagClass.let { if (it == TagClass.UNIVERSAL) "" else it.name + " " }}${tagValue}${if (isConstructed) " CONSTRUCTED" else ""}" +
@@ -537,7 +540,7 @@ class Asn1CustomStructure private constructor(
      * @param children the elements to put into this sequence
      * @param tag the custom tag to use
      * @param tagClass the tag class to use for this custom tag. defaults to [TagClass.UNIVERSAL]
-     * @param sort whether to sort the passed childr nodes. defautls to false
+     * @param sort whether to sort the passed child nodes. defaults to false
      */
     constructor(
         children: List<Asn1Element>,
@@ -551,7 +554,7 @@ class Asn1CustomStructure private constructor(
      * @param children the elements to put into this sequence
      * @param tag the custom tag to use
      * @param tagClass the tag class to use for this custom tag. defaults to [TagClass.UNIVERSAL]
-     * @param sort whether to sort the passed childr nodes. defaults to false
+     * @param sort whether to sort the passed child nodes. defaults to false
      */
     constructor(
         children: List<Asn1Element>,
