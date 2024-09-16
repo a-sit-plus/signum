@@ -307,7 +307,8 @@ fun UInt.Companion.decodeFromDerValue(bytes: ByteArray): UInt = runRethrowing { 
 fun ULong.Companion.decodeFromDerValue(bytes: ByteArray): ULong = runRethrowing { fromTwosComplementByteArray(bytes) }
 
 @Throws(Asn1Exception::class)
-fun BigInteger.Companion.decodeFromDerValue(bytes: ByteArray): BigInteger = runRethrowing { fromTwosComplementByteArray(bytes) }
+fun BigInteger.Companion.decodeFromDerValue(bytes: ByteArray): BigInteger =
+    runRethrowing { fromTwosComplementByteArray(bytes) }
 
 
 @Throws(Asn1Exception::class)
@@ -390,8 +391,7 @@ fun Iterator<Byte>.decodeAsn1VarULong(): Pair<ULong, ByteArray> {
     while (hasNext()) {
         val current = next().toUByte()
         accumulator += current.toByte()
-        if (offset == 0) result = (current and 0x7F.toUByte()).toULong()
-        else if (current >= 0x80.toUByte()) {
+        if (current >= 0x80.toUByte()) {
             result = (current and 0x7F.toUByte()).toULong() or (result shl 7)
         } else {
             result = (current and 0x7F.toUByte()).toULong() or (result shl 7)
@@ -437,8 +437,7 @@ fun Iterator<Byte>.decodeAsn1VarUInt(): Pair<UInt, ByteArray> {
     while (hasNext()) {
         val current = next().toUByte()
         accumulator += current.toByte()
-        if (offset == 0) result = (current and 0x7F.toUByte()).toUInt()
-        else if (current >= 0x80.toUByte()) {
+        if (current >= 0x80.toUByte()) {
             result = (current and 0x7F.toUByte()).toUInt() or (result shl 7)
         } else {
             result = (current and 0x7F.toUByte()).toUInt() or (result shl 7)
