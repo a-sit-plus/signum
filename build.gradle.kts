@@ -30,10 +30,6 @@ tasks.getByName("dokkaHtmlMultiModule") {
     }
 }
 
-nexusPublishing {
-    useStaging = true //TODO: why is this needed?
-}
-
 allprojects {
     apply(plugin = "org.jetbrains.dokka")
     group = rootProject.group
