@@ -384,31 +384,43 @@ Which results in the following output:
 
 The magic shown above is based on a from-scratch 100% KMP implementation of an ASN.1 encoder and parser.
 To parse any DER-encoded ASN.1 structure, call `Asn1Element.parse(derBytes)`, which will result in exactly a single
-`Asn1Element`.
+`Asn1Element`.  
+In addition, `Asn1Element.parseWithRemainder(derBytes)` returns both the parsed ASN.1 element from the passed bytes' start
+and the remaining bytes.
 It can be re-encoded (and yes, it is a true re-encoding, since the original bytes are discarded after decoding) by
 accessing the lazily evaluated `.derEncoded` property.
 
 **Note that decoding operations will throw exceptions if invalid data is provided!**
 
 A parsed `Asn1Element` can either be a primitive (whose tag and value can be read) or a structure (like a set or
-sequence) whose child
-nodes can be processed as desired. Subclasses of `Asn1Element` reflect this:
+sequence) whose child nodes can be processed as desired. Subclasses of `Asn1Element` reflect this:
 
 * `Asn1Primitive`
+  * `Asn1BitString` (for convenience)
+  * `Asn1PrimitiveOctetString` (for convenience)
 * `Asn1Structure`
-    * `Asn1Set`
-    * `Asn1Sequence`
+    * `Asn1Sequence` and `Asn1SequenceOf`
+    * `Asn1Set` and `Asn1SetOf` (sorting children by default)
+    * `Asn1EncapsulatingOctetString` (tagged as OCTET STRING, containing a valid ASN.1 structure or primitive)
+    * `Asn1ExplicitlyTagged` (user-specified tag + CONTEXT_SPECIFIC + CONSTRUCTED)
+    * `Asn1CustomStructure` (any other CONSTRUCTED tag not fitting the above options. CONSTRUCTED bit may be overridden)
 
+Convenience wrappers exist, to cast to any subtype (e.g. `.asSequence()`). These shorthand functions throw an `Asn1Exception`
+if a cast is not possible.  
 Any complex data structure (such as CSR, public key, certificate, …) implements `Asn1Encodable`, which means you can:
 
 * encapsulate it into an ASN.1 Tree by calling `.encodeToTlv()`
 * directly get a DER-encoded byte array through the `.encodetoDer()` function
 
-To also suport going the other way, the companion objects of these complex classes implement `Asn1Decodable`, which
+To also support going the other way, the companion objects of these complex classes implement `Asn1Decodable`, which
 allows for
 
-* directly parsing DER-encoded byte arrays by calling `.decodeFromDer(bytes)`
-* processing an `Asn1Element` by calling `.fromTlv(src)`
+* directly parsing DER-encoded byte arrays by calling `.decodeFromDer(bytes)` and `.decodeFromDerHexString`
+* processing an `Asn1Element` by calling `.decodefromTlv(src)`
+
+Both encoding and decoding functions come in two _safe_ (i.e. non-throwing) variants:
+* `…Safe()` which returns a [KmmResult](https://github.com/a-sit-plus/kmmresult)
+* `…orNull()` which returns null on error
 
 #### Decoding Values
 

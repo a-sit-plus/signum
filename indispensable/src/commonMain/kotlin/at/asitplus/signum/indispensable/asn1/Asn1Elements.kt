@@ -41,7 +41,8 @@ sealed class Asn1Element(
 
     companion object {
         /**
-         * Convenience method to directly parse a HEX-string representation of DER-encoded data
+         * Convenience method to directly parse a HEX-string representation of DER-encoded data.
+         * Ignores and strips all whitespace.
          * @throws [Throwable] all sorts of errors on invalid input
          */
         @Throws(Throwable::class)
