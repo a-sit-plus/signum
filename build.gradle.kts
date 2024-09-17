@@ -26,8 +26,12 @@ tasks.getByName("dokkaHtmlMultiModule") {
             "josef-light.png",
             "signum-light-large.png",
             "signum-dark-large.png",
-            ).files.forEach { it.copyTo(File("build/dokka/${it.name}"), overwrite = true) }
+        ).files.forEach { it.copyTo(File("build/dokka/${it.name}"), overwrite = true) }
     }
+}
+
+nexusPublishing {
+    useStaging = true //TODO: why is this needed?
 }
 
 allprojects {
