@@ -6,6 +6,11 @@ plugins {
 }
 group = "at.asitplus.signum"
 
+//work around nexus publish bug
+val artifactVersion: String by extra
+version = artifactVersion
+//end work around nexus publish bug
+
 
 //access dokka plugin from conventions plugin's classpath in root project → no need to specify version
 apply(plugin = "org.jetbrains.dokka")
