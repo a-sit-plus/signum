@@ -28,6 +28,11 @@
         * `Iterable<Byte>.decodeAsn1VarUInt()`
         * `ByteArray.decodeAsn1VarUInt()`
 * Revamp implicit tagging
+* More consistent low-level encoding and decoding function names:
+  * `encodeToAsn1Primitive` to produce an `Asn1Primitive` that can directly be DER-encoded
+  * `encodeToAsn1ContentBytes` to produce the content bytes of a TLV primitive (the _V_ in TLV)
+  * `decodeToXXX` to be invoked on an `Asn1Primitive` to decode a DER-encoded primitive into the target type
+  * `decodeFromAsn1ContentBytes` to be invoked on the companion of the target type to decode the content bytes of a TLV primitive (the _V_ in TLV)
 
 ## 3.0
 
