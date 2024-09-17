@@ -35,6 +35,7 @@
   * `encodeToAsn1ContentBytes` to produce the content bytes of a TLV primitive (the _V_ in TLV)
   * `decodeToXXX` to be invoked on an `Asn1Primitive` to decode a DER-encoded primitive into the target type
   * `decodeFromAsn1ContentBytes` to be invoked on the companion of the target type to decode the content bytes of a TLV primitive (the _V_ in TLV)
+* Update conventions -> Coroutines 1.0.9
 
 ## 3.0
 

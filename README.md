@@ -412,16 +412,6 @@ Any complex data structure (such as CSR, public key, certificate, …) implement
 * encapsulate it into an ASN.1 Tree by calling `.encodeToTlv()`
 * directly get a DER-encoded byte array through the `.encodetoDer()` function
 
-To also support going the other way, the companion objects of these complex classes implement `Asn1Decodable`, which
-allows for
-
-* directly parsing DER-encoded byte arrays by calling `.decodeFromDer(bytes)` and `.decodeFromDerHexString`
-* processing an `Asn1Element` by calling `.decodefromTlv(src)`
-
-Both encoding and decoding functions come in two _safe_ (i.e. non-throwing) variants:
-* `…Safe()` which returns a [KmmResult](https://github.com/a-sit-plus/kmmresult)
-* `…orNull()` which returns null on error
-
 A tandem of helper functions is available for primitives (numbers, booleans, string, bigints):
 
 * `encodeToAsn1Primitive` to produce an `Asn1Primitive` that can directly be DER-encoded
@@ -435,7 +425,15 @@ list of helper functions.
 #### Decoding Values
 
 Various helper functions exist to facilitate decoding the values contained in `Asn1Primitives`, such as `readInt()`,
-for example.
+for example. To also support decoding more complex structures, the companion objects of complex classes (such as certificates, CSRs, …)
+implement `Asn1Decodable`, which allows for:
+
+* directly parsing DER-encoded byte arrays by calling `.decodeFromDer(bytes)` and `.decodeFromDerHexString`
+* processing an `Asn1Element` by calling `.decodefromTlv(src)`
+
+Both encoding and decoding functions come in two _safe_ (i.e. non-throwing) variants:
+* `…Safe()` which returns a [KmmResult](https://github.com/a-sit-plus/kmmresult)
+* `…orNull()` which returns null on error
 
 Similarly to encoding, a tandem of decoding functions exists for primitives:
 * `decodeToXXX` to be invoked on an `Asn1Primitive` to decode a DER-encoded primitive into the target type
