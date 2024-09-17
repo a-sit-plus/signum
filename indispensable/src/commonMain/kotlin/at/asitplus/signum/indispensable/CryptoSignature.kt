@@ -95,7 +95,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
 
         override val signature: Asn1Element = Asn1.Sequence { +r.encodeToAsn1Primitive(); +s.encodeToAsn1Primitive() }
 
-        override fun encodeToTlvBitString(): Asn1Element = encodeToDer().encodeToTlvBitString()
+        override fun encodeToTlvBitString(): Asn1Element = encodeToDer().encodeToAsn1BitStringPrimitive()
 
         /**
          * Two signatures are considered equal if `r` and `s` are equal.
