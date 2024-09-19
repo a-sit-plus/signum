@@ -395,7 +395,7 @@ Any remaining bytes can still be consumed from the iterator, as it will only be 
 * `Asn1Element.parseAll(byteIterator)`, wich consumes all bytes, parses all toplevel ASN.1 elements, and returns them as list.
 Throws on any parsing error.
 
-And parsed ASN.1 element can be re-encoded (and yes, it is a true re-encoding, since the original bytes are discarded after decoding) by
+And parsed ASN.1 element can be re-encoded (this is a true re-encoding, since the original bytes are discarded after decoding) by
 accessing the lazily evaluated `.derEncoded` property, just as manually constructed ones can.
 
 **Note that decoding operations will throw exceptions if invalid data is provided!**
