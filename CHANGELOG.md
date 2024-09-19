@@ -29,7 +29,7 @@
         * `ByteArray.decodeAsn1VarUInt()`
 * Revamp implicit tagging
 * Consume only the first `Asn1Element.parse()` only consumes the first parsable element and
-  `Asn1Element.parserWithRemainder()` additionally returns the remaining bytes for convenience
+  `Asn1Element.parseWithRemainder()` additionally returns the remaining bytes for convenience
 * More consistent low-level encoding and decoding function names:
   * `encodeToAsn1Primitive` to produce an `Asn1Primitive` that can directly be DER-encoded
   * `encodeToAsn1ContentBytes` to produce the content bytes of a TLV primitive (the _V_ in TLV)

@@ -235,24 +235,24 @@ fun Asn1Primitive.readNullOrNull() = catching { readNull() }.getOrNull()
 
 
 /**
- * Generic decoding function. Verifies that this [Asn1Primitive]'s tag matches [tag]
+ * Generic decoding function. Verifies that this [Asn1Primitive]'s tag matches [assertTag]
  * and transforms its content as per [transform]
  * @throws Asn1Exception all sorts of exceptions on invalid input
  */
 @Throws(Asn1Exception::class)
-inline fun <reified T> Asn1Primitive.decode(tag: ULong, transform: (content: ByteArray) -> T): T =
-    decode(Asn1Element.Tag(tag, constructed = false), transform)
+inline fun <reified T> Asn1Primitive.decode(assertTag: ULong, transform: (content: ByteArray) -> T): T =
+    decode(Asn1Element.Tag(assertTag, constructed = false), transform)
 
 /**
- * Generic decoding function. Verifies that this [Asn1Primitive]'s tag matches [tag]
+ * Generic decoding function. Verifies that this [Asn1Primitive]'s tag matches [assertTag]
  * and transforms its content as per [transform]
  * @throws Asn1Exception all sorts of exceptions on invalid input
  */
 @Throws(Asn1Exception::class)
-inline fun <reified T> Asn1Primitive.decode(tag: Asn1Element.Tag, transform: (content: ByteArray) -> T) =
+inline fun <reified T> Asn1Primitive.decode(assertTag: Asn1Element.Tag, transform: (content: ByteArray) -> T) =
     runRethrowing {
-        if (tag.isConstructed) throw IllegalArgumentException("A primitive cannot have a CONSTRUCTED tag")
-        if (tag != this.tag) throw Asn1TagMismatchException(tag, this.tag)
+        if (assertTag.isConstructed) throw IllegalArgumentException("A primitive cannot have a CONSTRUCTED tag")
+        if (assertTag != this.tag) throw Asn1TagMismatchException(assertTag, this.tag)
         transform(content)
     }
 
