@@ -28,8 +28,11 @@
         * `Iterable<Byte>.decodeAsn1VarUInt()`
         * `ByteArray.decodeAsn1VarUInt()`
 * Revamp implicit tagging
-* Consume only the first `Asn1Element.parse()` only consumes the first parsable element and
-  `Asn1Element.parseWithRemainder()` additionally returns the remaining bytes for convenience
+* Revamp `Asn1Element.parse()`
+  * `Asn1Element.parse()` semantics remain the same
+  * `Asn1Element.parse()` alternative introduced, which takes a `ByteIterator`
+  * `Asn1Element.parseAll()` introduced, which consumes all bytes and returns a list of all ASN.1 elements (if parsing works)
+  * `Asn1Element.parseFirst()` introduced, which tries to only parse a single ASN.1 element from the input and leaves the rest untouched.
 * More consistent low-level encoding and decoding function names:
   * `encodeToAsn1Primitive` to produce an `Asn1Primitive` that can directly be DER-encoded
   * `encodeToAsn1ContentBytes` to produce the content bytes of a TLV primitive (the _V_ in TLV)

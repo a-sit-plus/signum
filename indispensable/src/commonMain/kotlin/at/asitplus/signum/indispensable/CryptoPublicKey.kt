@@ -129,7 +129,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                 Rsa.oid -> {
                     (keyInfo.nextChild() as Asn1Primitive).readNull()
                     val bitString = (src.nextChild() as Asn1Primitive).asAsn1BitString()
-                    val rsaSequence = Asn1Element.parse(bitString.rawBytes) as Asn1Sequence
+                    val rsaSequence = Asn1Element.parse(bitString.rawBytes.iterator()) as Asn1Sequence
                     val n = (rsaSequence.nextChild() as Asn1Primitive).decode(Asn1Element.Tag.INT) { it }
                     val e = (rsaSequence.nextChild() as Asn1Primitive).decodeToInt()
                     if (rsaSequence.hasMoreChildren()) throw Asn1StructuralException("Superfluous data in SPKI!")

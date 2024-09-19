@@ -2,7 +2,7 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.parse
-import at.asitplus.signum.indispensable.asn1.encoding.parseWithRemainder
+import at.asitplus.signum.indispensable.asn1.encoding.parseFirst
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
@@ -28,6 +28,7 @@ import kotlin.random.Random
 import kotlin.random.nextInt
 import java.security.cert.X509Certificate as JcaCertificate
 
+internal fun ByteIterator.toByteArray(): ByteArray =asSequence().toList().toByteArray()
 
 private val json = Json { prettyPrint = true }
 
@@ -40,9 +41,10 @@ class X509CertParserTest : FreeSpec({
         X509Certificate.decodeFromDer(derBytes)
 
         val garbage = Random.nextBytes(Random.nextInt(0..128))
-        Asn1Element.parseWithRemainder(derBytes + garbage).let { (parsed, remainder) ->
+        val input = (derBytes + garbage).iterator()
+        Asn1Element.parseFirst(input).let { parsed ->
             parsed.derEncoded shouldBe derBytes
-            remainder shouldBe garbage
+            input.toByteArray() shouldBe garbage
         }
     }
 
@@ -64,9 +66,10 @@ class X509CertParserTest : FreeSpec({
                 cert shouldBe X509Certificate.decodeFromByteArray(certBytes)
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
-                Asn1Element.parseWithRemainder(certBytes + garbage).let { (parsed, remainder) ->
+                val input = (certBytes + garbage).iterator()
+                Asn1Element.parseFirst(input).let { parsed ->
                     parsed.derEncoded shouldBe certBytes
-                    remainder shouldBe garbage
+                    input.toByteArray() shouldBe garbage
                 }
             }
         }
@@ -124,9 +127,10 @@ class X509CertParserTest : FreeSpec({
                 parsed shouldBe X509Certificate.decodeFromByteArray(crt.encoded)
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
-                Asn1Element.parseWithRemainder(crt.encoded + garbage).let { (parsed, remainder) ->
+                val bytes = (crt.encoded + garbage).iterator()
+                Asn1Element.parseFirst(bytes).let { parsed ->
                     parsed.derEncoded shouldBe own
-                    remainder shouldBe garbage
+                    bytes.toByteArray() shouldBe garbage
                 }
             }
         }
@@ -146,9 +150,10 @@ class X509CertParserTest : FreeSpec({
                 decoded shouldBe X509Certificate.decodeFromByteArray(it.second)
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
-                Asn1Element.parseWithRemainder(it.second + garbage).let { (parsed, remainder) ->
+                val bytes = (it.second + garbage).iterator()
+                Asn1Element.parseFirst(bytes).let { parsed ->
                     parsed.derEncoded shouldBe it.second
-                    remainder shouldBe garbage
+                    bytes.toByteArray() shouldBe garbage
                 }
             }
         }
@@ -189,9 +194,10 @@ class X509CertParserTest : FreeSpec({
                 cert.encodeToTlv().derEncoded shouldBe encodedSrc
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
-                Asn1Element.parseWithRemainder(jcaCert.encoded + garbage).let { (parsed, remainder) ->
+                val input = (jcaCert.encoded + garbage).iterator()
+                Asn1Element.parseFirst(input).let { parsed ->
                     parsed.derEncoded shouldBe jcaCert.encoded
-                    remainder shouldBe garbage
+                    input.asSequence().toList().toByteArray() shouldBe garbage
                 }
             }
         }
