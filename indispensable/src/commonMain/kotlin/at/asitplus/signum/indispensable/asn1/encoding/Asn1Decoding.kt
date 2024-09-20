@@ -105,7 +105,7 @@ private fun ByteIterator.doParseSingle(): Asn1Element = runRethrowing {
 fun Asn1Primitive.decodeToBoolean() = runRethrowing { decode(Asn1Element.Tag.BOOL) { Boolean.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [decodeToBoolean] */
-fun Asn1Primitive.decodeToBooleanOrNull() = runCatching { decodeToBoolean() }.getOrNull()
+fun Asn1Primitive.decodeToBooleanOrNull() = catching { decodeToBoolean() }.getOrNull()
 
 /**
  * decodes this [Asn1Primitive]'s content into an [Int]
@@ -115,7 +115,7 @@ fun Asn1Primitive.decodeToBooleanOrNull() = runCatching { decodeToBoolean() }.ge
 fun Asn1Primitive.decodeToInt() = runRethrowing { decode(Asn1Element.Tag.INT) { Int.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [decodeToInt] */
-fun Asn1Primitive.decodeToIntOrNull() = runCatching { decodeToInt() }.getOrNull()
+fun Asn1Primitive.decodeToIntOrNull() = catching { decodeToInt() }.getOrNull()
 
 /**
  * decodes this [Asn1Primitive]'s content into a [Long]
@@ -125,7 +125,7 @@ fun Asn1Primitive.decodeToIntOrNull() = runCatching { decodeToInt() }.getOrNull(
 fun Asn1Primitive.decodeToLong() = runRethrowing { decode(Asn1Element.Tag.INT) { Long.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [decodeToLong] */
-inline fun Asn1Primitive.decodeToLongOrNull() = runCatching { decodeToLong() }.getOrNull()
+inline fun Asn1Primitive.decodeToLongOrNull() = catching { decodeToLong() }.getOrNull()
 
 /**
  * decodes this [Asn1Primitive]'s content into an [UInt]
@@ -135,7 +135,7 @@ inline fun Asn1Primitive.decodeToLongOrNull() = runCatching { decodeToLong() }.g
 fun Asn1Primitive.decodeToUInt() = runRethrowing { decode(Asn1Element.Tag.INT) { UInt.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [decodeToUInt] */
-inline fun Asn1Primitive.decodeToUIntOrNull() = runCatching { decodeToUInt() }.getOrNull()
+inline fun Asn1Primitive.decodeToUIntOrNull() = catching { decodeToUInt() }.getOrNull()
 
 /**
  * decodes this [Asn1Primitive]'s content into an [ULong]
@@ -145,7 +145,7 @@ inline fun Asn1Primitive.decodeToUIntOrNull() = runCatching { decodeToUInt() }.g
 fun Asn1Primitive.decodeToULong() = runRethrowing { decode(Asn1Element.Tag.INT) { ULong.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [decodeToULong] */
-inline fun Asn1Primitive.decodeToULongOrNull() = runCatching { decodeToULong() }.getOrNull()
+inline fun Asn1Primitive.decodeToULongOrNull() = catching { decodeToULong() }.getOrNull()
 
 /** Decode the [Asn1Primitive] as a [BigInteger]
  * @throws [Asn1Exception] on invalid input */
@@ -154,7 +154,7 @@ fun Asn1Primitive.decodeToBigInteger() =
     runRethrowing { decode(Asn1Element.Tag.INT) { BigInteger.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [decodeToBigInteger] */
-inline fun Asn1Primitive.decodeToBigIntegerOrNull() = runCatching { decodeToBigInteger() }.getOrNull()
+inline fun Asn1Primitive.decodeToBigIntegerOrNull() = catching { decodeToBigInteger() }.getOrNull()
 
 /**
  * transforms this [Asn1Primitive] into an [Asn1String] subtype based on its tag
@@ -183,7 +183,7 @@ fun Asn1Primitive.asAsn1String(): Asn1String = runRethrowing {
 fun Asn1Primitive.decodeToString() = runRethrowing {asAsn1String().value}
 
 /** Exception-free version of [decodeToString] */
-fun Asn1Primitive.decodeToStringOrNull() = runCatching { decodeToString() }.getOrNull()
+fun Asn1Primitive.decodeToStringOrNull() = catching { decodeToString() }.getOrNull()
 
 
 

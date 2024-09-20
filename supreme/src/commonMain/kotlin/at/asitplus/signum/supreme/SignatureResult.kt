@@ -58,6 +58,6 @@ inline fun <T: CryptoSignature.RawByteEncodable, S: CryptoSignature.RawByteEncod
 /** Runs the block, catches exceptions, and maps to [SignatureResult].
  * @see SignatureResult.FromException */
 internal inline fun signCatching(fn: ()->CryptoSignature.RawByteEncodable): SignatureResult<*> =
-    runCatching { fn() }.fold(
+    catching { fn() }.fold(
         onSuccess = { SignatureResult.Success(it) },
         onFailure = { SignatureResult.FromException(it) })

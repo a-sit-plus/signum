@@ -1,8 +1,9 @@
 # Changelog
 
-## 4.0
 
-### 4.0.0 (Supreme 0.3.0) Breaking Changes Ahead!
+## 3.0
+
+### 3.8.0 (Supreme 0.3.0) Breaking Changes Ahead!
 * Completely revamped ASN.1 Tag Handling
   * Properly handle multi-byte tags
   * Introduce a new data structure `TLV.Tag` with an accompanying `TagClass` enum and a `constructed` flag to accurately represent arbitrary tags up to `ULong.MAX_VALUE`
@@ -43,8 +44,7 @@
   * `decodeToXXX` to be invoked on an `Asn1Primitive` to decode a DER-encoded primitive into the target type
   * `decodeFromAsn1ContentBytes` to be invoked on the companion of the target type to decode the content bytes of a TLV primitive (the _V_ in TLV)
 * Update conventions -> Coroutines 1.0.9
-
-## 3.0
+* replace `runCatching` with `catching` to be extra-safe
 
 ### 3.7.0 (Supreme 0.2.0)
 * Remove Swift verifier logic to obtain a general speed-up
