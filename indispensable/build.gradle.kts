@@ -197,6 +197,7 @@ kotlin {
 
 exportIosFramework(
     "Indispensable",
+    transitiveExports=false,
     serialization("json"),
     datetime(),
     kmmresult(),

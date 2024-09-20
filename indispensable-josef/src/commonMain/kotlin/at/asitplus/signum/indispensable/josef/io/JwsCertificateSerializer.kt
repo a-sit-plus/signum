@@ -7,5 +7,5 @@ import at.asitplus.signum.indispensable.pki.X509Certificate
 object JwsCertificateSerializer : TransformingSerializerTemplate<X509Certificate, ByteArray>(
     parent = ByteArrayBase64Serializer,
     encodeAs = X509Certificate::encodeToDer,
-    decodeAs = X509Certificate::decodeFromDer
+    decodeAs = { X509Certificate.decodeFromDer(it) } //workaround iOS compilation bug KT-71498
 )

@@ -2,8 +2,10 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.Asn1.Null
-import at.asitplus.signum.indispensable.asn1.Asn1.ExplicitlyTagged
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
+import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -150,7 +152,7 @@ enum class X509SignatureAlgorithm(
             )
 
             val last = (seq.nextChild() as Asn1ExplicitlyTagged).verifyTag(2u).single() as Asn1Primitive
-            val saltLen = last.readInt()
+            val saltLen = last.decodeToInt()
 
             return sigAlg.let {
                 when (it) {

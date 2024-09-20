@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.indispensable.asn1.encoding.byteMask
 
 //Based on https://github.com/bcgit/bc-java/blob/main/core/src/main/java/org/bouncycastle/asn1/BERTags.java
 object BERTags {

@@ -1,6 +1,8 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.signum.indispensable.asn1.encoding.parseFirst
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
@@ -22,8 +24,11 @@ import java.io.FileReader
 import java.io.InputStream
 import java.security.cert.CertificateFactory
 import java.util.*
+import kotlin.random.Random
+import kotlin.random.nextInt
 import java.security.cert.X509Certificate as JcaCertificate
 
+internal fun ByteIterator.toByteArray(): ByteArray =asSequence().toList().toByteArray()
 
 private val json = Json { prettyPrint = true }
 
@@ -34,6 +39,13 @@ class X509CertParserTest : FreeSpec({
         val derBytes =
             javaClass.classLoader.getResourceAsStream("certs/ok-uniqueid-incomplete-byte.der").readBytes()
         X509Certificate.decodeFromDer(derBytes)
+
+        val garbage = Random.nextBytes(Random.nextInt(0..128))
+        val input = (derBytes + garbage).iterator()
+        Asn1Element.parseFirst(input).let { parsed ->
+            parsed.derEncoded shouldBe derBytes
+            input.toByteArray() shouldBe garbage
+        }
     }
 
 
@@ -52,6 +64,13 @@ class X509CertParserTest : FreeSpec({
                 cert.encodeToTlv().derEncoded shouldBe jcaCert.encoded
 
                 cert shouldBe X509Certificate.decodeFromByteArray(certBytes)
+
+                val garbage = Random.nextBytes(Random.nextInt(0..128))
+                val input = (certBytes + garbage).iterator()
+                Asn1Element.parseFirst(input).let { parsed ->
+                    parsed.derEncoded shouldBe certBytes
+                    input.toByteArray() shouldBe garbage
+                }
             }
         }
     }
@@ -106,6 +125,13 @@ class X509CertParserTest : FreeSpec({
             ) {
                 own shouldBe crt.encoded
                 parsed shouldBe X509Certificate.decodeFromByteArray(crt.encoded)
+
+                val garbage = Random.nextBytes(Random.nextInt(0..128))
+                val bytes = (crt.encoded + garbage).iterator()
+                Asn1Element.parseFirst(bytes).let { parsed ->
+                    parsed.derEncoded shouldBe own
+                    bytes.toByteArray() shouldBe garbage
+                }
             }
         }
     }
@@ -122,6 +148,13 @@ class X509CertParserTest : FreeSpec({
                 val src = Asn1Element.parse(it.second) as Asn1Sequence
                 val decoded = X509Certificate.decodeFromTlv(src)
                 decoded shouldBe X509Certificate.decodeFromByteArray(it.second)
+
+                val garbage = Random.nextBytes(Random.nextInt(0..128))
+                val bytes = (it.second + garbage).iterator()
+                Asn1Element.parseFirst(bytes).let { parsed ->
+                    parsed.derEncoded shouldBe it.second
+                    bytes.toByteArray() shouldBe garbage
+                }
             }
         }
         "Faulty certs should glitch out" - {
@@ -159,6 +192,13 @@ class X509CertParserTest : FreeSpec({
 
                 jcaCert.encoded shouldBe encodedSrc
                 cert.encodeToTlv().derEncoded shouldBe encodedSrc
+
+                val garbage = Random.nextBytes(Random.nextInt(0..128))
+                val input = (jcaCert.encoded + garbage).iterator()
+                Asn1Element.parseFirst(input).let { parsed ->
+                    parsed.derEncoded shouldBe jcaCert.encoded
+                    input.asSequence().toList().toByteArray() shouldBe garbage
+                }
             }
         }
 

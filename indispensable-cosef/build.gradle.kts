@@ -39,6 +39,7 @@ kotlin {
 
 exportIosFramework(
     "IndispensableCosef",
+    transitiveExports=false,
     serialization("cbor"),
     datetime(),
     kmmresult(),

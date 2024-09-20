@@ -1,5 +1,8 @@
 package at.asitplus.signum.indispensable.asn1
 
+import at.asitplus.signum.indispensable.asn1.encoding.decode
+import at.asitplus.signum.indispensable.asn1.encoding.decodeAsn1VarUInt
+import at.asitplus.signum.indispensable.asn1.encoding.toAsn1VarInt
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient

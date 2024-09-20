@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.indispensable.asn1.Asn1
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.Asn1PrimitiveOctetString
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 import io.kotest.assertions.throwables.shouldThrow

@@ -82,7 +82,7 @@ object ByteArrayBase64UrlSerializer: TransformingSerializerTemplate<ByteArray, S
 object X509CertificateBase64UrlSerializer: TransformingSerializerTemplate<X509Certificate, ByteArray>(
     parent = ByteArrayBase64UrlSerializer,
     encodeAs = X509Certificate::encodeToDer,
-    decodeAs = X509Certificate::decodeFromDer
+    decodeAs = { X509Certificate.decodeFromDer(it) } // workaround iOS compilation bug KT-71498
 )
 
 /** De-/serializes a public key as a Base64Url-encoded IOS encoding public key */
@@ -109,3 +109,17 @@ sealed class ListSerializerTemplate<ValueT>(
 
 object CertificateChainBase64UrlSerializer: ListSerializerTemplate<X509Certificate>(
     using = X509CertificateBase64UrlSerializer)
+
+/**
+ * Drops bytes at the start, or adds zero bytes at the start, until the [size] is reached
+ */
+fun ByteArray.ensureSize(size: Int): ByteArray = (this.size - size).let { toDrop ->
+    when {
+        toDrop > 0 -> this.copyOfRange(toDrop, this.size)
+        toDrop < 0 -> ByteArray(-toDrop) + this
+        else -> this
+    }
+}
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun ByteArray.ensureSize(size: UInt) = ensureSize(size.toInt())

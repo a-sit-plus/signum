@@ -3,8 +3,8 @@ package at.asitplus.signum.indispensable
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.Asn1.BitString
-import at.asitplus.signum.indispensable.asn1.Asn1.Null
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.BitString
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix.Companion.hasPrefix
@@ -13,6 +13,8 @@ import at.asitplus.io.MultiBase
 import at.asitplus.io.UVarInt
 import at.asitplus.io.multibaseDecode
 import at.asitplus.io.multibaseEncode
+import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.signum.indispensable.io.ensureSize
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import kotlinx.serialization.SerialName
@@ -115,7 +117,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                     val curve = ECCurve.entries.find { it.oid == curveOid }
                         ?: throw Asn1Exception("Curve not supported: $curveOid")
 
-                    val bitString = (src.nextChild() as Asn1Primitive).readBitString()
+                    val bitString = (src.nextChild() as Asn1Primitive).asAsn1BitString()
                     if (!bitString.rawBytes.hasPrefix(ANSIECPrefix.UNCOMPRESSED)) throw Asn1Exception("EC key not prefixed with 0x04")
                     val xAndY = bitString.rawBytes.drop(1)
                     val coordLen = curve.coordinateLength.bytes.toInt()
@@ -126,10 +128,10 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
                 Rsa.oid -> {
                     (keyInfo.nextChild() as Asn1Primitive).readNull()
-                    val bitString = (src.nextChild() as Asn1Primitive).readBitString()
+                    val bitString = (src.nextChild() as Asn1Primitive).asAsn1BitString()
                     val rsaSequence = Asn1Element.parse(bitString.rawBytes) as Asn1Sequence
                     val n = (rsaSequence.nextChild() as Asn1Primitive).decode(Asn1Element.Tag.INT) { it }
-                    val e = (rsaSequence.nextChild() as Asn1Primitive).readInt()
+                    val e = (rsaSequence.nextChild() as Asn1Primitive).decodeToInt()
                     if (rsaSequence.hasMoreChildren()) throw Asn1StructuralException("Superfluous data in SPKI!")
                     return Rsa(n, e)
                 }
@@ -283,7 +285,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             fun fromPKCS1encoded(input: ByteArray): Rsa = runRethrowing {
                 val conv = Asn1Element.parse(input) as Asn1Sequence
                 val n = (conv.nextChild() as Asn1Primitive).decode(Asn1Element.Tag.INT) { it }
-                val e = (conv.nextChild() as Asn1Primitive).readInt()
+                val e = (conv.nextChild() as Asn1Primitive).decodeToInt()
                 if (conv.hasMoreChildren()) throw Asn1StructuralException("Superfluous bytes")
                 return Rsa(Size.of(n), n, e)
             }
