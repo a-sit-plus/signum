@@ -23,9 +23,8 @@ import kotlin.experimental.and
  * @throws Asn1Exception on invalid input or if more than a single root structure was contained in the [input]
  */
 @Throws(Asn1Exception::class)
-fun Asn1Element.Companion.parse(input: ByteIterator): Asn1Element = parseFirst(input).let {
-    if (input.hasNext()) throw Asn1StructuralException("Trailing bytes found after the fist ASN.1 element")
-    it
+fun Asn1Element.Companion.parse(input: ByteIterator): Asn1Element = parseFirst(input).also {
+    if (input.hasNext()) throw Asn1StructuralException("Trailing bytes found after the first ASN.1 element")
 }
 
 /**
@@ -65,20 +64,19 @@ fun Asn1Element.Companion.parseFirst(input: ByteIterator): Asn1Element = input.d
 
 /**
  * Convenience wrapper around [parseFirst], taking a [ByteArray] as [source].
- * @return a pari of the fist parsed [Asn1Element] mapped to the remaining bytes
+ * @return a pari of the first parsed [Asn1Element] mapped to the remaining bytes
  * @see parse
  */
 @Throws(Asn1Exception::class)
 fun Asn1Element.Companion.parseFirst(source: ByteArray): Pair<Asn1Element, ByteArray> =
     source.iterator().doParseSingle().let { Pair(it, source.copyOfRange(it.overallLength, source.size)) }
 
-
-    @Throws(Asn1Exception::class)
-    private fun ByteIterator.doParseAll(): List<Asn1Element> = runRethrowing {
-        val result = mutableListOf<Asn1Element>()
-        while (hasNext()) result += doParseSingle()
-        return result
-    }
+@Throws(Asn1Exception::class)
+private fun ByteIterator.doParseAll(): List<Asn1Element> = runRethrowing {
+    val result = mutableListOf<Asn1Element>()
+    while (hasNext()) result += doParseSingle()
+    return result
+}
 
 private fun ByteIterator.doParseSingle(): Asn1Element = runRethrowing {
     val tlv = readTlv()
@@ -364,9 +362,9 @@ private fun ByteIterator.readTlv(): TLV = runRethrowing {
     val length = decodeLength()
     require(length < 1024 * 1024) { "Heap space" }
     val value = ByteArray(length) {
-            require(hasNext()) { "Out of bytes to decode" }
+        require(hasNext()) { "Out of bytes to decode" }
         nextByte()
-        }
+    }
 
     return TLV(Asn1Element.Tag(tag.second), value)
 }
