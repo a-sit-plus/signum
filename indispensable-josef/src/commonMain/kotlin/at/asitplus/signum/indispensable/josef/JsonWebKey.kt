@@ -8,8 +8,8 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.fromUncompressed
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
-import at.asitplus.signum.indispensable.asn1.decodeFromDerValue
-import at.asitplus.signum.indispensable.asn1.toTwosComplementByteArray
+import at.asitplus.signum.indispensable.asn1.encoding.decodeFromAsn1ContentBytes
+import at.asitplus.signum.indispensable.asn1.encoding.toTwosComplementByteArray
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.josef.io.JwsCertificateSerializer
@@ -303,7 +303,7 @@ data class JsonWebKey(
             JwkType.RSA -> {
                 CryptoPublicKey.Rsa(
                     n = n ?: throw IllegalArgumentException("Missing modulus n"),
-                    e = e?.let { bytes -> Int.decodeFromDerValue(bytes) }
+                    e = e?.let { bytes -> Int.decodeFromAsn1ContentBytes(bytes) }
                         ?: throw IllegalArgumentException("Missing or invalid exponent e")
                 ).apply { jwkId = keyId }
             }

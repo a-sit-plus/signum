@@ -14,8 +14,11 @@
 [![Kotlin](https://img.shields.io/badge/kotlin-multiplatform-orange.svg?logo=kotlin)](http://kotlinlang.org)
 [![Kotlin](https://img.shields.io/badge/kotlin-2.0.20-blue.svg?logo=kotlin)](http://kotlinlang.org)
 [![Java](https://img.shields.io/badge/java-17+-blue.svg?logo=OPENJDK)](https://www.oracle.com/java/technologies/downloads/#java11)
+
 [![Maven Central (indispensable)](https://img.shields.io/maven-central/v/at.asitplus.signum/indispensable?label=maven-central%20%28indispensable%29)](https://mvnrepository.com/artifact/at.asitplus.signum/)
+[![Maven SNAPSHOT (indispensable)](https://img.shields.io/nexus/snapshots/https/s01.oss.sonatype.org/at.asitplus.signum/indispensable?label=SNAPSHOT%20%28indispensable%29)](https://s01.oss.sonatype.org/content/repositories/snapshots/at/asitplus/signum/indispensable/)  
 [![Maven Central (Supreme)](https://img.shields.io/maven-central/v/at.asitplus.signum/supreme?label=maven-central%20%28Supreme%29)](https://mvnrepository.com/artifact/at.asitplus.signum/supreme)
+[![Maven SNAPSHOT (Supreme)](https://img.shields.io/nexus/snapshots/https/s01.oss.sonatype.org/at.asitplus.signum/supreme?label=SNAPSHOT%20%28Supreme%29)](https://s01.oss.sonatype.org/content/repositories/snapshots/at/asitplus/signum/supreme/)
 
 </div>
 
@@ -383,47 +386,76 @@ Which results in the following output:
 ### Working with Generic ASN.1 Structures
 
 The magic shown above is based on a from-scratch 100% KMP implementation of an ASN.1 encoder and parser.
-To parse any DER-encoded ASN.1 structure, call `Asn1Element.parse(derBytes)`, which will result in exactly a single
-`Asn1Element`.
-It can be re-encoded (and yes, it is a true re-encoding, since the original bytes are discarded after decoding) by
-accessing the lazily evaluated `.derEncoded` property.
+To parse any DER-encoded ASN.1 structure, call either:
+
+* `Asn1Element.parse()`, which will consume all bytes and return the first parsed ASN.1 element.
+This method throws if parsing errors occur or any trailing bytes are left after parsing the first element.
+* `Asn1Element.parseFirst()`, which will try to parse a single toplevel ASN.1 element.
+Any remaining bytes can still be consumed from the iterator, as it will only be advanced to right after the first parsed element.
+* `Asn1Element.parseAll()`, wich consumes all bytes, parses all toplevel ASN.1 elements, and returns them as list.
+Throws on any parsing error.
+
+`Asn1Element`s can encoded by accessing the lazily evaluated `.derEncoded` property.
+Even for parsed elements, this is a true re-encoding. The original bytes are discarded after decoding.
 
 **Note that decoding operations will throw exceptions if invalid data is provided!**
 
 A parsed `Asn1Element` can either be a primitive (whose tag and value can be read) or a structure (like a set or
-sequence) whose child
-nodes can be processed as desired. Subclasses of `Asn1Element` reflect this:
+sequence) whose child nodes can be processed as desired. Subclasses of `Asn1Element` reflect this:
 
 * `Asn1Primitive`
+  * `Asn1BitString` (for convenience)
+  * `Asn1PrimitiveOctetString` (for convenience)
 * `Asn1Structure`
-    * `Asn1Set`
-    * `Asn1Sequence`
+    * `Asn1Sequence` and `Asn1SequenceOf`
+    * `Asn1Set` and `Asn1SetOf` (sorting children by default)
+    * `Asn1EncapsulatingOctetString` (tagged as OCTET STRING, containing a valid ASN.1 structure or primitive)
+    * `Asn1ExplicitlyTagged` (user-specified tag + CONTEXT_SPECIFIC + CONSTRUCTED)
+    * `Asn1CustomStructure` (any other CONSTRUCTED tag not fitting the above options. CONSTRUCTED bit may be overridden)
 
+Convenience wrappers exist, to cast to any subtype (e.g. `.asSequence()`). These shorthand functions throw an `Asn1Exception`
+if a cast is not possible.  
 Any complex data structure (such as CSR, public key, certificate, …) implements `Asn1Encodable`, which means you can:
 
 * encapsulate it into an ASN.1 Tree by calling `.encodeToTlv()`
 * directly get a DER-encoded byte array through the `.encodetoDer()` function
 
-To also suport going the other way, the companion objects of these complex classes implement `Asn1Decodable`, which
-allows for
+A tandem of helper functions is available for primitives (numbers, booleans, string, bigints):
 
-* directly parsing DER-encoded byte arrays by calling `.decodeFromDer(bytes)`
-* processing an `Asn1Element` by calling `.fromTlv(src)`
+* `encodeToAsn1Primitive` to produce an `Asn1Primitive` that can directly be DER-encoded
+* `encodeToAsn1ContentBytes` to produce the content bytes of a TLV primitive (the _V_ in TLV)
+
+Variations of these exist for `Instant` and `ByteArray`.
+
+Check out [Asn1Encoding.kt](indispensable/src/commonMain/kotlin/at/asitplus/signum/indispensable/asn1/encoding/Asn1Encoding.kt) for a full
+list of helper functions.
 
 #### Decoding Values
 
-Various helper functions exist to facilitate decoding the values contained in `Asn1Primitives`, such as `decodeInt()`,
-for example.
+Various helper functions exist to facilitate decoding the values contained in `Asn1Primitives`, such as `readInt()`,
+for example. To also support decoding more complex structures, the companion objects of complex classes (such as certificates, CSRs, …)
+implement `Asn1Decodable`, which allows for:
+
+* directly parsing DER-encoded byte arrays by calling `.decodeFromDer(bytes)` and `.decodeFromDerHexString`
+* processing an `Asn1Element` by calling `.decodefromTlv(src)`
+
+Both encoding and decoding functions come in two _safe_ (i.e. non-throwing) variants:
+* `…Safe()` which returns a [KmmResult](https://github.com/a-sit-plus/kmmresult)
+* `…orNull()` which returns null on error
+
+Similarly to encoding, a tandem of decoding functions exists for primitives:
+* `decodeToXXX` to be invoked on an `Asn1Primitive` to decode a DER-encoded primitive into the target type
+* `decodeFromAsn1ContentBytes` to be invoked on the companion of the target type to decode the content bytes of a TLV primitive (the _V_ in TLV)
+
 However, anything can be decoded and tagged at will. Therefore, a generic decoding function exists, which has the
 following signature:
 
 ```kotlin
-inline fun <reified T> Asn1Primitive.decode(tag: UByte, decode: (content: ByteArray) -> T) 
+inline fun <reified T> Asn1Primitive.decode(assertTag: Asn1Element.Tag, decode: (content: ByteArray) -> T) 
 ```
 
-Check out [Asn1Reader.kt](datatypes/src/commonMain/kotlin/at/asitplus/crypto/datatypes/asn1/Asn1Reader.kt) for a full
-list
-of helper functions.
+Check out [Asn1Decoding.kt](indispensable/src/commonMain/kotlin/at/asitplus/signum/indispensable/asn1/encoding/Asn1Decoding.kt) for a full
+list of helper functions.
 
 #### ASN1 DSL for Creating ASN.1 Structures
 

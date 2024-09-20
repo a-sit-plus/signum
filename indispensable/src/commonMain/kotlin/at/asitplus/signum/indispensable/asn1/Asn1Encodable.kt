@@ -5,6 +5,7 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag
+import at.asitplus.signum.indispensable.asn1.encoding.parse
 
 /**
  * Interface providing methods to encode to ASN.1

@@ -1,7 +1,9 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.io.Base64Strict
+import at.asitplus.signum.indispensable.io.ensureSize
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.max
 import at.asitplus.signum.indispensable.pki.X509Certificate
@@ -91,9 +93,9 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
             require(s.isPositive) { "s must be positive" }
         }
 
-        override val signature: Asn1Element = Asn1.Sequence { +r.encodeToTlv(); +s.encodeToTlv() }
+        override val signature: Asn1Element = Asn1.Sequence { +r.encodeToAsn1Primitive(); +s.encodeToAsn1Primitive() }
 
-        override fun encodeToTlvBitString(): Asn1Element = encodeToDer().encodeToTlvBitString()
+        override fun encodeToTlvBitString(): Asn1Element = encodeToDer().encodeToAsn1BitStringPrimitive()
 
         /**
          * Two signatures are considered equal if `r` and `s` are equal.
@@ -209,13 +211,13 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
 
             @Throws(Asn1Exception::class)
             fun decodeFromTlvBitString(src: Asn1Primitive): EC.IndefiniteLength = runRethrowing {
-                decodeFromDer(src.readBitString().rawBytes)
+                decodeFromDer(src.asAsn1BitString().rawBytes)
             }
 
             override fun doDecode(src: Asn1Element): EC.IndefiniteLength {
                 src as Asn1Sequence
-                val r = (src.nextChild() as Asn1Primitive).readBigInteger()
-                val s = (src.nextChild() as Asn1Primitive).readBigInteger()
+                val r = (src.nextChild() as Asn1Primitive).decodeToBigInteger()
+                val s = (src.nextChild() as Asn1Primitive).decodeToBigInteger()
                 if (src.hasMoreChildren()) throw Asn1Exception("Illegal Signature Format")
                 return fromRS(r, s)
             }

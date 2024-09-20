@@ -3,6 +3,7 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.encoding.*
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
@@ -21,7 +22,7 @@ class TagEncodingTest : FreeSpec({
         val it = 2204309167L
         val bytes = (it).toTwosComplementByteArray()
         val fromBC = ASN1Integer(it).encoded
-        val long = Long.decodeFromDerValue(bytes)
+        val long = Long.decodeFromAsn1ContentBytes(bytes)
         val encoded = Asn1.Int(it).derEncoded
         encoded shouldBe fromBC
         long shouldBe it

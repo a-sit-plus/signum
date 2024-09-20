@@ -28,6 +28,21 @@
         * `Iterable<Byte>.decodeAsn1VarUInt()`
         * `ByteArray.decodeAsn1VarUInt()`
 * Revamp implicit tagging
+* Revamp `Asn1Element.parse()`, introducing new variants. This yields:
+  * `Asn1Element.parse()` with the same semantics as before
+  * `Asn1Element.parse()` alternative introduced, which takes a `ByteIterator` instead of a `ByteArray`
+  * `Asn1Element.parseAll()` introduced, which consumes all bytes and returns a list of all ASN.1 elements (if parsing works)
+    * Variant 1 takes a `ByteIterator`
+    * Variant 2 takes a `ByteArray`
+  * `Asn1Element.parseFirst()` introduced, which tries to only parse a single ASN.1 element from the input and leaves the rest untouched.
+    * Variant 1 takes a `ByteIterator` and returns the element; the `ByteIterator` is advanced accordingly
+    * Variant 2 takes a `ByteArray` and returns a `Pair` of `(element, remainingBytes)`
+* More consistent low-level encoding and decoding function names:
+  * `encodeToAsn1Primitive` to produce an `Asn1Primitive` that can directly be DER-encoded
+  * `encodeToAsn1ContentBytes` to produce the content bytes of a TLV primitive (the _V_ in TLV)
+  * `decodeToXXX` to be invoked on an `Asn1Primitive` to decode a DER-encoded primitive into the target type
+  * `decodeFromAsn1ContentBytes` to be invoked on the companion of the target type to decode the content bytes of a TLV primitive (the _V_ in TLV)
+* Update conventions -> Coroutines 1.0.9
 
 ## 3.0
 

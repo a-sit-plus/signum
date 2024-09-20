@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
+import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -41,7 +42,8 @@ sealed class Asn1Element(
 
     companion object {
         /**
-         * Convenience method to directly parse a HEX-string representation of DER-encoded data
+         * Convenience method to directly parse a HEX-string representation of DER-encoded data.
+         * Ignores and strips all whitespace.
          * @throws [Throwable] all sorts of errors on invalid input
          */
         @Throws(Throwable::class)
