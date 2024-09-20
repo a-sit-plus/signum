@@ -35,6 +35,10 @@ class Asn1ParserTest : FreeSpec({
 
             val bytes = iterator.toByteArray()
             bytes shouldBe rawChildren.sliceArray(parseFirst.overallLength until rawChildren.size)
+            Asn1Element.parseFirst(rawChildren).let { (elem,rest )->
+                elem shouldBe seq.children.first()
+                rest shouldBe  rawChildren.sliceArray(parseFirst.overallLength until rawChildren.size)
+            }
             val byteIterator = bytes.iterator()
             repeat(9) { Asn1Element.parseFirst(byteIterator) shouldBe childIterator.next() }
             Asn1Element.parseAll(rawChildren.iterator()) shouldBe seq.children
@@ -53,6 +57,11 @@ class Asn1ParserTest : FreeSpec({
 
             val bytes = iterator.toByteArray()
             bytes shouldBe withGarbage.sliceArray(parseFirst.overallLength until withGarbage.size)
+
+            Asn1Element.parseFirst(withGarbage).let { (elem,rest )->
+                elem shouldBe seq.children.first()
+                rest shouldBe   withGarbage.sliceArray(parseFirst.overallLength until withGarbage.size)
+            }
 
             val byteIterator = bytes.iterator()
             repeat(9) { Asn1Element.parseFirst(byteIterator) shouldBe childIterator.next() }

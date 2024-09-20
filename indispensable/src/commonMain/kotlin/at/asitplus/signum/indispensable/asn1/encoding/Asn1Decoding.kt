@@ -23,10 +23,11 @@ import kotlin.experimental.and
  * @throws Asn1Exception on invalid input or if more than a single root structure was contained in the [input]
  */
 @Throws(Asn1Exception::class)
-fun Asn1Element.Companion.parse(source: ByteIterator): Asn1Element = parseAll(source).let{
-    if (it.size != 1) throw Asn1StructuralException("Multiple ASN.1 structures found")
-    it.first()
+fun Asn1Element.Companion.parse(input: ByteIterator): Asn1Element = parseFirst(input).let {
+    if (input.hasNext()) throw Asn1StructuralException("Trailing bytes found after the fist ASN.1 element")
+    it
 }
+
 /**
  * Convenience wrapper around [parse], taking a [ByteArray] as [source]
  * @see parse
@@ -41,7 +42,14 @@ fun Asn1Element.Companion.parse(source: ByteArray): Asn1Element = parse(source.i
  * @throws Asn1Exception on invalid input or if more than a single root structure was contained in the [input]
  */
 @Throws(Asn1Exception::class)
-fun Asn1Element.Companion.parseAll(input: ByteIterator): List<Asn1Element> = Asn1Reader(input).doParseAll()
+fun Asn1Element.Companion.parseAll(input: ByteIterator): List<Asn1Element> = input.doParseAll()
+
+/**
+ * Convenience wrapper around [parseAll], taking a [ByteArray] as [source]
+ * @see parse
+ */
+@Throws(Asn1Exception::class)
+fun Asn1Element.Companion.parseAll(source: ByteArray): List<Asn1Element> = parseAll(source.iterator())
 
 
 /**
@@ -52,36 +60,44 @@ fun Asn1Element.Companion.parseAll(input: ByteIterator): List<Asn1Element> = Asn
  */
 //this only makes sense until we switch to kotlinx.io
 @Throws(Asn1Exception::class)
-fun Asn1Element.Companion.parseFirst(input: ByteIterator): Asn1Element = Asn1Reader(input).doParseSingle()
+fun Asn1Element.Companion.parseFirst(input: ByteIterator): Asn1Element = input.doParseSingle()
 
 
-private class Asn1Reader(private val input: ByteIterator) {
+/**
+ * Convenience wrapper around [parseFirst], taking a [ByteArray] as [source].
+ * @return a pari of the fist parsed [Asn1Element] mapped to the remaining bytes
+ * @see parse
+ */
+@Throws(Asn1Exception::class)
+fun Asn1Element.Companion.parseFirst(source: ByteArray): Pair<Asn1Element, ByteArray> =
+    source.iterator().doParseSingle().let { Pair(it, source.copyOfRange(it.overallLength, source.size)) }
+
 
     @Throws(Asn1Exception::class)
-    fun doParseAll(): List<Asn1Element> = runRethrowing {
+    private fun ByteIterator.doParseAll(): List<Asn1Element> = runRethrowing {
         val result = mutableListOf<Asn1Element>()
-        while (input.hasNext()) result += doParseSingle()
+        while (hasNext()) result += doParseSingle()
         return result
     }
 
-    fun doParseSingle(): Asn1Element = runRethrowing {
-        val tlv = input.readTlv()
-        if (tlv.isSequence()) Asn1Sequence(Asn1Reader(tlv.content.iterator()).doParseAll())
-        else if (tlv.isSet()) Asn1Set.fromPresorted(Asn1Reader(tlv.content.iterator()).doParseAll())
+private fun ByteIterator.doParseSingle(): Asn1Element = runRethrowing {
+    val tlv = readTlv()
+    if (tlv.isSequence()) Asn1Sequence(tlv.content.iterator().doParseAll())
+    else if (tlv.isSet()) Asn1Set.fromPresorted(tlv.content.iterator().doParseAll())
         else if (tlv.isExplicitlyTagged())
-            Asn1ExplicitlyTagged(tlv.tag.tagValue, Asn1Reader(tlv.content.iterator()).doParseAll())
+        Asn1ExplicitlyTagged(tlv.tag.tagValue, tlv.content.iterator().doParseAll())
         else if (tlv.tag == Asn1Element.Tag.OCTET_STRING) catching {
-            Asn1EncapsulatingOctetString(Asn1Reader(tlv.content.iterator()).doParseAll()) as Asn1Element
+        Asn1EncapsulatingOctetString(tlv.content.iterator().doParseAll()) as Asn1Element
         }.getOrElse { Asn1PrimitiveOctetString(tlv.content) as Asn1Element }
         else if (tlv.tag.isConstructed) { //custom tags, we don't know if it is a SET OF, SET, SEQUENCE,… so we default to sequence semantics
-            Asn1CustomStructure(Asn1Reader(tlv.content.iterator()).doParseAll(), tlv.tag.tagValue, tlv.tagClass)
+        Asn1CustomStructure(tlv.content.iterator().doParseAll(), tlv.tag.tagValue, tlv.tagClass)
         } else Asn1Primitive(tlv.tag, tlv.content)
     }
 
     private fun TLV.isSet() = tag == Asn1Element.Tag.SET
     private fun TLV.isSequence() = (tag == Asn1Element.Tag.SEQUENCE)
     private fun TLV.isExplicitlyTagged() = tag.isExplicitlyTagged
-}
+
 
 /**
  * decodes this [Asn1Primitive]'s content into an [Boolean]

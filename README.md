@@ -388,14 +388,14 @@ Which results in the following output:
 The magic shown above is based on a from-scratch 100% KMP implementation of an ASN.1 encoder and parser.
 To parse any DER-encoded ASN.1 structure, call either:
 
-* `Asn1Element.parse(derBytes)`, which will consume all bytes and return the first parsed ASN.1 element.
-This method throws if more than a single toplevel ASN.1 Element it found or if any parsing errors occur.
-* `Asn1Element.parseFirst(byteIterator)`, which will try to parse a single toplevel ASN.1 element.
-Any remaining bytes can still be consumed from the iterator, as it will only be advanced to right after the frist parsed element.
-* `Asn1Element.parseAll(byteIterator)`, wich consumes all bytes, parses all toplevel ASN.1 elements, and returns them as list.
+* `Asn1Element.parse()`, which will consume all bytes and return the first parsed ASN.1 element.
+This method throws if parsing errors occur or any trailing bytes are left after parsing the first element.
+* `Asn1Element.parseFirst()`, which will try to parse a single toplevel ASN.1 element.
+Any remaining bytes can still be consumed from the iterator, as it will only be advanced to right after the first parsed element.
+* `Asn1Element.parseAll()`, wich consumes all bytes, parses all toplevel ASN.1 elements, and returns them as list.
 Throws on any parsing error.
 
-And parsed ASN.1 element can be re-encoded (this is a true re-encoding, since the original bytes are discarded after decoding) by
+Any parsed ASN.1 element can be re-encoded (this is a true re-encoding, since the original bytes are discarded after decoding) by
 accessing the lazily evaluated `.derEncoded` property, just as manually constructed ones can.
 
 **Note that decoding operations will throw exceptions if invalid data is provided!**
@@ -451,7 +451,7 @@ However, anything can be decoded and tagged at will. Therefore, a generic decodi
 following signature:
 
 ```kotlin
-inline fun <reified T> Asn1Primitive.decode(tag: Asn1Element.Tag, decode: (content: ByteArray) -> T) 
+inline fun <reified T> Asn1Primitive.decode(assertTag: Asn1Element.Tag, decode: (content: ByteArray) -> T) 
 ```
 
 Check out [Asn1Decoding.kt](indispensable/src/commonMain/kotlin/at/asitplus/signum/indispensable/asn1/encoding/Asn1Decoding.kt) for a full

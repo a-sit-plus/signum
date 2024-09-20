@@ -182,6 +182,7 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(kotest("property"))
+                api("io.arrow-kt:arrow-core:1.2.4")
             }
         }
 
