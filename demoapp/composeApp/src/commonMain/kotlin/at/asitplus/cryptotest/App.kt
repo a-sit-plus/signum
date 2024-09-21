@@ -62,6 +62,7 @@ import at.asitplus.signum.supreme.os.PlatformSigningProvider
 import at.asitplus.signum.supreme.os.SignerConfiguration
 import at.asitplus.signum.supreme.os.SigningProvider
 import at.asitplus.signum.supreme.os.jsonEncoded
+import at.asitplus.signum.supreme.sign.Verifier
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
 import io.ktor.util.decodeBase64Bytes
@@ -136,7 +137,7 @@ internal fun App() {
             } ?: ""
         }
         val verifyPossible by getter { signatureData?.isSuccess == true }
-        var verifyState by remember { mutableStateOf<KmmResult<Success>?>(null) }
+        var verifyState by remember { mutableStateOf<KmmResult<Verifier.Success>?>(null) }
         val verifySucceededStr by getter {
             verifyState?.fold(onSuccess = {
                 "Verify OK!"
