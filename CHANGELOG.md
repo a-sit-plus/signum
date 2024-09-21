@@ -1,10 +1,11 @@
 # Changelog
 
-## 4.0
-
-### NEXT
-
 ## 3.0
+
+### 3.8.1 (Supreme 0.3.1)
+* Hotfix for [KT-71650](https://youtrack.jetbrains.com/issue/KT-71650/Invalid-Objective-C-Header-in-XCFramework)
+* Disables export of `Asn1Element.Tag` class to ObjC. Signum remains usable for KMP projects,
+the Tag class just cannot be directly accessed from Swift and ObjC any more.
 
 ### 3.8.0 (Supreme 0.3.0) Breaking Changes Ahead!
 * Completely revamped ASN.1 Tag Handling
