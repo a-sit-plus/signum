@@ -13,6 +13,8 @@ import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlin.experimental.ExperimentalObjCRefinement
+import kotlin.native.HiddenFromObjC
 
 /**
  * Base ASN.1 data class. Can either be a primitive (holding a value), or a structure (holding other ASN.1 elements)
@@ -231,8 +233,10 @@ sealed class Asn1Element(
     }
 
 
+    @OptIn(ExperimentalObjCRefinement::class)
     @Serializable
     @ConsistentCopyVisibility
+    @HiddenFromObjC
     data class Tag private constructor(
         val tagValue: ULong, val encodedTagLength: Int,
         @Serializable(with = ByteArrayBase64Serializer::class) val encodedTag: ByteArray
