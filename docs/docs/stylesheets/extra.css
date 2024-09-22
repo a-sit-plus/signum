@@ -1,0 +1,70 @@
+[data-md-color-scheme="asp"] {
+    --md-primary-fg-color: #005b79;
+    --md-typeset-color: #1F2328;
+    --md-typeset-a-color: #009ed1;
+    --md-accent-fg-color: #005b79;
+    --md-default-bg-color: #fff;
+    --md-code-bg-color: #F6F8FA;
+    --md-default-fg-color--light: #1F2328;
+    --md-primary-fg-color--dark: #002A38;
+}
+
+[data-md-color-scheme="asp"] img[src$="#only-dark"],
+[data-md-color-scheme="asp"] img[src$="#gh-dark-mode-only"] {
+    display: none; /* Hide dark images in light mode */
+}
+
+[data-md-color-scheme="asp-dark"] {
+    --md-primary-fg-color: #005b79;
+    --md-typeset-color: #f0f6fc;
+    --md-typeset-a-color: #009dcf;
+    --md-accent-fg-color: #00c1ff;
+    --md-default-bg-color: #0D1117;
+    --md-default-fg-color: var(--md-typeset-color);
+    --md-default-fg-color--light: white;
+    --md-code-fg-color: #f0f6fc;
+    --md-code-bg-color: #1E242A;
+    --md-primary-fg-color--dark: #002A38;
+    --md-code-hl-variable-color: #fff;
+    --md-code-hl-operator-color: #f0f6fc;
+    --md-code-hl-string-color: rgb(47, 177, 112);
+    --md-code-hl-keyword-color: rgb(103, 145, 224);
+    --md-code-hl-number-color: rgb(230, 105, 91);
+    --md-code-hl-comment-color: rgba(226, 228, 233, 0.56);
+    --md-code-hl-punctuation-color: rgba(226, 228, 233, 0.56);
+    --md-code-hl-name-color: rgba(213, 216, 226, 0.82);
+    --md-typeset-table-color: rgba(213, 216, 226, 0.2);
+    --md-admonition-fg-color:            var(--md-typeset-color);
+    --md-admonition-bg-color:            var(--md-default-bg-color);
+}
+
+[data-md-color-scheme="asp-dark"] img[src$="#only-light"],
+[data-md-color-scheme="asp-dark"] img[src$="#gh-light-mode-only"] {
+    display: none; /* Hide light images in dark mode */
+}
+
+
+@font-face {
+    font-family: 'Fantasque';
+    src: url('../fonts/FantasqueSansMono-Regular.woff2') format('woff2'),
+    url('../fonts/FantasqueSansMono-Regular.woff') format('woff'), /* Firefox >= 3.6, any other modern browser */
+    url('../fonts/FantasqueSansMono-Regular.ttf') format('truetype'), /* Safari, Android, iOS */
+    url('../fonts/FantasqueSansMono-Regular.svg#FantasqueSansMono-Regular') format('svg'); /* Chrome < 4, Legacy iOS */
+    font-weight: 400;
+    font-style: normal;
+}
+
+:root {
+    --md-code-font: "Fantasque";
+}
+
+.md-typeset code {
+    font-size: 13pt;
+    font-feature-settings: "kern", "liga";
+}
+
+@media screen and (max-width: 76.2344em) {
+    .md-nav--primary .md-nav__title {
+        height: 3.9rem;
+    }
+}

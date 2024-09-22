@@ -1,9 +1,9 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="signum-light-large.png">
-  <source media="(prefers-color-scheme: light)" srcset="signum-dark-large.png">
-  <img alt="Signum – Kotlin Multiplatform Crypto/PKI Library and ASN1 Parser + Encoder" src="signum-dark-large.png">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/docs/assets/signum-light-large.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/docs/assets/signum-dark-large.png">
+  <img alt="Signum – Kotlin Multiplatform Crypto/PKI Library and ASN1 Parser + Encoder" src="docs/docs/assets/signum-dark-large.png">
 </picture>
 
 
@@ -48,7 +48,7 @@ This last bit means that
 **you can work with X509 Certificates, public keys, CSRs and arbitrary ASN.1 structures on iOS.**  
 The very first bit means that you can verify signatures on the JVM, Android and on iOS.
 
-**Do check out the full API docs [here](https://a-sit-plus.github.io/signum/)**!
+**Do check out the full manual with examples and API docs [here](https://a-sit-plus.github.io/signum/)**!
 
 ## Usage
 
@@ -58,12 +58,12 @@ the JVM, Android and iOS.
 This library consists of four modules, each of which is published on maven central:
 
 
-|                                                                                                            Name                                                                                                             | Info                                                                                                                                                                                                                                                               |
-|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| <picture> <source media="(prefers-color-scheme: dark)" srcset="core-light.png">   <source media="(prefers-color-scheme: light)" srcset="core-dark.png">   <img alt="Indispensable" src="indispensable-dark.png"> </picture> | **Indispensable** base module containing the cryptographic data structures, algorithm identifiers, the ASN.1 parser, OIDs, X.509 certificate, …                                                                                                                    | 
-| <picture> <source media="(prefers-color-scheme: dark)" srcset="josef-light.png">   <source media="(prefers-color-scheme: light)" srcset="josef-dark.png">   <img alt="Indispensable Josef" src="josef-dark.png"> </picture> | **Indispensable Josef** JOSE add-on module containing JWS/E/T-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization.      | 
-| <picture> <source media="(prefers-color-scheme: dark)" srcset="cosef-light.png">   <source media="(prefers-color-scheme: light)" srcset="cosef-dark.png">   <img alt="Indispensable Cosef" src="cosef-dark.png"> </picture> | **Indispensable Cosef** COSE add-on module containing all COSE/CWT-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. |
-|    <picture> <source media="(prefers-color-scheme: dark)" srcset="supreme-light.png">   <source media="(prefers-color-scheme: light)" srcset="supreme-dark.png">   <img alt="Supreme" src="supreme-dark.png"> </picture>    | *(Preview)* **Supreme** KMP crypto provider implementing signature verification across platforms. Signature creation using platform-native functionality across JVM, Android (read: HW-Backed AndroidKeyStore) and iOS (read KeyChain + Secure Enclave) are WIP.   | 
+|                                                                                                                                      Name                                                                                                                                      | Info                                                                                                                                                                                                                                                               |
+|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|     <picture> <source media="(prefers-color-scheme: dark)" srcset="docs/docs/assets/core-light.png">   <source media="(prefers-color-scheme: light)" srcset="docs/docs/assets/core-dark.png">   <img alt="Indispensable" src="docs/docs/assets/core-dark.png"> </picture>      | **Indispensable** base module containing the cryptographic data structures, algorithm identifiers, the ASN.1 parser, OIDs, X.509 certificate, …                                                                                                                    | 
+| <picture> <source media="(prefers-color-scheme: dark)" srcset="docs/docs/assets/josef-light.png">   <source media="(prefers-color-scheme: light)" srcset="docs/docs/assets/josef-dark.png">   <img alt="Indispensable Josef" src="docs/docs/assets/josef-dark.png"> </picture> | **Indispensable Josef** JOSE add-on module containing JWS/E/T-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization.      | 
+| <picture> <source media="(prefers-color-scheme: dark)" srcset="docs/docs/assets/cosef-light.png">   <source media="(prefers-color-scheme: light)" srcset="docs/docs/assets/cosef-dark.png">   <img alt="Indispensable Cosef" src="docs/docs/assets/cosef-dark.png"> </picture> | **Indispensable Cosef** COSE add-on module containing all COSE/CWT-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. |
+|    <picture> <source media="(prefers-color-scheme: dark)" srcset="docs/docs/assets/supreme-light.png">   <source media="(prefers-color-scheme: light)" srcset="docs/docs/assets/supreme-dark.png">   <img alt="Supreme" src="docs/docs/assets/supreme-dark.png"> </picture>    | *(Preview)* **Supreme** KMP crypto provider implementing signature verification across platforms. Signature creation using platform-native functionality across JVM, Android (read: HW-Backed AndroidKeyStore) and iOS (read KeyChain + Secure Enclave) are WIP.   | 
 
 This separation keeps dependencies to a minimum, i.e. it enables including only JWT-related functionality, if COSE is irrelevant.
 
@@ -132,7 +132,7 @@ PlatformSigningProvider.createSigningKey(alias = "Swordfish") {
   ec {
     // you don't even need to specify the curve (P256 is the default) but we'll do it for demonstration purposes
     curve = ECCurve.SECP_256_R_1
-    // you could specify the supported digests explicity - if you do not, the curve's native digest (for P256, this is SHA256) is supported
+    // you could specify the supported digests explicitly - if you do not, the curve's native digest (for P256, this is SHA256) is supported
   }
   // see https://a-sit-plus.github.io/signum/supreme/at.asitplus.signum.supreme.sign/-platform-signing-key-configuration-base/-secure-hardware-configuration/index.html
   hardware {

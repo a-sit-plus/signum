@@ -17,22 +17,7 @@ apply(plugin = "org.jetbrains.dokka")
 tasks.getByName("dokkaHtmlMultiModule") {
     (this as DokkaMultiModuleTask)
     outputDirectory.set(File("${buildDir}/dokka"))
-    includes.from("README.md")
     moduleName.set("Signum")
-    doLast {
-        files(
-            "core-dark.png",
-            "core-light.png",
-            "cosef-dark.png",
-            "cosef-light.png",
-            "supreme-dark.png",
-            "supreme-light.png",
-            "josef-dark.png",
-            "josef-light.png",
-            "signum-light-large.png",
-            "signum-dark-large.png",
-        ).files.forEach { it.copyTo(File("build/dokka/${it.name}"), overwrite = true) }
-    }
 }
 
 allprojects {
@@ -42,4 +27,22 @@ allprojects {
     repositories {
         mavenLocal()
     }
+}
+
+tasks.register<Copy>("copyChangelog") {
+    into(rootDir.resolve("docs/docs"))
+    from("CHANGELOG.md")
+}
+
+tasks.register<Copy>("mkDocsPrepare") {
+    dependsOn("dokkaHtmlMultiModule")
+    dependsOn("copyChangelog")
+    into(rootDir.resolve("docs/docs/dokka"))
+    from("${buildDir}/dokka")
+}
+
+tasks.register<Exec>("mkDocsBuild") {
+    dependsOn(tasks.named("mkDocsPrepare"))
+    workingDir("${rootDir}/docs")
+    commandLine("mkdocs", "build", "--clean", "--strict")
 }
