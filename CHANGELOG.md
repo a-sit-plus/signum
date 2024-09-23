@@ -2,6 +2,10 @@
 
 ## 3.0
 
+### 3.8.2 (Supreme 0.3.2)
+* Less destructive Hotfix for for [KT-71650](https://youtrack.jetbrains.com/issue/KT-71650/Invalid-Objective-C-Header-in-XCFramework)
+* Re-enables export of `Asn1Element.Tag` class to ObjC.
+
 ### 3.8.1 (Supreme 0.3.1)
 * Hotfix for [KT-71650](https://youtrack.jetbrains.com/issue/KT-71650/Invalid-Objective-C-Header-in-XCFramework)
 * Disables export of `Asn1Element.Tag` class to ObjC. Signum remains usable for KMP projects,
