@@ -1,8 +1,5 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.signum.indispensable.josef.JweAlgorithm
-import at.asitplus.signum.indispensable.josef.JweEncryption
-
 val JweEncryption.jcaName
     get() = when (this) {
         JweEncryption.A128GCM, JweEncryption.A192GCM, JweEncryption.A256GCM -> "AES/GCM/NoPadding"
@@ -20,6 +17,15 @@ val JweEncryption.jcaKeySpecName
         JweEncryption.A128GCM, JweEncryption.A192GCM, JweEncryption.A256GCM -> "AES"
         JweEncryption.A128CBC_HS256, JweEncryption.A192CBC_HS384, JweEncryption.A256CBC_HS512 -> "AES"
     }
+
+val JweEncryption.jcaHmacName: String?
+    get() = when (this) {
+        JweEncryption.A128CBC_HS256 -> "HMACSHA256"
+        JweEncryption.A192CBC_HS384 -> "HMACSHA384"
+        JweEncryption.A256CBC_HS512 -> "HMACSHA512"
+        else -> null
+    }
+
 
 val JweAlgorithm.jcaName: String?
     get() = when (this) {

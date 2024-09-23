@@ -40,6 +40,18 @@ enum class JweEncryption(val text: String) {
             A128GCM, A192GCM, A256GCM -> 128 // all AES-based
             A128CBC_HS256, A192CBC_HS384, A256CBC_HS512 -> 128 // all AES-based
         }
+
+    /**
+     * Per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.3),
+     * where the MAC output bytes need to be truncated to this size for use in JWE.
+     */
+    val macLength: Int?
+        get() = when (this) {
+            A128CBC_HS256 -> 16
+            A192CBC_HS384 -> 24
+            A256CBC_HS512 -> 32
+            else -> null
+        }
 }
 
 object JweEncryptionSerializer : KSerializer<JweEncryption?> {

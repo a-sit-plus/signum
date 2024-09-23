@@ -58,6 +58,15 @@ data class JweEncrypted(
         return result
     }
 
+    override fun toString(): String {
+        return "JweEncrypted(header=$header," +
+                " headerAsParsed=${headerAsParsed.encodeToString(Base64UrlStrict)}," +
+                " encryptedKey=${encryptedKey?.encodeToString(Base64UrlStrict)}," +
+                " iv=${iv.encodeToString(Base64UrlStrict)}," +
+                " ciphertext=${ciphertext.encodeToString(Base64UrlStrict)}," +
+                " authTag=${authTag.encodeToString(Base64UrlStrict)})"
+    }
+
 
     companion object {
         fun parse(it: String): KmmResult<JweEncrypted> = catching {
