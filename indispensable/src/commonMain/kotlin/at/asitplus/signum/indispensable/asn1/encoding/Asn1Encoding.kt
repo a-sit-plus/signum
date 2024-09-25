@@ -296,7 +296,7 @@ object Asn1 {
         Asn1Element.Tag(tagNum, constructed = false, tagClass = tagClass)
 
     /**
-     * Convenience helper to easily construct implicitly tagged elements.
+     * Convenience helper to easily construct explicitly tagged elements.
      * Shorthand for `Tag(tagValue, constructed=true, tagClass=TagClass.CONTEXT_SPECIFIC)`
      */
     fun ExplicitTag(tagNum: ULong) =
