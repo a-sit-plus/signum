@@ -1,6 +1,5 @@
-package at.asitplus.signum.supreme.os
+package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.CertificateChainBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.IosPublicKeySerializer

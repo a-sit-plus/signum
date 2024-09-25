@@ -3,12 +3,7 @@ package at.asitplus.signum.supreme.os
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.Digest
-import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.RSAPadding
-import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.supreme.CFCryptoOperationFailed
 import at.asitplus.signum.supreme.CryptoOperationFailed
 import at.asitplus.signum.supreme.UnsupportedCryptoException
@@ -96,7 +91,6 @@ import platform.Security.kSecReturnRef
 import platform.Security.kSecUseAuthenticationContext
 import platform.Security.kSecUseAuthenticationUI
 import platform.Security.kSecUseAuthenticationUIAllow
-import at.asitplus.signum.indispensable.secKeyAlgorithmPreHashed
 import at.asitplus.signum.supreme.AutofreeVariable
 import at.asitplus.signum.supreme.CoreFoundationException
 import at.asitplus.signum.supreme.SignatureResult

@@ -33,7 +33,7 @@ class JweEncryptedTest : FreeSpec({
         val secretKey = KeyGenerator.getInstance("AES").apply { init(128) }.generateKey()
         jweNimbus.encrypt(AESEncrypter(secretKey))
 
-        val parsed = JweEncrypted.parse(jweNimbus.serialize()).getOrThrow()
+        val parsed = JweEncrypted.deserialize(jweNimbus.serialize()).getOrThrow()
 
         parsed.header.algorithm shouldBe JweAlgorithm.A128KW
         parsed.header.encryption shouldBe JweEncryption.A128GCM
@@ -68,7 +68,7 @@ class JweEncryptedTest : FreeSpec({
 
         jweNimbus.encrypt(ECDHEncrypter(ECKeyGenerator(Curve.P_256).generate()))
 
-        val parsed = JweEncrypted.parse(jweNimbus.serialize()).getOrThrow()
+        val parsed = JweEncrypted.deserialize(jweNimbus.serialize()).getOrThrow()
 
         parsed.header.algorithm shouldBe JweAlgorithm.ECDH_ES
         parsed.header.encryption shouldBe JweEncryption.A256CBC_HS512
