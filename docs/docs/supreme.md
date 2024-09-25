@@ -280,9 +280,10 @@ The guarantees are different: you are trusting the OS, not the actual secure har
 and you are trusting that our library properly interfaces with the OS.
 Attestation types are serializable for transfer.
 
-For more details on attestation, an how it is possible to emulate key attestation on iOS, see [_WARDEN_'s README section on iOS attestation](https://github.com/a-sit-plus/warden?tab=readme-ov-file#ios).
+For more details on attestation, and how it is possible to emulate key attestation on iOS, see [_WARDEN_'s README section on iOS attestation](https://github.com/a-sit-plus/warden?tab=readme-ov-file#ios).
 
 The JVM also "supports" a custom attestation format. By default, it is rather nonsensical.
 However, if you plug an HSM that supports attestation to the JCA, you can make use of it.
 
-For mor
+The [feature matrix](features.md) also contains remarks on attestation, while
+details on the attestation format can be found in the corresponding [API documentation](dokka/supreme/at.asitplus.signum.supreme.os/-attestation/index.html).
