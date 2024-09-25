@@ -10,7 +10,7 @@ import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
-import at.asitplus.signum.supreme.os.Attestation
+import at.asitplus.signum.indispensable.Attestation
 import at.asitplus.signum.supreme.os.SigningProvider
 import com.ionspin.kotlin.bignum.integer.BigInteger
 

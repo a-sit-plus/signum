@@ -18,7 +18,7 @@ class JwsSignedTest : FreeSpec({
             ?: throw Exception("TestVectors not found")
 
         withData(testvec) { input ->
-            val parsed = JwsSigned.parse(input).getOrThrow()
+            val parsed = JwsSigned.deserialize(input).getOrThrow()
 
             val publicKey = parsed.header.publicKey.shouldNotBeNull()
 

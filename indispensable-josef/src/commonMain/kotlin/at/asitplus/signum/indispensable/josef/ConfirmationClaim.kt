@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -90,6 +89,6 @@ object JweEncryptedSerializer : KSerializer<JweEncrypted> {
     }
 
     override fun deserialize(decoder: Decoder): JweEncrypted {
-        return JweEncrypted.parse(decoder.decodeString()).getOrThrow()
+        return JweEncrypted.deserialize(decoder.decodeString()).getOrThrow()
     }
 }

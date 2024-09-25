@@ -69,7 +69,7 @@ data class JweEncrypted(
 
 
     companion object {
-        fun parse(it: String): KmmResult<JweEncrypted> = catching {
+        fun deserialize(it: String): KmmResult<JweEncrypted> = catching {
             val stringList = it.replace("[^A-Za-z0-9-_.]".toRegex(), "").split(".")
             if (stringList.size != 5) throw IllegalArgumentException("not five parts in input: $it")
             val headerAsParsed = stringList[0].decodeToByteArray(Base64UrlStrict)

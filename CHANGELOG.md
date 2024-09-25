@@ -4,6 +4,9 @@
 
 ### NEXT
 
+* Move `Attestation` from Supreme to Indispensable
+* Rename `parse()` to `deserialize()` in `JwsSigned` and `JweEncrypted` to align with COSE
+
 ## 3.0
 
 ### 3.8.3

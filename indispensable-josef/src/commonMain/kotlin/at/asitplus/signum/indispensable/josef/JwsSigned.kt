@@ -50,7 +50,7 @@ data class JwsSigned(
 
 
     companion object {
-        fun parse(it: String): KmmResult<JwsSigned> = catching {
+        fun deserialize(it: String): KmmResult<JwsSigned> = catching {
             val stringList = it.replace("[^A-Za-z0-9-_.]".toRegex(), "").split(".")
             if (stringList.size != 3) throw IllegalArgumentException("not three parts in input: $it")
             val headerInput = stringList[0].decodeToByteArray(Base64UrlStrict)
