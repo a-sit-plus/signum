@@ -193,7 +193,6 @@ data class JsonWebKey(
      */
     val jwkThumbprint: String by lazy {
         val jsonEncoded = Json.encodeToString(this.toMinimalJsonWebKey().getOrNull() ?: this)
-            .also { println(it) }
         val thumbprint = jsonEncoded
             .encodeToByteArray().toByteString().sha256().toByteArray().encodeToString(Base64UrlStrict)
         "urn:ietf:params:oauth:jwk-thumbprint:sha256:${thumbprint}"
