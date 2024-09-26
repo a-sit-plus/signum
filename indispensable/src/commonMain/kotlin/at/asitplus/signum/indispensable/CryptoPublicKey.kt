@@ -53,7 +53,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             +BitString(iosEncoded)
         }
 
-        is Rsa -> {
+        is RSA -> {
             Asn1.Sequence {
                 +Asn1.Sequence {
                     +oid
@@ -97,7 +97,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                     EC.fromAnsiX963Bytes(ECCurve.SECP_521_R_1, keyBytes)
 
                 0x1205uL ->
-                    Rsa.fromPKCS1encoded(keyBytes)
+                    RSA.fromPKCS1encoded(keyBytes)
 
                 else ->
                     throw IllegalArgumentException("Unknown public key identifier $codec")
@@ -126,14 +126,14 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                     return EC.fromUncompressed(curve, x, y)
                 }
 
-                Rsa.oid -> {
+                RSA.oid -> {
                     (keyInfo.nextChild() as Asn1Primitive).readNull()
                     val bitString = (src.nextChild() as Asn1Primitive).asAsn1BitString()
                     val rsaSequence = Asn1Element.parse(bitString.rawBytes) as Asn1Sequence
                     val n = (rsaSequence.nextChild() as Asn1Primitive).decode(Asn1Element.Tag.INT) { it }
                     val e = (rsaSequence.nextChild() as Asn1Primitive).decodeToInt()
                     if (rsaSequence.hasMoreChildren()) throw Asn1StructuralException("Superfluous data in SPKI!")
-                    return Rsa(n, e)
+                    return RSA(n, e)
                 }
 
                 else -> throw Asn1Exception("Unsupported Key Type: $oid")
@@ -159,7 +159,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                 }
 
                 //TODO: this could be nicer, maybe?
-                (BERTags.SEQUENCE or BERTags.CONSTRUCTED) -> Rsa.fromPKCS1encoded(it)
+                (BERTags.SEQUENCE or BERTags.CONSTRUCTED) -> RSA.fromPKCS1encoded(it)
                 else -> throw IllegalArgumentException("Unsupported Key type")
             }
 
@@ -170,7 +170,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
      */
     @Serializable
     @ConsistentCopyVisibility
-    data class Rsa
+    data class RSA
     @Throws(IllegalArgumentException::class)
     private constructor(
         /**
@@ -207,7 +207,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         @Throws(IllegalArgumentException::class)
         constructor(n: ByteArray, e: Int) : this(sanitizeRsaInputs(n, e))
 
-        override val oid = Rsa.oid
+        override val oid = RSA.oid
 
         /**
          * enum of supported RSA key sized. For sanity checks!
@@ -263,7 +263,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             if (other == null) return false
             if (this::class != other::class) return false
 
-            other as Rsa
+            other as RSA
 
             return pkcsEncoded.contentEquals(other.pkcsEncoded)
         }
@@ -282,12 +282,12 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
              * @throws Asn1Exception all sorts of exceptions on invalid input
              */
             @Throws(Asn1Exception::class)
-            fun fromPKCS1encoded(input: ByteArray): Rsa = runRethrowing {
+            fun fromPKCS1encoded(input: ByteArray): RSA = runRethrowing {
                 val conv = Asn1Element.parse(input) as Asn1Sequence
                 val n = (conv.nextChild() as Asn1Primitive).decode(Asn1Element.Tag.INT) { it }
                 val e = (conv.nextChild() as Asn1Primitive).decodeToInt()
                 if (conv.hasMoreChildren()) throw Asn1StructuralException("Superfluous bytes")
-                return Rsa(Size.of(n), n, e)
+                return RSA(Size.of(n), n, e)
             }
 
             override val oid = KnownOIDs.rsaEncryption
@@ -442,20 +442,20 @@ fun CryptoPublicKey.equalsCryptographically(other: SpecializedCryptoPublicKey) =
 
 
 //Helper typealias, for helper sanitization function. Enables passing all params along constructors for constructor chaining
-private typealias RsaParams = Triple<ByteArray, Int, CryptoPublicKey.Rsa.Size>
+private typealias RsaParams = Triple<ByteArray, Int, CryptoPublicKey.RSA.Size>
 
 private val RsaParams.n get() = first
 private val RsaParams.e get() = second
 private val RsaParams.size get() = third
 
 /**
- * Sanitizes RSA parameters and maps it to the correct [CryptoPublicKey.Rsa.Size] enum
+ * Sanitizes RSA parameters and maps it to the correct [CryptoPublicKey.RSA.Size] enum
  * This function lives here and returns a typealiased Triple to allow for constructor chaining.
  * If we were to change the primary constructor, we'd need to write a custom serializer
  */
 @Throws(IllegalArgumentException::class)
 private fun sanitizeRsaInputs(n: ByteArray, e: Int): RsaParams = n.dropWhile { it == 0.toByte() }.toByteArray()
-    .let { Triple(byteArrayOf(0, *it), e, CryptoPublicKey.Rsa.Size.of(it)) }
+    .let { Triple(byteArrayOf(0, *it), e, CryptoPublicKey.RSA.Size.of(it)) }
 
 
 private val PREFIX_DID_KEY = "did:key"

@@ -50,7 +50,7 @@ sealed class EphemeralSigner(internal val privateKey: EphemeralKeyRef): Signer {
         }.let { it.takeFromCF<NSData>().toByteArray() }
         return@signCatching when (val pubkey = publicKey) {
             is CryptoPublicKey.EC -> CryptoSignature.EC.decodeFromDer(signatureBytes).withCurve(pubkey.curve)
-            is CryptoPublicKey.Rsa -> CryptoSignature.RSAorHMAC(signatureBytes)
+            is CryptoPublicKey.RSA -> CryptoSignature.RSAorHMAC(signatureBytes)
         }
     }
     class EC(config: EphemeralSignerConfiguration, privateKey: EphemeralKeyRef,
@@ -58,7 +58,7 @@ sealed class EphemeralSigner(internal val privateKey: EphemeralKeyRef): Signer {
         : EphemeralSigner(privateKey), Signer.ECDSA
 
     class RSA(config: EphemeralSignerConfiguration, privateKey: EphemeralKeyRef,
-              override val publicKey: CryptoPublicKey.Rsa, override val signatureAlgorithm: SignatureAlgorithm.RSA)
+              override val publicKey: CryptoPublicKey.RSA, override val signatureAlgorithm: SignatureAlgorithm.RSA)
         : EphemeralSigner(privateKey), Signer.RSA
 }
 
@@ -91,7 +91,7 @@ internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfigura
             is SigningKeyConfiguration.ECConfiguration ->
                 EphemeralKeyBase.EC(EphemeralSigner::EC, key, CryptoPublicKey.EC.fromAnsiX963Bytes(alg.curve, pubkeyBytes), alg.digests)
             is SigningKeyConfiguration.RSAConfiguration ->
-                EphemeralKeyBase.RSA(EphemeralSigner::RSA, key, CryptoPublicKey.Rsa.fromPKCS1encoded(pubkeyBytes), alg.digests, alg.paddings)
+                EphemeralKeyBase.RSA(EphemeralSigner::RSA, key, CryptoPublicKey.RSA.fromPKCS1encoded(pubkeyBytes), alg.digests, alg.paddings)
         }
     }
 }

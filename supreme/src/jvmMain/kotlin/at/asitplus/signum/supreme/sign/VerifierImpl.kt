@@ -10,9 +10,6 @@ import at.asitplus.signum.indispensable.jcaPSSParams
 import at.asitplus.signum.indispensable.jcaSignatureBytes
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.UnsupportedCryptoException
-import at.asitplus.signum.supreme.sign.InvalidSignature
-import at.asitplus.signum.supreme.sign.PlatformVerifierConfiguration
-import at.asitplus.signum.supreme.sign.SignatureInput
 import at.asitplus.wrapping
 import java.security.Signature
 
@@ -74,7 +71,7 @@ private fun getRSAInstance(alg: SignatureAlgorithm.RSA, config: PlatformVerifier
 
 @Throws(UnsupportedCryptoException::class)
 internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
-            (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
+            (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
              config: PlatformVerifierConfiguration) {
     wrapping(asA=::UnsupportedCryptoException) {
         getRSAInstance(signatureAlgorithm, config)
@@ -84,7 +81,7 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
 
 @JvmSynthetic
 internal actual fun verifyRSAImpl
-            (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
+            (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
              data: SignatureInput, signature: CryptoSignature.RSAorHMAC,
              config: PlatformVerifierConfiguration)
 {
