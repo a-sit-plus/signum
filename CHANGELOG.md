@@ -1,21 +1,16 @@
 # Changelog
 
-## 4.0
+## 3.0
 
-### NEXT
+### 3.9.0 (Supreme 0.4.0)
 
 * Move `Attestation` from Supreme to Indispensable
 * Rename `parse()` to `deserialize()` in `JwsSigned` and `JweEncrypted` to align with COSE
 * Rename `CryptoPublicKey.Rsa` -> `CryptoPublicKey.RSA` for consistency reasons
-
-## 3.0
-
-### 3.8.3
-
-* Add HMAC JCA names, properties, used in JSON Web Encryption
+* Add HMAC JCA names, properties used in JSON Web Encryption
 
 ### 3.8.2 (Supreme 0.3.2)
-* Less destructive Hotfix for for [KT-71650](https://youtrack.jetbrains.com/issue/KT-71650/Invalid-Objective-C-Header-in-XCFramework)
+* Less destructive Hotfix for [KT-71650](https://youtrack.jetbrains.com/issue/KT-71650/Invalid-Objective-C-Header-in-XCFramework)
 * Re-enables export of `Asn1Element.Tag` class to ObjC.
 
 ### 3.8.1 (Supreme 0.3.1)
