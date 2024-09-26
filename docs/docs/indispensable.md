@@ -34,7 +34,8 @@ types and functionality related to crypto and PKI applications:
 This last bit means that
 you can work with X509 Certificates, public keys, CSRs and arbitrary ASN.1 structures on iOS.
 
-**Do check out the full API docs [here](dokka/indispensable/index.html)**!
+!!! tip
+    **Do check out the full API docs [here](dokka/indispensable/index.html)**!
 
 ## Using it in your Projects
 
@@ -58,7 +59,6 @@ of working with and on cryptographic data.
 The main package housing all data classes is `at.asitplus.signum.indispensable`.
 It contains essentials such as:
 
-
 * `CryptoPublicKey` representing a public key. Currently, we support RSA and EC public keys on NIST curves.
 * `Digest` containing an enumeration of supported
 * `ECCurve` representing an EC Curve
@@ -66,6 +66,12 @@ It contains essentials such as:
 * `CryptoSignatre` representing a cryptographic signature including descriptive information regarding the algorithms and signature data
 * `SignatureAlgorithm` containing an enumeration of supported signature algorithms
     * `X509SignatureAlgorithm` enumeration of supported X.509 signature algorithms (maps to and from `SignatureAlgorithm`)
+* `Attestation` representing a container to convey attestation statements 
+    * `AndroidKeystoreAttestation` contains the certificate chain from Google's root certificate down to the attested key
+    * `IosLegacyHomebrewAttesation` contains an attestation and an assertion, conforming to the emulated key attestation scheme
+currently supported by warden.
+    * `IosHomebrewAttestation` contains the new iOS attestation format introduces in Supreme 0.2.0 (see the [Attestation](supreme.md#attestation) section of the _Supreme_ manual for details).
+    * `SelfAttestation` is used on the JVM. It has no specific semantics, but could be used, if an attestation-supporting HSM is used on the JVM. WIP!
 
 #### PKI-Related data Structures
 The `pki` package contains data classes relevant in the PKI context:
@@ -303,6 +309,7 @@ In addition, some more specialized encoding functions exist for cases that are n
 * `Instant.encodeToAsn1GeneralizedTimePrimitive()` produces an ASN.1 GENERALIZED TIME primitive
 
 ### Custom Tagging
+
 This library comes with extensive tagging support and an expressive `Asn1Element.Tag` class.
 ASN.1 knows EXPLICIT and IMPLICIT tags.
 The former is simply a structure with SEQUENCE SEMANTICS and a user-defined CONSTRUCTED, CONTEXT_SPECIFIC tag, while the latter replaces an ASN.1 element's tag.
@@ -312,17 +319,25 @@ To explicitly tag any number of elements, simply invoke `Asn1.ExplicitlyTagged`,
 To create an explicit tag (to compare it to a parsed, explicitly tagged element, for example), just pass tag number (and optionally) tag class to `Asn1.ExplicitTag`.
 
 #### Implicit
+
 Implicit tagging is implemented differently. Any element can be implicitly tagged, after it was constructed, by invoking the
 `withImplicitTag` infix function on it. There's, of course, also an option to override the tag class.
 Creating an implicitly tagged UTF-8 String using the ASN.1 builder DSL with a custom tag class works as follows:
+
 ```kotlin
 Asn1.Utf8String("Foo") withImplicitTag (0xCAFEuL withClass TagClass.PRIVATE)
 ```
 
-It is also possible to unset the CONSTRUCTED bit from any ASN.1 structure or Tag by invoking the infix function  `without` as follows:
+It is also possible to unset the CONSTRUCTED bit from any ASN.1 structure or Tag by invoking the infix function `without` as follows:
 ```kotlin
 Asn1.Sequence { +Asn1.Int(42) } withImplicitTag (0x5EUL without CONSTRUCTED)
 ```
+
+!!! warning
+    It is perfectly possible to use abuse implicit tagging in ways that produces UNIVERSAL tags that are reserved for well-defined types.
+    If you really think you must create a faux ASN.1 NULL from an X.509 certificate go ahead, we dare you!
+    Just blame the mess you created only on yourself and nobody else!
+
 
 ### ASN.1 Builder DSL
 So far, custom high-level types and manually constructing low-level types was discussed.
@@ -407,9 +422,9 @@ Application 1337 (9 elem)
         UTCTime 2024-09-16 11:53:51 UTC
 ```
 
-The builder also takes any `Asn1Encodable`, so you can also add an `X509Certificate`, or a `CryptoPublicKey` using
-the same concise syntax. 
 You can, of course, also create primitives, by directly invoking builder functions, like `Asn1.Int()` and use the resulting
 ASN.1 primitive as-is.
-
-Do checkout the [API docs](dokka/indispensable/at.asitplus.signum.indispensable.asn1.encoding/-asn1/index.html) for a full list of builder functions.
+!!! tip
+    The builder also takes any `Asn1Encodable`, so you can also add an `X509Certificate`, or a `CryptoPublicKey` using
+    the same concise syntax.  
+    **Do checkout the [API docs](dokka/indispensable/at.asitplus.signum.indispensable.asn1.encoding/-asn1/index.html) for a full list of builder functions!**

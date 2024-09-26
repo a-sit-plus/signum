@@ -19,9 +19,9 @@ types and functionality related to crypto and PKI applications:
 * Certification Request (CSR)
 * ObjectIdentifier Class with human-readable notation (e.g. 1.2.9.6245.3.72.13.4.7.6)
 * Generic ASN.1 abstractions to operate on and create arbitrary ASN.1 Data
-* JWS-related data structures (JSON Web Keys, JWT, etc…)
+* JOSE-related data structures (JSON Web Keys, JWT, etc…)
 * COSE-related data structures (COSE Keys, CWT, etc…)
-* Serializability of all ASN.1 classes for debugging **AND ONLY FOR DEBUGGING!!!** *Seriously, do not try to deserialize
+* Serializability of all ASN.1 classes for debugging **and only for debugging!!!** *Seriously, do not try to deserialize
   ASN.1 classes through kotlinx.serialization! Use `decodeFromDer()` and its companions!*
 * 100% pure Kotlin BitSet
 * Exposes Multibase Encoder/Decoder as an API dependency
@@ -32,7 +32,7 @@ This last bit means that
 **you can work with X509 Certificates, public keys, CSRs and arbitrary ASN.1 structures on iOS.**  
 The very first bit means that you can create and verify signatures on the JVM, Android and on iOS.
 
-**Do check out the full API docs [here](dokka)**!
+**We also provide comprehensive API docs [here](dokka/index.html)**!
 
 ## Using it in your Projects
 
@@ -41,15 +41,15 @@ the JVM, Android and iOS.
 
 This library consists of four modules, each of which is published on maven central:
 
-|                                                       Name                                                        | Info                                                                                                                                                                                                                                                               |
-|:-----------------------------------------------------------------------------------------------------------------:|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|        ![indispensable](assets/core-dark.png#only-light) ![indispensable](assets/core-light.png#only-dark)        | **Indispensable** base module containing the cryptographic data structures, algorithm identifiers, the ASN.1 parser, OIDs, X.509 certificate, …                                                                                                                    | 
-| ![indispensable-josef](assets/josef-dark.png#only-light) ![indispensable-josef](assets/josef-light.png#only-dark) | **Indispensable Josef** JOSE add-on module containing JWS/E/T-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization.      | 
-| ![indispensable-cosef](assets/cosef-dark.png#only-light) ![indispensable-cosef](assets/cosef-light.png#only-dark) | **Indispensable Cosef** COSE add-on module containing all COSE/CWT-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. |
-|           ![Supreme](assets/supreme-dark.png#only-light) ![Supreme](assets/supreme-light.png#only-dark)           | **Supreme** KMP crypto provider implementing hardware-backed signature creation and verification across platforms (Android KeyStore / iOS Secure Enclave).                                                                                                         | 
+|                                                       Name                                                        | Info                                                                                                                                                                                                                                                                |
+|:-----------------------------------------------------------------------------------------------------------------:|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|        ![indispensable](assets/core-dark.png#only-light) ![indispensable](assets/core-light.png#only-dark)        | **Indispensable** base module containing the cryptographic data structures, algorithm identifiers, the ASN.1 parser, OIDs, X.509 certificate, …                                                                                                                     | 
+| ![indispensable-josef](assets/josef-dark.png#only-light) ![indispensable-josef](assets/josef-light.png#only-dark) | **Indispensable Josef** JOSE add-on module containing JWS/E/T-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization.       | 
+| ![indispensable-cosef](assets/cosef-dark.png#only-light) ![indispensable-cosef](assets/cosef-light.png#only-dark) | **Indispensable Cosef** COSE add-on module containing all COSE/CWT-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization.  |
+|           ![Supreme](assets/supreme-dark.png#only-light) ![Supreme](assets/supreme-light.png#only-dark)           | **Supreme** KMP crypto provider implementing hardware-backed signature creation and verification across mobile platforms (Android KeyStore / iOS Secure Enclave) and JCA compatibility (on the JVM).                                                                | 
 
-This separation keeps dependencies to a minimum, i.e. it enables including only JWT-related functionality, if COSE is
-irrelevant.
+This separation keeps dependencies to a minimum, i.e. it enables including only JOSE-related functionality, if COSE is irrelevant.
+More importantly, in a JVM, iOS, or Android-only project, it allows for processing cryptographic material without imposing the inclusion of a crypto provider.
 
 Simply declare the desired dependency to get going:
 
@@ -232,14 +232,16 @@ Application 1337 (9 elem)
 
 ### COSE and JOSE
 
-The modules _indispensable-josef_ and _indispensable-cosef_ provide data structures to work within JOSE and COSE
+The modules _Indispensable Josef_ and _Indispensable Cosef_ provide data structures to work within JOSE and COSE
 domains, respectively.
 Since these are essentially data classes, there's really not much magic to using them.
-The main reason those modules exist, is that they provide mappings to core (_indispensable_) data types,
+The main reason those modules exist, is to keep the core _Indispensable_ module small, so it can be used without pulling
+in unnecessary functionality.
+COSE and JOSE data types come with mapping functionality to core (_Indispensable_) data types,
 such as `CryptoPublicKey` and are guaranteed to parse and serialize correctly.
 
-#### COSE Parsing (indidpensable-cosef)
-For example, deserializing the following `CoseSigned` structure works as expected:
+#### COSE Parsing (Indidpensable Cosef)
+As a quick self-contained example, deserializing the following `CoseSigned` structure works as expected:
 ```kotlin
 val input = "d28443a10126a10442313154546869732069732074686520636f6e74656e" +
                 "742e58408eb33e4ca31d1c465ab05aac34cc6b23d58fef5c083106c4d25a" +
@@ -253,8 +255,8 @@ The output confirms that parsing was successful:
 
     CoseSigned(protectedHeader=CoseHeader(algorithm=ES256, criticalHeaders=null, contentType=null, kid=null, iv=null, partialIv=null, coseKey=null, certificateChain=null), unprotectedHeader=CoseHeader(algorithm=null, criticalHeaders=null, contentType=null, kid=3131, iv=null, partialIv=null, coseKey=null, certificateChain=null), payload=546869732069732074686520636F6E74656E742E, signature=8EB33E4CA31D1C465AB05AAC34CC6B23D58FEF5C083106C4D25A91AEF0B0117E2AF9A291AA32E14AB834DC56ED2A223444547E01F11D3B0916E5A4C345CACB36)
 
-#### JWK creation (indispensable-josef)
-JsonWebKeys can be manually created too (just as COSE keys) and converted to `CryptoPublicKey`, so we can pass it to a _Supreme_ verifier:
+#### JWK creation (Indispensable Josef)
+JsonWebKeys can be manually created (just as COSE keys) and converted to `CryptoPublicKey`, so we can pass it to a _Supreme_ verifier:
 
 ```kotlin
 val parsedN = ("0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2" +

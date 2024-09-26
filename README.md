@@ -37,7 +37,7 @@ types and functionality related to crypto and PKI applications:
 * Certification Request (CSR)
 * ObjectIdentifier Class with human-readable notation (e.g. 1.2.9.6245.3.72.13.4.7.6)
 * Generic ASN.1 abstractions to operate on and create arbitrary ASN.1 Data
-* JWS-related data structures (JSON Web Keys, JWT, etc…)
+* JOSE-related data structures (JSON Web Keys, JWT, etc…)
 * COSE-related data structures (COSE Keys, CWT, etc…)
 * Serializability of all ASN.1 classes for debugging **AND ONLY FOR DEBUGGING!!!** *Seriously, do not try to deserialize ASN.1 classes through kotlinx.serialization! Use `decodeFromDer()` and its companions!*
 * 100% pure Kotlin BitSet
@@ -48,14 +48,15 @@ This last bit means that
 **you can work with X509 Certificates, public keys, CSRs and arbitrary ASN.1 structures on iOS.**  
 The very first bit means that you can verify signatures on the JVM, Android and on iOS.
 
-**Do check out the full manual with examples and API docs [here](https://a-sit-plus.github.io/signum/)**!
+### Do check out the full manual with examples and API docs [here](https://a-sit-plus.github.io/signum/)!
+This README provides just an overview.
+The full manual is more comprehensive, has separate sections for each module, and provides a full API documentation.
 
-## Usage
+## Using it in your Projects
 
 This library was built for [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html). Currently, it targets
 the JVM, Android and iOS.
-
-This library consists of four modules, each of which is published on maven central:
+Tt.  consists of four modules, each of which is published on maven central:
 
 
 |                                                                                                                                      Name                                                                                                                                      | Info                                                                                                                                                                                                                                                               |
@@ -63,11 +64,10 @@ This library consists of four modules, each of which is published on maven centr
 |     <picture> <source media="(prefers-color-scheme: dark)" srcset="docs/docs/assets/core-light.png">   <source media="(prefers-color-scheme: light)" srcset="docs/docs/assets/core-dark.png">   <img alt="Indispensable" src="docs/docs/assets/core-dark.png"> </picture>      | **Indispensable** base module containing the cryptographic data structures, algorithm identifiers, the ASN.1 parser, OIDs, X.509 certificate, …                                                                                                                    | 
 | <picture> <source media="(prefers-color-scheme: dark)" srcset="docs/docs/assets/josef-light.png">   <source media="(prefers-color-scheme: light)" srcset="docs/docs/assets/josef-dark.png">   <img alt="Indispensable Josef" src="docs/docs/assets/josef-dark.png"> </picture> | **Indispensable Josef** JOSE add-on module containing JWS/E/T-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization.      | 
 | <picture> <source media="(prefers-color-scheme: dark)" srcset="docs/docs/assets/cosef-light.png">   <source media="(prefers-color-scheme: light)" srcset="docs/docs/assets/cosef-dark.png">   <img alt="Indispensable Cosef" src="docs/docs/assets/cosef-dark.png"> </picture> | **Indispensable Cosef** COSE add-on module containing all COSE/CWT-specific data structures and extensions to convert from/to types contained in the base module. Includes all required kotlinx-serialization magic to allow for spec-compliant de-/serialization. |
-|    <picture> <source media="(prefers-color-scheme: dark)" srcset="docs/docs/assets/supreme-light.png">   <source media="(prefers-color-scheme: light)" srcset="docs/docs/assets/supreme-dark.png">   <img alt="Supreme" src="docs/docs/assets/supreme-dark.png"> </picture>    | *(Preview)* **Supreme** KMP crypto provider implementing signature verification across platforms. Signature creation using platform-native functionality across JVM, Android (read: HW-Backed AndroidKeyStore) and iOS (read KeyChain + Secure Enclave) are WIP.   | 
+|    <picture> <source media="(prefers-color-scheme: dark)" srcset="docs/docs/assets/supreme-light.png">   <source media="(prefers-color-scheme: light)" srcset="docs/docs/assets/supreme-dark.png">   <img alt="Supreme" src="docs/docs/assets/supreme-dark.png"> </picture>    | **Supreme** KMP crypto provider implementing hardware-backed signature creation and verification across mobile platforms (Android KeyStore / iOS Secure Enclave) and JCA compatibility (on the JVM).                                                               | 
 
-This separation keeps dependencies to a minimum, i.e. it enables including only JWT-related functionality, if COSE is irrelevant.
-
-### Using it in your Projects
+This separation keeps dependencies to a minimum, i.e. it enables including only JOSE-related functionality, if COSE is irrelevant.
+More importantly, in a JVM, iOS, or Android-only project, it allows for processing cryptographic material without imposing the inclusion of a crypto provider.
 
 Simply declare the desired dependency to get going:
 
@@ -87,14 +87,9 @@ implementation("at.asitplus.signum:indispensable-cosef:$version")
 implementation("at.asitplus.signum:supreme:0.2.0")
 ```
 
-<br>
-
-_Relevant classes like `CryptoPublicKey`, `X509Certificate`, `Pkcs10CertificationRequest`, etc. all
-implement `Asn1Encodable` and their respective companions implement `Asn1Decodable`.
-Which means that you can do things like parsing and examining certificates, creating CSRs, or transferring key
-material._
-
-<br>
+## _Supreme_ Demo Reel
+The _Supreme_ KMP crypto provider works differently from JCA. Configuration is type-safe, more expressive and you'll
+end up less code. **Nothing throws! Do not discard the results returned from any operation!**
 
 ### Signature Creation
 
@@ -208,7 +203,7 @@ println("Certificate looks trustworthy: $isValid")
 
 #### Platform Verifiers
 
-Not every platform supports every algorithm parameter. For example, iOS does not support raw ECDSA verification (of pre-hashed data).
+Not every platform supports every algorithm parameter. For example, iOS does not support raw ECDSA verification (of pre-hashed data) for curve P-521.
 If you use `.verifierFor`, and this happens, the library will transparently substitute a pure-Kotlin implementation.
 
 If this is not desired, you can specifically enforce a platform verifier by using `.platformVerifierFor`.
@@ -229,7 +224,15 @@ val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Is it trustworthy? $isValid")
 ```
 
+## ASN.1 Demo Reel
+
+Classes like `CryptoPublicKey`, `X509Certificate`, `Pkcs10CertificationRequest`, etc. all
+implement `Asn1Encodable` and their respective companions implement `Asn1Decodable`.
+Which means that you can do things like parsing and examining certificates, creating CSRs, or transferring key
+material.
+
 ### Certificate Parsing
+
 
 ```kotlin
 val cert = X509Certificate.decodeFromDer(certBytes)

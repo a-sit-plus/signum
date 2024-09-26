@@ -30,18 +30,19 @@ Hardware-backed key agreement, asymmetric and symmetric encryption are WIP and w
 This is more than a mere lip service, since we (A-SIT Plus GmbH) need this functionality urgently ourselves and are already working on it.
 
 ### ❋ JVM Attestation
-The JVM supports a custom attestation format, which can carry arbitrary payloads to convey attestation
-information.
+The JVM supports a custom attestation format, which can convey attestation
+information inside an X.509 certificate.
 By default, no semantics are attached to it. It can, therefore be used in any way desired, although this is
 highly context-specific.
 For example, if a hardware security module is plugged into the JVM crypto provider (e.g. using PKCS11) and this HSM
-supports attestation, the JVM-specific attestation format can convey this information.
+supports attestation, the JVM-specific attestation format can carry this information. WIP!
+If you have suggestions, experience or a concrete use-case where you need this, check the footer and let us know!
 
 ### ✔* iOS Attestation
 iOS supports App attestation, but no direct key attestation. The Supreme crypto provider emulates key attestation
 through app attestation, by _asserting_ the creation of a fresh public/private key pair inside the secure enclave
 through application-layer logic encapsulated by the Supreme crypto provider.  
-Additional Details are described in [_WARDEN_'s README section on iOS attestation](https://github.com/a-sit-plus/warden?tab=readme-ov-file#ios).
+Additional details are described in the [Attestation](supreme.md#attestation) section of the _Supreme_ manual.
 
 ## Supported Algorithms
 

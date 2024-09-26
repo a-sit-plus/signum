@@ -13,7 +13,8 @@ _Indispensable_ data classes such as `SignatureAlgorithm`, `CryptoSignature`,  a
 Classes like `CborWebToken` come with `serialize()` and `deserialize()` functions, that take care of everything.
 The preconfigured serializer ensuring compliant serialization of all COSE-related data structures is called `coseCompliantSerializer`.
 
-**Do check out the full API docs [here](dokka/indispensable-cosef/index.html)** to get an overview!
+!!! tip
+      **Do check out the full API docs [here](dokka/indispensable-cosef/index.html)** to get an overview about all COSE-specific data types included!
 
 
 ## Using it in your Projects

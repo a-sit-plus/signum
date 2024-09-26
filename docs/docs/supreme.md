@@ -13,7 +13,8 @@ types and functionality related to crypto and PKI applications:
 * Biometric Authentication on Android and iOS without Callbacks or Activity Passing** (✨Magic!✨)
 * Support Attestation on Android and iOS
 
-**Do check out the full API docs [here](dokka/supreme/index.html)**!
+!!! tip
+    **Do check out the full API docs [here](dokka/supreme/index.html)**!
 
 ## Using it in your Projects
 
@@ -37,10 +38,8 @@ This type-safety goes so far as to expose platform-specific configuration option
 the actual calls to some DSL-configurable type reads the same as in common code.
 
 !!! warning
-
     **Do not ignore the results returned by any operation!**  
     We heavily rely  on `KmmResult` to communicate the success or failure of operations. Nothing ever throws!
-
 
 
 ## Provider Initialization
@@ -179,8 +178,9 @@ If no timeout is specified, the key requires authentication on every use.
 In case an attestation challenge is specified, an attestation proof is generated alongside the key.
 On iOS, this requires an Internet connection! See also [Attestation](#attestation).
 
-**Note:** iOS only supports P-256 keys in hardware!
-Yes, this means hardware-backed RSA keys are altogether unsupported on iOS!
+!!! warning
+    iOS only supports P-256 keys in hardware!
+    Yes, this means hardware-backed RSA keys are altogether unsupported on iOS!
 
 
 #### JVM
@@ -250,6 +250,16 @@ val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Looks good? $isValid")
 ```
 
+!!! tip
+
+      Not every platform supports every algorithm parameter. For example, iOS does not support raw ECDSA verification (of pre-hashed data) for curve P-521.
+      If you use `.verifierFor`, and this happens, the library will transparently substitute a pure-Kotlin implementation.  
+      If this is not desired, you can specifically enforce a platform verifier by using `.platformVerifierFor`.
+      That way, the library will only ever act as a proxy to platform APIs (JCA, CryptoKit, etc.), and will not use its own implementations.
+
+You can also further configure the verifier, for example to specify the `provider` to use on the JVM.
+To do this, pass a DSL configuration lambda to `verifierFor`/`platformVerifierFor`.
+
 There really is not much more to it. This pattern works the same on all platforms.
 Details on how to parse cryptographic material can be found in the [section on decoding](indispensable.md#decoding) in
 of the Indispensable module description.
@@ -271,6 +281,13 @@ The Supreme KMP crypto provider introduces a `digest()` extension function on th
 For a list of supported algorithms, check out the [feature matrix](features.md#supported-algorithms).
 
 ## Attestation
+!!! info
+    All attestation types are serializable for transfer and are part of the _Indispensable_ module, so they are usable
+    on JVM-only back-ends, that may not wish to include the _Supreme_ KM crypto provider.
+    [_WARDEN_](https://github.com/a-sit-plus/warden) does not yet directly support this format, but will in the next release.
+    As of now, the encoded certificate chain of the `AndroidKeytoreAttestation` and an array containing `attestation`
+    followed by `assertion` from the `IosLegacyHomebrewAttestation` are supported WARDEN.
+
 The Android KeyStore offers key attestation certificates for hardware-backed keys.
 These certificates are exposed by the signer's `.attestation` property.
 
@@ -278,9 +295,20 @@ For iOS, Apple does not provide this capability, but rather supports app attesta
 We therefore piggy-back onto iOS app attestation to provide a home-brew "key attestation" scheme.
 The guarantees are different: you are trusting the OS, not the actual secure hardware;
 and you are trusting that our library properly interfaces with the OS.
-Attestation types are serializable for transfer.
+On a technical level, it works as follows:
 
-For more details on attestation, and how it is possible to emulate key attestation on iOS, see [_WARDEN_'s README section on iOS attestation](https://github.com/a-sit-plus/warden?tab=readme-ov-file#ios).
+!!! note inline end
+    This section assumes in-depth knowledge of how an Apple attestation statement is created and validated,
+    as described in the [Apple Developer Documentation on AppAttest](https://developer.apple.com/documentation/devicecheck/validating-apps-that-connect-to-your-server).
+
+We make use of the fact that verification of `clientHashData` is purely up to the back-end.
+Hence, we create an attestation key, immediately afterwards create a P-256 key inside the secure enclave, and compute
+`clientHashData` over both the nonce obtained from the back-end **and** the public key bytes of the freshly created, SE-protected
+EC key.
+The iOS attestation type hence includes an attestation statement, the challenge, and the public key, so that the back-end
+can easily verify the attestation result based on Apple's AppAttest service and the public key bytes, hence emulating
+key attestation. Strictly speaking, this is a violation of the process described by Apple, but cryptographically, it is
+perfectly sound!
 
 The JVM also "supports" a custom attestation format. By default, it is rather nonsensical.
 However, if you plug an HSM that supports attestation to the JCA, you can make use of it.

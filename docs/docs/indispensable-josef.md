@@ -13,7 +13,8 @@ _Indispensable_ data classes such as `SignatureAlgorithm`, `CryptoSignature`,  a
 Classes like `JsonWebToken` come with `serialize()` and `deserialize()` functions, since their encoded representation is not a valid JSON string.
 The preconfigured serializer ensuring compliant serialization of all JOSE-related data structures is called `joseCompliantSerializer`.
 
-**Do check out the full API docs [here](dokka/indispensable-josef/index.html)** to get an overview!
+!!! tip
+**Do check out the full API docs [here](dokka/indispensable-josef/index.html)** to get an overview about all JOSE-specific data types included!
 
 ## Using it in your Projects
 
