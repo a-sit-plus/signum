@@ -301,7 +301,7 @@ data class JsonWebKey(
             }
 
             JwkType.RSA -> {
-                CryptoPublicKey.Rsa(
+                CryptoPublicKey.RSA(
                     n = n ?: throw IllegalArgumentException("Missing modulus n"),
                     e = e?.let { bytes -> Int.decodeFromAsn1ContentBytes(bytes) }
                         ?: throw IllegalArgumentException("Missing or invalid exponent e")
@@ -358,7 +358,7 @@ fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
             )
 
 
-        is CryptoPublicKey.Rsa ->
+        is CryptoPublicKey.RSA ->
             JsonWebKey(
                 type = JwkType.RSA,
                 keyId = keyId,

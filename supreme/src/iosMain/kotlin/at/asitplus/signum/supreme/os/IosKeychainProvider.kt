@@ -331,7 +331,7 @@ sealed class IosSigner(final override val alias: String,
     }
 
     class RSA internal constructor
-        (alias: String, override val publicKey: CryptoPublicKey.Rsa, metadata: IosKeyMetadata, config: IosSignerConfiguration)
+        (alias: String, override val publicKey: CryptoPublicKey.RSA, metadata: IosKeyMetadata, config: IosSignerConfiguration)
         : IosSigner(alias, metadata, config), Signer.RSA
     {
         override val signatureAlgorithm: SignatureAlgorithm.RSA
@@ -526,7 +526,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             is SigningKeyConfiguration.ECConfiguration ->
                 CryptoPublicKey.EC.fromAnsiX963Bytes(alg.curve, publicKeyBytes)
             is SigningKeyConfiguration.RSAConfiguration ->
-                CryptoPublicKey.Rsa.fromPKCS1encoded(publicKeyBytes)
+                CryptoPublicKey.RSA.fromPKCS1encoded(publicKeyBytes)
         }
 
         val attestation = if (useSecureEnclave) {
@@ -573,7 +573,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
         return@catching when (publicKey) {
             is CryptoPublicKey.EC ->
                 IosSigner.ECDSA(alias, publicKey, metadata, signerConfiguration)
-            is CryptoPublicKey.Rsa ->
+            is CryptoPublicKey.RSA ->
                 IosSigner.RSA(alias, publicKey, metadata, signerConfiguration)
         }
     }.also {
@@ -601,7 +601,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
         val metadata = getKeyMetadata(alias)
         return@catching when (publicKey) {
             is CryptoPublicKey.EC -> IosSigner.ECDSA(alias, publicKey, metadata, config)
-            is CryptoPublicKey.Rsa -> IosSigner.RSA(alias, publicKey, metadata, config)
+            is CryptoPublicKey.RSA -> IosSigner.RSA(alias, publicKey, metadata, config)
         }
     }}
 

@@ -55,7 +55,7 @@ class JsonWebKeyJvmTest : FreeSpec({
     "JWK can be created from n and e" - {
         val nFromBc = (keyPairRSA.public as RSAPublicKey).modulus.toByteArray()
         val eFromBc = (keyPairRSA.public as RSAPublicKey).publicExponent.toInt()
-        val pubKey = CryptoPublicKey.Rsa(nFromBc, eFromBc).also { it.jwkId = it.didEncoded }
+        val pubKey = CryptoPublicKey.RSA(nFromBc, eFromBc).also { it.jwkId = it.didEncoded }
         val jwk = pubKey.toJsonWebKey()
 
         jwk.shouldNotBeNull()

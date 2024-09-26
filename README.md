@@ -241,7 +241,7 @@ when (val pk = cert.publicKey) {
         } contains an EC public key using curve ${pk.curve}"
     )
 
-    is CryptoPublicKey.Rsa -> println(
+    is CryptoPublicKey.RSA -> println(
         "Certificate with serial no. ${
             cert.tbsCertificate.serialNumber
         } contains a ${pk.bits.number} bit RSA public key"

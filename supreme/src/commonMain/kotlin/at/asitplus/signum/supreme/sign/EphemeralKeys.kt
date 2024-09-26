@@ -7,7 +7,6 @@ import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.nativeDigest
-import at.asitplus.signum.supreme.HazardousMaterials
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.os.SignerConfiguration
@@ -54,7 +53,7 @@ sealed interface EphemeralKey {
     }
     /** An [EphemeralKey] suitable for RSA operations. */
     interface RSA: EphemeralKey {
-        override val publicKey: CryptoPublicKey.Rsa
+        override val publicKey: CryptoPublicKey.RSA
         override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): KmmResult<Signer.RSA>
     }
     companion object {
@@ -89,8 +88,8 @@ internal sealed class EphemeralKeyBase <PrivateKeyT>
     }
 
     class RSA<PrivateKeyT, SignerT: Signer.RSA>(
-        private val signerFactory: (EphemeralSignerConfiguration, PrivateKeyT, CryptoPublicKey.Rsa, SignatureAlgorithm.RSA)->SignerT,
-        privateKey: PrivateKeyT, override val publicKey: CryptoPublicKey.Rsa,
+        private val signerFactory: (EphemeralSignerConfiguration, PrivateKeyT, CryptoPublicKey.RSA, SignatureAlgorithm.RSA)->SignerT,
+        privateKey: PrivateKeyT, override val publicKey: CryptoPublicKey.RSA,
         val digests: Set<Digest>, val paddings: Set<RSAPadding>) : EphemeralKeyBase<PrivateKeyT>(privateKey), EphemeralKey.RSA {
 
         override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): KmmResult<SignerT> = catching {

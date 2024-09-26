@@ -255,7 +255,7 @@ object AndroidKeyStoreProvider:
                 val digest = resolveOption("digest", keyInfo.digests, Digest.entries.asSequence() + sequenceOf<Digest?>(null), ecConfig.digestSpecified, { ecConfig.digest }) { it?.jcaName ?: KeyProperties.DIGEST_NONE }
                 SignatureAlgorithm.ECDSA(digest, publicKey.curve)
             }
-            is CryptoPublicKey.Rsa -> {
+            is CryptoPublicKey.RSA -> {
                 val rsaConfig = config.rsa.v
                 val digest = resolveOption<Digest>("digest", keyInfo.digests, Digest.entries.asSequence(), rsaConfig.digestSpecified, { rsaConfig.digest }, Digest::jcaName)
                 val padding = resolveOption<RSAPadding>("padding", keyInfo.signaturePaddings, RSAPadding.entries.asSequence(), rsaConfig.paddingSpecified, { rsaConfig.padding }) {
@@ -273,7 +273,7 @@ object AndroidKeyStoreProvider:
                 AndroidKeystoreSigner.ECDSA(
                     jcaPrivateKey, alias, keyInfo, config, publicKey,
                     attestation, algorithm as SignatureAlgorithm.ECDSA)
-            is CryptoPublicKey.Rsa ->
+            is CryptoPublicKey.RSA ->
                 AndroidKeystoreSigner.RSA(
                     jcaPrivateKey, alias, keyInfo, config, publicKey,
                     attestation, algorithm as SignatureAlgorithm.RSA)
@@ -400,7 +400,7 @@ sealed class AndroidKeystoreSigner private constructor(
                                    alias: String,
                                    keyInfo: KeyInfo,
                                    config: AndroidSignerConfiguration,
-                                   override val publicKey: CryptoPublicKey.Rsa,
+                                   override val publicKey: CryptoPublicKey.RSA,
                                    attestation: AndroidKeystoreAttestation?,
                                    override val signatureAlgorithm: SignatureAlgorithm.RSA)
         : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, config, attestation), SignerI.RSA

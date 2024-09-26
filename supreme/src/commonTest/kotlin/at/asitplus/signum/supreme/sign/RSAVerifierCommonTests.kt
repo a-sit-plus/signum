@@ -27,7 +27,7 @@ open class RSAVerifierCommonTests : FreeSpec({
     class TestInfo(test: RawTestInfo) {
         val digest = Digest.valueOf(test.dig)
         val padding = RSAPadding.valueOf(test.pad)
-        val key = CryptoPublicKey.decodeFromDer(Base64.decode(test.key)) as CryptoPublicKey.Rsa
+        val key = CryptoPublicKey.decodeFromDer(Base64.decode(test.key)) as CryptoPublicKey.RSA
         val b64msg = test.msg
         val msg = Base64.decode(b64msg)
         val sig = CryptoSignature.RSAorHMAC(Base64.decode(test.sig))

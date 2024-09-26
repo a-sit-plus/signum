@@ -96,7 +96,7 @@ interface Signer {
     /** A [Signer] that signs using RSA. */
     interface RSA: AlgTrait {
         override val signatureAlgorithm: SignatureAlgorithm.RSA
-        override val publicKey: CryptoPublicKey.Rsa
+        override val publicKey: CryptoPublicKey.RSA
     }
 
     /** Some [Signer]s are retrieved from a signing provider, such as a key store, and have a string [alias]. */
