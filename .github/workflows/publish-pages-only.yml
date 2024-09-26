@@ -9,7 +9,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -19,15 +19,19 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+      - run: pip install mkdocs-material
       - name: Build Dokka HTML
-        run: ./gradlew dokkaHtmlMultiModule
+        run: ./gradlew mkDocsBuild
       - name: Setup Pages
         uses: actions/configure-pages@v3
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
           # Upload docs folder
-          path: './build/dokka'
+          path: './docs/site'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v2
