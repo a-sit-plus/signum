@@ -286,4 +286,4 @@ The JVM also "supports" a custom attestation format. By default, it is rather no
 However, if you plug an HSM that supports attestation to the JCA, you can make use of it.
 
 The [feature matrix](features.md) also contains remarks on attestation, while
-details on the attestation format can be found in the corresponding [API documentation](dokka/supreme/at.asitplus.signum.supreme.os/-attestation/index.html).
+details on the attestation format can be found in the corresponding [API documentation](dokka/indispensable/at.asitplus.signum.indispensable/-attestation/index.html).

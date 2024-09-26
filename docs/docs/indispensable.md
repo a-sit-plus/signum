@@ -134,10 +134,10 @@ The following functions provide interop functionality with platform types.
 
 * `CryptoPublicKey.getJcaPublicKey()` returns the JCA-representation of the public key
 * `CryptoPublicKey.EC.getJcaPublicKey()` returns the JCA-representation of the public key (convenience helper)
-* `CryptoPublicKey.Rsa.getJcaPublicKey()` returns the JCA-representation of the public key (convenience helper)
+* `CryptoPublicKey.RSA.getJcaPublicKey()` returns the JCA-representation of the public key (convenience helper)
 * `CryptoPublicKey.fromJcaPublicKey` creates a `CryptoPublicKey` from a JCA Public Key
 * `CryptoPublicKey.EC.fromJcaPublicKey` creates a `CryptoPublicKey.EC` from a JCA EC Public Key
-* `CryptoPublicKey.Rsa.fromJcaPublicKey` creates a `CryptoPublicKey.Rsa` from a JCA Rsa Public Key
+* `CryptoPublicKey.RSA.fromJcaPublicKey` creates a `CryptoPublicKey.RSA` from a JCA RSA Public Key
 
 * `CryptoSignature.jcaSignatureBytes` returns the JCA-native encoded representation of a signature
 * `CryptoSignature.parseFromJca()` returns a signature object form a JCA-native encoded representation of a signature
