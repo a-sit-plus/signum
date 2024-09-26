@@ -1,0 +1,80 @@
+site_name: Signum
+site_url: https://a-sit-plus.github.io/signum/
+
+theme:
+  name: material
+  logo: assets/signum-light-large.png
+  favicon: assets/schloss.svg
+  custom_dir: overrides
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+  icon:
+    repo: fontawesome/brands/github
+
+  palette:
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+      font:
+        text: Roboto
+
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: asp
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+      font:
+        text: Roboto
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: asp-dark
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+      font:
+        text: Roboto
+
+
+extra_css:
+  - stylesheets/extra.css
+
+repo_url: https://github.com/a-sit-plus/signum
+repo_name: a-sit-plus/signum
+
+copyright: Copyright &copy; 2024 A-SIT Plus GmbH
+
+extra:
+  social:
+    - icon: fontawesome/solid/earth-americas
+      link: https://a-sit-plus.github.io
+    - icon: fontawesome/solid/paper-plane
+      link: mailto:<opensource@a-sit.at>
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+
+nav:
+  - Manual:
+      - Overview: index.md
+      - CHANGELOG.md
+      - Modules:
+          - Indispensable: indispensable.md
+          - Indispensable Josef: indispensable-josef.md
+          - Indispensable Cosef: indispensable-cosef.md
+          - Signum Supreme: supreme.md
+  - Feature Matrix: features.md
+  - API Docs: dokka/index.html
