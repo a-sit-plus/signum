@@ -58,8 +58,12 @@
     --md-code-font: "Fantasque";
 }
 
+.md-typeset {
+    font-size: .8rem;
+}
+
 .md-typeset code {
-    font-size: 13pt;
+    font-size: .8rem;
     font-feature-settings: "kern", "liga";
 }
 

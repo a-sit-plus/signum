@@ -373,7 +373,7 @@ Asn1.Sequence {
     +(Utf8String("Foo") withImplicitTag (0xCAFEuL withClass TagClass.PRIVATE))
     +PrintableString("Bar")
 
-    //fake Primitive
+                                                            // ↓ faux primitive ↓
     +(Asn1.Sequence { +Asn1.Int(42) } withImplicitTag (0x5EUL without CONSTRUCTED))
 
     +Asn1.Set {

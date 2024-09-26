@@ -181,7 +181,7 @@ Asn1.Sequence {
     +(Utf8String("Foo") withImplicitTag (0xCAFEuL withClass TagClass.PRIVATE))
     +PrintableString("Bar")
 
-    //fake Primitive
+                                                            // ↓ faux primitive ↓
     +(Asn1.Sequence { +Asn1.Int(42) } withImplicitTag (0x5EUL without CONSTRUCTED))
 
     +Asn1.Set {
@@ -274,4 +274,5 @@ key.toCryptoPublicKey().getOrThrow() //<- this we can pass to a Supreme verifier
 
 ## Further Reading
 Every module has dedicated documentation pages, and we provide full API docs.
+Also checkout the feature matrix to get an overview of what is and isn't supported.
 

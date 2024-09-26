@@ -115,10 +115,10 @@ As EC and RSA keys are the only supported ones, this amounts to the following co
 
 ```kotlin
 prov.createSigningKey(alias = "sig") {
-    ec {
-        curve = ECCurve.SECP_256_R_1
-        digests = setOf(Digest.SHA256)
-    }
+  ec {
+      curve = ECCurve.SECP_256_R_1
+      digests = setOf(Digest.SHA256)
+  }
 }
 ```
 
@@ -196,7 +196,7 @@ is protected by biometry:
 provider.getSignerForKey("Swordfish") {
   unlockPrompt {
     message = "Authenticate key usage"
-    subtitle = "We require your authentication to sign data" //only available on Android
+    subtitle = "We require your authentication to sign data" //Android-only
     cancelText = "Cancel"
   }
 }
@@ -227,7 +227,7 @@ setting up an `unlockPrompt`:
 signer.sign(data) {
   unlockPrompt {
     message = "Authenticate key usage"
-    subtitle = "We require your authentication to sign data" //only available on Android
+    subtitle = "We require your authentication to sign data" //Android-only
     cancelText = "Cancel"
   }
 }
