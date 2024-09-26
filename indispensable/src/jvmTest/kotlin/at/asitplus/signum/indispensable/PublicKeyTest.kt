@@ -96,8 +96,8 @@ class PublicKeyTest : FreeSpec({
                 keys
             ) { pubKey ->
 
-                val own = CryptoPublicKey.Rsa(pubKey.modulus.toByteArray(), pubKey.publicExponent.toInt())
-                val own1 = CryptoPublicKey.Rsa(
+                val own = CryptoPublicKey.RSA(pubKey.modulus.toByteArray(), pubKey.publicExponent.toInt())
+                val own1 = CryptoPublicKey.RSA(
                     ByteArray((0..10).random()) { 0 } + pubKey.modulus.toByteArray(),
                     pubKey.publicExponent.toInt()
                 )

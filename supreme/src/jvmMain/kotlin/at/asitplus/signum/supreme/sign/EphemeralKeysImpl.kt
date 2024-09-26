@@ -54,7 +54,7 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
     }
 
     open class RSA internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
-               override val publicKey: CryptoPublicKey.Rsa, override val signatureAlgorithm: SignatureAlgorithm.RSA)
+                                         override val publicKey: CryptoPublicKey.RSA, override val signatureAlgorithm: SignatureAlgorithm.RSA)
         : EphemeralSigner(privateKey, config.provider), Signer.RSA {
 
         override fun parseFromJca(bytes: ByteArray) = CryptoSignature.RSAorHMAC.parseFromJca(bytes)
@@ -85,7 +85,7 @@ internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfigura
                 generateKeyPair()
             }.let { pair ->
                 EphemeralKeyBase.RSA(EphemeralSigner::RSA,
-                    pair.private, CryptoPublicKey.fromJcaPublicKey(pair.public).getOrThrow() as CryptoPublicKey.Rsa,
+                    pair.private, CryptoPublicKey.fromJcaPublicKey(pair.public).getOrThrow() as CryptoPublicKey.RSA,
                     digests = alg.digests, paddings = alg.paddings)
             }
         }

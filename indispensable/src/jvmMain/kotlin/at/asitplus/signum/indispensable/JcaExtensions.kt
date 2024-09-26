@@ -122,7 +122,7 @@ fun ECCurve.Companion.byJcaName(name: String): ECCurve? = ECCurve.entries.find {
 
 fun CryptoPublicKey.getJcaPublicKey() = when (this) {
     is CryptoPublicKey.EC -> getJcaPublicKey()
-    is CryptoPublicKey.Rsa -> getJcaPublicKey()
+    is CryptoPublicKey.RSA -> getJcaPublicKey()
 }
 
 fun CryptoPublicKey.EC.getJcaPublicKey(): KmmResult<ECPublicKey> = catching {
@@ -137,7 +137,7 @@ fun CryptoPublicKey.EC.getJcaPublicKey(): KmmResult<ECPublicKey> = catching {
 
 private val rsaFactory = KeyFactory.getInstance("RSA")
 
-fun CryptoPublicKey.Rsa.getJcaPublicKey(): KmmResult<RSAPublicKey> = catching {
+fun CryptoPublicKey.RSA.getJcaPublicKey(): KmmResult<RSAPublicKey> = catching {
     rsaFactory.generatePublic(
         RSAPublicKeySpec(BigInteger(1, n), BigInteger.valueOf(e.toLong()))
     ) as RSAPublicKey
@@ -158,12 +158,12 @@ fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmRe
     )
 }
 
-fun CryptoPublicKey.Rsa.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey> =
-    catching { CryptoPublicKey.Rsa(publicKey.modulus.toByteArray(), publicKey.publicExponent.toInt()) }
+fun CryptoPublicKey.RSA.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey> =
+    catching { CryptoPublicKey.RSA(publicKey.modulus.toByteArray(), publicKey.publicExponent.toInt()) }
 
 fun CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
     when (publicKey) {
-        is RSAPublicKey -> CryptoPublicKey.Rsa.fromJcaPublicKey(publicKey)
+        is RSAPublicKey -> CryptoPublicKey.RSA.fromJcaPublicKey(publicKey)
         is ECPublicKey -> CryptoPublicKey.EC.fromJcaPublicKey(publicKey)
         else -> KmmResult.failure(IllegalArgumentException("Unsupported Key Type"))
     }

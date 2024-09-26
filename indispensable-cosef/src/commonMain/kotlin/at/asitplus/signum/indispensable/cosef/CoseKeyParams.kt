@@ -162,7 +162,7 @@ sealed class CoseKeyParams : SpecializedCryptoPublicKey {
         }
 
         override fun toCryptoPublicKey(): KmmResult<CryptoPublicKey> = catching {
-            CryptoPublicKey.Rsa(
+            CryptoPublicKey.RSA(
                 n = n ?: throw IllegalArgumentException("Missing modulus n"),
                 e = Int.decodeFromAsn1ContentBytes(e ?:
                     throw IllegalArgumentException("Missing or invalid exponent e"))

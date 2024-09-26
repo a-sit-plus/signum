@@ -6,6 +6,7 @@
 
 * Move `Attestation` from Supreme to Indispensable
 * Rename `parse()` to `deserialize()` in `JwsSigned` and `JweEncrypted` to align with COSE
+* Rename `CryptoPublicKey.Rsa` -> `CryptoPublicKey.RSA` for consistency reasons
 
 ## 3.0
 

@@ -39,7 +39,7 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
     }
 
     class RSA (config: EphemeralSignerConfiguration, privateKey: PrivateKey,
-               override val publicKey: CryptoPublicKey.Rsa, override val signatureAlgorithm: SignatureAlgorithm.RSA)
+               override val publicKey: CryptoPublicKey.RSA, override val signatureAlgorithm: SignatureAlgorithm.RSA)
         : AndroidEphemeralSigner(privateKey), Signer.RSA {
 
         override fun parseFromJca(bytes: ByteArray) = CryptoSignature.RSAorHMAC.parseFromJca(bytes)
@@ -64,7 +64,7 @@ internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfigura
                 generateKeyPair()
             }.let { pair ->
                 EphemeralKeyBase.RSA(AndroidEphemeralSigner::RSA,
-                    pair.private, CryptoPublicKey.fromJcaPublicKey(pair.public).getOrThrow() as CryptoPublicKey.Rsa,
+                    pair.private, CryptoPublicKey.fromJcaPublicKey(pair.public).getOrThrow() as CryptoPublicKey.RSA,
                     digests = alg.digests, paddings = alg.paddings)
             }
         }

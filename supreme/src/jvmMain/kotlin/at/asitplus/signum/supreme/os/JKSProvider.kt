@@ -69,7 +69,7 @@ interface JKSSigner: Signer, Signer.WithAlias {
         : EphemeralSigner.EC(config, privateKey, publicKey, signatureAlgorithm), JKSSigner
 
     class RSA internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
-                                    publicKey: CryptoPublicKey.Rsa, signatureAlgorithm: SignatureAlgorithm.RSA,
+                                    publicKey: CryptoPublicKey.RSA, signatureAlgorithm: SignatureAlgorithm.RSA,
                                     override val alias: String)
         : EphemeralSigner.RSA(config, privateKey, publicKey, signatureAlgorithm), JKSSigner
 }
@@ -172,7 +172,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 digest = if (config.ec.v.digestSpecified) config.ec.v.digest else Digest.SHA256,
                 requiredCurve = publicKey.curve),
             alias)
-        is CryptoPublicKey.Rsa -> JKSSigner.RSA(config, privateKey as RSAPrivateKey, publicKey,
+        is CryptoPublicKey.RSA -> JKSSigner.RSA(config, privateKey as RSAPrivateKey, publicKey,
             SignatureAlgorithm.RSA(
                 digest = if (config.rsa.v.digestSpecified) config.rsa.v.digest else Digest.SHA256,
                 padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else RSAPadding.PSS),

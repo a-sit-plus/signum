@@ -47,7 +47,8 @@ sealed interface Verifier {
     sealed class RSA
     constructor (
         final override val signatureAlgorithm: SignatureAlgorithm.RSA,
-        final override val publicKey: CryptoPublicKey.Rsa)
+        final override val publicKey: CryptoPublicKey.RSA
+    )
     : Verifier
 }
 fun Verifier.verify(data: ByteArray, sig: CryptoSignature) =
@@ -89,17 +90,17 @@ class PlatformECDSAVerifier
 
 @Throws(UnsupportedCryptoException::class)
 internal expect fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
-            (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
+            (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
              config: PlatformVerifierConfiguration)
 
 /** data is guaranteed to be in RAW_BYTES format. failure should throw. */
 internal expect fun verifyRSAImpl
-            (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
+            (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
              data: SignatureInput, signature: CryptoSignature.RSAorHMAC,
              config: PlatformVerifierConfiguration)
 
 class PlatformRSAVerifier
-    internal constructor (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
+    internal constructor (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
                           configure: ConfigurePlatformVerifier)
     : Verifier.RSA(signatureAlgorithm, publicKey), PlatformVerifier {
 
@@ -185,7 +186,7 @@ private fun SignatureAlgorithm.verifierForImpl
                 verifierForImpl(publicKey, configure, allowKotlin)
         }
         is SignatureAlgorithm.RSA -> {
-            if (publicKey !is CryptoPublicKey.Rsa)
+            if (publicKey !is CryptoPublicKey.RSA)
                 KmmResult.failure(IllegalArgumentException("Non-RSA public key passed to RSA algorithm"))
             else
                 verifierForImpl(publicKey, configure, allowKotlin)
@@ -242,7 +243,7 @@ private fun SignatureAlgorithm.ECDSA.verifierForImpl
  * @see PlatformVerifierConfiguration
  */
 fun SignatureAlgorithm.RSA.verifierFor
-            (publicKey: CryptoPublicKey.Rsa, configure: ConfigurePlatformVerifier = null) =
+            (publicKey: CryptoPublicKey.RSA, configure: ConfigurePlatformVerifier = null) =
     verifierForImpl(publicKey, configure, allowKotlin = true)
 
 /**
@@ -255,11 +256,11 @@ fun SignatureAlgorithm.RSA.verifierFor
  * @see PlatformVerifierConfiguration
  */
 fun SignatureAlgorithm.RSA.platformVerifierFor
-            (publicKey: CryptoPublicKey.Rsa, configure: ConfigurePlatformVerifier = null) =
+            (publicKey: CryptoPublicKey.RSA, configure: ConfigurePlatformVerifier = null) =
     verifierForImpl(publicKey, configure, allowKotlin = false)
 
 private fun SignatureAlgorithm.RSA.verifierForImpl
-            (publicKey: CryptoPublicKey.Rsa, configure: ConfigurePlatformVerifier,
+            (publicKey: CryptoPublicKey.RSA, configure: ConfigurePlatformVerifier,
              allowKotlin: Boolean): KmmResult<Verifier.RSA> =
     catching { PlatformRSAVerifier(this, publicKey, configure) }
 

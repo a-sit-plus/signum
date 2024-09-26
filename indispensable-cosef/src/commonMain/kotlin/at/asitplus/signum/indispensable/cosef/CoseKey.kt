@@ -173,7 +173,7 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null, keyId: ByteArray
                 }
             }
 
-        is CryptoPublicKey.Rsa ->
+        is CryptoPublicKey.RSA ->
             if ((algorithm != null) && (algorithm !in listOf(
                     CoseAlgorithm.PS256,
                     CoseAlgorithm.PS384,

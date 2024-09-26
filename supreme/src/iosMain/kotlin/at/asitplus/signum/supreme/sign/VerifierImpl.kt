@@ -47,7 +47,7 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
 
 @Throws(UnsupportedCryptoException::class)
 internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
-            (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
+            (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
              config: PlatformVerifierConfiguration)
 {
 }
@@ -58,7 +58,7 @@ private fun MemScope.toSecKey(key: CryptoPublicKey): SecKeyRef =
             kSecAttrKeyClass to kSecAttrKeyClassPublic,
             kSecAttrKeyType to when (key) {
                 is CryptoPublicKey.EC -> kSecAttrKeyTypeEC
-                is CryptoPublicKey.Rsa -> kSecAttrKeyTypeRSA
+                is CryptoPublicKey.RSA -> kSecAttrKeyTypeRSA
             }), error)
     }.also { defer { CFRelease(it) }}
 
@@ -99,7 +99,7 @@ internal actual fun verifyECDSAImpl
 
 
 internal actual fun verifyRSAImpl
-            (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.Rsa,
+            (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
              data: SignatureInput, signature: CryptoSignature.RSAorHMAC,
              config: PlatformVerifierConfiguration) =
 verifyImpl(signatureAlgorithm, publicKey, data, signature, config)
