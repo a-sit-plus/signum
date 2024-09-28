@@ -71,6 +71,7 @@ nav:
   - Manual:
       - Overview: index.md
       - CHANGELOG.md
+      - Examples: examples.md
       - Modules:
           - Indispensable: indispensable.md
           - Indispensable Josef: indispensable-josef.md
