@@ -74,7 +74,15 @@ This process works more or less as follows:
          validFrom = Asn1Time(Clock.System.now()),
          validUntil = Asn1Time(Clock.System.now() + VALIDITY),
          subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
-         publicKey = ISSUER_KEY
+         publicKey = ISSUER_KEY,
+         extensions = listOf(
+             // we want to indicate, that this client passed attestation checks
+             X509CertificateExtension(
+             attestedClientOid,
+             critical = true,
+             Asn1PrimitiveOctetString(byteArrayOf())
+           )
+         )
        )
 
        val clientCertificate = X509Certificate(
@@ -90,7 +98,7 @@ To recap: This example shows how to
 * instantiate a verifier
 * create, sign and verify CSRs with a custom attribute
 * extract a custom attribute from a CSR
-* create, and sign certificates
+* create, and sign a certificate with a custom critical extension
 
 # Create and Verify a JWT on the JVM
 
