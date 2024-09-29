@@ -67,6 +67,11 @@
     font-feature-settings: "kern", "liga";
 }
 
+.md-typeset h2 code {
+    font-size: 1.2rem;
+    font-feature-settings: "kern", "liga";
+}
+
 @media screen and (max-width: 76.2344em) {
     .md-nav--primary .md-nav__title {
         height: 3.9rem;
