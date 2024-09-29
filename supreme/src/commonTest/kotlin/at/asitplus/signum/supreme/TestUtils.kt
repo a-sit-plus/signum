@@ -10,3 +10,5 @@ internal object succeed: Matcher<KmmResult<*>> {
             failureMessageFn = { "Should have succeeded, but failed:\n${value.exceptionOrNull()!!.stackTraceToString()}"},
             negatedFailureMessageFn = { "Should have failed, but succeeded with ${value.getOrNull()!!}"})
 }
+
+

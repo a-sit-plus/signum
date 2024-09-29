@@ -48,7 +48,7 @@ This process works more or less as follows:
 
       val csr = Pkcs10CertificationRequest(
           tbsCSR, X509SignatureAlgorithm.ES256,
-          signer.sign(tbsCSR.encodeToDer()).signature.encodeToDer()
+          signer.sign(tbsCSR.encodeToDer()).signature.encodeToDer() //TODO handle error
       )
       ```
 7. The back-end verifies tha signature of the CSR, and validates the challenge (and attestation information, if present)
@@ -100,7 +100,47 @@ To recap: This example shows how to
 * extract a custom attribute from a CSR
 * create, and sign a certificate with a custom critical extension
 
-# Create and Verify a JWT on the JVM
+## Creating a Signed JSON Web Signature Object (`JwsSigned`)
+
+!!! info  inline end
+    This example requires the _Supreme_ KMP crypto provider and _Indispensable Josef_.
+
+In this example, we'll start with an ephemere P-256 signer: 
+
+```kotlin
+val signer = Signer.Ephemeral {
+    ec { curve = ECCurve.SECP_256_R_1 }
+}.getOrThrow() //TODO handle error properly
+```
+
+Next up, we'll create a header and payload:
+
+```kotlin
+val header = JwsHeader(
+    algorithm = signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
+    jsonWebKey = signer.publicKey.toJsonWebKey()
+)
+val payload = byteArrayOf(1, 3, 3, 7)
+```
+
+Since both header and payload are fed into the signature, we need to prepare this signature input:
+
+```kotlin
+val plainSignatureInput = JwsSigned.prepareJwsSignatureInput(header, payload)
+```
+
+Now, everything is ready to be signed:
+
+```kotlin
+val signature = signer.sign(plainSignatureInput.encodeToByteArray()).signature //TODO: handle error
+JwsSigned(header, payload, signature, plainSignatureInput).serialize() // this we can verify on jwt.io 
+```
+
+As can be seen, a `JwsSigned` takes header, payload, signature, and the plain signature input as parameters.
+The reason for keeping this fourth parameter is convenience and efficiency: For one, you need this input to serialize a
+`JwsSigned`, so it would be a waste to discard it. After parsing a `JswSigned` from its serialized form, you also need the 
+`plainSignatureInput` to verify everything was signed correctly.
+
 
 # Create and Verify a CWT on a Mobile Client
 
