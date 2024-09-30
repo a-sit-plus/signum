@@ -13,6 +13,9 @@
 * Base OIDs on BigInteger instead of UInt
 * Directly support UUID-based OID creation
 
+* Introduce generic tag assertion to `Asn1Element`
+
+
 ### 3.9.0 (Supreme 0.4.0)
 
 * Move `Attestation` from Supreme to Indispensable
