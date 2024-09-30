@@ -47,7 +47,8 @@ This process works more or less as follows:
       )
 
       val csr = Pkcs10CertificationRequest(
-          tbsCSR, X509SignatureAlgorithm.ES256,
+          tbsCSR,
+          signer.signatureAlgorithm.toX509SignatureAlgorithm().getOrThrow(),
           signer.sign(tbsCSR.encodeToDer()).signature.encodeToDer() //TODO handle error
       )
       ```
@@ -69,7 +70,7 @@ This process works more or less as follows:
        ```kotlin
        val tbsCrt = TbsCertificate(
          serialNumber = Random.nextBytes(16),
-         signatureAlgorithm = X509SignatureAlgorithm.ES256,
+         signatureAlgorithm = signer.signatureAlgorithm.toX509SignatureAlgorithm().getOrThrow(),
          issuerName = backendIssuerName,
          validFrom = Asn1Time(Clock.System.now()),
          validUntil = Asn1Time(Clock.System.now() + VALIDITY),
@@ -87,7 +88,7 @@ This process works more or less as follows:
 
        val clientCertificate = X509Certificate(
          tbsCrt,
-         signatureAlgorithm = X509SignatureAlgorithm.ES256,
+         signatureAlgorithm = signer.signatureAlgorithm.toX509SignatureAlgorithm().getOrThrow(),
          signer.sign(tbsCrt.encodeToDer()).signature
        )
        ```
