@@ -105,7 +105,7 @@ To recap: This example shows how to
 !!! info  inline end
     This example requires the _Supreme_ KMP crypto provider and _Indispensable Josef_.
 
-In this example, we'll start with an ephemere P-256 signer: 
+In this example, we'll start with an ephemeral P-256 signer: 
 
 ```kotlin
 val signer = Signer.Ephemeral {
@@ -142,10 +142,159 @@ The reason for keeping this fourth parameter is convenience and efficiency: For 
 `plainSignatureInput` to verify everything was signed correctly.
 
 
-# Create and Verify a CWT on a Mobile Client
+## Creating a `CoseSigned` Object
 
-# Parse an X.509 CRL
-_Signum_ currently has no built-in CRL type, nor does it support certificate validation, since this is a complex task.
-In controlled settings, with a single root certificate signing all client certificates, however,
-it is rather straight-forward, even when also considering revocation.
-Assuming the root CA publishes CRLs and you have obtained one, you can parse it as follows:
+
+!!! info  inline end
+    This example requires the _Supreme_ KMP crypto provider and _Indispensable Cosef_.
+
+In this example, we'll again start with an ephemeral P-256 signer:
+
+```kotlin
+val signer = Signer.Ephemeral {
+    ec { curve = ECCurve.SECP_256_R_1 }
+}.getOrThrow() //TODO handle error properly
+```
+
+Next up, we'll create a header and payload:
+
+```kotlin
+//set KID + algorithm
+val protectedHeader = CoseHeader(
+    algorithm = signer.signatureAlgorithm.toCoseAlgorithm().getOrElse { TODO() },
+    kid = signer.publicKey.didEncoded.encodeToByteArray()
+)
+
+val payload = byteArrayOf(0xC, 0xA, 0xF, 0xE)
+```
+
+Both of these are signature inputs, so we'll construct a `CoseSignatureInput` to sign.
+
+```kotlin
+val signatureInput = CoseSignatureInput(
+    contextString = "Signature1",
+    protectedHeader = ByteStringWrapper(protectedHeader),
+    externalAad = byteArrayOf(),
+    payload = payload,
+).serialize()
+```
+
+
+Now, everything is ready to be signed:
+
+```kotlin
+val signature = signer.sign(signatureInput).signature //TODO handle error
+
+val coseSigned = CoseSigned(
+    ByteStringWrapper(protectedHeader),
+    unprotectedHeader = null,
+    payload,
+    signature
+).serialize() // sadly, there's no cwt.io, but you can use cbor.me to explore the signed data
+```
+
+
+
+## Create and Parse a Custom-Tagged ASN.1 Structure
+
+When you come across a certain pattern more than once, you only encode and decode it once and recycle this code.
+Still, it has to be done at least once. This example shows how to create a small, custom-tagged ASN.1 structure and shows how
+it can be parsed and validated.
+
+### Definitions
+
+Let's say you are using ASN.1 as your wire format and you want to report the status about an operation.
+The status message is an implicitly tagged ASN.1 structure with APPLICATION tag `1337` and sequence semantics.
+It contains the number of times the operation was run, and a timestamp, which can be either relative (in whole seconds since the last operation)
+or absolute (UTC Time). This relative/absolute flag uses the implicit APPLICATION tag `42` and the tuple of flag and time
+is encoded into an ANS.1 OCTET STRING. This allows for two possible encodings, as illustrated below:
+
+<table>
+<tr>
+<th>
+Absolute Time
+</th>
+<th>
+Relative Time
+</th>
+</tr>
+<tr>
+<td>
+
+```asn1
+Application 1337 (2 elem)
+  INTEGER 1
+  OCTET STRING (19 byte)
+    Application 42 (1 byte) 00
+    UTCTime 2024-09-30 18:11:59 UTC
+```
+
+</td>
+
+<td>
+
+```asn1
+Application 1337 (2 elem)
+  INTEGER 3
+  OCTET STRING (7 byte)
+    Application 42 (1 byte) FF
+    INTEGER 39
+```
+
+</td>
+</tr>
+</table>
+
+### Encoding
+
+We'll be assuming absolute time to keep things simple.
+Hence, the structure containing an absolute time can be created using the _Indispensable_ ASN.1 engine as follows:
+
+```kotlin
+val TAG_TIME_RELATIVE = 42uL withClass TagClass.APPLICATION
+
+Asn1.Sequence {
+    +Asn1.Int(1)
+    +OctetStringEncapsulating {
+        +(Bool(false) withImplicitTag TAG_TIME_RELATIVE)
+        +Asn1Time(Clock.System.now())
+    }
+} withImplicitTag (1337uL withClass TagClass.APPLICATION) 
+//                ↑ in reality this would be a constant ↑ 
+```
+
+The HEX-equivalent of this structure (which can be obtained by calling `.toDerHexString()`) is
+[7F8A391802010104135F2A0100170D3234303933303138313135395A](https://lapo.it/asn1js/#f4o5GAIBAQQTXyoBABcNMjQwOTMwMTgxMTU5Wg).
+
+### Parsing and Validating Tags
+
+Basic parsing is straight-forward: You have DER-encoded bytes, and feed them into `AsnElement.parse()`.
+Then you examine the first child to get the number of times the operation was carried out,
+decode the first child of the OCTET STRING that follows to see of an UTC time follows or an int.
+
+Usually, though (and especially when using implicit tags), you really want to verify those tags too.
+Hence, parsing and properly validating is a bit more elaborate:
+
+```kotlin
+Asn1Element.parse(customSequence.derEncoded).asStructure().let { root -> 
+
+  //↓↓↓ In reality, this would be a global constant
+  val rootTag = Asn1Element.Tag(1337uL, tagClass = TagClass.APPLICATION, constructed = true)
+  if (root.tag != rootTag) throw Asn1TagMismatchException(rootTag, root.tag)
+
+  val numberOfOps = root.nextChild().asPrimitive().decodeToUInt()
+  root.nextChild().asEncapsulatingOctetString().let { timestamp ->
+    val isRelative = timestamp.nextChild().asPrimitive()
+      .decode(TAG_TIME_RELATIVE) { Boolean.decodeFromAsn1ContentBytes(it) }
+
+    val time = if (isRelative) timestamp.nextChild().asPrimitive().decodeToUInt()
+    else timestamp.nextChild().asPrimitive().decodeToInstant()
+
+    if (timestamp.hasMoreChildren() || root.hasMoreChildren())
+      throw Asn1StructuralException("Superfluous Content")
+      
+    // Everything is parsed and validated
+    TODO("Create domain object from $numberOfOps, $isRelative, and $time")
+    }
+}
+```
