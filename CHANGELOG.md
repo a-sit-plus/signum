@@ -26,6 +26,7 @@ Better safe than sorry!
         * Remove single element decoding from Iterator
 
 * Introduce generic tag assertion to `Asn1Element`
+* Change CSR to take an actual `CryptoSignature` instead of a ByteArray
 
 
 ### 3.9.0 (Supreme 0.4.0)
