@@ -272,6 +272,11 @@ Manually working on DER-encoded payloads is also supported through the following
 
 All of these functions throw an `Asn1Exception` when decoding fails.
 
+Moreover, a generic tag assertion function is present on `Asn1Element`, which throws an `Asn1TagMisMatchException` on error
+and returns the tag-asserted element on success:
+
+* `Asn1Element.assertTag()` takes either an `Asn1Element.Tag` or an `Ulong` tag number
+
 
 ### Encoding
 Similarly to decoding function, encoding function also come as high-level and low-level ones.

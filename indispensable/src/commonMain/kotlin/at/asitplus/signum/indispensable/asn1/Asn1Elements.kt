@@ -244,6 +244,11 @@ sealed class Asn1Element(
             derEncoded.iterator().decodeTag().let { Triple(it.first, it.second.size, derEncoded) }
         )
 
+        /**
+         * Creates a copy of this tag, overriding [tagValue], but keeping [isConstructed] and [tagClass]
+         */
+        fun withNumber(number: ULong) = Tag(number, constructed = isConstructed, tagClass = tagClass)
+
         constructor(tagValue: ULong, constructed: Boolean, tagClass: TagClass = TagClass.UNIVERSAL) : this(
             encode(
                 tagClass,
@@ -386,6 +391,25 @@ sealed class Asn1Element(
         }
     }
 }
+
+/**
+ * asserts that this element's tag matches [tag].
+ *
+ * @throws Asn1TagMismatchException on failure
+ */
+@Throws(Asn1TagMismatchException::class)
+inline fun <reified T : Asn1Element> T.assertTag(tag: Asn1Element.Tag): T {
+    if (this.tag != tag) throw Asn1TagMismatchException(tag, this.tag)
+    return this
+}
+
+/**
+ * Asserts only the tag number, but neither class, nor CONSTRUCTED bit.
+ * @see assertTag
+ * @throws Asn1TagMismatchException on failure
+ */
+@Throws(Asn1TagMismatchException::class)
+inline fun <reified T : Asn1Element> T.assertTag(tagNumber: ULong): T = assertTag(tag.withNumber(tagNumber))
 
 object Asn1EncodableSerializer : KSerializer<Asn1Element> {
     override val descriptor = PrimitiveSerialDescriptor("Asn1Encodable", PrimitiveKind.STRING)
