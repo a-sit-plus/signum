@@ -50,7 +50,7 @@ The very first bit means that you can verify signatures on the JVM, Android and 
 
 ### Do check out the full manual with examples and API docs [here](https://a-sit-plus.github.io/signum/)!
 This README provides just an overview.
-The full manual is more comprehensive, has separate sections for each module, and provides a full API documentation.
+The full manual is more comprehensive, has separate sections for each module, provides examples, and a full API documentation.
 
 ## Using it in your Projects
 
