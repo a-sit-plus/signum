@@ -40,11 +40,14 @@ data class IosLegacyHomebrewAttestation(
     @Serializable(with=ByteArrayBase64UrlSerializer::class)
     val attestation: ByteArray,
     @Serializable(with=ByteArrayBase64UrlSerializer::class)
+    val clientData: ByteArray,
+    @Serializable(with=ByteArrayBase64UrlSerializer::class)
     val assertion: ByteArray): Attestation {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is IosLegacyHomebrewAttestation) return false
 
+        if (!clientData.contentEquals(other.clientData)) return false
         if (!attestation.contentEquals(other.attestation)) return false
         return assertion.contentEquals(other.assertion)
     }
@@ -52,6 +55,7 @@ data class IosLegacyHomebrewAttestation(
     override fun hashCode(): Int {
         var result = attestation.contentHashCode()
         result = 31 * result + assertion.contentHashCode()
+        result = 31 * result + clientData.contentHashCode()
         return result
     }
 }
