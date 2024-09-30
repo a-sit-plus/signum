@@ -480,7 +480,8 @@ sealed class Asn1Structure(
     fun hasMoreChildren() = children.size > index
 
     /**
-     * Returns the current child (useful when iterating over this structure's children)
+     * Returns the current child or `null`, if there are no children left
+     * (useful when iterating over this structure's children).
      */
     fun peek() = if (!hasMoreChildren()) null else children[index]
 
