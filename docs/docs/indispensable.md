@@ -225,7 +225,7 @@ The base decoding function is called `decode()` and has the following signature:
 fun <reified T> Asn1Primitive.decode(assertTag: ULong, transform: (content: ByteArray) -> T): T
 ```
 An alternative exists, taking a `Tag` instead of an `Ulong`. in both cases a tag to assert and a user-defined transformation function is expected, which operates on
-the content of the ASN.1 primitive. Moreover,  npn-throwing `decodeOrNull` variant is present.
+the content of the ASN.1 primitive. Moreover,  non-throwing `decodeOrNull` variant is present.
 In addition, the following self-describing shorthands are defined:
 
 * `Asn1Primitive.decodeToBoolean()` throws on error
