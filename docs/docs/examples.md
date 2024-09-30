@@ -144,7 +144,6 @@ The reason for keeping this fourth parameter is convenience and efficiency: For 
 
 ## Creating a `CoseSigned` Object
 
-
 !!! info  inline end
     This example requires the _Supreme_ KMP crypto provider and _Indispensable Cosef_.
 
@@ -193,9 +192,10 @@ val coseSigned = CoseSigned(
 ).serialize() // sadly, there's no cwt.io, but you can use cbor.me to explore the signed data
 ```
 
-
-
 ## Create and Parse a Custom-Tagged ASN.1 Structure
+
+!!! info  inline end
+    This example requires only the _Indispensable_ module.
 
 When you come across a certain pattern more than once, you only encode and decode it once and recycle this code.
 Still, it has to be done at least once. This example shows how to create a small, custom-tagged ASN.1 structure and shows how
