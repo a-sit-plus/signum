@@ -55,13 +55,13 @@ import at.asitplus.signum.supreme.sign.makeVerifier
 import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.cryptotest.theme.AppTheme
 import at.asitplus.cryptotest.theme.LocalThemeIsDark
+import at.asitplus.signum.indispensable.jsonEncoded
 import at.asitplus.signum.supreme.asKmmResult
 import at.asitplus.signum.supreme.os.PlatformSignerConfigurationBase
 import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.supreme.os.PlatformSigningProvider
 import at.asitplus.signum.supreme.os.SignerConfiguration
 import at.asitplus.signum.supreme.os.SigningProvider
-import at.asitplus.signum.supreme.os.jsonEncoded
 import at.asitplus.signum.supreme.sign.Verifier
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
@@ -80,7 +80,7 @@ you don't need this workaround for ios/android, just use PlatformSigningProvider
 expect val Provider: SigningProvider
 
 const val ALIAS = "Bartschlüssel"
-val SIGNER_CONFIG: (SignerConfiguration.()->Unit) = {
+val SIGNER_CONFIG: (SignerConfiguration.() -> Unit) = {
     if (this is PlatformSignerConfigurationBase) {
         unlockPrompt {
             message = "We're signing a thing!"
@@ -94,7 +94,7 @@ val SIGNER_CONFIG: (SignerConfiguration.()->Unit) = {
 
 val context = newSingleThreadContext("crypto").also { Napier.base(DebugAntilog()) }
 
-private class getter<T>(private val fn: ()->T) {
+private class getter<T>(private val fn: () -> T) {
     operator fun getValue(nothing: Nothing?, property: KProperty<*>): T = fn()
 }
 
@@ -112,8 +112,13 @@ internal fun App() {
             X509SignatureAlgorithm.RS1,
             X509SignatureAlgorithm.RS256,
             X509SignatureAlgorithm.RS384,
-            X509SignatureAlgorithm.RS512)
-        var keyAlgorithm by remember { mutableStateOf<SpecializedSignatureAlgorithm>(X509SignatureAlgorithm.ES256) }
+            X509SignatureAlgorithm.RS512
+        )
+        var keyAlgorithm by remember {
+            mutableStateOf<SpecializedSignatureAlgorithm>(
+                X509SignatureAlgorithm.ES256
+            )
+        }
         var inputData by remember { mutableStateOf("Foo") }
         var currentSigner by remember { mutableStateOf<KmmResult<Signer>?>(null) }
         val currentKey by getter { currentSigner?.mapCatching(Signer::publicKey) }
@@ -121,13 +126,15 @@ internal fun App() {
             currentKey?.fold(onSuccess = {
                 it.toString()
             },
-            onFailure = {
-                Napier.e("Key failed", it)
-                "${it::class.simpleName ?: "<unnamed>"}: ${it.message}"
-            }) ?: "<none>"
+                onFailure = {
+                    Napier.e("Key failed", it)
+                    "${it::class.simpleName ?: "<unnamed>"}: ${it.message}"
+                }) ?: "<none>"
         }
         val currentAttestation by getter { (currentSigner?.getOrNull() as? Signer.Attestable<*>)?.attestation }
-        val currentAttestationStr by getter { currentAttestation?.jsonEncoded ?: "" }
+        val currentAttestationStr by getter {
+            currentAttestation?.jsonEncoded?.also { Napier.d { it } } ?: ""
+        }
         val signingPossible by getter { currentKey?.isSuccess == true }
         var signatureData by remember { mutableStateOf<KmmResult<CryptoSignature>?>(null) }
         val signatureDataStr by getter {
@@ -148,9 +155,12 @@ internal fun App() {
         var canGenerate by remember { mutableStateOf(true) }
 
         var genTextOverride by remember { mutableStateOf<String?>(null) }
-        val genText by getter { genTextOverride ?: "Generate"}
+        val genText by getter { genTextOverride ?: "Generate" }
 
-        Column(modifier = Modifier.fillMaxSize().verticalScroll(ScrollState(0), enabled = true).windowInsetsPadding(WindowInsets.safeDrawing)) {
+        Column(
+            modifier = Modifier.fillMaxSize().verticalScroll(ScrollState(0), enabled = true)
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+        ) {
 
             Row(
                 horizontalArrangement = Arrangement.Center
@@ -300,11 +310,12 @@ internal fun App() {
                                 when (val alg = keyAlgorithm.algorithm) {
                                     is SignatureAlgorithm.ECDSA -> {
                                         this@createSigningKey.ec {
-                                            curve = alg.requiredCurve ?:
-                                                ECCurve.entries.find { it.nativeDigest == alg.digest }!!
+                                            curve = alg.requiredCurve
+                                                ?: ECCurve.entries.find { it.nativeDigest == alg.digest }!!
                                             digests = setOf(alg.digest)
                                         }
                                     }
+
                                     is SignatureAlgorithm.RSA -> {
                                         this@createSigningKey.rsa {
                                             digests = setOf(alg.digest)
@@ -312,6 +323,7 @@ internal fun App() {
                                             bits = 1024
                                         }
                                     }
+
                                     else -> error("unreachable")
                                 }
 
