@@ -46,11 +46,8 @@ This process works more or less as follows:
           )
       )
 
-      val csr = Pkcs10CertificationRequest(
-          tbsCSR,
-          signer.signatureAlgorithm.toX509SignatureAlgorithm().getOrThrow(),
-          signer.sign(tbsCSR.encodeToDer()).signature.encodeToDer() //TODO handle error
-      )
+      //extension function producing a signed CSR
+      val csr = signer.sign(tbsCSR).getOrElse { TODO("handle error") }
       ```
 7. The back-end verifies tha signature of the CSR, and validates the challenge (and attestation information, if present)
       ```kotlin
@@ -86,11 +83,7 @@ This process works more or less as follows:
          )
        )
 
-       val clientCertificate = X509Certificate(
-         tbsCrt,
-         signatureAlgorithm = signer.signatureAlgorithm.toX509SignatureAlgorithm().getOrThrow(),
-         signer.sign(tbsCrt.encodeToDer()).signature
-       )
+       val clientCertificate = signer.sign(tbsCrt).getOrElse { TODO("handle error") }
        ```
 9. The client stores the certificate.
 
@@ -271,17 +264,17 @@ The HEX-equivalent of this structure (which can be obtained by calling `.toDerHe
 
 Basic parsing is straight-forward: You have DER-encoded bytes, and feed them into `AsnElement.parse()`.
 Then you examine the first child to get the number of times the operation was carried out,
-decode the first child of the OCTET STRING that follows to see of an UTC time follows or an int.
+decode the first child of the OCTET STRING that follows to see if n UTC time or an int follows.
 
 Usually, though (and especially when using implicit tags), you really want to verify those tags too.
 Hence, parsing and properly validating is a bit more elaborate:
 
-```kotlin
+```kotlin linenums="1"
 Asn1Element.parse(customSequence.derEncoded).asStructure().let { root -> 
 
-  //↓↓↓ In reality, this would be a global constant
+  //↓↓↓ In reality, this would be a global constant; the same as in the previous snippet ↓↓↓
   val rootTag = Asn1Element.Tag(1337uL, tagClass = TagClass.APPLICATION, constructed = true)
-  if (root.tag != rootTag) throw Asn1TagMismatchException(rootTag, root.tag)
+  assertTag(rootTag) //throws on tag mismatch
 
   val numberOfOps = root.nextChild().asPrimitive().decodeToUInt()
   root.nextChild().asEncapsulatingOctetString().let { timestamp ->
@@ -299,3 +292,17 @@ Asn1Element.parse(customSequence.derEncoded).asStructure().let { root ->
     }
 }
 ```
+
+The above snippet performs the following validations:
+
+1. Line 5 asserts the tag or the root structure
+2. Line 7 ensures that the first child is an ASN.1 primitive tagged as INT, containing an unsigned integer
+3. Line 8 execution successfully guarantees that the second child is indeed an ASN.1 OCTET STRING encapsulating
+another ASN.1 structure.
+4. Lines 9-10 verify that the first child contained in the ASN.1 OCTET STRING
+    * is an ASN.1 primitive
+    * tagged with `TAG_TIME_RELATIVE`
+    * containing an ASN.1 boolean
+5. Line 12 ensures that the next child is an ASN.1 primitive, encoding an unsigned integer (in case an `UInt` is expected)
+6. Line 13 tackles the alternative and ensures that the next child contains a properly encoded ASN.1 time
+7. Lastly, lines 15-16 make sure no additional content is present, thus fully verifying the structure as a whole.

@@ -67,6 +67,15 @@
     font-feature-settings: "kern", "liga";
 }
 
+.linenodiv {
+    padding-top: .12rem;
+}
+
+ .linenodiv .normal {
+     font-size: .8rem;
+     font-feature-settings: "kern", "liga";
+ }
+
 .md-typeset h2 code {
     font-size: 1.2rem;
     font-feature-settings: "kern", "liga";
