@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import io.matthewnelson.encoding.base16.Base16
+import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.KSerializer
@@ -19,7 +20,7 @@ import kotlin.native.ObjCName
 /**
  * Base ASN.1 data class. Can either be a primitive (holding a value), or a structure (holding other ASN.1 elements)
  */
-@Serializable(with = Asn1EncodableSerializer::class)
+@Serializable(with = Asn1EncodableBase16Serializer::class)
 sealed class Asn1Element(
     internal val tlv: TLV,
     protected open val children: List<Asn1Element>?
@@ -387,7 +388,7 @@ sealed class Asn1Element(
     }
 }
 
-object Asn1EncodableSerializer : KSerializer<Asn1Element> {
+object Asn1EncodableBase16Serializer : KSerializer<Asn1Element> {
     override val descriptor = PrimitiveSerialDescriptor("Asn1Encodable", PrimitiveKind.STRING)
 
     override fun deserialize(decoder: Decoder): Asn1Element {
@@ -400,6 +401,18 @@ object Asn1EncodableSerializer : KSerializer<Asn1Element> {
 
 }
 
+object Asn1EncodableBase64Serializer : KSerializer<Asn1Element> {
+    override val descriptor = PrimitiveSerialDescriptor("Asn1Encodable", PrimitiveKind.STRING)
+
+    override fun deserialize(decoder: Decoder): Asn1Element {
+        return Asn1Element.parse(decoder.decodeString().decodeToByteArray(Base64()))
+    }
+
+    override fun serialize(encoder: Encoder, value: Asn1Element) {
+        encoder.encodeString(value.derEncoded.encodeToString(Base64()))
+    }
+
+}
 /**
  * ASN.1 structure. Contains no data itself, but holds zero or more [children]
  */
@@ -587,7 +600,7 @@ class Asn1CustomStructure private constructor(
  * @param children the elements to put into this sequence
  */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
-@Serializable(with = Asn1EncodableSerializer::class)
+@Serializable(with = Asn1EncodableBase16Serializer::class)
 class Asn1EncapsulatingOctetString(children: List<Asn1Element>) :
     Asn1Structure(Tag.OCTET_STRING, children),
     Asn1OctetString<Asn1EncapsulatingOctetString> {
