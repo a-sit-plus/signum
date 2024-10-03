@@ -86,6 +86,12 @@ data class IosHomebrewAttestation(
 
         internal fun assertValidity() { if (purpose != THE_PURPOSE) throw IllegalStateException("Invalid purpose") }
 
+        /**
+         * Computes the ByteArray that is used to compute the client data hash input for `DCAppAttest`.
+         * This is effectively the ByteArray-Representation of this data's JSON encoding.
+         */
+        fun prepareDigestInput(): ByteArray = Json.encodeToString(this).encodeToByteArray()
+
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other == null || this::class != other::class) return false
