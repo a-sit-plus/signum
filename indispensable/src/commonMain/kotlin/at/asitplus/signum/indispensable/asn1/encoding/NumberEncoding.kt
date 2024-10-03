@@ -125,24 +125,24 @@ fun Long.toTwosComplementByteArray() = when {
 fun Int.toTwosComplementByteArray() = toLong().toTwosComplementByteArray()
 
 fun Int.Companion.fromTwosComplementByteArray(it: ByteArray) = when (it.size) {
-    4 -> it.shiftLeftFirstInt(24) or
-            it.shiftLeftAsInt(1, 16) or
-            it.shiftLeftAsInt(2, 8) or
-            it.shiftLeftAsInt(3, 0)
+    4 -> it[0].shiftLeftFirstInt(24) or
+            (it[1] shiftLeftAsInt 16) or
+            (it[2] shiftLeftAsInt 8) or
+            (it[3] shiftLeftAsInt 0)
 
-    3 -> it.shiftLeftFirstInt(16) or
-            it.shiftLeftAsInt(1, 8) or
-            it.shiftLeftAsInt(2, 0)
+    3 -> it[0].shiftLeftFirstInt(16) or
+            (it[1] shiftLeftAsInt 8) or
+            (it[2] shiftLeftAsInt 0)
 
-    2 -> it.shiftLeftFirstInt(8) or
-            it.shiftLeftAsInt(1, 0)
+    2 -> it[0].shiftLeftFirstInt(8) or
+            (it[1] shiftLeftAsInt 0)
 
-    1 -> it.shiftLeftFirstInt(0)
+    1 -> it[0].shiftLeftFirstInt(0)
     else -> throw IllegalArgumentException("Input with size $it is out of bounds for Int")
 }
 
-private fun ByteArray.shiftLeftAsInt(index: Int, shift: Int) = this[index].toUByte().toInt() shl shift
-private fun ByteArray.shiftLeftFirstInt(shift: Int) = this[0].toInt() shl shift
+private infix fun Byte.shiftLeftAsInt(shift: Int) = this.toUByte().toInt() shl shift
+private fun Byte.shiftLeftFirstInt(shift: Int) = toInt() shl shift
 
 fun UInt.Companion.fromTwosComplementByteArray(it: ByteArray) =
     Long.fromTwosComplementByteArray(it).let {
@@ -151,54 +151,54 @@ fun UInt.Companion.fromTwosComplementByteArray(it: ByteArray) =
     }
 
 fun Long.Companion.fromTwosComplementByteArray(it: ByteArray) = when (it.size) {
-    8 -> it.shiftLeftFirstLong(56) or
-            it.shiftLeftAsLong(1, 48) or
-            it.shiftLeftAsLong(2, 40) or
-            it.shiftLeftAsLong(3, 32) or
-            it.shiftLeftAsLong(4, 24) or
-            it.shiftLeftAsLong(5, 16) or
-            it.shiftLeftAsLong(6, 8) or
-            it.shiftLeftAsLong(7, 0)
+    8 -> it[0].shiftLeftFirstLong(56) or
+            (it[1] shiftLeftAsLong 48) or
+            (it[2] shiftLeftAsLong 40) or
+            (it[3] shiftLeftAsLong 32) or
+            (it[4] shiftLeftAsLong 24) or
+            (it[5] shiftLeftAsLong 16) or
+            (it[6] shiftLeftAsLong 8) or
+            (it[7] shiftLeftAsLong 0)
 
-    7 -> it.shiftLeftFirstLong(48) or
-            it.shiftLeftAsLong(1, 40) or
-            it.shiftLeftAsLong(2, 32) or
-            it.shiftLeftAsLong(3, 24) or
-            it.shiftLeftAsLong(4, 16) or
-            it.shiftLeftAsLong(5, 8) or
-            it.shiftLeftAsLong(6, 0)
+    7 -> it[0].shiftLeftFirstLong(48) or
+            (it[1] shiftLeftAsLong 40) or
+            (it[2] shiftLeftAsLong 32) or
+            (it[3] shiftLeftAsLong 24) or
+            (it[4] shiftLeftAsLong 16) or
+            (it[5] shiftLeftAsLong 8) or
+            (it[6] shiftLeftAsLong 0)
 
-    6 -> it.shiftLeftFirstLong(40) or
-            it.shiftLeftAsLong(1, 32) or
-            it.shiftLeftAsLong(2, 24) or
-            it.shiftLeftAsLong(3, 16) or
-            it.shiftLeftAsLong(4, 8) or
-            it.shiftLeftAsLong(5, 0)
+    6 -> it[0].shiftLeftFirstLong(40) or
+            (it[1] shiftLeftAsLong 32) or
+            (it[2] shiftLeftAsLong 24) or
+            (it[3] shiftLeftAsLong 16) or
+            (it[4] shiftLeftAsLong 8) or
+            (it[5] shiftLeftAsLong 0)
 
-    5 -> it.shiftLeftFirstLong(32) or
-            it.shiftLeftAsLong(1, 24) or
-            it.shiftLeftAsLong(2, 16) or
-            it.shiftLeftAsLong(3, 8) or
-            it.shiftLeftAsLong(4, 0)
+    5 -> it[0].shiftLeftFirstLong(32) or
+            (it[1] shiftLeftAsLong 24) or
+            (it[2] shiftLeftAsLong 16) or
+            (it[3] shiftLeftAsLong 8) or
+            (it[4] shiftLeftAsLong 0)
 
-    4 -> it.shiftLeftFirstLong(24) or
-            it.shiftLeftAsLong(1, 16) or
-            it.shiftLeftAsLong(2, 8) or
-            it.shiftLeftAsLong(3, 0)
+    4 -> it[0].shiftLeftFirstLong(24) or
+            (it[1] shiftLeftAsLong 16) or
+            (it[2] shiftLeftAsLong 8) or
+            (it[3] shiftLeftAsLong 0)
 
-    3 -> it.shiftLeftFirstLong(16) or
-            it.shiftLeftAsLong(1, 8) or
-            it.shiftLeftAsLong(2, 0)
+    3 -> it[0].shiftLeftFirstLong(16) or
+            (it[1] shiftLeftAsLong 8) or
+            (it[2] shiftLeftAsLong 0)
 
-    2 -> it.shiftLeftFirstLong(8) or
-            it.shiftLeftAsLong(1, 0)
+    2 -> it[0].shiftLeftFirstLong(8) or
+            (it[1] shiftLeftAsLong 0)
 
-    1 -> it.shiftLeftFirstLong(0)
+    1 -> it[0].shiftLeftFirstLong(0)
     else -> throw IllegalArgumentException("Input with size $it is out of bounds for Long")
 }
 
-private fun ByteArray.shiftLeftAsLong(index: Int, shift: Int) = this[index].toUByte().toLong() shl shift
-private fun ByteArray.shiftLeftFirstLong(shift: Int) = this[0].toLong() shl shift
+private infix fun Byte.shiftLeftAsLong(shift: Int) = this.toUByte().toLong() shl shift
+private fun Byte.shiftLeftFirstLong(shift: Int) = toLong() shl shift
 
 fun ULong.Companion.fromTwosComplementByteArray(it: ByteArray) = when {
     ((it.size == 9) && (it[0] == 0.toByte())) -> it.shiftLeftAsULong(1, 56) or
