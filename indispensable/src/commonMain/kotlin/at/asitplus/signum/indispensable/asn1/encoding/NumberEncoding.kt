@@ -125,24 +125,24 @@ fun Long.toTwosComplementByteArray() = when {
 fun Int.toTwosComplementByteArray() = toLong().toTwosComplementByteArray()
 
 fun Int.Companion.fromTwosComplementByteArray(it: ByteArray) = when (it.size) {
-    4 -> it.toIntShift(0, 24) or
-            it.toUByteToIntShift(1, 16) or
-            it.toUByteToIntShift(2, 8) or
-            it.toUByteToIntShift(3, 0)
+    4 -> it.shiftLeftFirstInt(24) or
+            it.shiftLeftAsInt(1, 16) or
+            it.shiftLeftAsInt(2, 8) or
+            it.shiftLeftAsInt(3, 0)
 
-    3 -> it.toIntShift(0, 16) or
-            it.toUByteToIntShift(1, 8) or
-            it.toUByteToIntShift(2, 0)
+    3 -> it.shiftLeftFirstInt(16) or
+            it.shiftLeftAsInt(1, 8) or
+            it.shiftLeftAsInt(2, 0)
 
-    2 -> it.toIntShift(0, 8) or
-            it.toUByteToIntShift(1, 0)
+    2 -> it.shiftLeftFirstInt(8) or
+            it.shiftLeftAsInt(1, 0)
 
-    1 -> it.toIntShift(0, 0)
+    1 -> it.shiftLeftFirstInt(0)
     else -> throw IllegalArgumentException("Input with size $it is out of bounds for Int")
 }
 
-private fun ByteArray.toUByteToIntShift(index: Int, shift: Int) = this[index].toUByte().toInt() shl shift
-private fun ByteArray.toIntShift(index: Int, shift: Int) = this[index].toInt() shl shift
+private fun ByteArray.shiftLeftAsInt(index: Int, shift: Int) = this[index].toUByte().toInt() shl shift
+private fun ByteArray.shiftLeftFirstInt(shift: Int) = this[0].toInt() shl shift
 
 fun UInt.Companion.fromTwosComplementByteArray(it: ByteArray) =
     Long.fromTwosComplementByteArray(it).let {
@@ -151,64 +151,64 @@ fun UInt.Companion.fromTwosComplementByteArray(it: ByteArray) =
     }
 
 fun Long.Companion.fromTwosComplementByteArray(it: ByteArray) = when (it.size) {
-    8 -> it.toLongShift(0, 56) or
-            it.toUByteToLongShift(1, 48) or
-            it.toUByteToLongShift(2, 40) or
-            it.toUByteToLongShift(3, 32) or
-            it.toUByteToLongShift(4, 24) or
-            it.toUByteToLongShift(5, 16) or
-            it.toUByteToLongShift(6, 8) or
-            it.toUByteToLongShift(7, 0)
+    8 -> it.shiftLeftFirstLong(56) or
+            it.shiftLeftAsLong(1, 48) or
+            it.shiftLeftAsLong(2, 40) or
+            it.shiftLeftAsLong(3, 32) or
+            it.shiftLeftAsLong(4, 24) or
+            it.shiftLeftAsLong(5, 16) or
+            it.shiftLeftAsLong(6, 8) or
+            it.shiftLeftAsLong(7, 0)
 
-    7 -> it.toLongShift(0, 48) or
-            it.toUByteToLongShift(1, 40) or
-            it.toUByteToLongShift(2, 32) or
-            it.toUByteToLongShift(3, 24) or
-            it.toUByteToLongShift(4, 16) or
-            it.toUByteToLongShift(5, 8) or
-            it.toUByteToLongShift(6, 0)
+    7 -> it.shiftLeftFirstLong(48) or
+            it.shiftLeftAsLong(1, 40) or
+            it.shiftLeftAsLong(2, 32) or
+            it.shiftLeftAsLong(3, 24) or
+            it.shiftLeftAsLong(4, 16) or
+            it.shiftLeftAsLong(5, 8) or
+            it.shiftLeftAsLong(6, 0)
 
-    6 -> it.toLongShift(0, 40) or
-            it.toUByteToLongShift(1, 32) or
-            it.toUByteToLongShift(2, 24) or
-            it.toUByteToLongShift(3, 16) or
-            it.toUByteToLongShift(4, 8) or
-            it.toUByteToLongShift(5, 0)
+    6 -> it.shiftLeftFirstLong(40) or
+            it.shiftLeftAsLong(1, 32) or
+            it.shiftLeftAsLong(2, 24) or
+            it.shiftLeftAsLong(3, 16) or
+            it.shiftLeftAsLong(4, 8) or
+            it.shiftLeftAsLong(5, 0)
 
-    5 -> it.toLongShift(0, 32) or
-            it.toUByteToLongShift(1, 24) or
-            it.toUByteToLongShift(2, 16) or
-            it.toUByteToLongShift(3, 8) or
-            it.toUByteToLongShift(4, 0)
+    5 -> it.shiftLeftFirstLong(32) or
+            it.shiftLeftAsLong(1, 24) or
+            it.shiftLeftAsLong(2, 16) or
+            it.shiftLeftAsLong(3, 8) or
+            it.shiftLeftAsLong(4, 0)
 
-    4 -> it.toLongShift(0, 24) or
-            it.toUByteToLongShift(1, 16) or
-            it.toUByteToLongShift(2, 8) or
-            it.toUByteToLongShift(3, 0)
+    4 -> it.shiftLeftFirstLong(24) or
+            it.shiftLeftAsLong(1, 16) or
+            it.shiftLeftAsLong(2, 8) or
+            it.shiftLeftAsLong(3, 0)
 
-    3 -> it.toLongShift(0, 16) or
-            it.toUByteToLongShift(1, 8) or
-            it.toUByteToLongShift(2, 0)
+    3 -> it.shiftLeftFirstLong(16) or
+            it.shiftLeftAsLong(1, 8) or
+            it.shiftLeftAsLong(2, 0)
 
-    2 -> it.toLongShift(0, 8) or
-            it.toUByteToLongShift(1, 0)
+    2 -> it.shiftLeftFirstLong(8) or
+            it.shiftLeftAsLong(1, 0)
 
-    1 -> it.toLongShift(0, 0)
+    1 -> it.shiftLeftFirstLong(0)
     else -> throw IllegalArgumentException("Input with size $it is out of bounds for Long")
 }
 
-private fun ByteArray.toUByteToLongShift(index: Int, shift: Int) = this[index].toUByte().toLong() shl shift
-private fun ByteArray.toLongShift(index: Int, shift: Int) = this[index].toLong() shl shift
+private fun ByteArray.shiftLeftAsLong(index: Int, shift: Int) = this[index].toUByte().toLong() shl shift
+private fun ByteArray.shiftLeftFirstLong(shift: Int) = this[0].toLong() shl shift
 
 fun ULong.Companion.fromTwosComplementByteArray(it: ByteArray) = when {
-    ((it.size == 9) && (it[0] == 0.toByte())) -> it.toUByteToULongShift(1, 56) or
-            it.toUByteToULongShift(2, 48) or
-            it.toUByteToULongShift(3, 40) or
-            it.toUByteToULongShift(4, 32) or
-            it.toUByteToULongShift(5, 24) or
-            it.toUByteToULongShift(6, 16) or
-            it.toUByteToULongShift(7, 8) or
-            it.toUByteToULongShift(8, 0)
+    ((it.size == 9) && (it[0] == 0.toByte())) -> it.shiftLeftAsULong(1, 56) or
+            it.shiftLeftAsULong(2, 48) or
+            it.shiftLeftAsULong(3, 40) or
+            it.shiftLeftAsULong(4, 32) or
+            it.shiftLeftAsULong(5, 24) or
+            it.shiftLeftAsULong(6, 16) or
+            it.shiftLeftAsULong(7, 8) or
+            it.shiftLeftAsULong(8, 0)
 
     else -> Long.fromTwosComplementByteArray(it).let {
         require(it >= 0) { "Value $it is out of bounds for ULong" }
@@ -216,7 +216,7 @@ fun ULong.Companion.fromTwosComplementByteArray(it: ByteArray) = when {
     }
 }
 
-private fun ByteArray.toUByteToULongShift(index: Int, shift: Int) = this[index].toUByte().toULong() shl shift
+private fun ByteArray.shiftLeftAsULong(index: Int, shift: Int) = this[index].toUByte().toULong() shl shift
 
 /** Encodes an unsigned Long to a minimum-size unsigned byte array */
 fun Long.toUnsignedByteArray(): ByteArray {
