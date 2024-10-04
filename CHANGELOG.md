@@ -2,7 +2,13 @@
 
 ## 3.0
 
-### 3.10.0 NEXT
+### 3.10.0 NEXT (Supreme 0.5.0 NEXT)
+
+* Introduce generic tag assertion to `Asn1Element`
+* Change CSR to take an actual `CryptoSignature` instead of a ByteArray
+* Introduce shorthand to create CSR from TbsCSR
+* Introduce shorthand to create certificate from TbsCertificate
+
 
 ### 3.9.0 (Supreme 0.4.0)
 

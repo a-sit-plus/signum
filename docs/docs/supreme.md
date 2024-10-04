@@ -281,12 +281,6 @@ The Supreme KMP crypto provider introduces a `digest()` extension function on th
 For a list of supported algorithms, check out the [feature matrix](features.md#supported-algorithms).
 
 ## Attestation
-!!! info
-    All attestation types are serializable for transfer and are part of the _Indispensable_ module, so they are usable
-    on JVM-only back-ends, that may not wish to include the _Supreme_ KM crypto provider.
-    [_WARDEN_](https://github.com/a-sit-plus/warden) does not yet directly support this format, but will in the next release.
-    As of now, the encoded certificate chain of the `AndroidKeytoreAttestation` and an array containing `attestation`
-    followed by `assertion` from the `IosLegacyHomebrewAttestation` are supported WARDEN.
 
 The Android KeyStore offers key attestation certificates for hardware-backed keys.
 These certificates are exposed by the signer's `.attestation` property.

@@ -76,7 +76,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             initSign(keyPair.private)
             update(tbsCsr.encodeToDer())
         }.sign()
-        val csr = Pkcs10CertificationRequest(tbsCsr, signatureAlgorithm, signed)
+        val csr = Pkcs10CertificationRequest(tbsCsr, signatureAlgorithm, CryptoSignature.parseFromJca(signed,signatureAlgorithm))
 
         val kotlinEncoded = csr.encodeToDer()
 
@@ -135,7 +135,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             initSign(keyPair.private)
             update(tbsCsr.encodeToTlv().derEncoded)
         }.sign()
-        val csr = Pkcs10CertificationRequest(tbsCsr, signatureAlgorithm, signed)
+        val csr = Pkcs10CertificationRequest(tbsCsr, signatureAlgorithm, CryptoSignature.parseFromJca(signed,signatureAlgorithm))
 
         val kotlinEncoded = csr.encodeToTlv().derEncoded
         val jvmEncoded = bcCsr.encoded
@@ -201,7 +201,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             initSign(keyPair.private)
             update(tbsCsr.encodeToTlv().derEncoded)
         }.sign()
-        val csr = Pkcs10CertificationRequest(tbsCsr, signatureAlgorithm, signed)
+        val csr = Pkcs10CertificationRequest(tbsCsr, signatureAlgorithm, CryptoSignature.parseFromJca(signed,signatureAlgorithm))
 
         val kotlinEncoded = csr.encodeToTlv().derEncoded
         val jvmEncoded = bcCsr.encoded
@@ -331,10 +331,10 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             update(tbsCsr2.encodeToDer())
         }.sign()
 
-        val csr = Pkcs10CertificationRequest(tbsCsr1, signatureAlgorithm1, signed)
-        val csr1 = Pkcs10CertificationRequest(tbsCsr1, signatureAlgorithm1, signed1)
-        val csr11 = Pkcs10CertificationRequest(tbsCsr1, signatureAlgorithm2, signed11)
-        val csr2 = Pkcs10CertificationRequest(tbsCsr2, signatureAlgorithm1, signed2)
+        val csr = Pkcs10CertificationRequest(tbsCsr1, signatureAlgorithm1, CryptoSignature.parseFromJca(signed,signatureAlgorithm1))
+        val csr1 = Pkcs10CertificationRequest(tbsCsr1, signatureAlgorithm1, CryptoSignature.parseFromJca(signed1,signatureAlgorithm1))
+        val csr11 = Pkcs10CertificationRequest(tbsCsr1, signatureAlgorithm2, CryptoSignature.parseFromJca(signed11,signatureAlgorithm2))
+        val csr2 = Pkcs10CertificationRequest(tbsCsr2, signatureAlgorithm1, CryptoSignature.parseFromJca(signed2,signatureAlgorithm1))
 
         csr shouldNotBe csr1
         csr1 shouldBe csr1
