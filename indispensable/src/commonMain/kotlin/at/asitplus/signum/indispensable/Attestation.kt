@@ -34,28 +34,6 @@ data class AndroidKeystoreAttestation (
     @SerialName("x5c")
     val certificateChain: CertificateChain) : Attestation
 
-@Serializable
-@SerialName("ios-appattest-assertion")
-data class IosLegacyHomebrewAttestation(
-    @Serializable(with=ByteArrayBase64UrlSerializer::class)
-    val attestation: ByteArray,
-    @Serializable(with=ByteArrayBase64UrlSerializer::class)
-    val assertion: ByteArray): Attestation {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is IosLegacyHomebrewAttestation) return false
-
-        if (!attestation.contentEquals(other.attestation)) return false
-        return assertion.contentEquals(other.assertion)
-    }
-
-    override fun hashCode(): Int {
-        var result = attestation.contentHashCode()
-        result = 31 * result + assertion.contentHashCode()
-        return result
-    }
-}
-
 val StrictJson = Json { ignoreUnknownKeys = true; isLenient = false }
 
 @Serializable
@@ -81,6 +59,12 @@ data class IosHomebrewAttestation(
             this(THE_PURPOSE, publicKey, challenge)
 
         internal fun assertValidity() { if (purpose != THE_PURPOSE) throw IllegalStateException("Invalid purpose") }
+
+        /**
+         * Computes the ByteArray that is used to compute the client data hash input for `DCAppAttest`.
+         * This is effectively the ByteArray-Representation of this data's JSON encoding.
+         */
+        fun prepareDigestInput(): ByteArray = Json.encodeToString(this).encodeToByteArray()
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true

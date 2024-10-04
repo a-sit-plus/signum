@@ -179,11 +179,12 @@ typealias IosSignerSigningConfiguration = PlatformSigningProviderSignerSigningCo
 sealed class IosSigner(final override val alias: String,
                        private val metadata: IosKeyMetadata,
                        private val signerConfig: IosSignerConfiguration)
-    : PlatformSigningProviderSigner<IosSignerSigningConfiguration> {
+    : PlatformSigningProviderSigner<IosSignerSigningConfiguration>, Signer.Attestable<IosHomebrewAttestation> {
 
     override val mayRequireUserUnlock get() = needsAuthentication
     val needsAuthentication get() = metadata.needsUnlock
     val needsAuthenticationForEveryUse get() = metadata.needsUnlock && (metadata.unlockTimeout == Duration.ZERO)
+    override val attestation get() = metadata.attestation
 
     internal interface PrivateKeyManager { fun get(signingConfig: IosSignerSigningConfiguration): AutofreeVariable<SecKeyRef> }
     internal val privateKeyManager = object : PrivateKeyManager {
@@ -547,7 +548,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
 
                 val clientData = IosHomebrewAttestation.ClientData(
                     publicKey = publicKey, challenge = attestationConfig.challenge)
-                val clientDataJSON = Json.encodeToString(clientData).encodeToByteArray()
+                val clientDataJSON = clientData.prepareDigestInput()
 
                 val assertionKeyAttestation = swiftasync {
                     service.attestKey(keyId, Digest.SHA256.digest(clientDataJSON).toNSData(), callback)

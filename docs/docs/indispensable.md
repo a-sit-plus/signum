@@ -68,8 +68,6 @@ It contains essentials such as:
     * `X509SignatureAlgorithm` enumeration of supported X.509 signature algorithms (maps to and from `SignatureAlgorithm`)
 * `Attestation` representing a container to convey attestation statements 
     * `AndroidKeystoreAttestation` contains the certificate chain from Google's root certificate down to the attested key
-    * `IosLegacyHomebrewAttesation` contains an attestation and an assertion, conforming to the emulated key attestation scheme
-currently supported by warden.
     * `IosHomebrewAttestation` contains the new iOS attestation format introduces in Supreme 0.2.0 (see the [Attestation](supreme.md#attestation) section of the _Supreme_ manual for details).
     * `SelfAttestation` is used on the JVM. It has no specific semantics, but could be used, if an attestation-supporting HSM is used on the JVM. WIP!
 
@@ -271,6 +269,11 @@ Manually working on DER-encoded payloads is also supported through the following
 * `Instant.decodeUtcTimeFromAsn1ContentBytes()`
 
 All of these functions throw an `Asn1Exception` when decoding fails.
+
+Moreover, a generic tag assertion function is present on `Asn1Element`, which throws an `Asn1TagMisMatchException` on error
+and returns the tag-asserted element on success:
+
+* `Asn1Element.assertTag()` takes either an `Asn1Element.Tag` or an `ULong` tag number
 
 
 ### Encoding

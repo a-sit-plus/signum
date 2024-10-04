@@ -2,10 +2,15 @@
 
 ## 3.0
 
-### 3.10.0-SNAPSHOT (Supreme 0.5.0-SNAPSHOT)
+### 3.10.0 NEXT (Supreme 0.5.0 NEXT)
 
- * Add type parameter to `JwsSigned` for its payload
- * Add type parameter to `JweDecrypted` for its payload
+* Introduce generic tag assertion to `Asn1Element`
+* Change CSR to take an actual `CryptoSignature` instead of a ByteArray
+* Introduce shorthand to create CSR from TbsCSR
+* Introduce shorthand to create certificate from TbsCertificate
+* Add type parameter to `JwsSigned` for its payload
+* Add type parameter to `JweDecrypted` for its payload
+
 
 ### 3.9.0 (Supreme 0.4.0)
 

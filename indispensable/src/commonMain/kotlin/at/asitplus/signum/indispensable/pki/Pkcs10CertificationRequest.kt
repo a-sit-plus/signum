@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
@@ -113,7 +114,7 @@ data class Pkcs10CertificationRequest(
     val tbsCsr: TbsCertificationRequest,
     val signatureAlgorithm: X509SignatureAlgorithm,
     @Serializable(with = ByteArrayBase64Serializer::class)
-    val signature: ByteArray
+    val signature: CryptoSignature
 ) : Asn1Encodable<Asn1Sequence> {
 
 
@@ -121,7 +122,7 @@ data class Pkcs10CertificationRequest(
     override fun encodeToTlv() = Asn1.Sequence {
         +tbsCsr
         +signatureAlgorithm
-        +BitString(signature)
+        +BitString(signature.encodeToDer())
     }
 
     override fun equals(other: Any?): Boolean {
@@ -132,7 +133,7 @@ data class Pkcs10CertificationRequest(
 
         if (tbsCsr != other.tbsCsr) return false
         if (signatureAlgorithm != other.signatureAlgorithm) return false
-        if (!signature.contentEquals(other.signature)) return false
+        if (signature != other.signature) return false
 
         return true
     }
@@ -140,7 +141,7 @@ data class Pkcs10CertificationRequest(
     override fun hashCode(): Int {
         var result = tbsCsr.hashCode()
         result = 31 * result + signatureAlgorithm.hashCode()
-        result = 31 * result + signature.contentHashCode()
+        result = 31 * result + signature.hashCode()
         return result
     }
 
@@ -152,7 +153,7 @@ data class Pkcs10CertificationRequest(
             val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val signature = (src.nextChild() as Asn1Primitive).asAsn1BitString()
             if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous structure in CSR Structure")
-            return Pkcs10CertificationRequest(tbsCsr, sigAlg, signature.rawBytes)
+            return Pkcs10CertificationRequest(tbsCsr, sigAlg, CryptoSignature.decodeFromDer(signature.rawBytes))
         }
     }
 }
