@@ -4,14 +4,15 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.fromJcaPublicKey
-import at.asitplus.signum.indispensable.getJCASignatureInstance
-import at.asitplus.signum.indispensable.getJCASignatureInstancePreHashed
 import at.asitplus.signum.indispensable.jcaName
-import at.asitplus.signum.indispensable.parseFromJca
+import at.asitplus.signum.indispensable.signWithJCA
+import at.asitplus.signum.indispensable.signWithJCAPreHashed
+import at.asitplus.signum.supreme.asSignatureResult
 import at.asitplus.signum.supreme.signCatching
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
+import java.security.Signature
 import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
 
@@ -30,35 +31,27 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
     override suspend fun sign(data: SignatureInput) = signCatching {
         val preHashed = (data.format != null)
         if (preHashed) {
-            require (data.format == signatureAlgorithm.preHashedSignatureFormat)
+            require(data.format == signatureAlgorithm.preHashedSignatureFormat)
             { "Pre-hashed data (format ${data.format}) unsupported for algorithm $signatureAlgorithm" }
         }
-        (if (preHashed)
-            signatureAlgorithm.getJCASignatureInstancePreHashed(provider = provider).getOrThrow()
-        else
-            signatureAlgorithm.getJCASignatureInstance(provider = provider).getOrThrow())
-        .run {
+        val block: Signature.() -> ByteArray = {
             initSign(privateKey)
             data.data.forEach { update(it) }
-            sign().let(::parseFromJca)
+            sign()
         }
+        if (preHashed)
+            signatureAlgorithm.signWithJCAPreHashed(provider = provider, block).getOrThrow()
+        else
+            signatureAlgorithm.signWithJCA(provider = provider, block).getOrThrow()
     }
-
-    protected abstract fun parseFromJca(bytes: ByteArray): CryptoSignature.RawByteEncodable
 
     open class EC internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
               override val publicKey: CryptoPublicKey.EC, override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
-        : EphemeralSigner(privateKey, config.provider), Signer.ECDSA {
-
-        override fun parseFromJca(bytes: ByteArray) = CryptoSignature.EC.parseFromJca(bytes).withCurve(publicKey.curve)
-    }
+        : EphemeralSigner(privateKey, config.provider), Signer.ECDSA
 
     open class RSA internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
                                          override val publicKey: CryptoPublicKey.RSA, override val signatureAlgorithm: SignatureAlgorithm.RSA)
-        : EphemeralSigner(privateKey, config.provider), Signer.RSA {
-
-        override fun parseFromJca(bytes: ByteArray) = CryptoSignature.RSAorHMAC.parseFromJca(bytes)
-    }
+        : EphemeralSigner(privateKey, config.provider), Signer.RSA
 }
 
 internal fun getKPGInstance(alg: String, provider: String? = null) =

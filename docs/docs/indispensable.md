@@ -124,10 +124,10 @@ The following functions provide interop functionality with platform types.
 
 ### JVM/Android
 
-* `SignatureAlgorithm.getJCASignatureInstance()` gets a pre-configured JCA instance for this algorithm
-* `SpecializedSignatureAlgorithm.getJCASignatureInstance()` gets a pre-configured JCA instance for this algorithm
-* `SignatureAlgorithm.getJCASignatureInstancePreHashed()` gets  a pre-configured JCA instance for pre-hashed data for this algorithm
-* `SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed()` gets  a pre-configured JCA instance for pre-hashed data for this algorithm
+* `SignatureAlgorithm.signWithJCA { initSign(key); update(data); sign() }` allows transparent signing using the JCA
+* `SignatureAlgorithm.signWithJCAPreHashed { initSign(key); update(data); sign() }` allows transparent signing of pre-hashed data using the JCA
+* `SignatureAlgorithm.signWithJCA { initSign(key); update(data); sign() }` allows transparent signing using the JCA
+* `SignatureAlgorithm.signWithJCAPreHashed { initSign(key); update(data); sign() }` allows transparent signing of pre-hashed data using the JCA
 
 * `Digest.jcaPSSParams` returns a sane default `PSSParameterSpec` for computing PSS signatures
 * `Digest.jcaName` returns the JCA name of the digest

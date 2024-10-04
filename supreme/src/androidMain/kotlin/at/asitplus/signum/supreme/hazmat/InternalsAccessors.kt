@@ -1,7 +1,6 @@
 package at.asitplus.signum.supreme.hazmat
 
-import at.asitplus.signum.indispensable.getJCASignatureInstance
-import at.asitplus.signum.supreme.HazardousMaterials
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.supreme.os.AndroidKeystoreSigner
 import at.asitplus.signum.supreme.sign.AndroidEphemeralSigner
 import at.asitplus.signum.supreme.sign.EphemeralKey

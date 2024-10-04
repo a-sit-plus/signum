@@ -1,6 +1,6 @@
 package at.asitplus.signum.supreme.hazmat
 
-import at.asitplus.signum.supreme.HazardousMaterials
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.supreme.sign.EphemeralKey
 import at.asitplus.signum.supreme.sign.EphemeralKeyBase
 import at.asitplus.signum.supreme.sign.EphemeralSigner

@@ -48,16 +48,17 @@ inline fun <T: CryptoSignature.RawByteEncodable, S: CryptoSignature.RawByteEncod
         is SignatureResult.Error -> this
     }
 
+inline fun <T: CryptoSignature.RawByteEncodable> KmmResult<T>.asSignatureResult() =
+    this.fold(
+        onSuccess = { SignatureResult.Success(it) },
+        onFailure = { SignatureResult.FromException(it) })
+
 /** Modifies the contained [CryptoSignature], usually in order to reinterpret it as a more narrow type. */
 inline fun <T: CryptoSignature.RawByteEncodable, S: CryptoSignature.RawByteEncodable> SignatureResult<T>
         .modify(block: KmmResult<T>.()->KmmResult<S>) =
-    catching { this.signature }.block().fold(
-        onSuccess = { SignatureResult.Success(it) },
-        onFailure = { SignatureResult.FromException(it) })
+    catching { this.signature }.block().asSignatureResult()
 
 /** Runs the block, catches exceptions, and maps to [SignatureResult].
  * @see SignatureResult.FromException */
 internal inline fun signCatching(fn: ()->CryptoSignature.RawByteEncodable): SignatureResult<*> =
-    catching { fn() }.fold(
-        onSuccess = { SignatureResult.Success(it) },
-        onFailure = { SignatureResult.FromException(it) })
+    catching { fn() }.asSignatureResult()

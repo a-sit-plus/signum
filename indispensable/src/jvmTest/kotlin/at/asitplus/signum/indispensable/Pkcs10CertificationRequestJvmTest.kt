@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.io.ensureSize
@@ -26,10 +27,11 @@ import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.interfaces.ECPublicKey
 
-internal fun X509SignatureAlgorithm.getContentSigner(key: PrivateKey) =
-    getJCASignatureInstance().getOrThrow().algorithm.let {
-        JcaContentSignerBuilder(it).build(key)
-    }
+@OptIn(HazardousMaterials::class)
+internal fun X509SignatureAlgorithm.getContentSigner(key: PrivateKey) : ContentSigner {
+    val algorithm = getJCASignatureInstance(provider = null, forSigning = false).getOrThrow().algorithm
+    return JcaContentSignerBuilder(algorithm).build(key)
+}
 
 @OptIn(ExperimentalStdlibApi::class)
 class Pkcs10CertificationRequestJvmTest : FreeSpec({
@@ -72,11 +74,12 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             ),
             publicKey = cryptoPublicKey
         )
-        val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
+        val signed = signatureAlgorithm.signWithJCA {
             initSign(keyPair.private)
             update(tbsCsr.encodeToDer())
-        }.sign()
-        val csr = Pkcs10CertificationRequest(tbsCsr, signatureAlgorithm, CryptoSignature.parseFromJca(signed,signatureAlgorithm))
+            sign()
+        }.getOrThrow()
+        val csr = Pkcs10CertificationRequest(tbsCsr, signatureAlgorithm, signed)
 
         val kotlinEncoded = csr.encodeToDer()
 
@@ -131,11 +134,12 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
                 )
             )
         )
-        val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
+        val signed = signatureAlgorithm.signWithJCA {
             initSign(keyPair.private)
             update(tbsCsr.encodeToTlv().derEncoded)
-        }.sign()
-        val csr = Pkcs10CertificationRequest(tbsCsr, signatureAlgorithm, CryptoSignature.parseFromJca(signed,signatureAlgorithm))
+            sign()
+        }.getOrThrow()
+        val csr = Pkcs10CertificationRequest(tbsCsr, signatureAlgorithm, signed)
 
         val kotlinEncoded = csr.encodeToTlv().derEncoded
         val jvmEncoded = bcCsr.encoded
@@ -197,11 +201,12 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
                 )
             )
         )
-        val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
+        val signed = signatureAlgorithm.signWithJCA {
             initSign(keyPair.private)
             update(tbsCsr.encodeToTlv().derEncoded)
-        }.sign()
-        val csr = Pkcs10CertificationRequest(tbsCsr, signatureAlgorithm, CryptoSignature.parseFromJca(signed,signatureAlgorithm))
+            sign()
+        }.getOrThrow()
+        val csr = Pkcs10CertificationRequest(tbsCsr, signatureAlgorithm, signed)
 
         val kotlinEncoded = csr.encodeToTlv().derEncoded
         val jvmEncoded = bcCsr.encoded
@@ -314,27 +319,31 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         val signatureAlgorithm1 = X509SignatureAlgorithm.ES256
         val signatureAlgorithm2 = X509SignatureAlgorithm.ES512
 
-        val signed = signatureAlgorithm1.getJCASignatureInstance().getOrThrow().apply {
+        val signed = signatureAlgorithm1.signWithJCA {
             initSign(keyPair.private)
             update(tbsCsr1.encodeToDer())
-        }.sign()
-        val signed1 = signatureAlgorithm1.getJCASignatureInstance().getOrThrow().apply {
+            sign()
+        }.getOrThrow()
+        val signed1 = signatureAlgorithm1.signWithJCA {
             initSign(keyPair.private)
             update(tbsCsr1.encodeToDer())
-        }.sign()
-        val signed11 = signatureAlgorithm2.getJCASignatureInstance().getOrThrow().apply {
+            sign()
+        }.getOrThrow()
+        val signed11 = signatureAlgorithm2.signWithJCA {
             initSign(keyPair.private)
             update(tbsCsr1.encodeToDer())
-        }.sign()
-        val signed2 = signatureAlgorithm1.getJCASignatureInstance().getOrThrow().apply {
+            sign()
+        }.getOrThrow()
+        val signed2 = signatureAlgorithm1.signWithJCA {
             initSign(keyPair1.private)
             update(tbsCsr2.encodeToDer())
-        }.sign()
+            sign()
+        }.getOrThrow()
 
-        val csr = Pkcs10CertificationRequest(tbsCsr1, signatureAlgorithm1, CryptoSignature.parseFromJca(signed,signatureAlgorithm1))
-        val csr1 = Pkcs10CertificationRequest(tbsCsr1, signatureAlgorithm1, CryptoSignature.parseFromJca(signed1,signatureAlgorithm1))
-        val csr11 = Pkcs10CertificationRequest(tbsCsr1, signatureAlgorithm2, CryptoSignature.parseFromJca(signed11,signatureAlgorithm2))
-        val csr2 = Pkcs10CertificationRequest(tbsCsr2, signatureAlgorithm1, CryptoSignature.parseFromJca(signed2,signatureAlgorithm1))
+        val csr = Pkcs10CertificationRequest(tbsCsr1, signatureAlgorithm1, signed)
+        val csr1 = Pkcs10CertificationRequest(tbsCsr1, signatureAlgorithm1, signed1)
+        val csr11 = Pkcs10CertificationRequest(tbsCsr1, signatureAlgorithm2, signed11)
+        val csr2 = Pkcs10CertificationRequest(tbsCsr2, signatureAlgorithm1, signed2)
 
         csr shouldNotBe csr1
         csr1 shouldBe csr1

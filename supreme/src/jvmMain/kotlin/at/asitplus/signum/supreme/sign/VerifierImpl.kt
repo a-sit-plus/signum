@@ -1,13 +1,13 @@
 package at.asitplus.signum.supreme.sign
 
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.indispensable.getJcaPublicKey
-import at.asitplus.signum.indispensable.jcaAlgorithmComponent
-import at.asitplus.signum.indispensable.jcaPSSParams
-import at.asitplus.signum.indispensable.jcaSignatureBytes
+import at.asitplus.signum.indispensable.verifyWithJCA
+import at.asitplus.signum.indispensable.verifyWithJCAPreHashed
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.UnsupportedCryptoException
 import at.asitplus.wrapping
@@ -22,20 +22,15 @@ actual class PlatformVerifierConfiguration internal actual constructor() : DSL.D
     var provider: String? = null
 }
 
-private fun getSigInstance(alg: String, p: String?) =
-    when (p) {
-        null -> Signature.getInstance(alg)
-        else -> Signature.getInstance(alg, p)
-    }
-
+@OptIn(HazardousMaterials::class)
 @Throws(UnsupportedCryptoException::class)
 internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
             (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
              config: PlatformVerifierConfiguration)
 {
     wrapping(asA=::UnsupportedCryptoException) {
-        getSigInstance("${signatureAlgorithm.digest.jcaAlgorithmComponent}withECDSA", config.provider)
-            .initVerify(publicKey.getJcaPublicKey().getOrThrow())
+        signatureAlgorithm.getJCASignatureInstance(config.provider, forSigning = false)
+            .getOrThrow().initVerify(publicKey.getJcaPublicKey().getOrThrow())
     }.getOrThrow()
 }
 
@@ -45,37 +40,30 @@ internal actual fun verifyECDSAImpl
              data: SignatureInput, signature: CryptoSignature.EC,
              config: PlatformVerifierConfiguration)
 {
-    val (input, alg) = when {
-        (data.format == null) -> /* input data is not hashed, let JCA do hashing */
-            Pair(data, "${signatureAlgorithm.digest.jcaAlgorithmComponent}withECDSA")
-        else -> /* input data is already hashed, request raw sig from JCA */
-            Pair(data.convertTo(signatureAlgorithm.digest).getOrThrow(), "NONEwithECDSA")
+    val preHashed = (data.format != null)
+    if (preHashed) {
+        require(data.format == signatureAlgorithm.preHashedSignatureFormat)
+        { "Pre-hashed data (format ${data.format}) unsupported for algorithm $signatureAlgorithm" }
     }
-    getSigInstance(alg, config.provider).run {
+    val block: Signature.(ByteArray) -> Boolean = { sig ->
         initVerify(publicKey.getJcaPublicKey().getOrThrow())
-        input.data.forEach(this::update)
-        val success = verify(signature.jcaSignatureBytes)
-        if (!success)
-            throw InvalidSignature("Signature is cryptographically invalid")
+        data.data.forEach { update(it) }
+        verify(sig)
     }
+    if (preHashed)
+        signatureAlgorithm.verifyWithJCAPreHashed(provider = config.provider, signature, block).getOrThrow()
+    else
+        signatureAlgorithm.verifyWithJCA(provider = config.provider, signature, block).getOrThrow()
 }
 
-private fun getRSAInstance(alg: SignatureAlgorithm.RSA, config: PlatformVerifierConfiguration) =
-    when (alg.padding) {
-        RSAPadding.PKCS1 -> getSigInstance(
-            "${alg.digest.jcaAlgorithmComponent}withRSA", config.provider)
-        RSAPadding.PSS -> getSigInstance("RSASSA-PSS", config.provider).apply {
-            setParameter(alg.digest.jcaPSSParams)
-        }
-    }
-
+@OptIn(HazardousMaterials::class)
 @Throws(UnsupportedCryptoException::class)
 internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
             (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
              config: PlatformVerifierConfiguration) {
     wrapping(asA=::UnsupportedCryptoException) {
-        getRSAInstance(signatureAlgorithm, config)
-            .initVerify(publicKey.getJcaPublicKey().getOrThrow())
+        signatureAlgorithm.getJCASignatureInstance(config.provider, forSigning = false)
+            .getOrThrow().initVerify(publicKey.getJcaPublicKey().getOrThrow())
     }.getOrThrow()
 }
 
@@ -85,11 +73,9 @@ internal actual fun verifyRSAImpl
              data: SignatureInput, signature: CryptoSignature.RSAorHMAC,
              config: PlatformVerifierConfiguration)
 {
-    getRSAInstance(signatureAlgorithm, config).run {
+    signatureAlgorithm.verifyWithJCA(provider = config.provider, signature) { sig ->
         initVerify(publicKey.getJcaPublicKey().getOrThrow())
         data.data.forEach(this::update)
-        val success = verify(signature.jcaSignatureBytes)
-        if (!success)
-            throw InvalidSignature("Signature is cryptographically invalid")
-    }
+        verify(sig)
+    }.getOrThrow()
 }

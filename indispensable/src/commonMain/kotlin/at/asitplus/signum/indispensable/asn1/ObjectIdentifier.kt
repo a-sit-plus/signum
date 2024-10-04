@@ -27,7 +27,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transient vara
         if (nodes[0] * 40u > UByte.MAX_VALUE.toUInt()) throw Asn1Exception("first node too lage!")
         //TODO more sanity checks
 
-        if (nodes.first() > 2u) throw Asn1Exception("OID must start with either 1 or 2")
+        if (nodes.first() > 2u) throw Asn1Exception("OID must start with 0, 1 or 2")
         if (nodes[1] > 39u) throw Asn1Exception("Second segment must be <40")
     }
 
