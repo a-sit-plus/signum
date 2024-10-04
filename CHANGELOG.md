@@ -8,7 +8,8 @@
 * Change CSR to take an actual `CryptoSignature` instead of a ByteArray
 * Introduce shorthand to create CSR from TbsCSR
 * Introduce shorthand to create certificate from TbsCertificate
-
+* Introduce `prepareDigestInput()` to `IosHomebrewAttestation`
+* Remove Legacy iOS Attestation
 
 ### 3.9.0 (Supreme 0.4.0)
 
@@ -16,7 +17,6 @@
 * Rename `parse()` to `deserialize()` in `JwsSigned` and `JweEncrypted` to align with COSE
 * Rename `CryptoPublicKey.Rsa` -> `CryptoPublicKey.RSA` for consistency reasons
 * Add HMAC JCA names, properties used in JSON Web Encryption
-
 ### 3.8.2 (Supreme 0.3.2)
 * Less destructive Hotfix for [KT-71650](https://youtrack.jetbrains.com/issue/KT-71650/Invalid-Objective-C-Header-in-XCFramework)
 * Re-enables export of `Asn1Element.Tag` class to ObjC.
