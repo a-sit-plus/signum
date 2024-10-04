@@ -24,6 +24,8 @@ Better safe than sorry!
         * Remove parsing from iterator
     * Base ASN.1 encoding and decoding on kotlinx-io
         * Remove single element decoding from Iterator
+* Introduce `prepareDigestInput()` to `IosHomebrewAttestation`
+* Remove Legacy iOS Attestation
 
 ### 3.9.0 (Supreme 0.4.0)
 
