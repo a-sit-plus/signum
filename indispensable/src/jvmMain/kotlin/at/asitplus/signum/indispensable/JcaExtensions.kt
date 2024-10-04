@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
@@ -30,7 +31,7 @@ import java.security.spec.RSAPublicKeySpec
 private val certificateFactoryMutex = Mutex()
 private val certFactory = CertificateFactory.getInstance("X.509")
 
-val Digest.jcaPSSParams
+private val Digest.jcaPSSParams
     get() = when (this) {
         Digest.SHA1 -> PSSParameterSpec("SHA-1", "MGF1", MGF1ParameterSpec.SHA1, 20, 1)
         Digest.SHA256 -> PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 32, 1)
@@ -38,7 +39,7 @@ val Digest.jcaPSSParams
         Digest.SHA512 -> PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 64, 1)
     }
 
-internal val isAndroid by lazy {
+private val isAndroid by lazy {
     try { Class.forName("android.os.Build"); true } catch (_: ClassNotFoundException) { false }
 }
 
@@ -47,8 +48,13 @@ private fun sigGetInstance(alg: String, provider: String?) =
         null -> Signature.getInstance(alg)
         else -> Signature.getInstance(alg, provider)
     }
-/** Get a pre-configured JCA instance for this algorithm */
-private fun SignatureAlgorithm.getJCASignatureInstance(provider: String?, forSigning: Boolean) = catching {
+
+/** Get a pre-configured JCA instance for this algorithm.
+ * No guarantees are made regarding encoding format.
+ * @see signWithJCA
+ * @see verifyWithJCA */
+@HazardousMaterials
+fun SignatureAlgorithm.getJCASignatureInstance(provider: String?, forSigning: Boolean) = catching {
     when (this) {
         is SignatureAlgorithm.ECDSA ->
             sigGetInstance(
@@ -74,8 +80,20 @@ private fun SignatureAlgorithm.getJCASignatureInstance(provider: String?, forSig
     }
 }
 
-/** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
-private fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String?, forSigning: Boolean) = catching {
+/** Get a pre-configured JCA instance for this algorithm.
+ * No guarantees are made regarding encoding format.
+ * @see signWithJCA
+ * @see verifyWithJCA */
+@HazardousMaterials
+fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String?, forSigning: Boolean) =
+    this.algorithm.getJCASignatureInstance(provider, forSigning)
+
+/** Get a pre-configured JCA instance for pre-hashed data for this algorithm.
+ * No guarantees are made regarding encoding format.
+ * @see signWithJCAPreHashed
+ * @see verifyWithJCAPreHashed */
+@HazardousMaterials
+fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String?, forSigning: Boolean) = catching {
     when (this) {
         is SignatureAlgorithm.ECDSA -> sigGetInstance(
             if (forSigning)
@@ -97,50 +115,128 @@ private fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String
     }
 }
 
-/** Parses JCA signature from the [Signature] instance returned by [getJCASignatureInstance] */
-private fun parseRSAorHMACFromJcaSignature(input: ByteArray) = CryptoSignature.RSAorHMAC(input)
-/** Parses JCA signature from the [Signature] instance returned by [getJCASignatureInstance] */
-private fun parseECDSAFromJcaSignature(input: ByteArray) = CryptoSignature.EC.fromRawBytes(input)
+/** Get a pre-configured JCA instance for pre-hashed data for this algorithm.
+ * No guarantees are made regarding encoding format.
+ * @see signWithJCAPreHashed
+ * @see verifyWithJCAPreHashed */
+@HazardousMaterials
+fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String?, forSigning: Boolean) =
+    this.algorithm.getJCASignatureInstancePreHashed(provider, forSigning)
 
-private inline fun <reified T> signWithJCATemplate(
-        getSignature: (String?,Boolean)->KmmResult<Signature>,
-        provider: String?,
-        block: Signature.()->ByteArray,
-        mapSignature: (ByteArray)->T) =
-    getSignature(provider,true).mapCatching(block).mapCatching(mapSignature)
 
-fun SignatureAlgorithm.ECDSA.signWithJCA(provider: String? = null, block: Signature.()->ByteArray) =
-    signWithJCATemplate(::getJCASignatureInstance, provider, block, ::parseECDSAFromJcaSignature)
-fun SignatureAlgorithm.RSA.signWithJCA(provider: String? = null, block: Signature.()->ByteArray) =
-    signWithJCATemplate(::getJCASignatureInstance, provider, block, ::parseRSAorHMACFromJcaSignature)
-fun SignatureAlgorithm.HMAC.signWithJCA(provider: String? = null, block: Signature.()->ByteArray) =
-    signWithJCATemplate(::getJCASignatureInstance, provider, block, ::parseRSAorHMACFromJcaSignature)
-fun SignatureAlgorithm.signWithJCA(provider: String? = null, block: Signature.()->ByteArray) =
+@HazardousMaterials
+fun parseRSAorHMACFromJcaSignature(input: ByteArray) = CryptoSignature.RSAorHMAC(input)
+/** Parses JCA signature from the [Signature] instance returned by [getJCASignatureInstance] */
+@HazardousMaterials
+fun parseECDSAFromJcaSignature(input: ByteArray) = CryptoSignature.EC.fromRawBytes(input)
+
+/** Parses a signature produced by the [getJCASignatureInstance] instance.
+ * No guarantees are made regarding the expected format.
+ * @see signWithJCA
+ * @see signWithJCAPreHashed */
+@HazardousMaterials
+fun CryptoSignature.Companion.parseFromJca(
+    input: ByteArray,
+    algorithm: SignatureAlgorithm
+) =  when (algorithm) {
+    is SignatureAlgorithm.ECDSA -> CryptoSignature.EC.parseFromJca(input)
+    else -> CryptoSignature.RSAorHMAC.parseFromJca(input)
+}
+
+/** Parses a signature produced by the [getJCASignatureInstance] instance.
+ * No guarantees are made regarding the expected format.
+ * @see signWithJCA
+ * @see signWithJCAPreHashed */
+@HazardousMaterials
+fun CryptoSignature.Companion.parseFromJca(
+    input: ByteArray,
+    algorithm: SpecializedSignatureAlgorithm
+) = parseFromJca(input, algorithm.algorithm)
+
+/** Parses a signature produced by the [getJCASignatureInstance] instance.
+ * No guarantees are made regarding the expected format.
+ * @see signWithJCA
+ * @see signWithJCAPreHashed */
+@HazardousMaterials
+fun CryptoSignature.EC.Companion.parseFromJca(input: ByteArray) =
+    CryptoSignature.EC.fromRawBytes(input)
+
+/** Parses a signature produced by the [getJCASignatureInstance] instance.
+ * No guarantees are made regarding the expected format.
+ * @see signWithJCA
+ * @see signWithJCAPreHashed */
+@HazardousMaterials
+fun CryptoSignature.RSAorHMAC.Companion.parseFromJca(input: ByteArray) =
+    CryptoSignature.RSAorHMAC(input)
+
+/** Parses a signature produced by the JCA <digest>WithECDSAinP1363Format algorithm. */
+@Deprecated("If you want to specify a format explicitly, use fromRawBytes",
+    ReplaceWith("CryptoSignature.EC.fromRawBytes(input)"))
+fun CryptoSignature.EC.Companion.parseFromJcaP1363(input: ByteArray) =
+    fromRawBytes(input)
+
+/** Allows customized signing using the JCA.
+ * Use as `signWithJCA { initSign(jcaPrivateKey); update(data); sign() }`. */
+@OptIn(HazardousMaterials::class)
+inline fun SignatureAlgorithm.ECDSA.signWithJCA(provider: String? = null, block: Signature.()->ByteArray) =
+    getJCASignatureInstance(provider, true).mapCatching(block).mapCatching(CryptoSignature.EC::parseFromJca)
+/** Allows customized signing using the JCA.
+ * Use as `signWithJCA { initSign(jcaPrivateKey); update(data); sign() }`. */
+@OptIn(HazardousMaterials::class)
+inline fun SignatureAlgorithm.RSA.signWithJCA(provider: String? = null, block: Signature.()->ByteArray) =
+    getJCASignatureInstance(provider, true).mapCatching(block).mapCatching(CryptoSignature.RSAorHMAC::parseFromJca)
+/** Allows customized signing using the JCA.
+ * Use as `signWithJCA { initSign(jcaPrivateKey); update(data); sign() }`. */
+@OptIn(HazardousMaterials::class)
+inline fun SignatureAlgorithm.HMAC.signWithJCA(provider: String? = null, block: Signature.()->ByteArray) =
+    getJCASignatureInstance(provider, true).mapCatching(block).mapCatching(CryptoSignature.RSAorHMAC::parseFromJca)
+/** Allows customized signing using the JCA.
+ * Use as `signWithJCA { initSign(jcaPrivateKey); update(data); sign() }`. */
+inline fun SignatureAlgorithm.signWithJCA(provider: String? = null, block: Signature.()->ByteArray) =
     when (this) {
         is SignatureAlgorithm.ECDSA -> signWithJCA(provider, block)
         is SignatureAlgorithm.RSA -> signWithJCA(provider, block)
         is SignatureAlgorithm.HMAC -> signWithJCA(provider, block)
     }
-fun SpecializedSignatureAlgorithm.signWithJCA(provider: String? = null, block: Signature.()->ByteArray) =
+/** Allows customized signing using the JCA.
+ * Use as `signWithJCA { initSign(jcaPrivateKey); update(data); sign() }`. */
+inline fun SpecializedSignatureAlgorithm.signWithJCA(provider: String? = null, block: Signature.()->ByteArray) =
     this.algorithm.signWithJCA(provider, block)
 
-fun SignatureAlgorithm.ECDSA.signWithJCAPreHashed(provider: String? = null, block: Signature.()->ByteArray) =
-    signWithJCATemplate(::getJCASignatureInstancePreHashed, provider, block, ::parseECDSAFromJcaSignature)
-fun SignatureAlgorithm.RSA.signWithJCAPreHashed(provider: String? = null, block: Signature.()->ByteArray) =
-    signWithJCATemplate(::getJCASignatureInstancePreHashed, provider, block, ::parseRSAorHMACFromJcaSignature)
-fun SignatureAlgorithm.HMAC.signWithJCAPreHashed(provider: String? = null, block: Signature.()->ByteArray) =
-    signWithJCATemplate(::getJCASignatureInstancePreHashed, provider, block, ::parseRSAorHMACFromJcaSignature)
-fun SignatureAlgorithm.signWithJCAPreHashed(provider: String? = null, block: Signature.()->ByteArray) =
+/** Allows customized signing using the JCA.
+ * Use as `signWithJCAPreHashed { initSign(jcaPrivateKey); update(hashBytes); sign() }`. */
+@OptIn(HazardousMaterials::class)
+inline fun SignatureAlgorithm.ECDSA.signWithJCAPreHashed(provider: String? = null, block: Signature.()->ByteArray) =
+    getJCASignatureInstancePreHashed(provider, true).mapCatching(block).map(CryptoSignature.EC::parseFromJca)
+/** Allows customized signing using the JCA.
+ * Use as `signWithJCAPreHashed { initSign(jcaPrivateKey); update(hashBytes); sign() }`. */
+@OptIn(HazardousMaterials::class)
+inline fun SignatureAlgorithm.RSA.signWithJCAPreHashed(provider: String? = null, block: Signature.()->ByteArray) =
+    getJCASignatureInstancePreHashed(provider, true).mapCatching(block).map(CryptoSignature.RSAorHMAC::parseFromJca)
+/** Allows customized signing using the JCA.
+ * Use as `signWithJCAPreHashed { initSign(jcaPrivateKey); update(hashBytes); sign() }`. */
+@OptIn(HazardousMaterials::class)
+inline fun SignatureAlgorithm.HMAC.signWithJCAPreHashed(provider: String? = null, block: Signature.()->ByteArray) =
+    getJCASignatureInstancePreHashed(provider, true).mapCatching(block).map(CryptoSignature.RSAorHMAC::parseFromJca)
+/** Allows customized signing using the JCA.
+ * Use as `signWithJCAPreHashed { initSign(jcaPrivateKey); update(hashBytes); sign() }`. */
+inline fun SignatureAlgorithm.signWithJCAPreHashed(provider: String? = null, block: Signature.()->ByteArray) =
     when (this) {
         is SignatureAlgorithm.ECDSA -> signWithJCAPreHashed(provider, block)
         is SignatureAlgorithm.RSA -> signWithJCAPreHashed(provider, block)
         is SignatureAlgorithm.HMAC -> signWithJCAPreHashed(provider, block)
     }
-fun SpecializedSignatureAlgorithm.signWithJCAPreHashed(provider: String? = null, block: Signature.()->ByteArray) =
+
+/** Allows customized signing using the JCA.
+ * Use as `signWithJCAPreHashed { initSign(jcaPrivateKey); update(hashBytes); sign() }`. */
+inline fun SpecializedSignatureAlgorithm.signWithJCAPreHashed(provider: String? = null, block: Signature.()->ByteArray) =
     this.algorithm.signWithJCAPreHashed(provider, block)
 
-/** we use the more permissive form (DER-encoded for EC) since we do not want to require RawByteEncodable */
-private val CryptoSignature.jcaSignatureBytes: ByteArray
+/** Gets an encoding suitable for verification using [getJCASignatureInstance]. No particular encoding is guaranteed.
+ * @see verifyWithJCA
+ * @see verifyWithJCAPreHashed */
+@HazardousMaterials
+val CryptoSignature.jcaSignatureBytes: ByteArray
     get() = when (this) {
         is CryptoSignature.EC -> encodeToDer()
         is CryptoSignature.RSAorHMAC -> rawByteArray
@@ -148,10 +244,78 @@ private val CryptoSignature.jcaSignatureBytes: ByteArray
 
 data object JCASignatureSuccess
 class JCAVerifyFailedException: Exception("Failed to verify signature")
-fun SignatureAlgorithm.verifyWithJCA(provider: String?, sig: CryptoSignature, block: Signature.(ByteArray)->Boolean) =
+
+/** Allows customized verification of the given signature using the JCA.
+ * Use as `verifyWithJca(cryptoSignature) { sigBytes -> initVerify(jcaPubkey); update(data); verify(sigBytes) }`.
+ *
+ * No particular encoding of the signature bytes is guaranteed.
+ * The only guarantee is that they are suitably encoded for the provided [Signature] instance.
+ */
+@OptIn(HazardousMaterials::class)
+inline fun SignatureAlgorithm.verifyWithJCA(provider: String?, sig: CryptoSignature, block: Signature.(ByteArray)->Boolean) =
     getJCASignatureInstance(provider, false)
         .mapCatching { it.block(sig.jcaSignatureBytes) }
         .mapCatching { if (it) JCASignatureSuccess else throw JCAVerifyFailedException() }
+/** Allows customized verification of the given signature using the JCA.
+ * Use as `verifyWithJca(cryptoSignature) { sigBytes -> initVerify(jcaPubkey); update(data); verify(sigBytes) }`.
+ *
+ * No particular encoding of the signature bytes is guaranteed.
+ * The only guarantee is that they are suitably encoded for the provided [Signature] instance.
+ */
+inline fun SignatureAlgorithm.verifyWithJCA(sig: CryptoSignature, block: Signature.(ByteArray)->Boolean) =
+    verifyWithJCA(null, sig, block)
+/** Allows customized verification of the given signature using the JCA.
+ * Use as `verifyWithJca(cryptoSignature) { sigBytes -> initVerify(jcaPubkey); update(data); verify(sigBytes) }`.
+ *
+ * No particular encoding of the signature bytes is guaranteed.
+ * The only guarantee is that they are suitably encoded for the provided [Signature] instance.
+ */
+inline fun SpecializedSignatureAlgorithm.verifyWithJCA(provider: String, sig: CryptoSignature, block: Signature.(ByteArray)->Boolean) =
+    this.algorithm.verifyWithJCA(provider, sig, block)
+/** Allows customized verification of the given signature using the JCA.
+ * Use as `verifyWithJca(cryptoSignature) { sigBytes -> initVerify(jcaPubkey); update(data); verify(sigBytes) }`.
+ *
+ * No particular encoding of the signature bytes is guaranteed.
+ * The only guarantee is that they are suitably encoded for the provided [Signature] instance.
+ */
+inline fun SpecializedSignatureAlgorithm.verifyWithJCA(sig: CryptoSignature, block: Signature.(ByteArray)->Boolean) =
+    this.algorithm.verifyWithJCA(null, sig, block)
+
+/** Allows customized verification of the given signature using the JCA while providing data in pre-hashed form.
+ * Use as `verifyWithJcaPreHashed(cryptoSignature) { sigBytes -> initVerify(jcaPubkey); update(hashBytes); verify(sigBytes) }`.
+ *
+ * No particular encoding of the signature bytes is guaranteed.
+ * The only guarantee is that they are suitably encoded for the provided [Signature] instance.
+ */
+@OptIn(HazardousMaterials::class)
+inline fun SignatureAlgorithm.verifyWithJCAPreHashed(provider: String?, sig: CryptoSignature, block: Signature.(ByteArray)->Boolean) =
+    getJCASignatureInstancePreHashed(provider, false)
+        .mapCatching { it.block(sig.jcaSignatureBytes) }
+        .mapCatching { if (it) JCASignatureSuccess else throw JCAVerifyFailedException() }
+/** Allows customized verification of the given signature using the JCA while providing data in pre-hashed form.
+ * Use as `verifyWithJcaPreHashed(cryptoSignature) { sigBytes -> initVerify(jcaPubkey); update(hashBytes); verify(sigBytes) }`.
+ *
+ * No particular encoding of the signature bytes is guaranteed.
+ * The only guarantee is that they are suitably encoded for the provided [Signature] instance.
+ */
+inline fun SignatureAlgorithm.verifyWithJCAPreHashed(sig: CryptoSignature, block: Signature.(ByteArray)->Boolean) =
+    verifyWithJCAPreHashed(null, sig, block)
+/** Allows customized verification of the given signature using the JCA while providing data in pre-hashed form.
+ * Use as `verifyWithJcaPreHashed(cryptoSignature) { sigBytes -> initVerify(jcaPubkey); update(hashBytes); verify(sigBytes) }`.
+ *
+ * No particular encoding of the signature bytes is guaranteed.
+ * The only guarantee is that they are suitably encoded for the provided [Signature] instance.
+ */
+inline fun SpecializedSignatureAlgorithm.verifyWithJCAPreHashed(provider: String, sig: CryptoSignature, block: Signature.(ByteArray)->Boolean) =
+    this.algorithm.verifyWithJCAPreHashed(provider, sig, block)
+/** Allows customized verification of the given signature using the JCA while providing data in pre-hashed form.
+ * Use as `verifyWithJcaPreHashed(cryptoSignature) { sigBytes -> initVerify(jcaPubkey); update(hashBytes); verify(sigBytes) }`.
+ *
+ * No particular encoding of the signature bytes is guaranteed.
+ * The only guarantee is that they are suitably encoded for the provided [Signature] instance.
+ */
+inline fun SpecializedSignatureAlgorithm.verifyWithJCAPreHashed(sig: CryptoSignature, block: Signature.(ByteArray)->Boolean) =
+    this.algorithm.verifyWithJCAPreHashed(null, sig, block)
 
 val Digest.jcaName
     get() = when (this) {

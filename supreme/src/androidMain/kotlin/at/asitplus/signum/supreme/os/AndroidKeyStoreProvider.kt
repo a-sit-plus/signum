@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.pki.X509Certificate
@@ -352,6 +353,7 @@ sealed class AndroidKeystoreSigner private constructor(
         }
     }
 
+    @OptIn(HazardousMaterials::class)
     internal suspend fun getJCASignature(signingConfig: AndroidSignerSigningConfiguration): Signature =
         signatureAlgorithm.getJCASignatureInstance().getOrThrow().also {
             if (needsAuthenticationForEveryUse) {
@@ -373,6 +375,7 @@ sealed class AndroidKeystoreSigner private constructor(
         }
     }
 
+    @OptIn(HazardousMaterials::class)
     final override suspend fun sign(
         data: SignatureInput,
         configure: DSLConfigureFn<AndroidSignerSigningConfiguration>
@@ -382,7 +385,7 @@ sealed class AndroidKeystoreSigner private constructor(
             .let { data.data.forEach(it::update); it.sign() }
 
         return@signCatching when (this@AndroidKeystoreSigner) {
-            is ECDSA -> CryptoSignature.EC.parseFromJca(jcaSig).withCurve(publicKey.curve)
+            is ECDSA -> CryptoSignature.EC.parseFromJca(jcaSig)
             is RSA -> CryptoSignature.RSAorHMAC.parseFromJca(jcaSig)
         }
     }}

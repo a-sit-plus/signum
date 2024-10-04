@@ -77,11 +77,11 @@ class X509CertificateJvmTest : FreeSpec({
             subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
             publicKey = cryptoPublicKey
         )
-        val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
+        val test = signatureAlgorithm.signWithJCA {
             initSign(keyPair.private)
             update(tbsCertificate.encodeToTlv().derEncoded)
-        }.sign()
-        val test = CryptoSignature.decodeFromDer(signed)
+            sign()
+        }.getOrThrow()
         val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, test)
 
         val kotlinEncoded = x509Certificate.encodeToDer()
@@ -123,11 +123,11 @@ class X509CertificateJvmTest : FreeSpec({
             subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
             publicKey = cryptoPublicKey
         )
-        val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
+        val test = signatureAlgorithm.signWithJCA {
             initSign(keyPair.private)
             update(tbsCertificate.encodeToTlv().derEncoded)
-        }.sign()
-        val test = CryptoSignature.decodeFromDer(signed)
+            sign()
+        }.getOrThrow()
         val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, test)
 
         repeat(500) {
@@ -275,24 +275,21 @@ class X509CertificateJvmTest : FreeSpec({
             X509Certificate
         */
 
-        val signed1 = signatureAlgorithm256.getJCASignatureInstance().getOrThrow().apply {
+        val signature1 = signatureAlgorithm256.signWithJCA {
             initSign(keyPair.private)
             update(tbsCertificate1.encodeToTlv().derEncoded)
-        }.sign()
-        val signed2 = signatureAlgorithm256.getJCASignatureInstance().getOrThrow().apply {
+            sign()
+        }.getOrThrow()
+        val signature2 = signatureAlgorithm256.signWithJCA {
             initSign(keyPair.private)
             update(tbsCertificate2.encodeToTlv().derEncoded)
-        }.sign()
-        val signed3 = signatureAlgorithm512.getJCASignatureInstance().getOrThrow().apply {
+            sign()
+        }.getOrThrow()
+        val signature3 = signatureAlgorithm512.signWithJCA {
             initSign(keyPair.private)
             update(tbsCertificate3.encodeToTlv().derEncoded)
-        }.sign()
-        val signature1 =
-            (CryptoSignature.decodeFromDer(signed1) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
-        val signature2 =
-            (CryptoSignature.decodeFromDer(signed2) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_256_R_1)
-        val signature3 =
-            (CryptoSignature.decodeFromDer(signed3) as CryptoSignature.EC.IndefiniteLength).withCurve(ECCurve.SECP_521_R_1)
+            sign()
+        }.getOrThrow()
         val x509Certificate1 = X509Certificate(tbsCertificate1, signatureAlgorithm256, signature1)
         val x509Certificate2 = X509Certificate(tbsCertificate2, signatureAlgorithm256, signature2)
         val x509Certificate3 = X509Certificate(tbsCertificate3, signatureAlgorithm512, signature3)
