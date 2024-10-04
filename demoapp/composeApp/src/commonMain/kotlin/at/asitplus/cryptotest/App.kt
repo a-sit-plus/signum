@@ -123,9 +123,10 @@ internal fun App() {
         var currentSigner by remember { mutableStateOf<KmmResult<Signer>?>(null) }
         val currentKey by getter { currentSigner?.mapCatching(Signer::publicKey) }
         val currentKeyStr by getter {
-            currentKey?.fold(onSuccess = {
-                it.toString()
-            },
+            currentKey?.fold(
+                onSuccess = {
+                    it.toString()
+                },
                 onFailure = {
                     Napier.e("Key failed", it)
                     "${it::class.simpleName ?: "<unnamed>"}: ${it.message}"
@@ -133,7 +134,7 @@ internal fun App() {
         }
         val currentAttestation by getter { (currentSigner?.getOrNull() as? Signer.Attestable<*>)?.attestation }
         val currentAttestationStr by getter {
-            currentAttestation?.jsonEncoded?.also { Napier.d { it } } ?: ""
+            currentAttestation?.jsonEncoded?.also { Napier.d { "Current Attestation: $it" } } ?: ""
         }
         val signingPossible by getter { currentKey?.isSuccess == true }
         var signatureData by remember { mutableStateOf<KmmResult<CryptoSignature>?>(null) }
@@ -310,8 +311,8 @@ internal fun App() {
                                 when (val alg = keyAlgorithm.algorithm) {
                                     is SignatureAlgorithm.ECDSA -> {
                                         this@createSigningKey.ec {
-                                            curve = alg.requiredCurve
-                                                ?: ECCurve.entries.find { it.nativeDigest == alg.digest }!!
+                                            curve = alg.requiredCurve ?:
+                                                ECCurve.entries.find { it.nativeDigest == alg.digest }!!
                                             digests = setOf(alg.digest)
                                         }
                                     }

@@ -24,7 +24,7 @@ suspend fun Signer.sign(tbsCertificate: TbsCertificate): KmmResult<X509Certifica
 }
 
 /**
- * Shorthand helper to creat a [Pkcs10CertificationRequest] by signing [tbsCsr]
+ * Shorthand helper to create a [Pkcs10CertificationRequest] by signing [tbsCsr]
  */
 suspend fun Signer.sign(tbsCsr: TbsCertificationRequest): KmmResult<Pkcs10CertificationRequest> {
     val toX509SignatureAlgorithm =
