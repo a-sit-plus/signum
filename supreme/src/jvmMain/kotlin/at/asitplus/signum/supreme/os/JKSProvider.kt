@@ -2,24 +2,14 @@ package at.asitplus.signum.supreme.os
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.Digest
-import at.asitplus.signum.indispensable.RSAPadding
-import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.X509SignatureAlgorithm
+import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.Asn1Time
-import at.asitplus.signum.indispensable.fromJcaPublicKey
-import at.asitplus.signum.indispensable.getJCASignatureInstance
-import at.asitplus.signum.indispensable.jcaName
-import at.asitplus.signum.indispensable.parseFromJca
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.leaf
-import at.asitplus.signum.indispensable.toJcaCertificate
 import at.asitplus.signum.supreme.UnsupportedCryptoException
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
@@ -148,11 +138,11 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 validUntil = Asn1Time(Clock.System.now() + config.certificateValidityPeriod),
                 publicKey = publicKey
             )
-            val cert = certAlg.getJCASignatureInstance(provider = config.provider).getOrThrow().run {
+            val cert = certAlg.signWithJCA(provider = config.provider) {
                 initSign(keyPair.private)
                 update(tbsCert.encodeToDer())
                 sign()
-            }.let { X509Certificate(tbsCert, certAlg, CryptoSignature.parseFromJca(it, certAlg)) }
+            }.let { X509Certificate(tbsCert, certAlg, it.getOrThrow()) }
             ctx.ks.setKeyEntry(alias, keyPair.private, config.privateKeyPassword,
                             arrayOf(cert.toJcaCertificate().getOrThrow()))
             ctx.markAsDirty()

@@ -33,7 +33,7 @@ class ECMathTest : FreeSpec({
             // if new curves are ever added that violate this assumption,
             //   the algorithms in ECMath must be revisited!
             // the current algorithm only works on this particular class of curve
-            curve.a == curve.coordinateCreator.fromInt(-3)
+            curve.a shouldBe curve.coordinateCreator.fromInt(-3)
         }
     }
     "Addition: group axioms" - {

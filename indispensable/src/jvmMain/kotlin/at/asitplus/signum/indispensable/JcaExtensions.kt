@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -47,10 +48,15 @@ private fun sigGetInstance(alg: String, provider: String?) =
         else -> Signature.getInstance(alg, provider)
     }
 /** Get a pre-configured JCA instance for this algorithm */
-fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) = catching {
+private fun SignatureAlgorithm.getJCASignatureInstance(provider: String?, forSigning: Boolean) = catching {
     when (this) {
         is SignatureAlgorithm.ECDSA ->
-            sigGetInstance("${this.digest.jcaAlgorithmComponent}withECDSA", provider)
+            sigGetInstance(
+                if (forSigning)
+                    "${this.digest.jcaAlgorithmComponent}withECDSAinP1363Format"
+                else
+                    "${this.digest.jcaAlgorithmComponent}withECDSA"
+                , provider)
         is SignatureAlgorithm.HMAC ->
             sigGetInstance("Hmac${this.digest.jcaAlgorithmComponent}", provider)
         is SignatureAlgorithm.RSA -> when (this.padding) {
@@ -67,14 +73,16 @@ fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) = catch
         }
     }
 }
-/** Get a pre-configured JCA instance for this algorithm */
-fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =
-    this.algorithm.getJCASignatureInstance(provider)
 
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
-fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) = catching {
+private fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String?, forSigning: Boolean) = catching {
     when (this) {
-        is SignatureAlgorithm.ECDSA -> sigGetInstance("NONEwithECDSA", provider)
+        is SignatureAlgorithm.ECDSA -> sigGetInstance(
+            if (forSigning)
+                "NONEwithECDSAinP1363Format"
+            else
+                "NONEwithECDSA"
+            , provider)
         is SignatureAlgorithm.RSA -> when (this.padding) {
             RSAPadding.PKCS1 -> when (isAndroid) {
                 true -> sigGetInstance("NONEwithRSA", provider)
@@ -89,9 +97,61 @@ fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null
     }
 }
 
-/** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
-fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) =
-    this.algorithm.getJCASignatureInstancePreHashed(provider)
+/** Parses JCA signature from the [Signature] instance returned by [getJCASignatureInstance] */
+private fun parseRSAorHMACFromJcaSignature(input: ByteArray) = CryptoSignature.RSAorHMAC(input)
+/** Parses JCA signature from the [Signature] instance returned by [getJCASignatureInstance] */
+private fun parseECDSAFromJcaSignature(input: ByteArray) = CryptoSignature.EC.fromRawBytes(input)
+
+private inline fun <reified T> signWithJCATemplate(
+        getSignature: (String?,Boolean)->KmmResult<Signature>,
+        provider: String?,
+        block: Signature.()->ByteArray,
+        mapSignature: (ByteArray)->T) =
+    getSignature(provider,true).mapCatching(block).mapCatching(mapSignature)
+
+fun SignatureAlgorithm.ECDSA.signWithJCA(provider: String? = null, block: Signature.()->ByteArray) =
+    signWithJCATemplate(::getJCASignatureInstance, provider, block, ::parseECDSAFromJcaSignature)
+fun SignatureAlgorithm.RSA.signWithJCA(provider: String? = null, block: Signature.()->ByteArray) =
+    signWithJCATemplate(::getJCASignatureInstance, provider, block, ::parseRSAorHMACFromJcaSignature)
+fun SignatureAlgorithm.HMAC.signWithJCA(provider: String? = null, block: Signature.()->ByteArray) =
+    signWithJCATemplate(::getJCASignatureInstance, provider, block, ::parseRSAorHMACFromJcaSignature)
+fun SignatureAlgorithm.signWithJCA(provider: String? = null, block: Signature.()->ByteArray) =
+    when (this) {
+        is SignatureAlgorithm.ECDSA -> signWithJCA(provider, block)
+        is SignatureAlgorithm.RSA -> signWithJCA(provider, block)
+        is SignatureAlgorithm.HMAC -> signWithJCA(provider, block)
+    }
+fun SpecializedSignatureAlgorithm.signWithJCA(provider: String? = null, block: Signature.()->ByteArray) =
+    this.algorithm.signWithJCA(provider, block)
+
+fun SignatureAlgorithm.ECDSA.signWithJCAPreHashed(provider: String? = null, block: Signature.()->ByteArray) =
+    signWithJCATemplate(::getJCASignatureInstancePreHashed, provider, block, ::parseECDSAFromJcaSignature)
+fun SignatureAlgorithm.RSA.signWithJCAPreHashed(provider: String? = null, block: Signature.()->ByteArray) =
+    signWithJCATemplate(::getJCASignatureInstancePreHashed, provider, block, ::parseRSAorHMACFromJcaSignature)
+fun SignatureAlgorithm.HMAC.signWithJCAPreHashed(provider: String? = null, block: Signature.()->ByteArray) =
+    signWithJCATemplate(::getJCASignatureInstancePreHashed, provider, block, ::parseRSAorHMACFromJcaSignature)
+fun SignatureAlgorithm.signWithJCAPreHashed(provider: String? = null, block: Signature.()->ByteArray) =
+    when (this) {
+        is SignatureAlgorithm.ECDSA -> signWithJCAPreHashed(provider, block)
+        is SignatureAlgorithm.RSA -> signWithJCAPreHashed(provider, block)
+        is SignatureAlgorithm.HMAC -> signWithJCAPreHashed(provider, block)
+    }
+fun SpecializedSignatureAlgorithm.signWithJCAPreHashed(provider: String? = null, block: Signature.()->ByteArray) =
+    this.algorithm.signWithJCAPreHashed(provider, block)
+
+/** we use the more permissive form (DER-encoded for EC) since we do not want to require RawByteEncodable */
+private val CryptoSignature.jcaSignatureBytes: ByteArray
+    get() = when (this) {
+        is CryptoSignature.EC -> encodeToDer()
+        is CryptoSignature.RSAorHMAC -> rawByteArray
+    }
+
+data object JCASignatureSuccess
+class JCAVerifyFailedException: Exception("Failed to verify signature")
+fun SignatureAlgorithm.verifyWithJCA(provider: String?, sig: CryptoSignature, block: Signature.(ByteArray)->Boolean) =
+    getJCASignatureInstance(provider, false)
+        .mapCatching { it.block(sig.jcaSignatureBytes) }
+        .mapCatching { if (it) JCASignatureSuccess else throw JCAVerifyFailedException() }
 
 val Digest.jcaName
     get() = when (this) {
@@ -167,47 +227,6 @@ fun CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<
         is ECPublicKey -> CryptoPublicKey.EC.fromJcaPublicKey(publicKey)
         else -> KmmResult.failure(IllegalArgumentException("Unsupported Key Type"))
     }
-
-/**
- * In Java EC signatures are returned as DER-encoded, RSA signatures however are raw bytearrays
- */
-val CryptoSignature.jcaSignatureBytes: ByteArray
-    get() = when (this) {
-        is CryptoSignature.EC -> encodeToDer()
-        is CryptoSignature.RSAorHMAC -> rawByteArray
-    }
-
-/**
- * In Java EC signatures are returned as DER-encoded, RSA signatures however are raw bytearrays
- */
-fun CryptoSignature.Companion.parseFromJca(
-    input: ByteArray,
-    algorithm: SignatureAlgorithm
-): CryptoSignature =
-    if (algorithm is SignatureAlgorithm.ECDSA)
-        CryptoSignature.EC.parseFromJca(input)
-    else
-        CryptoSignature.RSAorHMAC.parseFromJca(input)
-
-fun CryptoSignature.Companion.parseFromJca(
-    input: ByteArray,
-    algorithm: SpecializedSignatureAlgorithm
-) = parseFromJca(input, algorithm.algorithm)
-
-/**
- * Parses a signature produced by the JCA digestwithECDSA algorithm.
- */
-fun CryptoSignature.EC.Companion.parseFromJca(input: ByteArray) =
-    CryptoSignature.EC.decodeFromDer(input)
-
-/**
- * Parses a signature produced by the JCA digestWithECDSAinP1363Format algorithm.
- */
-fun CryptoSignature.EC.Companion.parseFromJcaP1363(input: ByteArray) =
-    CryptoSignature.EC.fromRawBytes(input)
-
-fun CryptoSignature.RSAorHMAC.Companion.parseFromJca(input: ByteArray) =
-    CryptoSignature.RSAorHMAC(input)
 
 /**
  * Converts this [X509Certificate] to a [java.security.cert.X509Certificate].
