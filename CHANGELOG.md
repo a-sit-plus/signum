@@ -8,6 +8,8 @@
 * Change CSR to take an actual `CryptoSignature` instead of a ByteArray
 * Introduce shorthand to create CSR from TbsCSR
 * Introduce shorthand to create certificate from TbsCertificate
+* Add `SignatureAlgorithm.signWithJCA` and `SignatureAlgorithm.verifyWithJCA` helpers.
+* Deprecate `SignatureAlgorithm.getJCASignatureInstance`, `CryptoSignature.parseFromJCA` etc as hazmat.
 
 
 ### 3.9.0 (Supreme 0.4.0)
