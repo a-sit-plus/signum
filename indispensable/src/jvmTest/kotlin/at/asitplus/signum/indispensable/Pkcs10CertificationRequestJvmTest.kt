@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.io.ensureSize
@@ -26,9 +27,9 @@ import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.interfaces.ECPublicKey
 
+@OptIn(HazardousMaterials::class)
 internal fun X509SignatureAlgorithm.getContentSigner(key: PrivateKey) : ContentSigner {
-    lateinit var algorithm: String
-    signWithJCA { algorithm = this.algorithm; TODO() }
+    val algorithm = getJCASignatureInstance(provider = null, forSigning = false).getOrThrow().algorithm
     return JcaContentSignerBuilder(algorithm).build(key)
 }
 
