@@ -253,6 +253,11 @@ sealed class Asn1Element(
          */
         infix fun withNumber(number: ULong) = Tag(number, constructed = isConstructed, tagClass = tagClass)
 
+        /**
+         * Creates a copy of this tag, overriding [tagValue], but keeping [isConstructed] and [tagClass]
+         */
+        infix fun withNumber(number: ULong) = Tag(number, constructed = isConstructed, tagClass = tagClass)
+
         constructor(tagValue: ULong, constructed: Boolean, tagClass: TagClass = TagClass.UNIVERSAL) : this(
             tagValue, encode(tagClass, constructed, tagValue)
         )

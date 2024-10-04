@@ -179,7 +179,7 @@ typealias IosSignerSigningConfiguration = PlatformSigningProviderSignerSigningCo
 sealed class IosSigner(final override val alias: String,
                        private val metadata: IosKeyMetadata,
                        private val signerConfig: IosSignerConfiguration)
-    : PlatformSigningProviderSigner<IosSignerSigningConfiguration, IosHomebrewAttestation> {
+    : PlatformSigningProviderSigner<IosSignerSigningConfiguration>, Signer.Attestable<IosHomebrewAttestation> {
 
     override val mayRequireUserUnlock get() = needsAuthentication
     val needsAuthentication get() = metadata.needsUnlock
