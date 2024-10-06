@@ -8,6 +8,7 @@
 * Change CSR to take an actual `CryptoSignature` instead of a ByteArray
 * Introduce shorthand to create CSR from TbsCSR
 * Introduce shorthand to create certificate from TbsCertificate
+* Remove requirement from CSR to have certificate extensions
 * Add type parameter to `JwsSigned` for its payload
 * Add type parameter to `JweDecrypted` for its payload
 
