@@ -41,7 +41,6 @@ data class TbsCertificationRequest(
         version: Int = 0,
         attributes: List<Pkcs10CertificationRequestAttribute>? = null,
     ) : this(version, subjectName, publicKey, mutableListOf<Pkcs10CertificationRequestAttribute>().also { attrs ->
-        if (extensions.isEmpty()) throw IllegalArgumentException("No extensions provided!")
         attributes?.let { attrs.addAll(it) }
         attrs.add(Pkcs10CertificationRequestAttribute(KnownOIDs.extensionRequest, Asn1.Sequence {
             extensions.forEach { +it }
