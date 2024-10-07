@@ -377,14 +377,13 @@ inline fun ByteArray.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> = iterat
 
 
 /**
- * Decodes an ULong from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
+ * Decodes an BigInteger from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
  * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
  *
- * @return the decoded ULong and the underlying varint-encoded bytes as `ByteArray`
+ * @return the decoded BigInteger and the underlying varint-encoded bytes as `ByteArray`
  * @throws IllegalArgumentException if the number is larger than [ULong.MAX_VALUE]
  */
 fun Iterator<Byte>.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> {
-    var offset = 0
     var result = BigInteger.ZERO
     val mask = BigInteger.fromUByte(0x7Fu)
     val accumulator = mutableListOf<Byte>()
