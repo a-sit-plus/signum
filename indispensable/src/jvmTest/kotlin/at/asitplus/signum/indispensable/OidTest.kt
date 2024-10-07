@@ -1,10 +1,13 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.encoding.fromBigintOrNull
+import at.asitplus.signum.indispensable.asn1.encoding.toBigInteger
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
+import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.property.Arb
@@ -14,7 +17,10 @@ import io.kotest.property.arbitrary.intArray
 import io.kotest.property.arbitrary.positiveInt
 import io.kotest.property.checkAll
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalUuidApi::class)
 class OidTest : FreeSpec({
     "OID test" - {
 
@@ -122,6 +128,29 @@ class OidTest : FreeSpec({
                         parsed.hashCode() shouldNotBe oid1.hashCode()
                     }
                 }
+            }
+        }
+
+        "UUID" - {
+            "550e8400-e29b-41d4-a716-446655440000" {
+                val uuid = Uuid.parse("550e8400-e29b-41d4-a716-446655440000")
+                val bigint = uuid.toBigInteger()
+                bigint.toString() shouldBe "113059749145936325402354257176981405696"
+                Uuid.fromBigintOrNull(bigint) shouldBe uuid
+            }
+
+            withData(nameFn = { it.toString() }, List(1000) { Uuid.random() }) {
+                val bigint = it.toBigInteger()
+                bigint shouldBe BigInteger.parseString(it.toHexString(), 16)
+                Uuid.fromBigintOrNull(bigint) shouldBe it
+
+                val oid = ObjectIdentifier(it)
+                oid.nodes.size shouldBe 3
+                oid.nodes.first() shouldBe  BigInteger(2)
+                oid.nodes[1] shouldBe BigInteger(25)
+                oid.nodes.last() shouldBe bigint
+
+                oid.toString() shouldBe "2.25.$bigint"
             }
         }
     }

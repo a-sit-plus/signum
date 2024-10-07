@@ -3,7 +3,9 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decode
 import at.asitplus.signum.indispensable.asn1.encoding.decodeAsn1VarBigInt
 import at.asitplus.signum.indispensable.asn1.encoding.toAsn1VarInt
+import at.asitplus.signum.indispensable.asn1.encoding.toBigInteger
 import com.ionspin.kotlin.bignum.integer.BigInteger
+import com.ionspin.kotlin.bignum.integer.Sign
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -11,6 +13,8 @@ import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 private val BIGINT_40 = BigInteger.fromUByte(40u)
 
@@ -33,6 +37,18 @@ class ObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transient vara
         if (nodes.first() > 2u) throw Asn1Exception("OID must start with either 1 or 2")
         if (nodes[1] > 39u) throw Asn1Exception("Second segment must be <40")
     }
+
+    /**
+     * Creates an OID in the 2.25 subtree that requires no formal registration.
+     * E.g. the UUID `550e8400-e29b-41d4-a716-446655440000` results in the OID
+     * `2.25.113059749145936325402354257176981405696`
+     */
+    @OptIn(ExperimentalUuidApi::class)
+    constructor(uuid: Uuid) : this(
+        BigInteger.fromByte(2),
+        BigInteger.fromByte(25),
+        uuid.toBigInteger()
+    )
 
     /**
      * @param nodes OID Tree nodes passed in order (e.g. 1u, 2u, 96u, …)
