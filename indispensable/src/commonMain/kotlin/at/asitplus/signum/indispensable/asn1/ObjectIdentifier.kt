@@ -25,14 +25,14 @@ private val BIGINT_40 = BigInteger.fromUByte(40u)
  * @throws Asn1Exception if less than two nodes are supplied, the first node is >2 or the second node is >39
  */
 @Serializable(with = ObjectIdSerializer::class)
-class ObjectIdentifier @Throws(Asn1Exception::class) constructor(
+class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
     val bytes: ByteArray,
     @Transient private val _nodes: List<BigInteger>? = null, dontVerify: Boolean = false
 ) :
     Asn1Encodable<Asn1Primitive> {
 
     init {
-        if (_nodes == null || dontVerify) {
+        if (_nodes == null || !dontVerify) {
             //Verify that everything can be parsed into nodes
             if (bytes.isEmpty()) throw Asn1Exception("Empty OIDs are not supported")
             var index = 1
