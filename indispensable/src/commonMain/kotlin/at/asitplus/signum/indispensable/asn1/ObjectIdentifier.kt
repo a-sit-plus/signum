@@ -1,8 +1,9 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.decode
-import at.asitplus.signum.indispensable.asn1.encoding.decodeAsn1VarUInt
+import at.asitplus.signum.indispensable.asn1.encoding.decodeAsn1VarBigInt
 import at.asitplus.signum.indispensable.asn1.encoding.toAsn1VarInt
+import com.ionspin.kotlin.bignum.integer.BigInteger
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -10,6 +11,8 @@ import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+
+private val BIGINT_40 = BigInteger.fromUByte(40u)
 
 /**
  * ASN.1 OBJECT IDENTIFIER featuring the most cursed encoding of numbers known to man, which probably surfaced due to an ungodly combination
@@ -19,12 +22,12 @@ import kotlinx.serialization.encoding.Encoder
  * @throws Asn1Exception if less than two nodes are supplied, the first node is >2 or the second node is >39
  */
 @Serializable(with = ObjectIdSerializer::class)
-class ObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transient vararg val nodes: UInt) :
+class ObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transient vararg val nodes: BigInteger) :
     Asn1Encodable<Asn1Primitive> {
 
     init {
         if (nodes.size < 2) throw Asn1StructuralException("at least two nodes required!")
-        if (nodes[0] * 40u > UByte.MAX_VALUE.toUInt()) throw Asn1Exception("first node too lage!")
+        if ((nodes[0] * BIGINT_40) > UByte.MAX_VALUE.toUInt()) throw Asn1Exception("first node too lage!")
         //TODO more sanity checks
 
         if (nodes.first() > 2u) throw Asn1Exception("OID must start with either 1 or 2")
@@ -32,9 +35,17 @@ class ObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transient vara
     }
 
     /**
+     * @param nodes OID Tree nodes passed in order (e.g. 1u, 2u, 96u, …)
+     * @throws Asn1Exception if less than two nodes are supplied, the first node is >2 or the second node is >39
+     */
+    constructor(vararg ints: UInt) : this(*(ints.map { BigInteger.fromUInt(it) }.toTypedArray()))
+
+
+    /**
      * @param oid in human-readable format (e.g. "1.2.96")
      */
-    constructor(oid: String) : this(*(oid.split(if (oid.contains('.')) '.' else ' ')).map { it.toUInt() }.toUIntArray())
+    constructor(oid: String) : this(*(oid.split(if (oid.contains('.')) '.' else ' ')).map { BigInteger.parseString(it) }
+        .toTypedArray())
 
     /**
      * @return human-readable format (e.g. "1.2.96")
@@ -48,7 +59,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transient vara
     }
 
     override fun hashCode(): Int {
-        return nodes.hashCode()
+        return bytes.contentHashCode()
     }
 
 
@@ -58,7 +69,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transient vara
     val bytes: ByteArray by lazy {
         nodes.slice(2..<nodes.size).map { it.toAsn1VarInt() }.fold(
             byteArrayOf(
-                (nodes[0] * 40u + nodes[1]).toUByte().toByte()
+                (nodes[0] * BIGINT_40 + nodes[1]).ubyteValue(exactRequired = true).toByte()
             )
         ) { acc, bytes -> acc + bytes }
     }
@@ -92,16 +103,16 @@ class ObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transient vara
             if (rawValue.isEmpty()) throw Asn1Exception("Empty OIDs are not supported")
             val (first, second) =
                 if (rawValue[0] >= 80) {
-                    2u to rawValue[0].toUByte() - 80u
+                    BigInteger.fromUByte(2u) to BigInteger.fromUInt(rawValue[0].toUByte() - 80u)
                 } else {
-                    rawValue[0].toUByte() / 40u to rawValue[0].toUByte() % 40u
+                    BigInteger.fromUInt(rawValue[0].toUByte() / 40u) to BigInteger.fromUInt(rawValue[0].toUByte() % 40u)
                 }
 
             var index = 1
             val collected = mutableListOf(first, second)
             while (index < rawValue.size) {
                 if (rawValue[index] >= 0) {
-                    collected += rawValue[index].toUInt()
+                    collected += BigInteger.fromUInt(rawValue[index].toUInt())
                     index++
                 } else {
                     val currentNode = mutableListOf<Byte>()
@@ -111,10 +122,10 @@ class ObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transient vara
                     }
                     currentNode += rawValue[index]
                     index++
-                    collected += currentNode.decodeAsn1VarUInt().first
+                    collected += currentNode.decodeAsn1VarBigInt().first
                 }
             }
-            return ObjectIdentifier(*collected.toUIntArray())
+            return ObjectIdentifier(*collected.toTypedArray())
         }
     }
 }
