@@ -26,49 +26,23 @@ private val BIGINT_40 = BigInteger.fromUByte(40u)
 @Serializable(with = ObjectIdSerializer::class)
 class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
     bytes: ByteArray?,
-    nodes: List<BigInteger>? = null,
-    dontVerify: Boolean = false
+    nodes: List<BigInteger>? = null
 ) :
     Asn1Encodable<Asn1Primitive> {
     init {
-
-        //we're not even declaring these, since this is an implementation error on our end
-        if (bytes == null && nodes == null)
+        if (bytes == null && nodes == null) {
+            //we're not even declaring this, since this is an implementation error on our end
             throw IllegalArgumentException("either nodes or bytes required")
-        if (bytes?.isEmpty() == true && nodes?.isEmpty() == true)
-            throw IllegalArgumentException("either nodes or bytes required")
-
-        if (!dontVerify && bytes != null) {
-            //Verify that everything can be parsed into nodes
-            if (bytes.isEmpty()) throw Asn1Exception("Empty OIDs are not supported")
-            var index = 1
-            while (index < bytes.size) {
-                if (bytes[index] >= 0) {
-                    index++
-                } else {
-                    val currentNode = mutableListOf<Byte>()
-                    while (bytes[index] < 0) {
-                        currentNode += bytes[index] //+= parsed
-                        index++
-                    }
-                    currentNode += bytes[index]
-                    index++
-                    val consumed = currentNode.iterator().consumeVarIntEncoded()
-                    @OptIn(ExperimentalStdlibApi::class)
-                    if (consumed != currentNode) throw Asn1Exception(
-                        "Trailing bytes in OID Node ${
-                            currentNode.toByteArray().toHexString(HexFormat.UpperCase)
-                        }"
-                    )
-                }
-            }
         }
+        if (bytes?.isEmpty() == true || nodes?.isEmpty() == true)
+            throw Asn1Exception("Empty OIDs are not supported")
     }
 
 
     /**
-     * Cursed encoding of OID nodes. A sacrifice of pristine numbers requested by past gods of the netherrealm.
-     * Lazily evaluated
+     * Efficient, but cursed encoding of OID nodes, see [Microsoft's KB entry on OIDs](https://learn.microsoft.com/en-us/windows/win32/seccertenroll/about-object-identifier)
+     * for details.
+     * Lazily evaluated.
      */
     val bytes: ByteArray by if (bytes != null) lazyOf(bytes) else lazy {
         nodes ?: throw Asn1Exception("Empty nodes are not supported")
@@ -113,7 +87,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
      */
     @OptIn(ExperimentalUuidApi::class)
     constructor(uuid: Uuid) : this(
-        byteArrayOf((2 * 40 + 25).toUByte().toByte(), *uuid.toBigInteger().toAsn1VarInt()), dontVerify = true
+        bytes = byteArrayOf((2 * 40 + 25).toUByte().toByte(), *uuid.toBigInteger().toAsn1VarInt())
     )
 
     /**
@@ -121,8 +95,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
      * @throws Asn1Exception if less than two nodes are supplied, the first node is >2 or the second node is >39
      */
     constructor(vararg nodes: UInt) : this(
-        nodes.toOidBytes(),
-        dontVerify = true
+        bytes = nodes.toOidBytes()
     )
 
     /**
@@ -132,7 +105,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
     constructor(vararg nodes: BigInteger) : this(bytes = null, nodes = nodes.asList())
 
     /**
-     * @param oid in human-readable format (e.g. "1.2.96")
+     * @param oid OID string in human-readable format (e.g. "1.2.96" or "1 2 96")
      */
     constructor(oid: String) : this(*(oid.split(if (oid.contains('.')) '.' else ' ')).map { BigInteger.parseString(it) }
         .toTypedArray())
@@ -181,17 +154,6 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
          */
         @Throws(Asn1Exception::class)
         fun parse(rawValue: ByteArray): ObjectIdentifier = ObjectIdentifier(rawValue)
-
-        private fun Iterator<Byte>.consumeVarIntEncoded(): MutableList<Byte> {
-            val accumulator = mutableListOf<Byte>()
-            while (hasNext()) {
-                val curByte = next()
-                val current = BigInteger(curByte.toUByte().toInt())
-                accumulator += curByte
-                if (current < 0x80.toUByte()) break
-            }
-            return accumulator
-        }
 
         private fun UIntArray.toOidBytes(): ByteArray {
             if (size < 2) throw Asn1StructuralException("at least two nodes required!")
