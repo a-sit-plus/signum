@@ -7,7 +7,6 @@ import at.asitplus.signum.indispensable.asn1.encoding.toBigInteger
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
@@ -26,13 +25,20 @@ private val BIGINT_40 = BigInteger.fromUByte(40u)
  */
 @Serializable(with = ObjectIdSerializer::class)
 class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
-    val bytes: ByteArray,
-    @Transient private val _nodes: List<BigInteger>? = null, dontVerify: Boolean = false
+    bytes: ByteArray?,
+    nodes: List<BigInteger>? = null,
+    dontVerify: Boolean = false
 ) :
     Asn1Encodable<Asn1Primitive> {
-
     init {
-        if (_nodes == null || !dontVerify) {
+
+        //we're not even declaring these, since this is an implementation error on our end
+        if (bytes == null && nodes == null)
+            throw IllegalArgumentException("either nodes or bytes required")
+        if (bytes?.isEmpty() == true && nodes?.isEmpty() == true)
+            throw IllegalArgumentException("either nodes or bytes required")
+
+        if (!dontVerify && bytes != null) {
             //Verify that everything can be parsed into nodes
             if (bytes.isEmpty()) throw Asn1Exception("Empty OIDs are not supported")
             var index = 1
@@ -59,6 +65,47 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
         }
     }
 
+
+    /**
+     * Cursed encoding of OID nodes. A sacrifice of pristine numbers requested by past gods of the netherrealm.
+     * Lazily evaluated
+     */
+    val bytes: ByteArray by if (bytes != null) lazyOf(bytes) else lazy {
+        nodes ?: throw Asn1Exception("Empty nodes are not supported")
+        nodes.toOidBytes()
+    }
+
+    /**
+     * Lazily evaluated list of OID nodes (e.g. `[1, 2, 35, 4654]`)
+     */
+    val nodes by if (nodes != null) lazyOf(nodes) else lazy {
+        bytes ?: throw Asn1Exception("Empty nodes are not supported")
+        val (first, second) =
+            if (bytes[0] >= 80) {
+                BigInteger.fromUByte(2u) to BigInteger.fromUInt(bytes[0].toUByte() - 80u)
+            } else {
+                BigInteger.fromUInt(bytes[0].toUByte() / 40u) to BigInteger.fromUInt(bytes[0].toUByte() % 40u)
+            }
+        var index = 1
+        val collected = mutableListOf(first, second)
+        while (index < bytes.size) {
+            if (bytes[index] >= 0) {
+                collected += BigInteger.fromUInt(bytes[index].toUInt())
+                index++
+            } else {
+                val currentNode = mutableListOf<Byte>()
+                while (bytes[index] < 0) {
+                    currentNode += bytes[index] //+= parsed
+                    index++
+                }
+                currentNode += bytes[index]
+                index++
+                collected += currentNode.decodeAsn1VarBigInt().first
+            }
+        }
+        collected
+    }
+
     /**
      * Creates an OID in the 2.25 subtree that requires no formal registration.
      * E.g. the UUID `550e8400-e29b-41d4-a716-446655440000` results in the OID
@@ -66,7 +113,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
      */
     @OptIn(ExperimentalUuidApi::class)
     constructor(uuid: Uuid) : this(
-        byteArrayOf((2 * 40 + 25).toUByte().toByte(), *uuid.toBigInteger().toAsn1VarInt())
+        byteArrayOf((2 * 40 + 25).toUByte().toByte(), *uuid.toBigInteger().toAsn1VarInt()), dontVerify = true
     )
 
     /**
@@ -82,7 +129,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
      * @param nodes OID Tree nodes passed in order (e.g. 1, 2, 96, …)
      * @throws Asn1Exception if less than two nodes are supplied, the first node is >2, the second node is >39 or any node is negative
      */
-    constructor(vararg nodes: BigInteger) : this(nodes.toOidBytes(), _nodes = nodes.asList())
+    constructor(vararg nodes: BigInteger) : this(bytes = null, nodes = nodes.asList())
 
     /**
      * @param oid in human-readable format (e.g. "1.2.96")
@@ -90,37 +137,6 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
     constructor(oid: String) : this(*(oid.split(if (oid.contains('.')) '.' else ' ')).map { BigInteger.parseString(it) }
         .toTypedArray())
 
-    /**
-     * Lazily evaluated list of OID nodes (e.g. `[1, 2, 35, 4654]`)
-     */
-    val nodes: List<BigInteger> by lazy {
-        if (_nodes != null) _nodes else {
-            val (first, second) =
-                if (bytes[0] >= 80) {
-                    BigInteger.fromUByte(2u) to BigInteger.fromUInt(bytes[0].toUByte() - 80u)
-                } else {
-                    BigInteger.fromUInt(bytes[0].toUByte() / 40u) to BigInteger.fromUInt(bytes[0].toUByte() % 40u)
-                }
-            var index = 1
-            val collected = mutableListOf(first, second)
-            while (index < bytes.size) {
-                if (bytes[index] >= 0) {
-                    collected += BigInteger.fromUInt(bytes[index].toUInt())
-                    index++
-                } else {
-                    val currentNode = mutableListOf<Byte>()
-                    while (bytes[index] < 0) {
-                        currentNode += bytes[index] //+= parsed
-                        index++
-                    }
-                    currentNode += bytes[index]
-                    index++
-                    collected += currentNode.decodeAsn1VarBigInt().first
-                }
-            }
-            collected
-        }
-    }
 
     /**
      * @return human-readable format (e.g. "1.2.96")
@@ -186,7 +202,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
             ) { acc, bytes -> acc + bytes }
         }
 
-        private fun Array<out BigInteger>.toOidBytes(): ByteArray {
+        private fun List<out BigInteger>.toOidBytes(): ByteArray {
             if (size < 2) throw Asn1StructuralException("at least two nodes required!")
             if (first() > 2u) throw Asn1Exception("OID must start with either 1 or 2")
             if (get(1) > 39u) throw Asn1Exception("Second segment must be <40")
