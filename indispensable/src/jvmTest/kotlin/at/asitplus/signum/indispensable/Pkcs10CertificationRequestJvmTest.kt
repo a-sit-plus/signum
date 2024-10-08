@@ -213,6 +213,50 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         parsedFromKotlinCsr.isSignatureValid(JcaContentVerifierProviderBuilder().build(keyPair.public))
     }
 
+    "CSRs with empty extensions match" {
+        val ecPublicKey = keyPair.public as ECPublicKey
+        val cryptoPublicKey = CryptoPublicKey.EC.fromJcaPublicKey(ecPublicKey).getOrThrow()
+
+        // create CSR with bouncycastle
+        val commonName = "localhost"
+        val signatureAlgorithm = X509SignatureAlgorithm.ES256
+        val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
+        val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
+
+
+
+        val bcCsr = PKCS10CertificationRequestBuilder(X500Name("CN=$commonName"), spki)
+            .addAttribute(ASN1ObjectIdentifier("1.2.1840.13549.1.9.16.1337.26"), ASN1Integer(1337L))
+            .build(contentSigner)
+        val tbsCsr = TbsCertificationRequest(
+            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
+            publicKey = cryptoPublicKey,
+            extensions = null,
+            attributes = listOf(
+                Pkcs10CertificationRequestAttribute(
+                    ObjectIdentifier("1.2.1840.13549.1.9.16.1337.26"),
+                    1337.encodeToAsn1Primitive()
+                )
+            )
+        )
+        val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
+            initSign(keyPair.private)
+            update(tbsCsr.encodeToTlv().derEncoded)
+        }.sign()
+        val csr = Pkcs10CertificationRequest(tbsCsr, signatureAlgorithm, CryptoSignature.parseFromJca(signed,signatureAlgorithm))
+
+        val kotlinEncoded = csr.encodeToTlv().derEncoded
+        val jvmEncoded = bcCsr.encoded
+        println(jvmEncoded.toHexString(HexFormat.UpperCase))
+        println(kotlinEncoded.toHexString(HexFormat.UpperCase))
+        // CSR will never entirely match because of randomness in ECDSA signature
+        //kotlinEncoded shouldBe jvmEncoded
+        kotlinEncoded.drop(6).take(152) shouldBe jvmEncoded.drop(6).take(152)
+
+        val parsedFromKotlinCsr = PKCS10CertificationRequest(kotlinEncoded)
+        parsedFromKotlinCsr.isSignatureValid(JcaContentVerifierProviderBuilder().build(keyPair.public))
+    }
+
     "CSR can be parsed" {
         val ecPublicKey = keyPair.public as ECPublicKey
         val keyX = ecPublicKey.w.affineX.toByteArray().ensureSize(ecCurve.coordinateLength.bytes)
