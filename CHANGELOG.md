@@ -9,7 +9,7 @@
 * Introduce shorthand to create CSR from TbsCSR
 * Introduce shorthand to create certificate from TbsCertificate
 * Remove requirement from CSR to have certificate extensions
-
+* Fix CoseSigned equals
 
 ### 3.9.0 (Supreme 0.4.0)
 
