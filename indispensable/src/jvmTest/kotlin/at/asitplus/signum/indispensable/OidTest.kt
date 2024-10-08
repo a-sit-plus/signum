@@ -4,6 +4,7 @@ import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
@@ -20,7 +21,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-@OptIn(ExperimentalUuidApi::class)
+@OptIn(ExperimentalUuidApi::class, ExperimentalStdlibApi::class)
 class OidTest : FreeSpec({
     "OID test" - {
 
@@ -34,12 +35,79 @@ class OidTest : FreeSpec({
             oid shouldNotBe oid2
             oid.hashCode() shouldBe oid1.hashCode()
             oid.hashCode() shouldNotBe oid2.hashCode()
+
+            println(ObjectIdentifier("2.39").encodeToTlv().prettyPrint())
+            println(ASN1ObjectIdentifier("0.15").encoded.toHexString(HexFormat.UpperCase))
+
+        }
+
+        "Full Root Arc" - {
+            withData(nameFn = { "Byte $it" }, List(127) { it }) {
+                val oid = ObjectIdentifier.parse(byteArrayOf(it.toUByte().toByte()))
+                val fromBC = ASN1ObjectIdentifier.fromContents(byteArrayOf(it.toByte()))
+                oid.encodeToDer() shouldBe fromBC.encoded
+                ObjectIdentifier(oid.toString()).let {
+                    it shouldBe oid
+                    it.encodeToDer() shouldBe fromBC.encoded
+                }
+                ObjectIdentifier(*(oid.toString().split(".").map { it.toUInt() }.toUIntArray())).let {
+                    it shouldBe oid
+                    it.encodeToDer() shouldBe fromBC.encoded
+                }
+                ObjectIdentifier(*(oid.toString().split(".").map { BigInteger.parseString(it) }.toTypedArray())).let {
+                    it shouldBe oid
+                    it.encodeToDer() shouldBe fromBC.encoded
+                }
+            }
+
+            val stringRepesentations = mutableListOf<String>()
+            repeat(39) { stringRepesentations += "0.$it" }
+            repeat(39) { stringRepesentations += "1.$it" }
+            repeat(47) { stringRepesentations += "2.$it" }
+            withData(nameFn = { "String $it" }, stringRepesentations) {
+                val oid = ObjectIdentifier(it)
+                val fromBC = ASN1ObjectIdentifier(it)
+                oid.encodeToDer() shouldBe fromBC.encoded
+                ObjectIdentifier(oid.toString()).let {
+                    it shouldBe oid
+                    it.encodeToDer() shouldBe fromBC.encoded
+                }
+                ObjectIdentifier(*(oid.toString().split(".").map { it.toUInt() }.toUIntArray())).let {
+                    it shouldBe oid
+                    it.encodeToDer() shouldBe fromBC.encoded
+                }
+                ObjectIdentifier(*(oid.toString().split(".").map { BigInteger.parseString(it) }.toTypedArray())).let {
+                    it shouldBe oid
+                    it.encodeToDer() shouldBe fromBC.encoded
+                }
+            }
+
+        }
+        "Failing Root Arc" - {
+            withData(nameFn = { "Byte $it" }, List(128) { it + 128 }) {
+                shouldThrow<Asn1Exception> {
+                    ObjectIdentifier.parse(byteArrayOf(it.toUByte().toByte()))
+                }
+            }
+            val stringRepesentations = mutableListOf<String>()
+
+            repeat(255-40) { stringRepesentations += "0.${it + 40}" }
+            repeat(255-40) { stringRepesentations += "1.${it + 40}" }
+            repeat(255-48) { stringRepesentations += "2.${it + 48}" }
+            repeat(255-3) { stringRepesentations += "${3 + it}.${it % 40}" }
+
+            withData(nameFn = { "String $it" }, stringRepesentations) {
+                shouldThrow<Asn1Exception> {
+                    ObjectIdentifier(it)
+                }
+            }
+
         }
 
         "Automated UInt Capped" - {
             checkAll(iterations = 15, Arb.positiveInt(39)) { second ->
                 checkAll(iterations = 5000, Arb.intArray(Arb.int(0..128), Arb.positiveInt(Int.MAX_VALUE))) {
-                    listOf(1, 2).forEach { first ->
+                    listOf(0, 1, 2).forEach { first ->
                         val oid = ObjectIdentifier(
                             first.toUInt(),
                             second.toUInt(),

@@ -36,6 +36,19 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
         }
         if (bytes?.isEmpty() == true || nodes?.isEmpty() == true)
             throw Asn1Exception("Empty OIDs are not supported")
+
+        bytes?.apply {
+            if(first().toUByte()>127u) throw Asn1Exception("OID top-level arc can only be number 0, 1 or 2")
+        }
+        nodes?.apply {
+            if (size < 2) throw Asn1StructuralException("at least two nodes required!")
+            if (first() > 2u) throw Asn1Exception("OID top-level arc can only be number 0, 1 or 2")
+            if(first()<2u) {
+                if (get(1) > 39u) throw Asn1Exception("Second segment must be <40")
+            }else {
+                if (get(1) > 47u) throw Asn1Exception("Second segment must be <48")
+            }
+        }
     }
 
 
@@ -157,8 +170,12 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
 
         private fun UIntArray.toOidBytes(): ByteArray {
             if (size < 2) throw Asn1StructuralException("at least two nodes required!")
-            if (first() > 2u) throw Asn1Exception("OID must start with either 1 or 2")
-            if (get(1) > 39u) throw Asn1Exception("Second segment must be <40")
+            if (first() > 2u) throw Asn1Exception("OID top-level arc can only be number 0, 1 or 2")
+            if(first()<2u) {
+                if (get(1) > 39u) throw Asn1Exception("Second segment must be <40")
+            }else {
+                if (get(1) > 47u) throw Asn1Exception("Second segment must be <48")
+            }
             return slice(2..<size).map { it.toAsn1VarInt() }.fold(
                 byteArrayOf((first() * 40u + get(1)).toUByte().toByte())
             ) { acc, bytes -> acc + bytes }
@@ -166,9 +183,12 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
 
         private fun List<out BigInteger>.toOidBytes(): ByteArray {
             if (size < 2) throw Asn1StructuralException("at least two nodes required!")
-            if (first() > 2u) throw Asn1Exception("OID must start with either 1 or 2")
-            if (get(1) > 39u) throw Asn1Exception("Second segment must be <40")
-
+            if (first() > 2u) throw Asn1Exception("OID top-level arc can only be number 0, 1 or 2")
+            if(first()<2u) {
+                if (get(1) > 39u) throw Asn1Exception("Second segment must be <40")
+            }else {
+                if (get(1) > 47u) throw Asn1Exception("Second segment must be <48")
+            }
             return slice(2..<size).map { if (it.isNegative) throw Asn1Exception("Negative Number encountered: $it") else it.toAsn1VarInt() }
                 .fold(
                     byteArrayOf((first().intValue() * 40 + get(1).intValue()).toUByte().toByte())
