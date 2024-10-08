@@ -104,6 +104,20 @@ class OidTest : FreeSpec({
 
         }
 
+        "Failing negative Bigints" - {
+            checkAll(iterations = 50, Arb.negativeInt()) { negativeInt ->
+                checkAll(iterations = 15, Arb.positiveInt(39)) { second ->
+                    checkAll(iterations = 100, Arb.intArray(Arb.int(0..128), Arb.positiveInt(Int.MAX_VALUE))) { rest ->
+                        listOf(0, 1, 2).forEach { first ->
+                            val withNegative = intArrayOf(negativeInt, *rest).apply { shuffle() }.map { BigInteger(it) }.toTypedArray()
+                            shouldThrow<Asn1Exception> {
+                                ObjectIdentifier(BigInteger(first), BigInteger(second), *withNegative)
+                            }
+                        }
+                    }
+                }
+            }
+        }
         "Automated UInt Capped" - {
             checkAll(iterations = 15, Arb.positiveInt(39)) { second ->
                 checkAll(iterations = 5000, Arb.intArray(Arb.int(0..128), Arb.positiveInt(Int.MAX_VALUE))) {

@@ -48,6 +48,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
             }else {
                 if (get(1) > 47u) throw Asn1Exception("Second segment must be <48")
             }
+            forEach { if (it.isNegative) throw Asn1Exception("Negative Number encountered: $it") }
         }
     }
 
@@ -169,27 +170,13 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
         fun parse(rawValue: ByteArray): ObjectIdentifier = ObjectIdentifier(rawValue)
 
         private fun UIntArray.toOidBytes(): ByteArray {
-            if (size < 2) throw Asn1StructuralException("at least two nodes required!")
-            if (first() > 2u) throw Asn1Exception("OID top-level arc can only be number 0, 1 or 2")
-            if(first()<2u) {
-                if (get(1) > 39u) throw Asn1Exception("Second segment must be <40")
-            }else {
-                if (get(1) > 47u) throw Asn1Exception("Second segment must be <48")
-            }
             return slice(2..<size).map { it.toAsn1VarInt() }.fold(
                 byteArrayOf((first() * 40u + get(1)).toUByte().toByte())
             ) { acc, bytes -> acc + bytes }
         }
 
         private fun List<out BigInteger>.toOidBytes(): ByteArray {
-            if (size < 2) throw Asn1StructuralException("at least two nodes required!")
-            if (first() > 2u) throw Asn1Exception("OID top-level arc can only be number 0, 1 or 2")
-            if(first()<2u) {
-                if (get(1) > 39u) throw Asn1Exception("Second segment must be <40")
-            }else {
-                if (get(1) > 47u) throw Asn1Exception("Second segment must be <48")
-            }
-            return slice(2..<size).map { if (it.isNegative) throw Asn1Exception("Negative Number encountered: $it") else it.toAsn1VarInt() }
+            return slice(2..<size).map { it.toAsn1VarInt() }
                 .fold(
                     byteArrayOf((first().intValue() * 40 + get(1).intValue()).toUByte().toByte())
                 ) { acc, bytes -> acc + bytes }
