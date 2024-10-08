@@ -35,10 +35,6 @@ class OidTest : FreeSpec({
             oid shouldNotBe oid2
             oid.hashCode() shouldBe oid1.hashCode()
             oid.hashCode() shouldNotBe oid2.hashCode()
-
-            println(ObjectIdentifier("2.39").encodeToTlv().prettyPrint())
-            println(ASN1ObjectIdentifier("0.15").encoded.toHexString(HexFormat.UpperCase))
-
         }
 
         "Full Root Arc" - {

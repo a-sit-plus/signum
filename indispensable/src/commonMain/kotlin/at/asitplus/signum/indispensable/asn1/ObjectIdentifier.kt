@@ -26,11 +26,11 @@ private val BIGINT_40 = BigInteger.fromUByte(40u)
 @Serializable(with = ObjectIdSerializer::class)
 class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
     bytes: ByteArray?,
-    nodes: List<BigInteger>? = null
+    nodes: List<BigInteger>?
 ) :
     Asn1Encodable<Asn1Primitive> {
     init {
-        if (bytes == null && nodes == null) {
+        if ((bytes == null) && (nodes == null)) {
             //we're not even declaring this, since this is an implementation error on our end
             throw IllegalArgumentException("either nodes or bytes required")
         }
@@ -59,34 +59,32 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
      * Lazily evaluated.
      */
     val bytes: ByteArray by if (bytes != null) lazyOf(bytes) else lazy {
-        nodes ?: throw Asn1Exception("Empty nodes are not supported")
-        nodes.toOidBytes()
+        this.nodes.toOidBytes()
     }
 
     /**
      * Lazily evaluated list of OID nodes (e.g. `[1, 2, 35, 4654]`)
      */
     val nodes by if (nodes != null) lazyOf(nodes) else lazy {
-        bytes ?: throw Asn1Exception("Empty nodes are not supported")
         val (first, second) =
-            if (bytes[0] >= 80) {
-                BigInteger.fromUByte(2u) to BigInteger.fromUInt(bytes[0].toUByte() - 80u)
+            if (this.bytes[0] >= 80) {
+                BigInteger.fromUByte(2u) to BigInteger.fromUInt(this.bytes[0].toUByte() - 80u)
             } else {
-                BigInteger.fromUInt(bytes[0].toUByte() / 40u) to BigInteger.fromUInt(bytes[0].toUByte() % 40u)
+                BigInteger.fromUInt(this.bytes[0].toUByte() / 40u) to BigInteger.fromUInt(this.bytes[0].toUByte() % 40u)
             }
         var index = 1
         val collected = mutableListOf(first, second)
-        while (index < bytes.size) {
-            if (bytes[index] >= 0) {
-                collected += BigInteger.fromUInt(bytes[index].toUInt())
+        while (index < this.bytes.size) {
+            if (this.bytes[index] >= 0) {
+                collected += BigInteger.fromUInt(this.bytes[index].toUInt())
                 index++
             } else {
                 val currentNode = mutableListOf<Byte>()
-                while (bytes[index] < 0) {
-                    currentNode += bytes[index] //+= parsed
+                while (this.bytes[index] < 0) {
+                    currentNode += this.bytes[index] //+= parsed
                     index++
                 }
-                currentNode += bytes[index]
+                currentNode += this.bytes[index]
                 index++
                 collected += currentNode.decodeAsn1VarBigInt().first
             }
@@ -101,7 +99,8 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
      */
     @OptIn(ExperimentalUuidApi::class)
     constructor(uuid: Uuid) : this(
-        bytes = byteArrayOf((2 * 40 + 25).toUByte().toByte(), *uuid.toBigInteger().toAsn1VarInt())
+        bytes = byteArrayOf((2 * 40 + 25).toUByte().toByte(), *uuid.toBigInteger().toAsn1VarInt()),
+        nodes = null
     )
 
     /**
@@ -109,14 +108,18 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
      * @throws Asn1Exception if less than two nodes are supplied, the first node is >2 or the second node is >39
      */
     constructor(vararg nodes: UInt) : this(
-        bytes = nodes.toOidBytes()
+        bytes = nodes.toOidBytes(),
+        nodes = null
     )
 
     /**
      * @param nodes OID Tree nodes passed in order (e.g. 1, 2, 96, …)
      * @throws Asn1Exception if less than two nodes are supplied, the first node is >2, the second node is >39 or any node is negative
      */
-    constructor(vararg nodes: BigInteger) : this(bytes = null, nodes = nodes.asList())
+    constructor(vararg nodes: BigInteger) : this(
+        bytes = null,
+        nodes = nodes.asList()
+    )
 
     /**
      * @param oid OID string in human-readable format (e.g. "1.2.96" or "1 2 96")
@@ -167,7 +170,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
          * @throws Asn1Exception all sorts of errors on invalid input
          */
         @Throws(Asn1Exception::class)
-        fun parse(rawValue: ByteArray): ObjectIdentifier = ObjectIdentifier(rawValue)
+        fun parse(rawValue: ByteArray): ObjectIdentifier = ObjectIdentifier(bytes = rawValue, nodes = null)
 
         private fun UIntArray.toOidBytes(): ByteArray {
             return slice(2..<size).map { it.toAsn1VarInt() }.fold(
