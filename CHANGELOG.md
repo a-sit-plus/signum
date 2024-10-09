@@ -10,6 +10,8 @@
 * Introduce shorthand to create certificate from TbsCertificate
 * Remove requirement from CSR to have certificate extensions
 * Fix CoseSigned equals
+* Base OIDs on BigInteger instead of UInt
+* Directly support UUID-based OID creation
 
 ### 3.9.0 (Supreme 0.4.0)
 
