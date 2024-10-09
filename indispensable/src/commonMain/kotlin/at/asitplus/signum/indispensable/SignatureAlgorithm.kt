@@ -23,7 +23,7 @@ sealed interface SignatureAlgorithm {
 
     data class RSA(
         /** The digest to apply to the data. */
-        override val digest: Digest?,
+        override val digest: Digest,
         /** The padding to apply to the data. */
         val padding: RSAPadding
     ) : SignatureAlgorithm
