@@ -342,6 +342,25 @@ Asn1.Sequence { +Asn1.Int(42) } withImplicitTag (0x5EUL without CONSTRUCTED)
     Just blame the mess you created only on yourself and nobody else!
 
 
+### Object Identifiers
+Signum's _Indispensable_ module comes with an expressive, convenient, and efficient ASN.1 `ObjectIdentifier` class.
+It can be constructed by either parsing a `ByteArray` containing ASN.1-encoded representation of an OID,
+or constructing it from a humanly-readable string representation (`"1.2.96"`, `"1 2 96"`).
+In addition, it is possible to pass OID node components as either `UInt` or `BigInteger` to construct an OID: `ObjectIdentifier(1u, 3u, 6u, 1u)`.
+
+The OID class exposes a `nodes` property, corresponding to the individual components that make up an OID node for convenience,
+as well as a `bytes` property, corresponding to its ASN.1-encoded `ByteArray` representation.  
+One peculiar characteristic of the `ObjectIdentifier` class is that both `nodes` and `bytes` properties are lazily evaluated.
+This means that if the OID was constructed from raw bytes, accessing `bytes` is a NOOP, but operating on `nodes` is initially
+quite expensive, since the bytes have yet to be parsed.
+Conversely, if an OID was constructed from `BigInteger` components, accessing `bytes` is slow.
+If, however, an OID was constructed from `UInt` components, those are eagerly encoded into bytes and the `nodes` property
+is not immediately initialized.
+
+This behaviour boils down to performance: Only very rarely, will you want to create an OID with components exceeding `UInt.MAX_VALUE`,
+but you will almost certainly want to encode a OID you created to ASN.1.
+On the other hand, parsing an OID from ASN.1-encoded bytes and re-encoding it are both close to a NOOP (object creation aside).
+
 ### ASN.1 Builder DSL
 So far, custom high-level types and manually constructing low-level types was discussed.
 When actually constructing ASN.1 structures, a far more streamlined and intuitive approach exists.
