@@ -6,6 +6,8 @@ import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.base64.Base64ConfigBuilder
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.io.Buffer
+import kotlinx.io.bytestring.ByteString
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ListSerializer
@@ -123,3 +125,12 @@ fun ByteArray.ensureSize(size: Int): ByteArray = (this.size - size).let { toDrop
 
 @Suppress("NOTHING_TO_INLINE")
 inline fun ByteArray.ensureSize(size: UInt) = ensureSize(size.toInt())
+
+/**
+ * gets the first byte
+ */
+@Suppress("NOTHING_TO_INLINE")
+inline fun ByteString.first() = get(0)
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun ByteArray.asBuffer()=Buffer().also{it.write(this)}

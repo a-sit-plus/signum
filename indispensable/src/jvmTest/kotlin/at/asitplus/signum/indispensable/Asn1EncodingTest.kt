@@ -1,22 +1,24 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.BitString
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Bool
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.OctetString
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.OctetStringEncapsulating
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.PrintableString
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.UtcTime
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Utf8String
-import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.io.BitSet
+import at.asitplus.signum.indispensable.io.asBuffer
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import com.ionspin.kotlin.bignum.integer.toBigInteger
 import com.ionspin.kotlin.bignum.integer.util.fromTwosComplementByteArray
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -25,8 +27,11 @@ import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
 import io.kotest.property.checkAll
 import kotlinx.datetime.Clock
+import kotlinx.io.Buffer
+import kotlinx.io.snapshot
 import org.bouncycastle.asn1.ASN1Integer
 import java.util.*
+import kotlin.math.pow
 
 class Asn1EncodingTest : FreeSpec({
 
@@ -89,15 +94,32 @@ class Asn1EncodingTest : FreeSpec({
 
     "Asn1 Number encoding" - {
 
-        withData(15253481L, -1446230472L, 0L, 1L, -1L, -2L, -9994587L, 340281555L) {
-            val bytes = (it).toTwosComplementByteArray()
+        "manual" - {
+            withData(
+                257L,
+                2f.pow(24).toLong() - 1,
+                65555,
+                2f.pow(24).toLong(),
+                15253481L,
+                -1446230472L,
+                0L,
+                1L,
+                -1L,
+                -2L,
+                -9994587L,
+                340281555L
+            ) {
+                val bytes = (it).toTwosComplementByteArray()
 
-            val fromBC = ASN1Integer(it).encoded
-            val long = Long.decodeFromAsn1ContentBytes(bytes)
+                val fromBC = ASN1Integer(it).encoded
+                val long = Long.decodeFromAsn1ContentBytes(bytes)
 
-            val encoded = Asn1Primitive(Asn1Element.Tag.INT, bytes).derEncoded
-            encoded shouldBe fromBC
-            long shouldBe it
+                val encoded = Asn1Primitive(Asn1Element.Tag.INT, bytes).derEncoded
+                encoded shouldBe fromBC
+                long shouldBe it
+
+                bytes.asBuffer().readTwosComplementLong() shouldBe it
+            }
         }
 
 
@@ -121,6 +143,11 @@ class Asn1EncodingTest : FreeSpec({
                     decoded shouldBe it
 
                     Asn1.Int(it).derEncoded shouldBe ASN1Integer(it).encoded
+
+                    it.toTwosComplementByteArray().asBuffer().readTwosComplementLong() shouldBe it
+                    Buffer().apply { writeTwosComplementLong(it) }.snapshot()
+                        .toByteArray() shouldBe it.toTwosComplementByteArray()
+
                 }
             }
         }
@@ -143,6 +170,8 @@ class Asn1EncodingTest : FreeSpec({
                     decoded shouldBe it
 
                     Asn1.Int(it).derEncoded shouldBe ASN1Integer(it.toLong()).encoded
+                    it.toTwosComplementByteArray().asBuffer().readTwosComplementInt() shouldBe it
+                    it.toTwosComplementByteArray().asBuffer().readTwosComplementLong() shouldBe it
                 }
             }
         }
@@ -165,11 +194,29 @@ class Asn1EncodingTest : FreeSpec({
                     decoded shouldBe it
 
                     Asn1.Int(it).derEncoded shouldBe ASN1Integer(it.toBigInteger().toJavaBigInteger()).encoded
+                    it.toTwosComplementByteArray().asBuffer().readTwosComplementUInt() shouldBe it
+                    it.toTwosComplementByteArray().asBuffer().readTwosComplementULong() shouldBe it.toULong()
                 }
             }
         }
 
         "unsigned longs" - {
+
+                "manual" - {
+                    withData(
+                        2f.pow(24).toULong() - 1u,
+                        256uL,
+                        65555uL,
+                        2f.pow(24).toULong(),
+                        255uL,
+                        360uL,
+                        4113774321109173852uL
+                    ) {
+                        val bytes = (it).toTwosComplementByteArray()
+                        bytes.asBuffer().readTwosComplementULong() shouldBe it
+                    }
+                }
+
             "failures: negative" - {
                 checkAll(iterations = 5000, Arb.long(Long.MIN_VALUE..<0)) {
                     shouldThrow<Asn1Exception> { Asn1.Int(it).decodeToULong() }
@@ -188,6 +235,7 @@ class Asn1EncodingTest : FreeSpec({
                     decoded shouldBe it
 
                     Asn1.Int(it).derEncoded shouldBe ASN1Integer(it.toBigInteger().toJavaBigInteger()).encoded
+                    it.toTwosComplementByteArray().asBuffer().readTwosComplementULong() shouldBe it
                 }
             }
         }

@@ -7,6 +7,8 @@ import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.io.Buffer
+import kotlinx.io.Sink
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -746,6 +748,22 @@ internal fun Int.encodeLength(): ByteArray {
             val lengthLength = length.size
             check(lengthLength < 0x80)
             byteArrayOf((lengthLength or 0x80).toByte(), *length)
+        }
+    }
+}
+
+@Throws(IllegalArgumentException::class)
+internal fun Sink.encodeLength(len: Long): Int {
+    require(len >= 0)
+    return when {
+        (len < 0x80) -> writeByte(len.toByte()).run { 1 } /* short form */
+        else -> { /* long form */
+            val length = Buffer()
+            val lengthLength = length.writeUnsignedTwosComplementLong(len)
+            check(lengthLength < 0x80)
+            writeByte((lengthLength or 0x80).toByte())
+            length.transferTo(this)
+            1 + lengthLength
         }
     }
 }
