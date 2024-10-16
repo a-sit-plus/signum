@@ -1,8 +1,7 @@
 @file:OptIn(ExperimentalStdlibApi::class)
 
-package at.asitplus.signum.indispensable
+package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
@@ -15,7 +14,7 @@ import io.kotest.property.arbitrary.uInt
 import io.kotest.property.arbitrary.uLong
 import io.kotest.property.checkAll
 import kotlinx.io.Buffer
-import kotlinx.io.snapshot
+import kotlinx.io.readByteArray
 import org.bouncycastle.asn1.ASN1Integer
 import org.bouncycastle.asn1.DERTaggedObject
 
@@ -33,7 +32,7 @@ class TagEncodingTest : FreeSpec({
 
     "length encoding" - {
         checkAll(Arb.positiveInt()) {
-           Buffer().apply { encodeLength(it.toLong()) }.snapshot().toByteArray() shouldBe it.encodeLength()
+            Buffer().apply { encodeLength(it.toLong()) }.readByteArray() shouldBe it.toLong().encodeLength()
         }
     }
 
@@ -63,9 +62,7 @@ class TagEncodingTest : FreeSpec({
             }
             withClue(
                 "Expected: ${bc.encoded.toHexString(HexFormat.UpperCase)}, actual: ${
-                    own.derEncoded.toHexString(
-                        HexFormat.UpperCase
-                    )
+                    own.derEncoded.toHexString(HexFormat.UpperCase)
                 }"
             ) {
                 own.derEncoded shouldBe bc.encoded

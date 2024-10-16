@@ -1,13 +1,16 @@
 package at.asitplus.signum.indispensable.asn1
 
-import io.matthewnelson.encoding.base16.Base16
-import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.io.Buffer
+import kotlinx.io.bytestring.ByteString
+import kotlinx.io.bytestring.toHexString
+import kotlinx.io.readByteArray
+import kotlinx.io.snapshot
 
-internal data class TLV(val tag: Asn1Element.Tag, val content: ByteArray) {
+internal sealed class TLV<T>(val tag: Asn1Element.Tag, val content: T) {
 
     val encodedContentLength by lazy { contentLength.encodeLength() }
-    val contentLength: Int by lazy { content.size }
-    val overallLength: Int by lazy { contentLength + tag.encodedTagLength + encodedContentLength.size }
+    abstract val contentLength: Long
+    val overallLength: Long by lazy { contentLength + tag.encodedTagLength + encodedContentLength.size }
 
     val tagClass: TagClass get() = tag.tagClass
 
@@ -16,11 +19,13 @@ internal data class TLV(val tag: Asn1Element.Tag, val content: ByteArray) {
     val encodedTag get() = tag.encodedTag
 
     override fun equals(other: Any?): Boolean {
+        if (other is TLV.Shallow || this is TLV.Shallow) throw IllegalStateException("Shallow TLVs may neve be compared")
         if (this === other) return true
         if (other == null) return false
         if (this::class != other::class) return false
 
-        other as TLV
+        other as Immutable
+        this as Immutable
 
         if (tag != other.tag) return false
         if (!content.contentEquals(other.content)) return false
@@ -30,15 +35,55 @@ internal data class TLV(val tag: Asn1Element.Tag, val content: ByteArray) {
 
     override fun hashCode(): Int {
         var result = tag.hashCode()
-        result = 31 * result + content.contentHashCode()
+        result = 31 * result + if(this is Shallow) content.hashCode() else (content as ByteArray).contentHashCode()
         return result
     }
+
+    protected abstract val contentHexString: String
 
     override fun toString(): String {
         return "TLV(tag=$tag" +
                 ", length=$contentLength" +
                 ", overallLength=$overallLength" +
-                ", content=${content.encodeToString(Base16)})"
+                ", content=$contentHexString)"
+    }
+
+    /**
+     * Shallow TLV, containing a reference to the buffer it is based on. Once [content] is consumed, the underlying bytes are gone.
+     */
+    class Shallow(tag: Asn1Element.Tag, content: Buffer) : TLV<Buffer>(tag, content) {
+
+        override val contentLength: Long by lazy { content.size }
+
+
+        override fun equals(other: Any?): Boolean {
+            throw IllegalStateException("Shallow TLVs may neve be compared")
+        }
+
+
+        override val contentHexString: String by lazy {
+            @OptIn(ExperimentalStdlibApi::class)
+            content.snapshot().toHexString(HexFormat.UpperCase)
+        }
+
+        /**
+         * Deep-copies this shallow TLV into an [Immutable] one. Does not consume anything from [content]
+         */
+        fun deepCopy() = Immutable(tag, content.copy().readByteArray())
+
+    }
+
+    /**
+     * Immutable TLV, containing a deep copy of the parsed bytes
+     */
+    class Immutable(tag: Asn1Element.Tag, content: ByteArray) : TLV<ByteArray>(tag, content) {
+
+        override val contentLength: Long by lazy { content.size.toLong() }
+
+        override val contentHexString: String by lazy {
+            @OptIn(ExperimentalStdlibApi::class)
+            content.toHexString(HexFormat.UpperCase)
+        }
     }
 
 }

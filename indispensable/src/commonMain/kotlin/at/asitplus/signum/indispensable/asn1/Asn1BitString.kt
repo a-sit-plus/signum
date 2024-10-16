@@ -82,7 +82,7 @@ class Asn1BitString private constructor(
 
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Primitive): Asn1BitString {
-            if (src.length == 0) return Asn1BitString(0, byteArrayOf())
+            if (src.length == 0L) return Asn1BitString(0, byteArrayOf())
             if (src.content.first() > 7) throw Asn1Exception("Number of padding bits < 7")
             return Asn1BitString(src.content[0], src.content.sliceArray(1..<src.content.size))
         }

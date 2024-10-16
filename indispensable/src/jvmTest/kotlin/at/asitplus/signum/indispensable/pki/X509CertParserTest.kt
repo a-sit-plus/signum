@@ -26,25 +26,45 @@ import java.security.cert.CertificateFactory
 import java.util.*
 import kotlin.random.Random
 import kotlin.random.nextInt
+import kotlin.text.HexFormat
 import java.security.cert.X509Certificate as JcaCertificate
 
 internal fun ByteIterator.toByteArray(): ByteArray =asSequence().toList().toByteArray()
 
 private val json = Json { prettyPrint = true }
 
+@OptIn(ExperimentalStdlibApi::class)
 class X509CertParserTest : FreeSpec({
 
-    "Manual" {
-        //ok-uniqueid-incomplete-byte.der
-        val derBytes =
-            javaClass.classLoader.getResourceAsStream("certs/ok-uniqueid-incomplete-byte.der").readBytes()
-        X509Certificate.decodeFromDer(derBytes)
+    "Manual" - {
+        "ok-uniqueid-incomplete-byte.der" {
+            val derBytes =
+                javaClass.classLoader.getResourceAsStream("certs/ok-uniqueid-incomplete-byte.der").readBytes()
+            X509Certificate.decodeFromDer(derBytes)
 
-        val garbage = Random.nextBytes(Random.nextInt(0..128))
-        val input = (derBytes + garbage).iterator()
-        Asn1Element.parseFirst(input).let { parsed ->
-            parsed.derEncoded shouldBe derBytes
-            input.toByteArray() shouldBe garbage
+            val garbage = Random.nextBytes(Random.nextInt(0..128))
+            val input = (derBytes + garbage)
+            Asn1Element.parseFirst(input).let { parsed ->
+                parsed.first.derEncoded shouldBe derBytes
+                parsed.second shouldBe garbage
+            }
+
+        }
+        "regression test" {
+            val derBytes =
+                "308201D53082015CA00302010202133D8CC3458C346EBD17871B13D1229C73074196300A06082A8648CE3D040303302931133011060355040A130A476F6F676C65204C4C43311230100603550403130944726F696420434132301E170D3233303531313138313335305A170D3233303631353138313334395A302931133011060355040A130A476F6F676C65204C4C43311230100603550403130944726F6964204341333059301306072A8648CE3D020106082A8648CE3D03010703420004AFF4215B16DA6C4D8C74088501B86B86AF42FFEE2354B2300233D0B00DCD9A4B0A3E9643B4FE892E0F587B8FC53F1B99385A9B07FACA4C19B5158437A73A8162A3633061300E0603551D0F0101FF040403020204300F0603551D130101FF040530030101FF301D0603551D0E04160414EB92862F31C3DB96A349FFCBA515642314B3D23D301F0603551D23041830168014BBF836AD89AE6CE2E59E94F0D5B2D7D27AE47C41300A06082A8648CE3D04030303670030640230077BEA0C7E5825232524FE131C71C6790D43DF087CCFCECAF8AED266431DDA3BA71F0CE02CFCBA6F11BCEC60777F01940230389756CA3F3965AD18AB416667F604E0EC9DA456AA97E21B9EE25F09B7A8039D018D639886FAE435D87BB2A3657EBF2B".hexToByteArray(
+                    HexFormat.UpperCase
+                )
+            val cert = X509Certificate.decodeFromDer(derBytes)
+            val jcaCert = CertificateFactory
+                .getInstance("X509")
+                .generateCertificate(ByteArrayInputStream(derBytes)) as java.security.cert.X509Certificate
+
+            jcaCert.encoded shouldBe derBytes
+            withClue("ACT: ${cert.encodeToTlv().toDerHexString()}\nEXP: ${derBytes.toHexString(HexFormat.UpperCase)}") {
+                cert.encodeToTlv().derEncoded shouldBe derBytes
+            }
+
         }
     }
 
@@ -66,10 +86,10 @@ class X509CertParserTest : FreeSpec({
                 cert shouldBe X509Certificate.decodeFromByteArray(certBytes)
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
-                val input = (certBytes + garbage).iterator()
+                val input = (certBytes + garbage)
                 Asn1Element.parseFirst(input).let { parsed ->
-                    parsed.derEncoded shouldBe certBytes
-                    input.toByteArray() shouldBe garbage
+                    parsed.first.derEncoded shouldBe certBytes
+                    parsed.second shouldBe garbage
                 }
             }
         }
@@ -127,10 +147,10 @@ class X509CertParserTest : FreeSpec({
                 parsed shouldBe X509Certificate.decodeFromByteArray(crt.encoded)
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
-                val bytes = (crt.encoded + garbage).iterator()
+                val bytes = (crt.encoded + garbage)
                 Asn1Element.parseFirst(bytes).let { parsed ->
-                    parsed.derEncoded shouldBe own
-                    bytes.toByteArray() shouldBe garbage
+                    parsed.first.derEncoded shouldBe own
+                    parsed.second shouldBe garbage
                 }
             }
         }
@@ -150,10 +170,10 @@ class X509CertParserTest : FreeSpec({
                 decoded shouldBe X509Certificate.decodeFromByteArray(it.second)
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
-                val bytes = (it.second + garbage).iterator()
+                val bytes = (it.second + garbage)
                 Asn1Element.parseFirst(bytes).let { parsed ->
-                    parsed.derEncoded shouldBe it.second
-                    bytes.toByteArray() shouldBe garbage
+                    parsed.first.derEncoded shouldBe it.second
+                   parsed.second shouldBe garbage
                 }
             }
         }
@@ -191,13 +211,15 @@ class X509CertParserTest : FreeSpec({
                 val cert = X509Certificate.decodeFromDer(encodedSrc)
 
                 jcaCert.encoded shouldBe encodedSrc
-                cert.encodeToTlv().derEncoded shouldBe encodedSrc
+                withClue("ACT: ${cert.encodeToTlv().toDerHexString()}\nEXP: ${encodedSrc.toHexString(HexFormat.UpperCase)}") {
+                    cert.encodeToTlv().derEncoded shouldBe encodedSrc
+                }
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
-                val input = (jcaCert.encoded + garbage).iterator()
+                val input = (jcaCert.encoded + garbage)
                 Asn1Element.parseFirst(input).let { parsed ->
-                    parsed.derEncoded shouldBe jcaCert.encoded
-                    input.asSequence().toList().toByteArray() shouldBe garbage
+                    parsed.first.derEncoded shouldBe jcaCert.encoded
+                    parsed.second shouldBe garbage
                 }
             }
         }

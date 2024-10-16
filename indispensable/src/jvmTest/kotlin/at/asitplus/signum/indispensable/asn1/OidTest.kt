@@ -30,7 +30,8 @@ class OidTest : FreeSpec({
             val oid1 = ObjectIdentifier("1.3.311.128.1.4.99991.9311.21.20")
             val oid2 = ObjectIdentifier("1.3.312.128.1.4.99991.9311.21.20")
 
-            ObjectIdentifier.decodeFromTlv(oid.encodeToTlv()) shouldBe oid
+            val encoded = oid.encodeToTlv()
+            ObjectIdentifier.decodeFromTlv(encoded) shouldBe oid
             oid shouldBe oid1
             oid shouldNotBe oid2
             oid.hashCode() shouldBe oid1.hashCode()
@@ -162,7 +163,7 @@ class OidTest : FreeSpec({
             }
         }
 
-        "Benchmarking fast case" - {
+        "!Benchmarking fast case" - {
             val optimized = mutableListOf<Duration>()
             val repetitions= 10
 

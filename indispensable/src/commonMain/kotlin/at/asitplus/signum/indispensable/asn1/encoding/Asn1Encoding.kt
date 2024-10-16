@@ -7,7 +7,8 @@ import at.asitplus.signum.indispensable.io.BitSet
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.util.toTwosComplementByteArray
 import kotlinx.datetime.Instant
-import kotlin.experimental.or
+import kotlinx.io.bytestring.ByteString
+import kotlinx.io.bytestring.encodeToByteString
 
 /**
  * Class Providing a DSL for creating arbitrary ASN.1 structures. You will almost certainly never use it directly, but rather use it as follows:

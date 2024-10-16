@@ -1,4 +1,4 @@
-package at.asitplus.signum.indispensable
+package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.io.asBuffer
@@ -14,7 +14,6 @@ import io.kotest.property.arbitrary.uLong
 import io.kotest.property.checkAll
 import kotlinx.io.Buffer
 import kotlinx.io.snapshot
-import kotlinx.io.writeULong
 import kotlin.random.Random
 
 class UVarIntTest : FreeSpec({

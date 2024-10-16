@@ -1,16 +1,6 @@
-package at.asitplus.signum.indispensable
+package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.BitString
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Bool
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.OctetString
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.OctetStringEncapsulating
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.PrintableString
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.UtcTime
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Utf8String
 import at.asitplus.signum.indispensable.io.BitSet
 import at.asitplus.signum.indispensable.io.asBuffer
 import com.ionspin.kotlin.bignum.integer.BigInteger
@@ -18,7 +8,6 @@ import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import com.ionspin.kotlin.bignum.integer.toBigInteger
 import com.ionspin.kotlin.bignum.integer.util.fromTwosComplementByteArray
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -32,12 +21,14 @@ import kotlinx.io.snapshot
 import org.bouncycastle.asn1.ASN1Integer
 import java.util.*
 import kotlin.math.pow
+import kotlin.text.HexFormat
 
+@OptIn(ExperimentalStdlibApi::class)
 class Asn1EncodingTest : FreeSpec({
 
     "Boolean" - {
         checkAll(Arb.boolean()) {
-            val seq = Asn1.Sequence { +Bool(it) }
+            val seq = Asn1.Sequence { +Asn1.Bool(it) }
             val decoded = (seq.nextChild() as Asn1Primitive).decodeToBoolean()
             decoded shouldBe it
         }
@@ -51,24 +42,24 @@ class Asn1EncodingTest : FreeSpec({
         fromBitSet.toBitSet().toBitString() shouldBe "011011100101110111"
         fromBitSet.toBitSet() shouldBe bitSet
 
-        Asn1BitString.decodeFromTlv(Asn1.Sequence { +BitString(bitSet) }.children.first() as Asn1Primitive)
+        Asn1BitString.decodeFromTlv(Asn1.Sequence { +Asn1.BitString(bitSet) }.children.first() as Asn1Primitive)
             .toBitSet() shouldBe bitSet
     }
 
     "OCTET STRING Test" {
         val seq = Asn1.Sequence {
-            +OctetStringEncapsulating {
-                +Asn1.Sequence { +Utf8String("foo") }
-                +Asn1.Set { +Utf8String("bar") }
-                +PrintableString("a")
+            +Asn1.OctetStringEncapsulating {
+                +Asn1.Sequence { +Asn1.Utf8String("foo") }
+                +Asn1.Set { +Asn1.Utf8String("bar") }
+                +Asn1.PrintableString("a")
             }
-            +OctetString(byteArrayOf(17))
+            +Asn1.OctetString(byteArrayOf(17))
 
-            +OctetString(
+            +Asn1.OctetString(
                 Asn1.Set {
                     +Asn1.Int(99)
-                    +OctetString(byteArrayOf(1, 2, 3))
-                    +OctetStringEncapsulating {
+                    +Asn1.OctetString(byteArrayOf(1, 2, 3))
+                    +Asn1.OctetStringEncapsulating {
                         +Asn1EncapsulatingOctetString(
                             listOf(
                                 Asn1PrimitiveOctetString(
@@ -83,10 +74,10 @@ class Asn1EncodingTest : FreeSpec({
                     }
                 }.derEncoded
             )
-            +ExplicitlyTagged(9u) { +Clock.System.now().encodeToAsn1UtcTimePrimitive() }
-            +OctetString(byteArrayOf(17, -43, 23, -12, 8, 65, 90))
-            +Bool(false)
-            +Bool(true)
+            +Asn1.ExplicitlyTagged(9u) { +Clock.System.now().encodeToAsn1UtcTimePrimitive() }
+            +Asn1.OctetString(byteArrayOf(17, -43, 23, -12, 8, 65, 90))
+            +Asn1.Bool(false)
+            +Asn1.Bool(true)
         }
         val parsed = Asn1Element.parse(seq.derEncoded)
         parsed.shouldNotBeNull()
@@ -126,13 +117,15 @@ class Asn1EncodingTest : FreeSpec({
         "longs" - {
             "failures: too small" - {
                 checkAll(iterations = 5000, Arb.bigInt(128)) {
-                    val v = BigInteger.fromLong(Long.MIN_VALUE).minus(1).minus(BigInteger.fromTwosComplementByteArray(it.toByteArray()))
+                    val v = BigInteger.fromLong(Long.MIN_VALUE).minus(1)
+                        .minus(BigInteger.fromTwosComplementByteArray(it.toByteArray()))
                     shouldThrow<Asn1Exception> { Asn1.Int(v).decodeToLong() }
                 }
             }
             "failures: too large" - {
                 checkAll(iterations = 5000, Arb.bigInt(128)) {
-                    val v = BigInteger.fromLong(Long.MAX_VALUE).plus(1).plus(BigInteger.fromTwosComplementByteArray(it.toByteArray()))
+                    val v = BigInteger.fromLong(Long.MAX_VALUE).plus(1)
+                        .plus(BigInteger.fromTwosComplementByteArray(it.toByteArray()))
                     shouldThrow<Asn1Exception> { Asn1.Int(v).decodeToLong() }
                 }
             }
@@ -143,7 +136,6 @@ class Asn1EncodingTest : FreeSpec({
                     decoded shouldBe it
 
                     Asn1.Int(it).derEncoded shouldBe ASN1Integer(it).encoded
-
                     it.toTwosComplementByteArray().asBuffer().readTwosComplementLong() shouldBe it
                     Buffer().apply { writeTwosComplementLong(it) }.snapshot()
                         .toByteArray() shouldBe it.toTwosComplementByteArray()
@@ -159,7 +151,7 @@ class Asn1EncodingTest : FreeSpec({
                 }
             }
             "failures: too large" - {
-                checkAll(iterations = 5000, Arb.long(Int.MAX_VALUE.toLong()+1..<Long.MAX_VALUE)) {
+                checkAll(iterations = 5000, Arb.long(Int.MAX_VALUE.toLong() + 1..<Long.MAX_VALUE)) {
                     shouldThrow<Asn1Exception> { Asn1.Int(it).decodeToInt() }
                 }
             }
@@ -202,20 +194,20 @@ class Asn1EncodingTest : FreeSpec({
 
         "unsigned longs" - {
 
-                "manual" - {
-                    withData(
-                        2f.pow(24).toULong() - 1u,
-                        256uL,
-                        65555uL,
-                        2f.pow(24).toULong(),
-                        255uL,
-                        360uL,
-                        4113774321109173852uL
-                    ) {
-                        val bytes = (it).toTwosComplementByteArray()
-                        bytes.asBuffer().readTwosComplementULong() shouldBe it
-                    }
+            "manual" - {
+                withData(
+                    2f.pow(24).toULong() - 1u,
+                    256uL,
+                    65555uL,
+                    2f.pow(24).toULong(),
+                    255uL,
+                    360uL,
+                    4113774321109173852uL
+                ) {
+                    val bytes = (it).toTwosComplementByteArray()
+                    bytes.asBuffer().readTwosComplementULong() shouldBe it
                 }
+            }
 
             "failures: negative" - {
                 checkAll(iterations = 5000, Arb.long(Long.MIN_VALUE..<0)) {
@@ -224,7 +216,8 @@ class Asn1EncodingTest : FreeSpec({
             }
             "failures: too large" - {
                 checkAll(iterations = 5000, Arb.bigInt(128)) {
-                    val v = BigInteger.fromULong(ULong.MAX_VALUE).plus(1).plus(BigInteger.fromTwosComplementByteArray(it.toByteArray()))
+                    val v = BigInteger.fromULong(ULong.MAX_VALUE).plus(1)
+                        .plus(BigInteger.fromTwosComplementByteArray(it.toByteArray()))
                     shouldThrow<Asn1Exception> { Asn1.Int(v).decodeToULong() }
                 }
             }
@@ -246,8 +239,8 @@ class Asn1EncodingTest : FreeSpec({
         val certBytes = Base64.getMimeDecoder()
             .decode(javaClass.classLoader.getResourceAsStream("github-com.pem")!!.reader().readText())
         val tree = Asn1Element.parse(certBytes)
-            tree.derEncoded shouldBe certBytes
-        }
+        tree.derEncoded shouldBe certBytes
+    }
 
 
     "Old and new encoder produce the same bytes" {
@@ -255,40 +248,48 @@ class Asn1EncodingTest : FreeSpec({
         val instant = Clock.System.now()
 
         val sequence = Asn1.Sequence {
-            +ExplicitlyTagged(1u) { +Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00)) }
+            +Asn1.ExplicitlyTagged(1u) { +Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00)) }
             +Asn1.Set {
                 +Asn1.Sequence {
                     +Asn1.SetOf {
-                        +PrintableString("World")
-                        +PrintableString("Hello")
+                        +Asn1.PrintableString("World")
+                        +Asn1.PrintableString("Hello")
                     }
                     +Asn1.Set {
-                        +PrintableString("World")
-                        +PrintableString("Hello")
-                        +Utf8String("!!!")
+                        +Asn1.PrintableString("World")
+                        +Asn1.PrintableString("Hello")
+                        +Asn1.Utf8String("!!!")
                     }
 
                 }
             }
-            +Null()
+            +Asn1.Null()
 
             +ObjectIdentifier("1.2.603.624.97")
 
-            +Utf8String("Foo")
-            +PrintableString("Bar")
+            +Asn1.Utf8String("Foo")
+            +Asn1.PrintableString("Bar")
 
             +Asn1.Set {
                 +Asn1.Int(3)
                 +Asn1.Int(-65789876543L)
-                +Bool(false)
-                +Bool(true)
+                +Asn1.Bool(false)
+                +Asn1.Bool(true)
             }
             +Asn1.Sequence {
-                +Null()
+                +Asn1.Null()
                 +Asn1String.Numeric("12345")
-                +UtcTime(instant)
+                +Asn1.UtcTime(instant)
             }
         }
         Asn1Element.parse(sequence.derEncoded).derEncoded shouldBe sequence.derEncoded
+    }
+
+    "KTX IO Regression test" - {
+        val derEncoded =
+            "30 1D 06 03 55 1D 0E 04 16 04 14 EB 92 86 2F 31 C3 DB 96 A3 49 FF CB A5 15 64 23 14 B3 D2 3D".replace(" ","")
+        val elem = Asn1Element.decodeFromDerHexString(derEncoded)
+        println(elem.prettyPrint())
+        elem.derEncoded.toHexString(HexFormat.UpperCase) shouldBe derEncoded
     }
 })
