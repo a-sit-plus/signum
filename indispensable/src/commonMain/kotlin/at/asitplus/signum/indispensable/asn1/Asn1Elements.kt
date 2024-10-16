@@ -83,6 +83,10 @@ sealed class Asn1Element(
 
 
     private val derEncodedLazy = lazy { Buffer().also { it.writeAsn1Element(this) }.readByteArray() }
+
+    /**
+     * Lazily-evaluated DER-encoded representation of this ASN.1 element
+     */
     val derEncoded: ByteArray by derEncodedLazy
 
     private fun Sink.writeAsn1Element(element: Asn1Element) {
@@ -761,6 +765,22 @@ internal fun Int.encodeLength(): ByteArray {
             val lengthLength = length.size
             check(lengthLength < 0x80)
             byteArrayOf((lengthLength or 0x80).toByte(), *length)
+        }
+    }
+}
+
+@Throws(IllegalArgumentException::class)
+internal fun Sink.encodeLength(len: Long): Int {
+    require(len >= 0)
+    return when {
+        (len < 0x80) -> writeByte(len.toByte()).run { 1 } /* short form */
+        else -> { /* long form */
+            val length = Buffer()
+            val lengthLength = length.writeUnsignedTwosComplementLong(len)
+            check(lengthLength < 0x80)
+            writeByte((lengthLength or 0x80).toByte())
+            length.transferTo(this)
+            1 + lengthLength
         }
     }
 }
