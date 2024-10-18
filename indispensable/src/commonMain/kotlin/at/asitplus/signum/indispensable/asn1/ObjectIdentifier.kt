@@ -1,9 +1,8 @@
 package at.asitplus.signum.indispensable.asn1
 
+import at.asitplus.signum.indispensable.asn1.BigUInt.Companion.decodeAsn1VarBigUInt
 import at.asitplus.signum.indispensable.asn1.encoding.decode
-import at.asitplus.signum.indispensable.asn1.encoding.decodeAsn1VarBigInt
 import at.asitplus.signum.indispensable.asn1.encoding.toAsn1VarInt
-import at.asitplus.signum.indispensable.asn1.encoding.toBigInteger
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -26,7 +25,7 @@ private val BIGINT_40 = BigInteger.fromUByte(40u)
 @Serializable(with = ObjectIdSerializer::class)
 class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
     bytes: ByteArray?,
-    nodes: List<BigInteger>?
+    nodes: List<BigUInt>?
 ) :
     Asn1Encodable<Asn1Primitive> {
     init {
@@ -39,6 +38,8 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
 
         bytes?.apply {
             if(first().toUByte()>127u) throw Asn1Exception("OID top-level arc can only be number 0, 1 or 2")
+            //this is the best we can do
+            if(last()<0) throw Asn1Exception("Encoded OID does not end with a valid ASN.1 varint")
         }
         nodes?.apply {
             if (size < 2) throw Asn1StructuralException("at least two nodes required!")
@@ -48,7 +49,6 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
             }else {
                 if (get(1) > 47u) throw Asn1Exception("Second segment must be <48")
             }
-            forEach { if (it.isNegative) throw Asn1Exception("Negative Number encountered: $it") }
         }
     }
 
@@ -58,38 +58,41 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
      * for details.
      * Lazily evaluated.
      */
-    val bytes: ByteArray by if (bytes != null) lazyOf(bytes) else lazy {
-        this.nodes.toOidBytes()
+    val bytes: ByteArray by lazy {
+        if (bytes != null) bytes
+        else nodes!!.toOidBytes()
     }
 
     /**
      * Lazily evaluated list of OID nodes (e.g. `[1, 2, 35, 4654]`)
      */
-    val nodes by if (nodes != null) lazyOf(nodes) else lazy {
-        val (first, second) =
-            if (this.bytes[0] >= 80) {
-                BigInteger.fromUByte(2u) to BigInteger.fromUInt(this.bytes[0].toUByte() - 80u)
-            } else {
-                BigInteger.fromUInt(this.bytes[0].toUByte() / 40u) to BigInteger.fromUInt(this.bytes[0].toUByte() % 40u)
-            }
-        var index = 1
-        val collected = mutableListOf(first, second)
-        while (index < this.bytes.size) {
-            if (this.bytes[index] >= 0) {
-                collected += BigInteger.fromUInt(this.bytes[index].toUInt())
-                index++
-            } else {
-                val currentNode = mutableListOf<Byte>()
-                while (this.bytes[index] < 0) {
-                    currentNode += this.bytes[index] //+= parsed
-                    index++
+    val nodes: List<String> by lazy {
+        if (nodes != null) nodes.map { it.toString() } else {
+            val (first, second) =
+                if (this.bytes[0] >= 80) {
+                    BigUInt(2u) to BigUInt(this.bytes[0].toUByte() - 80u)
+                } else {
+                    BigUInt(this.bytes[0].toUByte() / 40u) to BigUInt(this.bytes[0].toUByte() % 40u)
                 }
-                currentNode += this.bytes[index]
-                index++
-                collected += currentNode.decodeAsn1VarBigInt().first
+            var index = 1
+            val collected = mutableListOf(first, second)
+            while (index < this.bytes.size) {
+                if (this.bytes[index] >= 0) {
+                    collected += BigUInt(this.bytes[index].toUInt())
+                    index++
+                } else {
+                    val currentNode = mutableListOf<Byte>()
+                    while (this.bytes[index] < 0) {
+                        currentNode += this.bytes[index] //+= parsed
+                        index++
+                    }
+                    currentNode += this.bytes[index]
+                    index++
+                    collected += currentNode.iterator().decodeAsn1VarBigUInt()
+                }
             }
+            collected.map { it.toString() }
         }
-        collected
     }
 
     /**
@@ -99,8 +102,8 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
      */
     @OptIn(ExperimentalUuidApi::class)
     constructor(uuid: Uuid) : this(
-        bytes = byteArrayOf((2 * 40 + 25).toUByte().toByte(), *uuid.toBigInteger().toAsn1VarInt()),
-        nodes = null
+        bytes = null,
+        nodes = listOf(BigUInt(2u), BigUInt(25u), BigUInt(uuid.toByteArray()))
     )
 
     /**
@@ -113,19 +116,14 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
     )
 
     /**
-     * @param nodes OID Tree nodes passed in order (e.g. 1, 2, 96, …)
-     * @throws Asn1Exception if less than two nodes are supplied, the first node is >2, the second node is >39 or any node is negative
-     */
-    constructor(vararg nodes: BigInteger) : this(
-        bytes = null,
-        nodes = nodes.asList()
-    )
-
-    /**
      * @param oid OID string in human-readable format (e.g. "1.2.96" or "1 2 96")
+     * @throws Asn1Exception on illegal input
      */
-    constructor(oid: String) : this(*(oid.split(if (oid.contains('.')) '.' else ' ')).map { BigInteger.parseString(it) }
-        .toTypedArray())
+    @Throws(Asn1Exception::class)
+    constructor(oid: String) : this(
+        bytes = null,
+        nodes = (oid.split(if (oid.contains('.')) '.' else ' ')).map { BigUInt(it) }
+    )
 
 
     /**
@@ -178,7 +176,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
             ) { acc, bytes -> acc + bytes }
         }
 
-        private fun List<out BigInteger>.toOidBytes(): ByteArray {
+        private fun List<out BigUInt>.toOidBytes(): ByteArray {
             return slice(2..<size).map { it.toAsn1VarInt() }
                 .fold(
                     byteArrayOf((first().intValue() * 40 + get(1).intValue()).toUByte().toByte())
