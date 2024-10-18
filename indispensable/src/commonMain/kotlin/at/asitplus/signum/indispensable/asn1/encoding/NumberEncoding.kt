@@ -316,7 +316,7 @@ fun Uuid.toBigInteger(): BigInteger = BigInteger.fromByteArray(toByteArray(), Si
  */
 @OptIn(ExperimentalUuidApi::class)
 fun Uuid.Companion.fromBigintOrNull(bigInteger: BigInteger): Uuid? =
-   catchingUnwrapped { fromByteArray(bigInteger.toByteArray().ensureSize(16)) }.getOrNull()
+    catchingUnwrapped { fromByteArray(bigInteger.toByteArray().ensureSize(16)) }.getOrNull()
 
 
 ///////////KTX-IO

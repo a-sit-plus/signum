@@ -155,7 +155,7 @@ private fun Iterator<Byte>.decodeAsn1VarULong(): Pair<ULong, ByteArray> {
  *
  * @return the decoded unsigned BigInteger and the underlying varint-encoded bytes as `ByteArray`
  */
-private inline fun Iterable<Byte>.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> = iterator().decodeAsn1VarBigInt()
+internal inline fun Iterable<Byte>.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> = iterator().decodeAsn1VarBigInt()
 
 
 
