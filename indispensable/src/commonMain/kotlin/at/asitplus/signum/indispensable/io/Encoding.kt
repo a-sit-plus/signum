@@ -6,11 +6,9 @@ import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.base64.Base64ConfigBuilder
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.io.Buffer
-import kotlinx.io.RawSource
-import kotlinx.io.Source
-import kotlinx.io.buffered
+import kotlinx.io.*
 import kotlinx.io.bytestring.ByteString
+import kotlinx.io.unsafe.UnsafeBufferOperations
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ListSerializer
@@ -139,5 +137,7 @@ inline fun ByteString.first() = get(0)
 inline fun ByteArray.asBuffer()=Buffer().also{it.write(this)}
 
 
-internal fun ByteArray.copyToSource():Source= ByteArraySource(this)
-internal fun ByteArraySource(bytes: ByteArray):Source = Buffer().apply { write(bytes) }
+@OptIn(UnsafeIoApi::class)
+internal fun ByteArray.wrapInUnsafeSource():Source = Buffer().apply {
+    UnsafeBufferOperations.moveToTail(this, this@wrapInUnsafeSource)
+}

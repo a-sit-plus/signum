@@ -10,7 +10,7 @@ import at.asitplus.signum.indispensable.asn1.BERTags.T61_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.UNIVERSAL_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.UTF8_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.VISIBLE_STRING
-import at.asitplus.signum.indispensable.io.copyToSource
+import at.asitplus.signum.indispensable.io.wrapInUnsafeSource
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.util.fromTwosComplementByteArray
 import kotlinx.datetime.Instant
@@ -32,33 +32,38 @@ fun Asn1Element.Companion.parse(input: Source): Asn1Element = input.readAsn1Elem
 
 }
 /**
- * Parses the provided [input] into a single [Asn1Element]. Consumes all Bytes and throws if more than one Asn.1 Structure was found or trailing bytes were detected
- * @return the parsed [Asn1Element]
+ * Parses the provided [input] into a single [Asn1Element]. Consumes all Bytes and throws if more than one Asn.1 Structure was found or trailing bytes were detected.
+ * Mutating the `ByteArray` while parsing leads to undefined behavior.
  *
+ * @return the parsed [Asn1Element]
  * @throws Asn1Exception on invalid input or if more than a single root structure was contained in the [input]
  */
 @Throws(Asn1Exception::class)
-fun Asn1Element.Companion.parse(source: ByteArray): Asn1Element = parse(source.copyToSource())
+fun Asn1Element.Companion.parse(source: ByteArray): Asn1Element = parse(source.wrapInUnsafeSource())
 
 /**
  * Tries to parse the [input] into a list of [Asn1Element]s. Consumes all Bytes and throws if an invalid ASN.1 Structure is found at any point.
- * @return the parsed elements
  *
+ * @return the parsed elements
  * @throws Asn1Exception on parse error
  */
 @Throws(Asn1Exception::class)
 fun Asn1Element.Companion.parseAll(input: Source): List<Asn1Element> = input.doParseAll()
 
 /**
- * Convenience wrapper around [parseAll], taking a [ByteArray] as [source]
+ * Tries to parse the [input] into a list of [Asn1Element]s. Consumes all Bytes and throws if an invalid ASN.1 Structure is found at any point.
+ * Mutating the `ByteArray` while parsing leads to undefined behavior.
+ *
  * @see parse
  */
 @Throws(Asn1Exception::class)
-fun Asn1Element.Companion.parseAll(source: ByteArray): List<Asn1Element> = parseAll(source.copyToSource())
+fun Asn1Element.Companion.parseAll(source: ByteArray): List<Asn1Element> = parseAll(source.wrapInUnsafeSource())
 
 
 /**
- * Convenience wrapper around [parseFirst], taking a [ByteArray] as [source].
+ * Convenience wrapper around [readAsn1Element], taking a [ByteArray] as [source].
+ * Mutating the `ByteArray` while parsing leads to undefined behavior.
+ *
  * @return a pair of the first parsed [Asn1Element] mapped to the remaining bytes
  * @see parse
  */

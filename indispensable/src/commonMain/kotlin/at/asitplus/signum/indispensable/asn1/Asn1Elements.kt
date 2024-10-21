@@ -4,7 +4,7 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
-import at.asitplus.signum.indispensable.io.copyToSource
+import at.asitplus.signum.indispensable.io.wrapInUnsafeSource
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlinx.io.*
@@ -244,7 +244,7 @@ sealed class Asn1Element(
         //TODO this CTOR is internally called only using already validated inputs.
         // We need another CTOR to prevent double-parsing and byte copying
         constructor(derEncoded: ByteArray) : this(
-            derEncoded.copyToSource().decodeTag()
+            derEncoded.wrapInUnsafeSource().decodeTag()
                 .let { Triple(it.first, it.second.size, derEncoded) }
         )
 
