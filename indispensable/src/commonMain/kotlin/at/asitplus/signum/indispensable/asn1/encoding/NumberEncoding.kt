@@ -10,6 +10,12 @@ import kotlin.math.ceil
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
+internal val UVARINT_SINGLEBYTE_MAXVALUE_UBYTE: UByte = 0x80u
+internal val UVARINT_SINGLEBYTE_MAXVALUE: Byte = 0x80.toByte()
+
+internal val UVARINT_MASK_UBYTE: UByte = 0x7Fu
+internal val UVARINT_MASK_UINT: UInt = 0x7Fu
+internal val UVARINT_MASK_ULONG: ULong = 0x7FuL
 
 /**
  * Encode as a four-byte array
@@ -130,6 +136,7 @@ fun Long.toTwosComplementByteArray() = when {
 /** Encodes a signed Int to a minimum-size twos-complement byte array */
 fun Int.toTwosComplementByteArray() = toLong().toTwosComplementByteArray()
 
+@Throws(IllegalArgumentException::class)
 fun Int.Companion.fromTwosComplementByteArray(it: ByteArray) = when (it.size) {
     4 -> it[0].shiftLeftFirstInt(24) or
             (it[1] shiftLeftAsInt 16) or
@@ -150,12 +157,14 @@ fun Int.Companion.fromTwosComplementByteArray(it: ByteArray) = when (it.size) {
 private infix fun Byte.shiftLeftAsInt(shift: Int) = this.toUByte().toInt() shl shift
 private fun Byte.shiftLeftFirstInt(shift: Int) = toInt() shl shift
 
+@Throws(IllegalArgumentException::class)
 fun UInt.Companion.fromTwosComplementByteArray(it: ByteArray) =
     Long.fromTwosComplementByteArray(it).let {
         require((0 <= it) && (it <= 0xFFFFFFFFL)) { "Value $it is out of bounds for UInt" }
         it.toUInt()
     }
 
+@Throws(IllegalArgumentException::class)
 fun Long.Companion.fromTwosComplementByteArray(it: ByteArray) = when (it.size) {
     8 -> it[0].shiftLeftFirstLong(56) or
             (it[1] shiftLeftAsLong 48) or
@@ -206,6 +215,7 @@ fun Long.Companion.fromTwosComplementByteArray(it: ByteArray) = when (it.size) {
 private infix fun Byte.shiftLeftAsLong(shift: Int) = this.toUByte().toLong() shl shift
 private fun Byte.shiftLeftFirstLong(shift: Int) = toLong() shl shift
 
+@Throws(IllegalArgumentException::class)
 fun ULong.Companion.fromTwosComplementByteArray(it: ByteArray) = when {
     ((it.size == 9) && (it[0] == 0.toByte())) -> it.shiftLeftAsULong(1, 56) or
             it.shiftLeftAsULong(2, 48) or
@@ -242,16 +252,16 @@ fun Int.toUnsignedByteArray() = toLong().toUnsignedByteArray()
  * while the highest bit indicates if more bytes are to come
  */
 fun ULong.toAsn1VarInt(): ByteArray {
-    if (this < 128u) return byteArrayOf(this.toByte()) //Fast case
+    if (this < UVARINT_SINGLEBYTE_MAXVALUE_UBYTE) return byteArrayOf(this.toByte()) //Fast case
     var offset = 0
     var result = mutableListOf<Byte>()
 
-    var b0 = (this shr offset and 0x7FuL).toByte()
+    var b0 = (this shr offset and UVARINT_MASK_ULONG).toByte()
     while ((this shr offset > 0uL) || offset == 0) {
         result += b0
         offset += 7
         if (offset > (ULong.SIZE_BITS - 1)) break //End of Fahnenstange
-        b0 = (this shr offset and 0x7FuL).toByte()
+        b0 = (this shr offset and UVARINT_MASK_ULONG).toByte()
     }
     return with(result) {
         ByteArray(size) { fromBack(it) or asn1VarIntByteMask(it) }
@@ -262,14 +272,15 @@ fun ULong.toAsn1VarInt(): ByteArray {
  * Encodes this number using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
  * while the highest bit indicates if more bytes are to come
  */
+@Throws(IllegalArgumentException::class)
 fun BigInteger.toAsn1VarInt(): ByteArray {
     if (isZero()) return byteArrayOf(0)
     require(isPositive) { "Only positive Numbers are supported" }
-    if (this < 128) return byteArrayOf(this.byteValue(exactRequired = true)) //Fast case
+    if (this < UVARINT_SINGLEBYTE_MAXVALUE_UBYTE) return byteArrayOf(this.byteValue(exactRequired = true)) //Fast case
     var offset = 0
     var result = mutableListOf<Byte>()
 
-    val mask = BigInteger.fromUByte(0x7Fu)
+    val mask = BigInteger.fromUByte(UVARINT_MASK_UBYTE)
     var b0 = ((this shr offset) and mask).byteValue(exactRequired = false)
     while ((this shr offset > 0uL) || offset == 0) {
         result += b0
@@ -290,11 +301,11 @@ fun BigInteger.toAsn1VarInt(): ByteArray {
  * This kind of encoding is used to encode [ObjectIdentifier] nodes and ASN.1 Tag values > 30
  */
 fun UInt.toAsn1VarInt(): ByteArray {
-    if (this < 128u) return byteArrayOf(this.toByte()) //Fast case
+    if (this < UVARINT_SINGLEBYTE_MAXVALUE_UBYTE) return byteArrayOf(this.toByte()) //Fast case
     var offset = 0
     var result = mutableListOf<Byte>()
 
-    var b0 = (this shr offset and 0x7Fu).toByte()
+    var b0 = (this shr offset and UVARINT_MASK_UINT).toByte()
     while ((this shr offset > 0u) || offset == 0) {
         result += b0
         offset += 7
@@ -307,11 +318,12 @@ fun UInt.toAsn1VarInt(): ByteArray {
     }
 }
 
-private fun MutableList<Byte>.asn1VarIntByteMask(it: Int) = (if (isLastIndex(it)) 0x00 else 0x80).toByte()
+internal fun MutableList<Byte>.asn1VarIntByteMask(it: Int) =
+    (if (isLastIndex(it)) 0x00 else UVARINT_SINGLEBYTE_MAXVALUE).toByte()
 
 private fun MutableList<Byte>.isLastIndex(it: Int) = it == size - 1
 
-private fun MutableList<Byte>.fromBack(it: Int) = this[size - 1 - it]
+internal fun MutableList<Byte>.fromBack(it: Int) = this[size - 1 - it]
 
 
 /**
@@ -321,6 +333,7 @@ private fun MutableList<Byte>.fromBack(it: Int) = this[size - 1 - it]
  * @return the decoded ULong and the underlying varint-encoded bytes as `ByteArray`
  * @throws IllegalArgumentException if the number is larger than [ULong.MAX_VALUE]
  */
+@Throws(IllegalArgumentException::class)
 inline fun Iterable<Byte>.decodeAsn1VarULong(): Pair<ULong, ByteArray> = iterator().decodeAsn1VarULong()
 
 /**
@@ -330,6 +343,7 @@ inline fun Iterable<Byte>.decodeAsn1VarULong(): Pair<ULong, ByteArray> = iterato
  * @return the decoded ULong and the underlying varint-encoded bytes as `ByteArray`
  * @throws IllegalArgumentException if the number is larger than [ULong.MAX_VALUE]
  */
+@Throws(IllegalArgumentException::class)
 inline fun ByteArray.decodeAsn1VarULong(): Pair<ULong, ByteArray> = iterator().decodeAsn1VarULong()
 
 /**
@@ -339,6 +353,7 @@ inline fun ByteArray.decodeAsn1VarULong(): Pair<ULong, ByteArray> = iterator().d
  * @return the decoded ULong and the underlying varint-encoded bytes as `ByteArray`
  * @throws IllegalArgumentException if the number is larger than [ULong.MAX_VALUE]
  */
+@Throws(IllegalArgumentException::class)
 fun Iterator<Byte>.decodeAsn1VarULong(): Pair<ULong, ByteArray> {
     var offset = 0
     var result = 0uL
@@ -377,11 +392,10 @@ inline fun ByteArray.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> = iterat
 
 
 /**
- * Decodes an BigInteger from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
+ * Decodes a BigInteger from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
  * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
  *
  * @return the decoded BigInteger and the underlying varint-encoded bytes as `ByteArray`
- * @throws IllegalArgumentException if the number is larger than [ULong.MAX_VALUE]
  */
 fun Iterator<Byte>.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> {
     var result = BigInteger.ZERO
@@ -407,6 +421,7 @@ fun Iterator<Byte>.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> {
  * @return the decoded UInt and the underlying varint-encoded bytes as `ByteArray`
  * @throws IllegalArgumentException if the number is larger than [UInt.MAX_VALUE]
  */
+@Throws(IllegalArgumentException::class)
 inline fun Iterable<Byte>.decodeAsn1VarUInt(): Pair<UInt, ByteArray> = iterator().decodeAsn1VarUInt()
 
 /**
@@ -416,6 +431,7 @@ inline fun Iterable<Byte>.decodeAsn1VarUInt(): Pair<UInt, ByteArray> = iterator(
  * @return the decoded UInt and the underlying varint-encoded bytes as `ByteArray`
  * @throws IllegalArgumentException if the number is larger than [UInt.MAX_VALUE]
  */
+@Throws(IllegalArgumentException::class)
 inline fun ByteArray.decodeAsn1VarUInt(): Pair<UInt, ByteArray> = iterator().decodeAsn1VarUInt()
 
 /**
@@ -425,6 +441,7 @@ inline fun ByteArray.decodeAsn1VarUInt(): Pair<UInt, ByteArray> = iterator().dec
  * @return the decoded UInt and the underlying varint-encoded bytes as `ByteArray`
  * @throws IllegalArgumentException if the number is larger than [UInt.MAX_VALUE]
  */
+@Throws(IllegalArgumentException::class)
 fun Iterator<Byte>.decodeAsn1VarUInt(): Pair<UInt, ByteArray> {
     var offset = 0
     var result = 0u

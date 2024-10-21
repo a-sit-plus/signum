@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.catching
+import at.asitplus.catchingUnwrapped
 import at.asitplus.wrapping
 
 open class Asn1Exception(message: String?, cause: Throwable?) : Throwable(message, cause) {
@@ -19,4 +20,5 @@ class Asn1OidException(message: String, val oid: ObjectIdentifier) : Asn1Excepti
  * Runs [block] inside [catching] and encapsulates any thrown exception in an [Asn1Exception] unless it already is one
  */
 @Throws(Asn1Exception::class)
-inline fun <reified R> runRethrowing(block: () -> R) = wrapping(asA = ::Asn1Exception, block).getOrThrow()
+inline fun <reified R> runRethrowing(block: () -> R) =
+    catchingUnwrapped(block).getOrElse { if(it is Asn1Exception) throw it else throw Asn1Exception(it) }
