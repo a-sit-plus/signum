@@ -78,13 +78,19 @@ sealed class Asn1Element(
 
     val tag by lazy { tlv.tag }
 
-    val derEncoded: ByteArray by lazy {
-        (children?.fold(Buffer()) { acc, extendedTlv -> acc.apply { write(extendedTlv.derEncoded) } }
-            ?.let {
-                Buffer().apply { write(tlv.tag.encodedTag); encodeLength(it.size); it.transferTo(this) }
-            }?.readByteArray()
-            ?: Buffer().apply { write(tlv.tag.encodedTag); write(encodedLength);write(tlv.content) }.readByteArray())
+
+    internal val derBuffered: Source by lazy {
+        children?.fold(Buffer()) { acc, tlv -> acc.apply { /*Yes, we copy!*/ tlv.derBuffered.peek().transferTo(this) } }
+            ?.let { Buffer().apply { write(tlv.tag.encodedTag); encodeLength(it.size); it.transferTo(this) } }
+            ?: Buffer().apply { write(tlv.tag.encodedTag); write(encodedLength); tlv.content.wrapInUnsafeSource().transferTo(this) }
     }
+
+    /**
+     * DER-encoded representation of this ASN.1 element.
+     * Each time, this property is read, a new copy of the underlying DER-encoded representation is created.
+     * This enables non-destructive modification of DER-encoded representations, because a fresh copy can always be obtained.
+     */
+    val derEncoded: ByteArray get() = derBuffered.peek().readByteArray()
 
     override fun toString(): String = "(tag=${tlv.tag}" +
             ", length=${length}" +
@@ -235,17 +241,19 @@ sealed class Asn1Element(
 
     @Serializable
     @ConsistentCopyVisibility
-    data class Tag private constructor(
+    data class Tag
+    /**
+     * This constructor performs no validations on the passed byte array!
+     */
+    internal constructor(
         val tagValue: ULong, val encodedTagLength: Int,
         @Serializable(with = ByteArrayBase64Serializer::class) val encodedTag: ByteArray
     ) : Comparable<Tag> {
         private constructor(values: Triple<ULong, Int, ByteArray>) : this(values.first, values.second, values.third)
 
-        //TODO this CTOR is internally called only using already validated inputs.
-        // We need another CTOR to prevent double-parsing and byte copying
         constructor(derEncoded: ByteArray) : this(
-            derEncoded.wrapInUnsafeSource().decodeTag()
-                .let { Triple(it.first, it.second.size, derEncoded) }
+            derEncoded.wrapInUnsafeSource().decodeTag(collect = false)
+                .let { Triple(it.first, it.second, derEncoded) }
         )
 
         /**

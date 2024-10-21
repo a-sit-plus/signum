@@ -371,7 +371,7 @@ fun String.Companion.decodeFromAsn1ContentBytes(bytes: ByteString) = bytes.decod
 private fun Source.readTlv(): TLV.Shallow = runRethrowing {
     if (exhausted()) throw IllegalArgumentException("Can't read TLV, input empty")
 
-    val tag = decodeTag()
+    val tag = decodeTag(collect = true)
     val length = decodeLength()
     require(length < 1024 * 1024) { "Heap space" }
     val value = Buffer().also {
@@ -381,9 +381,18 @@ private fun Source.readTlv(): TLV.Shallow = runRethrowing {
         }
     }
 
-    return TLV.Shallow(Asn1Element.Tag(tag.second), value)
+    return TLV.Shallow(
+        Asn1Element.Tag(
+            tagValue = tag.first,
+            encodedTagLength = length.toInt(),
+            encodedTag = tag.third!!
+        ), value
+    )
 }
 
+/**
+ * [collect] tells this method to collect read bytes into a [ByteArray]
+ */
 @Throws(IllegalArgumentException::class)
 private fun Source.decodeLength(): Long =
     readByte().let { firstByte ->
@@ -392,9 +401,11 @@ private fun Source.decodeLength(): Long =
         } else { // its BER long form!
             val numOctets = (firstByte byteMask UVARINT_MASK).toInt()
             require(numOctets <= Long.SIZE_BYTES) { "TLV Length too long ($numOctets bytes). Invalid data?" }
+
             (0 until numOctets).fold(0L) { acc, index ->
                 require(!exhausted()) { "Can't decode length" }
-                acc + (readUByte().toLong() shl Byte.SIZE_BITS * (numOctets - index - 1))
+                acc + (readUByte()
+                    .toLong() shl Byte.SIZE_BITS * (numOctets - index - 1))
             }.also {
                 require(it >= 0) { "TLV length overflow: $it. Invalid data?" }
             }
@@ -406,17 +417,20 @@ private fun Byte.isBerShortForm() = this byteMask UVARINT_SINGLEBYTE_MAXVALUE ==
 internal infix fun Byte.byteMask(mask: Int) = (this and mask.toUInt().toByte()).toUByte()
 internal infix fun Byte.byteMask(mask: Byte) = (this and mask).toUByte()
 
-internal fun Source.decodeTag(): Pair<ULong, ByteArray> =
+/**
+ * [collect] tells this method to collect read bytes into a [ByteArray]
+ */
+internal fun Source.decodeTag(collect: Boolean = false): Triple<ULong, Int, ByteArray?> =
     readByte().let { firstByte ->
         (firstByte byteMask 0x1F).let { tagNumber ->
             if (tagNumber <= 30U) {
-                tagNumber.toULong() to byteArrayOf(firstByte)
+                Triple(tagNumber.toULong(), 1, if (collect) byteArrayOf(firstByte) else null)
             } else {
                 decodeAsn1VarULongShallow().let { (l, b) ->
-                    l to Buffer().apply {
+                    Triple(l, 1 + b.size.toInt(), if (collect) Buffer().apply {
                         writeByte(firstByte)
                         b.transferTo(this)
-                    }.readByteArray()
+                    }.readByteArray() else null)
                 }
             }
         }
