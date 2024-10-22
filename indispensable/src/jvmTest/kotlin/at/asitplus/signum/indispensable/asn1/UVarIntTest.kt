@@ -1,4 +1,4 @@
-package at.asitplus.signum.indispensable
+package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.decodeAsn1VarBigInt
 import at.asitplus.signum.indispensable.asn1.encoding.decodeAsn1VarUInt

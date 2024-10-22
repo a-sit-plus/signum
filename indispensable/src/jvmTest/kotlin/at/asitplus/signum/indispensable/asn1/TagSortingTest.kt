@@ -1,9 +1,7 @@
 @file:OptIn(ExperimentalStdlibApi::class)
 
-package at.asitplus.signum.indispensable
+package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.signum.indispensable.asn1.Asn1Element
-import at.asitplus.signum.indispensable.asn1.TagClass
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.comparables.shouldBeLessThan
