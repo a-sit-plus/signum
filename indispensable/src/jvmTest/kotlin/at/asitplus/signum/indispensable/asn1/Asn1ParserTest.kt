@@ -4,7 +4,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.asn1.encoding.parseAll
 import at.asitplus.signum.indispensable.asn1.encoding.parseFirst
-import at.asitplus.signum.indispensable.toByteArray
+import at.asitplus.signum.indispensable.pki.toByteArray
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe

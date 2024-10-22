@@ -2,7 +2,6 @@ package at.asitplus.signum.indispensable.asn1
 
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-
 internal data class TLV(val tag: Asn1Element.Tag, val content: ByteArray) {
 
     val encodedContentLength by lazy { contentLength.encodeLength() }

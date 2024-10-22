@@ -24,9 +24,12 @@ import kotlin.native.ObjCName
  */
 @Serializable(with = Asn1EncodableSerializer::class)
 sealed class Asn1Element(
-    internal val tlv: TLV,
+    val tag: Tag,
     protected open val children: List<Asn1Element>?
 ) {
+
+
+    abstract val content: ByteArray?
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -36,13 +39,8 @@ sealed class Asn1Element(
         if (!content.contentEquals(other.content)) return false
         if (this is Asn1Structure && other !is Asn1Structure) return false
         if (this is Asn1Primitive && other !is Asn1Primitive) return false
-        return if (this is Asn1Primitive) {
-            (this.content contentEquals other.content)
-        } else {
-            this as Asn1Structure
-            other as Asn1Structure
-            children == other.children
-        }
+        return children == other.children
+
     }
 
     companion object {
@@ -69,17 +67,13 @@ sealed class Asn1Element(
      * For a structure, it is the sum of the number of bytes needed to encode all held child nodes.
      */
     val length: Int by lazy {
-        children?.fold(0) { acc, extendedTlv -> acc + extendedTlv.overallLength } ?: tlv.contentLength
+        children?.fold(0) { acc, extendedTlv -> acc + extendedTlv.overallLength } ?: content!!.size
     }
 
     /**
      * Total number of bytes required to represent the ths element, when encoding to ASN.1.
      */
-    val overallLength by lazy { length + tlv.tag.encodedTagLength + encodedLength.size }
-
-    protected open val content by lazy { tlv.content }
-
-    val tag by lazy { tlv.tag }
+    val overallLength by lazy { length + tag.encodedTagLength + encodedLength.size }
 
 
     private val derEncodedLazy = lazy { Buffer().also { it.writeAsn1Element(this) }.readByteArray() }
@@ -95,20 +89,24 @@ sealed class Asn1Element(
             return
         }
 
-        write(element.tlv.tag.encodedTag);
-        write(element.encodedLength);
-        if (element.children != null) { // structure
-            element.children!!.forEach { writeAsn1Element(it) }
-        } else { // primitive
-            write(element.tlv.content)
+        element.children?.let { childElems ->
+            write(element.tag.encodedTag);
+            write(element.encodedLength);
+            childElems.forEach { child -> writeAsn1Element(child) }
         }
+
+            ?: also { //primitive
+                write(element.tag.encodedTag)
+                write(element.encodedLength)
+                write(element.content!!)
+            }
     }
 
-    override fun toString(): String = "(tag=${tlv.tag}" +
+    override fun toString(): String = "(tag=${tag}" +
             ", length=${length}" +
             ", overallLength=${overallLength}" +
             (children?.let { ", children=$children" } ?: ", content=${
-                content.encodeToString(Base16 {
+                content?.encodeToString(Base16 {
                     lineBreakInterval = 0;encodeToLowercase = false
                 })
             }") +
@@ -117,7 +115,7 @@ sealed class Asn1Element(
 
     fun prettyPrint() = prettyPrint(0)
 
-    protected open fun prettyPrint(indent: Int): String = "(tag=${tlv.tag}" +
+    protected open fun prettyPrint(indent: Int): String = "(tag=${tag}" +
             ", length=${length}" +
             ", overallLength=${overallLength}" +
             ((children?.joinToString(
@@ -125,7 +123,7 @@ sealed class Asn1Element(
                 separator = "\n",
                 postfix = "\n" + (" " * indent) + "}"
             ) { it.prettyPrint(indent + 2) }) ?: ", content=${
-                content.encodeToString(Base16 {
+                content?.encodeToString(Base16 {
                     lineBreakInterval = 0;encodeToLowercase = false
                 })
             })")
@@ -146,11 +144,7 @@ sealed class Asn1Element(
         }
     })
 
-    override fun hashCode(): Int {
-        var result = tlv.hashCode()
-        result = 31 * result + (children?.hashCode() ?: 0)
-        return result
-    }
+
 
     /**
      * Convenience function to cast this element to an [Asn1Primitive]
@@ -250,6 +244,13 @@ sealed class Asn1Element(
             Tag(template.tagValue, tagClass = template.tagClass ?: TagClass.CONTEXT_SPECIFIC, constructed = false),
             content
         )
+    }
+
+    override fun hashCode(): Int {
+        var result = tag.hashCode()
+        result = 31 * result + (children?.hashCode() ?: 0)
+        result = 31 * result + (content?.contentHashCode() ?: 0)
+        return result
     }
 
 
@@ -464,7 +465,7 @@ sealed class Asn1Structure(
      */
     val isSorted: Boolean = false
 ) :
-    Asn1Element(TLV(tag, byteArrayOf()), if (!isSorted) children else children.sortedBy { it.tag }) {
+    Asn1Element(tag, if (!isSorted) children else children.sortedBy { it.tag }) {
 
 
     public override val children: List<Asn1Element>
@@ -494,6 +495,9 @@ sealed class Asn1Structure(
      * Returns the current child (useful when iterating over this structure's children)
      */
     fun peek() = if (!hasMoreChildren()) null else children[index]
+
+
+    override val content: ByteArray? = null
 
 }
 
@@ -596,7 +600,7 @@ class Asn1CustomStructure private constructor(
     ) : this(children, tag.toULong(), tagClass, sortChildren)
 
 
-    override val content: ByteArray by lazy {
+    override val content: ByteArray? by lazy {
         if (!tag.isConstructed)
             children.fold(byteArrayOf()) { acc, asn1Element -> acc + asn1Element.derEncoded }
         else super.content
@@ -660,7 +664,9 @@ class Asn1PrimitiveOctetString(content: ByteArray) : Asn1Primitive(Tag.OCTET_STR
 
     override fun toString() = "OCTET STRING " + super.toString()
 
-    override fun prettyPrint(indent: Int) = (" " * indent) + "OCTET STRING Primitive" + tlv.toString().substring(3)
+    @OptIn(ExperimentalStdlibApi::class)
+    override fun prettyPrint(indent: Int) =
+        (" " * indent) + "OCTET STRING Primitive" + content.toHexString(HexFormat.UpperCase)
 }
 
 
@@ -707,7 +713,13 @@ class Asn1SetOf @Throws(Asn1Exception::class) internal constructor(children: Lis
 /**
  * ASN.1 primitive. Hold o children, but [content] under [tag]
  */
-open class Asn1Primitive(tag: Tag, content: ByteArray) : Asn1Element(TLV(tag, content), null) {
+open class Asn1Primitive(
+    tag: Tag,
+    /**
+     * Raw data contained in this ASN.1 primitive in its encoded form. Requires decoding to interpret it
+     */
+    override val content: ByteArray
+) : Asn1Element(tag, null) {
     init {
         if (tag.isConstructed) throw IllegalArgumentException("A primitive cannot have a CONSTRUCTED tag")
     }
@@ -720,11 +732,6 @@ open class Asn1Primitive(tag: Tag, content: ByteArray) : Asn1Element(TLV(tag, co
 
     override fun prettyPrint(indent: Int) = (" " * indent) + "Primitive" + super.prettyPrint(indent)
 
-    /**
-     * Raw data contained in this ASN.1 primitive in its encoded form. Requires decoding to interpret it
-     */
-    public override val content: ByteArray
-        get() = super.content
 }
 
 

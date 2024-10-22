@@ -1,9 +1,8 @@
-package at.asitplus.signum.indispensable
+package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.asn1.encoding.parseFirst
-import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
