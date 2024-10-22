@@ -371,7 +371,7 @@ fun String.Companion.decodeFromAsn1ContentBytes(bytes: ByteString) = bytes.decod
 private fun Source.readTlv(): TLV.Shallow = runRethrowing {
     if (exhausted()) throw IllegalArgumentException("Can't read TLV, input empty")
 
-    val tag = decodeTag(collect = true)
+    val tag = decodeTag()
     val length = decodeLength()
     require(length < 1024 * 1024) { "Heap space" }
     val value = Buffer().also {
@@ -384,8 +384,7 @@ private fun Source.readTlv(): TLV.Shallow = runRethrowing {
     return TLV.Shallow(
         Asn1Element.Tag(
             tagValue = tag.first,
-            encodedTagLength = length.toInt(),
-            encodedTag = tag.third!!
+            encodedTag = tag.second!!
         ), value
     )
 }
@@ -420,17 +419,17 @@ internal infix fun Byte.byteMask(mask: Byte) = (this and mask).toUByte()
 /**
  * [collect] tells this method to collect read bytes into a [ByteArray]
  */
-internal fun Source.decodeTag(collect: Boolean = false): Triple<ULong, Int, ByteArray?> =
+internal fun Source.decodeTag(): Pair<ULong, ByteArray?> =
     readByte().let { firstByte ->
         (firstByte byteMask 0x1F).let { tagNumber ->
             if (tagNumber <= 30U) {
-                Triple(tagNumber.toULong(), 1, if (collect) byteArrayOf(firstByte) else null)
+                tagNumber.toULong() to byteArrayOf(firstByte)
             } else {
                 decodeAsn1VarULongShallow().let { (l, b) ->
-                    Triple(l, 1 + b.size.toInt(), if (collect) Buffer().apply {
+                   l to Buffer().apply {
                         writeByte(firstByte)
                         b.transferTo(this)
-                    }.readByteArray() else null)
+                    }.readByteArray()
                 }
             }
         }

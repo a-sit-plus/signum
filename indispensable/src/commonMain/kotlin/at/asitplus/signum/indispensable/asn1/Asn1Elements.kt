@@ -4,10 +4,12 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
-import at.asitplus.signum.indispensable.io.wrapInUnsafeSource
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
-import kotlinx.io.*
+import kotlinx.io.Buffer
+import kotlinx.io.Sink
+import kotlinx.io.readByteArray
+import kotlinx.io.writeUByte
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -51,6 +53,26 @@ sealed class Asn1Element(
         @Throws(Throwable::class)
         fun decodeFromDerHexString(derEncoded: String) =
             Asn1Element.parse(derEncoded.replace(Regex("\\s"), "").trim().decodeToByteArray(Base16))
+
+
+        private fun Sink.writeAsn1Element(element: Asn1Element) {
+            if (element.derEncodedLazy.isInitialized()) {
+                write(element.derEncoded)
+                return
+            }
+
+            element.children?.let { childElems ->
+                write(element.tlv.tag.encodedTag);
+                write(element.encodedLength);
+                childElems.forEach { child -> writeAsn1Element(child) }
+            }
+
+                ?: also { //primitive
+                    write(element.tlv.tag.encodedTag)
+                    write(element.encodedLength)
+                    write(element.tlv.content)
+                }
+        }
     }
 
     /**
@@ -58,7 +80,7 @@ sealed class Asn1Element(
      * For a primitive, this is just the size of the held bytes.
      * For a structure, it is the sum of the number of bytes needed to encode all held child nodes.
      */
-    val encodedLength by lazy { Buffer().apply { encodeLength(length) }.snapshot().toByteArray() }
+    val encodedLength by lazy { length.encodeLength() }
 
     /**
      * Length (as a plain `Long` to work with it in code) of the contained data.
@@ -66,7 +88,9 @@ sealed class Asn1Element(
      * For a structure, it is the sum of the number of bytes needed to encode all held child nodes.
      */
     val length: Long by lazy {
-        children?.fold(0L) { acc, extendedTlv -> acc + extendedTlv.overallLength } ?: tlv.contentLength
+
+        (children?.fold(0L) { acc, extendedTlv -> acc + extendedTlv.overallLength }
+            ?: tlv.contentLength).also { println("LEN: $it") }
     }
 
     /**
@@ -79,18 +103,8 @@ sealed class Asn1Element(
     val tag by lazy { tlv.tag }
 
 
-    internal val derBuffered: Source by lazy {
-        children?.fold(Buffer()) { acc, tlv -> acc.apply { /*Yes, we copy!*/ tlv.derBuffered.peek().transferTo(this) } }
-            ?.let { Buffer().apply { write(tlv.tag.encodedTag); encodeLength(it.size); it.transferTo(this) } }
-            ?: Buffer().apply { write(tlv.tag.encodedTag); write(encodedLength); tlv.content.wrapInUnsafeSource().transferTo(this) }
-    }
-
-    /**
-     * DER-encoded representation of this ASN.1 element.
-     * Each time, this property is read, a new copy of the underlying DER-encoded representation is created.
-     * This enables non-destructive modification of DER-encoded representations, because a fresh copy can always be obtained.
-     */
-    val derEncoded: ByteArray get() = derBuffered.peek().readByteArray()
+    private val derEncodedLazy = lazy { Buffer().also { it.writeAsn1Element(this) }.readByteArray() }
+    val derEncoded: ByteArray by derEncodedLazy
 
     override fun toString(): String = "(tag=${tlv.tag}" +
             ", length=${length}" +
@@ -246,15 +260,11 @@ sealed class Asn1Element(
      * This constructor performs no validations on the passed byte array!
      */
     internal constructor(
-        val tagValue: ULong, val encodedTagLength: Int,
+        val tagValue: ULong,
         @Serializable(with = ByteArrayBase64Serializer::class) val encodedTag: ByteArray
     ) : Comparable<Tag> {
-        private constructor(values: Triple<ULong, Int, ByteArray>) : this(values.first, values.second, values.third)
 
-        constructor(derEncoded: ByteArray) : this(
-            derEncoded.wrapInUnsafeSource().decodeTag(collect = false)
-                .let { Triple(it.first, it.second, derEncoded) }
-        )
+        val encodedTagLength: Int = encodedTag.size
 
         /**
          * Creates a copy of this tag, overriding [tagValue], but keeping [isConstructed] and [tagClass]
@@ -262,6 +272,7 @@ sealed class Asn1Element(
         infix fun withNumber(number: ULong) = Tag(number, constructed = isConstructed, tagClass = tagClass)
 
         constructor(tagValue: ULong, constructed: Boolean, tagClass: TagClass = TagClass.UNIVERSAL) : this(
+            tagValue,
             encode(
                 tagClass,
                 constructed,
