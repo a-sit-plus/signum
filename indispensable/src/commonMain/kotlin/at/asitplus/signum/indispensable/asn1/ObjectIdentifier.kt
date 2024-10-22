@@ -58,40 +58,39 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
      * for details.
      * Lazily evaluated.
      */
-    val bytes: ByteArray by if (bytes != null) lazyOf(bytes) else lazy {
-        this.nodes.toOidBytes()
-    }
+    val bytes: ByteArray by lazy { bytes ?: this.nodes.toOidBytes() }
 
     /**
      * Lazily evaluated list of OID nodes (e.g. `[1, 2, 35, 4654]`)
      */
-    val nodes by if (nodes != null) lazyOf(nodes) else lazy {
-        val (first, second) =
-            if (this.bytes[0] >= 80) {
-                BigInteger.fromUByte(2u) to BigInteger.fromUInt(this.bytes[0].toUByte() - 80u)
-            } else {
-                BigInteger.fromUInt(this.bytes[0].toUByte() / 40u) to BigInteger.fromUInt(this.bytes[0].toUByte() % 40u)
-            }
-        var index = 1
-        val collected = mutableListOf(first, second)
-        while (index < this.bytes.size) {
-            if (this.bytes[index] >= 0) {
-                collected += BigInteger.fromUInt(this.bytes[index].toUInt())
-                index++
-            } else {
-                val currentNode = mutableListOf<Byte>()
-                while (this.bytes[index] < 0) {
-                    currentNode += this.bytes[index] //+= parsed
-                    index++
+    val nodes by lazy {
+        if (nodes != null) nodes else {
+            val (first, second) =
+                if (this.bytes[0] >= 80) {
+                    BigInteger.fromUByte(2u) to BigInteger.fromUInt(this.bytes[0].toUByte() - 80u)
+                } else {
+                    BigInteger.fromUInt(this.bytes[0].toUByte() / 40u) to BigInteger.fromUInt(this.bytes[0].toUByte() % 40u)
                 }
-                currentNode += this.bytes[index]
-                index++
-                collected += currentNode.decodeAsn1VarBigInt().first
+            var index = 1
+            val collected = mutableListOf(first, second)
+            while (index < this.bytes.size) {
+                if (this.bytes[index] >= 0) {
+                    collected += BigInteger.fromUInt(this.bytes[index].toUInt())
+                    index++
+                } else {
+                    val currentNode = mutableListOf<Byte>()
+                    while (this.bytes[index] < 0) {
+                        currentNode += this.bytes[index] //+= parsed
+                        index++
+                    }
+                    currentNode += this.bytes[index]
+                    index++
+                    collected += currentNode.decodeAsn1VarBigInt().first
+                }
             }
+            collected
         }
-        collected
     }
-
     /**
      * Creates an OID in the 2.25 subtree that requires no formal registration.
      * E.g. the UUID `550e8400-e29b-41d4-a716-446655440000` results in the OID

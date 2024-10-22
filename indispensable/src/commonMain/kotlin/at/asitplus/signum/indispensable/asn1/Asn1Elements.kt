@@ -66,9 +66,7 @@ sealed class Asn1Element(
      * For a primitive, this is just the size of the held bytes.
      * For a structure, it is the sum of the number of bytes needed to encode all held child nodes.
      */
-    val length: Int by lazy {
-        children?.fold(0) { acc, extendedTlv -> acc + extendedTlv.overallLength } ?: content!!.size
-    }
+    abstract val length: Int
 
     /**
      * Total number of bytes required to represent the ths element, when encoding to ASN.1.
@@ -76,31 +74,33 @@ sealed class Asn1Element(
     val overallLength by lazy { length + tag.encodedTagLength + encodedLength.size }
 
 
-    private val derEncodedLazy = lazy { Buffer().also { it.writeAsn1Element(this) }.readByteArray() }
+    private val derEncodedLazy = lazy { Buffer().also { encodeTo(it) }.readByteArray() }
 
     /**
      * Lazily-evaluated DER-encoded representation of this ASN.1 element
      */
     val derEncoded: ByteArray by derEncodedLazy
 
-    private fun Sink.writeAsn1Element(element: Asn1Element) {
-        if (element.derEncodedLazy.isInitialized()) {
-            write(element.derEncoded)
+
+    private fun encodeTo(sink:Sink) {
+        if (derEncodedLazy.isInitialized()) {
+            sink.write(derEncoded)
             return
         }
 
-        element.children?.let { childElems ->
-            write(element.tag.encodedTag);
-            write(element.encodedLength);
-            childElems.forEach { child -> writeAsn1Element(child) }
+        children?.let { childElems ->
+            sink.write(tag.encodedTag);
+            sink.write(encodedLength);
+            childElems.forEach { child -> child.encodeTo(sink) }
         }
 
             ?: also { //primitive
-                write(element.tag.encodedTag)
-                write(element.encodedLength)
-                write(element.content!!)
+                sink.write(tag.encodedTag)
+                sink.write(encodedLength)
+                sink.write(content!!)
             }
     }
+
 
     override fun toString(): String = "(tag=${tag}" +
             ", length=${length}" +
@@ -499,6 +499,7 @@ sealed class Asn1Structure(
 
     override val content: ByteArray? = null
 
+    override val length: Int by lazy { children.fold(0) { acc, child -> acc + child.overallLength } }
 }
 
 /**
@@ -723,6 +724,9 @@ open class Asn1Primitive(
     init {
         if (tag.isConstructed) throw IllegalArgumentException("A primitive cannot have a CONSTRUCTED tag")
     }
+
+    override val length: Int get() = content.size
+
 
     override fun toString() = "Primitive" + super.toString()
 
