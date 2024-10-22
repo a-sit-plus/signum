@@ -10,11 +10,27 @@ import at.asitplus.signum.indispensable.asn1.BERTags.T61_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.UNIVERSAL_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.UTF8_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.VISIBLE_STRING
+import at.asitplus.signum.indispensable.io.wrapInUnsafeSource
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.util.fromTwosComplementByteArray
 import kotlinx.datetime.Instant
+import kotlinx.io.Source
+import kotlinx.io.readByteArray
+import kotlinx.io.readUByte
 import kotlin.experimental.and
 
+
+/**
+ * Convenience wrapper around [parse], taking a [ByteArray] as [source]
+ * @see parse
+ */
+@Throws(Asn1Exception::class)
+@Deprecated(
+    "Use a ByteArray or (even better) a kotlinx.io Source as input when possible. This method copies all bytes from the input twice and is inefficient.",
+    ReplaceWith("source.readAsn1Element(); require(source.exhausted())")
+)
+fun Asn1Element.Companion.parse(input: ByteIterator): Asn1Element =
+    parse(mutableListOf<Byte>().also { while (input.hasNext()) it.add(input.nextByte()) }.toByteArray())
 
 /**
  * Parses the provided [input] into a single [Asn1Element]. Consumes all Bytes and throws if more than one Asn.1 Structure was found or trailing bytes were detected
@@ -23,78 +39,103 @@ import kotlin.experimental.and
  * @throws Asn1Exception on invalid input or if more than a single root structure was contained in the [input]
  */
 @Throws(Asn1Exception::class)
-fun Asn1Element.Companion.parse(input: ByteIterator): Asn1Element = parseFirst(input).also {
-    if (input.hasNext()) throw Asn1StructuralException("Trailing bytes found after the first ASN.1 element")
-}
-
-/**
- * Convenience wrapper around [parse], taking a [ByteArray] as [source]
- * @see parse
- */
-@Throws(Asn1Exception::class)
-fun Asn1Element.Companion.parse(source: ByteArray): Asn1Element = parse(source.iterator())
+fun Asn1Element.Companion.parse(source: ByteArray): Asn1Element =
+    source.wrapInUnsafeSource().readFullyToAsn1Elements().first.let {
+        if (it.size != 1)
+            throw Asn1StructuralException("Trailing bytes found after the first ASN.1 element")
+        it.first()
+    }
 
 /**
  * Tries to parse the [input] into a list of [Asn1Element]s. Consumes all Bytes and throws if an invalid ASN.1 Structure is found at any point.
  * @return the parsed elements
  *
  * @throws Asn1Exception on invalid input or if more than a single root structure was contained in the [input]
+ *
  */
+@Deprecated(
+    "Use a ByteArray or (even better) a kotlinx.io Source as input when possible. This method copies all bytes from the input twice and is inefficient.",
+    ReplaceWith("source.readFullyToAsn1Elements()"),
+    DeprecationLevel.WARNING
+)
 @Throws(Asn1Exception::class)
-fun Asn1Element.Companion.parseAll(input: ByteIterator): List<Asn1Element> = input.doParseAll()
+fun Asn1Element.Companion.parseAll(input: ByteIterator): List<Asn1Element> =
+    mutableListOf<Byte>().also { while (input.hasNext()) it.add(input.nextByte()) }.toByteArray().wrapInUnsafeSource()
+        .readFullyToAsn1Elements().first
 
 /**
  * Convenience wrapper around [parseAll], taking a [ByteArray] as [source]
  * @see parse
  */
 @Throws(Asn1Exception::class)
-fun Asn1Element.Companion.parseAll(source: ByteArray): List<Asn1Element> = parseAll(source.iterator())
-
-
-/**
- * Parses the first [Asn1Element] from [input].
- * @return the parsed [Asn1Element]. Trailing byte are left untouched and can be consumed from [input] after parsing
- *
- * @throws Asn1Exception on invalid input or if more than a single root structure was contained in the [input]
- */
-//this only makes sense until we switch to kotlinx.io
-@Throws(Asn1Exception::class)
-fun Asn1Element.Companion.parseFirst(input: ByteIterator): Asn1Element = input.doParseSingle()
-
+fun Asn1Element.Companion.parseAll(source: ByteArray): List<Asn1Element> =
+    source.wrapInUnsafeSource().readFullyToAsn1Elements().first
 
 /**
  * Convenience wrapper around [parseFirst], taking a [ByteArray] as [source].
  * @return a pari of the first parsed [Asn1Element] mapped to the remaining bytes
- * @see parse
+ * @see readAsn1Element
  */
 @Throws(Asn1Exception::class)
 fun Asn1Element.Companion.parseFirst(source: ByteArray): Pair<Asn1Element, ByteArray> =
-    source.iterator().doParseSingle().let { Pair(it, source.copyOfRange(it.overallLength, source.size)) }
+    source.wrapInUnsafeSource().readAsn1Element()
+        .let { Pair(it.first, source.copyOfRange(it.second.toInt(), source.size)) }
 
-@Throws(Asn1Exception::class)
-private fun ByteIterator.doParseAll(): List<Asn1Element> = runRethrowing {
-    val result = mutableListOf<Asn1Element>()
-    while (hasNext()) result += doParseSingle()
-    return result
+private fun Source.doParseExactly(nBytes: Long): List<Asn1Element> = mutableListOf<Asn1Element>().also { list ->
+    var nBytesRead: Long = 0
+    while (nBytesRead < nBytes) {
+        val peekTagAndLen = peekTagAndLen()
+        val numberOfNextBytesRead = peekTagAndLen.second + peekTagAndLen.first.second
+        if (nBytesRead + numberOfNextBytesRead > nBytes)
+            return@also
+        val (elem, read) = readAsn1Element()
+        list.add(elem)
+        nBytesRead += read
+    }
+    require(nBytesRead == nBytes) { (if (nBytesRead < nBytes) "Less " else "More ") + " bytes read ($nBytesRead) than allowed ($nBytes)" }
 }
 
-private fun ByteIterator.doParseSingle(): Asn1Element = runRethrowing {
-    val tlv = readTlv()
-    if (tlv.isSequence()) Asn1Sequence(tlv.content.iterator().doParseAll())
-    else if (tlv.isSet()) Asn1Set.fromPresorted(tlv.content.iterator().doParseAll())
-        else if (tlv.isExplicitlyTagged())
-        Asn1ExplicitlyTagged(tlv.tag.tagValue, tlv.content.iterator().doParseAll())
-        else if (tlv.tag == Asn1Element.Tag.OCTET_STRING) catching {
-        Asn1EncapsulatingOctetString(tlv.content.iterator().doParseAll()) as Asn1Element
-        }.getOrElse { Asn1PrimitiveOctetString(tlv.content) as Asn1Element }
-        else if (tlv.tag.isConstructed) { //custom tags, we don't know if it is a SET OF, SET, SEQUENCE,… so we default to sequence semantics
-        Asn1CustomStructure(tlv.content.iterator().doParseAll(), tlv.tag.tagValue, tlv.tagClass)
-        } else Asn1Primitive(tlv.tag, tlv.content)
+/**
+ * Reads all parsable ASN.1 elements from this source.
+ *
+ * @throws Asn1Exception on error if any illegal element or any trailing bytes are encountered
+ */
+@Throws(Asn1Exception::class)
+fun Source.readFullyToAsn1Elements(): Pair<List<Asn1Element>, Long> = mutableListOf<Asn1Element>().let { list ->
+    var bytesRead = 0L
+    while (!exhausted()) readAsn1Element().also { (elem, nBytes) ->
+        bytesRead += nBytes
+        list.add(elem)
+    }
+    list to bytesRead
+}
+
+fun Source.peekTagAndLen() = peek().readTagAndLength()
+
+@Throws(Asn1Exception::class)
+fun Source.readAsn1Element(): Pair<Asn1Element, Long> = runRethrowing {
+    val (readTagAndLength, bytesRead) = readTagAndLength() //TODO split s.t. peekTagAndLen can be used
+    val (tag, length) = readTagAndLength
+    (if (tag.isSequence()) Asn1Sequence(doParseExactly(length))
+    else if (tag.isSet()) Asn1Set.fromPresorted(doParseExactly(length))
+    else if (tag.isExplicitlyTagged)
+        Asn1ExplicitlyTagged(tag.tagValue, doParseExactly(length))
+    else if (tag == Asn1Element.Tag.OCTET_STRING) catching {
+        Asn1EncapsulatingOctetString(peek().doParseExactly(length)).also { skip(length) } as Asn1Element
+    }.getOrElse {
+        require(length <= Int.MAX_VALUE) { "Cannot read more than ${Int.MAX_VALUE} into an OCTET STRING" }
+        Asn1PrimitiveOctetString(readByteArray(length.toInt())) as Asn1Element
+    }
+    else if (tag.isConstructed) { //custom tags, we don't know if it is a SET OF, SET, SEQUENCE,… so we default to sequence semantics
+        Asn1CustomStructure(doParseExactly(length), tag.tagValue, tag.tagClass) as Asn1Element
+    } else {
+        require(length <= Int.MAX_VALUE) { "Cannot read more than ${Int.MAX_VALUE} into a primitive" }
+        Asn1Primitive(tag, readByteArray(length.toInt())) as Asn1Element
+    }) to length + bytesRead
     }
 
-    private fun TLV.isSet() = tag == Asn1Element.Tag.SET
-    private fun TLV.isSequence() = (tag == Asn1Element.Tag.SEQUENCE)
-    private fun TLV.isExplicitlyTagged() = tag.isExplicitlyTagged
+private fun Asn1Element.Tag.isSet() = this == Asn1Element.Tag.SET
+private fun Asn1Element.Tag.isSequence() = (this == Asn1Element.Tag.SEQUENCE)
 
 
 /**
@@ -355,31 +396,28 @@ fun Boolean.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): Boolean {
 fun String.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray) = bytes.decodeToString()
 
 
-private fun ByteIterator.readTlv(): TLV = runRethrowing {
-    if (!hasNext()) throw IllegalArgumentException("Can't read TLV, input empty")
+typealias TagAndLength = Pair<Asn1Element.Tag, Long>
 
-    val tag = decodeTag()
+private fun Source.readTagAndLength(): Pair<TagAndLength, Int> = runRethrowing {
+    if (exhausted()) throw IllegalArgumentException("Can't read TLV, input empty")
+
+    val tag = readAsn1Tag()
     val length = decodeLength()
-    require(length < 1024 * 1024) { "Heap space" }
-    val value = ByteArray(length) {
-        require(hasNext()) { "Out of bytes to decode" }
-        nextByte()
-    }
-
-    return TLV(Asn1Element.Tag(tag.first,tag.second), value)
+    require(length.first >= 0L) { "Illegal length: $length" }
+    return (tag to length.first) to length.second + tag.encodedTagLength
 }
 
 @Throws(IllegalArgumentException::class)
-private fun ByteIterator.decodeLength() =
-    nextByte().let { firstByte ->
+private fun Source.decodeLength(): Pair<Long, Int> =
+    readByte().let { firstByte ->
         if (firstByte.isBerShortForm()) {
-            firstByte.toUByte().toInt()
+            firstByte.toUByte().toLong() to 1
         } else { // its BER long form!
             val numberOfLengthOctets = (firstByte byteMask 0x7F).toInt()
-            (0 until numberOfLengthOctets).fold(0) { acc, index ->
-                require(hasNext()) { "Can't decode length" }
-                acc + (nextByte().toUByte().toInt() shl Byte.SIZE_BITS * (numberOfLengthOctets - index - 1))
-            }
+            (0 until numberOfLengthOctets).fold(0L) { acc, index ->
+                require(!exhausted()) { "Can't decode length" }
+                acc + (readUByte().toLong() shl Byte.SIZE_BITS * (numberOfLengthOctets - index - 1))
+            } to 1 + numberOfLengthOctets
         }
     }
 
@@ -387,13 +425,12 @@ private fun Byte.isBerShortForm() = this byteMask 0x80 == 0x00.toUByte()
 
 internal infix fun Byte.byteMask(mask: Int) = (this and mask.toUInt().toByte()).toUByte()
 
-internal fun ByteIterator.decodeTag(): Pair<ULong, ByteArray> =
-    nextByte().let { firstByte ->
+fun Source.readAsn1Tag(): Asn1Element.Tag =
+    readByte().let { firstByte ->
         (firstByte byteMask 0x1F).let { tagNumber ->
-            if (tagNumber <= 30U) {
-                tagNumber.toULong() to byteArrayOf(firstByte)
-            } else {
-                decodeAsn1VarULong().let { (l, b) -> l to byteArrayOf(firstByte, *b) }
+            if (tagNumber <= 30U) Asn1Element.Tag(tagNumber.toULong(), byteArrayOf(firstByte))
+            else decodeAsn1VarULongShallow().let { (l, b) ->
+                Asn1Element.Tag(l, byteArrayOf(firstByte, *b.readByteArray()))
             }
         }
     }

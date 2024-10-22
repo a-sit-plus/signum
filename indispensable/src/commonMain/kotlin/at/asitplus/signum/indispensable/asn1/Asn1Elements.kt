@@ -234,12 +234,12 @@ sealed class Asn1Element(
         @Serializable(with = ByteArrayBase64Serializer::class) val encodedTag: ByteArray
     ) : Comparable<Tag> {
 
-
-        constructor(derEncoded: ByteArray) : this(derEncoded.iterator().decodeTag())
-
         //workaround because we cannot return two values or assign params in a destructured manner
         private constructor(decoded: Pair<ULong, ByteArray>) : this(decoded.first, decoded.second)
 
+        /**
+         * The length (in bytes) of this tag when encoded according to DER
+         */
         val encodedTagLength: Int = encodedTag.size
         /**
          * Creates a copy of this tag, overriding [tagValue], but keeping [isConstructed] and [tagClass]

@@ -41,6 +41,9 @@ class Asn1EncodingTest : FreeSpec({
             decoded shouldBe it
         }
     }
+    "Manual" - {
+        Asn1Element.decodeFromDerHexString("30 1D 06 03 55 1D 0E 04 16 04 14 EB 92 86 2F 31 C3 DB 96 A3 49 FF CB A5 15 64 23 14 B3 D2 3D")
+    }
 
 
     val bitSet = BitSet.fromBitString("011011100101110111")
