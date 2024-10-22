@@ -89,6 +89,8 @@ class Asn1EncodingTest : FreeSpec({
         }
         val parsed = Asn1Element.parse(seq.derEncoded)
         parsed.shouldNotBeNull()
+        println(parsed.prettyPrint())
+
     }
 
     "Asn1 Number encoding" - {
