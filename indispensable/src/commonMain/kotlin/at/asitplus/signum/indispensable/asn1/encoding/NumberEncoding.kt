@@ -507,7 +507,6 @@ fun Sink.writeAsn1VarInt(number: UInt) = writeAsn1VarInt(number.toULong(), UInt.
  *
  * @return the number of bytes written to the sink
  */
-//TODO find a way to make it work with any number to avoid allocating an ULong
 private fun Sink.writeAsn1VarInt(number: ULong, bits: Int):Int {
     if (number < 128u) return writeByte(number.toByte()).run { 1 } //Fast case
     var offset = 0
@@ -555,63 +554,38 @@ fun Sink.writeAsn1VarInt(number: BigInteger): Int {
 }
 
 /**
- * Decodes an ASN.1 unsigned varint to an [ULong].
- * This function is useful as an intermediate processing step, since it also returns a [Buffer]
- * holding all bytes consumed from the source.
- * This operation essentially moves bytes around without copying.
- *
- * @return the decoded [ULong] and the underlying varint-encoded bytes as Buffer
- * @throws IllegalArgumentException if the number is larger than [ULong.MAX_VALUE]
- */
-@Throws(IllegalArgumentException::class)
-fun Source.decodeAsn1VarULongShallow(): Pair<ULong, Buffer> = decodeAsn1VarIntShallow(ULong.SIZE_BITS)
-
-/**
- * Decodes an ASN.1 unsigned varint to an [ULong], copying all bytes from the source into a [ByteString].
+ * Decodes an ASN.1 unsigned varint to an [ULong], copying all bytes from the source into a [ByteArray].
  *
  * @return the decoded [ULong] and the underlying varint-encoded bytes as ByteString
  * @throws IllegalArgumentException if the number is larger than [ULong.MAX_VALUE]
  */
 @Throws(IllegalArgumentException::class)
-fun Source.decodeAsn1VarULong(): Pair<ULong, ByteString> =
-    decodeAsn1VarULongShallow().let { (ulong, buffer) -> ulong to buffer.snapshot() }
+fun Source.decodeAsn1VarULong(): Pair<ULong, ByteArray> = decodeAsn1VarULong(ULong.SIZE_BITS)
 
 
-/**
- * Decodes an ASN.1 unsigned varint to an [UInt].
- * This function is useful as an intermediate processing step, since it also returns a [Buffer]
- * holding all bytes consumed from the source.
- * This operation essentially moves bytes around without copying.
- *
- * @return the decoded [UInt] and the underlying varint-encoded bytes as Buffer
- * @throws IllegalArgumentException if the number is larger than [UInt.MAX_VALUE]
- */
-@Throws(IllegalArgumentException::class)
-fun Source.decodeAsn1VarUIntShallow(): Pair<UInt, Buffer> =
-    decodeAsn1VarIntShallow(UInt.SIZE_BITS).let { (ulong, buffer) -> ulong.toUInt() to buffer }
 
 /**
- * Decodes an ASN.1 unsigned varint to an [UInt], copying all bytes from the source into a [ByteString].
+ * Decodes an ASN.1 unsigned varint to an [UInt], copying all bytes from the source into a [ByteArray].
  *
  * @return the decoded [UInt] and the underlying varint-encoded bytes as ByteString
  * @throws IllegalArgumentException if the number is larger than [UInt.MAX_VALUE]
  */
 @Throws(IllegalArgumentException::class)
-fun Source.decodeAsn1VarUInt(): Pair<UInt, ByteString> =
-    decodeAsn1VarUIntShallow().let { (ulong, buffer) -> ulong to buffer.snapshot() }
+fun Source.decodeAsn1VarUInt(): Pair<UInt, ByteArray> =
+    decodeAsn1VarULong(Int.SIZE_BITS).let { (num, bytes) -> num.toUInt() to bytes }
 
 /**
  * Decodes an ASN.1 unsigned varint to an ULong allocating at most [bits] many bits .
- * This function is useful as an intermediate processing step, since it also returns a [Buffer]
+ * This function is useful as an intermediate processing step, since it also returns a [ByteArray]
  * holding all bytes consumed from the source.
  * This operation essentially moves bytes around without copying.
  *
- * @return the decoded ASN.1 varint as an [ULong] and the underlying varint-encoded bytes as [Buffer]
+ * @return the decoded ASN.1 varint as an [ULong] and the underlying varint-encoded bytes as [ByteArray]
  * @throws IllegalArgumentException if the resulting number requires more than [bits] many bits to be represented
  */
 @Throws(IllegalArgumentException::class)
 //TODO: find a way to do this without allocating an ULong when using UInt
-private fun Source.decodeAsn1VarIntShallow(bits: Int): Pair<ULong, Buffer> {
+private fun Source.decodeAsn1VarULong(bits: Int): Pair<ULong, ByteArray> {
     var offset = 0
     var result = 0uL
     val accumulator = Buffer()
@@ -627,20 +601,20 @@ private fun Source.decodeAsn1VarIntShallow(bits: Int): Pair<ULong, Buffer> {
         if (++offset > ceil((bits * 8).toFloat() * 8f / 7f)) throw IllegalArgumentException("Tag number too Large do decode into $bits bits!")
     }
 
-    return result to accumulator
+    return result to accumulator.readByteArray()
 }
 
 /**
  * Decodes a BigInteger from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
  * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
  *
- * This function is useful as an intermediate processing step, since it also returns a [Buffer]
+ * This function is useful as an intermediate processing step, since it also returns a [ByteArray]
  * holding all bytes consumed from the source.
  * This operation essentially moves bytes around without copying.
  *
- * @return the decoded [BigInteger] and the underlying varint-encoded bytes as [Buffer]
+ * @return the decoded [BigInteger] and the underlying varint-encoded bytes as [ByteArray]
  */
-fun Source.decodeAsn1VarBigIntShallow(): Pair<BigInteger, Buffer> {
+fun Source.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> {
     var result = BigInteger.ZERO
     val accumulator = Buffer()
     while (!exhausted()) {
@@ -651,17 +625,8 @@ fun Source.decodeAsn1VarBigIntShallow(): Pair<BigInteger, Buffer> {
         if (current < UVARINT_SINGLEBYTE_MAXVALUE_UBYTE) break
     }
 
-    return result to accumulator
+    return result to accumulator.readByteArray()
 }
-
-/**
- * Decodes an ASN.1 unsigned varint to a [BigInteger], copying all bytes from the source into a [ByteString].
- *
- * @return the decoded [BigInteger] and the underlying varint-encoded bytes as ByteString
- */
-fun Source.decodeAsn1VarBigInt(): Pair<BigInteger, ByteString> =
-    decodeAsn1VarBigIntShallow().let { (bigInt, buffer) -> bigInt to buffer.snapshot() }
-
 
 /**
  * Writes a signed long using twos-complement encoding using the fewest bytes required
@@ -670,27 +635,27 @@ fun Source.decodeAsn1VarBigInt(): Pair<BigInteger, ByteString> =
  *
  * @return the number of byte written to the sink
  * */
-fun Sink.writeTwosComplementLong(number: Long, unpadded: Boolean = false): Int = when {
+fun Sink.writeTwosComplementLong(number: Long, padded: Boolean = true): Int = when {
     (number >= -0x80L && number <= 0x7FL) -> {
         writeByte(number.toByte())
         1
     }
 
     (number >= -0x8000L && number <= 0x7FFFL) -> {
-        val byteWritten = writeOrSkipPadding(number, 8, unpadded)
+        val byteWritten = writeOrSkipPadding(number, 8, padded)
         writeByte(number.toByte())
         1 + byteWritten
     }
 
     (number >= -0x800000L && number <= 0x7FFFFFL) -> {
-        val byteWritten = writeOrSkipPadding(number, 16, unpadded)
+        val byteWritten = writeOrSkipPadding(number, 16, padded)
         writeByte((number ushr 8).toByte())
         writeByte(number.toByte())
         2 + byteWritten
     }
 
     (number >= -0x80000000L && number <= 0x7FFFFFFFL) -> {
-        val byteWritten = writeOrSkipPadding(number, 24, unpadded)
+        val byteWritten = writeOrSkipPadding(number, 24, padded)
         writeByte((number ushr 16).toByte())
         writeByte((number ushr 8).toByte())
         writeByte(number.toByte())
@@ -698,7 +663,7 @@ fun Sink.writeTwosComplementLong(number: Long, unpadded: Boolean = false): Int =
     }
 
     (number >= -0x8000000000L && number <= 0x7FFFFFFFFFL) -> {
-        val byteWritten = writeOrSkipPadding(number, 32, unpadded)
+        val byteWritten = writeOrSkipPadding(number, 32, padded)
         writeByte((number ushr 24).toByte())
         writeByte((number ushr 16).toByte())
         writeByte((number ushr 8).toByte())
@@ -707,7 +672,7 @@ fun Sink.writeTwosComplementLong(number: Long, unpadded: Boolean = false): Int =
     }
 
     (number >= -0x800000000000L && number <= 0x7FFFFFFFFFFFL) -> {
-        val byteWritten = writeOrSkipPadding(number, 40, unpadded)
+        val byteWritten = writeOrSkipPadding(number, 40, padded)
         writeByte((number ushr 32).toByte())
         writeByte((number ushr 24).toByte())
         writeByte((number ushr 16).toByte())
@@ -717,7 +682,7 @@ fun Sink.writeTwosComplementLong(number: Long, unpadded: Boolean = false): Int =
     }
 
     (number >= -0x80000000000000L && number <= 0x7FFFFFFFFFFFFFL) -> {
-        val byteWritten = writeOrSkipPadding(number, 48, unpadded)
+        val byteWritten = writeOrSkipPadding(number, 48, padded)
         writeByte((number ushr 40).toByte())
         writeByte((number ushr 32).toByte())
         writeByte((number ushr 24).toByte())
@@ -728,7 +693,7 @@ fun Sink.writeTwosComplementLong(number: Long, unpadded: Boolean = false): Int =
     }
 
     else -> {
-        val byteWritten = writeOrSkipPadding(number, 56, unpadded)
+        val byteWritten = writeOrSkipPadding(number, 56, padded)
         writeByte((number ushr 48).toByte())
         writeByte((number ushr 40).toByte())
         writeByte((number ushr 32).toByte())
@@ -741,9 +706,9 @@ fun Sink.writeTwosComplementLong(number: Long, unpadded: Boolean = false): Int =
 
 }
 
-private inline fun Sink.writeOrSkipPadding(number: Long, shift: Int, unpadded: Boolean): Int {
+private inline fun Sink.writeOrSkipPadding(number: Long, shift: Int, padded: Boolean): Int {
     val byte = (number ushr shift).toByte()
-    val writeFirstByte = !unpadded || (byte != 0.toByte())
+    val writeFirstByte = padded || (byte != 0.toByte())
     if (writeFirstByte) writeByte(byte)
     return if (writeFirstByte) 1 else 0
 }
@@ -776,17 +741,19 @@ fun Sink.writeTwosComplement(number: ULong): Int = when {
 fun Sink.writeTwosComplementUInt(number: UInt) = writeTwosComplementLong(number.toLong())
 
 /**
- * Consumes all remaining data from this source and interprets it as a signed [ULong]
+ * Consumes data from this source and interprets it as a signed [ULong].
+ * Tries to read exactly [nBytes] many bytes from this source, or all remaining data if not set.
  *
- * @throws IllegalArgumentException if no or too much data is present
+ * @throws IllegalArgumentException if too much or too little data is present
  */
 @Throws(IllegalArgumentException::class)
-fun Source.readTwosComplementULong(): ULong {
+fun Source.readTwosComplementULong(nBytes: Int? = null): ULong {
+    if(nBytes==0) return 0uL
     require(!exhausted()) { "Source is exhausted" }
     val firstByte = readByte()
     var result = firstByte.toUByte().toULong()
     var bytesRead = 1
-    while (!exhausted()) {
+    while (nBytes?.let { bytesRead < nBytes } ?: !exhausted()) {
         require(bytesRead ++ <= 8) { "Input too large" }
         result = (result shl 8) or readUByte().toULong()
     }
@@ -795,18 +762,22 @@ fun Source.readTwosComplementULong(): ULong {
 
 
 /**
- * Consumes all remaining data from this source and interprets it as a [Long]
+ * Consumes data from this source and interprets it as a [Long].
+ * Tries to read exactly [nBytes] many bytes from this source, or all remaining data if not set.
  *
- * @throws IllegalArgumentException if no or too much data is present
+ * @throws IllegalArgumentException if too much or too little data is present
  */
-fun Source.readTwosComplementLong(): Long {
+fun Source.readTwosComplementLong(nBytes: Int? = null): Long {
+    if (nBytes == 0) return 0L
     require(!exhausted()) { "Source is exhausted" }
     val firstByte = readByte()
     var result = 0L
     var offset = 48 //one less than max shift (56), since first byte is read
-    while (!exhausted()) {
+    var bytesRead = 1
+    while (nBytes?.let { bytesRead < nBytes } ?: !exhausted()) {
         require(offset >= 0) { "Input too large" }
         result = result or readByte().shiftLeftAsLong(offset)
+        bytesRead++
         offset -= 8
     }
     return result.shr(offset + 8) or firstByte.shiftLeftFirstLong(48 - offset)
@@ -814,19 +785,23 @@ fun Source.readTwosComplementLong(): Long {
 
 
 /**
- * Consumes all remaining data from this source and interprets it as a signed [Int]
+ * Consumes data from this source and interprets it as a signed [Int]
+ * Tries to read exactly [nBytes] many bytes from this source, or all remaining data if not set.
  *
- * @throws IllegalArgumentException if no or too much data is present
+ * @throws IllegalArgumentException if too much or too little data is present
  */
 @Throws(IllegalArgumentException::class)
-fun Source.readTwosComplementInt(): Int {
+fun Source.readTwosComplementInt(nBytes: Int? = null): Int {
+    if (nBytes == 0) return 0
     require(!exhausted()) { "Source is exhausted" }
     val firstByte = readByte()
+    var bytesRead = 1
     var result = 0
     var offset = 16 //one less than max shift (24), since first byte is read
-    while (!exhausted()) {
+    while (nBytes?.let { bytesRead < nBytes } ?: !exhausted()) {
         require(offset >= 0) { "Input too large" }
         result = result or readByte().shiftLeftAsInt(offset)
+        bytesRead++
         offset -= 8
     }
     return result.shr(offset + 8) or firstByte.shiftLeftFirstInt(16 - offset)
@@ -852,5 +827,5 @@ fun Source.readTwosComplementUInt() =
  */
 fun Sink.writeUnsignedTwosComplementLong(number: Long): Int {
     require(number >= 0)
-    return writeTwosComplementLong(number, unpadded = true)
+    return writeTwosComplementLong(number, padded = false)
 }
