@@ -86,8 +86,7 @@ private fun Source.doParseExactly(nBytes: Long): List<Asn1Element> = mutableList
     while (nBytesRead < nBytes) {
         val peekTagAndLen = peekTagAndLen()
         val numberOfNextBytesRead = peekTagAndLen.second + peekTagAndLen.first.second
-        if (nBytesRead + numberOfNextBytesRead > nBytes)
-            return@also
+        if (nBytesRead + numberOfNextBytesRead > nBytes) break
         val (elem, read) = readAsn1Element()
         list.add(elem)
         nBytesRead += read

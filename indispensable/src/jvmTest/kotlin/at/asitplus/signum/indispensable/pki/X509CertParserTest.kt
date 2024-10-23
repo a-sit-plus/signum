@@ -199,7 +199,7 @@ class X509CertParserTest : FreeSpec({
                 val input = (jcaCert.encoded + garbage).wrapInUnsafeSource()
                 input.readAsn1Element().let { (parsed,_) ->
                     parsed.derEncoded shouldBe jcaCert.encoded
-                    input.readAsn1Element() shouldBe garbage
+                    input.readByteArray() shouldBe garbage
                 }
             }
         }
