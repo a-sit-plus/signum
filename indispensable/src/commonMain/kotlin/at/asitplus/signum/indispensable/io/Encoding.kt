@@ -9,6 +9,7 @@ import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.io.Buffer
 import kotlinx.io.Source
 import kotlinx.io.UnsafeIoApi
+import kotlinx.io.readByteArray
 import kotlinx.io.unsafe.UnsafeBufferOperations
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
@@ -128,10 +129,21 @@ fun ByteArray.ensureSize(size: Int): ByteArray = (this.size - size).let { toDrop
 @Suppress("NOTHING_TO_INLINE")
 inline fun ByteArray.ensureSize(size: UInt) = ensureSize(size.toInt())
 
-@Suppress("NOTHING_TO_INLINE")
-inline fun ByteArray.asBuffer()= Buffer().also{it.write(this)}
-
 @OptIn(UnsafeIoApi::class)
 internal fun ByteArray.wrapInUnsafeSource(): Source = Buffer().apply {
     UnsafeBufferOperations.moveToTail(this, this@wrapInUnsafeSource)
 }
+
+@OptIn(UnsafeIoApi::class)
+internal fun wrapInUnsafeSource(vararg bytes: ByteArray) = Buffer().apply {
+    bytes.forEach { UnsafeBufferOperations.moveToTail(this, it) }
+}
+
+/**
+ * Helper to create a buffer, operate on it and return its contents as a [ByteArray]
+ */
+internal inline fun throughBuffer(operation: (Buffer) -> Unit): ByteArray =
+    Buffer().also { operation(it) }.readByteArray()
+
+internal inline fun <reified T> ByteArray.throughBuffer(operation: (Source) -> T): T =
+    wrapInUnsafeSource().let { operation(it) }

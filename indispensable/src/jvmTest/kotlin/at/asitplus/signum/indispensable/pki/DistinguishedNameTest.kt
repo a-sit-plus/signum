@@ -1,4 +1,4 @@
-package at.asitplus.signum.indispensable
+package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue.*
