@@ -132,7 +132,7 @@ class Asn1EncodingTest : FreeSpec({
                 encoded shouldBe fromBC
                 long shouldBe it
 
-                bytes.wrapInUnsafeSource().readTwosComplementLong() shouldBe it
+                bytes.wrapInUnsafeSource().readTwosComplementLong(bytes.size) shouldBe it
             }
         }
 
@@ -158,9 +158,10 @@ class Asn1EncodingTest : FreeSpec({
 
                     Asn1.Int(it).derEncoded shouldBe ASN1Integer(it).encoded
 
-                    it.toTwosComplementByteArray().wrapInUnsafeSource().readTwosComplementLong() shouldBe it
+                    val toTwosComplementByteArray = it.toTwosComplementByteArray()
+                    toTwosComplementByteArray.wrapInUnsafeSource().readTwosComplementLong(toTwosComplementByteArray.size) shouldBe it
                     Buffer().apply { writeTwosComplementLong(it) }.snapshot()
-                        .toByteArray() shouldBe it.toTwosComplementByteArray()
+                        .toByteArray() shouldBe toTwosComplementByteArray
 
                 }
             }
@@ -184,8 +185,9 @@ class Asn1EncodingTest : FreeSpec({
                     decoded shouldBe it
 
                     Asn1.Int(it).derEncoded shouldBe ASN1Integer(it.toLong()).encoded
-                    it.toTwosComplementByteArray().wrapInUnsafeSource().readTwosComplementInt() shouldBe it
-                    it.toTwosComplementByteArray().wrapInUnsafeSource().readTwosComplementLong() shouldBe it
+                    val twosComplementByteArray = it.toTwosComplementByteArray()
+                    twosComplementByteArray.wrapInUnsafeSource().readTwosComplementInt(twosComplementByteArray.size) shouldBe it
+                    twosComplementByteArray.wrapInUnsafeSource().readTwosComplementLong(twosComplementByteArray.size) shouldBe it
                 }
             }
         }
@@ -208,8 +210,9 @@ class Asn1EncodingTest : FreeSpec({
                     decoded shouldBe it
 
                     Asn1.Int(it).derEncoded shouldBe ASN1Integer(it.toBigInteger().toJavaBigInteger()).encoded
-                    it.toTwosComplementByteArray().wrapInUnsafeSource().readTwosComplementUInt() shouldBe it
-                    it.toTwosComplementByteArray().wrapInUnsafeSource().readTwosComplementULong() shouldBe it.toULong()
+                    val twosComplementByteArray = it.toTwosComplementByteArray()
+                    twosComplementByteArray.wrapInUnsafeSource().readTwosComplementUInt(twosComplementByteArray.size) shouldBe it
+                    twosComplementByteArray.wrapInUnsafeSource().readTwosComplementULong(twosComplementByteArray.size) shouldBe it.toULong()
                 }
             }
         }
@@ -227,12 +230,11 @@ class Asn1EncodingTest : FreeSpec({
                         4113774321109173852uL
                     ) {
                         val bytes = (it).toTwosComplementByteArray()
-                        bytes.wrapInUnsafeSource().readTwosComplementULong() shouldBe it
+                        bytes.wrapInUnsafeSource().readTwosComplementULong(bytes.size) shouldBe it
                     }
                 }
 
             "failures: negative" - {
-                //TODO: can this test ever make sense? wasn't it wrong to begin with?
                 checkAll(iterations = 5000, Arb.long(Long.MIN_VALUE..<0)) {
                     shouldThrow<Asn1Exception> { Asn1.Int(it).decodeToULong() }
                 }
@@ -254,7 +256,8 @@ class Asn1EncodingTest : FreeSpec({
                     decoded shouldBe it
 
                     Asn1.Int(it).derEncoded shouldBe ASN1Integer(it.toBigInteger().toJavaBigInteger()).encoded
-                    it.toTwosComplementByteArray().wrapInUnsafeSource().readTwosComplementULong() shouldBe it
+                    val twosComplementByteArray = it.toTwosComplementByteArray()
+                    twosComplementByteArray.wrapInUnsafeSource().readTwosComplementULong(twosComplementByteArray.size) shouldBe it
                 }
             }
         }

@@ -114,7 +114,7 @@ sealed class Asn1Element(
     }
 
     /**
-     * Convenience method to directly produce an HEX string of this element's ANS.1 representation
+     * Convenience method to directly produce an HEX string of this element's ASN.1 representation
      */
     fun toDerHexString(lineLen: Byte? = null) = derEncoded.encodeToString(Base16 {
         lineLen?.let {

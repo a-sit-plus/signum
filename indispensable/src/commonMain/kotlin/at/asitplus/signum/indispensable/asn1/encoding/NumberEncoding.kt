@@ -58,23 +58,97 @@ fun Long.toTwosComplementByteArray() = throughBuffer { it.writeTwosComplementLon
 /** Encodes a signed Int to a minimum-size twos-complement byte array */
 fun Int.toTwosComplementByteArray() = toLong().toTwosComplementByteArray()
 
-@Throws(IllegalArgumentException::class)
-fun Int.Companion.fromTwosComplementByteArray(it: ByteArray):Int = it.throughBuffer { it.readTwosComplementInt() }
+fun Int.Companion.fromTwosComplementByteArray(it: ByteArray) = when (it.size) {
+    4 -> it[0].shiftLeftFirstInt(24) or
+            (it[1] shiftLeftAsInt 16) or
+            (it[2] shiftLeftAsInt 8) or
+            (it[3] shiftLeftAsInt 0)
+
+    3 -> it[0].shiftLeftFirstInt(16) or
+            (it[1] shiftLeftAsInt 8) or
+            (it[2] shiftLeftAsInt 0)
+
+    2 -> it[0].shiftLeftFirstInt(8) or
+            (it[1] shiftLeftAsInt 0)
+
+    1 -> it[0].shiftLeftFirstInt(0)
+    else -> throw IllegalArgumentException("Input with size $it is out of bounds for Int")
+}
 
 private infix fun Byte.shiftLeftAsInt(shift: Int) = this.toUByte().toInt() shl shift
 private fun Byte.shiftLeftFirstInt(shift: Int) = toInt() shl shift
 
-@Throws(IllegalArgumentException::class)
-fun UInt.Companion.fromTwosComplementByteArray(it: ByteArray):UInt = it.throughBuffer { it.readTwosComplementUInt() }
+fun UInt.Companion.fromTwosComplementByteArray(it: ByteArray) =
+    Long.fromTwosComplementByteArray(it).let {
+        require((0 <= it) && (it <= 0xFFFFFFFFL)) { "Value $it is out of bounds for UInt" }
+        it.toUInt()
+    }
 
-@Throws(IllegalArgumentException::class)
-fun Long.Companion.fromTwosComplementByteArray(it: ByteArray):Long = it.throughBuffer { it.readTwosComplementLong() }
+fun Long.Companion.fromTwosComplementByteArray(it: ByteArray) = when (it.size) {
+    8 -> it[0].shiftLeftFirstLong(56) or
+            (it[1] shiftLeftAsLong 48) or
+            (it[2] shiftLeftAsLong 40) or
+            (it[3] shiftLeftAsLong 32) or
+            (it[4] shiftLeftAsLong 24) or
+            (it[5] shiftLeftAsLong 16) or
+            (it[6] shiftLeftAsLong 8) or
+            (it[7] shiftLeftAsLong 0)
+
+    7 -> it[0].shiftLeftFirstLong(48) or
+            (it[1] shiftLeftAsLong 40) or
+            (it[2] shiftLeftAsLong 32) or
+            (it[3] shiftLeftAsLong 24) or
+            (it[4] shiftLeftAsLong 16) or
+            (it[5] shiftLeftAsLong 8) or
+            (it[6] shiftLeftAsLong 0)
+
+    6 -> it[0].shiftLeftFirstLong(40) or
+            (it[1] shiftLeftAsLong 32) or
+            (it[2] shiftLeftAsLong 24) or
+            (it[3] shiftLeftAsLong 16) or
+            (it[4] shiftLeftAsLong 8) or
+            (it[5] shiftLeftAsLong 0)
+
+    5 -> it[0].shiftLeftFirstLong(32) or
+            (it[1] shiftLeftAsLong 24) or
+            (it[2] shiftLeftAsLong 16) or
+            (it[3] shiftLeftAsLong 8) or
+            (it[4] shiftLeftAsLong 0)
+
+    4 -> it[0].shiftLeftFirstLong(24) or
+            (it[1] shiftLeftAsLong 16) or
+            (it[2] shiftLeftAsLong 8) or
+            (it[3] shiftLeftAsLong 0)
+
+    3 -> it[0].shiftLeftFirstLong(16) or
+            (it[1] shiftLeftAsLong 8) or
+            (it[2] shiftLeftAsLong 0)
+
+    2 -> it[0].shiftLeftFirstLong(8) or
+            (it[1] shiftLeftAsLong 0)
+
+    1 -> it[0].shiftLeftFirstLong(0)
+    else -> throw IllegalArgumentException("Input with size $it is out of bounds for Long")
+}
 
 private infix fun Byte.shiftLeftAsLong(shift: Int) = this.toUByte().toLong() shl shift
 private fun Byte.shiftLeftFirstLong(shift: Int) = toLong() shl shift
 
-@Throws(IllegalArgumentException::class)
-fun ULong.Companion.fromTwosComplementByteArray(it: ByteArray):ULong = it.throughBuffer { it.readTwosComplementULong() }
+fun ULong.Companion.fromTwosComplementByteArray(it: ByteArray) = when {
+    ((it.size == 9) && (it[0] == 0.toByte())) -> it.shiftLeftAsULong(1, 56) or
+            it.shiftLeftAsULong(2, 48) or
+            it.shiftLeftAsULong(3, 40) or
+            it.shiftLeftAsULong(4, 32) or
+            it.shiftLeftAsULong(5, 24) or
+            it.shiftLeftAsULong(6, 16) or
+            it.shiftLeftAsULong(7, 8) or
+            it.shiftLeftAsULong(8, 0)
+
+    else -> Long.fromTwosComplementByteArray(it).let {
+        require(it >= 0) { "Value $it is out of bounds for ULong" }
+        it.toULong()
+    }
+}
 
 private fun ByteArray.shiftLeftAsULong(index: Int, shift: Int) = this[index].toUByte().toULong() shl shift
 
@@ -259,7 +333,6 @@ fun Source.decodeAsn1VarUInt(): Pair<UInt, ByteArray> =
  * @throws IllegalArgumentException if the resulting number requires more than [bits] many bits to be represented
  */
 @Throws(IllegalArgumentException::class)
-//TODO: find a way to do this without allocating an ULong when using UInt
 private fun Source.decodeAsn1VarInt(bits: Int): Pair<ULong, ByteArray> {
     var offset = 0
     var result = 0uL
@@ -303,8 +376,8 @@ fun Source.decodeAsn1VarBigInt():Pair<BigInteger, ByteArray> {
  * Writes a signed long using twos-complement encoding using the fewest bytes required
  *
  * @return the number of byte written to the sink
- * */
-fun Sink.writeTwosComplementLong(number: Long): Int = writeTwosComplement(number, false)
+ */
+fun Sink.writeTwosComplementLong(number: Long): Int = writeTwosComplement(number, true)
 
 /**
  * Writes a signed long using twos-complement encoding using the fewest bytes required
@@ -312,28 +385,28 @@ fun Sink.writeTwosComplementLong(number: Long): Int = writeTwosComplement(number
  * in ASN.1 tag length encoding.
  *
  * @return the number of byte written to the sink
- * */
-internal fun Sink.writeTwosComplement(number: Long, unpadded: Boolean = false): Int = when {
+ */
+private fun Sink.writeTwosComplement(number: Long, padded: Boolean = true): Int = when {
     (number >= -0x80L && number <= 0x7FL) -> {
         writeByte(number.toByte())
         1
     }
 
     (number >= -0x8000L && number <= 0x7FFFL) -> {
-        val byteWritten = writeOrSkipPadding(number, 8, unpadded)
+        val byteWritten = writeOrSkipPadding(number, 8, padded)
         writeByte(number.toByte())
         1 + byteWritten
     }
 
     (number >= -0x800000L && number <= 0x7FFFFFL) -> {
-        val byteWritten = writeOrSkipPadding(number, 16, unpadded)
+        val byteWritten = writeOrSkipPadding(number, 16, padded)
         writeByte((number ushr 8).toByte())
         writeByte(number.toByte())
         2 + byteWritten
     }
 
     (number >= -0x80000000L && number <= 0x7FFFFFFFL) -> {
-        val byteWritten = writeOrSkipPadding(number, 24, unpadded)
+        val byteWritten = writeOrSkipPadding(number, 24, padded)
         writeByte((number ushr 16).toByte())
         writeByte((number ushr 8).toByte())
         writeByte(number.toByte())
@@ -341,7 +414,7 @@ internal fun Sink.writeTwosComplement(number: Long, unpadded: Boolean = false): 
     }
 
     (number >= -0x8000000000L && number <= 0x7FFFFFFFFFL) -> {
-        val byteWritten = writeOrSkipPadding(number, 32, unpadded)
+        val byteWritten = writeOrSkipPadding(number, 32, padded)
         writeByte((number ushr 24).toByte())
         writeByte((number ushr 16).toByte())
         writeByte((number ushr 8).toByte())
@@ -350,7 +423,7 @@ internal fun Sink.writeTwosComplement(number: Long, unpadded: Boolean = false): 
     }
 
     (number >= -0x800000000000L && number <= 0x7FFFFFFFFFFFL) -> {
-        val byteWritten = writeOrSkipPadding(number, 40, unpadded)
+        val byteWritten = writeOrSkipPadding(number, 40, padded)
         writeByte((number ushr 32).toByte())
         writeByte((number ushr 24).toByte())
         writeByte((number ushr 16).toByte())
@@ -360,7 +433,7 @@ internal fun Sink.writeTwosComplement(number: Long, unpadded: Boolean = false): 
     }
 
     (number >= -0x80000000000000L && number <= 0x7FFFFFFFFFFFFFL) -> {
-        val byteWritten = writeOrSkipPadding(number, 48, unpadded)
+        val byteWritten = writeOrSkipPadding(number, 48, padded)
         writeByte((number ushr 40).toByte())
         writeByte((number ushr 32).toByte())
         writeByte((number ushr 24).toByte())
@@ -371,7 +444,7 @@ internal fun Sink.writeTwosComplement(number: Long, unpadded: Boolean = false): 
     }
 
     else -> {
-        val byteWritten = writeOrSkipPadding(number, 56, unpadded)
+        val byteWritten = writeOrSkipPadding(number, 56, padded)
         writeByte((number ushr 48).toByte())
         writeByte((number ushr 40).toByte())
         writeByte((number ushr 32).toByte())
@@ -384,15 +457,15 @@ internal fun Sink.writeTwosComplement(number: Long, unpadded: Boolean = false): 
 
 }
 
-private inline fun Sink.writeOrSkipPadding(number: Long, shift: Int, unpadded: Boolean): Int {
+private inline fun Sink.writeOrSkipPadding(number: Long, shift: Int, padded: Boolean): Int {
     val byte = (number ushr shift).toByte()
-    val writeFirstByte = !unpadded || (byte != 0.toByte())
+    val writeFirstByte = padded || (byte != 0.toByte())
     if (writeFirstByte) writeByte(byte)
     return if (writeFirstByte) 1 else 0
 }
 
 /**
- *  Encodes an unsigned Long to a minimum-size twos-complement byte array
+ * Encodes an unsigned Long to a minimum-size twos-complement byte array
  * @return the number of bytes written
  */
 fun Sink.writeTwosComplementULong(number: ULong): Int = when {
@@ -419,82 +492,37 @@ fun Sink.writeTwosComplementULong(number: ULong): Int = when {
 fun Sink.writeTwosComplementUInt(number: UInt) = writeTwosComplementLong(number.toLong())
 
 /**
- * Consumes data from this source and interprets it as a signed [ULong].
- * Tries to read exactly [nBytes] many bytes from this source, or all remaining data if not set.
+ * Consumes exactly [nBytes] from this source and interprets it as a signed [ULong].
  *
  * @throws IllegalArgumentException if too much or too little data is present
  */
 @Throws(IllegalArgumentException::class)
-fun Source.readTwosComplementULong(nBytes: Int? = null): ULong {
-    if(nBytes==0) return 0uL
-    require(!exhausted()) { "Source is exhausted" }
-    val firstByte = readByte()
-    var result = firstByte.toUByte().toULong()
-    var bytesRead = 1
-    while (nBytes?.let { bytesRead < nBytes } ?: !exhausted()) {
-        require(bytesRead++  <= 8) { "Input too large" }
-        result = (result shl 8) or readUByte().toULong()
-    }
-    return result
-}
+fun Source.readTwosComplementULong(nBytes: Int): ULong = ULong.fromTwosComplementByteArray(readByteArray(nBytes))
 
 
 /**
- * Consumes data from this source and interprets it as a [Long].
- * Tries to read exactly [nBytes] many bytes from this source, or all remaining data if not set.
- *
- * @throws IllegalArgumentException if too much or too little data is present
- */
-fun Source.readTwosComplementLong(nBytes: Int? = null): Long {
-    if (nBytes == 0) return 0L
-    require(!exhausted()) { "Source is exhausted" }
-    val firstByte = readByte()
-    var result = 0L
-    var offset = 48 //one less than max shift (56), since first byte is read
-    var bytesRead = 1
-    while (nBytes?.let { bytesRead < nBytes } ?: !exhausted()) {
-        require(offset >= 0) { "Input too large" }
-        result = result or readByte().shiftLeftAsLong(offset)
-        bytesRead++
-        offset -= 8
-    }
-    return result.shr(offset + 8) or firstByte.shiftLeftFirstLong(48 - offset)
-}
-
-
-/**
- * Consumes data from this source and interprets it as a signed [Int]
- * Tries to read exactly [nBytes] many bytes from this source, or all remaining data if not set.
+ * Consumes exactly [nBytes] from this source and interprets it as a [Long].
  *
  * @throws IllegalArgumentException if too much or too little data is present
  */
 @Throws(IllegalArgumentException::class)
-fun Source.readTwosComplementInt(nBytes: Int? = null): Int {
-    if (nBytes == 0) return 0
-    require(!exhausted()) { "Source is exhausted" }
-    val firstByte = readByte()
-    var bytesRead = 1
-    var result = 0
-    var offset = 16 //one less than max shift (24), since first byte is read
-    while (nBytes?.let { bytesRead < nBytes } ?: !exhausted()) {
-        require(offset >= 0) { "Input too large" }
-        result = result or readByte().shiftLeftAsInt(offset)
-        bytesRead++
-        offset -= 8
-    }
-    return result.shr(offset + 8) or firstByte.shiftLeftFirstInt(16 - offset)
-}
+fun Source.readTwosComplementLong(nBytes: Int): Long =Long.fromTwosComplementByteArray(readByteArray(nBytes))
+
+
 /**
- * Consumes all remaining data from this source and interprets it as a [UInt]
+ * Consumes exactly [nBytes] from this source and interprets it as a signed [Int]
+ *
+ * @throws IllegalArgumentException if too much or too little data is present
+ */
+@Throws(IllegalArgumentException::class)
+fun Source.readTwosComplementInt(nBytes: Int): Int  = Int.fromTwosComplementByteArray(readByteArray(nBytes))
+/**
+ * Consumes exactly [nBytes] remaining data from this source and interprets it as a [UInt]
  *
  * @throws IllegalArgumentException if no or too much data is present
  */
 @Throws(IllegalArgumentException::class)
-fun Source.readTwosComplementUInt() =
-    readTwosComplementLong().let {
-        require((0 <= it) && (it <= 0xFFFFFFFFL)) { "Value $it is out of bounds for UInt" }
-        it.toUInt()
-    }
+fun Source.readTwosComplementUInt(nBytes: Int):UInt = UInt.fromTwosComplementByteArray(readByteArray(nBytes))
 
 /**
  *  Encodes a positive Long to a minimum-size unsigned byte array, omitting the leading zero
@@ -504,5 +532,5 @@ fun Source.readTwosComplementUInt() =
  */
 fun Sink.writeUnsignedTwosComplementLong(number: Long): Int {
     require(number >= 0)
-    return writeTwosComplement(number, unpadded = true)
+    return writeTwosComplement(number, padded = false)
 }

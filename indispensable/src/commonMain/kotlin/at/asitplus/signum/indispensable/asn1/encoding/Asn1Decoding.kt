@@ -85,9 +85,11 @@ private fun Source.doParseExactly(nBytes: Long): List<Asn1Element> = mutableList
     var nBytesRead: Long = 0
     while (nBytesRead < nBytes) {
         val peekTagAndLen = peekTagAndLen()
-        val numberOfNextBytesRead = peekTagAndLen.second + peekTagAndLen.first.second
+        val numberOfNextBytesRead = peekTagAndLen.second + peekTagAndLen.first.length
         if (nBytesRead + numberOfNextBytesRead > nBytes) break
-        val (elem, read) = readAsn1Element()
+        skip(peekTagAndLen.second.toLong()) // we only peeked before, so now we need to skip,
+        //                                     since we want to recycle the result below
+        val (elem, read) = readAsn1Element(peekTagAndLen.first, peekTagAndLen.second)
         list.add(elem)
         nBytesRead += read
     }
@@ -109,28 +111,57 @@ fun Source.readFullyToAsn1Elements(): Pair<List<Asn1Element>, Long> = mutableLis
     list to bytesRead
 }
 
+/**
+ * Reads a [TagAndLength] and the number of consumed bytes from the source without consuming it
+ */
 fun Source.peekTagAndLen() = peek().readTagAndLength()
 
+/**
+ * Decodes a single [Asn1Element] from this source.
+ *
+ * @return the decoded element and the number of bytes read from the source
+ */
 @Throws(Asn1Exception::class)
 fun Source.readAsn1Element(): Pair<Asn1Element, Long> = runRethrowing {
-    val (readTagAndLength, bytesRead) = readTagAndLength() //TODO split s.t. peekTagAndLen can be used
-    val (tag, length) = readTagAndLength
-    (if (tag.isSequence()) Asn1Sequence(doParseExactly(length))
-    else if (tag.isSet()) Asn1Set.fromPresorted(doParseExactly(length))
-    else if (tag.isExplicitlyTagged)
-        Asn1ExplicitlyTagged(tag.tagValue, doParseExactly(length))
-    else if (tag == Asn1Element.Tag.OCTET_STRING) catching {
-        Asn1EncapsulatingOctetString(peek().doParseExactly(length)).also { skip(length) } as Asn1Element
-    }.getOrElse {
-        require(length <= Int.MAX_VALUE) { "Cannot read more than ${Int.MAX_VALUE} into an OCTET STRING" }
-        Asn1PrimitiveOctetString(readByteArray(length.toInt())) as Asn1Element
-    }
-    else if (tag.isConstructed) { //custom tags, we don't know if it is a SET OF, SET, SEQUENCE,… so we default to sequence semantics
-        Asn1CustomStructure(doParseExactly(length), tag.tagValue, tag.tagClass) as Asn1Element
-    } else {
-        require(length <= Int.MAX_VALUE) { "Cannot read more than ${Int.MAX_VALUE} into a primitive" }
-        Asn1Primitive(tag, readByteArray(length.toInt())) as Asn1Element
-    }) to length + bytesRead
+    val (readTagAndLength, bytesRead) = readTagAndLength()
+    readAsn1Element(readTagAndLength, bytesRead)
+}
+
+/**
+ * RAW decoding of an ASN.1 element after tag and length have already been decoded and consumed from the source
+ */
+@Throws(Asn1Exception::class)
+private fun Source.readAsn1Element(tagAndLength: TagAndLength, tagAndLengthBytes: Int): Pair<Asn1Element, Long> =
+    runRethrowing {
+        val (tag, length) = tagAndLength
+
+        //ASN.1 SEQUENCE
+        (if (tag.isSequence()) Asn1Sequence(doParseExactly(length))
+
+        //ASN.1 SET
+        else if (tag.isSet()) Asn1Set.fromPresorted(doParseExactly(length))
+
+        //ASN.1 TAGGED (explicitly)
+        else if (tag.isExplicitlyTagged) Asn1ExplicitlyTagged(tag.tagValue, doParseExactly(length))
+
+        //ASN.1 OCTET STRING
+        else if (tag == Asn1Element.Tag.OCTET_STRING) catching {
+            //try to decode recursively
+            Asn1EncapsulatingOctetString(peek().doParseExactly(length)).also { skip(length) } as Asn1Element
+        }.getOrElse {
+            //recursive decoding failed, so we interpret is as primitive
+            require(length <= Int.MAX_VALUE) { "Cannot read more than ${Int.MAX_VALUE} into an OCTET STRING" }
+            Asn1PrimitiveOctetString(readByteArray(length.toInt())) as Asn1Element
+        }
+
+        //IMPLICIT-ly TAGGED ASN.1 CONSTRUCTED; we don't know if it is a SET OF, SET, SEQUENCE,… so we default to sequence semantics
+        else if (tag.isConstructed) Asn1CustomStructure(doParseExactly(length), tag.tagValue, tag.tagClass)
+
+        //IMPLICIT-ly TAGGED ASN.1 PRIMITIVE
+        else {
+            require(length <= Int.MAX_VALUE) { "Cannot read more than ${Int.MAX_VALUE} into a primitive" }
+            Asn1Primitive(tag, readByteArray(length.toInt())) as Asn1Element
+        }) to length + tagAndLengthBytes
     }
 
 private fun Asn1Element.Tag.isSet() = this == Asn1Element.Tag.SET
@@ -394,9 +425,16 @@ fun Boolean.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): Boolean {
  */
 fun String.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray) = bytes.decodeToString()
 
-
+/**
+ * [Asn1Element.Tag] to the decoded length
+ */
 typealias TagAndLength = Pair<Asn1Element.Tag, Long>
+private val TagAndLength.tag:Asn1Element.Tag get() = first
+private val TagAndLength.length:Long get() = second
 
+/**
+ * Reads [TagAndLength] and the number of consumed bytes from the source
+ */
 private fun Source.readTagAndLength(): Pair<TagAndLength, Int> = runRethrowing {
     if (exhausted()) throw IllegalArgumentException("Can't read TLV, input empty")
 
@@ -406,6 +444,10 @@ private fun Source.readTagAndLength(): Pair<TagAndLength, Int> = runRethrowing {
     return (tag to length.first) to length.second + tag.encodedTagLength
 }
 
+/**
+ * Decodes the `length` of an ASN.1 element (which is preceded by its tag) from the source.
+ * @return the decoded length and the number of bytes consumed
+ */
 @Throws(IllegalArgumentException::class)
 private fun Source.decodeLength(): Pair<Long, Int> =
     readByte().let { firstByte ->
@@ -429,7 +471,7 @@ fun Source.readAsn1Tag(): Asn1Element.Tag =
         (firstByte byteMask 0x1F).let { tagNumber ->
             if (tagNumber <= 30U) Asn1Element.Tag(tagNumber.toULong(), byteArrayOf(firstByte))
             else decodeAsn1VarULong().let { (l, b) ->
-                Asn1Element.Tag(l, byteArrayOf(firstByte, *b)) //TODO: avoid double copy
+                Asn1Element.Tag(l, byteArrayOf(firstByte, *b))
             }
         }
     }
