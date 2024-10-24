@@ -1,5 +1,6 @@
 [versions]
 core = "1.5.0"
+kotlinxIoCore = "0.5.4"
 multibase = "1.2.0"
 kotestExtensionsAndroid = "0.1.3"
 kotestRunnerAndroid = "1.1.1"
@@ -15,6 +16,7 @@ bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum"
 core = { module = "androidx.test:core", version.ref = "core" }
 kotest-extensions-android = { module = "br.com.colman:kotest-extensions-android", version.ref = "kotestExtensionsAndroid" }
 kotest-runner-android = { module = "br.com.colman:kotest-runner-android", version.ref = "kotestRunnerAndroid" }
+kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinxIoCore" }
 okio = { group = "com.squareup.okio", name = "okio", version.ref = "okio" }
 jose = { group = "com.nimbusds", name = "nimbus-jose-jwt", version.ref = "jose" }
 kotlinpoet = { group = "com.squareup", name = "kotlinpoet", version.ref = "kotlinpoet" }
