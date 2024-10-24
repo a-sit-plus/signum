@@ -2,7 +2,10 @@
 
 ## 3.0
 
-### 3.10.0 NEXT (Supreme 0.5.0 NEXT)
+### 3.10.0 NEXT (Supreme 0.5.0 NEXT) Breaking Changes Ahead!
+
+The public API remains unchanged, except for some methods migrating from a ByteIterator to kotlinx-io Source
+and some newly added. The internals have changed substantially, however.
 
 * Introduce generic tag assertion to `Asn1Element`
 * Change CSR to take an actual `CryptoSignature` instead of a ByteArray
@@ -12,7 +15,7 @@
 * Fix CoseSigned equals
 * Base OIDs on BigInteger instead of UInt
 * Directly support UUID-based OID creation
-* Use kotlinx-io as primate source for parsing
+* Use kotlinx-io as primary source for parsing
   * Base number encoding/decoding on koltinx-io
     * Remove parsing from iterator
   * Base ASN.1 encoding and decoding on kotlinx-io

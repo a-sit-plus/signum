@@ -432,7 +432,7 @@ fun Source.readTwosComplementULong(nBytes: Int? = null): ULong {
     var result = firstByte.toUByte().toULong()
     var bytesRead = 1
     while (nBytes?.let { bytesRead < nBytes } ?: !exhausted()) {
-        require(++bytesRead  <= 8) { "Input too large" }
+        require(bytesRead++  <= 8) { "Input too large" }
         result = (result shl 8) or readUByte().toULong()
     }
     return result

@@ -109,7 +109,7 @@ sealed class Asn1Element(
 
     protected operator fun String.times(op: Int): String {
         var s = this
-        kotlin.repeat(op) { s += this }
+        repeat(op) { s += this }
         return s
     }
 
