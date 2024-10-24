@@ -134,6 +134,11 @@ internal fun ByteArray.wrapInUnsafeSource(): Source = Buffer().apply {
     UnsafeBufferOperations.moveToTail(this, this@wrapInUnsafeSource)
 }
 
+@OptIn(UnsafeIoApi::class)
+internal fun wrapInUnsafeSource(vararg bytes: ByteArray) = Buffer().apply {
+    bytes.forEach { UnsafeBufferOperations.moveToTail(this, it) }
+}
+
 /**
  * Helper to create a buffer, operate on it and return its contents as a [ByteArray]
  */

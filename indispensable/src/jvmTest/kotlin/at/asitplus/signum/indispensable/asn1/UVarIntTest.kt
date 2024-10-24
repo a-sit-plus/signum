@@ -14,10 +14,12 @@ import io.kotest.property.arbitrary.uLong
 import io.kotest.property.checkAll
 import kotlinx.io.Buffer
 import kotlinx.io.snapshot
+import kotlin.math.ceil
 import kotlin.random.Random
 
 class UVarIntTest : FreeSpec({
 
+    //TODO: buffer based tests with capped number of bytes test
     "UInts with trailing bytes" - {
         "manual" {
             val src = byteArrayOf(65, 0, 0, 0)
@@ -106,3 +108,112 @@ class UVarIntTest : FreeSpec({
     }
 
 })
+
+//old code for regeressiontests
+
+/**
+ * Decodes an ULong from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
+ * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
+ *
+ * @return the decoded ULong and the underlying varint-encoded bytes as `ByteArray`
+ * @throws IllegalArgumentException if the number is larger than [ULong.MAX_VALUE]
+ */
+@Throws(IllegalArgumentException::class)
+private inline fun Iterable<Byte>.decodeAsn1VarULong(): Pair<ULong, ByteArray> = iterator().decodeAsn1VarULong()
+
+
+/**
+ * Decodes an ULong from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
+ * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
+ *
+ * @return the decoded ULong and the underlying varint-encoded bytes as `ByteArray`
+ * @throws IllegalArgumentException if the number is larger than [ULong.MAX_VALUE]
+ */
+@Throws(IllegalArgumentException::class)
+private fun Iterator<Byte>.decodeAsn1VarULong(): Pair<ULong, ByteArray> {
+    var offset = 0
+    var result = 0uL
+    val accumulator = mutableListOf<Byte>()
+    while (hasNext()) {
+        val current = next().toUByte()
+        accumulator += current.toByte()
+        if (current >= 0x80.toUByte()) {
+            result = (current and 0x7F.toUByte()).toULong() or (result shl 7)
+        } else {
+            result = (current and 0x7F.toUByte()).toULong() or (result shl 7)
+            break
+        }
+        if (++offset > ceil(ULong.SIZE_BYTES.toFloat() * 8f / 7f)) throw IllegalArgumentException("Tag number too Large do decode into ULong!")
+    }
+
+    return result to accumulator.toByteArray()
+}
+
+/**
+ * Decodes an unsigned BigInteger from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
+ * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
+ *
+ * @return the decoded unsigned BigInteger and the underlying varint-encoded bytes as `ByteArray`
+ */
+private inline fun Iterable<Byte>.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> = iterator().decodeAsn1VarBigInt()
+
+
+
+/**
+ * Decodes a BigInteger from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
+ * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
+ *
+ * @return the decoded BigInteger and the underlying varint-encoded bytes as `ByteArray`
+ */
+private fun Iterator<Byte>.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> {
+    var result = BigInteger.ZERO
+    val mask = BigInteger.fromUByte(0x7Fu)
+    val accumulator = mutableListOf<Byte>()
+    while (hasNext()) {
+        val curByte = next()
+        val current = BigInteger(curByte.toUByte().toInt())
+        accumulator += curByte
+        result = (current and mask) or (result shl 7)
+        if (current < 0x80.toUByte()) break
+    }
+
+    return result to accumulator.toByteArray()
+}
+
+
+/**
+ * Decodes an UInt from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
+ * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
+ *
+ * @return the decoded UInt and the underlying varint-encoded bytes as `ByteArray`
+ * @throws IllegalArgumentException if the number is larger than [UInt.MAX_VALUE]
+ */
+@Throws(IllegalArgumentException::class)
+private inline fun Iterable<Byte>.decodeAsn1VarUInt(): Pair<UInt, ByteArray> = iterator().decodeAsn1VarUInt()
+
+/**
+ * Decodes an UInt from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
+ * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
+ *
+ * @return the decoded UInt and the underlying varint-encoded bytes as `ByteArray`
+ * @throws IllegalArgumentException if the number is larger than [UInt.MAX_VALUE]
+ */
+@Throws(IllegalArgumentException::class)
+private fun Iterator<Byte>.decodeAsn1VarUInt(): Pair<UInt, ByteArray> {
+    var offset = 0
+    var result = 0u
+    val accumulator = mutableListOf<Byte>()
+    while (hasNext()) {
+        val current = next().toUByte()
+        accumulator += current.toByte()
+        if (current >= 0x80.toUByte()) {
+            result = (current and 0x7F.toUByte()).toUInt() or (result shl 7)
+        } else {
+            result = (current and 0x7F.toUByte()).toUInt() or (result shl 7)
+            break
+        }
+        if (++offset > ceil(UInt.SIZE_BYTES.toFloat() * 8f / 7f)) throw IllegalArgumentException("Tag number too Large do decode into UInt!")
+    }
+
+    return result to accumulator.toByteArray()
+}

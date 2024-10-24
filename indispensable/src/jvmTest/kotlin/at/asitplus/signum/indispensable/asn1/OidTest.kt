@@ -400,7 +400,7 @@ class OldOIDObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transien
                     }
                     currentNode += rawValue[index]
                     index++
-                    collected += currentNode.decodeAsn1VarBigInt().first
+                    collected += currentNode.toByteArray().decodeAsn1VarBigInt().first
                 }
             }
             return ObjectIdentifier(*collected.toTypedArray())

@@ -428,8 +428,8 @@ fun Source.readAsn1Tag(): Asn1Element.Tag =
     readByte().let { firstByte ->
         (firstByte byteMask 0x1F).let { tagNumber ->
             if (tagNumber <= 30U) Asn1Element.Tag(tagNumber.toULong(), byteArrayOf(firstByte))
-            else decodeAsn1VarULongShallow().let { (l, b) ->
-                Asn1Element.Tag(l, byteArrayOf(firstByte, *b.readByteArray()))
+            else decodeAsn1VarULong().let { (l, b) ->
+                Asn1Element.Tag(l, byteArrayOf(firstByte, *b)) //TODO: avoid double copy
             }
         }
     }

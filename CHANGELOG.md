@@ -12,6 +12,11 @@
 * Fix CoseSigned equals
 * Base OIDs on BigInteger instead of UInt
 * Directly support UUID-based OID creation
+* Use kotlinx-io as primate source for parsing
+  * Base number encoding/decoding on koltinx-io
+    * Remove parsing from iterator
+  * Base ASN.1 encoding and decoding on kotlinx-io
+    * Remove single element decoding from Iterator
 
 ### 3.9.0 (Supreme 0.4.0)
 

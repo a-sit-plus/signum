@@ -59,7 +59,7 @@ fun Long.toTwosComplementByteArray() = throughBuffer { it.writeTwosComplementLon
 fun Int.toTwosComplementByteArray() = toLong().toTwosComplementByteArray()
 
 @Throws(IllegalArgumentException::class)
-fun Int.Companion.fromTwosComplementByteArray(it: ByteArray):Int = it.throughBuffer { it.readTwosComplementULong().toInt() }
+fun Int.Companion.fromTwosComplementByteArray(it: ByteArray):Int = it.throughBuffer { it.readTwosComplementInt() }
 
 private infix fun Byte.shiftLeftAsInt(shift: Int) = this.toUByte().toInt() shl shift
 private fun Byte.shiftLeftFirstInt(shift: Int) = toInt() shl shift
@@ -122,19 +122,7 @@ private fun MutableList<Byte>.fromBack(it: Int) = this[size - 1 - it]
  * @throws IllegalArgumentException if the number is larger than [ULong.MAX_VALUE]
  */
 @Throws(IllegalArgumentException::class)
-inline fun Iterable<Byte>.decodeAsn1VarULong(): Pair<ULong, ByteArray> = iterator().decodeAsn1VarULong()
-
-/**
- * Decodes an ULong from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
- * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
- *
- * @return the decoded ULong and the underlying varint-encoded bytes as `ByteArray`
- * @throws IllegalArgumentException if the number is larger than [ULong.MAX_VALUE]
- */
-@Throws(IllegalArgumentException::class)
-inline fun ByteArray.decodeAsn1VarULong(): Pair<ULong, ByteArray> = this.throughBuffer { it.decodeAsn1VarULong() }
-
-
+fun ByteArray.decodeAsn1VarULong(): Pair<ULong, ByteArray> = this.throughBuffer { it.decodeAsn1VarULong() }
 
 /**
  * Decodes an unsigned BigInteger from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
@@ -142,49 +130,7 @@ inline fun ByteArray.decodeAsn1VarULong(): Pair<ULong, ByteArray> = this.through
  *
  * @return the decoded unsigned BigInteger and the underlying varint-encoded bytes as `ByteArray`
  */
-inline fun Iterable<Byte>.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> = iterator().decodeAsn1VarBigInt()
-
-/**
- * Decodes an unsigned BigInteger from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
- * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
- *
- * @return the decoded unsigned BigInteger and the underlying varint-encoded bytes as `ByteArray`
- */
-inline fun ByteArray.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> = iterator().decodeAsn1VarBigInt()
-
-
-/**
- * Decodes a BigInteger from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
- * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
- *
- * @return the decoded BigInteger and the underlying varint-encoded bytes as `ByteArray`
- */
-fun Iterator<Byte>.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> {
-    var result = BigInteger.ZERO
-    val mask = BigInteger.fromUByte(0x7Fu)
-    val accumulator = mutableListOf<Byte>()
-    while (hasNext()) {
-        val curByte = next()
-        val current = BigInteger(curByte.toUByte().toInt())
-        accumulator += curByte
-        result = (current and mask) or (result shl 7)
-        if (current < 0x80.toUByte()) break
-    }
-
-    return result to accumulator.toByteArray()
-}
-
-
-//TOOD: how to not duplicate all this???
-/**
- * Decodes an UInt from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
- * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
- *
- * @return the decoded UInt and the underlying varint-encoded bytes as `ByteArray`
- * @throws IllegalArgumentException if the number is larger than [UInt.MAX_VALUE]
- */
-@Throws(IllegalArgumentException::class)
-inline fun Iterable<Byte>.decodeAsn1VarUInt(): Pair<UInt, ByteArray> = iterator().decodeAsn1VarUInt()
+fun ByteArray.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> = this.throughBuffer { it.decodeAsn1VarBigInt() }
 
 /**
  * Decodes an UInt from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
@@ -194,34 +140,7 @@ inline fun Iterable<Byte>.decodeAsn1VarUInt(): Pair<UInt, ByteArray> = iterator(
  * @throws IllegalArgumentException if the number is larger than [UInt.MAX_VALUE]
  */
 @Throws(IllegalArgumentException::class)
-inline fun ByteArray.decodeAsn1VarUInt(): Pair<UInt, ByteArray> = iterator().decodeAsn1VarUInt()
-
-/**
- * Decodes an UInt from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
- * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
- *
- * @return the decoded UInt and the underlying varint-encoded bytes as `ByteArray`
- * @throws IllegalArgumentException if the number is larger than [UInt.MAX_VALUE]
- */
-@Throws(IllegalArgumentException::class)
-fun Iterator<Byte>.decodeAsn1VarUInt(): Pair<UInt, ByteArray> {
-    var offset = 0
-    var result = 0u
-    val accumulator = mutableListOf<Byte>()
-    while (hasNext()) {
-        val current = next().toUByte()
-        accumulator += current.toByte()
-        if (current >= 0x80.toUByte()) {
-            result = (current and 0x7F.toUByte()).toUInt() or (result shl 7)
-        } else {
-            result = (current and 0x7F.toUByte()).toUInt() or (result shl 7)
-            break
-        }
-        if (++offset > ceil(UInt.SIZE_BYTES.toFloat() * 8f / 7f)) throw IllegalArgumentException("Tag number too Large do decode into UInt!")
-    }
-
-    return result to accumulator.toByteArray()
-}
+fun ByteArray.decodeAsn1VarUInt(): Pair<UInt, ByteArray> = this.throughBuffer { it.decodeAsn1VarUInt() }
 
 /**
  * Converts this UUID to a BigInteger representation
@@ -265,7 +184,6 @@ fun Sink.writeAsn1VarInt(number: UInt) = writeAsn1VarInt(number.toULong(), UInt.
  *
  * @return the number of bytes written to the sink
  */
-//TODO find a way to make it work with any number to avoid allocating an ULong
 private fun Sink.writeAsn1VarInt(number: ULong, bits: Int):Int {
     if (number < 128u) return writeByte(number.toByte()).run { 1 } //Fast case
     var offset = 0
@@ -313,40 +231,13 @@ fun Sink.writeAsn1VarInt(number: BigInteger): Int {
 }
 
 /**
- * Decodes an ASN.1 unsigned varint to an [ULong].
- * This function is useful as an intermediate processing step, since it also returns a [Buffer]
- * holding all bytes consumed from the source.
- * This operation essentially moves bytes around without copying.
- *
- * @return the decoded [ULong] and the underlying varint-encoded bytes as Buffer
- * @throws IllegalArgumentException if the number is larger than [ULong.MAX_VALUE]
- */
-@Throws(IllegalArgumentException::class)
-fun Source.decodeAsn1VarULongShallow(): Pair<ULong, Buffer> = decodeAsn1VarIntShallow(ULong.SIZE_BITS)
-
-/**
- * Decodes an ASN.1 unsigned varint to an [ULong], copying all bytes from the source into a [ByteString].
+ * Decodes an ASN.1 unsigned varint to an [ULong], copying all bytes from the source into a [ByteArray].
  *
  * @return the decoded [ULong] and the underlying varint-encoded bytes as ByteString
  * @throws IllegalArgumentException if the number is larger than [ULong.MAX_VALUE]
  */
 @Throws(IllegalArgumentException::class)
-fun Source.decodeAsn1VarULong(): Pair<ULong, ByteString> =
-    decodeAsn1VarULongShallow().let { (ulong, buffer) -> ulong to buffer.snapshot() }
-
-
-/**
- * Decodes an ASN.1 unsigned varint to an [UInt].
- * This function is useful as an intermediate processing step, since it also returns a [Buffer]
- * holding all bytes consumed from the source.
- * This operation essentially moves bytes around without copying.
- *
- * @return the decoded [UInt] and the underlying varint-encoded bytes as Buffer
- * @throws IllegalArgumentException if the number is larger than [UInt.MAX_VALUE]
- */
-@Throws(IllegalArgumentException::class)
-fun Source.decodeAsn1VarUIntShallow(): Pair<UInt, Buffer> =
-    decodeAsn1VarIntShallow(UInt.SIZE_BITS).let { (ulong, buffer) -> ulong.toUInt() to buffer }
+fun Source.decodeAsn1VarULong(): Pair<ULong, ByteArray> = decodeAsn1VarInt(ULong.SIZE_BITS)
 
 /**
  * Decodes an ASN.1 unsigned varint to an [UInt], copying all bytes from the source into a [ByteString].
@@ -355,8 +246,8 @@ fun Source.decodeAsn1VarUIntShallow(): Pair<UInt, Buffer> =
  * @throws IllegalArgumentException if the number is larger than [UInt.MAX_VALUE]
  */
 @Throws(IllegalArgumentException::class)
-fun Source.decodeAsn1VarUInt(): Pair<UInt, ByteString> =
-    decodeAsn1VarUIntShallow().let { (ulong, buffer) -> ulong to buffer.snapshot() }
+fun Source.decodeAsn1VarUInt(): Pair<UInt, ByteArray> =
+    decodeAsn1VarInt(UInt.SIZE_BITS).let { (n, b) -> n.toUInt() to b }
 
 /**
  * Decodes an ASN.1 unsigned varint to an ULong allocating at most [bits] many bits .
@@ -369,7 +260,7 @@ fun Source.decodeAsn1VarUInt(): Pair<UInt, ByteString> =
  */
 @Throws(IllegalArgumentException::class)
 //TODO: find a way to do this without allocating an ULong when using UInt
-private fun Source.decodeAsn1VarIntShallow(bits: Int): Pair<ULong, Buffer> {
+private fun Source.decodeAsn1VarInt(bits: Int): Pair<ULong, ByteArray> {
     var offset = 0
     var result = 0uL
     val accumulator = Buffer()
@@ -385,20 +276,15 @@ private fun Source.decodeAsn1VarIntShallow(bits: Int): Pair<ULong, Buffer> {
         if (++offset > ceil((bits * 8).toFloat() * 8f / 7f)) throw IllegalArgumentException("Tag number too Large do decode into $bits bits!")
     }
 
-    return result to accumulator
+    return result to accumulator.readByteArray()
 }
 
 /**
- * Decodes a BigInteger from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
- * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
+ * Decodes an ASN.1 unsigned varint to a [BigInteger], copying all bytes from the source into a [ByteString].
  *
- * This function is useful as an intermediate processing step, since it also returns a [Buffer]
- * holding all bytes consumed from the source.
- * This operation essentially moves bytes around without copying.
- *
- * @return the decoded [BigInteger] and the underlying varint-encoded bytes as [Buffer]
+ * @return the decoded [BigInteger] and the underlying varint-encoded bytes as ByteString
  */
-fun Source.decodeAsn1VarBigIntShallow(): Pair<BigInteger, Buffer> {
+fun Source.decodeAsn1VarBigInt():Pair<BigInteger, ByteArray> {
     var result = BigInteger.ZERO
     val accumulator = Buffer()
     while (!exhausted()) {
@@ -409,16 +295,8 @@ fun Source.decodeAsn1VarBigIntShallow(): Pair<BigInteger, Buffer> {
         if (current < UVARINT_SINGLEBYTE_MAXVALUE_UBYTE) break
     }
 
-    return result to accumulator
+    return result to accumulator.readByteArray()
 }
-
-/**
- * Decodes an ASN.1 unsigned varint to a [BigInteger], copying all bytes from the source into a [ByteString].
- *
- * @return the decoded [BigInteger] and the underlying varint-encoded bytes as ByteString
- */
-fun Source.decodeAsn1VarBigInt(): Pair<BigInteger, ByteString> =
-    decodeAsn1VarBigIntShallow().let { (bigInt, buffer) -> bigInt to buffer.snapshot() }
 
 
 /**
@@ -541,18 +419,20 @@ fun Sink.writeTwosComplementULong(number: ULong): Int = when {
 fun Sink.writeTwosComplementUInt(number: UInt) = writeTwosComplementLong(number.toLong())
 
 /**
- * Consumes all remaining data from this source and interprets it as a signed [ULong]
+ * Consumes data from this source and interprets it as a signed [ULong].
+ * Tries to read exactly [nBytes] many bytes from this source, or all remaining data if not set.
  *
- * @throws IllegalArgumentException if no or too much data is present
+ * @throws IllegalArgumentException if too much or too little data is present
  */
 @Throws(IllegalArgumentException::class)
-fun Source.readTwosComplementULong(): ULong {
+fun Source.readTwosComplementULong(nBytes: Int? = null): ULong {
+    if(nBytes==0) return 0uL
     require(!exhausted()) { "Source is exhausted" }
     val firstByte = readByte()
     var result = firstByte.toUByte().toULong()
     var bytesRead = 1
-    while (!exhausted()) {
-        require(bytesRead ++ <= 8) { "Input too large" }
+    while (nBytes?.let { bytesRead < nBytes } ?: !exhausted()) {
+        require(++bytesRead  <= 8) { "Input too large" }
         result = (result shl 8) or readUByte().toULong()
     }
     return result
@@ -560,18 +440,22 @@ fun Source.readTwosComplementULong(): ULong {
 
 
 /**
- * Consumes all remaining data from this source and interprets it as a [Long]
+ * Consumes data from this source and interprets it as a [Long].
+ * Tries to read exactly [nBytes] many bytes from this source, or all remaining data if not set.
  *
- * @throws IllegalArgumentException if no or too much data is present
+ * @throws IllegalArgumentException if too much or too little data is present
  */
-fun Source.readTwosComplementLong(): Long {
+fun Source.readTwosComplementLong(nBytes: Int? = null): Long {
+    if (nBytes == 0) return 0L
     require(!exhausted()) { "Source is exhausted" }
     val firstByte = readByte()
     var result = 0L
     var offset = 48 //one less than max shift (56), since first byte is read
-    while (!exhausted()) {
+    var bytesRead = 1
+    while (nBytes?.let { bytesRead < nBytes } ?: !exhausted()) {
         require(offset >= 0) { "Input too large" }
         result = result or readByte().shiftLeftAsLong(offset)
+        bytesRead++
         offset -= 8
     }
     return result.shr(offset + 8) or firstByte.shiftLeftFirstLong(48 - offset)
@@ -579,24 +463,27 @@ fun Source.readTwosComplementLong(): Long {
 
 
 /**
- * Consumes all remaining data from this source and interprets it as a signed [Int]
+ * Consumes data from this source and interprets it as a signed [Int]
+ * Tries to read exactly [nBytes] many bytes from this source, or all remaining data if not set.
  *
- * @throws IllegalArgumentException if no or too much data is present
+ * @throws IllegalArgumentException if too much or too little data is present
  */
 @Throws(IllegalArgumentException::class)
-fun Source.readTwosComplementInt(): Int {
+fun Source.readTwosComplementInt(nBytes: Int? = null): Int {
+    if (nBytes == 0) return 0
     require(!exhausted()) { "Source is exhausted" }
     val firstByte = readByte()
+    var bytesRead = 1
     var result = 0
     var offset = 16 //one less than max shift (24), since first byte is read
-    while (!exhausted()) {
+    while (nBytes?.let { bytesRead < nBytes } ?: !exhausted()) {
         require(offset >= 0) { "Input too large" }
         result = result or readByte().shiftLeftAsInt(offset)
+        bytesRead++
         offset -= 8
     }
     return result.shr(offset + 8) or firstByte.shiftLeftFirstInt(16 - offset)
 }
-
 /**
  * Consumes all remaining data from this source and interprets it as a [UInt]
  *
@@ -617,5 +504,5 @@ fun Source.readTwosComplementUInt() =
  */
 fun Sink.writeUnsignedTwosComplementLong(number: Long): Int {
     require(number >= 0)
-    return writeTwosComplementLong(number, unpadded = true)
+    return writeTwosComplement(number, unpadded = true)
 }

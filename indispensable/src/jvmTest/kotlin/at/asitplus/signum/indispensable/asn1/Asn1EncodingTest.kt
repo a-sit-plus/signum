@@ -232,14 +232,19 @@ class Asn1EncodingTest : FreeSpec({
                 }
 
             "failures: negative" - {
+                //TODO: can this test ever make sense? wasn't it wrong to begin with?
                 checkAll(iterations = 5000, Arb.long(Long.MIN_VALUE..<0)) {
                     shouldThrow<Asn1Exception> { Asn1.Int(it).decodeToULong() }
                 }
             }
             "failures: too large" - {
                 checkAll(iterations = 5000, Arb.bigInt(128)) {
-                    val v = BigInteger.fromULong(ULong.MAX_VALUE).plus(1).plus(BigInteger.fromTwosComplementByteArray(it.toByteArray()))
-                    shouldThrow<Asn1Exception> { Asn1.Int(v).decodeToULong() }
+                    val byteArray = it.toByteArray()
+                    val v = BigInteger.fromULong(ULong.MAX_VALUE).plus(1).plus(BigInteger.fromTwosComplementByteArray(
+                        byteArray
+                    ))
+                    val asn1Primitive = Asn1.Int(v)
+                    shouldThrow<Asn1Exception> { asn1Primitive.decodeToULong() }
                 }
             }
             "successes" - {
