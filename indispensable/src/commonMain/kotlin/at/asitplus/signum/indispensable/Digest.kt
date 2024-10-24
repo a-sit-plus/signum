@@ -11,6 +11,13 @@ enum class Digest(val outputLength: BitLength, override val oid: ObjectIdentifie
     SHA256(256.bit, KnownOIDs.sha_256),
     SHA384(384.bit, KnownOIDs.sha_384),
     SHA512(512.bit, KnownOIDs.sha_512);
+
+    val inputBlockSize: BitLength get() = when (this) {
+        SHA1 -> 512.bit
+        SHA256 -> 512.bit
+        SHA384 -> 1024.bit
+        SHA512 -> 1024.bit
+    }
 }
 
 /** A digest well-suited to operations on this curve, with output length near the curve's coordinate length. */

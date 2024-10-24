@@ -125,7 +125,7 @@ sealed class ECPoint private constructor(
     companion object {
         private fun requireOnCurve(curve: ECCurve, x: ModularBigInteger, y: ModularBigInteger) {
             require((x.pow(3) + (curve.a * x) + curve.b) == y.pow(2))
-            { "Point (x=$x, y=$y) is not on $curve" }
+            { "Point (x=${x.toString(16)}, y=${y.toString(16)}) is not on $curve" }
         }
 
         fun fromXY(curve: ECCurve, x: ModularBigInteger, y: ModularBigInteger): Normalized {
