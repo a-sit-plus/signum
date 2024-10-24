@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.asn1.encoding
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.io.ensureSize
+import at.asitplus.signum.indispensable.io.throughBuffer
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import kotlinx.io.*
@@ -46,206 +47,39 @@ fun Long.encodeTo8Bytes(): ByteArray = byteArrayOf(
 )
 
 /** Encodes an unsigned Long to a minimum-size twos-complement byte array */
-fun ULong.toTwosComplementByteArray() = when {
-    this >= 0x8000000000000000UL ->
-        byteArrayOf(
-            0x00,
-            (this shr 56).toByte(),
-            (this shr 48).toByte(),
-            (this shr 40).toByte(),
-            (this shr 32).toByte(),
-            (this shr 24).toByte(),
-            (this shr 16).toByte(),
-            (this shr 8).toByte(),
-            this.toByte()
-        )
-
-    else -> this.toLong().toTwosComplementByteArray()
-}
+fun ULong.toTwosComplementByteArray() = throughBuffer { it.writeTwosComplementULong(this) }
 
 /** Encodes an unsigned Int to a minimum-size twos-complement byte array */
 fun UInt.toTwosComplementByteArray() = toLong().toTwosComplementByteArray()
 
 /** Encodes a signed Long to a minimum-size twos-complement byte array */
-fun Long.toTwosComplementByteArray() = when {
-    (this >= -0x80L && this <= 0x7FL) ->
-        byteArrayOf(
-            this.toByte()
-        )
-
-    (this >= -0x8000L && this <= 0x7FFFL) ->
-        byteArrayOf(
-            (this ushr 8).toByte(),
-            this.toByte()
-        )
-
-    (this >= -0x800000L && this <= 0x7FFFFFL) ->
-        byteArrayOf(
-            (this ushr 16).toByte(),
-            (this ushr 8).toByte(),
-            this.toByte()
-        )
-
-    (this >= -0x80000000L && this <= 0x7FFFFFFFL) ->
-        byteArrayOf(
-            (this ushr 24).toByte(),
-            (this ushr 16).toByte(),
-            (this ushr 8).toByte(),
-            this.toByte()
-        )
-
-    (this >= -0x8000000000L && this <= 0x7FFFFFFFFFL) ->
-        byteArrayOf(
-            (this ushr 32).toByte(),
-            (this ushr 24).toByte(),
-            (this ushr 16).toByte(),
-            (this ushr 8).toByte(),
-            this.toByte()
-        )
-
-    (this >= -0x800000000000L && this <= 0x7FFFFFFFFFFFL) ->
-        byteArrayOf(
-            (this ushr 40).toByte(),
-            (this ushr 32).toByte(),
-            (this ushr 24).toByte(),
-            (this ushr 16).toByte(),
-            (this ushr 8).toByte(),
-            this.toByte()
-        )
-
-    (this >= -0x80000000000000L && this <= 0x7FFFFFFFFFFFFFL) ->
-        byteArrayOf(
-            (this ushr 48).toByte(),
-            (this ushr 40).toByte(),
-            (this ushr 32).toByte(),
-            (this ushr 24).toByte(),
-            (this ushr 16).toByte(),
-            (this ushr 8).toByte(),
-            this.toByte()
-        )
-
-    else ->
-        byteArrayOf(
-            (this ushr 56).toByte(),
-            (this ushr 48).toByte(),
-            (this ushr 40).toByte(),
-            (this ushr 32).toByte(),
-            (this ushr 24).toByte(),
-            (this ushr 16).toByte(),
-            (this ushr 8).toByte(),
-            this.toByte()
-        )
-}
+fun Long.toTwosComplementByteArray() = throughBuffer { it.writeTwosComplementLong(this) }
 
 /** Encodes a signed Int to a minimum-size twos-complement byte array */
 fun Int.toTwosComplementByteArray() = toLong().toTwosComplementByteArray()
 
 @Throws(IllegalArgumentException::class)
-fun Int.Companion.fromTwosComplementByteArray(it: ByteArray) = when (it.size) {
-    4 -> it[0].shiftLeftFirstInt(24) or
-            (it[1] shiftLeftAsInt 16) or
-            (it[2] shiftLeftAsInt 8) or
-            (it[3] shiftLeftAsInt 0)
-
-    3 -> it[0].shiftLeftFirstInt(16) or
-            (it[1] shiftLeftAsInt 8) or
-            (it[2] shiftLeftAsInt 0)
-
-    2 -> it[0].shiftLeftFirstInt(8) or
-            (it[1] shiftLeftAsInt 0)
-
-    1 -> it[0].shiftLeftFirstInt(0)
-    else -> throw IllegalArgumentException("Input with size $it is out of bounds for Int")
-}
+fun Int.Companion.fromTwosComplementByteArray(it: ByteArray):Int = it.throughBuffer { it.readTwosComplementULong().toInt() }
 
 private infix fun Byte.shiftLeftAsInt(shift: Int) = this.toUByte().toInt() shl shift
 private fun Byte.shiftLeftFirstInt(shift: Int) = toInt() shl shift
 
 @Throws(IllegalArgumentException::class)
-fun UInt.Companion.fromTwosComplementByteArray(it: ByteArray) =
-    Long.fromTwosComplementByteArray(it).let {
-        require((0 <= it) && (it <= 0xFFFFFFFFL)) { "Value $it is out of bounds for UInt" }
-        it.toUInt()
-    }
+fun UInt.Companion.fromTwosComplementByteArray(it: ByteArray):UInt = it.throughBuffer { it.readTwosComplementUInt() }
 
 @Throws(IllegalArgumentException::class)
-fun Long.Companion.fromTwosComplementByteArray(it: ByteArray) = when (it.size) {
-    8 -> it[0].shiftLeftFirstLong(56) or
-            (it[1] shiftLeftAsLong 48) or
-            (it[2] shiftLeftAsLong 40) or
-            (it[3] shiftLeftAsLong 32) or
-            (it[4] shiftLeftAsLong 24) or
-            (it[5] shiftLeftAsLong 16) or
-            (it[6] shiftLeftAsLong 8) or
-            (it[7] shiftLeftAsLong 0)
-
-    7 -> it[0].shiftLeftFirstLong(48) or
-            (it[1] shiftLeftAsLong 40) or
-            (it[2] shiftLeftAsLong 32) or
-            (it[3] shiftLeftAsLong 24) or
-            (it[4] shiftLeftAsLong 16) or
-            (it[5] shiftLeftAsLong 8) or
-            (it[6] shiftLeftAsLong 0)
-
-    6 -> it[0].shiftLeftFirstLong(40) or
-            (it[1] shiftLeftAsLong 32) or
-            (it[2] shiftLeftAsLong 24) or
-            (it[3] shiftLeftAsLong 16) or
-            (it[4] shiftLeftAsLong 8) or
-            (it[5] shiftLeftAsLong 0)
-
-    5 -> it[0].shiftLeftFirstLong(32) or
-            (it[1] shiftLeftAsLong 24) or
-            (it[2] shiftLeftAsLong 16) or
-            (it[3] shiftLeftAsLong 8) or
-            (it[4] shiftLeftAsLong 0)
-
-    4 -> it[0].shiftLeftFirstLong(24) or
-            (it[1] shiftLeftAsLong 16) or
-            (it[2] shiftLeftAsLong 8) or
-            (it[3] shiftLeftAsLong 0)
-
-    3 -> it[0].shiftLeftFirstLong(16) or
-            (it[1] shiftLeftAsLong 8) or
-            (it[2] shiftLeftAsLong 0)
-
-    2 -> it[0].shiftLeftFirstLong(8) or
-            (it[1] shiftLeftAsLong 0)
-
-    1 -> it[0].shiftLeftFirstLong(0)
-    else -> throw IllegalArgumentException("Input with size $it is out of bounds for Long")
-}
+fun Long.Companion.fromTwosComplementByteArray(it: ByteArray):Long = it.throughBuffer { it.readTwosComplementLong() }
 
 private infix fun Byte.shiftLeftAsLong(shift: Int) = this.toUByte().toLong() shl shift
 private fun Byte.shiftLeftFirstLong(shift: Int) = toLong() shl shift
 
 @Throws(IllegalArgumentException::class)
-fun ULong.Companion.fromTwosComplementByteArray(it: ByteArray) = when {
-    ((it.size == 9) && (it[0] == 0.toByte())) -> it.shiftLeftAsULong(1, 56) or
-            it.shiftLeftAsULong(2, 48) or
-            it.shiftLeftAsULong(3, 40) or
-            it.shiftLeftAsULong(4, 32) or
-            it.shiftLeftAsULong(5, 24) or
-            it.shiftLeftAsULong(6, 16) or
-            it.shiftLeftAsULong(7, 8) or
-            it.shiftLeftAsULong(8, 0)
-
-    else -> Long.fromTwosComplementByteArray(it).let {
-        require(it >= 0) { "Value $it is out of bounds for ULong" }
-        it.toULong()
-    }
-}
+fun ULong.Companion.fromTwosComplementByteArray(it: ByteArray):ULong = it.throughBuffer { it.readTwosComplementULong() }
 
 private fun ByteArray.shiftLeftAsULong(index: Int, shift: Int) = this[index].toUByte().toULong() shl shift
 
 /** Encodes an unsigned Long to a minimum-size unsigned byte array */
-fun Long.toUnsignedByteArray(): ByteArray {
-    require(this >= 0)
-    return this.toTwosComplementByteArray().let {
-        if (it[0] == 0.toByte()) it.copyOfRange(1, it.size)
-        else it
-    }
-}
+fun Long.toUnsignedByteArray(): ByteArray = throughBuffer { it.writeUnsignedTwosComplementLong(this) }
 
 /** Encodes an unsigned Int to a minimum-size unsigned byte array */
 fun Int.toUnsignedByteArray() = toLong().toUnsignedByteArray()
@@ -255,48 +89,14 @@ fun Int.toUnsignedByteArray() = toLong().toUnsignedByteArray()
  * Encodes this number using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
  * while the highest bit indicates if more bytes are to come
  */
-fun ULong.toAsn1VarInt(): ByteArray {
-    if (this < UVARINT_SINGLEBYTE_MAXVALUE_UBYTE) return byteArrayOf(this.toByte()) //Fast case
-    var offset = 0
-    var result = mutableListOf<Byte>()
-
-    var b0 = (this shr offset and UVARINT_MASK_ULONG).toByte()
-    while ((this shr offset > 0uL) || offset == 0) {
-        result += b0
-        offset += 7
-        if (offset > (ULong.SIZE_BITS - 1)) break //End of Fahnenstange
-        b0 = (this shr offset and UVARINT_MASK_ULONG).toByte()
-    }
-    return with(result) {
-        ByteArray(size) { fromBack(it) or asn1VarIntByteMask(it) }
-    }
-}
+fun ULong.toAsn1VarInt(): ByteArray = throughBuffer { it.writeAsn1VarInt(this) }
 
 /**
  * Encodes this number using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
  * while the highest bit indicates if more bytes are to come
  */
 @Throws(IllegalArgumentException::class)
-fun BigInteger.toAsn1VarInt(): ByteArray {
-    if (isZero()) return byteArrayOf(0)
-    require(isPositive) { "Only positive Numbers are supported" }
-    if (this < UVARINT_SINGLEBYTE_MAXVALUE_UBYTE) return byteArrayOf(this.byteValue(exactRequired = true)) //Fast case
-    var offset = 0
-    var result = mutableListOf<Byte>()
-
-    val mask = BigInteger.fromUByte(UVARINT_MASK_UBYTE)
-    var b0 = ((this shr offset) and mask).byteValue(exactRequired = false)
-    while ((this shr offset > 0uL) || offset == 0) {
-        result += b0
-        offset += 7
-        if (offset > (this.bitLength() - 1)) break //End of Fahnenstange
-        b0 = ((this shr offset) and mask).byteValue(exactRequired = false)
-    }
-
-    return with(result) {
-        ByteArray(size) { fromBack(it) or asn1VarIntByteMask(it) }
-    }
-}
+fun BigInteger.toAsn1VarInt(): ByteArray = throughBuffer { it.writeAsn1VarInt(this) }
 
 /**
  * Encodes this number using unsigned VarInt encoding as used within ASN.1:
@@ -304,23 +104,7 @@ fun BigInteger.toAsn1VarInt(): ByteArray {
  *
  * This kind of encoding is used to encode [ObjectIdentifier] nodes and ASN.1 Tag values > 30
  */
-fun UInt.toAsn1VarInt(): ByteArray {
-    if (this < UVARINT_SINGLEBYTE_MAXVALUE_UBYTE) return byteArrayOf(this.toByte()) //Fast case
-    var offset = 0
-    var result = mutableListOf<Byte>()
-
-    var b0 = (this shr offset and UVARINT_MASK_UINT).toByte()
-    while ((this shr offset > 0u) || offset == 0) {
-        result += b0
-        offset += 7
-        if (offset > (UInt.SIZE_BITS - 1)) break //End of Fahnenstange
-        b0 = (this shr offset and 0x7Fu).toByte()
-    }
-
-    return with(result) {
-        ByteArray(size) { fromBack(it) or asn1VarIntByteMask(it) }
-    }
-}
+fun UInt.toAsn1VarInt(): ByteArray = throughBuffer { it.writeAsn1VarInt(this) }
 
 private fun MutableList<Byte>.asn1VarIntByteMask(it: Int) =
     (if (isLastIndex(it)) 0x00 else UVARINT_SINGLEBYTE_MAXVALUE).toByte()
@@ -348,34 +132,8 @@ inline fun Iterable<Byte>.decodeAsn1VarULong(): Pair<ULong, ByteArray> = iterato
  * @throws IllegalArgumentException if the number is larger than [ULong.MAX_VALUE]
  */
 @Throws(IllegalArgumentException::class)
-inline fun ByteArray.decodeAsn1VarULong(): Pair<ULong, ByteArray> = iterator().decodeAsn1VarULong()
+inline fun ByteArray.decodeAsn1VarULong(): Pair<ULong, ByteArray> = this.throughBuffer { it.decodeAsn1VarULong() }
 
-/**
- * Decodes an ULong from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
- * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
- *
- * @return the decoded ULong and the underlying varint-encoded bytes as `ByteArray`
- * @throws IllegalArgumentException if the number is larger than [ULong.MAX_VALUE]
- */
-@Throws(IllegalArgumentException::class)
-fun Iterator<Byte>.decodeAsn1VarULong(): Pair<ULong, ByteArray> {
-    var offset = 0
-    var result = 0uL
-    val accumulator = mutableListOf<Byte>()
-    while (hasNext()) {
-        val current = next().toUByte()
-        accumulator += current.toByte()
-        if (current >= 0x80.toUByte()) {
-            result = (current and 0x7F.toUByte()).toULong() or (result shl 7)
-        } else {
-            result = (current and 0x7F.toUByte()).toULong() or (result shl 7)
-            break
-        }
-        if (++offset > ceil(ULong.SIZE_BYTES.toFloat() * 8f / 7f)) throw IllegalArgumentException("Tag number too Large do decode into ULong!")
-    }
-
-    return result to accumulator.toByteArray()
-}
 
 
 /**
@@ -665,12 +423,19 @@ fun Source.decodeAsn1VarBigInt(): Pair<BigInteger, ByteString> =
 
 /**
  * Writes a signed long using twos-complement encoding using the fewest bytes required
+ *
+ * @return the number of byte written to the sink
+ * */
+fun Sink.writeTwosComplementLong(number: Long): Int = writeTwosComplement(number, false)
+
+/**
+ * Writes a signed long using twos-complement encoding using the fewest bytes required
  * Allows for omitting the leading zero byte. This can be useful in certain number encodings such as
  * in ASN.1 tag length encoding.
  *
  * @return the number of byte written to the sink
  * */
-fun Sink.writeTwosComplementLong(number: Long, unpadded: Boolean = false): Int = when {
+internal fun Sink.writeTwosComplement(number: Long, unpadded: Boolean = false): Int = when {
     (number >= -0x80L && number <= 0x7FL) -> {
         writeByte(number.toByte())
         1
@@ -752,7 +517,7 @@ private inline fun Sink.writeOrSkipPadding(number: Long, shift: Int, unpadded: B
  *  Encodes an unsigned Long to a minimum-size twos-complement byte array
  * @return the number of bytes written
  */
-fun Sink.writeTwosComplement(number: ULong): Int = when {
+fun Sink.writeTwosComplementULong(number: ULong): Int = when {
     number >= 0x8000000000000000UL -> {
         writeByte(0x00)
         writeByte((number shr 56).toByte())
