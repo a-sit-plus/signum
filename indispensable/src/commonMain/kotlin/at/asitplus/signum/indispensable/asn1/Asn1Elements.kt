@@ -91,17 +91,13 @@ sealed class Asn1Element(
             return
         }
 
-        element.children?.let { childElems ->
-            write(element.tlv.tag.encodedTag);
-            write(element.encodedLength);
-            childElems.forEach { child -> writeAsn1Element(child) }
+        write(element.tlv.tag.encodedTag);
+        write(element.encodedLength);
+        if (element.children != null) { // structure
+            element.children.forEach(this::writeAsn1Element)
+        } else { // primitive
+            write(element.tlv.content)
         }
-
-            ?: also { //primitive
-                write(element.tlv.tag.encodedTag)
-                write(element.encodedLength)
-                write(element.tlv.content)
-            }
     }
 
     override fun toString(): String = "(tag=${tlv.tag}" +
