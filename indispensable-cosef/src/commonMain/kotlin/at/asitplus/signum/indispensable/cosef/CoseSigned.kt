@@ -71,7 +71,7 @@ data class CoseSigned(
             if (other.payload == null) return false
             if (!payload.contentEquals(other.payload)) return false
         } else if (other.payload != null) return false
-        return !rawSignature.contentEquals(other.rawSignature)
+        return rawSignature.contentEquals(other.rawSignature)
     }
 
     override fun hashCode(): Int {
