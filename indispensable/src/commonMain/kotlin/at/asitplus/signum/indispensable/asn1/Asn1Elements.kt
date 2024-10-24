@@ -94,7 +94,7 @@ sealed class Asn1Element(
         write(element.tlv.tag.encodedTag);
         write(element.encodedLength);
         if (element.children != null) { // structure
-            element.children.forEach(this::writeAsn1Element)
+            element.children!!.forEach { writeAsn1Element(it) }
         } else { // primitive
             write(element.tlv.content)
         }
