@@ -1,8 +1,7 @@
 @file:OptIn(ExperimentalStdlibApi::class)
 
-package at.asitplus.signum.indispensable
+package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec

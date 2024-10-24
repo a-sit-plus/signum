@@ -7,6 +7,9 @@ import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.io.Buffer
+import kotlinx.io.Sink
+import kotlinx.io.readByteArray
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -78,10 +81,23 @@ sealed class Asn1Element(
 
     val tag by lazy { tlv.tag }
 
-    val derEncoded: ByteArray by lazy {
-        children?.fold(byteArrayOf()) { acc, extendedTlv -> acc + extendedTlv.derEncoded }
-            ?.let { byteArrayOf(*tlv.tag.encodedTag, *it.size.encodeLength(), *it) }
-            ?: byteArrayOf(*tlv.tag.encodedTag, *encodedLength, *tlv.content)
+
+    private val derEncodedLazy = lazy { Buffer().also { it.writeAsn1Element(this) }.readByteArray() }
+    val derEncoded: ByteArray by derEncodedLazy
+
+    private fun Sink.writeAsn1Element(element: Asn1Element) {
+        if (element.derEncodedLazy.isInitialized()) {
+            write(element.derEncoded)
+            return
+        }
+
+        write(element.tlv.tag.encodedTag);
+        write(element.encodedLength);
+        if (element.children != null) { // structure
+            element.children!!.forEach { writeAsn1Element(it) }
+        } else { // primitive
+            write(element.tlv.content)
+        }
     }
 
     override fun toString(): String = "(tag=${tlv.tag}" +
@@ -235,26 +251,25 @@ sealed class Asn1Element(
 
     @Serializable
     @ConsistentCopyVisibility
-    data class Tag private constructor(
-        val tagValue: ULong, val encodedTagLength: Int,
+    data class Tag internal constructor(
+        val tagValue: ULong,
         @Serializable(with = ByteArrayBase64Serializer::class) val encodedTag: ByteArray
     ) : Comparable<Tag> {
-        private constructor(values: Triple<ULong, Int, ByteArray>) : this(values.first, values.second, values.third)
-        constructor(derEncoded: ByteArray) : this(
-            derEncoded.iterator().decodeTag().let { Triple(it.first, it.second.size, derEncoded) }
-        )
 
+
+        constructor(derEncoded: ByteArray) : this(derEncoded.iterator().decodeTag())
+
+        //workaround because we cannot return two values or assign params in a destructured manner
+        private constructor(decoded: Pair<ULong, ByteArray>) : this(decoded.first, decoded.second)
+
+        val encodedTagLength: Int = encodedTag.size
         /**
          * Creates a copy of this tag, overriding [tagValue], but keeping [isConstructed] and [tagClass]
          */
         infix fun withNumber(number: ULong) = Tag(number, constructed = isConstructed, tagClass = tagClass)
 
         constructor(tagValue: ULong, constructed: Boolean, tagClass: TagClass = TagClass.UNIVERSAL) : this(
-            encode(
-                tagClass,
-                constructed,
-                tagValue
-            )
+            tagValue, encode(tagClass, constructed, tagValue)
         )
 
         companion object {

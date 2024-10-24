@@ -366,7 +366,7 @@ private fun ByteIterator.readTlv(): TLV = runRethrowing {
         nextByte()
     }
 
-    return TLV(Asn1Element.Tag(tag.second), value)
+    return TLV(Asn1Element.Tag(tag.first,tag.second), value)
 }
 
 @Throws(IllegalArgumentException::class)

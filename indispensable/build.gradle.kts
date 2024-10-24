@@ -171,6 +171,7 @@ kotlin {
             )
 
             dependencies {
+                api(libs.kotlinx.io.core)
                 api(kmmresult())
                 api(serialization("json"))
                 api(datetime())

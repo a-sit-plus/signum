@@ -1,12 +1,10 @@
-package at.asitplus.signum.indispensable
+package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.signum.indispensable.asn1.Asn1Element
-import at.asitplus.signum.indispensable.asn1.Asn1Exception
-import at.asitplus.signum.indispensable.asn1.Asn1PrimitiveOctetString
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.asn1.encoding.parseAll
 import at.asitplus.signum.indispensable.asn1.encoding.parseFirst
+import at.asitplus.signum.indispensable.toByteArray
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
