@@ -1,7 +1,11 @@
-import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.*
 import com.ionspin.kotlin.bignum.integer.toBigInteger
 import io.kotest.core.spec.style.FreeSpec
+import io.kotest.datatest.withData
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import java.util.Stack
+import kotlin.reflect.KClass
 
 
 /**
@@ -45,5 +49,32 @@ class ECCurveTest : FreeSpec({
         ECCurve.SECP_256_R_1.coordinateLength.bytes shouldBe 32u
         ECCurve.SECP_384_R_1.coordinateLength.bytes shouldBe 48u
         ECCurve.SECP_521_R_1.coordinateLength.bytes shouldBe 66u
+    }
+
+    "EC interface entries completeness" - {
+        val discovered = mutableSetOf<NewECCurve>()
+        val queue = Stack<KClass<out NewECCurve>>()
+        queue.push(NewECCurve::class)
+        while (!queue.empty()) {
+            queue.pop().sealedSubclasses.shouldNotBeNull().forEach {
+                when (val o = it.objectInstance) {
+                    null -> queue.push(it)
+                    else -> discovered.add(o)
+                }
+            }
+        }
+        NewECCurve.entries.toSet() shouldBe discovered
+    }
+
+    "EC parameter relationships" - {
+        withData(NewECCurve.entries) { curve ->
+            curve.modulus * curve.extensionDegree shouldBe curve.fieldOrder
+            curve.order * curve.cofactor shouldBe curve.n
+            if (curve is WeierstrassCurve) {
+                val (x, y) = curve.generator
+                // weierstrass form curve equation: y² = x³+ax+b
+                x.pow(3) + (curve.a * x) + curve.b shouldBe y.pow(2)
+            }
+        }
     }
 })
