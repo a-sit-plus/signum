@@ -3,7 +3,6 @@ package at.asitplus.signum.ecmath
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.ECPoint
-import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.supreme.hash.digest
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -50,8 +49,17 @@ private infix fun ByteArray.xor(other: ByteArray): ByteArray {
     return ByteArray(this.size) { i -> this[i] xor other[i] }
 }
 
-private inline fun I2OSP(value: Int, len: Int): ByteArray {
-    check(len == 2)
+/** I2OSP for case len = 1 only */
+private inline fun I2OSPForLen1(value: Byte): ByteArray = byteArrayOf(value)
+
+/** I2OSP for case len = 1 only */
+private inline fun I2OSPForLen1(value: Int): ByteArray {
+    require (value in 0..0xff)
+    return I2OSPForLen1((value and 0xff).toByte())
+}
+
+/** I2OSP for case len = 2 only */
+private inline fun I2OSPForLen2(value: Int): ByteArray {
     require(value in 0..0xffff)
     return byteArrayOf(((value shr 8) and 0xff).toByte(), (value and 0xff).toByte())
 }
@@ -65,16 +73,17 @@ private inline fun expand_message_xmd(digest: Digest): (msg: Sequence<ByteArray>
         val ell = (lenInBytes.floorDiv(bInBytes) + if (lenInBytes.mod(bInBytes) != 0) 1 else 0).also {
             require (it <= 255) { "RFC 9380 requirement: ell <= 255"}
         }.toUByte()
-        require(lenInBytes <= 65535 && domain.size <= 255) { "RFC 9380 requirements" }
-        val DST_prime = domain + domain.size.toByte()
+        require(lenInBytes <= 65535) { "RFC 9380 requirement: len_in_bytes <= 65535" }
+        require(domain.size <= 255) { "RFC 9380 requirement: len(DST) <= 255" }
+        val DST_prime = domain + I2OSPForLen1(domain.size)
         val Z_pad = ByteArray(sInBytes)
-        val l_i_b_str = I2OSP(lenInBytes, 2)
-        val msg_prime = sequenceOf(Z_pad) + msg + sequenceOf(l_i_b_str, byteArrayOf(0x00), DST_prime)
+        val l_i_b_str = I2OSPForLen2(lenInBytes)
+        val msg_prime = sequenceOf(Z_pad) + msg + sequenceOf(l_i_b_str, I2OSPForLen1(0x00), DST_prime)
         val b0 = digest.digest(msg_prime)
         val result = Buffer()
         var H = ByteArray(bInBytes)
         for (i in 1.toUByte()..ell) {
-            H = digest.digest(sequenceOf(b0 xor H, byteArrayOf(i.toByte()), DST_prime))
+            H = digest.digest(sequenceOf(b0 xor H, I2OSPForLen1(i.toByte()), DST_prime))
             result.write(H)
         }
         /* return */ result
@@ -83,7 +92,7 @@ private inline fun expand_message_xmd(digest: Digest): (msg: Sequence<ByteArray>
 
 /** this only works for prime field curves (m = 1) */
 private inline fun hash_to_field_rfc9380(crossinline em: expand_message, curve: ECCurve, domain: ByteArray)
-        : (msg: Sequence<ByteArray>, count: Int) -> Array<ModularBigInteger>
+        : hash_to_field
 {
     val p = curve.modulus
     val L = curve.L
