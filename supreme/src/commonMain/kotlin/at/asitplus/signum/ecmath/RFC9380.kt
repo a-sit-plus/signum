@@ -3,6 +3,7 @@ package at.asitplus.signum.ecmath
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.ECPoint
+import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.supreme.hash.digest
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -13,9 +14,10 @@ import org.kotlincrypto.SecureRandom
 import kotlin.experimental.xor
 import kotlin.jvm.JvmInline
 
-private typealias hash_to_field = (Sequence<ByteArray>, Int) -> Array<ModularBigInteger>
-private typealias map_to_curve = (ModularBigInteger) -> ECPoint
-private typealias clear_cofactor = (ECPoint) -> ECPoint
+private typealias HashToFieldFn = (msg: Sequence<ByteArray>, count: Int) -> Array<ModularBigInteger>
+private typealias MapToCurveFn = (ModularBigInteger) -> ECPoint
+private typealias ClearCofactorFn = (ECPoint) -> ECPoint
+private typealias ExpandMessageFn = (msg: Sequence<ByteArray>, domain: ByteArray, lenInBytes: Int) -> Buffer
 
 /** RFC 9380 8.2ff */
 private inline val ECCurve.Z get() = BigInteger(when (this) {
@@ -40,31 +42,30 @@ private inline val ECCurve.L get() = when(this) {
 /** per RFC9794 4.7.2. */
 fun ECCurve.randomScalar() = SecureRandom().nextBytesOf(this.L).let { BigInteger.fromByteArray(it, Sign.POSITIVE).toModularBigInteger(this.order) }
 
-private inline fun clear_cofactor_trivial(p: ECPoint) = p.curve.cofactor * p
-
-private typealias expand_message = (msg: Sequence<ByteArray>, domain: ByteArray, lenInBytes: Int) -> Buffer
+private inline fun clearCofactorTrivial(p: ECPoint) = p.curve.cofactor * p
 
 private infix fun ByteArray.xor(other: ByteArray): ByteArray {
     check(this.size == other.size)
     return ByteArray(this.size) { i -> this[i] xor other[i] }
 }
 
-/** I2OSP for case len = 1 only */
-private inline fun I2OSPForLen1(value: Byte): ByteArray = byteArrayOf(value)
+/** I2OSP (Integer To Octet String Primitive) for case len = 1 only */
+private inline fun i2ospForLen1(value: Byte): ByteArray = byteArrayOf(value)
 
-/** I2OSP for case len = 1 only */
-private inline fun I2OSPForLen1(value: Int): ByteArray {
+/** I2OSP (Integer To Octet String Primitive) for case len = 1 only */
+private inline fun i2ospForLen1(value: Int): ByteArray {
     require (value in 0..0xff)
-    return I2OSPForLen1((value and 0xff).toByte())
+    return i2ospForLen1((value and 0xff).toByte())
 }
 
-/** I2OSP for case len = 2 only */
-private inline fun I2OSPForLen2(value: Int): ByteArray {
+/** I2OSP (Integer To Octet String Primitive) for case len = 2 only */
+private inline fun i2ospForLen2(value: Int): ByteArray {
     require(value in 0..0xffff)
     return byteArrayOf(((value shr 8) and 0xff).toByte(), (value and 0xff).toByte())
 }
 
-private inline fun expand_message_xmd(digest: Digest): (msg: Sequence<ByteArray>, domain: ByteArray, lenInBytes: Int) -> Buffer {
+/** RFC9380: expand_message_xmd */
+private inline fun expandMessageXMD(digest: Digest): ExpandMessageFn {
     check(digest.outputLength.bitSpacing == 0u) { "RFC9380 requirement: b mod 8 = 0 " }
     check(digest.outputLength <= digest.inputBlockSize) { "RFC9380 requirement: b <= s" }
     val sInBytes = digest.inputBlockSize.bytes.toInt()
@@ -75,15 +76,15 @@ private inline fun expand_message_xmd(digest: Digest): (msg: Sequence<ByteArray>
         }.toUByte()
         require(lenInBytes <= 65535) { "RFC 9380 requirement: len_in_bytes <= 65535" }
         require(domain.size <= 255) { "RFC 9380 requirement: len(DST) <= 255" }
-        val DST_prime = domain + I2OSPForLen1(domain.size)
-        val Z_pad = ByteArray(sInBytes)
-        val l_i_b_str = I2OSPForLen2(lenInBytes)
-        val msg_prime = sequenceOf(Z_pad) + msg + sequenceOf(l_i_b_str, I2OSPForLen1(0x00), DST_prime)
-        val b0 = digest.digest(msg_prime)
+        val domainPrime = domain + i2ospForLen1(domain.size)
+        val zeroPad = ByteArray(sInBytes)
+        val lenInBytesStr = i2ospForLen2(lenInBytes)
+        val msgPrime = sequenceOf(zeroPad) + msg + sequenceOf(lenInBytesStr, i2ospForLen1(0x00), domainPrime)
+        val b0 = digest.digest(msgPrime)
         val result = Buffer()
         var H = ByteArray(bInBytes)
         for (i in 1.toUByte()..ell) {
-            H = digest.digest(sequenceOf(b0 xor H, I2OSPForLen1(i.toByte()), DST_prime))
+            H = digest.digest(sequenceOf(b0 xor H, i2ospForLen1(i.toByte()), domainPrime))
             result.write(H)
         }
         /* return */ result
@@ -91,8 +92,8 @@ private inline fun expand_message_xmd(digest: Digest): (msg: Sequence<ByteArray>
 }
 
 /** this only works for prime field curves (m = 1) */
-private inline fun hash_to_field_rfc9380(crossinline em: expand_message, curve: ECCurve, domain: ByteArray)
-        : hash_to_field
+private inline fun hashToFieldRFC9380ForPrimeField
+            (crossinline em: ExpandMessageFn, curve: ECCurve, domain: ByteArray) : HashToFieldFn
 {
     val p = curve.modulus
     val L = curve.L
@@ -106,9 +107,9 @@ private inline fun hash_to_field_rfc9380(crossinline em: expand_message, curve: 
     }
 }
 
-private inline fun sgn0(a: ModularBigInteger): Int = a.toBigInteger().mod(BigInteger.TWO).intValue()
-/** this is appendix F.2.1.2. */
-private inline fun ECCurve.sqrt_ratio_3mod4(u: ModularBigInteger, v: ModularBigInteger): Pair<Boolean, ModularBigInteger> {
+private inline fun sgn0ForPrimeFields(a: ModularBigInteger): Int = a.toBigInteger().mod(BigInteger.TWO).intValue()
+/** RFC9380: appendix F.2.1.2. (sqrt_ratio_3mod4); only works for p mod 4 = 3 */
+private inline fun ECCurve.sqrtRatio3mod4(u: ModularBigInteger, v: ModularBigInteger): Pair<Boolean, ModularBigInteger> {
     var tv1: ModularBigInteger; var tv2: ModularBigInteger; var tv3: ModularBigInteger;
     var y1: ModularBigInteger;  val y2: ModularBigInteger; val y: ModularBigInteger
     tv1 = v*v
@@ -125,7 +126,7 @@ private inline fun ECCurve.sqrt_ratio_3mod4(u: ModularBigInteger, v: ModularBigI
 }
 
 /** this only works for weierstrass curves with A != 0, B != 0; taken from RFC9380 appendix F.2  */
-private inline fun map_to_curve_simple_swu(curve: ECCurve)
+private inline fun mapToCurveSimplifiedSWUWeierstrassABNonZero(curve: ECCurve)
         : (u: ModularBigInteger) -> ECPoint
 {
     val Z = curve.Z
@@ -152,20 +153,21 @@ private inline fun map_to_curve_simple_swu(curve: ECCurve)
 /* 15.*/tv5 = B * tv6
 /* 16.*/tv2 = tv2 + tv5
 /* 17.*/  x = tv1 * tv3
-/* 18.*/val (isGx1Square, y1) = curve.sqrt_ratio_3mod4(tv2, tv6)
+/* 18.*/val (isGx1Square, y1) = curve.sqrtRatio3mod4(tv2, tv6)
 /* 19.*/  y = tv1 * u
 /* 20.*/  y = y * y1
 /* 21.*/  x = CMOV(x, tv3, isGx1Square)
 /* 22.*/  y = CMOV(y, y1, isGx1Square)
-/* 23.*/val e1 = sgn0(u) == sgn0(y)
+/* 23.*/val e1 = sgn0ForPrimeFields(u) == sgn0ForPrimeFields(y)
 /* 24.*/  y = CMOV(-y, y, e1)
 /* 25.*/  x = x / tv4
         /* return */ ECPoint.fromXY(curve, x, y)
     }
 }
 
-private inline fun encode_to_curve
-            (crossinline htf: hash_to_field, crossinline mtc: map_to_curve, crossinline ccf: clear_cofactor) =
+/** RFC9380: encode_to_curve */
+private inline fun encodeToCurveComposition
+            (crossinline htf: HashToFieldFn, crossinline mtc: MapToCurveFn, crossinline ccf: ClearCofactorFn) =
 HashToEllipticCurve { msg: Sequence<ByteArray> ->
     val u = htf(msg, 1)
     val Q = mtc(u[0])
@@ -173,8 +175,9 @@ HashToEllipticCurve { msg: Sequence<ByteArray> ->
     /*return*/ P
 }
 
-private inline fun hash_to_curve
-            (crossinline htf: hash_to_field, crossinline mtc: map_to_curve, crossinline ccf: clear_cofactor) =
+/** RFC9380: hash_to_curve */
+private inline fun hashToCurveComposition
+            (crossinline htf: HashToFieldFn, crossinline mtc: MapToCurveFn, crossinline ccf: ClearCofactorFn) =
 HashToEllipticCurve { msg: Sequence<ByteArray> ->
     val u = htf(msg, 2)
     val Q0 = mtc(u[0])
@@ -187,6 +190,16 @@ HashToEllipticCurve { msg: Sequence<ByteArray> ->
 private inline fun <T> CMOV(a: T, b: T, c: Boolean) = if (c) b else a
 
 @JvmInline
+value class HashToECScalar(private val fn: HashToFieldFn) {
+    operator fun invoke(data: Sequence<ByteArray>) = fn(data, 1)[0]
+    operator fun invoke(data: ByteArray) = fn(sequenceOf(data), 1)[0]
+    operator fun invoke(data: Iterable<ByteArray>) = fn(data.asSequence(), 1)[0]
+    operator fun invoke(data: Sequence<ByteArray>, count: Int) = fn(data, count)
+    operator fun invoke(data: ByteArray, count: Int) = fn(sequenceOf(data), count)
+    operator fun invoke(data: Iterable<ByteArray>, count: Int) = fn(data.asSequence(), count)
+}
+
+@JvmInline
 value class HashToEllipticCurve(private val fn: (Sequence<ByteArray>)->ECPoint) {
     operator fun invoke(data: Sequence<ByteArray>) = fn(data)
     operator fun invoke(data: ByteArray) = fn(sequenceOf(data))
@@ -194,35 +207,83 @@ value class HashToEllipticCurve(private val fn: (Sequence<ByteArray>)->ECPoint) 
 }
 
 object RFC9380 {
+    /** the hash_to_field construction as specified in RFC9380;
+     *   Usage: `hash_to_field(params)(input)`
+     *  @see ECCurve.hashToScalar */
+    fun hash_to_field(expandMessage: ExpandMessageFn, curve: ECCurve, domain: ByteArray) =
+        HashToECScalar(hashToFieldRFC9380ForPrimeField(expandMessage, curve, domain))
+    /** the hash_to_field construction as specified in RFC9380, using expand_message_xmd with the specified digest;
+     *   Usage: `hash_to_field(params)(input)`
+     *  @see ECCurve.hashToScalar  */
+    fun hash_to_field(digest: Digest, curve: ECCurve, domain: ByteArray) =
+        hash_to_field(expandMessageXMD(digest), curve, domain)
+    /** The P256_XMD:SHA-256_SSWU_RO_ suite as defined in RFC9380;
+     *   Usage: `suite(dst)(input)`
+     *  @see ECCurve.hashToCurve */
     fun `P256_XMD∶SHA-256_SSWU_RO_`(domain: ByteArray) =
-        hash_to_curve(
-            hash_to_field_rfc9380(expand_message_xmd(Digest.SHA256), ECCurve.SECP_256_R_1, domain),
-            map_to_curve_simple_swu(ECCurve.SECP_256_R_1),
-            ::clear_cofactor_trivial)
+        hashToCurveComposition(
+            hashToFieldRFC9380ForPrimeField(expandMessageXMD(Digest.SHA256), ECCurve.SECP_256_R_1, domain),
+            mapToCurveSimplifiedSWUWeierstrassABNonZero(ECCurve.SECP_256_R_1),
+            ::clearCofactorTrivial)
+    /** The P256_XMD:SHA-256_SSWU_NU_ suite as defined in RFC9380;
+     *   Usage: `suite(dst)(input)`
+     *  @see ECCurve.hashToCurve */
     fun `P256_XMD∶SHA-256_SSWU_NU_`(domain: ByteArray) =
-        encode_to_curve(
-            hash_to_field_rfc9380(expand_message_xmd(Digest.SHA256), ECCurve.SECP_256_R_1, domain),
-            map_to_curve_simple_swu(ECCurve.SECP_256_R_1),
-            ::clear_cofactor_trivial)
+        encodeToCurveComposition(
+            hashToFieldRFC9380ForPrimeField(expandMessageXMD(Digest.SHA256), ECCurve.SECP_256_R_1, domain),
+            mapToCurveSimplifiedSWUWeierstrassABNonZero(ECCurve.SECP_256_R_1),
+            ::clearCofactorTrivial)
+    /** The P384_XMD:SHA-384_SSWU_RO_ suite as defined in RFC9380;
+     *   Usage: `suite(dst)(input)`
+     *  @see ECCurve.hashToCurve */
     fun `P384_XMD∶SHA-384_SSWU_RO_`(domain: ByteArray) =
-        hash_to_curve(
-            hash_to_field_rfc9380(expand_message_xmd(Digest.SHA384), ECCurve.SECP_384_R_1, domain),
-            map_to_curve_simple_swu(ECCurve.SECP_384_R_1),
-            ::clear_cofactor_trivial)
+        hashToCurveComposition(
+            hashToFieldRFC9380ForPrimeField(expandMessageXMD(Digest.SHA384), ECCurve.SECP_384_R_1, domain),
+            mapToCurveSimplifiedSWUWeierstrassABNonZero(ECCurve.SECP_384_R_1),
+            ::clearCofactorTrivial)
+    /** The P384_XMD:SHA-384_SSWU_NU_ suite as defined in RFC9380;
+     *   Usage: `suite(dst)(input)`
+     *  @see ECCurve.hashToCurve */
     fun `P384_XMD∶SHA-384_SSWU_NU_`(domain: ByteArray) =
-        encode_to_curve(
-            hash_to_field_rfc9380(expand_message_xmd(Digest.SHA384), ECCurve.SECP_384_R_1, domain),
-            map_to_curve_simple_swu(ECCurve.SECP_384_R_1),
-            ::clear_cofactor_trivial)
+        encodeToCurveComposition(
+            hashToFieldRFC9380ForPrimeField(expandMessageXMD(Digest.SHA384), ECCurve.SECP_384_R_1, domain),
+            mapToCurveSimplifiedSWUWeierstrassABNonZero(ECCurve.SECP_384_R_1),
+            ::clearCofactorTrivial)
+    /** The P521_XMD:SHA-512_SSWU_RO_ suite as defined in RFC9380;
+     *   Usage: `suite(dst)(input)`
+     *  @see ECCurve.hashToCurve */
     fun `P521_XMD∶SHA-512_SSWU_RO_`(domain: ByteArray) =
-        hash_to_curve(
-            hash_to_field_rfc9380(expand_message_xmd(Digest.SHA512), ECCurve.SECP_521_R_1, domain),
-            map_to_curve_simple_swu(ECCurve.SECP_521_R_1),
-            ::clear_cofactor_trivial)
+        hashToCurveComposition(
+            hashToFieldRFC9380ForPrimeField(expandMessageXMD(Digest.SHA512), ECCurve.SECP_521_R_1, domain),
+            mapToCurveSimplifiedSWUWeierstrassABNonZero(ECCurve.SECP_521_R_1),
+            ::clearCofactorTrivial)
+    /** The P521_XMD:SHA-512_SSWU_NU_ suite as defined in RFC9380;
+     *   Usage: `suite(dst)(input)`
+     *  @see ECCurve.hashToCurve */
     fun `P521_XMD∶SHA-512_SSWU_NU_`(domain: ByteArray) =
-        encode_to_curve(
-            hash_to_field_rfc9380(expand_message_xmd(Digest.SHA512), ECCurve.SECP_521_R_1, domain),
-            map_to_curve_simple_swu(ECCurve.SECP_521_R_1),
-            ::clear_cofactor_trivial)
+        encodeToCurveComposition(
+            hashToFieldRFC9380ForPrimeField(expandMessageXMD(Digest.SHA512), ECCurve.SECP_521_R_1, domain),
+            mapToCurveSimplifiedSWUWeierstrassABNonZero(ECCurve.SECP_521_R_1),
+            ::clearCofactorTrivial)
 }
 
+/** Obtains a suitable secure hash-to-scalar function as defined in [RFC9380].
+ * @param domain a suitable _domain separation tag_ (DST) for your use case;
+ *                   this should be unique to this particular use case within your application!
+ *                   see [RFC9380 3.1 Domain Separation Requirements](https://www.rfc-editor.org/rfc/rfc9380#name-domain-separation-requireme)
+ *                      for guidance */
+fun ECCurve.hashToScalar(domain: ByteArray) = HashToECScalar(when (this) {
+    ECCurve.SECP_256_R_1, ECCurve.SECP_384_R_1, ECCurve.SECP_521_R_1 ->
+        hashToFieldRFC9380ForPrimeField(expandMessageXMD(this.nativeDigest), this, domain)
+})
+
+/** Obtains a suitable secure hash-to-curve suite as defined in [RFC9380].
+ * @param domain a suitable _domain separation tag_ (DST) for your use case;
+ *                   this should be unique to this particular use case within your application!
+ *                   see [RFC9380 3.1 Domain Separation Requirements](https://www.rfc-editor.org/rfc/rfc9380#name-domain-separation-requireme)
+ *                      for guidance */
+inline fun ECCurve.hashToCurve(domain: ByteArray) = when (this) {
+    ECCurve.SECP_256_R_1 -> RFC9380.`P256_XMD∶SHA-256_SSWU_RO_`(domain)
+    ECCurve.SECP_384_R_1 -> RFC9380.`P384_XMD∶SHA-384_SSWU_RO_`(domain)
+    ECCurve.SECP_521_R_1 -> RFC9380.`P521_XMD∶SHA-512_SSWU_RO_`(domain)
+}

@@ -12,6 +12,7 @@
 * Fix CoseSigned equals
 * Base OIDs on BigInteger instead of UInt
 * Directly support UUID-based OID creation
+* Implement hash-to-curve and hash-to-scalar as per RFC9380
 
 ### 3.9.0 (Supreme 0.4.0)
 
