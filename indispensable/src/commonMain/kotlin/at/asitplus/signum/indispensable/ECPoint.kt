@@ -70,6 +70,9 @@ sealed class ECPoint private constructor(
         /** y coordinate of the point (x,y) */
         val y inline get() = homY
 
+        inline operator fun component1() = x
+        inline operator fun component2() = y
+
         val xBytes inline get() = x.toByteArray().ensureSize(curve.coordinateLength.bytes)
         val yBytes inline get() = y.toByteArray().ensureSize(curve.coordinateLength.bytes)
         val yCompressed get() = compressY(curve, x, y)

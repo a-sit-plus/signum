@@ -1,7 +1,6 @@
 package at.asitplus.signum.ecmath
 
-import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.ECPoint
+import at.asitplus.signum.indispensable.*
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Quadruple
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -28,12 +27,9 @@ private fun ECCurve.randomPoint(): ECPoint =
     }}.firstNotNullOf { it.getOrNull() }
 
 class ECMathTest : FreeSpec({
-    "Assumption: All implemented curves are prime order Weierstrass curves with a = -3" - {
-        withData(ECCurve.entries) { curve ->
-            // if new curves are ever added that violate this assumption,
-            //   the algorithms in ECMath must be revisited!
-            // the current algorithm only works on this particular class of curve
-            curve.a == curve.coordinateCreator.fromInt(-3)
+    "Curves have appropriate math objects assigned" - {
+        withData(NewECCurve.entries) { curve ->
+            curve.math.checkRequirements(curve)
         }
     }
     "Addition: group axioms" - {
@@ -747,7 +743,7 @@ class ECMathTest : FreeSpec({
         withData(ECCurve.entries) { curve ->
             withData(generateSequence { Pair(curve.randomScalar(), curve.randomPoint())}.take(10))
             { (k,P) ->
-                montgomeryMul(k.residue,P) shouldBe (k*P)
+                (k ct_mul P) shouldBe (k * P)
             }
         }
     }
