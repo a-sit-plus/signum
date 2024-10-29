@@ -4,6 +4,12 @@
 
 ### 3.10.0 NEXT (Supreme 0.5.0 NEXT)
 
+The public API remains unchanged, except for some methods migrating from a ByteIterator to kotlinx-io Source
+and some newly added. The internals have changed substantially, however.
+Be sure to match Signum versions if multiple libraries pull it in as transitive dependency.
+Better safe than sorry!
+
+* KmmResult 1.9.0
 * Introduce generic tag assertion to `Asn1Element`
 * Change CSR to take an actual `CryptoSignature` instead of a ByteArray
 * Introduce shorthand to create CSR from TbsCSR
@@ -13,6 +19,11 @@
 * Base OIDs on BigInteger instead of UInt
 * Directly support UUID-based OID creation
 * Implement hash-to-curve and hash-to-scalar as per RFC9380
+* Use kotlinx-io as primary source for parsing
+    * Base number encoding/decoding on koltinx-io
+        * Remove parsing from iterator
+    * Base ASN.1 encoding and decoding on kotlinx-io
+        * Remove single element decoding from Iterator
 * Add type parameter to `JwsSigned` for its payload
 * Add type parameter to `JweDecrypted` for its payload
 
@@ -303,7 +314,7 @@ the Tag class just cannot be directly accessed from Swift and ObjC any more.
 * Proper BIT STRING
 * BitSet (100% Kotlin BitSet implementation)
 * Recursively parsing (and encapsulating) ASN.1 structures in OCTET Strings
-* Initial pretty-printing of ASN.1 Strucutres
+* Initial pretty-printing of ASN.1 Structures
 * Massive ASN.1 builder DSL streamlining
 * More convenient explicit tagging
 

@@ -1,10 +1,8 @@
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.encoding.parse
-import at.asitplus.signum.indispensable.asn1.encoding.parseAll
-import at.asitplus.signum.indispensable.asn1.encoding.parseFirst
-import at.asitplus.signum.indispensable.toByteArray
+import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.signum.indispensable.io.wrapInUnsafeSource
+import at.asitplus.signum.indispensable.pki.toByteArray
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
@@ -24,22 +22,25 @@ class Asn1ParserTest : FreeSpec({
             encoded.sliceArray(seq.tag.encodedTagLength + seq.encodedLength.size until seq.derEncoded.size)
 
         "without Garbage" {
-            val iterator = rawChildren.iterator()
-            val parseFirst = Asn1Element.parseFirst(iterator)
+
+            val (parseFirst, rest) = Asn1Element.parseFirst(rawChildren)
             val childIterator = seq.children.iterator()
             parseFirst shouldBe childIterator.next()
 
 
 
-            val bytes = iterator.toByteArray()
-            bytes shouldBe rawChildren.sliceArray(parseFirst.overallLength until rawChildren.size)
+
+            rest shouldBe rawChildren.sliceArray(parseFirst.overallLength until rawChildren.size)
             Asn1Element.parseFirst(rawChildren).let { (elem,rest )->
                 elem shouldBe seq.children.first()
                 rest shouldBe  rawChildren.sliceArray(parseFirst.overallLength until rawChildren.size)
             }
-            val byteIterator = bytes.iterator()
-            repeat(9) { Asn1Element.parseFirst(byteIterator) shouldBe childIterator.next() }
-            Asn1Element.parseAll(rawChildren.iterator()) shouldBe seq.children
+            var byteIterator = rest
+            repeat(9) {
+                Asn1Element.parseFirst(byteIterator)
+                    .let { (elem, residue) -> byteIterator = residue;elem } shouldBe childIterator.next()
+            }
+            Asn1Element.parseAll(rawChildren) shouldBe seq.children
 
             shouldThrow<Asn1Exception> { Asn1Element.parse(rawChildren) }
             shouldThrow<Asn1Exception> { Asn1Element.parse(rawChildren.iterator()) }
@@ -48,21 +49,23 @@ class Asn1ParserTest : FreeSpec({
         "with Garbage" {
             val garbage = Random.nextBytes(32)
             val withGarbage = rawChildren + garbage
-            val iterator = withGarbage.iterator()
-            val parseFirst = Asn1Element.parseFirst(iterator)
+            val source = withGarbage.wrapInUnsafeSource()
+            val (parseFirst,rest) = Asn1Element.parseFirst(withGarbage)
+            val firstFromSource= source.readAsn1Element().first
+            firstFromSource shouldBe parseFirst
             val childIterator = seq.children.iterator()
             parseFirst shouldBe childIterator.next()
 
-            val bytes = iterator.toByteArray()
-            bytes shouldBe withGarbage.sliceArray(parseFirst.overallLength until withGarbage.size)
+
+            rest shouldBe withGarbage.sliceArray(parseFirst.overallLength until withGarbage.size)
 
             Asn1Element.parseFirst(withGarbage).let { (elem,rest )->
                 elem shouldBe seq.children.first()
                 rest shouldBe   withGarbage.sliceArray(parseFirst.overallLength until withGarbage.size)
             }
 
-            val byteIterator = bytes.iterator()
-            repeat(9) { Asn1Element.parseFirst(byteIterator) shouldBe childIterator.next() }
+
+            repeat(9) { source.readAsn1Element().first shouldBe childIterator.next() }
 
 
             shouldThrow<Asn1Exception> { Asn1Element.parseAll(withGarbage.iterator()) shouldBe seq.children }
