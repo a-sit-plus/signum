@@ -6,7 +6,7 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
-import at.asitplus.signum.indispensable.io.BitSet
+import at.asitplus.signum.indispensable.asn1.BitSet
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
@@ -15,8 +15,13 @@ import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.ISSUER
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.SUBJECT_UID
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
 /**
  * Very simple implementation of the meat of an X.509 Certificate:
@@ -30,8 +35,8 @@ constructor(
     @Serializable(with = ByteArrayBase64Serializer::class) val serialNumber: ByteArray,
     val signatureAlgorithm: X509SignatureAlgorithm,
     val issuerName: List<RelativeDistinguishedName>,
-    val validFrom: Asn1Time,
-    val validUntil: Asn1Time,
+    @Serializable(with=CertTimeStampSerializer::class) val validFrom: Asn1Time,
+    @Serializable(with=CertTimeStampSerializer::class) val validUntil: Asn1Time,
     val subjectName: List<RelativeDistinguishedName>,
     val publicKey: CryptoPublicKey,
     val issuerUniqueID: BitSet? = null,
@@ -283,3 +288,17 @@ typealias CertificateChain = List<X509Certificate>
 
 val CertificateChain.leaf: X509Certificate get() = first()
 val CertificateChain.root: X509Certificate get() = last()
+
+
+
+object CertTimeStampSerializer : KSerializer<Asn1Time> {
+    override val descriptor = PrimitiveSerialDescriptor("CertificateTimestamp", PrimitiveKind.STRING)
+
+    override fun deserialize(decoder: Decoder) =
+        Asn1Time.decodeFromTlv(Asn1Element.decodeFromDerHexString(decoder.decodeString()) as Asn1Primitive)
+
+    override fun serialize(encoder: Encoder, value: Asn1Time) {
+        encoder.encodeString(value.encodeToTlv().toDerHexString())
+    }
+
+}

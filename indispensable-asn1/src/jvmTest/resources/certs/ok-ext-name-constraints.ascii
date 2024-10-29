@@ -1,0 +1,240 @@
+SEQUENCE {
+  SEQUENCE {  # TBSCertificate
+    [0] {  # ENUMERATED
+      INTEGER { 2 }  # v3
+    }  # version
+    INTEGER { `01e14d1508f28d88` }  # serialNumber
+    SEQUENCE {  # AlgorithmIdentifier
+      # sha256WithRSAEncryption
+      OBJECT_IDENTIFIER { 1.2.840.113549.1.1.11 }  # algorithm
+      NULL {}  # parameters
+    }  # signature
+    SEQUENCE {  # Name
+      SET {
+        SEQUENCE {
+          # countryName
+          OBJECT_IDENTIFIER { 2.5.4.6 }
+          PrintableString { "GB" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # stateOrProvinceName
+          OBJECT_IDENTIFIER { 2.5.4.8 }
+          PrintableString { "London" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # localityName
+          OBJECT_IDENTIFIER { 2.5.4.7 }
+          PrintableString { "London" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # organizationName
+          OBJECT_IDENTIFIER { 2.5.4.10 }
+          PrintableString { "Google" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # organizationUnitName
+          OBJECT_IDENTIFIER { 2.5.4.11 }
+          PrintableString { "Eng" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # commonName
+          OBJECT_IDENTIFIER { 2.5.4.3 }
+          PrintableString { "FakeCertificateAuthority" }
+        }
+      }
+    }  # issuer
+    SEQUENCE {  # Validity
+      UTCTime { "230811064841Z" }  # notBefore
+      UTCTime { "260412064841Z" }  # notAfter
+    }  # validity
+    SEQUENCE {  # Name
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # countryName
+          OBJECT_IDENTIFIER { 2.5.4.6 }  # type
+          PrintableString { "US" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # stateOrProvinceName
+          OBJECT_IDENTIFIER { 2.5.4.8 }  # type
+          UTF8String { "California" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # localityName
+          OBJECT_IDENTIFIER { 2.5.4.7 }  # type
+          UTF8String { "Mountain View" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # organizationName
+          OBJECT_IDENTIFIER { 2.5.4.10 }  # type
+          UTF8String { "Google Inc" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # commonName
+          OBJECT_IDENTIFIER { 2.5.4.3 }  # type
+          UTF8String { "*.google.com" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # surname
+          OBJECT_IDENTIFIER { 2.5.4.4 }  # type
+          UTF8String { "RFC5280 s4.2 'applications conforming to this profile MUST recognize the following extensions: ...name constraints (Section 4.2.1.10)'" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # givenName
+          OBJECT_IDENTIFIER { 2.5.4.42 }  # type
+          UTF8String { "Include Name Constraints extension" }  # value
+        }
+      }
+    }  # subject
+    # Generated from cfg/fake-intermediate-ca.private.pem via:
+    #  - openssl req -new -x509 -config cfg/fake-intermediate-ca.cnf -days 365 -extensions v3_ca -inform pem -key cfg/fake-intermediate-ca.private.pem -outform der -out temp.der
+    #  - der2ascii -i temp.der -o temp.ascii
+    #  - manually extract the subjectPublicKeyInfo
+    SEQUENCE {  # SubjectPublicKeyInfo
+      SEQUENCE {  # AlgorithmIdentifier
+        # rsaEncryption
+        OBJECT_IDENTIFIER { 1.2.840.113549.1.1.1 }  # algorithm
+        NULL {}  # parameters
+      }
+      BIT_STRING {
+        `00`  # no unused bits
+        SEQUENCE {
+          INTEGER { `00caa40c7a6de92622d46719c82940c6bdcb4439e7fa84011db304154837fa55d5984b2aff140ed6ce276b29d5e88d39ebbe97be5321d2a3f227ef46681c6f847785b468787ad43d5049898f9e6b4ace74c00fc868387eae82ae910c6d8724c448f3e08ea83e0cf8e1e87fa1dd29f4d0eb3ab238770f1a4ea614c4b1db5bedf9a4f09d1ed8a8d04028d6fc69440b3737e7d6fd29b07036470089815ac951cf2da08076fcd85728878171e4104b391651f285eda03441bff35228f1cdc4dc31f92614fdb665512f76e98294fc2abe1aa05854d8b5dee3960807503d0e3526e53ac767e88db6f13461f60c47d2fd0b51cfa69997d426a11214dda20ee5684d75f7c5` }
+          INTEGER { 65537 }
+        }
+      }  # subjectPublicKey
+    }  # subjectPublicKeyInfo
+    [3] {
+      SEQUENCE {  # Extensions
+        SEQUENCE {  # Extension
+          # authorityKeyIdentifier
+          OBJECT_IDENTIFIER { 2.5.29.35 }  # extnID = id-ce-authorityKeyIdentifier
+          OCTET_STRING {
+            SEQUENCE {  # AuthorityKeyIdentifier
+              [0 PRIMITIVE] { `01020304` }  # KeyIdentifier
+            }
+          }  # extnValue
+        }
+        SEQUENCE {  # Extension
+          # subjectKeyIdentifier
+          OBJECT_IDENTIFIER { 2.5.29.14 }  # extnID = id-ce-subjectKeyIdentifier
+          OCTET_STRING {
+            OCTET_STRING { `dbf46e63eee2dcbebf38604f9831d06444f163d8` }  # SubjectKeyIdentifier
+          }  # extnValue
+        }
+        SEQUENCE {
+          # basicConstraints
+          OBJECT_IDENTIFIER { 2.5.29.19 }  # extnID = id-ce-basicConstraints
+          BOOLEAN { `ff` }  # critical
+          OCTET_STRING {
+            SEQUENCE {
+              BOOLEAN { `ff` }  # cA
+              INTEGER { 0 }  # pathLenConstraint
+            }  # extnValue
+          }  # value
+        }
+        SEQUENCE {  # Extension
+          # extKeyUsage
+          OBJECT_IDENTIFIER { 2.5.29.15 }  # extnID = id-ce-keyUsage
+          BOOLEAN { `ff` }  # critical
+          OCTET_STRING {
+            BIT_STRING { `07` `ff80` }  # 7 unused bits, b111111111
+          }  # value
+        }
+        SEQUENCE {
+          # nameConstraints
+          OBJECT_IDENTIFIER { 2.5.29.30 }  # extnID = id-ce-nameConstraints
+          BOOLEAN { `ff` }  # critical
+          OCTET_STRING {
+            SEQUENCE {  # NameConstraints
+              [0] {  # GeneralSubtrees
+                SEQUENCE {  # GeneralSubtree
+                  [2 PRIMITIVE] { "*.google.co.uk" }  # base = dNSName
+                }
+                SEQUENCE {  # GeneralSubtree
+                  [7 PRIMITIVE] { `01020304ffffff00`}  # OCTET STRING iPAddress
+                }
+                SEQUENCE {  # GeneralSubtree
+                  [1 PRIMITIVE] { "someone@example.com" }  # IA5String rfc822Name
+                }
+                SEQUENCE {  # GeneralSubtree
+                  [0] {  # OtherName
+                    OBJECT_IDENTIFIER { 1.2.3.4 }
+                    [0] {
+                      UTF8String { "some other identifier" }
+                    }
+                  }  # otherName
+                }
+                SEQUENCE {  # GeneralSubtree
+                  [4] {
+                    SEQUENCE {  # Name
+                      SET {  # RelativeDistinguishedName
+                        SEQUENCE {  # AttributeTypeAndValue
+                          # countryName
+                          OBJECT_IDENTIFIER { 2.5.4.6 }  # type
+                          PrintableString { "US" }  # value
+                        }
+                      }
+                      SET {  # RelativeDistinguishedName
+                        SEQUENCE {  # AttributeTypeAndValue
+                          # localityName
+                          OBJECT_IDENTIFIER { 2.5.4.7 }  # type
+                          UTF8String { "Mountain View" }  # value
+                        }
+                      }
+                      SET {  # RelativeDistinguishedName
+                        SEQUENCE {  # AttributeTypeAndValue
+                          # organizationName
+                          OBJECT_IDENTIFIER { 2.5.4.10 }  # type
+                          UTF8String { "Google Inc" }  # value
+                        }
+                      }
+                    }  # directoryName
+                  }
+                }
+                SEQUENCE {  # GeneralSubtree
+                  [6 PRIMITIVE] { "http://example.com" }  # IA5String uniformResourceIdentifier
+                }
+              }  # permittedSubtrees
+              [1] {  # GeneralSubtrees
+                SEQUENCE {  # GeneralSubtree
+                  [2 PRIMITIVE] { "*.google.com" }  # base = dNSName
+                }  # base
+              }  # excludedSubtrees
+            }  # extnValue
+          }  # value
+        }
+      }  # extensions
+    }
+  }  # tbsCertificate
+  SEQUENCE {
+    OBJECT_IDENTIFIER { 1.2.840.113549.1.1.11 }
+    NULL {}
+  }
+  BIT_STRING {
+    `00`
+    `34aec4ecd20024ddec7315545b9da23c4b28ce37b2ebdc83782f472a93ef54a494e383b027a6674c1cd45b0f4f20c216876a9c1b4438043f63cb7949f73aadcc123559d9fb95928896c66a2d5deb7e2b94df1186db1b43e32363dd348c4bb83f1bc528eb91c1a9314ee26d306ce7190d1a2c25d3d38d98d5044e5a9a9d862f48972396e771f1bcd8b5fc0714245101d44cce56cf10bad2043b379a5e7d466a855ee4d3b6b9130003c45fc0100d2a01d94048449fcb6657ca7ec89c2017a935dc1c5971c61d53ed026ede3843520a6668357df6394c4b6a1b4901e74c3b3f195f42aa99566b2d5815e698e416c9c807c5ae59ed196ccef203b27550261555e7f3`
+  }
+}

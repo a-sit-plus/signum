@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.indispensable.io.ensureSize
+import at.asitplus.signum.indispensable.asn1.ensureSize
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import at.asitplus.signum.indispensable.misc.compressY
 import at.asitplus.signum.indispensable.misc.decompressY

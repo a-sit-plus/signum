@@ -1,0 +1,147 @@
+SEQUENCE {
+  SEQUENCE {  # TBSCertificate
+    [0] {  # ENUMERATED
+      INTEGER { 2 }  # v3
+    }  # version
+    INTEGER { `01f0ab8b18e160e0` }  # serialNumber
+    SEQUENCE {  # AlgorithmIdentifier
+      # sha256WithRSAEncryption
+      OBJECT_IDENTIFIER { 1.2.840.113549.1.1.11 }  # algorithm
+      NULL {}  # parameters
+    }  # signature
+    SEQUENCE {  # Name
+      SET {
+        SEQUENCE {
+          # countryName
+          OBJECT_IDENTIFIER { 2.5.4.6 }
+          PrintableString { "GB" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # stateOrProvinceName
+          OBJECT_IDENTIFIER { 2.5.4.8 }
+          PrintableString { "London" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # localityName
+          OBJECT_IDENTIFIER { 2.5.4.7 }
+          PrintableString { "London" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # organizationName
+          OBJECT_IDENTIFIER { 2.5.4.10 }
+          PrintableString { "Google" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # organizationUnitName
+          OBJECT_IDENTIFIER { 2.5.4.11 }
+          PrintableString { "Eng" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # commonName
+          OBJECT_IDENTIFIER { 2.5.4.3 }
+          PrintableString { "FakeCertificateAuthority" }
+        }
+      }
+    }  # issuer
+    SEQUENCE {  # Validity
+      UTCTime { "230811064846Z" }  # notBefore
+      UTCTime { "260412064846Z" }  # notAfter
+    }  # validity
+    SEQUENCE {  # Name
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # countryName
+          OBJECT_IDENTIFIER { 2.5.4.6 }  # type
+          PrintableString { "US" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # stateOrProvinceName
+          OBJECT_IDENTIFIER { 2.5.4.8 }  # type
+          UTF8String { "California" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # localityName
+          OBJECT_IDENTIFIER { 2.5.4.7 }  # type
+          UTF8String { "Mountain View" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # organizationName
+          OBJECT_IDENTIFIER { 2.5.4.10 }  # type
+          UTF8String { "Google Inc" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # commonName
+          OBJECT_IDENTIFIER { 2.5.4.3 }  # type
+          UTF8String { "*.google.com" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # surname
+          OBJECT_IDENTIFIER { 2.5.4.4 }  # type
+          UTF8String { "RFC3279 s2.3.1" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # givenName
+          OBJECT_IDENTIFIER { 2.5.4.42 }  # type
+          UTF8String { "RSA public key with negative modulus" }  # value
+        }
+      }
+    }  # subject
+    SEQUENCE {  # SubjectPublicKeyInfo
+      SEQUENCE {
+        # rsaEncryption
+        OBJECT_IDENTIFIER { 1.2.840.113549.1.1.1 }  # algorithm
+        NULL {} # parameters
+      }
+      BIT_STRING {
+        `00`
+        SEQUENCE {
+          INTEGER { `81bce2f7cbc890b5018bb0a06eedf2a5ecc9f1a25d4e30098ef1fb3e6c7266043f982769274bf23f939e93a58314e4b7332f175ca53075df5545c75f20322dc91b767681533c0f7bbdeb41924f94be53a45fb7f68b24954794442d3333057e287c3cda1a249ab1b7616f7013a14b6cda4d07714f6dfd271343415951449e6f21f4618a079921607c1176f4ab192b74f4c4358463ba2c30c96df807a35bf1848694bd9951f4c35e8affefe7e62740d7dc694d1311a54300e88373a933072182c4ec65c14c77350d8103f3f37df3797eaf7fff4147be5d144c6a83b699e2c29c7ba4dffc13e93304ac287bdf6267e4f78a285902bb87075bd9983df9a4e6c1f60919` }  # modulus
+          INTEGER { 65537 }  # publicExponent
+        }
+      }
+    }  # subjectPublicKeyInfo
+    [3] {
+      SEQUENCE {  # Extensions
+        SEQUENCE {  # Extension
+          # authorityKeyIdentifier
+          OBJECT_IDENTIFIER { 2.5.29.35 }  # extnID = id-ce-authorityKeyIdentifier
+          OCTET_STRING {
+            SEQUENCE {  # AuthorityKeyIdentifier
+              [0 PRIMITIVE] { `01020304` }  # KeyIdentifier
+            }
+          }  # extnValue
+        }
+      }  # extensions
+    }
+  }  # tbsCertificate
+  SEQUENCE {
+    OBJECT_IDENTIFIER { 1.2.840.113549.1.1.11 }
+    NULL {}
+  }
+  BIT_STRING {
+    `00`
+    `945b837240bdccf4cbb11c93930fcdd0aa6b3b1c09b0b72a5618dada9883b81609a5bed3192d4c7abc16324a667a58ea0ed9f7d980e824f2d274eb32a007d448f8c2598698639d7111a5c71f9bbf967896a0225e9410d9829d2e94381917b3aae86533db09af82bb7902fdbd193297655a96586b16759a182102629eee38440d675eb476b563b50920bfcf6d3cebf6ed26cfcdef1e7ee0075ad0e495129f643734559eca506133a2133409ab5b5bbac17df85b867d2d6386a9f0e58f6e005c631efe6a191d3e7d476eaa034cfb81b6808b95678d970fdc5853b214931ad074e13e061d64435d8653025d48580613c1831d684a53ba3a12090dc4b291688e0eb5`
+  }
+}
