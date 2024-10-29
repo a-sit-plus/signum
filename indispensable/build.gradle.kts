@@ -40,10 +40,6 @@ kotlin {
 
         commonMain.dependencies {
             api(project(":indispensable-asn1"))
-            api(libs.kotlinx.io.core)
-            api(kmmresult())
-            api(serialization("json"))
-            api(datetime())
             api(libs.multibase)
             api(libs.bignum)
         }
