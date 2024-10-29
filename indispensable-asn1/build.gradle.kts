@@ -175,8 +175,6 @@ kotlin {
                 api(kmmresult())
                 api(serialization("json"))
                 api(datetime())
-                api(libs.multibase)
-                api(libs.bignum)
             }
         }
 
@@ -188,7 +186,7 @@ kotlin {
 
         jvmTest {
             dependencies {
-               implementation(project(":indispensable"))
+                implementation(project(":indispensable"))
             }
         }
 
@@ -197,7 +195,7 @@ kotlin {
 
 exportIosFramework(
     "Indispensable-asn1",
-    transitiveExports=false,
+    transitiveExports = false,
     serialization("json"),
     datetime(),
     kmmresult(),
