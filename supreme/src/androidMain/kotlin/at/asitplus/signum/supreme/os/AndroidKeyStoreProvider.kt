@@ -291,7 +291,7 @@ sealed class AndroidKeystoreSigner private constructor(
     val keyInfo: KeyInfo,
     private val config: AndroidSignerConfiguration,
     final override val attestation: AndroidKeystoreAttestation?
-) : PlatformSigningProviderSigner<AndroidSignerSigningConfiguration>, SignerI.Attestable<AndroidKeystoreAttestation> {
+) : PlatformSigningProviderSigner<AndroidSignerSigningConfiguration, AndroidKeystoreAttestation> {
 
     final override val mayRequireUserUnlock: Boolean get() = this.needsAuthentication
 

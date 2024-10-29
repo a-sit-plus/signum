@@ -2,6 +2,7 @@ package at.asitplus.signum.supreme.os
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.indispensable.Attestation
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.supreme.SignatureResult
@@ -139,8 +140,9 @@ open class PlatformSigningProviderSignerSigningConfigurationBase internal constr
     open val unlockPrompt = childOrDefault(::UnlockPromptConfiguration)
 }
 
-interface PlatformSigningProviderSigner<SigningConfiguration: PlatformSigningProviderSignerSigningConfigurationBase>
-    : Signer.WithAlias {
+interface PlatformSigningProviderSigner
+    <SigningConfiguration: PlatformSigningProviderSignerSigningConfigurationBase, AttestationT: Attestation>
+    : Signer.WithAlias, Signer.Attestable<AttestationT> {
 
     suspend fun trySetupUninterruptedSigning(configure: DSLConfigureFn<SigningConfiguration> = null) : KmmResult<Unit> = KmmResult.success(Unit)
     override suspend fun trySetupUninterruptedSigning() = trySetupUninterruptedSigning(null)
@@ -160,7 +162,7 @@ internal expect fun getPlatformSigningProvider(configure: DSLConfigureFn<Platfor
 
 /** KT-71089 workaround
  * @see PlatformSigningProvider */
-interface PlatformSigningProviderI<out SignerT: PlatformSigningProviderSigner<*>,
+interface PlatformSigningProviderI<out SignerT: PlatformSigningProviderSigner<*,*>,
         out SignerConfigT: PlatformSignerConfigurationBase,
         out KeyConfigT: PlatformSigningKeyConfigurationBase<*>>
     : SigningProviderI<SignerT, SignerConfigT, KeyConfigT> {
