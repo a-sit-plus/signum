@@ -9,7 +9,7 @@ bignum = "0.3.10"
 jose = "9.31"
 kotlinpoet = "1.16.0"
 runner = "1.5.2"
-kotest-plugin = "20240918.002009-71"
+kotest = "5.9.1"
 kmmresult = "1.9.0"
 
 [libraries]
