@@ -1,8 +1,6 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.BigUInt.Companion.decodeAsn1VarBigUint
-import at.asitplus.signum.indispensable.asn1.encoding.decodeAsn1VarBigInt
-import at.asitplus.signum.indispensable.asn1.encoding.toAsn1VarInt
 import com.ionspin.kotlin.bignum.integer.Sign
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData

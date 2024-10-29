@@ -2,10 +2,8 @@ package at.asitplus.signum.indispensable.asn1.encoding
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.BitSet
-import com.ionspin.kotlin.bignum.integer.BigInteger
-import com.ionspin.kotlin.bignum.integer.util.toTwosComplementByteArray
 import kotlinx.datetime.Instant
 
 /**
@@ -197,7 +195,7 @@ object Asn1 {
      * Exception-free version of [ExplicitlyTagged]
      */
     fun ExplicitlyTaggedOrNull(tag: ULong, root: Asn1TreeBuilder.() -> Unit) =
-        catching { ExplicitlyTagged(tag, root) }.getOrNull()
+         catchingUnwrapped { ExplicitlyTagged(tag, root) }.getOrNull()
 
     /**
      * Safe version on [ExplicitlyTagged], wrapping the result into a [KmmResult]
@@ -205,12 +203,10 @@ object Asn1 {
     fun ExplicitlyTaggedSafe(tag: ULong, root: Asn1TreeBuilder.() -> Unit) =
         catching { ExplicitlyTagged(tag, root) }
 
-
     /**
      * Adds a BOOL [Asn1Primitive] to this ASN.1 structure
      */
     fun Bool(value: Boolean) = value.encodeToAsn1Primitive()
-
 
     /** Creates an INTEGER [Asn1Primitive] from [value] */
     fun Int(value: Int) = value.encodeToAsn1Primitive()
@@ -224,8 +220,6 @@ object Asn1 {
     /** Creates an INTEGER [Asn1Primitive] from [value] */
     fun Int(value: ULong) = value.encodeToAsn1Primitive()
 
-    /** Creates an INTEGER [Asn1Primitive] from [value] */
-    fun Int(value: BigInteger) = value.encodeToAsn1Primitive()
 
     /** Creates an OCTET STRING [Asn1Element] from [bytes] */
     fun OctetString(bytes: ByteArray) = bytes.encodeToAsn1OctetStringPrimitive()
@@ -320,8 +314,6 @@ fun UInt.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.INT, encodeToAs
 /** Produces an INTEGER as [Asn1Primitive] */
 fun ULong.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.INT, encodeToAsn1ContentBytes())
 
-/** Produces an INTEGER as [Asn1Primitive] */
-fun BigInteger.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.INT, encodeToAsn1ContentBytes())
 
 /** Produces an ASN.1 UTF8 STRING as [Asn1Primitive] */
 fun String.encodeToAsn1Primitive() = Asn1String.UTF8(this).encodeToTlv()
@@ -358,8 +350,6 @@ fun UInt.encodeToAsn1ContentBytes() = toTwosComplementByteArray()
 /** Encodes this number into a [ByteArray] using the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 INTEGER */
 fun ULong.encodeToAsn1ContentBytes() = toTwosComplementByteArray()
 
-/** Encodes this number into a [ByteArray] using the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 INTEGER */
-fun BigInteger.encodeToAsn1ContentBytes() = toTwosComplementByteArray()
 
 /**
  * Produces a UTC TIME as [Asn1Primitive]

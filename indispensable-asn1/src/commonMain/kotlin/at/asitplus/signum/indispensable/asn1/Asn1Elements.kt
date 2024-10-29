@@ -5,9 +5,6 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
 import at.asitplus.signum.indispensable.asn1.encoding.*
-import io.matthewnelson.encoding.base16.Base16
-import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
-import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.io.Buffer
 import kotlinx.io.Sink
 import kotlinx.io.readByteArray
@@ -47,7 +44,7 @@ sealed class Asn1Element(
          */
         @Throws(Throwable::class)
         fun decodeFromDerHexString(derEncoded: String) =
-            Asn1Element.parse(derEncoded.replace(Regex("\\s"), "").trim().decodeToByteArray(Base16))
+            Asn1Element.parse(derEncoded.replace(Regex("\\s"), "").trim().hexToByteArray(HexFormat.UpperCase))
     }
 
     /**
@@ -111,11 +108,8 @@ sealed class Asn1Element(
     /**
      * Convenience method to directly produce an HEX string of this element's ASN.1 representation
      */
-    fun toDerHexString(lineLen: Byte? = null) = derEncoded.encodeToString(Base16 {
-        lineLen?.let {
-            lineBreakInterval = lineLen
-        }
-    })
+    fun toDerHexString(lineLen: Byte? = null) = derEncoded.toHexString(HexFormat.UpperCase)
+        .let { if (lineLen == null) it else it.chunked(lineLen.toInt()).joinToString(separator = "\n") }
 
 
     /**
@@ -308,7 +302,7 @@ sealed class Asn1Element(
 
         override fun toString(): String =
             "${tagClass.let { if (it == TagClass.UNIVERSAL) "" else it.name + " " }}${tagValue}${if (isConstructed) " CONSTRUCTED" else ""}" +
-                    (" (=${encodedTag.encodeToString(Base16)})")
+                    (" (=${encodedTag.toHexString(HexFormat.UpperCase)})")
 
         /**
          * As per ITU-T X.680 8824-1 8.6
@@ -411,11 +405,11 @@ object Asn1EncodableSerializer : KSerializer<Asn1Element> {
     override val descriptor = PrimitiveSerialDescriptor("Asn1Encodable", PrimitiveKind.STRING)
 
     override fun deserialize(decoder: Decoder): Asn1Element {
-        return Asn1Element.parse(decoder.decodeString().decodeToByteArray(Base16))
+        return Asn1Element.parse(decoder.decodeString().hexToByteArray(HexFormat.UpperCase))
     }
 
     override fun serialize(encoder: Encoder, value: Asn1Element) {
-        encoder.encodeString(value.derEncoded.encodeToString(Base16))
+        encoder.encodeString(value.derEncoded.toHexString(HexFormat.UpperCase))
     }
 
 }
@@ -653,7 +647,7 @@ class Asn1CustomStructure private constructor(
         (" " * indent) + tag.tagClass +
                 " ${tag.tagValue}" +
                 (if (!tag.isConstructed) " PRIMITIVE" else "") +
-                " (=${tag.encodedTag.encodeToString(Base16)}), length=${length}" +
+                " (=${tag.encodedTag.toHexString(HexFormat.UpperCase)}), length=${length}" +
                 ", overallLength=${overallLength}" +
                 content?.let { " ${it.toHexString(HexFormat.UpperCase)}" }
 

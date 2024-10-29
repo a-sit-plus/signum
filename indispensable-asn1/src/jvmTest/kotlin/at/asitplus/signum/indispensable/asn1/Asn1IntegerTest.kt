@@ -1,7 +1,5 @@
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToBigInteger
-import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import io.kotest.core.spec.style.FreeSpec

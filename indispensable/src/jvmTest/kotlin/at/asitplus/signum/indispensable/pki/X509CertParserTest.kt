@@ -28,10 +28,6 @@ import kotlin.random.Random
 import kotlin.random.nextInt
 import java.security.cert.X509Certificate as JcaCertificate
 
-internal fun ByteIterator.toByteArray(): ByteArray =asSequence().toList().toByteArray()
-
-private val json = Json { prettyPrint = true }
-
 class X509CertParserTest : FreeSpec({
 
     "Manual" {

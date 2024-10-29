@@ -23,10 +23,10 @@ internal fun wrapInUnsafeSource(bytes: ByteArray, startIndex: Int = 0, endIndex:
 /**
  * Helper to create a buffer, operate on it and return its contents as a [ByteArray]
  */
-internal inline fun throughBuffer(operation: (Buffer) -> Unit): ByteArray =
+inline fun throughBuffer(operation: (Buffer) -> Unit): ByteArray =
     Buffer().also(operation).readByteArray()
 
-internal inline fun <reified T> ByteArray.throughBuffer(operation: (Source) -> T): T =
+inline fun <reified T> ByteArray.throughBuffer(operation: (Source) -> T): T =
     wrapInUnsafeSource().let { operation(it) }
 
 

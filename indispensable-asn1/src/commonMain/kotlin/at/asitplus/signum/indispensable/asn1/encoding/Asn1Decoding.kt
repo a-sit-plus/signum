@@ -11,8 +11,6 @@ import at.asitplus.signum.indispensable.asn1.BERTags.UNIVERSAL_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.UTF8_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.VISIBLE_STRING
 import at.asitplus.signum.indispensable.asn1.wrapInUnsafeSource
-import com.ionspin.kotlin.bignum.integer.BigInteger
-import com.ionspin.kotlin.bignum.integer.util.fromTwosComplementByteArray
 import kotlinx.datetime.Instant
 import kotlinx.io.Source
 import kotlinx.io.readByteArray
@@ -233,18 +231,8 @@ fun Asn1Primitive.decodeToULong(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT
 inline fun Asn1Primitive.decodeToULongOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
     catching { decodeToULong(assertTag) }.getOrNull()
 
-/**
- * Decode the [Asn1Primitive] as a [BigInteger]. [assertTag] defaults to [Asn1Element.Tag.INT], but can be
- * overridden (for implicitly tagged integers, for example)
- * @throws [Asn1Exception] on invalid input
- */
-@Throws(Asn1Exception::class)
-fun Asn1Primitive.decodeToBigInteger(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
-    runRethrowing { decode(assertTag) { BigInteger.decodeFromAsn1ContentBytes(it) } }
 
-/** Exception-free version of [decodeToBigInteger] */
-inline fun Asn1Primitive.decodeToBigIntegerOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
-    catching { decodeToBigInteger(assertTag) }.getOrNull()
+
 
 /**
  * transforms this [Asn1Primitive] into an [Asn1String] subtype based on its tag
@@ -420,13 +408,6 @@ fun UInt.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): UInt =
  */
 @Throws(Asn1Exception::class)
 fun ULong.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): ULong =
-    runRethrowing { fromTwosComplementByteArray(bytes) }
-
-/**
- * Decodes a [BigInteger] from [bytes] assuming the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 INTEGER
- */
-@Throws(Asn1Exception::class)
-fun BigInteger.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): BigInteger =
     runRethrowing { fromTwosComplementByteArray(bytes) }
 
 /**
