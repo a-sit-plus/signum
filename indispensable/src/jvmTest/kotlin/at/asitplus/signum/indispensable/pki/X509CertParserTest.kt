@@ -1,9 +1,10 @@
-package at.asitplus.signum.indispensable
+package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.asn1.encoding.parseFirst
-import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.asn1.encoding.readAsn1Element
+import at.asitplus.signum.indispensable.io.wrapInUnsafeSource
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
@@ -14,6 +15,7 @@ import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.io.readByteArray
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -41,10 +43,10 @@ class X509CertParserTest : FreeSpec({
         X509Certificate.decodeFromDer(derBytes)
 
         val garbage = Random.nextBytes(Random.nextInt(0..128))
-        val input = (derBytes + garbage).iterator()
-        Asn1Element.parseFirst(input).let { parsed ->
+        val input = (derBytes + garbage).wrapInUnsafeSource()
+        input.readAsn1Element().let { (parsed, _) ->
             parsed.derEncoded shouldBe derBytes
-            input.toByteArray() shouldBe garbage
+            input.readByteArray() shouldBe garbage
         }
     }
 
@@ -66,10 +68,10 @@ class X509CertParserTest : FreeSpec({
                 cert shouldBe X509Certificate.decodeFromByteArray(certBytes)
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
-                val input = (certBytes + garbage).iterator()
-                Asn1Element.parseFirst(input).let { parsed ->
+                val input = (certBytes + garbage).wrapInUnsafeSource()
+                input.readAsn1Element().let { (parsed, _) ->
                     parsed.derEncoded shouldBe certBytes
-                    input.toByteArray() shouldBe garbage
+                    input.readByteArray() shouldBe garbage
                 }
             }
         }
@@ -127,10 +129,10 @@ class X509CertParserTest : FreeSpec({
                 parsed shouldBe X509Certificate.decodeFromByteArray(crt.encoded)
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
-                val bytes = (crt.encoded + garbage).iterator()
-                Asn1Element.parseFirst(bytes).let { parsed ->
+                val bytes = (crt.encoded + garbage).wrapInUnsafeSource()
+                bytes.readAsn1Element().let { (parsed,_) ->
                     parsed.derEncoded shouldBe own
-                    bytes.toByteArray() shouldBe garbage
+                    bytes.readByteArray() shouldBe garbage
                 }
             }
         }
@@ -150,10 +152,10 @@ class X509CertParserTest : FreeSpec({
                 decoded shouldBe X509Certificate.decodeFromByteArray(it.second)
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
-                val bytes = (it.second + garbage).iterator()
-                Asn1Element.parseFirst(bytes).let { parsed ->
+                val bytes = (it.second + garbage).wrapInUnsafeSource()
+                bytes.readAsn1Element().let { (parsed,_) ->
                     parsed.derEncoded shouldBe it.second
-                    bytes.toByteArray() shouldBe garbage
+                    bytes.readByteArray() shouldBe garbage
                 }
             }
         }
@@ -194,16 +196,14 @@ class X509CertParserTest : FreeSpec({
                 cert.encodeToTlv().derEncoded shouldBe encodedSrc
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
-                val input = (jcaCert.encoded + garbage).iterator()
-                Asn1Element.parseFirst(input).let { parsed ->
+                val input = (jcaCert.encoded + garbage).wrapInUnsafeSource()
+                input.readAsn1Element().let { (parsed,_) ->
                     parsed.derEncoded shouldBe jcaCert.encoded
-                    input.asSequence().toList().toByteArray() shouldBe garbage
+                    input.readByteArray() shouldBe garbage
                 }
             }
         }
-
     }
-
 })
 
 

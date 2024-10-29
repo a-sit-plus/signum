@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.decodeAsn1VarBigInt
 import at.asitplus.signum.indispensable.asn1.encoding.toAsn1VarInt
 import at.asitplus.signum.indispensable.asn1.encoding.toBigInteger
 import com.ionspin.kotlin.bignum.integer.BigInteger
+import kotlinx.io.Buffer
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -38,14 +39,14 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
             throw Asn1Exception("Empty OIDs are not supported")
 
         bytes?.apply {
-            if(first().toUByte()>127u) throw Asn1Exception("OID top-level arc can only be number 0, 1 or 2")
+            if (first().toUByte() > 127u) throw Asn1Exception("OID top-level arc can only be number 0, 1 or 2")
         }
         nodes?.apply {
             if (size < 2) throw Asn1StructuralException("at least two nodes required!")
             if (first() > 2u) throw Asn1Exception("OID top-level arc can only be number 0, 1 or 2")
-            if(first()<2u) {
+            if (first() < 2u) {
                 if (get(1) > 39u) throw Asn1Exception("Second segment must be <40")
-            }else {
+            } else {
                 if (get(1) > 47u) throw Asn1Exception("Second segment must be <48")
             }
             forEach { if (it.isNegative) throw Asn1Exception("Negative Number encountered: $it") }
@@ -79,12 +80,12 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
                 collected += BigInteger.fromUInt(this.bytes[index].toUInt())
                 index++
             } else {
-                val currentNode = mutableListOf<Byte>()
+                val currentNode = Buffer() //todo: calculate only index and then operate on a byte view (unsafe wrapped). probably irrelevant since we'll roll our own
                 while (this.bytes[index] < 0) {
-                    currentNode += this.bytes[index] //+= parsed
+                    currentNode.writeByte(this.bytes[index]) //+= parsed
                     index++
                 }
-                currentNode += this.bytes[index]
+                currentNode.writeByte(this.bytes[index])
                 index++
                 collected += currentNode.decodeAsn1VarBigInt().first
             }
