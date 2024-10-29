@@ -1,0 +1,153 @@
+SEQUENCE {
+  SEQUENCE {  # TBSCertificate
+    [0] {  # ENUMERATED
+      INTEGER { 2 }  # v3
+    }  # version
+    INTEGER { `019fb7e36a9f9726` }  # serialNumber
+    SEQUENCE {  # AlgorithmIdentifier
+      # sha256WithRSAEncryption
+      OBJECT_IDENTIFIER { 1.2.840.113549.1.1.11 }  # algorithm
+      NULL {}  # parameters
+    }  # signature
+    SEQUENCE {  # Name
+      SET {
+        SEQUENCE {
+          # countryName
+          OBJECT_IDENTIFIER { 2.5.4.6 }
+          PrintableString { "GB" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # stateOrProvinceName
+          OBJECT_IDENTIFIER { 2.5.4.8 }
+          PrintableString { "London" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # localityName
+          OBJECT_IDENTIFIER { 2.5.4.7 }
+          PrintableString { "London" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # organizationName
+          OBJECT_IDENTIFIER { 2.5.4.10 }
+          PrintableString { "Google" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # organizationUnitName
+          OBJECT_IDENTIFIER { 2.5.4.11 }
+          PrintableString { "Eng" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # commonName
+          OBJECT_IDENTIFIER { 2.5.4.3 }
+          PrintableString { "FakeCertificateAuthority" }
+        }
+      }
+    }  # issuer
+    SEQUENCE {  # Validity
+      UTCTime { "230811064843Z" }  # notBefore
+      UTCTime { "260412064843Z" }  # notAfter
+    }  # validity
+    SEQUENCE {  # Name
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # countryName
+          OBJECT_IDENTIFIER { 2.5.4.6 }  # type
+          PrintableString { "US" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # stateOrProvinceName
+          OBJECT_IDENTIFIER { 2.5.4.8 }  # type
+          UTF8String { "California" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # localityName
+          OBJECT_IDENTIFIER { 2.5.4.7 }  # type
+          UTF8String { "Mountain View" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # organizationName
+          OBJECT_IDENTIFIER { 2.5.4.10 }  # type
+          UTF8String { "Google Inc" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # commonName
+          OBJECT_IDENTIFIER { 2.5.4.3 }  # type
+          UTF8String { "*.google.com" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # surname
+          OBJECT_IDENTIFIER { 2.5.4.4 }  # type
+          UTF8String { "RFC5280 s4.2.1.1 'authorityCertIssuer [1] GeneralNames OPTIONAL'" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # givenName
+          OBJECT_IDENTIFIER { 2.5.4.42 }  # type
+          UTF8String { "Authority Key Id with invalid issuer" }  # value
+        }
+      }
+    }  # subject
+    # Generated from cfg/leaf.private.pem via:
+    #  - openssl req -new -x509 -config cfg/fake-intermediate-ca.cnf -days 365 -extensions v3_ca -inform pem -key cfg/leaf.private.pem -outform der -out temp.der
+    #  - der2ascii -i temp.der -o temp.ascii
+    #  - manually extract the subjectPublicKeyInfo
+    SEQUENCE {  # SubjectPublicKeyInfo
+      SEQUENCE {  # AlgorithmIdentifier
+        # ecPublicKey
+        OBJECT_IDENTIFIER { 1.2.840.10045.2.1 }  # algorithm
+        # secp256r1
+        OBJECT_IDENTIFIER { 1.2.840.10045.3.1.7 }  # parameters
+      }
+      BIT_STRING { `0004baddaef3f00303d55f2255e1bf1d16cdf0c01e8476f970223c1ab31af94924c4a01429f6b1a02e4b863b9f71f3ad149ef2d1c4a8d814438ab0eb78ce37a32410` }  # subjectPublicKey
+    }  # subjectPublicKeyInfo
+    [3] {
+      SEQUENCE {  # Extensions
+        SEQUENCE {  # Extension
+          # authorityKeyIdentifier
+          OBJECT_IDENTIFIER { 2.5.29.35 }  # extnID = id-ce-authorityKeyIdentifier
+          OCTET_STRING {
+            SEQUENCE {  # AuthorityKeyIdentifier
+              [0 PRIMITIVE] { `01020304` }  # KeyIdentifier
+              [1] {  # GeneralNames
+                 [6 PRIMITIVE] { "http://bobs-dodgy-certs.com" }  # uniformResourceIdentifier
+                 [7 PRIMITIVE] { `7f00000102`}  # OCTET STRING iPAddress
+              }  # authorityCertIssuer
+              [2 PRIMITIVE] {  # CertificateSerialNumber
+                `0406cafe`
+              }  # authorityCertSerialNumber
+            }
+          }  # extnValue
+        }
+      }  # extensions
+    }
+  }  # tbsCertificate
+  SEQUENCE {
+    OBJECT_IDENTIFIER { 1.2.840.113549.1.1.11 }
+    NULL {}
+  }
+  BIT_STRING {
+    `00`
+    `bb445827e7aeb7c7c033339c5602d93e4c2dc861142623a1f4bce39ee0819e34b0fe7252e25a27f088286b7006e8bd4ab5e407f580e25529459f54017945f20ac4bf891a2e969f9d3b1ce0a65d5c0e285d9a522b74599a2b658f9a23d863e4e323b0f83fbef05fa024d0392fa7e24377c4fd15ff36a43b1b28eb1aa1ede7541c9bb60658bf28f48b2d00565d2e02337735624168879f2040c76ae73f5e86ba296254f75fddacf6c2337203629be8efa68d02643834fcc87f060c25046f8aaa44b59c61e7a4ea74af40c8e115ba2a15d0d19dc3625794b7f2a55f5bbe619279555faed1af85b830cdbeabdf663b5ed126c4464720c591c9140a12a48ecf953029`
+  }
+}

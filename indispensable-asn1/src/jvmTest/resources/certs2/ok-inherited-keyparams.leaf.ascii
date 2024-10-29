@@ -1,0 +1,157 @@
+SEQUENCE {
+  SEQUENCE {  # TBSCertificate
+    [0] {  # ENUMERATED
+      INTEGER { 2 }  # v3
+    }  # version
+    INTEGER { `42822a5b866fbfeb` }  # serialNumber
+    # Intermediate CA has a DSA public key so sign with DSA-with-SHA1
+    SEQUENCE {  # AlgorithmIdentifier
+      # dsa-with-sha1
+      OBJECT_IDENTIFIER { 1.2.840.10040.4.3 }  # algorithm
+      # No parameters -- inherited from CA certificate
+      NULL {}  # parameters
+    }  # signature
+    SEQUENCE {  # Name
+      SET {
+        SEQUENCE {
+          # countryName
+          OBJECT_IDENTIFIER { 2.5.4.6 }
+          PrintableString { "GB" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # stateOrProvinceName
+          OBJECT_IDENTIFIER { 2.5.4.8 }
+          PrintableString { "London" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # localityName
+          OBJECT_IDENTIFIER { 2.5.4.7 }
+          PrintableString { "London" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # organizationName
+          OBJECT_IDENTIFIER { 2.5.4.10 }
+          PrintableString { "Google" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # organizationUnitName
+          OBJECT_IDENTIFIER { 2.5.4.11 }
+          PrintableString { "Eng" }
+        }
+      }
+      SET {
+        SEQUENCE {
+          # commonName
+          OBJECT_IDENTIFIER { 2.5.4.3 }
+          PrintableString { "FakeIntermediateAuthority" }
+        }
+      }
+    }  # issuer
+  
+    SEQUENCE {  # Validity
+      UTCTime { "230811064847Z" }  # notBefore
+      UTCTime { "260412064847Z" }  # notAfter
+    }  # validity
+    SEQUENCE {  # Name
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # countryName
+          OBJECT_IDENTIFIER { 2.5.4.6 }  # type
+          PrintableString { "US" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # stateOrProvinceName
+          OBJECT_IDENTIFIER { 2.5.4.8 }  # type
+          UTF8String { "California" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # localityName
+          OBJECT_IDENTIFIER { 2.5.4.7 }  # type
+          UTF8String { "Mountain View" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # organizationName
+          OBJECT_IDENTIFIER { 2.5.4.10 }  # type
+          UTF8String { "Google Inc" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # commonName
+          OBJECT_IDENTIFIER { 2.5.4.3 }  # type
+          UTF8String { "*.google.com" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # surname
+          OBJECT_IDENTIFIER { 2.5.4.4 }  # type
+          UTF8String { "RFC3279 s2.2.2 'The DSA parameters in the subjectPublicKeyInfo field of the certificate of the issuer SHALL apply to the verification of the signature.'" }  # value
+        }
+      }
+      SET {  # RelativeDistinguishedName
+        SEQUENCE {  # AttributeTypeAndValue
+          # givenName
+          OBJECT_IDENTIFIER { 2.5.4.42 }  # type
+          UTF8String { "Leaf cert omits DSA parameters for signature" }  # value
+        }
+      }
+    }  # subject
+    # Generated from cfg/leaf.private.pem via:
+    #  - openssl req -new -x509 -config cfg/fake-intermediate-ca.cnf -days 365 -extensions v3_ca -inform pem -key cfg/leaf.private.pem -outform der -out temp.der
+    #  - der2ascii -i temp.der -o temp.ascii
+    #  - manually extract the subjectPublicKeyInfo
+    SEQUENCE {  # SubjectPublicKeyInfo
+      SEQUENCE {  # AlgorithmIdentifier
+        # ecPublicKey
+        OBJECT_IDENTIFIER { 1.2.840.10045.2.1 }  # algorithm
+        # secp256r1
+        OBJECT_IDENTIFIER { 1.2.840.10045.3.1.7 }  # parameters
+      }
+      BIT_STRING { `0004baddaef3f00303d55f2255e1bf1d16cdf0c01e8476f970223c1ab31af94924c4a01429f6b1a02e4b863b9f71f3ad149ef2d1c4a8d814438ab0eb78ce37a32410` }  # subjectPublicKey
+    }  # subjectPublicKeyInfo
+    [3] {
+      SEQUENCE {  # Extensions
+        SEQUENCE {  # Extension
+          # keyUsage
+          OBJECT_IDENTIFIER { 2.5.29.15 }  # extnID = id-ce-keyUsage
+          BOOLEAN { `ff` }  # critical
+          OCTET_STRING {
+            BIT_STRING { `07` `8080` }  # KeyUsage = b100000001 = digitalSignature, decipherOnly
+          }  # extnValue
+        }
+        SEQUENCE {  # Extension
+          # authorityKeyIdentifier
+          OBJECT_IDENTIFIER { 2.5.29.35 }  # extnID = id-ce-authorityKeyIdentifier
+          OCTET_STRING {
+            SEQUENCE {  # AuthorityKeyIdentifier
+              [0 PRIMITIVE] { `dbf46e63eee2dcbebf38604f9831d06444f163d8` }  # KeyIdentifier
+            }
+          }  # extnValue
+        }
+      }  # extensions
+    }
+  }  # tbsCertificate
+  SEQUENCE {
+    OBJECT_IDENTIFIER { 1.2.840.10040.4.3 }
+    NULL {}
+  }
+  BIT_STRING {
+    `00`
+    `3045022100c245168bcadac1d2ef40e3bf1e48591986cf382a51f97b5a6143bd8a9c3cef81022009a5ce184ba59475970831e3fa4261f463514b0981c716a09d20a7c12a13ad85`
+  }
+}
