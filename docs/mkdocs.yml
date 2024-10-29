@@ -73,6 +73,7 @@ nav:
       - CHANGELOG.md
       - Examples: examples.md
       - Modules:
+          - Indispensable ASN.1: indispensable-asn1.md
           - Indispensable: indispensable.md
           - Indispensable Josef: indispensable-josef.md
           - Indispensable Cosef: indispensable-cosef.md
