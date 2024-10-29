@@ -1,9 +1,7 @@
 import at.asitplus.gradle.*
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.*
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.js.backend.ast.JsName
 import java.io.FileInputStream
 import java.util.regex.Pattern
 
@@ -137,8 +135,14 @@ fun generateKnowOIDs() {
                                                 '.'
                                             )
                                         }`: ${oidTriple.comment}"
-                                    )
+                                    ).apply {
+                                        if(name.matches(Regex("^[0.-9].*")))
+                                            this.addAnnotation(AnnotationSpec.builder(ClassName("kotlin.js","JsName")).addMember("\"_$name\"").build())
+                                    }
+
+
                                     .build()
+
                             )
                         }
 
@@ -151,8 +155,6 @@ fun generateKnowOIDs() {
     )
 
 }
-
-
 
 kotlin {
     jvm()
