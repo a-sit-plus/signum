@@ -25,7 +25,7 @@ data class TbsCertificationRequest(
     val version: Int = 0,
     val subjectName: List<RelativeDistinguishedName>,
     val publicKey: CryptoPublicKey,
-    val attributes: List<Pkcs10CertificationRequestAttribute>? = null
+    val attributes: List<Pkcs10CertificationRequestAttribute> = listOf()
 ) : Asn1Encodable<Asn1Sequence> {
 
     /**
@@ -57,7 +57,7 @@ data class TbsCertificationRequest(
 
         //subject Public Key
         +publicKey
-        +ExplicitlyTagged(0u) { attributes?.map { +it } }
+        +ExplicitlyTagged(0u) { attributes.map { +it } }
     }
 
 
@@ -79,7 +79,7 @@ data class TbsCertificationRequest(
         var result = version
         result = 31 * result + subjectName.hashCode()
         result = 31 * result + publicKey.hashCode()
-        result = 31 * result + (attributes?.hashCode() ?: 0)
+        result = 31 * result + (attributes.hashCode())
         return result
     }
 
