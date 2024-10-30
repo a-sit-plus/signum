@@ -309,7 +309,8 @@ fun ECCurve.hashToScalar(domain: ByteArray, L: Int = this.L) = RFC9380.HashToECS
  * @param domain a suitable _domain separation tag_ (DST) for your use case;
  *                   this should be unique to this particular use case within your application!
  *                   see [RFC9380 3.1 Domain Separation Requirements](https://www.rfc-editor.org/rfc/rfc9380#name-domain-separation-requireme)
- *                      for guidance */
+ *                      for guidance
+ * @return a function mapping arbitrary bytes to a point on the curve */
 inline fun ECCurve.hashToCurve(domain: ByteArray) = when (this) {
     ECCurve.SECP_256_R_1 -> RFC9380.`P256_XMD∶SHA-256_SSWU_RO_`(domain)
     ECCurve.SECP_384_R_1 -> RFC9380.`P384_XMD∶SHA-384_SSWU_RO_`(domain)
