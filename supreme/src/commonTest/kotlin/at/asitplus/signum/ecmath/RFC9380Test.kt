@@ -671,7 +671,8 @@ Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
                     result.y.toString(16).padStart(test.Py.length, '0') shouldBe test.Py
                 }
                 registerTest(TestName("hash_to_field"), false, null) {
-                    val htfA = RFC9380.hash_to_field(suiteInfo.curve.nativeDigest, suiteInfo.curve, suiteInfo.dstB)
+                    val htfA = RFC9380.hash_to_field(
+                        RFC9380.expand_message_xmd(suiteInfo.curve.nativeDigest), suiteInfo.curve, suiteInfo.dstB)
                     if (test.u1 != null) {
                         val u = htfA(test.msg.encodeToByteArray(), 2)
                         u[0].toString(16).padStart(test.u0.length, '0') shouldBe test.u0
