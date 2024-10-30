@@ -672,19 +672,13 @@ Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
                 }
                 registerTest(TestName("hash_to_field"), false, null) {
                     val htfA = RFC9380.hash_to_field(suiteInfo.curve.nativeDigest, suiteInfo.curve, suiteInfo.dstB)
-                    val htfB = suiteInfo.curve.hashToScalar(suiteInfo.dstB)
                     if (test.u1 != null) {
-                        val uA = htfA(test.msg.encodeToByteArray(), 2)
-                        val uB = htfB(test.msg.encodeToByteArray(), 2)
-                        uA[0].toString(16).padStart(test.u0.length, '0') shouldBe test.u0
-                        uB[0].toString(16).padStart(test.u0.length, '0') shouldBe test.u0
-                        uA[1].toString(16).padStart(test.u1.length, '0') shouldBe test.u1
-                        uB[1].toString(16).padStart(test.u1.length, '0') shouldBe test.u1
+                        val u = htfA(test.msg.encodeToByteArray(), 2)
+                        u[0].toString(16).padStart(test.u0.length, '0') shouldBe test.u0
+                        u[1].toString(16).padStart(test.u1.length, '0') shouldBe test.u1
                     } else {
-                        val uA = htfA(test.msg.encodeToByteArray())
-                        val uB = htfB(test.msg.encodeToByteArray())
-                        uA.toString(16).padStart(test.u0.length, '0') shouldBe test.u0
-                        uB.toString(16).padStart(test.u0.length, '0') shouldBe test.u0
+                        val u = htfA(test.msg.encodeToByteArray())
+                        u.toString(16).padStart(test.u0.length, '0') shouldBe test.u0
                     }
                 }
                 registerTest(TestName("map_to_curve"), false, null) {

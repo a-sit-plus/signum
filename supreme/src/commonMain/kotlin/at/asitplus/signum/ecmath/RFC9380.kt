@@ -32,7 +32,7 @@ private inline fun ModularBigInteger.sqrt() =
 private inline val ECCurve.c1 get() = this.modulus.minus(3).div(4)
 private inline val ECCurve.c2 get() = (-Z).sqrt()
 
-/** log(modulus) * (3/2), this matches RFC9380 NIST curve suites, and also matches RFC9497 */
+/** log2(modulus) * (3/2), this matches RFC9380 NIST curve suites, and also matches RFC9497 */
 private inline val ECCurve.L get() = when(this) {
     ECCurve.SECP_256_R_1 -> 48
     ECCurve.SECP_384_R_1 -> 72
@@ -93,11 +93,8 @@ private inline fun expandMessageXMD(digest: Digest): ExpandMessageFn {
 
 /** this only works for prime field curves (m = 1) */
 private inline fun hashToFieldRFC9380ForPrimeField
-            (crossinline em: ExpandMessageFn, curve: ECCurve, domain: ByteArray) : HashToFieldFn
-{
-    val p = curve.modulus
-    val L = curve.L
-    return { msg: Sequence<ByteArray>, count: Int ->
+            (crossinline em: ExpandMessageFn, p: BigInteger, L: Int, domain: ByteArray) : HashToFieldFn =
+    { msg: Sequence<ByteArray>, count: Int ->
         val lenInBytes = count * L
         val uniformBytes = em(msg, domain, lenInBytes)
         /* return */ Array(count) {
@@ -105,7 +102,10 @@ private inline fun hashToFieldRFC9380ForPrimeField
             BigInteger.fromByteArray(tv, Sign.POSITIVE).toModularBigInteger(p)
         }
     }
-}
+
+private inline fun hashToFieldRFC9380ForPrimeField
+            (crossinline em: ExpandMessageFn, curve: ECCurve, domain: ByteArray): HashToFieldFn =
+    hashToFieldRFC9380ForPrimeField(em, curve.modulus, curve.L, domain)
 
 private inline fun sgn0ForPrimeFields(a: ModularBigInteger): Int = a.toBigInteger().mod(BigInteger.TWO).intValue()
 /** RFC9380: appendix F.2.1.2. (sqrt_ratio_3mod4); only works for p mod 4 = 3 */
@@ -209,17 +209,22 @@ object RFC9380 {
 
     /** the hash_to_field construction as specified in RFC9380;
      *   Usage: `hash_to_field(params)(input)`
+     *  @see ECCurve.hashToScalar
+     *  @see expand_message_xmd */
+    fun hash_to_field(expandMessage: ExpandMessageFn, p: BigInteger, L: Int, domain: ByteArray) =
+        HashToECScalar(hashToFieldRFC9380ForPrimeField(expandMessage, p, L, domain))
+
+    /** the hash_to_field construction as specified in RFC9380;
+     *   Usage: `hash_to_field(params)(input)`
+     *
+     *  Note that this produces an element of the underlying field (mod [ECCurve.modulus]).<br/>
+     *   It does **not** produce a random scalar multiplier (mod [ECCurve.order]).
+     *
      *  @see ECCurve.hashToScalar */
     fun hash_to_field(expandMessage: ExpandMessageFn, curve: ECCurve, domain: ByteArray) = when (curve) {
         ECCurve.SECP_256_R_1, ECCurve.SECP_384_R_1, ECCurve.SECP_521_R_1 ->
             HashToECScalar(hashToFieldRFC9380ForPrimeField(expandMessage, curve, domain))
     }
-
-    /** the hash_to_field construction as specified in RFC9380, using expand_message_xmd with the specified digest;
-     *   Usage: `hash_to_field(params)(input)`
-     *  @see ECCurve.hashToScalar  */
-    fun hash_to_field(digest: Digest, curve: ECCurve, domain: ByteArray) =
-        hash_to_field(expandMessageXMD(digest), curve, domain)
 
     /** the expand_message_xmd function as specified in RFC9380;
      *   Usage: `expand_message_xmd(params)(input)` */
@@ -291,10 +296,13 @@ object RFC9380 {
  * @param domain a suitable _domain separation tag_ (DST) for your use case;
  *                   this should be unique to this particular use case within your application!
  *                   see [RFC9380 3.1 Domain Separation Requirements](https://www.rfc-editor.org/rfc/rfc9380#name-domain-separation-requireme)
- *                      for guidance */
-fun ECCurve.hashToScalar(domain: ByteArray) = RFC9380.HashToECScalar(when (this) {
+ *                      for guidance
+ * @param L security parameter controlling the drift from uniform;
+ *            defaults to `log2(modulus) * (3/2)`, which is the value used in RFC9380 suites
+ * @return a function mapping arbitrary bytes to a scalar multiplier in [0, [ECCurve.order]) */
+fun ECCurve.hashToScalar(domain: ByteArray, L: Int = this.L) = RFC9380.HashToECScalar(when (this) {
     ECCurve.SECP_256_R_1, ECCurve.SECP_384_R_1, ECCurve.SECP_521_R_1 ->
-        hashToFieldRFC9380ForPrimeField(expandMessageXMD(this.nativeDigest), this, domain)
+        hashToFieldRFC9380ForPrimeField(expandMessageXMD(this.nativeDigest), this.order, L, domain)
 })
 
 /** Obtains a suitable secure hash-to-curve suite as defined in [RFC9380].
