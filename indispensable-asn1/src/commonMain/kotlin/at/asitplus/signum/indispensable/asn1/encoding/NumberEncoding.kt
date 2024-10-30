@@ -1,10 +1,14 @@
 package at.asitplus.signum.indispensable.asn1.encoding
 
-import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.Asn1Integer
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.VarUInt.Companion.decodeAsn1VarBigUInt
 import at.asitplus.signum.indispensable.asn1.VarUInt.Companion.writeAsn1VarInt
+import at.asitplus.signum.indispensable.asn1.appendUnsafe
+import at.asitplus.signum.indispensable.asn1.throughBuffer
 import kotlinx.io.*
 import kotlin.math.ceil
+
 
 const val UVARINT_SINGLEBYTE_MAXVALUE_UBYTE: UByte = 0x80u
 const val UVARINT_SINGLEBYTE_MAXVALUE: Byte = 0x80.toByte()
@@ -480,3 +484,33 @@ fun Source.decodeAsn1VarBigInt(): Pair<Asn1Integer, ByteArray> =
  * @return the decoded unsigned BigInteger and the underlying varint-encoded bytes as `ByteArray`
  */
 fun ByteArray.decodeAsn1VarBigInt(): Pair<Asn1Integer, ByteArray> = this.throughBuffer { it.decodeAsn1VarBigInt() }
+
+fun Sink.writeAsn1Real(number: Double) {
+
+    val bits: Long = number.toRawBits()
+    val signByte = (bits shr (63 - 6)).toInt() and (1 shl 6) or (1 shl 7)
+
+    var exponent = ((bits shr 52).toInt() and 0x7FF) - (1023 + 52)
+
+    var mantissa = (bits and 0xFFFFFFFFFFFFFL) or (1L shl 52)
+
+    // add the hidden bit
+    while ((mantissa and 1L) == 0L) {
+        mantissa = mantissa shr 1
+        exponent++
+    }
+
+    // normalize
+    val exponentBytes: ByteArray = exponent.toTwosComplementByteArray()
+    if (exponentBytes.size < 3) writeUByte((signByte or (exponentBytes.size - 1)).toUByte())
+    else {
+        writeByte((signByte or 3).toByte())
+        writeByte(exponentBytes.size.toByte())
+    }
+
+    // only the if branch is actually needed
+    write(exponentBytes)
+    writeTwosComplementLong(mantissa)
+
+
+}

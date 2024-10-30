@@ -40,6 +40,7 @@ kotlin {
 
         commonMain.dependencies {
             api(project(":indispensable-asn1"))
+            api(serialization("json"))
             api(libs.multibase)
             api(libs.bignum)
         }
