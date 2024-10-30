@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.sign
 
+import at.asitplus.catchingUnwrappedAs
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.RSAPadding
@@ -9,7 +10,6 @@ import at.asitplus.signum.indispensable.jcaAlgorithmComponent
 import at.asitplus.signum.indispensable.jcaSignatureBytes
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.UnsupportedCryptoException
-import at.asitplus.wrapping
 import java.security.Signature
 
 /**
@@ -32,7 +32,7 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
             (signatureAlgorithm: SignatureAlgorithm.ECDSA, publicKey: CryptoPublicKey.EC,
              config: PlatformVerifierConfiguration)
 {
-    wrapping(asA=::UnsupportedCryptoException) {
+    catchingUnwrappedAs(a=::UnsupportedCryptoException) {
         getSigInstance("${signatureAlgorithm.digest.jcaAlgorithmComponent}withECDSA", config.provider)
             .initVerify(publicKey.getJcaPublicKey().getOrThrow())
     }.getOrThrow()
@@ -70,7 +70,7 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
             (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
              config: PlatformVerifierConfiguration)
 {
-    wrapping(asA=::UnsupportedCryptoException) {
+    catchingUnwrappedAs(a=::UnsupportedCryptoException) {
         getRSAInstance(signatureAlgorithm, config)
             .initVerify(publicKey.getJcaPublicKey().getOrThrow())
     }.getOrThrow()
