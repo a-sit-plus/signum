@@ -2,6 +2,8 @@ package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.BigUInt.Companion.decodeAsn1VarBigUint
 import com.ionspin.kotlin.bignum.integer.Sign
+import com.ionspin.kotlin.bignum.integer.util.toTwosComplementByteArray
+import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
@@ -61,6 +63,38 @@ class PoorMansBigUIntTest : FreeSpec({
             val hex = it.toHexString().uppercase()
             val bigint = com.ionspin.kotlin.bignum.integer.BigInteger.fromByteArray(it.toByteArray(), Sign.POSITIVE)
             val own = BigUInt(it.toByteArray())
+        }
+    }
+
+    "TwosComplement" - {
+
+        "manual" - {
+            withData("-1457686090107523769986476796769829633039407019130", "-18440417236681064435", "-1") {
+                val neg = com.ionspin.kotlin.bignum.integer.BigInteger.parseString(it)
+                val ownNeg = BigInt.fromDecimalString(neg.toString())
+                withClue(neg.toString()) {
+                    ownNeg.toString() shouldBe neg.toString()
+                    ownNeg.twosComplement() shouldBe neg.toTwosComplementByteArray()
+                }
+            }
+        }
+
+        "automated" - {
+            checkAll(Arb.bigInt(1, 349)) {
+                val pos = com.ionspin.kotlin.bignum.integer.BigInteger.fromByteArray(it.toByteArray(), Sign.POSITIVE)
+                val neg = com.ionspin.kotlin.bignum.integer.BigInteger.fromByteArray(it.toByteArray(), Sign.NEGATIVE)
+
+                val ownPos = BigInt.fromDecimalString(pos.toString())
+                ownPos.toString() shouldBe pos.toString()
+                ownPos.twosComplement() shouldBe pos.toTwosComplementByteArray()
+                val ownNeg = BigInt.fromDecimalString(neg.toString())
+                withClue(neg.toString()) {
+                    ownNeg.toString() shouldBe neg.toString()
+                    ownNeg.twosComplement() shouldBe neg.toTwosComplementByteArray()
+                }
+                BigInt.fromTwosComplement(ownPos.twosComplement()) shouldBe ownPos
+                BigInt.fromTwosComplement(ownNeg.twosComplement()) shouldBe ownNeg
+            }
         }
     }
 })

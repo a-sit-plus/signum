@@ -55,7 +55,16 @@ sealed class BigInt(internal val uint: BigUInt, private val sign: Sign) {
 
     class Negative internal constructor(uint: BigUInt) : BigInt(uint, Sign.NEGAVITE) {
         override fun twosComplement(): ByteArray {
-           TODO()
+            if (uint == BigUInt(1u)) return byteArrayOf(-1)
+
+            return BigUInt(
+                uint.inv().toString().toMutableList().decimalPlus(listOf('1')).joinToString(separator = "")
+            ).bytes.let {
+                val diff= uint.bytes.size - it.size
+                val list = if(diff==0) it else mutableListOf(0.toUByte())+it
+                if (list.first().toByte() >= 0) listOf((-1).toUByte()) + list
+                else it
+            }.toUByteArray().toByteArray()
         }
     }
 
@@ -72,7 +81,12 @@ sealed class BigInt(internal val uint: BigUInt, private val sign: Sign) {
 
         fun fromTwosComplement(input: ByteArray): BigInt =
             if (input.first() < 0) {
-               TODO()
+                Negative(
+                    BigUInt(
+                        BigUInt(input).inv().toString().toMutableList().decimalPlus(listOf('1'))
+                            .joinToString(separator = "")
+                    )
+                )
             } else Positive(BigUInt(input))
     }
 }
