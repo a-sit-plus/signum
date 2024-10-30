@@ -7,6 +7,7 @@
 The public API remains almost unchanged, except for some methods migrating from a ByteIterator to kotlinx-io Source,
 some newly added kotlinx-io helpers and OID changes. The internals have changed substantially, however.
 Be sure to match Signum versions if multiple libraries pull it in as transitive dependency.
+Be sure to match Signum versions if multiple libraries pull it in as transitive dependency.
 Better safe than sorry!
 
 * Discrete ASN.1 module `indispensable-asn1` supporting the following platforms:
@@ -32,7 +33,7 @@ Better safe than sorry!
 * Implement hash-to-curve and hash-to-scalar as per RFC9380
 * Rename `decodeFromDerHexString` to `parseFromDerHexString`
 * Move `ensureSize` from package `asn1` to `misc`
-* `JwsSignes.plainsignatureInput` is now a raw ByteArray
+* `JwsSigned.plainSignatureInput` is now a raw ByteArray
   * `JwsSigned.prepareSignatureInput` now returns a raw ByteArray
 * Use kotlinx-io as primary source for parsing
     * Base number encoding/decoding on kotlinx-io
@@ -41,6 +42,8 @@ Better safe than sorry!
         * Remove single element decoding from Iterator
 * Introduce `prepareDigestInput()` to `IosHomebrewAttestation`
 * Remove Legacy iOS Attestation
+* Add type parameter to `JwsSigned` for its payload
+* Add type parameter to `JweDecrypted` for its payload
 
 ### 3.9.0 (Supreme 0.4.0)
 
