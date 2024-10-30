@@ -285,7 +285,7 @@ This process works more or less as follows:
                ?.value?.first() ?: TODO("Abort here!")
       //TODO: feed attestation to WARDEN for verification
       ```
-8. The back-end issues and signs a _binding certificate_ for the CSR, (typically stores it to identify the client) and transmits it to the client.
+8. The back-end issues and signs a _binding certificate_ for the CSR, and transmits it to the client.
 ```kotlin
 val tbsCrt = TbsCertificate(
     serialNumber = Random.nextBytes(16),
