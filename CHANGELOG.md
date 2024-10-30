@@ -5,6 +5,7 @@
 ### 3.10.0
 
  * Add type parameter to `JwsSigned` for its payload
+ * Add type parameter to `JweDecrypted` for its payload
 
 ### 3.9.0 (Supreme 0.4.0)
 
