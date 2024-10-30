@@ -1,39 +1,43 @@
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.signum.indispensable.asn1.BigUInt.Companion.decimalPlus
+import at.asitplus.signum.indispensable.asn1.Asn1Integer.Companion.fromTwosComplement
+import at.asitplus.signum.indispensable.asn1.VarUInt.Companion.decimalPlus
 import at.asitplus.signum.indispensable.asn1.encoding.UVARINT_MASK_UBYTE
 import at.asitplus.signum.indispensable.asn1.encoding.UVARINT_SINGLEBYTE_MAXVALUE
-import at.asitplus.signum.indispensable.asn1.encoding.UVARINT_SINGLEBYTE_MAXVALUE_UBYTE
-import kotlinx.io.Buffer
-import kotlinx.io.readByteArray
-import kotlin.experimental.and
+import kotlinx.io.*
 import kotlin.experimental.or
 import kotlin.jvm.JvmInline
 
 private val REGEX_BASE10 = Regex("[0-9]+")
 private val REGEX_ZERO = Regex("0*")
 
-fun BigInt(number: Int) = BigInt(number.toLong())
-fun BigInt(number: Long) =
-    if (number < 0) BigInt.Negative(BigUInt((number * -1).toULong()))
-    else BigInt.Positive(BigUInt((number).toULong()))
+fun Asn1Integer(number: Int) = Asn1Integer(number.toLong())
+fun Asn1Integer(number: Long) =
+    if (number < 0) Asn1Integer.Negative(VarUInt((number * -1).toULong()))
+    else Asn1Integer.Positive(VarUInt((number).toULong()))
 
-sealed class BigInt(internal val uint: BigUInt, private val sign: Sign) {
+/**
+ * A very simple implementation of an ASN.1 variable-length integer.
+ * It is only good for reading from and writing to ASN.1 structures. It is not a BigInt, nor does it define any operations.
+ * It has a [sign] though, and supports [twosComplement] representation and converting [fromTwosComplement].
+ * Hence, it directly interoperates with [Kotlin MP BigNum](https://github.com/ionspin/kotlin-multiplatform-bignum) and the JVM BigInteger.
+ */
+sealed class Asn1Integer(internal val uint: VarUInt, private val sign: Sign) {
 
     enum class Sign {
         POSITIVE,
-        NEGAVITE
+        NEGATIVE
     }
 
     override fun toString(): String = when (sign) {
         Sign.POSITIVE -> uint.toString()
-        Sign.NEGAVITE -> "-${uint}"
+        Sign.NEGATIVE -> "-${uint}"
     }
 
     abstract fun twosComplement(): ByteArray
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is BigInt) return false
+        if (other !is Asn1Integer) return false
 
         if (uint != other.uint) return false
         if (sign != other.sign) return false
@@ -47,21 +51,21 @@ sealed class BigInt(internal val uint: BigUInt, private val sign: Sign) {
         return result
     }
 
-    class Positive internal constructor(uint: BigUInt) : BigInt(uint, Sign.POSITIVE) {
+    class Positive internal constructor(uint: VarUInt) : Asn1Integer(uint, Sign.POSITIVE) {
         override fun twosComplement(): ByteArray = uint.bytes.let {
             if (it.first().countLeadingZeroBits() == 0) listOf(0.toUByte()) + it else it
         }.toUByteArray().toByteArray()
     }
 
-    class Negative internal constructor(uint: BigUInt) : BigInt(uint, Sign.NEGAVITE) {
+    class Negative internal constructor(uint: VarUInt) : Asn1Integer(uint, Sign.NEGATIVE) {
         override fun twosComplement(): ByteArray {
-            if (uint == BigUInt(1u)) return byteArrayOf(-1)
+            if (uint == VarUInt(1u)) return byteArrayOf(-1)
 
-            return BigUInt(
+            return VarUInt(
                 uint.inv().toString().toMutableList().decimalPlus(listOf('1')).joinToString(separator = "")
             ).bytes.let {
-                val diff= uint.bytes.size - it.size
-                val list = if(diff==0) it else mutableListOf(0.toUByte())+it
+                val diff = uint.bytes.size - it.size
+                val list = if (diff == 0) it else mutableListOf(0.toUByte()) + it
                 if (list.first().toByte() >= 0) listOf((-1).toUByte()) + list
                 else it
             }.toUByteArray().toByteArray()
@@ -69,31 +73,31 @@ sealed class BigInt(internal val uint: BigUInt, private val sign: Sign) {
     }
 
     companion object {
-        val ONE = BigInt.Positive(BigUInt(1u))
-        val ZERO = BigInt.Positive(BigUInt(0u))
+        val ONE = Asn1Integer.Positive(VarUInt(1u))
+        val ZERO = Asn1Integer.Positive(VarUInt(0u))
 
-        fun fromDecimalString(input: String): BigInt {
-            if (input.matches(REGEX_BASE10)) return Positive(BigUInt(input))
+        fun fromDecimalString(input: String): Asn1Integer {
+            if (input.matches(REGEX_BASE10)) return Positive(VarUInt(input))
             if (input.first() == '-' && input.substring(1).matches(REGEX_BASE10))
-                return Negative(BigUInt(input.substring(1)))
+                return Negative(VarUInt(input.substring(1)))
             else throw IllegalArgumentException("NaN: $input")
         }
 
-        fun fromTwosComplement(input: ByteArray): BigInt =
+        fun fromTwosComplement(input: ByteArray): Asn1Integer =
             if (input.first() < 0) {
                 Negative(
-                    BigUInt(
-                        BigUInt(input).inv().toString().toMutableList().decimalPlus(listOf('1'))
+                    VarUInt(
+                        VarUInt(input).inv().toString().toMutableList().decimalPlus(listOf('1'))
                             .joinToString(separator = "")
                     )
                 )
-            } else Positive(BigUInt(input))
+            } else Positive(VarUInt(input))
     }
 }
 
 
 @JvmInline
-internal value class BigUInt(private val words: MutableList<UByte> = mutableListOf(0u)) {
+internal value class VarUInt(private val words: MutableList<UByte> = mutableListOf(0u)) {
 
 
     constructor(uInt: UInt) : this(uInt.toString())
@@ -129,35 +133,35 @@ internal value class BigUInt(private val words: MutableList<UByte> = mutableList
         }
     }.dropWhile { it == '0' }.toString().let { if (it.isEmpty()) "0" else it }
 
-    infix fun and(other: BigUInt): BigUInt {
+    infix fun and(other: VarUInt): VarUInt {
         val (shorter, longer) = if (other.words.size < words.size) other to this else this to other
         val diff = longer.words.size - shorter.words.size
-        return BigUInt(MutableList<UByte>(shorter.words.size) {
+        return VarUInt(MutableList<UByte>(shorter.words.size) {
             shorter.words[it] and longer.words[it + diff]
         }).apply { trim() }
     }
 
-    infix fun or(other: BigUInt): BigUInt {
+    infix fun or(other: VarUInt): VarUInt {
         val (shorter, longer) = if (other.words.size < words.size) other to this else this to other
         val diff = longer.words.size - shorter.words.size
-        return BigUInt(MutableList<UByte>(longer.words.size) {
+        return VarUInt(MutableList<UByte>(longer.words.size) {
             if (it >= diff) shorter.words[it - diff] or longer.words[it]
             else longer.words[it]
         }).apply { trim() }
     }
 
-    infix fun xor(other: BigUInt): BigUInt {
+    infix fun xor(other: VarUInt): VarUInt {
         val (shorter, longer) = if (other.words.size < words.size) other to this else this to other
         val diff = longer.words.size - shorter.words.size
-        return BigUInt(MutableList<UByte>(longer.words.size) {
+        return VarUInt(MutableList<UByte>(longer.words.size) {
             if (it >= diff) shorter.words[it - diff] xor longer.words[it]
             else longer.words[it] xor 0u
         }).apply { trim() }
     }
 
-    infix fun shl(offset: Int): BigUInt {
+    infix fun shl(offset: Int): VarUInt {
         //we us eit only internally require(offset >= 0) { "offset must be non-negative: $offset" }
-        if (offset == 0) return BigUInt(words.toMutableList())
+        if (offset == 0) return VarUInt(words.toMutableList())
         val byteOffset = offset / 8
 
         val bitOffset = offset % 8
@@ -169,14 +173,14 @@ internal value class BigUInt(private val words: MutableList<UByte> = mutableList
             result[index - 1] = result[index - 1] or tmpH
             result[index] = tmpL
         }
-        return BigUInt(result.apply { repeat(byteOffset) { add(0u) } })
+        return VarUInt(result.apply { repeat(byteOffset) { add(0u) } })
     }
 
-    infix fun shr(offset: Int): BigUInt {
+    infix fun shr(offset: Int): VarUInt {
         //we use it only internally require(offset >= 0) { "offset must be non-negative: $offset" }
-        if (offset == 0) return BigUInt(words.toMutableList())
+        if (offset == 0) return VarUInt(words.toMutableList())
         val byteOffset = offset / 8
-        if (byteOffset >= words.size) return BigUInt()
+        if (byteOffset >= words.size) return VarUInt()
 
         val bitOffset = offset % 8
         val dropped = words.dropLast(byteOffset).toMutableList()
@@ -188,29 +192,10 @@ internal value class BigUInt(private val words: MutableList<UByte> = mutableList
             result[index] = tmp.ushr(8).toUByte()
             result[index + 1] = result[index + 1] or tmp.toUByte()
         }
-        return BigUInt(result)
+        return VarUInt(result)
     }
 
-    fun toAsn1VarInt(): ByteArray {
-        if (words.size == 1) {
-            if (words.first() == 0.toUByte()) return byteArrayOf(0)
-            if (words.first() < UVARINT_SINGLEBYTE_MAXVALUE_UBYTE) return byteArrayOf(
-                words.first().toByte()
-            ) //Fast case}
-        }
-
-        val numBytes = (bitLength() + 6) / 7 // division rounding up
-        val buf = Buffer()
-        (numBytes - 1).downTo(0).forEach { byteIndex ->
-            buf.writeByte(
-                ((this shr (byteIndex * 7)).words.last() and UVARINT_MASK_UBYTE).toByte() or
-                        (if (byteIndex > 0) UVARINT_SINGLEBYTE_MAXVALUE else 0)
-            )
-        }
-        //otherwise we won't ever write zero
-        return buf.readByteArray()
-    }
-
+    fun toAsn1VarInt(): ByteArray = throughBuffer { it.writeAsn1VarInt(this) }
 
     fun isZero(): Boolean = (words.size == 1 && words.first() == 0.toUByte())
 
@@ -224,7 +209,7 @@ internal value class BigUInt(private val words: MutableList<UByte> = mutableList
         return result
     }
 
-    fun inv(): BigUInt = BigUInt(MutableList(words.size) { words[it].inv() })
+    fun inv(): VarUInt = VarUInt(MutableList(words.size) { words[it].inv() })
 
 
     operator fun compareTo(byte: UByte): Int = if (words.size > 1) 1 else words.last().compareTo(byte)
@@ -236,6 +221,24 @@ internal value class BigUInt(private val words: MutableList<UByte> = mutableList
 
 
     companion object {
+
+        internal fun Sink.writeAsn1VarInt(number: VarUInt): Int {
+            if (number.isZero()){
+                writeByte(0)
+                return 1
+            }
+            val numBytes = (number.bitLength() + 6) / 7 // division rounding up
+
+            (numBytes - 1).downTo(0).forEach { byteIndex ->
+                writeByte(
+                    ((number shr (byteIndex * 7)).words.last() and UVARINT_MASK_UBYTE).toByte() or
+                            (if (byteIndex > 0) UVARINT_SINGLEBYTE_MAXVALUE else 0)
+                )
+            }
+            //otherwise we won't ever write zero
+            return numBytes
+        }
+
         private fun String.convertToBytes(): MutableList<UByte> {
             if (!matches(REGEX_BASE10)) throw Asn1Exception("Illegal input!")
             if (matches(REGEX_ZERO)) return mutableListOf(0u)
@@ -324,18 +327,19 @@ internal value class BigUInt(private val words: MutableList<UByte> = mutableList
             return result.reverse().toMutableList()
         }
 
-        fun ByteArray.decodeAsn1VarBigUint() = iterator().decodeAsn1VarBigUInt()
+        internal fun ByteArray.decodeAsn1VarBigUInt() = wrapInUnsafeSource().decodeAsn1VarBigUInt().first
 
-        fun Iterator<Byte>.decodeAsn1VarBigUInt(): BigUInt {
-            var result = BigUInt()
+        internal fun Source.decodeAsn1VarBigUInt(): Pair<VarUInt, ByteArray> {
+            val accumulator = Buffer()
+            var result = VarUInt()
             val mask = 0x7Fu.toUByte()
-            while (hasNext()) {
-                val curByte = next()
-                val current = (curByte.toUByte())
-                result = BigUInt(current and mask) or (result shl 7)
+            while (!exhausted()) {
+                val current = readUByte()
+                accumulator.writeUByte(current)
+                result = VarUInt(current and mask) or (result shl 7)
                 if (current < 0x80.toUByte()) break
             }
-            return result
+            return result to accumulator.readByteArray()
         }
     }
 }

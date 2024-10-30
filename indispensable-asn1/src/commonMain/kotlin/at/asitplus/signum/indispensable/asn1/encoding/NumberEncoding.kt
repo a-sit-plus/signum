@@ -1,8 +1,8 @@
 package at.asitplus.signum.indispensable.asn1.encoding
 
-import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
-import at.asitplus.signum.indispensable.asn1.appendUnsafe
-import at.asitplus.signum.indispensable.asn1.throughBuffer
+import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.VarUInt.Companion.decodeAsn1VarBigUInt
+import at.asitplus.signum.indispensable.asn1.VarUInt.Companion.writeAsn1VarInt
 import kotlinx.io.*
 import kotlin.math.ceil
 
@@ -445,3 +445,38 @@ fun Sink.writeMagnitudeLong(number: Long): Int {
     require(number >= 0)
     return number.toTwosComplementByteArray().let { appendUnsafe(it, if (it[0] == 0.toByte()) 1 else 0) }
 }
+
+/**
+ * Encodes this number using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
+ * while the highest bit indicates if more bytes are to come
+ */
+@Throws(IllegalArgumentException::class)
+fun Asn1Integer.toAsn1VarInt(): ByteArray = throughBuffer { it.writeAsn1VarInt(this) }
+
+/**
+ * Encodes this number using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
+ * while the highest bit indicates if more bytes are to come
+ *
+ * @return the number of bytes written to the sink
+ */
+@Throws(IllegalArgumentException::class)
+fun Sink.writeAsn1VarInt(number: Asn1Integer): Int {
+    require(number is Asn1Integer.Positive) { "Only non-negative numbers are supported" }
+    return writeAsn1VarInt(number.uint)
+}
+
+/**
+ * Decodes an ASN.1 unsigned varint to a [Asn1Integer], copying all bytes from the source into a [ByteArray].
+ *
+ * @return the decoded [Asn1Integer] and the underlying varint-encoded bytes as [ByteArray]
+ */
+fun Source.decodeAsn1VarBigInt(): Pair<Asn1Integer, ByteArray> =
+    decodeAsn1VarBigUInt().let { (uint, bytes) -> Asn1Integer.Positive(uint) to bytes }
+
+/**
+ * Decodes an unsigned [Asn1Integer] from bytes using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
+ * while the highest bit indicates if more bytes are to come. Trailing bytes are ignored.
+ *
+ * @return the decoded unsigned BigInteger and the underlying varint-encoded bytes as `ByteArray`
+ */
+fun ByteArray.decodeAsn1VarBigInt(): Pair<Asn1Integer, ByteArray> = this.throughBuffer { it.decodeAsn1VarBigInt() }

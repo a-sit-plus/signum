@@ -195,7 +195,7 @@ object Asn1 {
      * Exception-free version of [ExplicitlyTagged]
      */
     fun ExplicitlyTaggedOrNull(tag: ULong, root: Asn1TreeBuilder.() -> Unit) =
-         catchingUnwrapped { ExplicitlyTagged(tag, root) }.getOrNull()
+        catchingUnwrapped { ExplicitlyTagged(tag, root) }.getOrNull()
 
     /**
      * Safe version on [ExplicitlyTagged], wrapping the result into a [KmmResult]
@@ -219,6 +219,9 @@ object Asn1 {
 
     /** Creates an INTEGER [Asn1Primitive] from [value] */
     fun Int(value: ULong) = value.encodeToAsn1Primitive()
+
+    /** Creates an INTEGER [Asn1Primitive] from [value] */
+    fun Int(value: Asn1Integer) = value.encodeToAsn1Primitive()
 
 
     /** Creates an OCTET STRING [Asn1Element] from [bytes] */
@@ -314,6 +317,8 @@ fun UInt.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.INT, encodeToAs
 /** Produces an INTEGER as [Asn1Primitive] */
 fun ULong.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.INT, encodeToAsn1ContentBytes())
 
+/** Produces an INTEGER as [Asn1Primitive] */
+fun Asn1Integer.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.INT, encodeToAsn1ContentBytes())
 
 /** Produces an ASN.1 UTF8 STRING as [Asn1Primitive] */
 fun String.encodeToAsn1Primitive() = Asn1String.UTF8(this).encodeToTlv()
@@ -350,6 +355,8 @@ fun UInt.encodeToAsn1ContentBytes() = toTwosComplementByteArray()
 /** Encodes this number into a [ByteArray] using the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 INTEGER */
 fun ULong.encodeToAsn1ContentBytes() = toTwosComplementByteArray()
 
+/** Encodes this number into a [ByteArray] using the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 INTEGER */
+fun Asn1Integer.encodeToAsn1ContentBytes() = twosComplement()
 
 /**
  * Produces a UTC TIME as [Asn1Primitive]

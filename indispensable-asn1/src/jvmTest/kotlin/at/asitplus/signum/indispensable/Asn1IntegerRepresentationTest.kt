@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.signum.indispensable.asn1.BigUInt.Companion.decodeAsn1VarBigUint
+import at.asitplus.signum.indispensable.asn1.encoding.decodeAsn1VarBigInt
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.integer.util.toTwosComplementByteArray
 import io.kotest.assertions.withClue
@@ -15,13 +15,13 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class)
-class PoorMansBigUIntTest : FreeSpec({
+class Asn1IntegerRepresentationTest : FreeSpec({
 
     "Manual" - {
         withData("1027", "256", "1", "3", "8", "127", "128", "255", "512", "1024") {
             val javaBigInt = BigInteger(it)
             val ref = javaBigInt.toString()
-            val own = BigUInt(ref)
+            val own = VarUInt(ref)
             val ownBytes = own.bytes
             val javaBytes = javaBigInt.toByteArray()
             val bigitBytes = javaBytes.dropWhile { it == 0.toByte() && javaBytes.size > 1 }.map { it.toUByte() }
@@ -35,7 +35,7 @@ class PoorMansBigUIntTest : FreeSpec({
                 com.ionspin.kotlin.bignum.integer.BigInteger.parseString(javaBigInt.toString()).toAsn1VarInt()
             varInt shouldBe refVarint
             refVarint.decodeAsn1VarBigInt()
-            refVarint.decodeAsn1VarBigUint() shouldBe own
+            refVarint.decodeAsn1VarBigInt().first.uint shouldBe own
 
         }
     }
@@ -45,7 +45,7 @@ class PoorMansBigUIntTest : FreeSpec({
         checkAll(Arb.bigInt(1, 65)) {
             val javaBigInt = it.abs()
             val ref = javaBigInt.toString()
-            val own = BigUInt(ref)
+            val own = VarUInt(ref)
             val ownBytes = own.bytes
             val javaBytes = javaBigInt.toByteArray()
             val bigitBytes = javaBytes.dropWhile { it == 0.toByte() && javaBytes.size > 1 }.map { it.toUByte() }
@@ -62,7 +62,7 @@ class PoorMansBigUIntTest : FreeSpec({
         withData(nameFn = { it.toHexString() }, List<Uuid>(100) { Uuid.random() }) {
             val hex = it.toHexString().uppercase()
             val bigint = com.ionspin.kotlin.bignum.integer.BigInteger.fromByteArray(it.toByteArray(), Sign.POSITIVE)
-            val own = BigUInt(it.toByteArray())
+            val own = VarUInt(it.toByteArray())
         }
     }
 
@@ -71,7 +71,7 @@ class PoorMansBigUIntTest : FreeSpec({
         "manual" - {
             withData("-1457686090107523769986476796769829633039407019130", "-18440417236681064435", "-1") {
                 val neg = com.ionspin.kotlin.bignum.integer.BigInteger.parseString(it)
-                val ownNeg = BigInt.fromDecimalString(neg.toString())
+                val ownNeg = Asn1Integer.fromDecimalString(neg.toString())
                 withClue(neg.toString()) {
                     ownNeg.toString() shouldBe neg.toString()
                     ownNeg.twosComplement() shouldBe neg.toTwosComplementByteArray()
@@ -84,16 +84,16 @@ class PoorMansBigUIntTest : FreeSpec({
                 val pos = com.ionspin.kotlin.bignum.integer.BigInteger.fromByteArray(it.toByteArray(), Sign.POSITIVE)
                 val neg = com.ionspin.kotlin.bignum.integer.BigInteger.fromByteArray(it.toByteArray(), Sign.NEGATIVE)
 
-                val ownPos = BigInt.fromDecimalString(pos.toString())
+                val ownPos = Asn1Integer.fromDecimalString(pos.toString())
                 ownPos.toString() shouldBe pos.toString()
                 ownPos.twosComplement() shouldBe pos.toTwosComplementByteArray()
-                val ownNeg = BigInt.fromDecimalString(neg.toString())
+                val ownNeg = Asn1Integer.fromDecimalString(neg.toString())
                 withClue(neg.toString()) {
                     ownNeg.toString() shouldBe neg.toString()
                     ownNeg.twosComplement() shouldBe neg.toTwosComplementByteArray()
                 }
-                BigInt.fromTwosComplement(ownPos.twosComplement()) shouldBe ownPos
-                BigInt.fromTwosComplement(ownNeg.twosComplement()) shouldBe ownNeg
+                Asn1Integer.fromTwosComplement(ownPos.twosComplement()) shouldBe ownPos
+                Asn1Integer.fromTwosComplement(ownNeg.twosComplement()) shouldBe ownNeg
             }
         }
     }

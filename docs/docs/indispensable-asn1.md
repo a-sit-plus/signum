@@ -10,6 +10,7 @@ It features:
 
 * **ASN.1 Parser and Encoder including a DSL to generate ASN.1 structures**
 * ObjectIdentifier Class with human-readable notation (e.g. 1.2.9.6245.3.72.13.4.7.6)
+* ASN.1 Integer (variable length integer)
 * 100% pure Kotlin BitSet
 * Generic ASN.1 abstractions to operate on and create arbitrary ASN.1 Data
 * Support for all targets but wasm/WASI (due to Kotest not supporting it)
@@ -31,7 +32,7 @@ implementation("at.asitplus.signum:indispensable-asn1:$version")
 ```
 
 ## Structure and Class Overview
-As the name _Indispensable ASN.1_ implies, this module is indispensable, if you work with ASN.1 strucutres.
+As the name _Indispensable ASN.1_ implies, this module is indispensable, if you work with ASN.1 structures.
 
 ### Package Organisation
 
@@ -69,7 +70,9 @@ The `asn1.encoding` package contains the ASN.1 builder DSL, as well as encoding 
 -- both for whole ASN.1 elements, as wells as for encoding/decoding primitive data types to/from DER-conforming byte arrays.
 Most prominently, it comes with ASN.1 unsigned varint and minimum-length encoding of signed numbers.
 
-## ASN.1 Engine
+## ASN.1 Core
+
+The ASN.1 engine allows decoding and encoding arbitrary structures from/to ByteArrays, kotlinx.io `Source` and `Sink`.
 
 Relevant _Indispensable_ classes like `CryptoPublicKey`, `X509Certificate`, `Pkcs10CertificationRequest`, etc. all
 implement `Asn1Encodable` and their respective companions implement `Asn1Decodable`.
@@ -142,6 +145,9 @@ In addition, the following self-describing shorthands are defined:
 * `Asn1Primitive.decodeToULong()` throws on error
 * `Asn1Primitive.decodeToULongOrNull()` returns `null` on error
 
+* `Asn1Primitive.decodeToAsn1Integer()` throws on error
+* `Asn1Primitive.decodeToAsn1IntegerOrNull()` returns `null` on error
+
 * `Asn1Primitive.decodeToString()` throws on error
 * `Asn1Primitive.decodeToStringOrNull()` returns `null` on error
 
@@ -158,6 +164,7 @@ Manually working on DER-encoded payloads is also supported through the following
 * `UInt.decodeFromAsn1ContentBytes()`
 * `Long.decodeFromAsn1ContentBytes()`
 * `ULong.decodeFromAsn1ContentBytes()`
+* `Asn1Integer.decodeFromAsn1ContentBytes()`
 * `Boolean.decodeFromAsn1ContentBytes()`
 * `String.decodeFromAsn1ContentBytes()`
 * `Instant.decodeGeneralizedTimeFromAsn1ContentBytes()`
@@ -169,7 +176,6 @@ Moreover, a generic tag assertion function is present on `Asn1Element`, which th
 and returns the tag-asserted element on success:
 
 * `Asn1Element.assertTag()` takes either an `Asn1Element.Tag` or an `ULong` tag number
-
 
 ### Encoding
 Similarly to decoding function, encoding function also come as high-level and low-level ones.
@@ -194,9 +200,10 @@ These essentially delegate to the other kind of low-level encoding function, pro
 Both kind of encoding functions follow a simple naming convention:
 
 * `encodeToAsn1Primitive()` produces an ASN.1 primitive corresponding to the input.
-This is implemented for `Int`, `UInt`, `Long`, `ULong`, `Boolean`, and `String`
+This is implemented for `Int`, `UInt`, `Long`, `ULong`, `Asn1Integer`, `Boolean`, and `String`
 * `encodeToAsn1ContentBytes()` producing the content bytes of an `Asn1Primitive`.
-This is implemented for `Int`, `UInt`, `Long`, `ULong`, and `Boolean`. As for strings: An UTF-8 string is just its bytes.
+This is implemented for `Int`, `UInt`, `Long`, `ULong`, `Asn1Integer`, and `Boolean`.
+* As for strings: An UTF-8 string is just its bytes.
 
 In addition, some more specialized encoding functions exist for cases that are not as straight-forward:
 
@@ -238,28 +245,38 @@ Asn1.Sequence { +Asn1.Int(42) } withImplicitTag (0x5EUL without CONSTRUCTED)
 
 
 ### Object Identifiers
-Signum's _Indispensable_ module comes with an expressive, convenient, and efficient ASN.1 `ObjectIdentifier` class.
+Signum's _Indispensable ASN.1_ engine comes with an expressive, convenient, and efficient ASN.1 `ObjectIdentifier` class.
 It can be constructed by either parsing a `ByteArray` containing ASN.1-encoded representation of an OID,
 or constructing it from a humanly-readable string representation (`"1.2.96"`, `"1 2 96"`).
-In addition, it is possible to pass OID node components as either `UInt` or `BigInteger` to construct an OID: `ObjectIdentifier(1u, 3u, 6u, 1u)`.
+In addition, it is possible to pass OID node components as either `UInt` or decimal string representation to construct an OID:
+`ObjectIdentifier(1u, 3u, 6u, 1u)`, `ObjectIdentifier("1.2.3.234567898765434567")`.
 
 The OID class exposes a `nodes` property, corresponding to the individual components that make up an OID node for convenience,
 as well as a `bytes` property, corresponding to its ASN.1-encoded `ByteArray` representation.  
 One peculiar characteristic of the `ObjectIdentifier` class is that both `nodes` and `bytes` properties are lazily evaluated.
 This means that if the OID was constructed from raw bytes, accessing `bytes` is a NOOP, but operating on `nodes` is initially
 quite expensive, since the bytes have yet to be parsed.
-Conversely, if an OID was constructed from `BigInteger` components, accessing `bytes` is slow.
+Conversely, if an OID was constructed from a string, accessing `bytes` is slow.
 If, however, an OID was constructed from `UInt` components, those are eagerly encoded into bytes and the `nodes` property
-is not immediately initialized.
+is not immediately initialized.  
+Finally, it is possible to directly construct an OID from a `Uuid`, which directly constructs an OID in Subtree `2.35`, which
+takes the same path as evaluating a String, but with some shortcuts.
 
-This behaviour boils down to performance: Only very rarely, will you want to create an OID with components exceeding `UInt.MAX_VALUE`,
+This lazy-evaluation behaviour boils down to performance: Only very rarely, will you want to create an OID with components exceeding `UInt.MAX_VALUE`,
 but you will almost certainly want to encode a OID you created to ASN.1.
 On the other hand, parsing an OID from ASN.1-encoded bytes and re-encoding it are both close to a NOOP (object creation aside).
+
+### ASN.1 Integer
+The ASN.1 engine provides its own bigint-like class, `Asn1Integer`. It is capable of encoding arbitrary length signed integers
+to write and read them from ASN.1 structures.
+It natively supports encoding from/to a two's complement `ByteArray`, and sing+ magnitude representation,
+making it interoperable with [Kotlin MP BigNum](https://github.com/ionspin/kotlin-multiplatform-bignum)
+and JVM's `BigInteger`.
 
 ### ASN.1 Builder DSL
 So far, custom high-level types and manually constructing low-level types was discussed.
 When actually constructing ASN.1 structures, a far more streamlined and intuitive approach exists.
-Signum's Indispensable module comes with a powerful, expressive ASN.1 builder DSL, including shorthand functions
+Signum's Indispensable ASN.1 engine comes with a powerful, expressive ASN.1 builder DSL, including shorthand functions
 covering CONSTRUCTED types and primitives.
 Everything is grouped under a namespace object called `Asn1`. It not only streamlines the creation of complex ASN.1
 structures, but also provides maximum flexibility. The following snippet showcases how it can be used in practice:
@@ -344,4 +361,4 @@ ASN.1 primitive as-is.
 !!! tip
     The builder also takes any `Asn1Encodable`, so you can also add an `X509Certificate`, or a `CryptoPublicKey` using
     the same concise syntax.  
-    **Do checkout the [API docs](dokka/indispensable/at.asitplus.signum.indispensable.asn1.encoding/-asn1/index.html) for a full list of builder functions!**
+    **Do checkout the [API docs](dokka/indispensable-asn1/at.asitplus.signum.indispensable.asn1.encoding/-asn1/index.html) for a full list of builder functions!**
