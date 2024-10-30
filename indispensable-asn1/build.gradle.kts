@@ -213,13 +213,12 @@ kotlin {
     }
 }
 
-exportIosFramework(
-    "Indispensable-asn1",
+exportXCFramework(
+    "IndispensableAsn1",
     transitiveExports = false,
     serialization("json"),
     datetime(),
     kmmresult(),
-    libs.bignum
 )
 
 val javadocJar = setupDokka(
