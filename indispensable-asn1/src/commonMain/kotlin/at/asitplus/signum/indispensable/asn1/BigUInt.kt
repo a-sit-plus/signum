@@ -1,19 +1,85 @@
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.signum.indispensable.asn1.BigUInt.Companion.decimalPlus
 import at.asitplus.signum.indispensable.asn1.encoding.UVARINT_MASK_UBYTE
 import at.asitplus.signum.indispensable.asn1.encoding.UVARINT_SINGLEBYTE_MAXVALUE
 import at.asitplus.signum.indispensable.asn1.encoding.UVARINT_SINGLEBYTE_MAXVALUE_UBYTE
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
+import kotlin.experimental.and
 import kotlin.experimental.or
 import kotlin.jvm.JvmInline
 
 private val REGEX_BASE10 = Regex("[0-9]+")
 private val REGEX_ZERO = Regex("0*")
 
+fun BigInt(number: Int) = BigInt(number.toLong())
+fun BigInt(number: Long) =
+    if (number < 0) BigInt.Negative(BigUInt((number * -1).toULong()))
+    else BigInt.Positive(BigUInt((number).toULong()))
+
+sealed class BigInt(internal val uint: BigUInt, private val sign: Sign) {
+
+    enum class Sign {
+        POSITIVE,
+        NEGAVITE
+    }
+
+    override fun toString(): String = when (sign) {
+        Sign.POSITIVE -> uint.toString()
+        Sign.NEGAVITE -> "-${uint}"
+    }
+
+    abstract fun twosComplement(): ByteArray
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is BigInt) return false
+
+        if (uint != other.uint) return false
+        if (sign != other.sign) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = uint.hashCode()
+        result = 31 * result + sign.hashCode()
+        return result
+    }
+
+    class Positive internal constructor(uint: BigUInt) : BigInt(uint, Sign.POSITIVE) {
+        override fun twosComplement(): ByteArray = uint.bytes.let {
+            if (it.first().countLeadingZeroBits() == 0) listOf(0.toUByte()) + it else it
+        }.toUByteArray().toByteArray()
+    }
+
+    class Negative internal constructor(uint: BigUInt) : BigInt(uint, Sign.NEGAVITE) {
+        override fun twosComplement(): ByteArray {
+           TODO()
+        }
+    }
+
+    companion object {
+        val ONE = BigInt.Positive(BigUInt(1u))
+        val ZERO = BigInt.Positive(BigUInt(0u))
+
+        fun fromDecimalString(input: String): BigInt {
+            if (input.matches(REGEX_BASE10)) return Positive(BigUInt(input))
+            if (input.first() == '-' && input.substring(1).matches(REGEX_BASE10))
+                return Negative(BigUInt(input.substring(1)))
+            else throw IllegalArgumentException("NaN: $input")
+        }
+
+        fun fromTwosComplement(input: ByteArray): BigInt =
+            if (input.first() < 0) {
+               TODO()
+            } else Positive(BigUInt(input))
+    }
+}
+
+
 @JvmInline
-internal value class BigUInt(private val digits: MutableList<UByte> = mutableListOf<UByte>(0u)) {
+internal value class BigUInt(private val words: MutableList<UByte> = mutableListOf(0u)) {
 
 
     constructor(uInt: UInt) : this(uInt.toString())
@@ -26,22 +92,22 @@ internal value class BigUInt(private val digits: MutableList<UByte> = mutableLis
         trim()
     }
 
-    val bytes: List<UByte> get() = digits
+    val bytes: List<UByte> get() = words
 
     private fun trim() {
-        digits.apply { while (digits.size > 1 && first() == 0.toUByte()) removeFirst() }
+        words.apply { while (words.size > 1 && first() == 0.toUByte()) removeFirst() }
     }
 
-    override fun toString() = digits.iterator().toDecimalString()
+    override fun toString() = words.iterator().toDecimalString()
     fun toHexString() = StringBuilder().apply {
-        digits.forEachIndexed { i, it ->
+        words.forEachIndexed { i, it ->
             append(
                 it.toString(16).run { if (i > 0 && length < 2) "0$this" else this })
         }
     }.toString()
 
     fun toBinaryString() = StringBuilder().apply {
-        digits.forEachIndexed { i, it ->
+        words.forEachIndexed { i, it ->
             it.toString(2).run {
                 repeat(8 - length) { append('0') }
                 append(this)
@@ -50,40 +116,40 @@ internal value class BigUInt(private val digits: MutableList<UByte> = mutableLis
     }.dropWhile { it == '0' }.toString().let { if (it.isEmpty()) "0" else it }
 
     infix fun and(other: BigUInt): BigUInt {
-        val (shorter, longer) = if (other.digits.size < digits.size) other to this else this to other
-        val diff = longer.digits.size - shorter.digits.size
-        return BigUInt(MutableList<UByte>(shorter.digits.size) {
-            shorter.digits[it] and longer.digits[it + diff]
+        val (shorter, longer) = if (other.words.size < words.size) other to this else this to other
+        val diff = longer.words.size - shorter.words.size
+        return BigUInt(MutableList<UByte>(shorter.words.size) {
+            shorter.words[it] and longer.words[it + diff]
         }).apply { trim() }
     }
 
     infix fun or(other: BigUInt): BigUInt {
-        val (shorter, longer) = if (other.digits.size < digits.size) other to this else this to other
-        val diff = longer.digits.size - shorter.digits.size
-        return BigUInt(MutableList<UByte>(longer.digits.size) {
-            if (it >= diff) shorter.digits[it - diff] or longer.digits[it]
-            else longer.digits[it]
+        val (shorter, longer) = if (other.words.size < words.size) other to this else this to other
+        val diff = longer.words.size - shorter.words.size
+        return BigUInt(MutableList<UByte>(longer.words.size) {
+            if (it >= diff) shorter.words[it - diff] or longer.words[it]
+            else longer.words[it]
         }).apply { trim() }
     }
 
     infix fun xor(other: BigUInt): BigUInt {
-        val (shorter, longer) = if (other.digits.size < digits.size) other to this else this to other
-        val diff = longer.digits.size - shorter.digits.size
-        return BigUInt(MutableList<UByte>(longer.digits.size) {
-            if (it >= diff) shorter.digits[it - diff] xor longer.digits[it]
-            else longer.digits[it] xor 0u
+        val (shorter, longer) = if (other.words.size < words.size) other to this else this to other
+        val diff = longer.words.size - shorter.words.size
+        return BigUInt(MutableList<UByte>(longer.words.size) {
+            if (it >= diff) shorter.words[it - diff] xor longer.words[it]
+            else longer.words[it] xor 0u
         }).apply { trim() }
     }
 
     infix fun shl(offset: Int): BigUInt {
         //we us eit only internally require(offset >= 0) { "offset must be non-negative: $offset" }
-        if (offset == 0) return BigUInt(digits.toMutableList())
+        if (offset == 0) return BigUInt(words.toMutableList())
         val byteOffset = offset / 8
 
         val bitOffset = offset % 8
-        val result = MutableList<UByte>(digits.size + 1) { 0u }
+        val result = MutableList<UByte>(words.size + 1) { 0u }
         result.indices.drop(1).forEach { index ->
-            val tmp = digits[index - 1].toInt() shl bitOffset
+            val tmp = words[index - 1].toInt() shl bitOffset
             val tmpH = (tmp ushr 8).toUByte()
             val tmpL = tmp.toUByte()
             result[index - 1] = result[index - 1] or tmpH
@@ -94,12 +160,12 @@ internal value class BigUInt(private val digits: MutableList<UByte> = mutableLis
 
     infix fun shr(offset: Int): BigUInt {
         //we use it only internally require(offset >= 0) { "offset must be non-negative: $offset" }
-        if (offset == 0) return BigUInt(digits.toMutableList())
+        if (offset == 0) return BigUInt(words.toMutableList())
         val byteOffset = offset / 8
-        if (byteOffset >= digits.size) return BigUInt()
+        if (byteOffset >= words.size) return BigUInt()
 
         val bitOffset = offset % 8
-        val dropped = digits.dropLast(byteOffset).toMutableList()
+        val dropped = words.dropLast(byteOffset).toMutableList()
 
         val result = MutableList<UByte>(dropped.size) { 0u }
         result[result.lastIndex] = (dropped.last().toInt() ushr bitOffset).toUByte()
@@ -112,10 +178,10 @@ internal value class BigUInt(private val digits: MutableList<UByte> = mutableLis
     }
 
     fun toAsn1VarInt(): ByteArray {
-        if (digits.size == 1) {
-            if (digits.first() == 0.toUByte()) return byteArrayOf(0)
-            if (digits.first() < UVARINT_SINGLEBYTE_MAXVALUE_UBYTE) return byteArrayOf(
-                digits.first().toByte()
+        if (words.size == 1) {
+            if (words.first() == 0.toUByte()) return byteArrayOf(0)
+            if (words.first() < UVARINT_SINGLEBYTE_MAXVALUE_UBYTE) return byteArrayOf(
+                words.first().toByte()
             ) //Fast case}
         }
 
@@ -123,7 +189,7 @@ internal value class BigUInt(private val digits: MutableList<UByte> = mutableLis
         val buf = Buffer()
         (numBytes - 1).downTo(0).forEach { byteIndex ->
             buf.writeByte(
-                ((this shr (byteIndex * 7)).digits.last() and UVARINT_MASK_UBYTE).toByte() or
+                ((this shr (byteIndex * 7)).words.last() and UVARINT_MASK_UBYTE).toByte() or
                         (if (byteIndex > 0) UVARINT_SINGLEBYTE_MAXVALUE else 0)
             )
         }
@@ -132,24 +198,27 @@ internal value class BigUInt(private val digits: MutableList<UByte> = mutableLis
     }
 
 
-    fun isZero(): Boolean = (digits.size == 1 && digits.first() == 0.toUByte())
+    fun isZero(): Boolean = (words.size == 1 && words.first() == 0.toUByte())
 
     fun bitLength(): Int {
-        var result = digits.size * 8
+        var result = words.size * 8
         for (i in 7 downTo 0) {
-            if (digits.first().toInt() and (1 shl i) == 0)
+            if (words.first().toInt() and (1 shl i) == 0)
                 result--
             else return result
         }
         return result
     }
 
-    operator fun compareTo(byte: UByte): Int = if (digits.size > 1) 1 else digits.last().compareTo(byte)
+    fun inv(): BigUInt = BigUInt(MutableList(words.size) { words[it].inv() })
 
 
-    fun intValue(): Int =
-        if (digits.size > 1) digits.last().toInt() and (digits[digits.lastIndex - 1].toInt() shl 8)
-        else digits.last().toInt()
+    operator fun compareTo(byte: UByte): Int = if (words.size > 1) 1 else words.last().compareTo(byte)
+
+
+    fun shortValue(): Int =
+        if (words.size > 1) words.last().toInt() and (words[words.lastIndex - 1].toInt() shl 8)
+        else words.last().toInt()
 
 
     companion object {
@@ -219,7 +288,7 @@ internal value class BigUInt(private val digits: MutableList<UByte> = mutableLis
         }
 
         // Function to add two large base-10 numbers (as strings)
-        private infix fun List<Char>.decimalPlus(num2: List<Char>): MutableList<Char> {
+        internal infix fun List<Char>.decimalPlus(num2: List<Char>): MutableList<Char> {
             val result = StringBuilder()
             var carry = 0
 
