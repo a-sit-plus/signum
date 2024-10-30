@@ -17,6 +17,7 @@ import kotlinx.serialization.encoding.Encoder
  * @param instant the timestamp to encode
  * @param formatOverride to force either  GENERALIZED TIME or UTC TIME
  */
+@Serializable(with = Asn1TimeSerializer::class)
 class Asn1Time(instant: Instant, formatOverride: Format? = null) : Asn1Encodable<Asn1Primitive> {
 
     val instant = Instant.fromEpochSeconds(instant.epochSeconds)
@@ -77,4 +78,17 @@ class Asn1Time(instant: Instant, formatOverride: Format? = null) : Asn1Encodable
          */
         GENERALIZED
     }
+}
+
+
+object Asn1TimeSerializer : KSerializer<Asn1Time> {
+    override val descriptor = PrimitiveSerialDescriptor("Asn1Time", PrimitiveKind.STRING)
+
+    override fun deserialize(decoder: Decoder) =
+        Asn1Time.decodeFromTlv(Asn1Element.decodeFromDerHexString(decoder.decodeString()) as Asn1Primitive)
+
+    override fun serialize(encoder: Encoder, value: Asn1Time) {
+        encoder.encodeString(value.encodeToTlv().toDerHexString())
+    }
+
 }

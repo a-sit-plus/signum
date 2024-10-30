@@ -5,6 +5,12 @@ import at.asitplus.signum.indispensable.asn1.VarUInt.Companion.decimalPlus
 import at.asitplus.signum.indispensable.asn1.encoding.UVARINT_MASK_UBYTE
 import at.asitplus.signum.indispensable.asn1.encoding.UVARINT_SINGLEBYTE_MAXVALUE
 import kotlinx.io.*
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlin.experimental.or
 import kotlin.jvm.JvmInline
 
@@ -22,6 +28,7 @@ fun Asn1Integer(number: Long) =
  * It has a [sign] though, and supports [twosComplement] representation and converting [fromTwosComplement].
  * Hence, it directly interoperates with [Kotlin MP BigNum](https://github.com/ionspin/kotlin-multiplatform-bignum) and the JVM BigInteger.
  */
+@Serializable(with = Asn1IntegerSerializer::class)
 sealed class Asn1Integer(internal val uint: VarUInt, private val sign: Sign) {
 
     enum class Sign {
@@ -223,7 +230,7 @@ internal value class VarUInt(private val words: MutableList<UByte> = mutableList
     companion object {
 
         internal fun Sink.writeAsn1VarInt(number: VarUInt): Int {
-            if (number.isZero()){
+            if (number.isZero()) {
                 writeByte(0)
                 return 1
             }
@@ -344,3 +351,15 @@ internal value class VarUInt(private val words: MutableList<UByte> = mutableList
     }
 }
 
+object Asn1IntegerSerializer : KSerializer<Asn1Integer> {
+    override val descriptor = PrimitiveSerialDescriptor("ASN.1 Integer", PrimitiveKind.STRING)
+
+    override fun deserialize(decoder: Decoder): Asn1Integer =
+        Asn1Integer.fromDecimalString(decoder.decodeString())
+
+
+    override fun serialize(encoder: Encoder, value: Asn1Integer) {
+        encoder.encodeString(value.toString())
+    }
+
+}
