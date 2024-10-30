@@ -172,7 +172,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
             ) { acc, bytes -> acc + bytes }
         }
 
-        private fun List<out VarUInt>.toOidBytes(): ByteArray {
+        private fun List<VarUInt>.toOidBytes(): ByteArray {
             return slice(2..<size).map { it.toAsn1VarInt() }
                 .fold(
                     byteArrayOf((first().shortValue() * 40 + get(1).shortValue()).toUByte().toByte())

@@ -67,6 +67,7 @@ exportIosFramework(
     serialization("json"),
     datetime(),
     kmmresult(),
+    project(":indispensable-asn1"),
     libs.bignum
 )
 
