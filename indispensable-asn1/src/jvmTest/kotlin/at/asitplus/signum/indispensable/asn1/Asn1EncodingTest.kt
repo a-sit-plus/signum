@@ -264,14 +264,6 @@ class Asn1EncodingTest : FreeSpec({
 
     }
 
-    "Parsing and encoding results in the same bytes" {
-        val certBytes = Base64.getMimeDecoder()
-            .decode(javaClass.classLoader.getResourceAsStream("github-com.pem")!!.reader().readText())
-        val tree = Asn1Element.parse(certBytes)
-        withClue(certBytes.toHexString() + "\n" + tree.toDerHexString())
-        { tree.derEncoded shouldBe certBytes }
-        }
-
 
     "Old and new encoder produce the same bytes" {
 

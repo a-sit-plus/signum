@@ -44,7 +44,6 @@ class X509CertParserTest : FreeSpec({
         }
     }
 
-
     "Real Certificates" - {
         withData("digicert-root.pem", "github-com.pem", "cert-times.pem") { crt ->
             val certBytes = java.util.Base64.getMimeDecoder()
