@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.signum.indispensable.asn1.BigUInt.Companion.decodeAsn1VarBigUInt
+import at.asitplus.signum.indispensable.asn1.VarUInt.Companion.decodeAsn1VarBigUInt
 import at.asitplus.signum.indispensable.asn1.encoding.decode
 import at.asitplus.signum.indispensable.asn1.encoding.toAsn1VarInt
 import kotlinx.serialization.KSerializer
@@ -22,7 +22,7 @@ import kotlin.uuid.Uuid
 @Serializable(with = ObjectIdSerializer::class)
 class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
     bytes: ByteArray?,
-    nodes: List<BigUInt>?
+    nodes: List<VarUInt>?
 ) :
     Asn1Encodable<Asn1Primitive> {
     init {
@@ -56,8 +56,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
      * Lazily evaluated.
      */
     val bytes: ByteArray by lazy {
-        if (bytes != null) bytes
-        else nodes!!.toOidBytes()
+        bytes ?: nodes!!.toOidBytes()
     }
 
     /**
@@ -67,15 +66,15 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
         if (nodes != null) nodes.map { it.toString() } else {
             val (first, second) =
                 if (this.bytes[0] >= 80) {
-                    BigUInt(2u) to BigUInt(this.bytes[0].toUByte() - 80u)
+                    VarUInt(2u) to VarUInt(this.bytes[0].toUByte() - 80u)
                 } else {
-                    BigUInt(this.bytes[0].toUByte() / 40u) to BigUInt(this.bytes[0].toUByte() % 40u)
+                    VarUInt(this.bytes[0].toUByte() / 40u) to VarUInt(this.bytes[0].toUByte() % 40u)
                 }
             var index = 1
             val collected = mutableListOf(first, second)
             while (index < this.bytes.size) {
                 if (this.bytes[index] >= 0) {
-                    collected += BigUInt(this.bytes[index].toUInt())
+                    collected += VarUInt(this.bytes[index].toUInt())
                     index++
                 } else {
                     val currentNode = mutableListOf<Byte>()
@@ -85,7 +84,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
                     }
                     currentNode += this.bytes[index]
                     index++
-                    collected += currentNode.iterator().decodeAsn1VarBigUInt()
+                    collected += currentNode.toByteArray().decodeAsn1VarBigUInt()
                 }
             }
             collected.map { it.toString() }
@@ -100,7 +99,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
     @OptIn(ExperimentalUuidApi::class)
     constructor(uuid: Uuid) : this(
         bytes = null,
-        nodes = listOf(BigUInt(2u), BigUInt(25u), BigUInt(uuid.toByteArray()))
+        nodes = listOf(VarUInt(2u), VarUInt(25u), VarUInt(uuid.toByteArray()))
     )
 
     /**
@@ -119,7 +118,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
     @Throws(Asn1Exception::class)
     constructor(oid: String) : this(
         bytes = null,
-        nodes = (oid.split(if (oid.contains('.')) '.' else ' ')).map { BigUInt(it) }
+        nodes = (oid.split(if (oid.contains('.')) '.' else ' ')).map { VarUInt(it) }
     )
 
 
@@ -173,7 +172,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
             ) { acc, bytes -> acc + bytes }
         }
 
-        private fun List<out BigUInt>.toOidBytes(): ByteArray {
+        private fun List<out VarUInt>.toOidBytes(): ByteArray {
             return slice(2..<size).map { it.toAsn1VarInt() }
                 .fold(
                     byteArrayOf((first().shortValue() * 40 + get(1).shortValue()).toUByte().toByte())

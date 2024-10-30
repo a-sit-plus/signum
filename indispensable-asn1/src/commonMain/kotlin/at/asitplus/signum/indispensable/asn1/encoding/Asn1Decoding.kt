@@ -165,7 +165,6 @@ private fun Source.readAsn1Element(tagAndLength: TagAndLength, tagAndLengthBytes
 private fun Asn1Element.Tag.isSet() = this == Asn1Element.Tag.SET
 private fun Asn1Element.Tag.isSequence() = (this == Asn1Element.Tag.SEQUENCE)
 
-
 /**
  * decodes this [Asn1Primitive]'s content into an [Boolean]. [assertTag] defaults to [Asn1Element.Tag.BOOL], but can be
  * overridden (for implicitly tagged booleans, for example)
@@ -231,8 +230,21 @@ fun Asn1Primitive.decodeToULong(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT
 inline fun Asn1Primitive.decodeToULongOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
     catching { decodeToULong(assertTag) }.getOrNull()
 
+/** Decode the [Asn1Primitive] as a [Asn1Integer]
+ * @throws [Asn1Exception] on invalid input */
+@Throws(Asn1Exception::class)
+fun Asn1Primitive.decodeToAsn1Integer() =
+    runRethrowing { decode(Asn1Element.Tag.INT) { Asn1Integer.decodeFromAsn1ContentBytes(it) } }
 
+/** Exception-free version of [decodeToAsn1Integer] */
+inline fun Asn1Primitive.decodeToAsn1IntegerOrNull() = catching { decodeToAsn1Integer() }.getOrNull()
 
+/**
+ * Decodes a [Asn1Integer] from [bytes] assuming the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 INTEGER
+ */
+@Throws(Asn1Exception::class)
+fun Asn1Integer.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): Asn1Integer =
+    runRethrowing { fromTwosComplement(bytes) }
 
 /**
  * transforms this [Asn1Primitive] into an [Asn1String] subtype based on its tag
@@ -263,7 +275,6 @@ fun Asn1Primitive.decodeToString() = runRethrowing { asAsn1String().value }
 /** Exception-free version of [decodeToString] */
 fun Asn1Primitive.decodeToStringOrNull() = catching { decodeToString() }.getOrNull()
 
-
 /**
  * decodes this [Asn1Primitive]'s content into an [Instant] if it is encoded as UTC TIME or GENERALIZED TIME
  *
@@ -290,7 +301,6 @@ fun Asn1Primitive.decodeToInstant() =
  */
 fun Asn1Primitive.decodeToInstantOrNull() = catching { decodeToInstant() }.getOrNull()
 
-
 /**
  * Transforms this [Asn1Primitive]' into an [Asn1BitString], assuming it was encoded as BIT STRING
  * @throws Asn1Exception  on invalid input
@@ -310,7 +320,6 @@ fun Asn1Primitive.readNull() = decode(Asn1Element.Tag.NULL) {}
  * Name seems odd, but this is just an exception-free version of [readNull]
  */
 fun Asn1Primitive.readNullOrNull() = catching { readNull() }.getOrNull()
-
 
 /**
  * Generic decoding function. Verifies that this [Asn1Primitive]'s tag matches [assertTag]

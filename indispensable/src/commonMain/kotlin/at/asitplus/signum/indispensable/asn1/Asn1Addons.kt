@@ -87,14 +87,13 @@ fun Uuid.toBigInteger(): BigInteger = BigInteger.fromByteArray(toByteArray(), Si
 /**
  * Tries to convert a BigInteger to a UUID. Only guaranteed to work with BigIntegers that contain the unsigned (positive)
  * integer representation of a UUID, chances are high, though, that it works with random positive BigIntegers between
- * 16 and 14 bytes large.
+ * 16 and 14 bytes long.
  *
  * Returns `null` if conversion fails. Never throws.
  */
 @OptIn(ExperimentalUuidApi::class)
 fun Uuid.Companion.fromBigintOrNull(bigInteger: BigInteger): Uuid? =
     catchingUnwrapped { fromByteArray(bigInteger.toByteArray().ensureSize(16)) }.getOrNull()
-
 
 /** Creates an INTEGER [Asn1Primitive] from [value] */
 fun Asn1.Int(value: BigInteger) = value.encodeToAsn1Primitive()
@@ -113,7 +112,7 @@ fun BigInteger.encodeToAsn1ContentBytes() = toTwosComplementByteArray()
 fun Asn1Primitive.decodeToBigInteger() =
     runRethrowing { decode(Asn1Element.Tag.INT) { BigInteger.decodeFromAsn1ContentBytes(it) } }
 
-/** Exception-free version of [decodeToBigInteger] */
+/** Exception-free version of [decodeToAsn1Integer] */
 inline fun Asn1Primitive.decodeToBigIntegerOrNull() = catching { decodeToBigInteger() }.getOrNull()
 
 /**

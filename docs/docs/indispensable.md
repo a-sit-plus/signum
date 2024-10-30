@@ -140,7 +140,7 @@ This also means, a direct serialization of such custom types is valuable for deb
 
 #### Low-Level Addons
 
-This module provides the following low-level addons:
+This module provides the following low-level addons for [Kotlin MP BigNum](https://github.com/ionspin/kotlin-multiplatform-bignum):
 
 * `Asn1Primitive.decodeToBigInteger()` throws on error
 * `Asn1Primitive.decodeToBigIntegerOrNull()` returns `null` on error

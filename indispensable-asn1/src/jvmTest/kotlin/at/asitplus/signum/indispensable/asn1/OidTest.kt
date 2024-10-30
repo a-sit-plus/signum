@@ -30,6 +30,13 @@ class OidTest : FreeSpec({
             val oid = ObjectIdentifier("1.3.311.128.1.4.99991.9311.21.20")
             val oid1 = ObjectIdentifier("1.3.311.128.1.4.99991.9311.21.20")
             val oid2 = ObjectIdentifier("1.3.312.128.1.4.99991.9311.21.20")
+            val oid3= ObjectIdentifier("1.3.132.0.34")
+
+            println(oid3.encodeToTlv().toDerHexString())
+            oid3.bytes shouldBe ObjectIdentifier.decodeFromDer(oid3.encodeToDer()).bytes
+            oid.bytes shouldBe ObjectIdentifier.decodeFromDer(oid.encodeToDer()).bytes
+            oid1.bytes shouldBe ObjectIdentifier.decodeFromDer(oid1.encodeToDer()).bytes
+            oid2.bytes shouldBe ObjectIdentifier.decodeFromDer(oid2.encodeToDer()).bytes
 
             val encoded = oid.encodeToTlv()
             ObjectIdentifier.decodeFromTlv(encoded) shouldBe oid
