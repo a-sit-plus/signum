@@ -6,10 +6,21 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 import io.kotest.core.names.TestName
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
+import io.kotest.matchers.comparables.beGreaterThanOrEqualTo
+import io.kotest.matchers.ints.beGreaterThan
+import io.kotest.matchers.ints.beGreaterThanOrEqualTo
 import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.property.Arb
+import io.kotest.property.arbitrary.byte
+import io.kotest.property.arbitrary.byteArray
+import io.kotest.property.arbitrary.int
+import io.kotest.property.azstring
+import io.kotest.property.checkAll
 import kotlin.math.min
+import kotlin.random.Random
 
 open class RFC9380Test : FreeSpec({
     "Assumption: all implemented curves have AB > 0" - {
@@ -660,20 +671,15 @@ Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
                     result.y.toString(16).padStart(test.Py.length, '0') shouldBe test.Py
                 }
                 registerTest(TestName("hash_to_field"), false, null) {
-                    val htfA = RFC9380.hash_to_field(suiteInfo.curve.nativeDigest, suiteInfo.curve, suiteInfo.dstB)
-                    val htfB = suiteInfo.curve.hashToScalar(suiteInfo.dstB)
+                    val htfA = RFC9380.hash_to_field(
+                        RFC9380.expand_message_xmd(suiteInfo.curve.nativeDigest), suiteInfo.curve, suiteInfo.dstB)
                     if (test.u1 != null) {
-                        val uA = htfA(test.msg.encodeToByteArray(), 2)
-                        val uB = htfB(test.msg.encodeToByteArray(), 2)
-                        uA[0].toString(16).padStart(test.u0.length, '0') shouldBe test.u0
-                        uB[0].toString(16).padStart(test.u0.length, '0') shouldBe test.u0
-                        uA[1].toString(16).padStart(test.u1.length, '0') shouldBe test.u1
-                        uB[1].toString(16).padStart(test.u1.length, '0') shouldBe test.u1
+                        val u = htfA(test.msg.encodeToByteArray(), 2)
+                        u[0].toString(16).padStart(test.u0.length, '0') shouldBe test.u0
+                        u[1].toString(16).padStart(test.u1.length, '0') shouldBe test.u1
                     } else {
-                        val uA = htfA(test.msg.encodeToByteArray())
-                        val uB = htfB(test.msg.encodeToByteArray())
-                        uA.toString(16).padStart(test.u0.length, '0') shouldBe test.u0
-                        uB.toString(16).padStart(test.u0.length, '0') shouldBe test.u0
+                        val u = htfA(test.msg.encodeToByteArray())
+                        u.toString(16).padStart(test.u0.length, '0') shouldBe test.u0
                     }
                 }
                 registerTest(TestName("map_to_curve"), false, null) {
@@ -690,6 +696,18 @@ Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
                         Q1.y.toString(16).padStart(test.Q1y.length, '0') shouldBe test.Q1y
                     }
                 }
+            }
+        }
+    }
+    "HashToScalar" - {
+        withData(ECCurve.entries) { curve ->
+            val hash_to_scalar = curve.hashToScalar(Random.azstring(32).encodeToByteArray())
+            checkAll(iterations = 5000, Arb.byteArray(Arb.int(25, 125), Arb.byte())) { input ->
+                val base = hash_to_scalar(input)
+                base.modulus shouldBe curve.order
+                val splitPos = Random.nextInt(1, input.size-2)
+                hash_to_scalar(sequenceOf(input.copyOfRange(0, splitPos), input.copyOfRange(splitPos, input.size))) shouldBe base
+                hash_to_scalar(listOf(input.copyOfRange(0, splitPos), input.copyOfRange(splitPos, input.size))) shouldBe base
             }
         }
     }
