@@ -39,8 +39,11 @@ private inline val ECCurve.L get() = when(this) {
     ECCurve.SECP_521_R_1 -> 98
 }
 
-/** per RFC9794 4.7.2. */
-fun ECCurve.randomScalar() = SecureRandom().nextBytesOf(this.L).let { BigInteger.fromByteArray(it, Sign.POSITIVE).toModularBigInteger(this.order) }
+/** per RFC9794 4.7.2.
+ * @param L security parameter controlling the drift from uniform;
+ *            defaults to `log2(modulus) * (3/2)`, which is the value used in RFC9794 */
+fun ECCurve.randomScalar(L: Int = this.L) = SecureRandom().nextBytesOf(L)
+    .let { BigInteger.fromByteArray(it, Sign.POSITIVE).toModularBigInteger(this.order) }
 
 private inline fun clearCofactorTrivial(p: ECPoint) = p.curve.cofactor * p
 
