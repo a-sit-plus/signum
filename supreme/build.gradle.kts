@@ -1,4 +1,6 @@
-import at.asitplus.gradle.*
+import at.asitplus.gradle.coroutines
+import at.asitplus.gradle.napier
+import at.asitplus.gradle.setupDokka
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
@@ -72,15 +74,24 @@ android {
     }
 
     packaging {
-        resources.excludes.add("/META-INF/{AL2.0,LGPL2.1}")
-        resources.excludes.add("win32-x86-64/attach_hotspot_windows.dll")
-        resources.excludes.add("win32-x86/attach_hotspot_windows.dll")
-        resources.excludes.add("META-INF/versions/9/OSGI-INF/MANIFEST.MF")
-        resources.excludes.add("META-INF/licenses/*")
+        listOf(
+            "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
+            "org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties",
+            "org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties",
+            "org/bouncycastle/x509/CertPathReviewerMessages_de.properties",
+            "org/bouncycastle/x509/CertPathReviewerMessages.properties",
+            "org/bouncycastle/pkix/CertPathReviewerMessages_de.properties",
+            "org/bouncycastle/pkix/CertPathReviewerMessages.properties",
+            "/META-INF/{AL2.0,LGPL2.1}",
+            "win32-x86-64/attach_hotspot_windows.dll",
+            "win32-x86/attach_hotspot_windows.dll",
+            "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
+            "META-INF/licenses/*",
+        ).forEach { resources.excludes.add(it) }
     }
 
     testOptions {
-        targetSdk=30
+        targetSdk = 30
         managedDevices {
             localDevices {
                 create("pixel2api33") {
@@ -214,7 +225,7 @@ fun wireAndroidInstrumentedTests() {
 }
 
 project.gradle.taskGraph.whenReady {
-    tasks.getByName("testDebugUnitTest"){
-        enabled=false
+    tasks.getByName("testDebugUnitTest") {
+        enabled = false
     }
 }
