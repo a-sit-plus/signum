@@ -84,16 +84,17 @@ sealed class Asn1Element(
         doEncode(sink)
     }
 
-
-    override fun toString(): String = prettyPrintHeader(0) + contentToString() + prettyPrintTrailer(0)
+    override fun toString(): String = prettyPrintHeader(0) +
+            (if (this is Asn1Primitive) " " else "") +
+            contentToString() +
+            prettyPrintTrailer(0)
 
     protected abstract fun contentToString(): String
-
 
     fun prettyPrint() = prettyPrint(0)
 
     protected open fun prettyPrintHeader(indent: Int) =
-        "(tag=${tag}" + ", length=${length}" + ", overallLength=${overallLength}) "
+        "(tag=${tag}" + ", length=${length}" + ", overallLength=${overallLength})"
 
     protected open fun prettyPrintTrailer(indent: Int) = ""
     protected abstract fun prettyPrintContents(indent: Int): String
@@ -569,7 +570,6 @@ internal constructor(tag: ULong, children: List<Asn1Element>) :
      */
     fun verifyTagOrNull(explicitTag: Tag) = catching { verifyTag(explicitTag) }.getOrNull()
 
-    override fun toString() = "Tagged" + super.toString()
     override fun prettyPrintHeader(indent: Int) = (" " * indent) + "Tagged" + super.prettyPrintHeader(indent)
 }
 
@@ -585,7 +585,6 @@ class Asn1Sequence internal constructor(children: List<Asn1Element>) :
 
     }
 
-    override fun toString() = "Sequence" + super.toString()
     override fun prettyPrintHeader(indent: Int) = (" " * indent) + "Sequence" + super.prettyPrintHeader(indent)
 }
 
@@ -690,11 +689,9 @@ class Asn1EncapsulatingOctetString(children: List<Asn1Element>) :
 
     override fun unwrap() = this
 
-    override fun toString() = "OCTET STRING Encapsulating" + super.toString()
-
-
     override fun prettyPrintHeader(indent: Int) =
-        (" " * indent) + "OCTET STRING Encapsulating" + super.prettyPrintHeader(indent) + content.toHexString(HexFormat.UpperCase)
+        (" " * indent) + "OCTET STRING Encapsulating" + super.prettyPrintHeader(indent) + " " +
+                content.toHexString(HexFormat.UpperCase)
 }
 
 /**
@@ -706,9 +703,8 @@ class Asn1PrimitiveOctetString(content: ByteArray) : Asn1Primitive(Tag.OCTET_STR
 
     override fun unwrap() = this
 
-    override fun toString() = "OCTET STRING " + super.toString()
 
-    override fun prettyPrintHeader(indent: Int) = (" " * indent) + "OCTET STRING" + super.prettyPrintHeader(0)
+    override fun prettyPrintHeader(indent: Int) = (" " * indent) + "OCTET STRING " + super.prettyPrintHeader(0)
 }
 
 
@@ -726,8 +722,6 @@ open class Asn1Set private constructor(children: List<Asn1Element>, dontSort: Bo
     init {
         if (!tag.isConstructed) throw IllegalArgumentException("An ASN.1 Structure must have a CONSTRUCTED tag")
     }
-
-    override fun toString() = "Set" + super.toString()
 
 
     override fun prettyPrintHeader(indent: Int) = (" " * indent) + "Set" + super.prettyPrintHeader(indent)
@@ -772,9 +766,6 @@ open class Asn1Primitive(
         sink.write(content)
     }
 
-
-    override fun toString() = "Primitive" + super.toString()
-
     constructor(tagValue: ULong, content: ByteArray) : this(Tag(tagValue, false), content)
 
     constructor(tagValue: UByte, content: ByteArray) : this(tagValue.toULong(), content)
@@ -795,7 +786,6 @@ open class Asn1Primitive(
 
         return true
     }
-
 }
 
 
