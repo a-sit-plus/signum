@@ -251,7 +251,7 @@ This process works more or less as follows:
             factors { biometry = true }
         }
      }
-   }.getOrElse { TODO("Handle error") } as Signer.Attestable<*>
+   }.getOrElse { TODO("Handle error") }
    ```
 6. The client creates and signs a CSR for the key, which includes the challenge and an attestation proof
       ```kotlin
