@@ -194,7 +194,7 @@ object ObjectIdSerializer : KSerializer<ObjectIdentifier> {
     override fun deserialize(decoder: Decoder): ObjectIdentifier = ObjectIdentifier(decoder.decodeString())
 
     override fun serialize(encoder: Encoder, value: ObjectIdentifier) {
-        encoder.encodeString(toString())
+        encoder.encodeString(value.toString())
     }
 
 }
