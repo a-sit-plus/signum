@@ -191,7 +191,7 @@ Asn1Element.parse(customSequence.derEncoded).asStructure().let { root ->
   val numberOfOps = root.nextChild().asPrimitive().decodeToUInt()
   root.nextChild().asEncapsulatingOctetString().let { timestamp ->
     val isRelative = timestamp.nextChild().asPrimitive()
-      .decode(TAG_TIME_RELATIVE) { Boolean.decodeFromAsn1ContentBytes(it) }
+      .decodeToBoolean(TAG_TIME_RELATIVE)
 
     val time = if (isRelative) timestamp.nextChild().asPrimitive().decodeToUInt()
     else timestamp.nextChild().asPrimitive().decodeToInstant()
