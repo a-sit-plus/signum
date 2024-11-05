@@ -12,7 +12,7 @@ In this example, we'll start with an ephemeral P-256 signer:
 ```kotlin
 val signer = Signer.Ephemeral {
     ec { curve = ECCurve.SECP_256_R_1 }
-}.getOrThrow() //TODO handle error properly
+}.getOrThrow() //TODO handle error
 ```
 
 Next up, we'll create a header and payload:
@@ -104,12 +104,12 @@ This example illustrates how to encapsulate a custom ASN.1 encoding scheme to ma
 ### Definitions
 
 Let's say you are using ASN.1 as your wire format for interoperability with different frameworks and languages.
-This particular example demonstrates log reporting, i.e. the status of an operation, maybe from a smartcard is sent off-device.
+This particular example demonstrates how log messages, i.e. the status of an operation, maybe from a smartcard, are sent off-device.
 
 !!! note inline end
     Such constraints may seem artificial, but when bandwidth is low, a compact representation is key.
 
-A log message is an implicitly tagged ASN.1 structure with APPLICATION tag `1337` and sequence semantics.
+A log message is an implicitly tagged ASN.1 structure with APPLICATION tag `26` and sequence semantics.
 It contains the number of times an operation was run, and a timestamp, which can be either relative (in whole seconds since the last operation)
 or absolute (UTC Time).
 This relative/absolute flag uses the implicit APPLICATION tag `42` and the tuple of flag and time
@@ -128,7 +128,7 @@ Relative Time
 <td>
 
 ```asn1
-Application 1337 (2 elem)
+Application 26 (2 elem)
   INTEGER 1
   OCTET STRING (19 byte)
     Application 42 (1 byte) 00
@@ -140,7 +140,7 @@ Application 1337 (2 elem)
 <td>
 
 ```asn1
-Application 1337 (2 elem)
+Application 26 (2 elem)
   INTEGER 3
   OCTET STRING (7 byte)
     Application 42 (1 byte) FF
@@ -165,7 +165,7 @@ Asn1.Sequence {
         +(Bool(false) withImplicitTag TAG_TIME_RELATIVE)
         +Asn1Time(Clock.System.now())
     }
-} withImplicitTag (1337uL withClass TagClass.APPLICATION) 
+} withImplicitTag (26uL withClass TagClass.APPLICATION) 
 //                ↑ in reality this would be a constant ↑ 
 ```
 
@@ -175,8 +175,8 @@ The HEX-equivalent of this structure (which can be obtained by calling `.toDerHe
 ### Parsing and Validating Tags
 
 Basic parsing is straight-forward: You have DER-encoded bytes, and feed them into `AsnElement.parse()`.
-In this example, you then examine the first child to get the number of times the operation was carried out,
-decode the first child of the OCTET STRING that follows to see if n UTC time or an int follows.
+In this example, you examine the first child to get the number of times the operation was carried out;
+then, you decode the first child of the OCTET STRING that follows to decide how to decode the second child.
 
 Usually, though (and especially when using implicit tags), you really want to verify those tags too.
 Hence, parsing and properly validating is a bit more elaborate:
@@ -185,7 +185,7 @@ Hence, parsing and properly validating is a bit more elaborate:
 Asn1Element.parse(customSequence.derEncoded).asStructure().let { root -> 
 
   //↓↓↓ In reality, this would be a global constant; the same as in the previous snippet ↓↓↓
-  val rootTag = Asn1Element.Tag(1337uL, tagClass = TagClass.APPLICATION, constructed = true)
+  val rootTag = Asn1Element.Tag(26uL, tagClass = TagClass.APPLICATION, constructed = true)
   root.assertTag(rootTag) //throws on tag mismatch
 
   val numberOfOps = root.nextChild().asPrimitive().decodeToUInt()
@@ -201,7 +201,7 @@ Asn1Element.parse(customSequence.derEncoded).asStructure().let { root ->
       
     // Everything is parsed and validated
     TODO("Create domain object from $numberOfOps, $isRelative, and $time")
-    }
+  }
 }
 ```
 
@@ -241,68 +241,68 @@ This process works more or less as follows:
 3. The user enters this information into the client app and the app transmits this information to the back-end.
 4. The back-end sends a challenge to the client
 5. The client creates a new public-private key pair, using the challenge to also attest app, key, and the biometric authorization requirement (see [Attestation](supreme.md#attestation)).
-   ```kotlin
-   val signer = PlatformSigningProvider.createSigningKey("binding") {
-     ec { curve = ECCurve.SECP_256_R_1 }
-     hardware {
-        backing = REQUIRED
-        attestation { challenge = challengeFromServer }
-        protection {
-            factors { biometry = true }
-        }
-     }
-   }.getOrElse { TODO("Handle error") }
-   ```
+```kotlin
+val signer = PlatformSigningProvider.createSigningKey("binding") {
+  ec { curve = ECCurve.SECP_256_R_1 }
+  hardware {
+    backing = REQUIRED
+    attestation { challenge = challengeFromServer }
+    protection {
+      factors { biometry = true }
+    }
+  }
+}.getOrElse { TODO("Handle error") }
+```
 6. The client creates and signs a CSR for the key, which includes the challenge and an attestation proof
-      ```kotlin
-      val tbsCSR = TbsCertificationRequest(
-          subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
-          publicKey = signer.publicKey,
-          attributes = listOf(
-              Pkcs10CertificationRequestAttribute(
-                  // No OID is assigned for this; choose one!
-                  attestationOid,
-                                      // ↓↓↓ contains challenge ↓↓↓
-                  Asn1String.UTF8(signer.attestation!!.jsonEncoded).encodeToTlv()
-              )
-          )
-      )
+```kotlin
+val tbsCSR = TbsCertificationRequest(
+  subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
+  publicKey = signer.publicKey,
+  attributes = listOf(
+    Pkcs10CertificationRequestAttribute(
+      // No OID is assigned for this; choose one!
+      attestationOid,
+                          // ↓↓↓ contains challenge ↓↓↓
+      Asn1String.UTF8(signer.attestation!!.jsonEncoded).encodeToTlv()
+    )
+  )
+)
 
-      //extension function producing a signed CSR
-      val csr = signer.sign(tbsCSR).getOrElse { TODO("handle error") }
-      ```
-7. The back-end verifies tha signature of the CSR, and validates the challenge (and attestation information, if present)
-      ```kotlin
-       X509SignatureAlgorithm.ES256.verifierFor(csr.tbsCsr.publicKey)
-           .getOrElse { TODO("Handle error") }
-           .verify(
-               csr.tbsCsr.encodeToDer(),
-               CryptoSignature.decodeFromDer(csr.signature)
-           ).getOrElse { TODO("Abort here!") }
+//extension function producing a signed CSR
+val csr = signer.sign(tbsCSR).getOrElse { TODO("handle error") }
+```
+7. The back-end verifies the signature of the CSR, and validates the challenge and attestation information
+```kotlin
+X509SignatureAlgorithm.ES256.verifierFor(csr.tbsCsr.publicKey)
+  .getOrElse { TODO("Handle error") }
+  .verify(
+    csr.tbsCsr.encodeToDer(),
+    CryptoSignature.decodeFromDer(csr.signature)
+  ).getOrElse { TODO("Abort here!") }
 
-       val attestation =
-           csr.tbsCsr.attributes.firstOrNull { it.oid == attestationOid }
-               ?.value?.first() ?: TODO("Abort here!")
-      //TODO: feed attestation to WARDEN for verification
-      ```
+val attestation =
+  csr.tbsCsr.attributes.firstOrNull { it.oid == attestationOid }
+    ?.value?.first() ?: TODO("Abort here!")
+//TODO: feed attestation to WARDEN for verification
+```
 8. The back-end issues and signs a _binding certificate_ for the CSR, and transmits it to the client.
 ```kotlin
 val tbsCrt = TbsCertificate(
-    serialNumber = Random.nextBytes(16),
-    signatureAlgorithm = signer.signatureAlgorithm.toX509SignatureAlgorithm().getOrThrow(),
-    issuerName = backendIssuerName,
-    validFrom = Asn1Time(Clock.System.now()),
-    validUntil = Asn1Time(Clock.System.now() + VALIDITY),
-    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
-    publicKey = ISSUER_KEY,
-    extensions = listOf(
-        // we want to indicate, that this client passed attestation checks
-        X509CertificateExtension(
-            attestedClientOid,
-            critical = true,
-            Asn1PrimitiveOctetString(byteArrayOf())
-        )
+  serialNumber = Random.nextBytes(16),
+  signatureAlgorithm = signer.signatureAlgorithm.toX509SignatureAlgorithm().getOrThrow(),
+  issuerName = backendIssuerName,
+  validFrom = Asn1Time(Clock.System.now()),
+  validUntil = Asn1Time(Clock.System.now() + VALIDITY),
+  subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
+  publicKey = csr.tbsCsr.publicKey, //client public key
+  extensions = listOf(
+    // we want to indicate, that this client passed attestation checks
+    X509CertificateExtension(
+      attestedClientOid,
+      critical = true,
+      Asn1PrimitiveOctetString(byteArrayOf())
     )
+  )
 )
 
 val clientCertificate = signer.sign(tbsCrt).getOrElse { TODO("handle error") }
