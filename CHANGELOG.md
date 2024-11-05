@@ -30,6 +30,7 @@ Better safe than sorry!
 * Base OIDs on BigInteger instead of UInt
 * Directly support UUID-based OID creation
 * Implement hash-to-curve and hash-to-scalar as per RFC9380
+* Rename `decodeFromDerHexString` to `parseFromDerHexString`
 * `JwsSignes.plainsignatureInput` is now a raw ByteArray
   * `JwsSigned.prepareSignatureInput` now returns a raw ByteArray
 * Use kotlinx-io as primary source for parsing

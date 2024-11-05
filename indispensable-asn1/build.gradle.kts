@@ -1,7 +1,6 @@
 import at.asitplus.gradle.*
 import com.squareup.kotlinpoet.*
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
-import org.jetbrains.kotlin.js.backend.ast.JsName
 import java.io.FileInputStream
 import java.util.regex.Pattern
 
@@ -28,11 +27,11 @@ private val Pair<String, *>.oid: String? get() = this.first
 
 //generate Known OIDs when importing the project.
 //This is dirt-cheap, so it does not matter that this call is hardcoded here
-generateKnowOIDs()
+generateKnownOIDs()
 
 //Also create a task that regenerates known OIDs, should this be needed
 tasks.register<DefaultTask>("regenerateKnownOIDs") {
-    doFirst { generateKnowOIDs() }
+    doFirst { generateKnownOIDs() }
 }
 
 /**
@@ -55,7 +54,7 @@ tasks.register<DefaultTask>("regenerateKnownOIDs") {
  *
  * `# End of Fahnenstange`
  */
-fun generateKnowOIDs() {
+fun generateKnownOIDs() {
     logger.lifecycle("  Regenerating KnownOIDs.kt")
     val collected = mutableMapOf<String, Pair<String, String?>>()
 

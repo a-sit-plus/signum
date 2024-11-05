@@ -110,7 +110,7 @@ internal value class VarUInt(private val words: MutableList<UByte> = mutableList
     constructor(uInt: UInt) : this(uInt.toString())
     constructor(uLong: ULong) : this(uLong.toString())
     constructor(uByte: UByte) : this(mutableListOf(uByte))
-    constructor(value: String) : this(value.convertToBytes())
+    constructor(value: String) : this(value.parseAsBase10())
     constructor(byteArray: ByteArray) : this(byteArray.map { it.toUByte() }.toMutableList())
 
     init {
@@ -130,15 +130,6 @@ internal value class VarUInt(private val words: MutableList<UByte> = mutableList
                 it.toString(16).run { if (i > 0 && length < 2) "0$this" else this })
         }
     }.toString()
-
-    fun toBinaryString() = StringBuilder().apply {
-        words.forEachIndexed { i, it ->
-            it.toString(2).run {
-                repeat(8 - length) { append('0') }
-                append(this)
-            }
-        }
-    }.dropWhile { it == '0' }.toString().let { if (it.isEmpty()) "0" else it }
 
     infix fun and(other: VarUInt): VarUInt {
         val (shorter, longer) = if (other.words.size < words.size) other to this else this to other
@@ -162,12 +153,12 @@ internal value class VarUInt(private val words: MutableList<UByte> = mutableList
         val diff = longer.words.size - shorter.words.size
         return VarUInt(MutableList<UByte>(longer.words.size) {
             if (it >= diff) shorter.words[it - diff] xor longer.words[it]
-            else longer.words[it] xor 0u
-        }).apply { trim() }
+            else longer.words[it]
+        })
     }
 
     infix fun shl(offset: Int): VarUInt {
-        //we us eit only internally require(offset >= 0) { "offset must be non-negative: $offset" }
+        require(offset >= 0) { "offset must be non-negative: $offset" }
         if (offset == 0) return VarUInt(words.toMutableList())
         val byteOffset = offset / 8
 
@@ -204,7 +195,7 @@ internal value class VarUInt(private val words: MutableList<UByte> = mutableList
 
     fun toAsn1VarInt(): ByteArray = throughBuffer { it.writeAsn1VarInt(this) }
 
-    fun isZero(): Boolean = (words.size == 1 && words.first() == 0.toUByte())
+    fun isZero(): Boolean = (words.first() == 0.toUByte()) //always trimmed, so it is enough to inspect the first byte
 
     fun bitLength(): Int {
         var result = words.size * 8
@@ -222,8 +213,13 @@ internal value class VarUInt(private val words: MutableList<UByte> = mutableList
     operator fun compareTo(byte: UByte): Int = if (words.size > 1) 1 else words.last().compareTo(byte)
 
 
+    /**
+     * @throws IllegalArgumentException if the number is too large
+     */
+    @Throws(IllegalArgumentException::class)
     fun shortValue(): Int =
-        if (words.size > 1) words.last().toInt() and (words[words.lastIndex - 1].toInt() shl 8)
+        if(words.size>2) throw IllegalArgumentException("Number too large!")
+        else if (words.size > 1) words.last().toInt() and (words[words.lastIndex - 1].toInt() shl 8)
         else words.last().toInt()
 
 
@@ -242,11 +238,10 @@ internal value class VarUInt(private val words: MutableList<UByte> = mutableList
                             (if (byteIndex > 0) UVARINT_SINGLEBYTE_MAXVALUE else 0)
                 )
             }
-            //otherwise we won't ever write zero
             return numBytes
         }
 
-        private fun String.convertToBytes(): MutableList<UByte> {
+        private fun String.parseAsBase10(): MutableList<UByte> {
             if (!matches(REGEX_BASE10)) throw Asn1Exception("Illegal input!")
             if (matches(REGEX_ZERO)) return mutableListOf(0u)
             var currentValue = toMutableList()
@@ -273,7 +268,7 @@ internal value class VarUInt(private val words: MutableList<UByte> = mutableList
 
 
         private fun Iterator<UByte>.toDecimalString(): String {
-            // Initialize the result as a StringBuilder to hold the base-10 value
+            // Initialize the result to hold the base-10 value
             var decimalResult = mutableListOf('0')
 
             // Process each byte in the base-256 array

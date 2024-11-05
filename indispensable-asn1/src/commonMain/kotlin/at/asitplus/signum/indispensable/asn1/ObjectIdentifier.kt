@@ -34,16 +34,16 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
             throw Asn1Exception("Empty OIDs are not supported")
 
         bytes?.apply {
-            if(first().toUByte()>127u) throw Asn1Exception("OID top-level arc can only be number 0, 1 or 2")
+            if (first().toUByte() > 127u) throw Asn1Exception("OID top-level arc can only be number 0, 1 or 2")
             //this is the best we can do
-            if(last()<0) throw Asn1Exception("Encoded OID does not end with a valid ASN.1 varint")
+            if (last() < 0) throw Asn1Exception("Encoded OID does not end with a valid ASN.1 varint")
         }
         nodes?.apply {
             if (size < 2) throw Asn1StructuralException("at least two nodes required!")
             if (first() > 2u) throw Asn1Exception("OID top-level arc can only be number 0, 1 or 2")
-            if(first()<2u) {
+            if (first() < 2u) {
                 if (get(1) > 39u) throw Asn1Exception("Second segment must be <40")
-            }else {
+            } else {
                 if (get(1) > 47u) throw Asn1Exception("Second segment must be <48")
             }
         }
@@ -55,8 +55,8 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
      * for details.
      * Lazily evaluated.
      */
-    val bytes: ByteArray by lazy {
-        bytes ?: nodes!!.toOidBytes()
+    val bytes: ByteArray by if (bytes != null) lazyOf(bytes) else lazy {
+        nodes!!.toOidBytes()
     }
 
     /**
@@ -167,16 +167,16 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
         fun parse(rawValue: ByteArray): ObjectIdentifier = ObjectIdentifier(bytes = rawValue, nodes = null)
 
         private fun UIntArray.toOidBytes(): ByteArray {
-            return slice(2..<size).map { it.toAsn1VarInt() }.fold(
+            return map { it.toAsn1VarInt() }.foldIndexed(
                 byteArrayOf((first() * 40u + get(1)).toUByte().toByte())
-            ) { acc, bytes -> acc + bytes }
+            ) { i, acc, bytes -> if (i >= 2) acc + bytes else acc }
         }
 
         private fun List<VarUInt>.toOidBytes(): ByteArray {
-            return slice(2..<size).map { it.toAsn1VarInt() }
-                .fold(
+            return map { it.toAsn1VarInt() }
+                .foldIndexed(
                     byteArrayOf((first().shortValue() * 40 + get(1).shortValue()).toUByte().toByte())
-                ) { acc, bytes -> acc + bytes }
+                ) { i, acc, bytes -> if (i >= 2) acc + bytes else acc }
         }
     }
 }

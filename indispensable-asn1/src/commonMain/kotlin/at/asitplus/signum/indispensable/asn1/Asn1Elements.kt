@@ -43,8 +43,17 @@ sealed class Asn1Element(
          * @throws [Throwable] all sorts of errors on invalid input
          */
         @Throws(Throwable::class)
-        fun decodeFromDerHexString(derEncoded: String) =
-            Asn1Element.parse(derEncoded.replace(Regex("\\s"), "").trim().hexToByteArray(HexFormat.UpperCase))
+        @Deprecated("Misleading name", ReplaceWith("parseFromDerHexString"))
+        fun decodeFromDerHexString(derEncoded: String) = parseFromDerHexString(derEncoded)
+
+        /**
+         * Convenience method to directly parse a HEX-string representation of DER-encoded data.
+         * Ignores and strips all whitespace.
+         * @throws [Throwable] all sorts of errors on invalid input
+         */
+        @Throws(Throwable::class)
+        fun parseFromDerHexString(derEncoded: String) =
+            Asn1Element.parse(derEncoded.replace(Regex("\\s"), "").hexToByteArray(HexFormat.UpperCase))
     }
 
     /**
@@ -109,8 +118,8 @@ sealed class Asn1Element(
     /**
      * Convenience method to directly produce an HEX string of this element's ASN.1 representation
      */
-    fun toDerHexString(lineLen: Byte? = null) = derEncoded.toHexString(HexFormat.UpperCase)
-        .let { if (lineLen == null) it else it.chunked(lineLen.toInt()).joinToString(separator = "\n") }
+    fun toDerHexString(lineLen: Int? = null) = derEncoded.toHexString(HexFormat.UpperCase)
+        .let { if (lineLen == null) it else it.chunked(lineLen).joinToString(separator = "\n") }
 
 
     /**

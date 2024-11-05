@@ -38,7 +38,7 @@ As the name _Indispensable ASN.1_ implies, this module is indispensable, if you 
 
 The `asn1` package contains a 100% pure Kotlin (read: no platform dependencies) ASN.1 engine and data types:
 
-* `Asn1Elements.kt` contains all ANS.1 element types
+* `Asn1Elements.kt` contains all ASN.1 element types
     * `Asn1Element` is an abstract, generic ASN.1 element. Has a tag and content. Can be DER-encoded
         * `Asn1Element.Tag` representing an ASN.1 tag. Contains user-friendly representations of:
             * Tag number
@@ -67,12 +67,12 @@ In addition, some convenience types are also present:
 * `Asn1Time` maps from/to kotlinx-datetime `Instant`s and supports both UTC time and generalized time
 
 The `asn1.encoding` package contains the ASN.1 builder DSL, as well as encoding and decoding functions
--- both for whole ASN.1 elements, as wells as for encoding/decoding primitive data types to/from DER-conforming byte arrays.
+-- both for whole ASN.1 elements, as well as for encoding/decoding primitive data types to/from DER-conforming byte arrays.
 Most prominently, it comes with ASN.1 unsigned varint and minimum-length encoding of signed numbers.
 
 ## ASN.1 Core
 
-The ASN.1 engine allows decoding and encoding arbitrary structures from/to ByteArrays, kotlinx.io `Source` and `Sink`.
+The ASN.1 engine allows decoding and encoding arbitrary structures from/to `ByteArray`s, as well as kotlinx.io `Source` and `Sink`.
 
 Relevant _Indispensable_ classes like `CryptoPublicKey`, `X509Certificate`, `Pkcs10CertificationRequest`, etc. all
 implement `Asn1Encodable` and their respective companions implement `Asn1Decodable`.
@@ -83,19 +83,28 @@ The following section provides more details on the various patterns used for ASN
 ### Generic Patterns
 Recalling the classes in the `asn1` package described before already hints how ASN.1 elements are constructed.
 In effect, it is just a nesting of those classes.
-This works well for parsing and encoding but lacks higher-level semantics (in contrast to `X509Certificate`, for example).
+This works well for parsing and encoding but lacks higher-level semantics (in contrast to `X509Certificate` from the _Indispensable_ module, for example).
 
 
 ### Decoding
 Decoding functions come in two categories: high-level functions, wich are used to map ASN.1 elements to types with enriched semantics
 (such as certificates, public keys, etc.) and low-level ones, operating on the encoded values of TLV structures (i.e. decoding the _V_ in TLV).
+Hence, a typical decoding pipeline looks as follows:
+
+
+
+| Encoded Bytes    |      ––––&rarr;       |                          ASN.1 Element                           |             ––––&rarr;             | `Asn1Encodable` rich type          |
+|------------------|:---------------------:|:----------------------------------------------------------------:|:----------------------------------:|------------------------------------|
+| `06052B81040022` | `Asn1Element.parse()` |  `Primitive(tag=6 (=06), length=5, overallLength=7) 2B81040022`  | `ObjectIdentifier.decodeFromTlv()` | `ObjectIdentifier("1.3.132.0.34")` |
+
 
 #### High-Level
 
 `Asn1Decodable` provides the following functions for decoding data:
 
 * `doDecode()`, which is the only function that needs to be implemented by high-level types implementing `Asn1Encodable`.
-  To provide a concrete example: This function needs to contain all parsing/decoding logic to construct a `CryptoPublicKey` from an `Asn1Sequence`.
+  To provide a concrete example: This function needs to contain all parsing/decoding logic to construct a `CryptoPublicKey` from an `Asn1Sequence`,
+  as demonstrated in the [_Indispensable_ source code](https://github.com/a-sit-plus/signum/blob/main/indispensable/src/commonMain/kotlin/at/asitplus/signum/indispensable/CryptoPublicKey.kt#L109).
 * `verifyTag()` already implements optional tag assertion. The default implementation of  `decodeFromTlv()` (see below) calls this before invoking `doDecode()`.
 * `decodeFromTlv()` takes an ASN.1 element and optional tag to assert, and returns a high-level type. Throws!
 * `decodeFromTlvSafe()` does not throw, but returns a KmmResult, encapsulating the result of `decodeFromTlv()`
@@ -107,11 +116,11 @@ Decoding functions come in two categories: high-level functions, wich are used t
 In addition, the companion of `Asn1Element` exposes the following functions:
 
 * `parse()` parses a single ASN.1 element from the input and throws on error, or when additional input is left after parsing.
-  This is helpful, to ensure that any given input contains a single, top-level ASN.1 element.
+  This ensures that the input contains a single, top-level ASN.1 element.
 * `parseAll()` consumes all input and returns a list of parsed ASN.1 elements. Throws on error.
 * `Source.readAsn1Element()` decodes a single ASN.1 element (can be a structure or a primitive) from a kotlix.io Source.
 * `parseFirst()` comes in two flavours, both of which parse only a single, top-level ASN.1 element from the passed input
-    * Variant 1 takes a `ByteIterator` and advances it until after the first parsed element.
+    * Variant 1 takes a `Source` and advances it until after the first parsed element.
     * Variant 2 takes a `ByteArray` and returns the first parses element, as well as the remaining bytes (as `Pair<Asn1Element, ByteArray>`)
 * `decodeFromDerHexString()` strips all whitespace before trying to decode an ASN.1 element from the provided hex string.
 This function throws various exceptions on illegal input. Has the same semantics as `parse()`.
@@ -121,43 +130,45 @@ Low-level decoding functions deal with the actual decoding of payloads in TLV st
 
 #### Low-Level
 
-Some Low-level decoding functions are implemented as extension functions in `Asn1Primitive` for convenience (since CONSTRUCTED elements contain child nodes, but no raw data).
+Some low-level decoding functions are implemented as extension functions in `Asn1Primitive` for convenience (since CONSTRUCTED elements contain child nodes, but no raw data).
 The base decoding function is called `decode()` and has the following signature:
 ```kotlin
 fun <reified T> Asn1Primitive.decode(assertTag: ULong, transform: (content: ByteArray) -> T): T
 ```
 An alternative exists, taking a `Tag` instead of an `Ulong`. in both cases a tag to assert and a user-defined transformation function is expected, which operates on
-the content of the ASN.1 primitive. Moreover,  non-throwing `decodeOrNull` variant is present.
+the content of the ASN.1 primitive. Moreover, a non-throwing `decodeOrNull` variant is present.
 In addition, the following self-describing shorthands are defined:
 
-* `Asn1Primitive.decodeToBoolean()` throws on error
-* `Asn1Primitive.decodeToBooleanOrNull()` returns `null` on error
+| Function                                    | Descrption                                                                          |
+|---------------------------------------------|-------------------------------------------------------------------------------------|
+| `Asn1Primitive.decodeToBoolean()`           | throws                                                                              |
+| `Asn1Primitive.decodeToBooleanOrNull()`     | returns `null` on error                                                             |
+|                                             |                                                                                     |
+| `Asn1Primitive.decodeToInt()`               | throws                                                                              |
+| `Asn1Primitive.decodeToIntOrNull()`         | returns `null` on error                                                             |
+|                                             |                                                                                     |
+| `Asn1Primitive.decodeToLong()`              | throws                                                                              |
+| `Asn1Primitive.decodeToLongOrNull()`        | returns `null` on error                                                             |
+|                                             |                                                                                     |
+| `Asn1Primitive.decodeToUInt()`              | throws                                                                              |
+| `Asn1Primitive.decodeToUIntOrNull()`        | returns `null` on error                                                             |
+|                                             |                                                                                     |
+| `Asn1Primitive.decodeToULong()`             | throws                                                                              |
+| `Asn1Primitive.decodeToULongOrNull()`       | returns `null` on error                                                             |
+|                                             |                                                                                     |
+| `Asn1Primitive.decodeToAsn1Integer()`       | throws                                                                              |
+| `Asn1Primitive.decodeToAsn1IntegerOrNull()` | returns `null` on error                                                             |
+|                                             |                                                                                     |
+| `Asn1Primitive.decodeToString()`            | throws                                                                              |
+| `Asn1Primitive.decodeToStringOrNull()`      | returns `null` on error                                                             |
+|                                             |                                                                                     |
+| `Asn1Primitive.decodeToInstant()`           | throws                                                                              |
+| `Asn1Primitive.decodeToInstantOrNull()`     | returns `null` on error                                                             |
+|                                             |                                                                                     |
+| `Asn1Primitive.readNull()`                  | validates that the ASN.1 primitive is indeed an ASN.1 NULL. throws on error         |
+| `Asn1Primitive.readNullOrNull()`            | validates that the ASN.1 primitive is indeed an ASN.1 NULL. returns `null` on error |
 
-* `Asn1Primitive.decodeToInt()` throws on error
-* `Asn1Primitive.decodeToIntOrNull()` returns `null` on error
-
-* `Asn1Primitive.decodeToLong()` throws on error
-* `Asn1Primitive.decodeToLongOrNull()` returns `null` on error
-
-* `Asn1Primitive.decodeToUInt()` throws on error
-* `Asn1Primitive.decodeToUIntOrNull()` returns `null` on error
-
-* `Asn1Primitive.decodeToULong()` throws on error
-* `Asn1Primitive.decodeToULongOrNull()` returns `null` on error
-
-* `Asn1Primitive.decodeToAsn1Integer()` throws on error
-* `Asn1Primitive.decodeToAsn1IntegerOrNull()` returns `null` on error
-
-* `Asn1Primitive.decodeToString()` throws on error
-* `Asn1Primitive.decodeToStringOrNull()` returns `null` on error
-
-* `Asn1Primitive.decodeToInstant()` throws on error
-* `Asn1Primitive.decodeToInstantOrNull()` returns `null` on error
-
-* `Asn1Primitive.readNull()` validates that the ASN.1 primitive is indeed an ASN.1 NULL. throws on error
-* `Asn1Primitive.readNullOrNull()` validates that the ASN.1 primitive is indeed an ASN.1 NULL. returns `null` on error
-
-In addition, an `asAsn1String()` conversion function exists that checks an ANS.1 primitive's tag and returns the correct `Asn1String` subtype (UTF-8, NUMERIC, BMP, …).
+In addition, an `asAsn1String()` conversion function exists that checks an ASN.1 primitive's tag and returns the correct `Asn1String` subtype (UTF-8, NUMERIC, BMP, …).
 Manually working on DER-encoded payloads is also supported through the following extensions (each taking a `ByteArray` as input):
 
 * `Int.decodeFromAsn1ContentBytes()`
@@ -179,8 +190,14 @@ and returns the tag-asserted element on success:
 
 ### Encoding
 Similarly to decoding function, encoding function also come as high-level and low-level ones.
-The general idea is the same: `Asn1Encodable` should be implemented by any custom type that needs encoding to ANS.1,
-while low-level encoding functions create the raw bytes contained in an `Asn1Primtive`.
+The general idea is the same: `Asn1Encodable` should be implemented by any custom type that needs encoding to ASN.1,
+while low-level encoding functions create the raw bytes contained in an `Asn1Primitive`.
+Hence, a typical encoding pipeline looks as follows:
+
+| `Asn1Encodable` rich type           |     ––––&rarr;      |                          ASN.1 Element                           |        ––––&rarr;        | Encoded Bytes    |
+|-------------------------------------|:-------------------:|:----------------------------------------------------------------:|:------------------------:|------------------|
+| `ObjectIdentifier("1.3.132.0.34")`  | `oid.encodeToTlv()` |  `Primitive(tag=6 (=06), length=5, overallLength=7) 2B81040022`  | `Asn1Element.derEncoded` | `06052B81040022` |
+
 
 #### High-Level
 `Asn1Encodable` defines the following functions:
@@ -195,8 +212,9 @@ while low-level encoding functions create the raw bytes contained in an `Asn1Pri
 `Asn1Element` and its subclasses come with the lazily-evaluated property `derEncoded` which produces a `ByteArray` conforming to DER.
 
 #### Low-Level
-Low-level encoding functions come in two flavours: On the one hand, functions to produce correctly tagged ASN.1 primitives exist.
-These essentially delegate to the other kind of low-level encoding function, producing the content bytes of an `Asn1Primitive`.
+Low-level encoding functions come in two flavours:
+On the one hand, functions exist to produce correctly tagged ASN.1 primitives exist, including tag, length, and the encoded value.
+On the other hand, there are functions responsible for producing only the content bytes of an `Asn1Primitive`. The first kind of functions rely on this second kind to encode values.
 Both kind of encoding functions follow a simple naming convention:
 
 * `encodeToAsn1Primitive()` produces an ASN.1 primitive corresponding to the input.
@@ -217,10 +235,17 @@ In addition, some more specialized encoding functions exist for cases that are n
 
 This library comes with extensive tagging support and an expressive `Asn1Element.Tag` class.
 ASN.1 knows EXPLICIT and IMPLICIT tags.
-The former is simply a structure with SEQUENCE SEMANTICS and a user-defined CONSTRUCTED, CONTEXT_SPECIFIC tag, while the latter replaces an ASN.1 element's tag.
+The former is simply a structure with SEQUENCE semantics and a user-defined CONSTRUCTED, CONTEXT_SPECIFIC tag, while the latter replaces an ASN.1 element's tag.
 
 #### Explicit
-To explicitly tag any number of elements, simply invoke `Asn1.ExplicitlyTagged`, set the desired tag and add the desired elements (see ASN.1 Builder DSL)
+To explicitly tag any number of elements, simply invoke `Asn1.ExplicitlyTagged`, set the desired tag and add the desired elements using the ASN.1 builder DSL:
+
+```kotlin
+ExplicitlyTagged(1uL) {
+  +Asn1.Bool(false)
+}
+```
+
 To create an explicit tag (to compare it to a parsed, explicitly tagged element, for example), just pass tag number (and optionally) tag class to `Asn1.ExplicitTag`.
 
 #### Implicit
@@ -269,7 +294,7 @@ On the other hand, parsing an OID from ASN.1-encoded bytes and re-encoding it ar
 ### ASN.1 Integer
 The ASN.1 engine provides its own bigint-like class, `Asn1Integer`. It is capable of encoding arbitrary length signed integers
 to write and read them from ASN.1 structures.
-It natively supports encoding from/to a two's complement `ByteArray`, and sing+ magnitude representation,
+It natively supports encoding from/to a two's complement `ByteArray`, and sign + magnitude representation,
 making it interoperable with [Kotlin MP BigNum](https://github.com/ionspin/kotlin-multiplatform-bignum)
 and JVM's `BigInteger`.
 
