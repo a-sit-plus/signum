@@ -24,7 +24,7 @@ val UVARINT_MASK_BIGINT = BigInteger.fromUByte(UVARINT_MASK_UBYTE)
  * while the highest bit indicates if more bytes are to come
  */
 @Throws(IllegalArgumentException::class)
-fun BigInteger.toAsn1VarInt(): ByteArray = throughBuffer { it.writeAsn1VarInt(this) }
+fun BigInteger.toAsn1VarInt(): ByteArray = Buffer().also { it.writeAsn1VarInt(this) }.readByteArray()
 
 /**
  * Encodes this number using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
@@ -34,7 +34,7 @@ fun BigInteger.toAsn1VarInt(): ByteArray = throughBuffer { it.writeAsn1VarInt(th
  */
 @Throws(IllegalArgumentException::class)
 fun Sink.writeAsn1VarInt(number: BigInteger): Int {
-    if(number==BigInteger.ZERO){ //fast case
+    if (number == BigInteger.ZERO) { //fast case
         writeByte(0)
         return 1
     }
@@ -46,8 +46,7 @@ fun Sink.writeAsn1VarInt(number: BigInteger): Int {
                     (if (byteIndex > 0) UVARINT_SINGLEBYTE_MAXVALUE else 0)
         )
     }
-    //otherwise we won't ever write zero
-    return  numBytes
+    return numBytes
 }
 
 
@@ -76,7 +75,7 @@ fun Source.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> {
  *
  * @return the decoded unsigned BigInteger and the underlying varint-encoded bytes as `ByteArray`
  */
-fun ByteArray.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> = this.throughBuffer { it.decodeAsn1VarBigInt() }
+fun ByteArray.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> = Buffer().let { it.decodeAsn1VarBigInt() }
 
 /**
  * Converts this UUID to a BigInteger representation

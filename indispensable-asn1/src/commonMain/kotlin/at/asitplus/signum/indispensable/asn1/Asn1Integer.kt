@@ -4,6 +4,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Integer.Companion.fromTwosCompl
 import at.asitplus.signum.indispensable.asn1.VarUInt.Companion.decimalPlus
 import at.asitplus.signum.indispensable.asn1.encoding.UVARINT_MASK_UBYTE
 import at.asitplus.signum.indispensable.asn1.encoding.UVARINT_SINGLEBYTE_MAXVALUE
+import at.asitplus.signum.indispensable.asn1.encoding.bitLength
 import kotlinx.io.*
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -197,15 +198,7 @@ internal value class VarUInt(private val words: MutableList<UByte> = mutableList
 
     fun isZero(): Boolean = (words.first() == 0.toUByte()) //always trimmed, so it is enough to inspect the first byte
 
-    fun bitLength(): Int {
-        var result = words.size * 8
-        for (i in 7 downTo 0) {
-            if (words.first().toInt() and (1 shl i) == 0)
-                result--
-            else return result
-        }
-        return result
-    }
+    fun bitLength(): Int = 8*(words.size-1) + words.first().toUInt().bitLength
 
     fun inv(): VarUInt = VarUInt(MutableList(words.size) { words[it].inv() })
 
