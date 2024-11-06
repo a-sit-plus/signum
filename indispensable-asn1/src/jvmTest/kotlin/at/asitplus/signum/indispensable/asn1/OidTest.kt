@@ -15,6 +15,7 @@ import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
 import io.kotest.property.checkAll
 import kotlinx.datetime.Clock
+import kotlinx.serialization.Serializable
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -29,8 +30,15 @@ class OidTest : FreeSpec({
             val oid = ObjectIdentifier("1.3.311.128.1.4.99991.9311.21.20")
             val oid1 = ObjectIdentifier("1.3.311.128.1.4.99991.9311.21.20")
             val oid2 = ObjectIdentifier("1.3.312.128.1.4.99991.9311.21.20")
+            val oid3= ObjectIdentifier("1.3.132.0.34")
 
-            ObjectIdentifier.decodeFromTlv(oid.encodeToTlv()) shouldBe oid
+            oid3.bytes shouldBe ObjectIdentifier.decodeFromDer(oid3.encodeToDer()).bytes
+            oid.bytes shouldBe ObjectIdentifier.decodeFromDer(oid.encodeToDer()).bytes
+            oid1.bytes shouldBe ObjectIdentifier.decodeFromDer(oid1.encodeToDer()).bytes
+            oid2.bytes shouldBe ObjectIdentifier.decodeFromDer(oid2.encodeToDer()).bytes
+
+            val encoded = oid.encodeToTlv()
+            ObjectIdentifier.decodeFromTlv(encoded) shouldBe oid
             oid shouldBe oid1
             oid shouldNotBe oid2
             oid.hashCode() shouldBe oid1.hashCode()
@@ -50,7 +58,7 @@ class OidTest : FreeSpec({
                     it shouldBe oid
                     it.encodeToDer() shouldBe fromBC.encoded
                 }
-                ObjectIdentifier(*(oid.toString().split(".").map { BigInteger.parseString(it) }.toTypedArray())).let {
+                ObjectIdentifier(oid.toString()).let {
                     it shouldBe oid
                     it.encodeToDer() shouldBe fromBC.encoded
                 }
@@ -72,7 +80,7 @@ class OidTest : FreeSpec({
                     it shouldBe oid
                     it.encodeToDer() shouldBe fromBC.encoded
                 }
-                ObjectIdentifier(*(oid.toString().split(".").map { BigInteger.parseString(it) }.toTypedArray())).let {
+                ObjectIdentifier(oid.toString()).let {
                     it shouldBe oid
                     it.encodeToDer() shouldBe fromBC.encoded
                 }
@@ -107,7 +115,7 @@ class OidTest : FreeSpec({
                         listOf(0, 1, 2).forEach { first ->
                             val withNegative = intArrayOf(negativeInt, *rest).apply { shuffle() }.map { BigInteger(it) }.toTypedArray()
                             shouldThrow<Asn1Exception> {
-                                ObjectIdentifier(BigInteger(first), BigInteger(second), *withNegative)
+                                ObjectIdentifier("$first.$second."+withNegative.joinToString("."))
                             }
                         }
                     }
@@ -127,8 +135,8 @@ class OidTest : FreeSpec({
                         val stringRepresentation =
                             "$first.$second" + if (it.isEmpty()) "" else ("." + it.joinToString("."))
 
-
                         oid.toString() shouldBe stringRepresentation
+
 
                         val second1 = if (second > 1) second - 1 else second + 1
 
@@ -162,9 +170,31 @@ class OidTest : FreeSpec({
             }
         }
 
-        "Benchmarking fast case" - {
+        "!Benchmarking fast case" - {
+            val oldOptimized = mutableListOf<Duration>()
             val optimized = mutableListOf<Duration>()
             val repetitions= 10
+
+            "Old Optimized" - {
+                repeat(repetitions) {
+                    val before = Clock.System.now()
+                    checkAll(iterations = 15, Arb.uInt(max = 39u)) { second ->
+                        checkAll(iterations = 5000, Arb.uIntArray(Arb.int(0..256), Arb.uInt(UInt.MAX_VALUE))) {
+                            listOf(1u, 2u).forEach { first ->
+                                val oid = BigIntObjectIdentifier(first, second, *it.toUIntArray())
+                                BigIntObjectIdentifier.decodeFromTlv(oid.encodeToTlv())
+                            }
+                        }
+                    }
+                    val duration = Clock.System.now() - before
+                    oldOptimized += duration
+                    println("Old Optimized: $duration")
+                }
+            }
+
+            val avgOldOpt = (oldOptimized.sorted().subList(1, oldOptimized.size - 1)
+                .sumOf { it.inWholeMilliseconds } / oldOptimized.size - 2).milliseconds
+            println("AvgOldOpt: $avgOldOpt")
 
             "Optimized" - {
                 repeat(repetitions) {
@@ -182,6 +212,7 @@ class OidTest : FreeSpec({
                     println("Optimized: $duration")
                 }
             }
+
 
             val avgOpt = (optimized.sorted().subList(1, optimized.size - 1)
                 .sumOf { it.inWholeMilliseconds } / optimized.size - 2).milliseconds
@@ -212,16 +243,60 @@ class OidTest : FreeSpec({
 
         }
 
+
+        "Benchmarking UUID" - {
+            val inputs = List<Uuid>(1000000){Uuid.random()}
+
+            val optimized = mutableListOf<Duration>()
+            val repetitions= 10
+
+
+
+            "Optimized" - {
+                repeat(repetitions) {
+                    val before = Clock.System.now()
+                    inputs.forEach { ObjectIdentifier(it) }
+                    val duration = Clock.System.now() - before
+                    optimized += duration
+                    println("Optimized: $duration")
+                }
+            }
+
+
+            val avgOpt = (optimized.sorted().subList(1, optimized.size - 1)
+                .sumOf { it.inWholeMilliseconds } / optimized.size - 2).milliseconds
+            println("AvgOpt: $avgOpt")
+
+            val oldOptimized = mutableListOf<Duration>()
+
+
+
+            "Old Bigint-Based" - {
+                repeat(repetitions) {
+                    val before = Clock.System.now()
+                    inputs.forEach { BigIntObjectIdentifier(it) }
+                    val duration = Clock.System.now() - before
+                    oldOptimized += duration
+                    println("Old Optimized: $duration")
+                }
+            }
+
+
+            val avgOldOpt = (oldOptimized.sorted().subList(1, oldOptimized.size - 1)
+                .sumOf { it.inWholeMilliseconds } / oldOptimized.size - 2).milliseconds
+            println("AvgOldOpt: $avgOldOpt")
+
+
+            avgOpt shouldBeLessThan avgOldOpt
+
+        }
+
         "Automated BigInt" - {
             checkAll(iterations = 15, Arb.positiveInt(39)) { second ->
                 checkAll(iterations = 500, Arb.bigInt(1, 358)) {
                     listOf(1, 2).forEach { first ->
                         val third = BigInteger.fromByteArray(it.toByteArray(), Sign.POSITIVE)
-                        val oid = ObjectIdentifier(
-                            BigInteger.fromUInt(first.toUInt()),
-                            BigInteger.fromUInt(second.toUInt()),
-                            third
-                        )
+                        val oid = ObjectIdentifier("$first.$second.$third")
 
                         val stringRepresentation =
                             "$first.$second.$third"
@@ -230,10 +305,7 @@ class OidTest : FreeSpec({
 
                         val second1 = if (second > 1) second - 1 else second + 1
 
-                        val oid1 = ObjectIdentifier(
-                            BigInteger.fromUInt(first.toUInt()),
-                            BigInteger.fromUInt(second1.toUInt()),
-                        )
+                        val oid1 = ObjectIdentifier("$first.$second1")
                         val parsed = ObjectIdentifier.decodeFromTlv(oid.encodeToTlv())
                         val fromBC = ASN1ObjectIdentifier(stringRepresentation)
 
@@ -272,13 +344,15 @@ class OidTest : FreeSpec({
                 bigint shouldBe BigInteger.parseString(it.toHexString(), 16)
                 Uuid.fromBigintOrNull(bigint) shouldBe it
 
-                val oid = ObjectIdentifier(it)
+                val oidString = "2.25.$bigint"
+                val oid = ObjectIdentifier(oidString)
+                oid.encodeToDer() shouldBe ASN1ObjectIdentifier(oidString).encoded
                 oid.nodes.size shouldBe 3
-                oid.nodes.first() shouldBe  BigInteger(2)
-                oid.nodes[1] shouldBe BigInteger(25)
-                oid.nodes.last() shouldBe bigint
+                oid.nodes.first() shouldBe  "2"
+                oid.nodes[1] shouldBe "25"
+                oid.nodes.last() shouldBe bigint.toString()
 
-                oid.toString() shouldBe "2.25.$bigint"
+                oid.toString() shouldBe oidString
             }
         }
     }
@@ -357,14 +431,14 @@ class OldOIDObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transien
      */
     override fun encodeToTlv() = Asn1Primitive(Asn1Element.Tag.OID, bytes)
 
-    companion object : Asn1Decodable<Asn1Primitive, ObjectIdentifier> {
+    companion object : Asn1Decodable<Asn1Primitive, OldOIDObjectIdentifier> {
 
         /**
          * Parses an OBJECT IDENTIFIER contained in [src] to an [ObjectIdentifier]
          * @throws Asn1Exception  all sorts of errors on invalid input
          */
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Primitive): ObjectIdentifier {
+        override fun doDecode(src: Asn1Primitive): OldOIDObjectIdentifier {
             if (src.length < 1) throw Asn1StructuralException("Empty OIDs are not supported")
 
             return parse(src.content)
@@ -377,7 +451,7 @@ class OldOIDObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transien
          * @throws Asn1Exception all sorts of errors on invalid input
          */
         @Throws(Asn1Exception::class)
-        fun parse(rawValue: ByteArray): ObjectIdentifier = runRethrowing {
+        fun parse(rawValue: ByteArray): OldOIDObjectIdentifier = runRethrowing {
             if (rawValue.isEmpty()) throw Asn1Exception("Empty OIDs are not supported")
             val (first, second) =
                 if (rawValue[0] >= 80) {
@@ -403,25 +477,172 @@ class OldOIDObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transien
                     collected += currentNode.toByteArray().decodeAsn1VarBigInt().first
                 }
             }
-            return ObjectIdentifier(*collected.toTypedArray())
+            return OldOIDObjectIdentifier(*collected.toTypedArray())
         }
     }
 }
 
 
-/**
- * Adds [oid] to the implementing class
- */
-interface Identifiable {
-    val oid: ObjectIdentifier
-}
+@Serializable(with = ObjectIdSerializer::class)
+class BigIntObjectIdentifier @Throws(Asn1Exception::class) private constructor(
+    bytes: ByteArray?,
+    nodes: List<BigInteger>?
+) :
+    Asn1Encodable<Asn1Primitive> {
+    init {
+        if ((bytes == null) && (nodes == null)) {
+            //we're not even declaring this, since this is an implementation error on our end
+            throw IllegalArgumentException("either nodes or bytes required")
+        }
+        if (bytes?.isEmpty() == true || nodes?.isEmpty() == true)
+            throw Asn1Exception("Empty OIDs are not supported")
 
-/**
- * decodes this [Asn1Primitive]'s content into an [ObjectIdentifier]
- *
- * @throws Asn1Exception on invalid input
- */
-@Throws(Asn1Exception::class)
-fun Asn1Primitive.readOid() = runRethrowing {
-    decode(Asn1Element.Tag.OID) { OldOIDObjectIdentifier.parse(it) }
+        bytes?.apply {
+            if(first().toUByte()>127u) throw Asn1Exception("OID top-level arc can only be number 0, 1 or 2")
+        }
+        nodes?.apply {
+            if (size < 2) throw Asn1StructuralException("at least two nodes required!")
+            if (first() > 2u) throw Asn1Exception("OID top-level arc can only be number 0, 1 or 2")
+            if(first()<2u) {
+                if (get(1) > 39u) throw Asn1Exception("Second segment must be <40")
+            }else {
+                if (get(1) > 47u) throw Asn1Exception("Second segment must be <48")
+            }
+            forEach { if (it.isNegative) throw Asn1Exception("Negative Number encountered: $it") }
+        }
+    }
+
+
+    /**
+     * Efficient, but cursed encoding of OID nodes, see [Microsoft's KB entry on OIDs](https://learn.microsoft.com/en-us/windows/win32/seccertenroll/about-object-identifier)
+     * for details.
+     * Lazily evaluated.
+     */
+    val bytes: ByteArray by if (bytes != null) lazyOf(bytes) else lazy {
+        this.nodes.toOidBytes()
+    }
+
+    /**
+     * Lazily evaluated list of OID nodes (e.g. `[1, 2, 35, 4654]`)
+     */
+    val nodes by if (nodes != null) lazyOf(nodes) else lazy {
+        val (first, second) =
+            if (this.bytes[0] >= 80) {
+                BigInteger.fromUByte(2u) to BigInteger.fromUInt(this.bytes[0].toUByte() - 80u)
+            } else {
+                BigInteger.fromUInt(this.bytes[0].toUByte() / 40u) to BigInteger.fromUInt(this.bytes[0].toUByte() % 40u)
+            }
+        var index = 1
+        val collected = mutableListOf(first, second)
+        while (index < this.bytes.size) {
+            if (this.bytes[index] >= 0) {
+                collected += BigInteger.fromUInt(this.bytes[index].toUInt())
+                index++
+            } else {
+                val currentNode = mutableListOf<Byte>()
+                while (this.bytes[index] < 0) {
+                    currentNode += this.bytes[index] //+= parsed
+                    index++
+                }
+                currentNode += this.bytes[index]
+                index++
+                collected += currentNode.decodeAsn1VarBigInt().first
+            }
+        }
+        collected
+    }
+
+    /**
+     * Creates an OID in the 2.25 subtree that requires no formal registration.
+     * E.g. the UUID `550e8400-e29b-41d4-a716-446655440000` results in the OID
+     * `2.25.113059749145936325402354257176981405696`
+     */
+    @OptIn(ExperimentalUuidApi::class)
+    constructor(uuid: Uuid) : this(
+        bytes = byteArrayOf((2 * 40 + 25).toUByte().toByte(), *uuid.toBigInteger().toAsn1VarInt()),
+        nodes = null
+    )
+
+    /**
+     * @param nodes OID Tree nodes passed in order (e.g. 1u, 2u, 96u, …)
+     * @throws Asn1Exception if less than two nodes are supplied, the first node is >2 or the second node is >39
+     */
+    constructor(vararg nodes: UInt) : this(
+        bytes = nodes.toOidBytes(),
+        nodes = null
+    )
+
+    /**
+     * @param nodes OID Tree nodes passed in order (e.g. 1, 2, 96, …)
+     * @throws Asn1Exception if less than two nodes are supplied, the first node is >2, the second node is >39 or any node is negative
+     */
+    constructor(vararg nodes: BigInteger) : this(
+        bytes = null,
+        nodes = nodes.asList()
+    )
+
+    /**
+     * @param oid OID string in human-readable format (e.g. "1.2.96" or "1 2 96")
+     */
+    constructor(oid: String) : this(*(oid.split(if (oid.contains('.')) '.' else ' ')).map { BigInteger.parseString(it) }
+        .toTypedArray())
+
+
+    /**
+     * @return human-readable format (e.g. "1.2.96")
+     */
+    override fun toString(): String {
+        return nodes.joinToString(".")
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (other == null) return false
+        if (other !is at.asitplus.signum.indispensable.asn1.ObjectIdentifier) return false
+        return bytes contentEquals other.bytes
+    }
+
+    override fun hashCode(): Int {
+        return bytes.contentHashCode()
+    }
+
+    /**
+     * @return an OBJECT IDENTIFIER [Asn1Primitive]
+     */
+    override fun encodeToTlv() = Asn1Primitive(Asn1Element.Tag.OID, bytes)
+
+    companion object : Asn1Decodable<Asn1Primitive, BigIntObjectIdentifier> {
+
+        /**
+         * Parses an OBJECT IDENTIFIER contained in [src] to an [ObjectIdentifier]
+         * @throws Asn1Exception  all sorts of errors on invalid input
+         */
+        @Throws(Asn1Exception::class)
+        override fun doDecode(src: Asn1Primitive): BigIntObjectIdentifier {
+            if (src.length < 1) throw Asn1StructuralException("Empty OIDs are not supported")
+
+            return parse(src.content)
+
+        }
+
+        /**
+         * Casts out the evil demons that haunt OID components encoded into [rawValue]
+         * @return ObjectIdentifier if decoding succeeded
+         * @throws Asn1Exception all sorts of errors on invalid input
+         */
+        @Throws(Asn1Exception::class)
+        fun parse(rawValue: ByteArray): BigIntObjectIdentifier = BigIntObjectIdentifier(bytes = rawValue, nodes = null)
+
+        private fun UIntArray.toOidBytes(): ByteArray {
+            return slice(2..<size).map { it.toAsn1VarInt() }.fold(
+                byteArrayOf((first() * 40u + get(1)).toUByte().toByte())
+            ) { acc, bytes -> acc + bytes }
+        }
+
+        private fun List<out BigInteger>.toOidBytes(): ByteArray {
+            return slice(2..<size).map { it.toAsn1VarInt() }
+                .fold(
+                    byteArrayOf((first().intValue() * 40 + get(1).intValue()).toUByte().toByte())
+                ) { acc, bytes -> acc + bytes }
+        }
+    }
 }

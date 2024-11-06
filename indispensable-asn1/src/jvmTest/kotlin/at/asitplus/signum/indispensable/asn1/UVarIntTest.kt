@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.*
-import at.asitplus.signum.indispensable.io.wrapInUnsafeSource
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import io.kotest.core.spec.style.FreeSpec
@@ -155,7 +154,7 @@ private fun Iterator<Byte>.decodeAsn1VarULong(): Pair<ULong, ByteArray> {
  *
  * @return the decoded unsigned BigInteger and the underlying varint-encoded bytes as `ByteArray`
  */
-private inline fun Iterable<Byte>.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> = iterator().decodeAsn1VarBigInt()
+internal inline fun Iterable<Byte>.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> = iterator().decodeAsn1VarBigInt()
 
 
 

@@ -2,9 +2,7 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.parse
-import at.asitplus.signum.indispensable.asn1.encoding.parseFirst
 import at.asitplus.signum.indispensable.asn1.encoding.readAsn1Element
-import at.asitplus.signum.indispensable.io.wrapInUnsafeSource
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
@@ -30,10 +28,6 @@ import kotlin.random.Random
 import kotlin.random.nextInt
 import java.security.cert.X509Certificate as JcaCertificate
 
-internal fun ByteIterator.toByteArray(): ByteArray =asSequence().toList().toByteArray()
-
-private val json = Json { prettyPrint = true }
-
 class X509CertParserTest : FreeSpec({
 
     "Manual" {
@@ -49,7 +43,6 @@ class X509CertParserTest : FreeSpec({
             input.readByteArray() shouldBe garbage
         }
     }
-
 
     "Real Certificates" - {
         withData("digicert-root.pem", "github-com.pem", "cert-times.pem") { crt ->
