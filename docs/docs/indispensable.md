@@ -1,5 +1,5 @@
 ![Indispensable](assets/core-dark-large.png#only-light)
-![Signum](assets/core-light-large.png#only-dark)
+![Indispensable](assets/core-light-large.png#only-dark)
 
 [![Maven Central](https://img.shields.io/maven-central/v/at.asitplus.signum/indispensable?label=maven-central)](https://mvnrepository.com/artifact/at.asitplus.signum.indispensable/)
 

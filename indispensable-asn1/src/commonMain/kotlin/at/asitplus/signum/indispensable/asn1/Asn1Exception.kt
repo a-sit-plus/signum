@@ -8,11 +8,7 @@ open class Asn1Exception(message: String?, cause: Throwable?) : Throwable(messag
     constructor(throwable: Throwable) : this(null, throwable)
 }
 
-class Asn1TagMismatchException(
-    val expected: Asn1Element.Tag,
-    val actual: Asn1Element.Tag,
-    detailedMessage: String? = null
-) :
+class Asn1TagMismatchException(val expected: Asn1Element.Tag, val actual: Asn1Element.Tag, detailedMessage: String? = null) :
     Asn1Exception((detailedMessage?.let { "$it " } ?: "") + "Expected tag $expected, is: $actual")
 
 class Asn1StructuralException(message: String, cause: Throwable? = null) : Asn1Exception(message, cause)

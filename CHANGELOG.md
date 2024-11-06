@@ -331,7 +331,7 @@ the Tag class just cannot be directly accessed from Swift and ObjC any more.
 * Proper BIT STRING
 * BitSet (100% Kotlin BitSet implementation)
 * Recursively parsing (and encapsulating) ASN.1 structures in OCTET Strings
-* Initial pretty-printing of ASN.1 Structures
+* Initial pretty-printing of ASN.1 Strucutres
 * Massive ASN.1 builder DSL streamlining
 * More convenient explicit tagging
 
