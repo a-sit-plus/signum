@@ -16,11 +16,11 @@ data class JwsSigned(
     val header: JwsHeader,
     val payload: ByteArray,
     val signature: CryptoSignature.RawByteEncodable,
-    val plainSignatureInput: String,
+    val plainSignatureInput: ByteArray,
 ) {
 
     fun serialize(): String {
-        return "${plainSignatureInput}.${signature.rawByteArray.encodeToString(Base64UrlStrict)}"
+        return "${plainSignatureInput.decodeToString()}.${signature.rawByteArray.encodeToString(Base64UrlStrict)}"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -45,7 +45,7 @@ data class JwsSigned(
         return "JwsSigned(header=$header" +
                 ", payload=${payload.encodeToString(Base64UrlStrict)}" +
                 ", signature=$signature" +
-                ", plainSignatureInput='$plainSignatureInput')"
+                ", plainSignatureInput='${plainSignatureInput.decodeToString()}')"
     }
 
 
@@ -65,19 +65,18 @@ data class JwsSigned(
                         else -> CryptoSignature.EC.fromRawBytes(curve, bytes)
                     }
                 }
-            val plainSignatureInput = stringList[0] + "." + stringList[1]
+            val plainSignatureInput = (stringList[0] + "." + stringList[1]).encodeToByteArray()
             JwsSigned(header, payload, signature, plainSignatureInput)
         }
-
 
         /**
          * Called by JWS signing implementations to get the string that will be
          * used as the input for signature calculation
          */
         @Suppress("unused")
-        fun prepareJwsSignatureInput(header: JwsHeader, payload: ByteArray): String =
-            "${header.serialize().encodeToByteArray().encodeToString(Base64UrlStrict)}" +
-                    ".${payload.encodeToString(Base64UrlStrict)}"
+        fun prepareJwsSignatureInput(header: JwsHeader, payload: ByteArray): ByteArray =
+            ("${header.serialize().encodeToByteArray().encodeToString(Base64UrlStrict)}" +
+                    ".${payload.encodeToString(Base64UrlStrict)}").encodeToByteArray()
     }
 }
 

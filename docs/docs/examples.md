@@ -34,7 +34,7 @@ val plainSignatureInput = JwsSigned.prepareJwsSignatureInput(header, payload)
 Now, everything is ready to be signed:
 
 ```kotlin
-val signature = signer.sign(plainSignatureInput.encodeToByteArray()).signature //TODO: handle error
+val signature = signer.sign(plainSignatureInput).signature //TODO: handle error
 JwsSigned(header, payload, signature, plainSignatureInput).serialize() // this we can verify on jwt.io 
 ```
 
