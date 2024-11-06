@@ -19,11 +19,15 @@ Better safe than sorry!
 * Base OIDs on BigInteger instead of UInt
 * Directly support UUID-based OID creation
 * Implement hash-to-curve and hash-to-scalar as per RFC9380
+* `JwsSignes.plainsignatureInput` is now a raw ByteArray
+  * `JwsSigned.prepareSignatureInput` now returns a raw ByteArray
 * Use kotlinx-io as primary source for parsing
-    * Base number encoding/decoding on koltinx-io
+    * Base number encoding/decoding on kotlinx-io
         * Remove parsing from iterator
     * Base ASN.1 encoding and decoding on kotlinx-io
         * Remove single element decoding from Iterator
+* Introduce `prepareDigestInput()` to `IosHomebrewAttestation`
+* Remove Legacy iOS Attestation
 
 ### 3.9.0 (Supreme 0.4.0)
 

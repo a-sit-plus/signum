@@ -22,7 +22,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: 3.x
-      - run: pip install mkdocs-material
+      - run: pip install mkdocs-material==9.5.40
       - name: Build Dokka HTML
         run: ./gradlew mkDocsBuild
       - name: Setup Pages
