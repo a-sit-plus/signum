@@ -3,7 +3,7 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
-import at.asitplus.signum.indispensable.asn1.ensureSize
+import at.asitplus.signum.indispensable.misc.ensureSize
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec

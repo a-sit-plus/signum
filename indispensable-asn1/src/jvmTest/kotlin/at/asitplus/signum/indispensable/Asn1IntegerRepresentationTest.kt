@@ -69,7 +69,7 @@ class Asn1IntegerRepresentationTest : FreeSpec({
     "TwosComplement" - {
 
         "manual" - {
-            withData("-1457686090107523769986476796769829633039407019130", "-18440417236681064435", "-1") {
+            withData( "-24519924295662886907187464938912882392492723242957571281","-1457686090107523769986476796769829633039407019130", "-18440417236681064435", "-1") {
                 val neg = com.ionspin.kotlin.bignum.integer.BigInteger.parseString(it)
                 val ownNeg = Asn1Integer.fromDecimalString(neg.toString())
                 withClue(neg.toString()) {

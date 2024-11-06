@@ -14,7 +14,7 @@ import at.asitplus.io.UVarInt
 import at.asitplus.io.multibaseDecode
 import at.asitplus.io.multibaseEncode
 import at.asitplus.signum.indispensable.asn1.encoding.*
-import at.asitplus.signum.indispensable.asn1.ensureSize
+import at.asitplus.signum.indispensable.misc.ensureSize
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import kotlinx.serialization.SerialName

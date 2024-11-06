@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.indispensable.asn1.ensureSize
+import at.asitplus.signum.indispensable.misc.ensureSize
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.max
 import at.asitplus.signum.indispensable.misc.min

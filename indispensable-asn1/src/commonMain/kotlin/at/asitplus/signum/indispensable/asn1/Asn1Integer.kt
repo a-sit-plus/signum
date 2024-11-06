@@ -73,7 +73,7 @@ sealed class Asn1Integer(internal val uint: VarUInt, private val sign: Sign) {
                 uint.inv().toString().toMutableList().decimalPlus(listOf('1')).joinToString(separator = "")
             ).bytes.let {
                 val diff = uint.bytes.size - it.size
-                val list = if (diff == 0) it else mutableListOf(0.toUByte()) + it
+                val list = if (diff == 0) it else (MutableList<UByte>(diff) { 0.toUByte() }) + it
                 if (list.first().toByte() >= 0) listOf((-1).toUByte()) + list
                 else it
             }.toUByteArray().toByteArray()
