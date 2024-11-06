@@ -6,11 +6,9 @@ import at.asitplus.signum.indispensable.asn1.VarUInt.Companion.writeAsn1VarInt
 import kotlinx.io.*
 import kotlin.math.ceil
 
-const val UVARINT_SINGLEBYTE_MAXVALUE_UBYTE: UByte = 0x80u
-const val UVARINT_SINGLEBYTE_MAXVALUE: Byte = 0x80.toByte()
-
-const val UVARINT_MASK: Byte = 0x7F
-const val UVARINT_MASK_UBYTE: UByte = 0x7Fu
+private const val UVARINT_SINGLEBYTE_MAXVALUE_UBYTE: UByte = 0x80u
+internal const val UVARINT_SINGLEBYTE_MAXVALUE: Byte = 0x80.toByte()
+internal const val UVARINT_MASK_UBYTE: UByte = 0x7Fu
 
 /**
  * Encode as a four-byte array

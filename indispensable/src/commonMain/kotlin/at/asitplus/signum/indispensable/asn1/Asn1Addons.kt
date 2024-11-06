@@ -17,7 +17,7 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 
-val UVARINT_MASK_BIGINT = BigInteger.fromUByte(UVARINT_MASK_UBYTE)
+private val UVARINT_MASK_BIGINT = BigInteger.fromUByte(0x7Fu)
 
 /**
  * Encodes this number using varint encoding as used within ASN.1: groups of seven bits are encoded into a byte,
@@ -42,8 +42,8 @@ fun Sink.writeAsn1VarInt(number: BigInteger): Int {
     val numBytes = (number.bitLength() + 6) / 7 // division rounding up
     (numBytes - 1).downTo(0).forEach { byteIndex ->
         writeByte(
-            ((number shr (byteIndex * 7)).byteValue(exactRequired = false) and UVARINT_MASK) or
-                    (if (byteIndex > 0) UVARINT_SINGLEBYTE_MAXVALUE else 0)
+            ((number shr (byteIndex * 7)).byteValue(exactRequired = false) and 0x7F) or
+                    (if (byteIndex > 0) 0x80.toByte() else 0)
         )
     }
     return numBytes
@@ -63,7 +63,7 @@ fun Source.decodeAsn1VarBigInt(): Pair<BigInteger, ByteArray> {
         val current = BigInteger(curByte.toUByte().toInt())
         accumulator.writeByte(curByte)
         result = (current and UVARINT_MASK_BIGINT) or (result shl 7)
-        if (current < UVARINT_SINGLEBYTE_MAXVALUE_UBYTE) break
+        if (current < 0x80u) break
     }
 
     return result to accumulator.readByteArray()
