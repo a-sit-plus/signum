@@ -106,14 +106,18 @@ fun BigInteger.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.INT, enco
 /** Encodes this number into a [ByteArray] using the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 INTEGER */
 fun BigInteger.encodeToAsn1ContentBytes() = toTwosComplementByteArray()
 
-/** Decode the [Asn1Primitive] as a [BigInteger]
- * @throws [Asn1Exception] on invalid input */
+/**
+ * Decode the [Asn1Primitive] as a [BigInteger]. [assertTag] defaults to [Asn1Element.Tag.INT], but can be
+ * overridden (for implicitly tagged integers, for example)
+ * @throws [Asn1Exception] on invalid input
+ */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.decodeToBigInteger() =
-    runRethrowing { decode(Asn1Element.Tag.INT) { BigInteger.decodeFromAsn1ContentBytes(it) } }
+fun Asn1Primitive.decodeToBigInteger(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
+    runRethrowing { decode(assertTag) { BigInteger.decodeFromAsn1ContentBytes(it) } }
 
-/** Exception-free version of [decodeToAsn1Integer] */
-inline fun Asn1Primitive.decodeToBigIntegerOrNull() = catching { decodeToBigInteger() }.getOrNull()
+/** Exception-free version of [decodeToBigInteger] */
+inline fun Asn1Primitive.decodeToBigIntegerOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
+    catching { decodeToBigInteger(assertTag) }.getOrNull()
 
 /**
  * Decodes a [BigInteger] from [bytes] assuming the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 INTEGER
