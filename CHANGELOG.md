@@ -20,10 +20,14 @@ Better safe than sorry!
 * Directly support UUID-based OID creation
 * Implement hash-to-curve and hash-to-scalar as per RFC9380
 * Use kotlinx-io as primary source for parsing
-    * Base number encoding/decoding on koltinx-io
+    * Base number encoding/decoding on kotlinx-io
         * Remove parsing from iterator
     * Base ASN.1 encoding and decoding on kotlinx-io
         * Remove single element decoding from Iterator
+* Introduce `prepareDigestInput()` to `IosHomebrewAttestation`
+* Remove Legacy iOS Attestation
+* `JwsSignes.plainsignatureInput` is now a raw ByteArray
+    * `JwsSigned.prepareSignatureInput` now returns a raw ByteArray
 * Add type parameter to `JwsSigned` for its payload
 * Add type parameter to `JweDecrypted` for its payload
 
@@ -314,7 +318,7 @@ the Tag class just cannot be directly accessed from Swift and ObjC any more.
 * Proper BIT STRING
 * BitSet (100% Kotlin BitSet implementation)
 * Recursively parsing (and encapsulating) ASN.1 structures in OCTET Strings
-* Initial pretty-printing of ASN.1 Structures
+* Initial pretty-printing of ASN.1 Strucutres
 * Massive ASN.1 builder DSL streamlining
 * More convenient explicit tagging
 

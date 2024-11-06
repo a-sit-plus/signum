@@ -22,11 +22,11 @@ data class JwsSigned<out P : Any>(
     val header: JwsHeader,
     val payload: P,
     val signature: CryptoSignature.RawByteEncodable,
-    val plainSignatureInput: String,
+    val plainSignatureInput: ByteArray,
 ) {
 
     fun serialize(): String {
-        return "${plainSignatureInput}.${signature.rawByteArray.encodeToString(Base64UrlStrict)}"
+        return "${plainSignatureInput.decodeToString()}.${signature.rawByteArray.encodeToString(Base64UrlStrict)}"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -51,7 +51,7 @@ data class JwsSigned<out P : Any>(
         return "JwsSigned(header=$header" +
                 ", payload=${payload}" +
                 ", signature=$signature" +
-                ", plainSignatureInput='$plainSignatureInput')"
+                ", plainSignatureInput='${plainSignatureInput.decodeToString()}')"
     }
 
 
@@ -77,7 +77,7 @@ data class JwsSigned<out P : Any>(
                     else -> CryptoSignature.EC.fromRawBytes(curve, this)
                 }
             }
-            val plainSignatureInput = stringList[0] + "." + stringList[1]
+            val plainSignatureInput = (stringList[0] + "." + stringList[1]).encodeToByteArray()
             JwsSigned(header, payload, signature, plainSignatureInput)
         }
 
@@ -104,8 +104,8 @@ data class JwsSigned<out P : Any>(
             header: JwsHeader,
             payload: ByteArray,
             json: Json = Json,
-        ): String = "${header.serialize().encodeToByteArray().encodeToString(Base64UrlStrict)}" +
-                ".${payload.encodeToString(Base64UrlStrict)}"
+        ): ByteArray = ("${header.serialize().encodeToByteArray().encodeToString(Base64UrlStrict)}" +
+                ".${payload.encodeToString(Base64UrlStrict)}").encodeToByteArray()
 
         /**
          * Called by JWS signing implementations to get the string that will be
@@ -117,8 +117,7 @@ data class JwsSigned<out P : Any>(
             payload: T,
             serializer: SerializationStrategy<T>,
             json: Json = Json,
-        ): String = "${header.serialize().encodeToByteArray().encodeToString(Base64UrlStrict)}" +
-                ".${json.encodeToString(serializer, payload).encodeToByteArray().encodeToString(Base64UrlStrict)}"
+        ): ByteArray = ("${header.serialize().encodeToByteArray().encodeToString(Base64UrlStrict)}" +
+                ".${json.encodeToString(serializer, payload).encodeToByteArray().encodeToString(Base64UrlStrict)}").encodeToByteArray()
     }
 }
-

@@ -39,6 +39,7 @@ kotlin {
          jvmTest {
             dependencies {
                 implementation(libs.jose)
+                implementation(project(":supreme"))
             }
         }
     }

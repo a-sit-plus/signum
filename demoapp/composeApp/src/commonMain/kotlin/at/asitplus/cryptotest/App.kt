@@ -312,7 +312,7 @@ internal fun App() {
                                     is SignatureAlgorithm.ECDSA -> {
                                         this@createSigningKey.ec {
                                             curve = alg.requiredCurve ?:
-                                                ECCurve.entries.find { it.nativeDigest == alg.digest }!!
+                                                    ECCurve.entries.find { it.nativeDigest == alg.digest }!!
                                             digests = setOf(alg.digest)
                                         }
                                     }

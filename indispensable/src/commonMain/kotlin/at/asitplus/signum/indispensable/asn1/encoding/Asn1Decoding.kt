@@ -169,65 +169,82 @@ private fun Asn1Element.Tag.isSequence() = (this == Asn1Element.Tag.SEQUENCE)
 
 
 /**
- * decodes this [Asn1Primitive]'s content into an [Boolean]
+ * decodes this [Asn1Primitive]'s content into an [Boolean]. [assertTag] defaults to [Asn1Element.Tag.BOOL], but can be
+ * overridden (for implicitly tagged booleans, for example)
  * @throws [Asn1Exception] all sorts of exceptions on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.decodeToBoolean() =
-    runRethrowing { decode(Asn1Element.Tag.BOOL) { Boolean.decodeFromAsn1ContentBytes(it) } }
+fun Asn1Primitive.decodeToBoolean(assertTag: Asn1Element.Tag = Asn1Element.Tag.BOOL) =
+    runRethrowing { decode(assertTag) { Boolean.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [decodeToBoolean] */
-fun Asn1Primitive.decodeToBooleanOrNull() = catching { decodeToBoolean() }.getOrNull()
+fun Asn1Primitive.decodeToBooleanOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.BOOL) =
+    catching { decodeToBoolean(assertTag) }.getOrNull()
 
 /**
- * decodes this [Asn1Primitive]'s content into an [Int]
+ * decodes this [Asn1Primitive]'s content into an [Int]. [assertTag] defaults to [Asn1Element.Tag.INT], but can be
+ *  overridden (for implicitly tagged integers, for example)
  * @throws [Asn1Exception] on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.decodeToInt() = runRethrowing { decode(Asn1Element.Tag.INT) { Int.decodeFromAsn1ContentBytes(it) } }
+fun Asn1Primitive.decodeToInt(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
+    runRethrowing { decode(assertTag) { Int.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [decodeToInt] */
-fun Asn1Primitive.decodeToIntOrNull() = catching { decodeToInt() }.getOrNull()
+fun Asn1Primitive.decodeToIntOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
+    catching { decodeToInt(assertTag) }.getOrNull()
 
 /**
- * decodes this [Asn1Primitive]'s content into a [Long]
+ * decodes this [Asn1Primitive]'s content into a [Long]. [assertTag] defaults to [Asn1Element.Tag.INT], but can be
+ * overridden (for implicitly tagged longs, for example)
  * @throws [Asn1Exception] on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.decodeToLong() = runRethrowing { decode(Asn1Element.Tag.INT) { Long.decodeFromAsn1ContentBytes(it) } }
+fun Asn1Primitive.decodeToLong(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
+    runRethrowing { decode(assertTag) { Long.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [decodeToLong] */
-inline fun Asn1Primitive.decodeToLongOrNull() = catching { decodeToLong() }.getOrNull()
+inline fun Asn1Primitive.decodeToLongOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
+    catching { decodeToLong(assertTag) }.getOrNull()
 
 /**
- * decodes this [Asn1Primitive]'s content into an [UInt]
+ * decodes this [Asn1Primitive]'s content into an [UInt]√. [assertTag] defaults to [Asn1Element.Tag.INT], but can be
+ * overridden (for implicitly tagged unsigned integers, for example)
  * @throws [Asn1Exception] on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.decodeToUInt() = runRethrowing { decode(Asn1Element.Tag.INT) { UInt.decodeFromAsn1ContentBytes(it) } }
+fun Asn1Primitive.decodeToUInt(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
+    runRethrowing { decode(assertTag) { UInt.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [decodeToUInt] */
-inline fun Asn1Primitive.decodeToUIntOrNull() = catching { decodeToUInt() }.getOrNull()
+inline fun Asn1Primitive.decodeToUIntOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
+    catching { decodeToUInt(assertTag) }.getOrNull()
 
 /**
- * decodes this [Asn1Primitive]'s content into an [ULong]
+ * decodes this [Asn1Primitive]'s content into an [ULong]. [assertTag] defaults to [Asn1Element.Tag.INT], but can be
+ * overridden (for implicitly tagged unsigned longs, for example)
  * @throws [Asn1Exception] on invalid input
  */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.decodeToULong() =
-    runRethrowing { decode(Asn1Element.Tag.INT) { ULong.decodeFromAsn1ContentBytes(it) } }
+fun Asn1Primitive.decodeToULong(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
+    runRethrowing { decode(assertTag) { ULong.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [decodeToULong] */
-inline fun Asn1Primitive.decodeToULongOrNull() = catching { decodeToULong() }.getOrNull()
+inline fun Asn1Primitive.decodeToULongOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
+    catching { decodeToULong(assertTag) }.getOrNull()
 
-/** Decode the [Asn1Primitive] as a [BigInteger]
- * @throws [Asn1Exception] on invalid input */
+/**
+ * Decode the [Asn1Primitive] as a [BigInteger]. [assertTag] defaults to [Asn1Element.Tag.INT], but can be
+ * overridden (for implicitly tagged integers, for example)
+ * @throws [Asn1Exception] on invalid input
+ */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.decodeToBigInteger() =
-    runRethrowing { decode(Asn1Element.Tag.INT) { BigInteger.decodeFromAsn1ContentBytes(it) } }
+fun Asn1Primitive.decodeToBigInteger(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
+    runRethrowing { decode(assertTag) { BigInteger.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [decodeToBigInteger] */
-inline fun Asn1Primitive.decodeToBigIntegerOrNull() = catching { decodeToBigInteger() }.getOrNull()
+inline fun Asn1Primitive.decodeToBigIntegerOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
+    catching { decodeToBigInteger(assertTag) }.getOrNull()
 
 /**
  * transforms this [Asn1Primitive] into an [Asn1String] subtype based on its tag
