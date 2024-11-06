@@ -19,6 +19,7 @@ dependencyResolutionManagement {
     }
 }
 
+include(":indispensable-asn1")
 include(":indispensable")
 include(":indispensable-josef")
 include(":indispensable-cosef")

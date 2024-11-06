@@ -15,7 +15,7 @@ jobs:
       - name: Build klibs
         run: ./gradlew iosArm64MainKlibrary iosX64MainKlibrary
       - name: Build XCFrameworks
-        run: ./gradlew assembleIndispensableXCFramework assembleIndispensableJosefXCFramework assembleIndispensableCosefXCFramework
+        run: ./gradlew assembleIndispensableAsn1XCFramework assembleIndispensableXCFramework assembleIndispensableJosefXCFramework assembleIndispensableCosefXCFramework
       - name: Upload debug XCFramework Indispensable
         uses: actions/upload-artifact@v3
         with:

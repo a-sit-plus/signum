@@ -1,7 +1,5 @@
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.signum.indispensable.io.BitSet
-
 /**
  * ASN.1 BIT STRING
  */

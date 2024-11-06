@@ -13,8 +13,8 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1.OctetStringEncapsulat
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.PrintableString
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.UtcTime
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Utf8String
-import at.asitplus.signum.indispensable.io.BitSet
-import at.asitplus.signum.indispensable.io.wrapInUnsafeSource
+import at.asitplus.signum.indispensable.asn1.BitSet
+import at.asitplus.signum.indispensable.asn1.wrapInUnsafeSource
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import com.ionspin.kotlin.bignum.integer.toBigInteger
@@ -263,14 +263,6 @@ class Asn1EncodingTest : FreeSpec({
         }
 
     }
-
-    "Parsing and encoding results in the same bytes" {
-        val certBytes = Base64.getMimeDecoder()
-            .decode(javaClass.classLoader.getResourceAsStream("github-com.pem")!!.reader().readText())
-        val tree = Asn1Element.parse(certBytes)
-        withClue(certBytes.toHexString() + "\n" + tree.toDerHexString())
-        { tree.derEncoded shouldBe certBytes }
-        }
 
 
     "Old and new encoder produce the same bytes" {

@@ -2,13 +2,24 @@
 
 ## 3.0
 
-### 3.10.0 NEXT (Supreme 0.5.0 NEXT)
+### 3.10.0 NEXT (Supreme 0.5.0 NEXT) Breaking Changes Ahead!
 
-The public API remains unchanged, except for some methods migrating from a ByteIterator to kotlinx-io Source
-and some newly added. The internals have changed substantially, however.
+The public API remains almost unchanged, except for some methods migrating from a ByteIterator to kotlinx-io Source,
+some newly added kotlinx-io helpers and OID changes. The internals have changed substantially, however.
 Be sure to match Signum versions if multiple libraries pull it in as transitive dependency.
 Better safe than sorry!
 
+* Discrete ASN.1 module `indispensable-asn1` supporting the following platforms:
+    * JVM
+    * Android
+    * iOS
+    * watchOS
+    * tvOS
+    * JS
+    * wasm/JS
+    * Linux X64
+    * Linux AARCH64
+    * MinGw X64
 * KmmResult 1.9.0
 * Introduce generic tag assertion to `Asn1Element`
 * Change CSR to take an actual `CryptoSignature` instead of a ByteArray
@@ -19,6 +30,8 @@ Better safe than sorry!
 * Base OIDs on BigInteger instead of UInt
 * Directly support UUID-based OID creation
 * Implement hash-to-curve and hash-to-scalar as per RFC9380
+* Rename `decodeFromDerHexString` to `parseFromDerHexString`
+* Move `ensureSize` from package `asn1` to `misc`
 * `JwsSignes.plainsignatureInput` is now a raw ByteArray
   * `JwsSigned.prepareSignatureInput` now returns a raw ByteArray
 * Use kotlinx-io as primary source for parsing

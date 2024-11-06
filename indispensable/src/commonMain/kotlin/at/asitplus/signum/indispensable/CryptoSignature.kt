@@ -3,7 +3,7 @@ package at.asitplus.signum.indispensable
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.io.Base64Strict
-import at.asitplus.signum.indispensable.io.ensureSize
+import at.asitplus.signum.indispensable.misc.ensureSize
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.max
 import at.asitplus.signum.indispensable.pki.X509Certificate

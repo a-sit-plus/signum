@@ -5,10 +5,6 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
 import at.asitplus.signum.indispensable.asn1.encoding.*
-import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
-import io.matthewnelson.encoding.base16.Base16
-import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
-import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.io.Buffer
 import kotlinx.io.Sink
 import kotlinx.io.readByteArray
@@ -47,8 +43,17 @@ sealed class Asn1Element(
          * @throws [Throwable] all sorts of errors on invalid input
          */
         @Throws(Throwable::class)
-        fun decodeFromDerHexString(derEncoded: String) =
-            Asn1Element.parse(derEncoded.replace(Regex("\\s"), "").trim().decodeToByteArray(Base16))
+        @Deprecated("Misleading name", ReplaceWith("parseFromDerHexString"))
+        fun decodeFromDerHexString(derEncoded: String) = parseFromDerHexString(derEncoded)
+
+        /**
+         * Convenience method to directly parse a HEX-string representation of DER-encoded data.
+         * Ignores and strips all whitespace.
+         * @throws [Throwable] all sorts of errors on invalid input
+         */
+        @Throws(Throwable::class)
+        fun parseFromDerHexString(derEncoded: String) =
+            Asn1Element.parse(derEncoded.replace(Regex("\\s"), "").hexToByteArray(HexFormat.UpperCase))
     }
 
     /**
@@ -88,16 +93,17 @@ sealed class Asn1Element(
         doEncode(sink)
     }
 
-
-    override fun toString(): String = prettyPrintHeader(0) + contentToString() + prettyPrintTrailer(0)
+    override fun toString(): String = prettyPrintHeader(0) +
+            (if (this is Asn1Primitive) " " else "") +
+            contentToString() +
+            prettyPrintTrailer(0)
 
     protected abstract fun contentToString(): String
-
 
     fun prettyPrint() = prettyPrint(0)
 
     protected open fun prettyPrintHeader(indent: Int) =
-        "(tag=${tag}" + ", length=${length}" + ", overallLength=${overallLength}) "
+        "(tag=${tag}" + ", length=${length}" + ", overallLength=${overallLength})"
 
     protected open fun prettyPrintTrailer(indent: Int) = ""
     protected abstract fun prettyPrintContents(indent: Int): String
@@ -112,11 +118,8 @@ sealed class Asn1Element(
     /**
      * Convenience method to directly produce an HEX string of this element's ASN.1 representation
      */
-    fun toDerHexString(lineLen: Byte? = null) = derEncoded.encodeToString(Base16 {
-        lineLen?.let {
-            lineBreakInterval = lineLen
-        }
-    })
+    fun toDerHexString(lineLen: Int? = null) = derEncoded.toHexString(HexFormat.UpperCase)
+        .let { if (lineLen == null) it else it.chunked(lineLen).joinToString(separator = "\n") }
 
 
     /**
@@ -234,7 +237,7 @@ sealed class Asn1Element(
     @ConsistentCopyVisibility
     data class Tag internal constructor(
         val tagValue: ULong,
-        @Serializable(with = ByteArrayBase64Serializer::class) val encodedTag: ByteArray
+        val encodedTag: ByteArray
     ) : Comparable<Tag> {
 
         //workaround because we cannot return two values or assign params in a destructured manner
@@ -309,7 +312,7 @@ sealed class Asn1Element(
 
         override fun toString(): String =
             "${tagClass.let { if (it == TagClass.UNIVERSAL) "" else it.name + " " }}${tagValue}${if (isConstructed) " CONSTRUCTED" else ""}" +
-                    (" (=${encodedTag.encodeToString(Base16)})")
+                    (" (=${encodedTag.toHexString(HexFormat.UpperCase)})")
 
         /**
          * As per ITU-T X.680 8824-1 8.6
@@ -412,11 +415,11 @@ object Asn1EncodableSerializer : KSerializer<Asn1Element> {
     override val descriptor = PrimitiveSerialDescriptor("Asn1Encodable", PrimitiveKind.STRING)
 
     override fun deserialize(decoder: Decoder): Asn1Element {
-        return Asn1Element.parse(decoder.decodeString().decodeToByteArray(Base16))
+        return Asn1Element.parse(decoder.decodeString().hexToByteArray(HexFormat.UpperCase))
     }
 
     override fun serialize(encoder: Encoder, value: Asn1Element) {
-        encoder.encodeString(value.derEncoded.encodeToString(Base16))
+        encoder.encodeString(value.derEncoded.toHexString(HexFormat.UpperCase))
     }
 
 }
@@ -576,7 +579,6 @@ internal constructor(tag: ULong, children: List<Asn1Element>) :
      */
     fun verifyTagOrNull(explicitTag: Tag) = catching { verifyTag(explicitTag) }.getOrNull()
 
-    override fun toString() = "Tagged" + super.toString()
     override fun prettyPrintHeader(indent: Int) = (" " * indent) + "Tagged" + super.prettyPrintHeader(indent)
 }
 
@@ -592,7 +594,6 @@ class Asn1Sequence internal constructor(children: List<Asn1Element>) :
 
     }
 
-    override fun toString() = "Sequence" + super.toString()
     override fun prettyPrintHeader(indent: Int) = (" " * indent) + "Sequence" + super.prettyPrintHeader(indent)
 }
 
@@ -654,7 +655,7 @@ class Asn1CustomStructure private constructor(
         (" " * indent) + tag.tagClass +
                 " ${tag.tagValue}" +
                 (if (!tag.isConstructed) " PRIMITIVE" else "") +
-                " (=${tag.encodedTag.encodeToString(Base16)}), length=${length}" +
+                " (=${tag.encodedTag.toHexString(HexFormat.UpperCase)}), length=${length}" +
                 ", overallLength=${overallLength}" +
                 content?.let { " ${it.toHexString(HexFormat.UpperCase)}" }
 
@@ -697,11 +698,9 @@ class Asn1EncapsulatingOctetString(children: List<Asn1Element>) :
 
     override fun unwrap() = this
 
-    override fun toString() = "OCTET STRING Encapsulating" + super.toString()
-
-
     override fun prettyPrintHeader(indent: Int) =
-        (" " * indent) + "OCTET STRING Encapsulating" + super.prettyPrintHeader(indent) + content.toHexString(HexFormat.UpperCase)
+        (" " * indent) + "OCTET STRING Encapsulating" + super.prettyPrintHeader(indent) + " " +
+                content.toHexString(HexFormat.UpperCase)
 }
 
 /**
@@ -713,9 +712,8 @@ class Asn1PrimitiveOctetString(content: ByteArray) : Asn1Primitive(Tag.OCTET_STR
 
     override fun unwrap() = this
 
-    override fun toString() = "OCTET STRING " + super.toString()
 
-    override fun prettyPrintHeader(indent: Int) = (" " * indent) + "OCTET STRING" + super.prettyPrintHeader(0)
+    override fun prettyPrintHeader(indent: Int) = (" " * indent) + "OCTET STRING " + super.prettyPrintHeader(0)
 }
 
 
@@ -733,8 +731,6 @@ open class Asn1Set private constructor(children: List<Asn1Element>, dontSort: Bo
     init {
         if (!tag.isConstructed) throw IllegalArgumentException("An ASN.1 Structure must have a CONSTRUCTED tag")
     }
-
-    override fun toString() = "Set" + super.toString()
 
 
     override fun prettyPrintHeader(indent: Int) = (" " * indent) + "Set" + super.prettyPrintHeader(indent)
@@ -779,9 +775,6 @@ open class Asn1Primitive(
         sink.write(content)
     }
 
-
-    override fun toString() = "Primitive" + super.toString()
-
     constructor(tagValue: ULong, content: ByteArray) : this(Tag(tagValue, false), content)
 
     constructor(tagValue: UByte, content: ByteArray) : this(tagValue.toULong(), content)
@@ -802,7 +795,6 @@ open class Asn1Primitive(
 
         return true
     }
-
 }
 
 

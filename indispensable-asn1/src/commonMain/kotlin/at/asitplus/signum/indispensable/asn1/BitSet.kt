@@ -1,4 +1,4 @@
-package at.asitplus.signum.indispensable.io
+package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.catching
 import kotlinx.serialization.KSerializer
