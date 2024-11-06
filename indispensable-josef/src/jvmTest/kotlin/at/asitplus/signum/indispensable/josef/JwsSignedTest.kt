@@ -1,7 +1,10 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.getJcaPublicKey
+import at.asitplus.signum.supreme.sign.Signer
+import at.asitplus.signum.supreme.signature
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.crypto.ECDSAVerifier
 import com.nimbusds.jose.crypto.RSASSAVerifier
@@ -29,5 +32,22 @@ class JwsSignedTest : FreeSpec({
             val result = JWSObject.parse(parsed.serialize()).verify(jvmVerifier)
             result.shouldBeTrue()
         }
+    }
+
+    "JWS example" {
+        val signer = Signer.Ephemeral {
+            ec { curve = ECCurve.SECP_256_R_1 }
+        }.getOrThrow() //TODO handle error
+
+        val header = JwsHeader(
+            algorithm = signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
+            jsonWebKey = signer.publicKey.toJsonWebKey()
+        )
+        val payload = byteArrayOf(1, 3, 3, 7)
+
+        val plainSignatureInput = JwsSigned.prepareJwsSignatureInput(header, payload)
+
+        val signature = signer.sign(plainSignatureInput).signature //TODO: handle error
+        println(JwsSigned(header, payload, signature, plainSignatureInput).serialize())// this we can verify on jwt.io
     }
 })
