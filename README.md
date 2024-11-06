@@ -56,7 +56,7 @@ The full manual is more comprehensive, has separate sections for each module, pr
 
 This library was built for [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html). Currently, it targets
 the JVM, Android and iOS.
-Tt.  consists of four modules, each of which is published on maven central:
+It consists of four modules, each of which is published on maven central:
 
 
 |                                                                                                                                      Name                                                                                                                                      | Info                                                                                                                                                                                                                                                               |
