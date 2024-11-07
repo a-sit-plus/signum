@@ -2,7 +2,7 @@
 
 ## 3.0
 
-### 3.10.0
+### 3.10.0-SNAPSHOT (Supreme 0.5.0-SNAPSHOT)
 
  * Add type parameter to `JwsSigned` for its payload
  * Add type parameter to `JweDecrypted` for its payload
