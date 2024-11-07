@@ -61,7 +61,7 @@ class Asn1IntegerRepresentationTest : FreeSpec({
     "UUIDs" - {
         withData(nameFn = { it.toHexString() }, List<Uuid>(100) { Uuid.random() }) {
             val hex = it.toHexString().uppercase()
-            val bigint = com.ionspin.kotlin.bignum.integer.BigInteger.fromByteArray(it.toByteArray(), Sign.POSITIVE)
+            val bigint = BigInteger.fromByteArray(it.toByteArray(), Sign.POSITIVE)
             val own = VarUInt(it.toByteArray())
         }
     }
@@ -75,7 +75,7 @@ class Asn1IntegerRepresentationTest : FreeSpec({
                 "-18440417236681064435",
                 "-1"
             ) {
-                val neg = com.ionspin.kotlin.bignum.integer.BigInteger.parseString(it)
+                val neg = BigInteger.parseString(it)
                 val ownNeg = Asn1Integer.fromDecimalString(neg.toString())
                 withClue(neg.toString()) {
                     ownNeg.toString() shouldBe neg.toString()
@@ -86,8 +86,8 @@ class Asn1IntegerRepresentationTest : FreeSpec({
 
         "automated" - {
             checkAll(Arb.byteArray(Arb.positiveInt(349), Arb.byte())) {
-                val pos = com.ionspin.kotlin.bignum.integer.BigInteger.fromByteArray(it, Sign.POSITIVE)
-                val neg = com.ionspin.kotlin.bignum.integer.BigInteger.fromByteArray(it, Sign.NEGATIVE)
+                val pos = BigInteger.fromByteArray(it, Sign.POSITIVE)
+                val neg = BigInteger.fromByteArray(it, Sign.NEGATIVE)
 
                 val ownPos = Asn1Integer.fromDecimalString(pos.toString())
                 ownPos.toString() shouldBe pos.toString()

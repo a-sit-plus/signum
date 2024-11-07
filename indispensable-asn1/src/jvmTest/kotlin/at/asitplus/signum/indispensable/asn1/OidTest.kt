@@ -546,7 +546,7 @@ class BigIntObjectIdentifier @Throws(Asn1Exception::class) private constructor(
                 }
                 currentNode += this.bytes[index]
                 index++
-                collected += currentNode.decodeAsn1VarBigInt().first
+                collected += currentNode.toByteArray().decodeAsn1VarBigInt().first
             }
         }
         collected
