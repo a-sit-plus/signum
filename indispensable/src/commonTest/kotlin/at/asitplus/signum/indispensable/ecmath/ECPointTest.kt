@@ -1,3 +1,5 @@
+package at.asitplus.signum.indispensable.ecmath
+
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.ECPoint
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -50,11 +52,11 @@ class ECPointTest : FreeSpec({
         withData(ECCurve.entries) { curve ->
 
             val g = curve.generator
-            shouldNotThrowAny { ECPoint.fromXY(curve, g.x, g.y) }
-            shouldNotThrowAny { ECPoint.fromXY(curve, g.x.residue, g.y.residue) }
-            shouldNotThrowAny { ECPoint.fromXY(curve, g.x, -g.y) }
-            shouldNotThrowAny { ECPoint.fromXY(curve, g.x.residue, -(g.y.residue)) }
-            shouldNotThrowAny { ECPoint.fromXY(curve, g.x.residue, (-g.y).residue) }
+            shouldNotThrowAny { ECPoint.Companion.fromXY(curve, g.x, g.y) }
+            shouldNotThrowAny { ECPoint.Companion.fromXY(curve, g.x.residue, g.y.residue) }
+            shouldNotThrowAny { ECPoint.Companion.fromXY(curve, g.x, -g.y) }
+            shouldNotThrowAny { ECPoint.Companion.fromXY(curve, g.x.residue, -(g.y.residue)) }
+            shouldNotThrowAny { ECPoint.Companion.fromXY(curve, g.x.residue, (-g.y).residue) }
 
             fun wrongMod(v: ModularBigInteger) =
                 ModularBigInteger.creatorForModulo(v.modulus + 1).fromBigInteger(v.residue)
@@ -63,9 +65,9 @@ class ECPointTest : FreeSpec({
             shouldThrow<IllegalArgumentException> { ECPoint.fromXY(curve, g.x, wrongMod(g.y)) }
             shouldThrow<IllegalArgumentException> { ECPoint.fromXY(curve, wrongMod(g.x), wrongMod(g.y)) }
 
-            shouldThrow<IllegalArgumentException> { ECPoint.fromXY(curve, g.x + 1, g.y) }
-            shouldThrow<IllegalArgumentException> { ECPoint.fromXY(curve, g.x, g.y + 1) }
-            shouldThrow<IllegalArgumentException> { ECPoint.fromXY(curve, g.x.residue + 1, g.y.residue) }
+            shouldThrow<IllegalArgumentException> { ECPoint.Companion.fromXY(curve, g.x + 1, g.y) }
+            shouldThrow<IllegalArgumentException> { ECPoint.Companion.fromXY(curve, g.x, g.y + 1) }
+            shouldThrow<IllegalArgumentException> { ECPoint.Companion.fromXY(curve, g.x.residue + 1, g.y.residue) }
 
             shouldNotThrowAny { ECPoint.fromUncompressed(curve, g.xBytes, g.yBytes) }
             shouldThrow<IllegalArgumentException> { ECPoint.fromUncompressed(curve, g.xBytes, byteArrayOf(0)) }

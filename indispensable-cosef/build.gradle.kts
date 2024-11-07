@@ -48,7 +48,6 @@ kotlin {
             dependencies {
                 api(project(":indispensable"))
                 api(serialization("cbor"))
-                implementation(napier())
                 implementation(libs.multibase)
                 implementation(libs.bignum) //Intellij bug work-around
             }

@@ -200,15 +200,9 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(kotest("property"))
-            }
-        }
-
-        jvmTest {
-            dependencies {
                 implementation(project(":indispensable"))
             }
         }
-
     }
 }
 

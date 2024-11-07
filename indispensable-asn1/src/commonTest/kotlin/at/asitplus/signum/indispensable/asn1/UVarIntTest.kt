@@ -7,9 +7,7 @@ import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
-import io.kotest.property.arbitrary.bigInt
-import io.kotest.property.arbitrary.uInt
-import io.kotest.property.arbitrary.uLong
+import io.kotest.property.arbitrary.*
 import io.kotest.property.checkAll
 import kotlinx.io.Buffer
 import kotlinx.io.snapshot
@@ -90,8 +88,8 @@ class UVarIntTest : FreeSpec({
         }
 
         "larger" - {
-            checkAll(Arb.bigInt(1, 1024 * 32)) { javaBigInt ->
-                val bigInt = BigInteger.fromByteArray(javaBigInt.toByteArray(), Sign.POSITIVE)
+            checkAll(Arb.byteArray(Arb.positiveInt(1024), Arb.byte())) {
+                val bigInt = BigInteger.fromByteArray(it, Sign.POSITIVE)
                 val bigIntVarint = bigInt.toAsn1VarInt()
                 val rnd = Random.nextBytes(33)
                 val src = bigIntVarint.asList() + rnd

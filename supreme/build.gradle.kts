@@ -46,7 +46,7 @@ kotlin {
     sourceSets.commonMain.dependencies {
         implementation(coroutines())
         implementation(napier())
-        implementation("org.kotlincrypto:secure-random:0.3.2")
+        implementation(libs.securerandom)
         api(project(":indispensable"))
     }
 

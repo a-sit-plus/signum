@@ -53,6 +53,7 @@ Better safe than sorry!
         * Remove single element decoding from Iterator
 * Introduce `prepareDigestInput()` to `IosHomebrewAttestation`
 * Remove Legacy iOS Attestation
+* Tests that do not dependen on BouncyCastle/JCA are now performed for all targets
 
 ### 3.9.0 (Supreme 0.4.0)
 

@@ -17,9 +17,13 @@ data class BitLength(val bits: UInt) : Comparable<BitLength> {
     companion object {
         @Suppress("NOTHING_TO_INLINE")
         inline fun of(v: BigInteger) = BitLength(v.bitLength().toUInt())
+        @Suppress("NOTHING_TO_INLINE")
         inline fun fromBits(bits: UInt) = BitLength(bits)
+        @Suppress("NOTHING_TO_INLINE")
         inline fun fromBits(bits: Int) = BitLength(bits.toUInt())
+        @Suppress("NOTHING_TO_INLINE")
         inline fun fromBytes(bytes: UInt) = BitLength(bytes*8u)
+        @Suppress("NOTHING_TO_INLINE")
         inline fun fromBytes(bytes: Int) = BitLength(bytes.toUInt()*8u)
     }
 
