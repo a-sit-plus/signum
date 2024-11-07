@@ -8,12 +8,13 @@ A new artefact, minor breaking changes and a lot more targets ahead!
 The public API remains _almost_ unchanged. Breaking API changes are:
 
 * Some parsing methods migrating from a `ByteIterator` to kotlinx-io `Source`
-* Moving `ensureSize` from package `asn1` to `misc`
+* Move `ensureSize` from package `asn1` to `misc`
 * Change CSR to take an actual `CryptoSignature` instead of a ByteArray
 * Remove Legacy iOS Attestation
 * Add type parameter to `JwsSigned` for its payload
 * Add type parameter to `JweDecrypted` for its payload
 * `JwsSigned.prepareSignatureInput` now returns a raw ByteArray
+* Move `BitSet` from `io` to `asn1` package
 
 The internals have changed substantially, however, and some fixes lead to behavioural changes.
 Therefore, be sure to match Signum versions if multiple libraries pull it in as transitive dependency.
@@ -55,6 +56,7 @@ The full list of changes is:
 * Implement hash-to-curve and hash-to-scalar as per RFC9380
 * Rename `decodeFromDerHexString` to `parseFromDerHexString`
 * Move `ensureSize` from package `asn1` to `misc`
+* Move `BitSet` from `io` to `asn1` package
 * Use kotlinx-io as primary source for parsing
     * Base number encoding/decoding on kotlinx-io
         * Remove parsing from iterator
