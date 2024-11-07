@@ -4,6 +4,8 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.contentEqualsIfArray
+import at.asitplus.signum.indispensable.contentHashCodeIfArray
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -35,13 +37,13 @@ data class JwsSigned<out P : Any>(
         other as JwsSigned<*>
 
         if (header != other.header) return false
-        if (!payload.equals(other.payload)) return false
+        if (!payload.contentEqualsIfArray(other.payload)) return false
         return signature == other.signature
     }
 
     override fun hashCode(): Int {
         var result = header.hashCode()
-        result = 31 * result + payload.hashCode()
+        result = 31 * result + payload.contentHashCodeIfArray()
         result = 31 * result + signature.hashCode()
         return result
     }
