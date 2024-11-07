@@ -4,6 +4,7 @@ import at.asitplus.gradle.kmmresult
 import at.asitplus.gradle.napier
 import at.asitplus.gradle.serialization
 import at.asitplus.gradle.setupDokka
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
     kotlin("multiplatform")
@@ -17,9 +18,26 @@ version = artifactVersion
 
 kotlin {
     jvm()
+    macosArm64()
+    macosX64()
+    tvosArm64()
+    tvosX64()
+    tvosSimulatorArm64()
+    iosX64()
     iosArm64()
     iosSimulatorArm64()
-    iosX64()
+
+    listOf(
+        js(IR).apply { browser { testTask { enabled = false } } },
+        @OptIn(ExperimentalWasmDsl::class)
+        wasmJs().apply { browser { testTask { enabled = false } } }
+    ).forEach {
+        it.nodejs()
+    }
+
+    linuxX64()
+    linuxArm64()
+    mingwX64()
     sourceSets {
         all {
             languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
@@ -30,7 +48,6 @@ kotlin {
                 api(project(":indispensable"))
                 implementation(libs.okio)
                 api(libs.multibase)
-                implementation(napier())
                 implementation(libs.bignum) //Intellij bug work-around
             }
         }

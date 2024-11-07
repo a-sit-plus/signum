@@ -7,7 +7,6 @@
 The public API remains almost unchanged, except for some methods migrating from a ByteIterator to kotlinx-io Source,
 some newly added kotlinx-io helpers and OID changes. The internals have changed substantially, however.
 Be sure to match Signum versions if multiple libraries pull it in as transitive dependency.
-Be sure to match Signum versions if multiple libraries pull it in as transitive dependency.
 Better safe than sorry!
 
 * Discrete ASN.1 module `indispensable-asn1` supporting the following platforms:
@@ -21,7 +20,19 @@ Better safe than sorry!
     * Linux X64
     * Linux AARCH64
     * MinGw X64
+* More targets for `indispensable`,  `indispensable-josef`, `indispensable-cosef`
+    * JVM
+    * Android
+    * iOS
+    * watchOS
+    * tvOS
+    * JS
+    * wasm/JS
+    * Linux X64
+    * Linux AARCH64
+    * MinGw X64
 * KmmResult 1.9.0
+* Multibase 1.2.1
 * Introduce generic tag assertion to `Asn1Element`
 * Change CSR to take an actual `CryptoSignature` instead of a ByteArray
 * Introduce shorthand to create CSR from TbsCSR
@@ -33,8 +44,6 @@ Better safe than sorry!
 * Implement hash-to-curve and hash-to-scalar as per RFC9380
 * Rename `decodeFromDerHexString` to `parseFromDerHexString`
 * Move `ensureSize` from package `asn1` to `misc`
-* `JwsSigned.plainSignatureInput` is now a raw ByteArray
-  * `JwsSigned.prepareSignatureInput` now returns a raw ByteArray
 * Use kotlinx-io as primary source for parsing
     * Base number encoding/decoding on kotlinx-io
         * Remove parsing from iterator
@@ -44,6 +53,9 @@ Better safe than sorry!
 * Remove Legacy iOS Attestation
 * Add type parameter to `JwsSigned` for its payload
 * Add type parameter to `JweDecrypted` for its payload
+* `JwsSigned.prepareSignatureInput` now returns a raw ByteArray
+* Tests that do not depend on BouncyCastle/JCA are now performed for all targets
+* Remove Napier dependency
 
 ### 3.9.0 (Supreme 0.4.0)
 

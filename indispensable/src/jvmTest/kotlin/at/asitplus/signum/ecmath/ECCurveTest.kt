@@ -1,8 +1,9 @@
+package at.asitplus.signum.indispensable.ecmath
+
 import at.asitplus.signum.indispensable.ECCurve
 import com.ionspin.kotlin.bignum.integer.toBigInteger
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
-
 
 /**
  * Verifies the hard coded field modulus versus its functional definition

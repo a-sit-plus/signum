@@ -1,7 +1,7 @@
 [versions]
 core = "1.5.0"
 kotlinxIoCore = "0.5.4"
-multibase = "1.2.0"
+multibase = "1.2.1"
 kotestExtensionsAndroid = "0.1.3"
 kotestRunnerAndroid = "1.1.1"
 okio = "3.9.0"
@@ -10,7 +10,7 @@ jose = "9.31"
 kotlinpoet = "1.16.0"
 runner = "1.5.2"
 kotest = "5.9.1"
-kmmresult = "1.9.0"
+secureRandom = "0.3.2"
 
 [libraries]
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }
@@ -24,3 +24,4 @@ kotlinpoet = { group = "com.squareup", name = "kotlinpoet", version.ref = "kotli
 rules = { module = "androidx.test:rules", version.ref = "core" }
 runner = { module = "androidx.test:runner", version.ref = "runner" }
 multibase = { module = "at.asitplus:multibase", version.ref = "multibase" }
+securerandom = { module = "org.kotlincrypto:secure-random", version.ref = "secureRandom" }

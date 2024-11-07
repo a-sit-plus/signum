@@ -1,10 +1,7 @@
-package at.asitplus.signum.indispensable.jws
+package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
-import at.asitplus.signum.indispensable.josef.JsonWebKey
-import at.asitplus.signum.indispensable.josef.JwkType
-import at.asitplus.signum.indispensable.josef.JwsAlgorithm
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -22,11 +19,11 @@ class JsonWebKeyTest : FreeSpec({
 
     beforeTest {
         curve = ECCurve.SECP_256_R_1
-        x = Random.Default.nextBytes(32)
-        y = Random.Default.nextBytes(32)
+        x = Random.nextBytes(32)
+        y = Random.nextBytes(32)
         ecKey = JsonWebKey(type = JwkType.EC, curve = curve, x = x, y = y)
-        n = Random.Default.nextBytes(1024)
-        e = Random.Default.nextBytes(16)
+        n = Random.nextBytes(1024)
+        e = Random.nextBytes(16)
         rsaKey = JsonWebKey(type = JwkType.RSA, n = n, e = e)
     }
 
