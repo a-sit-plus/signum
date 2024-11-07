@@ -2,12 +2,24 @@
 
 ## 3.0
 
-### 3.10.0 NEXT (Supreme 0.5.0 NEXT) Breaking Changes Ahead!
+### 3.10.0 (Supreme 0.5.0) More ~~cowbell~~ targets!
+A new artifact, minor breaking changes and a lot more targets ahead!
 
-The public API remains almost unchanged, except for some methods migrating from a ByteIterator to kotlinx-io Source,
-some newly added kotlinx-io helpers and OID changes. The internals have changed substantially, however.
-Be sure to match Signum versions if multiple libraries pull it in as transitive dependency.
-Better safe than sorry!
+The public API remains _almost_ unchanged. Breaking API changes are:
+
+* Some parsing methods migrating from a `ByteIterator` to kotlinx-io `Source`
+* Move `ensureSize` from package `asn1` to `misc`
+* Change CSR to take an actual `CryptoSignature` instead of a ByteArray
+* Remove Legacy iOS Attestation
+* Add type parameter to `JwsSigned` for its payload
+* Add type parameter to `JweDecrypted` for its payload
+* `JwsSigned.prepareSignatureInput` now returns a raw ByteArray
+* Move `BitSet` from `io` to `asn1` package
+
+The internals have changed substantially, however, and some fixes lead to behavioural changes.
+Therefore, be sure to match Signum versions if multiple libraries pull it in as transitive dependency.
+Better safe than sorry!  
+The full list of changes is:
 
 * Discrete ASN.1 module `indispensable-asn1` supporting the following platforms:
     * JVM
@@ -39,11 +51,12 @@ Better safe than sorry!
 * Introduce shorthand to create certificate from TbsCertificate
 * Remove requirement from CSR to have certificate extensions
 * Fix CoseSigned equals
-* Base OIDs on BigInteger instead of UInt
+* Base OIDs on unsigned varint instead of UInt
 * Directly support UUID-based OID creation
 * Implement hash-to-curve and hash-to-scalar as per RFC9380
 * Rename `decodeFromDerHexString` to `parseFromDerHexString`
 * Move `ensureSize` from package `asn1` to `misc`
+* Move `BitSet` from `io` to `asn1` package
 * Use kotlinx-io as primary source for parsing
     * Base number encoding/decoding on kotlinx-io
         * Remove parsing from iterator
