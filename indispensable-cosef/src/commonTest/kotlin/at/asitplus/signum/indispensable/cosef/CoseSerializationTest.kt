@@ -2,12 +2,7 @@ package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
-import at.asitplus.signum.indispensable.cosef.CoseAlgorithm
-import at.asitplus.signum.indispensable.cosef.CoseHeader
-import at.asitplus.signum.indispensable.cosef.CoseSignatureInput
-import at.asitplus.signum.indispensable.cosef.CoseSigned
-import io.github.aakira.napier.DebugAntilog
-import io.github.aakira.napier.Napier
+
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -21,7 +16,6 @@ val Base16Strict = Base16(strict = true)
 
 class CoseSerializationTest : FreeSpec({
 
-    Napier.base(DebugAntilog())
 
     "Serialization is correct" {
         val cose = CoseSigned(
