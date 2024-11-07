@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalStdlibApi::class)
-
 package at.asitplus.signum.indispensable.asn1
 
 import io.kotest.core.spec.style.FreeSpec
@@ -63,15 +61,15 @@ class TagSortingTest : FreeSpec({
 
                 a.compareTo(b) shouldBe tagA.compareTo(tagB)
 
-                if(tagA.encodedTagLength < tagB.encodedTagLength) {
+                if (tagA.encodedTagLength < tagB.encodedTagLength) {
                     aTags.forEach { it shouldBeLessThan tagB }
                 }
-                if(tagA.encodedTagLength>tagB.encodedTagLength) {
-                    aTags.forEach { it shouldBeGreaterThan  tagB }
+                if (tagA.encodedTagLength > tagB.encodedTagLength) {
+                    aTags.forEach { it shouldBeGreaterThan tagB }
                 }
 
-                if(tagA.encodedTagLength==tagB.encodedTagLength) {
-                    aTags.filterNot { it.tagClass==TagClass.UNIVERSAL }.forEach { it shouldBeGreaterThan  tagB }
+                if (tagA.encodedTagLength == tagB.encodedTagLength) {
+                    aTags.filterNot { it.tagClass == TagClass.UNIVERSAL }.forEach { it shouldBeGreaterThan tagB }
                 }
 
             }

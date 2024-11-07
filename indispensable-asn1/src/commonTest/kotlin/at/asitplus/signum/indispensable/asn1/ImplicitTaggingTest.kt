@@ -2,8 +2,6 @@ package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.without
-import at.asitplus.signum.indispensable.asn1.TagClass.CONTEXT_SPECIFIC
-import at.asitplus.signum.indispensable.asn1.TagClass.UNIVERSAL
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import io.kotest.core.spec.style.FreeSpec
@@ -23,14 +21,14 @@ class ImplicitTaggingTest : FreeSpec({
 
             universalConstructed.tagValue shouldBe tagNum
             universalConstructed.isConstructed.shouldBeTrue()
-            universalConstructed.tagClass shouldBe UNIVERSAL
+            universalConstructed.tagClass shouldBe TagClass.UNIVERSAL
 
             val universalPrimitive = Asn1Element.Tag(tagNum, constructed = false)
 
 
             universalPrimitive.tagValue shouldBe tagNum
             universalPrimitive.isConstructed.shouldBeFalse()
-            universalPrimitive.tagClass shouldBe UNIVERSAL
+            universalPrimitive.tagClass shouldBe TagClass.UNIVERSAL
 
             withData(nameFn = { "$tagNum $it" }, TagClass.entries) { tagClass ->
                 val classy = universalConstructed withClass tagClass
@@ -64,9 +62,9 @@ class ImplicitTaggingTest : FreeSpec({
 
             universalPrimitive.tagValue shouldBe tagNum
             universalPrimitive.isConstructed.shouldBeFalse()
-            universalPrimitive.tagClass shouldBe UNIVERSAL
+            universalPrimitive.tagClass shouldBe TagClass.UNIVERSAL
 
-            (primitive withImplicitTag tagNum).tag.tagClass shouldBe CONTEXT_SPECIFIC
+            (primitive withImplicitTag tagNum).tag.tagClass shouldBe TagClass.CONTEXT_SPECIFIC
 
             "convenience $tagNum" {
                 val tag = Asn1Element.Tag(tagNum, constructed = false)
@@ -75,7 +73,8 @@ class ImplicitTaggingTest : FreeSpec({
                 (Asn1.Int(1337u) withImplicitTag tag).asPrimitive().decodeToUIntOrNull(tag) shouldBe 1337u
                 (Asn1.Int(1337L) withImplicitTag tag).asPrimitive().decodeToLongOrNull(tag) shouldBe 1337L
                 (Asn1.Int(1337uL) withImplicitTag tag).asPrimitive().decodeToULongOrNull(tag) shouldBe 1337uL
-                (Asn1.Int(BigInteger(1337)) withImplicitTag tag).asPrimitive().decodeToBigIntegerOrNull(tag) shouldBe BigInteger(1337)
+                (Asn1.Int(BigInteger(1337)) withImplicitTag tag).asPrimitive()
+                    .decodeToBigIntegerOrNull(tag) shouldBe BigInteger(1337)
             }
 
 
@@ -116,9 +115,9 @@ class ImplicitTaggingTest : FreeSpec({
 
             universalConstructed shouldBe Asn1Element.Tag.SET
             universalConstructed.isConstructed.shouldBeTrue()
-            universalConstructed.tagClass shouldBe UNIVERSAL
+            universalConstructed.tagClass shouldBe TagClass.UNIVERSAL
 
-            (set withImplicitTag tagNum).tag.tagClass shouldBe CONTEXT_SPECIFIC
+            (set withImplicitTag tagNum).tag.tagClass shouldBe TagClass.CONTEXT_SPECIFIC
 
             withData(nameFn = { "$tagNum $it" }, TagClass.entries) { tagClass ->
 
@@ -139,7 +138,7 @@ class ImplicitTaggingTest : FreeSpec({
                 Asn1Element.parse(encoded).derEncoded shouldBe encoded
 
                 val primitive = set withImplicitTag (newTagValue without CONSTRUCTED)
-                primitive.tag.tagClass shouldBe CONTEXT_SPECIFIC
+                primitive.tag.tagClass shouldBe TagClass.CONTEXT_SPECIFIC
                 primitive.tag.isConstructed.shouldBeFalse()
                 primitive.tag.tagValue shouldBe newTagValue
 

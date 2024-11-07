@@ -1,8 +1,6 @@
-package at.asitplus.signum.indispensable
+package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.Asn1PrimitiveOctetString
-import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
@@ -55,7 +53,9 @@ class CastingTest : FreeSpec({
         shouldThrow<Asn1StructuralException> { Asn1.ExplicitlyTagged(19u) { +Asn1.Null() }.asSequence() }
         shouldThrow<Asn1StructuralException> { Asn1.ExplicitlyTagged(19u) { +Asn1.Null() }.asSet() }
         shouldThrow<Asn1StructuralException> { Asn1.ExplicitlyTagged(19u) { +Asn1.Null() }.asPrimitiveOctetString() }
-        shouldThrow<Asn1StructuralException> { Asn1.ExplicitlyTagged(19u) { +Asn1.Null() }.asEncapsulatingOctetString() }
+        shouldThrow<Asn1StructuralException> {
+            Asn1.ExplicitlyTagged(19u) { +Asn1.Null() }.asEncapsulatingOctetString()
+        }
 
         Asn1.ExplicitlyTagged(19u) { +Asn1.Null() }.let { it.asStructure() shouldBe it }
         Asn1.ExplicitlyTagged(19u) { +Asn1.Null() }.let { it.asExplicitlyTagged() shouldBe it }

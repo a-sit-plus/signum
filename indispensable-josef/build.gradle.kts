@@ -48,7 +48,6 @@ kotlin {
                 api(project(":indispensable"))
                 implementation(libs.okio)
                 api(libs.multibase)
-                implementation(napier())
                 implementation(libs.bignum) //Intellij bug work-around
             }
         }

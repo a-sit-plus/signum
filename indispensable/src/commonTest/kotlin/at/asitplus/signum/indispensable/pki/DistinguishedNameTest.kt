@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
-import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue.*
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
@@ -17,19 +16,19 @@ class DistinguishedNameTest : FreeSpec({
         withData(oids) { first ->
             withData(oids) { second ->
                 if (first != second) {
-                    val cn1 = CommonName(first.encodeToTlv())
-                    val cn2 = CommonName(first.encodeToTlv())
-                    val cn3 = CommonName(second.encodeToTlv())
-                    val c1 = Country(first.encodeToTlv())
-                    val c2 = Country(second.encodeToTlv())
-                    val o1 = Organization(first.encodeToTlv())
-                    val o2 = Organization(second.encodeToTlv())
-                    val ou1 = OrganizationalUnit(first.encodeToTlv())
-                    val ou2 = OrganizationalUnit(second.encodeToTlv())
-                    val ot1 = Other(first, first.encodeToTlv())
-                    val ot2 = Other(first, second.encodeToTlv())
-                    val ot3 = Other(second, first.encodeToTlv())
-                    val ot4 = Other(second, second.encodeToTlv())
+                    val cn1 = AttributeTypeAndValue.CommonName(first.encodeToTlv())
+                    val cn2 = AttributeTypeAndValue.CommonName(first.encodeToTlv())
+                    val cn3 = AttributeTypeAndValue.CommonName(second.encodeToTlv())
+                    val c1 = AttributeTypeAndValue.Country(first.encodeToTlv())
+                    val c2 = AttributeTypeAndValue.Country(second.encodeToTlv())
+                    val o1 = AttributeTypeAndValue.Organization(first.encodeToTlv())
+                    val o2 = AttributeTypeAndValue.Organization(second.encodeToTlv())
+                    val ou1 = AttributeTypeAndValue.OrganizationalUnit(first.encodeToTlv())
+                    val ou2 = AttributeTypeAndValue.OrganizationalUnit(second.encodeToTlv())
+                    val ot1 = AttributeTypeAndValue.Other(first, first.encodeToTlv())
+                    val ot2 = AttributeTypeAndValue.Other(first, second.encodeToTlv())
+                    val ot3 = AttributeTypeAndValue.Other(second, first.encodeToTlv())
+                    val ot4 = AttributeTypeAndValue.Other(second, second.encodeToTlv())
 
                     // equals()
                     cn1 shouldBe cn1
