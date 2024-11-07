@@ -32,6 +32,7 @@ Better safe than sorry!
     * Linux AARCH64
     * MinGw X64
 * KmmResult 1.9.0
+* Multibase 1.2.1
 * Introduce generic tag assertion to `Asn1Element`
 * Change CSR to take an actual `CryptoSignature` instead of a ByteArray
 * Introduce shorthand to create CSR from TbsCSR
