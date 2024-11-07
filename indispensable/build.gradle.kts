@@ -3,6 +3,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import java.io.FileInputStream
 import java.util.regex.Pattern
 
@@ -29,9 +30,26 @@ private val Pair<String, *>.oid: String? get() = this.first
 
 kotlin {
     jvm()
+    macosArm64()
+    macosX64()
+    tvosArm64()
+    tvosX64()
+    tvosSimulatorArm64()
+    iosX64()
     iosArm64()
     iosSimulatorArm64()
-    iosX64()
+
+    listOf(
+        js(IR).apply { browser { testTask { enabled = false } } },
+        @OptIn(ExperimentalWasmDsl::class)
+        wasmJs().apply { browser { testTask { enabled = false } } }
+    ).forEach {
+        it.nodejs()
+    }
+
+    linuxX64()
+    linuxArm64()
+    mingwX64()
 
     sourceSets {
         all {
