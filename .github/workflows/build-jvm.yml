@@ -14,7 +14,13 @@ jobs:
           java-version: '17'
       - name: Build jar
         run: ./gradlew assemble
-      - name: Upload jar datatypes
+      - name: Upload jar indispensable-asn1
+        uses: actions/upload-artifact@v3
+        with:
+          name: indispensable-asn1
+          path: |
+            indispensable-asn1/build/libs/*jar
+      - name: Upload jar indispensable
         uses: actions/upload-artifact@v3
         with:
           name: indispensable
