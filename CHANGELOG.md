@@ -44,8 +44,6 @@ Better safe than sorry!
 * Implement hash-to-curve and hash-to-scalar as per RFC9380
 * Rename `decodeFromDerHexString` to `parseFromDerHexString`
 * Move `ensureSize` from package `asn1` to `misc`
-* `JwsSignes.plainsignatureInput` is now a raw ByteArray
-  * `JwsSigned.prepareSignatureInput` now returns a raw ByteArray
 * Use kotlinx-io as primary source for parsing
     * Base number encoding/decoding on kotlinx-io
         * Remove parsing from iterator
@@ -53,6 +51,10 @@ Better safe than sorry!
         * Remove single element decoding from Iterator
 * Introduce `prepareDigestInput()` to `IosHomebrewAttestation`
 * Remove Legacy iOS Attestation
+* Add type parameter to `JwsSigned` for its payload
+* Add type parameter to `JweDecrypted` for its payload
+* `JwsSignes.plainsignatureInput` is now a raw ByteArray
+    * `JwsSigned.prepareSignatureInput` now returns a raw ByteArray
 * Tests that do not depend on BouncyCastle/JCA are now performed for all targets
 * Remove Napier dependency
 
