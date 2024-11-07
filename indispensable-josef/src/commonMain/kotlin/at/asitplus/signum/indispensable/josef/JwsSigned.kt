@@ -10,6 +10,7 @@ import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.json.Json
+
 /**
  * Representation of a signed JSON Web Signature object, i.e. consisting of header, payload and signature.
  *
@@ -93,18 +94,14 @@ data class JwsSigned<out P : Any>(
                     plainSignatureInput = it.plainSignatureInput
                 )
             }
-
         /**
          * Called by JWS signing implementations to get the string that will be
          * used as the input for signature calculation
          */
         @Suppress("unused")
-        inline fun prepareJwsSignatureInput(
-            header: JwsHeader,
-            payload: ByteArray,
-            json: Json = Json,
-        ): ByteArray = ("${header.serialize().encodeToByteArray().encodeToString(Base64UrlStrict)}" +
-                ".${payload.encodeToString(Base64UrlStrict)}").encodeToByteArray()
+        fun prepareJwsSignatureInput(header: JwsHeader, payload: ByteArray): ByteArray =
+            (header.serialize().encodeToByteArray().encodeToString(Base64UrlStrict) +
+                    ".${payload.encodeToString(Base64UrlStrict)}").encodeToByteArray()
 
         /**
          * Called by JWS signing implementations to get the string that will be
@@ -116,8 +113,7 @@ data class JwsSigned<out P : Any>(
             payload: T,
             serializer: SerializationStrategy<T>,
             json: Json = Json,
-        ): ByteArray = ("${header.serialize().encodeToByteArray().encodeToString(Base64UrlStrict)}" +
-                ".${json.encodeToString(serializer, payload).encodeToByteArray().encodeToString(Base64UrlStrict)}").encodeToByteArray()
+        ): ByteArray = prepareJwsSignatureInput(header, json.encodeToString(serializer, payload).encodeToByteArray())
     }
 }
 

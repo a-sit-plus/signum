@@ -1,6 +1,14 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Bool
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.OctetString
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.OctetStringEncapsulating
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.PrintableString
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.UtcTime
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Utf8String
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToBoolean
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1UtcTimePrimitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
@@ -47,18 +55,18 @@ class Asn1EncodingTest : FreeSpec({
 
     "OCTET STRING Test" {
         val seq = Asn1.Sequence {
-            +Asn1.OctetStringEncapsulating {
+            +OctetStringEncapsulating {
                 +Asn1.Sequence { +Asn1.Utf8String("foo") }
                 +Asn1.Set { +Asn1.Utf8String("bar") }
-                +Asn1.PrintableString("a")
+                +PrintableString("a")
             }
-            +Asn1.OctetString(byteArrayOf(17))
+            OctetString(byteArrayOf(17))
 
-            +Asn1.OctetString(
+            +OctetString(
                 Asn1.Set {
                     +Asn1.Int(99)
-                    +Asn1.OctetString(byteArrayOf(1, 2, 3))
-                    +Asn1.OctetStringEncapsulating {
+                    +OctetString(byteArrayOf(1, 2, 3))
+                    +OctetStringEncapsulating {
                         +Asn1EncapsulatingOctetString(
                             listOf(
                                 Asn1PrimitiveOctetString(
@@ -73,10 +81,10 @@ class Asn1EncodingTest : FreeSpec({
                     }
                 }.derEncoded
             )
-            +Asn1.ExplicitlyTagged(9u) { +Clock.System.now().encodeToAsn1UtcTimePrimitive() }
-            +Asn1.OctetString(byteArrayOf(17, -43, 23, -12, 8, 65, 90))
-            +Asn1.Bool(false)
-            +Asn1.Bool(true)
+            +ExplicitlyTagged(9u) { +Clock.System.now().encodeToAsn1UtcTimePrimitive() }
+            +OctetString(byteArrayOf(17, -43, 23, -12, 8, 65, 90))
+            +Bool(false)
+            +Bool(true)
         }
         val parsed = Asn1Element.parse(seq.derEncoded)
         parsed.shouldNotBeNull()
@@ -89,38 +97,38 @@ class Asn1EncodingTest : FreeSpec({
         val instant = Clock.System.now()
 
         val sequence = Asn1.Sequence {
-            +Asn1.ExplicitlyTagged(1u) { +Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00)) }
+            +ExplicitlyTagged(1u) { +Asn1Primitive(BERTags.BOOLEAN, byteArrayOf(0x00)) }
             +Asn1.Set {
                 +Asn1.Sequence {
                     +Asn1.SetOf {
-                        +Asn1.PrintableString("World")
-                        +Asn1.PrintableString("Hello")
+                        +PrintableString("World")
+                        +PrintableString("Hello")
                     }
                     +Asn1.Set {
-                        +Asn1.PrintableString("World")
-                        +Asn1.PrintableString("Hello")
-                        +Asn1.Utf8String("!!!")
+                        +PrintableString("World")
+                        +PrintableString("Hello")
+                        +Utf8String("!!!")
                     }
 
                 }
             }
-            +Asn1.Null()
+            +Null()
 
             +ObjectIdentifier("1.2.603.624.97")
 
-            +Asn1.Utf8String("Foo")
-            +Asn1.PrintableString("Bar")
+            +Utf8String("Foo")
+            +PrintableString("Bar")
 
             +Asn1.Set {
                 +Asn1.Int(3)
                 +Asn1.Int(-65789876543L)
-                +Asn1.Bool(false)
-                +Asn1.Bool(true)
+                +Bool(false)
+                +Bool(true)
             }
             +Asn1.Sequence {
-                +Asn1.Null()
+                +Null()
                 +Asn1String.Numeric("12345")
-                +Asn1.UtcTime(instant)
+                +UtcTime(instant)
             }
         }
         Asn1Element.parse(sequence.derEncoded).derEncoded shouldBe sequence.derEncoded
