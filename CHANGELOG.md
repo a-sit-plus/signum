@@ -53,8 +53,7 @@ Better safe than sorry!
 * Remove Legacy iOS Attestation
 * Add type parameter to `JwsSigned` for its payload
 * Add type parameter to `JweDecrypted` for its payload
-* `JwsSignes.plainsignatureInput` is now a raw ByteArray
-    * `JwsSigned.prepareSignatureInput` now returns a raw ByteArray
+* `JwsSigned.prepareSignatureInput` now returns a raw ByteArray
 * Tests that do not depend on BouncyCastle/JCA are now performed for all targets
 * Remove Napier dependency
 
