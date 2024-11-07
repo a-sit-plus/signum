@@ -20,7 +20,7 @@ Better safe than sorry!
     * Linux X64
     * Linux AARCH64
     * MinGw X64
-* More targets for `indeispensable`,  `indispensable-josef`, `indispensable-cosef`
+* More targets for `indispensable`,  `indispensable-josef`, `indispensable-cosef`
     * JVM
     * Android
     * iOS
