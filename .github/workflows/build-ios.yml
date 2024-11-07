@@ -22,6 +22,12 @@ jobs:
           name: Indispensable-debug.xcframework
           path: |
             indispensable/build/XCFrameworks/debug/
+      - name: Upload debug XCFramework Indispensable-ASN.1
+        uses: actions/upload-artifact@v3
+        with:
+          name: IndispensableAsn1-debug.xcframework
+          path: |
+            indispensable-asn1/build/XCFrameworks/debug/
       - name: Upload debug XCFramework IndispensableJosef
         uses: actions/upload-artifact@v3
         with:
@@ -34,6 +40,12 @@ jobs:
           name: IndispensableCosef-debug.xcframework
           path: |
             indispensable-cosef/build/XCFrameworks/debug/
+      - name: Upload release XCFramework Indispensable-ASN.1
+        uses: actions/upload-artifact@v3
+        with:
+          name: IndispensableAsn1-release.xcframework
+          path: |
+            indispensable-asn1/build/XCFrameworks/release/
       - name: Upload release XCFramework Indispensable
         uses: actions/upload-artifact@v3
         with:

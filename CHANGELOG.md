@@ -20,6 +20,17 @@ Better safe than sorry!
     * Linux X64
     * Linux AARCH64
     * MinGw X64
+* More targets for `indeispensable`,  `indispensable-josef`, `indispensable-cosef`
+    * JVM
+    * Android
+    * iOS
+    * watchOS
+    * tvOS
+    * JS
+    * wasm/JS
+    * Linux X64
+    * Linux AARCH64
+    * MinGw X64
 * KmmResult 1.9.0
 * Introduce generic tag assertion to `Asn1Element`
 * Change CSR to take an actual `CryptoSignature` instead of a ByteArray
