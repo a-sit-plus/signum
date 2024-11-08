@@ -2,6 +2,8 @@
 
 ## 3.0
 
+### 3.11.0 NEXT
+
 ### 3.10.0 (Supreme 0.5.0) More ~~cowbell~~ targets!
 A new artifact, minor breaking changes and a lot more targets ahead!
 
