@@ -1,7 +1,44 @@
 # Development
 
-Development happens in branch [development](https://github.com/a-sit-plus/signum/tree/development). The main branch always tracks the latest release.
-Hence, create PRs against `development`. Use dedicated `release/x.y.z` branches to prepare releases and create release PRs against `main`, which will then be merged back into `development`.
+Signum maintains two primary branches - [main](https://github.com/a-sit-plus/signum/tree/main) and [development](https://github.com/a-sit-plus/signum/tree/development).
+`development` will always be strictly ahead of `main`. The two will never diverge.
+
+Development of features is done in feature branches, which are based on `development`.
+Pull requests will be used to merge finished features from their feature branch into `development`.
+Each pull request will result in a single squashed feature commit on `development`, which references the original pull request.
+**Pull requests must never be merged into `main`**, since doing so would cause `main` and `development` to diverge.
+
+## Release process
+
+Both `main` and `development` are branch-protected against direct commits.
+When finalizing a new release version (with `main` catching up to `development`), proceed as follows.
+If any of these steps fail unexpectedly, please consult with your fellow developers instead of making potentially-breaking changes to the Git tree.
+
+1. Create a new feature pull request against `development`, which updates `CHANGELOG.md` (removing the "NEXT" marker) and `gradle.properties` (to the release version).
+2. Merge this pull request as usual.
+3. Create a pull request from `development` against `main`. **Do not merge this pull request using the GitHub UI**, since doing so [breaks](https://stackoverflow.com/questions/60597400/how-to-do-a-fast-forward-merge-on-github) the linear relationship between `main` and `development`.
+4. Once this pull request has been approved, **manually** merge it:
+```shell
+# make sure your local copy of the remote state is up-to-date
+git fetch origin
+
+# switch to your local main branch
+git checkout main
+
+# make sure your local main branch matches the remote main branch
+git reset --hard origin/main 
+
+# update your local main branch to the development branch without creating a merge commit
+git merge --ff-only origin/development
+
+# push your local main branch to the remote
+git push origin main
+```
+5. GitHub recognizes that your push is closing the pull request that you created, and will permit it despite the branch protection rule.
+6. Create a new tag for the release
+7. Publish the release
+8. Create a new feature pull request against `development`, which adds the next snapshot version to `CHANGELOG.md` and `gradle.properties`.
+9. Merge this pull request as usual.
 
 ## Publishing
 
