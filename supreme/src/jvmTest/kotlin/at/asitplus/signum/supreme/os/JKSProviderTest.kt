@@ -10,6 +10,8 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNot
 import io.kotest.property.azstring
 import java.nio.file.Files
+import java.nio.file.Path
+import kotlin.io.path.*
 import kotlin.random.Random
 
 class JKSProviderTest : FreeSpec({
@@ -69,5 +71,23 @@ class JKSProviderTest : FreeSpec({
             // check that ks1 "sees" the deletion that was made by ks3
             ks1.getSignerForKey(alias) shouldNot succeed
         } finally { Files.deleteIfExists(tempfile) }
+
+
+    }
+
+    "File-based persistence with encrypted private key" {
+        val jksFile = Path.of("src/jvmTest/resources/test.pw123456.p12")
+        val alias = "test"
+        val pwd = "123456".toCharArray()
+        jksFile.exists() shouldBe true
+        jksFile.isReadable() shouldBe true
+        JKSProvider {
+            file {
+                file = jksFile
+                password = pwd
+            }
+        }.getOrThrow().getSignerForKey(alias) {
+            privateKeyPassword = pwd
+        } should succeed
     }
 })
