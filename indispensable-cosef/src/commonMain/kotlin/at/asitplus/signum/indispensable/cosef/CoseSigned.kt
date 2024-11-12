@@ -1,22 +1,16 @@
 package at.asitplus.signum.indispensable.cosef
 
+import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
-import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import kotlinx.serialization.*
 import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.CborArray
-import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.encodeToByteArray
 
 /**
  * Representation of a signed COSE_Sign1 object, i.e. consisting of protected header, unprotected header and payload.
@@ -26,7 +20,7 @@ import kotlinx.serialization.encodeToByteArray
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
 @CborArray
-data class CoseSigned(
+data class CoseSigned<out P : Any>(
     @ByteString
     val protectedHeader: ByteStringWrapper<CoseHeader>,
     val unprotectedHeader: CoseHeader?,
@@ -56,13 +50,13 @@ data class CoseSigned(
         if (this === other) return true
         if (other == null || this::class != other::class) return false
 
-        other as CoseSigned
+        other as CoseSigned<*>
 
         if (protectedHeader != other.protectedHeader) return false
         if (unprotectedHeader != other.unprotectedHeader) return false
         if (payload != null) {
             if (other.payload == null) return false
-            if (!payload.contentEquals(other.payload)) return false
+            if (!payload.contentEqualsIfArray(other.payload)) return false
         } else if (other.payload != null) return false
         return rawSignature.contentEquals(other.rawSignature)
     }
@@ -70,7 +64,7 @@ data class CoseSigned(
     override fun hashCode(): Int {
         var result = protectedHeader.hashCode()
         result = 31 * result + (unprotectedHeader?.hashCode() ?: 0)
-        result = 31 * result + (payload?.contentHashCode() ?: 0)
+        result = 31 * result + (payload?.contentHashCodeIfArray() ?: 0)
         result = 31 * result + rawSignature.contentHashCode()
         return result
     }
@@ -83,8 +77,8 @@ data class CoseSigned(
     }
 
     companion object {
-        fun deserialize(it: ByteArray) = catching {
-            coseCompliantSerializer.decodeFromByteArray<CoseSigned>(it)
+        fun deserialize(it: ByteArray): KmmResult<CoseSigned<ByteArray>> = catching {
+            coseCompliantSerializer.decodeFromByteArray<CoseSigned<ByteArray>>(it)
         }
 
         /**
