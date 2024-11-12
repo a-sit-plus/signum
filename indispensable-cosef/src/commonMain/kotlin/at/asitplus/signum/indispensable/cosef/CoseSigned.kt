@@ -10,19 +10,12 @@ import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.CborArray
 import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encodeToByteArray
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 
 /**
  * Representation of a signed COSE_Sign1 object, i.e. consisting of protected header, unprotected header and payload.
@@ -33,7 +26,6 @@ import kotlinx.serialization.encoding.Encoder
 @Serializable
 @CborArray
 data class CoseSigned(
-    @Serializable(with = ByteStringWrapperCoseHeaderSerializer::class)
     @ByteString
     val protectedHeader: ByteStringWrapper<CoseHeader>,
     val unprotectedHeader: CoseHeader?,
@@ -105,7 +97,6 @@ fun CoseHeader.usesEC(): Boolean? = algorithm?.algorithm?.let { it is SignatureA
 @CborArray
 data class CoseSignatureInput(
     val contextString: String,
-    @Serializable(with = ByteStringWrapperCoseHeaderSerializer::class)
     @ByteString
     val protectedHeader: ByteStringWrapper<CoseHeader>,
     @ByteString
@@ -155,19 +146,3 @@ data class CoseSignatureInput(
     }
 }
 
-object ByteStringWrapperCoseHeaderSerializer : KSerializer<ByteStringWrapper<CoseHeader>> {
-
-    override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor("ByteStringWrapperCoseHeaderSerializer", PrimitiveKind.STRING)
-
-    override fun serialize(encoder: Encoder, value: ByteStringWrapper<CoseHeader>) {
-        val bytes = coseCompliantSerializer.encodeToByteArray(value.value)
-        encoder.encodeSerializableValue(ByteArraySerializer(), bytes)
-    }
-
-    override fun deserialize(decoder: Decoder): ByteStringWrapper<CoseHeader> {
-        val bytes = decoder.decodeSerializableValue(ByteArraySerializer())
-        return ByteStringWrapper(coseCompliantSerializer.decodeFromByteArray(bytes), bytes)
-    }
-
-}
