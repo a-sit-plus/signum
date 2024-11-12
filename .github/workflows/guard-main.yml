@@ -6,26 +6,7 @@ on:
     branches:
       - 'main'
 jobs:
-  warn:
-    name: 'Enforce PR target'
-    if: github.head_ref != 'development'
-    runs-on: 'ubuntu-latest'
-    steps:
-      - uses: 'actions/github-script@v6'
-        with:
-          script: |
-            try {
-              const {owner,repo} = context.repo;
-              const pull_number = ${{github.event.pull_request.number}};
-              await github.rest.issues.createComment({
-                issue_number: pull_number,
-                body: "⚠️⚠️ This pull request targets `main`. I am re-targeting it to `development`. ⚠️⚠️",
-                owner, repo});
-              await github.rest.pulls.update({
-                base: 'development',
-                pull_number, owner, repo});
-            } catch (err) {
-              core.setFailed(err);
-            }
+  check-target:
+    uses: a-sit-plus/internal-workflows/.github/workflows/guard-main.yml@main
 permissions:
   pull-requests: write
