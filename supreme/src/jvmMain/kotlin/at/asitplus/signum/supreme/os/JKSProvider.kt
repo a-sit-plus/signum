@@ -43,6 +43,7 @@ import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.RSAPrivateKey
 import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
+import kotlin.io.path.extension
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 
@@ -317,6 +318,8 @@ internal class JKSFileAccessor(opt: JKSProviderConfiguration.KeyStoreFile) : JKS
  * * [file] (backed by a file on disk)
  * * [withBackingObject] (backed by the specified [KeyStore] object)
  * * [customAccessor] (backed by a custom [JKSAccessor] object)
+ *
+ * @see JKSSignerConfiguration
  */
 class JKSProviderConfiguration internal constructor(): PlatformSigningProviderConfigurationBase() {
     sealed class KeyStoreConfiguration constructor(): DSL.Data()
@@ -347,8 +350,21 @@ class JKSProviderConfiguration internal constructor(): PlatformSigningProviderCo
     /** Accesses a keystore on disk. Automatically flushes back to disk. Use `file { path = ... }.`*/
     val file = _keystore.option(::KeyStoreFile)
     class KeyStoreFile internal constructor(): KeyStoreConfiguration() {
-        /** The KeyStore type to use */
-        var storeType = KeyStore.getDefaultType()
+        companion object {
+            /** file-based keystore types per
+             * [spec](https://docs.oracle.com/en/java/javase/17/docs/specs/security/standard-names.html#keystore-types) */
+            private fun typeForFile(file: Path) =
+                when (file.extension.lowercase()) {
+                    "jks" -> "jks"
+                    "p12", "pfx" -> "pkcs12"
+                    "jceks" -> "jceks"
+                    else -> null
+                }
+        }
+        private var _storeType: String? = null
+        /** The KeyStore type to use. By default, auto-detects from the file extension, and falls back to [KeyStore.getDefaultType]. */
+        var storeType get() = _storeType ?: typeForFile(file) ?: KeyStore.getDefaultType()
+                      set(v) { _storeType = v }
         /** The file to use */
         lateinit var file: Path
         /** The password to protect the keystore with */
