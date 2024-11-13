@@ -24,14 +24,15 @@
 
 ## Kotlin Multiplatform Crypto/PKI Library with ASN1 Parser + Encoder
 
-
-* **Multiplatform, platform-native crypto** &rarr; Check out the included [CMP demo App](app.md) to see it in
+* **Multiplatform, platform-native crypto** &rarr; Check out the included [CMP demo App](https://a-sit-plus.github.io/signum/app) to see it in
   action!
-  * **ECDSA and RSA Signer and Verifier**
-  * **Multiplatform ECDH key agreement**
-  * **Hardware-Backed crypto on Android and iOS**
-  * **Platform-native attestation on iOS and Android**
-  * **Configurable biometric authentication on Android and iOS without callbacks or activity passing** (✨Magic!✨)
+    * **ECDSA and RSA Signer and Verifier**
+    * **Multiplatform ECDH key agreement**
+    * **Hardware-Backed crypto on Android and iOS**
+    * **Platform-native attestation on iOS and Android**
+    * **Configurable biometric authentication on Android and iOS without callbacks or activity passing** (✨Magic!✨)
+    * **Multiplatform AES**
+    * **Multiplatform HMAC**
 * Public Keys (RSA and EC)
 * Private Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)
@@ -44,8 +45,7 @@
 * Serializability of all ASN.1 classes for debugging **and only for debugging!!!** *Seriously, do not try to deserialize
   ASN.1 classes through kotlinx.serialization! Use `decodeFromDer()` and its companions!*
 * 100% pure Kotlin BitSet
-* Exposes Multibase Encoder/Decoder as an API dependency
-  including [Matthew Nelson's smashing Base16, Base32, and Base64 encoders](https://github.com/05nelsonm/encoding)
+* Exposes Multibase Encoder/Decoder as an API dependency including [Matthew Nelson's smashing Base16, Base32, and Base64 encoders](https://github.com/05nelsonm/encoding)
 * **ASN.1 Parser and Encoder including a DSL to generate ASN.1 structures**
   * Parse, create, explore certificates, public keys, CSRs, and **arbitrary ASN.1* structures* on all supported platforms
   * Powerful, expressive, type-safe ASN.1 DSL on all KMP targets!
@@ -94,9 +94,71 @@ implementation("at.asitplus.signum:indispensable-cosef:$version")
 implementation("at.asitplus.signum:supreme:0.2.0")
 ```
 
+## Rationale
+Looking for a KMP cryptography framework, you have undoubtedly come across
+[cryptography-kotlin](https://github.com/whyoleg/cryptography-kotlin). So have we and it is a powerful
+library, supporting more platforms and more cryptographic operations than Signum Supreme.
+This begs the question: Why implement another, incompatible
+cryptography framework from scratch? The short answer is: Signum and cryptography-kotlin pursue different goals and priorities.<br>
+cryptography-kotlin strives for covering a wide range of targets and a broad range of operations based on a flexible provider architecture.
+Signum, on the other hand, focuses on tight platform integration (**including hardware-backed crypto and attestation!**),
+and comprehensive ASN.1, JOSE, and COSE support.
+
+<details>
+<summary>More…</summary>
+
+Signum was born from the need to have cryptographic data structures available across platforms, such as public keys, signatures,
+certificates, CSRs, as well as COSE and JOSE data. Hence, we needed a fully-featured ASN.1 engine and mappings from
+X.509 to COSE and JOSE datatypes. We required comprehensive ASN.1 introspection and builder capabilities across platforms.
+Most notably, Apple has been notoriously lacking anything even remotely usable
+and [SwiftASN1](https://github.com/apple/swift-asn1) was out of the question for a couple of reasons.
+Most notably, it did not exist, when we started work on Signum.
+As it stands now, our ASN.1 engine can handle almost anything you throw at it, in some areas even exceeding Bouncy Castle!
+cryptography-kotlin only added basic ASN.1 capabilities over a year after Signum's development started.
+<br>
+We are also unaware of any other library offering comprehensive JOSE and COSE data structures based on kotlinx-serialization.
+Hence, we implemented those ourselves, with first-class interop to our generic cryptographic data structures.
+We also support platform-native interop meaning that you can easily convert a Json Web Key to a JCA key or even a `SecKeyRef`.
+
+Having actual implementations of cryptographic operations available was only second on our list of priorities. From the
+get-go, it was clear that we wanted the tightest possible platform integration on Android and iOS, including hardware-backed
+storage of key material and in-hardware execution of cryptographic operations whenever possible.
+We also needed platform-native attestation capabilities (and so will you sooner or later, if you are doing anything
+mission-critical on mobile targets!).
+While this approach does limit the number of available cryptographic operations, it also means that all cryptographic operations
+involving secrets (e.g. private keys) provide the same security guarantees as platform-native implementations do &mdash;
+**because they are the same** under the hood. Most notably: private keys never leave the platform and **hardware-backed private keys
+never even leave the hardware crypto modules**!<br>
+This tight integration and our focus on mobile comes at the cost of the **Supreme KMP crypto provider only supporting JVM,
+Android, and iOS**.
+cryptography-kotlin, on the other hand allows you to perform a wider range of cryptographic functions an all KMP targets,
+Most prominently, it already supports RSA encryption, key stretching, and key derivation, which Signum currently lacks.
+On the other hand, cryptography-kotlin currently offers neither hardware-backed crypto, nor attestation capabilities.
+
+</details>
+
+The following table provides a detailed comparison between Signum and cryptography-kotlin.
+
+|                             | Signum               | cryptography-kotlin       |
+|-----------------------------|----------------------|---------------------------|
+| Digital Signatures          | ✔ (ECDSA, RSA)       | ✔ (ECDSA, RSA)            |
+| Symmetric Encryption        | ✔ (AES + ChaChaPoly) | ✔ (AES)                   |
+| Public-Key Encryption       | ✗                    | ✔ (RSA)                   |
+| Digest                      | ✔ (SHA-1, SHA-2)     | ✔ (MD5, SHA-1, SHA-2)     |
+| MAC                         | ✔ (HMAC)             | ✔ (HMAC)                  |
+| Key Agreement               | ✔ (ECDH)             | ✔ (ECDH)                  |
+| KDF/PRF/KSF                 | ✗                    | ✔ (PBKDF2, HKDF)          |
+| Hardware-Backed Crypto      | ✔                    | ✗                         |
+| Attestation                 | ✔                    | ✗                         |
+| Fully-Features ASN.1 Engine | ✔                    | ✗                         |
+| COSE                        | ✔                    | ✗                         |
+| JOSE                        | ✔                    | ✗                         |
+| Provider Targets            | JVM, Android, iOS    | All KMP-supported targets |
+
+
 ## _Supreme_ Demo Reel
-The _Supreme_ KMP crypto provider works differently from JCA. Configuration is type-safe, more expressive and you'll
-end up less code. **Nothing throws! Do not discard the results returned from any operation!**
+The _Supreme_ KMP crypto provider works differently from JCA. Configuration is type-safe, more expressive and more concise,
+meaning you'll end up with less code. **Nothing throws! Do not discard the results returned from any operation!**
 
 ### Signature Creation
 
@@ -230,6 +292,63 @@ val verifier = SignatureAlgorithm.ECDSAwithSHA512
 val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Is it trustworthy? $isValid")
 ```
+
+## Symmetric Encryption
+We currently support ChaCha20-Poly1503, AES-CBC, AES-GCM, and a very flexible flavour of AES-CBC-HMAC.
+This is supported across all _Supreme_ targets and works as follows:
+```kotlin
+val payload = "More matter, with less art!".encodeToByteArray()
+
+//define algorithm parameters
+val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
+  //with a custom HMAC input calculation function
+  .Custom(32.bytes) { ciphertext, iv, aad -> //A shorter version of RFC 7518
+    aad + iv + ciphertext + aad.size.encodeTo4Bytes()
+  }
+
+//any size is fine, really. omitting the override generates a mac key of
+//the same size as the encryption key
+val key = algorithm.randomKey(macKeyLength = 32.bit)
+val aad = Clock.System.now().toString().encodeToByteArray()
+
+val sealedBox = key.encrypt(
+  payload,
+  authenticatedData = aad,
+).getOrThrow(/*handle error*/)
+
+//The sealed box object is correctly typed:
+//  * It is a SealedBox.WithIV
+//  * The generic type arguments indicate that
+//      * the ciphertext is authenticated
+//      * Using a dedicated MAC function atop an unauthenticated cipher
+//  * we can hence access `authenticatedCiphertext` for:
+//      * authTag
+//      * authenticatedData
+sealedBox.authenticatedData shouldBe aad
+
+//because everything is structured, decryption is simple
+val recovered = sealedBox.decrypt(key).getOrThrow(/*handle error*/)
+
+recovered shouldBe payload //success!
+
+//we can also manually construct the sealed box, if we know the algorithm:
+val reconstructed = algorithm.sealedBox(
+  sealedBox.nonce,
+  encryptedData = sealedBox.encryptedData, /*Could also access authenticatedCipherText*/
+  authTag = sealedBox.authTag,
+  authenticatedData = sealedBox.authenticatedData
+).getOrThrow()
+
+val manuallyRecovered = reconstructed.decrypt(key).getOrThrow(/*handle error*/)
+
+manuallyRecovered shouldBe payload //great success!
+
+//if we just know algorithm and key bytes, we can also construct a symmetric key
+reconstructed.decrypt(
+  algorithm.keyFrom(key.encryptionKey, key.macKey).getOrThrow(/*handle error*/),
+).getOrThrow(/*handle error*/) shouldBe payload //greatest success!
+```
+
 
 ## ASN.1 Demo Reel
 
@@ -583,4 +702,3 @@ In particular, external contributions to this project are subject to the A-SIT P
 The Apache License does not apply to the logos, (including the A-SIT logo) and the project/module name(s), as these are the sole property of
 A-SIT/A-SIT Plus GmbH and may not be used in derivative works without explicit permission!
 </p>
-

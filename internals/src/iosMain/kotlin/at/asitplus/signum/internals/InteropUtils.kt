@@ -3,31 +3,18 @@
 package at.asitplus.signum.internals
 
 import kotlinx.cinterop.*
-import platform.CoreFoundation.CFDictionaryCreateMutable
-import platform.CoreFoundation.CFDictionaryGetValue
-import platform.CoreFoundation.CFDictionaryRef
-import platform.CoreFoundation.CFDictionarySetValue
-import platform.CoreFoundation.CFErrorRefVar
-import platform.CoreFoundation.CFMutableDictionaryRef
-import platform.CoreFoundation.CFRelease
-import platform.CoreFoundation.CFTypeRef
-import platform.CoreFoundation.kCFBooleanFalse
-import platform.CoreFoundation.kCFBooleanTrue
-import platform.CoreFoundation.kCFTypeDictionaryKeyCallBacks
-import platform.CoreFoundation.kCFTypeDictionaryValueCallBacks
-import platform.Foundation.CFBridgingRelease
-import platform.Foundation.CFBridgingRetain
-import platform.Foundation.NSData
-import platform.Foundation.NSError
-import platform.Foundation.create
+import platform.CoreFoundation.*
+import platform.Foundation.*
 import platform.posix.memcpy
 import kotlin.experimental.ExperimentalNativeApi
 import kotlin.native.ref.createCleaner
 
 fun NSData.toByteArray(): ByteArray = ByteArray(length.toInt()).apply {
-    usePinned {
-        memcpy(it.addressOf(0), bytes, length)
-    }
+    if(length>Int.MAX_VALUE.toULong()) throw IndexOutOfBoundsException("length is too large")
+    if (length > 0uL)
+        usePinned {
+            memcpy(it.addressOf(0), bytes, length)
+        }
 }
 
 @OptIn(BetaInteropApi::class)
@@ -136,6 +123,7 @@ class CFDictionaryInitScope private constructor() {
 }
 fun MemScope.createCFDictionary(pairs: CFDictionaryInitScope.()->Unit) =
     CFDictionaryInitScope.resolve(this, pairs)
+
 inline operator fun <reified T> CFDictionaryRef.get(key: Any?): T =
     CFDictionaryGetValue(this, key.giveToCF()).takeFromCF<T>()
 

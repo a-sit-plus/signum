@@ -17,6 +17,8 @@ types and platform-native functionality related to crypto and PKI applications:
     * **Hardware-Backed crypto on Android and iOS**
     * **Platform-native attestation on iOS and Android**
     * **Configurable biometric authentication on Android and iOS without callbacks or activity passing** (✨Magic!✨)
+    * **Multiplatform AES**
+    * **Multiplatform HMAC**
 * Public Keys (RSA and EC)
 * Private Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)
@@ -34,6 +36,7 @@ types and platform-native functionality related to crypto and PKI applications:
 * **ASN.1 Parser and Encoder including a DSL to generate ASN.1 structures**
     * Parse, create, explore certificates, public keys, CSRs, and **arbitrary ASN.1* structures* on all supported platforms
     * Powerful, expressive, type-safe ASN.1 DSL on all KMP targets!
+    * Parse, create, explore certificates, public keys, CSRs, and **arbitrary ASN.1* structures* on all supported platforms
 
 This last bit means that you can share ASN.1-related logic across platforms.
 The very first bit means that you can create and verify signatures on the JVM, Android and on iOS, using platform-native
@@ -75,6 +78,53 @@ implementation("at.asitplus.signum:indispensable-cosef:$version")
 ```kotlin 
 implementation("at.asitplus.signum:supreme:$supreme_version")
 ```
+
+
+## Rationale
+Looking for a KMP cryptography framework, you have undoubtedly come across
+[cryptography-kotlin](https://github.com/whyoleg/cryptography-kotlin). So have we and it is a powerful
+library, supporting more platforms and more cryptographic operations than Signum Supreme.
+This begs the question: Why implement another, incompatible
+cryptography framework from scratch? The short answer is: Signum and cryptography-kotlin pursue different goals and priorities.
+
+!!! tip inline end
+    A feature comparison between Signum and cryptography-kotlin is part of the [feature matrix](features.md#signum-vs-cryptography-kotlin).
+
+cryptography-kotlin strives for covering a wide range of targets and a broad range of operations based on a flexible provider architecture.
+Signum, on the other hand, focuses on tight platform integration (**including hardware-backed crypto and attestation!**),
+and comprehensive ASN.1, JOSE, and COSE support.
+
+??? info "More…"
+    Signum was born from the need to have cryptographic data structures available across platforms, such as public keys, signatures,
+    certificates, CSRs, as well as COSE and JOSE data. Hence, we needed a fully-featured ASN.1 engine and mappings from
+    X.509 to COSE and JOSE datatypes. We required comprehensive ASN.1 introspection and builder capabilities across platforms.
+    Most notably, Apple has been notoriously lacking anything even remotely usable
+    and [SwiftASN1](https://github.com/apple/swift-asn1) was out of the question for a couple of reasons.
+    Most notably, it did not exist, when we started work on Signum.
+    As it stands now, our ASN.1 engine can handle almost anything you throw at it, in some areas even exceeding Bouncy Castle!
+    cryptography-kotlin only added basic ASN.1 capabilities over a year after Signum's development started.
+    <br>
+    We are also unaware of any other library offering comprehensive JOSE and COSE data structures based on kotlinx-serialization.
+    Hence, we implemented those ourselves, with first-class interop to our generic cryptographic data structures.
+    We also support platform-native interop meaning that you can easily convert a Json Web Key to a JCA key or even a `SecKeyRef`.
+    
+    Having actual implementations of cryptographic operations available was only second on our list of priorities. From the
+    get-go, it was clear that we wanted the tightest possible platform integration on Android and iOS, including hardware-backed
+    storage of key material and in-hardware execution of cryptographic operations whenever possible.
+    We also needed platform-native attestation capabilities (and so will you sooner or later, if you are doing anything
+    mission-critical on mobile targets!).
+    While this approach does limit the number of available cryptographic operations, it also means that all cryptographic operations
+    involving secrets (e.g. private keys) provide the same security guarantees as platform-native implementations do &mdash;
+    **because they are the same** under the hood. Most notably: private keys never leave the platform and **hardware-backed private keys
+    never even leave the hardware crypto modules**!<br>
+    This tight integration and our focus on mobile comes at the cost of the **Supreme KMP crypto provider only supporting JVM,
+    Android, and iOS**.
+    
+    cryptography-kotlin, on the other hand allows you to perform a wider range of cryptographic functions an all KMP targets,
+    Most prominently, it already supports RSA encryption, key stretching, and key derivation, which Signum currently lacks.
+    On the other hand, cryptography-kotlin currently offers neither hardware-backed crypto, nor attestation capabilities.
+
+
 
 ## Demo Reel
 
@@ -121,6 +171,33 @@ val signature: CryptoSignature = TODO("This was sent alongside the plaintext.")
 val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey).getOrThrow()
 val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Looks good? $isValid")
+```
+
+### Symmetric Encryption (Supreme)
+We currently support AES-CBC, AES-GCM, and a very flexible flavour of AES-CBC-HMAC.
+This is supported across all _Supreme_ targets and works as follows:
+```kotlin
+val payload = "More matter, with less Art!".encodeToByteArray()
+
+//define parameters
+val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
+val secretKey = algorithm.randomKey()
+val macKey = algorithm.randomKey()
+val aad = Clock.System.now().toString().encodeToByteArray()
+
+val ciphertext =
+    //You typically chain encryptorFor and encrypt
+    //because you should never re-use an IV
+    algorithm.encryptorFor(
+        secretKey = secretKey,
+        dedicatedMacKey = macKey,
+        aad = aad
+    ).getOrThrow(/*TODO Error handling*/)
+        .encrypt(payload).getOrThrow(/*TODO Error Handling*/)
+val recovered = ciphertext.decrypt(secretKey, macKey)
+    .getOrThrow(/*TODO Error handling*/)
+
+recovered shouldBe payload //success!
 ```
 
 ### ASN.1 Parsing and Encoding
