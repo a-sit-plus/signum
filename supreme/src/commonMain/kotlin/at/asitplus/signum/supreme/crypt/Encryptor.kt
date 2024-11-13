@@ -4,7 +4,7 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.EncryptionAlgorithm
 
-abstract class Encryptor internal constructor(
+class Encryptor internal constructor(
     protected val cipher: EncryptionAlgorithm,
     protected val key: ByteArray,
     protected val iv: ByteArray?,
