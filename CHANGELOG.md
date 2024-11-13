@@ -31,6 +31,21 @@
 * Rename `ObjectIdentifier.parse` -> `ObjectIdentifier.decodeFromAsn1ContentBytes` in accordance with other similar functions
 * Add dedicated Android targets (SDK 30 /JDK 1.8) to all modules
 
+* HMAC Support
+* Symmetric Encryption
+    * Supported Algorithms
+        * AES
+            * GCM
+            * CBC-HMAC
+            * CBC
+            * ECB
+            * KW
+        * ChaCha-Poly1305
+    * Add algorithm mappings to indispensable-josef **This is a binary-incompatible change**
+        * `ivLength` and `encryptionKeyLength` now return `BitLength` instead of `Int`
+        * `text` is now properly called `identifier`
+* Moved `HazardousMaterials` annotation from `supreme` to `indispensable`
+
 ### 3.14.0 (Supreme 0.7.0)
 
 * Certificate Improvements:
