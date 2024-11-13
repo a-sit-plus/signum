@@ -187,7 +187,7 @@ fun CryptoSignature.Companion.parseFromJca(
     if (algorithm is SignatureAlgorithm.ECDSA)
         CryptoSignature.EC.parseFromJca(input)
     else
-        CryptoSignature.RSAorHMAC.parseFromJca(input)
+        CryptoSignature.RSAorHMAC.parseFromJca(byteArrayOf(0,* input))
 
 fun CryptoSignature.Companion.parseFromJca(
     input: ByteArray,
