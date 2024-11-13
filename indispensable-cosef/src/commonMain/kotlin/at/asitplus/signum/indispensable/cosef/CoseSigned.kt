@@ -31,11 +31,16 @@ data class CoseSigned<P : Any>(
 ) {
 
     constructor(
-        protectedHeader: ByteStringWrapper<CoseHeader>,
+        protectedHeader: CoseHeader,
         unprotectedHeader: CoseHeader?,
         payload: ByteArray?,
         signature: CryptoSignature.RawByteEncodable
-    ) : this(protectedHeader, unprotectedHeader, payload, signature.rawByteArray)
+    ) : this(
+        protectedHeader = ByteStringWrapper(value = protectedHeader),
+        unprotectedHeader = unprotectedHeader,
+        payload = payload,
+        rawSignature = signature.rawByteArray
+    )
 
     val signature: CryptoSignature by lazy {
         if (protectedHeader.value.usesEC() ?: unprotectedHeader?.usesEC() ?: (rawSignature.size < 2048))
