@@ -18,14 +18,14 @@ class CoseEqualsTest : FreeSpec({
                 content = Arb.byte()
             )
         ) { s1 ->
-            val signed1 = CoseSigned(
-                protectedHeader = ByteStringWrapper<CoseHeader>(CoseHeader()),
+            val signed1 = CoseSigned<ByteArray>(
+                protectedHeader = ByteStringWrapper(CoseHeader()),
                 unprotectedHeader = null,
                 payload = s1,
                 rawSignature = s1
             )
-            val signed11 = CoseSigned(
-                protectedHeader = ByteStringWrapper<CoseHeader>(CoseHeader()),
+            val signed11 = CoseSigned<ByteArray>(
+                protectedHeader = ByteStringWrapper(CoseHeader()),
                 unprotectedHeader = null,
                 payload = s1,
                 rawSignature = s1
@@ -37,14 +37,14 @@ class CoseEqualsTest : FreeSpec({
             signed1.hashCode() shouldBe signed11.hashCode()
 
             val s2 = s1.reversedArray().let { it + it + 1 + 3 + 5 }
-            val signed2 = CoseSigned(
-                protectedHeader = ByteStringWrapper<CoseHeader>(CoseHeader()),
+            val signed2 = CoseSigned<ByteArray>(
+                protectedHeader = ByteStringWrapper(CoseHeader()),
                 unprotectedHeader = null,
                 payload = s2,
                 rawSignature = s2
             )
-            val signed22 = CoseSigned(
-                protectedHeader = ByteStringWrapper<CoseHeader>(CoseHeader()),
+            val signed22 = CoseSigned<ByteArray>(
+                protectedHeader = ByteStringWrapper(CoseHeader()),
                 unprotectedHeader = null,
                 payload = s2,
                 rawSignature = s2

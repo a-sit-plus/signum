@@ -18,7 +18,7 @@ class CoseSerializationTest : FreeSpec({
 
 
     "Serialization is correct" {
-        val cose = CoseSigned(
+        val cose = CoseSigned<ByteArray>(
             protectedHeader = ByteStringWrapper(CoseHeader(algorithm = CoseAlgorithm.ES256)),
             unprotectedHeader = CoseHeader(),
             payload = "This is the content.".encodeToByteArray(),
