@@ -8,12 +8,9 @@ import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.Serializable
+import kotlinx.serialization.*
 import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.CborArray
-import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.encodeToByteArray
 
 /**
  * Representation of a signed COSE_Sign1 object, i.e. consisting of protected header, unprotected header and payload.
@@ -23,14 +20,14 @@ import kotlinx.serialization.encodeToByteArray
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable(with = CoseSignedSerializer::class)
 @CborArray
-data class CoseSigned<out P : Any>(
+data class CoseSigned<P : Any>(
     @ByteString
     val protectedHeader: ByteStringWrapper<CoseHeader>,
     val unprotectedHeader: CoseHeader?,
     @ByteString
     val payload: ByteArray?,
     @ByteString
-    val rawSignature: ByteArray
+    val rawSignature: ByteArray,
 ) {
 
     constructor(
@@ -46,7 +43,11 @@ data class CoseSigned<out P : Any>(
         else CryptoSignature.RSAorHMAC(rawSignature)
     }
 
-    fun serialize(): ByteArray = coseCompliantSerializer.encodeToByteArray(CoseSignedSerializer(),this)
+    fun serialize(): ByteArray = coseCompliantSerializer.encodeToByteArray(CoseSignedSerializer(), this)
+
+    fun getTypedPayload(deserializationStrategy: DeserializationStrategy<P>): KmmResult<P?> = catching {
+        payload?.let { coseCompliantSerializer.decodeFromByteArray(deserializationStrategy, it) }
+    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
