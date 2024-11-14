@@ -139,7 +139,7 @@ private val rsaFactory = KeyFactory.getInstance("RSA")
 
 fun CryptoPublicKey.RSA.getJcaPublicKey(): KmmResult<RSAPublicKey> = catching {
     rsaFactory.generatePublic(
-        RSAPublicKeySpec(BigInteger(1, n), BigInteger.valueOf(e.toLong()))
+        RSAPublicKeySpec(BigInteger(1, n.magnitude), BigInteger(1, e.magnitude))
     ) as RSAPublicKey
 }
 
@@ -159,7 +159,7 @@ fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmRe
 }
 
 fun CryptoPublicKey.RSA.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey> =
-    catching { CryptoPublicKey.RSA(publicKey.modulus.toByteArray(), publicKey.publicExponent.toInt()) }
+    catching { CryptoPublicKey.RSA(publicKey.modulus.toByteArray(), publicKey.publicExponent.toByteArray()) }
 
 fun CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
     when (publicKey) {

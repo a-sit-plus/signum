@@ -361,8 +361,8 @@ fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
             JsonWebKey(
                 type = JwkType.RSA,
                 keyId = keyId,
-                n = n,
-                e = e.toTwosComplementByteArray()
+                n = n.magnitude,
+                e = e.magnitude
             )
     }
 
