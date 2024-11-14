@@ -6,6 +6,9 @@ import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.Asn1Time
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.pki.*
+import at.asitplus.signum.supreme.dsl.DSL
+import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase
+import at.asitplus.signum.supreme.os.SignerConfiguration
 import at.asitplus.signum.supreme.sign
 import at.asitplus.signum.supreme.signature
 import at.asitplus.signum.supreme.succeed
@@ -22,28 +25,80 @@ import kotlinx.datetime.Clock
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.days
 
+interface SignatureTestSuite {
+    val isPreHashed: Boolean
+    fun configure(it: SigningKeyConfiguration)
+    fun configure(it: SignerConfiguration)
+}
+data class ECDSATestSuite(val curve: ECCurve, val digest: Digest, override val isPreHashed: Boolean): SignatureTestSuite {
+    override fun toString() = "ECDSA/$curve/$digest${if (isPreHashed) "/pre" else ""}"
+    override fun configure(it: SigningKeyConfiguration) {
+        it.ec {
+            this.curve = this@ECDSATestSuite.curve
+            this.digests = setOf(this@ECDSATestSuite.digest)
+        }
+        if (it is PlatformSigningKeyConfigurationBase<*>) {
+            it.signer { this@ECDSATestSuite.configure(this@signer) }
+        }
+    }
+    override fun configure(it: SignerConfiguration) {
+        it.ec {
+            this.digest = this@ECDSATestSuite.digest
+        }
+    }
+}
+data class RSATestSuite(val padding: RSAPadding, val digest: Digest, val keySize: Int, override val isPreHashed: Boolean): SignatureTestSuite {
+    override fun toString() = "RSA/$digest/$padding/${keySize}bit${if (isPreHashed) "/pre" else ""}"
+    override fun configure(it: SigningKeyConfiguration) {
+        it.rsa {
+            this.digests = setOf(this@RSATestSuite.digest)
+            this.paddings = setOf(this@RSATestSuite.padding)
+            this.bits = this@RSATestSuite.keySize
+        }
+        if (it is PlatformSigningKeyConfigurationBase<*>) {
+            it.signer { this@RSATestSuite.configure(this@signer) }
+        }
+    }
+    override fun configure(it: SignerConfiguration) {
+        it.rsa {
+            this.digest = this@RSATestSuite.digest
+            this.padding = this@RSATestSuite.padding
+        }
+    }
+}
+object TestSuites {
+    val ALL get() = ECDSA + RSA
+    val ECDSA get() = sequence {
+        ECCurve.entries.forEach { curve ->
+            Digest.entries.forEach { digest ->
+                yield(ECDSATestSuite(curve, digest, false))
+                yield(ECDSATestSuite(curve, digest, true))
+            }
+        }
+    }
+    val RSA get() = sequence {
+        RSAPadding.entries.forEach { padding ->
+            Digest.entries.forEach { digest ->
+                when {
+                    digest == Digest.SHA512 && padding == RSAPadding.PSS
+                        -> listOf(2048, 3072, 4096)
+                    digest == Digest.SHA384 || digest == Digest.SHA512 || padding == RSAPadding.PSS
+                        -> listOf(1024,2048,3072,4096)
+                    else
+                        -> listOf(512, 1024, 2048, 3072, 4096)
+                }.forEach { keySize ->
+                    yield(RSATestSuite(padding, digest, keySize, false))
+                    yield(RSATestSuite(padding, digest, keySize, true))
+                }
+            }
+        }
+    }
+}
+
 class EphemeralSignerCommonTests : FreeSpec({
     "Functional" - {
         "RSA" - {
-            withData(
-                nameFn = { (pad, dig, bits, pre) -> "$dig/$pad/${bits}bit${if (pre) "/pre" else ""}" },
-                sequence {
-                    RSAPadding.entries.forEach { padding ->
-                        Digest.entries.forEach { digest ->
-                            when {
-                                digest == Digest.SHA512 && padding == RSAPadding.PSS
-                                    -> listOf(2048, 3072, 4096)
-                                digest == Digest.SHA384 || digest == Digest.SHA512 || padding == RSAPadding.PSS
-                                    -> listOf(1024,2048,3072,4096)
-                                else
-                                    -> listOf(512, 1024, 2048, 3072, 4096)
-                            }.forEach { keySize ->
-                                yield(Quadruple(padding, digest, keySize, false))
-                                yield(Quadruple(padding, digest, keySize, true))
-                            }
-                        }
-                    }
-                }) { (padding, digest, keySize, preHashed) ->
+            withData(TestSuites.RSA) { (padding, digest, keySize, preHashed) ->
                 val data = Random.Default.nextBytes(64)
                 val signer: Signer
                 val signature = try {
@@ -68,16 +123,7 @@ class EphemeralSignerCommonTests : FreeSpec({
             }
         }
         "ECDSA" - {
-            withData(
-                nameFn = { (crv, dig, pre) -> "$crv/$dig${if (pre) "/pre" else ""}" },
-                sequence {
-                    ECCurve.entries.forEach { curve ->
-                        Digest.entries.forEach { digest ->
-                            yield(Triple(curve, digest, false))
-                            yield(Triple(curve, digest, true))
-                        }
-                    }
-                }) { (crv, digest, preHashed) ->
+            withData(TestSuites.ECDSA) { (crv, digest, preHashed) ->
                 val signer =
                     Signer.Ephemeral { ec { curve = crv; digests = setOf(digest) } }.getOrThrow()
                 signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.ECDSA>().let {
@@ -142,30 +188,9 @@ class EphemeralSignerCommonTests : FreeSpec({
 
     "Cert signing" - {
         "RSA" - {
-            withData(
-                nameFn = { (pad, dig, bits, pre) -> "$dig/$pad/${bits}bit${if (pre) "/pre" else ""}" },
-                sequence {
-                    RSAPadding.entries.forEach { padding ->
-                        Digest.entries.forEach { digest ->
-                            when {
-                                digest == Digest.SHA512 && padding == RSAPadding.PSS
-                                    -> listOf(2048, 3072, 4096)
-
-                                digest == Digest.SHA384 || digest == Digest.SHA512 || padding == RSAPadding.PSS
-                                    -> listOf(1024, 2048, 3072, 4096)
-
-                                else
-                                    -> listOf(512, 1024, 2048, 3072, 4096)
-                            }.forEach { keySize ->
-                                yield(Quadruple(padding, digest, keySize, false))
-                                yield(Quadruple(padding, digest, keySize, true))
-                            }
-                        }
-                    }
-                }) { (padding, digest, keySize, preHashed) ->
+            withData(TestSuites.RSA) { (padding, digest, keySize, preHashed) ->
                 val data = Random.Default.nextBytes(64)
                 val signer: Signer
-
 
                 try {
                     signer = Signer.Ephemeral {
@@ -226,16 +251,7 @@ class EphemeralSignerCommonTests : FreeSpec({
         }
 
         "ECDSA" - {
-            withData(
-                nameFn = { (crv, dig, pre) -> "$crv/$dig${if (pre) "/pre" else ""}" },
-                sequence {
-                    ECCurve.entries.forEach { curve ->
-                        Digest.entries.filterNot { it == Digest.SHA1 }.forEach { digest ->
-                            yield(Triple(curve, digest, false))
-                            yield(Triple(curve, digest, true))
-                        }
-                    }
-                }) { (crv, digest, preHashed) ->
+            withData(TestSuites.ECDSA.filter { it.digest != Digest.SHA1 }) { (crv, digest, _) ->
                 val signer =
                     Signer.Ephemeral { ec { curve = crv; digests = setOf(digest) } }.getOrThrow()
                 signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.ECDSA>().let {

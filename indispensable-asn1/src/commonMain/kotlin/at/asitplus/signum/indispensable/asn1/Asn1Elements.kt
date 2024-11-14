@@ -755,7 +755,7 @@ class Asn1SetOf @Throws(Asn1Exception::class) internal constructor(children: Lis
     })
 
 /**
- * ASN.1 primitive. Hold o children, but [content] under [tag]
+ * ASN.1 primitive. Holds no children, but [content] under [tag]
  */
 open class Asn1Primitive(
     tag: Tag,
