@@ -15,13 +15,8 @@ import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.ISSUER
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.SUBJECT_UID
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 
 /**
  * Very simple implementation of the meat of an X.509 Certificate:
@@ -211,6 +206,27 @@ constructor(
 }
 
 /**
+ * Signature encoded as per X.509:
+ * - RSA remains a bit string
+ * - EC is DER-encoded then wrapped in a bit string
+ */
+val CryptoSignature.x509Encoded get() = when (this) {
+    is CryptoSignature.EC -> encodeToDer().encodeToAsn1BitStringPrimitive()
+    is CryptoSignature.RSAorHMAC -> encodeToTlv()
+}
+
+/**
+ * Decode a X.509-encoded signature
+ * - RSA is encoded as a bit string
+ * - EC is DER-encoded then wrapped in a bit string
+ */
+fun CryptoSignature.Companion.fromX509Encoded(alg: X509SignatureAlgorithm, it: Asn1Primitive) =
+    when (alg.isEc) {
+        true -> CryptoSignature.EC.decodeFromDer(it.asAsn1BitString().rawBytes)
+        false -> CryptoSignature.RSAorHMAC.decodeFromTlv(it)
+    }
+
+/**
  * Very simple implementation of an X.509 Certificate
  */
 @Serializable
@@ -224,7 +240,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     override fun encodeToTlv() = Asn1.Sequence {
         +tbsCertificate
         +signatureAlgorithm
-        +signature.encodeToTlvBitString()
+        +signature.x509Encoded
     }
 
     override fun equals(other: Any?): Boolean {
@@ -255,10 +271,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         override fun doDecode(src: Asn1Sequence): X509Certificate = runRethrowing {
             val tbs = TbsCertificate.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val signature = when {
-                sigAlg.isEc -> CryptoSignature.EC.decodeFromTlvBitString(src.nextChild() as Asn1Primitive)
-                else -> CryptoSignature.RSAorHMAC.decodeFromTlvBitString(src.nextChild() as Asn1Primitive)
-            }
+            val signature = CryptoSignature.fromX509Encoded(sigAlg, src.nextChild() as Asn1Primitive)
             if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous structure in Certificate Structure")
             return X509Certificate(tbs, sigAlg, signature)
         }

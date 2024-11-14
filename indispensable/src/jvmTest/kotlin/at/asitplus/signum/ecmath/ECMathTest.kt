@@ -38,9 +38,11 @@ class ECMathTest : FreeSpec({
     }
     "Addition: group axioms" - {
         withData(ECCurve.entries) { curve ->
-            withData(generateSequence {
-                Triple(curve.randomPoint(), curve.randomPoint(), curve.randomPoint())
-            }.take(50)) { (a, b, c) ->
+            withData(nameFn = { (a, b, c) -> "(a=$a, b=$b, c=$c)" },
+                generateSequence {
+                    Triple(curve.randomPoint(), curve.randomPoint(), curve.randomPoint())
+                }.take(50)
+            ) { (a, b, c) ->
                 a + b shouldBe b + a
                 (a + b) + c shouldBe a + (b + c)
                 a + (-a) shouldBe curve.IDENTITY

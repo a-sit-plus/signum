@@ -6,6 +6,7 @@ import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.misc.ensureSize
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.max
+import at.asitplus.signum.indispensable.misc.orLazy
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -27,7 +28,6 @@ import kotlinx.serialization.encoding.Encoder
 
 @Serializable(with = CryptoSignature.CryptoSignatureSerializer::class)
 sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
-    val signature: Asn1Element
 
 
         /**
@@ -58,12 +58,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
          */
         sealed interface NotRawByteEncodable : CryptoSignature
 
-
-    fun encodeToTlvBitString(): Asn1Element
-
-    override fun encodeToTlv(): Asn1Element = signature
-
-    val humanReadableString: String get() = "${this::class.simpleName ?: "CryptoSignature"}(signature=${signature.prettyPrint()})"
+    val humanReadableString: String get() = "${this::class.simpleName ?: "CryptoSignature"}(signature=${encodeToTlv().prettyPrint()})"
 
 
     object CryptoSignatureSerializer : KSerializer<CryptoSignature> {
@@ -93,9 +88,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
             require(s.isPositive) { "s must be positive" }
         }
 
-        override val signature: Asn1Element = Asn1.Sequence { +r.encodeToAsn1Primitive(); +s.encodeToAsn1Primitive() }
-
-        override fun encodeToTlvBitString(): Asn1Element = encodeToDer().encodeToAsn1BitStringPrimitive()
+        override fun encodeToTlv() = Asn1.Sequence { +r.encodeToAsn1Primitive(); +s.encodeToAsn1Primitive() }
 
         /**
          * Two signatures are considered equal if `r` and `s` are equal.
@@ -209,11 +202,6 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
                 return fromRawBytes(input)
             }
 
-            @Throws(Asn1Exception::class)
-            fun decodeFromTlvBitString(src: Asn1Primitive): EC.IndefiniteLength = runRethrowing {
-                decodeFromDer(src.asAsn1BitString().rawBytes)
-            }
-
             override fun doDecode(src: Asn1Element): EC.IndefiniteLength {
                 src as Asn1Sequence
                 val r = (src.nextChild() as Asn1Primitive).decodeToBigInteger()
@@ -229,12 +217,21 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
 
     }
 
-    class RSAorHMAC(input: ByteArray) : CryptoSignature, RawByteEncodable {
+    class RSAorHMAC private constructor (rawBytes: ByteArray?, x509Element: Asn1Primitive?) : CryptoSignature, RawByteEncodable {
+        constructor(rawBytes: ByteArray) : this(rawBytes, null)
+        constructor(x509Element: Asn1Primitive) : this(null, x509Element)
 
-        override val signature: Asn1Element = Asn1Primitive(Asn1Element.Tag.BIT_STRING, input)
+        /** the signature encoded as an ASN.1 BIT STRING */
+        val signature: Asn1Primitive by x509Element orLazy {
+            Asn1Primitive(Asn1Element.Tag.BIT_STRING, byteArrayOf(0x00) + rawByteArray)
+        }
 
-        override val rawByteArray by lazy { (signature as Asn1Primitive).decode(Asn1Element.Tag.BIT_STRING) { it } }
-        override fun encodeToTlvBitString(): Asn1Element = this.encodeToTlv()
+        override fun encodeToTlv() = signature
+
+        /** the raw bytes of the signature value */
+        override val rawByteArray by rawBytes orLazy {
+            signature.decode(Asn1Element.Tag.BIT_STRING) { it }
+        }
 
         override fun hashCode(): Int = signature.hashCode()
 
@@ -249,10 +246,11 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
             return signature == other.signature
         }
 
-        companion object {
+        companion object : Asn1Decodable<Asn1Element, RSAorHMAC> {
             @Throws(Asn1Exception::class)
-            fun decodeFromTlvBitString(src: Asn1Primitive): RSAorHMAC = runRethrowing {
-                decodeFromTlv(src) as RSAorHMAC
+            override fun doDecode(src: Asn1Element): RSAorHMAC {
+                src as Asn1Primitive
+                return RSAorHMAC(src)
             }
         }
     }
@@ -261,8 +259,8 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Element): CryptoSignature = runRethrowing {
             when (src.tag) {
-                Asn1Element.Tag.BIT_STRING -> RSAorHMAC((src as Asn1Primitive).decode(Asn1Element.Tag.BIT_STRING) { it })
-                Asn1Element.Tag.SEQUENCE -> EC.decodeFromTlv(src as Asn1Sequence)
+                Asn1Element.Tag.BIT_STRING -> RSAorHMAC.decodeFromTlv(src)
+                Asn1Element.Tag.SEQUENCE -> EC.decodeFromTlv(src)
 
                 else -> throw Asn1Exception("Unknown Signature Format")
             }
