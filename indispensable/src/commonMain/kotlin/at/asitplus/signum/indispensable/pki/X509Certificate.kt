@@ -6,7 +6,6 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
-import at.asitplus.signum.indispensable.asn1.BitSet
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
@@ -31,7 +30,7 @@ constructor(
     val signatureAlgorithm: X509SignatureAlgorithm,
     val issuerName: List<RelativeDistinguishedName>,
     val validFrom: Asn1Time,
-   val validUntil: Asn1Time,
+    val validUntil: Asn1Time,
     val subjectName: List<RelativeDistinguishedName>,
     val publicKey: CryptoPublicKey,
     val issuerUniqueID: BitSet? = null,
@@ -173,7 +172,8 @@ constructor(
                 } else null
             }
             val extensions = if (src.hasMoreChildren()) {
-                ((src.nextChild() as Asn1ExplicitlyTagged).verifyTag(EXTENSIONS.tagValue).single() as Asn1Sequence).children.map {
+                ((src.nextChild() as Asn1ExplicitlyTagged).verifyTag(EXTENSIONS.tagValue)
+                    .single() as Asn1Sequence).children.map {
                     X509CertificateExtension.decodeFromTlv(it as Asn1Sequence)
                 }
             } else null
@@ -210,10 +210,11 @@ constructor(
  * - RSA remains a bit string
  * - EC is DER-encoded then wrapped in a bit string
  */
-val CryptoSignature.x509Encoded get() = when (this) {
-    is CryptoSignature.EC -> encodeToDer().encodeToAsn1BitStringPrimitive()
-    is CryptoSignature.RSAorHMAC -> encodeToTlv()
-}
+val CryptoSignature.x509Encoded
+    get() = when (this) {
+        is CryptoSignature.EC -> encodeToDer().encodeToAsn1BitStringPrimitive()
+        is CryptoSignature.RSAorHMAC -> encodeToTlv()
+    }
 
 /**
  * Decode a X.509-encoded signature
