@@ -69,29 +69,28 @@ val protectedHeader = CoseHeader(
 val payload = byteArrayOf(0xC, 0xA, 0xF, 0xE)
 ```
 
-Both of these are signature inputs, so we'll construct a `CoseSignatureInput` to sign.
+Both of these are signature inputs, so we can construct the signature input:
 
 ```kotlin
-val signatureInput = CoseSignatureInput(
-    contextString = "Signature1",
-    protectedHeader = ByteStringWrapper(protectedHeader),
-    externalAad = byteArrayOf(),
+val signatureInput = CoseSigned.prepareCoseSignatureInput(
+    protectedHeader = protectedHeader,
     payload = payload,
-).serialize()
+    externalAad = byteArrayOf()
+)
 ```
-
 
 Now, everything is ready to be signed:
 
 ```kotlin
 val signature = signer.sign(signatureInput).signature //TODO handle error
 
-val coseSigned = CoseSigned(
-    ByteStringWrapper(protectedHeader),
-    unprotectedHeader = null,
-    payload,
-    signature
-).serialize() // sadly, there's no cwt.io, but you can use cbor.me to explore the signed data
+CoseSigned(
+    protectedHeader = ByteStringWrapper(protectedHeader),
+    unprotectedHeader = unprotectedHeader,
+    payload = payload,
+    signature = signature
+)
+// sadly, there's no cwt.io, but you can use cbor.me to explore the signed data
 ```
 
 ## Create and Parse a Custom-Tagged ASN.1 Structure
