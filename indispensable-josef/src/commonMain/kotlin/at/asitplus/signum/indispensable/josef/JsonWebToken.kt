@@ -22,23 +22,31 @@ import kotlinx.serialization.encodeToString
 data class JsonWebToken(
     @SerialName("iss")
     val issuer: String? = null,
+
     @SerialName("sub")
     val subject: String? = null,
+
     @SerialName("aud")
     val audience: String? = null,
+
     @SerialName("nonce")
     val nonce: String? = null,
+
     @SerialName("nbf")
     @Serializable(with = InstantLongSerializer::class)
     val notBefore: Instant? = null,
+
     @SerialName("iat")
     @Serializable(with = InstantLongSerializer::class)
     val issuedAt: Instant? = null,
+
     @SerialName("exp")
     @Serializable(with = InstantLongSerializer::class)
     val expiration: Instant? = null,
+
     @SerialName("jti")
     val jwtId: String? = null,
+
     /**
      * OID4VP: This claim contains the confirmation method as defined in RFC7800. It MUST contain a JWK as defined in
      * Section 3.2 of RFC7800. This claim determines the public key for which the corresponding private key the
@@ -49,18 +57,21 @@ data class JsonWebToken(
      */
     @SerialName("cnf")
     val confirmationClaim: ConfirmationClaim? = null,
+
     /**
      * RFC 9449: The value of the HTTP method (Section 9.1 of [RFC9110](https://datatracker.ietf.org/doc/html/rfc9110))
      * of the request to which the JWT is attached.
      */
     @SerialName("htm")
     val httpMethod: String? = null,
+
     /**
      * RFC 9449: The HTTP target URI (Section 7.1 of [RFC9110](https://datatracker.ietf.org/doc/html/rfc9110)) of the
      * request to which the JWT is attached, without query and fragment parts.
      */
     @SerialName("htu")
     val httpTargetUrl: String? = null,
+
     /**
      * RFC 9449: Hash of the access token. The value MUST be the result of a base64url encoding (as defined in Section
      * 2 of [RFC7515](https://datatracker.ietf.org/doc/html/rfc7515) the SHA-256 hash of the ASCII encoding of the
@@ -68,6 +79,12 @@ data class JsonWebToken(
      */
     @SerialName("ath")
     val accessTokenHash: String? = null,
+
+    /**
+     * OID4VC HAIP: String asserting the authentication level of the Wallet and the key as asserted in the `cnf` claim.
+     */
+    @SerialName("aal")
+    val authenticationLevel: String? = null,
 ) {
 
     fun serialize() = joseCompliantSerializer.encodeToString(this)
