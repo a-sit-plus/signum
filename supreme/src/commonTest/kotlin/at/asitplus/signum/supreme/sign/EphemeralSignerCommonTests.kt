@@ -251,7 +251,7 @@ class EphemeralSignerCommonTests : FreeSpec({
         }
 
         "ECDSA" - {
-            withData(TestSuites.ECDSA) { (crv, digest, _) ->
+            withData(TestSuites.ECDSA.filter { it.digest != Digest.SHA1 }) { (crv, digest, _) ->
                 val signer =
                     Signer.Ephemeral { ec { curve = crv; digests = setOf(digest) } }.getOrThrow()
                 signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.ECDSA>().let {

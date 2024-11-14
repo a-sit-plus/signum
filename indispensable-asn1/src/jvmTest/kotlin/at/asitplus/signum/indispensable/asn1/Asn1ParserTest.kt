@@ -35,8 +35,9 @@ class Asn1ParserTest : FreeSpec({
             }
             var byteIterator = rest
             repeat(9) {
-                Asn1Element.parseFirst(byteIterator)
-                    .let { (elem, residue) -> byteIterator = residue;elem } shouldBe childIterator.next()
+                val (elem, residue) = Asn1Element.parseFirst(byteIterator)
+                elem shouldBe childIterator.next()
+                byteIterator = residue
             }
             Asn1Element.parseAll(rawChildren) shouldBe seq.children
 

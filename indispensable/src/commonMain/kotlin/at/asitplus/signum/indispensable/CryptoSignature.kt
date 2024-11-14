@@ -223,14 +223,14 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
 
         /** the signature encoded as an ASN.1 BIT STRING */
         val signature: Asn1Primitive by x509Element orLazy {
-            Asn1Primitive(Asn1Element.Tag.BIT_STRING, byteArrayOf(0x00) + rawByteArray)
+            Asn1BitString(rawByteArray).encodeToTlv()
         }
 
         override fun encodeToTlv() = signature
 
         /** the raw bytes of the signature value */
         override val rawByteArray by rawBytes orLazy {
-            signature.decode(Asn1Element.Tag.BIT_STRING) { it }
+            signature.asAsn1BitString().rawBytes
         }
 
         override fun hashCode(): Int = signature.hashCode()

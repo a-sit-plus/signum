@@ -41,6 +41,8 @@ class Asn1BitString private constructor(
      */
     constructor(source: BitSet) : this(fromBitSet(source))
 
+    constructor(source: ByteArray) : this(Pair(0x00.toByte(), source))
+
     /**
      * Transforms [rawBytes] and wraps into a [BitSet]. The last [numPaddingBits] bits are ignored.
      * This is a deep copy and mirrors the bits in every byte to match
