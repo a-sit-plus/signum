@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 
 import io.kotest.core.spec.style.FreeSpec
@@ -11,8 +12,6 @@ import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlin.random.Random
-
-val Base16Strict = Base16(strict = true)
 
 class CoseSerializationTest : FreeSpec({
 
@@ -71,15 +70,23 @@ class CoseSerializationTest : FreeSpec({
 
 
     "CoseSignatureInput is correct" {
-        val signatureInput = CoseSignatureInput(
+        val payload = Random.nextBytes(32)
+        val inputObject = CoseSignatureInput(
             contextString = "Signature1",
             protectedHeader = ByteStringWrapper(CoseHeader(algorithm = CoseAlgorithm.ES256)),
             externalAad = byteArrayOf(),
-            payload = Random.nextBytes(32)
+            payload = payload
         ).serialize().encodeToString(Base16())
             .also { println(it) }
 
-        signatureInput.shouldContain("Signature1".encodeToByteArray().encodeToString(Base16()))
+        val inputMethod = CoseSigned.prepareCoseSignatureInput(
+            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.ES256),
+            payload = payload,
+            externalAad = byteArrayOf(),
+        ).encodeToString(Base16())
+
+        inputObject.shouldContain("Signature1".encodeToByteArray().encodeToString(Base16()))
+        inputMethod shouldBe inputObject
     }
 
 
