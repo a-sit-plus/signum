@@ -1,12 +1,15 @@
 package at.asitplus.signum.indispensable.cosef
 
+import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.types.shouldBeTypeOf
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -14,6 +17,7 @@ import kotlin.random.Random
 
 val Base16Strict = Base16(strict = true)
 
+@OptIn(ExperimentalStdlibApi::class)
 class CoseSerializationTest : FreeSpec({
 
 
@@ -82,5 +86,16 @@ class CoseSerializationTest : FreeSpec({
         signatureInput.shouldContain("Signature1".encodeToByteArray().encodeToString(Base16()))
     }
 
+    "RSA Key should properly encode n and e (RFC 8230 sample)" {
+        val key = CryptoPublicKey.RSA(
+            n = Asn1Integer.fromUnsignedByteArray(("80".repeat(256)).hexToByteArray()), // high bit is set
+            e = Asn1Integer(32768u) // explicit example from RFC8230 sec 4.
+        ).also { it.coseKid = "key".encodeToByteArray() }.toCoseKey().getOrThrow()
+        key.keyId shouldBe "key".encodeToByteArray()
+        key.keyParams.shouldBeTypeOf<CoseKeyParams.RsaParams>().let {
+            it.n!!.size shouldBe 256
+            it.e!! shouldBe ubyteArrayOf(0x80u, 0x00u).toByteArray()
+        }
+    }
 
 })

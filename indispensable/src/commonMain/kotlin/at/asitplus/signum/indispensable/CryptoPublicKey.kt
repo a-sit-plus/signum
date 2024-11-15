@@ -130,8 +130,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                     (keyInfo.nextChild() as Asn1Primitive).readNull()
                     val bitString = (src.nextChild() as Asn1Primitive).asAsn1BitString()
                     val rsaSequence = Asn1Element.parse(bitString.rawBytes) as Asn1Sequence
-                    val n = (rsaSequence.nextChild() as Asn1Primitive).decode(Asn1Element.Tag.INT) { it }
-                    val e = (rsaSequence.nextChild() as Asn1Primitive).decodeToInt()
+                    val n = (rsaSequence.nextChild() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive
+                    val e = (rsaSequence.nextChild() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive
                     if (rsaSequence.hasMoreChildren()) throw Asn1StructuralException("Superfluous data in SPKI!")
                     return RSA(n, e)
                 }
@@ -170,14 +170,10 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
     data class RSA
     @Throws(IllegalArgumentException::class)
     constructor(
-        /**
-         * modulus
-         */
+        /** modulus */
         val n: Asn1Integer.Positive,
 
-        /**
-         * public exponent
-         */
+        /** public exponent */
         val e: Asn1Integer.Positive,
     ) : CryptoPublicKey() {
 
@@ -229,22 +225,6 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                 +Asn1.Int(n)
                 +Asn1.Int(e)
             }.derEncoded
-        }
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other == null) return false
-            if (this::class != other::class) return false
-
-            other as RSA
-
-            return pkcsEncoded.contentEquals(other.pkcsEncoded)
-        }
-
-        override fun hashCode(): Int {
-            var result = n.hashCode()
-            result = 31 * result + e.hashCode()
-            return result
         }
 
         companion object : Identifiable {

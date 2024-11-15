@@ -190,7 +190,7 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null, keyId: ByteArray
                         e = e.magnitude
                     ),
                     type = CoseKeyType.RSA,
-                    keyId = didEncoded.encodeToByteArray(),
+                    keyId = keyId,
                     algorithm = algorithm
                 )
             }
