@@ -45,7 +45,9 @@ sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign) {
         Sign.NEGATIVE -> "-${uint}"
     }
 
+    /** Encodes the [Asn1Integer] to its minimum-size twos-complement encoding. Non-empty. */
     abstract fun twosComplement(): ByteArray
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is Asn1Integer) return false
@@ -64,14 +66,16 @@ sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign) {
 
     fun isZero() = uint.isZero()
 
-    fun bitLength() = uint.bitLength().toUInt()
-
+    /** The minimum-size unsigned bytearray encoding of this number's absolute value. Non-empty. */
     val magnitude by lazy { uint.bytes.toUByteArray().toByteArray() }
 
     class Positive internal constructor(uint: VarUInt) : Asn1Integer(uint, Sign.POSITIVE) {
         override fun twosComplement(): ByteArray = uint.bytes.let {
             if (it.first().countLeadingZeroBits() == 0) listOf(0.toUByte()) + it else it
         }.toUByteArray().toByteArray()
+
+        /** The number of bits required to represent this value */
+        fun bitLength() = uint.bitLength().toUInt()
     }
 
     class Negative internal constructor(uint: VarUInt) : Asn1Integer(uint, Sign.NEGATIVE) {
@@ -96,6 +100,7 @@ sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign) {
         val ONE = Asn1Integer.Positive(VarUInt(1u))
         val ZERO = Asn1Integer.Positive(VarUInt(0u))
 
+        /** Constructs an [Asn1Integer] from a decimal string */
         fun fromDecimalString(input: String): Asn1Integer {
             require(input.isNotEmpty())
             val (numericPart, sign) = when {
@@ -111,12 +116,14 @@ sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign) {
             else -> Negative(magnitude)
         }
 
-        /** from sign-magnitude representation */
+        /** Constructs an [Asn1Integer] from its sign-magnitude representation */
         fun fromByteArray(magnitude: ByteArray, sign: Sign) =
             fromSignMagnitude(VarUInt(magnitude), sign)
 
+        /** Constructs a non-negative [Asn1Integer] from its unsigned magnitude representation */
         fun fromUnsignedByteArray(magnitude: ByteArray) = Positive(VarUInt(magnitude))
 
+        /** Constructs an [Asn1Integer] from its twos-complement byte representation */
         fun fromTwosComplement(input: ByteArray): Asn1Integer = when {
             input.isEmpty() -> Positive(VarUInt())
             (input.first() < 0) ->

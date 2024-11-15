@@ -27,9 +27,11 @@ private fun Sign.toAsn1IntegerSign() = when (this) {
     Sign.NEGATIVE -> Asn1Integer.Sign.NEGATIVE
 }
 
+/** Converts the [Asn1Integer] to the corresponding [BigInteger]. */
 fun Asn1Integer.toBigInteger(): BigInteger =
     BigInteger.fromByteArray(this.magnitude, this.sign.toBigIntegerSign())
 
+/** Converts the [BigInteger] to the corresponding [Asn1Integer]. */
 fun BigInteger.toAsn1Integer(): Asn1Integer =
     Asn1Integer.fromByteArray(this.toByteArray(), this.getSign().toAsn1IntegerSign())
 
