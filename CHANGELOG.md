@@ -4,6 +4,9 @@
 
 ### 3.11.0 NEXT
 
+* Add type parameter to `CoseSigned` for its payload
+* Add companion method `CoseSigned.fromObject` to create a `CoseSigned` with a typed payload (outside of the usual `ByteArray`)
+
 ### 3.10.0 (Supreme 0.5.0) More ~~cowbell~~ targets!
 A new artifact, minor breaking changes and a lot more targets ahead!
 

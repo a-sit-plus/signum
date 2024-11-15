@@ -90,6 +90,25 @@ data class CoseSigned<P : Any>(
         }
 
         /**
+         * Creates a [CoseSigned] object from the given parameters,
+         * encapsulating the [payload] into a [ByteStringWrapper].
+         *
+         * This has to be an inline function with a reified type parameter,
+         * so it can't be a constructor (leads to a runtime error).
+         */
+        inline fun <reified P : Any> fromObject(
+            protectedHeader: CoseHeader,
+            unprotectedHeader: CoseHeader?,
+            payload: P,
+            signature: CryptoSignature.RawByteEncodable
+        ) = CoseSigned<P>(
+            protectedHeader = ByteStringWrapper(value = protectedHeader),
+            unprotectedHeader = unprotectedHeader,
+            payload = coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload)),
+            rawSignature = signature.rawByteArray
+        )
+
+        /**
          * Called by COSE signing implementations to get the bytes that will be
          * used as the input for signature calculation of a `COSE_Sign1` object
          */
