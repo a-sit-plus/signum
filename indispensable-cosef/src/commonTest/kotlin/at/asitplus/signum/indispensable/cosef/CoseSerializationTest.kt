@@ -11,22 +11,39 @@ import io.kotest.matchers.string.shouldContain
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlin.random.Random
 
 class CoseSerializationTest : FreeSpec({
 
-
-    "Serialization is correct" {
+    "Serialization is correct for byte array" {
+        val payload = "This is the content.".encodeToByteArray()
         val cose = CoseSigned<ByteArray>(
             protectedHeader = CoseHeader(algorithm = CoseAlgorithm.ES256),
             unprotectedHeader = CoseHeader(),
-            payload = "This is the content.".encodeToByteArray(),
+            payload = payload,
             signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()) //RSAorHMAC because EC expects tuple
         )
         val serialized = cose.serialize().encodeToString(Base16Strict).uppercase()
 
         serialized shouldContain "546869732069732074686520636F6E74656E742E" // "This is the content."
         serialized shouldContain "43A10126"
+        cose.getTypedPayload(ByteArraySerializer()).isFailure shouldBe true
+    }
+
+    "Serialization is correct for data class" {
+        val payload = DataClass("This is the content.")
+        val cose = CoseSigned.fromObject(
+            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.ES256),
+            unprotectedHeader = CoseHeader(),
+            payload = payload,
+            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()) //RSAorHMAC because EC expects tuple
+        )
+        val serialized = cose.serialize().encodeToString(Base16Strict).uppercase()
+
+        serialized shouldContain "546869732069732074686520636F6E74656E742E" // "This is the content."
+        serialized shouldContain "43A10126"
+        cose.getTypedPayload(DataClass.serializer()).getOrThrow()?.value shouldBe payload
     }
 
     "Serialize header" {

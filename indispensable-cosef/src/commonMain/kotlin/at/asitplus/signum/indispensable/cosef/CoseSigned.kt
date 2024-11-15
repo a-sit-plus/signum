@@ -5,6 +5,7 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
+import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -50,8 +51,15 @@ data class CoseSigned<P : Any>(
 
     fun serialize(): ByteArray = coseCompliantSerializer.encodeToByteArray(CoseSignedSerializer(), this)
 
-    fun getTypedPayload(deserializationStrategy: DeserializationStrategy<P>): KmmResult<P?> = catching {
-        payload?.let { coseCompliantSerializer.decodeFromByteArray(deserializationStrategy, it) }
+    /**
+     * Decodes the payload of this object into a [ByteStringWrapper] containing an object of type [P].
+     *
+     * Note that this does not work if the payload is directly a [ByteArray].
+     */
+    fun getTypedPayload(deserializer: KSerializer<P>): KmmResult<ByteStringWrapper<P>?> = catching {
+        payload?.let {
+            coseCompliantSerializer.decodeFromByteArray(ByteStringWrapperSerializer(deserializer), it)
+        }
     }
 
     override fun equals(other: Any?): Boolean {
