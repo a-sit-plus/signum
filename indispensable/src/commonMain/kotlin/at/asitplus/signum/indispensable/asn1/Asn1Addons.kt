@@ -17,6 +17,21 @@ import kotlin.experimental.or
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
+private fun Asn1Integer.Sign.toBigIntegerSign() = when (this) {
+    Asn1Integer.Sign.POSITIVE -> Sign.POSITIVE
+    Asn1Integer.Sign.NEGATIVE -> Sign.NEGATIVE
+}
+
+private fun Sign.toAsn1IntegerSign() = when (this) {
+    Sign.ZERO, Sign.POSITIVE -> Asn1Integer.Sign.POSITIVE
+    Sign.NEGATIVE -> Asn1Integer.Sign.NEGATIVE
+}
+
+fun Asn1Integer.toBigInteger(): BigInteger =
+    BigInteger.fromByteArray(this.magnitude, this.sign.toBigIntegerSign())
+
+fun BigInteger.toAsn1Integer(): Asn1Integer =
+    Asn1Integer.fromByteArray(this.toByteArray(), this.getSign().toAsn1IntegerSign())
 
 private val UVARINT_MASK_BIGINT = BigInteger.fromUByte(0x7Fu)
 

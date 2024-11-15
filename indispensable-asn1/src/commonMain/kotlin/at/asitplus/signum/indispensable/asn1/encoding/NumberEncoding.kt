@@ -312,24 +312,19 @@ private fun Sink.writeAsn1VarInt(number: ULong, bits: Int): Int {
     return numBytes
 }
 
-/**
- * the number of bits required to represent this number
- */
+/** the number of bits required to represent this number */
 val ULong.bitLength inline get() = ULong.SIZE_BITS - this.countLeadingZeroBits()
 
-/**
- * the number of bits required to represent this number
- */
+/** the number of bits required to represent this number */
 val Long.bitLength inline get() = Long.SIZE_BITS - this.countLeadingZeroBits()
 
-/**
- * the number of bits required to represent this number
- */
+/** the number of bits required to represent this number */
 val UInt.bitLength inline get() = UInt.SIZE_BITS - this.countLeadingZeroBits()
 
-/**
- * the number of bits required to represent this number
- */
+/** the number of bits required to represent this number */
+val UByte.bitLength inline get() = UByte.SIZE_BITS - this.countLeadingZeroBits()
+
+/** the number of bits required to represent this number */
 val Int.bitLength inline get() = Int.SIZE_BITS - this.countLeadingZeroBits()
 
 /**
