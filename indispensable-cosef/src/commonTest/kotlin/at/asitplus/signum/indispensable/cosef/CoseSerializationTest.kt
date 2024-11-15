@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.cosef
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
+import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -12,6 +13,7 @@ import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.builtins.ByteArraySerializer
+import kotlinx.serialization.encodeToByteArray
 import kotlin.random.Random
 
 class CoseSerializationTest : FreeSpec({
@@ -85,19 +87,40 @@ class CoseSerializationTest : FreeSpec({
         cose.shouldNotBeNull()
     }
 
-
-    "CoseSignatureInput is correct" {
+    "CoseSignatureInput is correct for ByteArray" {
         val payload = Random.nextBytes(32)
+        val header = CoseHeader(algorithm = CoseAlgorithm.ES256)
         val inputObject = CoseSignatureInput(
             contextString = "Signature1",
-            protectedHeader = ByteStringWrapper(CoseHeader(algorithm = CoseAlgorithm.ES256)),
+            protectedHeader = ByteStringWrapper(header),
             externalAad = byteArrayOf(),
             payload = payload
         ).serialize().encodeToString(Base16())
             .also { println(it) }
 
         val inputMethod = CoseSigned.prepareCoseSignatureInput(
-            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.ES256),
+            protectedHeader = header,
+            payload = payload,
+            externalAad = byteArrayOf(),
+        ).encodeToString(Base16())
+
+        inputObject.shouldContain("Signature1".encodeToByteArray().encodeToString(Base16()))
+        inputMethod shouldBe inputObject
+    }
+
+    "CoseSignatureInput is correct for custom types" {
+        val payload = DataClass(Random.nextBytes(32).encodeToString(Base16Strict))
+        val header = CoseHeader(algorithm = CoseAlgorithm.ES256)
+        val inputObject = CoseSignatureInput(
+            contextString = "Signature1",
+            protectedHeader = ByteStringWrapper(header),
+            externalAad = byteArrayOf(),
+            payload = coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload)),
+        ).serialize().encodeToString(Base16())
+            .also { println(it) }
+
+        val inputMethod = CoseSigned.prepareCoseSignatureInput(
+            protectedHeader = header,
             payload = payload,
             externalAad = byteArrayOf(),
         ).encodeToString(Base16())

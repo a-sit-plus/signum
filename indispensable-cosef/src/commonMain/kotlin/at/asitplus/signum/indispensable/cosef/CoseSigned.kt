@@ -112,7 +112,8 @@ data class CoseSigned<P : Any>(
         ) = CoseSigned<P>(
             protectedHeader = ByteStringWrapper(value = protectedHeader),
             unprotectedHeader = unprotectedHeader,
-            payload = coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload)),
+            payload = if (payload is ByteArray) payload else
+                coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload)),
             rawSignature = signature.rawByteArray
         )
 
@@ -120,17 +121,18 @@ data class CoseSigned<P : Any>(
          * Called by COSE signing implementations to get the bytes that will be
          * used as the input for signature calculation of a `COSE_Sign1` object
          */
-        @Suppress("unused")
-        fun prepareCoseSignatureInput(
+        inline fun <reified P : Any> prepareCoseSignatureInput(
             protectedHeader: CoseHeader,
-            payload: ByteArray?,
+            payload: P?,
             externalAad: ByteArray = byteArrayOf(),
         ): ByteArray = CoseSignatureInput(
             contextString = "Signature1",
             protectedHeader = ByteStringWrapper(protectedHeader),
             externalAad = externalAad,
-            payload = payload,
+            payload = if (payload is ByteArray) payload else
+                coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload)),
         ).serialize()
+
 
     }
 }
