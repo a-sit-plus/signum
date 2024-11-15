@@ -112,8 +112,11 @@ data class CoseSigned<P : Any>(
         ) = CoseSigned<P>(
             protectedHeader = ByteStringWrapper(value = protectedHeader),
             unprotectedHeader = unprotectedHeader,
-            payload = if (payload is ByteArray) payload else
-                coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload)),
+            payload = when (payload) {
+                is ByteArray -> payload
+                is ByteStringWrapper<*> -> coseCompliantSerializer.encodeToByteArray(payload)
+                else -> coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload))
+            },
             rawSignature = signature.rawByteArray
         )
 
@@ -129,8 +132,11 @@ data class CoseSigned<P : Any>(
             contextString = "Signature1",
             protectedHeader = ByteStringWrapper(protectedHeader),
             externalAad = externalAad,
-            payload = if (payload is ByteArray) payload else
-                coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload)),
+            payload = when (payload) {
+                is ByteArray -> payload
+                is ByteStringWrapper<*> -> coseCompliantSerializer.encodeToByteArray(payload)
+                else -> coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload))
+            },
         ).serialize()
 
 
