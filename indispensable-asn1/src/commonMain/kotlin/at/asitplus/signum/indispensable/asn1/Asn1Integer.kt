@@ -111,8 +111,6 @@ sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign) {
             return fromSignMagnitude(VarUInt(numericPart), sign)
         }
 
-        fun fromUnsignedByteArray(input: ByteArray) = Positive(VarUInt(input))
-
         private fun fromSignMagnitude(magnitude: VarUInt, sign: Sign) = when {
             sign == Sign.POSITIVE || magnitude.isZero() -> Positive(magnitude)
             else -> Negative(magnitude)
