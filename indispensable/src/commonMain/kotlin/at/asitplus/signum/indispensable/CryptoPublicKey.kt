@@ -179,15 +179,15 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
         val bits = n.bitLength().let { Size.of(it) ?: throw IllegalArgumentException("Unsupported key size $it bits") }
 
-        /**
-         * @throws IllegalArgumentException in case of illegal input (odd key size, for example)
-         */
-        @Throws(IllegalArgumentException::class)
-        constructor(n: ByteArray, e: ByteArray) : this(Asn1Integer.fromUnsignedByteArray(n), Asn1Integer.fromUnsignedByteArray(e))
+        val bits = n.bitLength().let { Size.of(it) ?: throw IllegalArgumentException("Unsupported key size $it bits") }
 
+        @Deprecated(message="Use a BigInteger-capable constructor instead")
         constructor(n: ByteArray, e: Int): this(Asn1Integer.fromUnsignedByteArray(n), Asn1Integer(e) as Asn1Integer.Positive)
 
         constructor(n: Asn1Integer, e: Asn1Integer): this(n as Asn1Integer.Positive, e as Asn1Integer.Positive)
+        constructor(n: BigInteger, e: BigInteger): this(n.toAsn1Integer(), e.toAsn1Integer())
+        constructor(n: BigInteger, e: Int): this(n.toAsn1Integer(), Asn1Integer(e))
+        constructor(n: BigInteger, e: UInt): this(n.toAsn1Integer(), Asn1Integer(e))
 
         override val oid = RSA.oid
 
