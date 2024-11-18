@@ -2,6 +2,8 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.indispensable.asn1.toAsn1Integer
+import at.asitplus.signum.indispensable.asn1.toJavaBigInteger
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
@@ -139,7 +141,7 @@ private val rsaFactory = KeyFactory.getInstance("RSA")
 
 fun CryptoPublicKey.RSA.getJcaPublicKey(): KmmResult<RSAPublicKey> = catching {
     rsaFactory.generatePublic(
-        RSAPublicKeySpec(BigInteger(1, n), BigInteger.valueOf(e.toLong()))
+        RSAPublicKeySpec(n.toJavaBigInteger(), e.toJavaBigInteger())
     ) as RSAPublicKey
 }
 
@@ -159,7 +161,7 @@ fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmRe
 }
 
 fun CryptoPublicKey.RSA.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey> =
-    catching { CryptoPublicKey.RSA(publicKey.modulus.toByteArray(), publicKey.publicExponent.toInt()) }
+    catching { CryptoPublicKey.RSA(publicKey.modulus.toAsn1Integer(), publicKey.publicExponent.toAsn1Integer()) }
 
 fun CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
     when (publicKey) {

@@ -9,6 +9,8 @@
    * Additional constructor methods: `fromByteArray`, `fromUnsignedByteArray`
    * Additional instance methods: `isZero`, `magnitude`, `bitLength`
    * Additional conversion methods for Java BigInteger and iospin BigInteger
+ * Refactor `CryptoPublicKey.Rsa` to use `Asn1Integer`
+   * Fixes JWS/COSE encoding for non-standard exponents (with MSBit 1)
 
 ### 3.10.0 (Supreme 0.5.0) More ~~cowbell~~ targets!
 A new artifact, minor breaking changes and a lot more targets ahead!

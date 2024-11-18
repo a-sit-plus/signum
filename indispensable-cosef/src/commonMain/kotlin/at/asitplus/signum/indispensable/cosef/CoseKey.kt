@@ -186,11 +186,11 @@ fun CryptoPublicKey.toCoseKey(algorithm: CoseAlgorithm? = null, keyId: ByteArray
             else catching {
                 CoseKey(
                     keyParams = CoseKeyParams.RsaParams(
-                        n = n,
-                        e = e.toTwosComplementByteArray()
+                        n = n.magnitude,
+                        e = e.magnitude
                     ),
                     type = CoseKeyType.RSA,
-                    keyId = didEncoded.encodeToByteArray(),
+                    keyId = keyId,
                     algorithm = algorithm
                 )
             }
