@@ -22,6 +22,9 @@ fun Asn1Integer(number: Int) = Asn1Integer(number.toLong())
 fun Asn1Integer(number: Long) =
     if (number < 0) Asn1Integer.Negative(VarUInt((number * -1).toULong()))
     else Asn1Integer.Positive(VarUInt((number).toULong()))
+fun Asn1Integer(number: UInt) = Asn1Integer(number.toULong())
+fun Asn1Integer(number: ULong) =
+    Asn1Integer.Positive(VarUInt(number))
 
 /**
  * A very simple implementation of an ASN.1 variable-length integer.
@@ -30,7 +33,7 @@ fun Asn1Integer(number: Long) =
  * Hence, it directly interoperates with [Kotlin MP BigNum](https://github.com/ionspin/kotlin-multiplatform-bignum) and the JVM BigInteger.
  */
 @Serializable(with = Asn1IntegerSerializer::class)
-sealed class Asn1Integer(internal val uint: VarUInt, private val sign: Sign) {
+sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign) {
 
     enum class Sign {
         POSITIVE,
@@ -42,7 +45,9 @@ sealed class Asn1Integer(internal val uint: VarUInt, private val sign: Sign) {
         Sign.NEGATIVE -> "-${uint}"
     }
 
+    /** Encodes the [Asn1Integer] to its minimum-size twos-complement encoding. Non-empty. */
     abstract fun twosComplement(): ByteArray
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is Asn1Integer) return false
@@ -59,13 +64,24 @@ sealed class Asn1Integer(internal val uint: VarUInt, private val sign: Sign) {
         return result
     }
 
+    fun isZero() = uint.isZero()
+
+    /** The minimum-size unsigned bytearray encoding of this number's absolute value. Non-empty. */
+    val magnitude by lazy { uint.bytes.toUByteArray().toByteArray() }
+
     class Positive internal constructor(uint: VarUInt) : Asn1Integer(uint, Sign.POSITIVE) {
         override fun twosComplement(): ByteArray = uint.bytes.let {
             if (it.first().countLeadingZeroBits() == 0) listOf(0.toUByte()) + it else it
         }.toUByteArray().toByteArray()
+
+        /** The number of bits required to represent this value */
+        fun bitLength() = uint.bitLength().toUInt()
     }
 
     class Negative internal constructor(uint: VarUInt) : Asn1Integer(uint, Sign.NEGATIVE) {
+        init {
+            check(!uint.isZero()) // there is no negative zero
+        }
         override fun twosComplement(): ByteArray {
             if (uint == VarUInt(1u)) return byteArrayOf(-1)
 
@@ -84,22 +100,42 @@ sealed class Asn1Integer(internal val uint: VarUInt, private val sign: Sign) {
         val ONE = Asn1Integer.Positive(VarUInt(1u))
         val ZERO = Asn1Integer.Positive(VarUInt(0u))
 
+        /** Constructs an [Asn1Integer] from a decimal string */
         fun fromDecimalString(input: String): Asn1Integer {
-            if (input.matches(REGEX_BASE10)) return Positive(VarUInt(input))
-            if (input.first() == '-' && input.substring(1).matches(REGEX_BASE10))
-                return Negative(VarUInt(input.substring(1)))
-            else throw IllegalArgumentException("NaN: $input")
+            require(input.isNotEmpty())
+            val (numericPart, sign) = when {
+                input.first() == '-' -> Pair(input.substring(1), Sign.NEGATIVE)
+                else -> Pair(input, Sign.POSITIVE)
+            }
+            require(numericPart.matches(REGEX_BASE10)) { "NaN: $input" }
+            return fromSignMagnitude(VarUInt(numericPart), sign)
         }
 
-        fun fromTwosComplement(input: ByteArray): Asn1Integer =
-            if (input.first() < 0) {
+        private fun fromSignMagnitude(magnitude: VarUInt, sign: Sign) = when {
+            sign == Sign.POSITIVE || magnitude.isZero() -> Positive(magnitude)
+            else -> Negative(magnitude)
+        }
+
+        /** Constructs an [Asn1Integer] from its sign-magnitude representation */
+        fun fromByteArray(magnitude: ByteArray, sign: Sign) =
+            fromSignMagnitude(VarUInt(magnitude), sign)
+
+        /** Constructs a non-negative [Asn1Integer] from its unsigned magnitude representation */
+        fun fromUnsignedByteArray(magnitude: ByteArray) = Positive(VarUInt(magnitude))
+
+        /** Constructs an [Asn1Integer] from its twos-complement byte representation */
+        fun fromTwosComplement(input: ByteArray): Asn1Integer = when {
+            input.isEmpty() -> Positive(VarUInt())
+            (input.first() < 0) ->
                 Negative(
                     VarUInt(
                         VarUInt(input).inv().toString().toMutableList().decimalPlus(listOf('1'))
                             .joinToString(separator = "")
                     )
                 )
-            } else Positive(VarUInt(input))
+
+            else -> Positive(VarUInt(input))
+        }
     }
 }
 
@@ -121,7 +157,8 @@ internal value class VarUInt(private val words: MutableList<UByte> = mutableList
     val bytes: List<UByte> get() = words
 
     private fun trim() {
-        words.apply { while (words.size > 1 && first() == 0.toUByte()) removeFirst() }
+        if (words.isEmpty()) words.add(0u)
+        else words.apply { while (size > 1 && first() == 0.toUByte()) removeFirst() }
     }
 
     override fun toString() = words.iterator().toDecimalString()
@@ -198,7 +235,7 @@ internal value class VarUInt(private val words: MutableList<UByte> = mutableList
 
     fun isZero(): Boolean = (words.first() == 0.toUByte()) //always trimmed, so it is enough to inspect the first byte
 
-    fun bitLength(): Int = 8*(words.size-1) + words.first().toUInt().bitLength
+    fun bitLength(): Int = 8*(words.size-1) + words.first().bitLength
 
     fun inv(): VarUInt = VarUInt(MutableList(words.size) { words[it].inv() })
 
