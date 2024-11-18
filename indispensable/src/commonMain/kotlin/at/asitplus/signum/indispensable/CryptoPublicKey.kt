@@ -179,14 +179,11 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
         val bits = n.bitLength().let { Size.of(it) ?: throw IllegalArgumentException("Unsupported key size $it bits") }
 
-        val bits = n.bitLength().let { Size.of(it) ?: throw IllegalArgumentException("Unsupported key size $it bits") }
-
         @Deprecated(message="Use a BigInteger-capable constructor instead")
         constructor(n: ByteArray, e: Int): this(Asn1Integer.fromUnsignedByteArray(n), Asn1Integer(e) as Asn1Integer.Positive)
 
         constructor(n: Asn1Integer, e: Asn1Integer): this(n as Asn1Integer.Positive, e as Asn1Integer.Positive)
         constructor(n: BigInteger, e: BigInteger): this(n.toAsn1Integer(), e.toAsn1Integer())
-        constructor(n: BigInteger, e: Int): this(n.toAsn1Integer(), Asn1Integer(e))
         constructor(n: BigInteger, e: UInt): this(n.toAsn1Integer(), Asn1Integer(e))
 
         override val oid = RSA.oid
@@ -243,6 +240,9 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                 if (conv.hasMoreChildren()) throw Asn1StructuralException("Superfluous bytes")
                 return RSA(n, e)
             }
+
+            inline operator fun invoke(n: BigInteger, e: Int) =
+                RSA(n, e.also { require(it > 0) }.toUInt())
 
             override val oid = KnownOIDs.rsaEncryption
         }
