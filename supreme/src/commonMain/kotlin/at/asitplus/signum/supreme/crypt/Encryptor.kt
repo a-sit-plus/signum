@@ -38,3 +38,5 @@ expect internal fun initCipher(
 ): PlatformCipher
 
 expect internal fun PlatformCipher.encrypt(data: ByteArray): KmmResult<Ciphertext>
+
+expect internal fun Ciphertext.Authenticated.decrypt(key: ByteArray): KmmResult<ByteArray>
