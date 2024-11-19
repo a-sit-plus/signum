@@ -1,13 +1,13 @@
 package at.asitplus.signum.supreme.crypt
 
 import at.asitplus.KmmResult
+import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.Ciphertext
 import at.asitplus.signum.indispensable.EncryptionAlgorithm
 import org.kotlincrypto.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
-import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 private val secureRandom = SecureRandom()
@@ -20,12 +20,15 @@ actual internal fun initCipher(
 ): PlatformCipher {
     val nonce = iv ?: ByteArray(algorithm.keyNumBits.toInt() / 8).apply { secureRandom.nextBytes(this) }
     return Cipher.getInstance(algorithm.jcaName).apply {
-        if( algorithm is EncryptionAlgorithm.AES.GCM)
-            init(Cipher.ENCRYPT_MODE, SecretKeySpec(key, algorithm.jcaKeySpec), GCMParameterSpec(algorithm.tagNumBits.toInt(),nonce))
+        if (algorithm is EncryptionAlgorithm.AES.GCM)
+            init(
+                Cipher.ENCRYPT_MODE,
+                SecretKeySpec(key, algorithm.jcaKeySpec),
+                GCMParameterSpec(algorithm.tagNumBits.toInt(), nonce)
+            )
         aad?.let { updateAAD(it) }
     }.let { AESContainer(algorithm, nonce, aad, it) }
 }
-
 
 
 private class AESContainer(
@@ -49,8 +52,8 @@ actual internal fun PlatformCipher.encrypt(data: ByteArray): KmmResult<Ciphertex
             .toByteArray() else null
 
     return KmmResult.success(
-        if (authtag != null) Ciphertext.Authenticated(ciphertext, iv, authtag)
-        else Ciphertext(ciphertext, iv)
+        if (authtag != null) Ciphertext.Authenticated(alg, ciphertext, iv, authtag, aad)
+        else Ciphertext(alg, ciphertext, iv)
     )
 }
 
@@ -65,3 +68,20 @@ val EncryptionAlgorithm.jcaKeySpec: String
     get() = when (this) {
         is EncryptionAlgorithm.AES -> "AES"
     }
+
+actual internal fun Ciphertext.Authenticated.decrypt(key: ByteArray): KmmResult<ByteArray> {
+    return catching {
+        val wholeInput = encryptedData + authTag
+        Cipher.getInstance(algorithm.jcaName).also { cipher ->
+            cipher.init(
+                Cipher.DECRYPT_MODE,
+                SecretKeySpec(key, algorithm.jcaKeySpec),
+                GCMParameterSpec((algorithm as EncryptionAlgorithm.Authenticated).tagNumBits.toInt(), iv)
+            )
+            aad?.let {
+                cipher.updateAAD(it)
+            }
+        }.doFinal(wholeInput)
+    }
+}
+

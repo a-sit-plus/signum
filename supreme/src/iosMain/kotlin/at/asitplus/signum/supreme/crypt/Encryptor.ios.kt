@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.crypt
 
 import at.asitplus.KmmResult
+import at.asitplus.catching
 import at.asitplus.signum.indispensable.Ciphertext
 import at.asitplus.signum.indispensable.EncryptionAlgorithm
 import at.asitplus.signum.supreme.aes.AESwift
@@ -16,10 +17,10 @@ actual internal fun initCipher(
     aad: ByteArray?
 ): PlatformCipher {
     if (algorithm !is EncryptionAlgorithm.AES.GCM) throw IllegalArgumentException()
-    return AESContainer(key, iv!!, aad)
+    return AESContainer(algorithm, key, iv!!, aad)
 }
 
-private data class AESContainer(val key: ByteArray, val iv: ByteArray, val aad: ByteArray?)
+private data class AESContainer(val alg: EncryptionAlgorithm, val key: ByteArray, val iv: ByteArray, val aad: ByteArray?)
 
 @OptIn(ExperimentalForeignApi::class)
 actual internal fun PlatformCipher.encrypt(data: ByteArray): KmmResult<Ciphertext> {
@@ -36,27 +37,29 @@ actual internal fun PlatformCipher.encrypt(data: ByteArray): KmmResult<Ciphertex
     return if (ciphertext.authTag() != null)
         KmmResult.success(
             Ciphertext.Authenticated(
+                alg,
                 ciphertext.ciphertext().toByteArray(),
                 ciphertext.iv().toByteArray(),
                 ciphertext.authTag()!!.toByteArray(),
                 aad
             )
         )
-    else KmmResult.success(Ciphertext(ciphertext.ciphertext().toByteArray(), ciphertext.iv().toByteArray()))
+    else KmmResult.success(Ciphertext(alg, ciphertext.ciphertext().toByteArray(), ciphertext.iv().toByteArray()))
 }
 
 
 @OptIn(ExperimentalForeignApi::class)
-internal fun decrypt(ciphertext: Ciphertext, key: ByteArray): ByteArray? {
-
-    return  swiftcall {
-        AESwift.gcmDecryptWithCiphertext(
-            ciphertext.encryptedData.toNSData(),
-            key.toNSData(),
-            ciphertext.iv!!.toNSData(),
-            (ciphertext as Ciphertext.Authenticated).authTag.toNSData(),
-            (ciphertext as Ciphertext.Authenticated).aad?.toNSData(),
-            error
-        )!!.toByteArray()
+actual internal fun Ciphertext.Authenticated.decrypt(key: ByteArray): KmmResult<ByteArray> {
+    return catching {
+        swiftcall {
+            AESwift.gcmDecryptWithCiphertext(
+                encryptedData.toNSData(),
+                key.toNSData(),
+                iv!!.toNSData(),
+                authTag.toNSData(),
+                aad?.toNSData(),
+                error
+            )!!.toByteArray()
+        }
     }
 }
