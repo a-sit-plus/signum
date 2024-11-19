@@ -23,6 +23,29 @@ import CryptoKit
       }
             return AuthenticatedCiphertext(ciphertext: sealedBox.ciphertext, authTag: sealedBox.tag, iv: sealedBox.nonce.withUnsafeBytes { Data($0) })
       }
+
+       @objc public class func gcmDecrypt(ciphertext: NSData, key: NSData, iv: NSData, tag: NSData, aad: NSData?) throws -> Data {
+                  let data = (key as Data).withUnsafeBytes {
+                                  return Data($0)
+                              }
+                      let nonce=try! AES.GCM.Nonce(data: iv)
+
+                  let symmKey = SymmetricKey(data: data)
+
+                  let sealedBox = try AES.GCM.SealedBox(nonce: nonce, ciphertext: ciphertext as Data, tag: tag as Data)
+
+                  let decrypted =
+                  if(aad != nil)
+                  {
+                      try AES.GCM.open(sealedBox, using: symmKey, authenticating: aad!)
+                  }
+                  else {
+
+                          try AES.GCM.open(sealedBox, using: symmKey)
+                  }
+                  return decrypted
+
+              }
     }
 
     @objc public class AuthenticatedCiphertext: NSObject {

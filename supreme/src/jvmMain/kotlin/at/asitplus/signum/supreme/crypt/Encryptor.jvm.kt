@@ -49,7 +49,7 @@ actual internal fun PlatformCipher.encrypt(data: ByteArray): KmmResult<Ciphertex
             .toByteArray() else null
 
     return KmmResult.success(
-        if (authtag != null) Ciphertext.Authenticated(ciphertext, iv, authtag)
+        if (authtag != null) Ciphertext.Authenticated(ciphertext, iv, authtag, aad)
         else Ciphertext(ciphertext, iv)
     )
 }
