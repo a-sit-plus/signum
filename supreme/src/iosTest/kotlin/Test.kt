@@ -1,3 +1,7 @@
+import at.asitplus.signum.indispensable.Ciphertext
+import at.asitplus.signum.indispensable.EncryptionAlgorithm
+import at.asitplus.signum.supreme.crypt.Encryptor
+import at.asitplus.signum.supreme.crypt.decrypt
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldNotBe
 import kotlin.random.Random
@@ -12,7 +16,7 @@ class ProviderTest : FreeSpec({
     "AES" {
         val key = Random.Default.nextBytes(16)
         val iv = Random.Default.nextBytes(12)
-        val aad =  Random.Default.nextBytes(16)
+        val aad = Random.Default.nextBytes(16)
         val plaintext = "WUMBO".encodeToByteArray()
 
 
@@ -22,7 +26,10 @@ class ProviderTest : FreeSpec({
         println(ciphertext)
 
 
-       println("DECRYPTED: " +at.asitplus.signum.supreme.crypt.decrypt(ciphertext.getOrThrow(), key)?.toHexString(HexFormat.UpperCase))
+        println(
+            "DECRYPTED: " + (ciphertext.getOrThrow() as Ciphertext.Authenticated).decrypt(key).getOrThrow()
+                .toHexString(HexFormat.UpperCase)
+        )
 
     }
 })
