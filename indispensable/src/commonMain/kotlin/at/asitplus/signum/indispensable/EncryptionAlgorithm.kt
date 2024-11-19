@@ -19,9 +19,8 @@ sealed interface EncryptionAlgorithm {
     /**
      * Indicates that a cipher uses a discrete message authentication code
      */
-    interface WithMac {
-
-        val macNumBytes: UInt
+    interface Authenticated {
+        val tagNumBits: UInt
     }
 
     /**
@@ -39,16 +38,17 @@ sealed interface EncryptionAlgorithm {
     sealed class AES(modeOfOps: ModeOfOperation, override val keyNumBits: UInt) :
         BlockCipher(modeOfOps, blockSizeBits = 128u) {
 
-        class GCM(keyNumBits: UInt) : AES(ModeOfOperation.GCM, keyNumBits), WithIV {
-            override val ivNumBits: UInt = 128u
+        class GCM(keyNumBits: UInt) : AES(ModeOfOperation.GCM, keyNumBits), WithIV, Authenticated {
+            override val ivNumBits: UInt = 96u
+            override val tagNumBits: UInt = blockSizeBits
         }
 
-        class CBC(keyNumBits: UInt) : AES(ModeOfOperation.GCM, keyNumBits), WithIV, WithMac {
+        class CBC(keyNumBits: UInt) : AES(ModeOfOperation.GCM, keyNumBits), WithIV, Authenticated {
             override val ivNumBits: UInt = 128u
-            override val macNumBytes: UInt = keyNumBits / 16u
+            override val tagNumBits: UInt = blockSizeBits
         }
 
-        class ECB(keyNumBits: UInt) : AES(ModeOfOperation.GCM, keyNumBits)
+        class ECB(keyNumBits: UInt) : AES(ModeOfOperation.ECB, keyNumBits)
     }
 }
 
