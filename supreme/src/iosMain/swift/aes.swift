@@ -1,18 +1,41 @@
 import Foundation
-
-import Foundation
 import CryptoKit
 
 @objc public class AESwift: NSObject {
-  @objc public class func cryptoDemoCombinedData(plain: Data, key: Data, iv: Data, aad: Data) -> Data? {
+    @objc public class func gcm(plain: NSData, key: NSData, iv: NSData?, aad: NSData?) -> AuthenticatedCiphertext? {
+      let data = (key as Data).withUnsafeBytes {
+                      return Data($0)
+                  }
 
-    let nonce = try! AES.GCM.Nonce(data: iv)
-    let symmKey = SymmetricKey(data: key)
+      guard let nonce = if(iv != nil) {
+          try! AES.GCM.Nonce(data: iv!)
+      }else{          AES.GCM.Nonce()      }
+      else {return nil}
+      let symmKey = SymmetricKey(data: data)
 
-    // Encrypt
-    let sealedBox = try! AES.GCM.seal(
-      plain, using: symmKey, nonce: nonce, authenticating: aad)
+    let sealedBox = if(aad != nil) {
+        try! AES.GCM.seal(
+        plain, using: symmKey, nonce: nonce, authenticating: aad!)
+      }
+      else {
+        try!  AES.GCM.seal(
+          plain, using: symmKey, nonce: nonce)
+      }
+            return AuthenticatedCiphertext(ciphertext: sealedBox.ciphertext, authTag: sealedBox.tag, iv: sealedBox.nonce.withUnsafeBytes { Data($0) })
+      }
+    }
 
-    return sealedBox.combined
-  }
-}
+    @objc public class AuthenticatedCiphertext: NSObject {
+        @objc public let ciphertext: Data
+
+        @objc public let authTag: Data?
+
+        @objc public let iv: Data
+
+        init(ciphertext: Data, authTag: Data?, iv: Data) {
+            self.ciphertext = ciphertext
+            self.authTag = authTag
+            self.iv = iv
+        }
+
+    }
