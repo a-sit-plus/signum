@@ -12,12 +12,17 @@ class ProviderTest : FreeSpec({
     "AES" {
         val key = Random.Default.nextBytes(16)
         val iv = Random.Default.nextBytes(12)
-        //val aad =  Random.Default.nextBytes(16)
+        val aad =  Random.Default.nextBytes(16)
         val plaintext = "WUMBO".encodeToByteArray()
 
 
         println("KEY: ${key.toHexString()} IV: ${iv.toHexString()}  plaintext: ${plaintext.toHexString()}")
 
-        println( Encryptor(EncryptionAlgorithm.AES128_GCM, key, iv, null).encrypt(plaintext))
+        val ciphertext = Encryptor(EncryptionAlgorithm.AES128_GCM, key, iv, aad).encrypt(plaintext)
+        println(ciphertext)
+
+
+       println("DECRYPTED: " +at.asitplus.signum.supreme.crypt.decrypt(ciphertext.getOrThrow(), key)?.toHexString(HexFormat.UpperCase))
+
     }
 })

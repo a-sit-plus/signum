@@ -21,6 +21,8 @@ class ProviderTest : FreeSpec({
 
         println("KEY: ${key.toHexString()} IV: ${iv.toHexString()}  plaintext: ${plaintext.toHexString()}")
 
-        println( Encryptor(EncryptionAlgorithm.AES128_GCM, key, iv, null).encrypt(plaintext))
+        val ciphertext = Encryptor(EncryptionAlgorithm.AES128_GCM, key, iv, null).encrypt(plaintext)
+        println(ciphertext)
+
     }
 })
