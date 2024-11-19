@@ -1,5 +1,6 @@
+package at.asitplus.signum.supreme.crypt
+
 import at.asitplus.signum.indispensable.EncryptionAlgorithm
-import at.asitplus.signum.supreme.crypt.Encryptor
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldNotBe
 import kotlin.random.Random
