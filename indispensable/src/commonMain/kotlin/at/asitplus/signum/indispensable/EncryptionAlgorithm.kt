@@ -1,7 +1,11 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.indispensable.asn1.Identifiable
+import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 
-sealed interface EncryptionAlgorithm {
+
+sealed interface EncryptionAlgorithm : Identifiable {
     override fun toString(): String
 
     companion object {
@@ -9,9 +13,9 @@ sealed interface EncryptionAlgorithm {
         val AES192_GCM = AES.GCM(192u)
         val AES256_GCM = AES.GCM(256u)
 
-        val AES128_CBC_HMAC256 = AES.CBC(256u)
-        val AES128_CBC_HMAC384 = AES.CBC(348u)
-        val AES128_CBC_HMAC512 = AES.CBC(512u)
+        val AES128_CBC_HMAC256 = AES.CBC(128u)
+        val AES128_CBC_HMAC384 = AES.CBC(192u)
+        val AES128_CBC_HMAC512 = AES.CBC(256u)
 
         val AES128_ECB = AES.ECB(128u)
         val AES192_ECB = AES.ECB(192u)
@@ -21,7 +25,7 @@ sealed interface EncryptionAlgorithm {
     val name: String
 
     /**
-     * Indicates that a cipher uses a discrete message authentication code
+     * Indicates an authenticated cipher
      */
     interface Authenticated : EncryptionAlgorithm {
         val tagNumBits: UInt
@@ -45,17 +49,36 @@ sealed interface EncryptionAlgorithm {
 
         override fun toString(): String = name
 
-        class GCM(keyNumBits: UInt) : AES(ModeOfOperation.GCM, keyNumBits), WithIV, Authenticated {
+        class GCM internal constructor(keyNumBits: UInt) : AES(ModeOfOperation.GCM, keyNumBits), WithIV, Authenticated {
             override val ivNumBits: UInt = 96u
             override val tagNumBits: UInt = blockSizeBits
+            override val oid: ObjectIdentifier = when (keyNumBits) {
+                128u -> KnownOIDs.aes128_GCM
+                192u -> KnownOIDs.aes192_GCM
+                256u -> KnownOIDs.aes256_GCM
+                else -> throw IllegalStateException("$keyNumBits This is an implementation flaw. Report this bug!")
+            }
         }
 
-        class CBC(keyNumBits: UInt) : AES(ModeOfOperation.GCM, keyNumBits), WithIV, Authenticated {
+        class CBC(keyNumBits: UInt) : AES(ModeOfOperation.CBC, keyNumBits), WithIV, Authenticated {
             override val ivNumBits: UInt = 128u
             override val tagNumBits: UInt = blockSizeBits
+            override val oid: ObjectIdentifier = when (keyNumBits) {
+                128u -> KnownOIDs.aes128_CBC
+                192u -> KnownOIDs.aes192_CBC
+                256u -> KnownOIDs.aes256_CBC
+                else -> throw IllegalStateException("$keyNumBits This is an implementation flaw. Report this bug!")
+            }
         }
 
-        class ECB(keyNumBits: UInt) : AES(ModeOfOperation.ECB, keyNumBits)
+        class ECB(keyNumBits: UInt) : AES(ModeOfOperation.ECB, keyNumBits){
+            override val oid: ObjectIdentifier = when (keyNumBits) {
+                128u -> KnownOIDs.aes128_ECB
+                192u -> KnownOIDs.aes192_ECB
+                256u -> KnownOIDs.aes256_ECB
+                else -> throw IllegalStateException("$keyNumBits This is an implementation flaw. Report this bug!")
+            }
+        }
     }
 }
 
