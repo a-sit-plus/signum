@@ -25,7 +25,7 @@ class ProviderTest : FreeSpec({
                 val aad = Random.Default.nextBytes(32)
                 val plaintext = Random.Default.nextBytes(256)
 
-
+println(it.oid)
                 println("KEY: ${key.toHexString()} IV: ${iv.toHexString()}  plaintext: ${plaintext.toHexString()}")
 
                 val ciphertext: Ciphertext.Authenticated =
