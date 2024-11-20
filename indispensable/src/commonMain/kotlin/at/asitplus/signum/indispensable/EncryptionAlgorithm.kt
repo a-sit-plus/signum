@@ -1,6 +1,8 @@
 package at.asitplus.signum.indispensable
 
+
 sealed interface EncryptionAlgorithm {
+    override fun toString(): String
 
     companion object {
         val AES128_GCM = AES.GCM(128u)
@@ -16,17 +18,19 @@ sealed interface EncryptionAlgorithm {
         val AES256_ECB = AES.ECB(256u)
     }
 
+    val name: String
+
     /**
      * Indicates that a cipher uses a discrete message authentication code
      */
-    interface Authenticated {
+    interface Authenticated : EncryptionAlgorithm {
         val tagNumBits: UInt
     }
 
     /**
      * Indicates that a cipher requires an initialization vector
      */
-    interface WithIV {
+    interface WithIV : EncryptionAlgorithm {
         val ivNumBits: UInt
     }
 
@@ -37,6 +41,9 @@ sealed interface EncryptionAlgorithm {
 
     sealed class AES(modeOfOps: ModeOfOperation, override val keyNumBits: UInt) :
         BlockCipher(modeOfOps, blockSizeBits = 128u) {
+        override val name: String = "AES-$keyNumBits ${modeOfOps.acronym}"
+
+        override fun toString(): String = name
 
         class GCM(keyNumBits: UInt) : AES(ModeOfOperation.GCM, keyNumBits), WithIV, Authenticated {
             override val ivNumBits: UInt = 96u
@@ -54,10 +61,10 @@ sealed interface EncryptionAlgorithm {
 
 sealed class BlockCipher(val mode: ModeOfOperation, val blockSizeBits: UInt) : EncryptionAlgorithm {
 
-    enum class ModeOfOperation(val friendlyName: String) {
-        GCM("Galois Counter Mode"),
-        CBC("Cipherblock Chaining Mode"),
-        ECB("Electronic Codebook Mode"),
+    enum class ModeOfOperation(val friendlyName: String, val acronym: String) {
+        GCM("Galois Counter Mode", "GCM"),
+        CBC("Cipherblock Chaining Mode", "CBC"),
+        ECB("Electronic Codebook Mode", "ECB"),
 
     }
 }
