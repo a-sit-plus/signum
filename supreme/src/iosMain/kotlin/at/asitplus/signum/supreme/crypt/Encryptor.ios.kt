@@ -49,12 +49,12 @@ actual internal fun PlatformCipher.encrypt(data: ByteArray): KmmResult<Ciphertex
 
 
 @OptIn(ExperimentalForeignApi::class)
-actual internal fun Ciphertext.Authenticated.decrypt(key: ByteArray): KmmResult<ByteArray> {
+actual internal fun Ciphertext.Authenticated.doDecrypt(secretKey: ByteArray): KmmResult<ByteArray> {
     return catching {
         swiftcall {
             AESwift.gcmDecryptWithCiphertext(
                 encryptedData.toNSData(),
-                key.toNSData(),
+                secretKey.toNSData(),
                 iv!!.toNSData(),
                 authTag.toNSData(),
                 aad?.toNSData(),

@@ -62,20 +62,22 @@ val EncryptionAlgorithm.jcaName: String
         is EncryptionAlgorithm.AES.GCM -> "AES/GCM/NoPadding"
         is EncryptionAlgorithm.AES.CBC -> "AES/CBC/PKCS5Padding"
         is EncryptionAlgorithm.AES.ECB -> "AES/ECB/NoPadding"
+        else -> TODO()
     }
 
 val EncryptionAlgorithm.jcaKeySpec: String
     get() = when (this) {
         is EncryptionAlgorithm.AES -> "AES"
+        else -> TODO()
     }
 
-actual internal fun Ciphertext.Authenticated.decrypt(key: ByteArray): KmmResult<ByteArray> {
+actual internal fun Ciphertext.Authenticated.doDecrypt(secretKey: ByteArray): KmmResult<ByteArray> {
     return catching {
         val wholeInput = encryptedData + authTag
         Cipher.getInstance(algorithm.jcaName).also { cipher ->
             cipher.init(
                 Cipher.DECRYPT_MODE,
-                SecretKeySpec(key, algorithm.jcaKeySpec),
+                SecretKeySpec(secretKey, algorithm.jcaKeySpec),
                 GCMParameterSpec((algorithm as EncryptionAlgorithm.Authenticated).tagNumBits.toInt(), iv)
             )
             aad?.let {
