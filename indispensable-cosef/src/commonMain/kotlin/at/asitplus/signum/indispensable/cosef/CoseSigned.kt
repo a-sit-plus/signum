@@ -21,7 +21,7 @@ import kotlinx.serialization.cbor.CborArray
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable(with = CoseSignedSerializer::class)
 @CborArray
-data class CoseSigned<P : Any>(
+data class CoseSigned<P : Any?>(
     @ByteString
     val protectedHeader: ByteStringWrapper<CoseHeader>,
     val unprotectedHeader: CoseHeader?,

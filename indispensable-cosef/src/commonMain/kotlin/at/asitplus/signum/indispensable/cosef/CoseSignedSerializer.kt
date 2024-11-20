@@ -12,7 +12,7 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeStructure
 
-class CoseSignedSerializer<P : Any> : KSerializer<CoseSigned<P>> {
+class CoseSignedSerializer<P : Any?> : KSerializer<CoseSigned<P>> {
 
     @OptIn(InternalSerializationApi::class)
     override val descriptor: SerialDescriptor = buildSerialDescriptor("CoseSigned", StructureKind.LIST) {
