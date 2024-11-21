@@ -13,13 +13,15 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
      * optional attributes relevant when PKCS#8-encoding a private key
      */
     val attributes: List<Asn1Element>?
-) : Asn1Encodable<Asn1Sequence>, Identifiable {
+) : PemEncodable<Asn1Sequence>, Identifiable {
 
     /**
      * [CryptoPublicKey] matching this private key. Never null for RSA.
      * Maybe `null` for EC, if the curve is not specified (e.g. when decoding from SEC1 decoding and neither curve nor key are present)
      */
     abstract val publicKey: T?
+
+    override val ebString = CryptoPrivateKey.ebString
 
     /**
      * Encodes the plain key, i.e. PKCS#1 for RSA and SEC1 for EC
@@ -49,6 +51,18 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
          * The [CryptoPublicKey.RSA] matching this private key
          */
         override val publicKey = CryptoPublicKey.RSA(modulus, publicExponent)
+
+        private inner class PlainPemEncodable : PemEncodable<Asn1Sequence> {
+            override val ebString = RSA.ebString
+            override fun encodeToTlv() = this@RSA.pkcs1Encode()
+        }
+
+        private val innerPemEncodable = PlainPemEncodable()
+
+        /**
+         * Encodes this private key into a PKCS#1 PEM-encoded pricate key
+         */
+        fun pemEncodePkcs1() = innerPemEncodable.encodeToPEM()
 
         /**
          * OtherPrimeInfos as per PKCS#1
@@ -123,9 +137,10 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
             }
         }
 
-        companion object : Asn1Decodable<Asn1Sequence, RSA> {
+        companion object : PemDecodable<Asn1Sequence, RSA> {
 
             val oid: ObjectIdentifier = KnownOIDs.rsaEncryption
+            override val ebString = "RSA PRIVATE KEY"
 
             override fun doDecode(src: Asn1Sequence): RSA = pkcs1Decode(src, null)
 
@@ -178,6 +193,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
     class EC(
         val curve: ECCurve?,
         val privateKeyBytes: ByteArray,
+        val encodeCurve: Boolean,
         publicKey: CryptoPublicKey.EC?,
         attributes: List<Asn1Element>? = null
     ) :
@@ -186,6 +202,18 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
         override val oid = EC.oid
 
         private val intRepresentation = Asn1Integer.decodeFromAsn1ContentBytes(privateKeyBytes)
+
+        private inner class PlainPemEncodable : PemEncodable<Asn1Sequence> {
+            override val ebString = EC.ebString
+            override fun encodeToTlv() = this@EC.sec1Encode()
+        }
+
+        private val innerPemEncodable = PlainPemEncodable()
+
+        /**
+         * Encodes this private key into a SEC1 PEM-encoded pricate key
+         */
+        fun pemEncodeSec1() = innerPemEncodable.encodeToPEM()
 
         /**
          * [CryptoPublicKey.EC] matching this private key. May be null if this private key was parsed from SEC1 without
@@ -202,8 +230,9 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
             } ?: curve?.let { " for curve $it" } ?: " ${privateKeyBytes.size * 8} bit"
         }"
 
-        companion object : Asn1Decodable<Asn1Sequence, EC> {
+        companion object : PemDecodable<Asn1Sequence, EC> {
 
+            override val ebString = "EC PRIVATE KEY"
             val oid: ObjectIdentifier = KnownOIDs.ecPublicKey
 
             override fun doDecode(src: Asn1Sequence): EC = sec1decode(src, attributes = null)
@@ -228,6 +257,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
                 var params: ObjectIdentifier? = null
                 var publicKey: CryptoPublicKey.EC? = null
 
+                var encodeCurve = false
                 //TODO remove duplicated code
                 if (src.hasMoreChildren()) {
                     val tagged = src.nextChild().asExplicitlyTagged()
@@ -272,6 +302,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
                                     require(inner == pre) { "EC Curve OID mismatch" }
                                 }
                             }
+                            parsedCurve.let { encodeCurve = true }
                             val crv = parsedCurve ?: predefinedCurve
                             val asAsn1BitString = tagged.nextChild().asPrimitive().asAsn1BitString()
                             publicKey = if (crv != null)
@@ -284,6 +315,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
                 return EC(
                     curve = publicKey?.curve,
                     privateKeyBytes = privateKeyOctets,
+                    encodeCurve = encodeCurve,
                     publicKey = publicKey,
                     attributes
                 )
@@ -308,7 +340,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
         fun sec1Encode() = Asn1.Sequence {
             +Asn1.Int(1)
             +Asn1PrimitiveOctetString(privateKeyBytes)
-            curve?.let { +Asn1.ExplicitlyTagged(0uL) { +it.oid } }
+            if (encodeCurve) curve?.let { +Asn1.ExplicitlyTagged(0uL) { +it.oid } }
             publicKey?.let { +Asn1.ExplicitlyTagged(1uL) { +Asn1.BitString(it.iosEncoded) } }
         }
 
@@ -360,7 +392,8 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
         }
     }
 
-    companion object : Asn1Decodable<Asn1Sequence, CryptoPrivateKey<*>> {
+    companion object : PemDecodable<Asn1Sequence, CryptoPrivateKey<*>> {
+        override val ebString = "PRIVATE KEY"
         override fun doDecode(src: Asn1Sequence): CryptoPrivateKey<*> {
             //PKCS8 here
             require(src.nextChild().asPrimitive().decodeToInt() == 0) { "PKCS#8 Private Key VERSION must be 0" }

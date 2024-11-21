@@ -15,6 +15,9 @@
 * Allow reinterpreting an `Asn1Element` that successfully parsed as `Asn1EncapsulatingOctetString` as an `Asn1PrimitiveOctetString`
 * Make `Asn1Integer` an `Asn1Encodable<String>`
 * Add **Private Key Representation** to `indispensable`
+* **PEM Encoding**
+    * Introduce `PemEncodable` interface, derived from `Asn1Encodable`
+    * Introduce `PemDecodable` interface, derived from `Asn1Decodable`
 
 ### 3.10.0 (Supreme 0.5.0) More ~~cowbell~~ targets!
 A new artifact, minor breaking changes and a lot more targets ahead!
