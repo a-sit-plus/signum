@@ -47,6 +47,7 @@ kotlin {
         commonMain {
             dependencies {
                 api(project(":indispensable"))
+                implementation(project(":internals"))
                 api(serialization("cbor"))
                 implementation(libs.multibase)
                 implementation(libs.bignum) //Intellij bug work-around

@@ -1,6 +1,10 @@
+package wumb
+
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldNotBe
+import kotlinx.cinterop.ExperimentalForeignApi
 
+@OptIn(ExperimentalForeignApi::class)
 class ProviderTest : FreeSpec({
 
     "This dummy test" {

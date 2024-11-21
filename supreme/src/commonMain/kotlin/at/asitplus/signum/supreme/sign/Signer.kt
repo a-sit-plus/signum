@@ -1,16 +1,12 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.KmmResult
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.Digest
-import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.RSAPadding
-import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.nativeDigest
+import at.asitplus.catching
+import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.supreme.SecretExposure
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
-import at.asitplus.signum.indispensable.Attestation
 import at.asitplus.signum.supreme.os.SigningProvider
 import com.ionspin.kotlin.bignum.integer.BigInteger
 
@@ -21,12 +17,14 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
  * @see ec
  * @see rsa
  */
-open class SigningKeyConfiguration internal constructor(): DSL.Data() {
-    sealed class AlgorithmSpecific: DSL.Data()
+open class SigningKeyConfiguration internal constructor() : DSL.Data() {
+    sealed class AlgorithmSpecific : DSL.Data()
 
     internal val _algSpecific = subclassOf<AlgorithmSpecific>(default = ECConfiguration())
+
     /** Generates an elliptic-curve key. */
     open val ec = _algSpecific.option(::ECConfiguration)
+
     /** Generates an RSA key. */
     open val rsa = _algSpecific.option(::RSAConfiguration)
 
@@ -41,14 +39,21 @@ open class SigningKeyConfiguration internal constructor(): DSL.Data() {
             set(v) { _digests = v }
     }
 
-    open class RSAConfiguration internal constructor(): AlgorithmSpecific() {
-        companion object { val F0 = BigInteger(3); val F4 = BigInteger(65537) }
+    open class RSAConfiguration internal constructor() : AlgorithmSpecific() {
+        companion object {
+            val F0 = BigInteger(3);
+            val F4 = BigInteger(65537)
+        }
+
         /** The digests supported by the key. If not specified, defaults to [SHA256][Digest.SHA256]. */
         open var digests: Set<Digest> = setOf(Digest.SHA256)
+
         /** The paddings supported by the key. If not specified, defaults to [RSA-PSS][RSAPadding.PSS]. */
         open var paddings: Set<RSAPadding> = setOf(RSAPadding.PSS)
+
         /** The bit size of the generated key. If not specified, defaults to 3072 bits. */
         var bits: Int = 3072
+
         /** The public exponent to use. Defaults to F4.
          * This is treated as advisory, and may be ignored by some platforms. */
         var publicExponent: BigInteger = F4
@@ -81,31 +86,35 @@ open class SigningKeyConfiguration internal constructor(): DSL.Data() {
 interface Signer {
     val signatureAlgorithm: SignatureAlgorithm
     val publicKey: CryptoPublicKey
+
     /** Whether the signer may ask for user interaction when [sign] is called */
     val mayRequireUserUnlock: Boolean get() = true
 
+    @SecretExposure
+    fun exportPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>>
+
     /** Any [Signer] instantiation must be [ECDSA] or [RSA] */
-    sealed interface AlgTrait: Signer
+    sealed interface AlgTrait : Signer
 
     /** A [Signer] that signs using ECDSA. */
-    interface ECDSA: AlgTrait {
+    interface ECDSA : AlgTrait {
         override val signatureAlgorithm: SignatureAlgorithm.ECDSA
         override val publicKey: CryptoPublicKey.EC
     }
 
     /** A [Signer] that signs using RSA. */
-    interface RSA: AlgTrait {
+    interface RSA : AlgTrait {
         override val signatureAlgorithm: SignatureAlgorithm.RSA
         override val publicKey: CryptoPublicKey.RSA
     }
 
     /** Some [Signer]s are retrieved from a signing provider, such as a key store, and have a string [alias]. */
-    interface WithAlias: Signer {
+    interface WithAlias : Signer {
         val alias: String
     }
 
     /** Some [Signer]s might have an attestation of some sort */
-    interface Attestable<AttestationT: Attestation>: Signer {
+    interface Attestable<AttestationT : Attestation> : Signer {
         val attestation: AttestationT?
     }
 
@@ -127,15 +136,32 @@ interface Signer {
 }
 
 /**
+ * Creates a signer for the specified [privateKey]. Fails if the key type does not match the signature algorithm type (EC/RSA)
+ */
+fun SignatureAlgorithm.signerFor(privateKey: CryptoPrivateKey.WithPublicKey<*>): KmmResult<Signer> = catching {
+    require(
+        (this is SignatureAlgorithm.ECDSA && privateKey is CryptoPrivateKey.EC) ||
+                (this is SignatureAlgorithm.RSA && privateKey is CryptoPrivateKey.RSA)
+    ) { "Algorithm and Key mismatch: ${this::class.simpleName} + ${privateKey::class.simpleName}" }
+    when (this) {
+        is SignatureAlgorithm.ECDSA -> makePrivateKeySigner(privateKey as CryptoPrivateKey.EC.WithPublicKey, this)
+        is SignatureAlgorithm.HMAC -> throw UnsupportedOperationException("HMAC is not yet supported!")
+        is SignatureAlgorithm.RSA -> makePrivateKeySigner(privateKey as CryptoPrivateKey.RSA, this)
+    }
+}
+
+/**
  * Get a verifier for signatures generated by this [Signer].
  * @see SignatureAlgorithm.verifierFor
  */
-fun Signer.makeVerifier(configure: ConfigurePlatformVerifier = null) = signatureAlgorithm.verifierFor(publicKey, configure)
+fun Signer.makeVerifier(configure: ConfigurePlatformVerifier = null) =
+    signatureAlgorithm.verifierFor(publicKey, configure)
 
 /**
  * Gets a platform verifier for signatures generated by this [Signer].
  * @see SignatureAlgorithm.platformVerifierFor
  */
-fun Signer.makePlatformVerifier(configure: ConfigurePlatformVerifier = null) = signatureAlgorithm.platformVerifierFor(publicKey, configure)
+fun Signer.makePlatformVerifier(configure: ConfigurePlatformVerifier = null) =
+    signatureAlgorithm.platformVerifierFor(publicKey, configure)
 
 val Signer.ECDSA.curve get() = publicKey.curve

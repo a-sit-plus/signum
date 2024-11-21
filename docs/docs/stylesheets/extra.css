@@ -67,6 +67,11 @@
     font-feature-settings: "kern", "liga";
 }
 
+.admonition code {
+    font-size: .7rem;
+    font-feature-settings: "kern", "liga";
+}
+
 .linenodiv {
     padding-top: .12rem;
 }

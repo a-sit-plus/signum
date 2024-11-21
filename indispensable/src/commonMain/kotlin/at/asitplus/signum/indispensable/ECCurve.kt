@@ -1,11 +1,11 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.indispensable.ECCurve.entries
 import at.asitplus.signum.indispensable.asn1.Identifiable
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.misc.BitLength
 import com.ionspin.kotlin.bignum.integer.BigInteger
-import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.integer.toBigInteger
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
 import kotlinx.serialization.KSerializer
@@ -31,8 +31,10 @@ enum class ECCurve(
 ) : Identifiable {
     /** NIST curve [secp256r1](https://neuromancer.sk/std/nist/P-256) */
     SECP_256_R_1("P-256", KnownOIDs.prime256v1),
+
     /** NIST curve [secp384r1](https://neuromancer.sk/std/nist/P-384) */
     SECP_384_R_1("P-384", KnownOIDs.secp384r1),
+
     /** NIST curve [secp521r1](https://neuromancer.sk/std/nist/P-521) */
     SECP_521_R_1("P-521", KnownOIDs.secp521r1);
 
@@ -188,6 +190,8 @@ enum class ECCurve(
 
     companion object {
         fun of(bits: UInt) = entries.find { it.scalarLength.bits == bits }
+        fun withOid(oid: ObjectIdentifier) = entries.find { it.oid == oid } ?:
+            throw IllegalArgumentException("No curve with OID $oid is supported")
     }
 
 }
@@ -208,3 +212,41 @@ object ECCurveSerializer : KSerializer<ECCurve> {
     }
 
 }
+
+/**
+ * Returns the length of a public key, when it is exported from iOS.
+ * This is handy, because Apple does not encode curve identifiers, but implies them based on the length of the key
+ */
+val ECCurve.iosEncodedPublicKeyLength: Int
+    get() = when (this) {
+        ECCurve.SECP_256_R_1 -> 65
+        ECCurve.SECP_384_R_1 -> 97
+        ECCurve.SECP_521_R_1 -> 133
+    }
+/**
+ * Returns the length of a private key, when it is exported from iOS.
+ * This is handy, because Apple does not encode curve identifiers, but implies them based on the length of the key
+ */
+val ECCurve.iosEncodedPrivateKeyLength: Int
+    get() = when (this) {
+        ECCurve.SECP_256_R_1 -> 97
+        ECCurve.SECP_384_R_1 -> 145
+        ECCurve.SECP_521_R_1 -> 199
+    }
+
+
+/**
+ * Returns the curve associated with a public key exported from iOS based on the length of the key material
+ * This is handy, because Apple does not encode curve identifiers, but implies them based on the length of the key
+ */
+fun ECCurve.Companion.fromIosEncodedPublicKeyLength(length: Int): ECCurve? =
+    /** apple does not encode the curve identifier, but it is implied as one of the ios supported curves */
+    ECCurve.entries.find { curve -> curve.iosEncodedPublicKeyLength == length }
+
+/**
+ * Returns the curve associated with a public key exported from iOS based on the length of the key material
+ * This is handy, because Apple does not encode curve identifiers, but implies them based on the length of the key
+ */
+fun ECCurve.Companion.fromIosEncodedPrivateKeyLength(length: Int): ECCurve? =
+    /** apple does not encode the curve identifier, but it is implied as one of the ios supported curves */
+    ECCurve.entries.find { curve -> curve.iosEncodedPrivateKeyLength == length }

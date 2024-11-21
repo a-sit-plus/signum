@@ -1,6 +1,9 @@
 package at.asitplus.signum.supreme.sign
 
 import android.security.keystore.KeyProperties
+import at.asitplus.KmmResult
+import at.asitplus.catching
+import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
@@ -8,12 +11,17 @@ import at.asitplus.signum.indispensable.fromJcaPublicKey
 import at.asitplus.signum.indispensable.getJCASignatureInstancePreHashed
 import at.asitplus.signum.indispensable.jcaName
 import at.asitplus.signum.indispensable.parseFromJca
+import at.asitplus.signum.supreme.SecretExposure
 import at.asitplus.signum.supreme.signCatching
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
+
+@SecretExposure
+internal actual fun EphemeralKeyBase<*>.exportPrivate(): CryptoPrivateKey.WithPublicKey<*> =
+    CryptoPrivateKey.decodeFromDer((privateKey as PrivateKey).encoded) as CryptoPrivateKey.WithPublicKey<*>
 
 actual class EphemeralSigningKeyConfiguration internal actual constructor(): EphemeralSigningKeyConfigurationBase()
 actual class EphemeralSignerConfiguration internal actual constructor(): EphemeralSignerConfigurationBase()
@@ -28,6 +36,10 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
             sign().let(::parseFromJca)
         }
     }
+
+    @SecretExposure
+    override fun exportPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> = catching { CryptoPrivateKey.decodeFromDer(
+        privateKey.encoded) as CryptoPrivateKey.WithPublicKey<*> }
 
     protected abstract fun parseFromJca(bytes: ByteArray): CryptoSignature.RawByteEncodable
 

@@ -4,7 +4,9 @@ import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.signum.indispensable.asn1.toBigInteger
 import at.asitplus.signum.indispensable.io.Base64Strict
+import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
@@ -15,13 +17,17 @@ import org.bouncycastle.asn1.ASN1InputStream
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.DERBitString
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
+import org.bouncycastle.jce.interfaces.ECPrivateKey
 import org.bouncycastle.jce.provider.BouncyCastleProvider
+import java.math.BigInteger
 import java.security.KeyPairGenerator
 import java.security.Security
 import java.security.interfaces.ECPublicKey
+import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
 
-class PublicKeyTest : FreeSpec({
+@OptIn(ExperimentalStdlibApi::class)
+class KeyTest : FreeSpec({
     Security.addProvider(BouncyCastleProvider())
 
     "EC" - {
@@ -30,22 +36,29 @@ class PublicKeyTest : FreeSpec({
                 val ecKp = KeyPairGenerator.getInstance("EC", "BC").apply {
                     initialize(bits)
                 }.genKeyPair()
-                ecKp.public as ECPublicKey
+                ecKp.private as ECPrivateKey to ecKp.public as ECPublicKey
             }
             withData(
                 nameFn = {
-                    "(x: ${it.w.affineX.toByteArray().encodeToString(Base64Strict)}" +
-                            " y: ${it.w.affineY.toByteArray().encodeToString(Base64Strict)})"
+                    "(x: ${it.second.w.affineX.toByteArray().encodeToString(Base64Strict)}" +
+                            " y: ${it.second.w.affineY.toByteArray().encodeToString(Base64Strict)})"
                 },
                 keys
-            ) { pubKey ->
+            ) { (privKey, pubKey) ->
 
                 val own = CryptoPublicKey.EC.fromJcaPublicKey(pubKey).getOrThrow()
+
+                val ownPrivate = CryptoPrivateKey.decodeFromDer(privKey.encoded) as CryptoPrivateKey.WithPublicKey<*>
+
+                ownPrivate.publicKey shouldBe own
+                ownPrivate.encodeToDer() shouldBe privKey.encoded
+                ownPrivate.toJcaPrivateKey().getOrThrow().encoded shouldBe privKey.encoded
+
 
                 withClue("Basic Conversions") {
                     own.encodeToDer() shouldBe pubKey.encoded
                     CryptoPublicKey.fromDid(own.didEncoded) shouldBe own
-                    own.getJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
+                    own.toJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
                     CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.encodeToDer()) as Asn1Sequence) shouldBe own
                 }
 
@@ -85,18 +98,25 @@ class PublicKeyTest : FreeSpec({
                 val rsaKP = KeyPairGenerator.getInstance("RSA").apply {
                     initialize(bits)
                 }.genKeyPair()
-                rsaKP.public as RSAPublicKey
+                rsaKP.private as RSAPrivateKey to rsaKP.public as RSAPublicKey
             }
             withData(
                 nameFn = {
                     "(n: ${
-                        it.modulus.toByteArray().encodeToString(Base64Strict)
-                    } e: ${it.publicExponent.toInt()})"
+                        it.second.modulus.toByteArray().encodeToString(Base64Strict)
+                    } e: ${it.second.publicExponent.toInt()})"
                 },
                 keys
-            ) { pubKey ->
+            ) { (privKey, pubKey) ->
 
                 val own = CryptoPublicKey.RSA(pubKey.modulus.toByteArray(), pubKey.publicExponent.toInt())
+
+                val ownPrivate =CryptoPrivateKey.decodeFromDer(privKey.encoded) as CryptoPrivateKey.WithPublicKey<*>
+                ownPrivate.publicKey shouldBe own
+                ownPrivate.encodeToDer() shouldBe privKey.encoded
+                ownPrivate.toJcaPrivateKey().getOrThrow().encoded shouldBe privKey.encoded
+
+
                 val own1 = CryptoPublicKey.RSA(
                     ByteArray((0..10).random()) { 0 } + pubKey.modulus.toByteArray(),
                     pubKey.publicExponent.toInt()
@@ -111,7 +131,7 @@ class PublicKeyTest : FreeSpec({
                 own.pkcsEncoded shouldBe keyBytes //PKCS#1
                 own.encodeToDer() shouldBe pubKey.encoded //PKCS#8
                 CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.encodeToDer()) as Asn1Sequence) shouldBe own
-                own.getJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
+                own.toJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
             }
         }
         "Equality tests" {
