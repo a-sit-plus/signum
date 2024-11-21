@@ -5,8 +5,20 @@ import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.asPublicKey
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 
-sealed class CryptoPrivateKey<T : CryptoPublicKey>(val attributes: List<Asn1Element>?) : Asn1Encodable<Asn1Sequence> {
+/**
+ * PKCS#8 Representation of a private key structure as per [RFC 5208](https://datatracker.ietf.org/doc/html/rfc5208)
+ */
+sealed class CryptoPrivateKey<T : CryptoPublicKey>(
+    /**
+     * optional attributes relevant when PKCS#8-encoding a private key
+     */
+    val attributes: List<Asn1Element>?
+) : Asn1Encodable<Asn1Sequence>, Identifiable {
 
+    /**
+     * [CryptoPublicKey] matching this private key. Never null for RSA.
+     * Maybe `null` for EC, if the curve is not specified (e.g. when decoding from SEC1 decoding and neither curve nor key are present)
+     */
     abstract val publicKey: T?
 
     /**
@@ -14,6 +26,10 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(val attributes: List<Asn1Elem
      */
     abstract fun plainEncode(): Asn1Sequence
 
+    /**
+     * PKCS#1 RSA Private key representation as per [RFC 8017](https://datatracker.ietf.org/doc/html/rfc8017/#appendix-A.1.2) augmented with optional [attributes].
+     * Attributes are never SEC-1 encoded, but are relevant when PKCS#8-encoding a private key.
+     */
     class RSA(
         val modulus: Asn1Integer,
         val publicExponent: Asn1Integer,
@@ -23,13 +39,29 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(val attributes: List<Asn1Elem
         val exponent1: Asn1Integer,
         val exponent2: Asn1Integer,
         val coefficient: Asn1Integer,
-        val otherPrimeInfos: OtherPrimeInfos?,
+        val otherPrimeInfos: List<OtherPrimeInfo>?,
         attributes: List<Asn1Element>? = null
     ) : CryptoPrivateKey<CryptoPublicKey.RSA>(attributes) {
 
+        override val oid = RSA.oid
+
+        /**
+         * The [CryptoPublicKey.RSA] matching this private key
+         */
         override val publicKey = CryptoPublicKey.RSA(modulus, publicExponent)
 
-        class OtherPrimeInfos(
+        /**
+         * OtherPrimeInfos as per PKCS#1
+         *
+         * ```asn1
+         * OtherPrimeInfo ::= SEQUENCE {
+         *   prime             INTEGER,  -- ri
+         *   exponent          INTEGER,  -- di
+         *   coefficient       INTEGER   -- ti
+         * }
+         * ```
+         */
+        class OtherPrimeInfo(
             val prime: Asn1Integer,
             val exponent: Asn1Integer,
             val coefficient: Asn1Integer,
@@ -40,20 +72,39 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(val attributes: List<Asn1Elem
                 +coefficient
             }
 
-            companion object : Asn1Decodable<Asn1Sequence, OtherPrimeInfos> {
-                override fun doDecode(src: Asn1Sequence): OtherPrimeInfos {
+            companion object : Asn1Decodable<Asn1Sequence, OtherPrimeInfo> {
+                override fun doDecode(src: Asn1Sequence): OtherPrimeInfo {
                     val prime = src.nextChild().asPrimitive().decodeToAsn1Integer()
                     val exponent = src.nextChild().asPrimitive().decodeToAsn1Integer()
                     val coefficient = src.nextChild().asPrimitive().decodeToAsn1Integer()
                     require(src.hasMoreChildren() == false) { "Superfluous Data in OtherPrimeInfos" }
-                    return OtherPrimeInfos(prime, exponent, coefficient)
+                    return OtherPrimeInfo(prime, exponent, coefficient)
                 }
 
             }
         }
 
+        /**
+         * @see pkcs1Encode
+         */
         override fun plainEncode() = pkcs1Encode()
 
+        /**
+         * ```asn1
+         * RSAPrivateKey ::= SEQUENCE {
+         *   version           Version,
+         *   modulus           INTEGER,  -- n
+         *   publicExponent    INTEGER,  -- e
+         *   privateExponent   INTEGER,  -- d
+         *   prime1            INTEGER,  -- p
+         *   prime2            INTEGER,  -- q
+         *   exponent1         INTEGER,  -- d mod (p-1)
+         *   exponent2         INTEGER,  -- d mod (q-1)
+         *   coefficient       INTEGER,  -- (inverse of q) mod p
+         *   otherPrimeInfos   OtherPrimeInfos OPTIONAL
+         * }
+         * ```
+         */
         fun pkcs1Encode() = Asn1.Sequence {
             if (otherPrimeInfos != null) +Asn1.Int(1)
             else +Asn1.Int(0)
@@ -65,17 +116,25 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(val attributes: List<Asn1Elem
             +exponent1
             +exponent2
             +coefficient
-            otherPrimeInfos?.let { +it }
+            otherPrimeInfos?.let {
+                +Asn1.Sequence {
+                    it.forEach { info -> +info }
+                }
+            }
         }
 
         companion object : Asn1Decodable<Asn1Sequence, RSA> {
 
             val oid: ObjectIdentifier = KnownOIDs.rsaEncryption
 
-            override fun doDecode(src: Asn1Sequence): RSA = decodeInternal(src, null)
+            override fun doDecode(src: Asn1Sequence): RSA = pkcs1Decode(src, null)
 
-            //PKCS#1
-            fun decodeInternal(src: Asn1Sequence, attributes: List<Asn1Element>?): RSA {
+            fun plainDecode(src: Asn1Sequence) = pkcs1Decode(src, null)
+
+            /**
+             * PKCS1 decoding of an ASN.1 private key, optionally supporting attributes for later PKCS#8 encoding
+             */
+            fun pkcs1Decode(src: Asn1Sequence, attributes: List<Asn1Element>? = null): RSA {
                 val version = src.nextChild().asPrimitive().decodeToInt()
                 require(version == 0 || version == 1) { "RSA Private key VERSION must be 0 or 1" }
                 val modulus = src.nextChild().asPrimitive().decodeToAsn1Integer()
@@ -87,9 +146,9 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(val attributes: List<Asn1Elem
                 val exponent2 = src.nextChild().asPrimitive().decodeToAsn1Integer()
                 val coefficient = src.nextChild().asPrimitive().decodeToAsn1Integer()
 
-                val otherPrimeInfos: OtherPrimeInfos? = if (src.hasMoreChildren()) {
+                val otherPrimeInfos: List<OtherPrimeInfo>? = if (src.hasMoreChildren()) {
                     require(version == 1) { "OtherPrimeInfos is present. RSA private key version must be 1" }
-                    OtherPrimeInfos.decodeFromTlv(src.nextChild().asSequence())
+                    src.nextChild().asSequence().children.map { OtherPrimeInfo.decodeFromTlv(it.asSequence()) }
                 } else {
                     require(version == 0) { "OtherPrimeInfos is present. RSA private key version must be 0" }
                     null
@@ -112,6 +171,10 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(val attributes: List<Asn1Elem
         override fun toString() = "RSA private key for public key $publicKey"
     }
 
+    /**
+     * SEC1 Elliptic Curve Private Key Structure as per [RFC 5915](https://datatracker.ietf.org/doc/html/rfc5915) augmented with optional [attributes].
+     * Attributes are never SEC-1 encoded, but are relevant when PKCS#8-encoding a private key.
+     */
     class EC(
         val curve: ECCurve?,
         val privateKeyBytes: ByteArray,
@@ -120,8 +183,14 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(val attributes: List<Asn1Elem
     ) :
         CryptoPrivateKey<CryptoPublicKey.EC>(attributes) {
 
+        override val oid = EC.oid
+
         private val intRepresentation = Asn1Integer.decodeFromAsn1ContentBytes(privateKeyBytes)
 
+        /**
+         * [CryptoPublicKey.EC] matching this private key. May be null if this private key was parsed from SEC1 without
+         * any curve or public key infos
+         */
         override val publicKey: CryptoPublicKey.EC? = publicKey ?: curve?.let { crv ->
             intRepresentation.toBigInteger().times(crv.generator).asPublicKey(preferCompressed = true)
         }
@@ -137,13 +206,15 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(val attributes: List<Asn1Elem
 
             val oid: ObjectIdentifier = KnownOIDs.ecPublicKey
 
-            override fun doDecode(src: Asn1Sequence): EC = decodeInternal(src, attributes = null)
+            override fun doDecode(src: Asn1Sequence): EC = sec1decode(src, attributes = null)
 
-            //SEC1 v2
-            fun decodeInternal(
+            /**
+             * SEC1 V2 decoding optionally supporting attributes for later PKCS#8 encoding
+             */
+            fun sec1decode(
                 src: Asn1Sequence,
                 predefinedCurve: ECCurve? = null,
-                attributes: List<Asn1Element>?
+                attributes: List<Asn1Element>? = null
             ): EC {
 
                 fun Asn1ExplicitlyTagged.decodeECParams(): ObjectIdentifier {
@@ -219,8 +290,21 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(val attributes: List<Asn1Elem
             }
         }
 
+        /**
+         * @see sec1Encode
+         */
         override fun plainEncode() = sec1Encode()
 
+        /**
+         * ```asn1
+         * ECPrivateKey ::= SEQUENCE {
+         *   version INTEGER { ecPrivkeyVer1(1) } (ecPrivkeyVer1),
+         *   privateKey OCTET STRING,
+         *   parameters [0] ECDomainParameters {{ SECGCurveNames }} OPTIONAL,
+         *   publicKey [1] BIT STRING OPTIONAL
+         * }
+         * ```
+         */
         fun sec1Encode() = Asn1.Sequence {
             +Asn1.Int(1)
             +Asn1PrimitiveOctetString(privateKeyBytes)
@@ -231,6 +315,25 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(val attributes: List<Asn1Elem
     }
 
 
+    /**
+     * PKCS#8 encoding of a private key:
+     * ```asn1
+     * PrivateKeyInfo ::= SEQUENCE {
+     *   version                   Version,
+     *   privateKeyAlgorithm       PrivateKeyAlgorithmIdentifier,
+     *   privateKey                PrivateKey,
+     *   attributes           [0]  IMPLICIT Attributes OPTIONAL
+     * }
+     *
+     * Version ::= INTEGER
+     *
+     * PrivateKeyAlgorithmIdentifier ::= AlgorithmIdentifier
+     *
+     * PrivateKey ::= OCTET STRING
+     *
+     * Attributes ::= SET OF Attribute
+     * ```
+     */
     override fun encodeToTlv() = Asn1.Sequence {
         +Asn1.Int(0)
         +Asn1.Sequence {
@@ -275,10 +378,10 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(val attributes: List<Asn1Elem
                 else null
             return if (algIdentifier == RSA.oid) {
                 algParams.readNull()
-                RSA.decodeInternal(privateKeyStructure, attributes)
+                RSA.pkcs1Decode(privateKeyStructure, attributes)
             } else if (algIdentifier == EC.oid) {
                 val predefinedCurve = ECCurve.entries.first { it.oid == ObjectIdentifier.decodeFromTlv(algParams) }
-                EC.decodeInternal(privateKeyStructure, predefinedCurve, attributes)
+                EC.sec1decode(privateKeyStructure, predefinedCurve, attributes)
             } else throw IllegalArgumentException("Unknown Algorithm: $algIdentifier")
 
         }
