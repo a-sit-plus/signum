@@ -114,21 +114,23 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(val attributes: List<Asn1Elem
 
     class EC(
         val curve: ECCurve?,
-        val privateKeyBytes: Asn1Integer,
+        val privateKeyBytes: ByteArray,
         publicKey: CryptoPublicKey.EC?,
         attributes: List<Asn1Element>? = null
     ) :
         CryptoPrivateKey<CryptoPublicKey.EC>(attributes) {
 
+        private val intRepresentation = Asn1Integer.decodeFromAsn1ContentBytes(privateKeyBytes)
+
         override val publicKey: CryptoPublicKey.EC? = publicKey ?: curve?.let { crv ->
-            privateKeyBytes.toBigInteger().times(crv.generator).asPublicKey(preferCompressed = true)
+            intRepresentation.toBigInteger().times(crv.generator).asPublicKey(preferCompressed = true)
         }
 
 
         override fun toString() = "EC private key${
             publicKey?.let {
                 " for public key $it"
-            } ?: curve?.let { " for curve $it" } ?: " ${privateKeyBytes.magnitude.size * 8} bit"
+            } ?: curve?.let { " for curve $it" } ?: " ${privateKeyBytes.size * 8} bit"
         }"
 
         companion object : Asn1Decodable<Asn1Sequence, EC> {
@@ -151,8 +153,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(val attributes: List<Asn1Elem
 
                 val version = src.nextChild().asPrimitive().decodeToInt()
                 require(version == 1) { "EC public key version must be 1" }
-                val privateKeyOctets =
-                    src.nextChild().asPrimitiveOctetString().decodeToAsn1Integer(Asn1Element.Tag.OCTET_STRING)
+                val privateKeyOctets = src.nextChild().asPrimitiveOctetString().content
                 var params: ObjectIdentifier? = null
                 var publicKey: CryptoPublicKey.EC? = null
 
@@ -222,9 +223,9 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(val attributes: List<Asn1Elem
 
         fun sec1Encode() = Asn1.Sequence {
             +Asn1.Int(1)
-            +Asn1PrimitiveOctetString(privateKeyBytes.encodeToAsn1ContentBytes())
+            +Asn1PrimitiveOctetString(privateKeyBytes)
             curve?.let { +Asn1.ExplicitlyTagged(0uL) { +it.oid } }
-            publicKey?.let { +Asn1.ExplicitlyTagged(1uL) {+Asn1.BitString(it.iosEncoded) }}
+            publicKey?.let { +Asn1.ExplicitlyTagged(1uL) { +Asn1.BitString(it.iosEncoded) } }
         }
 
     }
