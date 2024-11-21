@@ -5,9 +5,14 @@ import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.asPublicKey
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 
-sealed class CryptoPrivateKey<T: CryptoPublicKey>(val attributes: List<Asn1Element>?) : Asn1Encodable<Asn1Sequence> {
+sealed class CryptoPrivateKey<T : CryptoPublicKey>(val attributes: List<Asn1Element>?) : Asn1Encodable<Asn1Sequence> {
 
     abstract val publicKey: T?
+
+    /**
+     * Encodes the plain key, i.e. PKCS#1 for RSA and SEC1 for EC
+     */
+    abstract fun plainEncode(): Asn1Sequence
 
     class RSA(
         val modulus: Asn1Integer,
@@ -46,6 +51,8 @@ sealed class CryptoPrivateKey<T: CryptoPublicKey>(val attributes: List<Asn1Eleme
 
             }
         }
+
+        override fun plainEncode() = pkcs1Encode()
 
         fun pkcs1Encode() = Asn1.Sequence {
             if (otherPrimeInfos != null) +Asn1.Int(1)
@@ -128,7 +135,7 @@ sealed class CryptoPrivateKey<T: CryptoPublicKey>(val attributes: List<Asn1Eleme
 
             val oid: ObjectIdentifier = KnownOIDs.ecPublicKey
 
-            override fun doDecode(src: Asn1Sequence): EC =  decodeInternal(src, attributes = null)
+            override fun doDecode(src: Asn1Sequence): EC = decodeInternal(src, attributes = null)
 
             //SEC1 v2
             fun decodeInternal(
@@ -144,7 +151,8 @@ sealed class CryptoPrivateKey<T: CryptoPublicKey>(val attributes: List<Asn1Eleme
 
                 val version = src.nextChild().asPrimitive().decodeToInt()
                 require(version == 1) { "EC public key version must be 1" }
-                val privateKeyOctets = src.nextChild().asPrimitiveOctetString().decodeToAsn1Integer(Asn1Element.Tag.OCTET_STRING)
+                val privateKeyOctets =
+                    src.nextChild().asPrimitiveOctetString().decodeToAsn1Integer(Asn1Element.Tag.OCTET_STRING)
                 var params: ObjectIdentifier? = null
                 var publicKey: CryptoPublicKey.EC? = null
 
@@ -210,12 +218,13 @@ sealed class CryptoPrivateKey<T: CryptoPublicKey>(val attributes: List<Asn1Eleme
             }
         }
 
+        override fun plainEncode() = sec1Encode()
 
         fun sec1Encode() = Asn1.Sequence {
             +Asn1.Int(1)
             +Asn1PrimitiveOctetString(privateKeyBytes.encodeToAsn1ContentBytes())
-            curve?.let { +it.oid }
-            publicKey?.let { +Asn1.BitString(it.iosEncoded) }
+            curve?.let { +Asn1.ExplicitlyTagged(0uL) { +it.oid } }
+            publicKey?.let { +Asn1.ExplicitlyTagged(1uL) {+Asn1.BitString(it.iosEncoded) }}
         }
 
     }
@@ -223,32 +232,27 @@ sealed class CryptoPrivateKey<T: CryptoPublicKey>(val attributes: List<Asn1Eleme
 
     override fun encodeToTlv() = Asn1.Sequence {
         +Asn1.Int(0)
-        val outer = this
         +Asn1.Sequence {
             when (this@CryptoPrivateKey) {
                 is RSA -> {
                     +RSA.oid
                     +Asn1.Null()
-                    attributes?.let { attrs ->
-                        +Asn1.ExplicitlyTagged(0uL) {
-                            attrs.forEach { +it }
-                        }
-                    }
-                    outer.apply { +pkcs1Encode() }
                 }
 
                 is EC -> {
                     +EC.oid
                     require(curve != null) { "Cannot PKCS#8-encode an EC key without curve. Re-create it and specify a curve!" }
                     +curve.oid
-                    attributes?.let { attrs ->
-                        +Asn1.ExplicitlyTagged(0uL) {
-                            attrs.forEach { +it }
-                        }
-                    }
-                    outer.apply { +sec1Encode() }
                 }
             }
+        }
+        +Asn1.OctetStringEncapsulating {
+            +plainEncode()
+        }
+        attributes?.let {
+            +(Asn1.SetOf {
+                it.forEach { attr -> +attr }
+            } withImplicitTag 0uL)
         }
     }
 
@@ -266,7 +270,7 @@ sealed class CryptoPrivateKey<T: CryptoPublicKey>(val attributes: List<Asn1Eleme
                 seq
             }
             val attributes: List<Asn1Element>? =
-                if (src.hasMoreChildren()) src.nextChild().asExplicitlyTagged().verifyTag(0u)
+                if (src.hasMoreChildren()) src.nextChild().asStructure().assertTag(0uL).children
                 else null
             return if (algIdentifier == RSA.oid) {
                 algParams.readNull()

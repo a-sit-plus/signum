@@ -23,6 +23,7 @@ import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
 
+@OptIn(ExperimentalStdlibApi::class)
 class KeyTest : FreeSpec({
     Security.addProvider(BouncyCastleProvider())
 
@@ -47,6 +48,9 @@ class KeyTest : FreeSpec({
                 val ownPrivate = CryptoPrivateKey.decodeFromDer(privKey.encoded)
 
                 ownPrivate.publicKey shouldBe own
+                println(ownPrivate.encodeToTlv().toDerHexString())
+                println(privKey.encoded.toHexString(HexFormat.UpperCase))
+                ownPrivate.encodeToDer() shouldBe privKey.encoded
 
 
                 withClue("Basic Conversions") {
@@ -107,6 +111,7 @@ class KeyTest : FreeSpec({
 
                 val ownPrivate =CryptoPrivateKey.decodeFromDer(privKey.encoded)
                 ownPrivate.publicKey shouldBe own
+                ownPrivate.encodeToDer() shouldBe privKey.encoded
 
 
                 val own1 = CryptoPublicKey.RSA(
