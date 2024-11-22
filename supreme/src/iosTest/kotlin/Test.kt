@@ -3,12 +3,14 @@ package wumb
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.decodeFromPem
+import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.toSecKey
 import at.asitplus.signum.supreme.sign.PrivateKeySigner
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.signum.supreme.signature
 import io.kotest.core.spec.style.FreeSpec
+import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kotlinx.cinterop.ExperimentalForeignApi
 
@@ -49,5 +51,27 @@ x6XroMXsmbnsEw==
 
        println( SignatureAlgorithm.RSAwithSHA256andPSSPadding.verifierFor(key.publicKey!!).getOrThrow().verify(data,signature.signature))
 
+    }
+
+    "EC" {
+        val pkcs8="""
+            -----BEGIN PRIVATE KEY-----
+            MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgbAdTcsqPZ8LGJRYH
+            vqMKfEg4nYoCBgptgZrKzyH+D6ChRANCAARP5mvy+sX6R2vXOmMre59S/V93sNLS
+            zxh/z83LcdvgjntLPbRlpulusOaoUHsCataF16M48ef34ufnWLjZsJ0Z
+            -----END PRIVATE KEY-----
+        """.trimIndent()
+        val privateKey= CryptoPrivateKey.decodeFromPem(pkcs8)
+
+        val secKey = privateKey.toSecKey()
+        println(secKey)
+
+        val signer = PrivateKeySigner(secKey.getOrThrow(), SignatureAlgorithm.ECDSAwithSHA256, privateKey.publicKey!!)
+
+        val data = "WUMBO".encodeToByteArray()
+        val signature = signer.sign(data)
+
+
+        println( SignatureAlgorithm.ECDSAwithSHA256.verifierFor(privateKey.publicKey!!).getOrThrow().verify(data,signature.signature))
     }
 })

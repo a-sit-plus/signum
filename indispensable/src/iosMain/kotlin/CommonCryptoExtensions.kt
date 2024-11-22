@@ -91,23 +91,28 @@ val CryptoSignature.iosEncoded
 fun CryptoPrivateKey<*>.toSecKey(): KmmResult<SecKeyRef> = catching {
     memScoped {
         corecall {
+            var data : ByteArray? = null
             val attr = createCFDictionary {
                 kSecAttrKeyClass mapsTo  kSecAttrKeyClassPrivate
-                when (this@toSecKey) {
+                kSecPrivateKeyAttrs mapsTo cfDictionaryOf(kSecAttrIsPermanent to false)
+                data = when (this@toSecKey) {
                     is CryptoPrivateKey.EC -> {
                         kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
                         kSecAttrKeySizeInBits mapsTo curve!!.coordinateLength.bits.toInt()
+                        val ecPubKey = this@toSecKey.publicKey
+                        require(ecPubKey !=null) {"Cannot import an EC private key without a public key attached"}
+                        ecPubKey.iosEncoded+ privateKeyBytes
                     }
 
                     is CryptoPrivateKey.RSA -> {
                         kSecAttrKeyType mapsTo kSecAttrKeyTypeRSA
                         kSecAttrKeySizeInBits mapsTo this@toSecKey.publicKey.bits.number.toInt()
+                        plainEncode().derEncoded
                     }
                 }
-                kSecPrivateKeyAttrs mapsTo cfDictionaryOf(kSecAttrIsPermanent to false)
             }
 
-            SecKeyCreateWithData(plainEncode().derEncoded.toNSData().giveToCF(), attr, error)
+            SecKeyCreateWithData(data!!.toNSData().giveToCF(), attr, error)
         }
     }
 }
