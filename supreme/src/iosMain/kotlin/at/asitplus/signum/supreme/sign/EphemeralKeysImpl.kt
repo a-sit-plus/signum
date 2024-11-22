@@ -96,22 +96,3 @@ internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfigura
     }
 }
 
- class PrivateKeySigner internal constructor(internal val privateKey: SecKeyRef,
-                                             override val signatureAlgorithm: SignatureAlgorithm,
-                                             override val publicKey: CryptoPublicKey
- ): Signer {
-    final override val mayRequireUserUnlock: Boolean get() = false
-    final override suspend fun sign(data: SignatureInput) = signCatching {
-        val inputData = data.convertTo(signatureAlgorithm.preHashedSignatureFormat).getOrThrow()
-        val algorithm = signatureAlgorithm.secKeyAlgorithmPreHashed
-        val input = inputData.data.single().toNSData()
-        val signatureBytes = corecall {
-            SecKeyCreateSignature(privateKey, algorithm, input.giveToCF(), error)
-        }.let { it.takeFromCF<NSData>().toByteArray() }
-        return@signCatching when (val pubkey = publicKey) {
-            is CryptoPublicKey.EC -> CryptoSignature.EC.decodeFromDer(signatureBytes).withCurve(pubkey.curve)
-            is CryptoPublicKey.RSA -> CryptoSignature.RSAorHMAC(signatureBytes)
-        }
-    }
-}
-

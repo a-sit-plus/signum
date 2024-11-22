@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.KmmResult
+import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.ECCurve
@@ -11,6 +12,7 @@ import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.indispensable.Attestation
+import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.supreme.os.SigningProvider
 import com.ionspin.kotlin.bignum.integer.BigInteger
 
@@ -52,6 +54,27 @@ open class SigningKeyConfiguration internal constructor(): DSL.Data() {
         /** The public exponent to use. Defaults to F4.
          * This is treated as advisory, and may be ignored by some platforms. */
         var publicExponent: BigInteger = F4
+    }
+
+    sealed class PrivateKeyConfiguration<T: CryptoPublicKey> : DSL.Data()
+
+    class PrivateECKeyConfiguration internal constructor() : PrivateKeyConfiguration<CryptoPublicKey.EC>() {
+        internal var digestSet = false
+
+        /** The digest supported by the signer. If not specified, supports the curve's native digest. */
+        var digest: Digest? = null
+            set(value) {
+                digestSet = true
+                field = value
+            }
+            get() = field
+    }
+
+    class PrivateRSAKeyConfiguration internal constructor():PrivateKeyConfiguration<CryptoPublicKey.RSA>() {
+        /** The digest supported by the signer. If not specified, defaults to [SHA256][Digest.SHA256]. */
+        open var digest: Digest = Digest.SHA256
+        /** The padding supported by the signer. If not specified, defaults to [RSA-PSS][RSAPadding.PSS]. */
+        open var padding: RSAPadding = RSAPadding.PSS
     }
 }
 
@@ -123,6 +146,64 @@ interface Signer {
     companion object {
         fun Ephemeral(configure: DSLConfigureFn<EphemeralSigningKeyConfiguration> = null) =
             EphemeralKey(configure).transform(EphemeralKey::signer)
+
+        /**
+         * Creates a Signer for a [privateKey], uses default signature algorithms.
+         */
+        fun <T : CryptoPublicKey> PrivateKeyBacked(
+            privateKey: CryptoPrivateKey<T>
+        ): KmmResult<Signer> = when (privateKey) {
+            is CryptoPrivateKey.EC -> PrivateKeyBacked(privateKey)
+            is CryptoPrivateKey.RSA -> PrivateKeyBacked(privateKey)
+        }
+
+        /**
+         * creates a DSL-configurable [Signer] for [privateKey]
+         * @see SigningKeyConfiguration.PrivateRSAKeyConfiguration
+         *
+         */
+        fun PrivateKeyBacked(
+            privateKey: CryptoPrivateKey.RSA,
+            configure: DSLConfigureFn<SigningKeyConfiguration.PrivateRSAKeyConfiguration> =null
+        ): KmmResult<Signer.RSA> = catching {
+            val configuration: SigningKeyConfiguration.PrivateRSAKeyConfiguration =
+                DSL.resolve(SigningKeyConfiguration::PrivateRSAKeyConfiguration, configure)
+                val signatureAlgorithm: SignatureAlgorithm.RSA = getSignatureAlgorithm(privateKey, configuration)
+                makePrivateKeySigner(privateKey, signatureAlgorithm)
+
+        }
+
+        /**
+         * creates a DSL-configurable [Signer] for [privateKey]
+         * @see SigningKeyConfiguration.PrivateECKeyConfiguration
+         *
+         */
+        fun PrivateKeyBacked(
+            privateKey: CryptoPrivateKey.EC,
+            configure: DSLConfigureFn<SigningKeyConfiguration.PrivateECKeyConfiguration> = null
+        ) : KmmResult<Signer.ECDSA> = catching {
+            val configuration: SigningKeyConfiguration.PrivateECKeyConfiguration =
+                DSL.resolve(SigningKeyConfiguration::PrivateECKeyConfiguration, configure)
+                val signatureAlgorithm: SignatureAlgorithm.ECDSA = getSignatureAlgorithm(privateKey, configuration)
+                makePrivateKeySigner(privateKey, signatureAlgorithm)
+
+        }
+
+        private inline fun<reified A: SignatureAlgorithm, T: CryptoPublicKey> getSignatureAlgorithm(key: CryptoPrivateKey<T>, configuration: SigningKeyConfiguration.PrivateKeyConfiguration<T>): A =
+                when (configuration) {
+                    is SigningKeyConfiguration.PrivateECKeyConfiguration -> {
+                        key as CryptoPrivateKey.EC
+                        require(key.curve!=null) {"EC Private key must specify a curve!"}
+                        val digest = if(configuration.digestSet) configuration.digest else key.curve!!.nativeDigest
+                        SignatureAlgorithm.ECDSA(digest = digest, requiredCurve = key.curve) as A
+                    }
+
+                    is SigningKeyConfiguration.PrivateRSAKeyConfiguration -> {
+                        SignatureAlgorithm.RSA(configuration.digest, padding = configuration.padding) as A
+                    }
+                }
+
+
     }
 }
 

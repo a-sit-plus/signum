@@ -87,7 +87,9 @@ val CryptoSignature.iosEncoded
         is CryptoSignature.RSAorHMAC -> this.rawByteArray
     }
 
-
+/**
+ * Converts this privateKey into a [SecKeyRef], making it usable on iOS
+ */
 fun CryptoPrivateKey<*>.toSecKey(): KmmResult<SecKeyRef> = catching {
     memScoped {
         corecall {
@@ -111,7 +113,6 @@ fun CryptoPrivateKey<*>.toSecKey(): KmmResult<SecKeyRef> = catching {
                     }
                 }
             }
-
             SecKeyCreateWithData(data!!.toNSData().giveToCF(), attr, error)
         }
     }
