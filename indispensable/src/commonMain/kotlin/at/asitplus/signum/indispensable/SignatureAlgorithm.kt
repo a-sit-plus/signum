@@ -5,25 +5,25 @@ enum class RSAPadding {
     PSS;
 }
 
-sealed interface SignatureAlgorithm {
+sealed interface SignatureAlgorithm<K: KeyType> {
     data class HMAC(
         /** The digest to use */
         val digest: Digest
-    ) : SignatureAlgorithm
+    ) : SignatureAlgorithm<KeyType.NONE> //TODO this needs a proper split
 
     data class ECDSA(
         /** The digest to apply to the data, or `null` to directly process the raw data. */
         val digest: Digest?,
         /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
         val requiredCurve: ECCurve?
-    ) : SignatureAlgorithm
+    ) : SignatureAlgorithm<KeyType.EC>
 
     data class RSA(
         /** The digest to apply to the data. */
         val digest: Digest,
         /** The padding to apply to the data. */
         val padding: RSAPadding
-    ) : SignatureAlgorithm
+    ) : SignatureAlgorithm<KeyType.RSA>
 
     companion object {
         val ECDSAwithSHA256 = ECDSA(Digest.SHA256, null)
@@ -47,6 +47,6 @@ sealed interface SignatureAlgorithm {
     }
 }
 
-interface SpecializedSignatureAlgorithm {
-    val algorithm: SignatureAlgorithm
+interface SpecializedSignatureAlgorithm<K: KeyType> {
+    val algorithm: SignatureAlgorithm<out K>
 }

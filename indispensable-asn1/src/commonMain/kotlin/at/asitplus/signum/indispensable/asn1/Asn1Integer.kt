@@ -5,6 +5,8 @@ import at.asitplus.signum.indispensable.asn1.VarUInt.Companion.decimalPlus
 import at.asitplus.signum.indispensable.asn1.encoding.UVARINT_MASK_UBYTE
 import at.asitplus.signum.indispensable.asn1.encoding.UVARINT_SINGLEBYTE_MAXVALUE
 import at.asitplus.signum.indispensable.asn1.encoding.bitLength
+import at.asitplus.signum.indispensable.asn1.encoding.decodeToAsn1Integer
+import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import kotlinx.io.*
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -33,7 +35,9 @@ fun Asn1Integer(number: ULong) =
  * Hence, it directly interoperates with [Kotlin MP BigNum](https://github.com/ionspin/kotlin-multiplatform-bignum) and the JVM BigInteger.
  */
 @Serializable(with = Asn1IntegerSerializer::class)
-sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign) {
+sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign): Asn1Encodable<Asn1Primitive> {
+
+    override fun encodeToTlv(): Asn1Primitive = encodeToAsn1Primitive()
 
     enum class Sign {
         POSITIVE,
@@ -96,7 +100,7 @@ sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign) {
         }
     }
 
-    companion object {
+    companion object: Asn1Decodable<Asn1Primitive, Asn1Integer> {
         val ONE = Asn1Integer.Positive(VarUInt(1u))
         val ZERO = Asn1Integer.Positive(VarUInt(0u))
 
@@ -136,6 +140,8 @@ sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign) {
 
             else -> Positive(VarUInt(input))
         }
+
+        override fun doDecode(src: Asn1Primitive): Asn1Integer = src.decodeToAsn1Integer()
     }
 }
 

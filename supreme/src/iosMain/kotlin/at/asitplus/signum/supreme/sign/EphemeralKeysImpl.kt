@@ -3,6 +3,7 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.KeyType
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.secKeyAlgorithmPreHashed
 import at.asitplus.signum.supreme.AutofreeVariable
@@ -39,7 +40,7 @@ actual class EphemeralSigningKeyConfiguration internal actual constructor(): Eph
 actual class EphemeralSignerConfiguration internal actual constructor(): EphemeralSignerConfigurationBase()
 
 private typealias EphemeralKeyRef = AutofreeVariable<SecKeyRef>
-sealed class EphemeralSigner(internal val privateKey: EphemeralKeyRef): Signer {
+sealed class EphemeralSigner<K: KeyType>(internal val privateKey: EphemeralKeyRef): Signer<K> {
     final override val mayRequireUserUnlock: Boolean get() = false
     final override suspend fun sign(data: SignatureInput) = signCatching {
         val inputData = data.convertTo(signatureAlgorithm.preHashedSignatureFormat).getOrThrow()
@@ -55,14 +56,14 @@ sealed class EphemeralSigner(internal val privateKey: EphemeralKeyRef): Signer {
     }
     class EC(config: EphemeralSignerConfiguration, privateKey: EphemeralKeyRef,
              override val publicKey: CryptoPublicKey.EC, override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
-        : EphemeralSigner(privateKey), Signer.ECDSA
+        : EphemeralSigner<KeyType.EC>(privateKey), Signer.ECDSA
 
     class RSA(config: EphemeralSignerConfiguration, privateKey: EphemeralKeyRef,
               override val publicKey: CryptoPublicKey.RSA, override val signatureAlgorithm: SignatureAlgorithm.RSA)
-        : EphemeralSigner(privateKey), Signer.RSA
+        : EphemeralSigner<KeyType.RSA>(privateKey), Signer.RSA
 }
 
-internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey {
+internal actual fun <K: KeyType>makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey<out K> {
     val key = AutofreeVariable<SecKeyRef>()
     memScoped {
         val attr = createCFDictionary {
@@ -89,9 +90,11 @@ internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfigura
         }.let { it.takeFromCF<NSData>() }.toByteArray()
         return when (val alg = configuration._algSpecific.v) {
             is SigningKeyConfiguration.ECConfiguration ->
-                EphemeralKeyBase.EC(EphemeralSigner::EC, key, CryptoPublicKey.EC.fromAnsiX963Bytes(alg.curve, pubkeyBytes), alg.digests)
+                EphemeralKeyBase.EC(EphemeralSigner<K>::EC, key, CryptoPublicKey.EC.fromAnsiX963Bytes(alg.curve, pubkeyBytes), alg.digests)
+
             is SigningKeyConfiguration.RSAConfiguration ->
-                EphemeralKeyBase.RSA(EphemeralSigner::RSA, key, CryptoPublicKey.RSA.fromPKCS1encoded(pubkeyBytes), alg.digests, alg.paddings)
-        }
+                EphemeralKeyBase.RSA(EphemeralSigner<K>::RSA, key, CryptoPublicKey.RSA.fromPKCS1encoded(pubkeyBytes), alg.digests, alg.paddings)
+        } as EphemeralKey<out K>
     }
 }
+

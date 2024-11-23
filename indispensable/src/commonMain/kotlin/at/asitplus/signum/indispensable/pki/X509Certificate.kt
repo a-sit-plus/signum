@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.KeyType
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
@@ -22,7 +23,7 @@ import kotlinx.serialization.Transient
  * The structure that gets signed
  */
 @Serializable
-data class TbsCertificate
+data class TbsCertificate<out K: KeyType>
 @Throws(Asn1Exception::class)
 constructor(
     val version: Int = 2,
@@ -32,7 +33,7 @@ constructor(
     val validFrom: Asn1Time,
     val validUntil: Asn1Time,
     val subjectName: List<RelativeDistinguishedName>,
-    val publicKey: CryptoPublicKey,
+    val publicKey: CryptoPublicKey<out K>,
     val issuerUniqueID: BitSet? = null,
     val subjectUniqueID: BitSet? = null,
     val extensions: List<X509CertificateExtension>? = null
@@ -101,7 +102,7 @@ constructor(
         if (this === other) return true
         if (other == null || this::class != other::class) return false
 
-        other as TbsCertificate
+        other as TbsCertificate<*>
 
         if (version != other.version) return false
         if (!serialNumber.contentEquals(other.serialNumber)) return false
@@ -133,7 +134,7 @@ constructor(
         return result
     }
 
-    companion object : Asn1Decodable<Asn1Sequence, TbsCertificate> {
+    companion object : Asn1Decodable<Asn1Sequence, TbsCertificate<out KeyType>> {
 
         object Tags {
             val ISSUER_UID = Asn1.ImplicitTag(1uL)
@@ -210,7 +211,7 @@ constructor(
  * - RSA remains a bit string
  * - EC is DER-encoded then wrapped in a bit string
  */
-val CryptoSignature.x509Encoded
+val CryptoSignature<*>.x509Encoded
     get() = when (this) {
         is CryptoSignature.EC -> encodeToDer().encodeToAsn1BitStringPrimitive()
         is CryptoSignature.RSAorHMAC -> encodeToTlv()
@@ -222,7 +223,7 @@ val CryptoSignature.x509Encoded
  * - EC is DER-encoded then wrapped in a bit string
  */
 fun CryptoSignature.Companion.fromX509Encoded(alg: X509SignatureAlgorithm, it: Asn1Primitive) =
-    when (alg.isEc) {
+    when (alg.keyType is KeyType.EC) {
         true -> CryptoSignature.EC.decodeFromDer(it.asAsn1BitString().rawBytes)
         false -> CryptoSignature.RSAorHMAC.decodeFromTlv(it)
     }
@@ -231,10 +232,10 @@ fun CryptoSignature.Companion.fromX509Encoded(alg: X509SignatureAlgorithm, it: A
  * Very simple implementation of an X.509 Certificate
  */
 @Serializable
-data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
-    val tbsCertificate: TbsCertificate,
+data class X509Certificate<out K: KeyType> @Throws(IllegalArgumentException::class) constructor(
+    val tbsCertificate: TbsCertificate<K>,
     val signatureAlgorithm: X509SignatureAlgorithm,
-    val signature: CryptoSignature
+    val signature: CryptoSignature<out K>
 ) : Asn1Encodable<Asn1Sequence> {
 
     @Throws(Asn1Exception::class)
@@ -248,7 +249,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         if (this === other) return true
         if (other == null || this::class != other::class) return false
 
-        other as X509Certificate
+        other as X509Certificate<*>
 
         if (tbsCertificate != other.tbsCertificate) return false
         if (signatureAlgorithm != other.signatureAlgorithm) return false
@@ -264,12 +265,12 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         return result
     }
 
-    val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
+    val publicKey: CryptoPublicKey<out K> get() = tbsCertificate.publicKey
 
-    companion object : Asn1Decodable<Asn1Sequence, X509Certificate> {
+    companion object : Asn1Decodable<Asn1Sequence, X509Certificate<KeyType>> {
 
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): X509Certificate = runRethrowing {
+        override fun doDecode(src: Asn1Sequence): X509Certificate<KeyType> = runRethrowing {
             val tbs = TbsCertificate.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val signature = CryptoSignature.fromX509Encoded(sigAlg, src.nextChild() as Asn1Primitive)
@@ -277,12 +278,13 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
             return X509Certificate(tbs, sigAlg, signature)
         }
 
+        //TODO replace with PEM encoded
         /**
          * Tries to decode [src] into an [X509Certificate], by parsing the bytes directly as ASN.1 structure,
          * or by decoding from Base64, or by decoding to a String, stripping PEM headers
          * (`-----BEGIN CERTIFICATE-----`) and then decoding from Base64.
          */
-        fun decodeFromByteArray(src: ByteArray): X509Certificate? = catching {
+        fun decodeFromByteArray(src: ByteArray): X509Certificate<KeyType>? = catching {
             X509Certificate.decodeFromTlv(Asn1Element.parse(src) as Asn1Sequence)
         }.getOrNull() ?: catching {
             X509Certificate.decodeFromTlv(Asn1Element.parse(src.decodeToByteArray(Base64())) as Asn1Sequence)
@@ -298,7 +300,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     }
 }
 
-typealias CertificateChain = List<X509Certificate>
+typealias CertificateChain = List<X509Certificate<*>>
 
-val CertificateChain.leaf: X509Certificate get() = first()
-val CertificateChain.root: X509Certificate get() = last()
+val CertificateChain.leaf: X509Certificate<*> get() = first()
+val CertificateChain.root: X509Certificate<*> get() = last()

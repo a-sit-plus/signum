@@ -17,14 +17,17 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.JCEECPublicKey
 import org.bouncycastle.jce.spec.ECPublicKeySpec
-import java.math.BigInteger
 import java.security.KeyFactory
+import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
 import java.security.cert.CertificateFactory
+import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.ECPublicKey
+import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
 import java.security.spec.MGF1ParameterSpec
+import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.PSSParameterSpec
 import java.security.spec.RSAPublicKeySpec
 
@@ -40,7 +43,11 @@ val Digest.jcaPSSParams
     }
 
 internal val isAndroid by lazy {
-    try { Class.forName("android.os.Build"); true } catch (_: ClassNotFoundException) { false }
+    try {
+        Class.forName("android.os.Build"); true
+    } catch (_: ClassNotFoundException) {
+        false
+    }
 }
 
 private fun sigGetInstance(alg: String, provider: String?) =
@@ -48,19 +55,24 @@ private fun sigGetInstance(alg: String, provider: String?) =
         null -> Signature.getInstance(alg)
         else -> Signature.getInstance(alg, provider)
     }
+
 /** Get a pre-configured JCA instance for this algorithm */
-fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) = catching {
+fun <K: KeyType>SignatureAlgorithm<out K>.getJCASignatureInstance(provider: String? = null) = catching {
     when (this) {
         is SignatureAlgorithm.ECDSA ->
             sigGetInstance("${this.digest.jcaAlgorithmComponent}withECDSA", provider)
+
         is SignatureAlgorithm.HMAC ->
             sigGetInstance("Hmac${this.digest.jcaAlgorithmComponent}", provider)
+
         is SignatureAlgorithm.RSA -> when (this.padding) {
             RSAPadding.PKCS1 ->
                 sigGetInstance("${this.digest.jcaAlgorithmComponent}withRSA", provider)
+
             RSAPadding.PSS -> when (isAndroid) {
                 true ->
                     sigGetInstance("${this.digest.jcaAlgorithmComponent}withRSA/PSS", provider)
+
                 false ->
                     sigGetInstance("RSASSA-PSS", provider).also {
                         it.setParameter(this.digest.jcaPSSParams)
@@ -69,12 +81,13 @@ fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) = catch
         }
     }
 }
+
 /** Get a pre-configured JCA instance for this algorithm */
-fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =
+inline fun<reified K: KeyType> SpecializedSignatureAlgorithm<out K>.getJCASignatureInstance(provider: String? = null) =
     this.algorithm.getJCASignatureInstance(provider)
 
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
-fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) = catching {
+fun<K: KeyType> SignatureAlgorithm<K>.getJCASignatureInstancePreHashed(provider: String? = null) = catching {
     when (this) {
         is SignatureAlgorithm.ECDSA -> sigGetInstance("NONEwithECDSA", provider)
         is SignatureAlgorithm.RSA -> when (this.padding) {
@@ -82,17 +95,19 @@ fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null
                 true -> sigGetInstance("NONEwithRSA", provider)
                 false -> throw UnsupportedOperationException("Pre-hashed RSA input is unsupported on JVM")
             }
+
             RSAPadding.PSS -> when (isAndroid) {
                 true -> sigGetInstance("NONEwithRSA/PSS", provider)
                 false -> throw UnsupportedOperationException("Pre-hashed RSA input is unsupported on JVM")
             }
         }
+
         else -> TODO("$this is unsupported with pre-hashed data")
     }
 }
 
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
-fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) =
+inline fun<reified K: KeyType> SpecializedSignatureAlgorithm<K>.getJCASignatureInstancePreHashed(provider: String? = null) =
     this.algorithm.getJCASignatureInstancePreHashed(provider)
 
 val Digest.jcaName
@@ -104,13 +119,14 @@ val Digest.jcaName
     }
 
 
-val Digest?.jcaAlgorithmComponent get() = when (this) {
-    null -> "NONE"
-    Digest.SHA1 -> "SHA1"
-    Digest.SHA256 -> "SHA256"
-    Digest.SHA384 -> "SHA384"
-    Digest.SHA512 -> "SHA512"
-}
+val Digest?.jcaAlgorithmComponent
+    get() = when (this) {
+        null -> "NONE"
+        Digest.SHA1 -> "SHA1"
+        Digest.SHA256 -> "SHA256"
+        Digest.SHA384 -> "SHA384"
+        Digest.SHA512 -> "SHA512"
+    }
 
 val ECCurve.jcaName
     get() = when (this) {
@@ -122,7 +138,7 @@ val ECCurve.jcaName
 fun ECCurve.Companion.byJcaName(name: String): ECCurve? = ECCurve.entries.find { it.jcaName == name }
 
 
-fun CryptoPublicKey.getJcaPublicKey() = when (this) {
+fun CryptoPublicKey<*>.getJcaPublicKey() = when (this) {
     is CryptoPublicKey.EC -> getJcaPublicKey()
     is CryptoPublicKey.RSA -> getJcaPublicKey()
 }
@@ -145,7 +161,7 @@ fun CryptoPublicKey.RSA.getJcaPublicKey(): KmmResult<RSAPublicKey> = catching {
     ) as RSAPublicKey
 }
 
-fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey> = catching {
+fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey<KeyType.EC>> = catching {
     val curve = ECCurve.byJcaName(
         SECNamedCurves.getName(
             SubjectPublicKeyInfo.getInstance(
@@ -160,20 +176,22 @@ fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmRe
     )
 }
 
-fun CryptoPublicKey.RSA.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey> =
+fun CryptoPublicKey.RSA.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey<KeyType.RSA>> =
     catching { CryptoPublicKey.RSA(publicKey.modulus.toAsn1Integer(), publicKey.publicExponent.toAsn1Integer()) }
 
-fun CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
+inline fun<reified K: KeyType> CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<CryptoPublicKey<out K>> =catching(){
+    val keyType = if(publicKey is ECPublicKey) KeyType.EC else KeyType.RSA
+    if(keyType !is K) throw IllegalStateException("KeyType $keyType is not of type ${K::class.simpleName}")
     when (publicKey) {
         is RSAPublicKey -> CryptoPublicKey.RSA.fromJcaPublicKey(publicKey)
         is ECPublicKey -> CryptoPublicKey.EC.fromJcaPublicKey(publicKey)
         else -> KmmResult.failure(IllegalArgumentException("Unsupported Key Type"))
-    }
-
+    }.getOrThrow() as CryptoPublicKey<K>
+}
 /**
  * In Java EC signatures are returned as DER-encoded, RSA signatures however are raw bytearrays
  */
-val CryptoSignature.jcaSignatureBytes: ByteArray
+val CryptoSignature<*>.jcaSignatureBytes: ByteArray
     get() = when (this) {
         is CryptoSignature.EC -> encodeToDer()
         is CryptoSignature.RSAorHMAC -> rawByteArray
@@ -182,18 +200,18 @@ val CryptoSignature.jcaSignatureBytes: ByteArray
 /**
  * In Java EC signatures are returned as DER-encoded, RSA signatures however are raw bytearrays
  */
-fun CryptoSignature.Companion.parseFromJca(
+fun<K: KeyType> CryptoSignature.Companion.parseFromJca(
     input: ByteArray,
-    algorithm: SignatureAlgorithm
-): CryptoSignature =
+    algorithm: SignatureAlgorithm<out K>
+): CryptoSignature<K> =
     if (algorithm is SignatureAlgorithm.ECDSA)
-        CryptoSignature.EC.parseFromJca(input)
+        CryptoSignature.EC.parseFromJca(input) as CryptoSignature<K>
     else
-        CryptoSignature.RSAorHMAC.parseFromJca(input)
+        CryptoSignature.RSAorHMAC.parseFromJca(input)as CryptoSignature<K>
 
-fun CryptoSignature.Companion.parseFromJca(
+inline fun <reified K: KeyType>CryptoSignature.Companion.parseFromJca(
     input: ByteArray,
-    algorithm: SpecializedSignatureAlgorithm
+    algorithm: SpecializedSignatureAlgorithm<out K>
 ) = parseFromJca(input, algorithm.algorithm)
 
 /**
@@ -215,7 +233,7 @@ fun CryptoSignature.RSAorHMAC.Companion.parseFromJca(input: ByteArray) =
  * Converts this [X509Certificate] to a [java.security.cert.X509Certificate].
  * This function is suspending, because it uses a mutex to lock the underlying certificate factory (which is reused for performance reasons
  */
-suspend fun X509Certificate.toJcaCertificate(): KmmResult<java.security.cert.X509Certificate> = catching {
+suspend fun X509Certificate<*>.toJcaCertificate(): KmmResult<java.security.cert.X509Certificate> = catching {
     certificateFactoryMutex.withLock {
         certFactory.generateCertificate(encodeToDer().inputStream()) as java.security.cert.X509Certificate
     }
@@ -224,7 +242,7 @@ suspend fun X509Certificate.toJcaCertificate(): KmmResult<java.security.cert.X50
 /**
  * blocking implementation of [toJcaCertificate]
  */
-fun X509Certificate.toJcaCertificateBlocking(): KmmResult<java.security.cert.X509Certificate> =
+fun X509Certificate<*>.toJcaCertificateBlocking(): KmmResult<java.security.cert.X509Certificate> =
     runBlocking { toJcaCertificate() }
 
 /**
@@ -232,3 +250,33 @@ fun X509Certificate.toJcaCertificateBlocking(): KmmResult<java.security.cert.X50
  */
 fun java.security.cert.X509Certificate.toKmpCertificate() =
     catching { X509Certificate.decodeFromDer(encoded) }
+
+fun CryptoPrivateKey<*>.toJcaPrivateKey(): KmmResult<PrivateKey> = catching {
+    val spec = PKCS8EncodedKeySpec(this.encodeToDer())
+    val kf = when (this) {
+        is CryptoPrivateKey.EC -> KeyFactory.getInstance("EC")
+        is CryptoPrivateKey.RSA -> KeyFactory.getInstance("RSA")
+    }
+    kf.generatePrivate(spec)!!
+}
+
+fun CryptoPrivateKey.EC.toJcaPrivateKey(): KmmResult<ECPrivateKey> =    toJcaPrivateKey()
+
+fun CryptoPrivateKey.RSA.toJcaPrivateKey(): KmmResult<RSAPrivateKey> =    toJcaPrivateKey()
+
+inline fun<reified K: KeyType> PrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey<K>> = catching {
+    val keyType = if(this is ECPrivateKey) KeyType.EC else KeyType.RSA
+    if(keyType !is K) throw IllegalStateException("KeyType $keyType is not of type ${K::class.simpleName}")
+    CryptoPrivateKey.decodeFromDer(encoded) as CryptoPrivateKey<K>
+}
+
+fun ECPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.EC> = catching {
+    CryptoPrivateKey.decodeFromDer(encoded) as CryptoPrivateKey.EC
+}
+
+fun RSAPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.RSA> = catching {
+    CryptoPrivateKey.decodeFromDer(encoded) as CryptoPrivateKey.RSA
+}
+
+
+

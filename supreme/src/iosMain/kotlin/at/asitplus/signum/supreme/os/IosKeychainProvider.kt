@@ -176,10 +176,10 @@ private object LAContextStorage {
 }
 
 typealias IosSignerSigningConfiguration = PlatformSigningProviderSignerSigningConfigurationBase
-sealed class IosSigner(final override val alias: String,
+sealed class IosSigner<K:KeyType>(final override val alias: String,
                        private val metadata: IosKeyMetadata,
                        private val signerConfig: IosSignerConfiguration)
-    : PlatformSigningProviderSigner<IosSignerSigningConfiguration, IosHomebrewAttestation> {
+    : PlatformSigningProviderSigner<K, IosSignerSigningConfiguration, IosHomebrewAttestation> {
 
     override val mayRequireUserUnlock get() = needsAuthentication
     val needsAuthentication get() = metadata.needsUnlock
@@ -286,8 +286,8 @@ sealed class IosSigner(final override val alias: String,
         }
     } }
 
-    protected abstract fun bytesToSignature(sigBytes: ByteArray): CryptoSignature.RawByteEncodable
-    final override suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<IosSignerSigningConfiguration>): SignatureResult<*> =
+    protected abstract fun bytesToSignature(sigBytes: ByteArray): CryptoSignature.RawByteEncodable<K>
+    final override suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<IosSignerSigningConfiguration>): SignatureResult<K,*> =
     withContext(keychainThreads) { signCatching {
         require(data.format == null) { "Pre-hashed data is unsupported on iOS" }
         val signingConfig = DSL.resolve(::IosSignerSigningConfiguration, configure)
@@ -313,7 +313,7 @@ sealed class IosSigner(final override val alias: String,
 
     class ECDSA internal constructor
         (alias: String, override val publicKey: CryptoPublicKey.EC, metadata: IosKeyMetadata, config: IosSignerConfiguration)
-        : IosSigner(alias, metadata, config), Signer.ECDSA
+        : IosSigner<KeyType.EC>(alias, metadata, config), Signer.ECDSA
     {
         override val signatureAlgorithm: SignatureAlgorithm.ECDSA
         init {
@@ -333,7 +333,7 @@ sealed class IosSigner(final override val alias: String,
 
     class RSA internal constructor
         (alias: String, override val publicKey: CryptoPublicKey.RSA, metadata: IosKeyMetadata, config: IosSignerConfiguration)
-        : IosSigner(alias, metadata, config), Signer.RSA
+        : IosSigner<KeyType.RSA>(alias, metadata, config), Signer.RSA
     {
         override val signatureAlgorithm: SignatureAlgorithm.RSA
         init {
@@ -378,7 +378,7 @@ internal data class IosKeyMetadata(
 }
 
 @OptIn(ExperimentalForeignApi::class)
-object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfiguration, IosSigningKeyConfiguration> {
+object IosKeychainProvider: PlatformSigningProviderI<KeyType, IosSigner<KeyType>, IosSignerConfiguration, IosSigningKeyConfiguration> {
     private fun MemScope.getPublicKey(alias: String): SecKeyRef? {
         val it = alloc<SecKeyRefVar>()
         val query = cfDictionaryOf(
@@ -432,7 +432,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
     override suspend fun createSigningKey(
         alias: String,
         configure: DSLConfigureFn<IosSigningKeyConfiguration>
-    ): KmmResult<IosSigner> = withContext(keychainThreads) { catching {
+    ): KmmResult<IosSigner<>> = withContext(keychainThreads) { catching {
         memScoped {
             if (getPublicKey(alias) != null)
                 throw NoSuchElementException("Key with alias $alias already exists")
@@ -634,5 +634,5 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
     } }
 }
 
-internal actual fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProviderI<*,*,*> =
+internal actual fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProviderI<*,*,*,*> =
     IosKeychainProvider

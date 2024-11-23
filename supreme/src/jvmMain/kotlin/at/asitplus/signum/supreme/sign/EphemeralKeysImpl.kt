@@ -2,6 +2,7 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.KeyType
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.fromJcaPublicKey
 import at.asitplus.signum.indispensable.getJCASignatureInstance
@@ -67,7 +68,7 @@ internal fun getKPGInstance(alg: String, provider: String? = null) =
         else -> KeyPairGenerator.getInstance(alg, provider)
     }
 
-internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey =
+internal actual fun <K: KeyType>makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey<out K> =
     when (val alg = configuration._algSpecific.v) {
         is SigningKeyConfiguration.ECConfiguration -> {
             getKPGInstance("EC", configuration.provider).run {

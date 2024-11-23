@@ -25,7 +25,7 @@ sealed interface Attestation {
 data class SelfAttestation (
     @Serializable(with=X509CertificateBase64UrlSerializer::class)
     @SerialName("x5c")
-    val certificate: X509Certificate) : Attestation
+    val certificate: X509Certificate<*>) : Attestation
 
 @Serializable
 @SerialName("android-key")
@@ -51,11 +51,11 @@ data class IosHomebrewAttestation(
     data class ClientData private constructor(
         private val purpose: String,
         @Serializable(with=IosPublicKeySerializer::class)
-        val publicKey: CryptoPublicKey,
+        val publicKey: CryptoPublicKey<*>,
         @Serializable(with=ByteArrayBase64UrlSerializer::class)
         val challenge: ByteArray
     ) {
-        constructor(publicKey: CryptoPublicKey, challenge: ByteArray) :
+        constructor(publicKey: CryptoPublicKey<*>, challenge: ByteArray) :
             this(THE_PURPOSE, publicKey, challenge)
 
         internal fun assertValidity() { if (purpose != THE_PURPOSE) throw IllegalStateException("Invalid purpose") }
