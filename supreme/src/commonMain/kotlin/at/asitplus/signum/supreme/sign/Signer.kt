@@ -146,64 +146,21 @@ interface Signer {
     companion object {
         fun Ephemeral(configure: DSLConfigureFn<EphemeralSigningKeyConfiguration> = null) =
             EphemeralKey(configure).transform(EphemeralKey::signer)
+    }
+}
 
-        /**
-         * Creates a Signer for a [privateKey], uses default signature algorithms.
-         */
-        fun <T : CryptoPublicKey> PrivateKeyBacked(
-            privateKey: CryptoPrivateKey<T>
-        ): KmmResult<Signer> = when (privateKey) {
-            is CryptoPrivateKey.EC -> PrivateKeyBacked(privateKey)
-            is CryptoPrivateKey.RSA -> PrivateKeyBacked(privateKey)
-        }
-
-        /**
-         * creates a DSL-configurable [Signer] for [privateKey]
-         * @see SigningKeyConfiguration.PrivateRSAKeyConfiguration
-         *
-         */
-        fun PrivateKeyBacked(
-            privateKey: CryptoPrivateKey.RSA,
-            configure: DSLConfigureFn<SigningKeyConfiguration.PrivateRSAKeyConfiguration> =null
-        ): KmmResult<Signer.RSA> = catching {
-            val configuration: SigningKeyConfiguration.PrivateRSAKeyConfiguration =
-                DSL.resolve(SigningKeyConfiguration::PrivateRSAKeyConfiguration, configure)
-                val signatureAlgorithm: SignatureAlgorithm.RSA = getSignatureAlgorithm(privateKey, configuration)
-                makePrivateKeySigner(privateKey, signatureAlgorithm)
-
-        }
-
-        /**
-         * creates a DSL-configurable [Signer] for [privateKey]
-         * @see SigningKeyConfiguration.PrivateECKeyConfiguration
-         *
-         */
-        fun PrivateKeyBacked(
-            privateKey: CryptoPrivateKey.EC,
-            configure: DSLConfigureFn<SigningKeyConfiguration.PrivateECKeyConfiguration> = null
-        ) : KmmResult<Signer.ECDSA> = catching {
-            val configuration: SigningKeyConfiguration.PrivateECKeyConfiguration =
-                DSL.resolve(SigningKeyConfiguration::PrivateECKeyConfiguration, configure)
-                val signatureAlgorithm: SignatureAlgorithm.ECDSA = getSignatureAlgorithm(privateKey, configuration)
-                makePrivateKeySigner(privateKey, signatureAlgorithm)
-
-        }
-
-        private inline fun<reified A: SignatureAlgorithm, T: CryptoPublicKey> getSignatureAlgorithm(key: CryptoPrivateKey<T>, configuration: SigningKeyConfiguration.PrivateKeyConfiguration<T>): A =
-                when (configuration) {
-                    is SigningKeyConfiguration.PrivateECKeyConfiguration -> {
-                        key as CryptoPrivateKey.EC
-                        require(key.curve!=null) {"EC Private key must specify a curve!"}
-                        val digest = if(configuration.digestSet) configuration.digest else key.curve!!.nativeDigest
-                        SignatureAlgorithm.ECDSA(digest = digest, requiredCurve = key.curve) as A
-                    }
-
-                    is SigningKeyConfiguration.PrivateRSAKeyConfiguration -> {
-                        SignatureAlgorithm.RSA(configuration.digest, padding = configuration.padding) as A
-                    }
-                }
-
-
+/**
+ * Creates a signer for the specified [privateKey]. Fails if the key type does not match the signature algorithm type (EC/RSA)
+ */
+fun SignatureAlgorithm.signerFor(privateKey: CryptoPrivateKey<*>): KmmResult<Signer> = catching {
+    require(
+        (this is SignatureAlgorithm.ECDSA && privateKey is CryptoPrivateKey.EC) ||
+        (this is SignatureAlgorithm.RSA && privateKey is CryptoPrivateKey.RSA)
+    ){"Algorithm and Key mismatch: ${this::class.simpleName} + ${privateKey::class.simpleName}"}
+    when(this) {
+        is SignatureAlgorithm.ECDSA ->  makePrivateKeySigner(privateKey as CryptoPrivateKey.EC, this)
+        is SignatureAlgorithm.HMAC -> throw UnsupportedOperationException("HMAC is not yet supported!")
+        is SignatureAlgorithm.RSA -> makePrivateKeySigner(privateKey as CryptoPrivateKey.RSA, this)
     }
 }
 

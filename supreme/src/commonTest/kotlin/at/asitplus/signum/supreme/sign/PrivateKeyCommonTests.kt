@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.signum.indispensable.CryptoPrivateKey
+import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.decodeFromPem
 import at.asitplus.signum.supreme.isSuccess
 import at.asitplus.signum.supreme.signature
@@ -28,7 +29,7 @@ x6XroMXsmbnsEw==
 
         val key = CryptoPrivateKey.decodeFromPem(rsa)
 
-        val signer: Signer = Signer.PrivateKeyBacked(key).getOrThrow()
+        val signer: Signer = SignatureAlgorithm.RSAwithSHA256andPSSPadding.signerFor(key).getOrThrow()
 
         val data = "WUMBO".encodeToByteArray()
         val signature = signer.sign(data)
@@ -52,7 +53,7 @@ x6XroMXsmbnsEw==
         val privateKey = CryptoPrivateKey.decodeFromPem(pkcs8)
 
 
-        val signer: Signer = Signer.PrivateKeyBacked(privateKey).getOrThrow()
+        val signer: Signer = SignatureAlgorithm.ECDSAwithSHA256.signerFor(privateKey).getOrThrow()
 
         val data = "WUMBO".encodeToByteArray()
         val signature = signer.sign(data)

@@ -1,6 +1,8 @@
 package at.asitplus.signum.supreme.sign
 
+import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
+import kotlin.UnsupportedOperationException
 
 
 actual fun makePrivateKeySigner(
@@ -12,4 +14,3 @@ actual fun makePrivateKeySigner(
     key: CryptoPrivateKey.EC,
     algorithm: SignatureAlgorithm.ECDSA
 ): Signer.ECDSA = AndroidEphemeralSigner.EC(config = EphemeralSignerConfiguration(), privateKey = key.toJcaPrivateKey().getOrThrow(), publicKey = key.publicKey!!, signatureAlgorithm = algorithm)
-
