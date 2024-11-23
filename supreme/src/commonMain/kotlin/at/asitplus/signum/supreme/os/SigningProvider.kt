@@ -4,6 +4,7 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.Attestation
 import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.KeyType
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.dsl.DISCOURAGED
@@ -141,13 +142,13 @@ open class PlatformSigningProviderSignerSigningConfigurationBase internal constr
 }
 
 interface PlatformSigningProviderSigner
-    <SigningConfiguration: PlatformSigningProviderSignerSigningConfigurationBase, AttestationT: Attestation>
-    : Signer.WithAlias, Signer.Attestable<AttestationT> {
+    <K: KeyType, SigningConfiguration: PlatformSigningProviderSignerSigningConfigurationBase, AttestationT: Attestation>
+    : Signer.WithAlias<K>, Signer.Attestable<K, AttestationT> {
 
     suspend fun trySetupUninterruptedSigning(configure: DSLConfigureFn<SigningConfiguration> = null) : KmmResult<Unit> = KmmResult.success(Unit)
     override suspend fun trySetupUninterruptedSigning() = trySetupUninterruptedSigning(null)
 
-    suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<SigningConfiguration> = null) : SignatureResult<*>
+    suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<SigningConfiguration> = null) : SignatureResult<K,*>
     suspend fun sign(data: ByteArray, configure: DSLConfigureFn<SigningConfiguration> = null) =
         sign(SignatureInput(data), configure)
     suspend fun sign(data: Sequence<ByteArray>, configure: DSLConfigureFn<SigningConfiguration> = null) =
@@ -158,14 +159,14 @@ interface PlatformSigningProviderSigner
 }
 
 open class PlatformSigningProviderConfigurationBase internal constructor(): DSL.Data()
-internal expect fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProviderI<*,*,*>
+internal expect fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProviderI<*,*,*,*>
 
 /** KT-71089 workaround
  * @see PlatformSigningProvider */
-interface PlatformSigningProviderI<out SignerT: PlatformSigningProviderSigner<*,*>,
+interface PlatformSigningProviderI<K: KeyType, out SignerT: PlatformSigningProviderSigner<K,*,*>,
         out SignerConfigT: PlatformSignerConfigurationBase,
         out KeyConfigT: PlatformSigningKeyConfigurationBase<*>>
-    : SigningProviderI<SignerT, SignerConfigT, KeyConfigT> {
+    : SigningProviderI<K,SignerT, SignerConfigT, KeyConfigT> {
 
     companion object {
         operator fun invoke(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase> = null) =
@@ -192,7 +193,7 @@ val PlatformSigningProvider get() = getPlatformSigningProvider(null)
 
 /** KT-71089 workaround
  * @see SigningProvider */
-interface SigningProviderI<out SignerT: Signer.WithAlias,
+interface SigningProviderI<K: KeyType, out SignerT: Signer.WithAlias<K>,
         out SignerConfigT: SignerConfiguration,
         out KeyConfigT: PlatformSigningKeyConfigurationBase<*>> {
     suspend fun createSigningKey(alias: String, configure: DSLConfigureFn<KeyConfigT> = null): KmmResult<SignerT>
@@ -206,4 +207,4 @@ interface SigningProviderI<out SignerT: Signer.WithAlias,
 }
 
 /** @see PlatformSigningProvider */
-typealias SigningProvider = SigningProviderI<*,*,*>
+typealias SigningProvider = SigningProviderI<*,*,*,*>

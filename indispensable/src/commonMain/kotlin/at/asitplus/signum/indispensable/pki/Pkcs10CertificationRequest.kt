@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.KeyType
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
@@ -21,10 +22,10 @@ import kotlinx.serialization.Serializable
  * @param attributes nomen est omen
  */
 @Serializable
-data class TbsCertificationRequest(
+data class TbsCertificationRequest<out K: KeyType>(
     val version: Int = 0,
     val subjectName: List<RelativeDistinguishedName>,
-    val publicKey: CryptoPublicKey,
+    val publicKey: CryptoPublicKey<out K>,
     val attributes: List<Pkcs10CertificationRequestAttribute> = listOf()
 ) : Asn1Encodable<Asn1Sequence> {
 
@@ -36,7 +37,7 @@ data class TbsCertificationRequest(
     @Throws(IllegalArgumentException::class)
     constructor(
         subjectName: List<RelativeDistinguishedName>,
-        publicKey: CryptoPublicKey,
+        publicKey: CryptoPublicKey<out K>,
         extensions: List<X509CertificateExtension>? = null,
         version: Int = 0,
         attributes: List<Pkcs10CertificationRequestAttribute>? = null,
@@ -65,7 +66,7 @@ data class TbsCertificationRequest(
         if (this === other) return true
         if (other == null || this::class != other::class) return false
 
-        other as TbsCertificationRequest
+        other as TbsCertificationRequest<*>
 
         if (version != other.version) return false
         if (subjectName != other.subjectName) return false
@@ -83,7 +84,7 @@ data class TbsCertificationRequest(
         return result
     }
 
-    companion object : Asn1Decodable<Asn1Sequence, TbsCertificationRequest> {
+    companion object : Asn1Decodable<Asn1Sequence, TbsCertificationRequest<out KeyType>> {
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence) = runRethrowing {
             val version = (src.nextChild() as Asn1Primitive).decodeToInt()
@@ -113,11 +114,10 @@ data class TbsCertificationRequest(
  * Very simple implementation of a PKCS#10 Certification Request
  */
 @Serializable
-data class Pkcs10CertificationRequest(
-    val tbsCsr: TbsCertificationRequest,
+data class Pkcs10CertificationRequest<out K: KeyType>(
+    val tbsCsr: TbsCertificationRequest<K>,
     val signatureAlgorithm: X509SignatureAlgorithm,
-    @Serializable(with = ByteArrayBase64Serializer::class)
-    val signature: CryptoSignature
+    val signature: CryptoSignature<out K>
 ) : Asn1Encodable<Asn1Sequence> {
 
 
@@ -132,7 +132,7 @@ data class Pkcs10CertificationRequest(
         if (this === other) return true
         if (other == null || this::class != other::class) return false
 
-        other as Pkcs10CertificationRequest
+        other as Pkcs10CertificationRequest<*>
 
         if (tbsCsr != other.tbsCsr) return false
         if (signatureAlgorithm != other.signatureAlgorithm) return false
@@ -148,10 +148,10 @@ data class Pkcs10CertificationRequest(
         return result
     }
 
-    companion object : Asn1Decodable<Asn1Sequence, Pkcs10CertificationRequest> {
+    companion object : Asn1Decodable<Asn1Sequence, Pkcs10CertificationRequest<out KeyType>> {
 
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): Pkcs10CertificationRequest = runRethrowing {
+        override fun doDecode(src: Asn1Sequence): Pkcs10CertificationRequest<out KeyType> = runRethrowing {
             val tbsCsr = TbsCertificationRequest.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val signature = (src.nextChild() as Asn1Primitive).asAsn1BitString()

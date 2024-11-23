@@ -225,7 +225,7 @@ object AndroidKeyStoreProvider:
         val config = DSL.resolve(::AndroidSignerConfiguration, configure)
         val jcaPrivateKey = ks.getKey(alias, null) as? PrivateKey
             ?: throw NoSuchElementException("No key for alias $alias exists")
-        val publicKey: CryptoPublicKey
+        val publicKey: CryptoPublicKey<*>
         val attestation: AndroidKeystoreAttestation?
         ks.getCertificateChain(alias).let { chain ->
             catching { chain.map { X509Certificate.decodeFromDer(it.encoded) } }.let { r ->
@@ -240,7 +240,7 @@ object AndroidKeyStoreProvider:
                         Napier.v { "Correcting Android 10 AKS signature bug" }
                         publicKey = CertificateFactory.getInstance("X.509")
                             .generateCertificate(chain.first().encoded.inputStream())
-                            .publicKey.let(CryptoPublicKey::fromJcaPublicKey).getOrThrow()
+                            .publicKey.let{CryptoPublicKey.fromJcaPublicKey<KeyType>(it)}.getOrThrow()
                         attestation = null
                     } else throw it
                 }
@@ -353,7 +353,7 @@ sealed class AndroidKeystoreSigner private constructor(
     }
 
     internal suspend fun getJCASignature(signingConfig: AndroidSignerSigningConfiguration): Signature =
-        signatureAlgorithm.getJCASignatureInstance().getOrThrow().also {
+        (signatureAlgorithm as SignatureAlgorithm<*>).getJCASignatureInstance().getOrThrow().also {
             if (needsAuthenticationForEveryUse) {
                 it.initSign(jcaPrivateKey)
                 attemptBiometry(DSL.ConfigStack(signingConfig.unlockPrompt.v, config.unlockPrompt.v), CryptoObject(it))

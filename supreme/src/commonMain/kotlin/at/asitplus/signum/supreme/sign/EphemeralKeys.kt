@@ -5,6 +5,7 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.KeyType
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.nativeDigest
@@ -12,7 +13,7 @@ import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.os.SignerConfiguration
 
-internal expect fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey
+internal expect fun <K: KeyType>makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey<out K>
 internal expect fun  makePrivateKeySigner(key: CryptoPrivateKey.EC, algorithm: SignatureAlgorithm.ECDSA) : Signer.ECDSA
 internal expect fun  makePrivateKeySigner(key: CryptoPrivateKey.RSA, algorithm: SignatureAlgorithm.RSA) : Signer.RSA
 
@@ -42,36 +43,36 @@ expect class EphemeralSignerConfiguration internal constructor(): SignerConfigur
  * }
  * ```
  */
-sealed interface EphemeralKey {
-    val publicKey: CryptoPublicKey
+sealed interface EphemeralKey<K: KeyType> {
+    val publicKey: CryptoPublicKey<K>
 
     /** Create a signer that signs using this [EphemeralKey].
      * @see EphemeralSignerConfiguration */
-    fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration> = null): KmmResult<Signer>
+    fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration> = null): KmmResult<Signer<K>>
 
     /** An [EphemeralKey] suitable for ECDSA operations. */
-    interface EC: EphemeralKey {
+    interface EC: EphemeralKey<KeyType.EC> {
         override val publicKey: CryptoPublicKey.EC
         override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): KmmResult<Signer.ECDSA>
     }
     /** An [EphemeralKey] suitable for RSA operations. */
-    interface RSA: EphemeralKey {
+    interface RSA: EphemeralKey<KeyType.RSA> {
         override val publicKey: CryptoPublicKey.RSA
         override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): KmmResult<Signer.RSA>
     }
     companion object {
-        operator fun invoke(configure: DSLConfigureFn<EphemeralSigningKeyConfiguration> = null) =
-            catching { makeEphemeralKey(DSL.resolve(::EphemeralSigningKeyConfiguration, configure)) }
+        operator fun <K: KeyType>invoke(configure: DSLConfigureFn<EphemeralSigningKeyConfiguration> = null) =
+            catching { makeEphemeralKey<K>(DSL.resolve(::EphemeralSigningKeyConfiguration, configure)) }
     }
 }
 
-internal sealed class EphemeralKeyBase <PrivateKeyT>
-    (internal val privateKey: PrivateKeyT): EphemeralKey {
+internal sealed class EphemeralKeyBase <K: KeyType,PrivateKeyT>
+    (internal val privateKey: PrivateKeyT): EphemeralKey<K> {
 
     class EC<PrivateKeyT, SignerT: Signer.ECDSA>(
         private val signerFactory: (EphemeralSignerConfiguration, PrivateKeyT, CryptoPublicKey.EC, SignatureAlgorithm.ECDSA)->SignerT,
         privateKey: PrivateKeyT, override val publicKey: CryptoPublicKey.EC,
-        val digests: Set<Digest?>) : EphemeralKeyBase<PrivateKeyT>(privateKey), EphemeralKey.EC {
+        val digests: Set<Digest?>) : EphemeralKeyBase<KeyType.EC,PrivateKeyT>(privateKey), EphemeralKey.EC {
 
         override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): KmmResult<SignerT> = catching {
             val config = DSL.resolve(::EphemeralSignerConfiguration, configure)
@@ -93,7 +94,7 @@ internal sealed class EphemeralKeyBase <PrivateKeyT>
     class RSA<PrivateKeyT, SignerT: Signer.RSA>(
         private val signerFactory: (EphemeralSignerConfiguration, PrivateKeyT, CryptoPublicKey.RSA, SignatureAlgorithm.RSA)->SignerT,
         privateKey: PrivateKeyT, override val publicKey: CryptoPublicKey.RSA,
-        val digests: Set<Digest>, val paddings: Set<RSAPadding>) : EphemeralKeyBase<PrivateKeyT>(privateKey), EphemeralKey.RSA {
+        val digests: Set<Digest>, val paddings: Set<RSAPadding>) : EphemeralKeyBase<KeyType.RSA, PrivateKeyT>(privateKey), EphemeralKey.RSA {
 
         override fun signer(configure: DSLConfigureFn<EphemeralSignerConfiguration>): KmmResult<SignerT> = catching {
             val config = DSL.resolve(::EphemeralSignerConfiguration, configure)

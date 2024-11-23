@@ -8,7 +8,7 @@ import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.memScoped
 import platform.Security.*
 
-val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm
+val SignatureAlgorithm<*>.secKeyAlgorithm: SecKeyAlgorithm
     get() = when (this) {
         is SignatureAlgorithm.ECDSA -> {
             when (digest) {
@@ -40,11 +40,11 @@ val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm
 
         is SignatureAlgorithm.HMAC -> TODO("HMAC is unsupported")
     }!!
-val SpecializedSignatureAlgorithm.secKeyAlgorithm
+val SpecializedSignatureAlgorithm<*>.secKeyAlgorithm
     get() =
         this.algorithm.secKeyAlgorithm
 
-val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm
+val SignatureAlgorithm<*>.secKeyAlgorithmPreHashed: SecKeyAlgorithm
     get() = when (this) {
         is SignatureAlgorithm.ECDSA -> {
             when (digest) {
@@ -77,11 +77,11 @@ val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm
         is SignatureAlgorithm.HMAC -> TODO("HMAC is unsupported")
     }!!
 
-val SpecializedSignatureAlgorithm.secKeyAlgorithmPreHashed
+val SpecializedSignatureAlgorithm<*>.secKeyAlgorithmPreHashed
     get() =
         this.algorithm.secKeyAlgorithmPreHashed
 
-val CryptoSignature.iosEncoded
+val CryptoSignature<*>.iosEncoded
     get() = when (this) {
         is CryptoSignature.EC -> this.encodeToDer()
         is CryptoSignature.RSAorHMAC -> this.rawByteArray
@@ -90,7 +90,7 @@ val CryptoSignature.iosEncoded
 /**
  * Converts this privateKey into a [SecKeyRef], making it usable on iOS
  */
-fun CryptoPrivateKey<*>.toSecKey(): KmmResult<SecKeyRef> = catching {
+fun <K: KeyType>CryptoPrivateKey<K>.toSecKey(): KmmResult<SecKeyRef> = catching {
     memScoped {
         corecall {
             var data : ByteArray? = null

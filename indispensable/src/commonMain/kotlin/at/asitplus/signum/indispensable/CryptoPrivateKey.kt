@@ -8,7 +8,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.*
 /**
  * PKCS#8 Representation of a private key structure as per [RFC 5208](https://datatracker.ietf.org/doc/html/rfc5208)
  */
-sealed class CryptoPrivateKey<T : CryptoPublicKey>(
+sealed class CryptoPrivateKey<K: KeyType>(
     /**
      * optional attributes relevant when PKCS#8-encoding a private key
      */
@@ -19,7 +19,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
      * [CryptoPublicKey] matching this private key. Never null for RSA.
      * Maybe `null` for EC, if the curve is not specified (e.g. when decoding from SEC1 decoding and neither curve nor key are present)
      */
-    abstract val publicKey: T?
+    abstract val publicKey: CryptoPublicKey<K>?
 
     override val ebString = CryptoPrivateKey.ebString
 
@@ -43,7 +43,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
         val coefficient: Asn1Integer,
         val otherPrimeInfos: List<OtherPrimeInfo>?,
         attributes: List<Asn1Element>? = null
-    ) : CryptoPrivateKey<CryptoPublicKey.RSA>(attributes) {
+    ) : CryptoPrivateKey<KeyType.RSA>(attributes) {
 
         override val oid = RSA.oid
 
@@ -197,7 +197,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
         publicKey: CryptoPublicKey.EC?,
         attributes: List<Asn1Element>? = null
     ) :
-        CryptoPrivateKey<CryptoPublicKey.EC>(attributes) {
+        CryptoPrivateKey<KeyType.EC>(attributes) {
 
         override val oid = EC.oid
 
@@ -392,9 +392,9 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
         }
     }
 
-    companion object : PemDecodable<Asn1Sequence, CryptoPrivateKey<*>> {
+    companion object : PemDecodable<Asn1Sequence, CryptoPrivateKey<out KeyType>> {
         override val ebString = "PRIVATE KEY"
-        override fun doDecode(src: Asn1Sequence): CryptoPrivateKey<*> {
+        override fun doDecode(src: Asn1Sequence): CryptoPrivateKey<out KeyType> {
             //PKCS8 here
             require(src.nextChild().asPrimitive().decodeToInt() == 0) { "PKCS#8 Private Key VERSION must be 0" }
             val algorithmID = src.nextChild().asSequence()

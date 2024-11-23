@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.io
 
 import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.KeyType
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.base64.Base64ConfigBuilder
@@ -86,10 +87,10 @@ object X509CertificateBase64UrlSerializer: TransformingSerializerTemplate<X509Ce
 )
 
 /** De-/serializes a public key as a Base64Url-encoded IOS encoding public key */
-object IosPublicKeySerializer: TransformingSerializerTemplate<CryptoPublicKey, ByteArray>(
+object IosPublicKeySerializer: TransformingSerializerTemplate<CryptoPublicKey<*>, ByteArray>(
     parent = ByteArrayBase64UrlSerializer,
-    encodeAs = CryptoPublicKey::iosEncoded,
-    decodeAs = CryptoPublicKey::fromIosEncoded)
+    encodeAs = CryptoPublicKey<*>::iosEncoded,
+    decodeAs = { CryptoPublicKey.fromIosEncoded(it) })
 
 sealed class ListSerializerTemplate<ValueT>(
     using: KSerializer<ValueT>, serialName: String = "")

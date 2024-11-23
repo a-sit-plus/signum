@@ -27,7 +27,7 @@ import kotlinx.serialization.encoding.Encoder
  */
 
 @Serializable(with = CryptoSignature.CryptoSignatureSerializer::class)
-sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
+sealed interface  CryptoSignature<K: KeyType> : Asn1Encodable<Asn1Element> {
 
 
         /**
@@ -37,7 +37,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
          *
          * **This is the opposite of a [NotRawByteEncodable] signature**
          */
-        sealed interface RawByteEncodable : CryptoSignature {
+        sealed interface RawByteEncodable<K: KeyType> : CryptoSignature<K> {
             /**
              * Removes ASN1 Structure and returns the signature value(s) as ByteArray
              */
@@ -56,20 +56,20 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
          * as the [RawByteEncodable] ones, to allow for exhaustive `when` clauses
          *
          */
-        sealed interface NotRawByteEncodable : CryptoSignature
+        sealed interface NotRawByteEncodable<K: KeyType> : CryptoSignature<K>
 
     val humanReadableString: String get() = "${this::class.simpleName ?: "CryptoSignature"}(signature=${encodeToTlv().prettyPrint()})"
 
 
-    object CryptoSignatureSerializer : KSerializer<CryptoSignature> {
+    object CryptoSignatureSerializer : KSerializer<CryptoSignature<*>> {
         override val descriptor: SerialDescriptor
             get() = PrimitiveSerialDescriptor("CryptoSignature", PrimitiveKind.STRING)
 
-        override fun deserialize(decoder: Decoder): CryptoSignature {
+        override fun deserialize(decoder: Decoder): CryptoSignature<*> {
             return CryptoSignature.decodeFromDer(decoder.decodeString().decodeToByteArray(Base64Strict))
         }
 
-        override fun serialize(encoder: Encoder, value: CryptoSignature) {
+        override fun serialize(encoder: Encoder, value: CryptoSignature<*>) {
             encoder.encodeString(value.encodeToDer().encodeToString(Base64Strict))
         }
     }
@@ -81,7 +81,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
         val r: BigInteger,
         /** s - ECDSA signature component */
         val s: BigInteger
-    ) : CryptoSignature {
+    ) : CryptoSignature<KeyType.EC> {
 
         init {
             require(r.isPositive) { "r must be positive" }
@@ -109,7 +109,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
 
         class IndefiniteLength internal constructor(
             r: BigInteger, s: BigInteger
-        ) : EC(r, s), NotRawByteEncodable {
+        ) : EC(r, s), NotRawByteEncodable<KeyType.EC> {
 
             /**
              * specifies the curve's scalar byte length for this signature, allowing it to be converted to raw bytes
@@ -154,7 +154,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
              */
             val scalarByteLength: UInt,
             r: BigInteger, s: BigInteger
-        ) : EC(r, s), RawByteEncodable {
+        ) : EC(r, s), RawByteEncodable<KeyType.EC> {
             init {
                 val max = scalarByteLength.toInt() * 8
 
@@ -217,7 +217,8 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
 
     }
 
-    class RSAorHMAC private constructor (rawBytes: ByteArray?, x509Element: Asn1Primitive?) : CryptoSignature, RawByteEncodable {
+    //TODO this is dodgy at best. RSA an HMAC need to be split into a proper RSA Signature and a proper MAC type
+    class RSAorHMAC private constructor (rawBytes: ByteArray?, x509Element: Asn1Primitive?) : CryptoSignature<KeyType.RSA>, RawByteEncodable<KeyType.RSA> {
         constructor(rawBytes: ByteArray) : this(rawBytes, null)
         constructor(x509Element: Asn1Primitive) : this(null, x509Element)
 
@@ -255,9 +256,9 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
         }
     }
 
-    companion object : Asn1Decodable<Asn1Element, CryptoSignature> {
+    companion object : Asn1Decodable<Asn1Element, CryptoSignature<out KeyType>> {
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Element): CryptoSignature = runRethrowing {
+        override fun doDecode(src: Asn1Element): CryptoSignature<out KeyType> = runRethrowing {
             when (src.tag) {
                 Asn1Element.Tag.BIT_STRING -> RSAorHMAC.decodeFromTlv(src)
                 Asn1Element.Tag.SEQUENCE -> EC.decodeFromTlv(src)

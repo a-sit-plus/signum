@@ -24,7 +24,7 @@ import kotlinx.serialization.Serializable
  * Representation of a public key structure
  */
 @Serializable
-sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
+sealed class CryptoPublicKey<K: KeyType> : Asn1Encodable<Asn1Sequence>, Identifiable {
 
     /**
      * This is meant for storing additional properties, which may be relevant for certain use cases.
@@ -65,14 +65,14 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
     }
 
 
-    companion object : Asn1Decodable<Asn1Sequence, CryptoPublicKey> {
+    companion object : Asn1Decodable<Asn1Sequence, CryptoPublicKey<out KeyType>> {
         /**
          * Parses a DID representation of a public key and
          * reconstructs the corresponding [CryptoPublicKey] from it
          * @throws Throwable all sorts of exception on invalid input
          */
         @Throws(Throwable::class)
-        fun fromDid(input: String): CryptoPublicKey {
+        fun fromDid(input: String): CryptoPublicKey<*> {
             val bytes = multiKeyRemovePrefix(input)
             var decoded = catching { bytes.multibaseDecode() }.getOrThrow()
                 ?: throw IndexOutOfBoundsException("Unsupported multibase encoding")
@@ -106,7 +106,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
 
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): CryptoPublicKey = runRethrowing {
+        override fun doDecode(src: Asn1Sequence): CryptoPublicKey<out KeyType> = runRethrowing {
             if (src.children.size != 2) throw Asn1StructuralException("Invalid SPKI Structure!")
             val keyInfo = src.nextChild() as Asn1Sequence
             if (keyInfo.children.size != 2) throw Asn1StructuralException("Superfluous data in  SPKI!")
@@ -145,7 +145,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          * Parses this key from an iOS-encoded one
          */
         @Throws(Throwable::class)
-        fun fromIosEncoded(it: ByteArray): CryptoPublicKey =
+        fun fromIosEncoded(it: ByteArray): CryptoPublicKey<out KeyType> =
             when (it[0].toUByte()) {
                 ANSIECPrefix.UNCOMPRESSED.prefixUByte -> {
                     val curve = when (it.size) {
@@ -175,7 +175,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
         /** public exponent */
         val e: Asn1Integer.Positive,
-    ) : CryptoPublicKey() {
+    ) : CryptoPublicKey<KeyType.RSA>() {
 
         val bits = n.bitLength().let { Size.of(it) ?: throw IllegalArgumentException("Unsupported key size $it bits") }
 
@@ -259,7 +259,7 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
     data class EC private constructor(
         val publicPoint: ECPoint.Normalized,
         val preferCompressedRepresentation: Boolean = true
-    ) : CryptoPublicKey() {
+    ) : CryptoPublicKey<KeyType.EC>() {
 
         val curve get() = publicPoint.curve
         val x get() = publicPoint.x
@@ -374,24 +374,24 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
     }
 }
 
-interface SpecializedCryptoPublicKey {
-    fun toCryptoPublicKey(): KmmResult<CryptoPublicKey>
+interface SpecializedCryptoPublicKey<K: KeyType> {
+    fun toCryptoPublicKey(): KmmResult<CryptoPublicKey<K>>
 }
 
 /** Alias of [equals] provided for convenience (and alignment with [SpecializedCryptoPublicKey]) */
-fun CryptoPublicKey.equalsCryptographically(other: CryptoPublicKey) =
+fun CryptoPublicKey<*>.equalsCryptographically(other: CryptoPublicKey<*>) =
     equals(other)
 
 /** Whether the actual underlying key (irrespective of any format-specific metadata) is equal */
-fun SpecializedCryptoPublicKey.equalsCryptographically(other: CryptoPublicKey) =
+fun SpecializedCryptoPublicKey<*>.equalsCryptographically(other: CryptoPublicKey<*>) =
     toCryptoPublicKey().map { it.equalsCryptographically(other) }.getOrElse { false }
 
 /** Whether the actual underlying key (irrespective of any format-specific metadata) is equal */
-fun SpecializedCryptoPublicKey.equalsCryptographically(other: SpecializedCryptoPublicKey) =
+fun SpecializedCryptoPublicKey<*>.equalsCryptographically(other: SpecializedCryptoPublicKey<*>) =
     toCryptoPublicKey().map { other.equalsCryptographically(it) }.getOrElse { false }
 
 /** Whether the actual underlying key (irrespective of any format-specific metadata) is equal */
-fun CryptoPublicKey.equalsCryptographically(other: SpecializedCryptoPublicKey) =
+fun CryptoPublicKey<*>.equalsCryptographically(other: SpecializedCryptoPublicKey<*>) =
     other.equalsCryptographically(this)
 
 

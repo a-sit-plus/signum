@@ -2,6 +2,7 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.KeyType
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.supreme.hash.digest
@@ -61,7 +62,7 @@ class SignatureInput private constructor (
     }
 }
 
-val SignatureAlgorithm.preHashedSignatureFormat: SignatureInputFormat get() = when(this) {
+val <K: KeyType>SignatureAlgorithm<K>.preHashedSignatureFormat: SignatureInputFormat get() = when(this) {
     is SignatureAlgorithm.RSA -> this.digest
     is SignatureAlgorithm.ECDSA -> this.digest
     else -> TODO("HMAC unsupported")

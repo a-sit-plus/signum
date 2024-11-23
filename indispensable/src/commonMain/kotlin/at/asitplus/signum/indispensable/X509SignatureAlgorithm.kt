@@ -17,31 +17,31 @@ import kotlinx.serialization.encoding.Encoder
 @Serializable(with = X509SignatureAlgorithmSerializer::class)
 enum class X509SignatureAlgorithm(
     override val oid: ObjectIdentifier,
-    val isEc: Boolean = false
-) : Asn1Encodable<Asn1Sequence>, Identifiable, SpecializedSignatureAlgorithm {
+    val keyType: KeyType
+) : Asn1Encodable<Asn1Sequence>, Identifiable, SpecializedSignatureAlgorithm<KeyType> {
 
     // ECDSA with SHA-size
-    ES256(KnownOIDs.ecdsaWithSHA256, true),
-    ES384(KnownOIDs.ecdsaWithSHA384, true),
-    ES512(KnownOIDs.ecdsaWithSHA512, true),
+    ES256(KnownOIDs.ecdsaWithSHA256, KeyType.EC),
+    ES384(KnownOIDs.ecdsaWithSHA384, KeyType.EC),
+    ES512(KnownOIDs.ecdsaWithSHA512, KeyType.EC),
 
     // HMAC-size with SHA-size
-    HS256(KnownOIDs.hmacWithSHA256),
-    HS384(KnownOIDs.hmacWithSHA384),
-    HS512(KnownOIDs.hmacWithSHA512),
+    HS256(KnownOIDs.hmacWithSHA256, KeyType.NONE),
+    HS384(KnownOIDs.hmacWithSHA384, KeyType.NONE),
+    HS512(KnownOIDs.hmacWithSHA512, KeyType.NONE),
 
     // RSASSA-PSS with SHA-size
-    PS256(KnownOIDs.rsaPSS),
-    PS384(KnownOIDs.rsaPSS),
-    PS512(KnownOIDs.rsaPSS),
+    PS256(KnownOIDs.rsaPSS, KeyType.RSA),
+    PS384(KnownOIDs.rsaPSS, KeyType.RSA),
+    PS512(KnownOIDs.rsaPSS, KeyType.RSA),
 
     // RSASSA-PKCS1-v1_5 with SHA-size
-    RS256(KnownOIDs.sha256WithRSAEncryption),
-    RS384(KnownOIDs.sha384WithRSAEncryption),
-    RS512(KnownOIDs.sha512WithRSAEncryption),
+    RS256(KnownOIDs.sha256WithRSAEncryption, KeyType.RSA),
+    RS384(KnownOIDs.sha384WithRSAEncryption, KeyType.RSA),
+    RS512(KnownOIDs.sha512WithRSAEncryption, KeyType.RSA),
 
     // RSASSA-PKCS1-v1_5 using SHA-1
-    RS1(KnownOIDs.sha1WithRSAEncryption);
+    RS1(KnownOIDs.sha1WithRSAEncryption, KeyType.RSA);
 
     private fun encodePSSParams(bits: Int): Asn1Sequence =
         when (bits) {
@@ -98,7 +98,7 @@ enum class X509SignatureAlgorithm(
         ES512, HS512, PS512, RS512 -> Digest.SHA512
     }
 
-    override val algorithm: SignatureAlgorithm get() = when(this) {
+    override val algorithm: SignatureAlgorithm<out KeyType> get() = when(this) {
         ES256, ES384, ES512 -> SignatureAlgorithm.ECDSA(this.digest, null)
         HS256, HS384, HS512 -> SignatureAlgorithm.HMAC(this.digest)
         PS256, PS384, PS512 -> SignatureAlgorithm.RSA(this.digest, RSAPadding.PSS)
@@ -169,7 +169,7 @@ enum class X509SignatureAlgorithm(
 }
 
 /** Finds a X.509 signature algorithm matching this algorithm. Curve restrictions are not preserved. */
-fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
+inline fun <reified K: KeyType>SignatureAlgorithm<out K>.toX509SignatureAlgorithm() = catching {
     when (this) {
         is SignatureAlgorithm.ECDSA -> when (this.digest) {
             Digest.SHA256 -> X509SignatureAlgorithm.ES256
@@ -200,7 +200,7 @@ fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
     }
 }
 /** Finds a X.509 signature algorithm matching this algorithm. Curve restrictions are not preserved. */
-fun SpecializedSignatureAlgorithm.toX509SignatureAlgorithm() =
+inline fun<reified K: KeyType> SpecializedSignatureAlgorithm<K>.toX509SignatureAlgorithm() =
     this.algorithm.toX509SignatureAlgorithm()
 
 object X509SignatureAlgorithmSerializer : KSerializer<X509SignatureAlgorithm> {

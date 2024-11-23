@@ -13,6 +13,7 @@ import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.indispensable.Attestation
 import at.asitplus.signum.indispensable.CryptoPrivateKey
+import at.asitplus.signum.indispensable.KeyType
 import at.asitplus.signum.supreme.os.SigningProvider
 import com.ionspin.kotlin.bignum.integer.BigInteger
 
@@ -56,9 +57,9 @@ open class SigningKeyConfiguration internal constructor(): DSL.Data() {
         var publicExponent: BigInteger = F4
     }
 
-    sealed class PrivateKeyConfiguration<T: CryptoPublicKey> : DSL.Data()
+    sealed class PrivateKeyConfiguration<K: KeyType> : DSL.Data()
 
-    class PrivateECKeyConfiguration internal constructor() : PrivateKeyConfiguration<CryptoPublicKey.EC>() {
+    class PrivateECKeyConfiguration internal constructor() : PrivateKeyConfiguration<KeyType.EC>() {
         internal var digestSet = false
 
         /** The digest supported by the signer. If not specified, supports the curve's native digest. */
@@ -70,7 +71,7 @@ open class SigningKeyConfiguration internal constructor(): DSL.Data() {
             get() = field
     }
 
-    class PrivateRSAKeyConfiguration internal constructor():PrivateKeyConfiguration<CryptoPublicKey.RSA>() {
+    class PrivateRSAKeyConfiguration internal constructor():PrivateKeyConfiguration<KeyType.RSA>() {
         /** The digest supported by the signer. If not specified, defaults to [SHA256][Digest.SHA256]. */
         open var digest: Digest = Digest.SHA256
         /** The padding supported by the signer. If not specified, defaults to [RSA-PSS][RSAPadding.PSS]. */
@@ -101,34 +102,34 @@ open class SigningKeyConfiguration internal constructor(): DSL.Data() {
  * There is never a guarantee that signing is uninterrupted if [mayRequireUserUnlock] is true.
  *
  */
-interface Signer {
-    val signatureAlgorithm: SignatureAlgorithm
-    val publicKey: CryptoPublicKey
+interface Signer<K: KeyType> {
+    val signatureAlgorithm: SignatureAlgorithm<out K>
+    val publicKey: CryptoPublicKey<K>
     /** Whether the signer may ask for user interaction when [sign] is called */
     val mayRequireUserUnlock: Boolean get() = true
 
     /** Any [Signer] instantiation must be [ECDSA] or [RSA] */
-    sealed interface AlgTrait: Signer
+    sealed interface AlgTrait<K: KeyType>: Signer<K>
 
     /** A [Signer] that signs using ECDSA. */
-    interface ECDSA: AlgTrait {
+    interface ECDSA: AlgTrait<KeyType.EC> {
         override val signatureAlgorithm: SignatureAlgorithm.ECDSA
         override val publicKey: CryptoPublicKey.EC
     }
 
     /** A [Signer] that signs using RSA. */
-    interface RSA: AlgTrait {
+    interface RSA: AlgTrait<KeyType.RSA> {
         override val signatureAlgorithm: SignatureAlgorithm.RSA
         override val publicKey: CryptoPublicKey.RSA
     }
 
     /** Some [Signer]s are retrieved from a signing provider, such as a key store, and have a string [alias]. */
-    interface WithAlias: Signer {
+    interface WithAlias<K: KeyType>: Signer<K> {
         val alias: String
     }
 
     /** Some [Signer]s might have an attestation of some sort */
-    interface Attestable<AttestationT: Attestation>: Signer {
+    interface Attestable<K: KeyType, AttestationT: Attestation>: Signer<K> {
         val attestation: AttestationT?
     }
 
@@ -139,20 +140,20 @@ interface Signer {
     suspend fun trySetupUninterruptedSigning(): KmmResult<Unit> = KmmResult.success(Unit)
 
     /** Signs data. Might ask for user confirmation first if this [Signer] [mayRequireUserUnlock]. */
-    suspend fun sign(data: SignatureInput): SignatureResult<*>
+    suspend fun sign(data: SignatureInput): SignatureResult<K,*>
     suspend fun sign(data: ByteArray) = sign(SignatureInput(data))
     suspend fun sign(data: Sequence<ByteArray>) = sign(SignatureInput(data))
 
     companion object {
-        fun Ephemeral(configure: DSLConfigureFn<EphemeralSigningKeyConfiguration> = null) =
-            EphemeralKey(configure).transform(EphemeralKey::signer)
+        fun <K: KeyType>Ephemeral(configure: DSLConfigureFn<EphemeralSigningKeyConfiguration> = null) =
+            EphemeralKey<K>(configure).transform(EphemeralKey<out K>::signer)
 
         /**
          * Creates a Signer for a [privateKey], uses default signature algorithms.
          */
-        fun <T : CryptoPublicKey> PrivateKeyBacked(
+        fun <T: KeyType> PrivateKeyBacked(
             privateKey: CryptoPrivateKey<T>
-        ): KmmResult<Signer> = when (privateKey) {
+        ): KmmResult<Signer<*>> = when (privateKey) {
             is CryptoPrivateKey.EC -> PrivateKeyBacked(privateKey)
             is CryptoPrivateKey.RSA -> PrivateKeyBacked(privateKey)
         }
@@ -189,7 +190,7 @@ interface Signer {
 
         }
 
-        private inline fun<reified A: SignatureAlgorithm, T: CryptoPublicKey> getSignatureAlgorithm(key: CryptoPrivateKey<T>, configuration: SigningKeyConfiguration.PrivateKeyConfiguration<T>): A =
+        private inline fun<reified A: SignatureAlgorithm<T>, T: KeyType> getSignatureAlgorithm(key: CryptoPrivateKey<T>, configuration: SigningKeyConfiguration.PrivateKeyConfiguration<T>): A =
                 when (configuration) {
                     is SigningKeyConfiguration.PrivateECKeyConfiguration -> {
                         key as CryptoPrivateKey.EC
@@ -202,21 +203,21 @@ interface Signer {
                         SignatureAlgorithm.RSA(configuration.digest, padding = configuration.padding) as A
                     }
                 }
-
-
     }
 }
+
+
 
 /**
  * Get a verifier for signatures generated by this [Signer].
  * @see SignatureAlgorithm.verifierFor
  */
-fun Signer.makeVerifier(configure: ConfigurePlatformVerifier = null) = signatureAlgorithm.verifierFor(publicKey, configure)
+fun <T: KeyType>Signer<T>.makeVerifier(configure: ConfigurePlatformVerifier = null) = signatureAlgorithm.verifierFor(publicKey, configure)
 
 /**
  * Gets a platform verifier for signatures generated by this [Signer].
  * @see SignatureAlgorithm.platformVerifierFor
  */
-fun Signer.makePlatformVerifier(configure: ConfigurePlatformVerifier = null) = signatureAlgorithm.platformVerifierFor(publicKey, configure)
+fun <K: KeyType>Signer<K>.makePlatformVerifier(configure: ConfigurePlatformVerifier = null) = signatureAlgorithm.platformVerifierFor(publicKey, configure)
 
 val Signer.ECDSA.curve get() = publicKey.curve

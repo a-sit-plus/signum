@@ -57,7 +57,7 @@ private fun sigGetInstance(alg: String, provider: String?) =
     }
 
 /** Get a pre-configured JCA instance for this algorithm */
-fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) = catching {
+fun <K: KeyType>SignatureAlgorithm<out K>.getJCASignatureInstance(provider: String? = null) = catching {
     when (this) {
         is SignatureAlgorithm.ECDSA ->
             sigGetInstance("${this.digest.jcaAlgorithmComponent}withECDSA", provider)
@@ -83,11 +83,11 @@ fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) = catch
 }
 
 /** Get a pre-configured JCA instance for this algorithm */
-fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =
+inline fun<reified K: KeyType> SpecializedSignatureAlgorithm<out K>.getJCASignatureInstance(provider: String? = null) =
     this.algorithm.getJCASignatureInstance(provider)
 
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
-fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) = catching {
+fun<K: KeyType> SignatureAlgorithm<K>.getJCASignatureInstancePreHashed(provider: String? = null) = catching {
     when (this) {
         is SignatureAlgorithm.ECDSA -> sigGetInstance("NONEwithECDSA", provider)
         is SignatureAlgorithm.RSA -> when (this.padding) {
@@ -107,7 +107,7 @@ fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null
 }
 
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
-fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) =
+inline fun<reified K: KeyType> SpecializedSignatureAlgorithm<K>.getJCASignatureInstancePreHashed(provider: String? = null) =
     this.algorithm.getJCASignatureInstancePreHashed(provider)
 
 val Digest.jcaName
@@ -138,7 +138,7 @@ val ECCurve.jcaName
 fun ECCurve.Companion.byJcaName(name: String): ECCurve? = ECCurve.entries.find { it.jcaName == name }
 
 
-fun CryptoPublicKey.getJcaPublicKey() = when (this) {
+fun CryptoPublicKey<*>.getJcaPublicKey() = when (this) {
     is CryptoPublicKey.EC -> getJcaPublicKey()
     is CryptoPublicKey.RSA -> getJcaPublicKey()
 }
@@ -161,7 +161,7 @@ fun CryptoPublicKey.RSA.getJcaPublicKey(): KmmResult<RSAPublicKey> = catching {
     ) as RSAPublicKey
 }
 
-fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey> = catching {
+fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey<KeyType.EC>> = catching {
     val curve = ECCurve.byJcaName(
         SECNamedCurves.getName(
             SubjectPublicKeyInfo.getInstance(
@@ -176,20 +176,22 @@ fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmRe
     )
 }
 
-fun CryptoPublicKey.RSA.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey> =
+fun CryptoPublicKey.RSA.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey<KeyType.RSA>> =
     catching { CryptoPublicKey.RSA(publicKey.modulus.toAsn1Integer(), publicKey.publicExponent.toAsn1Integer()) }
 
-fun CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
+inline fun<reified K: KeyType> CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<CryptoPublicKey<out K>> =catching(){
+    val keyType = if(publicKey is ECPublicKey) KeyType.EC else KeyType.RSA
+    if(keyType !is K) throw IllegalStateException("KeyType $keyType is not of type ${K::class.simpleName}")
     when (publicKey) {
         is RSAPublicKey -> CryptoPublicKey.RSA.fromJcaPublicKey(publicKey)
         is ECPublicKey -> CryptoPublicKey.EC.fromJcaPublicKey(publicKey)
         else -> KmmResult.failure(IllegalArgumentException("Unsupported Key Type"))
-    }
-
+    }.getOrThrow() as CryptoPublicKey<K>
+}
 /**
  * In Java EC signatures are returned as DER-encoded, RSA signatures however are raw bytearrays
  */
-val CryptoSignature.jcaSignatureBytes: ByteArray
+val CryptoSignature<*>.jcaSignatureBytes: ByteArray
     get() = when (this) {
         is CryptoSignature.EC -> encodeToDer()
         is CryptoSignature.RSAorHMAC -> rawByteArray
@@ -198,18 +200,18 @@ val CryptoSignature.jcaSignatureBytes: ByteArray
 /**
  * In Java EC signatures are returned as DER-encoded, RSA signatures however are raw bytearrays
  */
-fun CryptoSignature.Companion.parseFromJca(
+fun<K: KeyType> CryptoSignature.Companion.parseFromJca(
     input: ByteArray,
-    algorithm: SignatureAlgorithm
-): CryptoSignature =
+    algorithm: SignatureAlgorithm<out K>
+): CryptoSignature<K> =
     if (algorithm is SignatureAlgorithm.ECDSA)
-        CryptoSignature.EC.parseFromJca(input)
+        CryptoSignature.EC.parseFromJca(input) as CryptoSignature<K>
     else
-        CryptoSignature.RSAorHMAC.parseFromJca(input)
+        CryptoSignature.RSAorHMAC.parseFromJca(input)as CryptoSignature<K>
 
-fun CryptoSignature.Companion.parseFromJca(
+inline fun <reified K: KeyType>CryptoSignature.Companion.parseFromJca(
     input: ByteArray,
-    algorithm: SpecializedSignatureAlgorithm
+    algorithm: SpecializedSignatureAlgorithm<out K>
 ) = parseFromJca(input, algorithm.algorithm)
 
 /**
@@ -231,7 +233,7 @@ fun CryptoSignature.RSAorHMAC.Companion.parseFromJca(input: ByteArray) =
  * Converts this [X509Certificate] to a [java.security.cert.X509Certificate].
  * This function is suspending, because it uses a mutex to lock the underlying certificate factory (which is reused for performance reasons
  */
-suspend fun X509Certificate.toJcaCertificate(): KmmResult<java.security.cert.X509Certificate> = catching {
+suspend fun X509Certificate<*>.toJcaCertificate(): KmmResult<java.security.cert.X509Certificate> = catching {
     certificateFactoryMutex.withLock {
         certFactory.generateCertificate(encodeToDer().inputStream()) as java.security.cert.X509Certificate
     }
@@ -240,7 +242,7 @@ suspend fun X509Certificate.toJcaCertificate(): KmmResult<java.security.cert.X50
 /**
  * blocking implementation of [toJcaCertificate]
  */
-fun X509Certificate.toJcaCertificateBlocking(): KmmResult<java.security.cert.X509Certificate> =
+fun X509Certificate<*>.toJcaCertificateBlocking(): KmmResult<java.security.cert.X509Certificate> =
     runBlocking { toJcaCertificate() }
 
 /**
@@ -258,14 +260,14 @@ fun CryptoPrivateKey<*>.toJcaPrivateKey(): KmmResult<PrivateKey> = catching {
     kf.generatePrivate(spec)!!
 }
 
-fun CryptoPrivateKey.EC.toJcaPrivateKey(): KmmResult<ECPrivateKey> =
-    (this as CryptoPrivateKey<*>).toJcaPrivateKey().map { it as ECPrivateKey }
+fun CryptoPrivateKey.EC.toJcaPrivateKey(): KmmResult<ECPrivateKey> =    toJcaPrivateKey()
 
-fun CryptoPrivateKey.RSA.toJcaPrivateKey(): KmmResult<RSAPrivateKey> =
-    (this as CryptoPrivateKey<*>).toJcaPrivateKey().map { it as RSAPrivateKey }
+fun CryptoPrivateKey.RSA.toJcaPrivateKey(): KmmResult<RSAPrivateKey> =    toJcaPrivateKey()
 
-fun PrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey<*>> = catching {
-    CryptoPrivateKey.decodeFromDer(encoded)
+inline fun<reified K: KeyType> PrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey<K>> = catching {
+    val keyType = if(this is ECPrivateKey) KeyType.EC else KeyType.RSA
+    if(keyType !is K) throw IllegalStateException("KeyType $keyType is not of type ${K::class.simpleName}")
+    CryptoPrivateKey.decodeFromDer(encoded) as CryptoPrivateKey<K>
 }
 
 fun ECPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.EC> = catching {

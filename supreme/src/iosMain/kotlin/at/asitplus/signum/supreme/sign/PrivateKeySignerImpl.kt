@@ -22,11 +22,11 @@ actual fun makePrivateKeySigner(
 ): Signer.ECDSA = ECPrivateKeySigner(key, algorithm, key.publicKey!!)
 
 
-sealed class PrivateKeySigner @OptIn(ExperimentalForeignApi::class)
+sealed class PrivateKeySigner<K: KeyType> @OptIn(ExperimentalForeignApi::class)
 protected constructor(
     internal val privateKey: SecKeyRef,
-    override val signatureAlgorithm: SignatureAlgorithm,
-) : Signer {
+    override val signatureAlgorithm: SignatureAlgorithm<K>,
+) : Signer<K> {
     override val mayRequireUserUnlock: Boolean get() = false
 
     @OptIn(ExperimentalForeignApi::class)
@@ -50,11 +50,11 @@ class ECPrivateKeySigner(
     privateKey: CryptoPrivateKey.EC,
     override val signatureAlgorithm: SignatureAlgorithm.ECDSA,
     override val publicKey: CryptoPublicKey.EC
-) : PrivateKeySigner(privateKey.toSecKey().getOrThrow(), signatureAlgorithm), Signer.ECDSA
+) : PrivateKeySigner<KeyType.EC>(privateKey.toSecKey().getOrThrow(), signatureAlgorithm), Signer.ECDSA
 
 @OptIn(ExperimentalForeignApi::class)
 class RSAPrivateKeySigner(
     privateKey: CryptoPrivateKey.RSA,
     override val signatureAlgorithm: SignatureAlgorithm.RSA,
     override val publicKey: CryptoPublicKey.RSA
-) : PrivateKeySigner(privateKey.toSecKey().getOrThrow(), signatureAlgorithm), Signer.RSA
+) : PrivateKeySigner<KeyType.RSA>(privateKey.toSecKey().getOrThrow(), signatureAlgorithm), Signer.RSA

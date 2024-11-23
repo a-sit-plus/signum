@@ -3,6 +3,7 @@ package at.asitplus.signum.supreme.sign
 import android.security.keystore.KeyProperties
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.KeyType
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.fromJcaPublicKey
 import at.asitplus.signum.indispensable.getJCASignatureInstancePreHashed
@@ -46,7 +47,7 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
     }
 }
 
-internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey =
+internal actual fun <K: KeyType>makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey<out K> =
     when (val alg = configuration._algSpecific.v) {
         is SigningKeyConfiguration.ECConfiguration -> {
             KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_EC).run {
