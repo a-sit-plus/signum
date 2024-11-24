@@ -8,10 +8,14 @@ import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.nativeDigest
+import at.asitplus.signum.supreme.SecretExposure
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.os.SignerConfiguration
 
+
+@SecretExposure
+internal expect fun EphemeralKeyBase<*>.exportPrivate(): CryptoPrivateKey<*>
 internal expect fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey
 internal expect fun  makePrivateKeySigner(key: CryptoPrivateKey.EC, algorithm: SignatureAlgorithm.ECDSA) : Signer.ECDSA
 internal expect fun  makePrivateKeySigner(key: CryptoPrivateKey.RSA, algorithm: SignatureAlgorithm.RSA) : Signer.RSA
@@ -44,6 +48,11 @@ expect class EphemeralSignerConfiguration internal constructor(): SignerConfigur
  */
 sealed interface EphemeralKey {
     val publicKey: CryptoPublicKey
+
+    @SecretExposure
+    fun exportPrivateKey(): KmmResult<CryptoPrivateKey<*>> = catching {
+        (this as EphemeralKeyBase<*>).exportPrivate()
+    }
 
     /** Create a signer that signs using this [EphemeralKey].
      * @see EphemeralSignerConfiguration */

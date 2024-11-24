@@ -1,45 +1,37 @@
 @file:OptIn(ExperimentalForeignApi::class)
+
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.secKeyAlgorithmPreHashed
+import at.asitplus.KmmResult
+import at.asitplus.catching
+import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.supreme.*
 import at.asitplus.signum.supreme.AutofreeVariable
-import at.asitplus.signum.supreme.CFCryptoOperationFailed
-import at.asitplus.signum.supreme.cfDictionaryOf
 import at.asitplus.signum.supreme.corecall
-import at.asitplus.signum.supreme.createCFDictionary
-import at.asitplus.signum.supreme.giveToCF
-import at.asitplus.signum.supreme.signCatching
-import at.asitplus.signum.supreme.takeFromCF
-import at.asitplus.signum.supreme.toByteArray
-import at.asitplus.signum.supreme.toNSData
-import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.alloc
-import kotlinx.cinterop.memScoped
-import kotlinx.cinterop.ptr
-import kotlinx.cinterop.value
+import kotlinx.cinterop.*
 import platform.Foundation.NSData
-import platform.Security.SecKeyCopyExternalRepresentation
-import platform.Security.SecKeyCreateSignature
-import platform.Security.SecKeyGeneratePair
-import platform.Security.SecKeyRef
-import platform.Security.SecKeyRefVar
-import platform.Security.errSecSuccess
-import platform.Security.kSecAttrIsPermanent
-import platform.Security.kSecAttrKeySizeInBits
-import platform.Security.kSecAttrKeyType
-import platform.Security.kSecAttrKeyTypeEC
-import platform.Security.kSecAttrKeyTypeRSA
-import platform.Security.kSecPrivateKeyAttrs
-import platform.Security.kSecPublicKeyAttrs
+import platform.Security.*
 
-actual class EphemeralSigningKeyConfiguration internal actual constructor(): EphemeralSigningKeyConfigurationBase()
-actual class EphemeralSignerConfiguration internal actual constructor(): EphemeralSignerConfigurationBase()
+actual class EphemeralSigningKeyConfiguration internal actual constructor() : EphemeralSigningKeyConfigurationBase()
+actual class EphemeralSignerConfiguration internal actual constructor() : EphemeralSignerConfigurationBase()
 
 private typealias EphemeralKeyRef = AutofreeVariable<SecKeyRef>
-sealed class EphemeralSigner(internal val privateKey: EphemeralKeyRef): Signer {
+
+@SecretExposure
+internal actual fun EphemeralKeyBase<*>.exportPrivate(): CryptoPrivateKey<*> =
+    (privateKey as EphemeralKeyRef).export(this is EphemeralKeyBase.EC<*, *>)
+
+
+private fun EphemeralKeyRef.export(isEC: Boolean): CryptoPrivateKey<*> {
+    val privKeyBytes = corecall {
+        SecKeyCopyExternalRepresentation(value, error)
+    }.let { it.takeFromCF<NSData>() }.toByteArray()
+    return if (isEC) CryptoPrivateKey.EC.iosDecode(privKeyBytes)
+    else CryptoPrivateKey.RSA.decodeFromDer(privKeyBytes)
+}
+
+
+sealed class EphemeralSigner(internal val privateKey: EphemeralKeyRef) : Signer {
     final override val mayRequireUserUnlock: Boolean get() = false
     final override suspend fun sign(data: SignatureInput) = signCatching {
         val inputData = data.convertTo(signatureAlgorithm.preHashedSignatureFormat).getOrThrow()
@@ -53,16 +45,24 @@ sealed class EphemeralSigner(internal val privateKey: EphemeralKeyRef): Signer {
             is CryptoPublicKey.RSA -> CryptoSignature.RSAorHMAC(signatureBytes)
         }
     }
-    class EC(config: EphemeralSignerConfiguration, privateKey: EphemeralKeyRef,
-             override val publicKey: CryptoPublicKey.EC, override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
-        : EphemeralSigner(privateKey), Signer.ECDSA
 
-    class RSA(config: EphemeralSignerConfiguration, privateKey: EphemeralKeyRef,
-              override val publicKey: CryptoPublicKey.RSA, override val signatureAlgorithm: SignatureAlgorithm.RSA)
-        : EphemeralSigner(privateKey), Signer.RSA
+    @SecretExposure
+    override fun exportPrivateKey(): KmmResult<CryptoPrivateKey<*>> =catching{
+        privateKey.export(this is EC)
+    }
+
+    class EC(
+        config: EphemeralSignerConfiguration, privateKey: EphemeralKeyRef,
+        override val publicKey: CryptoPublicKey.EC, override val signatureAlgorithm: SignatureAlgorithm.ECDSA
+    ) : EphemeralSigner(privateKey), Signer.ECDSA
+
+    class RSA(
+        config: EphemeralSignerConfiguration, privateKey: EphemeralKeyRef,
+        override val publicKey: CryptoPublicKey.RSA, override val signatureAlgorithm: SignatureAlgorithm.RSA
+    ) : EphemeralSigner(privateKey), Signer.RSA
 }
 
-internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey {
+internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration): EphemeralKey {
     val key = AutofreeVariable<SecKeyRef>()
     memScoped {
         val attr = createCFDictionary {
@@ -71,6 +71,7 @@ internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfigura
                     kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
                     kSecAttrKeySizeInBits mapsTo alg.curve.coordinateLength.bits.toInt()
                 }
+
                 is SigningKeyConfiguration.RSAConfiguration -> {
                     kSecAttrKeyType mapsTo kSecAttrKeyTypeRSA
                     kSecAttrKeySizeInBits mapsTo alg.bits
@@ -87,11 +88,24 @@ internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfigura
         val pubkeyBytes = corecall {
             SecKeyCopyExternalRepresentation(pubkey.value, error)
         }.let { it.takeFromCF<NSData>() }.toByteArray()
+
         return when (val alg = configuration._algSpecific.v) {
             is SigningKeyConfiguration.ECConfiguration ->
-                EphemeralKeyBase.EC(EphemeralSigner::EC, key, CryptoPublicKey.EC.fromAnsiX963Bytes(alg.curve, pubkeyBytes), alg.digests)
+                EphemeralKeyBase.EC(
+                    EphemeralSigner::EC,
+                    key,
+                    CryptoPublicKey.EC.fromAnsiX963Bytes(alg.curve, pubkeyBytes),
+                    alg.digests
+                )
+
             is SigningKeyConfiguration.RSAConfiguration ->
-                EphemeralKeyBase.RSA(EphemeralSigner::RSA, key, CryptoPublicKey.RSA.fromPKCS1encoded(pubkeyBytes), alg.digests, alg.paddings)
+                EphemeralKeyBase.RSA(
+                    EphemeralSigner::RSA,
+                    key,
+                    CryptoPublicKey.RSA.fromPKCS1encoded(pubkeyBytes),
+                    alg.digests,
+                    alg.paddings
+                )
         }
     }
 }

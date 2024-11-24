@@ -93,6 +93,7 @@ import platform.Security.kSecUseAuthenticationUI
 import platform.Security.kSecUseAuthenticationUIAllow
 import at.asitplus.signum.supreme.AutofreeVariable
 import at.asitplus.signum.supreme.CoreFoundationException
+import at.asitplus.signum.supreme.SecretExposure
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.UnlockFailed
 import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
@@ -180,6 +181,10 @@ sealed class IosSigner(final override val alias: String,
                        private val metadata: IosKeyMetadata,
                        private val signerConfig: IosSignerConfiguration)
     : PlatformSigningProviderSigner<IosSignerSigningConfiguration, IosHomebrewAttestation> {
+
+
+    @SecretExposure
+    override fun exportPrivateKey(): KmmResult<CryptoPrivateKey<*>> = KmmResult.failure(IllegalStateException("Non-Exportable key"))
 
     override val mayRequireUserUnlock get() = needsAuthentication
     val needsAuthentication get() = metadata.needsUnlock
