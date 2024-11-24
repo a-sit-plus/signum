@@ -137,7 +137,7 @@ private fun CryptoPrivateKey.EC.Companion.parseIosKey(curve: ECCurve, privateKey
 
         ECCurve.SECP_521_R_1 -> CryptoPrivateKey.EC(
             curve,
-            privateKeyBytes.sliceArray(97..<privateKeyBytes.size),
+            privateKeyBytes.sliceArray(133..<privateKeyBytes.size),
             encodeCurve = true,
             publicKey = CryptoPublicKey.fromIosEncoded(privateKeyBytes.sliceArray(0..<133)) as CryptoPublicKey.EC
         )

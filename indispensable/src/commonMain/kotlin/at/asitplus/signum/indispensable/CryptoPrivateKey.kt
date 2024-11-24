@@ -283,7 +283,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
                 }
 
                 EC(
-                    curve = additionalData.publicKey?.curve,
+                    curve = additionalData.publicKey?.curve?:predefinedCurve,
                     privateKeyBytes = privateKeyOctets,
                     encodeCurve = additionalData.encodeCurve,
                     publicKey = additionalData.publicKey,
