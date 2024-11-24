@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.sign
 
+import at.asitplus.KmmResult
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.supreme.*
 import at.asitplus.signum.supreme.corecall
@@ -24,9 +25,13 @@ actual fun makePrivateKeySigner(
 
 sealed class PrivateKeySigner @OptIn(ExperimentalForeignApi::class)
 protected constructor(
-    internal val privateKey: SecKeyRef,
+    internal val secKey: SecKeyRef,
     override val signatureAlgorithm: SignatureAlgorithm,
 ) : Signer {
+
+
+    protected abstract val privateKey: CryptoPrivateKey<*>
+
     override val mayRequireUserUnlock: Boolean get() = false
 
     @OptIn(ExperimentalForeignApi::class)
@@ -35,26 +40,29 @@ protected constructor(
         val algorithm = signatureAlgorithm.secKeyAlgorithmPreHashed
         val input = inputData.data.single().toNSData()
         val signatureBytes = corecall {
-            SecKeyCreateSignature(privateKey, algorithm, input.giveToCF(), error)
+            SecKeyCreateSignature(secKey, algorithm, input.giveToCF(), error)
         }.let { it.takeFromCF<NSData>().toByteArray() }
         return@signCatching when (val pubkey = publicKey) {
             is CryptoPublicKey.EC -> CryptoSignature.EC.decodeFromDer(signatureBytes).withCurve(pubkey.curve)
             is CryptoPublicKey.RSA -> CryptoSignature.RSAorHMAC(signatureBytes)
         }
     }
+
+    @SecretExposure
+    override fun exportPrivateKey() = KmmResult.success(privateKey)
 }
 
 
 @OptIn(ExperimentalForeignApi::class)
 class ECPrivateKeySigner(
-    privateKey: CryptoPrivateKey.EC,
+    override val privateKey: CryptoPrivateKey.EC,
     override val signatureAlgorithm: SignatureAlgorithm.ECDSA,
     override val publicKey: CryptoPublicKey.EC
 ) : PrivateKeySigner(privateKey.toSecKey().getOrThrow(), signatureAlgorithm), Signer.ECDSA
 
 @OptIn(ExperimentalForeignApi::class)
 class RSAPrivateKeySigner(
-    privateKey: CryptoPrivateKey.RSA,
+    override val privateKey: CryptoPrivateKey.RSA,
     override val signatureAlgorithm: SignatureAlgorithm.RSA,
     override val publicKey: CryptoPublicKey.RSA
 ) : PrivateKeySigner(privateKey.toSecKey().getOrThrow(), signatureAlgorithm), Signer.RSA
