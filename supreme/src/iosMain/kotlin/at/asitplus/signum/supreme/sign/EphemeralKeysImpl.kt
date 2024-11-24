@@ -26,8 +26,7 @@ private fun EphemeralKeyRef.export(isEC: Boolean): CryptoPrivateKey<*> {
     val privKeyBytes = corecall {
         SecKeyCopyExternalRepresentation(value, error)
     }.let { it.takeFromCF<NSData>() }.toByteArray()
-    return if (isEC) CryptoPrivateKey.EC.iosDecode(privKeyBytes)
-    else CryptoPrivateKey.RSA.decodeFromDer(privKeyBytes)
+    return CryptoPrivateKey.fromIosEncoded(privKeyBytes).getOrThrow()
 }
 
 

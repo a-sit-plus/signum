@@ -117,37 +117,3 @@ fun CryptoPrivateKey<*>.toSecKey(): KmmResult<SecKeyRef> = catching {
         }
     }
 }
-
-
-private fun CryptoPrivateKey.EC.Companion.parseIosKey(curve: ECCurve, privateKeyBytes: ByteArray) =
-    when (curve) {
-        ECCurve.SECP_256_R_1 -> CryptoPrivateKey.EC(
-            curve,
-            privateKeyBytes.sliceArray(65..<privateKeyBytes.size),
-            encodeCurve = true,
-            publicKey = CryptoPublicKey.fromIosEncoded(privateKeyBytes.sliceArray(0..<65)) as CryptoPublicKey.EC
-        )
-
-        ECCurve.SECP_384_R_1 -> CryptoPrivateKey.EC(
-            curve,
-            privateKeyBytes.sliceArray(97..<privateKeyBytes.size),
-            encodeCurve = true,
-            publicKey = CryptoPublicKey.fromIosEncoded(privateKeyBytes.sliceArray(0..<97)) as CryptoPublicKey.EC
-        )
-
-        ECCurve.SECP_521_R_1 -> CryptoPrivateKey.EC(
-            curve,
-            privateKeyBytes.sliceArray(133..<privateKeyBytes.size),
-            encodeCurve = true,
-            publicKey = CryptoPublicKey.fromIosEncoded(privateKeyBytes.sliceArray(0..<133)) as CryptoPublicKey.EC
-        )
-    }
-
-
-fun CryptoPrivateKey.EC.Companion.iosDecode(keyBytes: ByteArray): CryptoPrivateKey.EC = when (keyBytes.size) {
-    /** apple does not encode the curve identifier, but it is implied as one of the ios supported curves */
-    97 -> parseIosKey(ECCurve.SECP_256_R_1, keyBytes)
-    145 -> parseIosKey(ECCurve.SECP_384_R_1, keyBytes)
-    199 -> parseIosKey(ECCurve.SECP_521_R_1, keyBytes)
-    else -> throw IllegalArgumentException("Unknown curve in iOS raw key")
-}

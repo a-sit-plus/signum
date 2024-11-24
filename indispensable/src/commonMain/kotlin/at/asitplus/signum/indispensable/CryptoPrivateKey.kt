@@ -6,6 +6,7 @@ import at.asitplus.signum.ecmath.times
 import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.asPublicKey
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 
 /**
  * PKCS#8 Representation of a private key structure as per [RFC 5208](https://datatracker.ietf.org/doc/html/rfc5208)
@@ -214,8 +215,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
         val encodeCurve: Boolean,
         publicKey: CryptoPublicKey.EC?,
         attributes: List<Asn1Element>? = null
-    ) :        CryptoPrivateKey<CryptoPublicKey.EC>(attributes) {
-
+    ) : CryptoPrivateKey<CryptoPublicKey.EC>(attributes) {
 
 
         override val oid = EC.oid
@@ -257,6 +257,39 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
             @Throws(Asn1Exception::class)
             override fun doDecode(src: Asn1Sequence): EC = sec1decode(src, attributes = null)
 
+            private fun parseIosKey(curve: ECCurve, privateKeyBytes: ByteArray) =
+                when (curve) {
+                    ECCurve.SECP_256_R_1 -> CryptoPrivateKey.EC(
+                        curve,
+                        privateKeyBytes.sliceArray(65..<privateKeyBytes.size),
+                        encodeCurve = true,
+                        publicKey = CryptoPublicKey.fromIosEncoded(privateKeyBytes.sliceArray(0..<65)) as CryptoPublicKey.EC
+                    )
+
+                    ECCurve.SECP_384_R_1 -> CryptoPrivateKey.EC(
+                        curve,
+                        privateKeyBytes.sliceArray(97..<privateKeyBytes.size),
+                        encodeCurve = true,
+                        publicKey = CryptoPublicKey.fromIosEncoded(privateKeyBytes.sliceArray(0..<97)) as CryptoPublicKey.EC
+                    )
+
+                    ECCurve.SECP_521_R_1 -> CryptoPrivateKey.EC(
+                        curve,
+                        privateKeyBytes.sliceArray(133..<privateKeyBytes.size),
+                        encodeCurve = true,
+                        publicKey = CryptoPublicKey.fromIosEncoded(privateKeyBytes.sliceArray(0..<133)) as CryptoPublicKey.EC
+                    )
+                }
+
+
+            internal fun iosDecodeInternal(keyBytes: ByteArray): CryptoPrivateKey.EC = when (keyBytes.size) {
+                /** apple does not encode the curve identifier, but it is implied as one of the ios supported curves */
+                97 -> parseIosKey(ECCurve.SECP_256_R_1, keyBytes)
+                145 -> parseIosKey(ECCurve.SECP_384_R_1, keyBytes)
+                199 -> parseIosKey(ECCurve.SECP_521_R_1, keyBytes)
+                else -> throw IllegalArgumentException("Unknown curve in iOS raw key")
+            }
+
             /**
              * SEC1 V2 decoding optionally supporting attributes for later PKCS#8 encoding
              */
@@ -283,7 +316,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
                 }
 
                 EC(
-                    curve = additionalData.publicKey?.curve?:predefinedCurve,
+                    curve = additionalData.publicKey?.curve ?: predefinedCurve,
                     privateKeyBytes = privateKeyOctets,
                     encodeCurve = additionalData.encodeCurve,
                     publicKey = additionalData.publicKey,
@@ -454,6 +487,16 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
                 val predefinedCurve = ECCurve.entries.first { it.oid == ObjectIdentifier.decodeFromTlv(algParams) }
                 EC.sec1decode(privateKeyStructure, predefinedCurve, attributes)
             } else throw IllegalArgumentException("Unknown Algorithm: $algIdentifier")
+        }
+
+        /**
+         * Tries to decode a private key as exported from iOS.
+         * EC keys are exported [as padded raw bytes](https://developer.apple.com/documentation/security/seckeycopyexternalrepresentation(_:_:)?language=objc).
+         * RSA keys are exported using PKCS#1 encoding
+         */
+        fun fromIosEncoded(keyBytes: ByteArray): KmmResult<CryptoPrivateKey<*>> = catching {
+            if (keyBytes.first() == ANSIECPrefix.UNCOMPRESSED.prefixByte) CryptoPrivateKey.EC.iosDecodeInternal((keyBytes))
+            else CryptoPrivateKey.RSA.pkcs1Decode(Asn1Element.parse(keyBytes).asSequence())
 
         }
 
