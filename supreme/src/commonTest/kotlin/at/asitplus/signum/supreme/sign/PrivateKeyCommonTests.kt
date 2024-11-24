@@ -27,7 +27,7 @@ iukIcKZoZQzoiMJUoVRrA5gqnmaYDI5uRRl/y57zt6YksR3KcLUIuQJAd242M/WF
 x6XroMXsmbnsEw==
 -----END PRIVATE KEY-----"""
 
-        val key = CryptoPrivateKey.decodeFromPem(rsa)
+        val key = CryptoPrivateKey.decodeFromPem(rsa).getOrThrow()
 
         val signer: Signer = SignatureAlgorithm.RSAwithSHA256andPSSPadding.signerFor(key).getOrThrow()
 
@@ -50,7 +50,7 @@ x6XroMXsmbnsEw==
             zxh/z83LcdvgjntLPbRlpulusOaoUHsCataF16M48ef34ufnWLjZsJ0Z
             -----END PRIVATE KEY-----
         """.trimIndent()
-        val privateKey = CryptoPrivateKey.decodeFromPem(pkcs8)
+        val privateKey = CryptoPrivateKey.decodeFromPem(pkcs8).getOrThrow()
 
 
         val signer: Signer = SignatureAlgorithm.ECDSAwithSHA256.signerFor(privateKey).getOrThrow()

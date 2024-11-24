@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.KmmResult
+import at.asitplus.catching
 import at.asitplus.signum.ecmath.times
 import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.asPublicKey
 import at.asitplus.signum.indispensable.asn1.*
@@ -26,6 +28,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
     /**
      * Encodes the plain key, i.e. PKCS#1 for RSA and SEC1 for EC
      */
+    @Throws(Asn1Exception::class)
     abstract fun plainEncode(): Asn1Sequence
 
     /**
@@ -60,7 +63,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
         private val innerPemEncodable = PlainPemEncodable()
 
         /**
-         * Encodes this private key into a PKCS#1 PEM-encoded pricate key
+         * Encodes this private key into a PKCS#1 PEM-encoded private key
          */
         fun pemEncodePkcs1() = innerPemEncodable.encodeToPEM()
 
@@ -80,19 +83,25 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
             val exponent: Asn1Integer,
             val coefficient: Asn1Integer,
         ) : Asn1Encodable<Asn1Sequence> {
-            override fun encodeToTlv() = Asn1.Sequence {
-                +prime
-                +exponent
-                +coefficient
+
+            @Throws(Asn1Exception::class)
+            override fun encodeToTlv() = runRethrowing {
+                Asn1.Sequence {
+                    +prime
+                    +exponent
+                    +coefficient
+                }
             }
 
             companion object : Asn1Decodable<Asn1Sequence, OtherPrimeInfo> {
-                override fun doDecode(src: Asn1Sequence): OtherPrimeInfo {
+
+                @Throws(Asn1Exception::class)
+                override fun doDecode(src: Asn1Sequence): OtherPrimeInfo = runRethrowing {
                     val prime = src.nextChild().asPrimitive().decodeToAsn1Integer()
                     val exponent = src.nextChild().asPrimitive().decodeToAsn1Integer()
                     val coefficient = src.nextChild().asPrimitive().decodeToAsn1Integer()
                     require(src.hasMoreChildren() == false) { "Superfluous Data in OtherPrimeInfos" }
-                    return OtherPrimeInfo(prime, exponent, coefficient)
+                    OtherPrimeInfo(prime, exponent, coefficient)
                 }
 
             }
@@ -101,6 +110,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
         /**
          * @see pkcs1Encode
          */
+        @Throws(Asn1Exception::class)
         override fun plainEncode() = pkcs1Encode()
 
         /**
@@ -119,20 +129,24 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
          * }
          * ```
          */
-        fun pkcs1Encode() = Asn1.Sequence {
-            if (otherPrimeInfos != null) +Asn1.Int(1)
-            else +Asn1.Int(0)
-            +modulus
-            +publicExponent
-            +privateExponent
-            +prime1
-            +prime2
-            +exponent1
-            +exponent2
-            +coefficient
-            otherPrimeInfos?.let {
-                +Asn1.Sequence {
-                    it.forEach { info -> +info }
+
+        @Throws(Asn1Exception::class)
+        fun pkcs1Encode() = runRethrowing {
+            Asn1.Sequence {
+                if (otherPrimeInfos != null) +Asn1.Int(1)
+                else +Asn1.Int(0)
+                +modulus
+                +publicExponent
+                +privateExponent
+                +prime1
+                +prime2
+                +exponent1
+                +exponent2
+                +coefficient
+                otherPrimeInfos?.let {
+                    +Asn1.Sequence {
+                        it.forEach { info -> +info }
+                    }
                 }
             }
         }
@@ -142,14 +156,17 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
             val oid: ObjectIdentifier = KnownOIDs.rsaEncryption
             override val ebString = "RSA PRIVATE KEY"
 
+            @Throws(Asn1Exception::class)
             override fun doDecode(src: Asn1Sequence): RSA = pkcs1Decode(src, null)
 
+            @Throws(Asn1Exception::class)
             fun plainDecode(src: Asn1Sequence) = pkcs1Decode(src, null)
 
             /**
              * PKCS1 decoding of an ASN.1 private key, optionally supporting attributes for later PKCS#8 encoding
              */
-            fun pkcs1Decode(src: Asn1Sequence, attributes: List<Asn1Element>? = null): RSA {
+            @Throws(Asn1Exception::class)
+            fun pkcs1Decode(src: Asn1Sequence, attributes: List<Asn1Element>? = null): RSA = runRethrowing {
                 val version = src.nextChild().asPrimitive().decodeToInt()
                 require(version == 0 || version == 1) { "RSA Private key VERSION must be 0 or 1" }
                 val modulus = src.nextChild().asPrimitive().decodeToAsn1Integer()
@@ -168,7 +185,8 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
                     require(version == 0) { "OtherPrimeInfos is present. RSA private key version must be 0" }
                     null
                 }
-                return RSA(
+
+                RSA(
                     modulus,
                     publicExponent,
                     privateExponent,
@@ -235,96 +253,88 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
             override val ebString = "EC PRIVATE KEY"
             val oid: ObjectIdentifier = KnownOIDs.ecPublicKey
 
+            @Throws(Asn1Exception::class)
             override fun doDecode(src: Asn1Sequence): EC = sec1decode(src, attributes = null)
 
             /**
              * SEC1 V2 decoding optionally supporting attributes for later PKCS#8 encoding
              */
+            @Throws(Asn1Exception::class)
             fun sec1decode(
                 src: Asn1Sequence,
                 predefinedCurve: ECCurve? = null,
                 attributes: List<Asn1Element>? = null
-            ): EC {
-
-                fun Asn1ExplicitlyTagged.decodeECParams(): ObjectIdentifier {
-                    require(children.size == 1) { "Only a single EC parameter is allowed" }
-                    return ObjectIdentifier.decodeFromTlv(nextChild().asPrimitive())
-                }
-
+            ): EC = runRethrowing {
                 val version = src.nextChild().asPrimitive().decodeToInt()
                 require(version == 1) { "EC public key version must be 1" }
                 val privateKeyOctets = src.nextChild().asPrimitiveOctetString().content
-                var params: ObjectIdentifier? = null
-                var publicKey: CryptoPublicKey.EC? = null
 
-                var encodeCurve = false
-                //TODO remove duplicated code
+                //Params and publicKey are both optional, but may only occur once. so we need to run `decode` potentially twice and record state
+                //DataAndKey class enables this without code duplication
+                val additionalData = DataAndKey()
+                //try once
                 if (src.hasMoreChildren()) {
-                    val tagged = src.nextChild().asExplicitlyTagged()
-                    when (tagged.tag.tagValue) {
-                        0uL -> tagged.decodeECParams().also {
-                            require(params == null) { "EC parameters may only occur once" }
-                            params = it
-                        }
-
-                        1uL -> {
-                            require(publicKey == null) { "EC public key may only occur once" }
-                            val parsedCurve =
-                                params?.let { params -> ECCurve.entries.first { it.oid == params } }
-                            predefinedCurve?.let { pre ->
-                                parsedCurve?.let { inner ->
-                                    require(inner == pre) { "EC Curve OID mismatch" }
-                                }
-                            }
-                            val crv = parsedCurve ?: predefinedCurve
-                            val asAsn1BitString = tagged.nextChild().asPrimitive().asAsn1BitString()
-                            publicKey = if (crv != null)
-                                CryptoPublicKey.EC.fromAnsiX963Bytes(crv, asAsn1BitString.rawBytes)
-                            else CryptoPublicKey.fromIosEncoded(asAsn1BitString.rawBytes) as CryptoPublicKey.EC
-                        }
-                    }
+                    additionalData.decode(src.nextChild(), predefinedCurve)
+                }
+                //try twice
+                if (src.hasMoreChildren()) {
+                    additionalData.decode(src.nextChild(), predefinedCurve)
                 }
 
-                if (src.hasMoreChildren()) {
-                    val tagged = src.nextChild().asExplicitlyTagged()
-                    when (tagged.tag.tagValue) {
-                        0uL -> tagged.decodeECParams().also {
-                            require(params == null) { "EC parameters may only occur once" }
-                            params = it
-                        }
-
-                        1uL -> {
-                            require(publicKey == null) { "EC public key may only occur once" }
-                            val parsedCurve =
-                                params?.let { params -> ECCurve.entries.first { it.oid == params } }
-                            predefinedCurve?.let { pre ->
-                                parsedCurve?.let { inner ->
-                                    require(inner == pre) { "EC Curve OID mismatch" }
-                                }
-                            }
-                            parsedCurve.let { encodeCurve = true }
-                            val crv = parsedCurve ?: predefinedCurve
-                            val asAsn1BitString = tagged.nextChild().asPrimitive().asAsn1BitString()
-                            publicKey = if (crv != null)
-                                CryptoPublicKey.EC.fromAnsiX963Bytes(crv, asAsn1BitString.rawBytes)
-                            else CryptoPublicKey.fromIosEncoded(asAsn1BitString.rawBytes) as CryptoPublicKey.EC
-                        }
-                    }
-                }
-
-                return EC(
-                    curve = publicKey?.curve,
+                EC(
+                    curve = additionalData.publicKey?.curve,
                     privateKeyBytes = privateKeyOctets,
-                    encodeCurve = encodeCurve,
-                    publicKey = publicKey,
+                    encodeCurve = additionalData.encodeCurve,
+                    publicKey = additionalData.publicKey,
                     attributes
                 )
+            }
+
+            private fun Asn1ExplicitlyTagged.decodeECParams(): ObjectIdentifier {
+                require(children.size == 1) { "Only a single EC parameter is allowed" }
+                return ObjectIdentifier.decodeFromTlv(nextChild().asPrimitive())
+            }
+
+            //Params and publicKey are both optional, but may only occur once. so we need to run `decode` potentially twice and record state
+            //DataAndKey class enables this without code duplication
+            private class DataAndKey(
+                var params: ObjectIdentifier? = null,
+                var publicKey: CryptoPublicKey.EC? = null,
+                var encodeCurve: Boolean = false
+            ) {
+                fun decode(src: Asn1Element, predefinedCurve: ECCurve?) {
+                    val tagged = src.asExplicitlyTagged()
+                    when (tagged.tag.tagValue) {
+                        0uL -> tagged.decodeECParams().also {
+                            require(params == null) { "EC parameters may only occur once" }
+                            params = it
+                        }
+
+                        1uL -> {
+                            require(publicKey == null) { "EC public key may only occur once" }
+                            val parsedCurve =
+                                params?.let { params -> ECCurve.entries.first { it.oid == params } }
+                            predefinedCurve?.let { pre ->
+                                parsedCurve?.let { inner ->
+                                    require(inner == pre) { "EC Curve OID mismatch" }
+                                }
+                            }
+                            parsedCurve?.let { encodeCurve = true }
+                            val crv = parsedCurve ?: predefinedCurve
+                            val asAsn1BitString = tagged.nextChild().asPrimitive().asAsn1BitString()
+                            publicKey = if (crv != null)
+                                CryptoPublicKey.EC.fromAnsiX963Bytes(crv, asAsn1BitString.rawBytes)
+                            else CryptoPublicKey.fromIosEncoded(asAsn1BitString.rawBytes) as CryptoPublicKey.EC
+                        }
+                    }
+                }
             }
         }
 
         /**
          * @see sec1Encode
          */
+        @Throws(Asn1Exception::class)
         override fun plainEncode() = sec1Encode()
 
         /**
@@ -337,13 +347,16 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
          * }
          * ```
          */
-        fun sec1Encode() = Asn1.Sequence {
-            +Asn1.Int(1)
-            +Asn1PrimitiveOctetString(privateKeyBytes)
-            if (encodeCurve) curve?.let { +Asn1.ExplicitlyTagged(0uL) { +it.oid } }
-            publicKey?.let { +Asn1.ExplicitlyTagged(1uL) { +Asn1.BitString(it.iosEncoded) } }
-        }
 
+        @Throws(Asn1Exception::class)
+        fun sec1Encode() = runRethrowing {
+            Asn1.Sequence {
+                +Asn1.Int(1)
+                +Asn1PrimitiveOctetString(privateKeyBytes)
+                if (encodeCurve) curve?.let { +Asn1.ExplicitlyTagged(0uL) { +it.oid } }
+                publicKey?.let { +Asn1.ExplicitlyTagged(1uL) { +Asn1.BitString(it.iosEncoded) } }
+            }
+        }
     }
 
 
@@ -366,35 +379,59 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
      * Attributes ::= SET OF Attribute
      * ```
      */
-    override fun encodeToTlv() = Asn1.Sequence {
-        +Asn1.Int(0)
-        +Asn1.Sequence {
-            when (this@CryptoPrivateKey) {
-                is RSA -> {
-                    +RSA.oid
-                    +Asn1.Null()
-                }
 
-                is EC -> {
-                    +EC.oid
-                    require(curve != null) { "Cannot PKCS#8-encode an EC key without curve. Re-create it and specify a curve!" }
-                    +curve.oid
+    @Throws(Asn1Exception::class)
+    override fun encodeToTlv() = runRethrowing {
+        Asn1.Sequence {
+            +Asn1.Int(0)
+            +Asn1.Sequence {
+                when (this@CryptoPrivateKey) {
+                    is RSA -> {
+                        +RSA.oid
+                        +Asn1.Null()
+                    }
+
+                    is EC -> {
+                        +EC.oid
+                        require(curve != null) { "Cannot PKCS#8-encode an EC key without curve. Re-create it and specify a curve!" }
+                        +curve.oid
+                    }
                 }
             }
-        }
-        +Asn1.OctetStringEncapsulating {
-            +plainEncode()
-        }
-        attributes?.let {
-            +(Asn1.SetOf {
-                it.forEach { attr -> +attr }
-            } withImplicitTag 0uL)
+            +Asn1.OctetStringEncapsulating {
+                +plainEncode()
+            }
+            attributes?.let {
+                +(Asn1.SetOf {
+                    it.forEach { attr -> +attr }
+                } withImplicitTag 0uL)
+            }
         }
     }
 
     companion object : PemDecodable<Asn1Sequence, CryptoPrivateKey<*>> {
+
+        /**
+         * Inspects the EB string and:
+         * * PKCS#8-decodes in [CryptoPrivateKey.ebString] is encountered
+         * * PKCS#1-decodes in [RSA.ebString] is encountered
+         * * SEC1-decodes in [EC.ebString] is encountered
+         * * throws otherwise
+         *
+         */
+        @Throws(Throwable::class)
+        override fun binaryDecodePayload(ebString: String, src: ByteArray): CryptoPrivateKey<*> =
+            when (ebString) {
+                CryptoPrivateKey.ebString -> super.binaryDecodePayload(ebString, src)
+                EC.ebString -> EC.binaryDecodePayload(ebString, src)
+                RSA.ebString -> RSA.binaryDecodePayload(ebString, src)
+                else -> throw IllegalArgumentException("Unrecognized EB string: $ebString")
+            }
+
         override val ebString = "PRIVATE KEY"
-        override fun doDecode(src: Asn1Sequence): CryptoPrivateKey<*> {
+
+        @Throws(Asn1Exception::class)
+        override fun doDecode(src: Asn1Sequence): CryptoPrivateKey<*> = runRethrowing {
             //PKCS8 here
             require(src.nextChild().asPrimitive().decodeToInt() == 0) { "PKCS#8 Private Key VERSION must be 0" }
             val algorithmID = src.nextChild().asSequence()
@@ -419,5 +456,46 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
 
         }
 
+    }
+}
+
+/**
+ * Representation of an encrypted private key structure as per [RFC 5208](https://datatracker.ietf.org/doc/html/rfc5208)
+ * As of November 2024, We do not ship decryption functionality
+ */
+class EncryptedPrivateKey(val encryptionAlgorithm: ObjectIdentifier, val encryptedData: ByteArray) :
+    PemEncodable<Asn1Sequence> {
+
+    override val ebString = EncryptedPrivateKey.ebString
+
+    @Throws(Asn1Exception::class)
+    override fun encodeToTlv(): Asn1Sequence = runRethrowing {
+        Asn1.Sequence {
+            +encryptionAlgorithm
+            +Asn1.OctetString(encryptedData)
+        }
+    }
+
+    companion object : PemDecodable<Asn1Sequence, EncryptedPrivateKey> {
+        override val ebString: String = "ENCRYPTED PRIVATE KEY"
+
+        @Throws(Asn1Exception::class)
+        override fun doDecode(src: Asn1Sequence): EncryptedPrivateKey = runRethrowing {
+            EncryptedPrivateKey(
+                ObjectIdentifier.decodeFromTlv(src.nextChild().asPrimitive()),
+                src.nextChild().asPrimitive().asPrimitiveOctetString().content
+            ).also {
+                require(!src.hasMoreChildren()) { "Superfluous data in EncryptedPrivateKey encountered" }
+            }
+        }
+    }
+
+    /**
+     * Convenience wrapper to decrypt this private key.
+     * Actual decryption must happen in [decryptFn], which gets passed [encryptionAlgorithm] an [encryptedData].
+     * [decryptFn] may throw anything, as it is executed inside a [catching] block.
+     */
+    fun decrypt(decryptFn: (ObjectIdentifier, ByteArray) -> ByteArray): KmmResult<CryptoPrivateKey<*>> = catching {
+        CryptoPrivateKey.decodeFromDer(decryptFn(encryptionAlgorithm, encryptedData))
     }
 }

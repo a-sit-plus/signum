@@ -13,11 +13,15 @@
     * Fixes JWS/COSE encoding for non-standard exponents (with MSBit 1)
 * Allow `assertTag` override also for `Asn1Integer` (was missing before)
 * Allow reinterpreting an `Asn1Element` that successfully parsed as `Asn1EncapsulatingOctetString` as an `Asn1PrimitiveOctetString`
+    * **This is a behavioural change!**
 * Make `Asn1Integer` an `Asn1Encodable<String>`
-* Add **Private Key Representation** to `indispensable`
 * **PEM Encoding**
     * Introduce `PemEncodable` interface, derived from `Asn1Encodable`
     * Introduce `PemDecodable` interface, derived from `Asn1Decodable`
+* Add **Private Key Representation** to `indispensable`
+    * Parsing of PEM and DER-encoded private keys
+    * Introduce `SignatureAlgorithm.signerFor(privateKey)` to create signers backed by (previously parsed, or manually constructed) private keys
+
 
 ### 3.10.0 (Supreme 0.5.0) More ~~cowbell~~ targets!
 A new artifact, minor breaking changes and a lot more targets ahead!
