@@ -6,6 +6,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.Asn1Time
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.pki.*
+import at.asitplus.signum.supreme.SecretExposure
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.supreme.os.SignerConfiguration
@@ -95,6 +96,7 @@ object TestSuites {
     }
 }
 
+@OptIn(SecretExposure::class)
 class EphemeralSignerCommonTests : FreeSpec({
     "Functional" - {
         "RSA" - {
@@ -118,8 +120,12 @@ class EphemeralSignerCommonTests : FreeSpec({
                     it.padding shouldBe padding
                 }
 
+                val secondSig= signer.exportPrivateKey().transform { signer.signatureAlgorithm.signerFor(it)  }.getOrThrow().sign(data).signature
+
+
                 val verifier = signer.makeVerifier().getOrThrow()
                 verifier.verify(data, signature) should succeed
+                verifier.verify(data, secondSig) should succeed
             }
         }
         "ECDSA" - {
@@ -135,8 +141,12 @@ class EphemeralSignerCommonTests : FreeSpec({
                     if (preHashed) it.convertTo(digest).getOrThrow() else it
                 }).signature
 
+
+                val secondSig= signer.exportPrivateKey().transform { signer.signatureAlgorithm.signerFor(it)  }.getOrThrow().sign(data).signature
+
                 val verifier = signer.makeVerifier().getOrThrow()
                 verifier.verify(data, signature) should succeed
+                verifier.verify(data, secondSig) should succeed
             }
         }
     }
@@ -147,12 +157,15 @@ class EphemeralSignerCommonTests : FreeSpec({
                 val key = EphemeralKey { ec { this.curve = curve } }.getOrThrow()
                 val signer = key.signer().getOrThrow()
                 signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.ECDSA>().digest shouldBe curve.nativeDigest
+
+                 key.exportPrivateKey().transform{signer.signatureAlgorithm.signerFor(it)} should succeed
             }
             "No digest specified, native disallowed, still succeeds" {
                 val curve = Random.of(ECCurve.entries)
                 val key = EphemeralKey { ec { this.curve = curve; digests = Digest.entries.filter { it != curve.nativeDigest }.toSet() } }.getOrThrow()
                 val signer = key.signer().getOrThrow()
                 signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.ECDSA>().digest shouldNotBeIn setOf(curve.nativeDigest, null)
+                key.exportPrivateKey().transform{signer.signatureAlgorithm.signerFor(it)} should succeed
             }
             "All digests legal by default" {
                 val curve = Random.of(ECCurve.entries)
@@ -160,6 +173,7 @@ class EphemeralSignerCommonTests : FreeSpec({
                 val nonNativeDigest = Random.of(Digest.entries.filter {it != curve.nativeDigest})
                 val signer = key.signer { ec { digest = nonNativeDigest } }.getOrThrow()
                 signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.ECDSA>().digest shouldBe nonNativeDigest
+                key.exportPrivateKey().transform{signer.signatureAlgorithm.signerFor(it)} should succeed
             }
             "Illegal digests should fail" {
                 val curve = Random.of(ECCurve.entries)
@@ -170,11 +184,13 @@ class EphemeralSignerCommonTests : FreeSpec({
                 val key = EphemeralKey { ec { this.curve = Random.of(ECCurve.entries); digests = setOf<Digest?>(null) } }.getOrThrow()
                 val signer = key.signer().getOrThrow()
                 signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.ECDSA>().digest shouldBe null
+                key.exportPrivateKey().transform{signer.signatureAlgorithm.signerFor(it)} should succeed
             }
             "Null digest should work if explicitly specified" {
                 val key = EphemeralKey { ec {} }.getOrThrow()
                 val signer = key.signer { ec { digest = null } }.getOrThrow()
                 signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.ECDSA>().digest shouldBe null
+                key.exportPrivateKey().transform{signer.signatureAlgorithm.signerFor(it)} should succeed
             }
         }
         "RSA" - {
@@ -182,6 +198,7 @@ class EphemeralSignerCommonTests : FreeSpec({
                 val key = EphemeralKey { rsa {} }.getOrThrow()
                 val signer = key.signer().getOrThrow()
                 signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.RSA>()
+                key.exportPrivateKey().transform{signer.signatureAlgorithm.signerFor(it)} should succeed
             }
         }
     }

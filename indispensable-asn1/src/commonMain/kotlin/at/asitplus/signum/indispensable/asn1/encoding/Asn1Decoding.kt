@@ -233,11 +233,12 @@ inline fun Asn1Primitive.decodeToULongOrNull(assertTag: Asn1Element.Tag = Asn1El
 /** Decode the [Asn1Primitive] as a [Asn1Integer]
  * @throws [Asn1Exception] on invalid input */
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.decodeToAsn1Integer() =
-    runRethrowing { decode(Asn1Element.Tag.INT) { Asn1Integer.decodeFromAsn1ContentBytes(it) } }
+fun Asn1Primitive.decodeToAsn1Integer(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
+    runRethrowing { decode(assertTag) { Asn1Integer.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [decodeToAsn1Integer] */
-inline fun Asn1Primitive.decodeToAsn1IntegerOrNull() = catching { decodeToAsn1Integer() }.getOrNull()
+inline fun Asn1Primitive.decodeToAsn1IntegerOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
+    catching { decodeToAsn1Integer() }.getOrNull()
 
 /**
  * Decodes a [Asn1Integer] from [bytes] assuming the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 INTEGER

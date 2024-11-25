@@ -93,7 +93,8 @@ options are passed.
 
 
 ## Key Management
-The provider enables creating, loading and deleting signing keys.
+The provider enables creating, loading, and deleting signing keys.
+In addition, it is possible to create a signing key (and a signer) from a `CryptoPrivateKey`.
 
 ### Key Generation
 A key's properties cannot be modified after its creation.
@@ -214,6 +215,42 @@ To configure such algorithm-specific options, invoke the `ec{}` or `rsa{}` block
 Simply call `provider.deleteSigningKey(alias)` to delete a key.
 If the operation succeeds, a key was indeed deleted.
 If not, it usually means that a non-existent alias was specified.
+
+### Private Key Management
+Private key can be loaded from PEM-encoded strings or DER-encoded byte arrays into a `CryptoPrivateKey` object.
+While encrypted keys can be parsed, decryption is currently not natively supported.
+Moreover, these keys currently cannot be imported into platform-native key stores (AndroidKeyStore/keyChain).
+
+#### Creating a Signer from a `CryptoPrivateKey`
+
+!!! note inline end 
+    Signers can only be created for private keys that have a public key and/or a curve attached
+
+Given a `CryptoPrivateKey` object and a `SignatureAlgorithm` object hand, a signer can be created as follows:
+
+```kotlin
+val signer = sigAlg.signerFor(privateKey)
+```
+
+This only works if key and signature algorithm are compatible. Otherwise, it returns `KmmResult.failure`.
+
+
+#### Exporting Private Keys
+
+!!! note inline end
+    The `exportPrivateKey()` method requires an explicit opt-in for `SecretExposure` to prevent accidental export of private keys
+
+Private keys can be exported (typically to be DER or PEM-encoded) from signers an ephemeral key objects as follows:
+
+```kotlin
+@OptIn(SecretExposure)
+val privKey = signer.exportPrivateKey()
+```
+
+While all signers feature an `exportPrivateKey()` method, only some signers allow for actually exporting private key material.
+Platform-native signers prevent it (i.e. always return a `KmmResult.failure`) when trying to export private keys.
+Keys from signers created from a `CryptoPrivateKey` (see above), as well as ephemeral signers can be exported.
+
 
 ## Signature Creation
 Regardless of whether a key was freshly created or a pre-existing key way loaded. The result of either operation

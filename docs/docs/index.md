@@ -14,6 +14,7 @@ types and functionality related to crypto and PKI applications:
     * **Supports Attestation on iOS and Android**
     * **Biometric Authentication on Android and iOS without Callbacks or Activity Passing** (✨Magic!✨)
 * Public Keys (RSA and EC)
+* Private Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)
 * X509 Certificate Class (create, encode, decode)
 * Certification Request (CSR)

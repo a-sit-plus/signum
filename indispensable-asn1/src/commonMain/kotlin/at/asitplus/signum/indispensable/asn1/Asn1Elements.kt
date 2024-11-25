@@ -16,6 +16,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlin.experimental.ExperimentalObjCName
 import kotlin.native.ObjCName
+import kotlin.reflect.typeOf
 
 /**
  * Base ASN.1 data class. Can either be a primitive (holding a value), or a structure (holding other ASN.1 elements)
@@ -172,9 +173,12 @@ sealed class Asn1Element(
     fun asPrimitiveOctetString() = thisAs<Asn1PrimitiveOctetString>()
 
     @Throws(Asn1StructuralException::class)
-    private inline fun <reified T : Asn1Element> thisAs(): T =
-        (this as? T)
+    private inline fun <reified T : Asn1Element> thisAs(): T  {
+        if (this is Asn1EncapsulatingOctetString && typeOf<T>() == typeOf<Asn1PrimitiveOctetString>()) //TODO? without reflection
+            return toPrimitiveOctetString() as T
+       return (this as? T)
             ?: throw Asn1StructuralException("${this::class.simpleName} cannot be reinterpreted as ${T::class.simpleName}.")
+    }
 
 
     /**
@@ -701,6 +705,11 @@ class Asn1EncapsulatingOctetString(children: List<Asn1Element>) :
     override fun prettyPrintHeader(indent: Int) =
         (" " * indent) + "OCTET STRING Encapsulating" + super.prettyPrintHeader(indent) + " " +
                 content.toHexString(HexFormat.UpperCase)
+
+    /**
+     * creates a new [Asn1PrimitiveOctetString] from this Encapsulating OCTET STRING
+     */
+    fun toPrimitiveOctetString(): Asn1PrimitiveOctetString = Asn1PrimitiveOctetString(this.content)
 }
 
 /**

@@ -66,6 +66,7 @@ markdown_extensions:
   - pymdownx.superfences
   - admonition
   - pymdownx.details
+  - pymdownx.tilde
 
 nav:
   - Manual:
