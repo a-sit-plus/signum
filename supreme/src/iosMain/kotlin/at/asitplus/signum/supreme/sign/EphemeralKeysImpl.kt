@@ -23,6 +23,7 @@ internal actual fun EphemeralKeyBase<*>.exportPrivate(): CryptoPrivateKey<*> =
 
 
 private fun EphemeralKeyRef.export(isEC: Boolean): CryptoPrivateKey<*> {
+    this.value
     val privKeyBytes = corecall {
         SecKeyCopyExternalRepresentation(value, error)
     }.let { it.takeFromCF<NSData>() }.toByteArray()

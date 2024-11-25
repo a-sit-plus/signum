@@ -91,29 +91,31 @@ val CryptoSignature.iosEncoded
  * Converts this privateKey into a [SecKeyRef], making it usable on iOS
  * Destroys the source key material by default
  */
-fun CryptoPrivateKey<*>.toSecKey(destroySource: Boolean =true): KmmResult<SecKeyRef> = catching {
+fun CryptoPrivateKey<*>.toSecKey(destroySource: Boolean = true): KmmResult<SecKeyRef> = catching {
     memScoped {
         corecall {
-            var data : ByteArray? = null
+            var data: ByteArray? = null
             val attr = createCFDictionary {
-                kSecAttrKeyClass mapsTo  kSecAttrKeyClassPrivate
+                kSecAttrKeyClass mapsTo kSecAttrKeyClassPrivate
                 kSecPrivateKeyAttrs mapsTo cfDictionaryOf(kSecAttrIsPermanent to false)
                 data = when (this@toSecKey) {
                     is CryptoPrivateKey.EC -> {
                         kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
                         kSecAttrKeySizeInBits mapsTo curve!!.coordinateLength.bits.toInt()
                         val ecPubKey = this@toSecKey.publicKey
-                        require(ecPubKey !=null) {"Cannot import an EC private key without a public key attached"}
-                        ecPubKey.iosEncoded+ privateKeyBytes
+                        require(ecPubKey != null) { "Cannot import an EC private key without a public key attached" }
+                        ecPubKey.iosEncoded + privateKeyBytes
                     }
 
                     is CryptoPrivateKey.RSA -> {
                         kSecAttrKeyType mapsTo kSecAttrKeyTypeRSA
                         kSecAttrKeySizeInBits mapsTo this@toSecKey.publicKey.bits.number.toInt()
-                        plainEncode().derEncoded
+                        plainEncode(destroySource = false).derEncoded //we will destroy later
                     }
                 }
-                if(destroySource) {destroy()}
+                if (destroySource) {
+                    destroy()
+                }
             }
             SecKeyCreateWithData(data!!.toNSData().giveToCF(), attr, error)
         }

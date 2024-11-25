@@ -13,14 +13,16 @@ import platform.Security.SecKeyRef
 @OptIn(ExperimentalForeignApi::class)
 actual fun makePrivateKeySigner(
     key: CryptoPrivateKey.RSA,
-    algorithm: SignatureAlgorithm.RSA
-): Signer.RSA = RSAPrivateKeySigner(key, algorithm, key.publicKey)
+    algorithm: SignatureAlgorithm.RSA,
+    destroySource: Boolean
+): Signer.RSA = RSAPrivateKeySigner(key, algorithm, key.publicKey,destroySource)
 
 @OptIn(ExperimentalForeignApi::class)
 actual fun makePrivateKeySigner(
     key: CryptoPrivateKey.EC,
-    algorithm: SignatureAlgorithm.ECDSA
-): Signer.ECDSA = ECPrivateKeySigner(key, algorithm, key.publicKey!!)
+    algorithm: SignatureAlgorithm.ECDSA,
+    destroySource: Boolean
+): Signer.ECDSA = ECPrivateKeySigner(key, algorithm, key.publicKey!!,destroySource)
 
 
 sealed class PrivateKeySigner @OptIn(ExperimentalForeignApi::class)
@@ -57,12 +59,14 @@ protected constructor(
 class ECPrivateKeySigner(
     override val privateKey: CryptoPrivateKey.EC,
     override val signatureAlgorithm: SignatureAlgorithm.ECDSA,
-    override val publicKey: CryptoPublicKey.EC
-) : PrivateKeySigner(privateKey.toSecKey().getOrThrow(), signatureAlgorithm), Signer.ECDSA
+    override val publicKey: CryptoPublicKey.EC,
+    destroySource: Boolean
+) : PrivateKeySigner(privateKey.toSecKey(destroySource).getOrThrow(), signatureAlgorithm), Signer.ECDSA
 
 @OptIn(ExperimentalForeignApi::class)
 class RSAPrivateKeySigner(
     override val privateKey: CryptoPrivateKey.RSA,
     override val signatureAlgorithm: SignatureAlgorithm.RSA,
-    override val publicKey: CryptoPublicKey.RSA
-) : PrivateKeySigner(privateKey.toSecKey().getOrThrow(), signatureAlgorithm), Signer.RSA
+    override val publicKey: CryptoPublicKey.RSA,
+    destroySource: Boolean
+) : PrivateKeySigner(privateKey.toSecKey(destroySource).getOrThrow(), signatureAlgorithm), Signer.RSA

@@ -52,6 +52,11 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
     override fun encodeToTlv() = encodeToTlv(true)
 
     /**
+     * does not destroy the source, since this is called from [encodeToPEM]. Hence, destruction must be delayed
+     */
+    override fun binaryEncodePayload(): ByteArray = encodeToDer(false)
+
+    /**
      * DER-encodes this private key and keeps it intact if [destroySource]=false. Destroys it otherwise
      */
     fun encodeToDer(destroySource: Boolean) = encodeToTlv(destroySource = false).let { sequence ->
@@ -80,7 +85,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
      * Encodes the plain key, i.e. PKCS#1 for RSA and SEC1 for EC
      */
     @Throws(Asn1Exception::class)
-    abstract fun plainEncode(): Asn1Sequence
+    abstract fun plainEncode(destroySource: Boolean): Asn1Sequence
 
     /**
      * PKCS#1 RSA Private key representation as per [RFC 8017](https://datatracker.ietf.org/doc/html/rfc8017/#appendix-A.1.2) augmented with optional [attributes].
@@ -102,6 +107,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
         override val oid = RSA.oid
 
         override fun destroy() {
+            if (isDestroyed()) throw IllegalStateException("This RSA key is already destroyed")
             privateExponent.destroy()
             prime1.destroy()
             prime2.destroy()
@@ -119,15 +125,17 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
 
         private inner class PlainPemEncodable : PemEncodable<Asn1Sequence> {
             override val ebString = RSA.ebString
-            override fun encodeToTlv() = this@RSA.pkcs1Encode()
+            override fun encodeToTlv() =
+                this@RSA.pkcs1Encode(destroySource = false) //because we are just referencing the key, not copying, we need to delay destruction
         }
 
         private val innerPemEncodable = PlainPemEncodable()
 
         /**
-         * Encodes this private key into a PKCS#1 PEM-encoded private key
+         * Encodes this private key into a PKCS#1 PEM-encoded private key and optionally destroys the source material if [destroySource] = true
          */
-        fun pemEncodePkcs1() = innerPemEncodable.encodeToPEM()
+        fun pemEncodePkcs1(destroySource: Boolean = false) =
+            innerPemEncodable.encodeToPEM(destroySource).also { if (destroySource) destroy() }
 
         /**
          * OtherPrimeInfos as per PKCS#1
@@ -147,6 +155,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
         ) : Asn1Encodable<Asn1Sequence>, Destroyable {
 
             override fun destroy() {
+                if (isDestroyed()) throw IllegalStateException("This OtherPrimeInfo key is already destroyed")
                 prime.destroy()
                 exponent.destroy()
                 coefficient.destroy()
@@ -183,7 +192,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
          * @see pkcs1Encode
          */
         @Throws(Asn1Exception::class)
-        override fun plainEncode() = pkcs1Encode()
+        override fun plainEncode(destroySource: Boolean) = pkcs1Encode(destroySource)
 
         /**
          * ```asn1
@@ -203,7 +212,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
          */
 
         @Throws(Asn1Exception::class)
-        fun pkcs1Encode() = runRethrowing {
+        fun pkcs1Encode(destroySource: Boolean) = runRethrowing {
             Asn1.Sequence {
                 if (otherPrimeInfos != null) +Asn1.Int(1)
                 else +Asn1.Int(0)
@@ -220,7 +229,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
                         it.forEach { info -> +info }
                     }
                 }
-            }
+            }.also { if (destroySource) destroy() }
         }
 
         companion object : PemDecodable<Asn1Sequence, RSA> {
@@ -229,48 +238,46 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
             override val ebString = "RSA PRIVATE KEY"
 
             @Throws(Asn1Exception::class)
-            override fun doDecode(src: Asn1Sequence): RSA = pkcs1Decode(src, null)
-
-            @Throws(Asn1Exception::class)
-            fun plainDecode(src: Asn1Sequence) = pkcs1Decode(src, null)
+            override fun doDecode(src: Asn1Sequence): RSA = pkcs1Decode(src, null, destroySource = false)
 
             /**
              * PKCS1 decoding of an ASN.1 private key, optionally supporting attributes for later PKCS#8 encoding
              */
             @Throws(Asn1Exception::class)
-            fun pkcs1Decode(src: Asn1Sequence, attributes: List<Asn1Element>? = null): RSA = runRethrowing {
-                val version = src.nextChild().asPrimitive().decodeToInt()
-                require(version == 0 || version == 1) { "RSA Private key VERSION must be 0 or 1" }
-                val modulus = src.nextChild().asPrimitive().decodeToAsn1Integer()
-                val publicExponent = src.nextChild().asPrimitive().decodeToAsn1Integer()
-                val privateExponent = src.nextChild().asPrimitive().decodeToAsn1Integer()
-                val prime1 = src.nextChild().asPrimitive().decodeToAsn1Integer()
-                val prime2 = src.nextChild().asPrimitive().decodeToAsn1Integer()
-                val exponent1 = src.nextChild().asPrimitive().decodeToAsn1Integer()
-                val exponent2 = src.nextChild().asPrimitive().decodeToAsn1Integer()
-                val coefficient = src.nextChild().asPrimitive().decodeToAsn1Integer()
+            fun pkcs1Decode(src: Asn1Sequence, attributes: List<Asn1Element>? = null, destroySource: Boolean): RSA =
+                runRethrowing {
+                    val version = src.nextChild().asPrimitive().decodeToInt()
+                    require(version == 0 || version == 1) { "RSA Private key VERSION must be 0 or 1" }
+                    val modulus = src.nextChild().asPrimitive().decodeToAsn1Integer()
+                    val publicExponent = src.nextChild().asPrimitive().decodeToAsn1Integer()
+                    val privateExponent = src.nextChild().asPrimitive().decodeToAsn1Integer()
+                    val prime1 = src.nextChild().asPrimitive().decodeToAsn1Integer()
+                    val prime2 = src.nextChild().asPrimitive().decodeToAsn1Integer()
+                    val exponent1 = src.nextChild().asPrimitive().decodeToAsn1Integer()
+                    val exponent2 = src.nextChild().asPrimitive().decodeToAsn1Integer()
+                    val coefficient = src.nextChild().asPrimitive().decodeToAsn1Integer()
 
-                val otherPrimeInfos: List<OtherPrimeInfo>? = if (src.hasMoreChildren()) {
-                    require(version == 1) { "OtherPrimeInfos is present. RSA private key version must be 1" }
-                    src.nextChild().asSequence().children.map { OtherPrimeInfo.decodeFromTlv(it.asSequence()) }
-                } else {
-                    require(version == 0) { "OtherPrimeInfos is present. RSA private key version must be 0" }
-                    null
+                    val otherPrimeInfos: List<OtherPrimeInfo>? = if (src.hasMoreChildren()) {
+                        require(version == 1) { "OtherPrimeInfos is present. RSA private key version must be 1" }
+                        src.nextChild().asSequence().children.map { OtherPrimeInfo.decodeFromTlv(it.asSequence()) }
+                    } else {
+                        require(version == 0) { "OtherPrimeInfos is present. RSA private key version must be 0" }
+                        null
+                    }
+
+                    RSA(
+                        modulus,
+                        publicExponent,
+                        privateExponent,
+                        prime1,
+                        prime2,
+                        exponent1,
+                        exponent2,
+                        coefficient,
+                        otherPrimeInfos,
+                        attributes
+                    ).also { if (destroySource) src.destroy() }
                 }
-
-                RSA(
-                    modulus,
-                    publicExponent,
-                    privateExponent,
-                    prime1,
-                    prime2,
-                    exponent1,
-                    exponent2,
-                    coefficient,
-                    otherPrimeInfos,
-                    attributes
-                )
-            }
         }
 
         override fun toString() = "RSA private key for public key $publicKey"
@@ -289,7 +296,9 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
     ) : CryptoPrivateKey<CryptoPublicKey.EC>(attributes) {
 
         override fun destroy() {
+            if (isDestroyed()) throw IllegalStateException("This EC key is already destroyed")
             privateKeyBytes.destroy()
+            intRepresentation.destroy()
             destroyed = true
         }
 
@@ -300,15 +309,17 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
 
         private inner class PlainPemEncodable : PemEncodable<Asn1Sequence> {
             override val ebString = EC.ebString
-            override fun encodeToTlv() = this@EC.sec1Encode()
+            override fun encodeToTlv() =
+                this@EC.sec1Encode(destroySource = false) //We'll destroy later
         }
 
         private val innerPemEncodable = PlainPemEncodable()
 
         /**
-         * Encodes this private key into a SEC1 PEM-encoded private key
+         * Encodes this private key into a SEC1 PEM-encoded private key and destroys the source key material if [destroySource] = true.
          */
-        fun pemEncodeSec1() = innerPemEncodable.encodeToPEM()
+        fun pemEncodeSec1(destroySource: Boolean = false) =
+            innerPemEncodable.encodeToPEM(destroySource).also { if (destroySource) destroy() }
 
         /**
          * [CryptoPublicKey.EC] matching this private key. May be null if this private key was parsed from SEC1 without
@@ -358,7 +369,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
                 }
 
 
-            internal fun iosDecodeInternal(keyBytes: ByteArray): CryptoPrivateKey.EC = when (keyBytes.size) {
+            fun iosDecodeInternal(keyBytes: ByteArray): CryptoPrivateKey.EC = when (keyBytes.size) {
                 /** apple does not encode the curve identifier, but it is implied as one of the ios supported curves */
                 97 -> parseIosKey(ECCurve.SECP_256_R_1, keyBytes)
                 145 -> parseIosKey(ECCurve.SECP_384_R_1, keyBytes)
@@ -445,7 +456,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
          * @see sec1Encode
          */
         @Throws(Asn1Exception::class)
-        override fun plainEncode() = sec1Encode()
+        override fun plainEncode(destroySource: Boolean) = sec1Encode(destroySource)
 
         /**
          * ```asn1
@@ -459,13 +470,13 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
          */
 
         @Throws(Asn1Exception::class)
-        fun sec1Encode() = runRethrowing {
+        fun sec1Encode(destroySource: Boolean) = runRethrowing {
             Asn1.Sequence {
                 +Asn1.Int(1)
                 +Asn1PrimitiveOctetString(privateKeyBytes)
                 if (encodeCurve) curve?.let { +Asn1.ExplicitlyTagged(0uL) { +it.oid } }
                 publicKey?.let { +Asn1.ExplicitlyTagged(1uL) { +Asn1.BitString(it.iosEncoded) } }
-            }
+            }.also { if (destroySource) destroy() }
         }
     }
 
@@ -509,7 +520,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
                 }
             }
             +Asn1.OctetStringEncapsulating {
-                +plainEncode()
+                +plainEncode(destroySource = false)
             }
             attributes?.let {
                 +(Asn1.SetOf {
@@ -561,7 +572,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
                 else null
             return if (algIdentifier == RSA.oid) {
                 algParams.readNull()
-                RSA.pkcs1Decode(privateKeyStructure, attributes)
+                RSA.pkcs1Decode(privateKeyStructure, attributes, destroySource = false)
             } else if (algIdentifier == EC.oid) {
                 val predefinedCurve = ECCurve.entries.first { it.oid == ObjectIdentifier.decodeFromTlv(algParams) }
                 EC.sec1decode(privateKeyStructure, predefinedCurve, attributes)
@@ -572,12 +583,14 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
          * Tries to decode a private key as exported from iOS.
          * EC keys are exported [as padded raw bytes](https://developer.apple.com/documentation/security/seckeycopyexternalrepresentation(_:_:)?language=objc).
          * RSA keys are exported using PKCS#1 encoding
+         *
+         * Destroys the source by default. Set [destroySource] = false to override.
          */
-        fun fromIosEncoded(keyBytes: ByteArray): KmmResult<CryptoPrivateKey<*>> = catching {
-            if (keyBytes.first() == ANSIECPrefix.UNCOMPRESSED.prefixByte) CryptoPrivateKey.EC.iosDecodeInternal((keyBytes))
-            else CryptoPrivateKey.RSA.pkcs1Decode(Asn1Element.parse(keyBytes).asSequence())
-
-        }
+        fun fromIosEncoded(keyBytes: ByteArray, destroySource: Boolean = true): KmmResult<CryptoPrivateKey<*>> =
+            catching {
+                if (keyBytes.first() == ANSIECPrefix.UNCOMPRESSED.prefixByte) CryptoPrivateKey.EC.iosDecodeInternal((keyBytes))
+                else CryptoPrivateKey.RSA.pkcs1Decode(Asn1Element.parse(keyBytes).asSequence(), null, destroySource)
+            }.also { if (destroySource) keyBytes.destroy() }
 
     }
 }

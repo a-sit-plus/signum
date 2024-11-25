@@ -7,10 +7,12 @@ import kotlin.UnsupportedOperationException
 
 actual fun makePrivateKeySigner(
     key: CryptoPrivateKey.RSA,
-    algorithm: SignatureAlgorithm.RSA
-): Signer.RSA = AndroidEphemeralSigner.RSA(config = EphemeralSignerConfiguration(), privateKey = key.toJcaPrivateKey().getOrThrow(), publicKey = key.publicKey, signatureAlgorithm = algorithm)
+    algorithm: SignatureAlgorithm.RSA,
+    destroySource: Boolean
+): Signer.RSA = AndroidEphemeralSigner.RSA(config = EphemeralSignerConfiguration(), privateKey = key.toJcaPrivateKey(destroySource).getOrThrow(), publicKey = key.publicKey, signatureAlgorithm = algorithm)
 
 actual fun makePrivateKeySigner(
     key: CryptoPrivateKey.EC,
-    algorithm: SignatureAlgorithm.ECDSA
-): Signer.ECDSA = AndroidEphemeralSigner.EC(config = EphemeralSignerConfiguration(), privateKey = key.toJcaPrivateKey().getOrThrow(), publicKey = key.publicKey!!, signatureAlgorithm = algorithm)
+    algorithm: SignatureAlgorithm.ECDSA,
+    destroySource: Boolean
+): Signer.ECDSA = AndroidEphemeralSigner.EC(config = EphemeralSignerConfiguration(), privateKey = key.toJcaPrivateKey(destroySource).getOrThrow(), publicKey = key.publicKey!!, signatureAlgorithm = algorithm)

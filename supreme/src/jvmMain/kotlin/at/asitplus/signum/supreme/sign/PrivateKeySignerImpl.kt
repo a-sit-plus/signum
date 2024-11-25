@@ -9,13 +9,15 @@ import at.asitplus.signum.supreme.os.JKSSignerConfiguration
 
 actual fun makePrivateKeySigner(
     key: CryptoPrivateKey.RSA,
-    algorithm: SignatureAlgorithm.RSA
-): Signer.RSA = EphemeralSigner.RSA(config = EphemeralSignerConfiguration(), privateKey = key.toJcaPrivateKey().getOrThrow(), publicKey = key.publicKey, signatureAlgorithm = algorithm)
+    algorithm: SignatureAlgorithm.RSA,
+    destroySource: Boolean
+): Signer.RSA = EphemeralSigner.RSA(config = EphemeralSignerConfiguration(), privateKey = key.toJcaPrivateKey(destroySource).getOrThrow(), publicKey = key.publicKey, signatureAlgorithm = algorithm)
 
 actual fun makePrivateKeySigner(
     key: CryptoPrivateKey.EC,
-    algorithm: SignatureAlgorithm.ECDSA
-): Signer.ECDSA = EphemeralSigner.EC(config = EphemeralSignerConfiguration(), privateKey = key.toJcaPrivateKey().getOrThrow(), publicKey = key.publicKey!!, signatureAlgorithm = algorithm)
+    algorithm: SignatureAlgorithm.ECDSA,
+    destroySource: Boolean
+): Signer.ECDSA = EphemeralSigner.EC(config = EphemeralSignerConfiguration(), privateKey = key.toJcaPrivateKey(destroySource).getOrThrow(), publicKey = key.publicKey!!, signatureAlgorithm = algorithm)
 
 /**
  * Creates a signer for the specified [privateKey]. Fails if the key type does not match the signature algorithm type (EC/RSA) or if it has no public key attached

@@ -163,9 +163,9 @@ fun SignatureAlgorithm.signerFor(privateKey: CryptoPrivateKey<*>): KmmResult<Sig
     ){"Algorithm and Key mismatch: ${this::class.simpleName} + ${privateKey::class.simpleName}"}
     when(this) {
         //TODO this may still fail
-        is SignatureAlgorithm.ECDSA ->  makePrivateKeySigner(privateKey as CryptoPrivateKey.EC, this)
+        is SignatureAlgorithm.ECDSA ->  makePrivateKeySigner(privateKey as CryptoPrivateKey.EC, this, destroySource = true)
         is SignatureAlgorithm.HMAC -> throw UnsupportedOperationException("HMAC is not yet supported!")
-        is SignatureAlgorithm.RSA -> makePrivateKeySigner(privateKey as CryptoPrivateKey.RSA, this)
+        is SignatureAlgorithm.RSA -> makePrivateKeySigner(privateKey as CryptoPrivateKey.RSA, this, destroySource = true)
     }
 }
 

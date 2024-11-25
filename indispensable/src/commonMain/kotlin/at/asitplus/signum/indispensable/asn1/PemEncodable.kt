@@ -21,7 +21,7 @@ interface PemEncodable<A : Asn1Element> : Asn1Encodable<A> {
 
     /**
      * To be implemented for custom encoding of PEM-encoded payload.
-     * Defaults to [encodeToDer]
+     * Defaults to [encodeToDer].
      */
     @Throws(Throwable::class)
     fun binaryEncodePayload(): ByteArray = encodeToDer()
@@ -71,11 +71,14 @@ val PemDecodable<*, *>.postEB: String get() = "$FENCE_POST$ebString$FENCE_AFTER"
 
 /**
  * Encodes this [PemEncodable] into a PEM-encoded string
+ * If this [PemEncodable] also implements [Destroyable], setting [destroySource] to true destroys the source data
  */
 @OptIn(ExperimentalEncodingApi::class)
-fun PemEncodable<*>.encodeToPEM(): KmmResult<String> = catching {
-    "$preEB\n" + Base64.encode(binaryEncodePayload()).chunked(64)
+fun PemEncodable<*>.encodeToPEM(destroySource: Boolean = false): KmmResult<String> = catching {
+    val result = "$preEB\n" + Base64.encode(binaryEncodePayload()).chunked(64)
         .joinToString(separator = "\n", postfix = "\n") + postEB
+    if (this is Destroyable && destroySource) destroy()
+    result
 }
 
 /**

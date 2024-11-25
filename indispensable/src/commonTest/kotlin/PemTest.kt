@@ -3,6 +3,7 @@ import at.asitplus.signum.indispensable.asn1.decodeFromPem
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldNotContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 
 @OptIn(ExperimentalStdlibApi::class)
@@ -16,7 +17,12 @@ class PemTest : FreeSpec({
             -----END EC PRIVATE KEY-----
         """.trimIndent()
 
-        CryptoPrivateKey.EC.decodeFromPem(sec1).getOrThrow().pemEncodeSec1().getOrThrow() shouldBe sec1
+        val key = CryptoPrivateKey.EC.decodeFromPem(sec1).getOrThrow()
+        key.isDestroyed() shouldBe false
+        key.pemEncodeSec1(destroySource = false).getOrThrow()
+        key.isDestroyed() shouldBe false
+        key.pemEncodeSec1(destroySource = true).getOrThrow() shouldBe sec1
+        key.isDestroyed() shouldBe true
         (CryptoPrivateKey.decodeFromPem(sec1).getOrThrow() as CryptoPrivateKey.EC).pemEncodeSec1()
             .getOrThrow() shouldBe sec1
     }
@@ -29,7 +35,13 @@ class PemTest : FreeSpec({
             zxh/z83LcdvgjntLPbRlpulusOaoUHsCataF16M48ef34ufnWLjZsJ0Z
             -----END PRIVATE KEY-----
         """.trimIndent()
-        CryptoPrivateKey.decodeFromPem(pkcs8).getOrThrow().encodeToPEM().getOrThrow() shouldBe pkcs8
+        val key = CryptoPrivateKey.decodeFromPem(pkcs8).getOrThrow()
+        key.isDestroyed() shouldBe false
+        key.encodeToPEM(destroySource = false).getOrThrow()
+        key.isDestroyed() shouldBe false
+        key.encodeToPEM(destroySource = true).getOrThrow() shouldBe pkcs8
+        key.isDestroyed() shouldBe true
+        key.encodeToPEM().isSuccess shouldBe false
     }
 
     "from iOS" {
@@ -44,10 +56,33 @@ class PemTest : FreeSpec({
             "049d22ada3fed52d17e890066b707ba9476e4088b2d89e09109ee71a7590e629677f7bf1958e20533a41eaa4c26d371345b68e39b59ae1a36536c0ffa28ad976da0ba7b225d48c46e30e4fc6dbe05b590179f2c6bae0b9714f17c6b1996552dd6a"
         )
 
-        CryptoPrivateKey.fromIosEncoded(rsa.hexToByteArray()).getOrThrow().shouldBeInstanceOf<CryptoPrivateKey.RSA>()
+        val rsaKey = CryptoPrivateKey.fromIosEncoded(rsa.hexToByteArray()).getOrThrow()
+        rsaKey.shouldBeInstanceOf<CryptoPrivateKey.RSA>()
+
+        rsaKey.encodeToPEM(destroySource = false).getOrThrow() shouldNotContain "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        rsaKey.isDestroyed() shouldBe false
+        rsaKey.privateExponent.isDestroyed() shouldBe false
+        rsaKey.exponent1.isDestroyed() shouldBe false
+        rsaKey.exponent2.isDestroyed() shouldBe false
+        rsaKey.coefficient.isDestroyed() shouldBe false
+
+        rsaKey.encodeToPEM(destroySource = true).getOrThrow() shouldNotContain "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        rsaKey.isDestroyed() shouldBe true
+        rsaKey.privateExponent.isDestroyed() shouldBe true
+        rsaKey.exponent1.isDestroyed() shouldBe true
+        rsaKey.exponent2.isDestroyed() shouldBe true
+        rsaKey.coefficient.isDestroyed() shouldBe true
+
 
         ec.forEach { string ->
-        CryptoPrivateKey.fromIosEncoded(string.hexToByteArray()).getOrThrow().shouldBeInstanceOf<CryptoPrivateKey.EC>()
+        val key = CryptoPrivateKey.fromIosEncoded(string.hexToByteArray()).getOrThrow()
+            key.shouldBeInstanceOf<CryptoPrivateKey.EC>()
+            key.encodeToPEM(destroySource = false).getOrThrow() shouldNotContain "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+            key.isDestroyed() shouldBe false
+
+            key.encodeToPEM(destroySource = true).getOrThrow() shouldNotContain "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+            key.isDestroyed() shouldBe true
+            key.encodeToPEM().isSuccess shouldBe false
 
         }
 
