@@ -2,18 +2,15 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.io.*
+import at.asitplus.signum.indispensable.CryptoPublicKey.RSA.Size.entries
 import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.BitString
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix.Companion.hasPrefix
-import at.asitplus.io.BaseN
-import at.asitplus.io.MultiBase
-import at.asitplus.io.UVarInt
-import at.asitplus.io.multibaseDecode
-import at.asitplus.io.multibaseEncode
-import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.misc.ensureSize
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -234,7 +231,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
 
         /**
-         * Returns `did:key:$MULTIBASE_ENCODING_IDENTIFIER$MULTICODEC_ALGORITHM_IDENTIFIER$BYTES` with all bytes after MULTIBASE_ENCODING_IDENTIFIER in the assigned encoding.
+         * Returns `did:key:$MULTIBASE_ENCODING_IDENTIFIER$MULTICODEC_ALGORITHM_IDENTIFIER$BYTES` with all bytes
+         * after `MULTIBASE_ENCODING_IDENTIFIER` in the assigned encoding.
          * The Multicodec identifier for RSA is `0x1205` and the key bytes are represented as PKCS#1 encoding.
          */
         override val didEncoded by lazy {
@@ -326,25 +324,29 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             }
 
         /**
-         * Returns `did:key:$MULTIBASE_ENCODING_IDENTIFIER$MULTICODEC_ALGORITHM_IDENTIFIER$BYTES` with all bytes after MULTIBASE_ENCODING_IDENTIFIER in the assigned encoding
-         * Multicodec identifiers '0x120x' are draft identifiers for P-xxx keys with point compression
+         * Returns `did:key:$MULTIBASE_ENCODING_IDENTIFIER$MULTICODEC_ALGORITHM_IDENTIFIER$BYTES` with all bytes
+         * after `MULTIBASE_ENCODING_IDENTIFIER` in the assigned encoding.
          *
-         * 0x1200 P-256
-         * 0x1201 P-384
-         * 0x1202 P-512
+         * Multicodec identifiers `0x120x` are draft identifiers for P-xxx keys with point compression:
+         *
+         * * `0x1200` P-256
+         * * `0x1201` P-384
+         * * `0x1202` P-512
          *
          * The keybytes are ANSI X9.63 encoded (important for compression)
          */
         override val didEncoded by lazy {
-            val codec = when (curve) {
+            "$PREFIX_DID_KEY:" +
+                    (UVarInt(curve.multibaseId()).encodeToByteArray() + this.toAnsiX963Encoded(useCompressed = true))
+                        .multibaseEncode(MultiBase.Base.BASE58_BTC)
+        }
+
+        private fun ECCurve.multibaseId(): UInt {
+            return when (this) {
                 ECCurve.SECP_256_R_1 -> 0x1200u
                 ECCurve.SECP_384_R_1 -> 0x1201u
                 ECCurve.SECP_521_R_1 -> 0x1202u
             }
-            PREFIX_DID_KEY + ":" + MultiBase.encode(
-                MultiBase.Base.BASE58_BTC,
-                UVarInt(codec).encodeToByteArray() + this.toAnsiX963Encoded(useCompressed = true)
-            )
         }
 
         override val iosEncoded by lazy { toAnsiX963Encoded(useCompressed = false) }
