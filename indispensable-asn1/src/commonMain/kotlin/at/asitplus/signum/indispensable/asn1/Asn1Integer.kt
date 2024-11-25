@@ -35,9 +35,23 @@ fun Asn1Integer(number: ULong) =
  * Hence, it directly interoperates with [Kotlin MP BigNum](https://github.com/ionspin/kotlin-multiplatform-bignum) and the JVM BigInteger.
  */
 @Serializable(with = Asn1IntegerSerializer::class)
-sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign): Asn1Encodable<Asn1Primitive> {
+sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign): Asn1Encodable<Asn1Primitive>, Destroyable {
 
     override fun encodeToTlv(): Asn1Primitive = encodeToAsn1Primitive()
+
+    /**
+     * Zeroes out all bytes contained in this ASN.1 Integer, effectively destroying all information except for the sign.
+     * This is useful in case this integer was used as part of a secret
+     */
+    override fun destroy() {
+        if(isDestroyed()) throw IllegalStateException("This ASN.1 Integer is already destroyed!")
+        uint.words.fill(0u)
+        destroyed=true
+    }
+
+    private var destroyed=false
+    override fun isDestroyed()=destroyed
+
 
     enum class Sign {
         POSITIVE,
@@ -147,7 +161,7 @@ sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign): Asn1Encoda
 
 
 @JvmInline
-internal value class VarUInt(private val words: MutableList<UByte> = mutableListOf(0u)) {
+internal value class VarUInt(internal val words: MutableList<UByte> = mutableListOf(0u)) {
 
 
     constructor(uInt: UInt) : this(uInt.toString())

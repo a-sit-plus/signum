@@ -24,7 +24,7 @@ import kotlin.reflect.typeOf
 @Serializable(with = Asn1EncodableSerializer::class)
 sealed class Asn1Element(
     val tag: Tag
-) {
+): Destroyable {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -77,13 +77,21 @@ sealed class Asn1Element(
     val overallLength by lazy { length + tag.encodedTagLength + encodedLength.size }
 
 
-    private val derEncodedLazy = lazy { Buffer().also { encodeTo(it) }.readByteArray() }
+    private val derEncodedLazy = lazy {
+        if(isDestroyed()) throw IllegalStateException("This ASN.1 element is already destroyed")
+        Buffer().also { encodeTo(it) }.readByteArray() }
 
     /**
      * Lazily-evaluated DER-encoded representation of this ASN.1 element
      */
     val derEncoded: ByteArray by derEncodedLazy
 
+    fun destroyInternal() {
+        if(derEncodedLazy.isInitialized()) {
+            derEncodedLazy.value.destroy()
+            derEncoded.destroy() //Do we need this? we should not need this
+        }
+    }
 
     protected abstract fun doEncode(sink: Sink)
     internal fun encodeTo(sink: Sink) {
@@ -455,10 +463,10 @@ sealed class Asn1Structure(
      * parsing custom structures. Therefore, it has no impact on [equals].
      */
     val shouldBeSorted: Boolean
-) :
-    Asn1Element(tag) {
+) :    Asn1Element(tag) {
 
-    val children: List<Asn1Element> = if (!sortChildren) children else children.sortedBy { it.tag }
+    var children: List<Asn1Element> = if (!sortChildren) children else children.sortedBy { it.tag }
+    private set
 
     /**
      * indicated whether the structure's children are actually sorted.
@@ -533,6 +541,20 @@ sealed class Asn1Structure(
 
         return true
     }
+
+    /**
+     * recursively destroys all children and them removes all references to the children from this structure.
+     * (Does not remove them from the underlying list. The GC will consume it at some later point in time.)
+     */
+    override fun destroy() {
+        children.forEach(Asn1Element::destroy)
+        children = listOf()
+        destroyInternal()
+        destroyed = true
+    }
+
+    var destroyed = false
+    override fun isDestroyed() = destroyed
 }
 
 /**
@@ -776,6 +798,19 @@ open class Asn1Primitive(
     init {
         if (tag.isConstructed) throw IllegalArgumentException("A primitive cannot have a CONSTRUCTED tag")
     }
+
+
+    /**
+     * Zeroes out this element's content
+     */
+    override fun destroy() {
+        content.destroy()
+        destroyInternal()
+        destroyed = true
+    }
+
+    var destroyed = false
+    override fun isDestroyed() = destroyed
 
     override val length: Int get() = content.size
     override fun doEncode(sink: Sink) {

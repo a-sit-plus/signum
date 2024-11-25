@@ -89,8 +89,9 @@ val CryptoSignature.iosEncoded
 
 /**
  * Converts this privateKey into a [SecKeyRef], making it usable on iOS
+ * Destroys the source key material by default
  */
-fun CryptoPrivateKey<*>.toSecKey(): KmmResult<SecKeyRef> = catching {
+fun CryptoPrivateKey<*>.toSecKey(destroySource: Boolean =true): KmmResult<SecKeyRef> = catching {
     memScoped {
         corecall {
             var data : ByteArray? = null
@@ -112,6 +113,7 @@ fun CryptoPrivateKey<*>.toSecKey(): KmmResult<SecKeyRef> = catching {
                         plainEncode().derEncoded
                     }
                 }
+                if(destroySource) {destroy()}
             }
             SecKeyCreateWithData(data!!.toNSData().giveToCF(), attr, error)
         }

@@ -4,6 +4,7 @@ package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 
@@ -105,13 +106,13 @@ interface Asn1Decodable<A : Asn1Element, T : Asn1Encodable<A>> {
     /**
      * Exception-free version of [decodeFromTlv]
      */
-    fun decodeFromTlvOrNull(src: A, assertTag: Asn1Element.Tag? = null) =
-        catching { decodeFromTlv(src, assertTag) }.getOrNull()
+    fun decodeFromTlvOrNull(src: A, assertTag: Asn1Element.Tag? = null): T? =
+        catchingUnwrapped { decodeFromTlv(src, assertTag) }.getOrNull()
 
     /**
      * Safe version of [decodeFromTlv], wrapping the result into a [KmmResult]
      */
-    fun decodeFromTlvSafe(src: A, assertTag: Asn1Element.Tag? = null) =
+    fun decodeFromTlvSafe(src: A, assertTag: Asn1Element.Tag? = null): KmmResult<T> =
         catching { decodeFromTlv(src, assertTag) }
 
     /**
@@ -125,12 +126,69 @@ interface Asn1Decodable<A : Asn1Element, T : Asn1Encodable<A>> {
     /**
      * Exception-free version of [decodeFromDer]
      */
-    fun decodeFromDerOrNull(src: ByteArray, assertTag: Asn1Element.Tag? = null) =
-        catching { decodeFromDer(src, assertTag) }.getOrNull()
+    fun decodeFromDerOrNull(src: ByteArray, assertTag: Asn1Element.Tag? = null): T? =
+        catchingUnwrapped { decodeFromDer(src, assertTag) }.getOrNull()
 
     /**
      * Safe version of [decodeFromDer], wrapping the result into a [KmmResult]
      */
-    fun decodeFromDerSafe(src: ByteArray, assertTag: Asn1Element.Tag? = null) =
+    fun decodeFromDerSafe(src: ByteArray, assertTag: Asn1Element.Tag? = null): KmmResult<T> =
         catching { decodeFromDer(src, assertTag) }
 }
+
+/**
+ * Allows for destroying the source after decoding
+ */
+@Throws(Asn1Exception::class)
+fun <A : Asn1Element, T : Asn1Encodable<A>> Asn1Decodable<A, T>.decodeFromTlv(
+    src: A,
+    assertTag: Asn1Element.Tag? = null,
+    destroySource: Boolean
+): T = decodeFromTlv(src, assertTag).also { src.destroy() }
+
+/**
+ * Allows for destroying the source after decoding
+ */
+fun <A : Asn1Element, T : Asn1Encodable<A>> Asn1Decodable<A, T>.decodeFromTlvSafe(
+    src: A,
+    assertTag: Asn1Element.Tag? = null,
+    destroySource: Boolean
+) = decodeFromTlvSafe(src, assertTag).also { src.destroy() }
+
+/**
+ * Allows for destroying the source after decoding
+ */
+fun <A : Asn1Element, T : Asn1Encodable<A>> Asn1Decodable<A, T>.decodeFromTlvOrNull(
+    src: A,
+    assertTag: Asn1Element.Tag? = null,
+    destroySource: Boolean
+) = decodeFromTlvOrNull(src, assertTag).also { src.destroy() }
+
+/**
+ * Allows for destroying the source after decoding
+ */
+@Throws(Asn1Exception::class)
+fun <A : Asn1Element, T : Asn1Encodable<A>> Asn1Decodable<A, T>.decodeFromDer(
+    src: ByteArray,
+    assertTag: Asn1Element.Tag? = null,
+    destroySource: Boolean
+): T = decodeFromTlv(Asn1Element.parse(src) as A, assertTag, destroySource).also { src.destroy() }
+
+/**
+ * Allows for destroying the source after decoding
+ */
+fun <A : Asn1Element, T : Asn1Encodable<A>> Asn1Decodable<A, T>.decodeFromDerOrNull(
+    src: ByteArray,
+    assertTag: Asn1Element.Tag? = null,
+    destroySource: Boolean
+) =
+    catchingUnwrapped { decodeFromDer(src, assertTag, destroySource) }.getOrNull()
+
+/**
+ * Allows for destroying the source after decoding
+ */
+fun <A : Asn1Element, T : Asn1Encodable<A>> Asn1Decodable<A, T>.decodeFromDerSafe(
+    src: ByteArray,
+    assertTag: Asn1Element.Tag? = null,
+    destroySource: Boolean
+) = catching { decodeFromDer(src, assertTag, destroySource) }

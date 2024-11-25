@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable
 import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
+import at.asitplus.signum.indispensable.asn1.decodeFromDer
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.io.Base64Strict
 import io.kotest.assertions.withClue
@@ -45,13 +46,20 @@ class KeyTest : FreeSpec({
 
                 val own = CryptoPublicKey.EC.fromJcaPublicKey(pubKey).getOrThrow()
 
-                val ownPrivate = CryptoPrivateKey.decodeFromDer(privKey.encoded)
-
+                val encoded = privKey.encoded //does not destroy the source
+                val ownPrivate = CryptoPrivateKey.decodeFromDer(encoded) //does not destroy source
+                privKey.isDestroyed shouldBe false
+                privKey.toCryptoPrivateKey().isSuccess shouldBe true //destroys source
+                //privKey.isDestroyed shouldBe true //this is up to the provider, so we cannot rely on it
                 ownPrivate.publicKey shouldBe own
-                println(ownPrivate.encodeToTlv().toDerHexString())
-                println(privKey.encoded.toHexString(HexFormat.UpperCase))
-                ownPrivate.encodeToDer() shouldBe privKey.encoded
-                ownPrivate.toJcaPrivateKey().getOrThrow().encoded shouldBe privKey.encoded
+                ownPrivate.encodeToDer(destroySource = false) shouldBe encoded //destroys by default, so we prevent it
+                ownPrivate.isDestroyed() shouldBe false
+                val firstTry = ownPrivate.toJcaPrivateKey()
+                firstTry.getOrThrow().encoded shouldBe encoded
+                ownPrivate.toJcaPrivateKey().isSuccess shouldBe false
+
+                CryptoPrivateKey.decodeFromDer(encoded, destroySource = true) //destroys source
+                encoded.forEach { b -> b shouldBe 0.toByte() }
 
 
                 withClue("Basic Conversions") {
@@ -110,11 +118,19 @@ class KeyTest : FreeSpec({
 
                 val own = CryptoPublicKey.RSA(pubKey.modulus.toByteArray(), pubKey.publicExponent.toInt())
 
-                val ownPrivate =CryptoPrivateKey.decodeFromDer(privKey.encoded)
+                val encoded = privKey.encoded //does not destroy the source
+                val ownPrivate = CryptoPrivateKey.decodeFromDer(encoded) //does not destroy source
+                privKey.isDestroyed shouldBe false
+                privKey.toCryptoPrivateKey().isSuccess shouldBe true //destroys source
+                //privKey.isDestroyed shouldBe true //this is up to the provider, so we cannot rely on it
                 ownPrivate.publicKey shouldBe own
-                ownPrivate.encodeToDer() shouldBe privKey.encoded
-                ownPrivate.toJcaPrivateKey().getOrThrow().encoded shouldBe privKey.encoded
+                ownPrivate.encodeToDer(destroySource = false) shouldBe encoded //destroys by default, so we prevent it
+                ownPrivate.isDestroyed() shouldBe false
+                ownPrivate.toJcaPrivateKey().getOrThrow().encoded shouldBe encoded
+                ownPrivate.toJcaPrivateKey().isSuccess shouldBe false
 
+                CryptoPrivateKey.decodeFromDer(encoded, destroySource = true) //destroys source
+                encoded.forEach { b -> b shouldBe 0.toByte() }
 
                 val own1 = CryptoPublicKey.RSA(
                     ByteArray((0..10).random()) { 0 } + pubKey.modulus.toByteArray(),

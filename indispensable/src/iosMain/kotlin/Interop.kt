@@ -25,6 +25,7 @@ import platform.posix.memcpy
 import kotlin.experimental.ExperimentalNativeApi
 import kotlin.native.ref.createCleaner
 
+//TODO: this is duplicated code from Supreme. Come up with a better strategy without polluting the public API
 @OptIn(ExperimentalNativeApi::class)
 class AutofreeVariable<T: CPointer<*>> internal constructor(
     arena: Arena,

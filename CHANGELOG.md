@@ -4,17 +4,6 @@
 
 ### 3.11.0 NEXT
 
-* Implement members in `JsonWebToken` and `ConfirmationClaim` for OpenID4VC High Assurance Interoperability Profile with SD-JWT VC
-* Add utility methods to `Asn1Integer`
-    * Additional constructor methods: `fromByteArray`, `fromUnsignedByteArray`
-    * Additional instance methods: `isZero`, `magnitude`, `bitLength`
-    * Additional conversion methods for Java BigInteger and iospin BigInteger
-* Refactor `CryptoPublicKey.Rsa` to use `Asn1Integer`
-    * Fixes JWS/COSE encoding for non-standard exponents (with MSBit 1)
-* Allow `assertTag` override also for `Asn1Integer` (was missing before)
-* Allow reinterpreting an `Asn1Element` that successfully parsed as `Asn1EncapsulatingOctetString` as an `Asn1PrimitiveOctetString`
-    * **This is a behavioural change!**
-* Make `Asn1Integer` an `Asn1Encodable<String>`
 * **PEM Encoding**
     * Introduce `PemEncodable` interface, derived from `Asn1Encodable`
     * Introduce `PemDecodable` interface, derived from `Asn1Decodable`
@@ -22,6 +11,21 @@
     * Parsing of PEM and DER-encoded private keys
     * Introduce `SignatureAlgorithm.signerFor(privateKey)` to create signers backed by (previously parsed, or manually constructed) private keys
     * Export of private keys from ephemeral signers (and only ephemeral signers) in combination with a new @SecretExposure annotation
+* Introduce `Destroyable` interface, which indicates that sensitive information contained within a data structure can be destroyed.
+    * Implemented by `Asn1Integer`
+    * Implemented by `Asn1Element`
+    * Also introduce `ByteArray.destroy()`, zeroing out its contents
+* Implement members in `JsonWebToken` and `ConfirmationClaim` for OpenID4VC High Assurance Interoperability Profile with SD-JWT VC
+* Add utility methods to `Asn1Integer`
+    * Additional constructor methods: `fromByteArray`, `fromUnsignedByteArray`
+    * Additional instance methods: `isZero`, `magnitude`, `bitLength`
+    * Additional conversion methods for Java BigInteger and ionspin BigInteger
+* Refactor `CryptoPublicKey.Rsa` to use `Asn1Integer`
+    * Fixes JWS/COSE encoding for non-standard exponents (with MSBit 1)
+* Allow `assertTag` override also for `Asn1Integer` (was missing before)
+* Allow reinterpreting an `Asn1Element` that successfully parsed as `Asn1EncapsulatingOctetString` as an `Asn1PrimitiveOctetString`
+    * **This is a behavioural change!**
+* Make `Asn1Integer` an `Asn1Encodable<String>`
 
 
 ### 3.10.0 (Supreme 0.5.0) More ~~cowbell~~ targets!

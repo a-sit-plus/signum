@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.ecmath.times
 import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.asPublicKey
 import at.asitplus.signum.indispensable.asn1.*
@@ -16,7 +17,56 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
      * optional attributes relevant when PKCS#8-encoding a private key
      */
     val attributes: List<Asn1Element>?
-) : PemEncodable<Asn1Sequence>, Identifiable {
+) : PemEncodable<Asn1Sequence>, Identifiable, Destroyable {
+
+    /**
+     * Destroys this private key. The object remains accessible but the byte arrays containing private key data are zeroed out.
+     * Public parameters remain intact.
+     */
+    abstract override fun destroy()
+
+    protected var destroyed = false
+    override fun isDestroyed() = destroyed
+
+    /**
+     * **Destroys the source!!!
+     *
+     * PKCS#8 encoding of a private key:
+     * ```asn1
+     * PrivateKeyInfo ::= SEQUENCE {
+     *   version                   Version,
+     *   privateKeyAlgorithm       PrivateKeyAlgorithmIdentifier,
+     *   privateKey                PrivateKey,
+     *   attributes           [0]  IMPLICIT Attributes OPTIONAL
+     * }
+     *
+     * Version ::= INTEGER
+     *
+     * PrivateKeyAlgorithmIdentifier ::= AlgorithmIdentifier
+     *
+     * PrivateKey ::= OCTET STRING
+     *
+     * Attributes ::= SET OF Attribute
+     * ```
+     */
+    override fun encodeToTlv() = encodeToTlv(true)
+
+    /**
+     * DER-encodes this private key and keeps it intact if [destroySource]=false. Destroys it otherwise
+     */
+    fun encodeToDer(destroySource: Boolean) = encodeToTlv(destroySource = false).let { sequence ->
+        sequence.derEncoded.also {
+            if (destroySource) {
+                sequence.destroy()
+            }
+        }
+    }
+
+
+    /**
+     * DER-encodes this private key and destroys it afterwards
+     */
+    override fun encodeToDer(): ByteArray = encodeToDer(true)
 
     /**
      * [CryptoPublicKey] matching this private key. Never null for RSA.
@@ -51,6 +101,17 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
 
         override val oid = RSA.oid
 
+        override fun destroy() {
+            privateExponent.destroy()
+            prime1.destroy()
+            prime2.destroy()
+            exponent1.destroy()
+            exponent2.destroy()
+            coefficient.destroy()
+            otherPrimeInfos?.forEach { it.destroy() }
+            destroyed = true
+        }
+
         /**
          * The [CryptoPublicKey.RSA] matching this private key
          */
@@ -83,7 +144,17 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
             val prime: Asn1Integer,
             val exponent: Asn1Integer,
             val coefficient: Asn1Integer,
-        ) : Asn1Encodable<Asn1Sequence> {
+        ) : Asn1Encodable<Asn1Sequence>, Destroyable {
+
+            override fun destroy() {
+                prime.destroy()
+                exponent.destroy()
+                coefficient.destroy()
+                destroyed = true
+            }
+
+            var destroyed = false
+            override fun isDestroyed() = destroyed
 
             @Throws(Asn1Exception::class)
             override fun encodeToTlv() = runRethrowing {
@@ -216,6 +287,11 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
         publicKey: CryptoPublicKey.EC?,
         attributes: List<Asn1Element>? = null
     ) : CryptoPrivateKey<CryptoPublicKey.EC>(attributes) {
+
+        override fun destroy() {
+            privateKeyBytes.destroy()
+            destroyed = true
+        }
 
 
         override val oid = EC.oid
@@ -413,9 +489,9 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
      * Attributes ::= SET OF Attribute
      * ```
      */
-
     @Throws(Asn1Exception::class)
-    override fun encodeToTlv() = runRethrowing {
+    fun encodeToTlv(destroySource: Boolean) = runRethrowing {
+        if (isDestroyed()) throw IllegalStateException("This key is already destroyed")
         Asn1.Sequence {
             +Asn1.Int(0)
             +Asn1.Sequence {
@@ -440,8 +516,11 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
                     it.forEach { attr -> +attr }
                 } withImplicitTag 0uL)
             }
-        }
+        }.also { if (destroySource) destroy() }
     }
+
+    fun encodeToTlvOrNull(destroySource: Boolean) = catchingUnwrapped { encodeToTlv(destroySource) }.getOrNull()
+    fun encodeToTlvSafe(destroySource: Boolean) = catching { encodeToTlv(destroySource) }
 
     companion object : PemDecodable<Asn1Sequence, CryptoPrivateKey<*>> {
 

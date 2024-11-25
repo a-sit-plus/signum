@@ -2,6 +2,9 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.catchingUnwrapped
+import at.asitplus.signum.indispensable.asn1.decodeFromDer
+import at.asitplus.signum.indispensable.asn1.destroy
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.asn1.toJavaBigInteger
 import at.asitplus.signum.indispensable.pki.X509Certificate
@@ -160,7 +163,7 @@ fun CryptoPublicKey.EC.toJcaPublicKey(): KmmResult<ECPublicKey> = catching {
 private val rsaFactory = KeyFactory.getInstance("RSA")
 
 @Deprecated("renamed", ReplaceWith("toJcaPublicKey()"))
-fun CryptoPublicKey.RSA.getJcaPublicKey(): KmmResult<RSAPublicKey> =toJcaPublicKey()
+fun CryptoPublicKey.RSA.getJcaPublicKey(): KmmResult<RSAPublicKey> = toJcaPublicKey()
 fun CryptoPublicKey.RSA.toJcaPublicKey(): KmmResult<RSAPublicKey> = catching {
     rsaFactory.generatePublic(
         RSAPublicKeySpec(n.toJavaBigInteger(), e.toJavaBigInteger())
@@ -168,7 +171,8 @@ fun CryptoPublicKey.RSA.toJcaPublicKey(): KmmResult<RSAPublicKey> = catching {
 }
 
 
-fun ECPublicKey.toCryptoPublicKey() : KmmResult<CryptoPublicKey.EC> = CryptoPublicKey.EC.fromJcaPublicKey(this)
+fun ECPublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey.EC> = CryptoPublicKey.EC.fromJcaPublicKey(this)
+
 @Deprecated("replaced by extension", ReplaceWith("publicKey.toCryptoPublicKey()"))
 fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey.EC> = catching {
     val curve = ECCurve.byJcaName(
@@ -185,12 +189,14 @@ fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmRe
     )
 }
 
-fun RSAPublicKey.toCryptoPublicKey() : KmmResult<CryptoPublicKey.RSA> = CryptoPublicKey.RSA.fromJcaPublicKey(this)
+fun RSAPublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey.RSA> = CryptoPublicKey.RSA.fromJcaPublicKey(this)
+
 @Deprecated("replaced by extension", ReplaceWith("publicKey.toCryptoPublicKey()"))
 fun CryptoPublicKey.RSA.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey.RSA> =
     catching { CryptoPublicKey.RSA(publicKey.modulus.toAsn1Integer(), publicKey.publicExponent.toAsn1Integer()) }
 
-fun PublicKey.toCryptoPublicKey() : KmmResult<CryptoPublicKey> = CryptoPublicKey.fromJcaPublicKey(this)
+fun PublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey> = CryptoPublicKey.fromJcaPublicKey(this)
+
 @Deprecated("replaced by extension", ReplaceWith("publicKey.toCryptoPublicKey()"))
 fun CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
     when (publicKey) {
@@ -262,31 +268,84 @@ fun X509Certificate.toJcaCertificateBlocking(): KmmResult<java.security.cert.X50
 fun java.security.cert.X509Certificate.toKmpCertificate() =
     catching { X509Certificate.decodeFromDer(encoded) }
 
-fun CryptoPrivateKey<*>.toJcaPrivateKey(): KmmResult<PrivateKey> = catching {
-    val spec = PKCS8EncodedKeySpec(this.encodeToDer())
+/**
+ * Creates a JCA [PrivateKey] from this private key.
+ * **Destroys the source key material by default**.
+ *
+ * Explicitly [destroySource] to `false`to keep the source private key intact
+ */
+fun CryptoPrivateKey<*>.toJcaPrivateKey(destroySource: Boolean = true): KmmResult<PrivateKey> = catching {
+    val derBytes = this.encodeToDer(destroySource = false)
+    val spec = PKCS8EncodedKeySpec(derBytes)
     val kf = when (this) {
         is CryptoPrivateKey.EC -> KeyFactory.getInstance("EC")
         is CryptoPrivateKey.RSA -> KeyFactory.getInstance("RSA")
     }
-    kf.generatePrivate(spec)!!
+    kf.generatePrivate(spec)!!.also {
+        if (destroySource) {
+            derBytes.destroy()
+            destroy()
+        }
+    }
 }
 
-fun CryptoPrivateKey.EC.toJcaPrivateKey(): KmmResult<ECPrivateKey> =
-    (this as CryptoPrivateKey<*>).toJcaPrivateKey().map { it as ECPrivateKey }
+/**
+ * Creates a JCA [PrivateKey] from this private key.
+ * **Destroys the source key material by default**.
+ *
+ * Explicitly [destroySource] to `false`to keep the source private key intact
+ */
+fun CryptoPrivateKey.EC.toJcaPrivateKey(destroySource: Boolean = true): KmmResult<ECPrivateKey> =
+    (this as CryptoPrivateKey<*>).toJcaPrivateKey(destroySource).map { it as ECPrivateKey }
 
-fun CryptoPrivateKey.RSA.toJcaPrivateKey(): KmmResult<RSAPrivateKey> =
-    (this as CryptoPrivateKey<*>).toJcaPrivateKey().map { it as RSAPrivateKey }
+/**
+ * Creates a JCA [PrivateKey] from this private key.
+ * **Destroys the source key material by default**.
+ *
+ * Explicitly [destroySource] to `false`to keep the source private key intact
+ */
+fun CryptoPrivateKey.RSA.toJcaPrivateKey(destroySource: Boolean = true): KmmResult<RSAPrivateKey> =
+    (this as CryptoPrivateKey<*>).toJcaPrivateKey(destroySource).map { it as RSAPrivateKey }
 
-fun PrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey<*>> = catching {
-    CryptoPrivateKey.decodeFromDer(encoded)
+/**
+ * Creates a [CryptoPrivateKey] from this private key. Destroys the intermediate DER-encoded key bytes.
+ * **By default, this also tries to destroy the source JCA key material**. We cannot enforce this destruction to succeed,
+ * because it is entirely up to the JCA
+ *
+ * Explicitly [destroySource] to `false`to keep the source private key intact
+ */
+fun PrivateKey.toCryptoPrivateKey(destroySource: Boolean = true): KmmResult<CryptoPrivateKey<*>> = catching {
+    CryptoPrivateKey.decodeFromDer(encoded, destroySource = destroySource).also {
+        encoded.destroy()
+        catchingUnwrapped { if (destroySource) destroy() } //up to the provider
+    }
 }
 
-fun ECPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.EC> = catching {
-    CryptoPrivateKey.decodeFromDer(encoded) as CryptoPrivateKey.EC
+/**
+ * Creates a [CryptoPrivateKey] from this private key. Destroys the intermediate DER-encoded key bytes.
+ * **By default, this also tries to destroy the source JCA key material**. We cannot enforce this destruction to succeed,
+ * because it is entirely up to the JCA
+ *
+ * Explicitly [destroySource] to `false`to keep the source private key intact
+ */
+fun ECPrivateKey.toCryptoPrivateKey(destroySource: Boolean = true): KmmResult<CryptoPrivateKey.EC> = catching {
+    CryptoPrivateKey.decodeFromDer(encoded, destroySource = destroySource).also {
+        catchingUnwrapped { if (destroySource) destroy() } //up to the provider
+    } as CryptoPrivateKey.EC
 }
 
-fun RSAPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.RSA> = catching {
-    CryptoPrivateKey.decodeFromDer(encoded) as CryptoPrivateKey.RSA
+/**
+ * Creates a [CryptoPrivateKey] from this private key. Destroys the intermediate DER-encoded key bytes.
+ * **By default, this also tries to destroy the source JCA key material**. We cannot enforce this destruction to succeed,
+ * because it is entirely up to the JCA
+ *
+ * Explicitly [destroySource] to `false`to keep the source private key intact
+ */
+fun RSAPrivateKey.toCryptoPrivateKey(destroySource: Boolean = true): KmmResult<CryptoPrivateKey.RSA> = catching {
+    CryptoPrivateKey.decodeFromDer(encoded, destroySource = destroySource).also {
+        encoded.destroy()
+        catchingUnwrapped { if (destroySource) destroy() } //up to the provider
+    } as CryptoPrivateKey.RSA
 }
 
 
