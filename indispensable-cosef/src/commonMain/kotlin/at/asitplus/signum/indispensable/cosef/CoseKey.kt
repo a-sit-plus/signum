@@ -8,8 +8,6 @@ import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
 import at.asitplus.signum.indispensable.asn1.encoding.toTwosComplementByteArray
 import at.asitplus.signum.indispensable.cosef.CoseKey.Companion.deserialize
-import at.asitplus.signum.indispensable.cosef.CoseKeySerializer.CompressedCompoundCoseKeySerialContainer
-import at.asitplus.signum.indispensable.cosef.CoseKeySerializer.UncompressedCompoundCoseKeySerialContainer
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
