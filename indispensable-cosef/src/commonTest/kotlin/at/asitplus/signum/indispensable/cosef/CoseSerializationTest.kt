@@ -51,9 +51,6 @@ class CoseSerializationTest : FreeSpec({
     "Serialize header" {
         val header = CoseHeader(algorithm = CoseAlgorithm.ES256, kid = "11".encodeToByteArray())
 
-        header.serialize().encodeToString(Base16Strict).uppercase()
-            .also { println(it) }
-
         val deserialized = CoseHeader.deserialize(header.serialize()).getOrThrow().shouldNotBeNull()
 
         deserialized.algorithm shouldBe header.algorithm
@@ -67,11 +64,9 @@ class CoseSerializationTest : FreeSpec({
         )
 
         val serialized = header.serialize().encodeToString(Base16Strict).uppercase()
-            .also { println(it) }
         serialized shouldContain "COSE_Key".encodeToByteArray().encodeToString(Base16Strict)
 
         val deserialized = CoseHeader.deserialize(header.serialize()).getOrThrow().shouldNotBeNull()
-
         deserialized.algorithm shouldBe header.algorithm
         deserialized.kid shouldBe header.kid
     }
@@ -81,52 +76,48 @@ class CoseSerializationTest : FreeSpec({
                 "742e58408eb33e4ca31d1c465ab05aac34cc6b23d58fef5c083106c4d25a" +
                 "91aef0b0117e2af9a291aa32e14ab834dc56ed2a223444547e01f11d3b09" +
                 "16e5a4c345cacb36"
-        val cose = CoseSigned.deserialize(input.uppercase().decodeToByteArray(Base16Strict))
-            .also { println(it) }
 
-        cose.shouldNotBeNull()
+        val cose = CoseSigned.deserialize(input.uppercase().decodeToByteArray(Base16Strict)).getOrThrow()
+
+        cose.payload shouldBe "This is the content.".encodeToByteArray()
     }
 
     "CoseSignatureInput is correct for ByteArray" {
         val payload = Random.nextBytes(32)
         val header = CoseHeader(algorithm = CoseAlgorithm.ES256)
-        val inputObject = CoseSignatureInput(
+        val inputManual = CoseSignatureInput(
             contextString = "Signature1",
             protectedHeader = ByteStringWrapper(header),
             externalAad = byteArrayOf(),
             payload = payload
         ).serialize().encodeToString(Base16())
-            .also { println(it) }
 
-        val inputMethod = CoseSigned.prepareCoseSignatureInput(
+        val inputLibrary = CoseSigned.prepareCoseSignatureInput(
             protectedHeader = header,
             payload = payload,
-            externalAad = byteArrayOf(),
         ).encodeToString(Base16())
 
-        inputObject.shouldContain("Signature1".encodeToByteArray().encodeToString(Base16()))
-        inputMethod shouldBe inputObject
+        inputManual.shouldContain("Signature1".encodeToByteArray().encodeToString(Base16()))
+        inputLibrary shouldBe inputManual
     }
 
     "CoseSignatureInput is correct for custom types" {
         val payload = DataClass(Random.nextBytes(32).encodeToString(Base16Strict))
         val header = CoseHeader(algorithm = CoseAlgorithm.ES256)
-        val inputObject = CoseSignatureInput(
+        val inputManual = CoseSignatureInput(
             contextString = "Signature1",
             protectedHeader = ByteStringWrapper(header),
             externalAad = byteArrayOf(),
             payload = coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload)),
         ).serialize().encodeToString(Base16())
-            .also { println(it) }
 
-        val inputMethod = CoseSigned.prepareCoseSignatureInput(
+        val inputLibrary = CoseSigned.prepareCoseSignatureInput(
             protectedHeader = header,
             payload = payload,
-            externalAad = byteArrayOf(),
         ).encodeToString(Base16())
 
-        inputObject.shouldContain("Signature1".encodeToByteArray().encodeToString(Base16()))
-        inputMethod shouldBe inputObject
+        inputManual.shouldContain("Signature1".encodeToByteArray().encodeToString(Base16()))
+        inputLibrary shouldBe inputManual
     }
 
 
