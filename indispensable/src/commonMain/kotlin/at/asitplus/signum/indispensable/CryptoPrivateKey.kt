@@ -230,7 +230,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
         private val innerPemEncodable = PlainPemEncodable()
 
         /**
-         * Encodes this private key into a SEC1 PEM-encoded pricate key
+         * Encodes this private key into a SEC1 PEM-encoded private key
          */
         fun pemEncodeSec1() = innerPemEncodable.encodeToPEM()
 

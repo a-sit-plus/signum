@@ -65,23 +65,28 @@ We have therefore limited ourselves to what is natively supported on all platfor
 
 ## High-Level ASN.1 Abstractions
 
-The _Indispensable_ module comes with a fully-features ASN.1 engine including a builder DSL.
+The `indispensable-asn1` module comes with a fully-features ASN.1 engine including a builder DSL.
 In addition to low-level, generic abstractions, it also provides higher-level datatypes with enriched
-semantics:
+semantics. The `indispensable` module builds on top of it, adding cryptography-specific data types.
+Combined these two modules provide the following abstractions:
 
-| Abstraction                  | Remarks                                                                                                                                                                              |
-|------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| X.509 Certificate            | Only supported algorithms can be parsed as certificate.<br> Certificates containing other algorithm can be parsed as generic ASN.1 structure. Parser is too lenient in some aspects. |
-| X.509 Certificate Extension  | Almost no predefined extensions. Need to be manually created.                                                                                                                        |
-| Relative Distinguished Names | Rather barebones with little to no validation.                                                                                                                                       |
-| Alternative Names            | Only basic structural validation.                                                                                                                                                    |
-| PKCS10 CSR                   | Almost certainly a bit too lenient.                                                                                                                                                  |
-| PKCS10 CSR Attributes        | No predefined attributes. Need to be manually created.                                                                                                                               |
-| X.509 Signature Algorithm    | Only supported algorithms.                                                                                                                                                           |
-| Public Keys                  | Only supported types.                                                                                                                                                                |
-| ASN.1 Integer                | Supports `Int`, `UInt`, `Long`, `ULong` and `BigInteger`.                                                                                                                            |
-| ASN.1 Time                   | Maps from/to kotlinx-datetime `Instant`. Automatic choice of `GENERALIZED` and  `UTC` time                                                                                           |
-| ASN.1 String                 | All types supported, with little to no validation, however.                                                                                                                          |
-| ASN.1 Object Identifier      | Only `1` and `2` subtrees supported. `KnownOIDs` is generated from _dumpasn1_.                                                                                                       |
-| ASN.1 Octet String           | Primitive octet strings and encapsulating complex structures natively supported for encoding and parsing.                                                                            |
-| ASN.1 Bit String             | Relies on custom `BitSet` implementation, but also supports encoding raw bytes.                                                                                                      |
+| Abstraction                  |   | Remarks                                                                                                                                                                              |
+|------------------------------|::|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| X.509 Certificate            | ❋ | Only supported algorithms can be parsed as certificate.<br> Certificates containing other algorithm can be parsed as generic ASN.1 structure. Parser is too lenient in some aspects. |
+| X.509 Certificate Extension  | ❋ | Almost no predefined extensions. Need to be manually created.                                                                                                                        |
+| Relative Distinguished Names | ❋ | Rather barebones with little to no validation.                                                                                                                                       |
+| Alternative Names            | ❋ | Only basic structural validation.                                                                                                                                                    |
+| PKCS10 CSR                   | ❋ | Almost certainly a bit too lenient.                                                                                                                                                  |
+| PKCS10 CSR Attributes        | ❋ | No predefined attributes. Need to be manually created.                                                                                                                               |
+| X.509 Signature Algorithm    | ❋ | Only supported algorithms.                                                                                                                                                           |
+| Public Keys                  | ❋ | Only supported types.                                                                                                                                                                |
+| Private Keys                 | ❋ | Only supported types.                                                                                                                                                                |
+| ASN.1 Integer                |   | Supports `Int`, `UInt`, `Long`, `ULong`, and `BigInteger` and custom varint `Asn1Integer`.                                                                                                                            |
+| ASN.1 Time                   |   | Maps from/to kotlinx-datetime `Instant`. Automatic choice of `GENERALIZED` and  `UTC` time.                                                                                           |
+| ASN.1 String                 |   | All types supported, with little to no validation, however.                                                                                                                          |
+| ASN.1 Object Identifier      |   | Only `1` and `2` subtrees supported. `KnownOIDs` is generated from _dumpasn1_.                                                                                                       |
+| ASN.1 Octet String           |   | Primitive octet strings and encapsulating complex structures natively supported for encoding and parsing.                                                                            |
+| ASN.1 Bit String             |   | Relies on custom `BitSet` implementation, but also supports encoding raw bytes.                                                                                                      |
+
+!!! info
+    ❋ marks abstractions added by the `indispensable` module

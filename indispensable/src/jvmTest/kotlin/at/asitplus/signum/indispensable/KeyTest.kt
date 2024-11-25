@@ -51,6 +51,7 @@ class KeyTest : FreeSpec({
                 println(ownPrivate.encodeToTlv().toDerHexString())
                 println(privKey.encoded.toHexString(HexFormat.UpperCase))
                 ownPrivate.encodeToDer() shouldBe privKey.encoded
+                ownPrivate.toJcaPrivateKey().getOrThrow().encoded shouldBe privKey.encoded
 
 
                 withClue("Basic Conversions") {
@@ -112,6 +113,7 @@ class KeyTest : FreeSpec({
                 val ownPrivate =CryptoPrivateKey.decodeFromDer(privKey.encoded)
                 ownPrivate.publicKey shouldBe own
                 ownPrivate.encodeToDer() shouldBe privKey.encoded
+                ownPrivate.toJcaPrivateKey().getOrThrow().encoded shouldBe privKey.encoded
 
 
                 val own1 = CryptoPublicKey.RSA(

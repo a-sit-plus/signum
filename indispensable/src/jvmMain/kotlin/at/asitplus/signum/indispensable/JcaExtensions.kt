@@ -138,12 +138,16 @@ val ECCurve.jcaName
 fun ECCurve.Companion.byJcaName(name: String): ECCurve? = ECCurve.entries.find { it.jcaName == name }
 
 
-fun CryptoPublicKey.getJcaPublicKey() = when (this) {
+@Deprecated("renamed", ReplaceWith("toJcaPublicKey()"))
+fun CryptoPublicKey.getJcaPublicKey() = toJcaPublicKey()
+fun CryptoPublicKey.toJcaPublicKey() = when (this) {
     is CryptoPublicKey.EC -> getJcaPublicKey()
     is CryptoPublicKey.RSA -> getJcaPublicKey()
 }
 
-fun CryptoPublicKey.EC.getJcaPublicKey(): KmmResult<ECPublicKey> = catching {
+@Deprecated("renamed", ReplaceWith("toJcaPublicKey()"))
+fun CryptoPublicKey.EC.getJcaPublicKey() = toJcaPublicKey()
+fun CryptoPublicKey.EC.toJcaPublicKey(): KmmResult<ECPublicKey> = catching {
     val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.jwkName)
     val x = x.residue.toJavaBigInteger()
     val y = y.residue.toJavaBigInteger()
@@ -155,13 +159,18 @@ fun CryptoPublicKey.EC.getJcaPublicKey(): KmmResult<ECPublicKey> = catching {
 
 private val rsaFactory = KeyFactory.getInstance("RSA")
 
-fun CryptoPublicKey.RSA.getJcaPublicKey(): KmmResult<RSAPublicKey> = catching {
+@Deprecated("renamed", ReplaceWith("toJcaPublicKey()"))
+fun CryptoPublicKey.RSA.getJcaPublicKey(): KmmResult<RSAPublicKey> =toJcaPublicKey()
+fun CryptoPublicKey.RSA.toJcaPublicKey(): KmmResult<RSAPublicKey> = catching {
     rsaFactory.generatePublic(
         RSAPublicKeySpec(n.toJavaBigInteger(), e.toJavaBigInteger())
     ) as RSAPublicKey
 }
 
-fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey> = catching {
+
+fun ECPublicKey.toCryptoPublicKey() : KmmResult<CryptoPublicKey.EC> = CryptoPublicKey.EC.fromJcaPublicKey(this)
+@Deprecated("replaced by extension", ReplaceWith("publicKey.toCryptoPublicKey()"))
+fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey.EC> = catching {
     val curve = ECCurve.byJcaName(
         SECNamedCurves.getName(
             SubjectPublicKeyInfo.getInstance(
@@ -176,9 +185,13 @@ fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmRe
     )
 }
 
-fun CryptoPublicKey.RSA.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey> =
+fun RSAPublicKey.toCryptoPublicKey() : KmmResult<CryptoPublicKey.RSA> = CryptoPublicKey.RSA.fromJcaPublicKey(this)
+@Deprecated("replaced by extension", ReplaceWith("publicKey.toCryptoPublicKey()"))
+fun CryptoPublicKey.RSA.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey.RSA> =
     catching { CryptoPublicKey.RSA(publicKey.modulus.toAsn1Integer(), publicKey.publicExponent.toAsn1Integer()) }
 
+fun PublicKey.toCryptoPublicKey() : KmmResult<CryptoPublicKey> = CryptoPublicKey.fromJcaPublicKey(this)
+@Deprecated("replaced by extension", ReplaceWith("publicKey.toCryptoPublicKey()"))
 fun CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
     when (publicKey) {
         is RSAPublicKey -> CryptoPublicKey.RSA.fromJcaPublicKey(publicKey)
