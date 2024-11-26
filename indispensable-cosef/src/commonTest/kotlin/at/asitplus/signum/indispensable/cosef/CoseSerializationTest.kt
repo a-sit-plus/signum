@@ -94,6 +94,7 @@ class CoseSerializationTest : FreeSpec({
         val inputLibrary = CoseSigned.prepareCoseSignatureInput(
             protectedHeader = header,
             payload = payload,
+            serializer = ByteArraySerializer(),
         ).encodeToString(Base16())
 
         inputManual.shouldContain("Signature1".encodeToByteArray().encodeToString(Base16()))
@@ -113,6 +114,7 @@ class CoseSerializationTest : FreeSpec({
         val inputLibrary = CoseSigned.prepareCoseSignatureInput(
             protectedHeader = header,
             payload = payload,
+            serializer = DataClass.serializer(),
         ).encodeToString(Base16())
 
         inputManual.shouldContain("Signature1".encodeToByteArray().encodeToString(Base16()))
