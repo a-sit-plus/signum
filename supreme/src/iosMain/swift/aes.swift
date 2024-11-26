@@ -1,7 +1,59 @@
 import Foundation
 import CryptoKit
+import CommonCrypto
+
 
 @objc public class AESwift: NSObject {
+
+    @objc public class func cbc(_ operation: Int, data: NSData, key: NSData, iv: NSData?) throws -> NSData {
+
+        let keySize = if (key.length == 128/8) {
+            kCCKeySizeAES128
+        } else if (key.length == 192/8) {
+            kCCKeySizeAES192
+        } else if (key.length == 256/8) {
+            kCCKeySizeAES256
+        } else {0}
+
+         if(keySize == 0) {
+                    throw NSError(domain: "AESwift Key size", code: keySize)
+                }
+
+        if(iv != nil) {
+            if (iv?.length != 16) {
+                throw NSError(domain: "AESwift IV Size", code: iv?.length ?? 0)
+            }
+        }
+
+        let padLength = size_t(kCCBlockSizeAES128 + data.length)
+
+        var ciphertext = Data(count: padLength)
+
+        var bytesEncrypted = size_t(0)
+
+        let  err = ciphertext.withUnsafeMutableBytes { ciph in
+            CCCrypt(
+                CCOperation(operation),
+                CCAlgorithm(kCCAlgorithmAES),
+                CCOptions(kCCOptionPKCS7Padding),
+                key.bytes, keySize,
+                iv?.bytes,                                  // will be NULL if ivData is nil
+                data.bytes, size_t(data.length),
+                ciph.baseAddress!, padLength,
+                &bytesEncrypted
+            )
+        }
+
+        guard err == kCCSuccess else {
+            throw NSError(domain: "AESwift", code: Int(err))
+        }
+
+        ciphertext.removeSubrange(bytesEncrypted..<padLength)
+        return ciphertext as NSData
+    }
+
+    
+    
     @objc public class func gcm(plain: NSData, key: NSData, iv: NSData?, aad: NSData?) -> AuthenticatedCiphertext? {
       let data = (key as Data).withUnsafeBytes {
                       return Data($0)
