@@ -9,6 +9,7 @@ import at.asitplus.signum.supreme.swiftcall
 import at.asitplus.signum.supreme.toByteArray
 import at.asitplus.signum.supreme.toNSData
 import kotlinx.cinterop.ExperimentalForeignApi
+import platform.CoreCrypto.kCCEncrypt
 
 actual internal fun initCipher(
     algorithm: EncryptionAlgorithm,
@@ -20,7 +21,12 @@ actual internal fun initCipher(
     return AESContainer(algorithm, key, iv!!, aad)
 }
 
-private data class AESContainer(val alg: EncryptionAlgorithm, val key: ByteArray, val iv: ByteArray, val aad: ByteArray?)
+private data class AESContainer(
+    val alg: EncryptionAlgorithm,
+    val key: ByteArray,
+    val iv: ByteArray,
+    val aad: ByteArray?
+)
 
 @OptIn(ExperimentalForeignApi::class)
 actual internal fun PlatformCipher.encrypt(data: ByteArray): KmmResult<Ciphertext> {
@@ -45,6 +51,14 @@ actual internal fun PlatformCipher.encrypt(data: ByteArray): KmmResult<Ciphertex
             )
         )
     else KmmResult.success(Ciphertext(alg, ciphertext.ciphertext().toByteArray(), ciphertext.iv().toByteArray()))
+}
+
+
+@OptIn(ExperimentalForeignApi::class)
+internal fun CBC(operation: UInt, key: ByteArray, iv: ByteArray?, plain: ByteArray): ByteArray {
+    return swiftcall {
+        AESwift.cbc(operation.toLong(), plain.toNSData(), key.toNSData(), iv?.toNSData(), error)
+    }.toByteArray()
 }
 
 
