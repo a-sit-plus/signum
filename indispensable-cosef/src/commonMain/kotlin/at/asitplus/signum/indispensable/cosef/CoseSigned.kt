@@ -5,7 +5,6 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
-import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -102,11 +101,9 @@ data class CoseSigned<P : Any?>(
             protectedHeader = ByteStringWrapper(protectedHeader),
             externalAad = externalAad,
             payload = when (payload) {
-                is Nothing -> null
                 null -> null
                 is ByteArray -> payload
-                is ByteStringWrapper<*> -> coseCompliantSerializer.encodeToByteArray(payload)
-                else -> coseCompliantSerializer.encodeToByteArray(ByteStringWrapperSerializer(serializer),ByteStringWrapper(payload))
+                else -> coseCompliantSerializer.encodeToByteArray(serializer,payload)
             },
         ).serialize()
 
