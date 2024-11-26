@@ -1,6 +1,5 @@
 import at.asitplus.signum.indispensable.Ciphertext
 import at.asitplus.signum.indispensable.EncryptionAlgorithm
-import at.asitplus.signum.supreme.crypt.CBC
 import at.asitplus.signum.supreme.crypt.decrypt
 import at.asitplus.signum.supreme.crypt.encryptorFor
 import at.asitplus.signum.supreme.crypt.randomKey
@@ -8,8 +7,7 @@ import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import platform.CoreCrypto.kCCDecrypt
-import platform.CoreCrypto.kCCEncrypt
+import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlin.random.Random
 
 @ExperimentalStdlibApi
@@ -20,8 +18,15 @@ class ProviderTest : FreeSpec({
     }
 
     "AES" - {
-        "GCM" - {
-            withData(EncryptionAlgorithm.AES128_GCM, EncryptionAlgorithm.AES192_GCM, EncryptionAlgorithm.AES256_GCM) {
+        "GCM + CBC.PLAIN" - {
+            withData(
+                EncryptionAlgorithm.AES_128.GCM,
+                EncryptionAlgorithm.AES_192.GCM,
+                EncryptionAlgorithm.AES_256.GCM,
+                EncryptionAlgorithm.AES_128.CBC.PLAIN,
+                EncryptionAlgorithm.AES_192.CBC.PLAIN,
+                EncryptionAlgorithm.AES_256.CBC.PLAIN,
+            ) {
 
                 val key = it.randomKey()
                 val iv = Random.Default.nextBytes((it.ivNumBits / 8u).toInt())
@@ -29,36 +34,31 @@ class ProviderTest : FreeSpec({
                 val plaintext = Random.Default.nextBytes(256)
 
 
-                println("KEY: ${key.toHexString()} IV: ${iv.toHexString()}  plaintext: ${plaintext.toHexString()}")
+                //  println("KEY: ${key.toHexString()} IV: ${iv.toHexString()}  plaintext: ${plaintext.toHexString()}")
 
-                val ciphertext: Ciphertext.Authenticated =
-                    it.encryptorFor(key, iv, aad).getOrThrow().encrypt(plaintext).getOrThrow()
-                println(ciphertext)
+                val ciphertext: Ciphertext<*> =
+                    when (it) {
+                        is EncryptionAlgorithm.Authenticated -> it.encryptorFor(key, iv, aad).getOrThrow()
+                            .encrypt(plaintext).getOrThrow()
+
+                        is EncryptionAlgorithm.Unauthenticated -> it.encryptorFor(key, iv).getOrThrow().encrypt(plaintext)
+                            .getOrThrow()
+
+                        else -> TODO()
+                    }
+
+              //  println(ciphertext)
                 ciphertext.iv shouldBe iv
-                ciphertext.aad shouldBe aad
+                if (it is EncryptionAlgorithm.Authenticated) {
+                    ciphertext.shouldBeInstanceOf<Ciphertext.Authenticated>()
+                    ciphertext.aad shouldBe aad
+                }
 
                 val decrypted = ciphertext.decrypt(key).getOrThrow()
-                println(
-                    "DECRYPTED: " + decrypted.toHexString(HexFormat.UpperCase)
-                )
+              //  println("DECRYPTED: " + decrypted.toHexString(HexFormat.UpperCase))
                 decrypted shouldBe plaintext
 
             }
-        }
-
-        "CBC" {
-            val plaintext = Random.Default.nextBytes(256)
-            val randomKey = EncryptionAlgorithm.AES128_CBC_HMAC256.randomKey()
-            val iv = Random.Default.nextBytes(16)
-            println("KEY: ${randomKey.toHexString()} IV: ${iv.toHexString()}  plaintext: ${plaintext.toHexString()}")
-            val ciphertext= CBC(kCCEncrypt, randomKey,iv,plaintext)
-            println("CRYPT: ${ciphertext.toHexString()}")
-
-            val decrypted = CBC(kCCDecrypt, randomKey,iv, ciphertext)
-
-            println("DECRYPTED: " + decrypted.toHexString())
-
-            decrypted shouldBe plaintext
         }
     }
 })
