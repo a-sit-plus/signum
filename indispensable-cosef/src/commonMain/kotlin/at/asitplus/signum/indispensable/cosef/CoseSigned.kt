@@ -128,19 +128,19 @@ data class CoseSigned<P : Any?>(
                     },
                 rawSignature = signature.rawByteArray
             )
-    }
 
-    inline fun <reified P : Any?> formObject(
-        protectedHeader: CoseHeader,
-        unprotectedHeader: CoseHeader?,
-        payload: ByteStringWrapper<P>,
-        signature: CryptoSignature.RawByteEncodable,
-    ) = CoseSigned<P>(
-        protectedHeader = protectedHeader,
-        unprotectedHeader = unprotectedHeader,
-        payload = coseCompliantSerializer.encodeToByteArray(payload),
-        signature = signature
-    )
+        inline fun <reified P : Any?> formObject(
+            protectedHeader: CoseHeader,
+            unprotectedHeader: CoseHeader?,
+            payload: ByteStringWrapper<P>,
+            signature: CryptoSignature.RawByteEncodable,
+        ) = CoseSigned<P>(
+            protectedHeader = protectedHeader,
+            unprotectedHeader = unprotectedHeader,
+            payload = coseCompliantSerializer.encodeToByteArray(payload),
+            signature = signature
+        )
+    }
 
     /**
      * Called by COSE signing implementations to get the bytes that will be
