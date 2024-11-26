@@ -140,26 +140,37 @@ data class CoseSigned<P : Any?>(
             payload = coseCompliantSerializer.encodeToByteArray(payload),
             signature = signature
         )
-    }
 
-    /**
-     * Called by COSE signing implementations to get the bytes that will be
-     * used as the input for signature calculation of a `COSE_Sign1` object
-     */
-    inline fun <reified P : Any> prepareCoseSignatureInput(
-        protectedHeader: CoseHeader,
-        payload: P?,
-        externalAad: ByteArray = byteArrayOf(),
-    ): ByteArray = CoseSignatureInput(
-        contextString = "Signature1",
-        protectedHeader = ByteStringWrapper(protectedHeader),
-        externalAad = externalAad,
-        payload = when (payload) {
-            is ByteArray -> payload
-            is ByteStringWrapper<*> -> coseCompliantSerializer.encodeToByteArray(payload)
-            else -> coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload))
-        },
-    ).serialize()
+        /**
+         * Called by COSE signing implementations to get the bytes that will be
+         * used as the input for signature calculation of a `COSE_Sign1` object
+         */
+        inline fun <reified P : Any> prepareCoseSignatureInput(
+            protectedHeader: CoseHeader,
+            payload: P?,
+            externalAad: ByteArray = byteArrayOf(),
+        ): ByteArray = CoseSignatureInput(
+            contextString = "Signature1",
+            protectedHeader = ByteStringWrapper(protectedHeader),
+            externalAad = externalAad,
+            payload = when (payload) {
+                is ByteArray -> payload
+                is ByteStringWrapper<*> -> coseCompliantSerializer.encodeToByteArray(payload)
+                else -> coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload))
+            },
+        ).serialize()
+
+        inline fun <reified P : Any?> prepareCoseSignatureInput(
+            protectedHeader: CoseHeader,
+            payload: ByteStringWrapper<P>,
+            externalAad: ByteArray = byteArrayOf(),
+        ): ByteArray = CoseSignatureInput(
+            contextString = "Signature1",
+            protectedHeader = ByteStringWrapper(protectedHeader),
+            externalAad = externalAad,
+            payload = coseCompliantSerializer.encodeToByteArray(payload)
+        ).serialize()
+    }
 }
 
 
