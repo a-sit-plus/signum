@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.EncryptionAlgorithm
 import org.kotlincrypto.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 private val secureRandom = SecureRandom()
@@ -25,6 +26,12 @@ actual internal fun initCipher(
                 Cipher.ENCRYPT_MODE,
                 SecretKeySpec(key, algorithm.jcaKeySpec),
                 GCMParameterSpec(algorithm.tagNumBits.toInt(), nonce)
+            )
+        else if(algorithm is EncryptionAlgorithm.AES.CBC)
+            init(
+                Cipher.ENCRYPT_MODE,
+                SecretKeySpec(key, algorithm.jcaKeySpec),
+                IvParameterSpec(iv)
             )
         aad?.let { updateAAD(it) }
     }.let { AESContainer(algorithm, nonce, aad, it) }
@@ -94,7 +101,7 @@ actual internal fun Ciphertext.Unauthenticated.doDecrypt(secretKey: ByteArray): 
             cipher.init(
                 Cipher.DECRYPT_MODE,
                 SecretKeySpec(secretKey, algorithm.jcaKeySpec),
-                GCMParameterSpec((algorithm as EncryptionAlgorithm.Authenticated).tagNumBits.toInt(), iv)
+                IvParameterSpec(iv)
             )
         }.doFinal(encryptedData)
     }
