@@ -38,22 +38,22 @@ private class AESContainer(
     val cipher: Cipher
 )
 
-actual internal fun PlatformCipher.encrypt(data: ByteArray): KmmResult<Ciphertext> {
+actual internal fun PlatformCipher.encrypt(data: ByteArray): KmmResult<Ciphertext<*>> {
     (this as AESContainer)
     val jcaCiphertext =
         catchingUnwrapped { cipher.doFinal(data) }.getOrElse { return KmmResult.failure(it) }
 
     val ciphertext =
-        if (alg is EncryptionAlgorithm.Authenticated) jcaCiphertext.dropLast(((alg as EncryptionAlgorithm.Authenticated).tagNumBits / 8u).toInt())
+        if (alg is EncryptionAlgorithm.Authenticated) jcaCiphertext.dropLast((alg.tagNumBits / 8u).toInt())
             .toByteArray()
         else jcaCiphertext
     val authtag =
-        if (alg is EncryptionAlgorithm.Authenticated) jcaCiphertext.takeLast(((alg as EncryptionAlgorithm.Authenticated).tagNumBits / 8u).toInt())
+        if (alg is EncryptionAlgorithm.Authenticated) jcaCiphertext.takeLast((alg.tagNumBits / 8u).toInt())
             .toByteArray() else null
 
     return KmmResult.success(
-        if (authtag != null) Ciphertext.Authenticated(alg, ciphertext, iv, authtag, aad)
-        else Ciphertext(alg, ciphertext, iv)
+        if (authtag != null) Ciphertext.Authenticated(alg as EncryptionAlgorithm.Authenticated, ciphertext, iv, authtag, aad)
+        else Ciphertext.Unauthenticated(alg as EncryptionAlgorithm.Unauthenticated, ciphertext, iv)
     )
 }
 
@@ -61,7 +61,7 @@ val EncryptionAlgorithm.jcaName: String
     get() = when (this) {
         is EncryptionAlgorithm.AES.GCM -> "AES/GCM/NoPadding"
         is EncryptionAlgorithm.AES.CBC -> "AES/CBC/PKCS5Padding"
-        is EncryptionAlgorithm.AES.ECB -> "AES/ECB/NoPadding"
+        //  is EncryptionAlgorithm.AES.ECB -> "AES/ECB/NoPadding"
         else -> TODO()
     }
 
@@ -84,6 +84,19 @@ actual internal fun Ciphertext.Authenticated.doDecrypt(secretKey: ByteArray): Km
                 cipher.updateAAD(it)
             }
         }.doFinal(wholeInput)
+    }
+}
+
+
+actual internal fun Ciphertext.Unauthenticated.doDecrypt(secretKey: ByteArray): KmmResult<ByteArray> = catching {
+    return catching {
+        Cipher.getInstance(algorithm.jcaName).also { cipher ->
+            cipher.init(
+                Cipher.DECRYPT_MODE,
+                SecretKeySpec(secretKey, algorithm.jcaKeySpec),
+                GCMParameterSpec((algorithm as EncryptionAlgorithm.Authenticated).tagNumBits.toInt(), iv)
+            )
+        }.doFinal(encryptedData)
     }
 }
 

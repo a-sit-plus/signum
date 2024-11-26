@@ -25,8 +25,15 @@ fun EncryptionAlgorithm.Authenticated.encryptorFor(
     Encryptor(this, secretKey, iv, aad)
 }
 
+fun EncryptionAlgorithm.encryptorFor(
+    secretKey: ByteArray,
+    iv: ByteArray? = null,
+): KmmResult<Encryptor<Ciphertext.Authenticated>> = catching {
+    Encryptor(this, secretKey, iv, null)
+}
 
-class Encryptor<T: Ciphertext> internal constructor(
+
+class Encryptor<T: Ciphertext<*>> internal constructor(
     protected val algorithm: EncryptionAlgorithm,
     protected val key: ByteArray,
     protected val iv: ByteArray?,
@@ -65,14 +72,14 @@ expect internal fun initCipher(
     aad: ByteArray?
 ): PlatformCipher
 
-expect internal fun PlatformCipher.encrypt(data: ByteArray): KmmResult<Ciphertext>
+expect internal fun PlatformCipher.encrypt(data: ByteArray): KmmResult<Ciphertext<*>>
 
 /**
  * Attempts to decrypt this ciphertext (which also holds IV, AAD, auth tag) using the provided [secretKey].
  * This method will fail before even trying to decrypt anything and immediately return [KmmResult.failure]
  * if the parameters and the algorithm don't match.
  */
-fun Ciphertext.Authenticated.decrypt(secretKey: ByteArray): KmmResult<ByteArray> {
+fun Ciphertext<*>.decrypt(secretKey: ByteArray): KmmResult<ByteArray> {
     catching {
         if (algorithm is EncryptionAlgorithm.WithIV) {
             require(iv != null) { "IV must be non-null" }
@@ -81,7 +88,13 @@ fun Ciphertext.Authenticated.decrypt(secretKey: ByteArray): KmmResult<ByteArray>
         require(secretKey.size.toUInt() * 8u == algorithm.keyNumBits) { "Key must be exactly ${algorithm.keyNumBits} bits long" }
 
     }
-    return doDecrypt(secretKey)
+    return when(this) {
+        is Ciphertext.Authenticated -> doDecrypt(secretKey)
+        is Ciphertext.Unauthenticated -> doDecrypt(secretKey)
+    }
 }
 
+
 expect internal fun Ciphertext.Authenticated.doDecrypt(secretKey: ByteArray): KmmResult<ByteArray>
+
+expect internal fun Ciphertext.Unauthenticated.doDecrypt(secretKey: ByteArray): KmmResult<ByteArray>
