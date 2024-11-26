@@ -2,16 +2,24 @@ package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.contentEqualsIfArray
+import at.asitplus.signum.indispensable.contentHashCodeIfArray
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.serialization.*
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.CborArray
+import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.encodeToByteArray
 
 /**
  * Representation of a signed COSE_Sign1 object, i.e. consisting of protected header, unprotected header and payload.
@@ -109,55 +117,50 @@ data class CoseSigned<P : Any?>(
             unprotectedHeader: CoseHeader?,
             payload: P,
             signature: CryptoSignature.RawByteEncodable,
-        ): CoseSigned<P> = when (payload) {
-                is ByteArray -> CoseSigned(
-                    protectedHeader = ByteStringWrapper(value = protectedHeader),
-                    unprotectedHeader = unprotectedHeader,
-                    payload = payload,
-                    rawSignature = signature.rawByteArray
-                )
-
-                else ->
-                    CoseSigned(
-                        protectedHeader = ByteStringWrapper(value = protectedHeader),
-                        unprotectedHeader = unprotectedHeader,
-                        payload = coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload)),
-                        rawSignature = signature.rawByteArray
-                    )
-            }
-        }
-
-        inline fun <reified P: Any?> formObject(
-            protectedHeader: CoseHeader,
-            unprotectedHeader: CoseHeader?,
-            payload: ByteStringWrapper<P>,
-            signature: CryptoSignature.RawByteEncodable,
-        ) = CoseSigned<P>(
-            protectedHeader = protectedHeader,
-            unprotectedHeader = unprotectedHeader,
-            payload = coseCompliantSerializer.encodeToByteArray(payload),
-            signature = signature
-        )
-
-        /**
-         * Called by COSE signing implementations to get the bytes that will be
-         * used as the input for signature calculation of a `COSE_Sign1` object
-         */
-        inline fun <reified P : Any> prepareCoseSignatureInput(
-            protectedHeader: CoseHeader,
-            payload: P?,
-            externalAad: ByteArray = byteArrayOf(),
-        ): ByteArray = CoseSignatureInput(
-            contextString = "Signature1",
-            protectedHeader = ByteStringWrapper(protectedHeader),
-            externalAad = externalAad,
-            payload = when (payload) {
-                is ByteArray -> payload
-                is ByteStringWrapper<*> -> coseCompliantSerializer.encodeToByteArray(payload)
-                else -> coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload))
-            },
-        ).serialize()
+        ): CoseSigned<P> =
+            CoseSigned(
+                protectedHeader = ByteStringWrapper(value = protectedHeader),
+                unprotectedHeader = unprotectedHeader,
+                payload =
+                    when (payload) {
+                        is ByteArray -> payload
+                        else -> coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload))
+                    },
+                rawSignature = signature.rawByteArray
+            )
     }
+
+    inline fun <reified P : Any?> formObject(
+        protectedHeader: CoseHeader,
+        unprotectedHeader: CoseHeader?,
+        payload: ByteStringWrapper<P>,
+        signature: CryptoSignature.RawByteEncodable,
+    ) = CoseSigned<P>(
+        protectedHeader = protectedHeader,
+        unprotectedHeader = unprotectedHeader,
+        payload = coseCompliantSerializer.encodeToByteArray(payload),
+        signature = signature
+    )
+
+    /**
+     * Called by COSE signing implementations to get the bytes that will be
+     * used as the input for signature calculation of a `COSE_Sign1` object
+     */
+    inline fun <reified P : Any> prepareCoseSignatureInput(
+        protectedHeader: CoseHeader,
+        payload: P?,
+        externalAad: ByteArray = byteArrayOf(),
+    ): ByteArray = CoseSignatureInput(
+        contextString = "Signature1",
+        protectedHeader = ByteStringWrapper(protectedHeader),
+        externalAad = externalAad,
+        payload = when (payload) {
+            is ByteArray -> payload
+            is ByteStringWrapper<*> -> coseCompliantSerializer.encodeToByteArray(payload)
+            else -> coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload))
+        },
+    ).serialize()
+}
 
 
 fun CoseHeader.usesEC(): Boolean? = algorithm?.algorithm?.let { it is SignatureAlgorithm.ECDSA }
