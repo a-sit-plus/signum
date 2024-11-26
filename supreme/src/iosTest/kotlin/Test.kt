@@ -33,8 +33,7 @@ class ProviderTest : FreeSpec({
                 val aad = Random.Default.nextBytes(32)
                 val plaintext = Random.Default.nextBytes(256)
 
-
-                //  println("KEY: ${key.toHexString()} IV: ${iv.toHexString()}  plaintext: ${plaintext.toHexString()}")
+                println("KEY: ${key.toHexString()} IV: ${iv.toHexString()}  plaintext: ${plaintext.toHexString()}")
 
                 val ciphertext: Ciphertext<*> =
                     when (it) {
@@ -47,7 +46,7 @@ class ProviderTest : FreeSpec({
                         else -> TODO()
                     }
 
-              //  println(ciphertext)
+                println(ciphertext)
                 ciphertext.iv shouldBe iv
                 if (it is EncryptionAlgorithm.Authenticated) {
                     ciphertext.shouldBeInstanceOf<Ciphertext.Authenticated>()
@@ -55,7 +54,7 @@ class ProviderTest : FreeSpec({
                 }
 
                 val decrypted = ciphertext.decrypt(key).getOrThrow()
-              //  println("DECRYPTED: " + decrypted.toHexString(HexFormat.UpperCase))
+                println("DECRYPTED: " + decrypted.toHexString(HexFormat.UpperCase))
                 decrypted shouldBe plaintext
 
             }
