@@ -9,17 +9,34 @@ sealed interface EncryptionAlgorithm : Identifiable {
     override fun toString(): String
 
     companion object {
-        val AES128_GCM = AES.GCM(128u)
-        val AES192_GCM = AES.GCM(192u)
-        val AES256_GCM = AES.GCM(256u)
 
-        val AES128_CBC_HMAC256 = AES.CBC(128u)
-        val AES128_CBC_HMAC384 = AES.CBC(192u)
-        val AES128_CBC_HMAC512 = AES.CBC(256u)
+        val AES_128 = AESDefinition(128u)
+        val AES_192 = AESDefinition(192u)
+        val AES_256 = AESDefinition(256u)
 
-        val AES128_ECB = AES.ECB(128u)
-        val AES192_ECB = AES.ECB(192u)
-        val AES256_ECB = AES.ECB(256u)
+        class AESDefinition(private val keySize: UInt) {
+
+            val GCM = AES.GCM(keySize)
+            val CBC = CbcDefinition(keySize)
+
+            class CbcDefinition(private val keySize: UInt) {
+                val PLAIN = AES.CBC.Plain(keySize)
+                val HMAC = HmacDefinition(keySize)
+
+                class HmacDefinition(private val keySize: UInt) {
+                    val SHA_256 = AES.CBC.HMAC(keySize, Digest.SHA256)
+                    val SHA_384 = AES.CBC.HMAC(keySize, Digest.SHA384)
+                    val SHA_512 = AES.CBC.HMAC(keySize, Digest.SHA512)
+                    val SHA_1 = AES.CBC.HMAC(keySize, Digest.SHA1)
+                }
+            }
+        }
+
+
+        /*
+                val AES128_ECB = AES.ECB(128u)
+                val AES192_ECB = AES.ECB(192u)
+                val AES256_ECB = AES.ECB(256u)*/
     }
 
     val name: String
@@ -30,6 +47,11 @@ sealed interface EncryptionAlgorithm : Identifiable {
     interface Authenticated : EncryptionAlgorithm {
         val tagNumBits: UInt
     }
+
+    /**
+     * Indicates an unauthenticated cipher
+     */
+    interface Unauthenticated: EncryptionAlgorithm
 
     /**
      * Indicates that a cipher requires an initialization vector
@@ -60,25 +82,30 @@ sealed interface EncryptionAlgorithm : Identifiable {
             }
         }
 
-        class CBC(keyNumBits: UInt) : AES(ModeOfOperation.CBC, keyNumBits), WithIV, Authenticated {
+        sealed class CBC(keyNumBits: UInt) : AES(ModeOfOperation.CBC, keyNumBits), WithIV {
             override val ivNumBits: UInt = 128u
-            override val tagNumBits: UInt = blockSizeBits
             override val oid: ObjectIdentifier = when (keyNumBits) {
                 128u -> KnownOIDs.aes128_CBC
                 192u -> KnownOIDs.aes192_CBC
                 256u -> KnownOIDs.aes256_CBC
                 else -> throw IllegalStateException("$keyNumBits This is an implementation flaw. Report this bug!")
             }
+
+            class Plain(keyNumBits: UInt) : CBC(keyNumBits), WithIV, EncryptionAlgorithm.Unauthenticated
+
+            class HMAC(keyNumBits: UInt, val digest: Digest) : CBC(keyNumBits), WithIV, Authenticated {
+                override val tagNumBits: UInt = blockSizeBits
+            }
         }
 
-        class ECB(keyNumBits: UInt) : AES(ModeOfOperation.ECB, keyNumBits){
+        /*class ECB(keyNumBits: UInt) : AES(ModeOfOperation.ECB, keyNumBits){
             override val oid: ObjectIdentifier = when (keyNumBits) {
                 128u -> KnownOIDs.aes128_ECB
                 192u -> KnownOIDs.aes192_ECB
                 256u -> KnownOIDs.aes256_ECB
                 else -> throw IllegalStateException("$keyNumBits This is an implementation flaw. Report this bug!")
             }
-        }
+        } */
     }
 }
 
@@ -87,7 +114,7 @@ sealed class BlockCipher(val mode: ModeOfOperation, val blockSizeBits: UInt) : E
     enum class ModeOfOperation(val friendlyName: String, val acronym: String) {
         GCM("Galois Counter Mode", "GCM"),
         CBC("Cipherblock Chaining Mode", "CBC"),
-        ECB("Electronic Codebook Mode", "ECB"),
+        //ECB("Electronic Codebook Mode", "ECB"),
 
     }
 }
