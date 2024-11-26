@@ -5,7 +5,6 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
-import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -26,7 +25,7 @@ data class CoseSigned<P : Any?>(
     val protectedHeader: ByteStringWrapper<CoseHeader>,
     val unprotectedHeader: CoseHeader?,
     @ByteString
-    val payload: ByteArray?,
+    val payload: P?,
     @ByteString
     val rawSignature: ByteArray,
 ) {
@@ -34,7 +33,7 @@ data class CoseSigned<P : Any?>(
     constructor(
         protectedHeader: CoseHeader,
         unprotectedHeader: CoseHeader?,
-        payload: ByteArray?,
+        payload: P?,
         signature: CryptoSignature.RawByteEncodable
     ) : this(
         protectedHeader = ByteStringWrapper(value = protectedHeader),
@@ -49,18 +48,8 @@ data class CoseSigned<P : Any?>(
         else CryptoSignature.RSAorHMAC(rawSignature)
     }
 
-    fun serialize(): ByteArray = coseCompliantSerializer.encodeToByteArray(CoseSignedSerializer(), this)
-
-    /**
-     * Decodes the payload of this object into a [ByteStringWrapper] containing an object of type [P].
-     *
-     * Note that this does not work if the payload is directly a [ByteArray].
-     */
-    fun getTypedPayload(deserializer: KSerializer<P>): KmmResult<ByteStringWrapper<P>?> = catching {
-        payload?.let {
-            coseCompliantSerializer.decodeFromByteArray(ByteStringWrapperSerializer(deserializer), it)
-        }
-    }
+    fun serialize(parameterSerializer: KSerializer<P>): ByteArray = coseCompliantSerializer
+        .encodeToByteArray(CoseSignedSerializer(parameterSerializer), this)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -88,37 +77,15 @@ data class CoseSigned<P : Any?>(
     override fun toString(): String {
         return "CoseSigned(protectedHeader=${protectedHeader.value}," +
                 " unprotectedHeader=$unprotectedHeader," +
-                " payload=${payload?.encodeToString(Base16Strict)}," +
+                " payload=${payload}," +
                 " signature=${rawSignature.encodeToString(Base16Strict)})"
     }
 
     companion object {
-        fun deserialize(it: ByteArray): KmmResult<CoseSigned<ByteArray>> = catching {
-            coseCompliantSerializer.decodeFromByteArray<CoseSigned<ByteArray>>(it)
-        }
-
-        /**
-         * Creates a [CoseSigned] object from the given parameters,
-         * encapsulating the [payload] into a [ByteStringWrapper].
-         *
-         * This has to be an inline function with a reified type parameter,
-         * so it can't be a constructor (leads to a runtime error).
-         */
-        inline fun <reified P : Any> fromObject(
-            protectedHeader: CoseHeader,
-            unprotectedHeader: CoseHeader?,
-            payload: P,
-            signature: CryptoSignature.RawByteEncodable
-        ) = CoseSigned<P>(
-            protectedHeader = ByteStringWrapper(value = protectedHeader),
-            unprotectedHeader = unprotectedHeader,
-            payload = when (payload) {
-                is ByteArray -> payload
-                is ByteStringWrapper<*> -> coseCompliantSerializer.encodeToByteArray(payload)
-                else -> coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload))
-            },
-            rawSignature = signature.rawByteArray
-        )
+        fun <P : Any> deserialize(parameterSerializer: KSerializer<P>, it: ByteArray): KmmResult<CoseSigned<P>> =
+            catching {
+                coseCompliantSerializer.decodeFromByteArray(CoseSignedSerializer(parameterSerializer), it)
+            }
 
         /**
          * Called by COSE signing implementations to get the bytes that will be

@@ -72,13 +72,13 @@ class CoseEqualsTest : FreeSpec({
     "equals with data class" {
         checkAll(Arb.byteArray(length = Arb.int(0, 10), content = Arb.byte())) { bytes ->
             val payload = DataClass(content = bytes.encodeToString(Base16Strict))
-            val bytesSigned1 = CoseSigned.fromObject<DataClass>(
+            val bytesSigned1 = CoseSigned(
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = payload,
                 signature = CryptoSignature.RSAorHMAC(bytes)
             )
-            val bytesSigned2 = CoseSigned.fromObject<DataClass>(
+            val bytesSigned2 = CoseSigned(
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = payload,
@@ -91,18 +91,18 @@ class CoseEqualsTest : FreeSpec({
             bytesSigned1.hashCode() shouldBe bytesSigned2.hashCode()
 
             val reversed = DataClass(content = bytes.reversedArray().let { it + it + 1 + 3 + 5 }.encodeToString(Base16Strict))
-            val reversedSigned1 = CoseSigned.fromObject<DataClass>(
+            val reversedSigned1 = CoseSigned(
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = reversed,
                 signature = CryptoSignature.RSAorHMAC(bytes)
             )
-            val reversedSigned2 = CoseSigned.fromObject<DataClass>(
+            val reversedSigned2 = CoseSigned(
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = reversed,
                 signature = CryptoSignature.RSAorHMAC(bytes)
-            ).also { println(it.serialize().encodeToString(Base16Strict))}
+            ).also { println(it.serialize(DataClass.serializer()).encodeToString(Base16Strict))}
 
             reversedSigned2 shouldBe reversedSigned2
             reversedSigned2 shouldBe reversedSigned1
