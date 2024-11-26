@@ -18,14 +18,18 @@ class ProviderTest : FreeSpec({
 
     "AES" - {
         "GCM" - {
-            withData(EncryptionAlgorithm.AES128_GCM, EncryptionAlgorithm.AES192_GCM, EncryptionAlgorithm.AES256_GCM) {
+            withData(
+                EncryptionAlgorithm.AES_128.GCM,
+                EncryptionAlgorithm.AES_192.GCM,
+                EncryptionAlgorithm.AES_256.GCM
+            ) {
 
                 val key = it.randomKey()
                 val iv = Random.Default.nextBytes((it.ivNumBits / 8u).toInt())
                 val aad = Random.Default.nextBytes(32)
                 val plaintext = Random.Default.nextBytes(256)
 
-println(it.oid)
+                println(it.oid)
                 println("KEY: ${key.toHexString()} IV: ${iv.toHexString()}  plaintext: ${plaintext.toHexString()}")
 
                 val ciphertext: Ciphertext.Authenticated =
