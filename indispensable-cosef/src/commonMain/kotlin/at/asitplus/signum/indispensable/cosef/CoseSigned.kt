@@ -35,7 +35,7 @@ data class CoseSigned<P : Any?>(
         protectedHeader: CoseHeader,
         unprotectedHeader: CoseHeader?,
         payload: ByteArray?,
-        signature: CryptoSignature.RawByteEncodable
+        signature: CryptoSignature.RawByteEncodable,
     ) : this(
         protectedHeader = ByteStringWrapper(value = protectedHeader),
         unprotectedHeader = unprotectedHeader,
@@ -104,20 +104,39 @@ data class CoseSigned<P : Any?>(
          * This has to be an inline function with a reified type parameter,
          * so it can't be a constructor (leads to a runtime error).
          */
-        inline fun <reified P : Any> fromObject(
+        inline fun <reified P : Any?> fromObject(
             protectedHeader: CoseHeader,
             unprotectedHeader: CoseHeader?,
             payload: P,
-            signature: CryptoSignature.RawByteEncodable
+            signature: CryptoSignature.RawByteEncodable,
+        ): CoseSigned<P> = when (payload) {
+                is ByteArray -> CoseSigned(
+                    protectedHeader = ByteStringWrapper(value = protectedHeader),
+                    unprotectedHeader = unprotectedHeader,
+                    payload = payload,
+                    rawSignature = signature.rawByteArray
+                )
+
+                else ->
+                    CoseSigned(
+                        protectedHeader = ByteStringWrapper(value = protectedHeader),
+                        unprotectedHeader = unprotectedHeader,
+                        payload = coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload)),
+                        rawSignature = signature.rawByteArray
+                    )
+            }
+        }
+
+        inline fun <reified P: Any?> formObject(
+            protectedHeader: CoseHeader,
+            unprotectedHeader: CoseHeader?,
+            payload: ByteStringWrapper<P>,
+            signature: CryptoSignature.RawByteEncodable,
         ) = CoseSigned<P>(
-            protectedHeader = ByteStringWrapper(value = protectedHeader),
+            protectedHeader = protectedHeader,
             unprotectedHeader = unprotectedHeader,
-            payload = when (payload) {
-                is ByteArray -> payload
-                is ByteStringWrapper<*> -> coseCompliantSerializer.encodeToByteArray(payload)
-                else -> coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload))
-            },
-            rawSignature = signature.rawByteArray
+            payload = coseCompliantSerializer.encodeToByteArray(payload),
+            signature = signature
         )
 
         /**
@@ -138,10 +157,8 @@ data class CoseSigned<P : Any?>(
                 else -> coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload))
             },
         ).serialize()
-
-
     }
-}
+
 
 fun CoseHeader.usesEC(): Boolean? = algorithm?.algorithm?.let { it is SignatureAlgorithm.ECDSA }
     ?: certificateChain?.let { X509Certificate.decodeFromDerOrNull(it)?.publicKey is CryptoPublicKey.EC }
