@@ -7,6 +7,7 @@ import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlin.random.Random
 
 @ExperimentalStdlibApi
@@ -17,11 +18,14 @@ class ProviderTest : FreeSpec({
     }
 
     "AES" - {
-        "GCM" - {
+        "GCM + CBC.PLAIN" - {
             withData(
                 EncryptionAlgorithm.AES_128.GCM,
                 EncryptionAlgorithm.AES_192.GCM,
-                EncryptionAlgorithm.AES_256.GCM
+                EncryptionAlgorithm.AES_256.GCM,
+                EncryptionAlgorithm.AES_128.CBC.PLAIN,
+                EncryptionAlgorithm.AES_192.CBC.PLAIN,
+                EncryptionAlgorithm.AES_256.CBC.PLAIN,
             ) {
 
                 val key = it.randomKey()
@@ -29,19 +33,28 @@ class ProviderTest : FreeSpec({
                 val aad = Random.Default.nextBytes(32)
                 val plaintext = Random.Default.nextBytes(256)
 
-                println(it.oid)
                 println("KEY: ${key.toHexString()} IV: ${iv.toHexString()}  plaintext: ${plaintext.toHexString()}")
 
-                val ciphertext: Ciphertext.Authenticated =
-                    it.encryptorFor(key, iv, aad).getOrThrow().encrypt(plaintext).getOrThrow()
+                val ciphertext: Ciphertext<*> =
+                    when (it) {
+                        is EncryptionAlgorithm.Authenticated -> it.encryptorFor(key, iv, aad).getOrThrow()
+                            .encrypt(plaintext).getOrThrow()
+
+                        is EncryptionAlgorithm.Unauthenticated -> it.encryptorFor(key, iv).getOrThrow().encrypt(plaintext)
+                            .getOrThrow()
+
+                        else -> TODO()
+                    }
+
                 println(ciphertext)
                 ciphertext.iv shouldBe iv
-                ciphertext.aad shouldBe aad
+                if (it is EncryptionAlgorithm.Authenticated) {
+                    ciphertext.shouldBeInstanceOf<Ciphertext.Authenticated>()
+                    ciphertext.aad shouldBe aad
+                }
 
                 val decrypted = ciphertext.decrypt(key).getOrThrow()
-                println(
-                    "DECRYPTED: " + decrypted.toHexString(HexFormat.UpperCase)
-                )
+                println("DECRYPTED: " + decrypted.toHexString(HexFormat.UpperCase))
                 decrypted shouldBe plaintext
 
             }
