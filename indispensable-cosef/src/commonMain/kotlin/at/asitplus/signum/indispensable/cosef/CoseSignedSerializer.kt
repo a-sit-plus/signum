@@ -47,6 +47,7 @@ class CoseSignedSerializer<P : Any?>(
             encodeSerializableElement(descriptor, 0, ByteStringWrapperSerializer(CoseHeader.serializer()), value.protectedHeader)
             encodeNullableSerializableElement(descriptor, 1, CoseHeader.serializer(), value.unprotectedHeader)
             if (value.payload != null && value.payload::class != ByteArray::class) {
+                // TODO Here, tag the result with 24 (decimal) = D818 (hex string)
                 encodeNullableSerializableElement(descriptor, 2, ByteStringWrapperSerializer(parameterSerializer), ByteStringWrapper(value.payload))
             } else {
                 encodeNullableSerializableElement(descriptor, 2, parameterSerializer, value.payload)
@@ -54,5 +55,4 @@ class CoseSignedSerializer<P : Any?>(
             encodeSerializableElement(descriptor, 3, ByteArraySerializer(), value.rawSignature)
         }
     }
-
 }

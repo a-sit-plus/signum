@@ -65,7 +65,7 @@ class JwkTest : FreeSpec({
             certificateSha256Thumbprint = Random.nextBytes(32),
         )
 
-        val serialized = jwk.serialize().also { println(it) }
+        val serialized = jwk.serialize()
         val parsed = JsonWebKey.deserialize(serialized).getOrThrow()
 
         parsed shouldBe jwk
@@ -87,7 +87,7 @@ class JwkTest : FreeSpec({
                 certificateSha256Thumbprint = Random.nextBytes(32),
             )
 
-            val serialized = jwk.serialize().also { println(it) }
+            val serialized = jwk.serialize()
             val parsed = JsonWebKey.deserialize(serialized).getOrThrow()
 
             parsed shouldBe jwk

@@ -78,7 +78,7 @@ data class CoseSigned<P : Any?>(
     override fun toString(): String {
         return "CoseSigned(protectedHeader=${protectedHeader.value}," +
                 " unprotectedHeader=$unprotectedHeader," +
-                " payload=${payload}," +
+                " payload=${if (payload is ByteArray) payload.encodeToString(Base16Strict) else payload}," +
                 " signature=${rawSignature.encodeToString(Base16Strict)})"
     }
 

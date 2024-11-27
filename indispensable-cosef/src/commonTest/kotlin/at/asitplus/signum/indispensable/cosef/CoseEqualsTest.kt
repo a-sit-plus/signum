@@ -102,7 +102,7 @@ class CoseEqualsTest : FreeSpec({
                 unprotectedHeader = null,
                 payload = reversed,
                 signature = CryptoSignature.RSAorHMAC(bytes)
-            ).also { println(it.serialize(DataClass.serializer()).encodeToString(Base16Strict))}
+            )
 
             reversedSigned2 shouldBe reversedSigned2
             reversedSigned2 shouldBe reversedSigned1
