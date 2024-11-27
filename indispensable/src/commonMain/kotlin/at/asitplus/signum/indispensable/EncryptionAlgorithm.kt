@@ -1,11 +1,13 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.indispensable.AuthTrait.Authenticated
+import at.asitplus.signum.indispensable.AuthTrait.Unauthenticated
 import at.asitplus.signum.indispensable.asn1.Identifiable
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 
 
-sealed interface EncryptionAlgorithm : Identifiable {
+sealed interface EncryptionAlgorithm<out A: AuthTrait> : Identifiable {
     override fun toString(): String
 
     companion object {
@@ -41,37 +43,29 @@ sealed interface EncryptionAlgorithm : Identifiable {
 
     val name: String
 
-    /**
-     * Indicates an authenticated cipher
-     */
-    interface Authenticated : EncryptionAlgorithm {
-        val tagNumBits: UInt
-    }
-
-    /**
-     * Indicates an unauthenticated cipher
-     */
-    interface Unauthenticated: EncryptionAlgorithm
 
     /**
      * Indicates that a cipher requires an initialization vector
      */
-    interface WithIV : EncryptionAlgorithm {
+    interface WithIV<A: AuthTrait> : EncryptionAlgorithm<A> {
         val ivNumBits: UInt
     }
+
+    interface Authenticated: EncryptionAlgorithm<AuthTrait.Authenticated>, AuthTrait.Authenticated
+    interface Unauthenticated: EncryptionAlgorithm<AuthTrait.Unauthenticated>, AuthTrait.Unauthenticated
 
     /**
      * Key length in bits
      */
     val keyNumBits: UInt
 
-    sealed class AES(modeOfOps: ModeOfOperation, override val keyNumBits: UInt) :
-        BlockCipher(modeOfOps, blockSizeBits = 128u) {
+    sealed class AES<A: AuthTrait>(modeOfOps: ModeOfOperation, override val keyNumBits: UInt) :
+        BlockCipher<A>(modeOfOps, blockSizeBits = 128u) {
         override val name: String = "AES-$keyNumBits ${modeOfOps.acronym}"
 
         override fun toString(): String = name
 
-        class GCM internal constructor(keyNumBits: UInt) : AES(ModeOfOperation.GCM, keyNumBits), WithIV, Authenticated {
+        class GCM internal constructor(keyNumBits: UInt) : AES<AuthTrait.Authenticated>(ModeOfOperation.GCM, keyNumBits), WithIV<AuthTrait.Authenticated>, Authenticated {
             override val ivNumBits: UInt = 96u
             override val tagNumBits: UInt = blockSizeBits
             override val oid: ObjectIdentifier = when (keyNumBits) {
@@ -82,7 +76,7 @@ sealed interface EncryptionAlgorithm : Identifiable {
             }
         }
 
-        sealed class CBC(keyNumBits: UInt) : AES(ModeOfOperation.CBC, keyNumBits), WithIV {
+        sealed class CBC<A: AuthTrait>(keyNumBits: UInt) : AES<A> (ModeOfOperation.CBC, keyNumBits), WithIV<A> {
             override val ivNumBits: UInt = 128u
             override val oid: ObjectIdentifier = when (keyNumBits) {
                 128u -> KnownOIDs.aes128_CBC
@@ -91,9 +85,9 @@ sealed interface EncryptionAlgorithm : Identifiable {
                 else -> throw IllegalStateException("$keyNumBits This is an implementation flaw. Report this bug!")
             }
 
-            class Plain(keyNumBits: UInt) : CBC(keyNumBits), WithIV, EncryptionAlgorithm.Unauthenticated
+            class Plain(keyNumBits: UInt) : CBC<AuthTrait.Unauthenticated>(keyNumBits), WithIV<AuthTrait.Unauthenticated>, Unauthenticated
 
-            class HMAC(keyNumBits: UInt, val digest: Digest) : CBC(keyNumBits), WithIV, Authenticated {
+            class HMAC(keyNumBits: UInt, val digest: Digest) : CBC<AuthTrait.Authenticated>(keyNumBits), WithIV<AuthTrait.Authenticated>, Authenticated {
                 override val tagNumBits: UInt = blockSizeBits
             }
         }
@@ -109,7 +103,24 @@ sealed interface EncryptionAlgorithm : Identifiable {
     }
 }
 
-sealed class BlockCipher(val mode: ModeOfOperation, val blockSizeBits: UInt) : EncryptionAlgorithm {
+/**
+ * Defines whether a cipher is authenticated or not
+ */
+interface AuthTrait {
+    /**
+     * Indicates an authenticated cipher
+     */
+    interface Authenticated : AuthTrait {
+        val tagNumBits: UInt
+    }
+
+    /**
+     * Indicates an unauthenticated cipher
+     */
+    interface Unauthenticated: AuthTrait
+}
+
+sealed class BlockCipher<A: AuthTrait>(val mode: ModeOfOperation, val blockSizeBits: UInt) : EncryptionAlgorithm<A> {
 
     enum class ModeOfOperation(val friendlyName: String, val acronym: String) {
         GCM("Galois Counter Mode", "GCM"),

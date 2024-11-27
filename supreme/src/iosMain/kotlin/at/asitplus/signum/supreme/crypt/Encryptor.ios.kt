@@ -2,6 +2,7 @@ package at.asitplus.signum.supreme.crypt
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.indispensable.AuthTrait
 import at.asitplus.signum.indispensable.Ciphertext
 import at.asitplus.signum.indispensable.EncryptionAlgorithm
 import at.asitplus.signum.supreme.aes.GCM
@@ -13,27 +14,20 @@ import kotlinx.cinterop.ExperimentalForeignApi
 import platform.CoreCrypto.kCCDecrypt
 import platform.CoreCrypto.kCCEncrypt
 
-actual internal fun initCipher(
-    algorithm: EncryptionAlgorithm,
+actual internal fun <T, A : AuthTrait, E : EncryptionAlgorithm<A>> initCipher(
+    algorithm: EncryptionAlgorithm<out A>,
     key: ByteArray,
     iv: ByteArray?,
     aad: ByteArray?
-): PlatformCipher {
-    return AESContainer(algorithm, key, iv!!, aad)
+): CipherParam<T,A> {
+    return CipherParam<ByteArray,A>(algorithm, key, iv!!, aad) as CipherParam<T, A>
 }
 
-private data class AESContainer(
-    val alg: EncryptionAlgorithm,
-    val key: ByteArray,
-    val iv: ByteArray?,
-    val aad: ByteArray?
-)
-
 @OptIn(ExperimentalForeignApi::class)
-actual internal fun PlatformCipher.encrypt(data: ByteArray): KmmResult<Ciphertext<*>> {
-    this as AESContainer
+actual internal fun <A : AuthTrait> CipherParam<*,A>.encrypt(data: ByteArray): KmmResult<Ciphertext<A, EncryptionAlgorithm<A>>>{
+    this as CipherParam<ByteArray,A>
     val nsData = data.toNSData()
-    val nsKey = key.toNSData()
+    val nsKey = this.platformData.toNSData()
     val nsIV = iv?.toNSData()
     val nsAAD = aad?.toNSData()
 
@@ -46,7 +40,7 @@ actual internal fun PlatformCipher.encrypt(data: ByteArray): KmmResult<Ciphertex
                 val bytes: ByteArray = swiftcall {
                     CBC.crypt(kCCEncrypt.toLong(), nsData, nsKey, nsIV, error)
                 }.toByteArray()
-                Ciphertext.Unauthenticated(alg as EncryptionAlgorithm.Unauthenticated, bytes, iv)
+                Ciphertext.Unauthenticated(alg as EncryptionAlgorithm.Unauthenticated, bytes, iv) as Ciphertext<out A, EncryptionAlgorithm<A>>
             }
         }
 
@@ -65,7 +59,7 @@ actual internal fun PlatformCipher.encrypt(data: ByteArray): KmmResult<Ciphertex
                     ciphertext.authTag().toByteArray(),
                     aad
 
-                )
+                ) as Ciphertext<A, EncryptionAlgorithm<A>>
             }
         }
 
