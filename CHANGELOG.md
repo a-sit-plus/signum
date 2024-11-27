@@ -4,6 +4,12 @@
 
 ### 3.11.0 NEXT
 
+* HMAC Support
+* AES Support
+  * CBC
+  * CBC-HMAC
+  * GCM
+
  * Implement members in `JsonWebToken` and `ConfirmationClaim` for OpenID4VC High Assurance Interoperability Profile with SD-JWT VC
  * Add utility methods to `Asn1Integer`
    * Additional constructor methods: `fromByteArray`, `fromUnsignedByteArray`
