@@ -3,12 +3,12 @@ package at.asitplus.signum.indispensable
 /**
  * A generic ciphertext object, referencing the algorithm it was created by and an IV, if any.
  */
-sealed class Ciphertext<T: EncryptionAlgorithm>(val algorithm: T, val encryptedData: ByteArray, val iv: ByteArray? = null) {
+sealed class Ciphertext<out A: AuthTrait,T: EncryptionAlgorithm<out A>>(val algorithm: T, val encryptedData: ByteArray, val iv: ByteArray? = null) {
     /**
      * An authenticated ciphertext, i.e. containing an [authTag], and, optionally [aad] (_Additional Authenticated Data_)
      */
     class Authenticated(algorithm: EncryptionAlgorithm.Authenticated, encryptedData: ByteArray, iv: ByteArray? = null, val authTag: ByteArray, val aad: ByteArray?) :
-        Ciphertext<EncryptionAlgorithm.Authenticated>(algorithm, encryptedData, iv) {
+        Ciphertext<AuthTrait.Authenticated, EncryptionAlgorithm.Authenticated>(algorithm, encryptedData, iv) {
 
         @OptIn(ExperimentalStdlibApi::class)
         override fun toString(): String =
@@ -21,7 +21,7 @@ sealed class Ciphertext<T: EncryptionAlgorithm>(val algorithm: T, val encryptedD
      * An authenticated ciphertext, i.e. containing an [authTag], and, optionally [aad] (_Additional Authenticated Data_)
      */
     class Unauthenticated(algorithm: EncryptionAlgorithm.Unauthenticated, encryptedData: ByteArray, iv: ByteArray? = null) :
-        Ciphertext<EncryptionAlgorithm.Unauthenticated>(algorithm, encryptedData, iv) {
+        Ciphertext<AuthTrait.Unauthenticated, EncryptionAlgorithm.Unauthenticated>(algorithm, encryptedData, iv) {
 
         @OptIn(ExperimentalStdlibApi::class)
         override fun toString(): String =

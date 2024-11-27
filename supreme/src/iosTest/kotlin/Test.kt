@@ -1,3 +1,4 @@
+import at.asitplus.signum.indispensable.AuthTrait
 import at.asitplus.signum.indispensable.Ciphertext
 import at.asitplus.signum.indispensable.EncryptionAlgorithm
 import at.asitplus.signum.supreme.crypt.decrypt
@@ -35,7 +36,7 @@ class ProviderTest : FreeSpec({
 
                 println("KEY: ${key.toHexString()} IV: ${iv.toHexString()}  plaintext: ${plaintext.toHexString()}")
 
-                val ciphertext: Ciphertext<*> =
+                val ciphertext: Ciphertext<*,*> =
                     when (it) {
                         is EncryptionAlgorithm.Authenticated -> it.encryptorFor(key, iv, aad).getOrThrow()
                             .encrypt(plaintext).getOrThrow()
