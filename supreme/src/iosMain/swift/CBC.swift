@@ -3,7 +3,7 @@ import CryptoKit
 import Foundation
 
 @objc public class CBC: NSObject {
-  @objc public class func crypt(_ operation: Int, data: NSData, key: NSData, iv: NSData?) throws -> NSData {
+  @objc public class func crypt(_ operation: Int, data: NSData, key: NSData, iv: NSData) throws -> NSData {
 
     let keySize =
       if key.length == 128 / 8 {
@@ -18,7 +18,7 @@ import Foundation
       throw NSError(domain: "AESwift Key size", code: keySize)
     }
     
-    if iv != nil { if iv?.length != 16 { throw NSError(domain: "AESwift IV Size not 16", code: iv?.length ?? 0) } }
+    if iv.length != 16 { throw NSError(domain: "AESwift IV Size not 16", code: iv.length) }
 
     let padLength = size_t(kCCBlockSizeAES128 + data.length)
 
@@ -32,7 +32,7 @@ import Foundation
         CCAlgorithm(kCCAlgorithmAES),
         CCOptions(kCCOptionPKCS7Padding),
         key.bytes, keySize,
-        iv?.bytes,  // will be NULL if ivData is nil
+        iv.bytes,
         data.bytes, size_t(data.length),
         ciph.baseAddress!, padLength,
         &bytesEncrypted
