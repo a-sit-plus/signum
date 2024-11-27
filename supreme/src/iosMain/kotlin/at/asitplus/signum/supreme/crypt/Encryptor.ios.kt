@@ -11,8 +11,12 @@ import at.asitplus.signum.supreme.swiftcall
 import at.asitplus.signum.supreme.toByteArray
 import at.asitplus.signum.supreme.toNSData
 import kotlinx.cinterop.ExperimentalForeignApi
+import org.kotlincrypto.SecureRandom
 import platform.CoreCrypto.kCCDecrypt
 import platform.CoreCrypto.kCCEncrypt
+
+
+private val secureRandom = SecureRandom()
 
 actual internal fun <T, A : AuthTrait, E : EncryptionAlgorithm<A>> initCipher(
     algorithm: E,
@@ -20,15 +24,18 @@ actual internal fun <T, A : AuthTrait, E : EncryptionAlgorithm<A>> initCipher(
     macKey: ByteArray?,
     iv: ByteArray?,
     aad: ByteArray?
-): CipherParam<T, A>{
-    return CipherParam<ByteArray, A>(algorithm, key, macKey?:key, iv, aad) as CipherParam<T, A>
+): CipherParam<T, A> {
+    if (algorithm !is EncryptionAlgorithm.WithIV<*>) TODO()
+    val nonce = iv ?: secureRandom.nextBytesOf(algorithm.ivNumBits.toInt() / 8)
+    return CipherParam<ByteArray, A>(algorithm, key, macKey ?: key, nonce, aad) as CipherParam<T, A>
 }
 
 @OptIn(ExperimentalForeignApi::class)
 actual internal fun <A : AuthTrait> CipherParam<*, A>.encrypt(data: ByteArray): KmmResult<Ciphertext<A, EncryptionAlgorithm<A>>> {
     this as CipherParam<ByteArray, A>
     val nsData = data.toNSData()
-    val nsIV = iv?.toNSData()
+    require(iv != null)
+    val nsIV = iv.toNSData()
     val nsAAD = aad?.toNSData()
 
 
@@ -73,6 +80,8 @@ actual internal fun <A : AuthTrait> CipherParam<*, A>.encrypt(data: ByteArray): 
 @OptIn(ExperimentalForeignApi::class)
 actual internal fun Ciphertext.Authenticated.doDecrypt(secretKey: ByteArray): KmmResult<ByteArray> {
     return catching {
+        if (algorithm !is EncryptionAlgorithm.WithIV<*>) TODO()
+        require(iv != null) { "IV must not be null!" }
         swiftcall {
             GCM.decrypt(
                 encryptedData.toNSData(),
@@ -88,13 +97,14 @@ actual internal fun Ciphertext.Authenticated.doDecrypt(secretKey: ByteArray): Km
 
 @OptIn(ExperimentalForeignApi::class)
 actual internal fun Ciphertext.Unauthenticated.doDecrypt(secretKey: ByteArray): KmmResult<ByteArray> = catching {
-
+    if (algorithm !is EncryptionAlgorithm.WithIV<*>) TODO()
+    require(iv != null) { "IV must not be null!" }
     swiftcall {
         CBC.crypt(
             kCCDecrypt.toLong(),
             this@doDecrypt.encryptedData.toNSData(),
             secretKey.toNSData(),
-            this@doDecrypt.iv?.toNSData(),
+            this@doDecrypt.iv!!.toNSData(),
             error
         )
     }.toByteArray()

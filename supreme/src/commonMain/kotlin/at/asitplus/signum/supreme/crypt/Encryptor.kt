@@ -68,7 +68,6 @@ class Encryptor<A : AuthTrait, E : EncryptionAlgorithm<A>, C : Ciphertext<A, E>>
 
     fun encrypt(data: ByteArray): KmmResult<C> {
         if (algorithm is EncryptionAlgorithm.AES.CBC.HMAC) {
-            val e: EncryptionAlgorithm.Authenticated = algorithm
             val aMac: EncryptionAlgorithm.WithDedicatedMac = algorithm
             val innerCipher = initCipher<Any, AuthTrait.Unauthenticated, EncryptionAlgorithm.AES.CBC.Plain>(
                 algorithm.innerCipher,
@@ -78,23 +77,20 @@ class Encryptor<A : AuthTrait, E : EncryptionAlgorithm<A>, C : Ciphertext<A, E>>
                 aad
             )
             return catching {
-                require(macKey != null) { "AES-CBC-HMAC implementation error. Report this bug!" }
+                require(innerCipher.iv != null) { "AES-CBC-HMAC IV implementation error. Report this bug!" }
+                require(macKey != null) { "AES-CBC-HMAC mac key implementation error. Report this bug!" }
                 val encrypted = innerCipher.encrypt(data).getOrThrow().encryptedData
 
-                val hmacInput: ByteArray = (iv ?: byteArrayOf()) + (aad ?: byteArrayOf()) + encrypted
+                val hmacInput: ByteArray = innerCipher.iv + (aad ?: byteArrayOf()) + encrypted
 
                 val maced = aMac.mac.mac(macKey, hmacInput).getOrThrow()
                 return@catching Ciphertext.Authenticated.WithDedicatedMac(
                     aMac,
-                    encrypted, iv, maced, aad
+                    encrypted, innerCipher.iv, maced, aad
                 ) as C
             }
 
         }
-
-
-
-
         return platformCipher.encrypt<A>(data) as KmmResult<C>
     }
 
