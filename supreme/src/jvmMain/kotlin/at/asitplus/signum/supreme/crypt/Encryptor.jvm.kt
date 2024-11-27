@@ -22,7 +22,8 @@ actual internal fun <T, A : AuthTrait, E : EncryptionAlgorithm<A>> initCipher(
     iv: ByteArray?,
     aad: ByteArray?
 ): CipherParam<T,A> {
-    val nonce = iv ?: ByteArray(algorithm.keyNumBits.toInt() / 8).apply { secureRandom.nextBytes(this) }
+    if(algorithm !is EncryptionAlgorithm.WithIV<*>) TODO()
+    val nonce = iv ?: ByteArray(algorithm.ivNumBits.toInt() / 8).apply { secureRandom.nextBytes(this) }
     return Cipher.getInstance(algorithm.jcaName).apply {
         if (algorithm is EncryptionAlgorithm.AES.GCM)
             init(
@@ -34,7 +35,7 @@ actual internal fun <T, A : AuthTrait, E : EncryptionAlgorithm<A>> initCipher(
             init(
                 Cipher.ENCRYPT_MODE,
                 SecretKeySpec(key, algorithm.jcaKeySpec),
-                IvParameterSpec(iv)
+                IvParameterSpec(nonce)
             )
         else TODO()
         aad?.let { if(algorithm is EncryptionAlgorithm.AES.GCM) updateAAD(it) /*CBC-HMAC we do ourselves*/ }
