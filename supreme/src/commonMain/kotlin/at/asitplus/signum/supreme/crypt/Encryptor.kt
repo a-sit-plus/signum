@@ -2,6 +2,7 @@ package at.asitplus.signum.supreme.crypt
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.indispensable.AuthTrait
 import at.asitplus.signum.indispensable.Ciphertext
 import at.asitplus.signum.indispensable.EncryptionAlgorithm
 import org.kotlincrypto.SecureRandom
@@ -17,24 +18,26 @@ private val secureRandom = SecureRandom()
  * @return [KmmResult.success] containing an encryptor if valid parameters were provided or [KmmResult.failure] in case of
  * invalid parameters (e.g., key or IV length)
  */
-fun EncryptionAlgorithm.Authenticated.encryptorFor(
+inline fun EncryptionAlgorithm.Authenticated.encryptorFor(
     secretKey: ByteArray,
     iv: ByteArray? = null,
     aad: ByteArray? = null
-): KmmResult<Encryptor<Ciphertext.Authenticated>> = catching {
-    Encryptor(this, secretKey, iv, aad)
-}
+): KmmResult<Encryptor<AuthTrait.Authenticated, EncryptionAlgorithm.Authenticated, Ciphertext.Authenticated>> =
+    catching {
+        Encryptor(this, secretKey, iv, aad)
+    }
 
-fun EncryptionAlgorithm.encryptorFor(
+fun EncryptionAlgorithm.Unauthenticated.encryptorFor(
     secretKey: ByteArray,
     iv: ByteArray? = null,
-): KmmResult<Encryptor<Ciphertext.Authenticated>> = catching {
-    Encryptor(this, secretKey, iv, null)
-}
+): KmmResult<Encryptor<AuthTrait.Unauthenticated, EncryptionAlgorithm.Unauthenticated, Ciphertext.Unauthenticated>> =
+    catching {
+        Encryptor(this, secretKey, iv, null)
+    }
 
 
-class Encryptor<T: Ciphertext<*>> internal constructor(
-    protected val algorithm: EncryptionAlgorithm,
+class Encryptor<A : AuthTrait, E : EncryptionAlgorithm<A>, C : Ciphertext<A, E>>  constructor(
+    protected val algorithm: EncryptionAlgorithm<A>,
     protected val key: ByteArray,
     protected val iv: ByteArray?,
     protected val aad: ByteArray?
@@ -48,47 +51,50 @@ class Encryptor<T: Ciphertext<*>> internal constructor(
     }
 
 
-    private val platformCipher: PlatformCipher = initCipher(algorithm, key, iv, aad)
+    private val platformCipher: CipherParam<*,A> = initCipher<Any,A, E>(algorithm, key, iv, aad)
 
 
-    fun encrypt(data: ByteArray): KmmResult<T> {
-        return platformCipher.encrypt(data) as KmmResult<T>
-    }
+    fun encrypt(data: ByteArray): KmmResult<Ciphertext<A, EncryptionAlgorithm<A>>> =  platformCipher.encrypt<A>(data)
+
 
 }
+
+internal data class CipherParam<T, A: AuthTrait>(
+    val alg: EncryptionAlgorithm<out A>,
+    val platformData: T,
+    val iv: ByteArray?,
+    val aad: ByteArray?
+)
 
 /**
  * Generates a new random key matching the key size of this algorithm
  */
-fun EncryptionAlgorithm.randomKey(): ByteArray =secureRandom.nextBytesOf((keyNumBits/8u).toInt())
+fun EncryptionAlgorithm<*>.randomKey(): ByteArray = secureRandom.nextBytesOf((keyNumBits / 8u).toInt())
 
-
-internal typealias PlatformCipher = Any
-
-expect internal fun initCipher(
-    algorithm: EncryptionAlgorithm,
+expect internal fun <T, A : AuthTrait, E : EncryptionAlgorithm<A>> initCipher(
+    algorithm: EncryptionAlgorithm<out A>,
     key: ByteArray,
     iv: ByteArray?,
     aad: ByteArray?
-): PlatformCipher
+): CipherParam<T, A>
 
-expect internal fun PlatformCipher.encrypt(data: ByteArray): KmmResult<Ciphertext<*>>
+expect internal fun <A : AuthTrait> CipherParam<*,A>.encrypt(data: ByteArray): KmmResult<Ciphertext<A, EncryptionAlgorithm<A>>>
 
 /**
  * Attempts to decrypt this ciphertext (which also holds IV, AAD, auth tag) using the provided [secretKey].
  * This method will fail before even trying to decrypt anything and immediately return [KmmResult.failure]
  * if the parameters and the algorithm don't match.
  */
-fun Ciphertext<*>.decrypt(secretKey: ByteArray): KmmResult<ByteArray> {
+fun <A : AuthTrait, E : EncryptionAlgorithm<A>> Ciphertext<A, E>.decrypt(secretKey: ByteArray): KmmResult<ByteArray> {
     catching {
-        if (algorithm is EncryptionAlgorithm.WithIV) {
+        if (algorithm is EncryptionAlgorithm.WithIV<*>) {
             require(iv != null) { "IV must be non-null" }
-            require(iv!!.size.toUInt() * 8u == (algorithm as EncryptionAlgorithm.WithIV).ivNumBits) { "IV must be exactly ${(algorithm as EncryptionAlgorithm.WithIV).ivNumBits} bits long" }
+            require(iv!!.size.toUInt() * 8u == (algorithm as EncryptionAlgorithm.WithIV<*>).ivNumBits) { "IV must be exactly ${(algorithm as EncryptionAlgorithm.WithIV<*>).ivNumBits} bits long" }
         }
         require(secretKey.size.toUInt() * 8u == algorithm.keyNumBits) { "Key must be exactly ${algorithm.keyNumBits} bits long" }
 
     }
-    return when(this) {
+    return when (this) {
         is Ciphertext.Authenticated -> doDecrypt(secretKey)
         is Ciphertext.Unauthenticated -> doDecrypt(secretKey)
     }

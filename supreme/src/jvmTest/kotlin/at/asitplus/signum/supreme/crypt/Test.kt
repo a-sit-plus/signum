@@ -35,7 +35,7 @@ class ProviderTest : FreeSpec({
 
                 println("KEY: ${key.toHexString()} IV: ${iv.toHexString()}  plaintext: ${plaintext.toHexString()}")
 
-                val ciphertext: Ciphertext<*> =
+                val ciphertext: Ciphertext<*,*> =
                     when (it) {
                         is EncryptionAlgorithm.Authenticated -> it.encryptorFor(key, iv, aad).getOrThrow()
                             .encrypt(plaintext).getOrThrow()
