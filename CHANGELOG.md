@@ -3,6 +3,12 @@
 ## 3.0
 
 ### NEXT
+* HMAC Support
+* AES Support
+    * CBC
+    * CBC-HMAC
+    * GCM
+
 
 * Change variance of generic on `Asn1Encodable` and `Asn1Decodable`
 * **Key Agreement Support**
