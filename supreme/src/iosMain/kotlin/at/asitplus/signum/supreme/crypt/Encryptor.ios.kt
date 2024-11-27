@@ -5,8 +5,8 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.AuthTrait
 import at.asitplus.signum.indispensable.Ciphertext
 import at.asitplus.signum.indispensable.EncryptionAlgorithm
-import at.asitplus.signum.supreme.aes.GCM
 import at.asitplus.signum.supreme.aes.CBC
+import at.asitplus.signum.supreme.aes.GCM
 import at.asitplus.signum.supreme.swiftcall
 import at.asitplus.signum.supreme.toByteArray
 import at.asitplus.signum.supreme.toNSData
@@ -15,41 +15,44 @@ import platform.CoreCrypto.kCCDecrypt
 import platform.CoreCrypto.kCCEncrypt
 
 actual internal fun <T, A : AuthTrait, E : EncryptionAlgorithm<A>> initCipher(
-    algorithm: EncryptionAlgorithm<out A>,
+    algorithm: E,
     key: ByteArray,
+    macKey: ByteArray?,
     iv: ByteArray?,
     aad: ByteArray?
-): CipherParam<T,A> {
-    return CipherParam<ByteArray,A>(algorithm, key, iv!!, aad) as CipherParam<T, A>
+): CipherParam<T, A>{
+    return CipherParam<ByteArray, A>(algorithm, key, macKey?:key, iv, aad) as CipherParam<T, A>
 }
 
 @OptIn(ExperimentalForeignApi::class)
-actual internal fun <A : AuthTrait> CipherParam<*,A>.encrypt(data: ByteArray): KmmResult<Ciphertext<A, EncryptionAlgorithm<A>>>{
-    this as CipherParam<ByteArray,A>
+actual internal fun <A : AuthTrait> CipherParam<*, A>.encrypt(data: ByteArray): KmmResult<Ciphertext<A, EncryptionAlgorithm<A>>> {
+    this as CipherParam<ByteArray, A>
     val nsData = data.toNSData()
-    val nsKey = this.platformData.toNSData()
     val nsIV = iv?.toNSData()
     val nsAAD = aad?.toNSData()
 
 
     when (alg) {
         is EncryptionAlgorithm.AES.CBC.Plain -> {
-            return catching{
+            return catching {
                 println("ALGORITHM : $alg doing CBC")
 
                 val bytes: ByteArray = swiftcall {
-                    CBC.crypt(kCCEncrypt.toLong(), nsData, nsKey, nsIV, error)
+                    CBC.crypt(kCCEncrypt.toLong(), nsData, platformData.toNSData(), nsIV, error)
                 }.toByteArray()
-                Ciphertext.Unauthenticated(alg as EncryptionAlgorithm.Unauthenticated, bytes, iv) as Ciphertext<out A, EncryptionAlgorithm<A>>
+                Ciphertext.Unauthenticated(
+                    alg as EncryptionAlgorithm.Unauthenticated,
+                    bytes,
+                    iv
+                ) as Ciphertext<out A, EncryptionAlgorithm<A>>
             }
         }
 
         is EncryptionAlgorithm.AES.GCM -> {
-            return catching{
+            return catching {
 
-                println("ALGORITHM : $alg doing GCM")
                 require(iv != null) { "AES implementation error, please report this bug" }
-                val ciphertext = GCM.encrypt(nsData, nsKey, nsIV, nsAAD)
+                val ciphertext = GCM.encrypt(nsData, platformData.toNSData(), nsIV, nsAAD)
                 if (ciphertext == null) throw UnsupportedOperationException("Error from swift code!")
 
                 return@catching Ciphertext.Authenticated(
