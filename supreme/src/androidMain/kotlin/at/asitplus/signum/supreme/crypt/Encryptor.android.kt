@@ -16,8 +16,9 @@ import javax.crypto.spec.SecretKeySpec
 private val secureRandom = SecureRandom()
 
 actual internal fun <T, A : AuthTrait, E : EncryptionAlgorithm<A>> initCipher(
-    algorithm: EncryptionAlgorithm<out A>,
+    algorithm: E,
     key: ByteArray,
+    macKey: ByteArray?,
     iv: ByteArray?,
     aad: ByteArray?
 ): CipherParam<T,A> {
@@ -29,15 +30,15 @@ actual internal fun <T, A : AuthTrait, E : EncryptionAlgorithm<A>> initCipher(
                 SecretKeySpec(key, algorithm.jcaKeySpec),
                 GCMParameterSpec(algorithm.tagNumBits.toInt(), nonce)
             )
-        else if(algorithm is EncryptionAlgorithm.AES.CBC.Plain)
+        else if(algorithm is EncryptionAlgorithm.AES.CBC<*>) //covers Plain and CBC, because CBC will delegate to here
             init(
                 Cipher.ENCRYPT_MODE,
                 SecretKeySpec(key, algorithm.jcaKeySpec),
                 IvParameterSpec(iv)
             )
         else TODO()
-        aad?.let { updateAAD(it) }
-    }.let { CipherParam<Cipher,A>(algorithm, it, nonce, aad) as CipherParam<T, A> }
+        aad?.let { if(algorithm is EncryptionAlgorithm.AES.GCM) updateAAD(it) /*CBC-HMAC we do ourselves*/ }
+    }.let { CipherParam<Cipher,A>(algorithm, it, macKey?:key, nonce, aad) as CipherParam<T, A> }
 }
 
 actual internal fun <A : AuthTrait> CipherParam<*,A>.encrypt(data: ByteArray): KmmResult<Ciphertext<A, EncryptionAlgorithm<A>>> {
