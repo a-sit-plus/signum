@@ -31,6 +31,8 @@ types and functionality related to crypto and PKI applications:
 * **Multiplatform ECDSA and RSA Signer and Verifier** &rarr; Check out the included [CMP demo App](demoapp) to see it in action
   * **Supports Attestation on iOS and Android**
   * **Biometric Authentication on Android and iOS without Callbacks or Activity Passing** (✨Magic!✨)
+* **Multiplatform AES**
+* **Multiplatform HMAC**
 * Public Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)
 * X509 Certificate Class (create, encode, decode)
@@ -224,6 +226,41 @@ val verifier = SignatureAlgorithm.ECDSAwithSHA512
 val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Is it trustworthy? $isValid")
 ```
+
+## Symmetric Encryption
+We currently support AES-CBC, AES-GCM, and a very flexible flavour of AES-CMC-HMAC.
+This is supported across all _Supreme_ targets and works as follows:
+```kotlin
+val payload = "More matter, with less Art!".encodeToByteArray()
+
+//define parameters
+val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
+val secretKey = algorithm.randomKey()
+val macKey = algorithm.randomKey()
+val aad = Clock.System.now().toString().encodeToByteArray()
+
+val ciphertext =
+    //You typically chain encryptorFor and encrypt
+    //because you should never re-use an IV
+    algorithm.encryptorFor(
+        secretKey = secretKey,
+        dedicatedMacKey = macKey,
+        aad = aad
+    ).getOrThrow(/*TODO Error handling*/)
+        .encrypt(payload).getOrThrow(/*TODO Error Handling*/)
+
+//The ciphertext object is of type Authenticated.WithDedicatedMac,
+//because AES-CBC-HMAC constrains it to this type.
+//The ciphertext object contains an IV, even though null was passed
+//it also contains AAD and an authTag, in addition to encryptedData.
+//Because everything is structured, and it contains the encryption
+//algorithm identifier, decryption is simple:
+val recovered = ciphertext.decrypt(secretKey, macKey)
+    .getOrThrow(/*TODO Error handling*/)
+
+recovered shouldBe payload //success!
+```
+
 
 ## ASN.1 Demo Reel
 

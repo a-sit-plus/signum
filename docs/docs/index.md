@@ -13,6 +13,8 @@ types and functionality related to crypto and PKI applications:
   action
     * **Supports Attestation on iOS and Android**
     * **Biometric Authentication on Android and iOS without Callbacks or Activity Passing** (✨Magic!✨)
+* **Multiplatform AES**
+* **Multiplatform HMAC**
 * Public Keys (RSA and EC)
 * Private Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)
@@ -116,6 +118,33 @@ val signature: CryptoSignature = TODO("This was sent alongside the plaintext.")
 val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey).getOrThrow()
 val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Looks good? $isValid")
+```
+
+### Symmetric Encryption (Supreme)
+We currently support AES-CBC, AES-GCM, and a very flexible flavour of AES-CMC-HMAC.
+This is supported across all _Supreme_ targets and works as follows:
+```kotlin
+val payload = "More matter, with less Art!".encodeToByteArray()
+
+//define parameters
+val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
+val secretKey = algorithm.randomKey()
+val macKey = algorithm.randomKey()
+val aad = Clock.System.now().toString().encodeToByteArray()
+
+val ciphertext =
+    //You typically chain encryptorFor and encrypt
+    //because you should never re-use an IV
+    algorithm.encryptorFor(
+        secretKey = secretKey,
+        dedicatedMacKey = macKey,
+        aad = aad
+    ).getOrThrow(/*TODO Error handling*/)
+        .encrypt(payload).getOrThrow(/*TODO Error Handling*/)
+val recovered = ciphertext.decrypt(secretKey, macKey)
+    .getOrThrow(/*TODO Error handling*/)
+
+recovered shouldBe payload //success!
 ```
 
 ### ASN.1 Parsing and Encoding

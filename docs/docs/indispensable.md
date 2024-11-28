@@ -69,6 +69,18 @@ It contains essentials such as:
     * `AndroidKeystoreAttestation` contains the certificate chain from Google's root certificate down to the attested key
     * `IosHomebrewAttestation` contains the new iOS attestation format introduces in Supreme 0.2.0 (see the [Attestation](supreme.md#attestation) section of the _Supreme_ manual for details).
     * `SelfAttestation` is used on the JVM. It has no specific semantics, but could be used, if an attestation-supporting HSM is used on the JVM. WIP!
+* `MAC` defines the interface for message authentication codes
+    * `HMAC` defines HMAC for all supported `Digest` algorithms. The [Supreme](supreme.md) KMP crypto provider implements the actual HMAC functionality.
+* `SymmetricEncryptionAlgorithm` represents symmetric encryption algorithms. _Indispensable_ currently ships with definitions for AES-CBC, a flexible AES-CBC-HMAC, and AES-GCM, while the [Supreme](supreme.md) KMP crypto provider implements the actual AES functionality. 
+    * `BlockCipher` denotes a BlockCipher 
+    * `WithIV` denotes a Cipher requiring or supporting an initialization vector
+    * `Unauthanticated` denotes a non-authenticated encryption algorithm
+    * `Authenticated` denotes an authenticated encryption algorithm
+    * `Authenticated.WithDedicatedMac` describes an encryption authenticated encryption algorithm based on a non-authenticated one and a dedicated `MAC`, to achieve authenticated encryption
+* `Ciphertext` stores ciphertext produced by a symmetric cipher. It has dedicated accessors for every component of the ciphertext, such as `iv` and `encryptedData`
+    * `Unauthenticated` denotes a ciphertext produced by a `SymmetricEncryptionAlgorithm.Unauthenticated`
+    * `Authenticated` denotes a ciphertext produced by a `SymmetricEncryptionAlgorithm.Authenticated`, it also contains an `authTag` and, `aad`
+    * `Authenticated.WithDedicatedMac` restricts `Ciphertext.Authenticated` to ciphertexts produced by a `SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac`
 
 #### PKI-Related data Structures
 The `pki` package contains data classes relevant in the PKI context:
