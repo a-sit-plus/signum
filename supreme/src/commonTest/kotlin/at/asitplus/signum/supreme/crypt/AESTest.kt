@@ -3,10 +3,14 @@ import at.asitplus.signum.indispensable.EncryptionAlgorithm
 import at.asitplus.signum.supreme.crypt.decrypt
 import at.asitplus.signum.supreme.crypt.encryptorFor
 import at.asitplus.signum.supreme.crypt.randomKey
+import at.asitplus.signum.supreme.succeed
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNot
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlin.random.Random
 
@@ -46,6 +50,18 @@ class AESTest : FreeSpec({
                     val decrypted = ciphertext.decrypt(key).getOrThrow()
                     println("DECRYPTED: " + decrypted.toHexString(HexFormat.UpperCase))
                     decrypted shouldBe plaintext
+
+                    val wrongDecrypted = ciphertext.decrypt(ciphertext.algorithm.randomKey())
+                    wrongDecrypted shouldNot succeed
+
+                    val wrongCiphertext = Ciphertext.Unauthenticated(ciphertext.algorithm, Random.Default.nextBytes(ciphertext.encryptedData.size), iv= ciphertext.iv)
+
+                    val wrongWrongDecrypted= wrongCiphertext.decrypt(ciphertext.algorithm.randomKey())
+                    wrongWrongDecrypted shouldNot succeed
+
+                    val wrongRightDecrypted = wrongCiphertext.decrypt(key)
+                    wrongRightDecrypted shouldNot succeed
+
                 }
             }
         }
