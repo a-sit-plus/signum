@@ -5,8 +5,8 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.AuthTrait
 import at.asitplus.signum.indispensable.BlockCipher
 import at.asitplus.signum.indispensable.Ciphertext
-import at.asitplus.signum.indispensable.EncryptionAlgorithm
-import at.asitplus.signum.indispensable.EncryptionAlgorithm.AES
+import at.asitplus.signum.indispensable.SymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.SymmetricEncryptionAlgorithm.AES
 import at.asitplus.signum.supreme.aes.CBC
 import at.asitplus.signum.supreme.aes.GCM
 import at.asitplus.signum.supreme.swiftcall
@@ -17,21 +17,20 @@ import platform.CoreCrypto.kCCDecrypt
 import platform.CoreCrypto.kCCEncrypt
 
 
-
-actual internal fun <T, A : AuthTrait, E : EncryptionAlgorithm<A>> initCipher(
+internal actual fun <T, A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>> initCipher(
     algorithm: E,
     key: ByteArray,
     macKey: ByteArray?,
     iv: ByteArray?,
     aad: ByteArray?
 ): CipherParam<T, A> {
-    if (algorithm !is EncryptionAlgorithm.WithIV<*>) TODO()
+    if (algorithm !is SymmetricEncryptionAlgorithm.WithIV<*>) TODO()
     val nonce = iv ?: algorithm.randomIV()
     return CipherParam<ByteArray, A>(algorithm, key, macKey ?: key, nonce, aad) as CipherParam<T, A>
 }
 
 @OptIn(ExperimentalForeignApi::class)
-actual internal fun <A : AuthTrait> CipherParam<*, A>.encrypt(data: ByteArray): KmmResult<Ciphertext<A, EncryptionAlgorithm<A>>> {
+internal actual fun <A : AuthTrait> CipherParam<*, A>.doEncrypt(data: ByteArray): KmmResult<Ciphertext<A, SymmetricEncryptionAlgorithm<A>>> {
     this as CipherParam<ByteArray, A>
     require(iv != null)
     val nsIV = iv.toNSData()
@@ -39,7 +38,7 @@ actual internal fun <A : AuthTrait> CipherParam<*, A>.encrypt(data: ByteArray): 
 
 
     when (alg) {
-        is EncryptionAlgorithm.AES.CBC.Plain -> {
+        is SymmetricEncryptionAlgorithm.AES.CBC.Plain -> {
             return catching {
                 val padded = (alg as AES<*>).addPKCS7Padding(data)
                 println("PADDED len: ${padded.size}")
@@ -47,14 +46,14 @@ actual internal fun <A : AuthTrait> CipherParam<*, A>.encrypt(data: ByteArray): 
                     CBC.crypt(kCCEncrypt.toLong(), padded.toNSData(), platformData.toNSData(), nsIV, error)
                 }.toByteArray()
                 Ciphertext.Unauthenticated(
-                    alg as EncryptionAlgorithm.Unauthenticated,
+                    alg as SymmetricEncryptionAlgorithm.Unauthenticated,
                     bytes,
                     iv
-                ) as Ciphertext<out A, EncryptionAlgorithm<A>>
+                ) as Ciphertext<out A, SymmetricEncryptionAlgorithm<A>>
             }
         }
 
-        is EncryptionAlgorithm.AES.GCM -> {
+        is SymmetricEncryptionAlgorithm.AES.GCM -> {
             return catching {
 
                 require(iv != null) { "AES implementation error, please report this bug" }
@@ -62,13 +61,13 @@ actual internal fun <A : AuthTrait> CipherParam<*, A>.encrypt(data: ByteArray): 
                 if (ciphertext == null) throw UnsupportedOperationException("Error from swift code!")
 
                 return@catching Ciphertext.Authenticated(
-                    alg as EncryptionAlgorithm.Authenticated,
+                    alg as SymmetricEncryptionAlgorithm.Authenticated,
                     ciphertext.ciphertext().toByteArray(),
                     ciphertext.iv().toByteArray(),
                     ciphertext.authTag().toByteArray(),
                     aad
 
-                ) as Ciphertext<A, EncryptionAlgorithm<A>>
+                ) as Ciphertext<A, SymmetricEncryptionAlgorithm<A>>
             }
         }
 
@@ -97,7 +96,7 @@ private fun BlockCipher<*>.removePKCS7Padding(plainWithPadding: ByteArray): Byte
 @OptIn(ExperimentalForeignApi::class)
 actual internal fun Ciphertext.Authenticated.doDecrypt(secretKey: ByteArray): KmmResult<ByteArray> {
     return catching {
-        if (algorithm !is EncryptionAlgorithm.WithIV<*>) TODO()
+        if (algorithm !is SymmetricEncryptionAlgorithm.WithIV<*>) TODO()
         require(iv != null) { "IV must not be null!" }
         require(algorithm is AES<*>) { "Only AES is supported" }
         swiftcall {
@@ -116,7 +115,7 @@ actual internal fun Ciphertext.Authenticated.doDecrypt(secretKey: ByteArray): Km
 
 @OptIn(ExperimentalForeignApi::class)
 actual internal fun Ciphertext.Unauthenticated.doDecrypt(secretKey: ByteArray): KmmResult<ByteArray> = catching {
-    if (algorithm !is EncryptionAlgorithm.WithIV<*>) TODO()
+    if (algorithm !is SymmetricEncryptionAlgorithm.WithIV<*>) TODO()
     require(iv != null) { "IV must not be null!" }
     val decrypted = swiftcall {
         CBC.crypt(

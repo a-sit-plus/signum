@@ -7,7 +7,7 @@ import at.asitplus.signum.indispensable.mac.HMAC
 import at.asitplus.signum.indispensable.mac.MAC
 
 
-sealed interface EncryptionAlgorithm<out A : AuthTrait> : Identifiable {
+sealed interface SymmetricEncryptionAlgorithm<out A : AuthTrait> : Identifiable {
     override fun toString(): String
 
     companion object {
@@ -46,18 +46,18 @@ sealed interface EncryptionAlgorithm<out A : AuthTrait> : Identifiable {
 
     interface WithDedicatedMac : Authenticated, WithIV<AuthTrait.Authenticated> {
         val mac: MAC
-        val innerCipher: EncryptionAlgorithm.Unauthenticated
+        val innerCipher: SymmetricEncryptionAlgorithm.Unauthenticated
     }
 
     /**
      * Indicates that a cipher requires an initialization vector
      */
-    interface WithIV<A : AuthTrait> : EncryptionAlgorithm<A> {
+    interface WithIV<A : AuthTrait> : SymmetricEncryptionAlgorithm<A> {
         val ivNumBits: UInt
     }
 
-    interface Authenticated : EncryptionAlgorithm<AuthTrait.Authenticated>, AuthTrait.Authenticated
-    interface Unauthenticated : EncryptionAlgorithm<AuthTrait.Unauthenticated>, AuthTrait.Unauthenticated
+    interface Authenticated : SymmetricEncryptionAlgorithm<AuthTrait.Authenticated>, AuthTrait.Authenticated
+    interface Unauthenticated : SymmetricEncryptionAlgorithm<AuthTrait.Unauthenticated>, AuthTrait.Unauthenticated
 
     /**
      * Key length in bits
@@ -134,7 +134,7 @@ sealed interface AuthTrait {
     interface Unauthenticated : AuthTrait
 }
 
-sealed class BlockCipher<A : AuthTrait>(val mode: ModeOfOperation, val blockSizeBits: UInt) : EncryptionAlgorithm<A> {
+sealed class BlockCipher<A : AuthTrait>(val mode: ModeOfOperation, val blockSizeBits: UInt) : SymmetricEncryptionAlgorithm<A> {
 
     enum class ModeOfOperation(val friendlyName: String, val acronym: String) {
         GCM("Galois Counter Mode", "GCM"),

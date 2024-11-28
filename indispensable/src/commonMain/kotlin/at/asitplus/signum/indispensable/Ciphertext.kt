@@ -3,7 +3,7 @@ package at.asitplus.signum.indispensable
 /**
  * A generic ciphertext object, referencing the algorithm it was created by and an IV, if any.
  */
-sealed class Ciphertext<out A : AuthTrait, T : EncryptionAlgorithm<out A>>(
+sealed class Ciphertext<out A : AuthTrait, T : SymmetricEncryptionAlgorithm<out A>>(
     open val algorithm: T,
     val encryptedData: ByteArray,
     val iv: ByteArray?
@@ -33,12 +33,12 @@ sealed class Ciphertext<out A : AuthTrait, T : EncryptionAlgorithm<out A>>(
      * An authenticated ciphertext, i.e. containing an [authTag], and, optionally [aad] (_Additional Authenticated Data_)
      */
     open class Authenticated(
-        algorithm: EncryptionAlgorithm.Authenticated,
+        algorithm: SymmetricEncryptionAlgorithm.Authenticated,
         encryptedData: ByteArray,
         iv: ByteArray?,
         val authTag: ByteArray,
         val aad: ByteArray?
-    ) : Ciphertext<AuthTrait.Authenticated, EncryptionAlgorithm.Authenticated>(algorithm, encryptedData, iv) {
+    ) : Ciphertext<AuthTrait.Authenticated, SymmetricEncryptionAlgorithm.Authenticated>(algorithm, encryptedData, iv) {
 
         override fun getEncoded(): ByteArray = (iv ?: byteArrayOf()) + encryptedData + authTag
 
@@ -70,18 +70,18 @@ sealed class Ciphertext<out A : AuthTrait, T : EncryptionAlgorithm<out A>>(
             return result
         }
 
-        class WithDedicatedMac(override val algorithm: EncryptionAlgorithm.WithDedicatedMac,encryptedData: ByteArray, iv: ByteArray?,
-            authTag: ByteArray, aad: ByteArray?): Authenticated(algorithm, encryptedData, iv, authTag, aad)
+        class WithDedicatedMac(override val algorithm: SymmetricEncryptionAlgorithm.WithDedicatedMac, encryptedData: ByteArray, iv: ByteArray?,
+                               authTag: ByteArray, aad: ByteArray?): Authenticated(algorithm, encryptedData, iv, authTag, aad)
     }
 
     /**
      * An authenticated ciphertext, i.e. containing an [authTag], and, optionally [aad] (_Additional Authenticated Data_)
      */
     class Unauthenticated(
-        algorithm: EncryptionAlgorithm.Unauthenticated,
+        algorithm: SymmetricEncryptionAlgorithm.Unauthenticated,
         encryptedData: ByteArray,
         iv: ByteArray?
-    ) : Ciphertext<AuthTrait.Unauthenticated, EncryptionAlgorithm.Unauthenticated>(algorithm, encryptedData, iv) {
+    ) : Ciphertext<AuthTrait.Unauthenticated, SymmetricEncryptionAlgorithm.Unauthenticated>(algorithm, encryptedData, iv) {
 
         override fun getEncoded() = (iv ?: byteArrayOf()) + encryptedData
 
