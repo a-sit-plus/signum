@@ -66,7 +66,7 @@ class AESTest : FreeSpec({
                         decrypted shouldBe plaintext
 
                         val wrongDecrypted = ciphertext.decrypt(ciphertext.algorithm.randomKey())
-                        wrongDecrypted shouldNot succeed
+                        wrongDecrypted shouldNot succeed //We're not authenticated, so from time to time, we won't run into a padding error for specific plaintext sizes
 
                         val wrongCiphertext = Ciphertext.Unauthenticated(
                             ciphertext.algorithm,
@@ -79,7 +79,7 @@ class AESTest : FreeSpec({
                             //we're not authenticated, so from time to time, this succeeds
                             //wrongWrongDecrypted shouldNot succeed
                             //instead, we test differently:
-                           wrongWrongDecrypted.onSuccess { value -> value shouldNotBe plaintext }
+                            wrongWrongDecrypted.onSuccess { value -> value shouldNotBe plaintext }
                         }
                         val wrongRightDecrypted = wrongCiphertext.decrypt(key)
                         withClue("KEY: ${key.toHexString()}, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.iv?.toHexString()}") {
