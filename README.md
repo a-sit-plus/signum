@@ -32,6 +32,8 @@
   * **Hardware-Backed crypto on Android and iOS**
   * **Platform-native attestation on iOS and Android**
   * **Configurable biometric authentication on Android and iOS without callbacks or activity passing** (✨Magic!✨)
+  * **Multiplatform AES**
+  * **Multiplatform HMAC**
 * Public Keys (RSA and EC)
 * Private Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)
@@ -44,8 +46,7 @@
 * Serializability of all ASN.1 classes for debugging **and only for debugging!!!** *Seriously, do not try to deserialize
   ASN.1 classes through kotlinx.serialization! Use `decodeFromDer()` and its companions!*
 * 100% pure Kotlin BitSet
-* Exposes Multibase Encoder/Decoder as an API dependency
-  including [Matthew Nelson's smashing Base16, Base32, and Base64 encoders](https://github.com/05nelsonm/encoding)
+* Exposes Multibase Encoder/Decoder as an API dependency including [Matthew Nelson's smashing Base16, Base32, and Base64 encoders](https://github.com/05nelsonm/encoding)
 * **ASN.1 Parser and Encoder including a DSL to generate ASN.1 structures**
   * Parse, create, explore certificates, public keys, CSRs, and **arbitrary ASN.1* structures* on all supported platforms
 
@@ -229,6 +230,41 @@ val verifier = SignatureAlgorithm.ECDSAwithSHA512
 val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Is it trustworthy? $isValid")
 ```
+
+## Symmetric Encryption
+We currently support AES-CBC, AES-GCM, and a very flexible flavour of AES-CMC-HMAC.
+This is supported across all _Supreme_ targets and works as follows:
+```kotlin
+val payload = "More matter, with less Art!".encodeToByteArray()
+
+//define parameters
+val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
+val secretKey = algorithm.randomKey()
+val macKey = algorithm.randomKey()
+val aad = Clock.System.now().toString().encodeToByteArray()
+
+val ciphertext =
+    //You typically chain encryptorFor and encrypt
+    //because you should never re-use an IV
+    algorithm.encryptorFor(
+        secretKey = secretKey,
+        dedicatedMacKey = macKey,
+        aad = aad
+    ).getOrThrow(/*TODO Error handling*/)
+        .encrypt(payload).getOrThrow(/*TODO Error Handling*/)
+
+//The ciphertext object is of type Authenticated.WithDedicatedMac,
+//because AES-CBC-HMAC constrains it to this type.
+//The ciphertext object contains an IV, even though null was passed
+//it also contains AAD and an authTag, in addition to encryptedData.
+//Because everything is structured, and it contains the encryption
+//algorithm identifier, decryption is simple:
+val recovered = ciphertext.decrypt(secretKey, macKey)
+    .getOrThrow(/*TODO Error handling*/)
+
+recovered shouldBe payload //success!
+```
+
 
 ## ASN.1 Demo Reel
 

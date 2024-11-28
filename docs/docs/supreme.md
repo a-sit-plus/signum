@@ -9,6 +9,8 @@ types and functionality related to crypto and PKI applications:
 
 * **Multiplatform ECDSA and RSA Signer and Verifier** &rarr; Check out the included [CMP demo App](https://github.com/a-sit-plus/signum/tree/main/demoapp) to see it in
   action
+* **Multiplatform AES**
+* **Multiplatform HMAC**
 * Biometric Authentication on Android and iOS without Callbacks or Activity Passing** (✨Magic!✨)
 * Support Attestation on Android and iOS
 * Multiplatform, hardware-backed ECDH key agreement
@@ -28,10 +30,13 @@ implementation("at.asitplus.signum:supreme:$supreme_version")
 ```
 
 ## Key Design Principles
-The Supreme KMP crypto provider works differently than JCA. It uses a `Provider` to manage private key material and create `Signer` instances,
+The Supreme KMP crypto provider works differently than the JCA. It uses a `Provider` to manage private key material and create `Signer` instances,
 and a `Verifier`, that is instantiated on a `SignatureAlgorithm`, taking a `CryptoPublicKey` as parameter.
 In addition, creating ephemeral keys is a dedicated operation, decoupled from a `Provider`.
 The actual implementation of cryptographic functionality is delegated to platform-native implementations.
+
+Symmetric encryption follows a similar paradigm, utilising structured representations of ciphertexts and type-safe APIs.
+This prevents misuse and mishaps much more effectively than the JCA.
 
 Moreover, the Supreme KMP crypto provider heavily relies on a type-safe DSL for configuration.
 This type-safety goes so far as to expose platform-specific configuration options only in platform-specific sources, even when
@@ -346,6 +351,78 @@ specified when creating the ephemeral key.
 ## Digest Calculation
 The Supreme KMP crypto provider introduces a `digest()` extension function on the `Digest` class.
 For a list of supported algorithms, check out the [feature matrix](features.md#supported-algorithms).
+
+## HMAC Calculation
+The Supreme KMP crypto provider introduces a `mac()` extension on the `MAC` class. It takes two arguments:
+
+* `key` denotes the MAC key
+* `msg` represents the payload to compute a MAC for
+
+For a list of supported algorithms, check out the [feature matrix](features.md#supported-algorithms).
+
+## Symmetric Encryption
+
+!!! warning inline end
+    **NEVER** re-use an IV! Always directly chain `encrptorFor()` and `encrypt()`!
+
+Symmetric encryption is kept as simple as possible, meaning that symmetric encryption keys, IVs, additional authenticated data, authentication tags, etc. are plain bytearrays.
+The public interface is also rather lean, simply call `encryptionAlgorithm.encryptorFor(secretKey)` to instantiate an `Encryptor` object.
+Calling `encryptor.encrypt(data)` will produce a `Ciphertext` object, that matches the encryption algorithm.
+I.e., if you use `EncryptionAlgorithm.AES128.GCM`, you'll receive a `Ciphertext.Authenticated`.
+All authenticated encryption algorithms support AAD (additional authenticated data) and prodice ciphertexts with an authTag.
+
+We also support custom HMAC-based authenticated encryption, letting you freely define which data gets fed into the MAC.
+You also have free rein over the MAC key:
+
+```kotlin
+val payload = "More matter, with less Art!".encodeToByteArray()
+
+//define parameters
+val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
+val secretKey = algorithm.randomKey()
+val macKey = algorithm.randomKey()
+val aad = Clock.System.now().toString().encodeToByteArray()
+
+//we want to customise what is fed into the MAC
+val customMacInputFn =
+    fun MAC.(ciphertext: ByteArray, iv: ByteArray?, aad: ByteArray?): ByteArray =
+        //this is the default
+        (iv ?: byteArrayOf()) + (aad ?: byteArrayOf()) + ciphertext +
+                //but we augment it with the length of AAD:
+                (aad?.size?.encodeToAsn1ContentBytes() ?: byteArrayOf())
+
+
+val ciphertext =
+    //You typically chain encryptorFor and encrypt
+    //because you should never re-use an IV
+    algorithm.encryptorFor(
+        secretKey = secretKey,
+        /*iv defaults to null, forcing the generation of a random IV*/
+        dedicatedMacKey = macKey,
+        aad = aad,
+        dedicatedMacAuthTagCalculation = customMacInputFn
+    ).getOrThrow(/*TODO Error handling*/)
+        .encrypt(payload).getOrThrow(/*TODO Error Handling*/)
+
+//The ciphertext object is of type Authenticated.WithDedicatedMac,
+//because AES-CBC-HMAC constrains it to this type.
+//The ciphertext object contains an IV, even though null was passed
+//it also contains AAD and an authTag, in addition to encryptedData.
+//Because everything is structured, and it contains the encryption
+//algorithm identifier, decryption is simple:
+val recovered = ciphertext.decrypt(secretKey, macKey, customMacInputFn)
+    .getOrThrow(/*TODO Error handling*/)
+
+recovered shouldBe payload //success!
+```
+
+The `encryptorFor` and `decrypt` functions of less complex algorithms only support the parameters that actually get
+passed to the encryption process. E.g., it is impossible to specify a dedicated MAC key, or dedicated MAC function for AES-GCM,
+and non-authenticated AES-CBC doest not even support passing additional authenticated data, since it is not an
+authenticated encryption algorithm. The same constraints apply to the resulting ciphertexts, making it much harder
+to accidentally confuse an authenticated encryption algorithm with a non-authenticated one.
+
+
 
 ## Attestation
 

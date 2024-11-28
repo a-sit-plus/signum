@@ -54,7 +54,7 @@ The main package housing all data classes is `at.asitplus.signum.indispensable`.
 It contains essentials such as:
 
 * `CryptoPublicKey` representing a public key. Currently, we support RSA and EC public keys on NIST curves.
-* `CryptoPrivateKey` representing a private key. Currently, we support RSA (`CryptoPrivateKey.RSA`) and EC (`CryptoPrivateKey.EC`) private keys on NIST curves. RSA keys always include the public key, EC keys may or may not contain a public key and/or curve.
+* `CryptoPrivateKey` representing a private key. Currently, we support RSA and EC private keys on NIST curves. RSA keys always include the public key, EC keys may or may not contain a public key and/or curve.
     * Has an additional specialization `CryptoPrivateKey.WithPublicKey` that always includes a public key
     * Encodes to PKCS#8 by default
     * RSA keys also support PKCS#1 encoding (`.asPKCS1`)
@@ -73,6 +73,18 @@ It contains essentials such as:
 which is implemented by `CryptoPrivateKey.EC`
 * `KeyAgreementPublicValue` denotes what the name implies. Currently, only ECDH is implemented, hence, there is a single subinterface `KeyAgreementPublicValue.ECDH`,
 which is implemented by `CryptoPublicKey.EC`
+* `MAC` defines the interface for message authentication codes
+    * `HMAC` defines HMAC for all supported `Digest` algorithms. The [Supreme](supreme.md) KMP crypto provider implements the actual HMAC functionality.
+* `SymmetricEncryptionAlgorithm` represents symmetric encryption algorithms. _Indispensable_ currently ships with definitions for AES-CBC, a flexible AES-CBC-HMAC, and AES-GCM, while the [Supreme](supreme.md) KMP crypto provider implements the actual AES functionality. 
+    * `BlockCipher` denotes a BlockCipher 
+    * `WithIV` denotes a Cipher requiring or supporting an initialization vector
+    * `Unauthanticated` denotes a non-authenticated encryption algorithm
+    * `Authenticated` denotes an authenticated encryption algorithm
+    * `Authenticated.WithDedicatedMac` describes an encryption authenticated encryption algorithm based on a non-authenticated one and a dedicated `MAC`, to achieve authenticated encryption
+* `Ciphertext` stores ciphertext produced by a symmetric cipher. It has dedicated accessors for every component of the ciphertext, such as `iv` and `encryptedData`
+    * `Unauthenticated` denotes a ciphertext produced by a `SymmetricEncryptionAlgorithm.Unauthenticated`
+    * `Authenticated` denotes a ciphertext produced by a `SymmetricEncryptionAlgorithm.Authenticated`, it also contains an `authTag` and, `aad`
+    * `Authenticated.WithDedicatedMac` restricts `Ciphertext.Authenticated` to ciphertexts produced by a `SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac`
 
 #### PKI-Related data Structures
 The `pki` package contains data classes relevant in the PKI context:

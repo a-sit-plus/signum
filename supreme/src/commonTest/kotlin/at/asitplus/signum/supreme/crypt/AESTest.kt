@@ -1,5 +1,6 @@
 import at.asitplus.signum.indispensable.Ciphertext
-import at.asitplus.signum.indispensable.EncryptionAlgorithm
+import at.asitplus.signum.indispensable.SymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1ContentBytes
 import at.asitplus.signum.indispensable.mac.MAC
 import at.asitplus.signum.supreme.crypt.*
 import at.asitplus.signum.supreme.succeed
@@ -12,6 +13,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNot
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import kotlinx.datetime.Clock
 import kotlin.random.Random
 
 @ExperimentalStdlibApi
@@ -20,9 +22,9 @@ class AESTest : FreeSpec({
     "AES" - {
         "CBC.PLAIN" - {
             withData(
-                EncryptionAlgorithm.AES_128.CBC.PLAIN,
-                EncryptionAlgorithm.AES_192.CBC.PLAIN,
-                EncryptionAlgorithm.AES_256.CBC.PLAIN,
+                SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
+                SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN,
+                SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN,
             ) {
 
                 val key = it.randomKey()
@@ -87,9 +89,9 @@ class AESTest : FreeSpec({
 
     "GCM" - {
         withData(
-            EncryptionAlgorithm.AES_128.GCM,
-            EncryptionAlgorithm.AES_192.GCM,
-            EncryptionAlgorithm.AES_256.GCM
+            SymmetricEncryptionAlgorithm.AES_128.GCM,
+            SymmetricEncryptionAlgorithm.AES_192.GCM,
+            SymmetricEncryptionAlgorithm.AES_256.GCM
         ) {
 
             val key = it.randomKey()
@@ -209,24 +211,24 @@ class AESTest : FreeSpec({
                 "Oklahoma".encodeToByteArray() + (iv ?: byteArrayOf()) + (aad
                     ?: byteArrayOf()) + ciphertext) { (_, macInputFun) ->
             withData(
-                EncryptionAlgorithm.AES_128.CBC.HMAC.SHA_1,
-                EncryptionAlgorithm.AES_192.CBC.HMAC.SHA_1,
-                EncryptionAlgorithm.AES_256.CBC.HMAC.SHA_1,
+                SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_1,
+                SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_1,
+                SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_1,
 
 
-                EncryptionAlgorithm.AES_128.CBC.HMAC.SHA_256,
-                EncryptionAlgorithm.AES_192.CBC.HMAC.SHA_256,
-                EncryptionAlgorithm.AES_256.CBC.HMAC.SHA_256,
+                SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_256,
+                SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_256,
+                SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_256,
 
 
-                EncryptionAlgorithm.AES_128.CBC.HMAC.SHA_384,
-                EncryptionAlgorithm.AES_192.CBC.HMAC.SHA_384,
-                EncryptionAlgorithm.AES_256.CBC.HMAC.SHA_384,
+                SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_384,
+                SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_384,
+                SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_384,
 
 
-                EncryptionAlgorithm.AES_128.CBC.HMAC.SHA_512,
-                EncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512,
-                EncryptionAlgorithm.AES_256.CBC.HMAC.SHA_512,
+                SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_512,
+                SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512,
+                SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_512,
             ) {
 
                 val key = it.randomKey()
@@ -424,5 +426,45 @@ class AESTest : FreeSpec({
                 }
             }
         }
+    }
+
+    "README" {
+        val payload = "More matter, with less Art!".encodeToByteArray()
+
+        //define parameters
+        val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
+        val secretKey = algorithm.randomKey()
+        val macKey = algorithm.randomKey()
+        val aad = Clock.System.now().toString().encodeToByteArray()
+
+        //we want to customise what is fed into the MAC
+        val customMacInputFn =
+            fun MAC.(ciphertext: ByteArray, iv: ByteArray?, aad: ByteArray?): ByteArray =
+                //this is the default
+                (iv ?: byteArrayOf()) + (aad ?: byteArrayOf()) + ciphertext +
+                        //but we augment it with the length of AAD:
+                        (aad?.size?.encodeToAsn1ContentBytes() ?: byteArrayOf())
+
+
+        val ciphertext =
+            //You typically oneshot this, and not re-use an encryptor, because you should never re-use an IV
+            algorithm.encryptorFor(
+                secretKey = secretKey,
+                /*iv defaults to null, forcing the generation of a random IV*/
+                dedicatedMacKey = macKey,
+                aad = aad,
+                dedicatedMacAuthTagCalculation = customMacInputFn
+            ).getOrThrow(/*TODO Error handling*/).encrypt(payload).getOrThrow(/*TODO Error Handling*/)
+
+        //The ciphertext object is of type Authenticated.WithDedicatedMac, because AES-CBC-HMAC constrains the
+        //return type of the previous call to this type.
+        //The ciphertext object contains an IV, even though null was passed
+        //it also contains AAD and an authTag, in addition to encryptedData
+        //because everything is structured, decryption is simple
+        val recovered = ciphertext.decrypt(secretKey, macKey, customMacInputFn).getOrThrow(/*TODO Error handling*/)
+
+        recovered shouldBe payload //success!
+
+
     }
 })

@@ -6,29 +6,39 @@
 
 # Signum – Kotlin Multiplatform Crypto/PKI Library and ASN1 Parser + Encoder
 
-
 This [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html) library provides platform-independent data
 types and and platform-native functionality related to crypto and PKI applications:
 
-* **Multiplatform, platform-native crypto** &rarr; Check out the included [CMP demo App](app.md) to see it in
+* **Multiplatform, platform-native crypto** &rarr; Check out the included [CMP demo App]((https://github.com/a-sit-plus/signum/tree/main/demoapp) to see it in
   action!
-  * **ECDSA and RSA Signer and Verifier**
-  * **Multiplatform ECDH key agreement**
-  * **Hardware-Backed crypto on Android and iOS**
-  * **Platform-native attestation on iOS and Android**
-  * **Configurable biometric authentication on Android and iOS without callbacks or activity passing** (✨Magic!✨)
+    * **ECDSA and RSA Signer and Verifier**
+    * **Multiplatform ECDH key agreement**
+    * **Multiplatform AES**
+    * **Multiplatform HMAC**
+    * **Hardware-Backed crypto on Android and iOS**
+    * **Platform-native attestation on iOS and Android**
+   * **Configurable biometric authentication on Android and iOS without callbacks or activity passing** (✨Magic!✨)
 * Public Keys (RSA and EC)
 * Private Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)
-  @@ -28,10 +31,11 @@ types and functionality related to crypto and PKI applications:
+* X509 Certificate Class (create, encode, decode)
+* Certification Request (CSR)
+* ObjectIdentifier Class with human-readable notation (e.g. 1.2.9.6245.3.72.13.4.7.6)
+* Generic ASN.1 abstractions to operate on and create arbitrary ASN.1 Data
+* JOSE-related data structures (JSON Web Keys, JWT, etc…)
+* COSE-related data structures (COSE Keys, CWT, etc…)
+* Serializability of all ASN.1 classes for debugging **and only for debugging!!!** *Seriously, do not try to deserialize
+  ASN.1 classes through kotlinx.serialization! Use `decodeFromDer()` and its companions!*
+* 100% pure Kotlin BitSet
 * Exposes Multibase Encoder/Decoder as an API dependency
   including [Matthew Nelson's smashing Base16, Base32, and Base64 encoders](https://github.com/05nelsonm/encoding)
 * **ASN.1 Parser and Encoder including a DSL to generate ASN.1 structures**
-  * Parse, create, explore certificates, public keys, CSRs, and **arbitrary ASN.1* structures* on all supported platforms
+    * Parse, create, explore certificates, public keys, CSRs, and **arbitrary ASN.1* structures* on all supported platforms
 
 This last bit means that you can share ASN.1-related logic across platforms.
 The very first bit means that you can create and verify signatures on the JVM, Android and on iOS, using platform-native
 crypto hardware.
+
 **We also provide comprehensive API docs [here](dokka/index.html)**!
 
 ## Using it in your Projects
@@ -112,6 +122,33 @@ val signature: CryptoSignature = TODO("This was sent alongside the plaintext.")
 val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey).getOrThrow()
 val isValid = verifier.verify(plaintext, signature).isSuccess
 println("Looks good? $isValid")
+```
+
+### Symmetric Encryption (Supreme)
+We currently support AES-CBC, AES-GCM, and a very flexible flavour of AES-CMC-HMAC.
+This is supported across all _Supreme_ targets and works as follows:
+```kotlin
+val payload = "More matter, with less Art!".encodeToByteArray()
+
+//define parameters
+val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
+val secretKey = algorithm.randomKey()
+val macKey = algorithm.randomKey()
+val aad = Clock.System.now().toString().encodeToByteArray()
+
+val ciphertext =
+    //You typically chain encryptorFor and encrypt
+    //because you should never re-use an IV
+    algorithm.encryptorFor(
+        secretKey = secretKey,
+        dedicatedMacKey = macKey,
+        aad = aad
+    ).getOrThrow(/*TODO Error handling*/)
+        .encrypt(payload).getOrThrow(/*TODO Error Handling*/)
+val recovered = ciphertext.decrypt(secretKey, macKey)
+    .getOrThrow(/*TODO Error handling*/)
+
+recovered shouldBe payload //success!
 ```
 
 ### ASN.1 Parsing and Encoding
