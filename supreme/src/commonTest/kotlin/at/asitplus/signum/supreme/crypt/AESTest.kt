@@ -1,12 +1,9 @@
 import at.asitplus.signum.indispensable.Ciphertext
 import at.asitplus.signum.indispensable.EncryptionAlgorithm
 import at.asitplus.signum.indispensable.mac.MAC
-import at.asitplus.signum.supreme.crypt.DefaultDedicatedMacInputCalculation
-import at.asitplus.signum.supreme.crypt.decrypt
-import at.asitplus.signum.supreme.crypt.encryptorFor
-import at.asitplus.signum.supreme.crypt.randomIV
-import at.asitplus.signum.supreme.crypt.randomKey
+import at.asitplus.signum.supreme.crypt.*
 import at.asitplus.signum.supreme.succeed
+import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -32,8 +29,8 @@ class AESTest : FreeSpec({
                 val plaintext = Random.Default.nextBytes(256)
 
                 withData(
-                    nameFn = { "IV: " + it?.toHexString() },
-                    Random.Default.nextBytes((it.ivNumBits / 8u).toInt()),
+                    nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
+                    it.randomIV(),
                     null
                 ) { iv ->
 
@@ -67,8 +64,9 @@ class AESTest : FreeSpec({
                     wrongWrongDecrypted shouldNot succeed
 
                     val wrongRightDecrypted = wrongCiphertext.decrypt(key)
-                    wrongRightDecrypted shouldNot succeed
-
+                    withClue("KEY: ${key.toHexString()}, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData}, iv: ${wrongCiphertext.iv?.toHexString()}") {
+                        wrongRightDecrypted shouldNot succeed //unrealistic, but could succeed
+                    }
                     val wrongIV = Ciphertext.Unauthenticated(
                         ciphertext.algorithm,
                         ciphertext.encryptedData,
@@ -97,8 +95,8 @@ class AESTest : FreeSpec({
             val key = it.randomKey()
             val plaintext = Random.Default.nextBytes(256)
             withData(
-                nameFn = { "IV: " + it?.toHexString() },
-                Random.Default.nextBytes((it.ivNumBits / 8u).toInt()),
+                nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
+                it.randomIV(),
                 null
             ) { iv ->
 
@@ -235,7 +233,7 @@ class AESTest : FreeSpec({
                 val plaintext = Random.Default.nextBytes(256)
 
                 withData(
-                    nameFn = { "MAC KEY " + it.toHexString() },
+                    nameFn = { "MAC KEY " + it.toHexString().substring(0..8) },
                     Random.Default.nextBytes(8),
                     Random.Default.nextBytes(16),
                     Random.Default.nextBytes(32),
@@ -243,11 +241,15 @@ class AESTest : FreeSpec({
                 ) { macKey ->
 
                     withData(
-                        nameFn = { "IV: " + it?.toHexString() },
+                        nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
                         Random.Default.nextBytes((it.ivNumBits / 8u).toInt()),
                         null
                     ) { iv ->
-                        withData(nameFn = { "AAD: " + it?.toHexString() }, Random.Default.nextBytes(32), null) { aad ->
+                        withData(
+                            nameFn = { "AAD: " + it?.toHexString()?.substring(0..8) },
+                            Random.Default.nextBytes(32),
+                            null
+                        ) { aad ->
                             println("KEY: ${key.toHexString()} MACKEY: ${macKey.toHexString()} IV: ${iv?.toHexString()}  plaintext: ${plaintext.toHexString()}")
                             val ciphertext =
                                 it.encryptorFor(key, macKey, iv, aad, macInputFun).getOrThrow().encrypt(plaintext)
@@ -262,7 +264,12 @@ class AESTest : FreeSpec({
                             val randomIV = it.randomIV()
                             it.encryptorFor(key, macKey, randomIV, aad) { _, _, _ ->
                                 "Manila".encodeToByteArray()
-                            }.getOrThrow().encrypt(plaintext).getOrThrow() shouldBe it.encryptorFor(key, macKey, randomIV, aad) { _, _, _ ->
+                            }.getOrThrow().encrypt(plaintext).getOrThrow() shouldBe it.encryptorFor(
+                                key,
+                                macKey,
+                                randomIV,
+                                aad
+                            ) { _, _, _ ->
                                 "Manila".encodeToByteArray()
                             }.getOrThrow().encrypt(plaintext).getOrThrow()
 
