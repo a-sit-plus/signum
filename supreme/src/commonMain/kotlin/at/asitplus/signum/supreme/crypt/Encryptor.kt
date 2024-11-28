@@ -5,6 +5,7 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.AuthTrait
 import at.asitplus.signum.indispensable.Ciphertext
 import at.asitplus.signum.indispensable.EncryptionAlgorithm
+import at.asitplus.signum.indispensable.mac.MAC
 import at.asitplus.signum.supreme.mac.mac
 import org.kotlincrypto.SecureRandom
 
@@ -25,7 +26,7 @@ fun EncryptionAlgorithm.Authenticated.encryptorFor(
     aad: ByteArray? = null
 ): KmmResult<Encryptor<AuthTrait.Authenticated, EncryptionAlgorithm.Authenticated, Ciphertext.Authenticated>> =
     catching {
-        Encryptor(this, secretKey, null, iv, aad)
+        Encryptor(this, secretKey, null, iv, aad, DefaultDedicatedMacInputCalculation)
     }
 
 fun EncryptionAlgorithm.Unauthenticated.encryptorFor(
@@ -33,26 +34,28 @@ fun EncryptionAlgorithm.Unauthenticated.encryptorFor(
     iv: ByteArray? = null,
 ): KmmResult<Encryptor<AuthTrait.Unauthenticated, EncryptionAlgorithm.Unauthenticated, Ciphertext.Unauthenticated>> =
     catching {
-        Encryptor(this, secretKey, null, iv, null)
+        Encryptor(this, secretKey, null, iv, null, DefaultDedicatedMacInputCalculation)
     }
 
 fun EncryptionAlgorithm.WithDedicatedMac.encryptorFor(
     secretKey: ByteArray,
     dedicatedMacKey: ByteArray = secretKey,
     iv: ByteArray? = null,
-    aad: ByteArray? = null
+    aad: ByteArray? = null,
+    dedicatedMacAuthTagCalculation: DedicatedMacInputCalculation = DefaultDedicatedMacInputCalculation,
 ): KmmResult<Encryptor<AuthTrait.Authenticated, EncryptionAlgorithm.Authenticated, Ciphertext.Authenticated.WithDedicatedMac>> =
     catching {
-        Encryptor(this, secretKey, dedicatedMacKey, iv, aad)
+        Encryptor(this, secretKey, dedicatedMacKey, iv, aad, dedicatedMacAuthTagCalculation)
     }
 
 
 class Encryptor<A : AuthTrait, E : EncryptionAlgorithm<A>, C : Ciphertext<A, E>> internal constructor(
-    protected val algorithm: E,
-    protected val key: ByteArray,
-    protected val macKey: ByteArray?,
-    protected val iv: ByteArray?,
-    protected val aad: ByteArray?
+    private val algorithm: E,
+    private val key: ByteArray,
+    private val macKey: ByteArray?,
+    private val iv: ByteArray?,
+    private val aad: ByteArray?,
+    private val macAuthTagCalculation: DedicatedMacInputCalculation
 ) {
 
     init {
@@ -81,7 +84,8 @@ class Encryptor<A : AuthTrait, E : EncryptionAlgorithm<A>, C : Ciphertext<A, E>>
                 require(macKey != null) { "AES-CBC-HMAC mac key implementation error. Report this bug!" }
                 val encrypted = innerCipher.encrypt(data).getOrThrow().encryptedData
 
-                val hmacInput: ByteArray = innerCipher.iv + (aad ?: byteArrayOf()) + encrypted
+                val hmacInput: ByteArray =
+                    aMac.mac.macAuthTagCalculation(encrypted, innerCipher.iv, (aad ?: byteArrayOf()))
 
                 val maced = aMac.mac.mac(macKey, hmacInput).getOrThrow()
                 return@catching Ciphertext.Authenticated.WithDedicatedMac(
@@ -96,6 +100,19 @@ class Encryptor<A : AuthTrait, E : EncryptionAlgorithm<A>, C : Ciphertext<A, E>>
 
 }
 
+typealias DedicatedMacInputCalculation = MAC.(ciphertext: ByteArray, iv: ByteArray?, aad: ByteArray?) -> ByteArray
+
+/**
+ * The default dedicated mac input calculation:
+ * ```kotlin
+ * (iv?: byteArrayOf()) + (aad ?: byteArrayOf()) + ciphertext
+ * ```
+ */
+val DefaultDedicatedMacInputCalculation: DedicatedMacInputCalculation =
+    fun MAC.(ciphertext: ByteArray, iv: ByteArray?, aad: ByteArray?): ByteArray =
+        (iv ?: byteArrayOf()) + (aad ?: byteArrayOf()) + ciphertext
+
+
 internal data class CipherParam<T, A : AuthTrait>(
     val alg: EncryptionAlgorithm<out A>,
     val platformData: T,
@@ -108,6 +125,11 @@ internal data class CipherParam<T, A : AuthTrait>(
  * Generates a new random key matching the key size of this algorithm
  */
 fun EncryptionAlgorithm<*>.randomKey(): ByteArray = secureRandom.nextBytesOf((keyNumBits / 8u).toInt())
+
+/**
+ * Generates a new random IV matching the IV size of this algorithm
+ */
+fun EncryptionAlgorithm.WithIV<*>.randomIV(): ByteArray = secureRandom.nextBytesOf((ivNumBits / 8u).toInt())
 
 internal expect fun <T, A : AuthTrait, E : EncryptionAlgorithm<A>> initCipher(
     algorithm: E,
@@ -142,9 +164,11 @@ fun <A : AuthTrait, E : EncryptionAlgorithm<A>> Ciphertext<A, E>.decrypt(secretK
 
 fun Ciphertext.Authenticated.WithDedicatedMac.decrypt(
     secretKey: ByteArray,
-    macKey: ByteArray = secretKey
+    macKey: ByteArray = secretKey,
+    dedicatedMacInputCalculation: DedicatedMacInputCalculation = DefaultDedicatedMacInputCalculation
 ): KmmResult<ByteArray> {
-    val hmacInput: ByteArray = (iv ?: byteArrayOf()) + (aad ?: byteArrayOf()) + encryptedData
+    val hmacInput =
+        algorithm.mac.dedicatedMacInputCalculation(encryptedData, iv, aad)
 
     if (!(algorithm.mac.mac(macKey, hmacInput).getOrThrow().contentEquals(this.authTag))) return KmmResult.failure(
         IllegalArgumentException("Auth Tag mismatch!")
