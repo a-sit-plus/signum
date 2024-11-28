@@ -145,7 +145,10 @@ fun Ciphertext.Authenticated.WithDedicatedMac.decrypt(
     macKey: ByteArray = secretKey
 ): KmmResult<ByteArray> {
     val hmacInput: ByteArray = (iv ?: byteArrayOf()) + (aad ?: byteArrayOf()) + encryptedData
-    require(algorithm.mac.mac(macKey, hmacInput).getOrThrow().contentEquals(this.authTag)) { "Auth Tag mismatch!" }
+
+    if (!(algorithm.mac.mac(macKey, hmacInput).getOrThrow().contentEquals(this.authTag))) return KmmResult.failure(
+        IllegalArgumentException("Auth Tag mismatch!")
+    )
     return Ciphertext.Unauthenticated(algorithm.innerCipher, encryptedData, iv).decrypt(secretKey)
 }
 

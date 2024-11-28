@@ -6,7 +6,7 @@ package at.asitplus.signum.indispensable
 sealed class Ciphertext<out A : AuthTrait, T : EncryptionAlgorithm<out A>>(
     open val algorithm: T,
     val encryptedData: ByteArray,
-    val iv: ByteArray? = null
+    val iv: ByteArray?
 ) {
 
     abstract fun getEncoded(): ByteArray
@@ -17,7 +17,7 @@ sealed class Ciphertext<out A : AuthTrait, T : EncryptionAlgorithm<out A>>(
     open class Authenticated(
         algorithm: EncryptionAlgorithm.Authenticated,
         encryptedData: ByteArray,
-        iv: ByteArray? = null,
+        iv: ByteArray?,
         val authTag: ByteArray,
         val aad: ByteArray?
     ) : Ciphertext<AuthTrait.Authenticated, EncryptionAlgorithm.Authenticated>(algorithm, encryptedData, iv) {
@@ -44,7 +44,7 @@ sealed class Ciphertext<out A : AuthTrait, T : EncryptionAlgorithm<out A>>(
     class Unauthenticated(
         algorithm: EncryptionAlgorithm.Unauthenticated,
         encryptedData: ByteArray,
-        iv: ByteArray? = null
+        iv: ByteArray?
     ) : Ciphertext<AuthTrait.Unauthenticated, EncryptionAlgorithm.Unauthenticated>(algorithm, encryptedData, iv) {
 
         override fun getEncoded() = (iv ?: byteArrayOf()) + encryptedData
