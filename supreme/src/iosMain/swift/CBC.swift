@@ -30,7 +30,7 @@ import Foundation
       CCCrypt(
         CCOperation(operation),
         CCAlgorithm(kCCAlgorithmAES),
-        CCOptions(kCCOptionPKCS7Padding),
+        0, //manual padding
         key.bytes, keySize,
         iv.bytes,
         data.bytes, size_t(data.length),
