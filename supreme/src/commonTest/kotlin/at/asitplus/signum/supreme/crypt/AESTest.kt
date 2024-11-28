@@ -54,13 +54,30 @@ class AESTest : FreeSpec({
                     val wrongDecrypted = ciphertext.decrypt(ciphertext.algorithm.randomKey())
                     wrongDecrypted shouldNot succeed
 
-                    val wrongCiphertext = Ciphertext.Unauthenticated(ciphertext.algorithm, Random.Default.nextBytes(ciphertext.encryptedData.size), iv= ciphertext.iv)
+                    val wrongCiphertext = Ciphertext.Unauthenticated(
+                        ciphertext.algorithm,
+                        Random.Default.nextBytes(ciphertext.encryptedData.size),
+                        iv = ciphertext.iv
+                    )
 
-                    val wrongWrongDecrypted= wrongCiphertext.decrypt(ciphertext.algorithm.randomKey())
+                    val wrongWrongDecrypted = wrongCiphertext.decrypt(ciphertext.algorithm.randomKey())
                     wrongWrongDecrypted shouldNot succeed
 
                     val wrongRightDecrypted = wrongCiphertext.decrypt(key)
                     wrongRightDecrypted shouldNot succeed
+
+                    val wrongIV = Ciphertext.Unauthenticated(
+                        ciphertext.algorithm,
+                        ciphertext.encryptedData,
+                        iv = ciphertext.iv!!.asList().shuffled().toByteArray()
+                    )
+
+                    val wrongIVDecrypted = wrongIV.decrypt(key)
+                    wrongIVDecrypted should succeed
+                    wrongIVDecrypted shouldNotBe plaintext
+
+                    Ciphertext.Unauthenticated(ciphertext.algorithm, ciphertext.encryptedData, iv = null)
+                        .decrypt(key) shouldNot succeed
 
                 }
             }
@@ -99,6 +116,87 @@ class AESTest : FreeSpec({
                     val decrypted = ciphertext.decrypt(key).getOrThrow()
                     println("DECRYPTED: " + decrypted.toHexString(HexFormat.UpperCase))
                     decrypted shouldBe plaintext
+
+
+                    val wrongDecrypted = ciphertext.decrypt(ciphertext.algorithm.randomKey())
+                    wrongDecrypted shouldNot succeed
+
+                    val wrongCiphertext = Ciphertext.Authenticated(
+                        ciphertext.algorithm,
+                        Random.Default.nextBytes(ciphertext.encryptedData.size),
+                        iv = ciphertext.iv,
+                        authTag = ciphertext.authTag,
+                        aad = ciphertext.aad
+                    )
+
+                    val wrongWrongDecrypted = wrongCiphertext.decrypt(ciphertext.algorithm.randomKey())
+                    wrongWrongDecrypted shouldNot succeed
+
+                    val wrongRightDecrypted = wrongCiphertext.decrypt(key)
+                    wrongRightDecrypted shouldNot succeed
+
+                    val wrongIV = Ciphertext.Authenticated(
+                        ciphertext.algorithm,
+                        ciphertext.encryptedData,
+                        iv = ciphertext.iv!!.asList().shuffled().toByteArray(),
+                        authTag = ciphertext.authTag,
+                        aad = ciphertext.aad
+                    )
+
+                    val wrongIVDecrypted = wrongIV.decrypt(key)
+                    wrongIVDecrypted shouldNot succeed
+
+                    Ciphertext.Authenticated(
+                        ciphertext.algorithm,
+                        ciphertext.encryptedData,
+                        iv = null,
+                        authTag = ciphertext.authTag,
+                        aad = ciphertext.aad
+                    ).decrypt(key) shouldNot succeed
+
+
+                    Ciphertext.Authenticated(
+                        ciphertext.algorithm,
+                        ciphertext.encryptedData,
+                        iv = ciphertext.iv!!.asList().shuffled().toByteArray(),
+                        authTag = ciphertext.authTag,
+                        aad = ciphertext.aad
+                    ).decrypt(key) shouldNot succeed
+
+                    if (aad != null) {
+                        Ciphertext.Authenticated(
+                            ciphertext.algorithm,
+                            ciphertext.encryptedData,
+                            iv = ciphertext.iv,
+                            authTag = ciphertext.authTag,
+                            aad = null
+                        ).decrypt(key) shouldNot succeed
+
+                        Ciphertext.Authenticated(
+                            ciphertext.algorithm,
+                            ciphertext.encryptedData,
+                            iv = null,
+                            authTag = ciphertext.authTag,
+                            aad = null
+                        ).decrypt(key) shouldNot succeed
+
+
+                        Ciphertext.Authenticated(
+                            ciphertext.algorithm,
+                            ciphertext.encryptedData,
+                            iv = null,
+                            authTag = ciphertext.authTag.asList().shuffled().toByteArray(),
+                            aad = null
+                        ).decrypt(key) shouldNot succeed
+                    }
+
+                    Ciphertext.Authenticated(
+                        ciphertext.algorithm,
+                        ciphertext.encryptedData,
+                        iv = ciphertext.iv,
+                        authTag = ciphertext.authTag.asList().shuffled().toByteArray(),
+                        aad = ciphertext.aad
+                    ).decrypt(key) shouldNot succeed
                 }
             }
         }
@@ -157,6 +255,94 @@ class AESTest : FreeSpec({
                         val decrypted = ciphertext.decrypt(key, macKey).getOrThrow()
                         println("DECRYPTED: " + decrypted.toHexString(HexFormat.UpperCase))
                         decrypted shouldBe plaintext
+
+                        val wrongDecrypted = ciphertext.decrypt(ciphertext.algorithm.randomKey())
+                        wrongDecrypted shouldNot succeed
+
+                        val wrongCiphertext = Ciphertext.Authenticated(
+                            ciphertext.algorithm,
+                            Random.Default.nextBytes(ciphertext.encryptedData.size),
+                            iv = ciphertext.iv,
+                            authTag = ciphertext.authTag,
+                            aad = ciphertext.aad
+                        )
+
+                        val wrongWrongDecrypted = wrongCiphertext.decrypt(ciphertext.algorithm.randomKey())
+                        wrongWrongDecrypted shouldNot succeed
+
+                        val wrongRightDecrypted = wrongCiphertext.decrypt(key)
+                        wrongRightDecrypted shouldNot succeed
+
+                        val wrongIV = Ciphertext.Authenticated.WithDedicatedMac(
+                            ciphertext.algorithm,
+                            ciphertext.encryptedData,
+                            iv = ciphertext.iv!!.asList().shuffled().toByteArray(),
+                            authTag = ciphertext.authTag,
+                            aad = ciphertext.aad
+                        )
+
+                        val wrongIVDecrypted = wrongIV.decrypt(key, macKey = macKey)
+                        wrongIVDecrypted shouldNot succeed
+
+                        Ciphertext.Authenticated.WithDedicatedMac(
+                            ciphertext.algorithm,
+                            ciphertext.encryptedData,
+                            iv = null,
+                            authTag = ciphertext.authTag,
+                            aad = ciphertext.aad,
+                        ).decrypt(key, macKey = macKey) shouldNot succeed
+
+
+                        Ciphertext.Authenticated.WithDedicatedMac(
+                            ciphertext.algorithm,
+                            ciphertext.encryptedData,
+                            iv = ciphertext.iv!!.asList().shuffled().toByteArray(),
+                            authTag = ciphertext.authTag,
+                            aad = ciphertext.aad,
+                        ).decrypt(key, macKey = macKey) shouldNot succeed
+
+                        Ciphertext.Authenticated.WithDedicatedMac(
+                            ciphertext.algorithm,
+                            ciphertext.encryptedData,
+                            iv = ciphertext.iv,
+                            authTag = ciphertext.authTag,
+                            aad = ciphertext.aad,
+                        ).decrypt(key, macKey = macKey.asList().shuffled().toByteArray()) shouldNot succeed
+
+                        if (aad != null) {
+                            Ciphertext.Authenticated.WithDedicatedMac(
+                                ciphertext.algorithm,
+                                ciphertext.encryptedData,
+                                iv = ciphertext.iv,
+                                authTag = ciphertext.authTag,
+                                aad = null,
+                            ).decrypt(key, macKey = macKey) shouldNot succeed
+
+                            Ciphertext.Authenticated.WithDedicatedMac(
+                                ciphertext.algorithm,
+                                ciphertext.encryptedData,
+                                iv = null,
+                                authTag = ciphertext.authTag,
+                                aad = null,
+                            ).decrypt(key, macKey = macKey) shouldNot succeed
+
+
+                            Ciphertext.Authenticated.WithDedicatedMac(
+                                ciphertext.algorithm,
+                                ciphertext.encryptedData,
+                                iv = null,
+                                authTag = ciphertext.authTag.asList().shuffled().toByteArray(),
+                                aad = null,
+                            ).decrypt(key, macKey = macKey) shouldNot succeed
+                        }
+
+                        Ciphertext.Authenticated.WithDedicatedMac(
+                            ciphertext.algorithm,
+                            ciphertext.encryptedData,
+                            iv = ciphertext.iv,
+                            authTag = ciphertext.authTag.asList().shuffled().toByteArray(),
+                            aad = ciphertext.aad
+                        ).decrypt(key, macKey = macKey) shouldNot succeed
                     }
 
                 }
