@@ -154,12 +154,22 @@ internal data class CipherParam<T, A : AuthTrait>(
 /**
  * Generates a new random key matching the key size of this algorithm
  */
-fun SymmetricEncryptionAlgorithm<*>.randomKey(): ByteArray = secureRandom.nextBytesOf((keyNumBits / 8u).toInt())
+fun SymmetricEncryptionAlgorithm<*>.randomKey(): ByteArray {
+    var key = secureRandom.nextBytesOf((keyNumBits / 8u).toInt())
+    while (key.all { it == 0.toByte() })
+        key = secureRandom.nextBytesOf((keyNumBits / 8u).toInt())
+    return key
+}
 
 /**
  * Generates a new random IV matching the IV size of this algorithm
  */
-fun SymmetricEncryptionAlgorithm.WithIV<*>.randomIV(): ByteArray = secureRandom.nextBytesOf((ivNumBits / 8u).toInt())
+fun SymmetricEncryptionAlgorithm.WithIV<*>.randomIV(): ByteArray {
+    var key = secureRandom.nextBytesOf((ivNumBits / 8u).toInt())
+    while (key.all { it == 0.toByte() })
+        key = secureRandom.nextBytesOf((ivNumBits / 8u).toInt())
+    return key
+}
 
 internal expect fun <T, A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>> initCipher(
     algorithm: E,
