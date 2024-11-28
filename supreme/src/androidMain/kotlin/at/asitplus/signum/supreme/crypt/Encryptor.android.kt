@@ -13,8 +13,6 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-private val secureRandom = SecureRandom()
-
 actual internal fun <T, A : AuthTrait, E : EncryptionAlgorithm<A>> initCipher(
     algorithm: E,
     key: ByteArray,
@@ -23,7 +21,7 @@ actual internal fun <T, A : AuthTrait, E : EncryptionAlgorithm<A>> initCipher(
     aad: ByteArray?
 ): CipherParam<T,A> {
     if(algorithm !is EncryptionAlgorithm.WithIV<*>) TODO()
-    val nonce = iv ?: ByteArray(algorithm.ivNumBits.toInt() / 8).apply { secureRandom.nextBytes(this) }
+    val nonce = iv ?: algorithm.randomIV()
     return Cipher.getInstance(algorithm.jcaName).apply {
         if (algorithm is EncryptionAlgorithm.AES.GCM)
             init(

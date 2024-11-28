@@ -13,12 +13,10 @@ import at.asitplus.signum.supreme.swiftcall
 import at.asitplus.signum.supreme.toByteArray
 import at.asitplus.signum.supreme.toNSData
 import kotlinx.cinterop.ExperimentalForeignApi
-import org.kotlincrypto.SecureRandom
 import platform.CoreCrypto.kCCDecrypt
 import platform.CoreCrypto.kCCEncrypt
 
 
-private val secureRandom = SecureRandom()
 
 actual internal fun <T, A : AuthTrait, E : EncryptionAlgorithm<A>> initCipher(
     algorithm: E,
@@ -28,7 +26,7 @@ actual internal fun <T, A : AuthTrait, E : EncryptionAlgorithm<A>> initCipher(
     aad: ByteArray?
 ): CipherParam<T, A> {
     if (algorithm !is EncryptionAlgorithm.WithIV<*>) TODO()
-    val nonce = iv ?: secureRandom.nextBytesOf(algorithm.ivNumBits.toInt() / 8)
+    val nonce = iv ?: algorithm.randomIV()
     return CipherParam<ByteArray, A>(algorithm, key, macKey ?: key, nonce, aad) as CipherParam<T, A>
 }
 
