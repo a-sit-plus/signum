@@ -26,186 +26,222 @@ class AESTest : FreeSpec({
                 SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN,
                 SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN,
             ) {
-
-                val key = it.randomKey()
-                val plaintext = Random.Default.nextBytes(256)
-
                 withData(
-                    nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
-                    it.randomIV(),
-                    null
-                ) { iv ->
+                    nameFn = { "${it.size} Bytes" },
+                    Random.Default.nextBytes(5),
+                    Random.Default.nextBytes(15),
+                    Random.Default.nextBytes(16),
+                    Random.Default.nextBytes(17),
+                    Random.Default.nextBytes(31),
+                    Random.Default.nextBytes(32),
+                    Random.Default.nextBytes(33),
+                    Random.Default.nextBytes(256),
+                    Random.Default.nextBytes(257),
+                    Random.Default.nextBytes(1257),
+                    Random.Default.nextBytes(21257),
+                ) { plaintext ->
+                    val key = it.randomKey()
+
+                    withData(
+                        nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
+                        it.randomIV(),
+                        null
+                    ) { iv ->
 
 
-                    println("KEY: ${key.toHexString()} IV: ${iv?.toHexString()}  plaintext: ${plaintext.toHexString()}")
+                        println("KEY: ${key.toHexString()} IV: ${iv?.toHexString()}  plaintext: ${plaintext.toHexString()}")
 
-                    val ciphertext = it.encryptorFor(key, iv).getOrThrow().encrypt(plaintext).getOrThrow()
-
-
-                    println(ciphertext)
-                    ciphertext.iv.shouldNotBeNull()
-                    ciphertext.iv!!.size * 8 shouldBe it.ivNumBits.toInt()
-                    iv?.let { ciphertext.iv shouldBe it }
-                    ciphertext.shouldBeInstanceOf<Ciphertext.Unauthenticated>()
+                        val ciphertext = it.encryptorFor(key, iv).getOrThrow().encrypt(plaintext).getOrThrow()
 
 
-                    val decrypted = ciphertext.decrypt(key).getOrThrow()
-                    println("DECRYPTED: " + decrypted.toHexString(HexFormat.UpperCase))
-                    decrypted shouldBe plaintext
+                        println(ciphertext)
+                        ciphertext.iv.shouldNotBeNull()
+                        ciphertext.iv!!.size * 8 shouldBe it.ivNumBits.toInt()
+                        iv?.let { ciphertext.iv shouldBe it }
+                        ciphertext.shouldBeInstanceOf<Ciphertext.Unauthenticated>()
 
-                    val wrongDecrypted = ciphertext.decrypt(ciphertext.algorithm.randomKey())
-                    wrongDecrypted shouldNot succeed
 
-                    val wrongCiphertext = Ciphertext.Unauthenticated(
-                        ciphertext.algorithm,
-                        Random.Default.nextBytes(ciphertext.encryptedData.size),
-                        iv = ciphertext.iv
-                    )
+                        val decrypted = ciphertext.decrypt(key).getOrThrow()
+                        println("DECRYPTED: " + decrypted.toHexString(HexFormat.UpperCase))
+                        decrypted shouldBe plaintext
 
-                    val wrongWrongDecrypted = wrongCiphertext.decrypt(ciphertext.algorithm.randomKey())
-                    wrongWrongDecrypted shouldNot succeed
+                        val wrongDecrypted = ciphertext.decrypt(ciphertext.algorithm.randomKey())
+                        wrongDecrypted shouldNot succeed
 
-                    val wrongRightDecrypted = wrongCiphertext.decrypt(key)
-                    withClue("KEY: ${key.toHexString()}, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData}, iv: ${wrongCiphertext.iv?.toHexString()}") {
-                        wrongRightDecrypted shouldNot succeed //unrealistic, but could succeed
+                        val wrongCiphertext = Ciphertext.Unauthenticated(
+                            ciphertext.algorithm,
+                            Random.Default.nextBytes(ciphertext.encryptedData.size),
+                            iv = ciphertext.iv
+                        )
+
+                        val wrongWrongDecrypted = wrongCiphertext.decrypt(ciphertext.algorithm.randomKey())
+                        withClue("KEY: ${key.toHexString()}, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.iv?.toHexString()}") {
+                            //we're not authenticated, so from time to time, this succeeds
+                            //wrongWrongDecrypted shouldNot succeed
+                            //instead, we test differently:
+                           wrongWrongDecrypted.onSuccess { value -> value shouldNotBe plaintext }
+                        }
+                        val wrongRightDecrypted = wrongCiphertext.decrypt(key)
+                        withClue("KEY: ${key.toHexString()}, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.iv?.toHexString()}") {
+                            //we're not authenticated, so from time to time, this succeeds
+                            //wrongRightDecrypted shouldNot succeed
+                            //instead, we test differently:
+                            wrongRightDecrypted.onSuccess { value -> value shouldNotBe plaintext }
+                        }
+                        val wrongIV = Ciphertext.Unauthenticated(
+                            ciphertext.algorithm,
+                            ciphertext.encryptedData,
+                            iv = ciphertext.iv!!.asList().shuffled().toByteArray()
+                        )
+
+                        if (plaintext.size > it.blockSizeBits.toInt() / 8) { //cannot test like that for ciphertexts shorter than IV
+                            val wrongIVDecrypted = wrongIV.decrypt(key)
+                            wrongIVDecrypted should succeed
+                            wrongIVDecrypted shouldNotBe plaintext
+                        }
+
+                        Ciphertext.Unauthenticated(ciphertext.algorithm, ciphertext.encryptedData, iv = null)
+                            .decrypt(key) shouldNot succeed
+
                     }
-                    val wrongIV = Ciphertext.Unauthenticated(
-                        ciphertext.algorithm,
-                        ciphertext.encryptedData,
-                        iv = ciphertext.iv!!.asList().shuffled().toByteArray()
-                    )
-
-                    val wrongIVDecrypted = wrongIV.decrypt(key)
-                    wrongIVDecrypted should succeed
-                    wrongIVDecrypted shouldNotBe plaintext
-
-                    Ciphertext.Unauthenticated(ciphertext.algorithm, ciphertext.encryptedData, iv = null)
-                        .decrypt(key) shouldNot succeed
-
                 }
             }
         }
     }
-
     "GCM" - {
         withData(
             SymmetricEncryptionAlgorithm.AES_128.GCM,
             SymmetricEncryptionAlgorithm.AES_192.GCM,
             SymmetricEncryptionAlgorithm.AES_256.GCM
         ) {
-
-            val key = it.randomKey()
-            val plaintext = Random.Default.nextBytes(256)
             withData(
-                nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
-                it.randomIV(),
-                null
-            ) { iv ->
+                nameFn = { "${it.size} Bytes" },
+                Random.Default.nextBytes(5),
+                Random.Default.nextBytes(15),
+                Random.Default.nextBytes(16),
+                Random.Default.nextBytes(17),
+                Random.Default.nextBytes(31),
+                Random.Default.nextBytes(32),
+                Random.Default.nextBytes(33),
+                Random.Default.nextBytes(256),
+                Random.Default.nextBytes(257),
+                Random.Default.nextBytes(1257),
+                Random.Default.nextBytes(21257),
+            ) { plaintext ->
+                val key = it.randomKey()
+                withData(
+                    nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
+                    it.randomIV(),
+                    null
+                ) { iv ->
 
-                withData(nameFn = { "AAD: " + it?.toHexString() }, Random.Default.nextBytes(32), null) { aad ->
-                    println("KEY: ${key.toHexString()} IV: ${iv?.toHexString()}  plaintext: ${plaintext.toHexString()}")
+                    withData(nameFn = { "AAD: " + it?.toHexString() }, Random.Default.nextBytes(32), null) { aad ->
+                        println("KEY: ${key.toHexString()} IV: ${iv?.toHexString()}  plaintext: ${plaintext.toHexString()}")
 
-                    val ciphertext = it.encryptorFor(key, iv, aad).getOrThrow().encrypt(plaintext).getOrThrow()
-
-
-                    println(ciphertext)
-                    ciphertext.iv.shouldNotBeNull()
-                    ciphertext.iv!!.size * 8 shouldBe it.ivNumBits.toInt()
-
-                    iv?.let { ciphertext.iv shouldBe it }
-                    ciphertext.shouldBeInstanceOf<Ciphertext.Authenticated>()
-                    ciphertext.aad shouldBe aad
-
-                    val decrypted = ciphertext.decrypt(key).getOrThrow()
-                    println("DECRYPTED: " + decrypted.toHexString(HexFormat.UpperCase))
-                    decrypted shouldBe plaintext
-
-
-                    val wrongDecrypted = ciphertext.decrypt(ciphertext.algorithm.randomKey())
-                    wrongDecrypted shouldNot succeed
-
-                    val wrongCiphertext = Ciphertext.Authenticated(
-                        ciphertext.algorithm,
-                        Random.Default.nextBytes(ciphertext.encryptedData.size),
-                        iv = ciphertext.iv,
-                        authTag = ciphertext.authTag,
-                        aad = ciphertext.aad
-                    )
-
-                    val wrongWrongDecrypted = wrongCiphertext.decrypt(ciphertext.algorithm.randomKey())
-                    wrongWrongDecrypted shouldNot succeed
-
-                    val wrongRightDecrypted = wrongCiphertext.decrypt(key)
-                    wrongRightDecrypted shouldNot succeed
-
-                    val wrongIV = Ciphertext.Authenticated(
-                        ciphertext.algorithm,
-                        ciphertext.encryptedData,
-                        iv = ciphertext.iv!!.asList().shuffled().toByteArray(),
-                        authTag = ciphertext.authTag,
-                        aad = ciphertext.aad
-                    )
-
-                    val wrongIVDecrypted = wrongIV.decrypt(key)
-                    wrongIVDecrypted shouldNot succeed
-
-                    Ciphertext.Authenticated(
-                        ciphertext.algorithm,
-                        ciphertext.encryptedData,
-                        iv = null,
-                        authTag = ciphertext.authTag,
-                        aad = ciphertext.aad
-                    ).decrypt(key) shouldNot succeed
+                        val ciphertext = it.encryptorFor(key, iv, aad).getOrThrow().encrypt(plaintext).getOrThrow()
 
 
-                    Ciphertext.Authenticated(
-                        ciphertext.algorithm,
-                        ciphertext.encryptedData,
-                        iv = ciphertext.iv!!.asList().shuffled().toByteArray(),
-                        authTag = ciphertext.authTag,
-                        aad = ciphertext.aad
-                    ).decrypt(key) shouldNot succeed
+                        println(ciphertext)
+                        ciphertext.iv.shouldNotBeNull()
+                        ciphertext.iv!!.size * 8 shouldBe it.ivNumBits.toInt()
 
-                    if (aad != null) {
+                        iv?.let { ciphertext.iv shouldBe it }
+                        ciphertext.shouldBeInstanceOf<Ciphertext.Authenticated>()
+                        ciphertext.aad shouldBe aad
+
+                        val decrypted = ciphertext.decrypt(key).getOrThrow()
+                        println("DECRYPTED: " + decrypted.toHexString(HexFormat.UpperCase))
+                        decrypted shouldBe plaintext
+
+
+                        val wrongDecrypted = ciphertext.decrypt(ciphertext.algorithm.randomKey())
+                        wrongDecrypted shouldNot succeed
+
+                        val wrongCiphertext = Ciphertext.Authenticated(
+                            ciphertext.algorithm,
+                            Random.Default.nextBytes(ciphertext.encryptedData.size),
+                            iv = ciphertext.iv,
+                            authTag = ciphertext.authTag,
+                            aad = ciphertext.aad
+                        )
+
+                        val wrongWrongDecrypted = wrongCiphertext.decrypt(ciphertext.algorithm.randomKey())
+                        wrongWrongDecrypted shouldNot succeed
+
+                        val wrongRightDecrypted = wrongCiphertext.decrypt(key)
+                        wrongRightDecrypted shouldNot succeed
+
+                        val wrongIV = Ciphertext.Authenticated(
+                            ciphertext.algorithm,
+                            ciphertext.encryptedData,
+                            iv = ciphertext.iv!!.asList().shuffled().toByteArray(),
+                            authTag = ciphertext.authTag,
+                            aad = ciphertext.aad
+                        )
+
+                        val wrongIVDecrypted = wrongIV.decrypt(key)
+                        wrongIVDecrypted shouldNot succeed
+
+                        Ciphertext.Authenticated(
+                            ciphertext.algorithm,
+                            ciphertext.encryptedData,
+                            iv = null,
+                            authTag = ciphertext.authTag,
+                            aad = ciphertext.aad
+                        ).decrypt(key) shouldNot succeed
+
+
+                        Ciphertext.Authenticated(
+                            ciphertext.algorithm,
+                            ciphertext.encryptedData,
+                            iv = ciphertext.iv!!.asList().shuffled().toByteArray(),
+                            authTag = ciphertext.authTag,
+                            aad = ciphertext.aad
+                        ).decrypt(key) shouldNot succeed
+
+                        if (aad != null) {
+                            Ciphertext.Authenticated(
+                                ciphertext.algorithm,
+                                ciphertext.encryptedData,
+                                iv = ciphertext.iv,
+                                authTag = ciphertext.authTag,
+                                aad = null
+                            ).decrypt(key) shouldNot succeed
+
+                            Ciphertext.Authenticated(
+                                ciphertext.algorithm,
+                                ciphertext.encryptedData,
+                                iv = null,
+                                authTag = ciphertext.authTag,
+                                aad = null
+                            ).decrypt(key) shouldNot succeed
+
+
+                            Ciphertext.Authenticated(
+                                ciphertext.algorithm,
+                                ciphertext.encryptedData,
+                                iv = null,
+                                authTag = ciphertext.authTag.asList().shuffled().toByteArray(),
+                                aad = null
+                            ).decrypt(key) shouldNot succeed
+                        }
+
                         Ciphertext.Authenticated(
                             ciphertext.algorithm,
                             ciphertext.encryptedData,
                             iv = ciphertext.iv,
-                            authTag = ciphertext.authTag,
-                            aad = null
-                        ).decrypt(key) shouldNot succeed
-
-                        Ciphertext.Authenticated(
-                            ciphertext.algorithm,
-                            ciphertext.encryptedData,
-                            iv = null,
-                            authTag = ciphertext.authTag,
-                            aad = null
-                        ).decrypt(key) shouldNot succeed
-
-
-                        Ciphertext.Authenticated(
-                            ciphertext.algorithm,
-                            ciphertext.encryptedData,
-                            iv = null,
                             authTag = ciphertext.authTag.asList().shuffled().toByteArray(),
-                            aad = null
+                            aad = ciphertext.aad
                         ).decrypt(key) shouldNot succeed
                     }
-
-                    Ciphertext.Authenticated(
-                        ciphertext.algorithm,
-                        ciphertext.encryptedData,
-                        iv = ciphertext.iv,
-                        authTag = ciphertext.authTag.asList().shuffled().toByteArray(),
-                        aad = ciphertext.aad
-                    ).decrypt(key) shouldNot succeed
                 }
             }
         }
     }
+
     "CBC+HMAC" - {
         withData(
+            nameFn = { it.first },
             "Default" to DefaultDedicatedMacInputCalculation,
             "Oklahoma MAC" to fun MAC.(ciphertext: ByteArray, iv: ByteArray?, aad: ByteArray?): ByteArray =
                 "Oklahoma".encodeToByteArray() + (iv ?: byteArrayOf()) + (aad
@@ -230,198 +266,213 @@ class AESTest : FreeSpec({
                 SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512,
                 SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_512,
             ) {
-
-                val key = it.randomKey()
-                val plaintext = Random.Default.nextBytes(256)
-
                 withData(
-                    nameFn = { "MAC KEY " + it.toHexString().substring(0..8) },
-                    Random.Default.nextBytes(8),
+                    nameFn = { "${it.size} Bytes" },
+                    byteArrayOf(),
+                    Random.Default.nextBytes(5),
+                    Random.Default.nextBytes(15),
                     Random.Default.nextBytes(16),
+                    Random.Default.nextBytes(17),
+                    Random.Default.nextBytes(31),
                     Random.Default.nextBytes(32),
-                    key
-                ) { macKey ->
+                    Random.Default.nextBytes(33),
+                    Random.Default.nextBytes(256),
+                    Random.Default.nextBytes(257),
+                    Random.Default.nextBytes(1257),
+                    Random.Default.nextBytes(21257),
+                ) { plaintext ->
+
+                    val key = it.randomKey()
 
                     withData(
-                        nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
-                        Random.Default.nextBytes((it.ivNumBits / 8u).toInt()),
-                        null
-                    ) { iv ->
+                        nameFn = { "MAC KEY " + it.toHexString().substring(0..8) },
+                        Random.Default.nextBytes(8),
+                        Random.Default.nextBytes(16),
+                        Random.Default.nextBytes(32),
+                        key
+                    ) { macKey ->
+
                         withData(
-                            nameFn = { "AAD: " + it?.toHexString()?.substring(0..8) },
-                            Random.Default.nextBytes(32),
+                            nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
+                            Random.Default.nextBytes((it.ivNumBits / 8u).toInt()),
                             null
-                        ) { aad ->
-                            println("KEY: ${key.toHexString()} MACKEY: ${macKey.toHexString()} IV: ${iv?.toHexString()}  plaintext: ${plaintext.toHexString()}")
-                            val ciphertext =
-                                it.encryptorFor(key, macKey, iv, aad, macInputFun).getOrThrow().encrypt(plaintext)
-                                    .getOrThrow()
+                        ) { iv ->
+                            withData(
+                                nameFn = { "AAD: " + it?.toHexString()?.substring(0..8) },
+                                Random.Default.nextBytes(32),
+                                null
+                            ) { aad ->
+                                println("KEY: ${key.toHexString()} MACKEY: ${macKey.toHexString()} IV: ${iv?.toHexString()}  plaintext: ${plaintext.toHexString()}")
+                                val ciphertext =
+                                    it.encryptorFor(key, macKey, iv, aad, macInputFun).getOrThrow().encrypt(plaintext)
+                                        .getOrThrow()
 
-                            it.encryptorFor(key, macKey, iv, aad) { _, _, _ ->
-                                "Manila".encodeToByteArray()
-                            }.getOrThrow().encrypt(plaintext)
-                                .getOrThrow() shouldNotBe ciphertext
+                                it.encryptorFor(key, macKey, iv, aad) { _, _, _ ->
+                                    "Manila".encodeToByteArray()
+                                }.getOrThrow().encrypt(plaintext)
+                                    .getOrThrow() shouldNotBe ciphertext
 
-                            //no randomness. must be equal
-                            val randomIV = it.randomIV()
-                            it.encryptorFor(key, macKey, randomIV, aad) { _, _, _ ->
-                                "Manila".encodeToByteArray()
-                            }.getOrThrow().encrypt(plaintext).getOrThrow() shouldBe it.encryptorFor(
-                                key,
-                                macKey,
-                                randomIV,
-                                aad
-                            ) { _, _, _ ->
-                                "Manila".encodeToByteArray()
-                            }.getOrThrow().encrypt(plaintext).getOrThrow()
-
-
-                            println(ciphertext)
-                            iv?.let { ciphertext.iv shouldBe it }
-                            ciphertext.iv.shouldNotBeNull()
-                            ciphertext.shouldBeInstanceOf<Ciphertext.Authenticated.WithDedicatedMac>()
-                            ciphertext.aad shouldBe aad
-
-                            val decrypted = ciphertext.decrypt(key, macKey, macInputFun).getOrThrow()
-                            println("DECRYPTED: " + decrypted.toHexString(HexFormat.UpperCase))
-                            decrypted shouldBe plaintext
-
-                            val wrongDecrypted = ciphertext.decrypt(
-                                ciphertext.algorithm.randomKey(),
-                                dedicatedMacInputCalculation = macInputFun
-                            )
-                            wrongDecrypted shouldNot succeed
-
-                            val wrongCiphertext = Ciphertext.Authenticated.WithDedicatedMac(
-                                ciphertext.algorithm,
-                                Random.Default.nextBytes(ciphertext.encryptedData.size),
-                                iv = ciphertext.iv,
-                                authTag = ciphertext.authTag,
-                                aad = ciphertext.aad
-                            )
-
-                            val wrongWrongDecrypted = wrongCiphertext.decrypt(
-                                ciphertext.algorithm.randomKey(),
-                                dedicatedMacInputCalculation = macInputFun
-                            )
-                            wrongWrongDecrypted shouldNot succeed
-
-                            val wrongRightDecrypted =
-                                wrongCiphertext.decrypt(key, dedicatedMacInputCalculation = macInputFun)
-                            wrongRightDecrypted shouldNot succeed
-
-                            val wrongIV = Ciphertext.Authenticated.WithDedicatedMac(
-                                ciphertext.algorithm,
-                                ciphertext.encryptedData,
-                                iv = ciphertext.iv!!.asList().shuffled().toByteArray(),
-                                authTag = ciphertext.authTag,
-                                aad = ciphertext.aad
-                            )
-
-                            val wrongIVDecrypted =
-                                wrongIV.decrypt(key, macKey = macKey, dedicatedMacInputCalculation = macInputFun)
-                            wrongIVDecrypted shouldNot succeed
-
-                            Ciphertext.Authenticated.WithDedicatedMac(
-                                ciphertext.algorithm,
-                                ciphertext.encryptedData,
-                                iv = null,
-                                authTag = ciphertext.authTag,
-                                aad = ciphertext.aad,
-                            ).decrypt(
-                                key,
-                                macKey = macKey,
-                                dedicatedMacInputCalculation = macInputFun
-                            ) shouldNot succeed
+                                //no randomness. must be equal
+                                val randomIV = it.randomIV()
+                                it.encryptorFor(key, macKey, randomIV, aad) { _, _, _ ->
+                                    "Manila".encodeToByteArray()
+                                }.getOrThrow().encrypt(plaintext).getOrThrow() shouldBe it.encryptorFor(
+                                    key,
+                                    macKey,
+                                    randomIV,
+                                    aad
+                                ) { _, _, _ ->
+                                    "Manila".encodeToByteArray()
+                                }.getOrThrow().encrypt(plaintext).getOrThrow()
 
 
-                            Ciphertext.Authenticated.WithDedicatedMac(
-                                ciphertext.algorithm,
-                                ciphertext.encryptedData,
-                                iv = ciphertext.iv!!.asList().shuffled().toByteArray(),
-                                authTag = ciphertext.authTag,
-                                aad = ciphertext.aad,
-                            ).decrypt(
-                                key,
-                                macKey = macKey,
-                                dedicatedMacInputCalculation = macInputFun
-                            ) shouldNot succeed
+                                println(ciphertext)
+                                iv?.let { ciphertext.iv shouldBe it }
+                                ciphertext.iv.shouldNotBeNull()
+                                ciphertext.shouldBeInstanceOf<Ciphertext.Authenticated.WithDedicatedMac>()
+                                ciphertext.aad shouldBe aad
 
-                            Ciphertext.Authenticated.WithDedicatedMac(
-                                ciphertext.algorithm,
-                                ciphertext.encryptedData,
-                                iv = ciphertext.iv,
-                                authTag = ciphertext.authTag,
-                                aad = ciphertext.aad,
-                            ).decrypt(
-                                key,
-                                macKey = macKey.asList().shuffled().toByteArray(),
-                                dedicatedMacInputCalculation = macInputFun
-                            ) shouldNot succeed
+                                val decrypted = ciphertext.decrypt(key, macKey, macInputFun).getOrThrow()
+                                println("DECRYPTED: " + decrypted.toHexString(HexFormat.UpperCase))
+                                decrypted shouldBe plaintext
 
-                            if (aad != null) {
+                                val wrongDecrypted = ciphertext.decrypt(
+                                    ciphertext.algorithm.randomKey(),
+                                    dedicatedMacInputCalculation = macInputFun
+                                )
+                                wrongDecrypted shouldNot succeed
+
+                                val wrongCiphertext = Ciphertext.Authenticated.WithDedicatedMac(
+                                    ciphertext.algorithm,
+                                    Random.Default.nextBytes(ciphertext.encryptedData.size),
+                                    iv = ciphertext.iv,
+                                    authTag = ciphertext.authTag,
+                                    aad = ciphertext.aad
+                                )
+
+                                val wrongWrongDecrypted = wrongCiphertext.decrypt(
+                                    ciphertext.algorithm.randomKey(),
+                                    dedicatedMacInputCalculation = macInputFun
+                                )
+                                wrongWrongDecrypted shouldNot succeed
+
+                                val wrongRightDecrypted =
+                                    wrongCiphertext.decrypt(key, dedicatedMacInputCalculation = macInputFun)
+                                wrongRightDecrypted shouldNot succeed
+
+                                val wrongIV = Ciphertext.Authenticated.WithDedicatedMac(
+                                    ciphertext.algorithm,
+                                    ciphertext.encryptedData,
+                                    iv = ciphertext.iv!!.asList().shuffled().toByteArray(),
+                                    authTag = ciphertext.authTag,
+                                    aad = ciphertext.aad
+                                )
+
+                                val wrongIVDecrypted =
+                                    wrongIV.decrypt(key, macKey = macKey, dedicatedMacInputCalculation = macInputFun)
+                                wrongIVDecrypted shouldNot succeed
+
+                                Ciphertext.Authenticated.WithDedicatedMac(
+                                    ciphertext.algorithm,
+                                    ciphertext.encryptedData,
+                                    iv = null,
+                                    authTag = ciphertext.authTag,
+                                    aad = ciphertext.aad,
+                                ).decrypt(
+                                    key,
+                                    macKey = macKey,
+                                    dedicatedMacInputCalculation = macInputFun
+                                ) shouldNot succeed
+
+
+                                Ciphertext.Authenticated.WithDedicatedMac(
+                                    ciphertext.algorithm,
+                                    ciphertext.encryptedData,
+                                    iv = ciphertext.iv!!.asList().shuffled().toByteArray(),
+                                    authTag = ciphertext.authTag,
+                                    aad = ciphertext.aad,
+                                ).decrypt(
+                                    key,
+                                    macKey = macKey,
+                                    dedicatedMacInputCalculation = macInputFun
+                                ) shouldNot succeed
+
                                 Ciphertext.Authenticated.WithDedicatedMac(
                                     ciphertext.algorithm,
                                     ciphertext.encryptedData,
                                     iv = ciphertext.iv,
                                     authTag = ciphertext.authTag,
-                                    aad = null,
+                                    aad = ciphertext.aad,
                                 ).decrypt(
                                     key,
-                                    macKey = macKey,
+                                    macKey = macKey.asList().shuffled().toByteArray(),
                                     dedicatedMacInputCalculation = macInputFun
                                 ) shouldNot succeed
+
+                                if (aad != null) {
+                                    Ciphertext.Authenticated.WithDedicatedMac(
+                                        ciphertext.algorithm,
+                                        ciphertext.encryptedData,
+                                        iv = ciphertext.iv,
+                                        authTag = ciphertext.authTag,
+                                        aad = null,
+                                    ).decrypt(
+                                        key,
+                                        macKey = macKey,
+                                        dedicatedMacInputCalculation = macInputFun
+                                    ) shouldNot succeed
+
+                                    Ciphertext.Authenticated.WithDedicatedMac(
+                                        ciphertext.algorithm,
+                                        ciphertext.encryptedData,
+                                        iv = null,
+                                        authTag = ciphertext.authTag,
+                                        aad = null,
+                                    ).decrypt(
+                                        key,
+                                        macKey = macKey,
+                                        dedicatedMacInputCalculation = macInputFun
+                                    ) shouldNot succeed
+
+
+                                    Ciphertext.Authenticated.WithDedicatedMac(
+                                        ciphertext.algorithm,
+                                        ciphertext.encryptedData,
+                                        iv = null,
+                                        authTag = ciphertext.authTag.asList().shuffled().toByteArray(),
+                                        aad = null,
+                                    ).decrypt(
+                                        key,
+                                        macKey = macKey,
+                                        dedicatedMacInputCalculation = macInputFun
+                                    ) shouldNot succeed
+                                }
 
                                 Ciphertext.Authenticated.WithDedicatedMac(
                                     ciphertext.algorithm,
                                     ciphertext.encryptedData,
-                                    iv = null,
-                                    authTag = ciphertext.authTag,
-                                    aad = null,
-                                ).decrypt(
-                                    key,
-                                    macKey = macKey,
-                                    dedicatedMacInputCalculation = macInputFun
-                                ) shouldNot succeed
-
-
-                                Ciphertext.Authenticated.WithDedicatedMac(
-                                    ciphertext.algorithm,
-                                    ciphertext.encryptedData,
-                                    iv = null,
+                                    iv = ciphertext.iv,
                                     authTag = ciphertext.authTag.asList().shuffled().toByteArray(),
-                                    aad = null,
+                                    aad = ciphertext.aad
                                 ).decrypt(
                                     key,
                                     macKey = macKey,
                                     dedicatedMacInputCalculation = macInputFun
                                 ) shouldNot succeed
+
+
+                                Ciphertext.Authenticated.WithDedicatedMac(
+                                    ciphertext.algorithm,
+                                    ciphertext.encryptedData,
+                                    iv = ciphertext.iv,
+                                    authTag = ciphertext.authTag.asList().shuffled().toByteArray(),
+                                    aad = ciphertext.aad
+                                ).decrypt(key, macKey = macKey) { _, _, _ ->
+                                    "Szombathely".encodeToByteArray()
+                                } shouldNot succeed
                             }
 
-                            Ciphertext.Authenticated.WithDedicatedMac(
-                                ciphertext.algorithm,
-                                ciphertext.encryptedData,
-                                iv = ciphertext.iv,
-                                authTag = ciphertext.authTag.asList().shuffled().toByteArray(),
-                                aad = ciphertext.aad
-                            ).decrypt(
-                                key,
-                                macKey = macKey,
-                                dedicatedMacInputCalculation = macInputFun
-                            ) shouldNot succeed
-
-
-                            Ciphertext.Authenticated.WithDedicatedMac(
-                                ciphertext.algorithm,
-                                ciphertext.encryptedData,
-                                iv = ciphertext.iv,
-                                authTag = ciphertext.authTag.asList().shuffled().toByteArray(),
-                                aad = ciphertext.aad
-                            ).decrypt(key, macKey = macKey) { _, _, _ ->
-                                "Szombathely".encodeToByteArray()
-                            } shouldNot succeed
                         }
-
                     }
                 }
             }

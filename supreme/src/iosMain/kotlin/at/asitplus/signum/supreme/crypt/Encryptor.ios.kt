@@ -41,7 +41,6 @@ internal actual fun <A : AuthTrait> CipherParam<*, A>.doEncrypt(data: ByteArray)
         is SymmetricEncryptionAlgorithm.AES.CBC.Plain -> {
             return catching {
                 val padded = (alg as AES<*>).addPKCS7Padding(data)
-                println("PADDED len: ${padded.size}")
                 val bytes: ByteArray = swiftcall {
                     CBC.crypt(kCCEncrypt.toLong(), padded.toNSData(), platformData.toNSData(), nsIV, error)
                 }.toByteArray()
@@ -88,7 +87,7 @@ private fun BlockCipher<*>.removePKCS7Padding(plainWithPadding: ByteArray): Byte
     val paddingBytes = plainWithPadding.last().toInt()
     require(paddingBytes > 0) { "Illegal padding: $paddingBytes" }
     require(plainWithPadding.takeLast(paddingBytes).all { it.toInt() == paddingBytes }) { "Padding not consistent" }
-    require(plainWithPadding.size - paddingBytes > 0) { "Too much padding" }
+    require(plainWithPadding.size - paddingBytes >= 0) { "Too much padding: data ${plainWithPadding.joinToString()}" }
     return plainWithPadding.sliceArray(0..<plainWithPadding.size - paddingBytes)
 }
 
@@ -126,5 +125,5 @@ actual internal fun Ciphertext.Unauthenticated.doDecrypt(secretKey: ByteArray): 
             error
         )
     }.toByteArray()
-    (algorithm as BlockCipher<*>).removePKCS7Padding(decrypted)
+    (algorithm as AES<*>).removePKCS7Padding(decrypted)
 }
