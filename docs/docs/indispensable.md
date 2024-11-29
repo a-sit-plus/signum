@@ -78,7 +78,7 @@ which is implemented by `CryptoPublicKey.EC`
 * `SymmetricEncryptionAlgorithm` represents symmetric encryption algorithms. _Indispensable_ currently ships with definitions for AES-CBC, a flexible AES-CBC-HMAC, and AES-GCM, while the [Supreme](supreme.md) KMP crypto provider implements the actual AES functionality. 
     * `BlockCipher` denotes a BlockCipher 
     * `WithIV` denotes a Cipher requiring or supporting an initialization vector
-    * `Unauthanticated` denotes a non-authenticated encryption algorithm
+    * `Unauthenticated` denotes a non-authenticated encryption algorithm
     * `Authenticated` denotes an authenticated encryption algorithm
     * `Authenticated.WithDedicatedMac` describes an encryption authenticated encryption algorithm based on a non-authenticated one and a dedicated `MAC`, to achieve authenticated encryption
 * `Ciphertext` stores ciphertext produced by a symmetric cipher. It has dedicated accessors for every component of the ciphertext, such as `iv` and `encryptedData`

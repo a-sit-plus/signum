@@ -106,7 +106,7 @@ actual internal fun Ciphertext.Authenticated.doDecrypt(secretKey: ByteArray): Km
                 authTag.toNSData(),
                 aad?.toNSData(),
                 error
-            )!!.toByteArray()
+            ).toByteArray()
         }
 
     }
