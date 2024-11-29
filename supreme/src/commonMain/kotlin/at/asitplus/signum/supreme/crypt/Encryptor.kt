@@ -112,7 +112,7 @@ class Encryptor<A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>, C : Cipherte
             return catching {
                 require(innerCipher.iv != null) { "AES-CBC-HMAC IV implementation error. Report this bug!" }
                 require(macKey != null) { "AES-CBC-HMAC mac key implementation error. Report this bug!" }
-                val encrypted = innerCipher.doEncrypt(data).getOrThrow().encryptedData
+                val encrypted = innerCipher.doEncrypt(data).encryptedData
 
                 val hmacInput: ByteArray =
                     aMac.mac.macAuthTagCalculation(encrypted, innerCipher.iv, (aad ?: byteArrayOf()))
@@ -125,7 +125,7 @@ class Encryptor<A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>, C : Cipherte
             }
 
         }
-        return platformCipher.doEncrypt<A>(data) as KmmResult<C>
+        return catching { platformCipher.doEncrypt<A>(data) as C }
     }
 
 }
@@ -173,34 +173,23 @@ fun SymmetricEncryptionAlgorithm.WithIV<*>.randomIV(): ByteArray {
     return key
 }
 
-internal expect fun <T, A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>> initCipher(
-    algorithm: E,
-    key: ByteArray,
-    macKey: ByteArray?,
-    iv: ByteArray?,
-    aad: ByteArray?
-): CipherParam<T, A>
-
-internal expect fun <A : AuthTrait> CipherParam<*, A>.doEncrypt(data: ByteArray): KmmResult<Ciphertext<A, SymmetricEncryptionAlgorithm<A>>>
-
-
 /**
  * Attempts to decrypt this ciphertext (which also holds IV, and in case of an authenticated ciphertext, AAD and auth tag) using the provided [secretKey].
  */
-fun <A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>> Ciphertext<A, E>.decrypt(secretKey: ByteArray): KmmResult<ByteArray> {
+fun <A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>> Ciphertext<A, E>.decrypt(secretKey: ByteArray): KmmResult<ByteArray> =
     catching {
+
         if (algorithm is SymmetricEncryptionAlgorithm.WithIV<*>) {
             require(iv != null) { "IV must be non-null" }
             require(iv!!.size.toUInt() * 8u == (algorithm as SymmetricEncryptionAlgorithm.WithIV<*>).ivNumBits) { "IV must be exactly ${(algorithm as SymmetricEncryptionAlgorithm.WithIV<*>).ivNumBits} bits long" }
         }
         require(secretKey.size.toUInt() * 8u == algorithm.keyNumBits) { "Key must be exactly ${algorithm.keyNumBits} bits long" }
 
+        when (this) {
+            is Ciphertext.Authenticated -> doDecrypt(secretKey)
+            is Ciphertext.Unauthenticated -> doDecrypt(secretKey)
+        }
     }
-    return when (this) {
-        is Ciphertext.Authenticated -> doDecrypt(secretKey)
-        is Ciphertext.Unauthenticated -> doDecrypt(secretKey)
-    }
-}
 
 /**
  * Attempts to decrypt this ciphertext (which also holds IV, AAD, and auth tag) using the provided [secretKey].
@@ -221,6 +210,18 @@ fun Ciphertext.Authenticated.WithDedicatedMac.decrypt(
     return Ciphertext.Unauthenticated(algorithm.innerCipher, encryptedData, iv).decrypt(secretKey)
 }
 
-expect internal fun Ciphertext.Authenticated.doDecrypt(secretKey: ByteArray): KmmResult<ByteArray>
+expect internal fun Ciphertext.Authenticated.doDecrypt(secretKey: ByteArray): ByteArray
 
-expect internal fun Ciphertext.Unauthenticated.doDecrypt(secretKey: ByteArray): KmmResult<ByteArray>
+expect internal fun Ciphertext.Unauthenticated.doDecrypt(secretKey: ByteArray): ByteArray
+
+
+internal expect fun <T, A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>> initCipher(
+    algorithm: E,
+    key: ByteArray,
+    macKey: ByteArray?,
+    iv: ByteArray?,
+    aad: ByteArray?
+): CipherParam<T, A>
+
+internal expect fun <A : AuthTrait> CipherParam<*, A>.doEncrypt(data: ByteArray): Ciphertext<A, SymmetricEncryptionAlgorithm<A>>
+
