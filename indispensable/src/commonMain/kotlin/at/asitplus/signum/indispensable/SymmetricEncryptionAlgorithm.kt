@@ -33,12 +33,6 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthTrait> : Identifiable 
                 }
             }
         }
-
-
-        /*
-                val AES128_ECB = AES.ECB(128u)
-                val AES192_ECB = AES.ECB(192u)
-                val AES256_ECB = AES.ECB(256u)*/
     }
 
     val name: String
@@ -100,20 +94,11 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthTrait> : Identifiable 
             class HMAC(override val innerCipher: Plain, override val mac: MAC) :
                 CBC<AuthTrait.Authenticated>(innerCipher.keyNumBits), WithIV<AuthTrait.Authenticated>, WithDedicatedMac,
                 Authenticated {
-                override val tagNumBits: UInt = mac.Nm.toUInt() * 8u
+                override val tagNumBits: UInt = mac.outputLength.toUInt() * 8u
 
                 override val name = super.name+ " $mac"
             }
         }
-
-        /*class ECB(keyNumBits: UInt) : AES(ModeOfOperation.ECB, keyNumBits){
-            override val oid: ObjectIdentifier = when (keyNumBits) {
-                128u -> KnownOIDs.aes128_ECB
-                192u -> KnownOIDs.aes192_ECB
-                256u -> KnownOIDs.aes256_ECB
-                else -> throw IllegalStateException("$keyNumBits This is an implementation flaw. Report this bug!")
-            }
-        } */
     }
 }
 
@@ -139,7 +124,5 @@ sealed class BlockCipher<A : AuthTrait>(val mode: ModeOfOperation, val blockSize
     enum class ModeOfOperation(val friendlyName: String, val acronym: String) {
         GCM("Galois Counter Mode", "GCM"),
         CBC("Cipherblock Chaining Mode", "CBC"),
-        //ECB("Electronic Codebook Mode", "ECB"),
-
     }
 }

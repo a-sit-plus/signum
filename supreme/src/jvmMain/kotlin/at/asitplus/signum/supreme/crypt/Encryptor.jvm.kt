@@ -11,14 +11,14 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-internal actual fun <T, A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>> initCipher(
+actual internal fun <T, A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>> initCipher(
     algorithm: E,
     key: ByteArray,
     macKey: ByteArray?,
     iv: ByteArray?,
     aad: ByteArray?
-): CipherParam<T,A> {
-    if(algorithm !is SymmetricEncryptionAlgorithm.WithIV<*>) TODO()
+): CipherParam<T, A> {
+    if (algorithm !is SymmetricEncryptionAlgorithm.WithIV<*>) TODO()
     val nonce = iv ?: algorithm.randomIV()
     return Cipher.getInstance(algorithm.jcaName).apply {
         if (algorithm is SymmetricEncryptionAlgorithm.AES.GCM)
@@ -27,19 +27,19 @@ internal actual fun <T, A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>> init
                 SecretKeySpec(key, algorithm.jcaKeySpec),
                 GCMParameterSpec(algorithm.tagNumBits.toInt(), nonce)
             )
-        else if(algorithm is SymmetricEncryptionAlgorithm.AES.CBC<*>) //covers Plain and CBC, because CBC will delegate to here
+        else if (algorithm is SymmetricEncryptionAlgorithm.AES.CBC<*>) //covers Plain and CBC, because CBC will delegate to here
             init(
                 Cipher.ENCRYPT_MODE,
                 SecretKeySpec(key, algorithm.jcaKeySpec),
                 IvParameterSpec(nonce)
             )
         else TODO()
-        aad?.let { if(algorithm is SymmetricEncryptionAlgorithm.AES.GCM) updateAAD(it) /*CBC-HMAC we do ourselves*/ }
-    }.let { CipherParam<Cipher,A>(algorithm, it, macKey?:key, nonce, aad) as CipherParam<T, A> }
+        aad?.let { if (algorithm is SymmetricEncryptionAlgorithm.AES.GCM) updateAAD(it) /*CBC-HMAC we do ourselves*/ }
+    }.let { CipherParam<Cipher, A>(algorithm, it, macKey ?: key, nonce, aad) as CipherParam<T, A> }
 }
 
-internal actual fun <A : AuthTrait> CipherParam<*,A>.doEncrypt(data: ByteArray): KmmResult<Ciphertext<A, SymmetricEncryptionAlgorithm<A>>> {
-    (this as CipherParam<Cipher,A>)
+actual internal fun <A : AuthTrait> CipherParam<*, A>.doEncrypt(data: ByteArray): KmmResult<Ciphertext<A, SymmetricEncryptionAlgorithm<A>>> {
+    (this as CipherParam<Cipher, A>)
     val jcaCiphertext =
         catchingUnwrapped { platformData.doFinal(data) }.getOrElse { return KmmResult.failure(it) }
 
@@ -52,7 +52,13 @@ internal actual fun <A : AuthTrait> CipherParam<*,A>.doEncrypt(data: ByteArray):
             .toByteArray() else null
 
     return KmmResult.success(
-        if (authtag != null) Ciphertext.Authenticated(alg as SymmetricEncryptionAlgorithm.Authenticated, ciphertext, iv, authtag, aad)
+        if (authtag != null) Ciphertext.Authenticated(
+            alg as SymmetricEncryptionAlgorithm.Authenticated,
+            ciphertext,
+            iv,
+            authtag,
+            aad
+        )
         else Ciphertext.Unauthenticated(alg as SymmetricEncryptionAlgorithm.Unauthenticated, ciphertext, iv)
     ) as KmmResult<Ciphertext<A, SymmetricEncryptionAlgorithm<A>>>
 }
@@ -61,7 +67,6 @@ val SymmetricEncryptionAlgorithm<*>.jcaName: String
     get() = when (this) {
         is SymmetricEncryptionAlgorithm.AES.GCM -> "AES/GCM/NoPadding"
         is SymmetricEncryptionAlgorithm.AES.CBC -> "AES/CBC/PKCS5Padding"
-        //  is EncryptionAlgorithm.AES.ECB -> "AES/ECB/NoPadding"
         else -> TODO()
     }
 
@@ -72,31 +77,27 @@ val SymmetricEncryptionAlgorithm<*>.jcaKeySpec: String
     }
 
 actual internal fun Ciphertext.Authenticated.doDecrypt(secretKey: ByteArray): KmmResult<ByteArray> {
-    return catching {
-        val wholeInput = encryptedData + authTag
-        Cipher.getInstance(algorithm.jcaName).also { cipher ->
-            cipher.init(
-                Cipher.DECRYPT_MODE,
-                SecretKeySpec(secretKey, algorithm.jcaKeySpec),
-                GCMParameterSpec(authTag.size*8, iv)
-            )
-            aad?.let {
-                cipher.updateAAD(it)
-            }
-        }.doFinal(wholeInput)
-    }
+    val wholeInput = encryptedData + authTag
+    Cipher.getInstance(algorithm.jcaName).also { cipher ->
+        cipher.init(
+            Cipher.DECRYPT_MODE,
+            SecretKeySpec(secretKey, algorithm.jcaKeySpec),
+            GCMParameterSpec(authTag.size * 8, iv)
+        )
+        aad?.let {
+            cipher.updateAAD(it)
+        }
+    }.doFinal(wholeInput)
 }
 
 
 actual internal fun Ciphertext.Unauthenticated.doDecrypt(secretKey: ByteArray): KmmResult<ByteArray> = catching {
-    return catching {
-        Cipher.getInstance(algorithm.jcaName).also { cipher ->
-            cipher.init(
-                Cipher.DECRYPT_MODE,
-                SecretKeySpec(secretKey, algorithm.jcaKeySpec),
-                IvParameterSpec(iv)
-            )
-        }.doFinal(encryptedData)
-    }
+    Cipher.getInstance(algorithm.jcaName).also { cipher ->
+        cipher.init(
+            Cipher.DECRYPT_MODE,
+            SecretKeySpec(secretKey, algorithm.jcaKeySpec),
+            IvParameterSpec(iv)
+        )
+    }.doFinal(encryptedData)
 }
 
