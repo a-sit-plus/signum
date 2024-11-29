@@ -1,8 +1,5 @@
 package at.asitplus.signum.supreme.crypt
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
-import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.AuthTrait
 import at.asitplus.signum.indispensable.Ciphertext
 import at.asitplus.signum.indispensable.SymmetricEncryptionAlgorithm
@@ -38,10 +35,9 @@ actual internal fun <T, A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>> init
     }.let { CipherParam<Cipher, A>(algorithm, it, macKey ?: key, nonce, aad) as CipherParam<T, A> }
 }
 
-actual internal fun <A : AuthTrait> CipherParam<*, A>.doEncrypt(data: ByteArray): KmmResult<Ciphertext<A, SymmetricEncryptionAlgorithm<A>>> {
+actual internal fun <A : AuthTrait> CipherParam<*, A>.doEncrypt(data: ByteArray): Ciphertext<A, SymmetricEncryptionAlgorithm<A>> {
     (this as CipherParam<Cipher, A>)
-    val jcaCiphertext =
-        catchingUnwrapped { platformData.doFinal(data) }.getOrElse { return KmmResult.failure(it) }
+    val jcaCiphertext = platformData.doFinal(data)
 
     val ciphertext =
         if (alg is AuthTrait.Authenticated) jcaCiphertext.dropLast((alg.tagNumBits / 8u).toInt())
@@ -51,16 +47,16 @@ actual internal fun <A : AuthTrait> CipherParam<*, A>.doEncrypt(data: ByteArray)
         if (alg is AuthTrait.Authenticated) jcaCiphertext.takeLast((alg.tagNumBits / 8u).toInt())
             .toByteArray() else null
 
-    return KmmResult.success(
-        if (authtag != null) Ciphertext.Authenticated(
-            alg as SymmetricEncryptionAlgorithm.Authenticated,
-            ciphertext,
-            iv,
-            authtag,
-            aad
-        )
-        else Ciphertext.Unauthenticated(alg as SymmetricEncryptionAlgorithm.Unauthenticated, ciphertext, iv)
-    ) as KmmResult<Ciphertext<A, SymmetricEncryptionAlgorithm<A>>>
+    val result = if (authtag != null) Ciphertext.Authenticated(
+        alg as SymmetricEncryptionAlgorithm.Authenticated,
+        ciphertext,
+        iv,
+        authtag,
+        aad
+    )
+    else Ciphertext.Unauthenticated(alg as SymmetricEncryptionAlgorithm.Unauthenticated, ciphertext, iv)
+
+    return result as Ciphertext<A, SymmetricEncryptionAlgorithm<A>>
 }
 
 val SymmetricEncryptionAlgorithm<*>.jcaName: String
@@ -76,9 +72,9 @@ val SymmetricEncryptionAlgorithm<*>.jcaKeySpec: String
         else -> TODO()
     }
 
-actual internal fun Ciphertext.Authenticated.doDecrypt(secretKey: ByteArray): KmmResult<ByteArray> {
+actual internal fun Ciphertext.Authenticated.doDecrypt(secretKey: ByteArray): ByteArray {
     val wholeInput = encryptedData + authTag
-    Cipher.getInstance(algorithm.jcaName).also { cipher ->
+    return Cipher.getInstance(algorithm.jcaName).also { cipher ->
         cipher.init(
             Cipher.DECRYPT_MODE,
             SecretKeySpec(secretKey, algorithm.jcaKeySpec),
@@ -91,8 +87,8 @@ actual internal fun Ciphertext.Authenticated.doDecrypt(secretKey: ByteArray): Km
 }
 
 
-actual internal fun Ciphertext.Unauthenticated.doDecrypt(secretKey: ByteArray): KmmResult<ByteArray> = catching {
-    Cipher.getInstance(algorithm.jcaName).also { cipher ->
+actual internal fun Ciphertext.Unauthenticated.doDecrypt(secretKey: ByteArray): ByteArray {
+    return Cipher.getInstance(algorithm.jcaName).also { cipher ->
         cipher.init(
             Cipher.DECRYPT_MODE,
             SecretKeySpec(secretKey, algorithm.jcaKeySpec),
