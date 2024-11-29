@@ -19,95 +19,98 @@ import kotlin.random.Random
 @ExperimentalStdlibApi
 class AESTest : FreeSpec({
 
-    "AES" - {
-        "CBC.PLAIN" - {
+    "CBC.PLAIN" - {
+
+        withData(
+            SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
+            SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN,
+            SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN,
+        ) {
             withData(
-                SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
-                SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN,
-                SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN,
-            ) {
+                nameFn = { "${it.size} Bytes" },
+                Random.Default.nextBytes(5),
+                Random.Default.nextBytes(15),
+                Random.Default.nextBytes(16),
+                Random.Default.nextBytes(17),
+                Random.Default.nextBytes(31),
+                Random.Default.nextBytes(32),
+                Random.Default.nextBytes(33),
+                Random.Default.nextBytes(256),
+                Random.Default.nextBytes(257),
+                Random.Default.nextBytes(1257),
+                Random.Default.nextBytes(21257),
+            ) { plaintext ->
+
+                val key = it.randomKey()
+
                 withData(
-                    nameFn = { "${it.size} Bytes" },
-                    Random.Default.nextBytes(5),
-                    Random.Default.nextBytes(15),
-                    Random.Default.nextBytes(16),
-                    Random.Default.nextBytes(17),
-                    Random.Default.nextBytes(31),
-                    Random.Default.nextBytes(32),
-                    Random.Default.nextBytes(33),
-                    Random.Default.nextBytes(256),
-                    Random.Default.nextBytes(257),
-                    Random.Default.nextBytes(1257),
-                    Random.Default.nextBytes(21257),
-                ) { plaintext ->
-                    val key = it.randomKey()
-
-                    withData(
-                        nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
-                        it.randomIV(),
-                        null
-                    ) { iv ->
+                    nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
+                    it.randomIV(),
+                    null
+                ) { iv ->
 
 
-                        println("KEY: ${key.toHexString()} IV: ${iv?.toHexString()}  plaintext: ${plaintext.toHexString()}")
+                    println("KEY: ${key.toHexString()} IV: ${iv?.toHexString()}  plaintext: ${plaintext.toHexString()}")
 
-                        val ciphertext = it.encryptorFor(key, iv).getOrThrow().encrypt(plaintext).getOrThrow()
-
-
-                        println(ciphertext)
-                        ciphertext.iv.shouldNotBeNull()
-                        ciphertext.iv!!.size * 8 shouldBe it.ivNumBits.toInt()
-                        iv?.let { ciphertext.iv shouldBe it }
-                        ciphertext.shouldBeInstanceOf<Ciphertext.Unauthenticated>()
+                    val ciphertext = it.encryptorFor(key, iv).getOrThrow().encrypt(plaintext).getOrThrow()
 
 
-                        val decrypted = ciphertext.decrypt(key).getOrThrow()
-                        println("DECRYPTED: " + decrypted.toHexString(HexFormat.UpperCase))
-                        decrypted shouldBe plaintext
+                    println(ciphertext)
+                    ciphertext.iv.shouldNotBeNull()
+                    ciphertext.iv!!.size * 8 shouldBe it.ivNumBits.toInt()
+                    iv?.let { ciphertext.iv shouldBe it }
+                    ciphertext.shouldBeInstanceOf<Ciphertext.Unauthenticated>()
 
-                        val wrongDecrypted = ciphertext.decrypt(ciphertext.algorithm.randomKey())
-                        wrongDecrypted shouldNot succeed //We're not authenticated, so from time to time, we won't run into a padding error for specific plaintext sizes
 
-                        val wrongCiphertext = Ciphertext.Unauthenticated(
-                            ciphertext.algorithm,
-                            Random.Default.nextBytes(ciphertext.encryptedData.size),
-                            iv = ciphertext.iv
-                        )
+                    val decrypted = ciphertext.decrypt(key).getOrThrow()
+                    println("DECRYPTED: " + decrypted.toHexString(HexFormat.UpperCase))
+                    decrypted shouldBe plaintext
 
-                        val wrongWrongDecrypted = wrongCiphertext.decrypt(ciphertext.algorithm.randomKey())
-                        withClue("KEY: ${key.toHexString()}, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.iv?.toHexString()}") {
-                            //we're not authenticated, so from time to time, this succeeds
-                            //wrongWrongDecrypted shouldNot succeed
-                            //instead, we test differently:
-                            wrongWrongDecrypted.onSuccess { value -> value shouldNotBe plaintext }
-                        }
-                        val wrongRightDecrypted = wrongCiphertext.decrypt(key)
-                        withClue("KEY: ${key.toHexString()}, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.iv?.toHexString()}") {
-                            //we're not authenticated, so from time to time, this succeeds
-                            //wrongRightDecrypted shouldNot succeed
-                            //instead, we test differently:
-                            wrongRightDecrypted.onSuccess { value -> value shouldNotBe plaintext }
-                        }
-                        val wrongIV = Ciphertext.Unauthenticated(
-                            ciphertext.algorithm,
-                            ciphertext.encryptedData,
-                            iv = ciphertext.iv!!.asList().shuffled().toByteArray()
-                        )
 
-                        if (plaintext.size > it.blockSizeBits.toInt() / 8) { //cannot test like that for ciphertexts shorter than IV
-                            val wrongIVDecrypted = wrongIV.decrypt(key)
-                            wrongIVDecrypted should succeed
-                            wrongIVDecrypted shouldNotBe plaintext
-                        }
+                    val wrongDecrypted = ciphertext.decrypt(ciphertext.algorithm.randomKey())
+                    //We're not authenticated, so from time to time, we won't run into a padding error for specific plaintext sizes
+                    wrongDecrypted.onSuccess { value -> value shouldNotBe plaintext }
 
-                        Ciphertext.Unauthenticated(ciphertext.algorithm, ciphertext.encryptedData, iv = null)
-                            .decrypt(key) shouldNot succeed
+                    val wrongCiphertext = Ciphertext.Unauthenticated(
+                        ciphertext.algorithm,
+                        Random.Default.nextBytes(ciphertext.encryptedData.size),
+                        iv = ciphertext.iv
+                    )
 
+                    val wrongWrongDecrypted = wrongCiphertext.decrypt(ciphertext.algorithm.randomKey())
+                    withClue("KEY: ${key.toHexString()}, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.iv?.toHexString()}") {
+                        //we're not authenticated, so from time to time, this succeeds
+                        //wrongWrongDecrypted shouldNot succeed
+                        //instead, we test differently:
+                        wrongWrongDecrypted.onSuccess { value -> value shouldNotBe plaintext }
                     }
+                    val wrongRightDecrypted = wrongCiphertext.decrypt(key)
+                    withClue("KEY: ${key.toHexString()}, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.iv?.toHexString()}") {
+                        //we're not authenticated, so from time to time, this succeeds
+                        //wrongRightDecrypted shouldNot succeed
+                        //instead, we test differently:
+                        wrongRightDecrypted.onSuccess { value -> value shouldNotBe plaintext }
+                    }
+                    val wrongIV = Ciphertext.Unauthenticated(
+                        ciphertext.algorithm,
+                        ciphertext.encryptedData,
+                        iv = ciphertext.iv!!.asList().shuffled().toByteArray()
+                    )
+
+                    if (plaintext.size > it.blockSizeBits.toInt() / 8) { //cannot test like that for ciphertexts shorter than IV
+                        val wrongIVDecrypted = wrongIV.decrypt(key)
+                        wrongIVDecrypted should succeed
+                        wrongIVDecrypted shouldNotBe plaintext
+                    }
+
+                    Ciphertext.Unauthenticated(ciphertext.algorithm, ciphertext.encryptedData, iv = null)
+                        .decrypt(key) shouldNot succeed //always fails, because we always use an IV for encryption
+
                 }
             }
         }
     }
+
     "GCM" - {
         withData(
             SymmetricEncryptionAlgorithm.AES_128.GCM,
@@ -135,10 +138,15 @@ class AESTest : FreeSpec({
                     null
                 ) { iv ->
 
-                    withData(nameFn = { "AAD: " + it?.toHexString() }, Random.Default.nextBytes(32), null) { aad ->
+                    withData(
+                        nameFn = { "AAD: " + it?.toHexString() },
+                        Random.Default.nextBytes(32),
+                        null
+                    ) { aad ->
                         println("KEY: ${key.toHexString()} IV: ${iv?.toHexString()}  plaintext: ${plaintext.toHexString()}")
 
-                        val ciphertext = it.encryptorFor(key, iv, aad).getOrThrow().encrypt(plaintext).getOrThrow()
+                        val ciphertext =
+                            it.encryptorFor(key, iv, aad).getOrThrow().encrypt(plaintext).getOrThrow()
 
 
                         println(ciphertext)
@@ -304,7 +312,8 @@ class AESTest : FreeSpec({
                             ) { aad ->
                                 println("KEY: ${key.toHexString()} MACKEY: ${macKey.toHexString()} IV: ${iv?.toHexString()}  plaintext: ${plaintext.toHexString()}")
                                 val ciphertext =
-                                    it.encryptorFor(key, macKey, iv, aad, macInputFun).getOrThrow().encrypt(plaintext)
+                                    it.encryptorFor(key, macKey, iv, aad, macInputFun).getOrThrow()
+                                        .encrypt(plaintext)
                                         .getOrThrow()
 
                                 it.encryptorFor(key, macKey, iv, aad) { _, _, _ ->
@@ -369,7 +378,11 @@ class AESTest : FreeSpec({
                                 )
 
                                 val wrongIVDecrypted =
-                                    wrongIV.decrypt(key, macKey = macKey, dedicatedMacInputCalculation = macInputFun)
+                                    wrongIV.decrypt(
+                                        key,
+                                        macKey = macKey,
+                                        dedicatedMacInputCalculation = macInputFun
+                                    )
                                 wrongIVDecrypted shouldNot succeed
 
                                 Ciphertext.Authenticated.WithDedicatedMac(
@@ -512,7 +525,8 @@ class AESTest : FreeSpec({
         //The ciphertext object contains an IV, even though null was passed
         //it also contains AAD and an authTag, in addition to encryptedData
         //because everything is structured, decryption is simple
-        val recovered = ciphertext.decrypt(secretKey, macKey, customMacInputFn).getOrThrow(/*TODO Error handling*/)
+        val recovered =
+            ciphertext.decrypt(secretKey, macKey, customMacInputFn).getOrThrow(/*TODO Error handling*/)
 
         recovered shouldBe payload //success!
 
