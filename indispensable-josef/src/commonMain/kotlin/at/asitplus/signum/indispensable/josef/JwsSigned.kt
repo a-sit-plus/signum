@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.contentHashCodeIfArray
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.json.Json
 
@@ -85,15 +86,20 @@ data class JwsSigned<out P : Any>(
          * Deserializes the input, expected to contain a valid JWS (three Base64-URL strings joined by `.`),
          * into a [JwsSigned] with [P] as the type of the payload.
          */
-        inline fun <reified P : Any> deserialize(it: String, json: Json = Json): KmmResult<JwsSigned<P>> =
+        inline fun <reified P : Any> deserialize(
+            it: String,
+            deserializationStrategy: DeserializationStrategy<P>,
+            json: Json = Json,
+        ): KmmResult<JwsSigned<P>> =
             deserialize(it).mapCatching {
                 JwsSigned(
                     header = it.header,
-                    payload = json.decodeFromString<P>(it.payload.decodeToString()),
+                    payload = json.decodeFromString(deserializationStrategy, it.payload.decodeToString()),
                     signature = it.signature,
                     plainSignatureInput = it.plainSignatureInput
                 )
             }
+
         /**
          * Called by JWS signing implementations to get the string that will be
          * used as the input for signature calculation
