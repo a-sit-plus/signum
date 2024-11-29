@@ -21,8 +21,14 @@
 * Add **Private Key Representation** to `indispensable`
     * Parsing of PEM and DER-encoded private keys
     * Introduce `SignatureAlgorithm.signerFor(privateKey)` to create signers backed by (previously parsed, or manually constructed) private keys
-    * Export of private keys from ephemeral signers (and only ephemeral signers) in combination with a new @SecretExposure annotation
-
+    * Export of private keys from ephemeral signers (and only ephemeral signers) in combination with a new `@SecretExposure` annotation
+* Add helpers for smoother iOS interop:
+    * `ECCurve.iosEncodedPublicKeyLength` 
+    * `ECCurve.iosEncodedPrivateKeyLength` 
+    * `ECCurve.Companion.fromIosEncodedPublicKeyLength` 
+    * `ECCurve.Companion.fromIosEncodedPrivateKeyLength` 
+* Renames (old names are kept with a deprecation warning):
+    * `getJcaPublicKey()` -> `toJcaPublicKey`
 
 ### 3.10.0 (Supreme 0.5.0) More ~~cowbell~~ targets!
 A new artifact, minor breaking changes and a lot more targets ahead!

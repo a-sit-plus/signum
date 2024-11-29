@@ -101,6 +101,12 @@ The following functions provide interop functionality with platform types.
 
 * `ECCurve.jcaName` returns the curve's name used by JCA
 * `ECCurve.byJcaName()` returns the curve matching the provided JCA curve name
+* `ECCurve.iosEncodedPublicKeyLength` returns the number of bytes of a public key matching this curve, when exporting such a key from iOS.
+* `ECCurve.iosEncodedPrivateKeyLength` returns the number of bytes of a private key matching this curve, when exporting such a key from iOS.
+* `ECCurve.fromIosEncodedPublicKeyLength`returns the curve matching the length of an encoded public key, when exported from iOS.
+(Apple does not encode curve identifiers, when exporting keys.)
+* `ECCurve.fromIosEncodedPrivateKeyLength` returns the curve matching the length of an encoded private key, when exported from iOS.
+(Apple does not encode curve identifiers, when exporting keys.)
 
 <br>
 
@@ -133,11 +139,12 @@ The following functions provide interop functionality with platform types.
 ### iOS
 
 * `CryptoPublicKey.iosEncoded` encodes a public key as iOS does
-* `CryptoPublicKey.fromiosEncoded()` decodes a public key that was encoded in iOS
+* `CryptoPublicKey.fromIosEncoded()` decodes a public key that was encoded in iOS
 
 <br>
 
 * `CryptoPrivateKey.toSecKey()` produces a `SecKey` usable on iOS
+* `CryptoPrivateKey.fromIosEncoded()` decodes a private key as it is exported from iOS
 
 <br>
 

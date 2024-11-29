@@ -148,13 +148,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         fun fromIosEncoded(it: ByteArray): CryptoPublicKey =
             when (it[0].toUByte()) {
                 ANSIECPrefix.UNCOMPRESSED.prefixUByte -> {
-                    val curve = when (it.size) {
-                        /** apple does not encode the curve identifier, but it is implied as one of the ios supported curves */
-                        65 -> ECCurve.SECP_256_R_1
-                        97 -> ECCurve.SECP_384_R_1
-                        133 -> ECCurve.SECP_521_R_1
-                        else -> throw IllegalArgumentException("Unknown curve in iOS raw key")
-                    }
+                    val curve = ECCurve.fromIosEncodedPublicKeyLength(it.size)
+                        ?: throw IllegalArgumentException("Unknown curve in iOS raw key")
                     EC.fromAnsiX963Bytes(curve, it)
                 }
 

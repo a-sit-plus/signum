@@ -48,8 +48,6 @@ class KeyTest : FreeSpec({
                 val ownPrivate = CryptoPrivateKey.decodeFromDer(privKey.encoded)
 
                 ownPrivate.publicKey shouldBe own
-                println(ownPrivate.encodeToTlv().toDerHexString())
-                println(privKey.encoded.toHexString(HexFormat.UpperCase))
                 ownPrivate.encodeToDer() shouldBe privKey.encoded
                 ownPrivate.toJcaPrivateKey().getOrThrow().encoded shouldBe privKey.encoded
 

@@ -134,8 +134,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
         @Throws(Asn1Exception::class)
         fun pkcs1Encode() = runRethrowing {
             Asn1.Sequence {
-                if (otherPrimeInfos != null) +Asn1.Int(1)
-                else +Asn1.Int(0)
+                if (otherPrimeInfos != null) +Asn1.Int(1) else +Asn1.Int(0)
                 +modulus
                 +publicExponent
                 +privateExponent
@@ -183,7 +182,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
                     require(version == 1) { "OtherPrimeInfos is present. RSA private key version must be 1" }
                     src.nextChild().asSequence().children.map { OtherPrimeInfo.decodeFromTlv(it.asSequence()) }
                 } else {
-                    require(version == 0) { "OtherPrimeInfos is present. RSA private key version must be 0" }
+                    require(version == 0) { "OtherPrimeInfos is not present. RSA private key version must be 0" }
                     null
                 }
 
@@ -243,11 +242,11 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
         }
 
 
-        override fun toString() = "EC private key${
-            publicKey?.let {
-                " for public key $it"
-            } ?: curve?.let { " for curve $it" } ?: " ${privateKeyBytes.size * 8} bit"
-        }"
+        override fun toString(): String {
+            val pubKey = publicKey?.let { " for public key $it" }
+            val curve = curve?.let { " for curve $it" }
+            return "EC private key${pubKey ?: curve ?: " ${privateKeyBytes.size * 8} bits"}"
+        }
 
         companion object : PemDecodable<Asn1Sequence, EC> {
 
@@ -257,37 +256,15 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
             @Throws(Asn1Exception::class)
             override fun doDecode(src: Asn1Sequence): EC = sec1decode(src, attributes = null)
 
-            private fun parseIosKey(curve: ECCurve, privateKeyBytes: ByteArray) =
-                when (curve) {
-                    ECCurve.SECP_256_R_1 -> CryptoPrivateKey.EC(
-                        curve,
-                        privateKeyBytes.sliceArray(65..<privateKeyBytes.size),
-                        encodeCurve = true,
-                        publicKey = CryptoPublicKey.fromIosEncoded(privateKeyBytes.sliceArray(0..<65)) as CryptoPublicKey.EC
-                    )
-
-                    ECCurve.SECP_384_R_1 -> CryptoPrivateKey.EC(
-                        curve,
-                        privateKeyBytes.sliceArray(97..<privateKeyBytes.size),
-                        encodeCurve = true,
-                        publicKey = CryptoPublicKey.fromIosEncoded(privateKeyBytes.sliceArray(0..<97)) as CryptoPublicKey.EC
-                    )
-
-                    ECCurve.SECP_521_R_1 -> CryptoPrivateKey.EC(
-                        curve,
-                        privateKeyBytes.sliceArray(133..<privateKeyBytes.size),
-                        encodeCurve = true,
-                        publicKey = CryptoPublicKey.fromIosEncoded(privateKeyBytes.sliceArray(0..<133)) as CryptoPublicKey.EC
-                    )
-                }
-
-
-            internal fun iosDecodeInternal(keyBytes: ByteArray): CryptoPrivateKey.EC = when (keyBytes.size) {
-                /** apple does not encode the curve identifier, but it is implied as one of the ios supported curves */
-                97 -> parseIosKey(ECCurve.SECP_256_R_1, keyBytes)
-                145 -> parseIosKey(ECCurve.SECP_384_R_1, keyBytes)
-                199 -> parseIosKey(ECCurve.SECP_521_R_1, keyBytes)
-                else -> throw IllegalArgumentException("Unknown curve in iOS raw key")
+            internal fun iosDecodeInternal(keyBytes: ByteArray): CryptoPrivateKey.EC {
+                val crv = ECCurve.fromIosEncodedPrivateKeyLength(keyBytes.size)
+                    ?: throw IllegalArgumentException("Unknown curve in iOS raw key")
+                return EC(
+                    crv,
+                    keyBytes.sliceArray(crv.iosEncodedPublicKeyLength..<keyBytes.size),
+                    encodeCurve = true,
+                    publicKey = CryptoPublicKey.fromIosEncoded(keyBytes.sliceArray(0..<crv.iosEncodedPublicKeyLength)) as CryptoPublicKey.EC
+                )
             }
 
             /**

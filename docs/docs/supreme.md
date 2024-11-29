@@ -217,14 +217,21 @@ If the operation succeeds, a key was indeed deleted.
 If not, it usually means that a non-existent alias was specified.
 
 ### Private Key Management
-Private key can be loaded from PEM-encoded strings or DER-encoded byte arrays into a `CryptoPrivateKey` object.
+Private key can be loaded from PEM-encoded strings or DER-encoded byte arrays into a `CryptoPrivateKey` object:
+
+```kotlin
+//PKCS8, could by EC or RSA
+CryptoPrivateKey.decodeFromPem(pkcs8)
+```
+
 While encrypted keys can be parsed, decryption is currently not natively supported.
 Moreover, these keys currently cannot be imported into platform-native key stores (AndroidKeyStore/keyChain).
 
 #### Creating a Signer from a `CryptoPrivateKey`
 
 !!! note inline end 
-    Signers can only be created for private keys that have a public key and/or a curve attached
+    Signers can only be created for private keys that have a public key and/or a curve attached. This may not be the case
+    when an EC private key was parsed from SEC1 encoding without curve and public key info.
 
 Given a `CryptoPrivateKey` object and a `SignatureAlgorithm` object hand, a signer can be created as follows:
 
@@ -240,7 +247,7 @@ This only works if key and signature algorithm are compatible. Otherwise, it ret
 !!! note inline end
     The `exportPrivateKey()` method requires an explicit opt-in for `SecretExposure` to prevent accidental export of private keys
 
-Private keys can be exported (typically to be DER or PEM-encoded) from signers an ephemeral key objects as follows:
+Private keys can be exported (typically to be DER or PEM-encoded) from signers and ephemeral key objects as follows:
 
 ```kotlin
 @OptIn(SecretExposure)
