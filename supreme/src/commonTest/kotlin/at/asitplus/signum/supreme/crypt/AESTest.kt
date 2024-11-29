@@ -50,12 +50,10 @@ class AESTest : FreeSpec({
                 ) { iv ->
 
 
-                    println("KEY: ${key.toHexString()} IV: ${iv?.toHexString()}  plaintext: ${plaintext.toHexString()}")
 
                     val ciphertext = it.encryptorFor(key, iv).getOrThrow().encrypt(plaintext).getOrThrow()
 
 
-                    println(ciphertext)
                     ciphertext.iv.shouldNotBeNull()
                     ciphertext.iv!!.size * 8 shouldBe it.ivNumBits.toInt()
                     iv?.let { ciphertext.iv shouldBe it }
@@ -63,7 +61,6 @@ class AESTest : FreeSpec({
 
 
                     val decrypted = ciphertext.decrypt(key).getOrThrow()
-                    println("DECRYPTED: " + decrypted.toHexString(HexFormat.UpperCase))
                     decrypted shouldBe plaintext
 
 
@@ -143,13 +140,11 @@ class AESTest : FreeSpec({
                         Random.Default.nextBytes(32),
                         null
                     ) { aad ->
-                        println("KEY: ${key.toHexString()} IV: ${iv?.toHexString()}  plaintext: ${plaintext.toHexString()}")
 
                         val ciphertext =
                             it.encryptorFor(key, iv, aad).getOrThrow().encrypt(plaintext).getOrThrow()
 
 
-                        println(ciphertext)
                         ciphertext.iv.shouldNotBeNull()
                         ciphertext.iv!!.size * 8 shouldBe it.ivNumBits.toInt()
 
@@ -158,7 +153,6 @@ class AESTest : FreeSpec({
                         ciphertext.aad shouldBe aad
 
                         val decrypted = ciphertext.decrypt(key).getOrThrow()
-                        println("DECRYPTED: " + decrypted.toHexString(HexFormat.UpperCase))
                         decrypted shouldBe plaintext
 
 
@@ -310,7 +304,6 @@ class AESTest : FreeSpec({
                                 Random.Default.nextBytes(32),
                                 null
                             ) { aad ->
-                                println("KEY: ${key.toHexString()} MACKEY: ${macKey.toHexString()} IV: ${iv?.toHexString()}  plaintext: ${plaintext.toHexString()}")
                                 val ciphertext =
                                     it.encryptorFor(key, macKey, iv, aad, macInputFun).getOrThrow()
                                         .encrypt(plaintext)
@@ -335,14 +328,12 @@ class AESTest : FreeSpec({
                                 }.getOrThrow().encrypt(plaintext).getOrThrow()
 
 
-                                println(ciphertext)
                                 iv?.let { ciphertext.iv shouldBe it }
                                 ciphertext.iv.shouldNotBeNull()
                                 ciphertext.shouldBeInstanceOf<Ciphertext.Authenticated.WithDedicatedMac>()
                                 ciphertext.aad shouldBe aad
 
                                 val decrypted = ciphertext.decrypt(key, macKey, macInputFun).getOrThrow()
-                                println("DECRYPTED: " + decrypted.toHexString(HexFormat.UpperCase))
                                 decrypted shouldBe plaintext
 
                                 val wrongDecrypted = ciphertext.decrypt(

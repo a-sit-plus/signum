@@ -228,7 +228,7 @@ println("Is it trustworthy? $isValid")
 ```
 
 ## Symmetric Encryption
-We currently support AES-CBC, AES-GCM, and a very flexible flavour of AES-CMC-HMAC.
+We currently support AES-CBC, AES-GCM, and a very flexible flavour of AES-CBC-HMAC.
 This is supported across all _Supreme_ targets and works as follows:
 ```kotlin
 val payload = "More matter, with less Art!".encodeToByteArray()

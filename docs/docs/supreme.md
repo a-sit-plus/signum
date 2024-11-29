@@ -348,7 +348,7 @@ Symmetric encryption is kept as simple as possible, meaning that symmetric encry
 The public interface is also rather lean, simply call `encryptionAlgorithm.encryptorFor(secretKey)` to instantiate an `Encryptor` object.
 Calling `encryptor.encrypt(data)` will produce a `Ciphertext` object, that matches the encryption algorithm.
 I.e., if you use `EncryptionAlgorithm.AES128.GCM`, you'll receive a `Ciphertext.Authenticated`.
-All authenticated encryption algorithms support AAD (additional authenticated data) and prodice ciphertexts with an authTag.
+All authenticated encryption algorithms support AAD (additional authenticated data) and produce ciphertexts with an authTag.
 
 We also support custom HMAC-based authenticated encryption, letting you freely define which data gets fed into the MAC.
 You also have free rein over the MAC key:
@@ -397,7 +397,7 @@ recovered shouldBe payload //success!
 
 The `encryptorFor` and `decrypt` functions of less complex algorithms only support the parameters that actually get
 passed to the encryption process. E.g., it is impossible to specify a dedicated MAC key, or dedicated MAC function for AES-GCM,
-and non-authenticated AES-CBC doest not even support passing additional authenticated data, since it is not an
+and non-authenticated AES-CBC does not even support passing additional authenticated data, since it is not an
 authenticated encryption algorithm. The same constraints apply to the resulting ciphertexts, making it much harder
 to accidentally confuse an authenticated encryption algorithm with a non-authenticated one.
 

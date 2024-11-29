@@ -18,7 +18,6 @@ private val HMAC.outerPad get() = ByteArray(B) { 0x5C }
 fun MAC.mac(key: ByteArray, msg: Sequence<ByteArray>): KmmResult<ByteArray> = catching {
     when (this@mac) {
         is HMAC -> hmac(key, msg)
-        else -> TODO()
     }
 }
 

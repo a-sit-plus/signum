@@ -13,8 +13,9 @@ private val secureRandom = SecureRandom()
 
 /**
  * Creates an encryptor for the specified [secretKey]. Can be used to encrypt arbitrary data.
- * If no [iv] is specified, a random IV is generated.
- * [aad] = _Additional Authenticated Data_.
+ * * If no [iv] is specified, a random IV is generated.
+ * * [aad] = _Additional Authenticated Data_.
+ *
  * It is safe to discard the reference to [iv] and [aad], as both will be added to any [Ciphertext.Authenticated] resulting from an encryption.
  *
  * **DO NOT RECYCLE THIS OBJECT, AS THIS WILL ALSO RECYCLE THE IV!**
@@ -55,6 +56,7 @@ fun SymmetricEncryptionAlgorithm.Unauthenticated.encryptorFor(
  * * [aad] = _Additional Authenticated Data_.
  * * [dedicatedMacKey] should be used to specify a dedicated MAC key, unless indicated otherwise. Defaults to [secretKey]
  * * [dedicatedMacAuthTagCalculation] can be used to specify a custom computation for the MAC input. Defaults to [DefaultDedicatedMacInputCalculation].
+ *
  * It is safe to discard the reference to [iv] and [aad], as both will be added to any [Ciphertext.Authenticated.WithDedicatedMac] resulting from an encryption.
  *
  * **DO NOT RECYCLE THIS OBJECT, AS THIS WILL ALSO RECYCLE THE IV!**
