@@ -87,8 +87,8 @@ data class JwsSigned<out P : Any>(
          * into a [JwsSigned] with [P] as the type of the payload.
          */
         inline fun <reified P : Any> deserialize(
-            it: String,
             deserializationStrategy: DeserializationStrategy<P>,
+            it: String,
             json: Json = Json,
         ): KmmResult<JwsSigned<P>> =
             deserialize(it).mapCatching {
