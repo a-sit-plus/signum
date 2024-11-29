@@ -70,8 +70,13 @@ sealed class Ciphertext<out A : AuthTrait, T : SymmetricEncryptionAlgorithm<out 
             return result
         }
 
-        class WithDedicatedMac(override val algorithm: SymmetricEncryptionAlgorithm.WithDedicatedMac, encryptedData: ByteArray, iv: ByteArray?,
-                               authTag: ByteArray, aad: ByteArray?): Authenticated(algorithm, encryptedData, iv, authTag, aad)
+        class WithDedicatedMac(
+            override val algorithm: SymmetricEncryptionAlgorithm.WithDedicatedMac,
+            encryptedData: ByteArray,
+            iv: ByteArray?,
+            authTag: ByteArray,
+            aad: ByteArray?
+        ) : Authenticated(algorithm, encryptedData, iv, authTag, aad)
     }
 
     /**
@@ -81,7 +86,11 @@ sealed class Ciphertext<out A : AuthTrait, T : SymmetricEncryptionAlgorithm<out 
         algorithm: SymmetricEncryptionAlgorithm.Unauthenticated,
         encryptedData: ByteArray,
         iv: ByteArray?
-    ) : Ciphertext<AuthTrait.Unauthenticated, SymmetricEncryptionAlgorithm.Unauthenticated>(algorithm, encryptedData, iv) {
+    ) : Ciphertext<AuthTrait.Unauthenticated, SymmetricEncryptionAlgorithm.Unauthenticated>(
+        algorithm,
+        encryptedData,
+        iv
+    ) {
 
         override fun getEncoded() = (iv ?: byteArrayOf()) + encryptedData
 
