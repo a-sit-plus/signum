@@ -1,12 +1,15 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlin.random.Random
 
+@OptIn(ExperimentalStdlibApi::class)
 class JsonWebKeyTest : FreeSpec({
 
     lateinit var curve: ECCurve
@@ -74,6 +77,15 @@ class JsonWebKeyTest : FreeSpec({
         val key = JsonWebKey(type = JwkType.RSA, n = parsedN, e = parsedE)
 
         key.jwkThumbprint shouldBe "urn:ietf:params:oauth:jwk-thumbprint:sha256:NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs"
+    }
+
+    "RSA Key should properly encode n and e (RFC 7518 sample)" {
+        val key = CryptoPublicKey.RSA(
+            n = Asn1Integer.fromUnsignedByteArray(("80".repeat(256)).hexToByteArray()), // high bit is set
+            e = Asn1Integer(65537u) // explicit example from RFC7518 6.3.1.2
+        ).toJsonWebKey()
+        key.n!!.size shouldBe 256
+        key.e!! shouldBe byteArrayOf(0x01, 0x00, 0x01)
     }
 
 })

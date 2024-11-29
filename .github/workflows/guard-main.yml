@@ -1,0 +1,12 @@
+name: 'Verify PR branch target'
+on:
+  pull_request_target:
+    types:
+      - 'opened'
+    branches:
+      - 'main'
+jobs:
+  check-target:
+    uses: a-sit-plus/internal-workflows/.github/workflows/guard-main.yml@main
+permissions:
+  pull-requests: write

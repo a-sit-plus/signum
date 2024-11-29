@@ -2,18 +2,15 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.io.*
+import at.asitplus.signum.indispensable.CryptoPublicKey.RSA.Size.entries
 import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.BitString
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix.Companion.hasPrefix
-import at.asitplus.io.BaseN
-import at.asitplus.io.MultiBase
-import at.asitplus.io.UVarInt
-import at.asitplus.io.multibaseDecode
-import at.asitplus.io.multibaseEncode
-import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.misc.ensureSize
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -130,8 +127,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
                     (keyInfo.nextChild() as Asn1Primitive).readNull()
                     val bitString = (src.nextChild() as Asn1Primitive).asAsn1BitString()
                     val rsaSequence = Asn1Element.parse(bitString.rawBytes) as Asn1Sequence
-                    val n = (rsaSequence.nextChild() as Asn1Primitive).decode(Asn1Element.Tag.INT) { it }
-                    val e = (rsaSequence.nextChild() as Asn1Primitive).decodeToInt()
+                    val n = (rsaSequence.nextChild() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive
+                    val e = (rsaSequence.nextChild() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive
                     if (rsaSequence.hasMoreChildren()) throw Asn1StructuralException("Superfluous data in SPKI!")
                     return RSA(n, e)
                 }
@@ -165,52 +162,31 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
 
     }
 
-    /**
-     * RSA Public key
-     */
-    @Serializable
+    /** RSA Public key */
     @ConsistentCopyVisibility
     data class RSA
     @Throws(IllegalArgumentException::class)
-    private constructor(
-        /**
-         * RSA key size
-         */
-        val bits: Size,
+    constructor(
+        /** modulus */
+        val n: Asn1Integer.Positive,
 
-        /**
-         * modulus
-         */
-        @Serializable(with = ByteArrayBase64Serializer::class) val n: ByteArray,
-
-        /**
-         * public exponent
-         */
-        val e: Int,
+        /** public exponent */
+        val e: Asn1Integer.Positive,
     ) : CryptoPublicKey() {
 
-        init {
-            val computed = Size.of(n)
-            if (bits != computed) throw IllegalArgumentException("Provided number of bits (${bits.number}) does not match computed number of bits (${computed.number})")
-        }
+        val bits = n.bitLength().let { Size.of(it) ?: throw IllegalArgumentException("Unsupported key size $it bits") }
 
-        @Throws(IllegalArgumentException::class)
-        private constructor(params: RsaParams) : this(
-            params.size,
-            params.n,
-            params.e
-        )
+        @Deprecated(message="Use a BigInteger-capable constructor instead")
+        constructor(n: ByteArray, e: Int): this(Asn1Integer.fromUnsignedByteArray(n), Asn1Integer(e) as Asn1Integer.Positive)
 
-        /**
-         * @throws IllegalArgumentException in case of illegal input (odd key size, for example)
-         */
-        @Throws(IllegalArgumentException::class)
-        constructor(n: ByteArray, e: Int) : this(sanitizeRsaInputs(n, e))
+        constructor(n: Asn1Integer, e: Asn1Integer): this(n as Asn1Integer.Positive, e as Asn1Integer.Positive)
+        constructor(n: BigInteger, e: BigInteger): this(n.toAsn1Integer(), e.toAsn1Integer())
+        constructor(n: BigInteger, e: UInt): this(n.toAsn1Integer(), Asn1Integer(e))
 
         override val oid = RSA.oid
 
         /**
-         * enum of supported RSA key sized. For sanity checks!
+         * enum of supported RSA key sizes. For sanity checks!
          */
         enum class Size(val number: UInt) {
             RSA_512(512u),
@@ -222,19 +198,13 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             companion object : Identifiable {
                 fun of(numBits: UInt) = entries.find { it.number == numBits }
 
-                @Throws(IllegalArgumentException::class)
-                fun of(n: ByteArray): Size {
-                    val nTruncSize = n.dropWhile { it == 0.toByte() }.size
-                    return entries.find { nTruncSize == (it.number.toInt() / 8) }
-                        ?: throw IllegalArgumentException("Unsupported key size $nTruncSize")
-                }
-
                 override val oid = KnownOIDs.rsaEncryption
             }
         }
 
         /**
-         * Returns `did:key:$MULTIBASE_ENCODING_IDENTIFIER$MULTICODEC_ALGORITHM_IDENTIFIER$BYTES` with all bytes after MULTIBASE_ENCODING_IDENTIFIER in the assigned encoding.
+         * Returns `did:key:$MULTIBASE_ENCODING_IDENTIFIER$MULTICODEC_ALGORITHM_IDENTIFIER$BYTES` with all bytes
+         * after `MULTIBASE_ENCODING_IDENTIFIER` in the assigned encoding.
          * The Multicodec identifier for RSA is `0x1205` and the key bytes are represented as PKCS#1 encoding.
          */
         override val didEncoded by lazy {
@@ -249,30 +219,9 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
          */
         val pkcsEncoded by lazy {
             Asn1.Sequence {
-                +Asn1Primitive(
-                    Asn1Element.Tag.INT,
-                    n.ensureSize(bits.number / 8u)
-                        .let { if (it.first() == 0x00.toByte()) it else byteArrayOf(0x00, *it) })
-
+                +Asn1.Int(n)
                 +Asn1.Int(e)
             }.derEncoded
-        }
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other == null) return false
-            if (this::class != other::class) return false
-
-            other as RSA
-
-            return pkcsEncoded.contentEquals(other.pkcsEncoded)
-        }
-
-        override fun hashCode(): Int {
-            var result = bits.hashCode()
-            result = 31 * result + n.contentHashCode()
-            result = 31 * result + e.hashCode()
-            return result
         }
 
         companion object : Identifiable {
@@ -284,11 +233,14 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             @Throws(Asn1Exception::class)
             fun fromPKCS1encoded(input: ByteArray): RSA = runRethrowing {
                 val conv = Asn1Element.parse(input) as Asn1Sequence
-                val n = (conv.nextChild() as Asn1Primitive).decode(Asn1Element.Tag.INT) { it }
-                val e = (conv.nextChild() as Asn1Primitive).decodeToInt()
+                val n = (conv.nextChild() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive
+                val e = (conv.nextChild() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive
                 if (conv.hasMoreChildren()) throw Asn1StructuralException("Superfluous bytes")
-                return RSA(Size.of(n), n, e)
+                return RSA(n, e)
             }
+
+            inline operator fun invoke(n: BigInteger, e: Int) =
+                RSA(n, e.also { require(it > 0) }.toUInt())
 
             override val oid = KnownOIDs.rsaEncryption
         }
@@ -326,25 +278,29 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             }
 
         /**
-         * Returns `did:key:$MULTIBASE_ENCODING_IDENTIFIER$MULTICODEC_ALGORITHM_IDENTIFIER$BYTES` with all bytes after MULTIBASE_ENCODING_IDENTIFIER in the assigned encoding
-         * Multicodec identifiers '0x120x' are draft identifiers for P-xxx keys with point compression
+         * Returns `did:key:$MULTIBASE_ENCODING_IDENTIFIER$MULTICODEC_ALGORITHM_IDENTIFIER$BYTES` with all bytes
+         * after `MULTIBASE_ENCODING_IDENTIFIER` in the assigned encoding.
          *
-         * 0x1200 P-256
-         * 0x1201 P-384
-         * 0x1202 P-512
+         * Multicodec identifiers `0x120x` are draft identifiers for P-xxx keys with point compression:
+         *
+         * * `0x1200` P-256
+         * * `0x1201` P-384
+         * * `0x1202` P-512
          *
          * The keybytes are ANSI X9.63 encoded (important for compression)
          */
         override val didEncoded by lazy {
-            val codec = when (curve) {
+            "$PREFIX_DID_KEY:" +
+                    (UVarInt(curve.multibaseId()).encodeToByteArray() + this.toAnsiX963Encoded(useCompressed = true))
+                        .multibaseEncode(MultiBase.Base.BASE58_BTC)
+        }
+
+        private fun ECCurve.multibaseId(): UInt {
+            return when (this) {
                 ECCurve.SECP_256_R_1 -> 0x1200u
                 ECCurve.SECP_384_R_1 -> 0x1201u
                 ECCurve.SECP_521_R_1 -> 0x1202u
             }
-            PREFIX_DID_KEY + ":" + MultiBase.encode(
-                MultiBase.Base.BASE58_BTC,
-                UVarInt(codec).encodeToByteArray() + this.toAnsiX963Encoded(useCompressed = true)
-            )
         }
 
         override val iosEncoded by lazy { toAnsiX963Encoded(useCompressed = false) }
@@ -439,23 +395,6 @@ fun SpecializedCryptoPublicKey.equalsCryptographically(other: SpecializedCryptoP
 /** Whether the actual underlying key (irrespective of any format-specific metadata) is equal */
 fun CryptoPublicKey.equalsCryptographically(other: SpecializedCryptoPublicKey) =
     other.equalsCryptographically(this)
-
-
-//Helper typealias, for helper sanitization function. Enables passing all params along constructors for constructor chaining
-private typealias RsaParams = Triple<ByteArray, Int, CryptoPublicKey.RSA.Size>
-
-private val RsaParams.n get() = first
-private val RsaParams.e get() = second
-private val RsaParams.size get() = third
-
-/**
- * Sanitizes RSA parameters and maps it to the correct [CryptoPublicKey.RSA.Size] enum
- * This function lives here and returns a typealiased Triple to allow for constructor chaining.
- * If we were to change the primary constructor, we'd need to write a custom serializer
- */
-@Throws(IllegalArgumentException::class)
-private fun sanitizeRsaInputs(n: ByteArray, e: Int): RsaParams = n.dropWhile { it == 0.toByte() }.toByteArray()
-    .let { Triple(byteArrayOf(0, *it), e, CryptoPublicKey.RSA.Size.of(it)) }
 
 
 private val PREFIX_DID_KEY = "did:key"

@@ -2,8 +2,21 @@
 
 ## 3.0
 
+### 3.11.0 NEXT
+
+ * Implement members in `JsonWebToken` and `ConfirmationClaim` for OpenID4VC High Assurance Interoperability Profile with SD-JWT VC
+ * Add utility methods to `Asn1Integer`
+   * Additional constructor methods: `fromByteArray`, `fromUnsignedByteArray`
+   * Additional instance methods: `isZero`, `magnitude`, `bitLength`
+   * Additional conversion methods for Java BigInteger and iospin BigInteger
+ * Refactor `CryptoPublicKey.Rsa` to use `Asn1Integer`
+   * Fixes JWS/COSE encoding for non-standard exponents (with MSBit 1)
+ * Add type parameter to `CoseSigned` for its payload
+ * Add companion method `CoseSigned.fromObject` to create a `CoseSigned` with a typed payload (outside of the usual `ByteArray`)
+ * Do not use DID key identifiers as keyId for `CoseKey`
+
 ### 3.10.0 (Supreme 0.5.0) More ~~cowbell~~ targets!
-A new artefact, minor breaking changes and a lot more targets ahead!
+A new artifact, minor breaking changes and a lot more targets ahead!
 
 The public API remains _almost_ unchanged. Breaking API changes are:
 

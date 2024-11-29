@@ -3,8 +3,11 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.fromUncompressed
 import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.misc.ensureSize
 import at.asitplus.signum.indispensable.asn1.encoding.toTwosComplementByteArray
+import at.asitplus.signum.indispensable.asn1.encoding.toUnsignedByteArray
+import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -13,6 +16,13 @@ import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPublicKey
+
+private fun ByteArray.trimLeadingZeros() =
+    when (val i = this.indexOfFirst { it != 0x00.toByte() }) {
+        -1 -> byteArrayOf(0x00)
+        0 -> this
+        else -> this.copyOfRange(i, this.size)
+    }
 
 class JsonWebKeyJvmTest : FreeSpec({
 
@@ -53,14 +63,17 @@ class JsonWebKeyJvmTest : FreeSpec({
     }
 
     "JWK can be created from n and e" - {
-        val nFromBc = (keyPairRSA.public as RSAPublicKey).modulus.toByteArray()
-        val eFromBc = (keyPairRSA.public as RSAPublicKey).publicExponent.toInt()
-        val pubKey = CryptoPublicKey.RSA(nFromBc, eFromBc).also { it.jwkId = it.didEncoded }
+        val nFromBc = (keyPairRSA.public as RSAPublicKey).modulus
+        val eFromBc = (keyPairRSA.public as RSAPublicKey).publicExponent
+        val pubKey = CryptoPublicKey.RSA(
+            nFromBc.toAsn1Integer() as Asn1Integer.Positive,
+            eFromBc.toAsn1Integer() as Asn1Integer.Positive)
+                .also { it.jwkId = it.didEncoded }
         val jwk = pubKey.toJsonWebKey()
 
         jwk.shouldNotBeNull()
-        jwk.n shouldBe nFromBc
-        jwk.e shouldBe eFromBc.toTwosComplementByteArray()
+        jwk.n shouldBe nFromBc.toByteArray().trimLeadingZeros()
+        jwk.e shouldBe eFromBc.toByteArray().trimLeadingZeros()
         jwk.keyId.shouldNotBeNull()
 
         "it can be converted back to CryptoPublicKey" {

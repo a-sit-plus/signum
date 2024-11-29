@@ -163,7 +163,7 @@ val signature = signer.sign(plaintext) {
 On the JVM, no native secure hardware storage is available.
 File-based keystores can be accessed using `JKSProvider { file { /* ... */ } }`.
 Other keystores can be accessed using `JKSProvider { withBackingObject{ /* ... */ } }` or `JksProvider { customAccessor{ /* ... */ } }`.
-For more details, please refer to the provider's [configuration options](https://a-sit-plus.github.io/signum/supreme/at.asitplus.signum.supreme.os/-j-k-s-provider-configuration/index.html).
+For more details, please refer to the provider's [configuration options](https://a-sit-plus.github.io/signum/dokka/supreme/at.asitplus.signum.supreme.os/-j-k-s-provider-configuration/index.html).
 
 #### Key Attestation
 
