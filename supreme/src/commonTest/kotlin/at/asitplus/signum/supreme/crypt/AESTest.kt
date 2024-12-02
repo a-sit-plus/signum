@@ -19,6 +19,109 @@ import kotlin.random.Random
 @ExperimentalStdlibApi
 class AESTest : FreeSpec({
 
+
+    "Illegal IV Size" - {
+        withData(
+            SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
+            SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN,
+            SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN,
+
+            SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_1,
+            SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_256,
+            SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_384,
+            SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_512,
+
+            SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_1,
+            SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_256,
+            SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_384,
+            SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512,
+
+            SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_1,
+            SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_256,
+            SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_384,
+            SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_512,
+
+            SymmetricEncryptionAlgorithm.AES_128.GCM,
+            SymmetricEncryptionAlgorithm.AES_192.GCM,
+            SymmetricEncryptionAlgorithm.AES_256.GCM,
+
+            ) { alg ->
+
+            withData(
+                nameFn = { "${it.size} Bytes" },
+                Random.nextBytes(0),
+                Random.nextBytes(1),
+                Random.nextBytes(17),
+                Random.nextBytes(18),
+                Random.nextBytes(32),
+                Random.nextBytes(256),
+
+                ) { iv ->
+                alg.encryptorFor(alg.randomKey(), iv) shouldNot succeed
+                alg.encryptorFor(alg.randomKey(), alg.randomIV()) should succeed
+                alg.encryptorFor(alg.randomKey()) should succeed
+                if (alg is SymmetricEncryptionAlgorithm.Authenticated)
+                    alg.encryptorFor(alg.randomKey()).getOrThrow().encrypt(Random.nextBytes(32)).getOrThrow()
+                        .shouldBeInstanceOf<Ciphertext.Authenticated>()
+                else if (alg is SymmetricEncryptionAlgorithm.Unauthenticated)
+                    alg.encryptorFor(alg.randomKey()).getOrThrow().encrypt(Random.nextBytes(32)).getOrThrow()
+                        .shouldBeInstanceOf<Ciphertext.Unauthenticated>()
+            }
+        }
+    }
+
+
+    "Illegal Key Size" - {
+        withData(
+            SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
+            SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN,
+            SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN,
+
+            SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_1,
+            SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_256,
+            SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_384,
+            SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_512,
+
+            SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_1,
+            SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_256,
+            SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_384,
+            SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512,
+
+            SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_1,
+            SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_256,
+            SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_384,
+            SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_512,
+
+            SymmetricEncryptionAlgorithm.AES_128.GCM,
+            SymmetricEncryptionAlgorithm.AES_192.GCM,
+            SymmetricEncryptionAlgorithm.AES_256.GCM,
+
+            ) { alg ->
+
+            withData(
+                nameFn = { "${it.size} Bytes" },
+                Random.nextBytes(0),
+                Random.nextBytes(1),
+                Random.nextBytes(17),
+                Random.nextBytes(18),
+                Random.nextBytes(33), //cannot use 16, 24, or 32
+                Random.nextBytes(256),
+
+                ) { key ->
+                alg.encryptorFor(key) shouldNot succeed
+                alg.encryptorFor(key, alg.randomIV()) shouldNot succeed
+                alg.encryptorFor(alg.randomKey()) should succeed
+                alg.encryptorFor(alg.randomKey(), alg.randomIV()) should succeed
+                if (alg is SymmetricEncryptionAlgorithm.Authenticated)
+                    alg.encryptorFor(alg.randomKey()).getOrThrow().encrypt(Random.nextBytes(32)).getOrThrow()
+                        .shouldBeInstanceOf<Ciphertext.Authenticated>()
+                else if (alg is SymmetricEncryptionAlgorithm.Unauthenticated)
+                    alg.encryptorFor(alg.randomKey()).getOrThrow().encrypt(Random.nextBytes(32)).getOrThrow()
+                        .shouldBeInstanceOf<Ciphertext.Unauthenticated>()
+            }
+        }
+    }
+
     "CBC.PLAIN" - {
 
         withData(
@@ -48,7 +151,6 @@ class AESTest : FreeSpec({
                     it.randomIV(),
                     null
                 ) { iv ->
-
 
 
                     val ciphertext = it.encryptorFor(key, iv).getOrThrow().encrypt(plaintext).getOrThrow()

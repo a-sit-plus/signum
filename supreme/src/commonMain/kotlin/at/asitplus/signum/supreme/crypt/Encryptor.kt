@@ -29,7 +29,7 @@ fun SymmetricEncryptionAlgorithm.Authenticated.encryptorFor(
     aad: ByteArray? = null
 ): KmmResult<Encryptor<AuthTrait.Authenticated, SymmetricEncryptionAlgorithm.Authenticated, Ciphertext.Authenticated>> =
     catching {
-        Encryptor(this, secretKey, null, iv, aad, DefaultDedicatedMacInputCalculation)
+        Encryptor(this, secretKey, secretKey, iv, aad, DefaultDedicatedMacInputCalculation)
     }
 
 /**
@@ -49,6 +49,35 @@ fun SymmetricEncryptionAlgorithm.Unauthenticated.encryptorFor(
     catching {
         Encryptor(this, secretKey, null, iv, null, DefaultDedicatedMacInputCalculation)
     }
+
+/**
+ * Creates an encryptor for the specified [secretKey]. Can be used to encrypt arbitrary data.
+ * If no [iv] is specified, a random IV is generated.
+ * It is safe to discard the reference to [iv], as it will be added to any [Ciphertext] resulting from an encryption.
+ *
+ * **DO NOT RECYCLE THIS OBJECT, AS THIS WILL ALSO RECYCLE THE IV!**
+ *
+ * @return [KmmResult.success] containing an encryptor if valid parameters were provided or [KmmResult.failure] in case of
+ * invalid parameters (e.g., key or IV length)
+ */
+ fun <A : AuthTrait> SymmetricEncryptionAlgorithm.WithIV<A>.encryptorFor(
+    secretKey: ByteArray,
+    iv: ByteArray? = null
+): KmmResult<Encryptor<A, SymmetricEncryptionAlgorithm.WithIV<A>, Ciphertext<A, SymmetricEncryptionAlgorithm.WithIV<A>>>> =
+    when (this) {
+        is SymmetricEncryptionAlgorithm.Authenticated -> (this as SymmetricEncryptionAlgorithm.Authenticated).encryptorFor(
+            secretKey,
+            iv
+        )
+
+        is SymmetricEncryptionAlgorithm.Unauthenticated -> (this as SymmetricEncryptionAlgorithm.Unauthenticated).encryptorFor(
+            secretKey,
+            iv
+        )
+
+        else -> KmmResult.failure<Encryptor<A, SymmetricEncryptionAlgorithm.WithIV<A>, Ciphertext<A, SymmetricEncryptionAlgorithm.WithIV<A>>>> (TODO())
+    } as KmmResult<Encryptor<A, SymmetricEncryptionAlgorithm.WithIV<A>, Ciphertext<A, SymmetricEncryptionAlgorithm.WithIV<A>>>>
+
 
 /**
  * Creates an encryptor for the specified [secretKey]. Can be used to encrypt arbitrary data.
