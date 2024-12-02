@@ -225,7 +225,7 @@ CryptoPrivateKey.decodeFromPem(pkcs8)
 ```
 
 While encrypted keys can be parsed, decryption is currently not natively supported.
-Moreover, these keys currently cannot be imported into platform-native key stores (AndroidKeyStore/keyChain).
+Moreover, these keys currently cannot be imported into platform-native key stores (Android KeyStore/ iOS KeyChain).
 
 #### Creating a Signer from a `CryptoPrivateKey`
 

@@ -4,10 +4,13 @@ import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import io.matthewnelson.encoding.base16.Base16
+import kotlin.random.Random
 
 @OptIn(ExperimentalStdlibApi::class)
 class PemTest : FreeSpec({
     "SEC1" {
+        val rnd = Random.nextBytes(35).toHexString()+"\n                  "
         val sec1 = """
             -----BEGIN EC PRIVATE KEY-----
             MHcCAQEEIGwHU3LKj2fCxiUWB76jCnxIOJ2KAgYKbYGays8h/g+goAoGCCqGSM49
@@ -16,9 +19,9 @@ class PemTest : FreeSpec({
             -----END EC PRIVATE KEY-----
         """.trimIndent()
 
-        CryptoPrivateKey.EC.decodeFromPem(sec1).getOrThrow().pemEncodeSec1().getOrThrow() shouldBe sec1
-        (CryptoPrivateKey.decodeFromPem(sec1).getOrThrow() as CryptoPrivateKey.EC).pemEncodeSec1()
-            .getOrThrow() shouldBe sec1
+        CryptoPrivateKey.EC.decodeFromPem(rnd+sec1).getOrThrow().pemEncodeSec1().getOrThrow().lines() shouldBe sec1.lines()
+        (CryptoPrivateKey.decodeFromPem(rnd+sec1).getOrThrow() as CryptoPrivateKey.EC).pemEncodeSec1()
+            .getOrThrow().lines() shouldBe sec1.lines()
     }
 
     "PKCS#8" {
@@ -29,7 +32,7 @@ class PemTest : FreeSpec({
             zxh/z83LcdvgjntLPbRlpulusOaoUHsCataF16M48ef34ufnWLjZsJ0Z
             -----END PRIVATE KEY-----
         """.trimIndent()
-        CryptoPrivateKey.decodeFromPem(pkcs8).getOrThrow().encodeToPEM().getOrThrow() shouldBe pkcs8
+        CryptoPrivateKey.decodeFromPem(pkcs8).getOrThrow().encodeToPEM().getOrThrow().lines() shouldBe pkcs8.lines()
     }
 
     "from iOS" {

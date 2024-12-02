@@ -74,7 +74,7 @@ val PemDecodable<*, *>.postEB: String get() = "$FENCE_POST$ebString$FENCE_AFTER"
  */
 @OptIn(ExperimentalEncodingApi::class)
 fun PemEncodable<*>.encodeToPEM(): KmmResult<String> = catching {
-    "$preEB\n" + Base64.encode(binaryEncodePayload()).chunked(64)
+    "$preEB\n" + Base64.Mime.encode(binaryEncodePayload()).lines().joinToString("").chunked(64)
         .joinToString(separator = "\n", postfix = "\n") + postEB
 }
 
@@ -82,11 +82,18 @@ fun PemEncodable<*>.encodeToPEM(): KmmResult<String> = catching {
  * Reads the first line of the passed string and tries to extract the encapsulation boundary string
  */
 @Throws(Throwable::class)
-private fun PemDecodable<*, *>.peekEbString(src: String): String {
-    val firstLine = src.lines().first()
-    val lastLine = src.lines().last()
-    require(firstLine.startsWith(FENCE_PRE)) { "PEM-encoded string must start with '$FENCE_PRE'! (mind the trailing space). First line: $firstLine" }
-    require(firstLine.endsWith(FENCE_AFTER)) { "PEM-encoded string first line must end with '$FENCE_AFTER'! (without the trailing spaces). First line: $firstLine" }
+private fun PemDecodable<*, *>.peekEbString(src: String): Pair<String, Int> {
+    val lines = src.lines()
+    val lineIter = lines.iterator()
+    var firstLine = lineIter.next().trim()
+    val lastLine = lines.last()
+    var linesSkipped = 0
+    while (!(firstLine.startsWith(FENCE_PRE) && firstLine.endsWith(FENCE_AFTER))) {
+        ++linesSkipped
+        require(lineIter.hasNext()) {"No encapsulation boundary found"}
+        firstLine = lineIter.next().trim()
+    }
+
 
     require(lastLine.startsWith(FENCE_POST)) { "PEM-encoded string last line start with '$FENCE_POST'! (mind the trailing space). Last line: $lastLine" }
     require(lastLine.endsWith(FENCE_AFTER)) { "PEM-encoded string must end with '$FENCE_AFTER'! (without the trailing spaces). Last line: $lastLine" }
@@ -97,7 +104,7 @@ private fun PemDecodable<*, *>.peekEbString(src: String): String {
         "PRE-EB and POST-EB strings differ: '$ebString' vs. '$postEB'"
     }
 
-    return ebString
+    return ebString to linesSkipped
 }
 
 /**
@@ -106,5 +113,10 @@ private fun PemDecodable<*, *>.peekEbString(src: String): String {
 @OptIn(ExperimentalEncodingApi::class)
 fun <A : Asn1Element, T : PemEncodable<A>> PemDecodable<A, T>.decodeFromPem(src: String): KmmResult<T> = catching {
     val lines = src.lines()
-    binaryDecodePayload(peekEbString(src), Base64.decode(lines.slice(1..<lines.size - 1).joinToString(separator = "")))
+    peekEbString(src).let { (ebString, linesToSkip) ->
+        binaryDecodePayload(
+            ebString,
+            Base64.Mime.decode(lines.slice(1 + linesToSkip..<lines.size - 1).joinToString(separator = ""))
+        )
+    }
 }
