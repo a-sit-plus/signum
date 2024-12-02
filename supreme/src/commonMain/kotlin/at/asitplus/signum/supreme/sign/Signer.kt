@@ -64,27 +64,6 @@ open class SigningKeyConfiguration internal constructor() : DSL.Data() {
 
     sealed class PrivateKeyConfiguration<T : CryptoPublicKey> : DSL.Data()
 
-    class PrivateECKeyConfiguration internal constructor() : PrivateKeyConfiguration<CryptoPublicKey.EC>() {
-        internal var digestSet = false
-
-        /** The digest supported by the signer. If not specified, supports the curve's native digest. */
-        var digest: Digest? = null
-            set(value) {
-                digestSet = true
-                field = value
-            }
-            get() = field
-    }
-
-    class PrivateRSAKeyConfiguration internal constructor() : PrivateKeyConfiguration<CryptoPublicKey.RSA>() {
-        /** The digest supported by the signer. If not specified, defaults to [SHA256][Digest.SHA256]. */
-        open var digest: Digest = Digest.SHA256
-
-        /** The padding supported by the signer. If not specified, defaults to [RSA-PSS][RSAPadding.PSS]. */
-        open var padding: RSAPadding = RSAPadding.PSS
-    }
-}
-
 /**
  * Shared interface of all objects that can sign data.
  * Signatures are created using the [signatureAlgorithm], and can be verified using [publicKey], potentially with a [verifierFor] this object.
