@@ -98,8 +98,8 @@ actual internal fun Ciphertext.Authenticated.doDecrypt(secretKey: ByteArray): By
             authTag.toNSData(),
             aad?.toNSData(),
             error
-        )!!.toByteArray()
-    }
+        )
+    }.toByteArray()
 }
 
 @OptIn(ExperimentalForeignApi::class)
