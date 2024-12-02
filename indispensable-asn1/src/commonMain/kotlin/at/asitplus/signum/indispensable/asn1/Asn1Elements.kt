@@ -174,7 +174,7 @@ sealed class Asn1Element(
 
     @Throws(Asn1StructuralException::class)
     private inline fun <reified T : Asn1Element> thisAs(): T  {
-        if (this is Asn1EncapsulatingOctetString && typeOf<T>() == typeOf<Asn1PrimitiveOctetString>()) //TODO? without reflection
+        if (this is Asn1EncapsulatingOctetString && typeOf<T>() == typeOf<Asn1PrimitiveOctetString>())
             return toPrimitiveOctetString() as T
        return (this as? T)
             ?: throw Asn1StructuralException("${this::class.simpleName} cannot be reinterpreted as ${T::class.simpleName}.")

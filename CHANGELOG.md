@@ -18,17 +18,18 @@
 * **PEM Encoding**
     * Introduce `PemEncodable` interface, derived from `Asn1Encodable`
     * Introduce `PemDecodable` interface, derived from `Asn1Decodable`
-* Add **Private Key Representation** to `indispensable`
-    * Parsing of PEM and DER-encoded private keys
-    * Introduce `SignatureAlgorithm.signerFor(privateKey)` to create signers backed by (previously parsed, or manually constructed) private keys
-    * Export of private keys from ephemeral signers (and only ephemeral signers) in combination with a new `@SecretExposure` annotation
+* Add **Private Key**
+    * Add **Private Key Representation** to `indispensable`
+    * Parsing of PEM and DER-encoded private keys in  `indispensable`
+    * Introduce `SignatureAlgorithm.signerFor(privateKey)` in `supreme` to create signers backed by (previously parsed, or manually constructed) private keys
+    * Export of private keys from ephemeral signers (and only ephemeral signers) in combination with a new `@SecretExposure` annotation in `supreme`
 * Add helpers for smoother iOS interop:
     * `ECCurve.iosEncodedPublicKeyLength` 
     * `ECCurve.iosEncodedPrivateKeyLength` 
     * `ECCurve.Companion.fromIosEncodedPublicKeyLength` 
     * `ECCurve.Companion.fromIosEncodedPrivateKeyLength` 
 * Renames (old names are kept with a deprecation warning):
-    * `getJcaPublicKey()` -> `toJcaPublicKey`
+    * `getJcaPublicKey()` -> `toJcaPublicKey()`
 
 ### 3.10.0 (Supreme 0.5.0) More ~~cowbell~~ targets!
 A new artifact, minor breaking changes and a lot more targets ahead!

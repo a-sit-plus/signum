@@ -262,27 +262,28 @@ fun X509Certificate.toJcaCertificateBlocking(): KmmResult<java.security.cert.X50
 fun java.security.cert.X509Certificate.toKmpCertificate() =
     catching { X509Certificate.decodeFromDer(encoded) }
 
-fun CryptoPrivateKey<*>.toJcaPrivateKey(): KmmResult<PrivateKey> = catching {
+fun CryptoPrivateKey.WithPublicKey<*>.toJcaPrivateKey(): KmmResult<PrivateKey> = catching {
     val spec = PKCS8EncodedKeySpec(this.encodeToDer())
     val kf = when (this) {
-        is CryptoPrivateKey.EC -> KeyFactory.getInstance("EC")
+        is CryptoPrivateKey.EC.WithPublicKey -> KeyFactory.getInstance("EC")
         is CryptoPrivateKey.RSA -> KeyFactory.getInstance("RSA")
+        else -> TODO("Unreachable")
     }
     kf.generatePrivate(spec)!!
 }
 
-fun CryptoPrivateKey.EC.toJcaPrivateKey(): KmmResult<ECPrivateKey> =
-    (this as CryptoPrivateKey<*>).toJcaPrivateKey().map { it as ECPrivateKey }
+fun CryptoPrivateKey.EC.WithPublicKey.toJcaPrivateKey(): KmmResult<ECPrivateKey> =
+    (this as CryptoPrivateKey.WithPublicKey<*>).toJcaPrivateKey().map { it as ECPrivateKey }
 
 fun CryptoPrivateKey.RSA.toJcaPrivateKey(): KmmResult<RSAPrivateKey> =
-    (this as CryptoPrivateKey<*>).toJcaPrivateKey().map { it as RSAPrivateKey }
+    (this as CryptoPrivateKey.WithPublicKey<*>).toJcaPrivateKey().map { it as RSAPrivateKey }
 
-fun PrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey<*>> = catching {
-    CryptoPrivateKey.decodeFromDer(encoded)
+fun PrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> = catching {
+    CryptoPrivateKey.decodeFromDer(encoded) as CryptoPrivateKey.WithPublicKey<*>
 }
 
-fun ECPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.EC> = catching {
-    CryptoPrivateKey.decodeFromDer(encoded) as CryptoPrivateKey.EC
+fun ECPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicKey> = catching {
+    CryptoPrivateKey.decodeFromDer(encoded) as CryptoPrivateKey.EC.WithPublicKey
 }
 
 fun RSAPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.RSA> = catching {

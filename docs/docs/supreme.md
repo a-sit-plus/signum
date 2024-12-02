@@ -233,14 +233,20 @@ Moreover, these keys currently cannot be imported into platform-native key store
     Signers can only be created for private keys that have a public key and/or a curve attached. This may not be the case
     when an EC private key was parsed from SEC1 encoding without curve and public key info.
 
-Given a `CryptoPrivateKey` object and a `SignatureAlgorithm` object hand, a signer can be created as follows:
+Given a `CryptoPrivateKey.WithPublicKey` object and a `SignatureAlgorithm` object hand, a signer can be created as follows:
 
 ```kotlin
 val signer = sigAlg.signerFor(privateKey)
 ```
 
-This only works if key and signature algorithm are compatible. Otherwise, it returns `KmmResult.failure`.
+This only works if key and signature algorithm are compatible. Otherwise, it returns `KmmResult.failure`. 
+If you have an EC private key at hand without a public key attached, simply convert it to a `CryptoPrivateKey.EC.WithPublicKey` as follows:
 
+```kotlin
+privateKey.withCurve(EECurve.SECP_256_R_1)
+```
+
+Note that this function does not perform plausibility checks wrt. curve and key size!
 
 #### Exporting Private Keys
 

@@ -55,6 +55,7 @@ It contains essentials such as:
 
 * `CryptoPublicKey` representing a public key. Currently, we support RSA and EC public keys on NIST curves.
 * `CryptoPrivateKey` representing a private key. Currently, we support RSA and EC private keys on NIST curves. RSA keys always include the public key, EC keys may or may not contain a public key and/or curve.
+    * Has an additional specialization `CryptoPrivateKey.WithPublicKey` that always includes a public key
     * Encodes to PKCS#8 by default
     * RSA keys also support `pkcs1Encode()`
     * EC keys also support  `sec1Encode()`
@@ -113,18 +114,18 @@ The following functions provide interop functionality with platform types.
 * `CryptoPublicKey.toJcaPublicKey()` returns the JCA-representation of the public key
 * `CryptoPublicKey.EC.toJcaPublicKey()` returns the JCA-representation of the public key (convenience helper)
 * `CryptoPublicKey.RSA.toJcaPublicKey()` returns the JCA-representation of the public key (convenience helper)
-* `PublicKey.fromJcaPublicKey()` creates a `CryptoPublicKey` from a JCA Public Key
-* `ECPublicKey.fromJcaPublicKey()` creates a `CryptoPublicKey.EC` from a JCA EC Public Key
-* `RSAPublicKey.fromJcaPublicKey()` creates a `CryptoPublicKey.RSA` from a JCA RSA Public Key
+* `PublicKey.toCryptoPublicKey()` creates a `CryptoPublicKey` from a JCA Public Key
+* `ECPublicKey.toCryptoPublicKey()` creates a `CryptoPublicKey.EC` from a JCA EC Public Key
+* `RSAPublicKey.toCryptoPublicKey()` creates a `CryptoPublicKey.RSA` from a JCA RSA Public Key
 
 <br>
 
-* `CryptoPrivateKey.toJcaPublicKey()` returns the JCA-representation of the private key
-* `CryptoPrivateKey.EC.toJcaPublicKey()` returns the JCA-representation of the private key (convenience helper)
+* `CryptoPrivateKey.WihtPublicKey<*>.toJcaPublicKey()` returns the JCA-representation of the private key
+* `CryptoPrivateKey.EC.WithPublicKey.toJcaPublicKey()` returns the JCA-representation of the private key (convenience helper)
 * `CryptoPrivateKey.RSA.toJcaPublicKey()` returns the JCA-representation of the private key (convenience helper)
-* `PrivateKey.toCryptoPrivateKey()` creates a `CryptoPrivateKey` from a JCA Public Key
-* `PrivateKey.toCryptoPrivateKey()` creates a `CryptoPrivateKey.EC` from a JCA EC Public Key
-* `PrivateKey.toCryptoPrivateKey()` creates a `CryptoPrivateKey.RSA` from a JCA RSA Public Key
+* `PrivateKey.toCryptoPrivateKey()` creates a `CryptoPrivateKey.WithPublicKey<*>` from a JCA Public Key
+* `ECPrivateKey.toCryptoPrivateKey()` creates a `CryptoPrivateKey.EC.WithPublicKey` from a JCA EC Public Key
+* `RSAPrivateKey.toCryptoPrivateKey()` creates a `CryptoPrivateKey.RSA` from a JCA RSA Public Key
 
 <br>
 

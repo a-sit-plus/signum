@@ -30,7 +30,7 @@ class PrivateKeyCommonTests : FreeSpec({
             -----END PRIVATE KEY-----
         """.trimIndent()
 
-        val key = CryptoPrivateKey.decodeFromPem(rsa).getOrThrow()
+        val key = CryptoPrivateKey.decodeFromPem(rsa).getOrThrow() as CryptoPrivateKey.WithPublicKey<*>
 
         val signer: Signer = SignatureAlgorithm.RSAwithSHA256andPSSPadding.signerFor(key).getOrThrow()
 
@@ -53,7 +53,7 @@ class PrivateKeyCommonTests : FreeSpec({
             zxh/z83LcdvgjntLPbRlpulusOaoUHsCataF16M48ef34ufnWLjZsJ0Z
             -----END PRIVATE KEY-----
         """.trimIndent()
-        val privateKey = CryptoPrivateKey.decodeFromPem(pkcs8).getOrThrow()
+        val privateKey = CryptoPrivateKey.decodeFromPem(pkcs8).getOrThrow() as CryptoPrivateKey.EC.WithPublicKey
 
 
         val signer: Signer = SignatureAlgorithm.ECDSAwithSHA256.signerFor(privateKey).getOrThrow()

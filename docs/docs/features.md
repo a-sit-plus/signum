@@ -65,7 +65,7 @@ We have therefore limited ourselves to what is natively supported on all platfor
 
 ## High-Level ASN.1 Abstractions
 
-The `indispensable-asn1` module comes with a fully-features ASN.1 engine including a builder DSL.
+The `indispensable-asn1` module comes with a fully-featured ASN.1 engine including a builder DSL.
 In addition to low-level, generic abstractions, it also provides higher-level datatypes with enriched
 semantics. The `indispensable` module builds on top of it, adding cryptography-specific data types.
 Combined these two modules provide the following abstractions:

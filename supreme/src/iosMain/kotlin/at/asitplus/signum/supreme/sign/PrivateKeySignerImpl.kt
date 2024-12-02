@@ -18,9 +18,9 @@ actual fun makePrivateKeySigner(
 
 @OptIn(ExperimentalForeignApi::class)
 actual fun makePrivateKeySigner(
-    key: CryptoPrivateKey.EC,
+    key: CryptoPrivateKey.EC.WithPublicKey,
     algorithm: SignatureAlgorithm.ECDSA
-): Signer.ECDSA = ECPrivateKeySigner(key, algorithm, key.publicKey!!)
+): Signer.ECDSA = ECPrivateKeySigner(key, algorithm, key.publicKey)
 
 
 sealed class PrivateKeySigner @OptIn(ExperimentalForeignApi::class)
@@ -55,7 +55,7 @@ protected constructor(
 
 @OptIn(ExperimentalForeignApi::class)
 class ECPrivateKeySigner(
-    override val privateKey: CryptoPrivateKey.EC,
+    override val privateKey: CryptoPrivateKey.EC.WithPublicKey,
     override val signatureAlgorithm: SignatureAlgorithm.ECDSA,
     override val publicKey: CryptoPublicKey.EC
 ) : PrivateKeySigner(privateKey.toSecKey().getOrThrow(), signatureAlgorithm), Signer.ECDSA

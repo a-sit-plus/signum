@@ -11,26 +11,36 @@ import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 /**
  * PKCS#8 Representation of a private key structure as per [RFC 5208](https://datatracker.ietf.org/doc/html/rfc5208)
  */
-sealed class CryptoPrivateKey<T : CryptoPublicKey>(
+sealed interface CryptoPrivateKey<T : CryptoPublicKey>
+ : PemEncodable<Asn1Sequence>, Identifiable {
+
     /**
      * optional attributes relevant when PKCS#8-encoding a private key
      */
     val attributes: List<Asn1Element>?
-) : PemEncodable<Asn1Sequence>, Identifiable {
 
-    /**
-     * [CryptoPublicKey] matching this private key. Never null for RSA.
-     * Maybe `null` for EC, if the curve is not specified (e.g. when decoding from SEC1 decoding and neither curve nor key are present)
-     */
-    abstract val publicKey: T?
+    sealed interface WithPublicKey<T : CryptoPublicKey>:PemEncodable<Asn1Sequence>, Identifiable  {
+        /**
+         * [CryptoPublicKey] matching this private key. Never null for RSA.
+         * Maybe `null` for EC, if the curve is not specified (e.g. when decoding from SEC1 decoding and neither curve nor key are present)
+         */
+        abstract val publicKey: T
 
-    override val ebString = CryptoPrivateKey.ebString
+        companion object:  PemDecodable<Asn1Sequence, CryptoPrivateKey<*>> {
+            override val ebString = CryptoPrivateKey.ebString
+
+            override fun doDecode(src: Asn1Sequence): CryptoPrivateKey<*> = CryptoPrivateKey.doDecode(src)
+        }
+    }
+
+    override val ebString: String
+        get() = CryptoPrivateKey.ebString
 
     /**
      * Encodes the plain key, i.e. PKCS#1 for RSA and SEC1 for EC
      */
     @Throws(Asn1Exception::class)
-    abstract fun plainEncode(): Asn1Sequence
+    fun plainEncode(): Asn1Sequence
 
     /**
      * PKCS#1 RSA Private key representation as per [RFC 8017](https://datatracker.ietf.org/doc/html/rfc8017/#appendix-A.1.2) augmented with optional [attributes].
@@ -46,8 +56,8 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
         val exponent2: Asn1Integer,
         val coefficient: Asn1Integer,
         val otherPrimeInfos: List<OtherPrimeInfo>?,
-        attributes: List<Asn1Element>? = null
-    ) : CryptoPrivateKey<CryptoPublicKey.RSA>(attributes) {
+        override val attributes: List<Asn1Element>? = null
+    ) : CryptoPrivateKey<CryptoPublicKey.RSA>, WithPublicKey<CryptoPublicKey.RSA> {
 
         override val oid = RSA.oid
 
@@ -208,18 +218,15 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
      * SEC1 Elliptic Curve Private Key Structure as per [RFC 5915](https://datatracker.ietf.org/doc/html/rfc5915) augmented with optional [attributes].
      * Attributes are never SEC-1 encoded, but are relevant when PKCS#8-encoding a private key.
      */
-    class EC(
-        val curve: ECCurve?,
+    sealed class EC(
         val privateKeyBytes: ByteArray,
-        val encodeCurve: Boolean,
-        publicKey: CryptoPublicKey.EC?,
-        attributes: List<Asn1Element>? = null
-    ) : CryptoPrivateKey<CryptoPublicKey.EC>(attributes) {
+        override val attributes: List<Asn1Element>? = null
+    ) : CryptoPrivateKey<CryptoPublicKey.EC> {
 
 
         override val oid = EC.oid
 
-        private val intRepresentation = Asn1Integer.decodeFromAsn1ContentBytes(privateKeyBytes)
+        internal val intRepresentation = Asn1Integer.decodeFromAsn1ContentBytes(privateKeyBytes)
 
         private inner class PlainPemEncodable : PemEncodable<Asn1Sequence> {
             override val ebString = EC.ebString
@@ -233,20 +240,72 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
          */
         fun pemEncodeSec1() = innerPemEncodable.encodeToPEM()
 
-        /**
-         * [CryptoPublicKey.EC] matching this private key. May be null if this private key was parsed from SEC1 without
-         * any curve or public key infos
-         */
-        override val publicKey: CryptoPublicKey.EC? = publicKey ?: curve?.let { crv ->
-            intRepresentation.toBigInteger().times(crv.generator).asPublicKey(preferCompressed = true)
-        }
+        class WithPublicKey private constructor(
+            curve: ECCurve?,
+            val encodeCurve: Boolean,
+            privateKeyBytes: ByteArray,
+            publicKey: CryptoPublicKey.EC?,
+            val encodePublicKey: Boolean,
+            attributes: List<Asn1Element>? = null
+        ) : EC(privateKeyBytes, attributes), CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC> {
+
+            constructor(
+                privateKeyBytes: ByteArray,
+                encodeCurve: Boolean,
+                publicKey: CryptoPublicKey.EC,
+                encodePublicKey: Boolean,
+                attributes: List<Asn1Element>? = null
+            ) : this(null, encodeCurve, privateKeyBytes, publicKey, encodePublicKey, attributes)
+
+            constructor(
+                privateKeyBytes: ByteArray,
+                encodeCurve: Boolean,
+                curve: ECCurve,
+                encodePublicKey: Boolean,
+                attributes: List<Asn1Element>? = null
+            ) : this(curve, encodeCurve, privateKeyBytes, null, encodePublicKey, attributes)
 
 
-        override fun toString(): String {
-            val pubKey = publicKey?.let { " for public key $it" }
-            val curve = curve?.let { " for curve $it" }
-            return "EC private key${pubKey ?: curve ?: " ${privateKeyBytes.size * 8} bits"}"
+            init {
+                require(publicKey != null || curve != null) { "PublicKey or curve must be set" }
+                if (publicKey != null && curve != null) require(publicKey.curve == curve) { "Curve and public key must match!" }
+            }
+
+            /**
+             * [CryptoPublicKey.EC] matching this private key. May be null if this private key was parsed from SEC1 without
+             * any curve or public key infos
+             */
+            override val publicKey: CryptoPublicKey.EC = publicKey ?: curve?.let { crv ->
+                intRepresentation.toBigInteger().times(crv.generator).asPublicKey(preferCompressed = true)
+            }!!
+
+
+            val curve = curve ?: this.publicKey.curve
+
+            override fun toString(): String {
+                return "EC private key for public key $publicKey"
+            }
         }
+
+        class WithoutPublicKey constructor(
+            privateKeyBytes: ByteArray,
+            attributes: List<Asn1Element>? = null
+        ) : EC(privateKeyBytes, attributes) {
+
+            /**
+             * Creates a new [CryptoPrivateKey.EC.WithPublicKey] based on the passed curve.
+             *
+             */
+            fun withCurve(curve: ECCurve, encodeCurve: Boolean = true, encodePublicKey: Boolean = true) =
+                CryptoPrivateKey.EC.WithPublicKey(
+                    privateKeyBytes,
+                    encodeCurve,
+                    curve,
+                    encodePublicKey,
+                    attributes
+                )
+        }
+
 
         companion object : PemDecodable<Asn1Sequence, EC> {
 
@@ -256,13 +315,13 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
             @Throws(Asn1Exception::class)
             override fun doDecode(src: Asn1Sequence): EC = sec1decode(src, attributes = null)
 
-            internal fun iosDecodeInternal(keyBytes: ByteArray): CryptoPrivateKey.EC {
+            internal fun iosDecodeInternal(keyBytes: ByteArray): CryptoPrivateKey.EC.WithPublicKey {
                 val crv = ECCurve.fromIosEncodedPrivateKeyLength(keyBytes.size)
                     ?: throw IllegalArgumentException("Unknown curve in iOS raw key")
-                return EC(
-                    crv,
+                return EC.WithPublicKey(
                     keyBytes.sliceArray(crv.iosEncodedPublicKeyLength..<keyBytes.size),
-                    encodeCurve = true,
+                    encodeCurve = false,
+                    encodePublicKey = true,
                     publicKey = CryptoPublicKey.fromIosEncoded(keyBytes.sliceArray(0..<crv.iosEncodedPublicKeyLength)) as CryptoPublicKey.EC
                 )
             }
@@ -292,13 +351,32 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
                     additionalData.decode(src.nextChild(), predefinedCurve)
                 }
 
-                EC(
-                    curve = additionalData.publicKey?.curve ?: predefinedCurve,
-                    privateKeyBytes = privateKeyOctets,
-                    encodeCurve = additionalData.encodeCurve,
-                    publicKey = additionalData.publicKey,
-                    attributes
-                )
+
+                val crv = additionalData.publicKey?.curve ?: predefinedCurve
+                if (crv == null && additionalData.publicKey == null)
+                    EC.WithoutPublicKey(
+                        privateKeyBytes = privateKeyOctets,
+                        attributes
+                    )
+                else {
+                    if (crv != null && additionalData.publicKey != null) require(crv == additionalData.publicKey!!.curve)
+                    if (additionalData.publicKey != null)
+                        EC.WithPublicKey(
+                            privateKeyOctets,
+                            additionalData.encodeCurve,
+                            additionalData.publicKey!!,
+                            encodePublicKey = true,
+                            attributes
+                        )
+                    else
+                        EC.WithPublicKey(
+                            privateKeyOctets,
+                            additionalData.encodeCurve,
+                            crv!!,
+                            encodePublicKey = false,
+                            attributes
+                        )
+                }
             }
 
             private fun Asn1ExplicitlyTagged.decodeECParams(): ObjectIdentifier {
@@ -342,6 +420,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
             }
         }
 
+
         /**
          * @see sec1Encode
          */
@@ -364,12 +443,14 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
             Asn1.Sequence {
                 +Asn1.Int(1)
                 +Asn1PrimitiveOctetString(privateKeyBytes)
-                if (encodeCurve) curve?.let { +Asn1.ExplicitlyTagged(0uL) { +it.oid } }
-                publicKey?.let { +Asn1.ExplicitlyTagged(1uL) { +Asn1.BitString(it.iosEncoded) } }
+                if (this@EC is EC.WithPublicKey) {
+                    if (encodeCurve) +Asn1.ExplicitlyTagged(0uL) { +curve.oid }
+                    if (encodePublicKey) +Asn1.ExplicitlyTagged(1uL) { +Asn1.BitString(publicKey.iosEncoded) }
+                }
             }
         }
-    }
 
+    }
 
     /**
      * PKCS#8 encoding of a private key:
@@ -389,6 +470,8 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
      *
      * Attributes ::= SET OF Attribute
      * ```
+     *
+     * @throws Asn1StructuralException if an [at.asitplus.signum.indispensable.CryptoPrivateKey.EC.WithoutPublicKey] shall be encoded
      */
 
     @Throws(Asn1Exception::class)
@@ -402,11 +485,12 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
                         +Asn1.Null()
                     }
 
-                    is EC -> {
+                    is EC.WithPublicKey -> {
                         +EC.oid
-                        require(curve != null) { "Cannot PKCS#8-encode an EC key without curve. Re-create it and specify a curve!" }
                         +curve.oid
                     }
+
+                    is EC.WithoutPublicKey -> throw Asn1StructuralException("Cannot PKCS#8-encode an EC key without curve. Re-create it and specify a curve!")
                 }
             }
             +Asn1.OctetStringEncapsulating {
@@ -471,7 +555,7 @@ sealed class CryptoPrivateKey<T : CryptoPublicKey>(
          * EC keys are exported [as padded raw bytes](https://developer.apple.com/documentation/security/seckeycopyexternalrepresentation(_:_:)?language=objc).
          * RSA keys are exported using PKCS#1 encoding
          */
-        fun fromIosEncoded(keyBytes: ByteArray): KmmResult<CryptoPrivateKey<*>> = catching {
+        fun fromIosEncoded(keyBytes: ByteArray): KmmResult<CryptoPrivateKey.WithPublicKey<*>> = catching {
             if (keyBytes.first() == ANSIECPrefix.UNCOMPRESSED.prefixByte) CryptoPrivateKey.EC.iosDecodeInternal((keyBytes))
             else CryptoPrivateKey.RSA.pkcs1Decode(Asn1Element.parse(keyBytes).asSequence())
 

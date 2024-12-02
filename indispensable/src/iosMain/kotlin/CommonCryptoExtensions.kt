@@ -90,7 +90,7 @@ val CryptoSignature.iosEncoded
 /**
  * Converts this privateKey into a [SecKeyRef], making it usable on iOS
  */
-fun CryptoPrivateKey<*>.toSecKey(): KmmResult<SecKeyRef> = catching {
+fun CryptoPrivateKey.WithPublicKey<*>.toSecKey(): KmmResult<SecKeyRef> = catching {
     memScoped {
         corecall {
             var data : ByteArray? = null
@@ -98,11 +98,10 @@ fun CryptoPrivateKey<*>.toSecKey(): KmmResult<SecKeyRef> = catching {
                 kSecAttrKeyClass mapsTo  kSecAttrKeyClassPrivate
                 kSecPrivateKeyAttrs mapsTo cfDictionaryOf(kSecAttrIsPermanent to false)
                 data = when (this@toSecKey) {
-                    is CryptoPrivateKey.EC -> {
+                    is CryptoPrivateKey.EC.WithPublicKey -> {
                         kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
-                        kSecAttrKeySizeInBits mapsTo curve!!.coordinateLength.bits.toInt()
+                        kSecAttrKeySizeInBits mapsTo curve.coordinateLength.bits.toInt()
                         val ecPubKey = this@toSecKey.publicKey
-                        require(ecPubKey !=null) {"Cannot import an EC private key without a public key attached"}
                         ecPubKey.iosEncoded+ privateKeyBytes
                     }
 
@@ -111,6 +110,8 @@ fun CryptoPrivateKey<*>.toSecKey(): KmmResult<SecKeyRef> = catching {
                         kSecAttrKeySizeInBits mapsTo this@toSecKey.publicKey.bits.number.toInt()
                         plainEncode().derEncoded
                     }
+
+                    else -> TODO("Unreachable")
                 }
             }
             SecKeyCreateWithData(data!!.toNSData().giveToCF(), attr, error)

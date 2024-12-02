@@ -17,7 +17,7 @@ import at.asitplus.signum.supreme.os.SignerConfiguration
 @SecretExposure
 internal expect fun EphemeralKeyBase<*>.exportPrivate(): CryptoPrivateKey<*>
 internal expect fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey
-internal expect fun  makePrivateKeySigner(key: CryptoPrivateKey.EC, algorithm: SignatureAlgorithm.ECDSA) : Signer.ECDSA
+internal expect fun  makePrivateKeySigner(key: CryptoPrivateKey.EC.WithPublicKey, algorithm: SignatureAlgorithm.ECDSA) : Signer.ECDSA
 internal expect fun  makePrivateKeySigner(key: CryptoPrivateKey.RSA, algorithm: SignatureAlgorithm.RSA) : Signer.RSA
 
 open class EphemeralSigningKeyConfigurationBase internal constructor(): SigningKeyConfiguration() {

@@ -16,11 +16,11 @@ actual fun makePrivateKeySigner(
 )
 
 actual fun makePrivateKeySigner(
-    key: CryptoPrivateKey.EC,
+    key: CryptoPrivateKey.EC.WithPrivateKey,
     algorithm: SignatureAlgorithm.ECDSA
 ): Signer.ECDSA = AndroidEphemeralSigner.EC(
     config = EphemeralSignerConfiguration(),
     privateKey = key.toJcaPrivateKey().getOrThrow(),
-    publicKey = key.publicKey!!,
+    publicKey = key.publicKey,
     signatureAlgorithm = algorithm
 )

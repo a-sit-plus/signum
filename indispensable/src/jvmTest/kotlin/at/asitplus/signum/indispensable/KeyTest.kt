@@ -45,7 +45,7 @@ class KeyTest : FreeSpec({
 
                 val own = CryptoPublicKey.EC.fromJcaPublicKey(pubKey).getOrThrow()
 
-                val ownPrivate = CryptoPrivateKey.decodeFromDer(privKey.encoded)
+                val ownPrivate = CryptoPrivateKey.decodeFromDer(privKey.encoded) as CryptoPrivateKey.WithPublicKey<*>
 
                 ownPrivate.publicKey shouldBe own
                 ownPrivate.encodeToDer() shouldBe privKey.encoded
@@ -108,7 +108,7 @@ class KeyTest : FreeSpec({
 
                 val own = CryptoPublicKey.RSA(pubKey.modulus.toByteArray(), pubKey.publicExponent.toInt())
 
-                val ownPrivate =CryptoPrivateKey.decodeFromDer(privKey.encoded)
+                val ownPrivate =CryptoPrivateKey.decodeFromDer(privKey.encoded) as CryptoPrivateKey.WithPublicKey<*>
                 ownPrivate.publicKey shouldBe own
                 ownPrivate.encodeToDer() shouldBe privKey.encoded
                 ownPrivate.toJcaPrivateKey().getOrThrow().encoded shouldBe privKey.encoded
