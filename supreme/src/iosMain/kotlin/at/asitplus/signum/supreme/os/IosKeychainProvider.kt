@@ -5,6 +5,7 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.internals.*
+import at.asitplus.signum.supreme.swiftasync
 import at.asitplus.signum.supreme.CFCryptoOperationFailed
 import at.asitplus.signum.supreme.CryptoOperationFailed
 import at.asitplus.signum.supreme.UnsupportedCryptoException
