@@ -5,6 +5,10 @@ import at.asitplus.signum.indispensable.Digest
 sealed interface MAC {
     /** output size of MAC */
     val outputLength: Int
+
+    companion object {
+        val entries: Iterable<MAC> = HMAC.entries
+    }
 }
 
 /**
