@@ -5,11 +5,11 @@ import at.asitplus.signum.indispensable.BlockCipher
 import at.asitplus.signum.indispensable.Ciphertext
 import at.asitplus.signum.indispensable.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.SymmetricEncryptionAlgorithm.AES
+import at.asitplus.signum.internals.swiftcall
+import at.asitplus.signum.internals.toNSData
+import at.asitplus.signum.internals.toByteArray
 import at.asitplus.signum.supreme.aes.CBC
 import at.asitplus.signum.supreme.aes.GCM
-import at.asitplus.signum.supreme.swiftcall
-import at.asitplus.signum.supreme.toByteArray
-import at.asitplus.signum.supreme.toNSData
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.CoreCrypto.kCCDecrypt
 import platform.CoreCrypto.kCCEncrypt
