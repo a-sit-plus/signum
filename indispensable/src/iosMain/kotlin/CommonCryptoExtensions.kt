@@ -7,6 +7,7 @@ import at.asitplus.catching
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.memScoped
 import platform.Security.*
+import at.asitplus.signum.indispensable.internals.*
 
 val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm
     get() = when (this) {

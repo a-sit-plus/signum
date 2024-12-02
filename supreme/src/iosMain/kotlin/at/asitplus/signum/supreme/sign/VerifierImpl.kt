@@ -9,13 +9,9 @@ import at.asitplus.signum.indispensable.misc.ensureSize
 import at.asitplus.signum.indispensable.iosEncoded
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.indispensable.secKeyAlgorithmPreHashed
-import at.asitplus.signum.supreme.CoreFoundationException
+import at.asitplus.signum.indispensable.internals.*
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.UnsupportedCryptoException
-import at.asitplus.signum.supreme.cfDictionaryOf
-import at.asitplus.signum.supreme.corecall
-import at.asitplus.signum.supreme.giveToCF
-import at.asitplus.signum.supreme.toNSData
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.MemScope
 import kotlinx.cinterop.memScoped

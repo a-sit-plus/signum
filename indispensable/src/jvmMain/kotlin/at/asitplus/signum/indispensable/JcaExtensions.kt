@@ -42,14 +42,6 @@ val Digest.jcaPSSParams
         Digest.SHA512 -> PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 64, 1)
     }
 
-internal val isAndroid by lazy {
-    try {
-        Class.forName("android.os.Build"); true
-    } catch (_: ClassNotFoundException) {
-        false
-    }
-}
-
 private fun sigGetInstance(alg: String, provider: String?) =
     when (provider) {
         null -> Signature.getInstance(alg)

@@ -25,9 +25,6 @@ val artifactVersion: String by extra
 version = artifactVersion
 
 
-private val Pair<*, String?>.comment: String? get() = this.second
-private val Pair<String, *>.oid: String? get() = this.first
-
 kotlin {
     jvm()
     macosArm64()
@@ -56,13 +53,6 @@ kotlin {
             languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
         }
 
-        commonMain.dependencies {
-            api(project(":indispensable-asn1"))
-            api(libs.multibase)
-            api(libs.bignum)
-            implementation(project(":indispensable-internals"))
-        }
-
 
         commonTest {
             dependencies {
@@ -70,24 +60,15 @@ kotlin {
             }
         }
 
-        jvmMain {
-            dependencies {
-                api(bouncycastle("bcpkix"))
-                api(coroutines("jvm"))
-            }
-        }
-
     }
 }
 
 exportIosFramework(
-    "Indispensable",
+    "Indispensable-Internals",
     transitiveExports = false,
     serialization("json"),
     datetime(),
     kmmresult(),
-    project(":indispensable-asn1"),
-    libs.bignum
 )
 
 val javadocJar = setupDokka(
@@ -100,8 +81,8 @@ publishing {
         withType<MavenPublication> {
             if (this.name != "relocation") artifact(javadocJar)
             pom {
-                name.set("Indispensable")
-                description.set("Kotlin Multiplatform Crypto Core Library, Datatypes and ASN.1 Parser+Encoder")
+                name.set("Indispensable Internals")
+                description.set("Kotlin Multiplatform Crypto Core Library, Internal Shared Helpers")
                 url.set("https://github.com/a-sit-plus/signum")
                 licenses {
                     license {

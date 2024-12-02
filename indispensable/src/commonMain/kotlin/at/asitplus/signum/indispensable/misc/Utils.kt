@@ -13,6 +13,3 @@ fun ByteArray.ensureSize(size: Int): ByteArray = (this.size - size).let { toDrop
 
 @Suppress("NOTHING_TO_INLINE")
 inline fun ByteArray.ensureSize(size: UInt) = ensureSize(size.toInt())
-
-internal infix fun <T: Any> T?.orLazy(block: ()->T) =
-    if (this != null) lazyOf(this) else lazy(block)
