@@ -9,8 +9,6 @@ sealed class Ciphertext<out A : AuthTrait, T : SymmetricEncryptionAlgorithm<out 
     val iv: ByteArray?
 ) {
 
-    abstract fun getEncoded(): ByteArray
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is Ciphertext<*, *>) return false
@@ -39,8 +37,6 @@ sealed class Ciphertext<out A : AuthTrait, T : SymmetricEncryptionAlgorithm<out 
         val authTag: ByteArray,
         val aad: ByteArray?
     ) : Ciphertext<AuthTrait.Authenticated, SymmetricEncryptionAlgorithm.Authenticated>(algorithm, encryptedData, iv) {
-
-        override fun getEncoded(): ByteArray = (iv ?: byteArrayOf()) + encryptedData + authTag
 
         @OptIn(ExperimentalStdlibApi::class)
         override fun toString(): String =
@@ -80,7 +76,7 @@ sealed class Ciphertext<out A : AuthTrait, T : SymmetricEncryptionAlgorithm<out 
     }
 
     /**
-     * An authenticated ciphertext, i.e. containing an [authTag], and, optionally [aad] (_Additional Authenticated Data_)
+     * An Unauthenticated ciphertext, most probably containing an [iv], but not guaranteed to.
      */
     class Unauthenticated(
         algorithm: SymmetricEncryptionAlgorithm.Unauthenticated,
@@ -91,8 +87,6 @@ sealed class Ciphertext<out A : AuthTrait, T : SymmetricEncryptionAlgorithm<out 
         encryptedData,
         iv
     ) {
-
-        override fun getEncoded() = (iv ?: byteArrayOf()) + encryptedData
 
         @OptIn(ExperimentalStdlibApi::class)
         override fun toString(): String =
