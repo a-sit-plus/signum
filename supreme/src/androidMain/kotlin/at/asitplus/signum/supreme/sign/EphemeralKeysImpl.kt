@@ -20,8 +20,8 @@ import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
 
 @SecretExposure
-internal actual fun EphemeralKeyBase<*>.exportPrivate(): CryptoPrivateKey<*> =
-    CryptoPrivateKey.decodeFromDer((privateKey as PrivateKey).encoded)
+internal actual fun EphemeralKeyBase<*>.exportPrivate(): CryptoPrivateKey.WithPublicKey<*> =
+    CryptoPrivateKey.decodeFromDer((privateKey as PrivateKey).encoded) as CryptoPrivateKey.WithPublicKey<*>
 
 actual class EphemeralSigningKeyConfiguration internal actual constructor(): EphemeralSigningKeyConfigurationBase()
 actual class EphemeralSignerConfiguration internal actual constructor(): EphemeralSignerConfigurationBase()
@@ -38,8 +38,8 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
     }
 
     @SecretExposure
-    override fun exportPrivateKey(): KmmResult<CryptoPrivateKey<*>> = catching { CryptoPrivateKey.decodeFromDer(
-        privateKey.encoded) }
+    override fun exportPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> = catching { CryptoPrivateKey.decodeFromDer(
+        privateKey.encoded) as CryptoPrivateKey.WithPublicKey<*> }
 
     protected abstract fun parseFromJca(bytes: ByteArray): CryptoSignature.RawByteEncodable
 

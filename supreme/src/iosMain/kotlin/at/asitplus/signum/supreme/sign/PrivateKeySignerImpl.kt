@@ -30,7 +30,7 @@ protected constructor(
 ) : Signer {
 
 
-    protected abstract val privateKey: CryptoPrivateKey<*>
+    protected abstract val privateKey: CryptoPrivateKey.WithPublicKey<*>
 
     override val mayRequireUserUnlock: Boolean get() = false
 

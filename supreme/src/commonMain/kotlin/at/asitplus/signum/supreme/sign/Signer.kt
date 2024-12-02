@@ -94,7 +94,7 @@ interface Signer {
     val mayRequireUserUnlock: Boolean get() = true
 
     @SecretExposure
-    fun exportPrivateKey(): KmmResult<CryptoPrivateKey<*>>
+    fun exportPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>>
 
     /** Any [Signer] instantiation must be [ECDSA] or [RSA] */
     sealed interface AlgTrait : Signer

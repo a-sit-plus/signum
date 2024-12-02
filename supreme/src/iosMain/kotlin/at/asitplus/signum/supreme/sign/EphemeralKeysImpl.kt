@@ -18,11 +18,11 @@ actual class EphemeralSignerConfiguration internal actual constructor() : Epheme
 private typealias EphemeralKeyRef = AutofreeVariable<SecKeyRef>
 
 @SecretExposure
-internal actual fun EphemeralKeyBase<*>.exportPrivate(): CryptoPrivateKey<*> =
+internal actual fun EphemeralKeyBase<*>.exportPrivate(): CryptoPrivateKey.WithPublicKey<*> =
     (privateKey as EphemeralKeyRef).export(this is EphemeralKeyBase.EC<*, *>)
 
 
-private fun EphemeralKeyRef.export(isEC: Boolean): CryptoPrivateKey<*> {
+private fun EphemeralKeyRef.export(isEC: Boolean): CryptoPrivateKey.WithPublicKey<*> {
     val privKeyBytes = corecall {
         SecKeyCopyExternalRepresentation(value, error)
     }.let { it.takeFromCF<NSData>() }.toByteArray()
@@ -46,7 +46,7 @@ sealed class EphemeralSigner(internal val privateKey: EphemeralKeyRef) : Signer 
     }
 
     @SecretExposure
-    override fun exportPrivateKey(): KmmResult<CryptoPrivateKey<*>> =catching{
+    override fun exportPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> =catching{
         privateKey.export(this is EC)
     }
 
