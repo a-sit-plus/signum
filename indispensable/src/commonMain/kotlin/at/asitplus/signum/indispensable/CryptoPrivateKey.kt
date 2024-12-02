@@ -12,21 +12,21 @@ import at.asitplus.signum.indispensable.misc.ANSIECPrefix
  * PKCS#8 Representation of a private key structure as per [RFC 5208](https://datatracker.ietf.org/doc/html/rfc5208)
  */
 sealed interface CryptoPrivateKey<T : CryptoPublicKey>
- : PemEncodable<Asn1Sequence>, Identifiable {
+    : PemEncodable<Asn1Sequence>, Identifiable {
 
     /**
      * optional attributes relevant when PKCS#8-encoding a private key
      */
     val attributes: List<Asn1Element>?
 
-    sealed interface WithPublicKey<T : CryptoPublicKey>:PemEncodable<Asn1Sequence>, Identifiable  {
+    sealed interface WithPublicKey<T : CryptoPublicKey> : PemEncodable<Asn1Sequence>, Identifiable {
         /**
          * [CryptoPublicKey] matching this private key. Never null for RSA.
          * Maybe `null` for EC, if the curve is not specified (e.g. when decoding from SEC1 decoding and neither curve nor key are present)
          */
         abstract val publicKey: T
 
-        companion object:  PemDecodable<Asn1Sequence, CryptoPrivateKey<*>> {
+        companion object : PemDecodable<Asn1Sequence, CryptoPrivateKey<*>> {
             override val ebString = CryptoPrivateKey.ebString
 
             override fun doDecode(src: Asn1Sequence): CryptoPrivateKey<*> = CryptoPrivateKey.doDecode(src)
@@ -47,8 +47,10 @@ sealed interface CryptoPrivateKey<T : CryptoPublicKey>
      * Attributes are never SEC-1 encoded, but are relevant when PKCS#8-encoding a private key.
      */
     class RSA(
-        val modulus: Asn1Integer,
-        val publicExponent: Asn1Integer,
+        /**
+         * The [CryptoPublicKey.RSA] matching this private key
+         */
+        override val publicKey: CryptoPublicKey.RSA,
         val privateExponent: Asn1Integer,
         val prime1: Asn1Integer,
         val prime2: Asn1Integer,
@@ -60,11 +62,6 @@ sealed interface CryptoPrivateKey<T : CryptoPublicKey>
     ) : CryptoPrivateKey<CryptoPublicKey.RSA>, WithPublicKey<CryptoPublicKey.RSA> {
 
         override val oid = RSA.oid
-
-        /**
-         * The [CryptoPublicKey.RSA] matching this private key
-         */
-        override val publicKey = CryptoPublicKey.RSA(modulus, publicExponent)
 
         private inner class PlainPemEncodable : PemEncodable<Asn1Sequence> {
             override val ebString = RSA.ebString
@@ -145,8 +142,8 @@ sealed interface CryptoPrivateKey<T : CryptoPublicKey>
         fun pkcs1Encode() = runRethrowing {
             Asn1.Sequence {
                 if (otherPrimeInfos != null) +Asn1.Int(1) else +Asn1.Int(0)
-                +modulus
-                +publicExponent
+                +publicKey.n
+                +publicKey.e
                 +privateExponent
                 +prime1
                 +prime2
@@ -197,8 +194,7 @@ sealed interface CryptoPrivateKey<T : CryptoPublicKey>
                 }
 
                 RSA(
-                    modulus,
-                    publicExponent,
+                    CryptoPublicKey.RSA(modulus, publicExponent),
                     privateExponent,
                     prime1,
                     prime2,
