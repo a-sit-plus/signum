@@ -61,8 +61,7 @@ open class SigningKeyConfiguration internal constructor() : DSL.Data() {
          * This is treated as advisory, and may be ignored by some platforms. */
         var publicExponent: BigInteger = F4
     }
-
-    sealed class PrivateKeyConfiguration<T : CryptoPublicKey> : DSL.Data()
+}
 
 /**
  * Shared interface of all objects that can sign data.
