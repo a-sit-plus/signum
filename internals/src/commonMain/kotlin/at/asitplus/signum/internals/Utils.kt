@@ -1,4 +1,4 @@
-package at.asitplus.signum.internals
+package at.asitplus.signum.indispensable.misc
 
 infix fun <T: Any> T?.orLazy(block: ()->T) = if (this != null) lazyOf(this) else lazy(block)
 
