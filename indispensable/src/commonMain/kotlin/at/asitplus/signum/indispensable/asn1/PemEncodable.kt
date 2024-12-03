@@ -53,21 +53,15 @@ interface PemDecodable<A : Asn1Element, T : PemEncodable<A>> : Asn1Decodable<A, 
 }
 
 
-private const val FENCE_PRE = "-----BEGIN "
-private const val FENCE_POST = "-----END "
-private const val FENCE_AFTER = "-----"
+private const val FENCE_PREFIX_BEGIN = "-----BEGIN "
+private const val FENCE_PREFIX_END = "-----END "
+private const val FENCE_SUFFIX = "-----"
 
 /**-----BEGIN [PemEncodable.ebString]-----*/
-val PemEncodable<*>.preEB: String get() = "$FENCE_PRE$ebString$FENCE_AFTER"
+private val PemEncodable<*>.preEB: String get() = "$FENCE_PREFIX_BEGIN${this.ebString}$FENCE_SUFFIX"
 
 /**-----END [PemEncodable.ebString]-----*/
-val PemEncodable<*>.postEB: String get() = "$FENCE_POST$ebString$FENCE_AFTER"
-
-/**-----BEGIN [PemDecodable.ebString]-----*/
-val PemDecodable<*, *>.preEB: String get() = "$FENCE_PRE$ebString$FENCE_AFTER"
-
-/**-----END [PemDecodable.ebString]-----*/
-val PemDecodable<*, *>.postEB: String get() = "$FENCE_POST$ebString$FENCE_AFTER"
+private val PemEncodable<*>.postEB: String get() = "$FENCE_PREFIX_END${this.ebString}$FENCE_SUFFIX"
 
 /**
  * Encodes this [PemEncodable] into a PEM-encoded string
@@ -79,44 +73,28 @@ fun PemEncodable<*>.encodeToPEM(): KmmResult<String> = catching {
 }
 
 /**
- * Reads the first line of the passed string and tries to extract the encapsulation boundary string
- */
-@Throws(Throwable::class)
-private fun PemDecodable<*, *>.peekEbString(src: String): Pair<String, Int> {
-    val lines = src.lines()
-    val lineIter = lines.iterator()
-    var firstLine = lineIter.next().trim()
-    val lastLine = lines.last()
-    var linesSkipped = 0
-    while (!(firstLine.startsWith(FENCE_PRE) && firstLine.endsWith(FENCE_AFTER))) {
-        ++linesSkipped
-        require(lineIter.hasNext()) {"No encapsulation boundary found"}
-        firstLine = lineIter.next().trim()
-    }
-
-
-    require(lastLine.startsWith(FENCE_POST)) { "PEM-encoded string last line start with '$FENCE_POST'! (mind the trailing space). Last line: $lastLine" }
-    require(lastLine.endsWith(FENCE_AFTER)) { "PEM-encoded string must end with '$FENCE_AFTER'! (without the trailing spaces). Last line: $lastLine" }
-
-    val ebString = firstLine.substring(FENCE_PRE.length, firstLine.length - FENCE_AFTER.length)
-    val postEB = lastLine.substring(FENCE_POST.length, lastLine.length - FENCE_AFTER.length)
-    require(ebString == postEB) {
-        "PRE-EB and POST-EB strings differ: '$ebString' vs. '$postEB'"
-    }
-
-    return ebString to linesSkipped
-}
-
-/**
  * Decodes a PEM-encoded string into [T]
  */
 @OptIn(ExperimentalEncodingApi::class)
 fun <A : Asn1Element, T : PemEncodable<A>> PemDecodable<A, T>.decodeFromPem(src: String): KmmResult<T> = catching {
-    val lines = src.lines()
-    peekEbString(src).let { (ebString, linesToSkip) ->
-        binaryDecodePayload(
-            ebString,
-            Base64.Mime.decode(lines.slice(1 + linesToSkip..<lines.size - 1).joinToString(separator = ""))
-        )
-    }
+    src.lineSequence()
+        .map(String::trim)
+        .dropWhile { !(it.startsWith(FENCE_PREFIX_BEGIN) && it.endsWith(FENCE_SUFFIX)) }
+        .iterator()
+        .run {
+            require(hasNext()) { "No encapsulation boundary found" }
+            val firstLine = next()
+            val ebString = firstLine.substring(FENCE_PREFIX_BEGIN.length, firstLine.length - FENCE_SUFFIX.length)
+            val b64data = StringBuilder()
+            while (hasNext()) {
+                val line = next()
+                if (line.startsWith(FENCE_PREFIX_END) && line.endsWith(FENCE_SUFFIX)) {
+                    val afterEbString = line.substring(FENCE_PREFIX_END.length, line.length - FENCE_SUFFIX.length)
+                    require(afterEbString == ebString) { "Boundary string mismatch: $ebString vs $afterEbString" }
+                    return@run binaryDecodePayload(ebString, Base64.Mime.decode(b64data.toString()))
+                }
+                b64data.append(line)
+            }
+            throw IllegalArgumentException("End of string reached while parsing (no encapsulation terminator?)")
+        }
 }

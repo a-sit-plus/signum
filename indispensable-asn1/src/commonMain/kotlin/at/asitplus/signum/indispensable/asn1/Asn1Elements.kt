@@ -129,7 +129,7 @@ sealed class Asn1Element(
      */
     @Throws(Asn1StructuralException::class)
     fun asPrimitive() = when (this) {
-        is Asn1EncapsulatingOctetString -> this.asPrimitiveOctetString()
+        is Asn1EncapsulatingOctetString -> @Suppress("DEPRECATED") this.asPrimitiveOctetString()
         else -> thisAs<Asn1Primitive>()
     }
 

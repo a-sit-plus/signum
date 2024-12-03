@@ -37,12 +37,6 @@ sealed interface CryptoPrivateKey<T : CryptoPublicKey>
         get() = CryptoPrivateKey.ebString
 
     /**
-     * Encodes the plain key, i.e. PKCS#1 for RSA and SEC1 for EC
-     */
-    @Throws(Asn1Exception::class)
-    fun plainEncode(): Asn1Sequence
-
-    /**
      * PKCS#1 RSA Private key representation as per [RFC 8017](https://datatracker.ietf.org/doc/html/rfc8017/#appendix-A.1.2) augmented with optional [attributes].
      * Attributes are never SEC-1 encoded, but are relevant when PKCS#8-encoding a private key.
      */
@@ -73,7 +67,7 @@ sealed interface CryptoPrivateKey<T : CryptoPublicKey>
         /**
          * Encodes this private key into a PKCS#1 PEM-encoded private key
          */
-        fun pemEncodePkcs1() = innerPemEncodable.encodeToPEM()
+        fun encodeToPkcs1PEM() = innerPemEncodable.encodeToPEM()
 
         /**
          * OtherPrimeInfos as per PKCS#1
@@ -114,12 +108,6 @@ sealed interface CryptoPrivateKey<T : CryptoPublicKey>
 
             }
         }
-
-        /**
-         * @see pkcs1Encode
-         */
-        @Throws(Asn1Exception::class)
-        override fun plainEncode() = pkcs1Encode()
 
         /**
          * ```asn1
@@ -333,7 +321,7 @@ sealed interface CryptoPrivateKey<T : CryptoPublicKey>
             ): EC = runRethrowing {
                 val version = src.nextChild().asPrimitive().decodeToInt()
                 require(version == 1) { "EC public key version must be 1" }
-                val privateKeyOctets = src.nextChild().asPrimitiveOctetString().content
+                val privateKeyOctets = src.nextChild().asOctetString().content
 
                 //Params and publicKey are both optional, but may only occur once. so we need to run `decode` potentially twice and record state
                 //DataAndKey class enables this without code duplication
@@ -416,13 +404,6 @@ sealed interface CryptoPrivateKey<T : CryptoPublicKey>
             }
         }
 
-
-        /**
-         * @see sec1Encode
-         */
-        @Throws(Asn1Exception::class)
-        override fun plainEncode() = sec1Encode()
-
         /**
          * ```asn1
          * ECPrivateKey ::= SEQUENCE {
@@ -490,7 +471,10 @@ sealed interface CryptoPrivateKey<T : CryptoPublicKey>
                 }
             }
             +Asn1.OctetStringEncapsulating {
-                +plainEncode()
+                when (this@CryptoPrivateKey) {
+                    is RSA -> +pkcs1Encode()
+                    is EC -> +sec1Encode()
+                }
             }
             attributes?.let {
                 +(Asn1.SetOf {
@@ -584,7 +568,7 @@ class EncryptedPrivateKey(val encryptionAlgorithm: ObjectIdentifier, val encrypt
         override fun doDecode(src: Asn1Sequence): EncryptedPrivateKey = runRethrowing {
             EncryptedPrivateKey(
                 ObjectIdentifier.decodeFromTlv(src.nextChild().asPrimitive()),
-                src.nextChild().asPrimitive().asPrimitiveOctetString().content
+                src.nextChild().asPrimitive().asOctetString().content
             ).also {
                 require(!src.hasMoreChildren()) { "Superfluous data in EncryptedPrivateKey encountered" }
             }
