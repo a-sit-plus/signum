@@ -12,8 +12,8 @@
 * Refactor `CryptoPublicKey.Rsa` to use `Asn1Integer`
     * Fixes JWS/COSE encoding for non-standard exponents (with MSBit 1)
 * Allow `assertTag` override also for `Asn1Integer` (was missing before)
-* Allow reinterpreting an `Asn1Element` that successfully parsed as `Asn1EncapsulatingOctetString` as an `Asn1PrimitiveOctetString`
-    * **This is a behavioural change!**
+* Sanitized `Asn1OctetString` inheritors' equality behavior
+  * Two `Asn1OctetString`s are always equal if their contents are equal
 * Make `Asn1Integer` an `Asn1Encodable<String>`
 * **PEM Encoding**
     * Introduce `PemEncodable` interface, derived from `Asn1Encodable`
