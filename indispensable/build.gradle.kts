@@ -67,7 +67,6 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(kotest("property"))
-                implementation("at.asitplus:kmmresult-test:1.9.0")
             }
         }
 

@@ -15,7 +15,6 @@ interface PemEncodable<A : Asn1Element> : Asn1Encodable<A> {
     /**
      * Encapsulation boundary string.
      * Will be automatically fenced.
-     * Make sure it matches the corresponding [PemDecodable.ebString]!
      */
     val canonicalPEMBoundary: String
 }

@@ -1,7 +1,6 @@
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPrivateKey.RSA.Companion.decodeFromPem
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
-import at.asitplus.succeed
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -21,13 +20,13 @@ class PemTest : FreeSpec({
             -----END EC PRIVATE KEY-----
         """.trimIndent()
 
-        CryptoPrivateKey.decodeFromPem(sec1) should succeed
-        CryptoPrivateKey.EC.decodeFromPem(sec1) should succeed
-        CryptoPrivateKey.RSA.decodeFromPem(sec1) shouldNot succeed
+        CryptoPrivateKey.decodeFromPem(sec1).getOrThrow().let {
+            it.shouldBeInstanceOf<CryptoPrivateKey.EC>()
+            CryptoPrivateKey.EC.decodeFromPem(sec1).getOrThrow() shouldBe it
+            CryptoPrivateKey.RSA.decodeFromPem(sec1).isSuccess shouldBe false
 
-        CryptoPrivateKey.EC.decodeFromPem(rnd+sec1).getOrThrow().asSEC1.encodeToPEM().getOrThrow().lines() shouldBe sec1.lines()
-        (CryptoPrivateKey.decodeFromPem(rnd+sec1).getOrThrow() as CryptoPrivateKey.EC).asSEC1.encodeToPEM()
-            .getOrThrow().lines() shouldBe sec1.lines()
+            it.asSEC1.encodeToPEM().getOrThrow().lines() shouldBe sec1.lines()
+        }
     }
 
     "PKCS#8" {
@@ -38,10 +37,12 @@ class PemTest : FreeSpec({
             zxh/z83LcdvgjntLPbRlpulusOaoUHsCataF16M48ef34ufnWLjZsJ0Z
             -----END PRIVATE KEY-----
         """.trimIndent()
-        CryptoPrivateKey.decodeFromPem(pkcs8) should succeed
-        CryptoPrivateKey.EC.decodeFromPem(pkcs8) should succeed
-        CryptoPrivateKey.RSA.decodeFromPem(pkcs8) shouldNot succeed
-        CryptoPrivateKey.decodeFromPem(pkcs8).getOrThrow().encodeToPEM().getOrThrow().lines() shouldBe pkcs8.lines()
+
+        CryptoPrivateKey.decodeFromPem(pkcs8).getOrThrow().let {
+            CryptoPrivateKey.EC.decodeFromPem(pkcs8).getOrThrow() shouldBe it
+            CryptoPrivateKey.RSA.decodeFromPem(pkcs8).isSuccess shouldBe false
+            it.encodeToPEM().getOrThrow().lines() shouldBe pkcs8.lines()
+        }
     }
 
     "from iOS" {
