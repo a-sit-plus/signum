@@ -215,7 +215,7 @@ class BitSet private constructor(private val buffer: MutableList<Byte>) : Iterab
      */
     override fun iterator(): Iterator<Boolean> = object : Iterator<Boolean> {
         var index = 0L
-        override fun hasNext(): Boolean = index < (length() - 1)
+        override fun hasNext(): Boolean = index < length()
         override fun next(): Boolean = get(index++)
     }
 
