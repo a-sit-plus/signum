@@ -116,6 +116,20 @@ data class CoseHeader(
     @ByteString
     // TODO Might also be an array, if there is a real chain, not only one cert
     val certificateChain: ByteArray? = null,
+
+    /**
+     * https://www.rfc-editor.org/rfc/rfc9596
+     * The "typ" (type) header parameter is used by COSE applications to declare the type of
+     * this complete COSE object, as compared to the content type header parameter, which declares
+     * the type of the COSE object payload. This is intended for use by the application when more
+     * than one kind of COSE object could be present in an application data structure that can
+     * contain a COSE object; the application can use this value to disambiguate among the different
+     * kinds of COSE objects that might be present. It will typically not be used by applications
+     * when the kind of COSE object is already known. Use of this header parameter is OPTIONAL.
+     */
+    @CborLabel(16)
+    @SerialName("typ")
+    val type: String? = null,
 ) {
 
     fun serialize() = coseCompliantSerializer.encodeToByteArray(this)
