@@ -256,7 +256,7 @@ class EphemeralSignerCommonTests : FreeSpec({
                         X509CertificateExtension(
                             KnownOIDs.pkcs_12_OID,
                             critical = true,
-                            Asn1PrimitiveOctetString(byteArrayOf())
+                            Asn1OctetString(byteArrayOf())
                         )
                     )
                 )

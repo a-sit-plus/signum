@@ -11,7 +11,7 @@ class Asn1ParserTest : FreeSpec({
     "Multiple Elements" - {
         val seq = Asn1.Sequence {
             repeat(10) {
-                +Asn1PrimitiveOctetString(Random.nextBytes(16))
+                +Asn1OctetString(Random.nextBytes(16))
             }
         }
 

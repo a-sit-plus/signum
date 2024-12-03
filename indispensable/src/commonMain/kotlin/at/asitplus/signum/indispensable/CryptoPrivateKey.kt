@@ -438,7 +438,7 @@ sealed interface CryptoPrivateKey<T : CryptoPublicKey>
         fun sec1Encode() = runRethrowing {
             Asn1.Sequence {
                 +Asn1.Int(1)
-                +Asn1PrimitiveOctetString(privateKeyBytes)
+                +Asn1OctetString(privateKeyBytes)
                 if (this@EC is EC.WithPublicKey) {
                     if (encodeCurve) +Asn1.ExplicitlyTagged(0uL) { +curve.oid }
                     if (encodePublicKey) +Asn1.ExplicitlyTagged(1uL) { +Asn1.BitString(publicKey.iosEncoded) }

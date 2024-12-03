@@ -128,7 +128,10 @@ sealed class Asn1Element(
      * @throws Asn1StructuralException if this element is not a primitive
      */
     @Throws(Asn1StructuralException::class)
-    fun asPrimitive() = thisAs<Asn1Primitive>()
+    fun asPrimitive() = when (this) {
+        is Asn1EncapsulatingOctetString -> this.asPrimitiveOctetString()
+        else -> thisAs<Asn1Primitive>()
+    }
 
     /**
      * Convenience function to cast this element to an [Asn1Structure]
@@ -708,6 +711,13 @@ class Asn1EncapsulatingOctetString(children: List<Asn1Element>) :
         children.fold(byteArrayOf()) { acc, asn1Element -> acc + asn1Element.derEncoded }
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (other is Asn1PrimitiveOctetString) return this.content contentEquals other.content
+        return super.equals(other)
+    }
+
+    override fun hashCode(): Int = content.contentHashCode()
+
     override fun prettyPrintHeader(indent: Int) =
         (" " * indent) + "OCTET STRING Encapsulating" + super.prettyPrintHeader(indent) + " " +
                 content.toHexString(HexFormat.UpperCase)
@@ -722,6 +732,14 @@ class Asn1EncapsulatingOctetString(children: List<Asn1Element>) :
  */
 class Asn1PrimitiveOctetString(content: ByteArray) : Asn1Primitive(Tag.OCTET_STRING, content),
     Asn1OctetString {
+
+    override fun equals(other: Any?): Boolean {
+        if (other is Asn1EncapsulatingOctetString) return this.content contentEquals other.content
+        return super.equals(other)
+    }
+
+    override fun hashCode(): Int = content.contentHashCode()
+
     override fun prettyPrintHeader(indent: Int) = (" " * indent) + "OCTET STRING " + super.prettyPrintHeader(0)
 }
 
