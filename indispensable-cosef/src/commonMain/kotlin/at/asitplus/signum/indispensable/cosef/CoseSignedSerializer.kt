@@ -3,10 +3,13 @@ package at.asitplus.signum.indispensable.cosef
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ByteArraySerializer
+import kotlinx.serialization.cbor.ValueTags
 import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.SerialKind
 import kotlinx.serialization.descriptors.StructureKind
 import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
@@ -44,11 +47,53 @@ class CoseSignedSerializer<P : Any?>(
 
     override fun serialize(encoder: Encoder, value: CoseSigned<P>) {
         encoder.encodeStructure(descriptor) {
-            encodeSerializableElement(descriptor, 0, ByteStringWrapperSerializer(CoseHeader.serializer()), value.protectedHeader)
+            encodeSerializableElement(
+                descriptor,
+                0,
+                ByteStringWrapperSerializer(CoseHeader.serializer()),
+                value.protectedHeader
+            )
             encodeNullableSerializableElement(descriptor, 1, CoseHeader.serializer(), value.unprotectedHeader)
             if (value.payload != null && value.payload::class != ByteArray::class) {
-                // TODO Here, tag the result with 24 (decimal) = D818 (hex string)
-                encodeNullableSerializableElement(descriptor, 2, ByteStringWrapperSerializer(parameterSerializer), ByteStringWrapper(value.payload))
+
+                val overriddenSerialDescriptor = object : SerialDescriptor {
+                    @ExperimentalSerializationApi
+                    override val serialName: String = descriptor.serialName
+
+                    @ExperimentalSerializationApi
+                    override val kind: SerialKind = descriptor.kind
+
+                    @ExperimentalSerializationApi
+                    override val elementsCount: Int = descriptor.elementsCount
+
+                    @ExperimentalSerializationApi
+                    override fun getElementName(index: Int): String =
+                        descriptor.getElementName(index)
+
+
+                    @ExperimentalSerializationApi
+                    override fun getElementIndex(name: String): Int = descriptor.getElementIndex(name)
+
+                    @ExperimentalSerializationApi
+                    override fun getElementAnnotations(index: Int): List<Annotation> =
+                        if (index != 2) descriptor.getElementAnnotations(index)
+                        else listOf(ValueTags(24u))
+
+
+                    @ExperimentalSerializationApi
+                    override fun getElementDescriptor(index: Int): SerialDescriptor =
+                        descriptor.getElementDescriptor(index)
+
+                    @ExperimentalSerializationApi
+                    override fun isElementOptional(index: Int): Boolean = descriptor.isElementOptional(index)
+                }
+
+                encodeNullableSerializableElement(
+                    overriddenSerialDescriptor,
+                    2,
+                    ByteStringWrapperSerializer(parameterSerializer),
+                    ByteStringWrapper(value.payload)
+                )
             } else {
                 encodeNullableSerializableElement(descriptor, 2, parameterSerializer, value.payload)
             }

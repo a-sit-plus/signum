@@ -94,9 +94,7 @@ class ByteStringWrapper<T>(
     override fun toString(): String {
         return "ByteStringWrapper(value=$value, serialized=${serialized.contentToString()})"
     }
-
 }
-
 
 @OptIn(ExperimentalSerializationApi::class)
 class ByteStringWrapperSerializer<T>(private val dataSerializer: KSerializer<T>) :
