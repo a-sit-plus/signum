@@ -21,7 +21,8 @@ sealed interface CryptoPrivateKey<T : CryptoPublicKey>
 
     sealed interface WithPublicKey<T : CryptoPublicKey> : PemEncodable<Asn1Sequence>, Identifiable {
         /**
-         * [CryptoPublicKey] matching this private key.
+         * [CryptoPublicKey] matching this private key. Never null for RSA.
+         * Maybe `null` for EC, if the curve is not specified (e.g. when decoding from SEC1 decoding and neither curve nor key are present)
          */
         abstract val publicKey: T
 
@@ -58,12 +59,21 @@ sealed interface CryptoPrivateKey<T : CryptoPublicKey>
         val coefficient: Asn1Integer,
         val otherPrimeInfos: List<OtherPrimeInfo>?,
         override val attributes: List<Asn1Element>? = null
-    ) : CryptoPrivateKey<CryptoPublicKey.RSA>, WithPublicKey<CryptoPublicKey.RSA>, PemEncodable<Asn1Sequence> {
+    ) : CryptoPrivateKey<CryptoPublicKey.RSA>, WithPublicKey<CryptoPublicKey.RSA> {
 
         override val oid = RSA.oid
 
-        override val ebString = RSA.ebString
-        override fun encodeToTlv() = pkcs1Encode()
+        private inner class PlainPemEncodable : PemEncodable<Asn1Sequence> {
+            override val ebString = RSA.ebString
+            override fun encodeToTlv() = this@RSA.pkcs1Encode()
+        }
+
+        private val innerPemEncodable = PlainPemEncodable()
+
+        /**
+         * Encodes this private key into a PKCS#1 PEM-encoded private key
+         */
+        fun pemEncodePkcs1() = innerPemEncodable.encodeToPEM()
 
         /**
          * OtherPrimeInfos as per PKCS#1
@@ -207,20 +217,24 @@ sealed interface CryptoPrivateKey<T : CryptoPublicKey>
     sealed class EC(
         val privateKeyBytes: ByteArray,
         override val attributes: List<Asn1Element>? = null
-    ) : CryptoPrivateKey<CryptoPublicKey.EC>, PemEncodable<Asn1Sequence> {
+    ) : CryptoPrivateKey<CryptoPublicKey.EC> {
 
 
         override val oid = EC.oid
 
         internal val intRepresentation = Asn1Integer.decodeFromAsn1ContentBytes(privateKeyBytes)
 
-        override val ebString = EC.ebString
-        override fun encodeToTlv() = sec1Encode()
+        private inner class PlainPemEncodable : PemEncodable<Asn1Sequence> {
+            override val ebString = EC.ebString
+            override fun encodeToTlv() = this@EC.sec1Encode()
+        }
+
+        private val innerPemEncodable = PlainPemEncodable()
 
         /**
          * Encodes this private key into a SEC1 PEM-encoded private key
          */
-        fun pemEncodeSec1() = encodeToPEM()
+        fun pemEncodeSec1() = innerPemEncodable.encodeToPEM()
 
         class WithPublicKey private constructor(
             curve: ECCurve?,
