@@ -247,8 +247,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
 
         val kotlinEncoded = csr.encodeToTlv().derEncoded
         val jvmEncoded = bcCsr.encoded
-        println(jvmEncoded.toHexString(HexFormat.UpperCase))
-        println(kotlinEncoded.toHexString(HexFormat.UpperCase))
+
         // CSR will never entirely match because of randomness in ECDSA signature
         //kotlinEncoded shouldBe jvmEncoded
         kotlinEncoded.drop(6).take(152) shouldBe jvmEncoded.drop(6).take(152)

@@ -44,7 +44,7 @@ class JwkTest : FreeSpec({
                 val own = cryptoPubKey.toJsonWebKey()
                 own.keyId shouldBe cryptoPubKey.jwkId
                 own.shouldNotBeNull()
-                println(own.serialize())
+
                 own.toCryptoPublicKey().getOrThrow().iosEncoded shouldBe cryptoPubKey.iosEncoded
                 CryptoPublicKey.fromDid(own.keyId!!) shouldBe cryptoPubKey
             }

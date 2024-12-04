@@ -49,8 +49,6 @@ class CoseKeySerializationTest : FreeSpec({
             val uncompressed = coseUncompressed.serialize()
 
             uncompressed.size shouldBeGreaterThan compressed.size
-            println(compressed.encodeToString(Base16))
-            println(uncompressed.encodeToString(Base16))
 
             val coseKey = CoseKey.deserialize(compressed).getOrThrow()
             coseKey.toCryptoPublicKey().getOrThrow()
@@ -166,10 +164,8 @@ class CoseKeySerializationTest : FreeSpec({
                             .getOrThrow()
                     val cose = coseKey.serialize()
 
-                    println(cose.encodeToString(Base16))
                     val decoded = CoseKey.deserialize(cose).getOrThrow()
                     decoded shouldBe coseKey
-                    println(decoded)
                 }
             }
         }
