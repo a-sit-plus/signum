@@ -118,13 +118,6 @@ sealed class CryptoPrivateKey(
         attributes: List<Asn1Element>? = null
     ) : CryptoPrivateKey(attributes), WithPublicKey<CryptoPublicKey.RSA> {
 
-        override fun equals(other: Any?): Boolean {
-            if (other !is RSA) return false
-            return publicKey.equalsCryptographically(other.publicKey)
-        }
-
-        override fun hashCode() = publicKey.hashCode()
-
         override val oid = RSA.oid
 
         /** Encodes this private key into a PKCS#1-encoded private key */
@@ -258,6 +251,33 @@ sealed class CryptoPrivateKey(
         }
 
         override fun toString() = "RSA private key for public key $publicKey"
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is RSA) return false
+
+            if (!publicKey.equalsCryptographically(other.publicKey)) return false
+            if (privateExponent != other.privateExponent) return false
+            if (prime1 != other.prime1) return false
+            if (prime2 != other.prime2) return false
+            if (exponent1 != other.exponent1) return false
+            if (exponent2 != other.exponent2) return false
+            if (coefficient != other.coefficient) return false
+            if (otherPrimeInfos != other.otherPrimeInfos) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = publicKey.hashCode()
+            result = 31 * result + privateExponent.hashCode()
+            result = 31 * result + prime1.hashCode()
+            result = 31 * result + prime2.hashCode()
+            result = 31 * result + exponent1.hashCode()
+            result = 31 * result + exponent2.hashCode()
+            result = 31 * result + coefficient.hashCode()
+            result = 31 * result + (otherPrimeInfos?.hashCode() ?: 0)
+            return result
+        }
     }
 
     /**
@@ -347,6 +367,20 @@ sealed class CryptoPrivateKey(
                 return "EC private key for public key $publicKey"
             }
 
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+                if (other !is WithPublicKey) return false
+                if(!super<EC>.privateKey.equals(other.privateKey)) return false
+
+                if (publicKey != other.publicKey) return false
+
+                return true
+            }
+
+            override fun hashCode(): Int {
+                return publicKey.hashCode()
+            }
+
             override val privateKeyBytes: ByteArray
                 get() = privateKey.toByteArray().ensureSize(curve.scalarLength.bytes)
         }
@@ -369,6 +403,22 @@ sealed class CryptoPrivateKey(
                     encodePublicKey,
                     attributes
                 )
+
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+                if (other !is WithoutPublicKey) return false
+                if (!super.equals(other)) return false
+
+                if (curveOrderLengthInBytes != other.curveOrderLengthInBytes) return false
+
+                return true
+            }
+
+            override fun hashCode(): Int {
+                var result = super.hashCode()
+                result = 31 * result + curveOrderLengthInBytes
+                return result
+            }
 
             override val privateKeyBytes: ByteArray
                 get() = privateKey.toByteArray().ensureSize(curveOrderLengthInBytes)
@@ -406,7 +456,7 @@ sealed class CryptoPrivateKey(
              * SEC1 V2 decoding optionally supporting attributes for later PKCS#8 encoding
              */
             @Throws(Asn1Exception::class)
-            fun doDecode(src: Asn1Sequence, attributes: List<Asn1Element>? = null): EC = runRethrowing {
+            fun doDecode(src: Asn1Sequence, predefinedCurve: ECCurve? = null, attributes: List<Asn1Element>? = null): EC = runRethrowing {
                 val version = src.nextChild().asPrimitive().decodeToInt()
                 require(version == 1) { "EC public key version must be 1" }
                 val privateKeyOctets = src.nextChild().asOctetString().content
@@ -416,11 +466,11 @@ sealed class CryptoPrivateKey(
                 val additionalData = DataAndKey()
                 //try once
                 if (src.hasMoreChildren()) {
-                    additionalData.decode(src.nextChild())
+                    additionalData.decode(src.nextChild(), predefinedCurve)
                 }
                 //try twice
                 if (src.hasMoreChildren()) {
-                    additionalData.decode(src.nextChild())
+                    additionalData.decode(src.nextChild(),predefinedCurve)
                 }
 
 
@@ -465,7 +515,7 @@ sealed class CryptoPrivateKey(
                 var publicKey: CryptoPublicKey.EC? = null,
                 var encodeCurve: Boolean = false
             ) {
-                fun decode(src: Asn1Element) {
+                fun decode(src: Asn1Element, outerCurve: ECCurve?) {
                     val tagged = src.asExplicitlyTagged()
                     when (tagged.tag.tagValue) {
                         0uL -> tagged.decodeECParams().also {
@@ -479,9 +529,12 @@ sealed class CryptoPrivateKey(
                                 params?.let { params -> ECCurve.entries.first { it.oid == params } }
                             encodeCurve = (crv != null)
                             val asAsn1BitString = tagged.nextChild().asPrimitive().asAsn1BitString()
+                            if (crv != null && outerCurve != null) require(crv == outerCurve) { "PKCS#8 and SEC1 curve mismatch!" }
+
+                            val actualCurve = crv ?: outerCurve
                             publicKey =
-                                if (crv != null)
-                                    CryptoPublicKey.EC.fromAnsiX963Bytes(crv, asAsn1BitString.rawBytes)
+                                if (actualCurve != null)
+                                    CryptoPublicKey.EC.fromAnsiX963Bytes(actualCurve, asAsn1BitString.rawBytes)
                                 else null
                         }
                     }
@@ -531,9 +584,10 @@ sealed class CryptoPrivateKey(
                 RSA.FromPKCS1.doDecode(privateKeyStructure, attributes)
             } else if (algIdentifier == EC.oid) {
                 val predefinedCurve = ECCurve.entries.first { it.oid == ObjectIdentifier.decodeFromTlv(algParams) }
-                EC.FromSEC1.doDecode(privateKeyStructure, attributes).let {
+                EC.FromSEC1.doDecode(privateKeyStructure, predefinedCurve, attributes).let {
                     when (it) {
                         is EC.WithPublicKey -> it.also { require(it.curve == predefinedCurve) }
+                        //@iaik-jheher how can this work, if we set encodeCurve= true? somehting seems off!
                         is EC.WithoutPublicKey -> it.withCurve(predefinedCurve)
                     }
                 }
