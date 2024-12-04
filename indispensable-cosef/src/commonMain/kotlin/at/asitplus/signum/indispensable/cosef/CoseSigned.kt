@@ -110,8 +110,6 @@ data class CoseSigned<P : Any?>(
                 )
             },
         ).serialize()
-
-
     }
 }
 

@@ -17,6 +17,10 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeStructure
 
+/**
+ * Serialized [CoseSigned] with a typed payload,
+ * also adding Tag 24 to the payload, if it is a typed object, i.e. not a byte array.
+ */
 class CoseSignedSerializer<P : Any?>(
     private val parameterSerializer: KSerializer<P>,
 ) : KSerializer<CoseSigned<P>> {
@@ -41,6 +45,7 @@ class CoseSignedSerializer<P : Any?>(
             }
             CoseSigned(protectedHeader, unprotectedHeader, typedPayload, signature)
         }.getOrElse {
+            @Suppress("UNCHECKED_CAST")
             CoseSigned(protectedHeader, unprotectedHeader, payload as P, signature)
         }
     }
@@ -55,41 +60,8 @@ class CoseSignedSerializer<P : Any?>(
             )
             encodeNullableSerializableElement(descriptor, 1, CoseHeader.serializer(), value.unprotectedHeader)
             if (value.payload != null && value.payload::class != ByteArray::class) {
-
-                val overriddenSerialDescriptor = object : SerialDescriptor {
-                    @ExperimentalSerializationApi
-                    override val serialName: String = descriptor.serialName
-
-                    @ExperimentalSerializationApi
-                    override val kind: SerialKind = descriptor.kind
-
-                    @ExperimentalSerializationApi
-                    override val elementsCount: Int = descriptor.elementsCount
-
-                    @ExperimentalSerializationApi
-                    override fun getElementName(index: Int): String =
-                        descriptor.getElementName(index)
-
-
-                    @ExperimentalSerializationApi
-                    override fun getElementIndex(name: String): Int = descriptor.getElementIndex(name)
-
-                    @ExperimentalSerializationApi
-                    override fun getElementAnnotations(index: Int): List<Annotation> =
-                        if (index != 2) descriptor.getElementAnnotations(index)
-                        else listOf(ValueTags(24u))
-
-
-                    @ExperimentalSerializationApi
-                    override fun getElementDescriptor(index: Int): SerialDescriptor =
-                        descriptor.getElementDescriptor(index)
-
-                    @ExperimentalSerializationApi
-                    override fun isElementOptional(index: Int): Boolean = descriptor.isElementOptional(index)
-                }
-
                 encodeNullableSerializableElement(
-                    overriddenSerialDescriptor,
+                    buildTag24SerialDescriptor(),
                     2,
                     ByteStringWrapperSerializer(parameterSerializer),
                     ByteStringWrapper(value.payload)
@@ -99,5 +71,32 @@ class CoseSignedSerializer<P : Any?>(
             }
             encodeSerializableElement(descriptor, 3, ByteArraySerializer(), value.rawSignature)
         }
+    }
+
+    private fun buildTag24SerialDescriptor(): SerialDescriptor = object : SerialDescriptor {
+        @ExperimentalSerializationApi
+        override val serialName: String = descriptor.serialName
+
+        @ExperimentalSerializationApi
+        override val kind: SerialKind = descriptor.kind
+
+        @ExperimentalSerializationApi
+        override val elementsCount: Int = descriptor.elementsCount
+
+        @ExperimentalSerializationApi
+        override fun getElementName(index: Int): String = descriptor.getElementName(index)
+
+        @ExperimentalSerializationApi
+        override fun getElementIndex(name: String): Int = descriptor.getElementIndex(name)
+
+        @ExperimentalSerializationApi
+        override fun getElementAnnotations(index: Int): List<Annotation> =
+            if (index != 2) descriptor.getElementAnnotations(index) else listOf(ValueTags(24u))
+
+        @ExperimentalSerializationApi
+        override fun getElementDescriptor(index: Int): SerialDescriptor = descriptor.getElementDescriptor(index)
+
+        @ExperimentalSerializationApi
+        override fun isElementOptional(index: Int): Boolean = descriptor.isElementOptional(index)
     }
 }
