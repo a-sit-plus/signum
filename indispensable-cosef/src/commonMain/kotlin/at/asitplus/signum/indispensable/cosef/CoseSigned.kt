@@ -16,8 +16,11 @@ import kotlinx.serialization.cbor.CborArray
 /**
  * Representation of a signed COSE_Sign1 object, i.e. consisting of protected header, unprotected header and payload.
  *
- * The payload might be a generic [ByteArray], then it will be serialized as-is. Should the payload be any other type,
+ * If the payload is a generic [ByteArray], then it will be serialized as-is. Should the payload be any other type,
  * the [CoseSignedSerializer] will tag it with 24 (see [RFC8949 3.4.5.1](https://www.rfc-editor.org/rfc/rfc8949.html#name-encoded-cbor-data-item)) during serialization.
+ * In order to prevent nested wrapping of the payload and the resulting type erasure
+ * payloads of type [ByteStringWrapper] will be rejected.
+ * In this case the payload could be handed over as the wrapped class itself or manually serialized to [ByteArray]
  *
  * See [RFC 9052](https://www.rfc-editor.org/rfc/rfc9052.html).
  */
@@ -34,6 +37,7 @@ data class CoseSigned<P : Any?>(
     val rawSignature: ByteArray,
 ) {
 
+    @Throws(IllegalArgumentException::class)
     constructor(
         protectedHeader: CoseHeader,
         unprotectedHeader: CoseHeader?,
@@ -42,7 +46,12 @@ data class CoseSigned<P : Any?>(
     ) : this(
         protectedHeader = ByteStringWrapper(value = protectedHeader),
         unprotectedHeader = unprotectedHeader,
-        payload = payload,
+        payload = kotlin.run {
+            when(payload) {
+                ByteStringWrapper -> throw IllegalArgumentException("CoseSigned does not support ByteStringWrapper payloads, unwrap or serialize manually")
+                else -> payload
+            }
+        },
         rawSignature = signature.rawByteArray
     )
 
