@@ -32,8 +32,7 @@ abstract class PemDecodable<A : Asn1Element, T : PemEncodable<A>>
     private val decoders = mapOf(*decoders)
 
     /** Decodes a PEM-encoded string into [T] */
-    @OptIn(ExperimentalEncodingApi::class)
-    fun <A : Asn1Element, T : PemEncodable<A>> PemDecodable<A, T>.decodeFromPem(src: String): KmmResult<T> = catching {
+    fun decodeFromPem(src: String): KmmResult<T> = catching {
         src.lineSequence()
             .map(String::trim)
             .dropWhile { !(it.startsWith(FENCE_PREFIX_BEGIN) && it.endsWith(FENCE_SUFFIX)) }
@@ -50,6 +49,7 @@ abstract class PemDecodable<A : Asn1Element, T : PemEncodable<A>>
                     if (line.startsWith(FENCE_PREFIX_END) && line.endsWith(FENCE_SUFFIX)) {
                         val afterEbString = line.substring(FENCE_PREFIX_END.length, line.length - FENCE_SUFFIX.length)
                         require(afterEbString == ebString) { "Boundary string mismatch: $ebString vs $afterEbString" }
+                        @OptIn(ExperimentalEncodingApi::class)
                         return@run decoder(Base64.Mime.decode(b64data.toString()))
                     }
                     b64data.append(line)

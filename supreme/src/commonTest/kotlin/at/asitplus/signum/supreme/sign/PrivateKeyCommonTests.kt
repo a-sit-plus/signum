@@ -2,7 +2,6 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.asn1.decodeFromPem
 import at.asitplus.signum.supreme.isSuccess
 import at.asitplus.signum.supreme.signature
 import io.kotest.core.spec.style.FreeSpec

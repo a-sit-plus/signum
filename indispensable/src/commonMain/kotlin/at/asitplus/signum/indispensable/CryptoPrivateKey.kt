@@ -544,12 +544,11 @@ sealed class CryptoPrivateKey(
     }
 
     companion object :
-        Asn1Decodable<Asn1Sequence, CryptoPrivateKey> by FromPKCS8,
         PemDecodable<Asn1Sequence, CryptoPrivateKey> (
         EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8 to checkedAsFn(FromPKCS8::decodeFromDer),
         EB_STRINGS.RSA_PRIVATE_KEY_PKCS1 to checkedAsFn(RSA.FromPKCS1::decodeFromDer),
         EB_STRINGS.EC_PRIVATE_KEY_SEC1 to checkedAsFn(EC.FromSEC1::decodeFromDer)
-    ) {
+    ), Asn1Decodable<Asn1Sequence, CryptoPrivateKey> by FromPKCS8 {
         /**
          * Tries to decode a private key as exported from iOS.
          * EC keys are exported [as padded raw bytes](https://developer.apple.com/documentation/security/seckeycopyexternalrepresentation(_:_:)?language=objc).
@@ -560,6 +559,7 @@ sealed class CryptoPrivateKey(
             else CryptoPrivateKey.RSA.FromPKCS1.decodeFromTlv(Asn1Element.parse(keyBytes).asSequence())
 
         }
+
     }
 
     object FromPKCS8 : Asn1Decodable<Asn1Sequence, CryptoPrivateKey> {
