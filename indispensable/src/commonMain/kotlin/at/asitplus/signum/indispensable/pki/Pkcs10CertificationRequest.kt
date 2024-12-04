@@ -116,7 +116,6 @@ data class TbsCertificationRequest(
 data class Pkcs10CertificationRequest(
     val tbsCsr: TbsCertificationRequest,
     val signatureAlgorithm: X509SignatureAlgorithm,
-    @Serializable(with = ByteArrayBase64Serializer::class)
     val signature: CryptoSignature
 ) : Asn1Encodable<Asn1Sequence> {
 
