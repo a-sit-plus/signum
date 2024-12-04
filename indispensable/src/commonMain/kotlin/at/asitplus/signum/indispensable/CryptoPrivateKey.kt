@@ -22,7 +22,7 @@ private inline fun <O, reified T> checkedAs(v: O): T =
     v as? T
         ?: throw IllegalArgumentException("Expected type was ${T::class.simpleName}, but was really ${if (v == null) "<null>" else v!!::class.simpleName}")
 
-private inline fun <I, O, reified T> checkedAsFn(crossinline fn: (I)->O) : (I)->T = {
+private inline fun <I, O, reified T> checkedAsFn(crossinline fn: (I) -> O): (I) -> T = {
     checkedAs(fn(it))
 }
 
@@ -40,7 +40,7 @@ sealed class CryptoPrivateKey(
     }
 
     /** Encodes this private key into a PKCS#8-encoded private key. This is the default. */
-    val asPKCS8 : PemEncodable<Asn1Sequence> get() = this
+    val asPKCS8: PemEncodable<Asn1Sequence> get() = this
 
     override val canonicalPEMBoundary get() = EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8
 
@@ -102,27 +102,57 @@ sealed class CryptoPrivateKey(
     /**
      * PKCS#1 RSA Private key representation as per [RFC 8017](https://datatracker.ietf.org/doc/html/rfc8017/#appendix-A.1.2) augmented with optional [attributes].
      * Attributes are never SEC-1 encoded, but are relevant when PKCS#8-encoding a private key.
+     *
      */
-    class RSA(
+    class RSA
+    /** @throws IllegalArgumentException in case invalid parameters are provided*/
+    @Throws(IllegalArgumentException::class)
+    constructor(
         /**
          * The [CryptoPublicKey.RSA] matching this private key
          */
         override val publicKey: CryptoPublicKey.RSA,
-        val privateExponent: Asn1Integer,
-        val prime1: Asn1Integer,
-        val prime2: Asn1Integer,
-        val exponent1: Asn1Integer,
-        val exponent2: Asn1Integer,
-        val coefficient: Asn1Integer,
+        val d: BigInteger,
+        val p: BigInteger,
+        val q: BigInteger,
+        val dp: BigInteger,
+        val dq: BigInteger,
+        val qi: BigInteger,
         val otherPrimeInfos: List<OtherPrimeInfo>?,
         attributes: List<Asn1Element>? = null
     ) : CryptoPrivateKey(attributes), WithPublicKey<CryptoPublicKey.RSA> {
 
         override val oid = RSA.oid
 
+        override fun equals(other: Any?): Boolean {
+            if (other !is RSA) return false
+            return publicKey.equalsCryptographically(other.publicKey)
+        }
+
+        override fun hashCode() = publicKey.hashCode()
+
+        init {
+            val one = BigInteger.ONE
+            val n = publicKey.n.toBigInteger()
+            val e = publicKey.e.toBigInteger()
+            require(n == p * q) { "n == p * q" }
+            require(dp == (d mod (p - one))) { "dp == (d mod (p - one))" }
+            require(dq == (d mod (q - one))) { "dq == (d mod (q - one))" }
+            require(qi == q.modInverse(p)) { "qi == q.modInverse(p)" }
+            //Carmichael Totient!, not Euler Totient as per PKCS #1!
+            require(one == (d.multiply(e).mod((p - 1).lcm(q - 1))))
+        }
+
+        private fun BigInteger.lcm(other: BigInteger): BigInteger {
+            val mul = this * other
+            val gcd = this.gcd(other)
+            return mul / gcd
+        }
+
         /** Encodes this private key into a PKCS#1-encoded private key */
         val asPKCS1 = object : PemEncodable<Asn1Sequence> {
             override val canonicalPEMBoundary get() = EB_STRINGS.RSA_PRIVATE_KEY_PKCS1
+
             /**
              * ```asn1
              * RSAPrivateKey ::= SEQUENCE {
@@ -144,12 +174,12 @@ sealed class CryptoPrivateKey(
                     if (otherPrimeInfos != null) +Asn1.Int(1) else +Asn1.Int(0)
                     +publicKey.n
                     +publicKey.e
-                    +privateExponent
-                    +prime1
-                    +prime2
-                    +exponent1
-                    +exponent2
-                    +coefficient
+                    +Asn1.Int(d)
+                    +Asn1.Int(p)
+                    +Asn1.Int(q)
+                    +Asn1.Int(dp)
+                    +Asn1.Int(dq)
+                    +Asn1.Int(qi)
                     otherPrimeInfos?.let {
                         +Asn1.Sequence {
                             it.forEach { info -> +info }
@@ -205,6 +235,7 @@ sealed class CryptoPrivateKey(
         ) {
             override fun doDecode(src: Asn1Sequence): RSA =
                 checkedAs(CryptoPrivateKey.doDecode(src))
+
             val oid: ObjectIdentifier = KnownOIDs.rsaEncryption
         }
 
@@ -221,12 +252,12 @@ sealed class CryptoPrivateKey(
                 require(version == 0 || version == 1) { "RSA Private key VERSION must be 0 or 1" }
                 val modulus = src.nextChild().asPrimitive().decodeToAsn1Integer()
                 val publicExponent = src.nextChild().asPrimitive().decodeToAsn1Integer()
-                val privateExponent = src.nextChild().asPrimitive().decodeToAsn1Integer()
-                val prime1 = src.nextChild().asPrimitive().decodeToAsn1Integer()
-                val prime2 = src.nextChild().asPrimitive().decodeToAsn1Integer()
-                val exponent1 = src.nextChild().asPrimitive().decodeToAsn1Integer()
-                val exponent2 = src.nextChild().asPrimitive().decodeToAsn1Integer()
-                val coefficient = src.nextChild().asPrimitive().decodeToAsn1Integer()
+                val privateExponent = src.nextChild().asPrimitive().decodeToBigInteger()
+                val prime1 = src.nextChild().asPrimitive().decodeToBigInteger()
+                val prime2 = src.nextChild().asPrimitive().decodeToBigInteger()
+                val exponent1 = src.nextChild().asPrimitive().decodeToBigInteger()
+                val exponent2 = src.nextChild().asPrimitive().decodeToBigInteger()
+                val coefficient = src.nextChild().asPrimitive().decodeToBigInteger()
 
                 val otherPrimeInfos: List<OtherPrimeInfo>? = if (src.hasMoreChildren()) {
                     require(version == 1) { "OtherPrimeInfos is present. RSA private key version must be 1" }
@@ -251,33 +282,6 @@ sealed class CryptoPrivateKey(
         }
 
         override fun toString() = "RSA private key for public key $publicKey"
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other !is RSA) return false
-
-            if (!publicKey.equalsCryptographically(other.publicKey)) return false
-            if (privateExponent != other.privateExponent) return false
-            if (prime1 != other.prime1) return false
-            if (prime2 != other.prime2) return false
-            if (exponent1 != other.exponent1) return false
-            if (exponent2 != other.exponent2) return false
-            if (coefficient != other.coefficient) return false
-            if (otherPrimeInfos != other.otherPrimeInfos) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = publicKey.hashCode()
-            result = 31 * result + privateExponent.hashCode()
-            result = 31 * result + prime1.hashCode()
-            result = 31 * result + prime2.hashCode()
-            result = 31 * result + exponent1.hashCode()
-            result = 31 * result + exponent2.hashCode()
-            result = 31 * result + coefficient.hashCode()
-            result = 31 * result + (otherPrimeInfos?.hashCode() ?: 0)
-            return result
-        }
     }
 
     /**
@@ -326,7 +330,10 @@ sealed class CryptoPrivateKey(
             }
         }
 
-        class WithPublicKey private constructor(
+        class WithPublicKey
+        /** @throws IllegalArgumentException in case invalid parameters are provided*/
+        @Throws(IllegalArgumentException::class)
+        private constructor(
             curve: ECCurve?,
             val encodeCurve: Boolean,
             privateKey: BigInteger,
@@ -335,6 +342,8 @@ sealed class CryptoPrivateKey(
             attributes: List<Asn1Element>? = null
         ) : EC(privateKey, attributes), CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC> {
 
+            /** @throws IllegalArgumentException in case invalid parameters are provided*/
+            @Throws(IllegalArgumentException::class)
             constructor(
                 privateKey: BigInteger,
                 encodeCurve: Boolean,
@@ -343,6 +352,8 @@ sealed class CryptoPrivateKey(
                 attributes: List<Asn1Element>? = null
             ) : this(null, encodeCurve, privateKey, publicKey, encodePublicKey, attributes)
 
+            /** @throws IllegalArgumentException in case invalid parameters are provided*/
+            @Throws(IllegalArgumentException::class)
             constructor(
                 privateKey: BigInteger,
                 encodeCurve: Boolean,
@@ -355,6 +366,11 @@ sealed class CryptoPrivateKey(
             init {
                 require(publicKey != null || curve != null) { "PublicKey or curve must be set" }
                 if (publicKey != null && curve != null) require(publicKey.curve == curve) { "Curve and public key must match!" }
+                publicKey?.let { pub ->
+                    require(
+                        privateKey.times(pub.curve.generator).asPublicKey() == pub
+                    ) { "Public key must match the private key!" }
+                }
             }
 
             /** [CryptoPublicKey.EC] matching this private key. */
@@ -365,20 +381,6 @@ sealed class CryptoPrivateKey(
 
             override fun toString(): String {
                 return "EC private key for public key $publicKey"
-            }
-
-            override fun equals(other: Any?): Boolean {
-                if (this === other) return true
-                if (other !is WithPublicKey) return false
-                if(!super<EC>.privateKey.equals(other.privateKey)) return false
-
-                if (publicKey != other.publicKey) return false
-
-                return true
-            }
-
-            override fun hashCode(): Int {
-                return publicKey.hashCode()
             }
 
             override val privateKeyBytes: ByteArray
@@ -439,7 +441,10 @@ sealed class CryptoPrivateKey(
                 val crv = ECCurve.fromIosEncodedPrivateKeyLength(keyBytes.size)
                     ?: throw IllegalArgumentException("Unknown curve in iOS raw key")
                 return EC.WithPublicKey(
-                    BigInteger.fromByteArray(keyBytes.sliceArray(crv.iosEncodedPublicKeyLength..<keyBytes.size), Sign.POSITIVE),
+                    BigInteger.fromByteArray(
+                        keyBytes.sliceArray(crv.iosEncodedPublicKeyLength..<keyBytes.size),
+                        Sign.POSITIVE
+                    ),
                     encodeCurve = false,
                     encodePublicKey = true,
                     publicKey = CryptoPublicKey.fromIosEncoded(keyBytes.sliceArray(0..<crv.iosEncodedPublicKeyLength)) as CryptoPublicKey.EC
@@ -456,7 +461,11 @@ sealed class CryptoPrivateKey(
              * SEC1 V2 decoding optionally supporting attributes for later PKCS#8 encoding
              */
             @Throws(Asn1Exception::class)
-            fun doDecode(src: Asn1Sequence, predefinedCurve: ECCurve? = null, attributes: List<Asn1Element>? = null): EC = runRethrowing {
+            fun doDecode(
+                src: Asn1Sequence,
+                predefinedCurve: ECCurve? = null,
+                attributes: List<Asn1Element>? = null
+            ): EC = runRethrowing {
                 val version = src.nextChild().asPrimitive().decodeToInt()
                 require(version == 1) { "EC public key version must be 1" }
                 val privateKeyOctets = src.nextChild().asOctetString().content
@@ -470,7 +479,7 @@ sealed class CryptoPrivateKey(
                 }
                 //try twice
                 if (src.hasMoreChildren()) {
-                    additionalData.decode(src.nextChild(),predefinedCurve)
+                    additionalData.decode(src.nextChild(), predefinedCurve)
                 }
 
 
@@ -544,11 +553,11 @@ sealed class CryptoPrivateKey(
     }
 
     companion object :
-        PemDecodable<Asn1Sequence, CryptoPrivateKey> (
-        EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8 to checkedAsFn(FromPKCS8::decodeFromDer),
-        EB_STRINGS.RSA_PRIVATE_KEY_PKCS1 to checkedAsFn(RSA.FromPKCS1::decodeFromDer),
-        EB_STRINGS.EC_PRIVATE_KEY_SEC1 to checkedAsFn(EC.FromSEC1::decodeFromDer)
-    ), Asn1Decodable<Asn1Sequence, CryptoPrivateKey> by FromPKCS8 {
+        PemDecodable<Asn1Sequence, CryptoPrivateKey>(
+            EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8 to checkedAsFn(FromPKCS8::decodeFromDer),
+            EB_STRINGS.RSA_PRIVATE_KEY_PKCS1 to checkedAsFn(RSA.FromPKCS1::decodeFromDer),
+            EB_STRINGS.EC_PRIVATE_KEY_SEC1 to checkedAsFn(EC.FromSEC1::decodeFromDer)
+        ), Asn1Decodable<Asn1Sequence, CryptoPrivateKey> by FromPKCS8 {
         /**
          * Tries to decode a private key as exported from iOS.
          * EC keys are exported [as padded raw bytes](https://developer.apple.com/documentation/security/seckeycopyexternalrepresentation(_:_:)?language=objc).
@@ -614,7 +623,8 @@ class EncryptedPrivateKey(val encryptionAlgorithm: ObjectIdentifier, val encrypt
     }
 
     companion object : PemDecodable<Asn1Sequence, EncryptedPrivateKey>(
-        EB_STRINGS.ENCRYPTED_PRIVATE_KEY to checkedAsFn(Companion::decodeFromDer)) {
+        EB_STRINGS.ENCRYPTED_PRIVATE_KEY to checkedAsFn(Companion::decodeFromDer)
+    ) {
 
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): EncryptedPrivateKey = runRethrowing {
