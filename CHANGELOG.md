@@ -4,6 +4,7 @@
 
 ### 3.11.0 NEXT
 
+* Kotlin 2.1.0
 * Implement members in `JsonWebToken` and `ConfirmationClaim` for OpenID4VC High Assurance Interoperability Profile with SD-JWT VC
 * Add utility methods to `Asn1Integer`
     * Additional constructor methods: `fromByteArray`, `fromUnsignedByteArray`

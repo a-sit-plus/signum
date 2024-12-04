@@ -1,5 +1,4 @@
 import at.asitplus.signum.indispensable.CryptoPrivateKey
-import at.asitplus.signum.indispensable.CryptoPrivateKey.RSA.Companion.decodeFromPem
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
