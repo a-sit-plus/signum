@@ -16,6 +16,9 @@ import kotlinx.serialization.cbor.CborArray
 /**
  * Representation of a signed COSE_Sign1 object, i.e. consisting of protected header, unprotected header and payload.
  *
+ * The payload might be a generic [ByteArray], then it will be serialized as-is. Should the payload be any other type,
+ * the [CoseSignedSerializer] will tag it with 24 (see [RFC8949 3.4.5.1](https://www.rfc-editor.org/rfc/rfc8949.html#name-encoded-cbor-data-item)) during serialization.
+ *
  * See [RFC 9052](https://www.rfc-editor.org/rfc/rfc9052.html).
  */
 @OptIn(ExperimentalSerializationApi::class)

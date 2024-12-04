@@ -18,7 +18,7 @@ import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeStructure
 
 /**
- * Serialized [CoseSigned] with a typed payload,
+ * Serializes [CoseSigned] with a typed payload,
  * also adding Tag 24 to the payload, if it is a typed object, i.e. not a byte array.
  */
 class CoseSignedSerializer<P : Any?>(
