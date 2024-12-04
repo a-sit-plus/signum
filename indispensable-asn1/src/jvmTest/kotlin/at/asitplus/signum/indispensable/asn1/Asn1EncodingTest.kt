@@ -88,8 +88,6 @@ class Asn1EncodingTest : FreeSpec({
         }
         val parsed = Asn1Element.parse(seq.derEncoded)
         parsed.shouldNotBeNull()
-        println(parsed.prettyPrint())
-
     }
 
     "Old and new encoder produce the same bytes" {

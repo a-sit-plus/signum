@@ -16,30 +16,40 @@ import kotlinx.serialization.cbor.CborArray
 /**
  * Representation of a signed COSE_Sign1 object, i.e. consisting of protected header, unprotected header and payload.
  *
+ * If the payload is a generic [ByteArray], then it will be serialized as-is. Should the payload be any other type,
+ * the [CoseSignedSerializer] will tag it with 24 (see [RFC8949 3.4.5.1](https://www.rfc-editor.org/rfc/rfc8949.html#name-encoded-cbor-data-item)) during serialization.
+ * In order to prevent nested wrapping of the payload and the resulting type erasure
+ * payloads of type [ByteStringWrapper] will be rejected.
+ * In this case the payload could be handed over as the wrapped class itself or manually serialized to [ByteArray]
+ *
  * See [RFC 9052](https://www.rfc-editor.org/rfc/rfc9052.html).
  */
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable(with = CoseSignedSerializer::class)
 @CborArray
-data class CoseSigned<P : Any?>(
+@ConsistentCopyVisibility
+data class CoseSigned<P : Any?> internal constructor(
     @ByteString
     val protectedHeader: ByteStringWrapper<CoseHeader>,
     val unprotectedHeader: CoseHeader?,
     @ByteString
-    val payload: ByteArray?,
+    val payload: P?,
     @ByteString
     val rawSignature: ByteArray,
 ) {
-
+    @Throws(IllegalArgumentException::class)
     constructor(
         protectedHeader: CoseHeader,
         unprotectedHeader: CoseHeader?,
-        payload: ByteArray?,
-        signature: CryptoSignature.RawByteEncodable
+        payload: P?,
+        signature: CryptoSignature.RawByteEncodable,
     ) : this(
         protectedHeader = ByteStringWrapper(value = protectedHeader),
         unprotectedHeader = unprotectedHeader,
-        payload = payload,
+        payload = when (payload) {
+            is ByteStringWrapper<*> -> throw IllegalArgumentException("payload shall not be ByteStringWrapper")
+            else -> payload
+        },
         rawSignature = signature.rawByteArray
     )
 
@@ -49,18 +59,8 @@ data class CoseSigned<P : Any?>(
         else CryptoSignature.RSAorHMAC(rawSignature)
     }
 
-    fun serialize(): ByteArray = coseCompliantSerializer.encodeToByteArray(CoseSignedSerializer(), this)
-
-    /**
-     * Decodes the payload of this object into a [ByteStringWrapper] containing an object of type [P].
-     *
-     * Note that this does not work if the payload is directly a [ByteArray].
-     */
-    fun getTypedPayload(deserializer: KSerializer<P>): KmmResult<ByteStringWrapper<P>?> = catching {
-        payload?.let {
-            coseCompliantSerializer.decodeFromByteArray(ByteStringWrapperSerializer(deserializer), it)
-        }
-    }
+    fun serialize(parameterSerializer: KSerializer<P>): ByteArray = coseCompliantSerializer
+        .encodeToByteArray(CoseSignedSerializer(parameterSerializer), this)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -88,58 +88,38 @@ data class CoseSigned<P : Any?>(
     override fun toString(): String {
         return "CoseSigned(protectedHeader=${protectedHeader.value}," +
                 " unprotectedHeader=$unprotectedHeader," +
-                " payload=${payload?.encodeToString(Base16Strict)}," +
+                " payload=${if (payload is ByteArray) payload.encodeToString(Base16Strict) else payload}," +
                 " signature=${rawSignature.encodeToString(Base16Strict)})"
     }
 
     companion object {
-        fun deserialize(it: ByteArray): KmmResult<CoseSigned<ByteArray>> = catching {
-            coseCompliantSerializer.decodeFromByteArray<CoseSigned<ByteArray>>(it)
-        }
-
-        /**
-         * Creates a [CoseSigned] object from the given parameters,
-         * encapsulating the [payload] into a [ByteStringWrapper].
-         *
-         * This has to be an inline function with a reified type parameter,
-         * so it can't be a constructor (leads to a runtime error).
-         */
-        inline fun <reified P : Any> fromObject(
-            protectedHeader: CoseHeader,
-            unprotectedHeader: CoseHeader?,
-            payload: P,
-            signature: CryptoSignature.RawByteEncodable
-        ) = CoseSigned<P>(
-            protectedHeader = ByteStringWrapper(value = protectedHeader),
-            unprotectedHeader = unprotectedHeader,
-            payload = when (payload) {
-                is ByteArray -> payload
-                is ByteStringWrapper<*> -> coseCompliantSerializer.encodeToByteArray(payload)
-                else -> coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload))
-            },
-            rawSignature = signature.rawByteArray
-        )
+        fun <P : Any> deserialize(parameterSerializer: KSerializer<P>, it: ByteArray): KmmResult<CoseSigned<P>> =
+            catching {
+                coseCompliantSerializer.decodeFromByteArray(CoseSignedSerializer(parameterSerializer), it)
+            }
 
         /**
          * Called by COSE signing implementations to get the bytes that will be
          * used as the input for signature calculation of a `COSE_Sign1` object
          */
-        inline fun <reified P : Any> prepareCoseSignatureInput(
+        fun <P : Any> prepareCoseSignatureInput(
             protectedHeader: CoseHeader,
             payload: P?,
+            serializer: KSerializer<P>,
             externalAad: ByteArray = byteArrayOf(),
         ): ByteArray = CoseSignatureInput(
             contextString = "Signature1",
             protectedHeader = ByteStringWrapper(protectedHeader),
             externalAad = externalAad,
             payload = when (payload) {
+                null -> null
                 is ByteArray -> payload
-                is ByteStringWrapper<*> -> coseCompliantSerializer.encodeToByteArray(payload)
-                else -> coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload))
+                else -> coseCompliantSerializer.encodeToByteArray(
+                    ByteStringWrapperSerializer(serializer),
+                    ByteStringWrapper(payload)
+                )
             },
         ).serialize()
-
-
     }
 }
 

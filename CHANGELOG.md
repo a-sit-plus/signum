@@ -11,8 +11,8 @@
    * Additional conversion methods for Java BigInteger and iospin BigInteger
  * Refactor `CryptoPublicKey.Rsa` to use `Asn1Integer`
    * Fixes JWS/COSE encoding for non-standard exponents (with MSBit 1)
- * Add type parameter to `CoseSigned` for its payload
- * Add companion method `CoseSigned.fromObject` to create a `CoseSigned` with a typed payload (outside of the usual `ByteArray`)
+ * Add type parameter to `CoseSigned` for its payload (tagging with tag 24 when necessary)
+   * Changes primary constructor visibility to `internal` to check for `ByteStringWrapper` as payload type, which shall be rejected
  * Do not use DID key identifiers as keyId for `CoseKey`
  * Fix BitSet iterator
 
