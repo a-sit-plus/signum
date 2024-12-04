@@ -2,16 +2,14 @@ import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPrivateKey.RSA.Companion.decodeFromPem
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNot
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlin.random.Random
 
 @OptIn(ExperimentalStdlibApi::class)
 class PemTest : FreeSpec({
+    val rnd = Random.nextBytes(35).toHexString() + "\n                  "
     "SEC1" {
-        val rnd = Random.nextBytes(35).toHexString()+"\n                  "
         val sec1 = """
             -----BEGIN EC PRIVATE KEY-----
             MHcCAQEEIGwHU3LKj2fCxiUWB76jCnxIOJ2KAgYKbYGays8h/g+goAoGCCqGSM49
@@ -20,7 +18,7 @@ class PemTest : FreeSpec({
             -----END EC PRIVATE KEY-----
         """.trimIndent()
 
-        CryptoPrivateKey.decodeFromPem(sec1).getOrThrow().let {
+        CryptoPrivateKey.decodeFromPem(rnd + sec1).getOrThrow().let {
             it.shouldBeInstanceOf<CryptoPrivateKey.EC>()
             CryptoPrivateKey.EC.decodeFromPem(sec1).getOrThrow() shouldBe it
             CryptoPrivateKey.RSA.decodeFromPem(sec1).isSuccess shouldBe false
@@ -38,7 +36,7 @@ class PemTest : FreeSpec({
             -----END PRIVATE KEY-----
         """.trimIndent()
 
-        CryptoPrivateKey.decodeFromPem(pkcs8).getOrThrow().let {
+        CryptoPrivateKey.decodeFromPem(rnd + pkcs8).getOrThrow().let {
             CryptoPrivateKey.EC.decodeFromPem(pkcs8).getOrThrow() shouldBe it
             CryptoPrivateKey.RSA.decodeFromPem(pkcs8).isSuccess shouldBe false
             it.encodeToPEM().getOrThrow().lines() shouldBe pkcs8.lines()
@@ -59,11 +57,13 @@ class PemTest : FreeSpec({
         )
 
         rsa.forEach { string ->
-            CryptoPrivateKey.fromIosEncoded(string.hexToByteArray()).getOrThrow().shouldBeInstanceOf<CryptoPrivateKey.RSA>()
+            CryptoPrivateKey.fromIosEncoded(string.hexToByteArray()).getOrThrow()
+                .shouldBeInstanceOf<CryptoPrivateKey.RSA>()
         }
 
         ec.forEach { string ->
-            CryptoPrivateKey.fromIosEncoded(string.hexToByteArray()).getOrThrow().shouldBeInstanceOf<CryptoPrivateKey.EC>()
+            CryptoPrivateKey.fromIosEncoded(string.hexToByteArray()).getOrThrow()
+                .shouldBeInstanceOf<CryptoPrivateKey.EC>()
 
         }
 

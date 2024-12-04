@@ -109,7 +109,7 @@ fun CryptoPrivateKey.WithPublicKey<*>.toSecKey(): KmmResult<SecKeyRef> = catchin
                     is CryptoPrivateKey.RSA -> {
                         kSecAttrKeyType mapsTo kSecAttrKeyTypeRSA
                         kSecAttrKeySizeInBits mapsTo this@toSecKey.publicKey.bits.number.toInt()
-                        plainEncode().derEncoded
+                        asPKCS1.encodeToDer()
                     }
 
                     else -> TODO("Unreachable")
