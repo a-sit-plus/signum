@@ -12,6 +12,7 @@
  * Refactor `CryptoPublicKey.Rsa` to use `Asn1Integer`
    * Fixes JWS/COSE encoding for non-standard exponents (with MSBit 1)
  * Add type parameter to `CoseSigned` for its payload (tagging with tag 24 when necessary)
+   * Changes primary constructor visibility to `internal` to check for `ByteStringWrapper` as payload type, which shall be rejected
  * Do not use DID key identifiers as keyId for `CoseKey`
 
 ### 3.10.0 (Supreme 0.5.0) More ~~cowbell~~ targets!

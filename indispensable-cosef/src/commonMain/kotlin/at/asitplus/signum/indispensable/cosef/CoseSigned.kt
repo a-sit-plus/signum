@@ -27,7 +27,8 @@ import kotlinx.serialization.cbor.CborArray
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable(with = CoseSignedSerializer::class)
 @CborArray
-data class CoseSigned<P : Any?>(
+@ConsistentCopyVisibility
+data class CoseSigned<P : Any?> internal constructor(
     @ByteString
     val protectedHeader: ByteStringWrapper<CoseHeader>,
     val unprotectedHeader: CoseHeader?,
@@ -36,21 +37,18 @@ data class CoseSigned<P : Any?>(
     @ByteString
     val rawSignature: ByteArray,
 ) {
-
     @Throws(IllegalArgumentException::class)
     constructor(
         protectedHeader: CoseHeader,
         unprotectedHeader: CoseHeader?,
         payload: P?,
-        signature: CryptoSignature.RawByteEncodable
+        signature: CryptoSignature.RawByteEncodable,
     ) : this(
         protectedHeader = ByteStringWrapper(value = protectedHeader),
         unprotectedHeader = unprotectedHeader,
-        payload = kotlin.run {
-            when(payload) {
-                ByteStringWrapper -> throw IllegalArgumentException("CoseSigned does not support ByteStringWrapper payloads, unwrap or serialize manually")
-                else -> payload
-            }
+        payload = when (payload) {
+            is ByteStringWrapper<*> -> throw IllegalArgumentException("payload shall not be ByteStringWrapper")
+            else -> payload
         },
         rawSignature = signature.rawByteArray
     )

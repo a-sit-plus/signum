@@ -4,6 +4,7 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -16,6 +17,18 @@ import kotlinx.serialization.encodeToByteArray
 import kotlin.random.Random
 
 class CoseSerializationTest : FreeSpec({
+
+    "CoseSigned can not be constructed with ByteStringWrapper" {
+        val payload = ByteStringWrapper("StringType")
+        shouldThrow<IllegalArgumentException> {
+            CoseSigned<ByteStringWrapper<*>>(
+                protectedHeader = CoseHeader(algorithm = CoseAlgorithm.ES256),
+                unprotectedHeader = CoseHeader(),
+                payload = payload,
+                signature = CryptoSignature.RSAorHMAC(byteArrayOf())
+            )
+        }
+    }
 
     "Serialization is correct for byte array" {
         val payload = "This is the content.".encodeToByteArray()
@@ -76,7 +89,8 @@ class CoseSerializationTest : FreeSpec({
                 "91aef0b0117e2af9a291aa32e14ab834dc56ed2a223444547e01f11d3b09" +
                 "16e5a4c345cacb36"
 
-        val cose = CoseSigned.deserialize(ByteArraySerializer(),input.uppercase().decodeToByteArray(Base16Strict)).getOrThrow()
+        val cose = CoseSigned.deserialize(ByteArraySerializer(), input.uppercase().decodeToByteArray(Base16Strict))
+            .getOrThrow()
 
         cose.payload shouldBe "This is the content.".encodeToByteArray()
     }
