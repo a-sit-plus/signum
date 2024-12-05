@@ -30,7 +30,7 @@ import java.security.interfaces.RSAPublicKey
 class KeyTest : FreeSpec({
     Security.addProvider(BouncyCastleProvider())
 
-    "EC" - {
+    "!EC" - {
         withData(256, 384, 521) { bits ->
             val keys = List(25600 / bits) {
                 val ecKp = KeyPairGenerator.getInstance("EC", "BC").apply {

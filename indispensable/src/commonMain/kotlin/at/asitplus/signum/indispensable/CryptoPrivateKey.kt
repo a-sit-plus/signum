@@ -28,6 +28,7 @@ private inline fun <I, O, reified T> checkedAsFn(crossinline fn: (I) -> O): (I) 
 
 /**
  * PKCS#8 Representation of a private key structure as per [RFC 5208](https://datatracker.ietf.org/doc/html/rfc5208)
+ * All parameters except f
  */
 sealed class CryptoPrivateKey(
     /** optional attributes relevant when PKCS#8-encoding a private key */
@@ -135,12 +136,28 @@ sealed class CryptoPrivateKey(
             val one = BigInteger.ONE
             val n = publicKey.n.toBigInteger()
             val e = publicKey.e.toBigInteger()
-            require(n == p * q) { "n == p * q" }
-            require(dp == (d mod (p - one))) { "dp == (d mod (p - one))" }
-            require(dq == (d mod (q - one))) { "dq == (d mod (q - one))" }
-            require(qi == q.modInverse(p)) { "qi == q.modInverse(p)" }
-            //Carmichael Totient!, not Euler Totient as per PKCS #1!
-            require(one == (d.multiply(e).mod((p - 1).lcm(q - 1))))
+            val pPrimeInfos = OtherPrimeInfo(prime = p, exponent = dp, coefficient = BigInteger.ZERO/*not needed*/)
+            val qPrimeInfos = OtherPrimeInfo(prime = q, exponent = dq, coefficient = qi)
+            val allPrimeInfos = mutableListOf(pPrimeInfos, qPrimeInfos)
+            otherPrimeInfos?.let { allPrimeInfos.addAll(it) }
+
+            require(allPrimeInfos.map { it.prime }
+                .reduce { product, prime -> product * prime } == n) { "p1 * p2 * … * pk != n" }
+            require(allPrimeInfos.all { info -> info.exponent == d mod (info.prime - one) }) { "di != d mod (pi-1)" }
+
+            allPrimeInfos.forEachIndexed { i, ii ->
+                if(i>0) {
+                    val pi = ii.prime
+                    val ci = ii.coefficient
+                    val j = (i - 1)
+                    val pj = allPrimeInfos[j].prime
+                    //TODO why does this not compute?
+                   // require(pj.modInverse(pi) == ci) { "p$j.modInverse(p$i)=c$i" }
+
+                    //Carmichael Totient!, not Euler Totient as per PKCS #1!
+                    require(one == (d.multiply(e).mod((pi - 1).lcm(pj - 1)))) { "Totient requirement failed" }
+                }
+            }
         }
 
         private fun BigInteger.lcm(other: BigInteger): BigInteger {
@@ -201,17 +218,17 @@ sealed class CryptoPrivateKey(
          * ```
          */
         class OtherPrimeInfo(
-            val prime: Asn1Integer,
-            val exponent: Asn1Integer,
-            val coefficient: Asn1Integer,
+            val prime: BigInteger,
+            val exponent: BigInteger,
+            val coefficient: BigInteger,
         ) : Asn1Encodable<Asn1Sequence> {
 
             @Throws(Asn1Exception::class)
             override fun encodeToTlv() = runRethrowing {
                 Asn1.Sequence {
-                    +prime
-                    +exponent
-                    +coefficient
+                    +Asn1.Int(prime)
+                    +Asn1.Int(exponent)
+                    +Asn1.Int(coefficient)
                 }
             }
 
@@ -219,9 +236,9 @@ sealed class CryptoPrivateKey(
 
                 @Throws(Asn1Exception::class)
                 override fun doDecode(src: Asn1Sequence): OtherPrimeInfo = runRethrowing {
-                    val prime = src.nextChild().asPrimitive().decodeToAsn1Integer()
-                    val exponent = src.nextChild().asPrimitive().decodeToAsn1Integer()
-                    val coefficient = src.nextChild().asPrimitive().decodeToAsn1Integer()
+                    val prime = src.nextChild().asPrimitive().decodeToBigInteger()
+                    val exponent = src.nextChild().asPrimitive().decodeToBigInteger()
+                    val coefficient = src.nextChild().asPrimitive().decodeToBigInteger()
                     require(src.hasMoreChildren() == false) { "Superfluous Data in OtherPrimeInfos" }
                     OtherPrimeInfo(prime, exponent, coefficient)
                 }

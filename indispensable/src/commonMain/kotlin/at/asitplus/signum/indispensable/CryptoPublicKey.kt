@@ -191,7 +191,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             RSA_1024(1024u),
             RSA_2048(2048u),
             RSA_3027(3072u),
-            RSA_4096(4096u);
+            RSA_4096(4096u),
+            RSA_8192(8192u);
 
             companion object : Identifiable {
                 fun of(numBits: UInt) = entries.find { it.number == numBits }

@@ -32,6 +32,7 @@
     * `ECCurve.Companion.fromIosEncodedPrivateKeyLength` 
 * Renames (old names are kept with a deprecation warning):
     * `getJcaPublicKey()` -> `toJcaPublicKey()`
+* Support RSA8192
 
 ### 3.10.0 (Supreme 0.5.0) More ~~cowbell~~ targets!
 A new artifact, minor breaking changes and a lot more targets ahead!
