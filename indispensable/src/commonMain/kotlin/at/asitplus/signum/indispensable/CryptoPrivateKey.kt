@@ -28,7 +28,7 @@ private inline fun <I, O, reified T> checkedAsFn(crossinline fn: (I) -> O): (I) 
 
 /**
  * PKCS#8 Representation of a private key structure as per [RFC 5208](https://datatracker.ietf.org/doc/html/rfc5208)
- * All parameters except f
+ * Equality checks are performed wrt. cryptographic properties.
  */
 sealed class CryptoPrivateKey(
     /** optional attributes relevant when PKCS#8-encoding a private key */
@@ -151,11 +151,12 @@ sealed class CryptoPrivateKey(
                     val ci = ii.coefficient
                     val j = (i - 1)
                     val pj = allPrimeInfos[j].prime
-                    //TODO why does this not compute?
-                   // require(pj.modInverse(pi) == ci) { "p$j.modInverse(p$i)=c$i" }
-
+                    //TODO what is wrong here? As per PKCS#1:
+                    // coefficient is the CRT coefficient t_i = (r_1 * r_2 * ... * r_(i-1))^(-1) mod r_i.
+                    val qi = allPrimeInfos.subList(0,i).map { info -> info.prime }.reduce { prod, info -> prod*info }
+                    require(qi.modInverse(pi) == ci) { "p$j.modInverse(p$i)=c$i" }
                     //Carmichael Totient!, not Euler Totient as per PKCS #1!
-                    require(one == (d.multiply(e).mod((pi - 1).lcm(pj - 1)))) { "Totient requirement failed" }
+                    require(one == (d.multiply(e).mod((pi - one).lcm(pj - one)))) { "Totient requirement failed" }
                 }
             }
         }
@@ -230,6 +231,24 @@ sealed class CryptoPrivateKey(
                     +Asn1.Int(exponent)
                     +Asn1.Int(coefficient)
                 }
+            }
+
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+                if (other !is OtherPrimeInfo) return false
+
+                if (prime != other.prime) return false
+                if (exponent != other.exponent) return false
+                if (coefficient != other.coefficient) return false
+
+                return true
+            }
+
+            override fun hashCode(): Int {
+                var result = prime.hashCode()
+                result = 31 * result + exponent.hashCode()
+                result = 31 * result + coefficient.hashCode()
+                return result
             }
 
             companion object : Asn1Decodable<Asn1Sequence, OtherPrimeInfo> {
