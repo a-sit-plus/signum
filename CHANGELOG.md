@@ -15,6 +15,7 @@
    * Changes primary constructor visibility to `internal` to check for `ByteStringWrapper` as payload type, which shall be rejected
  * Do not use DID key identifiers as keyId for `CoseKey`
  * Fix BitSet iterator
+ * Add cose header `typ`
 
 ### 3.10.0 (Supreme 0.5.0) More ~~cowbell~~ targets!
 A new artifact, minor breaking changes and a lot more targets ahead!
