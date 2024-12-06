@@ -102,24 +102,28 @@ sealed class CryptoPrivateKey(
 
     /**
      * PKCS#1 RSA Private key representation as per [RFC 8017](https://datatracker.ietf.org/doc/html/rfc8017/#appendix-A.1.2) augmented with optional [attributes].
-     * Attributes are never SEC-1 encoded, but are relevant when PKCS#8-encoding a private key.
-     *
+     * Attributes are never PKCS#1 encoded, but are relevant when PKCS#8-encoding a private key.
      */
     class RSA
     /** @throws IllegalArgumentException in case invalid parameters are provided*/
     @Throws(IllegalArgumentException::class)
     constructor(
-        /**
-         * The [CryptoPublicKey.RSA] matching this private key
-         */
+        /** The [CryptoPublicKey.RSA] (n,e) matching this private key */
         override val publicKey: CryptoPublicKey.RSA,
-        val d: BigInteger,
-        val p: BigInteger,
-        val q: BigInteger,
-        val dp: BigInteger,
-        val dq: BigInteger,
-        val qi: BigInteger,
-        val otherPrimeInfos: List<OtherPrimeInfo>?,
+        /** d: the private key such that d*e = 1 mod phi(n) */
+        val privateKey: BigInteger,
+        /** p: the first prime factor */
+        val prime1: BigInteger,
+        /** q: the second prime factor */
+        val prime2: BigInteger,
+        /** dP: the first factor's CRT exponent */
+        val prime1exponent: BigInteger,
+        /** dQ: the second factor's CRT exponent */
+        val prime2exponent: BigInteger,
+        /** qInv: the factors' CRT coefficient (q^(-1) mod p) */
+        val crtCoefficient: BigInteger,
+        /** information about additional prime factors: triples (r_i, d_i, t_i) of prime factor, exponent, coefficient */
+        val otherPrimeInfos: List<PrimeInfo>?,
         attributes: List<Asn1Element>? = null
     ) : CryptoPrivateKey(attributes), WithPublicKey<CryptoPublicKey.RSA> {
 
@@ -135,27 +139,21 @@ sealed class CryptoPrivateKey(
         init {
             val n = publicKey.n.toBigInteger()
             val e = publicKey.e.toBigInteger()
-            // the coefficients are intentionally swapped; see RFC 8017 sec 3.2 note 1
-            val primeInfos1 = OtherPrimeInfo(prime = q, exponent = dq, coefficient = BigInteger.ONE)
-            val primeInfos2 = OtherPrimeInfo(prime = p, exponent = dp, coefficient = qi)
+            // the primes and exponents are intentionally swapped; see RFC 8017 sec 3.2 note 1
+            val primeInfo1 = PrimeInfo(prime = prime2, exponent = prime2exponent, coefficient = BigInteger.ONE)
+            val primeInfo2 = PrimeInfo(prime = prime1, exponent = prime1exponent, coefficient = crtCoefficient)
 
             var product = BigInteger.ONE
-            (sequenceOf(primeInfos1, primeInfos2) + (otherPrimeInfos?.asSequence() ?: sequenceOf()))
+            (sequenceOf(primeInfo1, primeInfo2) + (otherPrimeInfos?.asSequence() ?: sequenceOf()))
             .forEachIndexed { i, info ->
                 val pminusone = info.prime - BigInteger.ONE
                 require(product.times(info.coefficient).mod(info.prime) == BigInteger.ONE)
                     { "t_$i != (r_0 * ... * r_${i-1})^(-1) mod r_$i" }
                 product *= info.prime
-                require(info.exponent == d.mod(pminusone)) { "d_$i != d mod (p_$i - 1)" }
+                require(info.exponent == privateKey.mod(pminusone)) { "d_$i != d mod (p_$i - 1)" }
                 require(e.multiply(info.exponent).mod(pminusone) == BigInteger.ONE)
             }
             require(product == n) { "p1 * p2 * … * pk != n" }
-        }
-
-        private fun BigInteger.lcm(other: BigInteger): BigInteger {
-            val mul = this * other
-            val gcd = this.gcd(other)
-            return mul / gcd
         }
 
         /** Encodes this private key into a PKCS#1-encoded private key */
@@ -183,12 +181,12 @@ sealed class CryptoPrivateKey(
                     if (otherPrimeInfos != null) +Asn1.Int(1) else +Asn1.Int(0)
                     +publicKey.n
                     +publicKey.e
-                    +Asn1.Int(d)
-                    +Asn1.Int(p)
-                    +Asn1.Int(q)
-                    +Asn1.Int(dp)
-                    +Asn1.Int(dq)
-                    +Asn1.Int(qi)
+                    +Asn1.Int(privateKey)
+                    +Asn1.Int(prime1)
+                    +Asn1.Int(prime2)
+                    +Asn1.Int(prime1exponent)
+                    +Asn1.Int(prime2exponent)
+                    +Asn1.Int(crtCoefficient)
                     otherPrimeInfos?.let {
                         +Asn1.Sequence {
                             it.forEach { info -> +info }
@@ -209,7 +207,7 @@ sealed class CryptoPrivateKey(
          * }
          * ```
          */
-        class OtherPrimeInfo(
+        class PrimeInfo(
             val prime: BigInteger,
             val exponent: BigInteger,
             val coefficient: BigInteger,
@@ -226,7 +224,7 @@ sealed class CryptoPrivateKey(
 
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true
-                if (other !is OtherPrimeInfo) return false
+                if (other !is PrimeInfo) return false
 
                 if (prime != other.prime) return false
                 if (exponent != other.exponent) return false
@@ -242,15 +240,15 @@ sealed class CryptoPrivateKey(
                 return result
             }
 
-            companion object : Asn1Decodable<Asn1Sequence, OtherPrimeInfo> {
+            companion object : Asn1Decodable<Asn1Sequence, PrimeInfo> {
 
                 @Throws(Asn1Exception::class)
-                override fun doDecode(src: Asn1Sequence): OtherPrimeInfo = runRethrowing {
+                override fun doDecode(src: Asn1Sequence): PrimeInfo = runRethrowing {
                     val prime = src.nextChild().asPrimitive().decodeToBigInteger()
                     val exponent = src.nextChild().asPrimitive().decodeToBigInteger()
                     val coefficient = src.nextChild().asPrimitive().decodeToBigInteger()
                     require(src.hasMoreChildren() == false) { "Superfluous Data in OtherPrimeInfos" }
-                    OtherPrimeInfo(prime, exponent, coefficient)
+                    PrimeInfo(prime, exponent, coefficient)
                 }
 
             }
@@ -270,9 +268,7 @@ sealed class CryptoPrivateKey(
             @Throws(Asn1Exception::class)
             override fun doDecode(src: Asn1Sequence): RSA = doDecode(src, null)
 
-            /**
-             * PKCS1 decoding of an ASN.1 private key, optionally supporting attributes for later PKCS#8 encoding
-             */
+            /** PKCS1 decoding of an ASN.1 private key, optionally supporting attributes for later PKCS#8 encoding */
             @Throws(Asn1Exception::class)
             fun doDecode(src: Asn1Sequence, attributes: List<Asn1Element>? = null): RSA = runRethrowing {
                 val version = src.nextChild().asPrimitive().decodeToInt()
@@ -286,9 +282,9 @@ sealed class CryptoPrivateKey(
                 val exponent2 = src.nextChild().asPrimitive().decodeToBigInteger()
                 val coefficient = src.nextChild().asPrimitive().decodeToBigInteger()
 
-                val otherPrimeInfos: List<OtherPrimeInfo>? = if (src.hasMoreChildren()) {
+                val otherPrimeInfos: List<PrimeInfo>? = if (src.hasMoreChildren()) {
                     require(version == 1) { "OtherPrimeInfos is present. RSA private key version must be 1" }
-                    src.nextChild().asSequence().children.map { OtherPrimeInfo.decodeFromTlv(it.asSequence()) }
+                    src.nextChild().asSequence().children.map { PrimeInfo.decodeFromTlv(it.asSequence()) }
                 } else {
                     require(version == 0) { "OtherPrimeInfos is not present. RSA private key version must be 0" }
                     null
@@ -313,7 +309,7 @@ sealed class CryptoPrivateKey(
 
     /**
      * SEC1 Elliptic Curve Private Key Structure as per [RFC 5915](https://datatracker.ietf.org/doc/html/rfc5915) augmented with optional [attributes].
-     * Attributes are never SEC-1 encoded, but are relevant when PKCS#8-encoding a private key.
+     * Attributes are never SEC1 encoded, but are relevant when PKCS#8-encoding a private key.
      */
     sealed class EC(
         val privateKey: BigInteger,
@@ -487,11 +483,6 @@ sealed class CryptoPrivateKey(
                 require(version == 1) { "EC public key version must be 1" }
                 val privateKeyOctets = src.nextChild().asOctetString().content
 
-                fun Asn1ExplicitlyTagged.decodeECParams(): ObjectIdentifier {
-
-                    return ObjectIdentifier.decodeFromTlv(nextChild().asPrimitive())
-                }
-
                 var curve: ECCurve? = null
                 var publicKey: Asn1BitString? = null
                 while (src.hasMoreChildren()) {
@@ -539,7 +530,6 @@ sealed class CryptoPrivateKey(
         fun fromIosEncoded(keyBytes: ByteArray): KmmResult<CryptoPrivateKey.WithPublicKey<*>> = catching {
             if (keyBytes.first() == ANSIECPrefix.UNCOMPRESSED.prefixByte) CryptoPrivateKey.EC.iosDecodeInternal((keyBytes))
             else CryptoPrivateKey.RSA.FromPKCS1.decodeFromTlv(Asn1Element.parse(keyBytes).asSequence())
-
         }
 
     }
@@ -547,15 +537,14 @@ sealed class CryptoPrivateKey(
     object FromPKCS8 : Asn1Decodable<Asn1Sequence, CryptoPrivateKey> {
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): CryptoPrivateKey = runRethrowing {
-            //PKCS8 here
             require(src.nextChild().asPrimitive().decodeToInt() == 0) { "PKCS#8 Private Key VERSION must be 0" }
             val algorithmID = src.nextChild().asSequence()
             val algIdentifier = ObjectIdentifier.decodeFromTlv(algorithmID.nextChild().asPrimitive())
             val algParams = algorithmID.nextChild().asPrimitive()
-            require(algorithmID.hasMoreChildren() == false) { "Superfluous Algorithm ID data encountered" }
+            require(!algorithmID.hasMoreChildren()) { "Superfluous Algorithm ID data encountered" }
             val privateKeyStructure = src.nextChild().asEncapsulatingOctetString().let {
                 val seq = it.nextChild().asSequence()
-                require(it.hasMoreChildren() == false) { "Superfluous private key data encountered" }
+                require(!it.hasMoreChildren()) { "Superfluous private key data encountered" }
                 seq
             }
             val attributes: List<Asn1Element>? =
@@ -577,10 +566,7 @@ sealed class CryptoPrivateKey(
     }
 }
 
-/**
- * Representation of an encrypted private key structure as per [RFC 5208](https://datatracker.ietf.org/doc/html/rfc5208)
- * As of November 2024, We do not ship decryption functionality
- */
+/** Representation of an encrypted private key structure as per [RFC 5208](https://datatracker.ietf.org/doc/html/rfc5208) */
 class EncryptedPrivateKey(val encryptionAlgorithm: ObjectIdentifier, val encryptedData: ByteArray) :
     PemEncodable<Asn1Sequence> {
 
@@ -607,14 +593,5 @@ class EncryptedPrivateKey(val encryptionAlgorithm: ObjectIdentifier, val encrypt
                 require(!src.hasMoreChildren()) { "Superfluous data in EncryptedPrivateKey encountered" }
             }
         }
-    }
-
-    /**
-     * Convenience wrapper to decrypt this private key.
-     * Actual decryption must happen in [decryptFn], which gets passed [encryptionAlgorithm] an [encryptedData].
-     * [decryptFn] may throw anything, as it is executed inside a [catching] block.
-     */
-    fun decrypt(decryptFn: (ObjectIdentifier, ByteArray) -> ByteArray): KmmResult<CryptoPrivateKey> = catching {
-        CryptoPrivateKey.decodeFromDer(decryptFn(encryptionAlgorithm, encryptedData))
     }
 }
