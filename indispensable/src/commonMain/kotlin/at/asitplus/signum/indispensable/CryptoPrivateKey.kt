@@ -135,7 +135,7 @@ sealed class CryptoPrivateKey(
         init {
             val n = publicKey.n.toBigInteger()
             val e = publicKey.e.toBigInteger()
-            // q and p are intentionally swapped; see RFC 8017 sec 3.2 note 1
+            // the coefficients are intentionally swapped; see RFC 8017 sec 3.2 note 1
             val primeInfos1 = OtherPrimeInfo(prime = q, exponent = dq, coefficient = BigInteger.ONE)
             val primeInfos2 = OtherPrimeInfo(prime = p, exponent = dp, coefficient = qi)
 
@@ -349,10 +349,16 @@ sealed class CryptoPrivateKey(
                 Asn1.Sequence {
                     +Asn1.Int(1)
                     +Asn1OctetString(privateKeyBytes)
-                    if (this@EC is EC.WithPublicKey) {
-                        if (encodeCurve) +Asn1.ExplicitlyTagged(0uL) { +curve.oid }
-                        if (encodePublicKey) +Asn1.ExplicitlyTagged(1uL) { +Asn1.BitString(publicKey.iosEncoded) }
+                    when (this@EC) {
+                        is EC.WithPublicKey -> {
+                            if (encodeCurve) +Asn1.ExplicitlyTagged(0uL) { +curve.oid }
+                            if (encodePublicKey) +Asn1.ExplicitlyTagged(1uL) { +Asn1.BitString(publicKey.iosEncoded) }
+                        }
+                        is EC.WithoutPublicKey -> {
+                            if (publicKeyBytes != null) +Asn1.ExplicitlyTagged(1uL) { +publicKeyBytes }
+                        }
                     }
+
                 }
             }
         }
@@ -360,50 +366,23 @@ sealed class CryptoPrivateKey(
         class WithPublicKey
         /** @throws IllegalArgumentException in case invalid parameters are provided*/
         @Throws(IllegalArgumentException::class)
-        private constructor(
-            curve: ECCurve?,
-            val encodeCurve: Boolean,
+        constructor(
             privateKey: BigInteger,
-            publicKey: CryptoPublicKey.EC?,
+            override val publicKey: CryptoPublicKey.EC,
+            val encodeCurve: Boolean,
             val encodePublicKey: Boolean,
             attributes: List<Asn1Element>? = null
         ) : EC(privateKey, attributes), CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC> {
 
-            /** @throws IllegalArgumentException in case invalid parameters are provided*/
-            @Throws(IllegalArgumentException::class)
-            constructor(
-                privateKey: BigInteger,
-                encodeCurve: Boolean,
-                publicKey: CryptoPublicKey.EC,
-                encodePublicKey: Boolean,
-                attributes: List<Asn1Element>? = null
-            ) : this(null, encodeCurve, privateKey, publicKey, encodePublicKey, attributes)
-
-            /** @throws IllegalArgumentException in case invalid parameters are provided*/
-            @Throws(IllegalArgumentException::class)
-            constructor(
-                privateKey: BigInteger,
-                encodeCurve: Boolean,
-                curve: ECCurve,
-                encodePublicKey: Boolean,
-                attributes: List<Asn1Element>? = null
-            ) : this(curve, encodeCurve, privateKey, null, encodePublicKey, attributes)
-
+            constructor(privateKey: BigInteger, curve: ECCurve,
+                        encodeCurve: Boolean, encodePublicKey: Boolean, attributes: List<Asn1Element>? = null) :
+                    this(privateKey, curve.generator.times(privateKey).asPublicKey(preferCompressed = true),
+                        encodeCurve, encodePublicKey, attributes)
 
             init {
-                require(publicKey != null || curve != null) { "PublicKey or curve must be set" }
-                if (publicKey != null && curve != null) require(publicKey.curve == curve) { "Curve and public key must match!" }
-                publicKey?.let { pub ->
-                    require(
-                        privateKey.times(pub.curve.generator).asPublicKey() == pub
-                    ) { "Public key must match the private key!" }
-                }
+                require(publicKey.publicPoint == privateKey.times(publicKey.curve.generator)) { "Public key must match the private key!" }
             }
 
-            /** [CryptoPublicKey.EC] matching this private key. */
-            override val publicKey: CryptoPublicKey.EC = publicKey ?: curve?.let { crv ->
-                privateKey.times(crv.generator).asPublicKey(preferCompressed = true)
-            }!!
             val curve get() = publicKey.curve
 
             override fun toString(): String {
@@ -416,22 +395,34 @@ sealed class CryptoPrivateKey(
 
         class WithoutPublicKey constructor(
             privateKey: BigInteger,
+            val publicKeyBytes: Asn1BitString?,
             attributes: List<Asn1Element>? = null,
             private val curveOrderLengthInBytes: Int
         ) : EC(privateKey, attributes) {
 
-            /**
-             * Creates a new [CryptoPrivateKey.EC.WithPublicKey] based on the passed curve.
-             *
-             */
-            fun withCurve(curve: ECCurve, encodeCurve: Boolean = true, encodePublicKey: Boolean = true) =
-                CryptoPrivateKey.EC.WithPublicKey(
-                    privateKey,
-                    encodeCurve,
-                    curve.also { require(it.scalarLength.bytes.toInt() == curveOrderLengthInBytes) },
-                    encodePublicKey,
-                    attributes
-                )
+            /** Creates a new [CryptoPrivateKey.EC.WithPublicKey] based on the passed curve. */
+            fun withCurve(curve: ECCurve, encodeCurve: Boolean = true, encodePublicKey: Boolean = (this.publicKeyBytes != null))
+            : WithPublicKey {
+                require(curve.scalarLength.bytes.toInt() == curveOrderLengthInBytes)
+                    { "Encoded private key was padded to $curveOrderLengthInBytes bytes, but curve $curve needs padding to ${curve.scalarLength.bytes.toInt()} bytes"}
+                return if (publicKeyBytes != null) {
+                    CryptoPrivateKey.EC.WithPublicKey(
+                        privateKey,
+                        CryptoPublicKey.EC.fromAnsiX963Bytes(curve, publicKeyBytes.rawBytes),
+                        encodeCurve,
+                        encodePublicKey,
+                        attributes
+                    )
+                } else {
+                    CryptoPrivateKey.EC.WithPublicKey(
+                        privateKey,
+                        curve,
+                        encodeCurve,
+                        encodePublicKey,
+                        attributes
+                    )
+                }
+            }
 
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true
@@ -490,90 +481,45 @@ sealed class CryptoPrivateKey(
             @Throws(Asn1Exception::class)
             fun doDecode(
                 src: Asn1Sequence,
-                predefinedCurve: ECCurve? = null,
                 attributes: List<Asn1Element>? = null
             ): EC = runRethrowing {
                 val version = src.nextChild().asPrimitive().decodeToInt()
                 require(version == 1) { "EC public key version must be 1" }
                 val privateKeyOctets = src.nextChild().asOctetString().content
 
-                //Params and publicKey are both optional, but may only occur once. so we need to run `decode` potentially twice and record state
-                //DataAndKey class enables this without code duplication
-                val additionalData = DataAndKey()
-                //try once
-                if (src.hasMoreChildren()) {
-                    additionalData.decode(src.nextChild(), predefinedCurve)
-                }
-                //try twice
-                if (src.hasMoreChildren()) {
-                    additionalData.decode(src.nextChild(), predefinedCurve)
+                fun Asn1ExplicitlyTagged.decodeECParams(): ObjectIdentifier {
+
+                    return ObjectIdentifier.decodeFromTlv(nextChild().asPrimitive())
                 }
 
-
-                val crv = additionalData.publicKey?.curve
-                if (crv == null)
-                    EC.WithoutPublicKey(
-                        BigInteger.fromByteArray(privateKeyOctets, Sign.POSITIVE),
-                        attributes,
-                        privateKeyOctets.size
-                    )
-                else {
-                    additionalData.publicKey?.let { require(crv == it.curve) }
-
-                    if (additionalData.publicKey != null)
-                        EC.WithPublicKey(
-                            BigInteger.fromByteArray(privateKeyOctets, Sign.POSITIVE),
-                            additionalData.encodeCurve,
-                            additionalData.publicKey!!,
-                            encodePublicKey = true,
-                            attributes
-                        )
-                    else
-                        EC.WithPublicKey(
-                            BigInteger.fromByteArray(privateKeyOctets, Sign.POSITIVE),
-                            additionalData.encodeCurve,
-                            crv,
-                            encodePublicKey = false,
-                            attributes
-                        )
-                }
-            }
-
-            private fun Asn1ExplicitlyTagged.decodeECParams(): ObjectIdentifier {
-                require(children.size == 1) { "Only a single EC parameter is allowed" }
-                return ObjectIdentifier.decodeFromTlv(nextChild().asPrimitive())
-            }
-
-            //Params and publicKey are both optional, but may only occur once. so we need to run `decode` potentially twice and record state
-            //DataAndKey class enables this without code duplication
-            private class DataAndKey(
-                var params: ObjectIdentifier? = null,
-                var publicKey: CryptoPublicKey.EC? = null,
-                var encodeCurve: Boolean = false
-            ) {
-                fun decode(src: Asn1Element, outerCurve: ECCurve?) {
-                    val tagged = src.asExplicitlyTagged()
-                    when (tagged.tag.tagValue) {
-                        0uL -> tagged.decodeECParams().also {
-                            require(params == null) { "EC parameters may only occur once" }
-                            params = it
+                var curve: ECCurve? = null
+                var publicKey: Asn1BitString? = null
+                while (src.hasMoreChildren()) {
+                    val elm= src.nextChild().asExplicitlyTagged()
+                    when (elm.tag.tagValue) {
+                        0uL -> {
+                            require(curve == null) { "Duplicate EC curve field in EC PrivateKey" }
+                            require(publicKey == null) { "Field order violation in EC PrivateKey" }
+                            require(elm.children.size == 1) { "Invalid EC curve field in EC PrivateKey" }
+                            curve = ObjectIdentifier.decodeFromTlv(elm.nextChild().asPrimitive()).let(ECCurve::withOid)
                         }
-
                         1uL -> {
-                            require(publicKey == null) { "EC public key may only occur once" }
-                            val crv =
-                                params?.let { params -> ECCurve.entries.first { it.oid == params } }
-                            encodeCurve = (crv != null)
-                            val asAsn1BitString = tagged.nextChild().asPrimitive().asAsn1BitString()
-                            if (crv != null && outerCurve != null) require(crv == outerCurve) { "PKCS#8 and SEC1 curve mismatch!" }
-
-                            val actualCurve = crv ?: outerCurve
-                            publicKey =
-                                if (actualCurve != null)
-                                    CryptoPublicKey.EC.fromAnsiX963Bytes(actualCurve, asAsn1BitString.rawBytes)
-                                else null
+                            require(publicKey == null) { "Duplicate public key field in EC PrivateKey" }
+                            require(elm.children.size == 1) { "Invalid public key field in EC PrivateKey" }
+                            publicKey = elm.nextChild().asPrimitive().asAsn1BitString()
                         }
+                        else -> throw Asn1Exception("Unknown optional field with tag ${elm.tag.tagValue} in EC PrivateKey")
                     }
+                }
+
+                val privateKey = EC.WithoutPublicKey(
+                    BigInteger.fromByteArray(privateKeyOctets, Sign.POSITIVE),
+                    publicKey,
+                    attributes,
+                    privateKeyOctets.size)
+                return@runRethrowing when(curve) {
+                    null -> privateKey
+                    else -> privateKey.withCurve(curve)
                 }
             }
         }
@@ -620,11 +566,10 @@ sealed class CryptoPrivateKey(
                 RSA.FromPKCS1.doDecode(privateKeyStructure, attributes)
             } else if (algIdentifier == EC.oid) {
                 val predefinedCurve = ECCurve.entries.first { it.oid == ObjectIdentifier.decodeFromTlv(algParams) }
-                EC.FromSEC1.doDecode(privateKeyStructure, predefinedCurve, attributes).let {
+                EC.FromSEC1.doDecode(privateKeyStructure, attributes).let {
                     when (it) {
                         is EC.WithPublicKey -> it.also { require(it.curve == predefinedCurve) }
-                        //@iaik-jheher how can this work, if we set encodeCurve= true? somehting seems off!
-                        is EC.WithoutPublicKey -> it.withCurve(predefinedCurve)
+                        is EC.WithoutPublicKey -> it.withCurve(predefinedCurve, encodeCurve = false)
                     }
                 }
             } else throw IllegalArgumentException("Unknown Algorithm: $algIdentifier")

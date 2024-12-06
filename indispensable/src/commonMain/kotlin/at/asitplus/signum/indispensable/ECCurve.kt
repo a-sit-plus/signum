@@ -190,6 +190,8 @@ enum class ECCurve(
 
     companion object {
         fun of(bits: UInt) = entries.find { it.scalarLength.bits == bits }
+        fun withOid(oid: ObjectIdentifier) = entries.find { it.oid == oid } ?:
+            throw IllegalArgumentException("No curve with OID $oid is supported")
     }
 
 }
