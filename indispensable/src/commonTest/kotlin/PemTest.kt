@@ -70,7 +70,7 @@ class PemTest : FreeSpec({
         }
     }
 
-    "PCKS#8 multi-prime RSA" - {
+    "PCKS#8 multi-prime RSA" {
         val rsa = listOf(
             """
             -----BEGIN PRIVATE KEY-----
@@ -379,7 +379,7 @@ class PemTest : FreeSpec({
                 -----END PRIVATE KEY-----
             """.trimIndent()
         )
-        withData(rsa) {
+        rsa.forEach {
             CryptoPrivateKey.decodeFromPem(it).getOrThrow()
         }
     }
