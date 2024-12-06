@@ -33,13 +33,10 @@ open class SigningKeyConfiguration internal constructor() : DSL.Data() {
         var curve: ECCurve = ECCurve.SECP_256_R_1
 
         private var _digests: Set<Digest?>? = null
-
         /** The digests supported by the key. If not specified, supports the curve's native digest only. */
         open var digests: Set<Digest?>
             get() = _digests ?: setOf(curve.nativeDigest)
-            set(v) {
-                _digests = v
-            }
+            set(v) { _digests = v }
     }
 
     open class RSAConfiguration internal constructor() : AlgorithmSpecific() {

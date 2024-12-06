@@ -220,12 +220,11 @@ If not, it usually means that a non-existent alias was specified.
 Private key can be loaded from PEM-encoded strings or DER-encoded byte arrays into a `CryptoPrivateKey` object:
 
 ```kotlin
-//PKCS8, could by EC or RSA
 CryptoPrivateKey.decodeFromPem(pkcs8)
 ```
 
-While encrypted keys can be parsed, decryption is currently not natively supported.
-Moreover, these keys currently cannot be imported into platform-native key stores (Android KeyStore/ iOS KeyChain).
+These keys currently cannot be imported into platform-native key stores (Android KeyStore/ iOS KeyChain).
+Also, while encrypted keys can be parsed, decryption is currently not natively supported.
 
 #### Creating a Signer from a `CryptoPrivateKey`
 
@@ -233,7 +232,7 @@ Moreover, these keys currently cannot be imported into platform-native key store
     Signers can only be created for private keys that have a public key and/or a curve attached. This may not be the case
     when an EC private key was parsed from SEC1 encoding without curve and public key info.
 
-Given a `CryptoPrivateKey.WithPublicKey` object and a `SignatureAlgorithm` object hand, a signer can be created as follows:
+Given a `CryptoPrivateKey.WithPublicKey` object and a `SignatureAlgorithm` object, a signer can be created as follows:
 
 ```kotlin
 val signer = sigAlg.signerFor(privateKey)
@@ -246,17 +245,15 @@ If you have an EC private key at hand without a public key attached, simply conv
 privateKey.withCurve(EECurve.SECP_256_R_1)
 ```
 
-Note that this function does not perform plausibility checks wrt. curve and key size!
-
 #### Exporting Private Keys
 
 !!! note inline end
     The `exportPrivateKey()` method requires an explicit opt-in for `SecretExposure` to prevent accidental export of private keys
 
-Private keys can be exported (typically to be DER or PEM-encoded) from signers and ephemeral key objects as follows:
+Private keys can be exported (typically to be DER or PEM-encoded) from ephemeral signers and ephemeral key objects as follows:
 
 ```kotlin
-@OptIn(SecretExposure)
+@OptIn(SecretExposure::class)
 val privKey = signer.exportPrivateKey()
 ```
 

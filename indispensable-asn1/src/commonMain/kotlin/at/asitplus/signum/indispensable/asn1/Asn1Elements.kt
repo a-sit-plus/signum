@@ -186,7 +186,7 @@ sealed class Asn1Element(
     }
 
     @Throws(Asn1StructuralException::class)
-    private inline fun <reified T> thisAs() =
+    private inline fun <reified T> thisAs(): T =
        (this as? T)
             ?: throw Asn1StructuralException("${this::class.simpleName} cannot be reinterpreted as ${T::class.simpleName}.")
 

@@ -30,72 +30,77 @@ private inline fun <I, O, reified T> checkedAsFn(crossinline fn: (I) -> O): (I) 
  * PKCS#8 Representation of a private key structure as per [RFC 5208](https://datatracker.ietf.org/doc/html/rfc5208)
  * Equality checks are performed wrt. cryptographic properties.
  */
-sealed class CryptoPrivateKey(
-    /** optional attributes relevant when PKCS#8-encoding a private key */
-    val attributes: List<Asn1Element>?
-) : PemEncodable<Asn1Sequence>, Identifiable {
+sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
 
-    sealed interface WithPublicKey<T : CryptoPublicKey> : PemEncodable<Asn1Sequence>, Identifiable {
+    sealed interface WithPublicKey<T : CryptoPublicKey> : CryptoPrivateKey {
         /** [CryptoPublicKey] matching this private key. */
         val publicKey: T
     }
 
+    /** optional attributes relevant when PKCS#8-encoding a private key */
+    val attributes: List<Asn1Element>?
+
     /** Encodes this private key into a PKCS#8-encoded private key. This is the default. */
     val asPKCS8: PemEncodable<Asn1Sequence> get() = this
 
-    override val canonicalPEMBoundary get() = EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8
+    sealed class Impl (
+        /** optional attributes relevant when PKCS#8-encoding a private key */
+       override val attributes: List<Asn1Element>?
+    ) : CryptoPrivateKey {
+        override val canonicalPEMBoundary get() = EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8
+        /**
+         * PKCS#8 encoding of a private key:
+         * ```asn1
+         * PrivateKeyInfo ::= SEQUENCE {
+         *   version                   Version,
+         *   privateKeyAlgorithm       PrivateKeyAlgorithmIdentifier,
+         *   privateKey                PrivateKey,
+         *   attributes           [0]  IMPLICIT Attributes OPTIONAL
+         * }
+         *
+         * Version ::= INTEGER
+         *
+         * PrivateKeyAlgorithmIdentifier ::= AlgorithmIdentifier
+         *
+         * PrivateKey ::= OCTET STRING
+         *
+         * Attributes ::= SET OF Attribute
+         * ```
+         *
+         * @throws Asn1StructuralException if `this` is [EC.WithoutPublicKey], such as decoded from minimal SEC1
+         */
 
-    /**
-     * PKCS#8 encoding of a private key:
-     * ```asn1
-     * PrivateKeyInfo ::= SEQUENCE {
-     *   version                   Version,
-     *   privateKeyAlgorithm       PrivateKeyAlgorithmIdentifier,
-     *   privateKey                PrivateKey,
-     *   attributes           [0]  IMPLICIT Attributes OPTIONAL
-     * }
-     *
-     * Version ::= INTEGER
-     *
-     * PrivateKeyAlgorithmIdentifier ::= AlgorithmIdentifier
-     *
-     * PrivateKey ::= OCTET STRING
-     *
-     * Attributes ::= SET OF Attribute
-     * ```
-     *
-     * @throws Asn1StructuralException if an [at.asitplus.signum.indispensable.CryptoPrivateKey.EC.WithoutPublicKey] shall be encoded
-     */
+        @Throws(Asn1Exception::class)
+        override fun encodeToTlv() = runRethrowing {
+            Asn1.Sequence {
+                +Asn1.Int(0)
+                +Asn1.Sequence {
+                    when (this@Impl) {
+                        is RSA -> {
+                            +RSA.oid
+                            +Asn1.Null()
+                        }
 
-    @Throws(Asn1Exception::class)
-    override fun encodeToTlv() = runRethrowing {
-        Asn1.Sequence {
-            +Asn1.Int(0)
-            +Asn1.Sequence {
-                when (this@CryptoPrivateKey) {
-                    is RSA -> {
-                        +RSA.oid
-                        +Asn1.Null()
+                        is EC.WithPublicKey -> {
+                            +EC.oid
+                            +curve.oid
+                        }
+
+                        is EC.WithoutPublicKey ->
+                            throw Asn1StructuralException("Cannot PKCS#8-encode an EC key without curve. Use withCurve()!")
                     }
-
-                    is EC.WithPublicKey -> {
-                        +EC.oid
-                        +curve.oid
+                }
+                +Asn1.OctetStringEncapsulating {
+                    when (this@Impl) {
+                        is RSA -> +asPKCS1.encodeToTlv()
+                        is EC -> +asSEC1.encodeToTlv()
                     }
-
-                    is EC.WithoutPublicKey -> throw Asn1StructuralException("Cannot PKCS#8-encode an EC key without curve. Re-create it and specify a curve!")
                 }
-            }
-            +Asn1.OctetStringEncapsulating {
-                when (this@CryptoPrivateKey) {
-                    is RSA -> +asPKCS1.encodeToTlv()
-                    is EC -> +asSEC1.encodeToTlv()
+                attributes?.let {
+                    +(Asn1.SetOf {
+                        it.forEach { attr -> +attr }
+                    } withImplicitTag 0uL)
                 }
-            }
-            attributes?.let {
-                +(Asn1.SetOf {
-                    it.forEach { attr -> +attr }
-                } withImplicitTag 0uL)
             }
         }
     }
@@ -124,8 +129,9 @@ sealed class CryptoPrivateKey(
         val crtCoefficient: BigInteger,
         /** information about additional prime factors: triples (r_i, d_i, t_i) of prime factor, exponent, coefficient */
         val otherPrimeInfos: List<PrimeInfo>?,
+        /** PKCS#8 attributes */
         attributes: List<Asn1Element>? = null
-    ) : CryptoPrivateKey(attributes), WithPublicKey<CryptoPublicKey.RSA> {
+    ) : CryptoPrivateKey.Impl(attributes), WithPublicKey<CryptoPublicKey.RSA> {
 
         override val oid = RSA.oid
 
@@ -207,7 +213,7 @@ sealed class CryptoPrivateKey(
          * }
          * ```
          */
-        class PrimeInfo(
+        data class PrimeInfo(
             val prime: BigInteger,
             val exponent: BigInteger,
             val coefficient: BigInteger,
@@ -222,24 +228,6 @@ sealed class CryptoPrivateKey(
                 }
             }
 
-            override fun equals(other: Any?): Boolean {
-                if (this === other) return true
-                if (other !is PrimeInfo) return false
-
-                if (prime != other.prime) return false
-                if (exponent != other.exponent) return false
-                if (coefficient != other.coefficient) return false
-
-                return true
-            }
-
-            override fun hashCode(): Int {
-                var result = prime.hashCode()
-                result = 31 * result + exponent.hashCode()
-                result = 31 * result + coefficient.hashCode()
-                return result
-            }
-
             companion object : Asn1Decodable<Asn1Sequence, PrimeInfo> {
 
                 @Throws(Asn1Exception::class)
@@ -247,7 +235,7 @@ sealed class CryptoPrivateKey(
                     val prime = src.nextChild().asPrimitive().decodeToBigInteger()
                     val exponent = src.nextChild().asPrimitive().decodeToBigInteger()
                     val coefficient = src.nextChild().asPrimitive().decodeToBigInteger()
-                    require(src.hasMoreChildren() == false) { "Superfluous Data in OtherPrimeInfos" }
+                    require(!src.hasMoreChildren()) { "Superfluous Data in OtherPrimeInfos" }
                     PrimeInfo(prime, exponent, coefficient)
                 }
 
@@ -255,8 +243,8 @@ sealed class CryptoPrivateKey(
         }
 
         companion object : PemDecodable<Asn1Sequence, RSA>(
-            EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8 to checkedAsFn(CryptoPrivateKey.Companion::decodeFromDer),
-            EB_STRINGS.RSA_PRIVATE_KEY_PKCS1 to checkedAsFn(RSA.FromPKCS1::decodeFromDer)
+            EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8 to checkedAsFn(FromPKCS8::decodeFromDer),
+            EB_STRINGS.RSA_PRIVATE_KEY_PKCS1 to checkedAsFn(FromPKCS1::decodeFromDer)
         ) {
             override fun doDecode(src: Asn1Sequence): RSA =
                 checkedAs(CryptoPrivateKey.doDecode(src))
@@ -313,8 +301,9 @@ sealed class CryptoPrivateKey(
      */
     sealed class EC(
         val privateKey: BigInteger,
+        /** PKCS#8 attributes */
         attributes: List<Asn1Element>? = null
-    ) : CryptoPrivateKey(attributes) {
+    ) : CryptoPrivateKey.Impl(attributes) {
 
         override val oid = EC.oid
 
@@ -442,8 +431,8 @@ sealed class CryptoPrivateKey(
 
 
         companion object : PemDecodable<Asn1Sequence, EC>(
-            EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8 to checkedAsFn(CryptoPrivateKey.Companion::decodeFromDer),
-            EB_STRINGS.EC_PRIVATE_KEY_SEC1 to checkedAsFn(EC.FromSEC1::decodeFromDer)
+            EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8 to checkedAsFn(FromPKCS8::decodeFromDer),
+            EB_STRINGS.EC_PRIVATE_KEY_SEC1 to checkedAsFn(FromSEC1::decodeFromDer)
         ) {
             val oid: ObjectIdentifier = KnownOIDs.ecPublicKey
 
@@ -580,9 +569,7 @@ class EncryptedPrivateKey(val encryptionAlgorithm: ObjectIdentifier, val encrypt
         }
     }
 
-    companion object : PemDecodable<Asn1Sequence, EncryptedPrivateKey>(
-        EB_STRINGS.ENCRYPTED_PRIVATE_KEY to checkedAsFn(Companion::decodeFromDer)
-    ) {
+    companion object : PemDecodable<Asn1Sequence, EncryptedPrivateKey>(EB_STRINGS.ENCRYPTED_PRIVATE_KEY) {
 
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): EncryptedPrivateKey = runRethrowing {

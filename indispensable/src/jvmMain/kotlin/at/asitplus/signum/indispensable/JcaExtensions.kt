@@ -134,8 +134,8 @@ fun ECCurve.Companion.byJcaName(name: String): ECCurve? = ECCurve.entries.find {
 @Deprecated("renamed", ReplaceWith("toJcaPublicKey()"))
 fun CryptoPublicKey.getJcaPublicKey() = toJcaPublicKey()
 fun CryptoPublicKey.toJcaPublicKey() = when (this) {
-    is CryptoPublicKey.EC -> getJcaPublicKey()
-    is CryptoPublicKey.RSA -> getJcaPublicKey()
+    is CryptoPublicKey.EC -> toJcaPublicKey()
+    is CryptoPublicKey.RSA -> toJcaPublicKey()
 }
 
 @Deprecated("renamed", ReplaceWith("toJcaPublicKey()"))
@@ -256,7 +256,7 @@ fun java.security.cert.X509Certificate.toKmpCertificate() =
     catching { X509Certificate.decodeFromDer(encoded) }
 
 fun CryptoPrivateKey.WithPublicKey<*>.toJcaPrivateKey(): KmmResult<PrivateKey> = catching {
-    val spec = PKCS8EncodedKeySpec(this.encodeToDer())
+    val spec = PKCS8EncodedKeySpec(asPKCS8.encodeToDer())
     val kf = when (this) {
         is CryptoPrivateKey.EC.WithPublicKey -> KeyFactory.getInstance("EC")
         is CryptoPrivateKey.RSA -> KeyFactory.getInstance("RSA")
@@ -266,10 +266,10 @@ fun CryptoPrivateKey.WithPublicKey<*>.toJcaPrivateKey(): KmmResult<PrivateKey> =
 }
 
 fun CryptoPrivateKey.EC.WithPublicKey.toJcaPrivateKey(): KmmResult<ECPrivateKey> =
-    (this as CryptoPrivateKey.WithPublicKey<*>).toJcaPrivateKey().map { it as ECPrivateKey }
+    (this as CryptoPrivateKey.WithPublicKey<*>).toJcaPrivateKey().mapCatching { it as ECPrivateKey }
 
 fun CryptoPrivateKey.RSA.toJcaPrivateKey(): KmmResult<RSAPrivateKey> =
-    (this as CryptoPrivateKey.WithPublicKey<*>).toJcaPrivateKey().map { it as RSAPrivateKey }
+    (this as CryptoPrivateKey.WithPublicKey<*>).toJcaPrivateKey().mapCatching { it as RSAPrivateKey }
 
 fun PrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> = catching {
     CryptoPrivateKey.decodeFromDer(encoded) as CryptoPrivateKey.WithPublicKey<*>

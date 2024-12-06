@@ -5,7 +5,7 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.getJcaPublicKey
+import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.indispensable.jcaAlgorithmComponent
 import at.asitplus.signum.indispensable.jcaPSSParams
 import at.asitplus.signum.indispensable.jcaSignatureBytes
@@ -35,7 +35,7 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier
 {
     catchingUnwrappedAs(a=::UnsupportedCryptoException) {
         getSigInstance("${signatureAlgorithm.digest.jcaAlgorithmComponent}withECDSA", config.provider)
-            .initVerify(publicKey.getJcaPublicKey().getOrThrow())
+            .initVerify(publicKey.toJcaPublicKey().getOrThrow())
     }.getOrThrow()
 }
 
@@ -52,7 +52,7 @@ internal actual fun verifyECDSAImpl
             Pair(data.convertTo(signatureAlgorithm.digest).getOrThrow(), "NONEwithECDSA")
     }
     getSigInstance(alg, config.provider).run {
-        initVerify(publicKey.getJcaPublicKey().getOrThrow())
+        initVerify(publicKey.toJcaPublicKey().getOrThrow())
         input.data.forEach(this::update)
         val success = verify(signature.jcaSignatureBytes)
         if (!success)
@@ -75,7 +75,7 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
              config: PlatformVerifierConfiguration) {
     catchingUnwrappedAs(a=::UnsupportedCryptoException) {
         getRSAInstance(signatureAlgorithm, config)
-            .initVerify(publicKey.getJcaPublicKey().getOrThrow())
+            .initVerify(publicKey.toJcaPublicKey().getOrThrow())
     }.getOrThrow()
 }
 
@@ -86,7 +86,7 @@ internal actual fun verifyRSAImpl
              config: PlatformVerifierConfiguration)
 {
     getRSAInstance(signatureAlgorithm, config).run {
-        initVerify(publicKey.getJcaPublicKey().getOrThrow())
+        initVerify(publicKey.toJcaPublicKey().getOrThrow())
         data.data.forEach(this::update)
         val success = verify(signature.jcaSignatureBytes)
         if (!success)

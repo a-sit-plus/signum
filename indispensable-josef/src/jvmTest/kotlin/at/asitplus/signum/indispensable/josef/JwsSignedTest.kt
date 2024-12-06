@@ -2,7 +2,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.getJcaPublicKey
+import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.supreme.signature
 import com.nimbusds.jose.JWSObject
@@ -27,8 +27,8 @@ class JwsSignedTest : FreeSpec({
             val publicKey = parsed.header.publicKey.shouldNotBeNull()
 
             val jvmVerifier =
-                if (publicKey is CryptoPublicKey.EC) ECDSAVerifier(publicKey.getJcaPublicKey().getOrThrow())
-                else RSASSAVerifier(publicKey.getJcaPublicKey().getOrThrow() as RSAPublicKey)
+                if (publicKey is CryptoPublicKey.EC) ECDSAVerifier(publicKey.toJcaPublicKey().getOrThrow())
+                else RSASSAVerifier(publicKey.toJcaPublicKey().getOrThrow() as RSAPublicKey)
 
             val result = JWSObject.parse(parsed.serialize()).verify(jvmVerifier)
             result.shouldBeTrue()

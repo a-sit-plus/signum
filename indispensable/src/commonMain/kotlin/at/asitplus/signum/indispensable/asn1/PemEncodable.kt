@@ -25,11 +25,12 @@ interface PemEncodable<A : Asn1Element> : Asn1Encodable<A> {
  * Use in tandem with [PemEncodable].
  */
 abstract class PemDecodable<A : Asn1Element, T : PemEncodable<A>>
-    (vararg decoders: Pair<String, (ByteArray)->T>)
+    private constructor(private val decoders: Map<String, ((ByteArray)->T)?>)
     : Asn1Decodable<A, T>
 {
 
-    private val decoders = mapOf(*decoders)
+    constructor(vararg ebStrings: String) : this(ebStrings.associateWith { null })
+    constructor(vararg decoders: Pair<String, ((ByteArray)->T)?>) : this(decoders.toMap())
 
     /** Decodes a PEM-encoded string into [T] */
     fun decodeFromPem(src: String): KmmResult<T> = catching {
@@ -41,8 +42,9 @@ abstract class PemDecodable<A : Asn1Element, T : PemEncodable<A>>
                 require(hasNext()) { "No encapsulation boundary found" }
                 val firstLine = next()
                 val ebString = firstLine.substring(FENCE_PREFIX_BEGIN.length, firstLine.length - FENCE_SUFFIX.length)
-                val decoder = decoders.getOrElse(ebString)
-                { throw IllegalArgumentException("Unknown encapsulation boundary string $ebString") }
+                val decoder: (ByteArray)->T = decoders.getOrElse(ebString)
+                    { throw IllegalArgumentException("Unknown encapsulation boundary string $ebString") }
+                    ?: { this@PemDecodable.decodeFromDer(it) }
                 val b64data = StringBuilder()
                 while (hasNext()) {
                     val line = next()

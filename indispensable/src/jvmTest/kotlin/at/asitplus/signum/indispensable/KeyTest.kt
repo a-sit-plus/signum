@@ -30,7 +30,7 @@ import java.security.interfaces.RSAPublicKey
 class KeyTest : FreeSpec({
     Security.addProvider(BouncyCastleProvider())
 
-    "!EC" - {
+    "EC" - {
         withData(256, 384, 521) { bits ->
             val keys = List(25600 / bits) {
                 val ecKp = KeyPairGenerator.getInstance("EC", "BC").apply {
@@ -58,7 +58,7 @@ class KeyTest : FreeSpec({
                 withClue("Basic Conversions") {
                     own.encodeToDer() shouldBe pubKey.encoded
                     CryptoPublicKey.fromDid(own.didEncoded) shouldBe own
-                    own.getJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
+                    own.toJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
                     CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.encodeToDer()) as Asn1Sequence) shouldBe own
                 }
 
@@ -131,7 +131,7 @@ class KeyTest : FreeSpec({
                 own.pkcsEncoded shouldBe keyBytes //PKCS#1
                 own.encodeToDer() shouldBe pubKey.encoded //PKCS#8
                 CryptoPublicKey.decodeFromTlv(Asn1Element.parse(own.encodeToDer()) as Asn1Sequence) shouldBe own
-                own.getJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
+                own.toJcaPublicKey().getOrThrow().encoded shouldBe pubKey.encoded
             }
         }
         "Equality tests" {

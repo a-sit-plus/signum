@@ -124,7 +124,7 @@ class JKSProviderTest : FreeSpec({
                 if (test.isPreHashed) it.getJCASignatureInstancePreHashed()
                 else it.getJCASignatureInstance()
             }.getOrThrow().let { sig ->
-                sig.initVerify(signer.publicKey.getJcaPublicKey().getOrThrow())
+                sig.initVerify(signer.publicKey.toJcaPublicKey().getOrThrow())
                 data.data.forEach(sig::update)
                 sig.verify(signature.jcaSignatureBytes) shouldBe true
             }
