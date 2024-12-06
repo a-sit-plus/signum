@@ -2,12 +2,14 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.supreme.SecretExposure
 import at.asitplus.signum.supreme.isSuccess
 import at.asitplus.signum.supreme.signature
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import kotlin.random.Random
 
+@OptIn(SecretExposure::class)
 class PrivateKeyCommonTests : FreeSpec({
     "RSA" {
         val rsa = """
@@ -65,5 +67,27 @@ class PrivateKeyCommonTests : FreeSpec({
 
         signer.signatureAlgorithm.verifierFor(signer.publicKey).getOrThrow()
             .verify(data, signature.signature).isSuccess shouldBe true
+    }
+
+    "Export EC" {
+        val signer = Signer.Ephemeral { ec {} }.getOrThrow()
+        val privateKey = signer.exportPrivateKey().getOrThrow()
+        signer.publicKey shouldBe privateKey.publicKey
+
+        val data = Random.Default.nextBytes(1024)
+        val sig = signer.signatureAlgorithm.signerFor(privateKey).getOrThrow().sign(data).signature
+
+        signer.signatureAlgorithm.verifierFor(signer.publicKey).getOrThrow().verify(data, sig).isSuccess shouldBe true
+    }
+
+    "Export RSA" {
+        val signer = Signer.Ephemeral { rsa {} }.getOrThrow()
+        val privateKey = signer.exportPrivateKey().getOrThrow()
+        signer.publicKey shouldBe privateKey.publicKey
+
+        val data = Random.Default.nextBytes(1024)
+        val sig = signer.signatureAlgorithm.signerFor(privateKey).getOrThrow().sign(data).signature
+
+        signer.signatureAlgorithm.verifierFor(signer.publicKey).getOrThrow().verify(data, sig).isSuccess shouldBe true
     }
 })
