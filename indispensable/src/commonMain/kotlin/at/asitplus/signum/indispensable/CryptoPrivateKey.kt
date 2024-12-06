@@ -133,32 +133,23 @@ sealed class CryptoPrivateKey(
         override fun hashCode() = publicKey.hashCode()
 
         init {
-            val one = BigInteger.ONE
             val n = publicKey.n.toBigInteger()
             val e = publicKey.e.toBigInteger()
-            val pPrimeInfos = OtherPrimeInfo(prime = p, exponent = dp, coefficient = BigInteger.ZERO/*not needed*/)
-            val qPrimeInfos = OtherPrimeInfo(prime = q, exponent = dq, coefficient = qi)
-            val allPrimeInfos = mutableListOf(pPrimeInfos, qPrimeInfos)
-            otherPrimeInfos?.let { allPrimeInfos.addAll(it) }
+            // q and p are intentionally swapped; see RFC 8017 sec 3.2 note 1
+            val primeInfos1 = OtherPrimeInfo(prime = q, exponent = dq, coefficient = BigInteger.ONE)
+            val primeInfos2 = OtherPrimeInfo(prime = p, exponent = dp, coefficient = qi)
 
-            require(allPrimeInfos.map { it.prime }
-                .reduce { product, prime -> product * prime } == n) { "p1 * p2 * … * pk != n" }
-            require(allPrimeInfos.all { info -> info.exponent == d mod (info.prime - one) }) { "di != d mod (pi-1)" }
-
-            allPrimeInfos.forEachIndexed { i, ii ->
-                if(i>0) {
-                    val pi = ii.prime
-                    val ci = ii.coefficient
-                    val j = (i - 1)
-                    val pj = allPrimeInfos[j].prime
-                    //TODO what is wrong here? As per PKCS#1:
-                    // coefficient is the CRT coefficient t_i = (r_1 * r_2 * ... * r_(i-1))^(-1) mod r_i.
-                    val qi = allPrimeInfos.subList(0,i).map { info -> info.prime }.reduce { prod, info -> prod*info }
-                    require(qi.modInverse(pi) == ci) { "p$j.modInverse(p$i)=c$i" }
-                    //Carmichael Totient!, not Euler Totient as per PKCS #1!
-                    require(one == (d.multiply(e).mod((pi - one).lcm(pj - one)))) { "Totient requirement failed" }
-                }
+            var product = BigInteger.ONE
+            (sequenceOf(primeInfos1, primeInfos2) + (otherPrimeInfos?.asSequence() ?: sequenceOf()))
+            .forEachIndexed { i, info ->
+                val pminusone = info.prime - BigInteger.ONE
+                require(product.times(info.coefficient).mod(info.prime) == BigInteger.ONE)
+                    { "t_$i != (r_0 * ... * r_${i-1})^(-1) mod r_$i" }
+                product *= info.prime
+                require(info.exponent == d.mod(pminusone)) { "d_$i != d mod (p_$i - 1)" }
+                require(e.multiply(info.exponent).mod(pminusone) == BigInteger.ONE)
             }
+            require(product == n) { "p1 * p2 * … * pk != n" }
         }
 
         private fun BigInteger.lcm(other: BigInteger): BigInteger {
