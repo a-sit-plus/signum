@@ -13,6 +13,7 @@
    * Fixes JWS/COSE encoding for non-standard exponents (with MSBit 1)
  * Add type parameter to `CoseSigned` for its payload (tagging with tag 24 when necessary)
    * Changes primary constructor visibility to `internal` to check for `ByteStringWrapper` as payload type, which shall be rejected
+   * Fix serialization with Json
  * Do not use DID key identifiers as keyId for `CoseKey`
  * Fix BitSet iterator
  * Add cose header `typ`

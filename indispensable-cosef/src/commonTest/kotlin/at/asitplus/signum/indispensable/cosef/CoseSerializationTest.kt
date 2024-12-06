@@ -14,6 +14,8 @@ import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.encodeToByteArray
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlin.random.Random
 
 class CoseSerializationTest : FreeSpec({
@@ -43,6 +45,18 @@ class CoseSerializationTest : FreeSpec({
         serialized shouldContain "546869732069732074686520636F6E74656E742E" // "This is the content."
         serialized shouldContain "43A10126"
         cose.payload shouldBe payload
+    }
+
+    "Serialization is correct with JSON" {
+        val payload = "This is the content.".encodeToByteArray()
+        val cose = CoseSigned<ByteArray>(
+            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.ES256),
+            unprotectedHeader = CoseHeader(),
+            payload = payload,
+            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray())
+        )
+
+        Json.decodeFromString<CoseSigned<ByteArray>>(Json.encodeToString(cose)) shouldBe cose
     }
 
     "Serialization is correct for data class" {

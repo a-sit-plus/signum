@@ -7,15 +7,14 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ByteArraySerializer
+import kotlinx.serialization.cbor.CborEncoder
 import kotlinx.serialization.cbor.ValueTags
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.descriptors.SerialKind
-import kotlinx.serialization.descriptors.StructureKind
-import kotlinx.serialization.descriptors.buildSerialDescriptor
+import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeStructure
+import kotlinx.serialization.json.JsonDecoder
 
 /**
  * Serializes [CoseSigned] with a typed payload,
@@ -33,43 +32,83 @@ class CoseSignedSerializer<P : Any?>(
         element("signature", ByteArraySerializer().descriptor)
     }
 
-    override fun deserialize(decoder: Decoder): CoseSigned<P> = decoder.decodeStructure(descriptor) {
+    @OptIn(InternalSerializationApi::class)
+    val jsonDescriptor: SerialDescriptor = buildClassSerialDescriptor("CoseSigned") {
+        element("protectedHeader", ByteStringWrapperSerializer(CoseHeader.serializer()).descriptor)
+        element("unprotectedHeader", CoseHeader.serializer().descriptor)
+        element("payload", ByteStringWrapperSerializer(parameterSerializer).descriptor)
+        element("signature", ByteArraySerializer().descriptor)
+    }
+
+    override fun deserialize(decoder: Decoder): CoseSigned<P> =
+        if (decoder is JsonDecoder) deserializeFromJson(decoder) else deserializeFromCbor(decoder)
+
+    private fun deserializeFromCbor(decoder: Decoder): CoseSigned<P> = decoder.decodeStructure(descriptor) {
         val protectedHeader =
             decodeSerializableElement(descriptor, 0, ByteStringWrapperSerializer(CoseHeader.serializer()))
         val unprotectedHeader = decodeNullableSerializableElement(descriptor, 1, CoseHeader.serializer())
         val payload: ByteArray? = decodeNullableSerializableElement(descriptor, 2, ByteArraySerializer())
         val signature: ByteArray = decodeSerializableElement(descriptor, 3, ByteArraySerializer())
-        runCatching {
-            val typedPayload: P? = payload?.let {
-                coseCompliantSerializer.decodeFromByteArray(parameterSerializer, it)
+        toTypedObject(payload, protectedHeader, unprotectedHeader, signature)
+    }
+
+    private fun deserializeFromJson(decoder: JsonDecoder): CoseSigned<P> = decoder.decodeStructure(jsonDescriptor) {
+        lateinit var protectedHeader: ByteStringWrapper<CoseHeader>
+        var unprotectedHeader: CoseHeader? = null
+        var payload: ByteArray? = null
+        lateinit var signature: ByteArray
+        while (true) {
+            var index = decodeElementIndex(jsonDescriptor)
+            when (index) {
+                0 -> protectedHeader =
+                    decodeSerializableElement(jsonDescriptor, 0, ByteStringWrapperSerializer(CoseHeader.serializer()))
+
+                1 -> unprotectedHeader = decodeNullableSerializableElement(jsonDescriptor, 1, CoseHeader.serializer())
+                2 -> payload = decodeNullableSerializableElement(jsonDescriptor, 2, ByteArraySerializer())
+                3 -> signature = decodeSerializableElement(jsonDescriptor, 3, ByteArraySerializer())
+                else -> break
             }
-            CoseSigned(protectedHeader, unprotectedHeader, typedPayload, signature)
-        }.getOrElse {
-            @Suppress("UNCHECKED_CAST")
-            CoseSigned(protectedHeader, unprotectedHeader, payload as P, signature)
         }
+        toTypedObject(payload, protectedHeader, unprotectedHeader, signature)
+    }
+
+    private fun toTypedObject(
+        payload: ByteArray?,
+        protectedHeader: ByteStringWrapper<CoseHeader>,
+        unprotectedHeader: CoseHeader?,
+        signature: ByteArray,
+    ): CoseSigned<P> = runCatching {
+        val typedPayload: P? = payload?.let {
+            coseCompliantSerializer.decodeFromByteArray(parameterSerializer, it)
+        }
+        CoseSigned(protectedHeader, unprotectedHeader, typedPayload, signature)
+    }.getOrElse {
+        @Suppress("UNCHECKED_CAST")
+        (CoseSigned(protectedHeader, unprotectedHeader, payload as P, signature))
     }
 
     override fun serialize(encoder: Encoder, value: CoseSigned<P>) {
-        encoder.encodeStructure(descriptor) {
-            encodeSerializableElement(
-                descriptor,
-                0,
-                ByteStringWrapperSerializer(CoseHeader.serializer()),
-                value.protectedHeader
-            )
-            encodeNullableSerializableElement(descriptor, 1, CoseHeader.serializer(), value.unprotectedHeader)
-            if (value.payload != null && value.payload::class != ByteArray::class) {
-                encodeNullableSerializableElement(
-                    buildTag24SerialDescriptor(),
-                    2,
-                    ByteStringWrapperSerializer(parameterSerializer),
-                    ByteStringWrapper(value.payload)
+        (if (encoder is CborEncoder) descriptor else jsonDescriptor).let { descriptor ->
+            encoder.encodeStructure(descriptor) {
+                encodeSerializableElement(
+                    descriptor,
+                    0,
+                    ByteStringWrapperSerializer(CoseHeader.serializer()),
+                    value.protectedHeader
                 )
-            } else {
-                encodeNullableSerializableElement(descriptor, 2, parameterSerializer, value.payload)
+                encodeNullableSerializableElement(descriptor, 1, CoseHeader.serializer(), value.unprotectedHeader)
+                if (value.payload != null && value.payload::class != ByteArray::class) {
+                    encodeNullableSerializableElement(
+                        buildTag24SerialDescriptor(),
+                        2,
+                        ByteStringWrapperSerializer(parameterSerializer),
+                        ByteStringWrapper(value.payload)
+                    )
+                } else {
+                    encodeNullableSerializableElement(descriptor, 2, parameterSerializer, value.payload)
+                }
+                encodeSerializableElement(descriptor, 3, ByteArraySerializer(), value.rawSignature)
             }
-            encodeSerializableElement(descriptor, 3, ByteArraySerializer(), value.rawSignature)
         }
     }
 
