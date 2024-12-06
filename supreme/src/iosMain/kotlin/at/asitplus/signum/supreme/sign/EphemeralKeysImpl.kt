@@ -7,7 +7,7 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.supreme.*
 import at.asitplus.signum.supreme.AutofreeVariable
-import at.asitplus.signum.indispensable.internals.*
+import at.asitplus.signum.indispensable.internals.at.asitplus.signum.internals.*
 import kotlinx.cinterop.*
 import platform.Foundation.NSData
 import platform.Security.*

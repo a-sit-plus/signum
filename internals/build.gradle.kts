@@ -64,7 +64,7 @@ kotlin {
 }
 
 exportIosFramework(
-    "Indispensable-Internals",
+    "Internals",
     transitiveExports = false,
     serialization("json"),
     datetime(),
@@ -81,8 +81,8 @@ publishing {
         withType<MavenPublication> {
             if (this.name != "relocation") artifact(javadocJar)
             pom {
-                name.set("Indispensable Internals")
-                description.set("Kotlin Multiplatform Crypto Core Library, Internal Shared Helpers")
+                name.set("Internals")
+                description.set("Kotlin Multiplatform Crypto Library, Internal Shared Helpers")
                 url.set("https://github.com/a-sit-plus/signum")
                 licenses {
                     license {

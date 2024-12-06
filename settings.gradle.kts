@@ -19,7 +19,7 @@ dependencyResolutionManagement {
     }
 }
 
-include(":indispensable-internals")
+include(":internals")
 include(":indispensable-asn1")
 include(":indispensable")
 include(":indispensable-josef")

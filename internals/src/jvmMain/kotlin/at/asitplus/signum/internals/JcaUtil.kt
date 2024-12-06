@@ -1,4 +1,4 @@
-package at.asitplus.signum.indispensable.internals
+package at.asitplus.signum.internals
 
 val isAndroid by lazy {
     try {

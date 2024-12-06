@@ -5,11 +5,11 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.misc.ensureSize
+import at.asitplus.signum.internals.ensureSize
 import at.asitplus.signum.indispensable.iosEncoded
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.indispensable.secKeyAlgorithmPreHashed
-import at.asitplus.signum.indispensable.internals.*
+import at.asitplus.signum.indispensable.internals.at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.UnsupportedCryptoException
 import kotlinx.cinterop.ExperimentalForeignApi

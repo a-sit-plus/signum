@@ -4,7 +4,7 @@ package at.asitplus.signum.supreme.os
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.internals.*
+import at.asitplus.signum.indispensable.internals.at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.swiftasync
 import at.asitplus.signum.supreme.CFCryptoOperationFailed
 import at.asitplus.signum.supreme.CryptoOperationFailed

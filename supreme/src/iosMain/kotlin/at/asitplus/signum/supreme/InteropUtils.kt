@@ -2,9 +2,9 @@
 
 package at.asitplus.signum.supreme
 
-import at.asitplus.signum.indispensable.internals.SwiftException
-import at.asitplus.signum.indispensable.internals.takeFromCF
-import at.asitplus.signum.indispensable.internals.toNiceString
+import at.asitplus.signum.indispensable.internals.at.asitplus.signum.internals.SwiftException
+import at.asitplus.signum.indispensable.internals.at.asitplus.signum.internals.takeFromCF
+import at.asitplus.signum.indispensable.internals.at.asitplus.signum.internals.toNiceString
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.cinterop.*

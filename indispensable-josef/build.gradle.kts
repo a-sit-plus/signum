@@ -46,6 +46,7 @@ kotlin {
          commonMain {
             dependencies {
                 api(project(":indispensable"))
+                implementation(project(":internals"))
                 implementation(libs.okio)
                 api(libs.multibase)
                 implementation(libs.bignum) //Intellij bug work-around

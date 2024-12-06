@@ -44,10 +44,11 @@ kotlin {
     iosSimulatorArm64()
 
     sourceSets.commonMain.dependencies {
+        api(project(":indispensable"))
+        implementation(project(":internals"))
         implementation(coroutines())
         implementation(napier())
         implementation(libs.securerandom)
-        api(project(":indispensable"))
     }
 
     sourceSets.androidMain.dependencies {

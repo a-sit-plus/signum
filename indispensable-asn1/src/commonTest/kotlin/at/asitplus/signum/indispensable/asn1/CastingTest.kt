@@ -34,7 +34,7 @@ class CastingTest : FreeSpec({
 
         Asn1.OctetStringEncapsulating { +Asn1.Null() }.let { it.asEncapsulatingOctetString() shouldBe it }
         //Reinterpreting this way must always work
-        Asn1.OctetStringEncapsulating { +Asn1.Null() }.let { it.asPrimitiveOctetString() shouldBe it.asPrimitiveOctetString() }
+        Asn1.OctetStringEncapsulating { +Asn1.Null() }.let { it.asPrimitive() shouldBe it }
         Asn1.OctetStringEncapsulating { +Asn1.Null() }.let { it.asStructure() shouldBe it }
     }
 

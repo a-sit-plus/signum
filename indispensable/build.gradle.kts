@@ -60,7 +60,7 @@ kotlin {
             api(project(":indispensable-asn1"))
             api(libs.multibase)
             api(libs.bignum)
-            implementation(project(":indispensable-internals"))
+            implementation(project(":internals"))
         }
 
 
