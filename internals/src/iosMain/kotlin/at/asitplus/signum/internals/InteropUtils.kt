@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalForeignApi::class)
 
-package at.asitplus.signum.indispensable.internals.at.asitplus.signum.internals
+package at.asitplus.signum.internals
 
 import kotlinx.cinterop.*
 import platform.CoreFoundation.CFDictionaryCreateMutable

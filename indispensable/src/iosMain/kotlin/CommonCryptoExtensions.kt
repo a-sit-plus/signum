@@ -2,12 +2,12 @@
 
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.internals.*
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.memScoped
 import platform.Security.*
-import at.asitplus.signum.indispensable.internals.at.asitplus.signum.internals.*
 
 val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm
     get() = when (this) {
