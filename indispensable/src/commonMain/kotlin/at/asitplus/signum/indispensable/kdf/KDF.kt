@@ -5,11 +5,9 @@ import at.asitplus.signum.indispensable.mac.HMAC
 
 
 sealed interface KDF {
-    /** output size of Extract */
-    val outputLength: Int
 
     companion object {
-        val entries: Iterable<KDF> = HKDF.entries
+        val entries: Iterable<KDF> = (HKDF.entries.toList() + PBKDF2.entries.toList())
     }
 }
 
@@ -31,5 +29,24 @@ enum class HKDF(private val digest: Digest) : KDF {
 
     val hmac = HMAC.entries.first { it.digest == digest }
 
-    override val outputLength: Int get() = digest.outputLength.bytes.toInt()
+    val outputLength: Int get() = digest.outputLength.bytes.toInt()
+}
+
+
+enum class PBKDF2(val prf: HMAC) : KDF {
+    HMAC_SHA1(HMAC.SHA1),
+    HMAC_SHA256(HMAC.SHA256),
+    HMAC_SHA384(HMAC.SHA384),
+    HMAC_SHA512(HMAC.SHA512);
+
+    companion object {
+        operator fun invoke(prf: HMAC) = when (prf) {
+            HMAC.SHA1 -> HMAC_SHA1
+            HMAC.SHA256 -> HMAC_SHA256
+            HMAC.SHA384 -> HMAC_SHA384
+            HMAC.SHA512 -> HMAC_SHA512
+        }
+
+        operator fun invoke(digest: Digest) = invoke(HMAC(digest))
+    }
 }

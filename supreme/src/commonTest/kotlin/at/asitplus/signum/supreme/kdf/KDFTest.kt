@@ -2,10 +2,13 @@ package at.asitplus.signum.supreme.kdf
 
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.kdf.HKDF
+import at.asitplus.signum.indispensable.kdf.PBKDF2
+import at.asitplus.signum.supreme.a
 import at.asitplus.signum.supreme.b
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
+import com.ionspin.kotlin.bignum.integer.Quadruple
 
 class KDFTest : FreeSpec({
     "HKDF" - {
@@ -98,6 +101,54 @@ class KDFTest : FreeSpec({
                 prk shouldBe t.PRK
                 val okm = hkdf.expand(prk, t.info, t.L).getOrThrow()
                 okm shouldBe t.OKM
+            }
+        }
+    }
+    "RFC2898 PBKDF2" - {
+        "PBKDF2-HMAC-SHA-1" - {
+            withData(nameFn={ "RFC6070: \"${it.d}\""}, sequence {
+                yield(Quadruple("password", "salt", 1, "" +
+                        "0c 60 c8 0f 96 1f 0e 71\n" +
+                        "            f3 a9 b5 24 af 60 12 06\n" +
+                        "            2f e0 37 a6"))
+                yield(Quadruple("password", "salt", 2, "" +
+                        "ea 6c 01 4d c7 2d 6f 8c\n" +
+                        "            cd 1e d9 2a ce 1d 41 f0\n" +
+                        "            d8 de 89 57"))
+                yield(Quadruple("password", "salt", 4096, "" +
+                        "4b 00 79 01 b7 65 48 9a\n" +
+                        "            be ad 49 d9 26 f7 21 d0\n" +
+                        "            65 a4 29 c1"))
+                yield(Quadruple("password", "salt", 16777216, "" +
+                        "ee fe 3d 61 cd 4d a4 e4\n" +
+                        "            e9 94 5b 3d 6b a2 15 8c\n" +
+                        "            26 34 e9 84"))
+                yield(Quadruple("passwordPASSWORDpassword", "saltSALTsaltSALTsaltSALTsaltSALTsalt", 4096, "" +
+                        "3d 2e ec 4f e4 1c 84 9b\n" +
+                        "            80 c8 d8 36 62 c0 e4 4a\n" +
+                        "            8b 29 1a 96 4c f2 f0 70\n" +
+                        "            38"))
+                yield(Quadruple("pass\u0000word", "sa\u0000lt", 4096, "" +
+                        "56 fa 6a a7 55 48 09 9d\n" +
+                        "            cc 37 d7 f0 34 25 e0 c3"))
+            }) { (P, S, c, ref) ->
+                PBKDF2.HMAC_SHA1(password=a(P),salt=a(S),iterations=c,dkLen=b(ref).size).getOrThrow() shouldBe b(ref)
+            }
+        }
+        "PBKDF2-HMAC-SHA-256" - {
+            "RFC7914: passwd" {
+                PBKDF2.HMAC_SHA256(password=a("passwd"), salt=a("salt"), iterations=1, dkLen=64).getOrThrow() shouldBe
+                        b("55 ac 04 6e 56 e3 08 9f ec 16 91 c2 25 44 b6 05\n" +
+                                "   f9 41 85 21 6d de 04 65 e6 8b 9d 57 c2 0d ac bc\n" +
+                                "   49 ca 9c cc f1 79 b6 45 99 16 64 b3 9d 77 ef 31\n" +
+                                "   7c 71 b8 45 b1 e3 0b d5 09 11 20 41 d3 a1 97 83")
+            }
+            "RFC7914: Password" {
+                PBKDF2.HMAC_SHA256(password=a("Password"), salt=a("NaCl"), iterations=80000, dkLen=64).getOrThrow() shouldBe
+                        b("4d dc d8 f6 0b 98 be 21 83 0c ee 5e f2 27 01 f9\n" +
+                                "   64 1a 44 18 d0 4c 04 14 ae ff 08 87 6b 34 ab 56\n" +
+                                "   a1 d4 25 a1 22 58 33 54 9a db 84 1b 51 c9 b3 17\n" +
+                                "   6a 27 2b de bb a1 d0 78 47 8f 62 b3 97 f3 3c 8d")
             }
         }
     }

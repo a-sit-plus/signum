@@ -64,6 +64,10 @@ kotlin {
     sourceSets.androidMain.dependencies {
         implementation("androidx.biometric:biometric:1.2.0-alpha05")
     }
+
+    sourceSets.jvmTest.dependencies {
+        implementation("com.lambdaworks:scrypt:1.4.0")
+    }
 }
 
 swiftklib {
