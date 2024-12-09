@@ -2,7 +2,7 @@
 
 ## 3.0
 
-### 3.11.0 NEXT
+### 3.11.0 (Supreme 0.6.0)
 
 * Kotlin 2.1.0
 * Bouncy Castle 1.79!! for JVM targets
