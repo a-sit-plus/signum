@@ -15,6 +15,7 @@ types and functionality related to crypto and PKI applications:
     * Bit Length
     * Point Compression
 * Public Keys (RSA and EC)
+* Private Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)
 * X509 Certificate Class (create, encode, decode)
   * Extensions
@@ -53,7 +54,12 @@ The main package housing all data classes is `at.asitplus.signum.indispensable`.
 It contains essentials such as:
 
 * `CryptoPublicKey` representing a public key. Currently, we support RSA and EC public keys on NIST curves.
-* `Digest` containing an enumeration of supported
+* `CryptoPrivateKey` representing a private key. Currently, we support RSA and EC private keys on NIST curves. RSA keys always include the public key, EC keys may or may not contain a public key and/or curve.
+    * Has an additional specialization `CryptoPrivateKey.WithPublicKey` that always includes a public key
+    * Encodes to PKCS#8 by default
+    * RSA keys also support PKCS#1 encoding (`.asPKCS1`)
+    * EC keys also support SEC1 encoding (`.asSEC1`)
+* `Digest` containing an enumeration of supported digests
 * `ECCurve` representing an EC Curve
 * `ECPoint` representing a point on an elliptic curve
 * `CryptoSignatre` representing a cryptographic signature including descriptive information regarding the algorithms and signature data
@@ -86,19 +92,42 @@ The following functions provide interop functionality with platform types.
 * `SignatureAlgorithm.getJCASignatureInstancePreHashed()` gets  a pre-configured JCA instance for pre-hashed data for this algorithm
 * `SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed()` gets  a pre-configured JCA instance for pre-hashed data for this algorithm
 
+<br>
+
 * `Digest.jcaPSSParams` returns a sane default `PSSParameterSpec` for computing PSS signatures
 * `Digest.jcaName` returns the JCA name of the digest
 * `Digest?.jcaAlgorithmComponent` digest part of the digest part of the <Digest>with<Algorithm> JCA algorithm identifier (which differs fom the above)
 
+<br>
+
 * `ECCurve.jcaName` returns the curve's name used by JCA
 * `ECCurve.byJcaName()` returns the curve matching the provided JCA curve name
+* `ECCurve.iosEncodedPublicKeyLength` returns the number of bytes of a public key matching this curve, when exporting such a key from iOS.
+* `ECCurve.iosEncodedPrivateKeyLength` returns the number of bytes of a private key matching this curve, when exporting such a key from iOS.
+* `ECCurve.fromIosEncodedPublicKeyLength`returns the curve matching the length of an encoded public key, when exported from iOS.
+(Apple does not encode curve identifiers, when exporting keys.)
+* `ECCurve.fromIosEncodedPrivateKeyLength` returns the curve matching the length of an encoded private key, when exported from iOS.
+(Apple does not encode curve identifiers, when exporting keys.)
 
-* `CryptoPublicKey.getJcaPublicKey()` returns the JCA-representation of the public key
-* `CryptoPublicKey.EC.getJcaPublicKey()` returns the JCA-representation of the public key (convenience helper)
-* `CryptoPublicKey.RSA.getJcaPublicKey()` returns the JCA-representation of the public key (convenience helper)
-* `CryptoPublicKey.fromJcaPublicKey` creates a `CryptoPublicKey` from a JCA Public Key
-* `CryptoPublicKey.EC.fromJcaPublicKey` creates a `CryptoPublicKey.EC` from a JCA EC Public Key
-* `CryptoPublicKey.RSA.fromJcaPublicKey` creates a `CryptoPublicKey.RSA` from a JCA RSA Public Key
+<br>
+
+* `CryptoPublicKey.toJcaPublicKey()` returns the JCA-representation of the public key
+* `CryptoPublicKey.EC.toJcaPublicKey()` returns the JCA-representation of the public key (convenience helper)
+* `CryptoPublicKey.RSA.toJcaPublicKey()` returns the JCA-representation of the public key (convenience helper)
+* `PublicKey.toCryptoPublicKey()` creates a `CryptoPublicKey` from a JCA Public Key
+* `ECPublicKey.toCryptoPublicKey()` creates a `CryptoPublicKey.EC` from a JCA EC Public Key
+* `RSAPublicKey.toCryptoPublicKey()` creates a `CryptoPublicKey.RSA` from a JCA RSA Public Key
+
+<br>
+
+* `CryptoPrivateKey.WihtPublicKey<*>.toJcaPublicKey()` returns the JCA-representation of the private key
+* `CryptoPrivateKey.EC.WithPublicKey.toJcaPublicKey()` returns the JCA-representation of the private key (convenience helper)
+* `CryptoPrivateKey.RSA.toJcaPublicKey()` returns the JCA-representation of the private key (convenience helper)
+* `PrivateKey.toCryptoPrivateKey()` creates a `CryptoPrivateKey.WithPublicKey<*>` from a JCA Public Key
+* `ECPrivateKey.toCryptoPrivateKey()` creates a `CryptoPrivateKey.EC.WithPublicKey` from a JCA EC Public Key
+* `RSAPrivateKey.toCryptoPrivateKey()` creates a `CryptoPrivateKey.RSA` from a JCA RSA Public Key
+
+<br>
 
 * `CryptoSignature.jcaSignatureBytes` returns the JCA-native encoded representation of a signature
 * `CryptoSignature.parseFromJca()` returns a signature object form a JCA-native encoded representation of a signature
@@ -111,7 +140,14 @@ The following functions provide interop functionality with platform types.
 ### iOS
 
 * `CryptoPublicKey.iosEncoded` encodes a public key as iOS does
-* `CryptoPublicKey.fromiosEncoded()` decodes a public key that was encoded in iOS
+* `CryptoPublicKey.fromIosEncoded()` decodes a public key that was encoded in iOS
+
+<br>
+
+* `CryptoPrivateKey.toSecKey()` produces a `SecKey` usable on iOS
+* `CryptoPrivateKey.fromIosEncoded()` decodes a private key as it is exported from iOS
+
+<br>
 
 * `SignatureAlgorithm.secKeyAlgorithm` returns an algorithm identifier constant usable with CommonCrypto
 * `SpecializedSignatureAlgorithm.secKeyAlgorithm` returns an algorithm identifier constant usable with CommonCrypto
@@ -124,7 +160,7 @@ The following functions provide interop functionality with platform types.
 
 ## ASN.1 Engine Addons
 
-Relevant classes like `CryptoPublicKey`, `X509Certificate`, `Pkcs10CertificationRequest`, etc. all
+Relevant classes like `CryptoPublicKey`, `CryptoPrivateKey`, `X509Certificate`, `Pkcs10CertificationRequest`, etc. all
 implement `Asn1Encodable` and their respective companions implement `Asn1Decodable`.
 This is an essential pattern, making the ASN.1 engine work the way it does.
 We have opted against using kotlinx.serialization for maximum flexibility and more convenient debugging.  

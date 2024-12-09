@@ -2,16 +2,23 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.nativeDigest
+import at.asitplus.signum.supreme.SecretExposure
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.os.SignerConfiguration
 
+
+@SecretExposure
+internal expect fun EphemeralKeyBase<*>.exportPrivate(): CryptoPrivateKey.WithPublicKey<*>
 internal expect fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey
+internal expect fun makePrivateKeySigner(key: CryptoPrivateKey.EC.WithPublicKey, algorithm: SignatureAlgorithm.ECDSA) : Signer.ECDSA
+internal expect fun makePrivateKeySigner(key: CryptoPrivateKey.RSA, algorithm: SignatureAlgorithm.RSA) : Signer.RSA
 
 open class EphemeralSigningKeyConfigurationBase internal constructor(): SigningKeyConfiguration() {
     class ECConfiguration internal constructor(): SigningKeyConfiguration.ECConfiguration() {
@@ -41,6 +48,11 @@ expect class EphemeralSignerConfiguration internal constructor(): SignerConfigur
  */
 sealed interface EphemeralKey {
     val publicKey: CryptoPublicKey
+
+    @SecretExposure
+    fun exportPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> = catching {
+        (this as EphemeralKeyBase<*>).exportPrivate()
+    }
 
     /** Create a signer that signs using this [EphemeralKey].
      * @see EphemeralSignerConfiguration */

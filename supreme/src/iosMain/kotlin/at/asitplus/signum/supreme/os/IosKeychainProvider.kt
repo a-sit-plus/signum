@@ -4,26 +4,19 @@ package at.asitplus.signum.supreme.os
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.internals.*
+import at.asitplus.signum.supreme.swiftasync
 import at.asitplus.signum.supreme.CFCryptoOperationFailed
 import at.asitplus.signum.supreme.CryptoOperationFailed
 import at.asitplus.signum.supreme.UnsupportedCryptoException
-import at.asitplus.signum.supreme.createCFDictionary
-import at.asitplus.signum.supreme.cfDictionaryOf
-import at.asitplus.signum.supreme.corecall
 import at.asitplus.signum.supreme.dsl.DISCOURAGED
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.dsl.PREFERRED
 import at.asitplus.signum.supreme.dsl.REQUIRED
-import at.asitplus.signum.supreme.get
-import at.asitplus.signum.supreme.giveToCF
 import at.asitplus.signum.supreme.hash.digest
 import at.asitplus.signum.supreme.sign.SignatureInput
 import at.asitplus.signum.supreme.sign.Signer
-import at.asitplus.signum.supreme.swiftasync
-import at.asitplus.signum.supreme.takeFromCF
-import at.asitplus.signum.supreme.toByteArray
-import at.asitplus.signum.supreme.toNSData
 import io.github.aakira.napier.Napier
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.MemScope
@@ -92,7 +85,7 @@ import platform.Security.kSecUseAuthenticationContext
 import platform.Security.kSecUseAuthenticationUI
 import platform.Security.kSecUseAuthenticationUIAllow
 import at.asitplus.signum.supreme.AutofreeVariable
-import at.asitplus.signum.supreme.CoreFoundationException
+import at.asitplus.signum.supreme.SecretExposure
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.UnlockFailed
 import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
@@ -180,6 +173,10 @@ sealed class IosSigner(final override val alias: String,
                        private val metadata: IosKeyMetadata,
                        private val signerConfig: IosSignerConfiguration)
     : PlatformSigningProviderSigner<IosSignerSigningConfiguration, IosHomebrewAttestation> {
+
+
+    @SecretExposure
+    override fun exportPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> = KmmResult.failure(IllegalStateException("Non-Exportable key"))
 
     override val mayRequireUserUnlock get() = needsAuthentication
     val needsAuthentication get() = metadata.needsUnlock

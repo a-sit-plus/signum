@@ -127,7 +127,10 @@ sealed class Asn1Element(
      * @throws Asn1StructuralException if this element is not a primitive
      */
     @Throws(Asn1StructuralException::class)
-    fun asPrimitive() = thisAs<Asn1Primitive>()
+    fun asPrimitive() = when (this) {
+        is Asn1EncapsulatingOctetString -> @Suppress("DEPRECATED") this.asPrimitiveOctetString()
+        else -> thisAs<Asn1Primitive>()
+    }
 
     /**
      * Convenience function to cast this element to an [Asn1Structure]
@@ -165,15 +168,26 @@ sealed class Asn1Element(
     fun asEncapsulatingOctetString() = thisAs<Asn1EncapsulatingOctetString>()
 
     /**
+     * Convenience function to cast this element to an [Asn1OctetString]
+     * @throws Asn1StructuralException if this element is not an octet string
+     */
+    @Throws(Asn1StructuralException::class)
+    fun asOctetString() = thisAs<Asn1OctetString>()
+
+    /**
      * Convenience function to cast this element to an [Asn1PrimitiveOctetString]
      * @throws Asn1StructuralException if this element is not an octet string containing raw data
      */
     @Throws(Asn1StructuralException::class)
-    fun asPrimitiveOctetString() = thisAs<Asn1PrimitiveOctetString>()
+    @Deprecated("Use asOctetString instead to avoid copying")
+    fun asPrimitiveOctetString() = when (this) {
+        is Asn1EncapsulatingOctetString -> Asn1PrimitiveOctetString(this.content)
+        else -> thisAs<Asn1PrimitiveOctetString>()
+    }
 
     @Throws(Asn1StructuralException::class)
-    private inline fun <reified T : Asn1Element> thisAs(): T =
-        (this as? T)
+    private inline fun <reified T> thisAs(): T =
+       (this as? T)
             ?: throw Asn1StructuralException("${this::class.simpleName} cannot be reinterpreted as ${T::class.simpleName}.")
 
 
@@ -691,12 +705,17 @@ class Asn1CustomStructure private constructor(
 @Serializable(with = Asn1EncodableSerializer::class)
 class Asn1EncapsulatingOctetString(children: List<Asn1Element>) :
     Asn1Structure(Tag.OCTET_STRING, children, sortChildren = false, shouldBeSorted = false),
-    Asn1OctetString<Asn1EncapsulatingOctetString> {
+    Asn1OctetString {
     override val content: ByteArray by lazy {
         children.fold(byteArrayOf()) { acc, asn1Element -> acc + asn1Element.derEncoded }
     }
 
-    override fun unwrap() = this
+    override fun equals(other: Any?): Boolean {
+        if (other is Asn1PrimitiveOctetString) return this.content contentEquals other.content
+        return super.equals(other)
+    }
+
+    override fun hashCode(): Int = content.contentHashCode()
 
     override fun prettyPrintHeader(indent: Int) =
         (" " * indent) + "OCTET STRING Encapsulating" + super.prettyPrintHeader(indent) + " " +
@@ -704,14 +723,21 @@ class Asn1EncapsulatingOctetString(children: List<Asn1Element>) :
 }
 
 /**
- * ASN.1 OCTET STRING 0x04 ([BERTags.OCTET_STRING]) containing data, which does not decode to an [Asn1Element]
+ * ASN.1 OCTET STRING 0x04 ([BERTags.OCTET_STRING]) containing arbitrary bytes
  * @param content the data to hold
+ *
+ * When parsing, you should NOT cast to this class.
+ * Cast to [Asn1OctetString] instead.
  */
 class Asn1PrimitiveOctetString(content: ByteArray) : Asn1Primitive(Tag.OCTET_STRING, content),
-    Asn1OctetString<Asn1PrimitiveOctetString> {
+    Asn1OctetString {
 
-    override fun unwrap() = this
+    override fun equals(other: Any?): Boolean {
+        if (other is Asn1EncapsulatingOctetString) return this.content contentEquals other.content
+        return super.equals(other)
+    }
 
+    override fun hashCode(): Int = content.contentHashCode()
 
     override fun prettyPrintHeader(indent: Int) = (" " * indent) + "OCTET STRING " + super.prettyPrintHeader(0)
 }
@@ -800,15 +826,15 @@ open class Asn1Primitive(
 
 /**
  * Interface describing an ASN.1 OCTET STRING.
- * This is really more of a crutch, since an octet string is either an
  *
- *  * [Asn1Primitive] if it contains bytes, that cannot be interpreted as an ASN.1 Structure
- *  * [Asn1Structure] if it contains one or more valid [Asn1Element]s
+ * Signum will attempt to parse any ASN.1 OCTET STRING's content as ASN.1.
+ * If this attempt succeeds, this will be an [Asn1EncapsulatingOctetString].
+ * Otherwise, it will be an [Asn1PrimitiveOctetString].
  *
- *  This interface is implemented by [Asn1PrimitiveOctetString] for the former case and by [Asn1EncapsulatingOctetString] to cover the latter case
- *  Hence, [T] will either be [Asn1Primitive]/[Asn1PrimitiveOctetString] or [Asn1Structure]/[Asn1EncapsulatingOctetString]
+ * If you are expecting arbitrary bytes, [Asn1OctetString] is the correct type to look for.
+ * (Your arbitrary bytes might inadvertently be valid ASN.1!)
  */
-interface Asn1OctetString<T : Asn1Element> {
+interface Asn1OctetString {
 
     /**
      * Raw data contained in this ASN.1 primitive in its encoded form. Requires decoding to interpret it.
@@ -817,11 +843,14 @@ interface Asn1OctetString<T : Asn1Element> {
      */
     val content: ByteArray
 
-    /**
-     * Returns the actual type of this object inside the [Asn1Element] class hierarchy
-     * [T] will either be [Asn1Primitive]/[Asn1PrimitiveOctetString] or [Asn1Structure]/[Asn1EncapsulatingOctetString]
-     */
-    fun unwrap(): T
+    companion object {
+        /** Constructs a new ASN.1 OCTET STRING primitive containing these bytes */
+        operator fun invoke(bytes: ByteArray) =
+            Asn1PrimitiveOctetString(bytes)
+        /** Constructs a new ASN.1 OCTET STRING primitive encapsulating these children */
+        operator fun invoke(children: List<Asn1Element>) =
+            Asn1EncapsulatingOctetString(children)
+    }
 }
 
 

@@ -2,7 +2,7 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.misc.ensureSize
+import at.asitplus.signum.internals.ensureSize
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull

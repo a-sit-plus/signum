@@ -5,7 +5,7 @@ import at.asitplus.signum.indispensable.cosef.CoseKeyParams
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.cosef.toCoseKey
 import at.asitplus.signum.indispensable.fromJcaPublicKey
-import at.asitplus.signum.indispensable.getJcaPublicKey
+import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.indispensable.io.Base64Strict
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
@@ -108,7 +108,7 @@ class CoseKeySerializationTest : FreeSpec({
                         decoded.toCryptoPublicKey().getOrThrow()
                             .shouldBeInstanceOf<CryptoPublicKey.EC>().preferCompressedRepresentation shouldBe false
                         decoded.toCryptoPublicKey().getOrThrow()
-                            .getJcaPublicKey()
+                            .toJcaPublicKey()
                             .getOrThrow().encoded.encodeToString(
                                 Base64Strict
                             ) shouldBe pubKey.encoded.encodeToString(Base64Strict)
@@ -132,7 +132,7 @@ class CoseKeySerializationTest : FreeSpec({
                         decoded.toCryptoPublicKey().getOrThrow()
                             .shouldBeInstanceOf<CryptoPublicKey.EC>().preferCompressedRepresentation shouldBe true
                         decoded.toCryptoPublicKey().getOrThrow()
-                            .getJcaPublicKey()
+                            .toJcaPublicKey()
                             .getOrThrow().encoded.encodeToString(
                                 Base64Strict
                             ) shouldBe pubKey.encoded.encodeToString(Base64Strict)

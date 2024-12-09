@@ -299,7 +299,7 @@ val tbsCrt = TbsCertificate(
     X509CertificateExtension(
       attestedClientOid,
       critical = true,
-      Asn1PrimitiveOctetString(byteArrayOf())
+      Asn1OctetString(byteArrayOf())
     )
   )
 )

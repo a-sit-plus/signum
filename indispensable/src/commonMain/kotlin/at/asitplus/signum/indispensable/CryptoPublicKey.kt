@@ -8,10 +8,8 @@ import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.BitString
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
-import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix.Companion.hasPrefix
-import at.asitplus.signum.indispensable.misc.ensureSize
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import kotlinx.serialization.SerialName
@@ -145,13 +143,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         fun fromIosEncoded(it: ByteArray): CryptoPublicKey =
             when (it[0].toUByte()) {
                 ANSIECPrefix.UNCOMPRESSED.prefixUByte -> {
-                    val curve = when (it.size) {
-                        /** apple does not encode the curve identifier, but it is implied as one of the ios supported curves */
-                        65 -> ECCurve.SECP_256_R_1
-                        97 -> ECCurve.SECP_384_R_1
-                        133 -> ECCurve.SECP_521_R_1
-                        else -> throw IllegalArgumentException("Unknown curve in iOS raw key")
-                    }
+                    val curve = ECCurve.fromIosEncodedPublicKeyLength(it.size)
+                        ?: throw IllegalArgumentException("Unknown curve in iOS raw key")
                     EC.fromAnsiX963Bytes(curve, it)
                 }
 
@@ -193,7 +186,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
             RSA_1024(1024u),
             RSA_2048(2048u),
             RSA_3027(3072u),
-            RSA_4096(4096u);
+            RSA_4096(4096u),
+            RSA_8192(8192u);
 
             companion object : Identifiable {
                 fun of(numBits: UInt) = entries.find { it.number == numBits }

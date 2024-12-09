@@ -30,10 +30,11 @@ class CastingTest : FreeSpec({
     "OctetString ENCAPSULATING" {
         shouldThrow<Asn1StructuralException> { Asn1.OctetStringEncapsulating { +Asn1.Null() }.asSet() }
         shouldThrow<Asn1StructuralException> { Asn1.OctetStringEncapsulating { +Asn1.Null() }.asExplicitlyTagged() }
-        shouldThrow<Asn1StructuralException> { Asn1.OctetStringEncapsulating { +Asn1.Null() }.asPrimitiveOctetString() }
         shouldThrow<Asn1StructuralException> { Asn1.OctetStringEncapsulating { +Asn1.Null() }.asSequence() }
 
         Asn1.OctetStringEncapsulating { +Asn1.Null() }.let { it.asEncapsulatingOctetString() shouldBe it }
+        //Reinterpreting this way must always work
+        Asn1.OctetStringEncapsulating { +Asn1.Null() }.let { it.asPrimitive() shouldBe it }
         Asn1.OctetStringEncapsulating { +Asn1.Null() }.let { it.asStructure() shouldBe it }
     }
 

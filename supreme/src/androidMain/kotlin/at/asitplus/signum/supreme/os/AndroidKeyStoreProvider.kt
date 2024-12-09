@@ -19,6 +19,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.supreme.AppLifecycleMonitor
+import at.asitplus.signum.supreme.SecretExposure
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.UnlockFailed
 import at.asitplus.signum.supreme.UnsupportedCryptoException
@@ -292,6 +293,9 @@ sealed class AndroidKeystoreSigner private constructor(
     private val config: AndroidSignerConfiguration,
     final override val attestation: AndroidKeystoreAttestation?
 ) : PlatformSigningProviderSigner<AndroidSignerSigningConfiguration, AndroidKeystoreAttestation> {
+
+    @SecretExposure
+    override fun exportPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> = KmmResult.failure(IllegalStateException("Non-Exportable key"))
 
     final override val mayRequireUserUnlock: Boolean get() = this.needsAuthentication
 
