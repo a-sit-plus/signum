@@ -25,6 +25,22 @@ data class JwsSigned<out P : Any>(
     val signature: CryptoSignature.RawByteEncodable,
     val plainSignatureInput: ByteArray,
 ) {
+    constructor(
+        val header = with(inputParts[0]) {
+            at.asitplus.signum.indispensable.josef.JwsHeader.deserialize(decodeToString())
+                .mapFailure { it.apply { printStackTrace() } }
+                .getOrThrow()
+        }
+        val payload = inputParts[1]
+        val signature = with(inputParts[2]) {
+            when (val curve = header.algorithm.ecCurve) {
+                null -> at.asitplus.signum.indispensable.CryptoSignature.RSAorHMAC(this)
+                else -> at.asitplus.signum.indispensable.CryptoSignature.EC.fromRawBytes(curve, this)
+            }
+        }
+    ) : this(
+
+    )
 
     fun serialize(): String {
         return "${plainSignatureInput.decodeToString()}.${signature.rawByteArray.encodeToString(Base64UrlStrict)}"
@@ -57,13 +73,15 @@ data class JwsSigned<out P : Any>(
 
 
     companion object {
+        val SEGMENT_COUNT = 3
+
         /**
          * Deserializes the input, expected to contain a valid JWS (three Base64-URL strings joined by `.`),
          * into a [JwsSigned] with `ByteArray` as the type of the payload.
          */
         inline fun deserialize(input: String): KmmResult<JwsSigned<ByteArray>> = catching {
             val stringList = input.replace("[^A-Za-z0-9-_.]".toRegex(), "").split(".")
-            if (stringList.size != 3)
+            if (stringList.size != SEGMENT_COUNT)
                 throw IllegalArgumentException("not three parts in input: $this")
             val inputParts = stringList.map { it.decodeToByteArray(Base64UrlStrict) }
             val header = with(inputParts[0]) {
