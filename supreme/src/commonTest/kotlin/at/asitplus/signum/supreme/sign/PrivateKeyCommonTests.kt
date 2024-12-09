@@ -35,7 +35,7 @@ class PrivateKeyCommonTests : FreeSpec({
 
         val signer: Signer = SignatureAlgorithm.RSAwithSHA256andPSSPadding.signerFor(key).getOrThrow()
 
-        val data = "WUMBO".encodeToByteArray()
+        val data = Random.nextBytes(384)
         val signature = signer.sign(data)
         signature.isSuccess shouldBe true
 
