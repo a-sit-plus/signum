@@ -3,6 +3,9 @@
 ## 3.0
 
 ### NEXT
+* PBKDF2 Support
+* HKDF Support
+* SCrypt Support
 * HMAC Support
 * AES Support
     * CBC
