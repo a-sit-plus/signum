@@ -3,6 +3,15 @@
 ## 3.0
 
 ### NEXT
+* PBKDF2 Support
+* HKDF Support
+* SCrypt Support
+* HMAC Support
+* AES Support
+    * CBC
+    * CBC-HMAC
+    * GCM
+
 
 ### 3.11.0 (Supreme 0.6.0)
 
