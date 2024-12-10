@@ -97,13 +97,22 @@ class CoseSignedSerializer<P : Any?>(
                     value.protectedHeader
                 )
                 encodeNullableSerializableElement(descriptor, 1, CoseHeader.serializer(), value.unprotectedHeader)
-                if (value.payload != null && value.payload::class != ByteArray::class) {
-                    encodeNullableSerializableElement(
-                        buildTag24SerialDescriptor(),
-                        2,
-                        ByteStringWrapperSerializer(parameterSerializer),
-                        ByteStringWrapper(value.payload)
-                    )
+                if (value.payload != null) {
+                    if (value.payload::class == ByteArray::class) {
+                        encodeNullableSerializableElement(
+                            descriptor,
+                            2,
+                            ByteArraySerializer(),
+                            value.payload as ByteArray
+                        )
+                    } else {
+                        encodeNullableSerializableElement(
+                            buildTag24SerialDescriptor(),
+                            2,
+                            ByteStringWrapperSerializer(parameterSerializer),
+                            ByteStringWrapper(value.payload)
+                        )
+                    }
                 } else {
                     encodeNullableSerializableElement(descriptor, 2, parameterSerializer, value.payload)
                 }
