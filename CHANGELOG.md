@@ -3,6 +3,7 @@
 ## 3.0
 
 ### NEXT
+* Fix `CoseSigned` JSON serialization
 
 ### 3.11.0 (Supreme 0.6.0)
 
