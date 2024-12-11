@@ -2,16 +2,24 @@ package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.contentEqualsIfArray
+import at.asitplus.signum.indispensable.contentHashCodeIfArray
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.serialization.*
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.CborArray
+import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.encodeToByteArray
 
 /**
  * Representation of a signed COSE_Sign1 object, i.e. consisting of protected header, unprotected header and payload.
@@ -54,7 +62,9 @@ data class CoseSigned<P : Any?> internal constructor(
     )
 
     val signature: CryptoSignature by lazy {
-        if (protectedHeader.value.usesEC() ?: unprotectedHeader?.usesEC() ?: (rawSignature.size < 2048))
+        if (protectedHeader.value.usesEC() ?: unprotectedHeader?.usesEC()
+            ?: (rawSignature.size < 2048)
+        )
             CryptoSignature.EC.fromRawBytes(rawSignature)
         else CryptoSignature.RSAorHMAC(rawSignature)
     }
@@ -92,10 +102,46 @@ data class CoseSigned<P : Any?> internal constructor(
                 " signature=${rawSignature.encodeToString(Base16Strict)})"
     }
 
+    val combinedCoseHeader: CoseHeader
+        get() = (unprotectedHeader ?: CoseHeader()).let {
+            CoseHeader(
+                algorithm = protectedHeader.value.algorithm ?: it.algorithm,
+                criticalHeaders = protectedHeader.value.criticalHeaders ?: it.criticalHeaders,
+                contentType = protectedHeader.value.contentType ?: it.contentType,
+                kid = protectedHeader.value.kid ?: it.kid,
+                iv = protectedHeader.value.iv ?: it.iv,
+                partialIv = protectedHeader.value.partialIv ?: it.partialIv,
+                coseKey = protectedHeader.value.coseKey ?: it.coseKey,
+                certificateChain = protectedHeader.value.certificateChain ?: it.certificateChain,
+                type = protectedHeader.value.type ?: it.type,
+            )
+        }
+
+    /**
+     * Tries to compute a public key in descending order from [coseKey] or [certificateChain],
+     * and takes the first success or null.
+     */
+    val publicKey: CoseKey?
+        get() = combinedCoseHeader.run {
+            coseKey?.let { CoseKey.deserialize(it).getOrNull() }
+                ?: kid?.let { CoseKey.fromDid(it.decodeToString()) }?.getOrNull()
+                ?: certificateChain?.let {
+                    runCatching {
+                        X509Certificate.decodeFromDer(it)
+                    }.getOrNull()?.publicKey?.toCoseKey()?.getOrThrow()
+                }
+        }
+
     companion object {
-        fun <P : Any> deserialize(parameterSerializer: KSerializer<P>, it: ByteArray): KmmResult<CoseSigned<P>> =
+        fun <P : Any> deserialize(
+            parameterSerializer: KSerializer<P>,
+            it: ByteArray
+        ): KmmResult<CoseSigned<P>> =
             catching {
-                coseCompliantSerializer.decodeFromByteArray(CoseSignedSerializer(parameterSerializer), it)
+                coseCompliantSerializer.decodeFromByteArray(
+                    CoseSignedSerializer(parameterSerializer),
+                    it
+                )
             }
 
         /**
