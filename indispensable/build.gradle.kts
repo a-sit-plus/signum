@@ -77,6 +77,12 @@ kotlin {
             }
         }
 
+        jvmTest {
+            dependencies {
+                implementation(kotlin("reflect"))
+            }
+        }
+
     }
 }
 

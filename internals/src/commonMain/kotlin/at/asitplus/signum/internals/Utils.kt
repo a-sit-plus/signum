@@ -1,5 +1,7 @@
 package at.asitplus.signum.internals
 
+import kotlin.experimental.xor
+
 infix fun <T: Any> T?.orLazy(block: ()->T) = if (this != null) lazyOf(this) else lazy(block)
 
 /** Drops bytes at the start, or adds zero bytes at the start, until the [size] is reached */
@@ -13,3 +15,8 @@ fun ByteArray.ensureSize(size: Int): ByteArray = (this.size - size).let { toDrop
 
 @Suppress("NOTHING_TO_INLINE")
 inline fun ByteArray.ensureSize(size: UInt) = ensureSize(size.toInt())
+
+infix fun ByteArray.xor(other: ByteArray): ByteArray {
+    check(this.size == other.size)
+    return ByteArray(this.size) { i -> this[i] xor other[i] }
+}
