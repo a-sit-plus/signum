@@ -59,6 +59,18 @@ class CoseSerializationTest : FreeSpec({
         Json.decodeFromString<CoseSigned<ByteArray>>(Json.encodeToString(cose)) shouldBe cose
     }
 
+    "Serialization is correct with JSON for data class" {
+        val payload = DataClass("This is the content.")
+        val cose = CoseSigned<DataClass>(
+            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.ES256),
+            unprotectedHeader = CoseHeader(),
+            payload = payload,
+            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray())
+        )
+
+        Json.decodeFromString<CoseSigned<DataClass>>(Json.encodeToString(cose)) shouldBe cose
+    }
+
     "Serialization is correct for data class" {
         val payload = DataClass("This is the content.")
         val cose = CoseSigned(

@@ -9,7 +9,11 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.cbor.CborEncoder
 import kotlinx.serialization.cbor.ValueTags
-import kotlinx.serialization.descriptors.*
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.SerialKind
+import kotlinx.serialization.descriptors.StructureKind
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
+import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
@@ -97,15 +101,22 @@ class CoseSignedSerializer<P : Any?>(
                     value.protectedHeader
                 )
                 encodeNullableSerializableElement(descriptor, 1, CoseHeader.serializer(), value.unprotectedHeader)
-                if (value.payload != null && value.payload::class != ByteArray::class) {
-                    encodeNullableSerializableElement(
+
+                when(value.payload) {
+                    is ByteArray -> encodeNullableSerializableElement(
+                        descriptor,
+                        2,
+                        ByteArraySerializer(),
+                        value.payload as ByteArray
+                    )
+                    is Nothing? -> encodeNullableSerializableElement(descriptor, 2, parameterSerializer, value.payload)
+
+                    else -> encodeNullableSerializableElement(
                         buildTag24SerialDescriptor(),
                         2,
                         ByteStringWrapperSerializer(parameterSerializer),
-                        ByteStringWrapper(value.payload)
+                        ByteStringWrapper(value.payload!!)
                     )
-                } else {
-                    encodeNullableSerializableElement(descriptor, 2, parameterSerializer, value.payload)
                 }
                 encodeSerializableElement(descriptor, 3, ByteArraySerializer(), value.rawSignature)
             }
