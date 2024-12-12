@@ -115,21 +115,6 @@ data class CoseSigned<P : Any?> internal constructor(
             )
         }
 
-    /**
-     * Tries to compute a public key in descending order from [coseKey] or [certificateChain],
-     * and takes the first success or null.
-     */
-    val publicKey: CoseKey?
-        get() = combinedCoseHeader.run {
-            coseKey?.let { CoseKey.deserialize(it).getOrNull() }
-                ?: kid?.let { CoseKey.fromDid(it.decodeToString()) }?.getOrNull()
-                ?: certificateChain?.let {
-                    runCatching {
-                        X509Certificate.decodeFromDer(it)
-                    }.getOrNull()?.publicKey?.toCoseKey()?.getOrThrow()
-                }
-        }
-
     companion object {
         fun <P : Any> deserialize(
             parameterSerializer: KSerializer<P>,
