@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.cosef
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
+import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
@@ -131,6 +132,23 @@ data class CoseHeader(
     @SerialName("typ")
     val type: String? = null,
 ) {
+    /**
+     * Tries to compute a public key in descending order from [jsonWebKey], [keyId],
+     * or [certificateChain], and takes the first success or null.
+     */
+
+    /**
+     * Tries to compute a public key in descending order from [coseKey] or [certificateChain],
+     * and takes the first success or null.
+     */
+    val publicKey: CoseKey?
+        get() = coseKey?.let { CoseKey.deserialize(it).getOrNull() }
+            ?: kid?.let { CoseKey.fromDid(it.decodeToString()) }?.getOrNull()
+            ?: certificateChain?.let {
+                runCatching {
+                    X509Certificate.decodeFromDer(it)
+                }.getOrNull()?.publicKey?.toCoseKey()?.getOrThrow()
+            }
 
     fun serialize() = coseCompliantSerializer.encodeToByteArray(this)
 

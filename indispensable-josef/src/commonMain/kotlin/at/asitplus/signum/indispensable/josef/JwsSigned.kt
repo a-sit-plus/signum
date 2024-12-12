@@ -25,7 +25,6 @@ data class JwsSigned<out P : Any>(
     val signature: CryptoSignature.RawByteEncodable,
     val plainSignatureInput: ByteArray,
 ) {
-
     fun serialize(): String {
         return "${plainSignatureInput.decodeToString()}.${signature.rawByteArray.encodeToString(Base64UrlStrict)}"
     }

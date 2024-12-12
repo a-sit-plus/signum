@@ -3,6 +3,7 @@
 ## 3.0
 
 ### NEXT
+* Add `CoseHeader.publicKey`
 
 ### 3.11.1 (Supreme 0.6.1)
 * Fix `CoseSigned` JSON serialization

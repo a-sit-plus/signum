@@ -16,6 +16,16 @@ val joseCompliantSerializer by lazy {
         prettyPrint = false
         encodeDefaults = false
         classDiscriminator = "type"
+
+        // TODO: unsure whether this is actually ok:
+        //  When receiving a jwt one cannot just ignore unknown headers:
+        /**
+         * https://datatracker.ietf.org/doc/html/rfc7519
+         *    5.   Verify that the resulting JOSE Header includes only parameters
+         *         and values whose syntax and semantics are both understood and
+         *         supported or that are specified as being ignored when not
+         *         understood.
+         */
         ignoreUnknownKeys = true
     }
 }
