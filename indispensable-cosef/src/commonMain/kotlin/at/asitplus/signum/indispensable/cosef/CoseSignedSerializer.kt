@@ -9,11 +9,7 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.cbor.CborEncoder
 import kotlinx.serialization.cbor.ValueTags
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.descriptors.SerialKind
-import kotlinx.serialization.descriptors.StructureKind
-import kotlinx.serialization.descriptors.buildClassSerialDescriptor
-import kotlinx.serialization.descriptors.buildSerialDescriptor
+import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
@@ -77,18 +73,25 @@ class CoseSignedSerializer<P : Any?>(
     }
 
     private fun toTypedObject(
-        payload: ByteArray?,
+        rawPayload: ByteArray?,
         protectedHeader: ByteStringWrapper<CoseHeader>,
         unprotectedHeader: CoseHeader?,
         signature: ByteArray,
     ): CoseSigned<P> = runCatching {
-        val typedPayload: P? = payload?.let {
+        val typedPayload: P? = rawPayload?.let {
             coseCompliantSerializer.decodeFromByteArray(parameterSerializer, it)
         }
-        CoseSigned(protectedHeader, unprotectedHeader, typedPayload, signature)
+        CoseSigned(protectedHeader, unprotectedHeader, typedPayload, signature, rawPayload)
     }.getOrElse {
-        @Suppress("UNCHECKED_CAST")
-        (CoseSigned(protectedHeader, unprotectedHeader, payload as P, signature))
+        runCatching {
+            val typedPayload = rawPayload?.let {
+                coseCompliantSerializer.decodeFromByteArray(ByteStringWrapperSerializer(parameterSerializer), it)
+            }
+            CoseSigned(protectedHeader, unprotectedHeader, typedPayload?.value, signature, rawPayload)
+        }.getOrElse {
+            @Suppress("UNCHECKED_CAST")
+            CoseSigned(protectedHeader, unprotectedHeader, rawPayload as P, signature, rawPayload)
+        }
     }
 
     override fun serialize(encoder: Encoder, value: CoseSigned<P>) {
@@ -102,20 +105,21 @@ class CoseSignedSerializer<P : Any?>(
                 )
                 encodeNullableSerializableElement(descriptor, 1, CoseHeader.serializer(), value.unprotectedHeader)
 
-                when(value.payload) {
+                when (value.payload) {
                     is ByteArray -> encodeNullableSerializableElement(
                         descriptor,
                         2,
                         ByteArraySerializer(),
                         value.payload as ByteArray
                     )
+
                     is Nothing? -> encodeNullableSerializableElement(descriptor, 2, parameterSerializer, value.payload)
 
                     else -> encodeNullableSerializableElement(
                         buildTag24SerialDescriptor(),
                         2,
                         ByteStringWrapperSerializer(parameterSerializer),
-                        ByteStringWrapper(value.payload!!)
+                        ByteStringWrapper(value.payload)
                     )
                 }
                 encodeSerializableElement(descriptor, 3, ByteArraySerializer(), value.rawSignature)

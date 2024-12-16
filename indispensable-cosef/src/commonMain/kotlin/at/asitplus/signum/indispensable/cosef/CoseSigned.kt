@@ -36,6 +36,11 @@ data class CoseSigned<P : Any?> internal constructor(
     val payload: P?,
     @ByteString
     val rawSignature: ByteArray,
+    /**
+     * The raw payload as it was transmitted, i.e. originally used for [CoseSignatureInput] to calculate the signature
+     */
+    @Transient
+    val rawPayload: ByteArray?,
 ) {
     @Throws(IllegalArgumentException::class)
     constructor(
@@ -43,6 +48,7 @@ data class CoseSigned<P : Any?> internal constructor(
         unprotectedHeader: CoseHeader?,
         payload: P?,
         signature: CryptoSignature.RawByteEncodable,
+        rawPayload: ByteArray?,
     ) : this(
         protectedHeader = ByteStringWrapper(value = protectedHeader),
         unprotectedHeader = unprotectedHeader,
@@ -50,8 +56,18 @@ data class CoseSigned<P : Any?> internal constructor(
             is ByteStringWrapper<*> -> throw IllegalArgumentException("payload shall not be ByteStringWrapper")
             else -> payload
         },
-        rawSignature = signature.rawByteArray
+        rawSignature = signature.rawByteArray,
+        rawPayload = rawPayload,
     )
+
+    fun prepareCoseSignatureInput(
+        externalAad: ByteArray = byteArrayOf(),
+    ): ByteArray = CoseSignatureInput(
+        contextString = "Signature1",
+        protectedHeader = protectedHeader,
+        externalAad = externalAad,
+        payload = rawPayload,
+    ).serialize()
 
     val signature: CryptoSignature by lazy {
         if (protectedHeader.value.usesEC() ?: unprotectedHeader?.usesEC() ?: (rawSignature.size < 2048))
@@ -107,7 +123,7 @@ data class CoseSigned<P : Any?> internal constructor(
             payload: P?,
             serializer: KSerializer<P>,
             externalAad: ByteArray = byteArrayOf(),
-        ): ByteArray = CoseSignatureInput(
+        ) = CoseSignatureInput(
             contextString = "Signature1",
             protectedHeader = ByteStringWrapper(protectedHeader),
             externalAad = externalAad,
@@ -119,7 +135,7 @@ data class CoseSigned<P : Any?> internal constructor(
                     ByteStringWrapper(payload)
                 )
             },
-        ).serialize()
+        )
     }
 }
 

@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
+import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -12,6 +13,7 @@ import io.kotest.property.arbitrary.int
 import io.kotest.property.checkAll
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToByteArray
 
 class CoseEqualsTest : FreeSpec({
     "equals with byte array" {
@@ -20,13 +22,15 @@ class CoseEqualsTest : FreeSpec({
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = bytes,
-                signature = CryptoSignature.RSAorHMAC(bytes)
+                signature = CryptoSignature.RSAorHMAC(bytes),
+                rawPayload = bytes,
             )
             val bytesSigned2 = CoseSigned<ByteArray>(
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = bytes,
-                signature = CryptoSignature.RSAorHMAC(bytes)
+                signature = CryptoSignature.RSAorHMAC(bytes),
+                rawPayload = bytes,
             )
 
             bytesSigned1 shouldBe bytesSigned1
@@ -39,13 +43,15 @@ class CoseEqualsTest : FreeSpec({
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = reversed,
-                signature = CryptoSignature.RSAorHMAC(reversed)
+                signature = CryptoSignature.RSAorHMAC(reversed),
+                rawPayload = reversed,
             )
             val reversedSigned2 = CoseSigned<ByteArray>(
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = reversed,
-                signature = CryptoSignature.RSAorHMAC(reversed)
+                signature = CryptoSignature.RSAorHMAC(reversed),
+                rawPayload = reversed,
             )
 
             reversedSigned2 shouldBe reversedSigned2
@@ -75,13 +81,15 @@ class CoseEqualsTest : FreeSpec({
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = payload,
-                signature = CryptoSignature.RSAorHMAC(bytes)
+                signature = CryptoSignature.RSAorHMAC(bytes),
+                rawPayload = coseCompliantSerializer.encodeToByteArray(payload),
             )
             val bytesSigned2 = CoseSigned(
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = payload,
-                signature = CryptoSignature.RSAorHMAC(bytes)
+                signature = CryptoSignature.RSAorHMAC(bytes),
+                rawPayload = coseCompliantSerializer.encodeToByteArray(payload),
             )
 
             bytesSigned1 shouldBe bytesSigned1
@@ -95,13 +103,15 @@ class CoseEqualsTest : FreeSpec({
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = reversed,
-                signature = CryptoSignature.RSAorHMAC(bytes)
+                signature = CryptoSignature.RSAorHMAC(bytes),
+                rawPayload = coseCompliantSerializer.encodeToByteArray(reversed),
             )
             val reversedSigned2 = CoseSigned(
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = reversed,
-                signature = CryptoSignature.RSAorHMAC(bytes)
+                signature = CryptoSignature.RSAorHMAC(bytes),
+                rawPayload = coseCompliantSerializer.encodeToByteArray(reversed),
             )
 
             reversedSigned2 shouldBe reversedSigned2

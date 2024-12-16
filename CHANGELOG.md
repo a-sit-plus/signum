@@ -2,6 +2,9 @@
 
 ## 3.0
 
+### 3.11.2
+* Fix `CoseSigned` reconstructing signature input during deserialization
+
 ### 3.11.1 (Supreme 0.6.1)
 * Fix `CoseSigned` JSON serialization
 

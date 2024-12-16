@@ -27,7 +27,8 @@ class CoseSerializationTest : FreeSpec({
                 protectedHeader = CoseHeader(algorithm = CoseAlgorithm.ES256),
                 unprotectedHeader = CoseHeader(),
                 payload = payload,
-                signature = CryptoSignature.RSAorHMAC(byteArrayOf())
+                signature = CryptoSignature.RSAorHMAC(byteArrayOf()),
+                rawPayload = null,
             )
         }
     }
@@ -38,7 +39,8 @@ class CoseSerializationTest : FreeSpec({
             protectedHeader = CoseHeader(algorithm = CoseAlgorithm.ES256),
             unprotectedHeader = CoseHeader(),
             payload = payload,
-            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()) //RSAorHMAC because EC expects tuple
+            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
+            rawPayload = payload,
         )
         val serialized = cose.serialize(ByteArraySerializer()).encodeToString(Base16Strict).uppercase()
 
@@ -53,7 +55,8 @@ class CoseSerializationTest : FreeSpec({
             protectedHeader = CoseHeader(algorithm = CoseAlgorithm.ES256),
             unprotectedHeader = CoseHeader(),
             payload = payload,
-            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray())
+            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()),
+            rawPayload = payload,
         )
 
         Json.decodeFromString<CoseSigned<ByteArray>>(Json.encodeToString(cose)) shouldBe cose
@@ -65,7 +68,8 @@ class CoseSerializationTest : FreeSpec({
             protectedHeader = CoseHeader(algorithm = CoseAlgorithm.ES256),
             unprotectedHeader = CoseHeader(),
             payload = payload,
-            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray())
+            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()),
+            rawPayload = coseCompliantSerializer.encodeToByteArray(payload),
         )
 
         Json.decodeFromString<CoseSigned<DataClass>>(Json.encodeToString(cose)) shouldBe cose
@@ -77,13 +81,23 @@ class CoseSerializationTest : FreeSpec({
             protectedHeader = CoseHeader(algorithm = CoseAlgorithm.ES256),
             unprotectedHeader = CoseHeader(),
             payload = payload,
-            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()) //RSAorHMAC because EC expects tuple
+            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
+            rawPayload = coseCompliantSerializer.encodeToByteArray(payload),
         )
         val serialized = cose.serialize(DataClass.serializer()).encodeToString(Base16Strict).uppercase()
 
         serialized shouldContain "546869732069732074686520636F6E74656E742E" // "This is the content."
         serialized shouldContain "43A10126"
         cose.payload shouldBe payload
+    }
+
+    "Deserialization is correct for data class" {
+        val input = "8443A10126A0D818581EA167636F6E74656E7474546869732069732074686520636F6E74656E742E43626172"
+
+        val cose = CoseSigned.deserialize(DataClass.serializer(), input.decodeToByteArray(Base16())).getOrThrow()
+        cose.payload shouldBe DataClass("This is the content.")
+        cose.rawPayload shouldBe "D818581EA167636F6E74656E7474546869732069732074686520636F6E74656E742E".decodeToByteArray(Base16())
+        // important part is the D818 as tag(24)
     }
 
     "Serialize header" {
@@ -135,7 +149,7 @@ class CoseSerializationTest : FreeSpec({
             protectedHeader = header,
             payload = payload,
             serializer = ByteArraySerializer(),
-        ).encodeToString(Base16())
+        ).serialize().encodeToString(Base16())
 
         inputManual.shouldContain("Signature1".encodeToByteArray().encodeToString(Base16()))
         inputLibrary shouldBe inputManual
@@ -155,7 +169,7 @@ class CoseSerializationTest : FreeSpec({
             protectedHeader = header,
             payload = payload,
             serializer = DataClass.serializer(),
-        ).encodeToString(Base16())
+        ).serialize().encodeToString(Base16())
 
         inputManual.shouldContain("Signature1".encodeToByteArray().encodeToString(Base16()))
         inputLibrary shouldBe inputManual
