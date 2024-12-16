@@ -100,21 +100,6 @@ data class CoseSigned<P : Any?> internal constructor(
                 " signature=${rawSignature.encodeToString(Base16Strict)})"
     }
 
-    val combinedCoseHeader: CoseHeader
-        get() = (unprotectedHeader ?: CoseHeader()).let {
-            CoseHeader(
-                algorithm = protectedHeader.value.algorithm ?: it.algorithm,
-                criticalHeaders = protectedHeader.value.criticalHeaders ?: it.criticalHeaders,
-                contentType = protectedHeader.value.contentType ?: it.contentType,
-                kid = protectedHeader.value.kid ?: it.kid,
-                iv = protectedHeader.value.iv ?: it.iv,
-                partialIv = protectedHeader.value.partialIv ?: it.partialIv,
-                coseKey = protectedHeader.value.coseKey ?: it.coseKey,
-                certificateChain = protectedHeader.value.certificateChain ?: it.certificateChain,
-                type = protectedHeader.value.type ?: it.type,
-            )
-        }
-
     companion object {
         fun <P : Any> deserialize(
             parameterSerializer: KSerializer<P>,

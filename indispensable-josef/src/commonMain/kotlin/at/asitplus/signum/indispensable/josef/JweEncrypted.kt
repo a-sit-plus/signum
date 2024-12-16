@@ -69,11 +69,9 @@ data class JweEncrypted(
 
 
     companion object {
-        const val SEGMENT_COUNT = 5
-
         fun deserialize(it: String): KmmResult<JweEncrypted> = catching {
             val stringList = it.replace("[^A-Za-z0-9-_.]".toRegex(), "").split(".")
-            if (stringList.size != SEGMENT_COUNT) throw IllegalArgumentException("not five parts in input: $it")
+            if (stringList.size != 5) throw IllegalArgumentException("not five parts in input: $it")
             val headerAsParsed = stringList[0].decodeToByteArray(Base64UrlStrict)
             val encryptedKey = stringList[1].decodeToByteArray(Base64UrlStrict)
             val iv = stringList[2].decodeToByteArray(Base64UrlStrict)

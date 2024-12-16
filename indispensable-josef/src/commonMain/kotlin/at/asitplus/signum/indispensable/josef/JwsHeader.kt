@@ -74,14 +74,6 @@ data class JwsHeader(
      *    integrity protected; therefore, it MUST occur only within the JWS
      *    Protected Header.  Use of this Header Parameter is OPTIONAL.  This
      *    Header Parameter MUST be understood and processed by implementations.
-     *
-     *    An example use, along with a hypothetical "exp" (expiration time)
-     *    field is:
-     *
-     *      {"alg":"ES256",
-     *       "crit":["exp"],
-     *       "exp":1363284000
-     *      }
      */
     @SerialName("crit")
     val critical: List<String>? = null,

@@ -133,13 +133,8 @@ data class CoseHeader(
     val type: String? = null,
 ) {
     /**
-     * Tries to compute a public key in descending order from [jsonWebKey], [keyId],
-     * or [certificateChain], and takes the first success or null.
-     */
-
-    /**
-     * Tries to compute a public key in descending order from [coseKey] or [certificateChain],
-     * and takes the first success or null.
+     * Tries to compute a public key in descending order from [coseKey], [kid] or
+     * [certificateChain], and takes the first success or null.
      */
     val publicKey: CoseKey?
         get() = coseKey?.let { CoseKey.deserialize(it).getOrNull() }
