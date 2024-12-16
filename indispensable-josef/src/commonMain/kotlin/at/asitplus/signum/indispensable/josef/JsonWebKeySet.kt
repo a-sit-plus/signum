@@ -24,5 +24,4 @@ data class JsonWebKeySet(
             joseCompliantSerializer.decodeFromString<JsonWebKeySet>(it)
         }
     }
-
 }
