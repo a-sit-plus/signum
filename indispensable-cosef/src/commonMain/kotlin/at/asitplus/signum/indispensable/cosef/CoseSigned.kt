@@ -101,15 +101,9 @@ data class CoseSigned<P : Any?> internal constructor(
     }
 
     companion object {
-        fun <P : Any> deserialize(
-            parameterSerializer: KSerializer<P>,
-            it: ByteArray
-        ): KmmResult<CoseSigned<P>> =
+        fun <P : Any> deserialize(parameterSerializer: KSerializer<P>, it: ByteArray): KmmResult<CoseSigned<P>> =
             catching {
-                coseCompliantSerializer.decodeFromByteArray(
-                    CoseSignedSerializer(parameterSerializer),
-                    it
-                )
+                coseCompliantSerializer.decodeFromByteArray(CoseSignedSerializer(parameterSerializer), it)
             }
 
         /**
