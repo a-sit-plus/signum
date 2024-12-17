@@ -11,6 +11,7 @@ import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.cbor.CborEncoder
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
@@ -49,7 +50,7 @@ class CoseSignedSerializer<P : Any?>(
         return CoseSigned<P>(
             protectedHeader = protectedHeader,
             unprotectedHeader = wire.unprotectedHeader,
-            payload = wire.payload.toTypedPayload(),
+            payload = wire.payload.toNullablePayload(),
             signature = signature,
             wireFormat = wire
         )
@@ -66,22 +67,28 @@ class CoseSignedSerializer<P : Any?>(
             CryptoSignature.EC.fromRawBytes(this)
         else CryptoSignature.RSAorHMAC(this)
 
-    private fun ByteArray?.toTypedPayload(): P? = when (this) {
+    private fun ByteArray?.toNullablePayload(): P? = when (this) {
         null -> null
-        else -> if (this.isEmpty()) null else runCatching {
-            coseCompliantSerializer.decodeFromByteArray(parameterSerializer, this)
-        }.getOrElse {
-            runCatching {
-                coseCompliantSerializer.decodeFromByteArray(
-                    ByteStringWrapperSerializer(parameterSerializer),
-                    this
-                ).value
-            }.getOrElse {
-                @Suppress("UNCHECKED_CAST")
-                this as P
+        else -> if (this.isEmpty()) null else toTypedPayload()
+    }
+
+    private fun ByteArray.toTypedPayload(): P =
+        if (parameterSerializer == ByteArraySerializer()) {
+            typed()
+        } else {
+            runCatching { fromBytes() }.getOrElse {
+                runCatching { fromByteStringWrapper() }.getOrElse { typed() }
             }
         }
-    }
+
+    private fun ByteArray.fromBytes(): P =
+        coseCompliantSerializer.decodeFromByteArray(parameterSerializer, this)
+
+    private fun ByteArray.fromByteStringWrapper(): P =
+        coseCompliantSerializer.decodeFromByteArray(ByteStringWrapperSerializer(parameterSerializer), this).value
+
+    @Suppress("UNCHECKED_CAST")
+    private fun ByteArray.typed(): P = (this as P)
 
 }
 

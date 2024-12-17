@@ -28,7 +28,7 @@ class CoseSerializationTest : FreeSpec({
         shouldThrow<IllegalArgumentException> {
             CoseSigned.create(
                 protectedHeader = CoseHeader(algorithm = CoseAlgorithm.ES256),
-                unprotectedHeader = CoseHeader(),
+                unprotectedHeader = null,
                 payload = payload,
                 signature = CryptoSignature.RSAorHMAC(byteArrayOf()),
                 payloadSerializer = ByteStringWrapper.serializer(String.serializer())
@@ -40,7 +40,7 @@ class CoseSerializationTest : FreeSpec({
         val payload = "This is the content.".encodeToByteArray()
         val cose = CoseSigned.create(
             protectedHeader = CoseHeader(algorithm = CoseAlgorithm.RS256),
-            unprotectedHeader = CoseHeader(),
+            unprotectedHeader = null,
             payload = payload,
             signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()),
             payloadSerializer = ByteArraySerializer(),
@@ -53,7 +53,7 @@ class CoseSerializationTest : FreeSpec({
         val payload = DataClass("This is the content.")
         val cose = CoseSigned.create(
             protectedHeader = CoseHeader(algorithm = CoseAlgorithm.RS256),
-            unprotectedHeader = CoseHeader(),
+            unprotectedHeader = null,
             payload = payload,
             signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()),
             payloadSerializer = DataClass.serializer(),
@@ -66,16 +66,19 @@ class CoseSerializationTest : FreeSpec({
         val payload = "This is the content.".encodeToByteArray()
         val cose = CoseSigned.create(
             protectedHeader = CoseHeader(algorithm = CoseAlgorithm.RS256),
-            unprotectedHeader = CoseHeader(),
+            unprotectedHeader = null,
             payload = payload,
             signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
             payloadSerializer = ByteArraySerializer(),
         )
-        val serialized = cose.serialize(ByteArraySerializer()).encodeToString(Base16Strict).uppercase()
+        val serialized = cose.serialize(ByteArraySerializer())
 
-        serialized shouldContain "546869732069732074686520636F6E74656E742E" // "This is the content."
-        serialized shouldContain "8445A101390100" // array of 5 bytes that is a map with -257 (the header for RS256)
+        val serializedString = serialized.encodeToString(Base16Strict).uppercase()
+        serializedString shouldContain "546869732069732074686520636F6E74656E742E" // "This is the content."
+        serializedString shouldContain "8445A101390100" // array of 5 bytes that is a map with -257 (the header for RS256)
         cose.payload shouldBe payload
+
+        CoseSigned.deserialize(ByteArraySerializer(), serialized).getOrThrow() shouldBe cose
     }
 
     "Deserialization is correct for byte array" {
@@ -91,16 +94,19 @@ class CoseSerializationTest : FreeSpec({
         val payload = DataClass("This is the content.")
         val cose = CoseSigned.create(
             protectedHeader = CoseHeader(algorithm = CoseAlgorithm.RS256),
-            unprotectedHeader = CoseHeader(),
+            unprotectedHeader = null,
             payload = payload,
             signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
             payloadSerializer = DataClass.serializer(),
         )
-        val serialized = cose.serialize(DataClass.serializer()).encodeToString(Base16Strict).uppercase()
+        val serialized = cose.serialize(DataClass.serializer())
+        val serializedString = serialized.encodeToString(Base16Strict).uppercase()
 
-        serialized shouldContain "546869732069732074686520636F6E74656E742E" // "This is the content."
-        serialized shouldContain "8445A101390100" // array of 5 bytes that is a map with -257 (the header for RS256)
+        serializedString shouldContain "546869732069732074686520636F6E74656E742E" // "This is the content."
+        serializedString shouldContain "8445A101390100" // array of 5 bytes that is a map with -257 (the header for RS256)
         cose.payload shouldBe payload
+
+        CoseSigned.deserialize(DataClass.serializer(), serialized).getOrThrow() shouldBe cose
     }
 
     "Deserialization is correct for data class" {
@@ -194,4 +200,5 @@ class CoseSerializationTest : FreeSpec({
 
 
 })
+
 private fun ByteArray.wrapInCborTag(tag: Byte) = byteArrayOf(0xd8.toByte()) + byteArrayOf(tag) + this
