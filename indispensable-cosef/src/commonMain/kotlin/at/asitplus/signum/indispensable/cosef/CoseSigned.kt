@@ -5,6 +5,7 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.contentHashCodeIfArray
+import at.asitplus.signum.indispensable.cosef.CoseSigned.Companion.create
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
@@ -19,7 +20,8 @@ import kotlinx.serialization.encodeToByteArray
  * Representation of a signed COSE_Sign1 object, i.e. consisting of protected header, unprotected header and payload.
  *
  * If the payload is a generic [ByteArray], then it will be serialized as-is. Should the payload be any other type,
- * the [CoseSignedSerializer] will tag it with 24 (see [RFC8949 3.4.5.1](https://www.rfc-editor.org/rfc/rfc8949.html#name-encoded-cbor-data-item)) during serialization.
+ * we will tag it with 24 (see
+ * [RFC8949 3.4.5.1](https://www.rfc-editor.org/rfc/rfc8949.html#name-encoded-cbor-data-item)) for serialization.
  * In order to prevent nested wrapping of the payload and the resulting type erasure
  * payloads of type [ByteStringWrapper] will be rejected.
  * In this case the payload could be handed over as the wrapped class itself or manually serialized to [ByteArray]
@@ -51,9 +53,10 @@ data class CoseSigned<P : Any?> internal constructor(
 
         if (protectedHeader != other.protectedHeader) return false
         if (unprotectedHeader != other.unprotectedHeader) return false
-        if (payload == null && other.payload != null) return false
-        if (payload != null && other.payload == null) return false
-        if (payload != null && other.payload != null && !payload.contentEqualsIfArray(other.payload)) return false
+        if (payload != null) {
+            if (other.payload == null) return false
+            if (!payload.contentEqualsIfArray(other.payload)) return false
+        } else if (other.payload != null) return false
         if (signature != other.signature) return false
         if (wireFormat != other.wireFormat) return false
 
@@ -83,6 +86,9 @@ data class CoseSigned<P : Any?> internal constructor(
                 coseCompliantSerializer.decodeFromByteArray(CoseSignedSerializer(parameterSerializer), it)
             }
 
+        /**
+         * Use this method to create a new [CoseSigned] object with correct [CoseSigned.wireFormat] set.
+         */
         @Throws(IllegalArgumentException::class)
         fun <P : Any> create(
             protectedHeader: CoseHeader,
@@ -103,6 +109,10 @@ data class CoseSigned<P : Any?> internal constructor(
             ),
         )
 
+        /**
+         * Use this method to prepare a [CoseSignatureInput] object to calculate the signature,
+         * and then call [create] to create a [CoseSigned] object.
+         */
         @Throws(IllegalArgumentException::class)
         fun <P : Any> prepare(
             protectedHeader: CoseHeader,
@@ -116,6 +126,9 @@ data class CoseSigned<P : Any?> internal constructor(
             payload = payload.toRawPayload(payloadSerializer),
         )
 
+        /**
+         * If [this] is a [ByteArray], use it as is, otherwise encode it as a [ByteStringWrapper], with CBOR tag 24
+         */
         private fun <P : Any> P?.toRawPayload(payloadSerializer: KSerializer<P>): ByteArray = when (this) {
             is ByteArray -> this
             is Nothing -> byteArrayOf()

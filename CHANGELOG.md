@@ -7,7 +7,9 @@
     * Introduce class `CoseSignedBytes` which holds the bytes as transmitted on the wire
     * Add property `wireFormat` to `CoseSigned` to hold those bytes
     * Create new `CoseSigned` objects by calling `CoseSigned.create()` instead of using a constructor
+    * Prepare COSE signature input by calling `CoseSigned.prepare()`
     * In `CoseSigned`, member `protectedHeader` is now a `CoseHeader`, not a `ByteStringWrapper<CoseHeader>`
+    * In `CoseSigned`, member `rawSignature` (`ByteArray`) is now `signature` (`CryptoSignature.RawByteEncodable`)
 
 ### 3.11.1 (Supreme 0.6.1)
 * Fix `CoseSigned` JSON serialization

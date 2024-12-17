@@ -23,6 +23,7 @@ import kotlinx.serialization.json.JsonDecoder
 
 /**
  * Serializes [CoseSigned] with a typed payload, by using its [CoseSigned.wireFormat].
+ * Also handles deserialization of the bytes.
  */
 class CoseSignedSerializer<P : Any?>(
     private val parameterSerializer: KSerializer<P>,
