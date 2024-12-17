@@ -9,8 +9,6 @@ import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.fromUncompr
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
-import at.asitplus.signum.indispensable.asn1.encoding.decodeFromAsn1ContentBytes
-import at.asitplus.signum.indispensable.asn1.encoding.toTwosComplementByteArray
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.josef.io.JwsCertificateSerializer
