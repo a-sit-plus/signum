@@ -5,7 +5,9 @@
 ### 3.12.0
 * Fix COSE signature verification:
     * Introduce class `CoseSignedBytes` which holds the bytes as transmitted on the wire
-    * Create new `CoseSigned` objects by calling `CoseSigned.create()`
+    * Add property `wireFormat` to `CoseSigned` to hold those bytes
+    * Create new `CoseSigned` objects by calling `CoseSigned.create()` instead of using a constructor
+    * In `CoseSigned`, member `protectedHeader` is now a `CoseHeader`, not a `ByteStringWrapper<CoseHeader>`
 
 ### 3.11.1 (Supreme 0.6.1)
 * Fix `CoseSigned` JSON serialization

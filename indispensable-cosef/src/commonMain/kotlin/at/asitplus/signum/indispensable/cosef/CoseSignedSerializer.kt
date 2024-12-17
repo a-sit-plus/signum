@@ -1,9 +1,12 @@
 package at.asitplus.signum.indispensable.cosef
 
+import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64Strict
+import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -63,19 +66,24 @@ class CoseSignedSerializer<P : Any?>(
             CryptoSignature.EC.fromRawBytes(this)
         else CryptoSignature.RSAorHMAC(this)
 
-    private fun ByteArray?.toTypedPayload(): P? = runCatching {
-        this?.let {
-            coseCompliantSerializer.decodeFromByteArray(parameterSerializer, it)
-        }
-    }.getOrElse {
-        runCatching {
-            this?.let {
-                coseCompliantSerializer.decodeFromByteArray(ByteStringWrapperSerializer(parameterSerializer), it)
-            }?.value
+    private fun ByteArray?.toTypedPayload(): P? = when (this) {
+        null -> null
+        else -> if (this.isEmpty()) null else runCatching {
+            coseCompliantSerializer.decodeFromByteArray(parameterSerializer, this)
         }.getOrElse {
-            @Suppress("UNCHECKED_CAST")
-            this as P
+            runCatching {
+                coseCompliantSerializer.decodeFromByteArray(
+                    ByteStringWrapperSerializer(parameterSerializer),
+                    this
+                ).value
+            }.getOrElse {
+                @Suppress("UNCHECKED_CAST")
+                this as P
+            }
         }
     }
 
 }
+
+private fun CoseHeader.usesEC(): Boolean? = algorithm?.algorithm?.let { it is SignatureAlgorithm.ECDSA }
+    ?: certificateChain?.let { X509Certificate.decodeFromDerOrNull(it)?.publicKey is CryptoPublicKey.EC }
