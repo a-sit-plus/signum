@@ -2,16 +2,18 @@ package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.cosef.io.Base16Strict
+import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.serialization.*
-import kotlinx.serialization.cbor.ByteString
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.cbor.CborArray
+import kotlinx.serialization.encodeToByteArray
 
 /**
  * Representation of a signed COSE_Sign1 object, i.e. consisting of protected header, unprotected header and payload.
@@ -29,51 +31,15 @@ import kotlinx.serialization.cbor.CborArray
 @CborArray
 @ConsistentCopyVisibility
 data class CoseSigned<P : Any?> internal constructor(
-    @ByteString
-    val protectedHeader: ByteStringWrapper<CoseHeader>,
-    val unprotectedHeader: CoseHeader?,
-    @ByteString
+    val protectedHeader: CoseHeader,
+    val unprotectedHeader: CoseHeader? = null,
     val payload: P?,
-    @ByteString
-    val rawSignature: ByteArray,
-    /**
-     * The raw payload as it was transmitted, i.e. originally used for [CoseSignatureInput] to calculate the signature
-     */
-    @Transient
-    val rawPayload: ByteArray?,
+    val signature: CryptoSignature.RawByteEncodable,
+    val wireFormat: CoseSignedBytes,
 ) {
-    @Throws(IllegalArgumentException::class)
-    constructor(
-        protectedHeader: CoseHeader,
-        unprotectedHeader: CoseHeader?,
-        payload: P?,
-        signature: CryptoSignature.RawByteEncodable,
-        rawPayload: ByteArray?,
-    ) : this(
-        protectedHeader = ByteStringWrapper(value = protectedHeader),
-        unprotectedHeader = unprotectedHeader,
-        payload = when (payload) {
-            is ByteStringWrapper<*> -> throw IllegalArgumentException("payload shall not be ByteStringWrapper")
-            else -> payload
-        },
-        rawSignature = signature.rawByteArray,
-        rawPayload = rawPayload,
-    )
 
-    fun prepareCoseSignatureInput(
-        externalAad: ByteArray = byteArrayOf(),
-    ): ByteArray = CoseSignatureInput(
-        contextString = "Signature1",
-        protectedHeader = protectedHeader,
-        externalAad = externalAad,
-        payload = rawPayload,
-    ).serialize()
-
-    val signature: CryptoSignature by lazy {
-        if (protectedHeader.value.usesEC() ?: unprotectedHeader?.usesEC() ?: (rawSignature.size < 2048))
-            CryptoSignature.EC.fromRawBytes(rawSignature)
-        else CryptoSignature.RSAorHMAC(rawSignature)
-    }
+    fun prepareCoseSignatureInput(externalAad: ByteArray = byteArrayOf()): ByteArray =
+        wireFormat.toCoseSignatureInput(externalAad)
 
     fun serialize(parameterSerializer: KSerializer<P>): ByteArray = coseCompliantSerializer
         .encodeToByteArray(CoseSignedSerializer(parameterSerializer), this)
@@ -86,26 +52,28 @@ data class CoseSigned<P : Any?> internal constructor(
 
         if (protectedHeader != other.protectedHeader) return false
         if (unprotectedHeader != other.unprotectedHeader) return false
-        if (payload != null) {
-            if (other.payload == null) return false
-            if (!payload.contentEqualsIfArray(other.payload)) return false
-        } else if (other.payload != null) return false
-        return rawSignature.contentEquals(other.rawSignature)
+        if (payload != other.payload) return false
+        if (signature != other.signature) return false
+        if (wireFormat != other.wireFormat) return false
+
+        return true
     }
 
     override fun hashCode(): Int {
         var result = protectedHeader.hashCode()
         result = 31 * result + (unprotectedHeader?.hashCode() ?: 0)
-        result = 31 * result + (payload?.contentHashCodeIfArray() ?: 0)
-        result = 31 * result + rawSignature.contentHashCode()
+        result = 31 * result + (payload?.hashCode() ?: 0)
+        result = 31 * result + signature.hashCode()
+        result = 31 * result + wireFormat.hashCode()
         return result
     }
 
     override fun toString(): String {
-        return "CoseSigned(protectedHeader=${protectedHeader.value}," +
+        return "CoseSigned(protectedHeader=$protectedHeader," +
                 " unprotectedHeader=$unprotectedHeader," +
-                " payload=${if (payload is ByteArray) payload.encodeToString(Base16Strict) else payload}," +
-                " signature=${rawSignature.encodeToString(Base16Strict)})"
+                " payload=$payload," +
+                " signature=$signature," +
+                " wireFormat=$wireFormat)"
     }
 
     companion object {
@@ -114,86 +82,68 @@ data class CoseSigned<P : Any?> internal constructor(
                 coseCompliantSerializer.decodeFromByteArray(CoseSignedSerializer(parameterSerializer), it)
             }
 
-        /**
-         * Called by COSE signing implementations to get the bytes that will be
-         * used as the input for signature calculation of a `COSE_Sign1` object
-         */
-        fun <P : Any> prepareCoseSignatureInput(
+        @Throws(IllegalArgumentException::class)
+        fun <P : Any> create(
             protectedHeader: CoseHeader,
+            unprotectedHeader: CoseHeader? = null,
             payload: P?,
-            serializer: KSerializer<P>,
-            externalAad: ByteArray = byteArrayOf(),
-        ) = CoseSignatureInput(
-            contextString = "Signature1",
-            protectedHeader = ByteStringWrapper(protectedHeader),
-            externalAad = externalAad,
-            payload = when (payload) {
-                null -> null
+            signature: CryptoSignature.RawByteEncodable,
+            payloadSerializer: KSerializer<P>,
+        ): CoseSigned<P> {
+            val rawPayload = when (payload) {
                 is ByteArray -> payload
-                else -> coseCompliantSerializer.encodeToByteArray(
-                    ByteStringWrapperSerializer(serializer),
+                is Nothing -> byteArrayOf()
+                is ByteStringWrapper<*> -> throw IllegalArgumentException("Payload must not be a ByteStringWrapper")
+                is P -> coseCompliantSerializer.encodeToByteArray(
+                    ByteStringWrapperSerializer(payloadSerializer),
                     ByteStringWrapper(payload)
-                )
-            },
-        )
+                ).wrapInCborTag(24)
+                else -> byteArrayOf()
+            }
+            val wireFormat = CoseSignedBytes(
+                protectedHeader = coseCompliantSerializer.encodeToByteArray(protectedHeader),
+                unprotectedHeader = unprotectedHeader,
+                payload = rawPayload,
+                rawSignature = signature.rawByteArray
+            )
+            return CoseSigned<P>(
+                protectedHeader = protectedHeader,
+                unprotectedHeader = unprotectedHeader,
+                payload = payload,
+                signature = signature,
+                wireFormat = wireFormat,
+            )
+        }
+
+        private fun ByteArray.wrapInCborTag(tag: Byte) = byteArrayOf(0xd8.toByte()) + byteArrayOf(tag) + this
+
+
+//        /**
+//         * Called by COSE signing implementations to get the bytes that will be
+//         * used as the input for signature calculation of a `COSE_Sign1` object
+//         */
+//        fun <P : Any> prepareCoseSignatureInput(
+//            protectedHeader: CoseHeader,
+//            payload: P?,
+//            serializer: KSerializer<P>,
+//            externalAad: ByteArray = byteArrayOf(),
+//        ) = CoseSignatureInput(
+//            contextString = "Signature1",
+//            protectedHeader = ByteStringWrapper(protectedHeader),
+//            externalAad = externalAad,
+//            payload = when (payload) {
+//                null -> null
+//                is ByteArray -> payload
+//                else -> coseCompliantSerializer.encodeToByteArray(
+//                    ByteStringWrapperSerializer(serializer),
+//                    ByteStringWrapper(payload)
+//                )
+//            },
+//        )
     }
 }
 
 fun CoseHeader.usesEC(): Boolean? = algorithm?.algorithm?.let { it is SignatureAlgorithm.ECDSA }
     ?: certificateChain?.let { X509Certificate.decodeFromDerOrNull(it)?.publicKey is CryptoPublicKey.EC }
 
-
-@OptIn(ExperimentalSerializationApi::class)
-@Serializable
-@CborArray
-data class CoseSignatureInput(
-    val contextString: String,
-    @ByteString
-    val protectedHeader: ByteStringWrapper<CoseHeader>,
-    @ByteString
-    val externalAad: ByteArray,
-    @ByteString
-    val payload: ByteArray?,
-) {
-    fun serialize() = coseCompliantSerializer.encodeToByteArray(this)
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-
-        other as CoseSignatureInput
-
-        if (contextString != other.contextString) return false
-        if (protectedHeader != other.protectedHeader) return false
-        if (!externalAad.contentEquals(other.externalAad)) return false
-        if (payload != null) {
-            if (other.payload == null) return false
-            if (!payload.contentEquals(other.payload)) return false
-        } else if (other.payload != null) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = contextString.hashCode()
-        result = 31 * result + protectedHeader.hashCode()
-        result = 31 * result + externalAad.contentHashCode()
-        result = 31 * result + (payload?.contentHashCode() ?: 0)
-        return result
-    }
-
-    override fun toString(): String {
-        return "CoseSignatureInput(contextString='$contextString'," +
-                " protectedHeader=${protectedHeader.value}," +
-                " externalAad=${externalAad.encodeToString(Base16Strict)}," +
-                " payload=${payload?.encodeToString(Base16Strict)})"
-    }
-
-
-    companion object {
-        fun deserialize(it: ByteArray) = catching {
-            coseCompliantSerializer.decodeFromByteArray<CoseSignatureInput>(it)
-        }
-    }
-}
 

@@ -2,8 +2,10 @@
 
 ## 3.0
 
-### 3.11.2
-* Fix `CoseSigned` reconstructing signature input during deserialization
+### 3.12.0
+* Fix COSE signature verification:
+    * Introduce class `CoseSignedBytes` which holds the bytes as transmitted on the wire
+    * Create new `CoseSigned` objects by calling `CoseSigned.create()`
 
 ### 3.11.1 (Supreme 0.6.1)
 * Fix `CoseSigned` JSON serialization
