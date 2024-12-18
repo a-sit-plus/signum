@@ -89,6 +89,14 @@ class CoseSerializationTest : FreeSpec({
         cose.wireFormat.payload shouldBe "546869732069732074686520636F6E74656E742E".decodeToByteArray(Base16())
     }
 
+    "Deserialization fails when trying to parse byte array as data class" {
+        val input = "8445A101390100A054546869732069732074686520636F6E74656E742E43626172"
+
+        shouldThrow<IllegalStateException> {
+            CoseSigned.deserialize(DataClass.serializer(), input.decodeToByteArray(Base16())).getOrThrow()
+        }
+    }
+
     "Serialization is correct for data class" {
         val payload = DataClass("This is the content.")
         val cose = CoseSigned.create(
@@ -113,6 +121,15 @@ class CoseSerializationTest : FreeSpec({
 
         val cose = CoseSigned.deserialize(DataClass.serializer(), input.decodeToByteArray(Base16())).getOrThrow()
         cose.payload shouldBe DataClass("This is the content.")
+        cose.wireFormat.payload shouldBe "D818581EA167636F6E74656E7474546869732069732074686520636F6E74656E742E"
+            .decodeToByteArray(Base16())
+        // important part is the D818 as tag(24)
+    }
+
+    "Deserialization is correct for data class read as byte array" {
+        val input = "8445A101390100A05822D818581EA167636F6E74656E7474546869732069732074686520636F6E74656E742E43626172"
+
+        val cose = CoseSigned.deserialize(ByteArraySerializer(), input.decodeToByteArray(Base16())).getOrThrow()
         cose.wireFormat.payload shouldBe "D818581EA167636F6E74656E7474546869732069732074686520636F6E74656E742E"
             .decodeToByteArray(Base16())
         // important part is the D818 as tag(24)
