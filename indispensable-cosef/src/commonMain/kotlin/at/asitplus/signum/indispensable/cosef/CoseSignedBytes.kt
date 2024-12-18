@@ -34,7 +34,7 @@ data class CoseSignedBytes(
         externalAad: ByteArray = byteArrayOf(),
     ): ByteArray = CoseSignatureInput(
         contextString = "Signature1",
-        protectedHeader = protectedHeader,
+        protectedHeader = protectedHeader.toZeroLengthByteString(),
         externalAad = externalAad,
         payload = payload,
     ).serialize()
@@ -75,4 +75,17 @@ data class CoseSignedBytes(
             coseCompliantSerializer.decodeFromByteArray(it)
         }
     }
+}
+
+/**
+ * The protected attributes from the body structure, encoded in a
+ * bstr type.  If there are no protected attributes, a zero-length
+ * byte string is used.
+ *
+ *  [RFC 9052 4.4](https://datatracker.ietf.org/doc/html/rfc9052#section-4.4)
+ */
+private fun ByteArray.toZeroLengthByteString(): ByteArray = when {
+    // "A0"
+    this.size == 1 && this[0] == 160.toByte() -> byteArrayOf()
+    else -> this
 }
