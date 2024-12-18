@@ -84,10 +84,9 @@ class CoseSerializationTest : FreeSpec({
     "Deserialization is correct for byte array" {
         val input = "8445A101390100A054546869732069732074686520636F6E74656E742E43626172"
 
-        val cose = CoseSigned.deserialize(DataClass.serializer(), input.decodeToByteArray(Base16())).getOrThrow()
+        val cose = CoseSigned.deserialize(ByteArraySerializer(), input.decodeToByteArray(Base16())).getOrThrow()
         cose.payload shouldBe "This is the content.".encodeToByteArray()
         cose.wireFormat.payload shouldBe "546869732069732074686520636F6E74656E742E".decodeToByteArray(Base16())
-        // important part is the D818 as tag(24)
     }
 
     "Serialization is correct for data class" {

@@ -77,9 +77,9 @@ class CoseSignedSerializer<P : Any?>(
         if (parameterSerializer == ByteArraySerializer()) {
             typed()
         } else {
-            runCatching { fromBytes() }.getOrElse {
-                runCatching { fromByteStringWrapper() }.getOrElse { typed() }
-            }
+            runCatching { fromBytes() }
+                .getOrElse { fromByteStringWrapper() }
+            // if it still fails, the input not valid
         }
 
     private fun ByteArray.fromBytes(): P =
