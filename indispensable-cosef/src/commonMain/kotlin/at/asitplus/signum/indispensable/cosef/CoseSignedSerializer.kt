@@ -75,7 +75,8 @@ class CoseSignedSerializer<P : Any?>(
 
     private fun ByteArray.toTypedPayload(): P =
         if (parameterSerializer == ByteArraySerializer()) {
-            typed()
+            @Suppress("UNCHECKED_CAST")
+            (this as P)
         } else {
             runCatching { fromBytes() }
                 .getOrElse { fromByteStringWrapper() }
@@ -87,9 +88,6 @@ class CoseSignedSerializer<P : Any?>(
 
     private fun ByteArray.fromByteStringWrapper(): P =
         coseCompliantSerializer.decodeFromByteArray(ByteStringWrapperSerializer(parameterSerializer), this).value
-
-    @Suppress("UNCHECKED_CAST")
-    private fun ByteArray.typed(): P = (this as P)
 
 }
 
