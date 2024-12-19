@@ -2,8 +2,8 @@
 
 ## 3.0
 
-### 3.12.0
-* Fix COSE signature verification:
+### 3.12.0 (Supreme 0.6.2)
+* Fix COSE signature verification (this is breaking change in `indispensable-cosef`):
     * Introduce class `CoseSignedBytes` which holds the bytes as transmitted on the wire
     * Add property `wireFormat` to `CoseSigned` to hold those bytes
     * Create new `CoseSigned` objects by calling `CoseSigned.create()` instead of using a constructor
