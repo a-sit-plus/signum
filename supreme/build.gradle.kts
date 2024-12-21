@@ -18,6 +18,7 @@ plugins {
     id("org.jetbrains.dokka")
     id("signing")
     id("at.asitplus.gradle.conventions")
+    id("io.github.ttypic.swiftklib") version "0.6.4"
 }
 
 buildscript {
@@ -39,9 +40,16 @@ kotlin {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         instrumentedTestVariant.sourceSetTree.set(test)
     }
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
+    listOf(
+    iosX64(),
+    iosArm64(),
+    iosSimulatorArm64()).forEach {
+        it.compilations{
+            val main by getting {
+                cinterops.create("AESwift")
+            }
+        }
+    }
 
     sourceSets.commonMain.dependencies {
         api(project(":indispensable"))
@@ -55,7 +63,18 @@ kotlin {
         implementation("androidx.biometric:biometric:1.2.0-alpha05")
     }
 
+    sourceSets.jvmTest.dependencies {
+        implementation("com.lambdaworks:scrypt:1.4.0")
+    }
 }
+
+swiftklib {
+    create("AESwift") {
+        path = file("src/iosMain/swift")
+        packageName("at.asitplus.signum.supreme.aes")
+    }
+}
+
 
 android {
     namespace = "at.asitplus.signum.supreme"
