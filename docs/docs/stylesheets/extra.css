@@ -91,3 +91,12 @@
         height: 3.9rem;
     }
 }
+
+.euflag {
+    text-align: center;
+    width: 150px !important;
+    display: inline !important;
+}
+.valign {
+    padding: 25px 0;
+}

@@ -67,6 +67,8 @@ markdown_extensions:
   - admonition
   - pymdownx.details
   - pymdownx.tilde
+  - attr_list
+  - md_in_html
 
 nav:
   - Manual:

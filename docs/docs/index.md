@@ -278,3 +278,14 @@ key.toCryptoPublicKey().getOrThrow() //<- this we can pass to a Supreme verifier
 Every module has dedicated documentation pages, and we provide full API docs.
 Also checkout the feature matrix to get an overview of what is and isn't supported.
 
+---
+
+<div class="inline euflag" markdown>
+   ![eu.svg](assets/eu.svg)
+  <br> Co&#8209;Funded&nbsp;by&nbsp;the<br>European&nbsp;Union
+</div>
+<div class="valign">
+<p>
+This project has received funding from the European Union’s <a href="https://digital-strategy.ec.europa.eu/en/activities/digital-programme">Digital Europe Programme (DIGITAL)</a>, Project 101102655 — POTENTIAL.
+</p>
+</div>
