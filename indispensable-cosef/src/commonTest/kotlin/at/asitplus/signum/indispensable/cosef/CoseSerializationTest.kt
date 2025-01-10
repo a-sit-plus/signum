@@ -81,12 +81,38 @@ class CoseSerializationTest : FreeSpec({
         CoseSigned.deserialize(ByteArraySerializer(), serialized).getOrThrow() shouldBe cose
     }
 
+    "Serialization is correct for null" {
+        val cose = CoseSigned.create(
+            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.RS256),
+            unprotectedHeader = null,
+            payload = null,
+            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
+            payloadSerializer = ByteArraySerializer(),
+        )
+        val serialized = cose.serialize(ByteArraySerializer())
+
+        val serializedString = serialized.encodeToString(Base16Strict).uppercase()
+        serializedString shouldContain "A0F643" // Empty unprotected header; null; begin of signature
+        serializedString shouldContain "8445A101390100" // array of 5 bytes that is a map with -257 (the header for RS256)
+        cose.payload shouldBe null
+
+        CoseSigned.deserialize(ByteArraySerializer(), serialized).getOrThrow() shouldBe cose
+    }
+
     "Deserialization is correct for byte array" {
         val input = "8445A101390100A054546869732069732074686520636F6E74656E742E43626172"
 
         val cose = CoseSigned.deserialize(ByteArraySerializer(), input.decodeToByteArray(Base16())).getOrThrow()
         cose.payload shouldBe "This is the content.".encodeToByteArray()
         cose.wireFormat.payload shouldBe "546869732069732074686520636F6E74656E742E".decodeToByteArray(Base16())
+    }
+
+    "Deserialization is correct for null payload" {
+        val input = "8445A101390100A0F643626172"
+
+        val cose = CoseSigned.deserialize(ByteArraySerializer(), input.decodeToByteArray(Base16())).getOrThrow()
+        cose.payload shouldBe null
+        cose.wireFormat.payload shouldBe null
     }
 
     "Deserialization fails when trying to parse byte array as data class" {

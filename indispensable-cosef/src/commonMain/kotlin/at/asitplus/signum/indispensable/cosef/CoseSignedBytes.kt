@@ -32,11 +32,12 @@ data class CoseSignedBytes(
 ) {
     fun toCoseSignatureInput(
         externalAad: ByteArray = byteArrayOf(),
+        detachedPayload: ByteArray? = null,
     ): ByteArray = CoseSignatureInput(
         contextString = "Signature1",
         protectedHeader = protectedHeader.toZeroLengthByteString(),
         externalAad = externalAad,
-        payload = payload,
+        payload = payload ?: detachedPayload,
     ).serialize()
 
     fun serialize(): ByteArray = coseCompliantSerializer.encodeToByteArray(this)
