@@ -9,6 +9,7 @@ import at.asitplus.signum.internals.*
 import at.asitplus.signum.indispensable.iosEncoded
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.indispensable.secKeyAlgorithmPreHashed
+import at.asitplus.signum.indispensable.toSecKey
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.UnsupportedCryptoException
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -47,15 +48,6 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
 {
 }
 
-private fun MemScope.toSecKey(key: CryptoPublicKey): SecKeyRef =
-    corecall {
-        SecKeyCreateWithData(key.iosEncoded.toNSData().giveToCF(), cfDictionaryOf(
-            kSecAttrKeyClass to kSecAttrKeyClassPublic,
-            kSecAttrKeyType to when (key) {
-                is CryptoPublicKey.EC -> kSecAttrKeyTypeEC
-                is CryptoPublicKey.RSA -> kSecAttrKeyTypeRSA
-            }), error)
-    }.also { defer { CFRelease(it) }}
 
 private fun verifyImpl(signatureAlgorithm: SignatureAlgorithm, publicKey: CryptoPublicKey,
                        data: SignatureInput, signature: CryptoSignature,
