@@ -21,7 +21,7 @@ More details about the supported algorithms is provided in the next section.
 | Attestation                 |           ❋           |    ✔    |       ✔*        |
 | Biometric Auth              |           ✗           |    ✔    |        ✔        |
 | Hardware-Backed Key Storage | through dedicated HSM |    ✔    | P-256 keys only |
-| Key Agreement               |           ✗           |    ✗    |        ✗        |
+| Key Agreement               |           ✔           |    ✔    |        ✔        |
 | Asymmetric Encryption       |           ✗           |    ✗    |        ✗        |
 | Symmetric Encryption        |           ✗           |    ✗    |        ✗        |
 | MAC                         |           ✗           |    ✗    |        ✗        |
@@ -57,6 +57,7 @@ a separate platform listing is omitted.
 | RSA Padding        | PKCS1 and PSS (with sensible defaults)                                               |
 | Elliptic Curves    | NIST Curves (P-256, P-384, P-521)                                                    |
 | Digests            | SHA-1 and SHA-2 family (SHA-256, SHA-384, SHA-512)                                   |
+| Key Agreement      | ECDH on all platforms. Needs key agreement bit set on Android                        |
 
 On the JVM and on Android, supporting more algorithms is rather easy, since Bouncy Castle works on both platforms
 and can be used to provide more algorithms than natively supported. However, we aim for tight platform integration,

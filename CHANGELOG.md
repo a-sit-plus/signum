@@ -3,8 +3,9 @@
 ## 3.0
 
 ### NEXT
+* Key Agreement Support
+    * ECDH
 * performance optimization: Instantiate fewer KmmResults
-
 * Move `PemEncodable`/`PemDecodable` from _indispensable_ to _indispensable-asn1_ module.
 
 ### 3.12.1 (Supreme 0.6.3)
