@@ -42,7 +42,9 @@ data class CoseSigned<P : Any?> internal constructor(
     fun prepareCoseSignatureInput(
         externalAad: ByteArray = byteArrayOf(),
         detachedPayload: ByteArray? = null,
-    ): ByteArray = wireFormat.toCoseSignatureInput(externalAad, detachedPayload)
+    ): ByteArray = detachedPayload
+        ?.let { wireFormat.toCoseSignatureInputWithDetachedPayload(externalAad, it) }
+        ?: wireFormat.toCoseSignatureInput(externalAad)
 
     fun serialize(parameterSerializer: KSerializer<P>): ByteArray = coseCompliantSerializer
         .encodeToByteArray(CoseSignedSerializer(parameterSerializer), this)
@@ -139,6 +141,7 @@ data class CoseSigned<P : Any?> internal constructor(
                 ByteStringWrapperSerializer(payloadSerializer),
                 ByteStringWrapper(this)
             ).wrapInCborTag(24)
+
             else -> null
         }
 

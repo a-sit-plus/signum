@@ -32,7 +32,20 @@ data class CoseSignedBytes(
 ) {
     fun toCoseSignatureInput(
         externalAad: ByteArray = byteArrayOf(),
-        detachedPayload: ByteArray? = null,
+    ): ByteArray = CoseSignatureInput(
+        contextString = "Signature1",
+        protectedHeader = protectedHeader.toZeroLengthByteString(),
+        externalAad = externalAad,
+        payload = payload,
+    ).serialize()
+
+    /**
+     * Warning: This ignores the member [payload] and should only be used for COSE detached payloads,
+     * i.e. when the payload is not transported inside the signed structure but externally.
+     */
+    fun toCoseSignatureInputWithDetachedPayload(
+        externalAad: ByteArray = byteArrayOf(),
+        detachedPayload: ByteArray,
     ): ByteArray = CoseSignatureInput(
         contextString = "Signature1",
         protectedHeader = protectedHeader.toZeroLengthByteString(),
