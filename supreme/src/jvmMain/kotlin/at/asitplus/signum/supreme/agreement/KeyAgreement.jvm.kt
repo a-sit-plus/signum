@@ -9,7 +9,7 @@ import at.asitplus.signum.supreme.os.PlatformSigningProviderSignerSigningConfigu
 import at.asitplus.signum.supreme.sign.Signer
 import javax.crypto.KeyAgreement
 
-internal actual fun Signer.ECDSA.performAgreement(publicKey: CryptoPublicKey.EC, config: DSLConfigureFn<PlatformSigningProviderSignerSigningConfigurationBase>): ByteArray =
+internal actual suspend fun Signer.ECDSA.performAgreement(publicKey: CryptoPublicKey.EC, config: DSLConfigureFn<PlatformSigningProviderSignerSigningConfigurationBase>): ByteArray =
     KeyAgreement.getInstance("ECDH").also {
         @OptIn(HazardousMaterials::class)
         it.init(jcaPrivateKey)

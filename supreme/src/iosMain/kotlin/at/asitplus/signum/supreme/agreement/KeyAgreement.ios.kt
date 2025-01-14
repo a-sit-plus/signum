@@ -20,7 +20,7 @@ import kotlinx.cinterop.memScoped
 import platform.Foundation.NSData
 
 @OptIn(ExperimentalForeignApi::class)
-internal actual fun Signer.ECDSA.performAgreement(publicKey: CryptoPublicKey.EC, config: DSLConfigureFn<PlatformSigningProviderSignerSigningConfigurationBase>): ByteArray {
+internal actual suspend fun Signer.ECDSA.performAgreement(publicKey: CryptoPublicKey.EC, config: DSLConfigureFn<PlatformSigningProviderSignerSigningConfigurationBase>): ByteArray {
 
     return catchingUnwrapped {
         val priv =  if( this is EphemeralSigner.EC)

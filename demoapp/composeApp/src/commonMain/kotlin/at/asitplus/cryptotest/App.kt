@@ -65,6 +65,7 @@ import at.asitplus.signum.supreme.os.SigningProvider
 import at.asitplus.signum.supreme.sign.Verifier
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
+import io.ktor.util.encodeBase64
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -471,9 +472,9 @@ internal fun App() {
                             val pub = eph.publicKey as CryptoPublicKey.EC
                             Napier.i { "Got Pubkey: $pub" }
                             val agreed= pub.keyAgreement( currentSigner!!.getOrThrow() as Signer.ECDSA).getOrThrow()
-                            Napier.i { "AGREED1: ${Base64.encodeToByteArray(agreed)}" }
+                            Napier.i { "AGREED1: ${agreed.encodeBase64()}" }
                             val agreed2 = ( currentSigner!!.getOrThrow() as Signer.ECDSA).keyAgreement(pub).getOrThrow()
-                            Napier.i { "AGREED2: ${Base64.encodeToByteArray(agreed2)}" }
+                            Napier.i { "AGREED2: ${agreed2.encodeBase64()}" }
                         }
 
                     },

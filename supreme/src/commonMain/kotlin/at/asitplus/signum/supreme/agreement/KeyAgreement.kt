@@ -18,7 +18,7 @@ import at.asitplus.signum.supreme.sign.signerFor
  *
  * [config] can be used to display a custom authentication prompt
  */
-fun Signer.ECDSA.keyAgreement(
+suspend fun Signer.ECDSA.keyAgreement(
     publicKey: CryptoPublicKey.EC,
     config: DSLConfigureFn<PlatformSigningProviderSignerSigningConfigurationBase> = null
 ): KmmResult<ByteArray> = catching {
@@ -30,7 +30,7 @@ fun Signer.ECDSA.keyAgreement(
  * Elliptic-curve Diffie-Hellman key agreement.
  * Curves of public key and signer need to match!
  */
-fun CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>.keyAgreement(publicKey: CryptoPublicKey.EC) = catching {
+suspend fun CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>.keyAgreement(publicKey: CryptoPublicKey.EC) = catching {
     (SignatureAlgorithm.ECDSA(this.publicKey.curve.nativeDigest, this.publicKey.curve).signerFor(this)
         .getOrThrow() as Signer.ECDSA).keyAgreement(
         publicKey
@@ -41,7 +41,7 @@ fun CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>.keyAgreement(publicKey: C
  * Elliptic-curve Diffie-Hellman key agreement.
  * Curves of public key and signer need to match!
  */
-fun CryptoPublicKey.EC.keyAgreement(privateKey: CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>) =
+suspend fun CryptoPublicKey.EC.keyAgreement(privateKey: CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>) =
     privateKey.keyAgreement(this)
 
 /**
@@ -50,12 +50,12 @@ fun CryptoPublicKey.EC.keyAgreement(privateKey: CryptoPrivateKey.WithPublicKey<C
  *
  * [config] can be used to display a custom authentication prompt
  */
-fun CryptoPublicKey.EC.keyAgreement(
+suspend fun CryptoPublicKey.EC.keyAgreement(
     signer: Signer.ECDSA,
     config: DSLConfigureFn<PlatformSigningProviderSignerSigningConfigurationBase> = null
 ) = signer.keyAgreement(this, config)
 
-internal expect fun Signer.ECDSA.performAgreement(
+internal expect suspend fun Signer.ECDSA.performAgreement(
     publicKey: CryptoPublicKey.EC,
     config: DSLConfigureFn<PlatformSigningProviderSignerSigningConfigurationBase>
 ): ByteArray
