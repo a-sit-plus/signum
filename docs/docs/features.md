@@ -21,7 +21,7 @@ More details about the supported algorithms is provided in the next section.
 | Attestation                 |           ❋           |    ✔    |       ✔*        |
 | Biometric Auth              |           ✗           |    ✔    |        ✔        |
 | Hardware-Backed Key Storage | through dedicated HSM |    ✔    | P-256 keys only |
-| Key Agreement               |           ✔           |    ✔    |        ✔        |
+| Key Agreement               |           ✔           |    ✔†    |        ✔        |
 | Asymmetric Encryption       |           ✗           |    ✗    |        ✗        |
 | Symmetric Encryption        |           ✗           |    ✗    |        ✗        |
 | MAC                         |           ✗           |    ✗    |        ✗        |
@@ -43,6 +43,15 @@ iOS supports App attestation, but no direct key attestation. The Supreme crypto 
 through app attestation, by _asserting_ the creation of a fresh public/private key pair inside the secure enclave
 through application-layer logic encapsulated by the Supreme crypto provider.  
 Additional details are described in the [Attestation](supreme.md#attestation) section of the _Supreme_ manual.
+
+### † Android Key Agreement
+Key Agreement support in Hardware is spotty on Android. Most importantly, it is only supported starting with SDK&nbsp;31 (Android&nbsp;12).
+Since this is indeed dependent on the crypto hardware (and *KeyMaster* version, etc.), not every device running Android&nbsp;12 or later
+will support key agreement in hardware. The reason for this is that devices launche with an earlier version of Android are exempt
+from certain (otherwise) hard requirements for Devices launched with later Android versions.
+Hence, a device launched with Android&nbsp;10, and later updated to Android&nbsp;12 may still not support key agreement in
+hardware.
+The Supreme crypto provider will return a failure, in if key agreement is not supported in hardware.
 
 ## Supported Algorithms
 
