@@ -54,8 +54,10 @@ import at.asitplus.signum.supreme.sign.makeVerifier
 import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.cryptotest.theme.AppTheme
 import at.asitplus.cryptotest.theme.LocalThemeIsDark
+import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.jsonEncoded
+import at.asitplus.signum.supreme.SecretExposure
 import at.asitplus.signum.supreme.agreement.keyAgreement
 import at.asitplus.signum.supreme.asKmmResult
 import at.asitplus.signum.supreme.os.PlatformSignerConfigurationBase
@@ -460,22 +462,37 @@ internal fun App() {
                         Napier.w { "input: $inputData" }
                         Napier.w { "signingKey: $currentKey" }
                         CoroutineScope(context).launch {
-                            val alg= keyAlgorithm.algorithm as SignatureAlgorithm.ECDSA
-                            val eph= Signer.Ephemeral {
-                               ec {
-                                            curve = alg.requiredCurve
-                                                ?: ECCurve.entries.find { it.nativeDigest == alg.digest }!!
-                                            digests = setOf(alg.digest)
+                            val alg = keyAlgorithm.algorithm as SignatureAlgorithm.ECDSA
+                            val eph = Signer.Ephemeral {
+                                ec {
+                                    curve = alg.requiredCurve
+                                        ?: ECCurve.entries.find { it.nativeDigest == alg.digest }!!
+                                    digests = setOf(alg.digest)
 
                                 }
                             }.getOrThrow()
                             val pub = eph.publicKey as CryptoPublicKey.EC
                             Napier.i { "Got Pubkey: $pub" }
-                            val agreed= pub.keyAgreement( currentSigner!!.getOrThrow() as Signer.ECDSA).getOrThrow()
+
+                            val agreed3 =
+                                (currentSigner!!.getOrThrow().publicKey as CryptoPublicKey.EC).keyAgreement(
+                                    @OptIn(SecretExposure::class)
+                                    eph.exportPrivateKey()
+                                        .getOrThrow() as CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>
+                                ).getOrThrow()
+                            Napier.i { "AGREED3: ${agreed3.encodeBase64()}" }
+
+
+                            val agreed =
+                                pub.keyAgreement(currentSigner!!.getOrThrow() as Signer.ECDSA)
+                                    .getOrThrow()
                             Napier.i { "AGREED1: ${agreed.encodeBase64()}" }
-                            val agreed2 = ( currentSigner!!.getOrThrow() as Signer.ECDSA).keyAgreement(pub).getOrThrow()
+                            val agreed2 =
+                                (currentSigner!!.getOrThrow() as Signer.ECDSA).keyAgreement(pub)
+                                    .getOrThrow()
                             Napier.i { "AGREED2: ${agreed2.encodeBase64()}" }
-                        }
+
+                             }
 
                     },
 

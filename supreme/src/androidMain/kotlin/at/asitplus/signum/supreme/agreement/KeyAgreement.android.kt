@@ -42,7 +42,7 @@ actual suspend fun Signer.ECDSA.performAgreement(
         agreement.doPhase(publicKey.toJcaPublicKey().getOrThrow(), true)
         agreement.generateSecret()
     } else {
-        javax.crypto.KeyAgreement.getInstance("ECDH", "AndroidKeyStore").also {
+        javax.crypto.KeyAgreement.getInstance("ECDH").also {
             @OptIn(HazardousMaterials::class)
             it.init(jcaPrivateKey)
             it.doPhase(publicKey.toJcaPublicKey().getOrThrow(), true)
