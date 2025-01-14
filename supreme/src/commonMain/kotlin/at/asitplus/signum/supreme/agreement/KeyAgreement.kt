@@ -29,6 +29,18 @@ suspend fun Signer.ECDSA.keyAgreement(
 /**
  * Elliptic-curve Diffie-Hellman key agreement.
  * Curves of public key and signer need to match!
+ *
+ * [config] can be used to display a custom authentication prompt
+ */
+suspend fun CryptoPublicKey.EC.keyAgreement(
+    signer: Signer.ECDSA,
+    config: DSLConfigureFn<PlatformSigningProviderSignerSigningConfigurationBase> = null
+) = signer.keyAgreement(this, config)
+
+
+/**
+ * Elliptic-curve Diffie-Hellman key agreement.
+ * Curves of public key and signer need to match!
  */
 suspend fun CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>.keyAgreement(publicKey: CryptoPublicKey.EC) = catching {
     (SignatureAlgorithm.ECDSA(this.publicKey.curve.nativeDigest, this.publicKey.curve).signerFor(this)
@@ -44,16 +56,6 @@ suspend fun CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>.keyAgreement(publ
 suspend fun CryptoPublicKey.EC.keyAgreement(privateKey: CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>) =
     privateKey.keyAgreement(this)
 
-/**
- * Elliptic-curve Diffie-Hellman key agreement.
- * Curves of public key and signer need to match!
- *
- * [config] can be used to display a custom authentication prompt
- */
-suspend fun CryptoPublicKey.EC.keyAgreement(
-    signer: Signer.ECDSA,
-    config: DSLConfigureFn<PlatformSigningProviderSignerSigningConfigurationBase> = null
-) = signer.keyAgreement(this, config)
 
 internal expect suspend fun Signer.ECDSA.performAgreement(
     publicKey: CryptoPublicKey.EC,

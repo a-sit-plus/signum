@@ -15,6 +15,7 @@ import at.asitplus.signum.supreme.os.PlatformSigningProvider
 import at.asitplus.signum.supreme.os.PlatformSigningProviderSignerSigningConfigurationBase
 import at.asitplus.signum.supreme.os.needsAuthenticationForEveryUse
 import at.asitplus.signum.supreme.sign.Signer
+import org.w3c.dom.Notation
 
 actual suspend fun Signer.ECDSA.performAgreement(
     publicKey: CryptoPublicKey.EC,
@@ -24,31 +25,22 @@ actual suspend fun Signer.ECDSA.performAgreement(
 
     return if (this is AndroidKeystoreSigner) {
         val resolvedConfig = DSL.resolve(::AndroidSignerSigningConfiguration, config)
-        javax.crypto.KeyAgreement.getInstance("ECDH", "AndroidKeyStore").also {
-
-            if (needsAuthenticationForEveryUse) {
+        val agreement = javax.crypto.KeyAgreement.getInstance("ECDH", "AndroidKeyStore").also {
+            try {
                 it.init(jcaPrivateKey)
+            } catch (_: UserNotAuthenticatedException) {
                 attemptBiometry(
-                    DSL.ConfigStack(resolvedConfig.unlockPrompt.v, resolvedConfig.unlockPrompt.v),
-                    null //TODO ????
+                    DSL.ConfigStack(
+                        resolvedConfig.unlockPrompt.v,
+                        resolvedConfig.unlockPrompt.v //TODO
+                    ),
+                    null
                 )
-            } else {
-                try {
-                    it.init(jcaPrivateKey)
-                } catch (_: UserNotAuthenticatedException) {
-                    attemptBiometry(
-                        DSL.ConfigStack(
-                            resolvedConfig.unlockPrompt.v,
-                            resolvedConfig.unlockPrompt.v
-                        ),
-                        null
-                    )
-                    it.init(jcaPrivateKey)
-                }
+                it.init(jcaPrivateKey)
             }
-            it.doPhase(publicKey.toJcaPublicKey().getOrThrow(), true)
-        }.generateSecret()
-
+        }
+        agreement.doPhase(publicKey.toJcaPublicKey().getOrThrow(), true)
+        agreement.generateSecret()
     } else {
         javax.crypto.KeyAgreement.getInstance("ECDH", "AndroidKeyStore").also {
             @OptIn(HazardousMaterials::class)

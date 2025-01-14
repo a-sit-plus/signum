@@ -52,6 +52,7 @@ from certain (otherwise) hard requirements for Devices launched with later Andro
 Hence, a device launched with Android&nbsp;10, and later updated to Android&nbsp;12 may still not support key agreement in
 hardware.
 The Supreme crypto provider will return a failure, in if key agreement is not supported in hardware.
+TODO: will fail for auth on every use! Bug in Android; fix hidden behind a feature flag
 
 ## Supported Algorithms
 

@@ -215,7 +215,7 @@ object AndroidKeyStoreProvider:
         KeyPairGenerator.getInstance(when(config._algSpecific.v) {
             is SigningKeyConfiguration.RSAConfiguration -> KeyProperties.KEY_ALGORITHM_RSA
             is SigningKeyConfiguration.ECConfiguration -> KeyProperties.KEY_ALGORITHM_EC
-        }, "AndroidKeyStore").apply {
+        }, "AndroidKeyStore"/*TODO not for ephemeral key*/).apply {
             initialize(spec)
         }.generateKeyPair()
         return@catching getSignerForKey(alias, config.signer.v).getOrThrow()
