@@ -46,12 +46,6 @@ actual suspend fun Signer.ECDSA.performAgreement(
                     it.init(jcaPrivateKey)
                 }
             }
-
-
-            attemptBiometry(
-                DSL.ConfigStack(resolvedConfig.unlockPrompt.v, resolvedConfig.unlockPrompt.v),
-                null
-            )
             it.doPhase(publicKey.toJcaPublicKey().getOrThrow(), true)
         }.generateSecret()
 
