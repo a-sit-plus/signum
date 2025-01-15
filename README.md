@@ -31,6 +31,7 @@ types and functionality related to crypto and PKI applications:
 * **Multiplatform ECDSA and RSA Signer and Verifier** &rarr; Check out the included [CMP demo App](demoapp) to see it in action
   * **Supports Attestation on iOS and Android**
   * **Biometric Authentication on Android and iOS without Callbacks or Activity Passing** (✨Magic!✨)
+* **Multiplatform ECDH key agreement**
 * Public Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)
 * X509 Certificate Class (create, encode, decode)
@@ -212,6 +213,24 @@ That way, the library will only ever act as a proxy to platform APIs (JCA, Crypt
 
 You can also further configure the verifier, for example to specify the `provider` to use on the JVM.
 To do this, pass a DSL configuration lambda to `verifierFor`/`platformVerifierFor`.
+
+### Key Agreement
+EC signers, private keys and public keys all sport a `keyAgreement()` extension function.
+The parameter is always the required opposite component, i.e. for private keys and signers, a public
+key needs to be passed and vice versa.
+
+On iOS and Android (starting with Android&nbsp;12), key agreement is possible in hardware and can
+require biometric authentication for hardware-backed keys. Custom biometric prompt text can be set
+in the same manner as for signing:
+
+```kotlin
+signer.keyAgreement(publicKey) {
+    unlockPrompt {
+        message = "Confirm key agreement?"
+        cancelText = "Agree to disagree!"
+    }
+}
+```
 
 ```kotlin
 val publicKey: CryptoPublicKey.EC = TODO("You have this.")
