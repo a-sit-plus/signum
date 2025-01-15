@@ -53,7 +53,7 @@ Since the app is especially aimed at demonstrating interactions with hardware-ba
 (i.e. `AndroidKeyStore` on Android and `SecureEnclave` on iOS), some of the UI elements do not make sense on the JVM.
 
 !!! abstract winline end "Legend"
-    1. Toggle _Attestation_: Adds attestation information to the key. on iOS, only P-256 keys can be attested.
+    1. Attestation toggle: Adds attestation information to the key. On iOS, this only works for P-256 keys and requires an Internet connection.
     2. Biometric auth selection: Makes key usage require biometric authentication if set. The app provides one of:
         * Disabled = no auth required
         * 0s = auth on every use

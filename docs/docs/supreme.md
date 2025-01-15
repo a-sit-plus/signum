@@ -353,6 +353,10 @@ For a list of supported algorithms, check out the [feature matrix](features.md#s
 The Android KeyStore offers key attestation certificates for hardware-backed keys.
 These certificates are exposed by the signer's `.attestation` property.
 
+!!!info inline end
+    On iOS, attestation requires an active Internet connection, as the device needs to communicate
+    with Apple's servers.
+
 For iOS, Apple does not provide this capability, but rather supports app attestation.
 We therefore piggy-back onto iOS app attestation to provide a home-brew "key attestation" scheme.
 The guarantees are different: you are trusting the OS, not the actual secure hardware;
