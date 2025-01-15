@@ -4,6 +4,6 @@ import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
 import platform.UIKit.UIViewController
 
-fun MainViewController(): UIViewController = ComposeUIViewController {
+fun MainViewController(): UIViewController =ComposeUIViewController(configure = { enforceStrictPlistSanityCheck = false }) {
     App()
 }
