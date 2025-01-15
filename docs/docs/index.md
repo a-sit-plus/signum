@@ -9,7 +9,7 @@
 This [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html) library provides platform-independent data
 types and functionality related to crypto and PKI applications:
 
-* **Multiplatform ECDSA and RSA Signer and Verifier** &rarr; Check out the included [CMP demo App](https://github.com/a-sit-plus/signum/tree/main/demoapp) to see it in
+* **Multiplatform ECDSA and RSA Signer and Verifier** &rarr; Check out the included [CMP demo App](app.md) to see it in
   action
     * **Supports Attestation on iOS and Android**
     * **Biometric Authentication on Android and iOS without Callbacks or Activity Passing** (✨Magic!✨)

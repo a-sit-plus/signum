@@ -33,10 +33,16 @@ tasks.register<Copy>("copyChangelog") {
     into(rootDir.resolve("docs/docs"))
     from("CHANGELOG.md")
 }
+tasks.register<Copy>("copyAppLegend") {
+    into(rootDir.resolve("docs/docs/assets"))
+    from("demoapp/legend.png")
+    from("demoapp/app.png")
+}
 
 tasks.register<Copy>("mkDocsPrepare") {
     dependsOn("dokkaHtmlMultiModule")
     dependsOn("copyChangelog")
+    dependsOn("copyAppLegend")
     into(rootDir.resolve("docs/docs/dokka"))
     from("${buildDir}/dokka")
 }

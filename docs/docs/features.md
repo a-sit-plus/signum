@@ -46,20 +46,20 @@ Additional details are described in the [Attestation](supreme.md#attestation) se
 
 
 ### † Android Key Agreement
-!!! warning inline end
+!!! bug inline end
     All Android versions supporting key agreement contain a bug, which makes it impossible
     to perform key agreement using an auth-on-every-use key. The bugfix is hidden behind a disabled-by-default
-    feature flag in the Android source code.
+    feature flag in the Android source code.<br>
     **Hence, do not require biometric authentication for keys you want to use for key agreement or
-    use a timeout of at leas one second!**
+    use a timeout of at least one second!**
 
 Key Agreement support in Hardware is spotty on Android: It is only implemented starting with SDK&nbsp;31 (Android&nbsp;12).
 Since this is indeed dependent on the crypto hardware (and *KeyMaster* version, etc.), not every device running Android&nbsp;12 or later
-will support key agreement in hardware. The reason for this is that devices launche with an earlier version of Android are exempt
-from certain (otherwise) hard requirements for Devices launched with later Android versions.
+will support key agreement in hardware. The reason for this is that devices launched with an earlier version of Android are exempt
+from certain (otherwise) hard requirements for devices launched with later Android versions.
 Hence, a device launched with Android&nbsp;10, and later updated to Android&nbsp;12 may still not support key agreement in
 hardware.
-The Supreme crypto provider will return a failure, in if key agreement is not supported in hardware.
+The Supreme crypto provider will return a failure, if key agreement is not supported in hardware.
 <br>
 **You can still, however, use key agreement based on software (ephemeral) keys.**
 

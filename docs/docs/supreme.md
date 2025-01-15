@@ -322,6 +322,28 @@ To obtain a signer from this ephemeral key, call `getSigner{}` on it. This, simi
 algorithm-specific configuration options, such as a specific hash algorithm or padding, in case more than one was
 specified when creating the ephemeral key.
 
+## Key Agreement
+
+EC signers, private keys and public keys all sport a `keyAgreement()` extension function.
+The parameter is always the required opposite component, i.e. for private keys and signers, a public
+key needs to be passed and vice versa.
+
+On iOS and Android (starting with Android&nbsp;12), key agreement is possible in hardware and can
+require biometric authentication for hardware-backed keys. Custom biometric prompt text can be set
+in the same manner as [for signing](#signature-creation):
+
+!!! bug inline end
+    The Android OS has a bug related to key agreement in hardware. See [important remarks](features.md#android-key-agreement) on key agreement!
+
+```kotlin
+signer.keyAgreement(publicKey) {
+    unlockPrompt {
+        message = "Confirm key agreement?"
+        cancelText = "Agree to disagree!"
+    }
+}
+```
+
 ## Digest Calculation
 The Supreme KMP crypto provider introduces a `digest()` extension function on the `Digest` class.
 For a list of supported algorithms, check out the [feature matrix](features.md#supported-algorithms).

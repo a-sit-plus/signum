@@ -215,7 +215,7 @@ object AndroidKeyStoreProvider:
         KeyPairGenerator.getInstance(when(config._algSpecific.v) {
             is SigningKeyConfiguration.RSAConfiguration -> KeyProperties.KEY_ALGORITHM_RSA
             is SigningKeyConfiguration.ECConfiguration -> KeyProperties.KEY_ALGORITHM_EC
-        }, "AndroidKeyStore"/*TODO not for ephemeral key*/).apply {
+        }, "AndroidKeyStore").apply {
             initialize(spec)
         }.generateKeyPair()
         return@catching getSignerForKey(alias, config.signer.v).getOrThrow()
@@ -292,7 +292,7 @@ sealed class AndroidKeystoreSigner private constructor(
     internal val jcaPrivateKey: PrivateKey,
     final override val alias: String,
     val keyInfo: KeyInfo,
-    private val config: AndroidSignerConfiguration,
+    internal val config: AndroidSignerConfiguration,
     final override val attestation: AndroidKeystoreAttestation?
 ) : PlatformSigningProviderSigner<AndroidSignerSigningConfiguration, AndroidKeystoreAttestation> {
 

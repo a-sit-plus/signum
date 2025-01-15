@@ -82,4 +82,5 @@ nav:
           - Indispensable Cosef: indispensable-cosef.md
           - Signum Supreme: supreme.md
   - Feature Matrix: features.md
+  - Showcase App: app.md
   - API Docs: dokka/index.html
