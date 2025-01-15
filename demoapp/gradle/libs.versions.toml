@@ -1,12 +1,12 @@
 [versions]
 
 biometric = "1.2.0-alpha05"
-kotlin = "2.0.20"
-compose = "1.6.11"
+kotlin = "2.1.0"
+compose = "1.7.1"
 agp = "8.2.2"
 androidx-appcompat = "1.7.0"
-androidx-activityCompose = "1.9.1"
-compose-uitooling = "1.6.8"
+androidx-activityCompose = "1.9.3"
+compose-uitooling = "1.7.6"
 voyager = "1.0.0"
 composeImageLoader = "1.7.1"
 napier = "2.7.1"

@@ -71,6 +71,7 @@ kotlin {
     }
 }
 
+
 android {
     namespace = "at.asitplus.cryptotest"
     compileSdk = 34
