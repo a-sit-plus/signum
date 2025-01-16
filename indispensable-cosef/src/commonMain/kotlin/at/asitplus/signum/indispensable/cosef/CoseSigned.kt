@@ -39,12 +39,13 @@ data class CoseSigned<P : Any?> internal constructor(
     val wireFormat: CoseSignedBytes,
 ) {
 
+    /**
+     * @param detachedPayload only to be set when [payload] is null, i.e. it is transported externally
+     */
     fun prepareCoseSignatureInput(
         externalAad: ByteArray = byteArrayOf(),
         detachedPayload: ByteArray? = null,
-    ): ByteArray = detachedPayload
-        ?.let { wireFormat.toCoseSignatureInputWithDetachedPayload(externalAad, it) }
-        ?: wireFormat.toCoseSignatureInput(externalAad)
+    ): ByteArray = wireFormat.toCoseSignatureInput(externalAad, detachedPayload)
 
     fun serialize(parameterSerializer: KSerializer<P>): ByteArray = coseCompliantSerializer
         .encodeToByteArray(CoseSignedSerializer(parameterSerializer), this)

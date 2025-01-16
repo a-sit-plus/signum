@@ -21,7 +21,8 @@ import kotlinx.serialization.encodeToByteArray
  */
 @Serializable
 @CborArray
-data class CoseSignedBytes(
+@ConsistentCopyVisibility
+data class CoseSignedBytes internal constructor(
     @ByteString
     val protectedHeader: ByteArray,
     val unprotectedHeader: CoseHeader?,
@@ -30,27 +31,21 @@ data class CoseSignedBytes(
     @ByteString
     val rawSignature: ByteArray,
 ) {
-    fun toCoseSignatureInput(
-        externalAad: ByteArray = byteArrayOf(),
-    ): ByteArray = CoseSignatureInput(
-        contextString = "Signature1",
-        protectedHeader = protectedHeader.toZeroLengthByteString(),
-        externalAad = externalAad,
-        payload = payload,
-    ).serialize()
-
     /**
-     * Warning: This ignores the member [payload] and should only be used for COSE detached payloads,
-     * i.e. when the payload is not transported inside the signed structure but externally.
+     * @param detachedPayload only to be set when [payload] is null, i.e. it is transported externally,
+     * as it ignores the [payload] member
      */
-    fun toCoseSignatureInputWithDetachedPayload(
+    internal fun toCoseSignatureInput(
         externalAad: ByteArray = byteArrayOf(),
-        detachedPayload: ByteArray,
+        detachedPayload: ByteArray? = null,
     ): ByteArray = CoseSignatureInput(
         contextString = "Signature1",
         protectedHeader = protectedHeader.toZeroLengthByteString(),
         externalAad = externalAad,
-        payload = payload ?: detachedPayload,
+        payload = if (detachedPayload != null) {
+            require(payload == null)
+            detachedPayload
+        } else payload,
     ).serialize()
 
     fun serialize(): ByteArray = coseCompliantSerializer.encodeToByteArray(this)
