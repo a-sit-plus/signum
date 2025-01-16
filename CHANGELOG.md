@@ -2,6 +2,9 @@
 
 ## 3.0
 
+### NEXT
+
+
 ### 3.12.1 (Supreme 0.6.3)
 
 * Add COSE object creation with detached payload, i.e. setting a `null` payload in `CoseSigned`, and clients are responsible to transport the payload separately
