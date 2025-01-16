@@ -39,8 +39,13 @@ data class CoseSigned<P : Any?> internal constructor(
     val wireFormat: CoseSignedBytes,
 ) {
 
-    fun prepareCoseSignatureInput(externalAad: ByteArray = byteArrayOf()): ByteArray =
-        wireFormat.toCoseSignatureInput(externalAad)
+    /**
+     * @param detachedPayload only to be set when [payload] is null, i.e. it is transported externally
+     */
+    fun prepareCoseSignatureInput(
+        externalAad: ByteArray = byteArrayOf(),
+        detachedPayload: ByteArray? = null,
+    ): ByteArray = wireFormat.toCoseSignatureInput(externalAad, detachedPayload)
 
     fun serialize(parameterSerializer: KSerializer<P>): ByteArray = coseCompliantSerializer
         .encodeToByteArray(CoseSignedSerializer(parameterSerializer), this)
@@ -129,16 +134,16 @@ data class CoseSigned<P : Any?> internal constructor(
         /**
          * If [this] is a [ByteArray], use it as is, otherwise encode it as a [ByteStringWrapper], with CBOR tag 24
          */
-        private fun <P : Any> P?.toRawPayload(payloadSerializer: KSerializer<P>): ByteArray = when (this) {
+        private fun <P : Any> P?.toRawPayload(payloadSerializer: KSerializer<P>): ByteArray? = when (this) {
             is ByteArray -> this
-            is Nothing -> byteArrayOf()
+            is Nothing -> null
             is ByteStringWrapper<*> -> throw IllegalArgumentException("Payload must not be a ByteStringWrapper")
             is P -> coseCompliantSerializer.encodeToByteArray<ByteStringWrapper<P>>(
                 ByteStringWrapperSerializer(payloadSerializer),
                 ByteStringWrapper(this)
             ).wrapInCborTag(24)
 
-            else -> byteArrayOf()
+            else -> null
         }
 
         private fun ByteArray.wrapInCborTag(tag: Byte) = byteArrayOf(0xd8.toByte()) + byteArrayOf(tag) + this

@@ -4,6 +4,8 @@
 
 ### NEXT
 
+* Add COSE object creation with detached payload, i.e. setting a `null` payload in `CoseSigned`, and clients are responsible to transport the payload separately
+
 ### 3.12.0 (Supreme 0.6.2)
 * Fix COSE signature verification (this is breaking change in `indispensable-cosef`):
     * Introduce class `CoseSignedBytes` which holds the bytes as transmitted on the wire

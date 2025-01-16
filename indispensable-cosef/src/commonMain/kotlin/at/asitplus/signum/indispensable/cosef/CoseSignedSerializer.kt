@@ -80,7 +80,7 @@ class CoseSignedSerializer<P : Any?>(
         } else {
             runCatching { fromBytes() }
                 .getOrElse { fromByteStringWrapper() }
-            // if it still fails, the input not valid
+            // if it still fails, the input is not valid
         }
 
     private fun ByteArray.fromBytes(): P =
