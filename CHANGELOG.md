@@ -3,6 +3,7 @@
 ## 3.0
 
 ### NEXT
+* performance optimization: Instantiate fewer KmmResults
 
 
 ### 3.12.1 (Supreme 0.6.3)
