@@ -121,14 +121,3 @@ fun CryptoPrivateKey.WithPublicKey<*>.toSecKey(): KmmResult<SecKeyRef> = catchin
         }
     }
 }
-
-//TODO HazMat
-fun MemScope.toSecKey(key: CryptoPublicKey): SecKeyRef =
-    corecall {
-        SecKeyCreateWithData(key.iosEncoded.toNSData().giveToCF(), cfDictionaryOf(
-            kSecAttrKeyClass to kSecAttrKeyClassPublic,
-            kSecAttrKeyType to when (key) {
-                is CryptoPublicKey.EC -> kSecAttrKeyTypeEC
-                is CryptoPublicKey.RSA -> kSecAttrKeyTypeRSA
-            }), error)
-    }.also { defer { CFRelease(it) }}
