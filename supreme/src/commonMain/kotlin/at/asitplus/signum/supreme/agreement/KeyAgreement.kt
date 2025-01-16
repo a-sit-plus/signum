@@ -41,6 +41,8 @@ suspend fun CryptoPublicKey.EC.keyAgreement(
 /**
  * Elliptic-curve Diffie-Hellman key agreement.
  * Curves of public key and signer need to match!
+ * This only works if both public keys are known, because otherwise, it is impossible
+ * to assure that both keys lie on the same curve.
  */
 suspend fun CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>.keyAgreement(publicKey: CryptoPublicKey.EC) =
     (SignatureAlgorithm.ECDSA(this.publicKey.curve.nativeDigest, this.publicKey.curve)
@@ -52,6 +54,8 @@ suspend fun CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>.keyAgreement(publ
 /**
  * Elliptic-curve Diffie-Hellman key agreement.
  * Curves of public key and signer need to match!
+ * This only works if both public keys are known, because otherwise, it is impossible
+ * to assure that both keys lie on the same curve.
  */
 suspend fun CryptoPublicKey.EC.keyAgreement(privateKey: CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>) =
     privateKey.keyAgreement(this)

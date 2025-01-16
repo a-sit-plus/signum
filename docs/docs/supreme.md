@@ -345,6 +345,16 @@ signer.keyAgreement(publicKey) {
 }
 ```
 
+!!! tip inline end
+    If you have an EC private key and know the curve, you already know the public key!
+    Hence, requiring the public keys of both parties for an ECDH key agreement is, in fact, a non-issue.
+
+Even though key agreement uses the private key of one party and the public key of another, the `keyAgreement` function
+is only implemented for `CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>`. I.e., both public keys need to be known.
+This is necessary to assure that both keys lie on the same curve and are indeed compatible.<br>
+
+
+
 ## Digest Calculation
 The Supreme KMP crypto provider introduces a `digest()` extension function on the `Digest` class.
 For a list of supported algorithms, check out the [feature matrix](features.md#supported-algorithms).
