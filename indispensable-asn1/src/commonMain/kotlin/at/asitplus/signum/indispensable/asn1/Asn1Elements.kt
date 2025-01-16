@@ -3,6 +3,7 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.catching
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import kotlinx.io.Buffer
@@ -489,7 +490,7 @@ sealed class Asn1Structure(
     /**
      * Exception-free version of [nextChild]
      */
-    fun nextChildOrNull() = catching { nextChild() }.getOrNull()
+    fun nextChildOrNull() = catchingUnwrapped { nextChild() }.getOrNull()
 
     /**
      * Returns `true` if more children can be retrieved by [nextChild]. `false` otherwise
@@ -586,12 +587,12 @@ internal constructor(tag: ULong, children: List<Asn1Element>) :
     /**
      * Exception-free version of [verifyTag]
      */
-    fun verifyTagOrNull(tagNumber: ULong) = catching { verifyTag(tagNumber) }.getOrNull()
+    fun verifyTagOrNull(tagNumber: ULong) = catchingUnwrapped { verifyTag(tagNumber) }.getOrNull()
 
     /**
      * Exception-free version of [verifyTag]
      */
-    fun verifyTagOrNull(explicitTag: Tag) = catching { verifyTag(explicitTag) }.getOrNull()
+    fun verifyTagOrNull(explicitTag: Tag) = catchingUnwrapped { verifyTag(explicitTag) }.getOrNull()
 
     override fun prettyPrintHeader(indent: Int) = (" " * indent) + "Tagged" + super.prettyPrintHeader(indent)
 }

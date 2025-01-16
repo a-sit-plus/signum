@@ -99,7 +99,7 @@ object Asn1 {
      * Exception-free version of [Sequence]
      */
     fun SequenceOrNull(root: Asn1TreeBuilder.() -> Unit) =
-        catching { Sequence(root) }.getOrNull()
+        catchingUnwrapped { Sequence(root) }.getOrNull()
 
 
     /**
@@ -130,13 +130,13 @@ object Asn1 {
     /**
      * Exception-free version of [Set]
      */
-    fun SetOrNull(root: Asn1TreeBuilder.() -> Unit) = catching { Set(root) }.getOrNull()
+    fun SetOrNull(root: Asn1TreeBuilder.() -> Unit) = catchingUnwrapped { Set(root) }.getOrNull()
 
 
     /**
      * Safe version of [Set], wrapping the result into a [KmmResult]
      */
-    fun SetSafe(root: Asn1TreeBuilder.() -> Unit) = catching { Set(root) }
+    fun SetSafe(root: Asn1TreeBuilder.() -> Unit) = catchingUnwrapped { Set(root) }
 
 
     /**
@@ -163,13 +163,13 @@ object Asn1 {
     /**
      * Exception-free version of [SetOf]
      */
-    fun SetOfOrNull(root: Asn1TreeBuilder.() -> Unit) = catching { SetOf(root) }.getOrNull()
+    fun SetOfOrNull(root: Asn1TreeBuilder.() -> Unit) = catchingUnwrapped { SetOf(root) }.getOrNull()
 
 
     /**
      * Safe version of [SetOf], wrapping the result into a [KmmResult]
      */
-    fun SetOfSafe(root: Asn1TreeBuilder.() -> Unit) = catching { SetOf(root) }
+    fun SetOfSafe(root: Asn1TreeBuilder.() -> Unit) = catchingUnwrapped { SetOf(root) }
 
 
     /**
