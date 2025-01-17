@@ -15,7 +15,7 @@ jobs:
       - name: Build klibs
         run: ./gradlew iosArm64MainKlibrary iosX64MainKlibrary
       - name: Build XCFrameworks
-        run: ./gradlew assembleIndispensableAsn1XCFramework assembleIndispensableXCFramework assembleIndispensableJosefXCFramework assembleIndispensableCosefXCFramework
+        run: ./gradlew assembleIndispensableAsn1XCFramework assembleIndispensableXCFramework assembleIndispensableJosefXCFramework assembleIndispensableCosefXCFramework assembleSupremeXCFramework
       - name: Upload debug XCFramework Indispensable
         uses: actions/upload-artifact@v3
         with:
@@ -64,3 +64,15 @@ jobs:
           name: IndispensableCosef-release.xcframework
           path: |
             indispensable-cosef/build/XCFrameworks/release/
+      - name: Upload release XCFramework Supreme
+        uses: actions/upload-artifact@v3
+        with:
+          name: SignumSupreme-release.xcframework
+          path: |
+            supreme/build/XCFrameworks/release/
+      - name: Upload release XCFramework Supreme
+        uses: actions/upload-artifact@v3
+        with:
+          name: SignumSupreme-release.xcframework
+          path: |
+            supreme/build/XCFrameworks/release/
