@@ -11,13 +11,14 @@ hide:
 
 
 This app showcases the _Supreme_ KMP Crypto provider on JVM, Android and on iOS.
-It is possible to generate key pairs, sign data, and verify the signature.
+It is possible to generate key pairs, sign data, verify the signature, and demonstrate
+key agreement ([souce code](https://github.com/a-sit-plus/signum/blob/main/demoapp/)).
 
 Generation of attestation statements is also supported, although on iOS, only P-256 keys can be attested due to platform constraints.
 The default JVM provider does not natively support the creation of attestation statements, so it is a NOOP there.
 
 !!! bug inline end
-    See [important remarks](features.md#android-key-agreement) on key agreement for Android!
+    The Android OS has a bug related to key agreement in hardware. See [important remarks](features.md#android-key-agreement) on key agreement!
 
 ECDH key agreement is also implemented across platforms.
 
