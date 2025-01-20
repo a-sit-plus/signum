@@ -59,14 +59,14 @@ class AESTest : FreeSpec({
                 Random.nextBytes(256),
 
                 ) { iv ->
-                alg.encryptorFor(alg.randomKey(), iv) shouldNot succeed
-                alg.encryptorFor(alg.randomKey(), alg.randomIV()) should succeed
-                alg.encryptorFor(alg.randomKey()) should succeed
+                alg.encrypt(alg.randomKey(), iv) shouldNot succeed
+                alg.encrypt(alg.randomKey(), alg.randomIV()) should succeed
+                alg.encrypt(alg.randomKey()) should succeed
                 if (alg is SymmetricEncryptionAlgorithm.Authenticated)
-                    alg.encryptorFor(alg.randomKey()).getOrThrow().encrypt(Random.nextBytes(32)).getOrThrow()
+                    alg.encrypt(alg.randomKey()).getOrThrow().encrypt(Random.nextBytes(32)).getOrThrow()
                         .shouldBeInstanceOf<Ciphertext.Authenticated>()
                 else if (alg is SymmetricEncryptionAlgorithm.Unauthenticated)
-                    alg.encryptorFor(alg.randomKey()).getOrThrow().encrypt(Random.nextBytes(32)).getOrThrow()
+                    alg.encrypt(alg.randomKey()).getOrThrow().encrypt(Random.nextBytes(32)).getOrThrow()
                         .shouldBeInstanceOf<Ciphertext.Unauthenticated>()
             }
         }
@@ -110,15 +110,15 @@ class AESTest : FreeSpec({
                 Random.nextBytes(256),
 
                 ) { key ->
-                alg.encryptorFor(key) shouldNot succeed
-                alg.encryptorFor(key, alg.randomIV()) shouldNot succeed
-                alg.encryptorFor(alg.randomKey()) should succeed
-                alg.encryptorFor(alg.randomKey(), alg.randomIV()) should succeed
+                alg.encrypt(key) shouldNot succeed
+                alg.encrypt(key, alg.randomIV()) shouldNot succeed
+                alg.encrypt(alg.randomKey()) should succeed
+                alg.encrypt(alg.randomKey(), alg.randomIV()) should succeed
                 if (alg is SymmetricEncryptionAlgorithm.Authenticated)
-                    alg.encryptorFor(alg.randomKey()).getOrThrow().encrypt(Random.nextBytes(32)).getOrThrow()
+                    alg.encrypt(alg.randomKey()).getOrThrow().encrypt(Random.nextBytes(32)).getOrThrow()
                         .shouldBeInstanceOf<Ciphertext.Authenticated>()
                 else if (alg is SymmetricEncryptionAlgorithm.Unauthenticated)
-                    alg.encryptorFor(alg.randomKey()).getOrThrow().encrypt(Random.nextBytes(32)).getOrThrow()
+                    alg.encrypt(alg.randomKey()).getOrThrow().encrypt(Random.nextBytes(32)).getOrThrow()
                         .shouldBeInstanceOf<Ciphertext.Unauthenticated>()
             }
         }
@@ -155,7 +155,7 @@ class AESTest : FreeSpec({
                 ) { iv ->
 
 
-                    val ciphertext = it.encryptorFor(key, iv).getOrThrow().encrypt(plaintext).getOrThrow()
+                    val ciphertext = it.encrypt(key, iv).getOrThrow().encrypt(plaintext).getOrThrow()
 
 
                     ciphertext.iv.shouldNotBeNull()
@@ -246,7 +246,7 @@ class AESTest : FreeSpec({
                     ) { aad ->
 
                         val ciphertext =
-                            it.encryptorFor(key, iv, aad).getOrThrow().encrypt(plaintext).getOrThrow()
+                            it.encrypt(key, iv, aad).getOrThrow().encrypt(plaintext).getOrThrow()
 
 
                         ciphertext.iv.shouldNotBeNull()
@@ -409,20 +409,20 @@ class AESTest : FreeSpec({
                                 null
                             ) { aad ->
                                 val ciphertext =
-                                    it.encryptorFor(key, macKey, iv, aad, macInputFun).getOrThrow()
+                                    it.encrypt(key, macKey, iv, aad, macInputFun).getOrThrow()
                                         .encrypt(plaintext)
                                         .getOrThrow()
 
-                                it.encryptorFor(key, macKey, iv, aad) { _, _, _ ->
+                                it.encrypt(key, macKey, iv, aad) { _, _, _ ->
                                     "Manila".encodeToByteArray()
                                 }.getOrThrow().encrypt(plaintext)
                                     .getOrThrow() shouldNotBe ciphertext
 
                                 //no randomness. must be equal
                                 val randomIV = it.randomIV()
-                                it.encryptorFor(key, macKey, randomIV, aad) { _, _, _ ->
+                                it.encrypt(key, macKey, randomIV, aad) { _, _, _ ->
                                     "Manila".encodeToByteArray()
-                                }.getOrThrow().encrypt(plaintext).getOrThrow() shouldBe it.encryptorFor(
+                                }.getOrThrow().encrypt(plaintext).getOrThrow() shouldBe it.encrypt(
                                     key,
                                     macKey,
                                     randomIV,
@@ -607,7 +607,7 @@ class AESTest : FreeSpec({
 
         val ciphertext =
             //You typically oneshot this, and not re-use an encryptor, because you should never re-use an IV
-            algorithm.encryptorFor(
+            algorithm.encrypt(
                 secretKey = secretKey,
                 /*iv defaults to null, forcing the generation of a random IV*/
                 dedicatedMacKey = macKey,

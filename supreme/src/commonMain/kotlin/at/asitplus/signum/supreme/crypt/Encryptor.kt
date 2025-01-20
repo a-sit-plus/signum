@@ -6,6 +6,7 @@ import at.asitplus.signum.indispensable.AuthTrait
 import at.asitplus.signum.indispensable.Ciphertext
 import at.asitplus.signum.indispensable.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.mac.MAC
+import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.supreme.mac.mac
 import org.kotlincrypto.SecureRandom
 
@@ -23,7 +24,7 @@ private val secureRandom = SecureRandom()
  * @return [KmmResult.success] containing an encryptor if valid parameters were provided or [KmmResult.failure] in case of
  * invalid parameters (e.g., key or IV length)
  */
-fun SymmetricEncryptionAlgorithm.Authenticated.encryptorFor(
+fun SymmetricEncryptionAlgorithm.Authenticated.encrypt(
     secretKey: ByteArray,
     iv: ByteArray? = null,
     aad: ByteArray? = null
@@ -42,7 +43,7 @@ fun SymmetricEncryptionAlgorithm.Authenticated.encryptorFor(
  * @return [KmmResult.success] containing an encryptor if valid parameters were provided or [KmmResult.failure] in case of
  * invalid parameters (e.g., key or IV length)
  */
-fun SymmetricEncryptionAlgorithm.Unauthenticated.encryptorFor(
+fun SymmetricEncryptionAlgorithm.Unauthenticated.encrypt(
     secretKey: ByteArray,
     iv: ByteArray? = null,
 ): KmmResult<Encryptor<AuthTrait.Unauthenticated, SymmetricEncryptionAlgorithm.Unauthenticated, Ciphertext.Unauthenticated>> =
@@ -60,17 +61,17 @@ fun SymmetricEncryptionAlgorithm.Unauthenticated.encryptorFor(
  * @return [KmmResult.success] containing an encryptor if valid parameters were provided or [KmmResult.failure] in case of
  * invalid parameters (e.g., key or IV length)
  */
- fun <A : AuthTrait> SymmetricEncryptionAlgorithm.WithIV<A>.encryptorFor(
+ fun <A : AuthTrait> SymmetricEncryptionAlgorithm.WithIV<A>.encrypt(
     secretKey: ByteArray,
     iv: ByteArray = randomIV()
 ): KmmResult<Encryptor<A, SymmetricEncryptionAlgorithm.WithIV<A>, Ciphertext<A, SymmetricEncryptionAlgorithm.WithIV<A>>>> =
     when (this) {
-        is SymmetricEncryptionAlgorithm.Authenticated -> encryptorFor(
+        is SymmetricEncryptionAlgorithm.Authenticated -> encrypt(
             secretKey,
             iv
         )
 
-        is SymmetricEncryptionAlgorithm.Unauthenticated -> encryptorFor(
+        is SymmetricEncryptionAlgorithm.Unauthenticated -> encrypt(
             secretKey,
             iv
         )
@@ -93,7 +94,7 @@ fun SymmetricEncryptionAlgorithm.Unauthenticated.encryptorFor(
  * @return [KmmResult.success] containing an encryptor if valid parameters were provided or [KmmResult.failure] in case of
  * invalid parameters (e.g., key or IV length)
  */
-fun SymmetricEncryptionAlgorithm.WithDedicatedMac.encryptorFor(
+fun SymmetricEncryptionAlgorithm.WithDedicatedMac.encrypt(
     secretKey: ByteArray,
     dedicatedMacKey: ByteArray = secretKey,
     iv: ByteArray? = null,
@@ -105,7 +106,7 @@ fun SymmetricEncryptionAlgorithm.WithDedicatedMac.encryptorFor(
     }
 
 
-class Encryptor<A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>, C : Ciphertext<A, E>> internal constructor(
+internal class Encryptor<A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>, C : Ciphertext<A, E>> internal constructor(
     private val algorithm: E,
     private val key: ByteArray,
     private val macKey: ByteArray?,
@@ -116,9 +117,9 @@ class Encryptor<A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>, C : Cipherte
 
     init {
         if (algorithm is SymmetricEncryptionAlgorithm.WithIV<*>) iv?.let {
-            require((it.size * 8).toUInt() == algorithm.ivNumBits) { "IV must be exactly ${algorithm.ivNumBits} bits long" }
+            require(it.size.toUInt() == algorithm.ivLen.bytes) { "IV must be exactly ${algorithm.ivLen} bits long" }
         }
-        require((key.size * 8).toUInt() == algorithm.keySize) { "Key must be exactly ${algorithm.keySize} bits long" }
+        require(key.size.toUInt() == algorithm.keySize.bytes) { "Key must be exactly ${algorithm.keySize} bits long" }
     }
 
 
@@ -186,13 +187,13 @@ internal data class CipherParam<T, A : AuthTrait>(
  * Generates a new random key matching the key size of this algorithm
  */
 fun SymmetricEncryptionAlgorithm<*>.randomKey() =
-     secureRandom.nextBytesOf((keySize / 8u).toInt())
+     secureRandom.nextBytesOf((keySize.bytes).toInt())
 
 /**
  * Generates a new random IV matching the IV size of this algorithm
  */
 internal fun SymmetricEncryptionAlgorithm.WithIV<*>.randomIV() =
-    secureRandom.nextBytesOf((ivNumBits / 8u).toInt())
+    secureRandom.nextBytesOf((ivLen.bytes).toInt())
 
 /**
  * Attempts to decrypt this ciphertext (which also holds IV, and in case of an authenticated ciphertext, AAD and auth tag) using the provided [secretKey].
@@ -202,9 +203,9 @@ fun <A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>> Ciphertext<A, E>.decryp
 
         if (algorithm is SymmetricEncryptionAlgorithm.WithIV<*>) {
             require(iv != null) { "IV must be non-null" }
-            require(iv!!.size.toUInt() * 8u == (algorithm as SymmetricEncryptionAlgorithm.WithIV<*>).ivNumBits) { "IV must be exactly ${(algorithm as SymmetricEncryptionAlgorithm.WithIV<*>).ivNumBits} bits long" }
+            require(iv!!.size.toUInt() == (algorithm as SymmetricEncryptionAlgorithm.WithIV<*>).ivLen.bytes) { "IV must be exactly ${(algorithm as SymmetricEncryptionAlgorithm.WithIV<*>).ivLen} bits long" }
         }
-        require(secretKey.size.toUInt() * 8u == algorithm.keySize) { "Key must be exactly ${algorithm.keySize} bits long" }
+        require(secretKey.size.toUInt() == algorithm.keySize.bytes) { "Key must be exactly ${algorithm.keySize} bits long" }
 
         when (this) {
             is Ciphertext.Authenticated -> doDecrypt(secretKey)

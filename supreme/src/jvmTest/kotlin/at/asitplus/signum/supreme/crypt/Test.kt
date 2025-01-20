@@ -2,7 +2,7 @@ import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.Ciphertext
 import at.asitplus.signum.indispensable.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.supreme.crypt.decrypt
-import at.asitplus.signum.supreme.crypt.encryptorFor
+import at.asitplus.signum.supreme.crypt.encrypt
 import at.asitplus.signum.supreme.crypt.randomIV
 import at.asitplus.signum.supreme.crypt.randomKey
 import io.kotest.core.spec.style.FreeSpec
@@ -52,7 +52,7 @@ class JvmAESTest : FreeSpec({
                         if (alg is SymmetricEncryptionAlgorithm.AES.GCM) {
                             //GCM
                             val own =
-                                alg.encryptorFor(secretKey, iv, aad).getOrThrow().encrypt(data)
+                                alg.encrypt(secretKey, iv, aad).getOrThrow().encrypt(data)
                                     .getOrThrow()
                                     .shouldBeInstanceOf<Ciphertext.Authenticated>()
                             jcaCipher.init(
@@ -77,7 +77,7 @@ class JvmAESTest : FreeSpec({
 
                         } else if (alg is SymmetricEncryptionAlgorithm.Unauthenticated) {
                             //CBC
-                            val own = alg.encryptorFor(secretKey, iv).getOrThrow().encrypt(data).getOrThrow()
+                            val own = alg.encrypt(secretKey, iv).getOrThrow().encrypt(data).getOrThrow()
                             jcaCipher.init(
                                 Cipher.ENCRYPT_MODE,
                                 SecretKeySpec(secretKey, "AES"),
