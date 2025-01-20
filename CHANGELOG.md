@@ -8,6 +8,7 @@
     * CBC
     * CBC-HMAC
     * GCM
+* Moved `HazardousMaterials` annotation from `supreme` to `indispensable`
 
 
 ### 3.12.0 (Supreme 0.6.2)

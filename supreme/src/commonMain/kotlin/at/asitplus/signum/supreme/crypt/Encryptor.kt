@@ -62,15 +62,15 @@ fun SymmetricEncryptionAlgorithm.Unauthenticated.encryptorFor(
  */
  fun <A : AuthTrait> SymmetricEncryptionAlgorithm.WithIV<A>.encryptorFor(
     secretKey: ByteArray,
-    iv: ByteArray? = null
+    iv: ByteArray = randomIV()
 ): KmmResult<Encryptor<A, SymmetricEncryptionAlgorithm.WithIV<A>, Ciphertext<A, SymmetricEncryptionAlgorithm.WithIV<A>>>> =
     when (this) {
-        is SymmetricEncryptionAlgorithm.Authenticated -> (this as SymmetricEncryptionAlgorithm.Authenticated).encryptorFor(
+        is SymmetricEncryptionAlgorithm.Authenticated -> encryptorFor(
             secretKey,
             iv
         )
 
-        is SymmetricEncryptionAlgorithm.Unauthenticated -> (this as SymmetricEncryptionAlgorithm.Unauthenticated).encryptorFor(
+        is SymmetricEncryptionAlgorithm.Unauthenticated -> encryptorFor(
             secretKey,
             iv
         )
@@ -118,7 +118,7 @@ class Encryptor<A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>, C : Cipherte
         if (algorithm is SymmetricEncryptionAlgorithm.WithIV<*>) iv?.let {
             require((it.size * 8).toUInt() == algorithm.ivNumBits) { "IV must be exactly ${algorithm.ivNumBits} bits long" }
         }
-        require((key.size * 8).toUInt() == algorithm.keyNumBits) { "Key must be exactly ${algorithm.keyNumBits} bits long" }
+        require((key.size * 8).toUInt() == algorithm.keySize) { "Key must be exactly ${algorithm.keySize} bits long" }
     }
 
 
@@ -185,22 +185,14 @@ internal data class CipherParam<T, A : AuthTrait>(
 /**
  * Generates a new random key matching the key size of this algorithm
  */
-fun SymmetricEncryptionAlgorithm<*>.randomKey(): ByteArray {
-    var key = secureRandom.nextBytesOf((keyNumBits / 8u).toInt())
-    while (key.all { it == 0.toByte() })
-        key = secureRandom.nextBytesOf((keyNumBits / 8u).toInt())
-    return key
-}
+fun SymmetricEncryptionAlgorithm<*>.randomKey() =
+     secureRandom.nextBytesOf((keySize / 8u).toInt())
 
 /**
  * Generates a new random IV matching the IV size of this algorithm
  */
-fun SymmetricEncryptionAlgorithm.WithIV<*>.randomIV(): ByteArray {
-    var key = secureRandom.nextBytesOf((ivNumBits / 8u).toInt())
-    while (key.all { it == 0.toByte() })
-        key = secureRandom.nextBytesOf((ivNumBits / 8u).toInt())
-    return key
-}
+internal fun SymmetricEncryptionAlgorithm.WithIV<*>.randomIV() =
+    secureRandom.nextBytesOf((ivNumBits / 8u).toInt())
 
 /**
  * Attempts to decrypt this ciphertext (which also holds IV, and in case of an authenticated ciphertext, AAD and auth tag) using the provided [secretKey].
@@ -212,7 +204,7 @@ fun <A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>> Ciphertext<A, E>.decryp
             require(iv != null) { "IV must be non-null" }
             require(iv!!.size.toUInt() * 8u == (algorithm as SymmetricEncryptionAlgorithm.WithIV<*>).ivNumBits) { "IV must be exactly ${(algorithm as SymmetricEncryptionAlgorithm.WithIV<*>).ivNumBits} bits long" }
         }
-        require(secretKey.size.toUInt() * 8u == algorithm.keyNumBits) { "Key must be exactly ${algorithm.keyNumBits} bits long" }
+        require(secretKey.size.toUInt() * 8u == algorithm.keySize) { "Key must be exactly ${algorithm.keySize} bits long" }
 
         when (this) {
             is Ciphertext.Authenticated -> doDecrypt(secretKey)
@@ -231,7 +223,7 @@ fun Ciphertext.Authenticated.WithDedicatedMac.decrypt(
     dedicatedMacInputCalculation: DedicatedMacInputCalculation = DefaultDedicatedMacInputCalculation
 ): KmmResult<ByteArray> {
     val hmacInput =
-        algorithm.mac.dedicatedMacInputCalculation(encryptedData, iv, aad)
+        algorithm.mac.dedicatedMacInputCalculation(encryptedData, iv, authenticatedData)
 
     if (!(algorithm.mac.mac(macKey, hmacInput).getOrThrow().contentEquals(this.authTag))) return KmmResult.failure(
         IllegalArgumentException("Auth Tag mismatch!")

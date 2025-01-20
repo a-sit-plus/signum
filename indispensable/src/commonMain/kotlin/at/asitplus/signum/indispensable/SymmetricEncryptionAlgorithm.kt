@@ -1,28 +1,33 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.Identifiable
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.mac.HMAC
 import at.asitplus.signum.indispensable.mac.MAC
+import at.asitplus.signum.indispensable.misc.BitLength
+import at.asitplus.signum.indispensable.misc.bit
 
 
-sealed interface SymmetricEncryptionAlgorithm<out A : AuthTrait> : Identifiable {
+sealed interface SymmetricEncryptionAlgorithm<out A : AuthTrait> : Identifiable, AuthTrait {
     override fun toString(): String
 
     companion object {
 
-        val AES_128 = AESDefinition(128u)
-        val AES_192 = AESDefinition(192u)
-        val AES_256 = AESDefinition(256u)
+        val AES_128 = AESDefinition(128.bit)
+        val AES_192 = AESDefinition(192.bit)
+        val AES_256 = AESDefinition(256.bit)
 
-        class AESDefinition(val keySize: UInt) {
+        class AESDefinition(val keySize: BitLength) {
 
             val GCM = AES.GCM(keySize)
             val CBC = CbcDefinition(keySize)
 
-            class CbcDefinition(keySize: UInt) {
+            class CbcDefinition(keySize: BitLength) {
+                @HazardousMaterials
                 val PLAIN = AES.CBC.Plain(keySize)
+                @OptIn(HazardousMaterials::class)
                 val HMAC = HmacDefinition(PLAIN)
 
                 class HmacDefinition(innerCipher: AES.CBC.Plain) {
@@ -56,43 +61,43 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthTrait> : Identifiable 
     /**
      * Key length in bits
      */
-    val keyNumBits: UInt
+    val keySize: BitLength
 
-    sealed class AES<A : AuthTrait>(modeOfOps: ModeOfOperation, override val keyNumBits: UInt) :
+    sealed class AES<A : AuthTrait>(modeOfOps: ModeOfOperation, override val keySize: BitLength) :
         BlockCipher<A>(modeOfOps, blockSizeBits = 128u) {
-        override val name: String = "AES-$keyNumBits ${modeOfOps.acronym}"
+        override val name: String = "AES-${keySize.bits} ${modeOfOps.acronym}"
 
         override fun toString(): String = name
 
-        class GCM internal constructor(keyNumBits: UInt) :
-            AES<AuthTrait.Authenticated>(ModeOfOperation.GCM, keyNumBits), WithIV<AuthTrait.Authenticated>,
+        class GCM internal constructor(keySize: BitLength) :
+            AES<AuthTrait.Authenticated>(ModeOfOperation.GCM, keySize), WithIV<AuthTrait.Authenticated>,
             Authenticated {
             override val ivNumBits: UInt = 96u
             override val tagNumBits: UInt = blockSizeBits
-            override val oid: ObjectIdentifier = when (keyNumBits) {
+            override val oid: ObjectIdentifier = when (keySize.bits) {
                 128u -> KnownOIDs.aes128_GCM
                 192u -> KnownOIDs.aes192_GCM
                 256u -> KnownOIDs.aes256_GCM
-                else -> throw IllegalStateException("$keyNumBits This is an implementation flaw. Report this bug!")
+                else -> throw IllegalStateException("$keySize This is an implementation flaw. Report this bug!")
             }
         }
 
-        sealed class CBC<A : AuthTrait>(keyNumBits: UInt) : AES<A>(ModeOfOperation.CBC, keyNumBits), WithIV<A> {
+        sealed class CBC<A : AuthTrait>(keySize: BitLength) : AES<A>(ModeOfOperation.CBC, keySize), WithIV<A> {
             override val ivNumBits: UInt = 128u
-            override val oid: ObjectIdentifier = when (keyNumBits) {
+            override val oid: ObjectIdentifier = when (keySize.bits) {
                 128u -> KnownOIDs.aes128_CBC
                 192u -> KnownOIDs.aes192_CBC
                 256u -> KnownOIDs.aes256_CBC
-                else -> throw IllegalStateException("$keyNumBits This is an implementation flaw. Report this bug!")
+                else -> throw IllegalStateException("$keySize This is an implementation flaw. Report this bug!")
             }
 
-            class Plain(keyNumBits: UInt) : CBC<AuthTrait.Unauthenticated>(keyNumBits),
+            class Plain(keySize: BitLength) : CBC<AuthTrait.Unauthenticated>(keySize),
                 WithIV<AuthTrait.Unauthenticated>, Unauthenticated {
                 override val name = super.name+ " Plain"
                 }
 
             class HMAC(override val innerCipher: Plain, override val mac: MAC) :
-                CBC<AuthTrait.Authenticated>(innerCipher.keyNumBits), WithIV<AuthTrait.Authenticated>, WithDedicatedMac,
+                CBC<AuthTrait.Authenticated>(innerCipher.keySize), WithIV<AuthTrait.Authenticated>, WithDedicatedMac,
                 Authenticated {
                 override val tagNumBits: UInt = mac.outputLength.toUInt() * 8u
 

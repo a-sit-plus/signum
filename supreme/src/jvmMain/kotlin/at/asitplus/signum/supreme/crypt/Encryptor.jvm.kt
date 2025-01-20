@@ -80,7 +80,7 @@ actual internal fun Ciphertext.Authenticated.doDecrypt(secretKey: ByteArray): By
             SecretKeySpec(secretKey, algorithm.jcaKeySpec),
             GCMParameterSpec(authTag.size * 8, iv)
         )
-        aad?.let {
+        authenticatedData?.let {
             cipher.updateAAD(it)
         }
     }.doFinal(wholeInput)

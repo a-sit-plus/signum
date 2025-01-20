@@ -1,3 +1,4 @@
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.Ciphertext
 import at.asitplus.signum.indispensable.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1ContentBytes
@@ -16,6 +17,7 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.datetime.Clock
 import kotlin.random.Random
 
+@OptIn(HazardousMaterials::class)
 @ExperimentalStdlibApi
 class AESTest : FreeSpec({
 
@@ -252,7 +254,7 @@ class AESTest : FreeSpec({
 
                         iv?.let { ciphertext.iv shouldBe it }
                         ciphertext.shouldBeInstanceOf<Ciphertext.Authenticated>()
-                        ciphertext.aad shouldBe aad
+                        ciphertext.authenticatedData shouldBe aad
 
                         val decrypted = ciphertext.decrypt(key).getOrThrow()
                         decrypted shouldBe plaintext
@@ -266,7 +268,7 @@ class AESTest : FreeSpec({
                             Random.Default.nextBytes(ciphertext.encryptedData.size),
                             iv = ciphertext.iv,
                             authTag = ciphertext.authTag,
-                            aad = ciphertext.aad
+                            authenticatedData = ciphertext.authenticatedData
                         )
 
                         val wrongWrongDecrypted = wrongCiphertext.decrypt(ciphertext.algorithm.randomKey())
@@ -280,7 +282,7 @@ class AESTest : FreeSpec({
                             ciphertext.encryptedData,
                             iv = ciphertext.iv!!.asList().shuffled().toByteArray(),
                             authTag = ciphertext.authTag,
-                            aad = ciphertext.aad
+                            authenticatedData = ciphertext.authenticatedData
                         )
 
                         val wrongIVDecrypted = wrongIV.decrypt(key)
@@ -291,7 +293,7 @@ class AESTest : FreeSpec({
                             ciphertext.encryptedData,
                             iv = null,
                             authTag = ciphertext.authTag,
-                            aad = ciphertext.aad
+                            authenticatedData = ciphertext.authenticatedData
                         ).decrypt(key) shouldNot succeed
 
 
@@ -300,7 +302,7 @@ class AESTest : FreeSpec({
                             ciphertext.encryptedData,
                             iv = ciphertext.iv!!.asList().shuffled().toByteArray(),
                             authTag = ciphertext.authTag,
-                            aad = ciphertext.aad
+                            authenticatedData = ciphertext.authenticatedData
                         ).decrypt(key) shouldNot succeed
 
                         if (aad != null) {
@@ -309,7 +311,7 @@ class AESTest : FreeSpec({
                                 ciphertext.encryptedData,
                                 iv = ciphertext.iv,
                                 authTag = ciphertext.authTag,
-                                aad = null
+                                authenticatedData = null
                             ).decrypt(key) shouldNot succeed
 
                             Ciphertext.Authenticated(
@@ -317,7 +319,7 @@ class AESTest : FreeSpec({
                                 ciphertext.encryptedData,
                                 iv = null,
                                 authTag = ciphertext.authTag,
-                                aad = null
+                                authenticatedData = null
                             ).decrypt(key) shouldNot succeed
 
 
@@ -326,7 +328,7 @@ class AESTest : FreeSpec({
                                 ciphertext.encryptedData,
                                 iv = null,
                                 authTag = ciphertext.authTag.asList().shuffled().toByteArray(),
-                                aad = null
+                                authenticatedData = null
                             ).decrypt(key) shouldNot succeed
                         }
 
@@ -335,7 +337,7 @@ class AESTest : FreeSpec({
                             ciphertext.encryptedData,
                             iv = ciphertext.iv,
                             authTag = ciphertext.authTag.asList().shuffled().toByteArray(),
-                            aad = ciphertext.aad
+                            authenticatedData = ciphertext.authenticatedData
                         ).decrypt(key) shouldNot succeed
                     }
                 }
@@ -433,7 +435,7 @@ class AESTest : FreeSpec({
                                 iv?.let { ciphertext.iv shouldBe it }
                                 ciphertext.iv.shouldNotBeNull()
                                 ciphertext.shouldBeInstanceOf<Ciphertext.Authenticated.WithDedicatedMac>()
-                                ciphertext.aad shouldBe aad
+                                ciphertext.authenticatedData shouldBe aad
 
                                 val decrypted = ciphertext.decrypt(key, macKey, macInputFun).getOrThrow()
                                 decrypted shouldBe plaintext
@@ -449,7 +451,7 @@ class AESTest : FreeSpec({
                                     Random.Default.nextBytes(ciphertext.encryptedData.size),
                                     iv = ciphertext.iv,
                                     authTag = ciphertext.authTag,
-                                    aad = ciphertext.aad
+                                    aad = ciphertext.authenticatedData
                                 )
 
                                 val wrongWrongDecrypted = wrongCiphertext.decrypt(
@@ -467,7 +469,7 @@ class AESTest : FreeSpec({
                                     ciphertext.encryptedData,
                                     iv = ciphertext.iv!!.asList().shuffled().toByteArray(),
                                     authTag = ciphertext.authTag,
-                                    aad = ciphertext.aad
+                                    aad = ciphertext.authenticatedData
                                 )
 
                                 val wrongIVDecrypted =
@@ -483,7 +485,7 @@ class AESTest : FreeSpec({
                                     ciphertext.encryptedData,
                                     iv = null,
                                     authTag = ciphertext.authTag,
-                                    aad = ciphertext.aad,
+                                    aad = ciphertext.authenticatedData,
                                 ).decrypt(
                                     key,
                                     macKey = macKey,
@@ -496,7 +498,7 @@ class AESTest : FreeSpec({
                                     ciphertext.encryptedData,
                                     iv = ciphertext.iv!!.asList().shuffled().toByteArray(),
                                     authTag = ciphertext.authTag,
-                                    aad = ciphertext.aad,
+                                    aad = ciphertext.authenticatedData,
                                 ).decrypt(
                                     key,
                                     macKey = macKey,
@@ -508,7 +510,7 @@ class AESTest : FreeSpec({
                                     ciphertext.encryptedData,
                                     iv = ciphertext.iv,
                                     authTag = ciphertext.authTag,
-                                    aad = ciphertext.aad,
+                                    aad = ciphertext.authenticatedData,
                                 ).decrypt(
                                     key,
                                     macKey = macKey.asList().shuffled().toByteArray(),
@@ -559,7 +561,7 @@ class AESTest : FreeSpec({
                                     ciphertext.encryptedData,
                                     iv = ciphertext.iv,
                                     authTag = ciphertext.authTag.asList().shuffled().toByteArray(),
-                                    aad = ciphertext.aad
+                                    aad = ciphertext.authenticatedData
                                 ).decrypt(
                                     key,
                                     macKey = macKey,
@@ -572,7 +574,7 @@ class AESTest : FreeSpec({
                                     ciphertext.encryptedData,
                                     iv = ciphertext.iv,
                                     authTag = ciphertext.authTag.asList().shuffled().toByteArray(),
-                                    aad = ciphertext.aad
+                                    aad = ciphertext.authenticatedData
                                 ).decrypt(key, macKey = macKey) { _, _, _ ->
                                     "Szombathely".encodeToByteArray()
                                 } shouldNot succeed

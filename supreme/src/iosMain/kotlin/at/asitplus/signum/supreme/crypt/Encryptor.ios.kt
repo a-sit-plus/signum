@@ -96,7 +96,7 @@ actual internal fun Ciphertext.Authenticated.doDecrypt(secretKey: ByteArray): By
             secretKey.toNSData(),
             iv!!.toNSData(),
             authTag.toNSData(),
-            aad?.toNSData(),
+            authenticatedData?.toNSData(),
             error
         )
     }.toByteArray()
