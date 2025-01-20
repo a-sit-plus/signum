@@ -15,11 +15,13 @@ import com.ionspin.kotlin.bignum.integer.Sign
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+private const val PEM_BOUNDARY = "PUBLIC KEY"
+
 /**
  * Representation of a public key structure
  */
 @Serializable
-sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
+sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
 
     /**
      * This is meant for storing additional properties, which may be relevant for certain use cases.
@@ -60,7 +62,10 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
     }
 
 
-    companion object : Asn1Decodable<Asn1Sequence, CryptoPublicKey> {
+    companion object : PemDecodable<Asn1Sequence, CryptoPublicKey>(
+        PEM_BOUNDARY to { CryptoPublicKey.decodeFromDer(it)},
+        "RSA PUBLIC KEY" to checkedAsFn(RSA::fromPKCS1encoded),
+        ) {
         /**
          * Parses a DID representation of a public key and
          * reconstructs the corresponding [CryptoPublicKey] from it
@@ -167,6 +172,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         val e: Asn1Integer.Positive,
     ) : CryptoPublicKey() {
 
+        override val canonicalPEMBoundary: String = PEM_BOUNDARY
+
         val bits = n.bitLength().let { Size.of(it) ?: throw IllegalArgumentException("Unsupported key size $it bits") }
 
         @Deprecated(message="Use a BigInteger-capable constructor instead")
@@ -252,6 +259,8 @@ sealed class CryptoPublicKey : Asn1Encodable<Asn1Sequence>, Identifiable {
         val publicPoint: ECPoint.Normalized,
         val preferCompressedRepresentation: Boolean = true
     ) : CryptoPublicKey() {
+
+        override val canonicalPEMBoundary: String = PEM_BOUNDARY
 
         val curve get() = publicPoint.curve
         val x get() = publicPoint.x

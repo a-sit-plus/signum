@@ -6,7 +6,12 @@
 * performance optimization: Instantiate fewer KmmResults
 
 * Move `PemEncodable`/`PemDecodable` from _indispensable_ to _indispensable-asn1_ module.
-
+* More comprehensive PEM encoding/decoding support:
+    * `CryptoPublicKey`
+      * Note that PKCS1 encoding of RSA keys is not supported as it is discouraged (decoding is supported)
+      * ANSI encoding and decoding is also unsupported, because decoding requires context and encoding this way is incomplete
+    * `X509Certificate`
+    * CSR (`Pkcs10CertificationRequest`)
 ### 3.12.1 (Supreme 0.6.3)
 
 * Add COSE object creation with detached payload, i.e. setting a `null` payload in `CoseSigned`, and clients are responsible to transport the payload separately
