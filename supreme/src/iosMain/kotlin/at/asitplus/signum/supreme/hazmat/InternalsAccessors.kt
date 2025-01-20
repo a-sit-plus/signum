@@ -1,7 +1,7 @@
 @file:OptIn(ExperimentalForeignApi::class)
 package at.asitplus.signum.supreme.hazmat
 
-import at.asitplus.signum.internals.OwnedCFValue
+import at.asitplus.signum.supreme.AutofreeVariable
 import at.asitplus.signum.supreme.HazardousMaterials
 import at.asitplus.signum.supreme.os.IosSigner
 import at.asitplus.signum.supreme.os.IosSignerSigningConfiguration

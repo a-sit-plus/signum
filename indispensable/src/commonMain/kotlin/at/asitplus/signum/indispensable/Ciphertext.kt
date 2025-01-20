@@ -28,25 +28,25 @@ sealed class Ciphertext<out A : AuthTrait, T : SymmetricEncryptionAlgorithm<out 
     }
 
     /**
-     * An authenticated ciphertext, i.e. containing an [authTag], and, optionally [aad] (_Additional Authenticated Data_)
+     * An authenticated ciphertext, i.e. containing an [authTag], and, optionally [authenticatedData] (_Additional Authenticated Data_)
      */
     open class Authenticated(
         algorithm: SymmetricEncryptionAlgorithm.Authenticated,
         encryptedData: ByteArray,
         iv: ByteArray?,
         val authTag: ByteArray,
-        val aad: ByteArray?
+        val authenticatedData: ByteArray?
     ) : Ciphertext<AuthTrait.Authenticated, SymmetricEncryptionAlgorithm.Authenticated>(algorithm, encryptedData, iv) {
 
         @OptIn(ExperimentalStdlibApi::class)
         override fun toString(): String =
-            " $algorithm Authenticated Ciphertext(encryptedData=${this.encryptedData.toHexString(HexFormat.UpperCase)}, iv=${
+            "$algorithm Authenticated Ciphertext(encryptedData=${this.encryptedData.toHexString(HexFormat.UpperCase)}, iv=${
                 iv?.toHexString(
                     HexFormat.UpperCase
                 )
             }, authTag=${
                 authTag.toHexString(HexFormat.UpperCase)
-            }, aad=${aad?.toHexString(HexFormat.UpperCase)})"
+            }, aad=${authenticatedData?.toHexString(HexFormat.UpperCase)})"
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -54,7 +54,7 @@ sealed class Ciphertext<out A : AuthTrait, T : SymmetricEncryptionAlgorithm<out 
             if (!super.equals(other)) return false
 
             if (!authTag.contentEquals(other.authTag)) return false
-            if (!aad.contentEquals(other.aad)) return false
+            if (!authenticatedData.contentEquals(other.authenticatedData)) return false
 
             return true
         }
@@ -62,7 +62,7 @@ sealed class Ciphertext<out A : AuthTrait, T : SymmetricEncryptionAlgorithm<out 
         override fun hashCode(): Int {
             var result = super.hashCode()
             result = 31 * result + authTag.contentHashCode()
-            result = 31 * result + (aad?.contentHashCode() ?: 0)
+            result = 31 * result + (authenticatedData?.contentHashCode() ?: 0)
             return result
         }
 
@@ -90,7 +90,7 @@ sealed class Ciphertext<out A : AuthTrait, T : SymmetricEncryptionAlgorithm<out 
 
         @OptIn(ExperimentalStdlibApi::class)
         override fun toString(): String =
-            " $algorithm Unauthenticated Ciphertext(encryptedData=${encryptedData.toHexString(HexFormat.UpperCase)}, iv=${
+            "$algorithm Unauthenticated Ciphertext(encryptedData=${encryptedData.toHexString(HexFormat.UpperCase)}, iv=${
                 iv?.toHexString(
                     HexFormat.UpperCase
                 )

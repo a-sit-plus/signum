@@ -1,3 +1,4 @@
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.Ciphertext
 import at.asitplus.signum.indispensable.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.supreme.crypt.decrypt
@@ -14,6 +15,7 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.random.Random
 
+@OptIn(HazardousMaterials::class)
 class JvmAESTest : FreeSpec({
 
     "Against JCA" - {

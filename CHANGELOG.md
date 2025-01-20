@@ -8,6 +8,7 @@
     * CBC
     * CBC-HMAC
     * GCM
+* Moved `HazardousMaterials` annotation from `supreme` to `indispensable`
 
 
 * Change variance of generic on `Asn1Encodable` and `Asn1Decodable`
