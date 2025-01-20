@@ -1,6 +1,7 @@
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.Ciphertext
 import at.asitplus.signum.indispensable.SymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.SymmetricKey
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1ContentBytes
 import at.asitplus.signum.indispensable.mac.MAC
 import at.asitplus.signum.supreme.crypt.*
@@ -59,14 +60,16 @@ class AESTest : FreeSpec({
                 Random.nextBytes(256),
 
                 ) { iv ->
-                alg.encrypt(alg.randomKey(), iv) shouldNot succeed
-                alg.encrypt(alg.randomKey(), alg.randomIV()) should succeed
-                alg.encrypt(alg.randomKey()) should succeed
+
+                val key = (alg as SymmetricEncryptionAlgorithm.WithIV<*>).randomKey() as SymmetricKey<SymmetricEncryptionAlgorithm.WithIV<*>>
+                key.encrypt( iv, Random.nextBytes(32) ) shouldNot succeed
+                key.encrypt( alg.randomIV(), Random.nextBytes(32) ) should succeed
+                key.encrypt(Random.nextBytes(32)) should succeed
                 if (alg is SymmetricEncryptionAlgorithm.Authenticated)
-                    alg.encrypt(alg.randomKey()).getOrThrow().encrypt(Random.nextBytes(32)).getOrThrow()
+                    key.encrypt(Random.nextBytes(32)).getOrThrow()
                         .shouldBeInstanceOf<Ciphertext.Authenticated>()
                 else if (alg is SymmetricEncryptionAlgorithm.Unauthenticated)
-                    alg.encrypt(alg.randomKey()).getOrThrow().encrypt(Random.nextBytes(32)).getOrThrow()
+                    key.encrypt(Random.nextBytes(32)).getOrThrow()
                         .shouldBeInstanceOf<Ciphertext.Unauthenticated>()
             }
         }

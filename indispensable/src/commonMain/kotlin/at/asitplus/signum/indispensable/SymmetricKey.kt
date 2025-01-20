@@ -3,7 +3,7 @@ package at.asitplus.signum.indispensable
 /**
  * Symmetric Encryption key
  */
-abstract class SymmetricKey<A : AuthTrait>(val algorithm: SymmetricEncryptionAlgorithm<A>, val secretKey: ByteArray) {
+sealed class SymmetricKey<A : AuthTrait>(val algorithm: SymmetricEncryptionAlgorithm<A>, val secretKey: ByteArray) {
 
     /**
      * Self-Contained encryption key, i.e. a single byte array is sufficient
