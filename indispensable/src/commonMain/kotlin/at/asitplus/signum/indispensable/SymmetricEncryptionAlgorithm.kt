@@ -40,6 +40,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthTrait> : Identifiable,
         }
     }
 
+    /**Humanly-readable nam**/
     val name: String
 
 
@@ -52,7 +53,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthTrait> : Identifiable,
      * Indicates that a cipher requires an initialization vector
      */
     interface WithIV<A : AuthTrait> : SymmetricEncryptionAlgorithm<A> {
-        val ivNumBits: UInt
+        val ivLen: BitLength
     }
 
     interface Authenticated : SymmetricEncryptionAlgorithm<AuthTrait.Authenticated>, AuthTrait.Authenticated
@@ -72,7 +73,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthTrait> : Identifiable,
         class GCM internal constructor(keySize: BitLength) :
             AES<AuthTrait.Authenticated>(ModeOfOperation.GCM, keySize), WithIV<AuthTrait.Authenticated>,
             Authenticated {
-            override val ivNumBits: UInt = 96u
+            override val ivLen = 96u.bit
             override val tagNumBits: UInt = blockSizeBits
             override val oid: ObjectIdentifier = when (keySize.bits) {
                 128u -> KnownOIDs.aes128_GCM
@@ -83,7 +84,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthTrait> : Identifiable,
         }
 
         sealed class CBC<A : AuthTrait>(keySize: BitLength) : AES<A>(ModeOfOperation.CBC, keySize), WithIV<A> {
-            override val ivNumBits: UInt = 128u
+            override val ivLen = 128u.bit
             override val oid: ObjectIdentifier = when (keySize.bits) {
                 128u -> KnownOIDs.aes128_CBC
                 192u -> KnownOIDs.aes192_CBC
