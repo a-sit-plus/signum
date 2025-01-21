@@ -31,12 +31,12 @@ sealed class Ciphertext<out A : AuthTrait, T : SymmetricEncryptionAlgorithm<out 
      * An authenticated ciphertext, i.e. containing an [authTag], and, optionally [authenticatedData] (_Additional Authenticated Data_)
      */
     open class Authenticated(
-        algorithm: SymmetricEncryptionAlgorithm.Authenticated,
+        algorithm: SymmetricEncryptionAlgorithm.Authenticated<*>,
         encryptedData: ByteArray,
         iv: ByteArray?,
         val authTag: ByteArray,
         val authenticatedData: ByteArray?
-    ) : Ciphertext<AuthTrait.Authenticated, SymmetricEncryptionAlgorithm.Authenticated>(algorithm, encryptedData, iv) {
+    ) : Ciphertext<AuthTrait.Authenticated, SymmetricEncryptionAlgorithm.Authenticated<*>>(algorithm, encryptedData, iv) {
 
         @OptIn(ExperimentalStdlibApi::class)
         override fun toString(): String =
@@ -67,7 +67,7 @@ sealed class Ciphertext<out A : AuthTrait, T : SymmetricEncryptionAlgorithm<out 
         }
 
         class WithDedicatedMac(
-            override val algorithm: SymmetricEncryptionAlgorithm.WithDedicatedMac,
+            override val algorithm: SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac,
             encryptedData: ByteArray,
             iv: ByteArray?,
             authTag: ByteArray,
