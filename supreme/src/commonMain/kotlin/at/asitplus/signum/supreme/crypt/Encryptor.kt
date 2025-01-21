@@ -65,7 +65,7 @@ fun <A : AuthTrait> SymmetricKey<out A, out SymmetricEncryptionAlgorithm<A>>.enc
  * invalid parameters (e.g., key or IV length)
  */
 @HazardousMaterials
-fun SymmetricKey<Authenticated, SymmetricEncryptionAlgorithm.WithIV<Authenticated>>.encrypt(
+fun  SymmetricKey<out Authenticated, out SymmetricEncryptionAlgorithm.WithIV<Authenticated>>.encrypt(
     iv: ByteArray,
     data: ByteArray,
     aad: ByteArray? = null
@@ -330,8 +330,10 @@ fun SymmetricEncryptionAlgorithm.Authenticated.Integrated.randomKey(): Symmetric
 /**
  * Generates a new random key matching the key size of this algorithm
  */
-fun SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac.randomKey(): SymmetricKey.WithDedicatedMac =
-    WithDedicatedMac(this, secureRandom.nextBytesOf(keySize.bytes.toInt()))
+fun SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac.randomKey(dedicatedMacKeyOverride: ByteArray?=null): SymmetricKey.WithDedicatedMac {
+    val secretKey = secureRandom.nextBytesOf(keySize.bytes.toInt())
+    return WithDedicatedMac(this, secretKey, dedicatedMacKeyOverride?:secretKey)
+}
 
 /**
  * Generates a new random key matching the key size of this algorithm

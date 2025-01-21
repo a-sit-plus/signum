@@ -55,9 +55,6 @@ class JvmAESTest : FreeSpec({
 
                         if (alg is SymmetricEncryptionAlgorithm.AES.GCM) {
                             //GCM
-
-
-
                             val own =
                                 ((alg as SymmetricEncryptionAlgorithm. WithIV<*>).randomKey()) .encrypt(iv=iv,data=data)
                                     .getOrThrow()
