@@ -9,62 +9,50 @@ import at.asitplus.signum.indispensable.AuthTrait.Unauthenticated
 import at.asitplus.signum.indispensable.Ciphertext
 import at.asitplus.signum.indispensable.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.SymmetricKey
+import at.asitplus.signum.indispensable.SymmetricKey.Integrated
+import at.asitplus.signum.indispensable.SymmetricKey.WithDedicatedMac
 import at.asitplus.signum.indispensable.mac.MAC
 import at.asitplus.signum.supreme.mac.mac
 import org.kotlincrypto.SecureRandom
 import kotlin.jvm.JvmName
 
-private val secureRandom = SecureRandom()
-
-
-@HazardousMaterials
-fun SymmetricKey<SymmetricEncryptionAlgorithm.WithIV<*>>.encrypt(
-    data: ByteArray
-) =
-    when (this) {
-        is SymmetricKey.WithDedicatedMac -> encrypt(data, aad = null)
-        else ->
-            when (algorithm) {
-                is SymmetricEncryptionAlgorithm.WithDedicatedMac -> (this as SymmetricKey.WithDedicatedMac).encrypt(data)
-                is SymmetricEncryptionAlgorithm.Authenticated -> (this as SymmetricKey.Integrated<SymmetricEncryptionAlgorithm.WithIV<Authenticated>>).encrypt(
-                    data
-                )
-
-                is SymmetricEncryptionAlgorithm.Unauthenticated -> (this as SymmetricKey.Integrated<SymmetricEncryptionAlgorithm.WithIV<Unauthenticated>>).encrypt(
-                    data
-                )
-
-                else -> TODO()
-            }
-    }
+internal val secureRandom = SecureRandom()
 
 @HazardousMaterials
-fun SymmetricKey<SymmetricEncryptionAlgorithm.WithIV<*>>.encrypt(
+@JvmName("encryptWithIV")
+fun SymmetricKey<*, out SymmetricEncryptionAlgorithm.WithIV<*>>.encrypt(
     iv: ByteArray,
     data: ByteArray
-) =
-    when (this) {
-        is SymmetricKey.WithDedicatedMac -> encrypt(iv, data, aad = null)
-        else ->
-            when (algorithm) {
-                is SymmetricEncryptionAlgorithm.WithDedicatedMac -> (this as SymmetricKey.WithDedicatedMac).encrypt(
-                    iv,
-                    data
-                )
+) : KmmResult<Ciphertext< *, out SymmetricEncryptionAlgorithm.WithIV<*>>> = catching {
+    Encryptor(
+        algorithm,
+        secretKey,
+        if(this is WithDedicatedMac) dedicatedMacKey else secretKey,
+        iv,
+        null,
+        DefaultDedicatedMacInputCalculation
+    ).encrypt(data) as Ciphertext<*, out SymmetricEncryptionAlgorithm.WithIV<*>>
+}
 
-                is SymmetricEncryptionAlgorithm.Authenticated -> (this as SymmetricKey.Integrated<SymmetricEncryptionAlgorithm.WithIV<Authenticated>>).encrypt(
-                    iv,
-                    data
-                )
 
-                is SymmetricEncryptionAlgorithm.Unauthenticated -> (this as SymmetricKey.Integrated<SymmetricEncryptionAlgorithm.WithIV<Unauthenticated>>).encrypt(
-                    iv,
-                    data
-                )
-
-                else -> TODO()
-            }
-    }
+/**
+ * Encrypts [data] and automagically generates a fresh IV if required by the cipher.
+ *
+ * @return [KmmResult.success] containing a [Ciphertext] if valid parameters were provided or [KmmResult.failure] in case of
+ * invalid parameters (e.g., key or IV length)
+ */
+fun <A : AuthTrait> SymmetricKey<out A, out SymmetricEncryptionAlgorithm<A>>.encrypt(
+    data: ByteArray,
+): KmmResult<Ciphertext<A, SymmetricEncryptionAlgorithm<A>>> = catching {
+    Encryptor(
+        algorithm,
+        secretKey,
+        if(this is WithDedicatedMac) dedicatedMacKey else secretKey,
+        null,
+        null,
+        DefaultDedicatedMacInputCalculation
+    ).encrypt(data) as Ciphertext<A, SymmetricEncryptionAlgorithm<A>>
+}
 
 /**
  * Encrypts [data] using a specified IV. Check yourself, before you really, really wreck yourself!
@@ -77,7 +65,7 @@ fun SymmetricKey<SymmetricEncryptionAlgorithm.WithIV<*>>.encrypt(
  * invalid parameters (e.g., key or IV length)
  */
 @HazardousMaterials
-fun SymmetricKey.Integrated<SymmetricEncryptionAlgorithm.WithIV<Authenticated>>.encrypt(
+fun SymmetricKey<Authenticated, SymmetricEncryptionAlgorithm.WithIV<Authenticated>>.encrypt(
     iv: ByteArray,
     data: ByteArray,
     aad: ByteArray? = null
@@ -86,7 +74,7 @@ fun SymmetricKey.Integrated<SymmetricEncryptionAlgorithm.WithIV<Authenticated>>.
         Encryptor(
             algorithm,
             secretKey,
-            secretKey,
+            if(this is WithDedicatedMac) dedicatedMacKey else secretKey,
             iv,
             aad,
             DefaultDedicatedMacInputCalculation
@@ -104,7 +92,7 @@ fun SymmetricKey.Integrated<SymmetricEncryptionAlgorithm.WithIV<Authenticated>>.
  * invalid parameters (e.g., key or IV length)
  */
 @JvmName("encryptAuthenticated")
-fun SymmetricKey.Integrated<SymmetricEncryptionAlgorithm.Authenticated>.encrypt(
+fun SymmetricKey<AuthTrait.Authenticated, SymmetricEncryptionAlgorithm.Authenticated<*>>.encrypt(
     data: ByteArray,
     aad: ByteArray? = null
 ): KmmResult<Ciphertext.Authenticated> =
@@ -112,7 +100,7 @@ fun SymmetricKey.Integrated<SymmetricEncryptionAlgorithm.Authenticated>.encrypt(
         Encryptor(
             algorithm,
             secretKey,
-            secretKey,
+            if(this is WithDedicatedMac) dedicatedMacKey else secretKey,
             null,
             aad,
             DefaultDedicatedMacInputCalculation
@@ -143,15 +131,17 @@ fun <A : AuthTrait> SymmetricKey.Integrated<SymmetricEncryptionAlgorithm.WithIV<
     ).encrypt(data) as Ciphertext<A, SymmetricEncryptionAlgorithm.WithIV<A>>
 }
 
+
 /**
  * Encrypts [data] and automagically generates a fresh IV if required by the cipher.
  *
  * @return [KmmResult.success] containing a [Ciphertext] if valid parameters were provided or [KmmResult.failure] in case of
  * invalid parameters (e.g., key or IV length)
  */
-fun <A : AuthTrait> SymmetricKey.Integrated<SymmetricEncryptionAlgorithm.WithIV<A>>.encrypt(
+@JvmName("encryptUnauthenticated")
+fun SymmetricKey<AuthTrait.Unauthenticated, SymmetricEncryptionAlgorithm.Unauthenticated>.encrypt(
     data: ByteArray,
-): KmmResult<Ciphertext<A, SymmetricEncryptionAlgorithm.WithIV<A>>> = catching {
+): KmmResult<Ciphertext.Unauthenticated> = catching {
     Encryptor(
         algorithm,
         secretKey,
@@ -159,8 +149,11 @@ fun <A : AuthTrait> SymmetricKey.Integrated<SymmetricEncryptionAlgorithm.WithIV<
         null,
         null,
         DefaultDedicatedMacInputCalculation
-    ).encrypt(data) as Ciphertext<A, SymmetricEncryptionAlgorithm.WithIV<A>>
+    ).encrypt(data) as Ciphertext.Unauthenticated
 }
+
+
+
 
 /**
  * Encrypts [data] using a specified IV. Check yourself, before you really, really wreck yourself!
@@ -243,7 +236,7 @@ internal class Encryptor<A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>, C :
      */
     fun encrypt(data: ByteArray): C {
         if (algorithm is SymmetricEncryptionAlgorithm.AES.CBC.HMAC) {
-            val aMac: SymmetricEncryptionAlgorithm.WithDedicatedMac = algorithm
+            val aMac: SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac = algorithm
             val innerCipher = initCipher<Any, AuthTrait.Unauthenticated, SymmetricEncryptionAlgorithm.AES.CBC.Plain>(
                 algorithm.innerCipher,
                 key,
@@ -294,11 +287,12 @@ internal data class CipherParam<T, A : AuthTrait>(
     val iv: ByteArray?,
     val aad: ByteArray?
 )
-
+/*
 /**
  * Generates a new random key matching the key size of this algorithm
  */
-fun SymmetricEncryptionAlgorithm<*>.randomKey() =
+fun <A: AuthTrait>SymmetricEncryptionAlgorithm<A>.randomKey() =
+@OptIn(HazardousMaterials::class)
     secureRandom.nextBytesOf((keySize.bytes).toInt()).let {
         when (this) {
             is SymmetricEncryptionAlgorithm.AES.CBC.HMAC -> SymmetricKey.WithDedicatedMac(this, it, it)
@@ -309,33 +303,66 @@ fun SymmetricEncryptionAlgorithm<*>.randomKey() =
 
     }
 
-/**
- * Generates a new random key matching the key size of this algorithm
- */
-fun SymmetricEncryptionAlgorithm.Unauthenticated.ramdomKey() =
-    randomKey() as SymmetricEncryptionAlgorithm.Unauthenticated
+
+
+inline fun <reified A, reified E : SymmetricEncryptionAlgorithm<A>, reified K : SymmetricKey<out A, out E>> E.randomKey(): K =
+    @OptIn(HazardousMaterials::class) secureRandom.nextBytesOf((keySize.bytes).toInt()).let {
+        when (this) {
+            is SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac -> WithDedicatedMac(this, it, it)
+            is SymmetricEncryptionAlgorithm.Unauthenticated -> Integrated(this, it)
+            is SymmetricEncryptionAlgorithm.Authenticated.Integrated -> Integrated(this, it)
+            else -> TODO()
+        } as K
+    }
+*/
 
 /**
  * Generates a new random key matching the key size of this algorithm
  */
-fun SymmetricEncryptionAlgorithm.Authenticated.ramdomKey() = randomKey() as SymmetricEncryptionAlgorithm.Authenticated
+//fun SymmetricEncryptionAlgorithm.Unauthenticated.randomKey(): SymmetricKey.Integrated<Unauthenticated> = randomKey()
 
 /**
  * Generates a new random key matching the key size of this algorithm
  */
-fun SymmetricEncryptionAlgorithm.WithDedicatedMac.ramdomKey() =
-    randomKey() as SymmetricEncryptionAlgorithm.WithDedicatedMac
+fun SymmetricEncryptionAlgorithm.Authenticated.Integrated.randomKey(): SymmetricKey.Integrated<Authenticated.Integrated> =
+    Integrated(this, secureRandom.nextBytesOf(keySize.bytes.toInt()))
 
 /**
  * Generates a new random key matching the key size of this algorithm
  */
-fun SymmetricEncryptionAlgorithm.WithIV<*>.ramdomKey() = randomKey() as SymmetricEncryptionAlgorithm.WithIV<*>
+fun SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac.randomKey(): SymmetricKey.WithDedicatedMac =
+    WithDedicatedMac(this, secureRandom.nextBytesOf(keySize.bytes.toInt()))
+
+/**
+ * Generates a new random key matching the key size of this algorithm
+ */
+@JvmName("randomKeyWithIV")
+fun <A: AuthTrait>SymmetricEncryptionAlgorithm.WithIV<A>.randomKey(): SymmetricKey<out A,  out SymmetricEncryptionAlgorithm.WithIV<A>> =
+    when(this){
+        is SymmetricEncryptionAlgorithm.Unauthenticated, is SymmetricEncryptionAlgorithm.Authenticated.Integrated ->  Integrated(this, secureRandom.nextBytesOf(keySize.bytes.toInt()))
+        is SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac -> secureRandom.nextBytesOf(keySize.bytes.toInt()).let { WithDedicatedMac(this, secretKey = it) }
+        else -> TODO()
+    }as  SymmetricKey<out A,  out SymmetricEncryptionAlgorithm.WithIV<A>>
+
+
+
+/**
+ * Generates a new random key matching the key size of this algorithm
+ */
+@JvmName("randomKeyWithIVAuthenticated")
+fun SymmetricEncryptionAlgorithm.WithIV<Authenticated>.randomKey(): SymmetricKey<out Authenticated, out SymmetricEncryptionAlgorithm.WithIV<Authenticated>> =
+    when(this){
+        is SymmetricEncryptionAlgorithm.Authenticated.Integrated ->  Integrated(this, secureRandom.nextBytesOf(keySize.bytes.toInt()))
+        is SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac -> secureRandom.nextBytesOf(keySize.bytes.toInt()).let { WithDedicatedMac(this, secretKey = it) }
+        else -> TODO()
+    }  as SymmetricKey<out Authenticated, out SymmetricEncryptionAlgorithm.WithIV<Authenticated>>
+
 
 /**
  * Generates a new random IV matching the IV size of this algorithm
  */
 internal fun SymmetricEncryptionAlgorithm.WithIV<*>.randomIV() =
-    secureRandom.nextBytesOf((ivLen.bytes).toInt())
+    @OptIn(HazardousMaterials::class) secureRandom.nextBytesOf((ivLen.bytes).toInt())
 
 /**
  * Attempts to decrypt this ciphertext (which also holds IV, and in case of an authenticated ciphertext, AAD and auth tag) using the provided [secretKey].

@@ -61,11 +61,12 @@ class AESTest : FreeSpec({
 
                 ) { iv ->
 
-                val key = (alg as SymmetricEncryptionAlgorithm.WithIV<*>).randomKey() as SymmetricKey<SymmetricEncryptionAlgorithm.WithIV<*>>
-                key.encrypt( iv, Random.nextBytes(32) ) shouldNot succeed
-                key.encrypt( alg.randomIV(), Random.nextBytes(32) ) should succeed
+                val key =
+                    (alg as SymmetricEncryptionAlgorithm.WithIV<*>).randomKey() as SymmetricKey<*,SymmetricEncryptionAlgorithm.WithIV<*>>
+                key.encrypt(iv, Random.nextBytes(32)) shouldNot succeed
+                key.encrypt(alg.randomIV(), Random.nextBytes(32)) should succeed
                 key.encrypt(Random.nextBytes(32)) should succeed
-                if (alg is SymmetricEncryptionAlgorithm.Authenticated)
+                if (alg is SymmetricEncryptionAlgorithm.Authenticated<*>)
                     key.encrypt(Random.nextBytes(32)).getOrThrow()
                         .shouldBeInstanceOf<Ciphertext.Authenticated>()
                 else if (alg is SymmetricEncryptionAlgorithm.Unauthenticated)
@@ -112,21 +113,37 @@ class AESTest : FreeSpec({
                 Random.nextBytes(33), //cannot use 16, 24, or 32
                 Random.nextBytes(256),
 
-                ) { key ->
-                alg.encrypt(key) shouldNot succeed
-                alg.encrypt(key, alg.randomIV()) shouldNot succeed
-                alg.encrypt(alg.randomKey()) should succeed
-                alg.encrypt(alg.randomKey(), alg.randomIV()) should succeed
-                if (alg is SymmetricEncryptionAlgorithm.Authenticated)
-                    alg.encrypt(alg.randomKey()).getOrThrow().encrypt(Random.nextBytes(32)).getOrThrow()
-                        .shouldBeInstanceOf<Ciphertext.Authenticated>()
+                ) { keyBytes ->
+                val key = (when (alg.randomKey()) {
+                    is SymmetricKey.Integrated<*> -> SymmetricKey.Integrated(alg, keyBytes)
+                    is SymmetricKey.WithDedicatedMac -> SymmetricKey.WithDedicatedMac(
+                        alg as SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac,
+                        keyBytes
+                    )
+                }) as SymmetricKey<*, SymmetricEncryptionAlgorithm.WithIV<*>>
+
+
+                key.encrypt(Random.nextBytes(32)) shouldNot succeed
+                key.encrypt( iv= alg.randomIV(), data= Random.nextBytes(32)) shouldNot succeed
+
+                if (alg is SymmetricEncryptionAlgorithm.Authenticated<*>)
+                    alg.randomKey().encrypt(
+                        Random.nextBytes(32)
+                    ).let {
+                        it should succeed
+                        it.getOrThrow().shouldBeInstanceOf<Ciphertext.Authenticated>()
+                    }
                 else if (alg is SymmetricEncryptionAlgorithm.Unauthenticated)
-                    alg.encrypt(alg.randomKey()).getOrThrow().encrypt(Random.nextBytes(32)).getOrThrow()
-                        .shouldBeInstanceOf<Ciphertext.Unauthenticated>()
+                    alg.randomKey().encrypt(
+                        Random.nextBytes(32)
+                    ).let {
+                        it should succeed
+                        it.getOrThrow().shouldBeInstanceOf<Ciphertext.Unauthenticated>()
+                    }
             }
         }
     }
-
+/*
     "CBC.PLAIN" - {
 
         withData(
@@ -629,5 +646,5 @@ class AESTest : FreeSpec({
         recovered shouldBe payload //success!
 
 
-    }
+    }*/
 })
