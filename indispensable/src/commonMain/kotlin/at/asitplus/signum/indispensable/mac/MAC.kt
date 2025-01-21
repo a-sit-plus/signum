@@ -1,10 +1,11 @@
 package at.asitplus.signum.indispensable.mac
 
 import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.misc.BitLength
 
 sealed interface MAC {
     /** output size of MAC */
-    val outputLength: Int
+    val outputLength: BitLength
 
     companion object {
         val entries: Iterable<MAC> = HMAC.entries
@@ -31,5 +32,5 @@ enum class HMAC(val digest: Digest) : MAC {
         }
     }
 
-    override val outputLength: Int get() = digest.outputLength.bytes.toInt()
+    override val outputLength: BitLength get() = digest.outputLength
 }

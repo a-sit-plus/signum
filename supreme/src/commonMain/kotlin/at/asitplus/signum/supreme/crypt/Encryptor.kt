@@ -3,9 +3,10 @@ package at.asitplus.signum.supreme.crypt
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.indispensable.AuthTrait
-import at.asitplus.signum.indispensable.AuthTrait.Authenticated
+import at.asitplus.signum.indispensable.CipherKind
+import at.asitplus.signum.indispensable.CipherKind.Authenticated
 import at.asitplus.signum.indispensable.Ciphertext
+import at.asitplus.signum.indispensable.SealedBox
 import at.asitplus.signum.indispensable.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.SymmetricKey
 import at.asitplus.signum.indispensable.SymmetricKey.Integrated
@@ -22,7 +23,7 @@ internal val secureRandom = SecureRandom()
 fun SymmetricKey<*, out SymmetricEncryptionAlgorithm.WithIV<*>>.encrypt(
     iv: ByteArray,
     data: ByteArray
-): KmmResult<Ciphertext<*, out SymmetricEncryptionAlgorithm.WithIV<*>>> = catching {
+): KmmResult<SealedBox.WithIV<*, out SymmetricEncryptionAlgorithm.WithIV<*>>> = catching {
     Encryptor(
         algorithm,
         secretKey,
@@ -40,7 +41,7 @@ fun SymmetricKey<*, out SymmetricEncryptionAlgorithm.WithIV<*>>.encrypt(
  * @return [KmmResult.success] containing a [Ciphertext] if valid parameters were provided or [KmmResult.failure] in case of
  * invalid parameters (e.g., key or IV length)
  */
-fun <A : AuthTrait> SymmetricKey<out A, out SymmetricEncryptionAlgorithm<A>>.encrypt(
+fun <A : CipherKind> SymmetricKey<out A, out SymmetricEncryptionAlgorithm<A>>.encrypt(
     data: ByteArray,
 ): KmmResult<Ciphertext<A, SymmetricEncryptionAlgorithm<A>>> = catching {
     Encryptor(
@@ -91,7 +92,7 @@ fun SymmetricKey<out Authenticated, out SymmetricEncryptionAlgorithm.WithIV<Auth
  * invalid parameters (e.g., key or IV length)
  */
 @JvmName("encryptAuthenticated")
-fun SymmetricKey<AuthTrait.Authenticated, SymmetricEncryptionAlgorithm.Authenticated<*>>.encrypt(
+fun SymmetricKey<CipherKind.Authenticated, SymmetricEncryptionAlgorithm.Authenticated<*>>.encrypt(
     data: ByteArray,
     aad: ByteArray? = null
 ): KmmResult<Ciphertext.Authenticated> =
@@ -116,7 +117,7 @@ fun SymmetricKey<AuthTrait.Authenticated, SymmetricEncryptionAlgorithm.Authentic
  * invalid parameters (e.g., key or IV length)
  */
 @HazardousMaterials
-fun <A : AuthTrait> SymmetricKey.Integrated<SymmetricEncryptionAlgorithm.WithIV<A>>.encrypt(
+fun <A : CipherKind> SymmetricKey.Integrated<SymmetricEncryptionAlgorithm.WithIV<A>>.encrypt(
     iv: ByteArray,
     data: ByteArray,
 ): KmmResult<Ciphertext<A, SymmetricEncryptionAlgorithm.WithIV<A>>> = catching {
@@ -138,7 +139,7 @@ fun <A : AuthTrait> SymmetricKey.Integrated<SymmetricEncryptionAlgorithm.WithIV<
  * invalid parameters (e.g., key or IV length)
  */
 @JvmName("encryptUnauthenticated")
-fun SymmetricKey<AuthTrait.Unauthenticated, SymmetricEncryptionAlgorithm.Unauthenticated>.encrypt(
+fun SymmetricKey<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm.Unauthenticated>.encrypt(
     data: ByteArray,
 ): KmmResult<Ciphertext.Unauthenticated> = catching {
     Encryptor(
@@ -208,7 +209,7 @@ fun SymmetricKey.WithDedicatedMac.encrypt(
 }
 
 
-internal class Encryptor<A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>, C : Ciphertext<A, E>> internal constructor(
+internal class Encryptor<A : CipherKind, E : SymmetricEncryptionAlgorithm<A>, C : Ciphertext<A, E>> internal constructor(
     private val algorithm: E,
     private val key: ByteArray,
     private val macKey: ByteArray?,
@@ -276,7 +277,7 @@ val DefaultDedicatedMacInputCalculation: DedicatedMacInputCalculation =
         (iv ?: byteArrayOf()) + (aad ?: byteArrayOf()) + ciphertext
 
 
-internal class CipherParam<T, A : AuthTrait>(
+internal class CipherParam<T, A : CipherKind>(
     val alg: SymmetricEncryptionAlgorithm<A>,
     val platformData: T,
     val iv: ByteArray?,
@@ -301,7 +302,7 @@ fun SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac.randomKey(dedica
  * Generates a new random key matching the key size of this algorithm
  */
 @JvmName("randomKeyWithIV")
-fun <A : AuthTrait> SymmetricEncryptionAlgorithm.WithIV<A>.randomKey(): SymmetricKey<out A, out SymmetricEncryptionAlgorithm.WithIV<A>> =
+fun <A : CipherKind> SymmetricEncryptionAlgorithm.WithIV<A>.randomKey(): SymmetricKey<out A, out SymmetricEncryptionAlgorithm.WithIV<A>> =
     when (this) {
         is SymmetricEncryptionAlgorithm.Unauthenticated, is SymmetricEncryptionAlgorithm.Authenticated.Integrated -> Integrated(
             this,
@@ -344,7 +345,7 @@ internal fun SymmetricEncryptionAlgorithm.WithIV<*>.randomIV() =
  * Attempts to decrypt this ciphertext (which also holds IV, and in case of an authenticated ciphertext, AAD and auth tag) using the provided [key].
  * This is the function you typically want to use.
  */
-fun <A: AuthTrait> Ciphertext<A, *>.decrypt(key: SymmetricKey<out A, *>): KmmResult<ByteArray> {
+fun <A: CipherKind> Ciphertext<A, *>.decrypt(key: SymmetricKey<out A, *>): KmmResult<ByteArray> {
     require(algorithm == key.algorithm) { "Somebody likes cursed casts!" }
     return if (this is Ciphertext.Authenticated.WithDedicatedMac) decrypt(
         key.secretKey,
@@ -405,12 +406,12 @@ expect internal fun Ciphertext.Authenticated.doDecrypt(secretKey: ByteArray): By
 expect internal fun Ciphertext.Unauthenticated.doDecrypt(secretKey: ByteArray): ByteArray
 
 
-internal expect fun <T, A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>> initCipher(
+internal expect fun <T, A : CipherKind, E : SymmetricEncryptionAlgorithm<A>> initCipher(
     algorithm: E,
     key: ByteArray,
     iv: ByteArray?,
     aad: ByteArray?
 ): CipherParam<T, A>
 
-internal expect fun <A : AuthTrait> CipherParam<*, A>.doEncrypt(data: ByteArray): Ciphertext<A, SymmetricEncryptionAlgorithm<A>>
+internal expect fun <A : CipherKind> CipherParam<*, A>.doEncrypt(data: ByteArray): Ciphertext<A, SymmetricEncryptionAlgorithm<A>>
 

@@ -1,5 +1,5 @@
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.indispensable.AuthTrait
+import at.asitplus.signum.indispensable.CipherKind
 import at.asitplus.signum.indispensable.Ciphertext
 import at.asitplus.signum.indispensable.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.SymmetricKey
@@ -219,7 +219,7 @@ class AESTest : FreeSpec({
                         iv = ciphertext.iv!!.asList().shuffled().toByteArray()
                     )
 
-                    if (plaintext.size > it.blockSizeBits.toInt() / 8) { //cannot test like that for ciphertexts shorter than IV
+                    if (plaintext.size > it.blockSize.toInt() / 8) { //cannot test like that for ciphertexts shorter than IV
                         val wrongIVDecrypted = wrongIV.decrypt(key)
                         wrongIVDecrypted should succeed
                         wrongIVDecrypted shouldNotBe plaintext
@@ -241,7 +241,7 @@ class AESTest : FreeSpec({
         ) {
             //TODO why cast here???
             val alg =
-                it as SymmetricEncryptionAlgorithm.WithIV<AuthTrait.Authenticated>
+                it as SymmetricEncryptionAlgorithm.WithIV<CipherKind.Authenticated>
             withData(
                 nameFn = { "${it.size} Bytes" },
                 Random.Default.nextBytes(5),
