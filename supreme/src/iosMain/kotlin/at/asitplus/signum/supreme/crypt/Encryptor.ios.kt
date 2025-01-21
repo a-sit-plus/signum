@@ -18,13 +18,12 @@ import platform.CoreCrypto.kCCEncrypt
 internal actual fun <T, A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>> initCipher(
     algorithm: E,
     key: ByteArray,
-    macKey: ByteArray?,
     iv: ByteArray?,
     aad: ByteArray?
 ): CipherParam<T, A> {
     if (algorithm !is SymmetricEncryptionAlgorithm.WithIV<*>) TODO()
     val nonce = iv ?: algorithm.randomIV()
-    return CipherParam<ByteArray, A>(algorithm, key, macKey ?: key, nonce, aad) as CipherParam<T, A>
+    return CipherParam<ByteArray, A>(algorithm, key, nonce, aad) as CipherParam<T, A>
 }
 
 @OptIn(ExperimentalForeignApi::class)
