@@ -344,7 +344,7 @@ internal fun SymmetricEncryptionAlgorithm.WithIV<*>.randomIV() =
  * Attempts to decrypt this ciphertext (which also holds IV, and in case of an authenticated ciphertext, AAD and auth tag) using the provided [key].
  * This is the function you typically want to use.
  */
-fun <E : SymmetricEncryptionAlgorithm<*>> Ciphertext<*, E>.decrypte(key: SymmetricKey<*, out E>): KmmResult<ByteArray> {
+fun <A: AuthTrait> Ciphertext<A, *>.decrypt(key: SymmetricKey<out A, *>): KmmResult<ByteArray> {
     require(algorithm == key.algorithm) { "Somebody likes cursed casts!" }
     return if (this is Ciphertext.Authenticated.WithDedicatedMac) decrypt(
         key.secretKey,
