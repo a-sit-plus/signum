@@ -10,7 +10,11 @@ import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 
 
-sealed interface SymmetricEncryptionAlgorithm<out A : AuthTrait> : Identifiable, AuthTrait {
+sealed interface SymmetricEncryptionAlgorithm<out A : CipherKind, out I : IV> :
+    Identifiable {
+    val cipher: A
+    val iv: IV
+
     override fun toString(): String
 
     companion object {
@@ -27,6 +31,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthTrait> : Identifiable,
             class CbcDefinition(keySize: BitLength) {
                 @HazardousMaterials
                 val PLAIN = AES.CBC.Plain(keySize)
+
                 @OptIn(HazardousMaterials::class)
                 val HMAC = HmacDefinition(PLAIN)
 
@@ -40,42 +45,36 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthTrait> : Identifiable,
         }
     }
 
-    /**Humanly-readable nam**/
+    /**Humanly-readable name**/
     val name: String
 
-
-    /**
-     * Indicates that a cipher requires an initialization vector
-     */
-    interface WithIV<A : AuthTrait> : SymmetricEncryptionAlgorithm<A> {
-        val ivLen: BitLength
-    }
-
-    sealed interface Authenticated<M: AuthTrait.Authenticated> : SymmetricEncryptionAlgorithm<M>, AuthTrait.Authenticated {
-        interface Integrated: Authenticated<AuthTrait.Authenticated.Integrated>
-        interface WithDedicatedMac : Authenticated<AuthTrait.Authenticated.WithDedicatedMac> {
-            val mac: MAC
-            val innerCipher: SymmetricEncryptionAlgorithm.Unauthenticated
+    /*
+        sealed interface Authenticated<A : AuthTrait.Authenticated, I: IvTrait> : SymmetricEncryptionAlgorithm<A>,
+            AuthTrait.Authenticated {
+            interface Integrated : Authenticated<AuthTrait.Authenticated.Integrated>
+            interface WithDedicatedMac : Authenticated<AuthTrait.Authenticated.WithDedicatedMac> {
+                val mac: MAC
+                val innerCipher: SymmetricEncryptionAlgorithm.Unauthenticated
+            }
         }
-    }
-    interface Unauthenticated : SymmetricEncryptionAlgorithm<AuthTrait.Unauthenticated>, AuthTrait.Unauthenticated
+
+        interface Unauthenticated : SymmetricEncryptionAlgorithm<AuthTrait.Unauthenticated,I>, AuthTrait.Unauthenticated*/
 
     /**
      * Key length in bits
      */
     val keySize: BitLength
 
-    sealed class AES<A : AuthTrait>(modeOfOps: ModeOfOperation, override val keySize: BitLength) :
-        BlockCipher<A>(modeOfOps, blockSizeBits = 128u), WithIV<A> {
+    sealed class AES<A : CipherKind>(modeOfOps: ModeOfOperation, override val keySize: BitLength) :
+        BlockCipher<A, IV.Required>(modeOfOps, blockSize = 128.bit) {
         override val name: String = "AES-${keySize.bits} ${modeOfOps.acronym}"
 
         override fun toString(): String = name
 
         class GCM internal constructor(keySize: BitLength) :
-            AES<AuthTrait.Authenticated.Integrated>(ModeOfOperation.GCM, keySize),
-            Authenticated.Integrated {
-            override val ivLen = 96u.bit
-            override val tagNumBits: UInt = blockSizeBits
+            AES<CipherKind.Authenticated.Integrated>(ModeOfOperation.GCM, keySize) {
+            override val iv = IV.Required(96.bit)
+            override val cipher = CipherKind.Authenticated.Integrated(blockSize)
             override val oid: ObjectIdentifier = when (keySize.bits) {
                 128u -> KnownOIDs.aes128_GCM
                 192u -> KnownOIDs.aes192_GCM
@@ -84,8 +83,8 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthTrait> : Identifiable,
             }
         }
 
-        sealed class CBC<A : AuthTrait>(keySize: BitLength) : AES<A>(ModeOfOperation.CBC, keySize) {
-            override val ivLen = 128u.bit
+        sealed class CBC<A : CipherKind>(keySize: BitLength) : AES<A>(ModeOfOperation.CBC, keySize) {
+            override val iv = IV.Required(128u.bit)
             override val oid: ObjectIdentifier = when (keySize.bits) {
                 128u -> KnownOIDs.aes128_CBC
                 192u -> KnownOIDs.aes192_CBC
@@ -93,17 +92,24 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthTrait> : Identifiable,
                 else -> throw IllegalStateException("$keySize This is an implementation flaw. Report this bug!")
             }
 
-            class Plain(keySize: BitLength) : CBC<AuthTrait.Unauthenticated>(keySize),
-                Unauthenticated {
-                override val name = super.name+ " Plain"
-                }
+            class Plain(
+                keySize: BitLength
+            ) : CBC<CipherKind.Unauthenticated>(keySize) {
+                override val cipher = CipherKind.Unauthenticated
+                override val name = super.name + " Plain"
+            }
 
-            class HMAC(override val innerCipher: Plain, override val mac: MAC) :
-                CBC<AuthTrait.Authenticated.WithDedicatedMac>(innerCipher.keySize),
-                Authenticated.WithDedicatedMac {
-                override val tagNumBits: UInt = mac.outputLength.toUInt() * 8u
-
-                override val name = super.name+ " $mac"
+            class HMAC(innerCipher: Plain, mac: at.asitplus.signum.indispensable.mac.HMAC) :
+                CBC<CipherKind.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC, IV.Required>>(
+                    innerCipher.keySize
+                ) {
+                override val cipher =
+                    CipherKind.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC, IV.Required>(
+                        innerCipher,
+                        mac,
+                        mac.outputLength
+                    )
+                override val name = super.name + " $mac"
             }
         }
     }
@@ -112,24 +118,46 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthTrait> : Identifiable,
 /**
  * Defines whether a cipher is authenticated or not
  */
-sealed interface AuthTrait {
+sealed interface CipherKind {
     /**
      * Indicates an authenticated cipher
      */
-    sealed interface Authenticated : AuthTrait {
-        val tagNumBits: UInt
+    sealed class Authenticated(val tagLen: BitLength) : CipherKind {
 
-        interface Integrated : Authenticated
-        interface WithDedicatedMac : Authenticated
+        /**
+         * An authenticated cipher construction that is inherently authenticated
+         */
+        class Integrated(tagLen: BitLength) : Authenticated(tagLen)
+
+        /**
+         * An authenticated cipher construction based on an unauthenticated cipher with a dedicated MAC function.
+         */
+        class WithDedicatedMac<M : MAC, I : IV>(
+            val innerCipher: SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, out I>,
+            val mac: M,
+            tagLen: BitLength
+        ) : Authenticated(tagLen)
     }
 
     /**
      * Indicates an unauthenticated cipher
      */
-    interface Unauthenticated : AuthTrait
+    object Unauthenticated : CipherKind
 }
 
-sealed class BlockCipher<A : AuthTrait>(val mode: ModeOfOperation, val blockSizeBits: UInt) : SymmetricEncryptionAlgorithm<A> {
+sealed class IV {
+    /**
+     * Indicates that a cipher requires an initialization vector
+     */
+    class Required(val ivLen: BitLength) : IV()
+
+    object Without : IV()
+}
+
+sealed class BlockCipher<A : CipherKind, I : IV>(
+    val mode: ModeOfOperation,
+    val blockSize: BitLength
+) : SymmetricEncryptionAlgorithm<A, I> {
 
     enum class ModeOfOperation(val friendlyName: String, val acronym: String) {
         GCM("Galois Counter Mode", "GCM"),

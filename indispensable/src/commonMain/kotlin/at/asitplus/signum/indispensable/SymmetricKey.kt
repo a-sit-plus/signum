@@ -3,7 +3,7 @@ package at.asitplus.signum.indispensable
 /**
  * Symmetric Encryption key
  */
-sealed class SymmetricKey<A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>>(
+sealed class SymmetricKey<A : CipherKind, E : SymmetricEncryptionAlgorithm<A>>(
     val algorithm: E,
     val secretKey: ByteArray
 ) {
@@ -11,7 +11,7 @@ sealed class SymmetricKey<A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>>(
     /**
      * Self-Contained encryption key, i.e. a single byte array is sufficient
      */
-    class Integrated<A : AuthTrait>(algorithm: SymmetricEncryptionAlgorithm<A>, secretKey: ByteArray) :
+    class Integrated<A : CipherKind>(algorithm: SymmetricEncryptionAlgorithm<A>, secretKey: ByteArray) :
         SymmetricKey<A, SymmetricEncryptionAlgorithm<A>>(algorithm, secretKey)
 
     /**
@@ -22,7 +22,7 @@ sealed class SymmetricKey<A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>>(
         algorithm: SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac,
         secretKey: ByteArray,
         val dedicatedMacKey: ByteArray = secretKey
-    ) : SymmetricKey<AuthTrait.Authenticated.WithDedicatedMac, SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac>(
+    ) : SymmetricKey<CipherKind.Authenticated.WithDedicatedMac, SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac>(
         algorithm,
         secretKey
     )

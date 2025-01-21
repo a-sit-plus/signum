@@ -1,6 +1,6 @@
 package at.asitplus.signum.supreme.crypt
 
-import at.asitplus.signum.indispensable.AuthTrait
+import at.asitplus.signum.indispensable.CipherKind
 import at.asitplus.signum.indispensable.BlockCipher
 import at.asitplus.signum.indispensable.Ciphertext
 import at.asitplus.signum.indispensable.SymmetricEncryptionAlgorithm
@@ -15,7 +15,7 @@ import platform.CoreCrypto.kCCDecrypt
 import platform.CoreCrypto.kCCEncrypt
 
 
-internal actual fun <T, A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>> initCipher(
+internal actual fun <T, A : CipherKind, E : SymmetricEncryptionAlgorithm<A>> initCipher(
     algorithm: E,
     key: ByteArray,
     iv: ByteArray?,
@@ -27,7 +27,7 @@ internal actual fun <T, A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>> init
 }
 
 @OptIn(ExperimentalForeignApi::class)
-internal actual fun <A : AuthTrait> CipherParam<*, A>.doEncrypt(data: ByteArray): Ciphertext<A, SymmetricEncryptionAlgorithm<A>> {
+internal actual fun <A : CipherKind> CipherParam<*, A>.doEncrypt(data: ByteArray): Ciphertext<A, SymmetricEncryptionAlgorithm<A>> {
     this as CipherParam<ByteArray, A>
     require(iv != null)
     val nsIV = iv.toNSData()
