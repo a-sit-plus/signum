@@ -11,7 +11,6 @@ import javax.crypto.spec.SecretKeySpec
 actual internal fun <T, A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>> initCipher(
     algorithm: E,
     key: ByteArray,
-    macKey: ByteArray?,
     iv: ByteArray?,
     aad: ByteArray?
 ): CipherParam<T, A> {
@@ -32,7 +31,7 @@ actual internal fun <T, A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>> init
             )
         else TODO()
         aad?.let { if (algorithm is SymmetricEncryptionAlgorithm.AES.GCM) updateAAD(it) /*CBC-HMAC we do ourselves*/ }
-    }.let { CipherParam<Cipher, A>(algorithm, it, macKey ?: key, nonce, aad) as CipherParam<T, A> }
+    }.let { CipherParam<Cipher, A>(algorithm, it, nonce, aad) as CipherParam<T, A> }
 }
 
 actual internal fun <A : AuthTrait> CipherParam<*, A>.doEncrypt(data: ByteArray): Ciphertext<A, SymmetricEncryptionAlgorithm<A>> {

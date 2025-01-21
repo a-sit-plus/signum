@@ -228,7 +228,7 @@ internal class Encryptor<A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>, C :
     }
 
 
-    private val platformCipher: CipherParam<*, A> = initCipher<Any, A, E>(algorithm, key, macKey, iv, aad)
+    private val platformCipher: CipherParam<*, A> = initCipher<Any, A, E>(algorithm, key, iv, aad)
 
     /**
      * Encrypts [data] and returns a [Ciphertext] matching the algorithm type that was used to create this [Encryptor] object.
@@ -240,7 +240,6 @@ internal class Encryptor<A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>, C :
             val innerCipher = initCipher<Any, AuthTrait.Unauthenticated, SymmetricEncryptionAlgorithm.AES.CBC.Plain>(
                 algorithm.innerCipher,
                 key,
-                macKey,
                 iv,
                 aad
             )
@@ -280,46 +279,12 @@ val DefaultDedicatedMacInputCalculation: DedicatedMacInputCalculation =
         (iv ?: byteArrayOf()) + (aad ?: byteArrayOf()) + ciphertext
 
 
-internal data class CipherParam<T, A : AuthTrait>(
-    val alg: SymmetricEncryptionAlgorithm<out A>,
+internal class CipherParam<T, A : AuthTrait>(
+    val alg: SymmetricEncryptionAlgorithm<A>,
     val platformData: T,
-    val macKey: ByteArray,
     val iv: ByteArray?,
     val aad: ByteArray?
 )
-/*
-/**
- * Generates a new random key matching the key size of this algorithm
- */
-fun <A: AuthTrait>SymmetricEncryptionAlgorithm<A>.randomKey() =
-@OptIn(HazardousMaterials::class)
-    secureRandom.nextBytesOf((keySize.bytes).toInt()).let {
-        when (this) {
-            is SymmetricEncryptionAlgorithm.AES.CBC.HMAC -> SymmetricKey.WithDedicatedMac(this, it, it)
-            is SymmetricEncryptionAlgorithm.AES.CBC.Plain -> SymmetricKey.Integrated(this, it)
-            is SymmetricEncryptionAlgorithm.AES.GCM -> SymmetricKey.Integrated(this, it)
-            else -> TODO()
-        }
-
-    }
-
-
-
-inline fun <reified A, reified E : SymmetricEncryptionAlgorithm<A>, reified K : SymmetricKey<out A, out E>> E.randomKey(): K =
-    @OptIn(HazardousMaterials::class) secureRandom.nextBytesOf((keySize.bytes).toInt()).let {
-        when (this) {
-            is SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac -> WithDedicatedMac(this, it, it)
-            is SymmetricEncryptionAlgorithm.Unauthenticated -> Integrated(this, it)
-            is SymmetricEncryptionAlgorithm.Authenticated.Integrated -> Integrated(this, it)
-            else -> TODO()
-        } as K
-    }
-*/
-
-/**
- * Generates a new random key matching the key size of this algorithm
- */
-//fun SymmetricEncryptionAlgorithm.Unauthenticated.randomKey(): SymmetricKey.Integrated<Unauthenticated> = randomKey()
 
 /**
  * Generates a new random key matching the key size of this algorithm
@@ -411,7 +376,6 @@ expect internal fun Ciphertext.Unauthenticated.doDecrypt(secretKey: ByteArray): 
 internal expect fun <T, A : AuthTrait, E : SymmetricEncryptionAlgorithm<A>> initCipher(
     algorithm: E,
     key: ByteArray,
-    macKey: ByteArray?,
     iv: ByteArray?,
     aad: ByteArray?
 ): CipherParam<T, A>
