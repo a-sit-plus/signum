@@ -185,11 +185,11 @@ class AESTest : FreeSpec({
                     ciphertext.shouldBeInstanceOf<Ciphertext.Unauthenticated>()
 
 
-                    val decrypted = ciphertext.decrypte(key).getOrThrow()
+                    val decrypted = ciphertext.decrypt(key).getOrThrow()
                     decrypted shouldBe plaintext
 
 
-                    val wrongDecrypted = ciphertext.decrypte(it.randomKey())
+                    val wrongDecrypted = ciphertext.decrypt(it.randomKey())
                     //We're not authenticated, so from time to time, we won't run into a padding error for specific plaintext sizes
                     wrongDecrypted.onSuccess { value -> value shouldNotBe plaintext }
 
@@ -199,14 +199,14 @@ class AESTest : FreeSpec({
                         iv = ciphertext.iv
                     )
 
-                    val wrongWrongDecrypted = wrongCiphertext.decrypte(it.randomKey())
+                    val wrongWrongDecrypted = wrongCiphertext.decrypt(it.randomKey())
                     withClue("KEY: ${key.secretKey.toHexString()}, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.iv?.toHexString()}") {
                         //we're not authenticated, so from time to time, this succeeds
                         //wrongWrongDecrypted shouldNot succeed
                         //instead, we test differently:
                         wrongWrongDecrypted.onSuccess { value -> value shouldNotBe plaintext }
                     }
-                    val wrongRightDecrypted = wrongCiphertext.decrypte(key)
+                    val wrongRightDecrypted = wrongCiphertext.decrypt(key)
                     withClue("KEY: ${key.secretKey.toHexString()}, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.iv?.toHexString()}") {
                         //we're not authenticated, so from time to time, this succeeds
                         //wrongRightDecrypted shouldNot succeed
@@ -220,13 +220,13 @@ class AESTest : FreeSpec({
                     )
 
                     if (plaintext.size > it.blockSizeBits.toInt() / 8) { //cannot test like that for ciphertexts shorter than IV
-                        val wrongIVDecrypted = wrongIV.decrypte(key)
+                        val wrongIVDecrypted = wrongIV.decrypt(key)
                         wrongIVDecrypted should succeed
                         wrongIVDecrypted shouldNotBe plaintext
                     }
 
                     Ciphertext.Unauthenticated(ciphertext.algorithm, ciphertext.encryptedData, iv = null)
-                        .decrypte(key) shouldNot succeed //always fails, because we always use an IV for encryption
+                        .decrypt(key) shouldNot succeed //always fails, because we always use an IV for encryption
 
                 }
             }
@@ -279,7 +279,7 @@ class AESTest : FreeSpec({
                         ciphertext.shouldBeInstanceOf<Ciphertext.Authenticated>()
                         ciphertext.authenticatedData shouldBe aad
 
-                        val decrypted = ciphertext.decrypte(key).getOrThrow()
+                        val decrypted = ciphertext.decrypt(key).getOrThrow()
                         decrypted shouldBe plaintext
 
 
@@ -297,7 +297,7 @@ class AESTest : FreeSpec({
                         val wrongWrongDecrypted = wrongCiphertext.decrypt(alg.randomKey().secretKey)
                         wrongWrongDecrypted shouldNot succeed
 
-                        val wrongRightDecrypted = wrongCiphertext.decrypte(key)
+                        val wrongRightDecrypted = wrongCiphertext.decrypt(key)
                         wrongRightDecrypted shouldNot succeed
 
                         val wrongIV = Ciphertext.Authenticated(
@@ -308,7 +308,7 @@ class AESTest : FreeSpec({
                             authenticatedData = ciphertext.authenticatedData
                         )
 
-                        val wrongIVDecrypted = wrongIV.decrypte(key)
+                        val wrongIVDecrypted = wrongIV.decrypt(key)
                         wrongIVDecrypted shouldNot succeed
 
                         Ciphertext.Authenticated(
@@ -317,7 +317,7 @@ class AESTest : FreeSpec({
                             iv = null,
                             authTag = ciphertext.authTag,
                             authenticatedData = ciphertext.authenticatedData
-                        ).decrypte(key) shouldNot succeed
+                        ).decrypt(key) shouldNot succeed
 
 
                         Ciphertext.Authenticated(
@@ -326,7 +326,7 @@ class AESTest : FreeSpec({
                             iv = ciphertext.iv!!.asList().shuffled().toByteArray(),
                             authTag = ciphertext.authTag,
                             authenticatedData = ciphertext.authenticatedData
-                        ).decrypte(key) shouldNot succeed
+                        ).decrypt(key) shouldNot succeed
 
                         if (aad != null) {
                             Ciphertext.Authenticated(
@@ -335,7 +335,7 @@ class AESTest : FreeSpec({
                                 iv = ciphertext.iv,
                                 authTag = ciphertext.authTag,
                                 authenticatedData = null
-                            ).decrypte(key) shouldNot succeed
+                            ).decrypt(key) shouldNot succeed
 
                             Ciphertext.Authenticated(
                                 ciphertext.algorithm,
@@ -343,7 +343,7 @@ class AESTest : FreeSpec({
                                 iv = null,
                                 authTag = ciphertext.authTag,
                                 authenticatedData = null
-                            ).decrypte(key) shouldNot succeed
+                            ).decrypt(key) shouldNot succeed
 
 
                             Ciphertext.Authenticated(
@@ -352,7 +352,7 @@ class AESTest : FreeSpec({
                                 iv = null,
                                 authTag = ciphertext.authTag.asList().shuffled().toByteArray(),
                                 authenticatedData = null
-                            ).decrypte(key) shouldNot succeed
+                            ).decrypt(key) shouldNot succeed
                         }
 
                         Ciphertext.Authenticated(
@@ -361,7 +361,7 @@ class AESTest : FreeSpec({
                             iv = ciphertext.iv,
                             authTag = ciphertext.authTag.asList().shuffled().toByteArray(),
                             authenticatedData = ciphertext.authenticatedData
-                        ).decrypte(key) shouldNot succeed
+                        ).decrypt(key) shouldNot succeed
                     }
                 }
             }
