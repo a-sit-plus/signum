@@ -3,6 +3,7 @@ package at.asitplus.signum.supreme.os
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.Attestation
+import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.supreme.SignatureResult
@@ -155,6 +156,9 @@ interface PlatformSigningProviderSigner
     override suspend fun sign(data: SignatureInput) = sign(data, null)
     override suspend fun sign(data: ByteArray) = sign(SignatureInput(data), null)
     override suspend fun sign(data: Sequence<ByteArray>) = sign(SignatureInput(data), null)
+
+    suspend fun keyAgreement(publicKey: CryptoPublicKey, configure: DSLConfigureFn<SigningConfiguration>): KmmResult<ByteArray>
+    override suspend fun keyAgreement(publicKey: CryptoPublicKey) = keyAgreement(publicKey, null)
 }
 
 open class PlatformSigningProviderConfigurationBase internal constructor(): DSL.Data()

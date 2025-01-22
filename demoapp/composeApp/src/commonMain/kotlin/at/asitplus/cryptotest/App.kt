@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -48,28 +49,33 @@ import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SpecializedSignatureAlgorithm
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.nativeDigest
-import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.supreme.dsl.PREFERRED
 import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.supreme.sign.makeVerifier
 import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.cryptotest.theme.AppTheme
 import at.asitplus.cryptotest.theme.LocalThemeIsDark
+import at.asitplus.signum.indispensable.CryptoPrivateKey
+import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.jsonEncoded
+import at.asitplus.signum.supreme.SecretExposure
+import at.asitplus.signum.supreme.agreement.keyAgreement
 import at.asitplus.signum.supreme.asKmmResult
 import at.asitplus.signum.supreme.os.PlatformSignerConfigurationBase
 import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase
-import at.asitplus.signum.supreme.os.PlatformSigningProvider
 import at.asitplus.signum.supreme.os.SignerConfiguration
 import at.asitplus.signum.supreme.os.SigningProvider
+import at.asitplus.signum.supreme.sign.EphemeralKey
 import at.asitplus.signum.supreme.sign.Verifier
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
-import io.ktor.util.decodeBase64Bytes
+import io.ktor.util.encodeBase64
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newSingleThreadContext
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 import kotlin.reflect.KProperty
 import kotlin.time.Duration.Companion.seconds
@@ -98,7 +104,10 @@ private class getter<T>(private val fn: () -> T) {
     operator fun getValue(nothing: Nothing?, property: KProperty<*>): T = fn()
 }
 
-@OptIn(ExperimentalStdlibApi::class, ExperimentalCoroutinesApi::class)
+@OptIn(
+    ExperimentalCoroutinesApi::class,
+    SecretExposure::class
+)
 @Composable
 internal fun App() {
 
@@ -138,6 +147,13 @@ internal fun App() {
         }
         val signingPossible by getter { currentKey?.isSuccess == true }
         var signatureData by remember { mutableStateOf<KmmResult<CryptoSignature>?>(null) }
+        var ephemeralKey by remember {
+            mutableStateOf<CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>?>(
+                null
+            )
+        }
+        var agreedKey1 by remember { mutableStateOf<KmmResult<ByteArray>?>(null) }
+        var agreedKey2 by remember { mutableStateOf<KmmResult<ByteArray>?>(null) }
         val signatureDataStr by getter {
             signatureData?.fold(onSuccess = Any::toString) {
                 Napier.e("Signature failed", it)
@@ -157,6 +173,24 @@ internal fun App() {
 
         var genTextOverride by remember { mutableStateOf<String?>(null) }
         val genText by getter { genTextOverride ?: "Generate" }
+
+        fun genEphemeralKey(){
+            ephemeralKey = if (currentKey?.getOrNull() is CryptoPublicKey.EC)
+                Signer.Ephemeral {
+                    val alg = keyAlgorithm.algorithm as SignatureAlgorithm.ECDSA
+                    ec {
+                        curve = alg.requiredCurve
+                            ?: ECCurve.entries.find { it.nativeDigest == alg.digest }!!
+                        digests = setOf(alg.digest)
+
+                    }
+                }.getOrNull()?.exportPrivateKey()
+                    ?.getOrNull() as CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>
+            else null
+            agreedKey1=null
+            agreedKey2=null
+        }
+
 
         Column(
             modifier = Modifier.fillMaxSize().verticalScroll(ScrollState(0), enabled = true)
@@ -311,8 +345,8 @@ internal fun App() {
                                 when (val alg = keyAlgorithm.algorithm) {
                                     is SignatureAlgorithm.ECDSA -> {
                                         this@createSigningKey.ec {
-                                            curve = alg.requiredCurve ?:
-                                                    ECCurve.entries.find { it.nativeDigest == alg.digest }!!
+                                            curve = alg.requiredCurve
+                                                ?: ECCurve.entries.find { it.nativeDigest == alg.digest }!!
                                             digests = setOf(alg.digest)
                                         }
                                     }
@@ -363,6 +397,8 @@ internal fun App() {
                             Napier.w { "Signing possible: ${currentKey?.isSuccess}" }
                             canGenerate = true
                             genTextOverride = null
+
+                            genEphemeralKey()
                         }
                     },
                     modifier = Modifier.padding(start = 16.dp)
@@ -386,6 +422,7 @@ internal fun App() {
                             //loadPubKey().let { Napier.w { "PubKey retrieved from native: $it" } }
                             canGenerate = true
                             genTextOverride = null
+                            genEphemeralKey()
                         }
                     },
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp)
@@ -433,7 +470,6 @@ internal fun App() {
 
             Button(
                 onClick = {
-
                     Napier.w { "input: $inputData" }
                     Napier.w { "signingKey: $currentKey" }
                     CoroutineScope(context).launch {
@@ -442,13 +478,72 @@ internal fun App() {
                             .transform { it.sign(data).asKmmResult() }
                             .also { signatureData = it; verifyState = null }
                     }
-
                 },
-
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
                 enabled = signingPossible
-            ) {
-                Text("Sign")
+            ) { Text("Sign") }
+
+            if (signingPossible && (currentKey?.getOrNull() is CryptoPublicKey.EC)) {
+                Napier.i { "Ephemeral key: $ephemeralKey" }
+                Spacer(Modifier.height(8.dp))
+                ephemeralKey?.let { ephemeralKey ->
+                    OutlinedTextField(value = ephemeralKey.toString(),
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        minLines = 1,
+                        textStyle = TextStyle.Default.copy(fontSize = 10.sp),
+                        readOnly = true,
+                        onValueChange = {},
+                        label = { Text("Random faux-external key for ECDH") })
+
+                    Button(
+                        onClick = {
+                            Napier.w { "input: $inputData" }
+                            Napier.w { "signingKey: $currentKey" }
+                            CoroutineScope(context).launch {
+
+                                agreedKey2 =
+                                    (currentSigner!!.getOrThrow().publicKey as CryptoPublicKey.EC).keyAgreement(
+                                        ephemeralKey
+                                    )
+                                Napier.i {
+                                    "ECDH Key of ext_piv + hardware-backed_pub: ${
+                                        agreedKey2?.getOrNull()?.encodeBase64()
+                                    }"
+                                }
+
+                                agreedKey1 =
+                                    ephemeralKey.publicKey.keyAgreement(currentSigner!!.getOrThrow() as Signer.ECDSA) {
+                                        unlockPrompt {
+                                            message = "Confirm key agreement?"
+                                            cancelText = "Agree to disagree"
+                                        }
+                                    }
+                                Napier.i {
+                                    "ECDH Key of ext_pub + hardware-backed_priv: ${
+                                        agreedKey2?.getOrNull()?.encodeBase64()
+                                    }"
+                                }
+                            }
+
+                        },
+                        modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+                    ) { Text("Perform ECDH key agreement") }
+                }
+
+                if (agreedKey1 != null || agreedKey2 != null) {
+                    OutlinedTextField(value =
+                    "computed from ext_pub + hardware-backed_priv:\n" + agreedKey1?.map { it.encodeBase64() }
+                        ?.getOrElse { it.message ?: it::class.simpleName ?: "" }
+                            + "\n\n" +
+                            "computed from ext_piv + hardware-backed_pub:\n" + agreedKey2?.map { it.encodeBase64() }
+                        ?.getOrElse { it.message ?: it::class.simpleName ?: "" },
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        minLines = 1,
+                        textStyle = TextStyle.Default.copy(fontSize = 10.sp),
+                        readOnly = true,
+                        onValueChange = {},
+                        label = { Text("Agreed-upon secret") })
+                }
             }
 
             if (signatureData != null) {
@@ -501,3 +596,4 @@ internal fun App() {
         }
     }
 }
+

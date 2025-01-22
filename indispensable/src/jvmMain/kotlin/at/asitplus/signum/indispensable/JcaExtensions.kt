@@ -255,6 +255,16 @@ fun X509Certificate.toJcaCertificateBlocking(): KmmResult<java.security.cert.X50
 fun java.security.cert.X509Certificate.toKmpCertificate() =
     catching { X509Certificate.decodeFromDer(encoded) }
 
+fun CryptoPrivateKey.Companion.fromJcaPrivateKey(privateKey: PrivateKey) = catching {
+    CryptoPrivateKey.decodeFromDer(privateKey.encoded) as CryptoPrivateKey.WithPublicKey<*>
+}
+
+fun CryptoPrivateKey.Companion.fromJcaPrivateKey(privateKey: ECPrivateKey) =
+    fromJcaPrivateKey(privateKey as PrivateKey).mapCatching { it as CryptoPrivateKey.EC.WithPublicKey }
+
+fun CryptoPrivateKey.Companion.fromJcaPrivateKey(privateKey: RSAPrivateKey) =
+    fromJcaPrivateKey(privateKey as PrivateKey).mapCatching { it as CryptoPrivateKey.RSA }
+
 fun CryptoPrivateKey.WithPublicKey<*>.toJcaPrivateKey(): KmmResult<PrivateKey> = catching {
     val spec = PKCS8EncodedKeySpec(asPKCS8.encodeToDer())
     val kf = when (this) {

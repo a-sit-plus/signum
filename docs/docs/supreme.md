@@ -9,6 +9,7 @@ types and functionality related to crypto and PKI applications:
 
 * **Multiplatform ECDSA and RSA Signer and Verifier** &rarr; Check out the included [CMP demo App](https://github.com/a-sit-plus/signum/tree/main/demoapp) to see it in
   action
+* **Multiplatform ECDH key agreement**
 * Biometric Authentication on Android and iOS without Callbacks or Activity Passing** (✨Magic!✨)
 * Support Attestation on Android and iOS
 
@@ -322,6 +323,38 @@ To obtain a signer from this ephemeral key, call `getSigner{}` on it. This, simi
 algorithm-specific configuration options, such as a specific hash algorithm or padding, in case more than one was
 specified when creating the ephemeral key.
 
+## Key Agreement
+
+EC signers, private keys and public keys all sport a `keyAgreement()` extension function.
+The parameter is always the required opposite component, i.e. for private keys and signers, a public
+key needs to be passed and vice versa.
+
+On iOS and Android (starting with Android&nbsp;12), key agreement is possible in hardware and can
+require biometric authentication for hardware-backed keys. Custom biometric prompt text can be set
+in the same manner as [for signing](#signature-creation):
+
+!!! bug inline end
+    The Android OS has a bug related to key agreement in hardware. See [important remarks](features.md#android-key-agreement) on key agreement!
+
+```kotlin
+signer.keyAgreement(publicKey) {
+    unlockPrompt {
+        message = "Confirm key agreement?"
+        cancelText = "Agree to disagree!"
+    }
+}
+```
+
+!!! tip inline end
+    If you have an EC private key and know the curve, you already know the public key!
+    Hence, requiring the public keys of both parties for an ECDH key agreement is, in fact, a non-issue.
+
+Even though key agreement uses the private key of one party and the public key of another, the `keyAgreement` function
+is only implemented for `CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>`. I.e., both public keys need to be known.
+This is necessary to assure that both keys lie on the same curve and are indeed compatible.<br>
+
+
+
 ## Digest Calculation
 The Supreme KMP crypto provider introduces a `digest()` extension function on the `Digest` class.
 For a list of supported algorithms, check out the [feature matrix](features.md#supported-algorithms).
@@ -330,6 +363,10 @@ For a list of supported algorithms, check out the [feature matrix](features.md#s
 
 The Android KeyStore offers key attestation certificates for hardware-backed keys.
 These certificates are exposed by the signer's `.attestation` property.
+
+!!!info inline end
+    On iOS, attestation requires an active Internet connection, as the device needs to communicate
+    with Apple's servers.
 
 For iOS, Apple does not provide this capability, but rather supports app attestation.
 We therefore piggy-back onto iOS app attestation to provide a home-brew "key attestation" scheme.

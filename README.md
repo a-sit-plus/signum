@@ -25,13 +25,15 @@
 ## Kotlin Multiplatform Crypto/PKI Library with ASN1 Parser + Encoder
 
 
-This [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html) library provides platform-independent data
-types and functionality related to crypto and PKI applications:
-
-* **Multiplatform ECDSA and RSA Signer and Verifier** &rarr; Check out the included [CMP demo App](demoapp) to see it in action
-  * **Supports Attestation on iOS and Android**
-  * **Biometric Authentication on Android and iOS without Callbacks or Activity Passing** (✨Magic!✨)
+* **Multiplatform, platform-native crypto** &rarr; Check out the included [CMP demo App](app.md) to see it in
+  action!
+  * **ECDSA and RSA Signer and Verifier**
+  * **Multiplatform ECDH key agreement**
+  * **Hardware-Backed crypto on Android and iOS**
+  * **Platform-native attestation on iOS and Android**
+  * **Configurable biometric authentication on Android and iOS without callbacks or activity passing** (✨Magic!✨)
 * Public Keys (RSA and EC)
+* Private Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)
 * X509 Certificate Class (create, encode, decode)
 * Certification Request (CSR)
@@ -39,14 +41,17 @@ types and functionality related to crypto and PKI applications:
 * Generic ASN.1 abstractions to operate on and create arbitrary ASN.1 Data
 * JOSE-related data structures (JSON Web Keys, JWT, etc…)
 * COSE-related data structures (COSE Keys, CWT, etc…)
-* Serializability of all ASN.1 classes for debugging **AND ONLY FOR DEBUGGING!!!** *Seriously, do not try to deserialize ASN.1 classes through kotlinx.serialization! Use `decodeFromDer()` and its companions!*
+* Serializability of all ASN.1 classes for debugging **and only for debugging!!!** *Seriously, do not try to deserialize
+  ASN.1 classes through kotlinx.serialization! Use `decodeFromDer()` and its companions!*
 * 100% pure Kotlin BitSet
-* Exposes Multibase Encoder/Decoder as an API dependency including [Matthew Nelson's smashing Base16, Base32, and Base64 encoders](https://github.com/05nelsonm/encoding)
+* Exposes Multibase Encoder/Decoder as an API dependency
+  including [Matthew Nelson's smashing Base16, Base32, and Base64 encoders](https://github.com/05nelsonm/encoding)
 * **ASN.1 Parser and Encoder including a DSL to generate ASN.1 structures**
+  * Parse, create, explore certificates, public keys, CSRs, and **arbitrary ASN.1* structures* on all supported platforms
 
-This last bit means that
-**you can work with X509 Certificates, public keys, CSRs and arbitrary ASN.1 structures on iOS.**  
-The very first bit means that you can verify signatures on the JVM, Android and on iOS.
+This last bit means that you can share ASN.1-related logic across platforms.
+The very first bit means that you can create and verify signatures on the JVM, Android and on iOS, using platform-native
+crypto hardware.
 
 ### Do check out the full manual with examples and API docs [here](https://a-sit-plus.github.io/signum/)!
 This README provides just an overview.
@@ -212,6 +217,24 @@ That way, the library will only ever act as a proxy to platform APIs (JCA, Crypt
 
 You can also further configure the verifier, for example to specify the `provider` to use on the JVM.
 To do this, pass a DSL configuration lambda to `verifierFor`/`platformVerifierFor`.
+
+### Key Agreement
+EC signers, private keys and public keys all sport a `keyAgreement()` extension function.
+The parameter is always the required opposite component, i.e. for private keys and signers, a public
+key needs to be passed and vice versa.
+
+On iOS and Android (starting with Android&nbsp;12), key agreement is possible in hardware and can
+require biometric authentication for hardware-backed keys. Custom biometric prompt text can be set
+in the same manner as for signing:
+
+```kotlin
+signer.keyAgreement(publicKey) {
+    unlockPrompt {
+        message = "Confirm key agreement?"
+        cancelText = "Agree to disagree!"
+    }
+}
+```
 
 ```kotlin
 val publicKey: CryptoPublicKey.EC = TODO("You have this.")

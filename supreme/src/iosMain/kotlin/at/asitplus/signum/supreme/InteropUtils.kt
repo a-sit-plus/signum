@@ -2,12 +2,21 @@
 
 package at.asitplus.signum.supreme
 
+import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.internals.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.cinterop.*
+import platform.CoreFoundation.CFRelease
 import platform.Foundation.NSError
 import platform.Security.SecCopyErrorMessageString
+import platform.Security.SecKeyCreateWithData
+import platform.Security.SecKeyRef
+import platform.Security.kSecAttrKeyClass
+import platform.Security.kSecAttrKeyClassPublic
+import platform.Security.kSecAttrKeyType
+import platform.Security.kSecAttrKeyTypeEC
+import platform.Security.kSecAttrKeyTypeRSA
 import platform.darwin.OSStatus
 import kotlin.experimental.ExperimentalNativeApi
 import kotlin.native.ref.createCleaner
@@ -67,3 +76,14 @@ internal class swiftasync<T> private constructor(val callback: (T?, NSError?)->U
         }
     }
 }
+
+@HazardousMaterials
+fun MemScope.toSecKey(key: CryptoPublicKey): SecKeyRef =
+    corecall {
+        SecKeyCreateWithData(key.iosEncoded.toNSData().giveToCF(), cfDictionaryOf(
+            kSecAttrKeyClass to kSecAttrKeyClassPublic,
+            kSecAttrKeyType to when (key) {
+                is CryptoPublicKey.EC -> kSecAttrKeyTypeEC
+                is CryptoPublicKey.RSA -> kSecAttrKeyTypeRSA
+            }), error)
+    }.also { defer { CFRelease(it) }}

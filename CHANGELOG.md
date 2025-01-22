@@ -3,8 +3,10 @@
 ## 3.0
 
 ### NEXT
+* Key Agreement Support
+    * ECDH
+    * **NOTE:** On Android, the key agreement purpose flag was not set in previous releases. If you need key agreement in Hardware, you need to create a new key. iOS is not affected.
 * performance optimization: Instantiate fewer KmmResults
-
 * Move `PemEncodable`/`PemDecodable` from _indispensable_ to _indispensable-asn1_ module.
 
 ### 3.12.1 (Supreme 0.6.3)
