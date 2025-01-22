@@ -220,8 +220,8 @@ internal class Encryptor<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>,
 ) {
 
     init {
-        if (algorithm is SymmetricEncryptionAlgorithm.WithIV<*>) iv?.let {
-            require(it.size.toUInt() == algorithm.ivLen.bytes) { "IV must be exactly ${algorithm.ivLen} bits long" }
+        if (algorithm.iv is IV.Required) iv?.let {
+            require(it.size.toUInt() == (algorithm.iv as IV.Required).ivLen.bytes) { "IV must be exactly ${(algorithm.iv as IV.Required).ivLen} bits long" }
         }
         require(key.size.toUInt() == algorithm.keySize.bytes) { "Key must be exactly ${algorithm.keySize} bits long" }
     }
@@ -233,33 +233,50 @@ internal class Encryptor<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>,
      * Encrypts [data] and returns a [Ciphertext] matching the algorithm type that was used to create this [Encryptor] object.
      * E.g., an authenticated encryption algorithm causes this function to return a [Ciphertext.Authenticated].
      */
-    fun encrypt(data: ByteArray): C {
-        if (algorithm is SymmetricEncryptionAlgorithm.AES.CBC.HMAC) {
-            val aMac: SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac = algorithm
-            val innerCipher = initCipher<Any, AuthTrait.Unauthenticated, SymmetricEncryptionAlgorithm.AES.CBC.Plain>(
-                algorithm.innerCipher,
+    fun encrypt(data: ByteArray): C = if (algorithm.cipher is Authenticated.WithDedicatedMac<*, *>) {
+        val aMac = algorithm.cipher as Authenticated.WithDedicatedMac<*, *>
+        aMac.innerCipher
+        val t = aMac.innerCipher::class
+        val innerCipher =
+            initCipher<Any, CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>>(
+                aMac.innerCipher,
                 key,
                 iv,
                 aad
             )
 
-            require(innerCipher.iv != null) { "AES-CBC-HMAC IV implementation error. Report this bug!" }
-            require(macKey != null) { "AES-CBC-HMAC mac key implementation error. Report this bug!" }
-            val encrypted = innerCipher.doEncrypt(data).encryptedData
+        require(innerCipher.iv != null) { "IV implementation error. Report this bug!" }
+        require(macKey != null) { "MAC key implementation error. Report this bug!" }
+        val encrypted = innerCipher.doEncrypt<CipherKind.Unauthenticated, IV>(data)
 
-            val hmacInput: ByteArray =
-                aMac.mac.macAuthTagCalculation(encrypted, innerCipher.iv, (aad ?: byteArrayOf()))
+        val hmacInput: ByteArray =
+            aMac.mac.macAuthTagCalculation(
+                encrypted.ciphertext.encryptedData,
+                innerCipher.iv,
+                (aad ?: byteArrayOf())
+            )
 
-            val maced = aMac.mac.mac(macKey, hmacInput).getOrThrow()
-            return Ciphertext.Authenticated.WithDedicatedMac(
-                aMac,
-                encrypted, innerCipher.iv, maced, aad
-            ) as C
+        val maced = aMac.mac.mac(macKey, hmacInput).getOrThrow()
+
+        val ciphertext = Ciphertext.Authenticated.WithDedicatedMac(
+            algorithm as SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, *>, *>,
+            encrypted.ciphertext.encryptedData,
+            maced,
+            aad
+        )
+
+        (if (algorithm.iv is IV.Required)
+            SealedBox.WithIV<A, SymmetricEncryptionAlgorithm<A, IV.Required>>(
+                (encrypted as SealedBox.WithIV<*, *>).iv,
+                ciphertext as Ciphertext<A, SymmetricEncryptionAlgorithm<A, IV.Required>>
+            )
+        else
+            SealedBox.WithoutIV<A, SymmetricEncryptionAlgorithm<A, IV.Without>>(ciphertext as Ciphertext<A, SymmetricEncryptionAlgorithm<A, IV.Without>>)
+                ) as C
 
 
-        }
-        return platformCipher.doEncrypt<A>(data) as C
-    }
+    } else platformCipher.doEncrypt<A, IV>(data) as C
+
 
 }
 /**
@@ -285,61 +302,15 @@ internal class CipherParam<T, A : CipherKind>(
     val aad: ByteArray?
 )
 
-/**
- * Generates a new random key matching the key size of this algorithm
- */
-fun SymmetricEncryptionAlgorithm.Authenticated.Integrated.randomKey(): SymmetricKey.Integrated<Authenticated.Integrated> =
-    Integrated(this, secureRandom.nextBytesOf(keySize.bytes.toInt()))
-
-/**
- * Generates a new random key matching the key size of this algorithm
- */
-fun SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac.randomKey(dedicatedMacKeyOverride: ByteArray? = null): SymmetricKey.WithDedicatedMac {
-    val secretKey = secureRandom.nextBytesOf(keySize.bytes.toInt())
-    return WithDedicatedMac(this, secretKey, dedicatedMacKeyOverride ?: secretKey)
-}
-
-/**
- * Generates a new random key matching the key size of this algorithm
- */
-@JvmName("randomKeyWithIV")
-fun <A : CipherKind> SymmetricEncryptionAlgorithm.WithIV<A>.randomKey(): SymmetricKey<out A, out SymmetricEncryptionAlgorithm.WithIV<A>> =
-    when (this) {
-        is SymmetricEncryptionAlgorithm.Unauthenticated, is SymmetricEncryptionAlgorithm.Authenticated.Integrated -> Integrated(
-            this,
-            secureRandom.nextBytesOf(keySize.bytes.toInt())
-        )
-
-        is SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac -> secureRandom.nextBytesOf(keySize.bytes.toInt())
-            .let { WithDedicatedMac(this, secretKey = it) }
-
-        else -> TODO()
-    } as SymmetricKey<out A, out SymmetricEncryptionAlgorithm.WithIV<A>>
-
-
-/**
- * Generates a new random key matching the key size of this algorithm
- */
-@JvmName("randomKeyWithIVAuthenticated")
-fun SymmetricEncryptionAlgorithm.WithIV<Authenticated>.randomKey(): SymmetricKey<out Authenticated, out SymmetricEncryptionAlgorithm.WithIV<Authenticated>> =
-    when (this) {
-        is SymmetricEncryptionAlgorithm.Authenticated.Integrated -> Integrated(
-            this,
-            secureRandom.nextBytesOf(keySize.bytes.toInt())
-        )
-
-        is SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac -> secureRandom.nextBytesOf(keySize.bytes.toInt())
-            .let { WithDedicatedMac(this, secretKey = it) }
-
-        else -> TODO()
-    } as SymmetricKey<out Authenticated, out SymmetricEncryptionAlgorithm.WithIV<Authenticated>>
-
+fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated,*>.randomKey(): SymmetricKey<CipherKind.Unauthenticated,*> = Integrated<CipherKind.Unauthenticated,IV>(this, secureRandom.nextBytesOf(keySize.bytes.toInt()))
+fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated,*>.randomKey(): SymmetricKey<CipherKind.Authenticated.Integrated,*> = Integrated<CipherKind.Authenticated.Integrated,IV>(this, secureRandom.nextBytesOf(keySize.bytes.toInt()))
+fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*,*>,*>.randomKey(): SymmetricKey<CipherKind.Authenticated.WithDedicatedMac<*,*>,*> = Integrated<CipherKind.Authenticated.WithDedicatedMac<*,*>,IV>(this, secureRandom.nextBytesOf(keySize.bytes.toInt()))
 
 /**
  * Generates a new random IV matching the IV size of this algorithm
  */
-internal fun SymmetricEncryptionAlgorithm.WithIV<*>.randomIV() =
-    @OptIn(HazardousMaterials::class) secureRandom.nextBytesOf((ivLen.bytes).toInt())
+internal fun SymmetricEncryptionAlgorithm<*,IV.Required>.randomIV() =
+    @OptIn(HazardousMaterials::class) secureRandom.nextBytesOf((iv.ivLen.bytes).toInt())
 
 
 /**

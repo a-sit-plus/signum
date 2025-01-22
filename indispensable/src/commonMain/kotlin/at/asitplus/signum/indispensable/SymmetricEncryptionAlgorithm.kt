@@ -13,7 +13,7 @@ import at.asitplus.signum.indispensable.misc.bit
 sealed interface SymmetricEncryptionAlgorithm<out A : CipherKind, out I : IV> :
     Identifiable {
     val cipher: A
-    val iv: IV
+    val iv: I
 
     override fun toString(): String
 
@@ -133,7 +133,7 @@ sealed interface CipherKind {
          * An authenticated cipher construction based on an unauthenticated cipher with a dedicated MAC function.
          */
         class WithDedicatedMac<M : MAC, I : IV>(
-            val innerCipher: SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, out I>,
+            val innerCipher: SymmetricEncryptionAlgorithm<Unauthenticated, I>,
             val mac: M,
             tagLen: BitLength
         ) : Authenticated(tagLen)

@@ -1,10 +1,10 @@
 package at.asitplus.signum.indispensable
 
 
-sealed class SealedBox<out A : CipherKind, I : IV, E : SymmetricEncryptionAlgorithm<out A, out I>>(
+sealed class SealedBox<out A : CipherKind, I : IV, E : SymmetricEncryptionAlgorithm<A, I>>(
     val ciphertext: Ciphertext<A, E>
 ) {
-    class WithoutIV<out A : CipherKind, E : SymmetricEncryptionAlgorithm<out A, IV.Without>>(ciphertext: Ciphertext<A, E>) :
+    class WithoutIV<out A : CipherKind, E : SymmetricEncryptionAlgorithm<A, IV.Without>>(ciphertext: Ciphertext<A, E>) :
         SealedBox<A, IV.Without, E>(ciphertext) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -20,7 +20,7 @@ sealed class SealedBox<out A : CipherKind, I : IV, E : SymmetricEncryptionAlgori
         override fun toString(): String = "SealedBox.WithoutIV(ciphertext=$ciphertext)"
     }
 
-    class WithIV<out A : CipherKind, E : SymmetricEncryptionAlgorithm<out A, IV.Required>>(
+    class WithIV<out A : CipherKind, E : SymmetricEncryptionAlgorithm<A, IV.Required>>(
         val iv: ByteArray,
         ciphertext: Ciphertext<A, E>
     ) : SealedBox<A, IV.Required, E>(ciphertext) {
