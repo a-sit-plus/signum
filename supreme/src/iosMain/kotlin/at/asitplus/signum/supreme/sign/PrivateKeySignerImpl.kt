@@ -1,9 +1,11 @@
 package at.asitplus.signum.supreme.sign
 
 import at.asitplus.KmmResult
+import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.*
+import at.asitplus.signum.supreme.agreement.performKeyAgreement
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSData
 import platform.Security.SecKeyCreateSignature
@@ -46,6 +48,13 @@ protected constructor(
             is CryptoPublicKey.EC -> CryptoSignature.EC.decodeFromDer(signatureBytes).withCurve(pubkey.curve)
             is CryptoPublicKey.RSA -> CryptoSignature.RSAorHMAC(signatureBytes)
         }
+    }
+
+    @OptIn(ExperimentalForeignApi::class)
+    override suspend fun keyAgreement(publicKey: CryptoPublicKey) = catching {
+        if (this !is Signer.ECDSA)
+            throw UnsupportedCryptoException("iOS does not support non-EC Diffie-Hellman.")
+        performKeyAgreement(secKey, publicKey)
     }
 
     @SecretExposure

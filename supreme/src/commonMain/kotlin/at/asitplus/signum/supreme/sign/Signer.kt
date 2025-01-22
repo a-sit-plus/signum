@@ -129,6 +129,9 @@ interface Signer {
     suspend fun sign(data: ByteArray) = sign(SignatureInput(data))
     suspend fun sign(data: Sequence<ByteArray>) = sign(SignatureInput(data))
 
+    /** Performs (EC)DH key agreement. Might ask for user confirmation first if this [Signer] [mayRequireUserUnlock]. */
+    suspend fun keyAgreement(publicKey: CryptoPublicKey): KmmResult<ByteArray>
+
     companion object {
         fun Ephemeral(configure: DSLConfigureFn<EphemeralSigningKeyConfiguration> = null) =
             EphemeralKey(configure).transform(EphemeralKey::signer)

@@ -88,6 +88,7 @@ import at.asitplus.signum.supreme.AutofreeVariable
 import at.asitplus.signum.supreme.SecretExposure
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.UnlockFailed
+import at.asitplus.signum.supreme.agreement.performKeyAgreement
 import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
 import at.asitplus.signum.supreme.sign.preHashedSignatureFormat
 import at.asitplus.signum.supreme.signCatching
@@ -307,6 +308,17 @@ sealed class IosSigner(final override val alias: String,
         }
         return@signCatching bytesToSignature(signatureBytes)
     }}
+
+    final override suspend fun keyAgreement(
+        publicKey: CryptoPublicKey,
+        configure: DSLConfigureFn<IosSignerSigningConfiguration>
+    ) = catching {
+        if (this !is Signer.ECDSA)
+            throw UnsupportedCryptoException("iOS does not support non-EC Diffie-Hellman.")
+
+        val config = DSL.resolve(::IosSignerSigningConfiguration, configure)
+        performKeyAgreement(privateKeyManager.get(config).value, publicKey)
+    }
 
     class ECDSA internal constructor
         (alias: String, override val publicKey: CryptoPublicKey.EC, metadata: IosKeyMetadata, config: IosSignerConfiguration)

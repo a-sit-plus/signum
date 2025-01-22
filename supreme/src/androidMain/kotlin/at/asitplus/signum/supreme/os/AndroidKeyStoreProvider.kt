@@ -393,6 +393,27 @@ sealed class AndroidKeystoreSigner private constructor(
         }
     }}
 
+    override suspend fun keyAgreement(
+        publicKey: CryptoPublicKey,
+        configure: DSLConfigureFn<AndroidSignerSigningConfiguration>
+    ) = catching {
+        val signingConfig = DSL.resolve(::AndroidSignerSigningConfiguration, configure)
+        val agreement = javax.crypto.KeyAgreement.getInstance(when(this) {
+            is ECDSA -> "ECDH"
+            is RSA -> "DH"
+        }, "AndroidKeyStore").also {
+            //Android bug here: impossible to do for auth-on-every use keys. Earliest possible fix: Android 16, if ever
+            try {
+                it.init(jcaPrivateKey)
+            } catch (_: UserNotAuthenticatedException) {
+                attemptBiometry(DSL.ConfigStack(signingConfig.unlockPrompt.v, config.unlockPrompt.v), null)
+                it.init(jcaPrivateKey)
+            }
+        }
+        agreement.doPhase(publicKey.toJcaPublicKey().getOrThrow(), true)
+        agreement.generateSecret()
+    }
+
     class ECDSA internal constructor(jcaPrivateKey: PrivateKey,
                                      alias: String,
                                      keyInfo: KeyInfo,

@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.*
 import at.asitplus.signum.supreme.AutofreeVariable
+import at.asitplus.signum.supreme.agreement.performKeyAgreement
 import kotlinx.cinterop.*
 import platform.Foundation.NSData
 import platform.Security.*
@@ -48,6 +49,13 @@ sealed class EphemeralSigner(internal val privateKey: EphemeralKeyRef) : Signer 
     @SecretExposure
     override fun exportPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> =catching{
         privateKey.export(this is EC)
+    }
+
+    override suspend fun keyAgreement(publicKey: CryptoPublicKey) = catching {
+        if (this !is Signer.ECDSA)
+            throw UnsupportedCryptoException("iOS does not support non-EC Diffie-Hellman.")
+
+        performKeyAgreement(privateKey.value, publicKey)
     }
 
     class EC(

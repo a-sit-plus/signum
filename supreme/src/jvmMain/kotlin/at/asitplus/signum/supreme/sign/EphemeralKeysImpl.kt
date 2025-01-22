@@ -2,22 +2,17 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.CryptoPrivateKey
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.fromJcaPublicKey
-import at.asitplus.signum.indispensable.getJCASignatureInstance
-import at.asitplus.signum.indispensable.getJCASignatureInstancePreHashed
-import at.asitplus.signum.indispensable.jcaName
-import at.asitplus.signum.indispensable.parseFromJca
+import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.supreme.HazardousMaterials
 import at.asitplus.signum.supreme.SecretExposure
+import at.asitplus.signum.supreme.hazmat.jcaPrivateKey
 import at.asitplus.signum.supreme.signCatching
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
+import javax.crypto.KeyAgreement
 
 
 @SecretExposure
@@ -59,6 +54,16 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
         privateKey.encoded) as CryptoPrivateKey.WithPublicKey<*> }
 
     protected abstract fun parseFromJca(bytes: ByteArray): CryptoSignature.RawByteEncodable
+
+    final override suspend fun keyAgreement(publicKey: CryptoPublicKey) = catching {
+        KeyAgreement.getInstance(when (this) {
+            is EC -> "ECDH"
+            is RSA -> "DH"
+        }).also {
+            it.init(privateKey)
+            it.doPhase(publicKey.toJcaPublicKey().getOrThrow(), true)
+        }.generateSecret()
+    }
 
     open class EC internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
               override val publicKey: CryptoPublicKey.EC, override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
