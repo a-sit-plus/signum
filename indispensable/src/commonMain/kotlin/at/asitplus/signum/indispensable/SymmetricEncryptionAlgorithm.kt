@@ -13,35 +13,35 @@ import kotlin.jvm.JvmName
 
 fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>.sealedBox(
     iv: ByteArray,
-    encryptedBytes: ByteArray
+    encryptedData: ByteArray
 ) =
     SealedBox.WithIV<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>>(
         iv,
         Ciphertext.Unauthenticated(
             this,
-            encryptedBytes
+            encryptedData
         ) as Ciphertext<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>>
     )
 
 @JvmName("sealedBoxAuthenticatedDedicated")
 fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>.sealedBox(
     iv: ByteArray,
-    encryptedBytes: ByteArray,
+    encryptedData: ByteArray,
     authTag: ByteArray,
-    aad: ByteArray? = null
+    authenticatedData: ByteArray? = null
 ) = (this as SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>).sealedBox(
     iv,
-    encryptedBytes,
+    encryptedData,
     authTag,
-    aad
+    authenticatedData
 ) as SealedBox.WithIV<CipherKind.Authenticated.WithDedicatedMac<*,IV.Required>, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*,IV.Required>, IV.Required>>
 
 @JvmName("sealedBoxAuthenticated")
 fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>.sealedBox(
     iv: ByteArray,
-    encryptedBytes: ByteArray,
+    encryptedData: ByteArray,
     authTag: ByteArray,
-    aad: ByteArray? = null
+    authenticatedData: ByteArray? = null
 ) =
     SealedBox.WithIV<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>>(
         iv,
@@ -49,17 +49,17 @@ fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>.sealedBo
             is CipherKind.Authenticated.WithDedicatedMac<*, *> ->
                 Ciphertext.Authenticated.WithDedicatedMac(
                     this as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, *>,
-                    encryptedBytes,
+                    encryptedData,
                     authTag,
-                    aad
+                    authenticatedData
                 )
 
             is CipherKind.Authenticated.Integrated ->
                 Ciphertext.Authenticated.Integrated(
                     this as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>,
-                    encryptedBytes,
+                    encryptedData,
                     authTag,
-                    aad
+                    authenticatedData
                 )
         } as Ciphertext<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>>
     )

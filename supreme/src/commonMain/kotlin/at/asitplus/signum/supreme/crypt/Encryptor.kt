@@ -231,11 +231,11 @@ fun SymmetricKey.WithDedicatedMac<*>.encrypt(
 @JvmName("encryptAuthenticatedWithDedicatedMacAndIV")
 fun SymmetricKey.WithDedicatedMac<IV.Required>.encrypt(
     data: ByteArray,
-    aad: ByteArray? = null,
+    authenticatedData: ByteArray? = null,
     dedicatedMacAuthTagCalculation: DedicatedMacInputCalculation = DefaultDedicatedMacInputCalculation,
 ): KmmResult<SealedBox.WithIV<CipherKind.Authenticated.WithDedicatedMac<*,IV.Required>,
         SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*,IV.Required>,IV.Required>>>
-= (this as SymmetricKey.WithDedicatedMac<*>).encrypt(data,aad,dedicatedMacAuthTagCalculation) as KmmResult<SealedBox.WithIV<Authenticated.WithDedicatedMac<*, IV.Required>, SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>>
+= (this as SymmetricKey.WithDedicatedMac<*>).encrypt(data,authenticatedData,dedicatedMacAuthTagCalculation) as KmmResult<SealedBox.WithIV<Authenticated.WithDedicatedMac<*, IV.Required>, SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>>
 
 internal class Encryptor<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>, C : SealedBox<A, *, E>> internal constructor(
     private val algorithm: E,

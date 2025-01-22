@@ -216,7 +216,7 @@ class AESTest : FreeSpec({
                     val wrongIV =
                         ciphertext.ciphertext.algorithm.sealedBox(
                             iv = ciphertext.iv.asList().shuffled().toByteArray(),
-                            encryptedBytes = ciphertext.ciphertext.encryptedData
+                            encryptedData = ciphertext.ciphertext.encryptedData
                         )
 
 
@@ -288,7 +288,7 @@ class AESTest : FreeSpec({
                                     ciphertext.ciphertext.algorithm as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>,
                                     Random.Default.nextBytes(ciphertext.ciphertext.encryptedData.size),
                                     authTag = ciphertext.authenticatedCiphertext.authTag,
-                                    aad = ciphertext.authenticatedCiphertext.authenticatedData,
+                                    authenticatedData = ciphertext.authenticatedCiphertext.authenticatedData,
                                 ) as Ciphertext<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>>
                             )
 
@@ -305,7 +305,7 @@ class AESTest : FreeSpec({
                                     ciphertext.ciphertext.algorithm as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>,
                                     ciphertext.ciphertext.encryptedData,
                                     authTag = ciphertext.authenticatedCiphertext.authTag,
-                                    aad = ciphertext.authenticatedCiphertext.authenticatedData
+                                    authenticatedData = ciphertext.authenticatedCiphertext.authenticatedData
                                 ) as Ciphertext<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>>
                             )
 
@@ -320,7 +320,7 @@ class AESTest : FreeSpec({
                                     ciphertext.ciphertext.algorithm as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>,
                                     ciphertext.ciphertext.encryptedData,
                                     authTag = ciphertext.authenticatedCiphertext.authTag,
-                                    aad = null
+                                    authenticatedData = null
                                 ) as Ciphertext<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>>
                             ).decrypt(key) shouldNot succeed
 
@@ -331,7 +331,7 @@ class AESTest : FreeSpec({
                                 ciphertext.ciphertext.algorithm as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>,
                                 ciphertext.ciphertext.encryptedData,
                                 authTag = ciphertext.authenticatedCiphertext.authTag.asList().shuffled().toByteArray(),
-                                aad = ciphertext.authenticatedCiphertext.authenticatedData
+                                authenticatedData = ciphertext.authenticatedCiphertext.authenticatedData
                             )
                                     as Ciphertext<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>>
                         ).decrypt(key) shouldNot succeed
@@ -446,7 +446,7 @@ class AESTest : FreeSpec({
                                         ciphertext.iv,
                                         Random.Default.nextBytes(ciphertext.ciphertext.encryptedData.size),
                                         authTag = ciphertext.authenticatedCiphertext.authTag,
-                                        aad = ciphertext.authenticatedCiphertext.authenticatedData
+                                        authenticatedData = ciphertext.authenticatedCiphertext.authenticatedData
                                     )
 
                                 val wrongWrongDecrypted = wrongCiphertext.decrypt(
@@ -479,7 +479,7 @@ class AESTest : FreeSpec({
                                         ciphertext.ciphertext.algorithm,
                                         ciphertext.ciphertext.encryptedData,
                                         authTag = ciphertext.authenticatedCiphertext.authTag,
-                                        aad = ciphertext.authenticatedCiphertext.authenticatedData,
+                                        authenticatedData = ciphertext.authenticatedCiphertext.authenticatedData,
                                     ) as Ciphertext<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>
                                 ).decrypt(
                                     key,
@@ -492,7 +492,7 @@ class AESTest : FreeSpec({
                                         ciphertext.ciphertext.algorithm,
                                         ciphertext.ciphertext.encryptedData,
                                         authTag = ciphertext.authenticatedCiphertext.authTag,
-                                        aad = ciphertext.authenticatedCiphertext.authenticatedData,
+                                        authenticatedData = ciphertext.authenticatedCiphertext.authenticatedData,
                                     ) as Ciphertext<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>
                                 ).decrypt(
                                     SymmetricKey.WithDedicatedMac<IV>(
@@ -561,23 +561,42 @@ class AESTest : FreeSpec({
                         (aad?.size?.encodeToAsn1ContentBytes() ?: byteArrayOf())
 
 
-        val ciphertext =
+        val sealedBox =
             key.encrypt(
                 payload,
-                aad = aad,
+                authenticatedData = aad,
                 dedicatedMacAuthTagCalculation = customMacInputFn
             ).getOrThrow(/*TODO Error Handling*/)
 
-        //The ciphertext object is of type Authenticated.WithDedicatedMac, because AES-CBC-HMAC constrains the
-        //return type of the previous call to this type.
-        //The ciphertext object contains an IV, even though null was passed
-        //it also contains AAD and an authTag, in addition to encryptedData
+        //The sealed box object is correctly typed:
+        //  * It is a SealedBox.WithIV
+        //  * The generic type arguments indicate that
+        //      * the ciphertext is authenticated
+        //      * Using a dedicated MAC function atop an unauthenticated cipher
+        //  * we can hence access `authenticatedCiphertext` for:
+        //      * authTag
+        //      * authenticatedData
+
+        sealedBox.authenticatedCiphertext.authenticatedData shouldBe aad
+
         //because everything is structured, decryption is simple
         val recovered =
-            ciphertext.decrypt(key, dedicatedMacInputCalculation = customMacInputFn).getOrThrow(/*TODO Error handling*/)
-
+            sealedBox.decrypt(key, dedicatedMacInputCalculation = customMacInputFn).getOrThrow(/*TODO Error handling*/)
         recovered shouldBe payload //success!
 
+        //we can also manually construct the sealed box, if we know the algorithm:
+        val reconstructed = algorithm.sealedBox(
+            sealedBox.iv,
+            encryptedData = sealedBox.ciphertext.encryptedData, /*Could also access authenticatedCipherText*/
+            authTag = sealedBox.authenticatedCiphertext.authTag,
+            authenticatedData = sealedBox.authenticatedCiphertext.authenticatedData
+        )
 
+        val manuallyRecovered = reconstructed.decrypt(
+            key,
+            dedicatedMacInputCalculation = customMacInputFn
+        ).getOrThrow(/*TODO Error handling*/)
+
+        manuallyRecovered shouldBe payload //great success!
     }
 })

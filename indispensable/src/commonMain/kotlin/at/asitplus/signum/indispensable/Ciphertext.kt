@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.indispensable.SealedBox.WithIV
 import kotlin.jvm.JvmName
 
 
@@ -119,26 +118,26 @@ sealed interface Ciphertext<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, 
             algorithm: SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, *>,
             encryptedData: ByteArray,
             authTag: ByteArray,
-            aad: ByteArray?
+            authenticatedData: ByteArray?
         ) : Authenticated<CipherKind.Authenticated.WithDedicatedMac<*, *>,
                 SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, *>>(
             algorithm,
             encryptedData,
             authTag,
-            aad
+            authenticatedData
         )
 
         class Integrated(
             algorithm: SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>,
             encryptedData: ByteArray,
             authTag: ByteArray,
-            aad: ByteArray?
+            authenticatedData: ByteArray?
         ) : Authenticated<CipherKind.Authenticated.Integrated,
                 SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>>(
             algorithm,
             encryptedData,
             authTag,
-            aad
+            authenticatedData
         )
     }
 
