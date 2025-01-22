@@ -1,9 +1,22 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.indispensable.SealedBox.WithIV
+import kotlin.jvm.JvmName
+
+
+val SealedBox.WithIV<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>.authenticatedCiphertext:
+Ciphertext.Authenticated<CipherKind.Authenticated.WithDedicatedMac<*,IV.Required>, *>
+@JvmName("authCipherTextWithDedicatedMac")
+    get() = ciphertext as Ciphertext.Authenticated<CipherKind.Authenticated.WithDedicatedMac<*,IV.Required>, IV.Required>
+
+val SealedBox.WithIV<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>>.authenticatedCiphertext:
+        Ciphertext.Authenticated<CipherKind.Authenticated, *>
+    get() = ciphertext as Ciphertext.Authenticated<CipherKind.Authenticated, IV.Required>
 
 sealed class SealedBox<A : CipherKind, I : IV, E : SymmetricEncryptionAlgorithm<A, I>>(
     val ciphertext: Ciphertext<A, E>
 ) {
+
     class WithoutIV<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, IV.Without>>(ciphertext: Ciphertext<A, E>) :
         SealedBox<A, IV.Without, E>(ciphertext) {
         override fun equals(other: Any?): Boolean {
@@ -20,7 +33,7 @@ sealed class SealedBox<A : CipherKind, I : IV, E : SymmetricEncryptionAlgorithm<
         override fun toString(): String = "SealedBox.WithoutIV(ciphertext=$ciphertext)"
     }
 
-    class WithIV< A : CipherKind, E : SymmetricEncryptionAlgorithm<A, IV.Required>>(
+    class WithIV<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, IV.Required>>(
         val iv: ByteArray,
         ciphertext: Ciphertext<A, E>
     ) : SealedBox<A, IV.Required, E>(ciphertext) {
@@ -39,7 +52,6 @@ sealed class SealedBox<A : CipherKind, I : IV, E : SymmetricEncryptionAlgorithm<
             result = 31 * result + iv.contentHashCode()
             return result
         }
-
 
         @OptIn(ExperimentalStdlibApi::class)
         override fun toString(): String =
@@ -63,14 +75,14 @@ sealed class SealedBox<A : CipherKind, I : IV, E : SymmetricEncryptionAlgorithm<
 /**
  * A generic ciphertext object, referencing the algorithm it was created by and an IV, if any.
  */
-sealed interface Ciphertext< A : CipherKind, E : SymmetricEncryptionAlgorithm< A, *>> {
+sealed interface Ciphertext<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>> {
     val algorithm: E
     val encryptedData: ByteArray
 
     /**
      * An authenticated ciphertext, i.e. containing an [authTag], and, optionally [authenticatedData] (_Additional Authenticated Data_)
      */
-    sealed class Authenticated<A : CipherKind.Authenticated, E : SymmetricEncryptionAlgorithm< A, *>>(
+    sealed class Authenticated<A : CipherKind.Authenticated, E : SymmetricEncryptionAlgorithm<A, *>>(
         override val algorithm: E,
         override val encryptedData: ByteArray,
         val authTag: ByteArray,

@@ -2,6 +2,7 @@ import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.CipherKind
 import at.asitplus.signum.indispensable.CipherKind.Unauthenticated
 import at.asitplus.signum.indispensable.Ciphertext
+import at.asitplus.signum.indispensable.IV
 import at.asitplus.signum.indispensable.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.supreme.crypt.decrypt
 import at.asitplus.signum.supreme.crypt.encrypt
@@ -11,6 +12,7 @@ import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
@@ -48,29 +50,29 @@ class JvmAESTest : FreeSpec({
                         val secretKey = alg.randomKey()
 
                         val jcaCipher =
-                            CipherKind.getInstance(if (alg is SymmetricEncryptionAlgorithm.Unauthenticated) "AES/CBC/PKCS5PADDING" else "AES/GCM/NoPadding")
+                            Cipher.getInstance(if (alg.cipher is CipherKind.Unauthenticated) "AES/CBC/PKCS5PADDING" else "AES/GCM/NoPadding")
 
                         if (alg is SymmetricEncryptionAlgorithm.AES.GCM) {
                             //GCM
                             val own =
-                                ((alg as SymmetricEncryptionAlgorithm. WithIV<*>).randomKey()) .encrypt(iv=iv,data=data)
+                                ((alg as SymmetricEncryptionAlgorithm<CipherKind.Authenticated,IV.Required>).randomKey()) .encrypt(iv=iv,data=data)
                                     .getOrThrow()
-                                    .shouldBeInstanceOf<Ciphertext.Authenticated>()
+                                    own.ciphertext.shouldBeInstanceOf<Ciphertext.Authenticated.Integrated>()
                             jcaCipher.init(
-                                CipherKind.ENCRYPT_MODE,
+                                Cipher.ENCRYPT_MODE,
                                 SecretKeySpec(secretKey.secretKey, "AES"),
-                                GCMParameterSpec(alg.tagNumBits.toInt(), own.iv/*use our own auto-generated IV*/)
+                                GCMParameterSpec(alg.cipher.tagLen.bytes.toInt(), own.iv/*use our own auto-generated IV*/)
                             )
                             if (aad != null) jcaCipher.updateAAD(aad)
 
                             val encrypted = jcaCipher.doFinal(data)
 
-                            (own.encryptedData + own.authTag) shouldBe encrypted
+                            (own.ciphertext.encryptedData + (own.ciphertext as Ciphertext.Authenticated).authTag) shouldBe encrypted
 
                             jcaCipher.init(
-                                CipherKind.DECRYPT_MODE,
+                                Cipher.DECRYPT_MODE,
                                 SecretKeySpec(secretKey.secretKey, "AES"),
-                                GCMParameterSpec(alg.tagNumBits.toInt(), own.iv/*use our own auto-generated IV*/)
+                                GCMParameterSpec(alg.cipher.tagLen.bytes.toInt(), own.iv/*use our own auto-generated IV*/)
                             )
                             if (aad != null) jcaCipher.updateAAD(aad)
                             own.decrypt(secretKey.secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
@@ -80,16 +82,16 @@ class JvmAESTest : FreeSpec({
                             //CBC
                             val own = alg.randomKey().encrypt(data).getOrThrow()
                             jcaCipher.init(
-                                CipherKind.ENCRYPT_MODE,
+                                Cipher.ENCRYPT_MODE,
                                 SecretKeySpec(secretKey.secretKey, "AES"),
                                 IvParameterSpec(own.iv)/*use our own auto-generated IV, if null iv was provided*/
                             )
                             val encrypted = jcaCipher.doFinal(data)
 
-                            own.encryptedData shouldBe encrypted
+                            own.ciphertext.encryptedData shouldBe encrypted
 
                             jcaCipher.init(
-                                CipherKind.DECRYPT_MODE,
+                                Cipher.DECRYPT_MODE,
                                 SecretKeySpec(secretKey.secretKey, "AES"),
                                 IvParameterSpec(own.iv)/*use our own auto-generated IV, if null iv was provided*/
                             )
