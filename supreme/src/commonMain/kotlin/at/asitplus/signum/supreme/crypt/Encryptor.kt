@@ -302,14 +302,24 @@ internal class CipherParam<T, A : CipherKind>(
     val aad: ByteArray?
 )
 
-fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated,*>.randomKey(): SymmetricKey<CipherKind.Unauthenticated,*> = Integrated<CipherKind.Unauthenticated,IV>(this, secureRandom.nextBytesOf(keySize.bytes.toInt()))
-fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated,*>.randomKey(): SymmetricKey<CipherKind.Authenticated.Integrated,*> = Integrated<CipherKind.Authenticated.Integrated,IV>(this, secureRandom.nextBytesOf(keySize.bytes.toInt()))
-fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*,*>,*>.randomKey(): SymmetricKey<CipherKind.Authenticated.WithDedicatedMac<*,*>,*> = Integrated<CipherKind.Authenticated.WithDedicatedMac<*,*>,IV>(this, secureRandom.nextBytesOf(keySize.bytes.toInt()))
+@JvmName("doEncryptUnauthenticated")
+fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>.randomKey(): SymmetricKey<CipherKind.Unauthenticated, *> =
+    Integrated<CipherKind.Unauthenticated, IV>(this, secureRandom.nextBytesOf(keySize.bytes.toInt()))
+
+@JvmName("doEncryptAuthenticatedIntegrated")
+fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>.randomKey(): SymmetricKey<CipherKind.Authenticated.Integrated, *> =
+    Integrated<CipherKind.Authenticated.Integrated, IV>(this, secureRandom.nextBytesOf(keySize.bytes.toInt()))
+
+fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, *>.randomKey(): SymmetricKey<CipherKind.Authenticated.WithDedicatedMac<*, *>, *> =
+    Integrated<CipherKind.Authenticated.WithDedicatedMac<*, *>, IV>(
+        this,
+        secureRandom.nextBytesOf(keySize.bytes.toInt())
+    )
 
 /**
  * Generates a new random IV matching the IV size of this algorithm
  */
-internal fun SymmetricEncryptionAlgorithm<*,IV.Required>.randomIV() =
+internal fun SymmetricEncryptionAlgorithm<*, IV.Required>.randomIV() =
     @OptIn(HazardousMaterials::class) secureRandom.nextBytesOf((iv.ivLen.bytes).toInt())
 
 
@@ -317,61 +327,74 @@ internal fun SymmetricEncryptionAlgorithm<*,IV.Required>.randomIV() =
  * Attempts to decrypt this ciphertext (which also holds IV, and in case of an authenticated ciphertext, AAD and auth tag) using the provided [key].
  * This is the function you typically want to use.
  */
-fun <A : CipherKind> Ciphertext<A, *>.decrypt(key: SymmetricKey<out A, *>): KmmResult<ByteArray> {
-    require(algorithm == key.algorithm) { "Somebody likes cursed casts!" }
-    return if (this is Ciphertext.Authenticated.WithDedicatedMac) decrypt(
-        key.secretKey,
-        (key as WithDedicatedMac).dedicatedMacKey
-    )
-    else decrypt(key.secretKey)
+fun <A : CipherKind, I : IV> SealedBox<A, I, *>.decrypt(key: SymmetricKey<out A, I>): KmmResult<ByteArray> = catching {
+    require(ciphertext.algorithm == key.algorithm) { "Somebody likes cursed casts!" }
+    if(ciphertext is Ciphertext.Authenticated.WithDedicatedMac) {
+        val authTag = (ciphertext as Ciphertext.Authenticated.WithDedicatedMac).authTag
+        (this as SealedBox<CipherKind.Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, *>>).decrypt(
+            key.secretKey, (key as SymmetricKey.WithDedicatedMac<*>).dedicatedMacKey
+        )
+    }
+    decrypt(key.secretKey).getOrThrow()
 }
 
 /**
- * Attempts to decrypt this ciphertext (which also holds IV, and in case of an authenticated ciphertext, AAD and auth tag) using the provided raw [secretKey].
+ * Attempts to decrypt this ciphertext using the provided raw [secretKey].
  */
-fun Ciphertext<*, *>.decrypt(secretKey: ByteArray): KmmResult<ByteArray> =
+fun SealedBox<*, *, *>.decrypt(secretKey: ByteArray): KmmResult<ByteArray> =
     catching {
+        require(secretKey.size.toUInt() == ciphertext.algorithm.keySize.bytes) { "Key must be exactly ${ciphertext.algorithm.keySize} bits long" }
+        when (ciphertext) {
+            is Ciphertext.Authenticated.Integrated -> (this as SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<Authenticated.Integrated, *>>).doDecrypt(
+                secretKey
+            )
 
-        if (algorithm is SymmetricEncryptionAlgorithm.WithIV<*>) {
-            require(iv != null) { "IV must be non-null" }
-            require(iv!!.size.toUInt() == (algorithm as SymmetricEncryptionAlgorithm.WithIV<*>).ivLen.bytes) { "IV must be exactly ${(algorithm as SymmetricEncryptionAlgorithm.WithIV<*>).ivLen} bits long" }
-        }
-        require(secretKey.size.toUInt() == algorithm.keySize.bytes) { "Key must be exactly ${algorithm.keySize} bits long" }
+            is Ciphertext.Unauthenticated -> (this as SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>>).doDecrypt(
+                secretKey
+            )
 
-        when (this) {
-            is Ciphertext.Authenticated -> doDecrypt(secretKey)
-            is Ciphertext.Unauthenticated -> doDecrypt(secretKey)
+            is Ciphertext.Authenticated.WithDedicatedMac -> (this as SealedBox<CipherKind.Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, *>, *>>).decrypt(
+                secretKey
+            ).getOrThrow()
         }
     }
 
 /**
- * Attempts to decrypt this ciphertext (which also holds IV, AAD, and auth tag).
- * [dedicatedMacInputCalculation] can be used to override the [DefaultDedicatedMacInputCalculation] used to compute MAC input.
- * This is the function you typically want to use.
- */
-fun Ciphertext.Authenticated.WithDedicatedMac.decrypt(
-    key: WithDedicatedMac,
-    dedicatedMacInputCalculation: DedicatedMacInputCalculation = DefaultDedicatedMacInputCalculation
-): KmmResult<ByteArray> = decrypt(key.secretKey, key.dedicatedMacKey, dedicatedMacInputCalculation)
-
-/**
- * Attempts to decrypt this ciphertext (which also holds IV, AAD, and auth tag) using the provided raw [secretKey].
+ * Attempts to decrypt this ciphertext using the provided raw [secretKey].
  * If no [macKey] is provided, [secretKey] will be used as MAC key.
  * [dedicatedMacInputCalculation] can be used to override the [DefaultDedicatedMacInputCalculation] used to compute MAC input.
  */
-fun Ciphertext.Authenticated.WithDedicatedMac.decrypt(
+
+fun SealedBox<CipherKind.Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, *>>.decrypt(
     secretKey: ByteArray,
     macKey: ByteArray = secretKey,
     dedicatedMacInputCalculation: DedicatedMacInputCalculation = DefaultDedicatedMacInputCalculation
-): KmmResult<ByteArray> {
-    val hmacInput =
-        algorithm.mac.dedicatedMacInputCalculation(encryptedData, iv, authenticatedData)
+): KmmResult<ByteArray> = catching {
+    val iv: ByteArray? = if (this is SealedBox.WithIV<*, *>) iv else null
+    val aad = (ciphertext as Ciphertext.Authenticated).authenticatedData
+    val authTag = (ciphertext as Ciphertext.Authenticated).authTag
 
-    if (!(algorithm.mac.mac(macKey, hmacInput).getOrThrow().contentEquals(this.authTag))) return KmmResult.failure(
+    val algorithm = ciphertext.algorithm
+    val innerCipher = ciphertext.algorithm.cipher.innerCipher
+    val mac = algorithm.cipher.mac
+    val hmacInput = mac.dedicatedMacInputCalculation(ciphertext.encryptedData, iv, aad)
+    if (!(mac.mac(macKey, hmacInput).getOrThrow().contentEquals(authTag))) return KmmResult.failure(
         IllegalArgumentException("Auth Tag mismatch!")
     )
-    return Ciphertext.Unauthenticated(algorithm.innerCipher, encryptedData, iv).decrypt(secretKey)
+    val innerCipherText: Ciphertext.Unauthenticated = Ciphertext.Unauthenticated(innerCipher, ciphertext.encryptedData)
+    val box: SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>> =
+        (
+                if (this is SealedBox.WithIV<*, *>) SealedBox.WithIV<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>>(
+                    iv!!,
+                    innerCipherText as Ciphertext<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>>
+                )
+                else SealedBox.WithoutIV<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Without>>(
+                    innerCipherText as Ciphertext<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Without>>
+                )
+                ) as SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>>
+    box.doDecrypt(secretKey)
 }
+
 
 expect internal fun SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>>.doDecrypt(
     secretKey: ByteArray

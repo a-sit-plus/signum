@@ -1,10 +1,10 @@
 package at.asitplus.signum.indispensable
 
 
-sealed class SealedBox<out A : CipherKind, I : IV, E : SymmetricEncryptionAlgorithm<A, I>>(
+sealed class SealedBox<A : CipherKind, I : IV, E : SymmetricEncryptionAlgorithm<A, I>>(
     val ciphertext: Ciphertext<A, E>
 ) {
-    class WithoutIV<out A : CipherKind, E : SymmetricEncryptionAlgorithm<A, IV.Without>>(ciphertext: Ciphertext<A, E>) :
+    class WithoutIV<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, IV.Without>>(ciphertext: Ciphertext<A, E>) :
         SealedBox<A, IV.Without, E>(ciphertext) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -20,7 +20,7 @@ sealed class SealedBox<out A : CipherKind, I : IV, E : SymmetricEncryptionAlgori
         override fun toString(): String = "SealedBox.WithoutIV(ciphertext=$ciphertext)"
     }
 
-    class WithIV<out A : CipherKind, E : SymmetricEncryptionAlgorithm<A, IV.Required>>(
+    class WithIV< A : CipherKind, E : SymmetricEncryptionAlgorithm<A, IV.Required>>(
         val iv: ByteArray,
         ciphertext: Ciphertext<A, E>
     ) : SealedBox<A, IV.Required, E>(ciphertext) {
@@ -63,14 +63,14 @@ sealed class SealedBox<out A : CipherKind, I : IV, E : SymmetricEncryptionAlgori
 /**
  * A generic ciphertext object, referencing the algorithm it was created by and an IV, if any.
  */
-sealed interface Ciphertext<out A : CipherKind, E : SymmetricEncryptionAlgorithm<out A, *>> {
+sealed interface Ciphertext< A : CipherKind, E : SymmetricEncryptionAlgorithm< A, *>> {
     val algorithm: E
     val encryptedData: ByteArray
 
     /**
      * An authenticated ciphertext, i.e. containing an [authTag], and, optionally [authenticatedData] (_Additional Authenticated Data_)
      */
-    sealed class Authenticated<A : CipherKind.Authenticated, E : SymmetricEncryptionAlgorithm<out A, *>>(
+    sealed class Authenticated<A : CipherKind.Authenticated, E : SymmetricEncryptionAlgorithm< A, *>>(
         override val algorithm: E,
         override val encryptedData: ByteArray,
         val authTag: ByteArray,
