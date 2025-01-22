@@ -6,9 +6,7 @@ import at.asitplus.signum.internals.*
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.MemScope
 import kotlinx.cinterop.memScoped
-import platform.CoreFoundation.CFRelease
 import platform.Security.*
 
 val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm
