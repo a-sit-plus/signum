@@ -2,6 +2,8 @@ package at.asitplus.signum.supreme.crypt
 
 import at.asitplus.signum.indispensable.CipherKind
 import at.asitplus.signum.indispensable.Ciphertext
+import at.asitplus.signum.indispensable.IV
+import at.asitplus.signum.indispensable.SealedBox
 import at.asitplus.signum.indispensable.SymmetricEncryptionAlgorithm
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
@@ -71,28 +73,38 @@ val SymmetricEncryptionAlgorithm<*>.jcaKeySpec: String
         else -> TODO()
     }
 
-actual internal fun Ciphertext.Authenticated.doDecrypt(secretKey: ByteArray): ByteArray {
-    val wholeInput = encryptedData + authTag
-    return CipherKind.getInstance(algorithm.jcaName).also { cipher ->
+
+actual internal fun SealedBox<CipherKind.Authenticated.Integrated,*, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated,*>>.doDecrypt(secretKey: ByteArray): ByteArray {
+
+    if(ciphertext.algorithm !is SymmetricEncryptionAlgorithm.AES<*>)
+        TODO()
+    this as SealedBox.WithIV
+
+    val integrated = ciphertext as Ciphertext.Authenticated.Integrated
+    val wholeInput = ciphertext.encryptedData + integrated.authTag
+    return Cipher.getInstance(ciphertext.algorithm.jcaName).also { cipher ->
         cipher.init(
-            CipherKind.DECRYPT_MODE,
-            SecretKeySpec(secretKey, algorithm.jcaKeySpec),
-            GCMParameterSpec(authTag.size * 8, iv)
+            Cipher.DECRYPT_MODE,
+            SecretKeySpec(secretKey, ciphertext.algorithm.jcaKeySpec),
+            GCMParameterSpec(integrated.authTag.size * 8, this.iv)
         )
-        authenticatedData?.let {
+        integrated.authenticatedData?.let {
             cipher.updateAAD(it)
         }
     }.doFinal(wholeInput)
 }
 
 
-actual internal fun Ciphertext.Unauthenticated.doDecrypt(secretKey: ByteArray): ByteArray {
-    return CipherKind.getInstance(algorithm.jcaName).also { cipher ->
+actual internal fun SealedBox<CipherKind.Unauthenticated,*, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated,*>>.doDecrypt(secretKey: ByteArray): ByteArray {
+    if(ciphertext.algorithm !is SymmetricEncryptionAlgorithm.AES<*>)
+        TODO()
+    this as SealedBox.WithIV
+    return Cipher.getInstance(ciphertext.algorithm.jcaName).also { cipher ->
         cipher.init(
-            CipherKind.DECRYPT_MODE,
-            SecretKeySpec(secretKey, algorithm.jcaKeySpec),
+            Cipher.DECRYPT_MODE,
+            SecretKeySpec(secretKey, ciphertext.algorithm.jcaKeySpec),
             IvParameterSpec(iv)
         )
-    }.doFinal(encryptedData)
+    }.doFinal(ciphertext.encryptedData)
 }
 
