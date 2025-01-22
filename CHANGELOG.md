@@ -3,6 +3,13 @@
 ## 3.0
 
 ### NEXT
+* HMAC Support
+* AES Support
+    * CBC
+    * CBC-HMAC
+    * GCM
+* Moved `HazardousMaterials` annotation from `supreme` to `indispensable`
+
 
 * Move `PemEncodable`/`PemDecodable` from _indispensable_ to _indispensable-asn1_ module.
 
