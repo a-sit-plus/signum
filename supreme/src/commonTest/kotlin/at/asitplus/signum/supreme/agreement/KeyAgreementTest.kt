@@ -60,14 +60,14 @@ class KeyAgreementTest : FreeSpec({
                 val other = Signer.Ephemeral { ec { curve = crv } }.getOrThrow() as Signer.ECDSA
                 other.keyAgreement(base.publicKey).isSuccess shouldBe success
                 base.keyAgreement(other.publicKey).isSuccess shouldBe success
-                (base.exportPrivateKey().getOrThrow() as CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>).keyAgreement(other.publicKey).isSuccess shouldBe success
-                (other.exportPrivateKey().getOrThrow() as CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>).keyAgreement(base.publicKey).isSuccess shouldBe success
+                base.exportPrivateKey().getOrThrow().keyAgreement(other.publicKey).isSuccess shouldBe success
+                other.exportPrivateKey().getOrThrow().keyAgreement(base.publicKey).isSuccess shouldBe success
 
                 if(success){
                     val agreed = other.keyAgreement(base.publicKey).getOrThrow()
                     agreed shouldBe base.keyAgreement(other.publicKey).getOrThrow()
-                    agreed shouldBe (base.exportPrivateKey().getOrThrow() as CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>).keyAgreement(other.publicKey).getOrThrow()
-                    agreed shouldBe (other.exportPrivateKey().getOrThrow() as CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>).keyAgreement(base.publicKey).getOrThrow()
+                    agreed shouldBe base.exportPrivateKey().getOrThrow().keyAgreement(other.publicKey).getOrThrow()
+                    agreed shouldBe other.exportPrivateKey().getOrThrow().keyAgreement(base.publicKey).getOrThrow()
 
                     (Signer.Ephemeral { ec { curve = crv } }.getOrThrow() as Signer.ECDSA).keyAgreement(base.publicKey) shouldNotBe agreed
                     (Signer.Ephemeral { ec { curve = crv } }.getOrThrow() as Signer.ECDSA).keyAgreement(other.publicKey) shouldNotBe agreed
