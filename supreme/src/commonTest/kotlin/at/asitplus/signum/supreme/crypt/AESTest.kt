@@ -68,7 +68,7 @@ class AESTest : FreeSpec({
                     key.encrypt(Random.nextBytes(32)).getOrThrow().ciphertext
                         .shouldBeInstanceOf<Ciphertext.Authenticated<*, *>>()
                 else if (alg.cipher is CipherKind.Unauthenticated)
-                    key.encrypt(Random.nextBytes(32)).getOrThrow()
+                    key.encrypt(Random.nextBytes(32)).getOrThrow().ciphertext
                         .shouldBeInstanceOf<Ciphertext.Unauthenticated>()
             }
         }
@@ -138,7 +138,7 @@ class AESTest : FreeSpec({
                         Random.nextBytes(32)
                     ).let {
                         it should succeed
-                        it.getOrThrow().shouldBeInstanceOf<Ciphertext.Unauthenticated>()
+                        it.getOrThrow().ciphertext.shouldBeInstanceOf<Ciphertext.Unauthenticated>()
                     }
             }
         }
@@ -178,10 +178,11 @@ class AESTest : FreeSpec({
                     val ciphertext = key.encrypt(iv, plaintext).getOrThrow()
 
 
+
                     ciphertext.iv.shouldNotBeNull()
                     ciphertext.iv.size shouldBe iv.size
                     iv.let { ciphertext.iv shouldBe it }
-                    ciphertext.shouldBeInstanceOf<Ciphertext.Unauthenticated>()
+                    ciphertext.ciphertext.shouldBeInstanceOf<Ciphertext.Unauthenticated>()
 
 
                     val decrypted = ciphertext.decrypt(key).getOrThrow()
@@ -193,35 +194,31 @@ class AESTest : FreeSpec({
                     wrongDecrypted.onSuccess { value -> value shouldNotBe plaintext }
 
                     val wrongCiphertext =
-                        SealedBox.WithIV<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>>(
+                        ciphertext.ciphertext.algorithm.sealedBox(
                             ciphertext.iv,
-                            Ciphertext.Unauthenticated(
-                                ciphertext.algorithm,
-                                Random.Default.nextBytes(ciphertext.encryptedData.size),
-                            ) as Ciphertext<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>>
+                            Random.Default.nextBytes(ciphertext.ciphertext.encryptedData.size)
                         )
+
                     val wrongWrongDecrypted = wrongCiphertext.decrypt(it.randomKey())
-                    withClue("KEY: ${key.secretKey.toHexString()}, wrongCiphertext: ${wrongCiphertext.ciphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.iv?.toHexString()}") {
+                    withClue("KEY: ${key.secretKey.toHexString()}, wrongCiphertext: ${wrongCiphertext.ciphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.iv?.toHexString()}") {
                         //we're not authenticated, so from time to time, this succeeds
                         //wrongWrongDecrypted shouldNot succeed
                         //instead, we test differently:
                         wrongWrongDecrypted.onSuccess { value -> value shouldNotBe plaintext }
                     }
                     val wrongRightDecrypted = wrongCiphertext.decrypt(key)
-                    withClue("KEY: ${key.secretKey.toHexString()}, wrongCiphertext: ${wrongCiphertext.ciphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.iv?.toHexString()}") {
+                    withClue("KEY: ${key.secretKey.toHexString()}, wrongCiphertext: ${wrongCiphertext.ciphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.iv?.toHexString()}") {
                         //we're not authenticated, so from time to time, this succeeds
                         //wrongRightDecrypted shouldNot succeed
                         //instead, we test differently:
                         wrongRightDecrypted.onSuccess { value -> value shouldNotBe plaintext }
                     }
                     val wrongIV =
-                        SealedBox.WithIV<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>>(
+                        ciphertext.ciphertext.algorithm.sealedBox(
                             iv = ciphertext.iv.asList().shuffled().toByteArray(),
-                            Ciphertext.Unauthenticated(
-                                ciphertext.algorithm,
-                                ciphertext.encryptedData,
-                            ) as Ciphertext<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>>
+                            encryptedBytes = ciphertext.ciphertext.encryptedData
                         )
+
 
                     if (plaintext.size > it.blockSize.bytes.toInt()) { //cannot test like that for ciphertexts shorter than IV
                         val wrongIVDecrypted = wrongIV.decrypt(key)

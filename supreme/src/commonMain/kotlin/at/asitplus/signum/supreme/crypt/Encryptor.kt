@@ -16,6 +16,24 @@ internal val secureRandom = SecureRandom()
 
 
 @HazardousMaterials
+@JvmName("encryptWithIVAuthenticated")
+fun SymmetricKey<CipherKind.Authenticated, IV.Required>.encrypt(
+    iv: ByteArray,
+    data: ByteArray
+): KmmResult<SealedBox.WithIV<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>>> =
+    (this as SymmetricKey<*, IV.Required>).encrypt(iv,data) as KmmResult<SealedBox.WithIV<Authenticated, SymmetricEncryptionAlgorithm<Authenticated, IV.Required>>>
+
+
+@HazardousMaterials
+@JvmName("encryptWithIVUnuthenticated")
+fun SymmetricKey<CipherKind.Unauthenticated, IV.Required>.encrypt(
+    iv: ByteArray,
+    data: ByteArray
+): KmmResult<SealedBox.WithIV<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>>> =
+    (this as SymmetricKey<*, IV.Required>).encrypt(iv,data) as KmmResult<SealedBox.WithIV<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>>>
+
+
+@HazardousMaterials
 @JvmName("encryptWithIV")
 fun SymmetricKey<*, IV.Required>.encrypt(
     iv: ByteArray,
