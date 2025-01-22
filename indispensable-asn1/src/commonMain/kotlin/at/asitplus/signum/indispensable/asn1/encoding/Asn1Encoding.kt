@@ -136,7 +136,7 @@ object Asn1 {
     /**
      * Safe version of [Set], wrapping the result into a [KmmResult]
      */
-    fun SetSafe(root: Asn1TreeBuilder.() -> Unit) = catchingUnwrapped { Set(root) }
+    fun SetSafe(root: Asn1TreeBuilder.() -> Unit) = catching { Set(root) }
 
 
     /**
@@ -169,7 +169,7 @@ object Asn1 {
     /**
      * Safe version of [SetOf], wrapping the result into a [KmmResult]
      */
-    fun SetOfSafe(root: Asn1TreeBuilder.() -> Unit) = catchingUnwrapped { SetOf(root) }
+    fun SetOfSafe(root: Asn1TreeBuilder.() -> Unit) = catching { SetOf(root) }
 
 
     /**
