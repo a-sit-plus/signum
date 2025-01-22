@@ -10,6 +10,8 @@ import at.asitplus.signum.supreme.signCatching
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
+import java.security.interfaces.ECPrivateKey
+import java.security.interfaces.RSAPrivateKey
 import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
 import javax.crypto.KeyAgreement
@@ -49,10 +51,6 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
         }
     }
 
-    @SecretExposure
-    override fun exportPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> = catching { CryptoPrivateKey.decodeFromDer(
-        privateKey.encoded) as CryptoPrivateKey.WithPublicKey<*> }
-
     protected abstract fun parseFromJca(bytes: ByteArray): CryptoSignature.RawByteEncodable
 
     final override suspend fun keyAgreement(publicKey: CryptoPublicKey) = catching {
@@ -70,6 +68,9 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
         : EphemeralSigner(privateKey, config.provider), Signer.ECDSA {
 
         override fun parseFromJca(bytes: ByteArray) = CryptoSignature.EC.parseFromJca(bytes).withCurve(publicKey.curve)
+
+        @SecretExposure
+        final override fun exportPrivateKey() = CryptoPrivateKey.fromJcaPrivateKey(privateKey as ECPrivateKey)
     }
 
     open class RSA internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
@@ -77,6 +78,9 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
         : EphemeralSigner(privateKey, config.provider), Signer.RSA {
 
         override fun parseFromJca(bytes: ByteArray) = CryptoSignature.RSAorHMAC.parseFromJca(bytes)
+
+        @SecretExposure
+        final override fun exportPrivateKey() = CryptoPrivateKey.fromJcaPrivateKey(privateKey as RSAPrivateKey)
     }
 }
 

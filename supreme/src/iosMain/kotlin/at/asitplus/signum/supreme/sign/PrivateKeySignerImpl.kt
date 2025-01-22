@@ -67,11 +67,21 @@ class ECPrivateKeySigner(
     override val privateKey: CryptoPrivateKey.EC.WithPublicKey,
     override val signatureAlgorithm: SignatureAlgorithm.ECDSA,
     override val publicKey: CryptoPublicKey.EC
-) : PrivateKeySigner(privateKey.toSecKey().getOrThrow(), signatureAlgorithm), Signer.ECDSA
+) : PrivateKeySigner(privateKey.toSecKey().getOrThrow(), signatureAlgorithm), Signer.ECDSA {
+
+    @SecretExposure
+    override fun exportPrivateKey() =
+        super.exportPrivateKey().mapCatching { it as CryptoPrivateKey.EC.WithPublicKey }
+}
 
 @OptIn(ExperimentalForeignApi::class)
 class RSAPrivateKeySigner(
     override val privateKey: CryptoPrivateKey.RSA,
     override val signatureAlgorithm: SignatureAlgorithm.RSA,
     override val publicKey: CryptoPublicKey.RSA
-) : PrivateKeySigner(privateKey.toSecKey().getOrThrow(), signatureAlgorithm), Signer.RSA
+) : PrivateKeySigner(privateKey.toSecKey().getOrThrow(), signatureAlgorithm), Signer.RSA {
+
+    @SecretExposure
+    override fun exportPrivateKey() =
+        super.exportPrivateKey().mapCatching { it as CryptoPrivateKey.RSA }
+}
