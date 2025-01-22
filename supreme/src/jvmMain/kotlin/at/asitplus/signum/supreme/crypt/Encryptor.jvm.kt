@@ -44,11 +44,11 @@ actual internal fun <A : CipherKind, I : IV> CipherParam<*, A>.doEncrypt(data: B
     val jcaCiphertext = platformData.doFinal(data)
 
     val ciphertext =
-        if (alg is CipherKind.Authenticated) jcaCiphertext.dropLast((alg.tagLen.bytes.toInt()).toInt())
+        if (alg.cipher is CipherKind.Authenticated) jcaCiphertext.dropLast(((alg.cipher as CipherKind.Authenticated).tagLen.bytes.toInt()).toInt())
             .toByteArray()
         else jcaCiphertext
     val authtag =
-        if (alg is CipherKind.Authenticated) jcaCiphertext.takeLast((alg.tagLen.bytes.toInt()).toInt())
+        if (alg.cipher is CipherKind.Authenticated) jcaCiphertext.takeLast(((alg.cipher as CipherKind.Authenticated).tagLen.bytes.toInt()).toInt())
             .toByteArray() else null
 
 

@@ -22,11 +22,11 @@ actual internal fun <T, A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>> 
     val nonce = iv ?: algorithm.randomIV()
     return Cipher.getInstance(algorithm.jcaName).apply {
         val cipher = algorithm.cipher
-        if (cipher is CipherKind.Authenticated)
+        if (cipher is CipherKind.Authenticated.Integrated)
             init(
                 Cipher.ENCRYPT_MODE,
                 SecretKeySpec(key, algorithm.jcaKeySpec),
-                GCMParameterSpec(cipher.tagLen.bytes.toInt(), nonce)
+                GCMParameterSpec(cipher.tagLen.bits.toInt(), nonce)
             )
         else if (algorithm is SymmetricEncryptionAlgorithm.AES.CBC<*>) //covers Plain and CBC, because CBC will delegate to here
             init(
@@ -44,11 +44,11 @@ actual internal fun <A : CipherKind, I : IV> CipherParam<*, A>.doEncrypt(data: B
     val jcaCiphertext = platformData.doFinal(data)
 
     val ciphertext =
-        if (alg is CipherKind.Authenticated) jcaCiphertext.dropLast((alg.tagLen.bytes.toInt()).toInt())
+        if (alg.cipher is CipherKind.Authenticated) jcaCiphertext.dropLast(((alg.cipher as CipherKind.Authenticated).tagLen.bytes.toInt()).toInt())
             .toByteArray()
         else jcaCiphertext
     val authtag =
-        if (alg is CipherKind.Authenticated) jcaCiphertext.takeLast((alg.tagLen.bytes.toInt()).toInt())
+        if (alg.cipher is CipherKind.Authenticated) jcaCiphertext.takeLast(((alg.cipher as CipherKind.Authenticated).tagLen.bytes.toInt()).toInt())
             .toByteArray() else null
 
 
