@@ -61,7 +61,7 @@ Hence, a device launched with Android&nbsp;10, and later updated to Android&nbsp
 hardware.
 The Supreme crypto provider will return a failure, if key agreement is not supported in hardware.
 <br>
-**You can still, however, use key agreement based on software (ephemeral) keys.**
+**You can still, however, use key agreement based on software (or ephemeral) keys.**
 
 
 ## Supported Algorithms
