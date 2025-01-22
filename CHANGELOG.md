@@ -3,6 +3,7 @@
 ## 3.0
 
 ### NEXT
+* performance optimization: Instantiate fewer KmmResults
 
 * Move `PemEncodable`/`PemDecodable` from _indispensable_ to _indispensable-asn1_ module.
 

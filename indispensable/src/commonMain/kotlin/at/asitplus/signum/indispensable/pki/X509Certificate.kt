@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.catching
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
@@ -282,11 +283,11 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
          * or by decoding from Base64, or by decoding to a String, stripping PEM headers
          * (`-----BEGIN CERTIFICATE-----`) and then decoding from Base64.
          */
-        fun decodeFromByteArray(src: ByteArray): X509Certificate? = catching {
+        fun decodeFromByteArray(src: ByteArray): X509Certificate? = catchingUnwrapped {
             X509Certificate.decodeFromTlv(Asn1Element.parse(src) as Asn1Sequence)
-        }.getOrNull() ?: catching {
+        }.getOrNull() ?: catchingUnwrapped {
             X509Certificate.decodeFromTlv(Asn1Element.parse(src.decodeToByteArray(Base64())) as Asn1Sequence)
-        }.getOrNull() ?: catching {
+        }.getOrNull() ?: catchingUnwrapped {
             X509Certificate.decodeFromTlv(Asn1Element.parse(src.decodeX5c()) as Asn1Sequence)
         }.getOrNull()
 
