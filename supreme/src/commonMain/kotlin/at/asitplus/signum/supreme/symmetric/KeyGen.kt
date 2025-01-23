@@ -4,7 +4,7 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.CipherKind
-import at.asitplus.signum.indispensable.symmetric.IV
+import at.asitplus.signum.indispensable.symmetric.Nonce
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricKey
 import at.asitplus.signum.indispensable.asn1.encoding.bitLength
@@ -13,39 +13,39 @@ import kotlin.jvm.JvmName
 fun SymmetricEncryptionAlgorithm<*, *>.randomKey(): SymmetricKey<*, *> =
     encryptionKeyFrom(secureRandom.nextBytesOf(keySize.bytes.toInt())).getOrThrow()
 
-@JvmName("randomKeyWithIV")
-fun <A: CipherKind>SymmetricEncryptionAlgorithm<A, IV.Required>.randomKey(): SymmetricKey<A, IV.Required> =
-    (this as SymmetricEncryptionAlgorithm<*, *>).randomKey() as SymmetricKey<A, IV.Required>
+@JvmName("randomKeyWithNonce")
+fun <A: CipherKind>SymmetricEncryptionAlgorithm<A, Nonce.Required>.randomKey(): SymmetricKey<A, Nonce.Required> =
+    (this as SymmetricEncryptionAlgorithm<*, *>).randomKey() as SymmetricKey<A, Nonce.Required>
 
 @JvmName("randomKeyUnauthenticated")
 fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>.randomKey(): SymmetricKey<CipherKind.Unauthenticated, *> =
     (this as SymmetricEncryptionAlgorithm<*, *>).randomKey() as SymmetricKey<CipherKind.Unauthenticated, *>
 
-@JvmName("randomKeyUnauthenticatedWithIV")
-fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>.randomKey(): SymmetricKey<CipherKind.Unauthenticated, IV.Required> =
-    (this as SymmetricEncryptionAlgorithm<*, *>).randomKey() as SymmetricKey<CipherKind.Unauthenticated, IV.Required>
+@JvmName("randomKeyUnauthenticatedWithNonce")
+fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Required>.randomKey(): SymmetricKey<CipherKind.Unauthenticated, Nonce.Required> =
+    (this as SymmetricEncryptionAlgorithm<*, *>).randomKey() as SymmetricKey<CipherKind.Unauthenticated, Nonce.Required>
 
 @JvmName("randomKeyAuthenticatedIntegrated")
 fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>.randomKey(): SymmetricKey<CipherKind.Authenticated.Integrated, *> =
     (this as SymmetricEncryptionAlgorithm<*, *>).randomKey() as SymmetricKey<CipherKind.Authenticated.Integrated, *>
 
-@JvmName("randomKeyAuthenticatedIntegratedWithIV")
-fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, IV.Required>.randomKey(): SymmetricKey<CipherKind.Authenticated.Integrated, IV.Required> =
-    (this as SymmetricEncryptionAlgorithm<*, *>).randomKey() as SymmetricKey<CipherKind.Authenticated.Integrated, IV.Required>
+@JvmName("randomKeyAuthenticatedIntegratedWithNonce")
+fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, Nonce.Required>.randomKey(): SymmetricKey<CipherKind.Authenticated.Integrated, Nonce.Required> =
+    (this as SymmetricEncryptionAlgorithm<*, *>).randomKey() as SymmetricKey<CipherKind.Authenticated.Integrated, Nonce.Required>
 
-@JvmName("randomKeyAuthenticatedWithDedicatedMacWithIV")
-fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>.randomKey(
+@JvmName("randomKeyAuthenticatedWithDedicatedMacWithNonce")
+fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, Nonce.Required>, Nonce.Required>.randomKey(
     dedicatedMacKeyOverride: ByteArray? = null
-): SymmetricKey.WithDedicatedMac<IV.Required> =
+): SymmetricKey.WithDedicatedMac<Nonce.Required> =
     (this as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, *>).randomKey(
         dedicatedMacKeyOverride = dedicatedMacKeyOverride
-    ) as SymmetricKey.WithDedicatedMac<IV.Required>
+    ) as SymmetricKey.WithDedicatedMac<Nonce.Required>
 
 @JvmName("randomKeyAuthenticatedWithDedicatedMAC")
 fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, *>.randomKey(dedicatedMacKeyOverride: ByteArray? = null): SymmetricKey<CipherKind.Authenticated.WithDedicatedMac<*, *>, *> {
     val secretKey = secureRandom.nextBytesOf(keySize.bytes.toInt())
     @OptIn(HazardousMaterials::class)
-    return SymmetricKey.WithDedicatedMac<IV>(
+    return SymmetricKey.WithDedicatedMac<Nonce>(
         this,
         secretKey = secretKey,
         dedicatedMacKey = dedicatedMacKeyOverride ?: secretKey
@@ -53,10 +53,10 @@ fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>
 }
 
 /**
- * Generates a new random IV matching the IV size of this algorithm
+ * Generates a new random Nonce matching the Nonce size of this algorithm
  */
-internal fun SymmetricEncryptionAlgorithm<*, IV.Required>.randomIV() =
-    @OptIn(HazardousMaterials::class) secureRandom.nextBytesOf((iv.ivLen.bytes).toInt())
+internal fun SymmetricEncryptionAlgorithm<*, Nonce.Required>.randomNonce() =
+    @OptIn(HazardousMaterials::class) secureRandom.nextBytesOf((nonce.length.bytes).toInt())
 
 
 fun SymmetricEncryptionAlgorithm<*, *>.encryptionKeyFrom(keyBytes: ByteArray): KmmResult<SymmetricKey<*, *>> =
@@ -77,35 +77,35 @@ fun SymmetricEncryptionAlgorithm<*, *>.encryptionKeyFrom(keyBytes: ByteArray): K
     }
 
 
-@JvmName("fixedKeyWithIV")
-fun SymmetricEncryptionAlgorithm<*, IV.Required>.encryptionKeyFrom(keyBytes: ByteArray): KmmResult<SymmetricKey<*, IV.Required>> =
-    (this as SymmetricEncryptionAlgorithm<*, *>).encryptionKeyFrom(keyBytes) as KmmResult<SymmetricKey<*, IV.Required>>
+@JvmName("fixedKeyWithNonce")
+fun SymmetricEncryptionAlgorithm<*, Nonce.Required>.encryptionKeyFrom(keyBytes: ByteArray): KmmResult<SymmetricKey<*, Nonce.Required>> =
+    (this as SymmetricEncryptionAlgorithm<*, *>).encryptionKeyFrom(keyBytes) as KmmResult<SymmetricKey<*, Nonce.Required>>
 
 @JvmName("fixedKeyUnauthenticated")
 fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>.encryptionKeyFrom(keyBytes: ByteArray): KmmResult<SymmetricKey<CipherKind.Unauthenticated, *>> =
     (this as SymmetricEncryptionAlgorithm<*, *>).encryptionKeyFrom(keyBytes) as KmmResult<SymmetricKey<CipherKind.Unauthenticated, *>>
 
-@JvmName("fixedKeyUnauthenticatedWithIV")
-fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>.encryptionKeyFrom(keyBytes: ByteArray): KmmResult<SymmetricKey<CipherKind.Unauthenticated, IV.Required>> =
-    (this as SymmetricEncryptionAlgorithm<*, *>).encryptionKeyFrom(keyBytes) as KmmResult<SymmetricKey<CipherKind.Unauthenticated, IV.Required>>
+@JvmName("fixedKeyUnauthenticatedWithNonce")
+fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Required>.encryptionKeyFrom(keyBytes: ByteArray): KmmResult<SymmetricKey<CipherKind.Unauthenticated, Nonce.Required>> =
+    (this as SymmetricEncryptionAlgorithm<*, *>).encryptionKeyFrom(keyBytes) as KmmResult<SymmetricKey<CipherKind.Unauthenticated, Nonce.Required>>
 
 @JvmName("fixedKeyAuthenticatedIntegrated")
 fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>.encryptionKeyFrom(keyBytes: ByteArray): KmmResult<SymmetricKey<CipherKind.Authenticated.Integrated, *>> =
     (this as SymmetricEncryptionAlgorithm<*, *>).encryptionKeyFrom(keyBytes) as KmmResult<SymmetricKey<CipherKind.Authenticated.Integrated, *>>
 
-@JvmName("fixedKeyAuthenticatedIntegratedWithIV")
-fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, IV.Required>.encryptionKeyFrom(keyBytes: ByteArray): KmmResult<SymmetricKey<CipherKind.Authenticated.Integrated, IV.Required>> =
-    (this as SymmetricEncryptionAlgorithm<*, *>).encryptionKeyFrom(keyBytes) as KmmResult<SymmetricKey<CipherKind.Authenticated.Integrated, IV.Required>>
+@JvmName("fixedKeyAuthenticatedIntegratedWithNonce")
+fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, Nonce.Required>.encryptionKeyFrom(keyBytes: ByteArray): KmmResult<SymmetricKey<CipherKind.Authenticated.Integrated, Nonce.Required>> =
+    (this as SymmetricEncryptionAlgorithm<*, *>).encryptionKeyFrom(keyBytes) as KmmResult<SymmetricKey<CipherKind.Authenticated.Integrated, Nonce.Required>>
 
-@JvmName("fixedKeyAuthenticatedWithDedicatedMacWithIV")
-fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>.encryptionKeyFrom(
+@JvmName("fixedKeyAuthenticatedWithDedicatedMacWithNonce")
+fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, Nonce.Required>, Nonce.Required>.encryptionKeyFrom(
     keyBytes: ByteArray,
     dedicatedMacKeyOverride: ByteArray? = null
-): KmmResult<SymmetricKey.WithDedicatedMac<IV.Required>> =
+): KmmResult<SymmetricKey.WithDedicatedMac<Nonce.Required>> =
     (this as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, *>).encryptionKeyFrom(
         keyBytes,
         dedicatedMacKeyOverride = dedicatedMacKeyOverride
-    ) as KmmResult<SymmetricKey.WithDedicatedMac<IV.Required>>
+    ) as KmmResult<SymmetricKey.WithDedicatedMac<Nonce.Required>>
 
 @JvmName("fixedKeyAuthenticatedWithDedicatedMAC")
 fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, *>.encryptionKeyFrom(
@@ -114,7 +114,7 @@ fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>
 ): KmmResult<SymmetricKey<CipherKind.Authenticated.WithDedicatedMac<*, *>, *>> = catching {
     require(keyBytes.size == this.keySize.bytes.toInt()) { "Invalid key size: ${keyBytes.size * 8}. Required: keySize=${keyBytes.size.bitLength}" }
     @OptIn(HazardousMaterials::class)
-    SymmetricKey.WithDedicatedMac<IV>(
+    SymmetricKey.WithDedicatedMac<Nonce>(
         this,
         secretKey = keyBytes,
         dedicatedMacKey = dedicatedMacKeyOverride ?: keyBytes

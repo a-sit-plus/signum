@@ -61,7 +61,7 @@ class AESTest : FreeSpec({
 
                 val key = alg.randomKey()
                 key.encrypt(iv, Random.nextBytes(32)) shouldNot succeed
-                key.encrypt(alg.randomIV(), Random.nextBytes(32)) should succeed
+                key.encrypt(alg.randomNonce(), Random.nextBytes(32)) should succeed
                 key.encrypt(Random.nextBytes(32)) should succeed
                 if (alg.cipher is CipherKind.Authenticated)
                     key.encrypt(Random.nextBytes(32)).getOrThrow().cipherKind.shouldBeInstanceOf<CipherKind.Authenticated>()
@@ -116,16 +116,16 @@ class AESTest : FreeSpec({
                 //so we try to out-smart ourselves and it must fail later on
                 val key = (when (alg.randomKey()) {
                     //Covers Unauthenticated and GCM
-                    is SymmetricKey.Integrated<*, IV.Required> -> SymmetricKey.Integrated(alg, keyBytes)
-                    is SymmetricKey.WithDedicatedMac<IV.Required> -> SymmetricKey.WithDedicatedMac(
-                        alg as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, IV.Required>,
+                    is SymmetricKey.Integrated<*, Nonce.Required> -> SymmetricKey.Integrated(alg, keyBytes)
+                    is SymmetricKey.WithDedicatedMac<Nonce.Required> -> SymmetricKey.WithDedicatedMac(
+                        alg as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, Nonce.Required>,
                         keyBytes
                     )
                 })
 
 
                 key.encrypt(Random.nextBytes(32)) shouldNot succeed
-                key.encrypt(iv = alg.randomIV(), data = Random.nextBytes(32)) shouldNot succeed
+                key.encrypt(iv = alg.randomNonce(), data = Random.nextBytes(32)) shouldNot succeed
 
                 if (alg.cipher is CipherKind.Authenticated)
                     alg.randomKey().encrypt(
@@ -171,8 +171,8 @@ class AESTest : FreeSpec({
 
                 withData(
                     nameFn = { "IV: " + it.toHexString().substring(0..8) },
-                    it.randomIV(),
-                    it.randomIV(),
+                    it.randomNonce(),
+                    it.randomNonce(),
                 ) { iv ->
 
 
@@ -180,9 +180,9 @@ class AESTest : FreeSpec({
 
 
 
-                    ciphertext.iv.shouldNotBeNull()
-                    ciphertext.iv.size shouldBe iv.size
-                    iv.let { ciphertext.iv shouldBe it }
+                    ciphertext.nonce.shouldNotBeNull()
+                    ciphertext.nonce.size shouldBe iv.size
+                    iv.let { ciphertext.nonce shouldBe it }
                     ciphertext.cipherKind.shouldBeInstanceOf<CipherKind.Unauthenticated>()
 
 
@@ -196,19 +196,19 @@ class AESTest : FreeSpec({
 
                     val wrongCiphertext =
                         ciphertext.algorithm.sealedBox(
-                            ciphertext.iv,
+                            ciphertext.nonce,
                             Random.Default.nextBytes(ciphertext.encryptedData.size)
                         )
 
                     val wrongWrongDecrypted = wrongCiphertext.decrypt(it.randomKey())
-                    withClue("KEY: ${key.secretKey.toHexString()}, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.iv?.toHexString()}") {
+                    withClue("KEY: ${key.secretKey.toHexString()}, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.nonce?.toHexString()}") {
                         //we're not authenticated, so from time to time, this succeeds
                         //wrongWrongDecrypted shouldNot succeed
                         //instead, we test differently:
                         wrongWrongDecrypted.onSuccess { value -> value shouldNotBe plaintext }
                     }
                     val wrongRightDecrypted = wrongCiphertext.decrypt(key)
-                    withClue("KEY: ${key.secretKey.toHexString()}, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.iv?.toHexString()}") {
+                    withClue("KEY: ${key.secretKey.toHexString()}, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.nonce?.toHexString()}") {
                         //we're not authenticated, so from time to time, this succeeds
                         //wrongRightDecrypted shouldNot succeed
                         //instead, we test differently:
@@ -216,7 +216,7 @@ class AESTest : FreeSpec({
                     }
                     val wrongIV =
                         ciphertext.algorithm.sealedBox(
-                            iv = ciphertext.iv.asList().shuffled().toByteArray(),
+                            nonce = ciphertext.nonce.asList().shuffled().toByteArray(),
                             encryptedData = ciphertext.encryptedData
                         )
 
@@ -256,8 +256,8 @@ class AESTest : FreeSpec({
                 val key = alg.randomKey()
                 withData(
                     nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
-                    alg.randomIV(),
-                    alg.randomIV(),
+                    alg.randomNonce(),
+                    alg.randomNonce(),
                 ) { iv ->
 
                     withData(
@@ -269,9 +269,9 @@ class AESTest : FreeSpec({
                         val ciphertext =
                             key.encrypt(iv, plaintext, aad).getOrThrow()
 
-                        ciphertext.iv.shouldNotBeNull()
-                        ciphertext.iv.size shouldBe alg.iv.ivLen.bytes.toInt()
-                        ciphertext.iv shouldBe iv
+                        ciphertext.nonce.shouldNotBeNull()
+                        ciphertext.nonce.size shouldBe alg.nonce.length.bytes.toInt()
+                        ciphertext.nonce shouldBe iv
                         ciphertext.cipherKind.shouldBeInstanceOf<CipherKind.Authenticated>()
                         ciphertext.authenticatedData shouldBe aad
 
@@ -283,7 +283,7 @@ class AESTest : FreeSpec({
                         wrongDecrypted shouldNot succeed
 
                         val wrongCiphertext = alg.sealedBox(
-                            ciphertext.iv,
+                            ciphertext.nonce,
                             Random.Default.nextBytes(ciphertext.encryptedData.size),
                             authTag = ciphertext.authTag,
                             authenticatedData = ciphertext.authenticatedData
@@ -297,7 +297,7 @@ class AESTest : FreeSpec({
                         wrongRightDecrypted shouldNot succeed
 
                         val wrongIV = alg.sealedBox(
-                            iv = ciphertext.iv.asList().shuffled().toByteArray(),
+                            nonce = ciphertext.nonce.asList().shuffled().toByteArray(),
                             ciphertext.encryptedData,
                             authTag = ciphertext.authTag,
                             authenticatedData = ciphertext.authenticatedData
@@ -310,7 +310,7 @@ class AESTest : FreeSpec({
                         if (aad != null) {
                             //missing aad
                             alg.sealedBox(
-                                iv = ciphertext.iv,
+                                nonce = ciphertext.nonce,
                                 encryptedData = ciphertext.encryptedData,
                                 authTag = ciphertext.authTag,
                                 authenticatedData = null
@@ -319,7 +319,7 @@ class AESTest : FreeSpec({
                         }
                         //shuffled auth tag
                         alg.sealedBox(
-                            iv = ciphertext.iv,
+                            nonce = ciphertext.nonce,
                             ciphertext.encryptedData,
                             authTag = ciphertext.authTag.asList().shuffled().toByteArray(),
                             authenticatedData = ciphertext.authenticatedData,
@@ -387,8 +387,8 @@ class AESTest : FreeSpec({
 
                         withData(
                             nameFn = { "IV: " + it.toHexString().substring(0..8) },
-                            Random.Default.nextBytes((it.iv.ivLen.bytes).toInt()),
-                            Random.Default.nextBytes((it.iv.ivLen.bytes).toInt()),
+                            Random.Default.nextBytes((it.nonce.length.bytes).toInt()),
+                            Random.Default.nextBytes((it.nonce.length.bytes).toInt()),
                         ) { iv ->
                             withData(
                                 nameFn = { "AAD: " + it?.toHexString()?.substring(0..8) },
@@ -398,7 +398,7 @@ class AESTest : FreeSpec({
                                 val ciphertext =
                                     key.encrypt(iv, plaintext, aad).getOrThrow()
                                 val manilaAlg = it.Custom { _, _, _ -> "Manila".encodeToByteArray() }
-                                val manilaKey = SymmetricKey.WithDedicatedMac<IV.Required>(
+                                val manilaKey = SymmetricKey.WithDedicatedMac<Nonce.Required>(
                                     manilaAlg,
                                     key.secretKey,
                                     key.dedicatedMacKey
@@ -406,7 +406,7 @@ class AESTest : FreeSpec({
                                 manilaKey.encrypt(iv, plaintext, aad).getOrThrow() shouldNotBe ciphertext
 
                                 //no randomness. must be equal
-                                val randomIV = it.randomIV()
+                                val randomIV = it.randomNonce()
                                 manilaKey.encrypt(randomIV, plaintext, aad).getOrThrow() shouldBe manilaKey.encrypt(
                                     randomIV,
                                     plaintext,
@@ -414,8 +414,8 @@ class AESTest : FreeSpec({
                                 ).getOrThrow()
 
 
-                                ciphertext.iv shouldBe iv
-                                ciphertext.iv.shouldNotBeNull()
+                                ciphertext.nonce shouldBe iv
+                                ciphertext.nonce.shouldNotBeNull()
                                 ciphertext.cipherKind.shouldBeInstanceOf<CipherKind.Authenticated>()
                                 ciphertext.authenticatedData shouldBe aad
 
@@ -427,7 +427,7 @@ class AESTest : FreeSpec({
 
                                 val wrongCiphertext =
                                     ciphertext.algorithm.sealedBox(
-                                        ciphertext.iv,
+                                        ciphertext.nonce,
                                         Random.Default.nextBytes(ciphertext.encryptedData.size),
                                         authTag = ciphertext.authTag,
                                         authenticatedData = ciphertext.authenticatedData
@@ -442,7 +442,7 @@ class AESTest : FreeSpec({
 
                                 val wrongIV =
                                     ciphertext.algorithm.sealedBox(
-                                        iv = ciphertext.iv.asList().shuffled().toByteArray(),
+                                        nonce = ciphertext.nonce.asList().shuffled().toByteArray(),
                                         ciphertext.encryptedData,
                                         ciphertext.authTag,
                                         ciphertext.authenticatedData
@@ -451,19 +451,19 @@ class AESTest : FreeSpec({
                                 val wrongIVDecrypted = wrongIV.decrypt(key)
                                 wrongIVDecrypted shouldNot succeed
                                 ciphertext.algorithm.sealedBox(
-                                    iv = ciphertext.iv.asList().shuffled().toByteArray(),
+                                    nonce = ciphertext.nonce.asList().shuffled().toByteArray(),
                                     ciphertext.encryptedData,
                                     authTag = ciphertext.authTag,
                                     authenticatedData = ciphertext.authenticatedData,
                                 ).decrypt(key) shouldNot succeed
 
                                 ciphertext.algorithm.sealedBox(
-                                    iv = ciphertext.iv,
+                                    nonce = ciphertext.nonce,
                                     ciphertext.encryptedData,
                                     authTag = ciphertext.authTag,
                                     authenticatedData = ciphertext.authenticatedData,
                                 ).decrypt(
-                                    SymmetricKey.WithDedicatedMac<IV.Required>(
+                                    SymmetricKey.WithDedicatedMac<Nonce.Required>(
                                         ciphertext.algorithm,
                                         key.secretKey,
                                         dedicatedMacKey = macKey.asList().shuffled().toByteArray()
@@ -472,7 +472,7 @@ class AESTest : FreeSpec({
 
                                 if (aad != null) {
                                     ciphertext.algorithm.sealedBox(
-                                        ciphertext.iv,
+                                        ciphertext.nonce,
                                         ciphertext.encryptedData,
                                         ciphertext.authTag,
                                         null
@@ -480,20 +480,20 @@ class AESTest : FreeSpec({
                                 }
 
                                 ciphertext.algorithm.sealedBox(
-                                    ciphertext.iv,
+                                    ciphertext.nonce,
                                     ciphertext.encryptedData,
                                     ciphertext.authTag.asList().shuffled().toByteArray(),
                                     ciphertext.authenticatedData
                                 ).decrypt(key) shouldNot succeed
                                 ciphertext.algorithm.sealedBox(
-                                    ciphertext.iv,
+                                    ciphertext.nonce,
                                     ciphertext.encryptedData,
                                     ciphertext.authTag.asList().shuffled().toByteArray(),
                                     ciphertext.authenticatedData
                                 ).decrypt(it.Custom { _, _, _ ->
                                     "Szombathely".encodeToByteArray()
                                 }.let {
-                                    SymmetricKey.WithDedicatedMac<IV.Required>(
+                                    SymmetricKey.WithDedicatedMac<Nonce.Required>(
                                         it,
                                         key.secretKey,
                                         key.dedicatedMacKey
@@ -558,7 +558,7 @@ class AESTest : FreeSpec({
 
         //we can also manually construct the sealed box, if we know the algorithm:
         val reconstructed = algorithm.sealedBox(
-            sealedBox.iv,
+            sealedBox.nonce,
             encryptedData = sealedBox.encryptedData, /*Could also access authenticatedCipherText*/
             authTag = sealedBox.authTag,
             authenticatedData = sealedBox.authenticatedData

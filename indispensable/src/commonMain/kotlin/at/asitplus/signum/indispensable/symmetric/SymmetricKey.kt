@@ -5,7 +5,7 @@ import at.asitplus.signum.HazardousMaterials
 /**
  * Symmetric encryption key. Can only be used for the specified [algorithm].
  */
-sealed class SymmetricKey<A : CipherKind, I : IV>(
+sealed class SymmetricKey<A : CipherKind, I : Nonce>(
     val algorithm: SymmetricEncryptionAlgorithm<A, I>,
     val secretKey: ByteArray
 ) {
@@ -13,7 +13,7 @@ sealed class SymmetricKey<A : CipherKind, I : IV>(
     /**
      * Self-Contained encryption key, i.e. a single byte array is sufficient
      */
-    class Integrated<A : CipherKind, I : IV>
+    class Integrated<A : CipherKind, I : Nonce>
     @HazardousMaterials("Does not check whether key size matched algorithm! Useful for testing, but not production!")
     /**
      * Do not invoke directly! use Supreme's `SymmetricEncryptionAlgorithm.randomKey()` and `SymmetricEncryptionAlgorithm.encryptionKeyFrom(bytes)`
@@ -26,7 +26,7 @@ sealed class SymmetricKey<A : CipherKind, I : IV>(
      * Encryption key with dedicated MAC key.
      * [dedicatedMacKey] defaults to [secretKey]
      */
-    class WithDedicatedMac<I : IV>
+    class WithDedicatedMac<I : Nonce>
     @HazardousMaterials("Does not check whether key size matched algorithm! Useful for testing, but not production!")
     /**
      * Do not invoke directly! use Supreme's `SymmetricEncryptionAlgorithm.randomKey()` and `SymmetricEncryptionAlgorithm.encryptionKeyFrom(bytes)`

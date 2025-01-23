@@ -1,7 +1,4 @@
-package at.asitplus.signum.indispensable.symmetric
-
-import at.asitplus.signum.indispensable.Digest
-import at.asitplus.signum.indispensable.ECCurve
+package at.asitplus.signum.indispensable
 
 enum class RSAPadding {
     PKCS1,
