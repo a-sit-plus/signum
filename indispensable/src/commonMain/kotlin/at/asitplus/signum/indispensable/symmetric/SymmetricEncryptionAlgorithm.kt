@@ -1,4 +1,4 @@
-package at.asitplus.signum.indispensable
+package at.asitplus.signum.indispensable.symmetric
 
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.Identifiable

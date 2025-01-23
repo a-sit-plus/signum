@@ -6,6 +6,9 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
+import at.asitplus.signum.indispensable.symmetric.RSAPadding
+import at.asitplus.signum.indispensable.symmetric.SignatureAlgorithm
+import at.asitplus.signum.indispensable.symmetric.SpecializedSignatureAlgorithm
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -98,7 +101,8 @@ enum class X509SignatureAlgorithm(
         ES512, HS512, PS512, RS512 -> Digest.SHA512
     }
 
-    override val algorithm: SignatureAlgorithm get() = when(this) {
+    override val algorithm: SignatureAlgorithm
+        get() = when(this) {
         ES256, ES384, ES512 -> SignatureAlgorithm.ECDSA(this.digest, null)
         HS256, HS384, HS512 -> SignatureAlgorithm.HMAC(this.digest)
         PS256, PS384, PS512 -> SignatureAlgorithm.RSA(this.digest, RSAPadding.PSS)

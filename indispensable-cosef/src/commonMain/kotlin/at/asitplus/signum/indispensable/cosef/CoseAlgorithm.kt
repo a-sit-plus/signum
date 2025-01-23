@@ -3,9 +3,9 @@ package at.asitplus.signum.indispensable.cosef
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.RSAPadding
-import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.SpecializedSignatureAlgorithm
+import at.asitplus.signum.indispensable.symmetric.RSAPadding
+import at.asitplus.signum.indispensable.symmetric.SignatureAlgorithm
+import at.asitplus.signum.indispensable.symmetric.SpecializedSignatureAlgorithm
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind

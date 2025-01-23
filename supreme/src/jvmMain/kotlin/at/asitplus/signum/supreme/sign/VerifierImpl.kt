@@ -3,8 +3,8 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.catchingUnwrappedAs
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.RSAPadding
-import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.symmetric.RSAPadding
+import at.asitplus.signum.indispensable.symmetric.SignatureAlgorithm
 import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.indispensable.jcaAlgorithmComponent
 import at.asitplus.signum.indispensable.jcaPSSParams

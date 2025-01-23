@@ -5,8 +5,8 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.Digest
-import at.asitplus.signum.indispensable.RSAPadding
-import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.symmetric.RSAPadding
+import at.asitplus.signum.indispensable.symmetric.SignatureAlgorithm
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.supreme.SecretExposure
 import at.asitplus.signum.supreme.dsl.DSL

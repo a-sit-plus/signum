@@ -1,8 +1,18 @@
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1ContentBytes
+import at.asitplus.signum.supreme.symmetric.encryptionKeyFrom
+import at.asitplus.signum.supreme.symmetric.randomIV
+import at.asitplus.signum.supreme.symmetric.randomKey
 import at.asitplus.signum.indispensable.mac.MAC
-import at.asitplus.signum.supreme.crypt.*
+import at.asitplus.signum.indispensable.symmetric.CipherKind
+import at.asitplus.signum.indispensable.symmetric.Ciphertext
+import at.asitplus.signum.indispensable.symmetric.IV
+import at.asitplus.signum.indispensable.symmetric.SealedBox
+import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.symmetric.SymmetricKey
+import at.asitplus.signum.indispensable.symmetric.authenticatedCiphertext
+import at.asitplus.signum.indispensable.symmetric.sealedBox
+import at.asitplus.signum.supreme.symmetric.*
 import at.asitplus.signum.supreme.succeed
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
@@ -112,6 +122,11 @@ class AESTest : FreeSpec({
                 Random.nextBytes(256),
 
                 ) { keyBytes ->
+
+                //prohibited!
+                 alg.encryptionKeyFrom(keyBytes) shouldNot succeed
+
+                //so we try to out-smart ourselves and it must fail later on
                 val key = (when (alg.randomKey()) {
                     //Covers Unauthenticated and GCM
                     is SymmetricKey.Integrated<*, IV.Required> -> SymmetricKey.Integrated(alg, keyBytes)
@@ -120,7 +135,6 @@ class AESTest : FreeSpec({
                         keyBytes
                     )
                 })
-
 
 
                 key.encrypt(Random.nextBytes(32)) shouldNot succeed

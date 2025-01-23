@@ -5,6 +5,9 @@ package at.asitplus.signum.indispensable
 import at.asitplus.signum.internals.*
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.indispensable.symmetric.RSAPadding
+import at.asitplus.signum.indispensable.symmetric.SignatureAlgorithm
+import at.asitplus.signum.indispensable.symmetric.SpecializedSignatureAlgorithm
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.memScoped
 import platform.Foundation.NSData

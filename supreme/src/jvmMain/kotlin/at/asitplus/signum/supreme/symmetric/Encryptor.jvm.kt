@@ -1,10 +1,10 @@
-package at.asitplus.signum.supreme.crypt
+package at.asitplus.signum.supreme.symmetric
 
-import at.asitplus.signum.indispensable.CipherKind
-import at.asitplus.signum.indispensable.Ciphertext
-import at.asitplus.signum.indispensable.IV
-import at.asitplus.signum.indispensable.SealedBox
-import at.asitplus.signum.indispensable.SymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.symmetric.CipherKind
+import at.asitplus.signum.indispensable.symmetric.Ciphertext
+import at.asitplus.signum.indispensable.symmetric.IV
+import at.asitplus.signum.indispensable.symmetric.SealedBox
+import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
