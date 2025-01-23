@@ -533,7 +533,8 @@ class AESTest : FreeSpec({
         val payload = "More matter, with less Art!".encodeToByteArray()
 
         //define parameters
-        val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
+        val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512 //custom mac fun here
+
         //any size is fine, really. omitting the override just uses the encryption key as mac key
         val key = algorithm.randomKey(dedicatedMacKeyOverride = secureRandom.nextBytesOf(32))
         val aad = Clock.System.now().toString().encodeToByteArray()
@@ -547,12 +548,11 @@ class AESTest : FreeSpec({
                         (aad?.size?.encodeToAsn1ContentBytes() ?: byteArrayOf())
 
 
-        val sealedBox =
-            key.encrypt(
-                payload,
-                authenticatedData = aad,
-                dedicatedMacAuthTagCalculation = customMacInputFn
-            ).getOrThrow(/*handle error*/)
+        val sealedBox = key.encrypt(
+            payload,
+            authenticatedData = aad,
+            dedicatedMacAuthTagCalculation = customMacInputFn
+        ).getOrThrow(/*handle error*/)
 
         //The sealed box object is correctly typed:
         //  * It is a SealedBox.WithIV
