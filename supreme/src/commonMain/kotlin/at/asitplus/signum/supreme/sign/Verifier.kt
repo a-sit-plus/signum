@@ -5,8 +5,8 @@ import at.asitplus.catching
 import at.asitplus.recoverCatching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.SpecializedSignatureAlgorithm
+import at.asitplus.signum.indispensable.symmetric.SignatureAlgorithm
+import at.asitplus.signum.indispensable.symmetric.SpecializedSignatureAlgorithm
 import at.asitplus.signum.ecmath.straussShamir
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.UnsupportedCryptoException

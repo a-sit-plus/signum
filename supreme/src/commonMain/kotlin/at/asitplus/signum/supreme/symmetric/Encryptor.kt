@@ -1,13 +1,17 @@
-package at.asitplus.signum.supreme.crypt
+package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.CipherKind.Authenticated
-import at.asitplus.signum.indispensable.SymmetricKey.Integrated
-import at.asitplus.signum.indispensable.SymmetricKey.WithDedicatedMac
+import at.asitplus.signum.indispensable.symmetric.CipherKind.Authenticated
+import at.asitplus.signum.indispensable.symmetric.SymmetricKey.WithDedicatedMac
 import at.asitplus.signum.indispensable.mac.MAC
+import at.asitplus.signum.indispensable.symmetric.CipherKind
+import at.asitplus.signum.indispensable.symmetric.Ciphertext
+import at.asitplus.signum.indispensable.symmetric.IV
+import at.asitplus.signum.indispensable.symmetric.SealedBox
+import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.symmetric.SymmetricKey
 import at.asitplus.signum.supreme.mac.mac
 import org.kotlincrypto.SecureRandom
 import kotlin.jvm.JvmName
@@ -20,7 +24,7 @@ internal val secureRandom = SecureRandom()
 fun SymmetricKey<CipherKind.Authenticated, IV.Required>.encrypt(
     iv: ByteArray,
     data: ByteArray
-): KmmResult<SealedBox.WithIV<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>>> =
+): KmmResult<SealedBox.WithIV<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<Authenticated, IV.Required>>> =
     (this as SymmetricKey<*, IV.Required>).encrypt(iv,data) as KmmResult<SealedBox.WithIV<Authenticated, SymmetricEncryptionAlgorithm<Authenticated, IV.Required>>>
 
 
@@ -83,7 +87,7 @@ fun <A : CipherKind.Authenticated> SymmetricKey<A, IV.Required>.encrypt(
 /**
  * Encrypts [data] and automagically generates a fresh IV if required by the cipher.
  *
- * @return [KmmResult.success] containing a [Ciphertext] if valid parameters were provided or [KmmResult.failure] in case of
+ * @return [KmmResult.success] containing a [at.asitplus.signum.indispensable.symmetric.Ciphertext] if valid parameters were provided or [KmmResult.failure] in case of
  * invalid parameters (e.g., key or IV length)
  */
 fun <A : CipherKind> SymmetricKey<A, *>.encrypt(
@@ -104,9 +108,9 @@ fun <A : CipherKind> SymmetricKey<A, *>.encrypt(
  * * [iv] =  _Initialization Vector_; **NEVER EVER RE-USE THIS!**
  * * [authenticatedData] = _Additional Authenticated Data_
  *
- * It is safe to discard the reference to [iv] and [authenticatedData], as both will be added to any [Ciphertext.Authenticated] resulting from an encryption.
+ * It is safe to discard the reference to [iv] and [authenticatedData], as both will be added to any [at.asitplus.signum.indispensable.symmetric.Ciphertext.Authenticated] resulting from an encryption.
  *
- * @return [KmmResult.success] containing a [Ciphertext.Authenticated] if valid parameters were provided or [KmmResult.failure] in case of
+ * @return [KmmResult.success] containing a [at.asitplus.signum.indispensable.symmetric.Ciphertext.Authenticated] if valid parameters were provided or [KmmResult.failure] in case of
  * invalid parameters (e.g., key or IV length)
  */
 @HazardousMaterials
@@ -149,9 +153,9 @@ fun SymmetricKey<Authenticated.Integrated, IV.Required>.encrypt(
  * This is the method you want to use, as it generates a fresh IV, if the underlying cipher requires an IV.
  * * [autehnticatedData] = _Additional Authenticated Data_
  *
- * It is safe to discard the reference to [autehnticatedData], as both IV and AAD will be added to any [Ciphertext.Authenticated] resulting from an encryption.
+ * It is safe to discard the reference to [autehnticatedData], as both IV and AAD will be added to any [at.asitplus.signum.indispensable.symmetric.Ciphertext.Authenticated] resulting from an encryption.
  *
- * @return [KmmResult.success] containing a [Ciphertext.Authenticated] if valid parameters were provided or [KmmResult.failure] in case of
+ * @return [KmmResult.success] containing a [at.asitplus.signum.indispensable.symmetric.Ciphertext.Authenticated] if valid parameters were provided or [KmmResult.failure] in case of
  * invalid parameters (e.g., key or IV length)
  */
 @JvmName("encryptAuthenticated")
@@ -177,9 +181,9 @@ fun SymmetricKey<Authenticated, *>.encrypt(
  * * [dedicatedMacKey] should be used to specify a dedicated MAC key, unless indicated otherwise. Defaults to [secretKey]
  * * [dedicatedMacAuthTagCalculation] can be used to specify a custom computation for the MAC input. Defaults to [DefaultDedicatedMacInputCalculation].
  *
- * It is safe to discard the reference to [iv] and [authenticatedData], as both will be added to any [Ciphertext.Authenticated.WithDedicatedMac] resulting from an encryption.
+ * It is safe to discard the reference to [iv] and [authenticatedData], as both will be added to any [at.asitplus.signum.indispensable.symmetric.Ciphertext.Authenticated.WithDedicatedMac] resulting from an encryption.
  *
- * @return [KmmResult.success] containing a [Ciphertext.Authenticated.WithDedicatedMac] if valid parameters were provided or [KmmResult.failure] in case of
+ * @return [KmmResult.success] containing a [at.asitplus.signum.indispensable.symmetric.Ciphertext.Authenticated.WithDedicatedMac] if valid parameters were provided or [KmmResult.failure] in case of
  * invalid parameters (e.g., key or IV length)
  */
 @HazardousMaterials
@@ -207,9 +211,9 @@ fun SymmetricKey.WithDedicatedMac<IV.Required>.encrypt(
  * * [dedicatedMacKey] should be used to specify a dedicated MAC key, unless indicated otherwise. Defaults to [secretKey]
  * * [dedicatedMacAuthTagCalculation] can be used to specify a custom computation for the MAC input. Defaults to [DefaultDedicatedMacInputCalculation].
  *
- * It is safe to discard the reference to [authenticatedData], as both AAD and iV will be added to any [Ciphertext.Authenticated.WithDedicatedMac] resulting from an encryption.
+ * It is safe to discard the reference to [authenticatedData], as both AAD and iV will be added to any [at.asitplus.signum.indispensable.symmetric.Ciphertext.Authenticated.WithDedicatedMac] resulting from an encryption.
  *
- * @return [KmmResult.success] containing a [Ciphertext.Authenticated.WithDedicatedMac] if valid parameters were provided or [KmmResult.failure] in case of
+ * @return [KmmResult.success] containing a [at.asitplus.signum.indispensable.symmetric.Ciphertext.Authenticated.WithDedicatedMac] if valid parameters were provided or [KmmResult.failure] in case of
  * invalid parameters (e.g., key or IV length)
  */
 fun SymmetricKey.WithDedicatedMac<*>.encrypt(
@@ -233,8 +237,8 @@ fun SymmetricKey.WithDedicatedMac<IV.Required>.encrypt(
     data: ByteArray,
     authenticatedData: ByteArray? = null,
     dedicatedMacAuthTagCalculation: DedicatedMacInputCalculation = DefaultDedicatedMacInputCalculation,
-): KmmResult<SealedBox.WithIV<CipherKind.Authenticated.WithDedicatedMac<*,IV.Required>,
-        SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*,IV.Required>,IV.Required>>>
+): KmmResult<SealedBox.WithIV<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>,
+        SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>>
 = (this as SymmetricKey.WithDedicatedMac<*>).encrypt(data,authenticatedData,dedicatedMacAuthTagCalculation) as KmmResult<SealedBox.WithIV<Authenticated.WithDedicatedMac<*, IV.Required>, SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>>
 
 internal class Encryptor<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>, C : SealedBox<A, *, E>> internal constructor(
@@ -257,8 +261,8 @@ internal class Encryptor<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>,
     private val platformCipher: CipherParam<*, A> = initCipher<Any, A, E>(algorithm, key, iv, aad)
 
     /**
-     * Encrypts [data] and returns a [Ciphertext] matching the algorithm type that was used to create this [Encryptor] object.
-     * E.g., an authenticated encryption algorithm causes this function to return a [Ciphertext.Authenticated].
+     * Encrypts [data] and returns a [at.asitplus.signum.indispensable.symmetric.Ciphertext] matching the algorithm type that was used to create this [Encryptor] object.
+     * E.g., an authenticated encryption algorithm causes this function to return a [at.asitplus.signum.indispensable.symmetric.Ciphertext.Authenticated].
      */
     fun encrypt(data: ByteArray): C = if (algorithm.cipher is Authenticated.WithDedicatedMac<*, *>) {
         val aMac = algorithm.cipher as Authenticated.WithDedicatedMac<*, *>
@@ -329,55 +333,6 @@ internal class CipherParam<T, A : CipherKind>(
     val aad: ByteArray?
 )
 
-@JvmName("randomKeyWithIV")
-fun SymmetricEncryptionAlgorithm<*, IV.Required>.randomKey(): SymmetricKey<*, IV.Required> =
-    (this as SymmetricEncryptionAlgorithm<*, *>).randomKey() as SymmetricKey<*, IV.Required>
-
-fun SymmetricEncryptionAlgorithm<*, *>.randomKey() = when (this.cipher) {
-    is Authenticated.Integrated -> (this as SymmetricEncryptionAlgorithm<Authenticated.Integrated, *>).randomKey()
-    is Authenticated.WithDedicatedMac<*, *> -> (this as SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, *>, *>).randomKey()
-    is CipherKind.Unauthenticated -> (this as SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>).randomKey()
-}
-
-@JvmName("doEncryptUnauthenticated")
-fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>.randomKey(): SymmetricKey<CipherKind.Unauthenticated, *> =
-    Integrated<CipherKind.Unauthenticated, IV>(this, secureRandom.nextBytesOf(keySize.bytes.toInt()))
-
-@JvmName("doEncryptUnauthenticatedWithIV")
-fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>.randomKey(): SymmetricKey<CipherKind.Unauthenticated, IV.Required> =
-    Integrated<CipherKind.Unauthenticated, IV.Required>(this, secureRandom.nextBytesOf(keySize.bytes.toInt()))
-
-@JvmName("doEncryptAuthenticatedIntegrated")
-fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>.randomKey(): SymmetricKey<CipherKind.Authenticated.Integrated, *> =
-    Integrated<CipherKind.Authenticated.Integrated, IV>(this, secureRandom.nextBytesOf(keySize.bytes.toInt()))
-
-@JvmName("doEncryptAuthenticatedIntegratedWithIV")
-fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, IV.Required>.randomKey(): SymmetricKey<CipherKind.Authenticated.Integrated, IV.Required> =
-    Integrated<CipherKind.Authenticated.Integrated, IV.Required>(this, secureRandom.nextBytesOf(keySize.bytes.toInt()))
-
-@JvmName("doEncryptAuthenticatedWithDedicatedMacWithIV")
-fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>.randomKey(
-    dedicatedMacKeyOverride: ByteArray? = null
-): SymmetricKey.WithDedicatedMac<IV.Required> =
-    (this as SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, *>, *>).randomKey(dedicatedMacKeyOverride = dedicatedMacKeyOverride) as WithDedicatedMac<IV.Required>
-
-@JvmName("doEncryptAuthenticatedWithDedicatedMAC")
-fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, *>.randomKey(dedicatedMacKeyOverride: ByteArray? = null): SymmetricKey<CipherKind.Authenticated.WithDedicatedMac<*, *>, *> {
-    val secretKey = secureRandom.nextBytesOf(keySize.bytes.toInt())
-    return WithDedicatedMac<IV>(
-        this,
-        secretKey = secretKey,
-        dedicatedMacKey = dedicatedMacKeyOverride ?: secretKey
-    )
-}
-
-/**
- * Generates a new random IV matching the IV size of this algorithm
- */
-internal fun SymmetricEncryptionAlgorithm<*, IV.Required>.randomIV() =
-    @OptIn(HazardousMaterials::class) secureRandom.nextBytesOf((iv.ivLen.bytes).toInt())
-
-
 /**
  * Attempts to decrypt this ciphertext (which also holds IV, and in case of an authenticated ciphertext, AAD and auth tag) using the provided [key].
  * This is the function you typically want to use.
@@ -386,7 +341,7 @@ fun SealedBox.WithIV<*, SymmetricEncryptionAlgorithm<*, IV.Required>>.decrypt(ke
     catching {
         require(ciphertext.algorithm == key.algorithm) { "Somebody likes cursed casts!" }
         if (ciphertext is Ciphertext.Authenticated.WithDedicatedMac) {
-            (this as SealedBox<CipherKind.Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, *>>).decrypt(
+            (this as SealedBox<Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, *>, *>>).decrypt(
                 key.secretKey, (key as SymmetricKey.WithDedicatedMac<*>).dedicatedMacKey
             )
         }
@@ -398,12 +353,12 @@ fun SealedBox.WithIV<*, SymmetricEncryptionAlgorithm<*, IV.Required>>.decrypt(ke
  * This is the function you typically want to use.
  */
 @JvmName("decryptAuthenticatedWithIV")
-fun SealedBox.WithIV<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>>.decrypt(
+fun SealedBox.WithIV<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<Authenticated, IV.Required>>.decrypt(
     key: SymmetricKey<*, IV.Required>
 ): KmmResult<ByteArray> = catching {
     require(ciphertext.algorithm == key.algorithm) { "Somebody likes cursed casts!" }
     if (ciphertext is Ciphertext.Authenticated.WithDedicatedMac) {
-        (this as SealedBox<CipherKind.Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, *>>).decrypt(
+        (this as SealedBox<Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, *>, *>>).decrypt(
             key.secretKey, (key as SymmetricKey.WithDedicatedMac<*>).dedicatedMacKey
         )
     }
@@ -418,7 +373,7 @@ fun SealedBox<*, *, *>.decrypt(secretKey: ByteArray): KmmResult<ByteArray> =
     catching {
         require(secretKey.size.toUInt() == ciphertext.algorithm.keySize.bytes) { "Key must be exactly ${ciphertext.algorithm.keySize} bits long" }
         when (ciphertext) {
-            is Ciphertext.Authenticated.Integrated -> (this as SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<Authenticated.Integrated, *>>).doDecrypt(
+            is Ciphertext.Authenticated.Integrated -> (this as SealedBox<Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<Authenticated.Integrated, *>>).doDecrypt(
                 secretKey
             )
 
@@ -426,7 +381,7 @@ fun SealedBox<*, *, *>.decrypt(secretKey: ByteArray): KmmResult<ByteArray> =
                 secretKey
             )
 
-            is Ciphertext.Authenticated.WithDedicatedMac -> (this as SealedBox<CipherKind.Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, *>, *>>).decrypt(
+            is Ciphertext.Authenticated.WithDedicatedMac -> (this as SealedBox<Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, *>, *>>).decrypt(
                 secretKey
             ).getOrThrow()
         }
@@ -439,11 +394,11 @@ fun <A : CipherKind, I : IV> SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>
     }
 
 @JvmName("decryptAuthenticatedWithIVandDedicatdMAC")
-fun SealedBox.WithIV<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>.decrypt(
+fun SealedBox.WithIV<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>.decrypt(
     key: SymmetricKey.WithDedicatedMac<*>,
     dedicatedMacInputCalculation: DedicatedMacInputCalculation = DefaultDedicatedMacInputCalculation
 ) =
-    (this as SealedBox<CipherKind.Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, *>>).decrypt(
+    (this as SealedBox<Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, *>, *>>).decrypt(
         key.secretKey, key.dedicatedMacKey, dedicatedMacInputCalculation
     )
 
@@ -452,7 +407,7 @@ fun SealedBox.WithIV<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, 
  * If no [macKey] is provided, [secretKey] will be used as MAC key.
  * [dedicatedMacInputCalculation] can be used to override the [DefaultDedicatedMacInputCalculation] used to compute MAC input.
  */
-fun SealedBox<CipherKind.Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, *>>.decrypt(
+fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, *>, *>>.decrypt(
     secretKey: ByteArray,
     macKey: ByteArray = secretKey,
     dedicatedMacInputCalculation: DedicatedMacInputCalculation = DefaultDedicatedMacInputCalculation
@@ -483,7 +438,7 @@ fun SealedBox<CipherKind.Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncry
 }
 
 
-expect internal fun SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>>.doDecrypt(
+expect internal fun SealedBox<Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<Authenticated.Integrated, *>>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray
 

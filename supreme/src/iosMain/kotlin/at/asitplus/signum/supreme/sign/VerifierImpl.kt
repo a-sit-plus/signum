@@ -4,7 +4,7 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.symmetric.SignatureAlgorithm
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.indispensable.iosEncoded
 import at.asitplus.signum.indispensable.nativeDigest

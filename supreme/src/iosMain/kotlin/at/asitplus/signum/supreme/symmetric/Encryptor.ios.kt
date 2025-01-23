@@ -1,7 +1,12 @@
-package at.asitplus.signum.supreme.crypt
+package at.asitplus.signum.supreme.symmetric
 
-import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.SymmetricEncryptionAlgorithm.AES
+import at.asitplus.signum.indispensable.symmetric.BlockCipher
+import at.asitplus.signum.indispensable.symmetric.CipherKind
+import at.asitplus.signum.indispensable.symmetric.Ciphertext
+import at.asitplus.signum.indispensable.symmetric.IV
+import at.asitplus.signum.indispensable.symmetric.SealedBox
+import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
 import at.asitplus.signum.internals.swiftcall
 import at.asitplus.signum.internals.toByteArray
 import at.asitplus.signum.internals.toNSData
@@ -71,7 +76,7 @@ internal actual fun <A : CipherKind, I : IV> CipherParam<*, A>.doEncrypt(data: B
     } as SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>
 }
 
-private fun BlockCipher<*,*>.addPKCS7Padding(plain: ByteArray): ByteArray {
+private fun BlockCipher<*, *>.addPKCS7Padding(plain: ByteArray): ByteArray {
     val blockBytes = blockSize.bytes.toInt()
     val diff = blockBytes - (plain.size % blockBytes)
     return if (diff == 0)
@@ -80,7 +85,7 @@ private fun BlockCipher<*,*>.addPKCS7Padding(plain: ByteArray): ByteArray {
 }
 
 
-private fun BlockCipher<*,*>.removePKCS7Padding(plainWithPadding: ByteArray): ByteArray {
+private fun BlockCipher<*, *>.removePKCS7Padding(plainWithPadding: ByteArray): ByteArray {
     val paddingBytes = plainWithPadding.last().toInt()
     require(paddingBytes > 0) { "Illegal padding: $paddingBytes" }
     require(plainWithPadding.takeLast(paddingBytes).all { it.toInt() == paddingBytes }) { "Padding not consistent" }
@@ -90,7 +95,7 @@ private fun BlockCipher<*,*>.removePKCS7Padding(plainWithPadding: ByteArray): By
 
 
 @OptIn(ExperimentalForeignApi::class)
-actual internal fun  SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>>.doDecrypt(secretKey: ByteArray): ByteArray {
+actual internal fun SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>>.doDecrypt(secretKey: ByteArray): ByteArray {
     if (ciphertext.algorithm.iv !is IV.Required) TODO()
     ciphertext as Ciphertext.Authenticated.Integrated
     this as SealedBox.WithIV
@@ -108,7 +113,7 @@ actual internal fun  SealedBox<CipherKind.Authenticated.Integrated, *, Symmetric
 }
 
 @OptIn(ExperimentalForeignApi::class)
-actual internal fun  SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>>.doDecrypt(secretKey: ByteArray): ByteArray {
+actual internal fun SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>>.doDecrypt(secretKey: ByteArray): ByteArray {
     if (ciphertext.algorithm.iv !is IV.Required) TODO()
     this as SealedBox.WithIV
     require(ciphertext.algorithm is AES<*>) { "Only AES is supported" }

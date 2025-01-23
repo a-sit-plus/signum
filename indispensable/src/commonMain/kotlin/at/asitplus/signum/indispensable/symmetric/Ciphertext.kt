@@ -1,12 +1,12 @@
-package at.asitplus.signum.indispensable
+package at.asitplus.signum.indispensable.symmetric
 
 import kotlin.jvm.JvmName
 
 
 val SealedBox.WithIV<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>.authenticatedCiphertext:
-Ciphertext.Authenticated<CipherKind.Authenticated.WithDedicatedMac<*,IV.Required>, *>
+Ciphertext.Authenticated<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, *>
 @JvmName("authCipherTextWithDedicatedMac")
-    get() = ciphertext as Ciphertext.Authenticated<CipherKind.Authenticated.WithDedicatedMac<*,IV.Required>, IV.Required>
+    get() = ciphertext as Ciphertext.Authenticated<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>
 
 val SealedBox.WithIV<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>>.authenticatedCiphertext:
         Ciphertext.Authenticated<CipherKind.Authenticated, *>

@@ -1,6 +1,8 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.pki.getContentSigner
+import at.asitplus.signum.indispensable.symmetric.RSAPadding
+import at.asitplus.signum.indispensable.symmetric.SignatureAlgorithm
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
