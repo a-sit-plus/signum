@@ -1,25 +1,13 @@
 package at.asitplus.signum.indispensable.symmetric
 
-import kotlin.jvm.JvmName
-
-/**
- * Shorthand to access the contained ciphertext as a [Ciphertext.Authenticated.WithDedicatedMac] to access:
- *  * [CipherKind.Authenticated.tagLen]
- *  * [CipherKind.Authenticated.WithDedicatedMac.mac]
- *  * [CipherKind.Authenticated.WithDedicatedMac.innerCipher]
- */
-val SealedBox.WithIV<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>.authenticatedCiphertext:
-        Ciphertext.Authenticated<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, *>
-    @JvmName("authCipherTextWithDedicatedMac")
-    get() = ciphertext as Ciphertext.Authenticated<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>
-
 /**
  * Shorthand to access the contained ciphertext as a [Ciphertext.Authenticated] to access:
  *  * [CipherKind.Authenticated.tagLen]
  */
-val SealedBox.WithIV<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>>.authenticatedCiphertext:
-        Ciphertext.Authenticated<CipherKind.Authenticated, *>
-    get() = ciphertext as Ciphertext.Authenticated<CipherKind.Authenticated, IV.Required>
+val <A : CipherKind.Authenticated, I : IV> SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>.authenticatedCiphertext:
+        Ciphertext.Authenticated<A, *>
+    get() = ciphertext as Ciphertext.Authenticated<A, SymmetricEncryptionAlgorithm<A, I>>
+
 
 /**
  * Represents symmetrically encrypted data. This is a separate class to more easily enforce type safety wrt. presence of
@@ -93,6 +81,7 @@ sealed class SealedBox<A : CipherKind, I : IV, E : SymmetricEncryptionAlgorithm<
     }
 }
 
+val SealedBox<*, IV.Required, *>.iv: ByteArray get() = (this as SealedBox.WithIV<*, *>).iv
 
 /**
  * A generic ciphertext object, referencing the algorithm it was created by and an IV, if any.
@@ -104,7 +93,7 @@ sealed interface Ciphertext<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, 
     /**
      * An authenticated ciphertext, i.e. containing an [authTag], and, optionally [authenticatedData] (_Additional Authenticated Data_)
      */
-    sealed class Authenticated<A : CipherKind.Authenticated, E : SymmetricEncryptionAlgorithm<A, *>>(
+    class Authenticated<A : CipherKind.Authenticated, E : SymmetricEncryptionAlgorithm<A, *>>(
         override val algorithm: E,
         override val encryptedData: ByteArray,
         val authTag: ByteArray,
@@ -136,32 +125,6 @@ sealed interface Ciphertext<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, 
             result = 31 * result + (authenticatedData?.contentHashCode() ?: 0)
             return result
         }
-
-        class WithDedicatedMac(
-            algorithm: SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, *>,
-            encryptedData: ByteArray,
-            authTag: ByteArray,
-            authenticatedData: ByteArray?
-        ) : Authenticated<CipherKind.Authenticated.WithDedicatedMac<*, *>,
-                SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, *>>(
-            algorithm,
-            encryptedData,
-            authTag,
-            authenticatedData
-        )
-
-        class Integrated(
-            algorithm: SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>,
-            encryptedData: ByteArray,
-            authTag: ByteArray,
-            authenticatedData: ByteArray?
-        ) : Authenticated<CipherKind.Authenticated.Integrated,
-                SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>>(
-            algorithm,
-            encryptedData,
-            authTag,
-            authenticatedData
-        )
     }
 
     /**

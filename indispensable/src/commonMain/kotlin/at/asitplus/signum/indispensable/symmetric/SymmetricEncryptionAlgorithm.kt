@@ -24,12 +24,13 @@ fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>.sealed
 
 fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Without>.sealedBox(
     encryptedData: ByteArray
-) = SealedBox.WithoutIV<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Without>>(
-    Ciphertext.Unauthenticated(
-        this,
-        encryptedData
-    ) as Ciphertext<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Without>>
-)
+) =
+    SealedBox.WithoutIV<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Without>>(
+        Ciphertext.Unauthenticated(
+            this,
+            encryptedData
+        ) as Ciphertext<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Without>>
+    )
 
 @JvmName("sealedBoxAuthenticatedDedicated")
 fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>.sealedBox(
@@ -45,47 +46,36 @@ fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV
 ) as SealedBox.WithIV<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>
 
 @JvmName("sealedBoxAuthenticated")
-fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>.sealedBox(
+fun <A : CipherKind.Authenticated> SymmetricEncryptionAlgorithm<A, IV.Required>.sealedBox(
     iv: ByteArray,
     encryptedData: ByteArray,
     authTag: ByteArray,
     authenticatedData: ByteArray? = null
-) = SealedBox.WithIV<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>>(
+) = SealedBox.WithIV<A, SymmetricEncryptionAlgorithm<A, IV.Required>>(
     iv,
     authenticatedCipherText(encryptedData, authTag, authenticatedData)
 )
 
 @JvmName("sealedBoxAuthenticated")
-fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Without>.sealedBox(
+fun <A : CipherKind.Authenticated> SymmetricEncryptionAlgorithm<A, IV.Without>.sealedBox(
     encryptedData: ByteArray,
     authTag: ByteArray,
     authenticatedData: ByteArray? = null
-) = SealedBox.WithoutIV<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Without>>(
+) = SealedBox.WithoutIV<A, SymmetricEncryptionAlgorithm<A, IV.Without>>(
     authenticatedCipherText(encryptedData, authTag, authenticatedData)
 )
 
 
-private inline fun <reified I : IV> SymmetricEncryptionAlgorithm<CipherKind.Authenticated, I>.authenticatedCipherText(
+private inline fun <A : CipherKind.Authenticated, reified I : IV> SymmetricEncryptionAlgorithm<A, I>.authenticatedCipherText(
     encryptedData: ByteArray,
     authTag: ByteArray,
     authenticatedData: ByteArray? = null
-) = when (this.cipher) {
-    is CipherKind.Authenticated.WithDedicatedMac<*, *> ->
-        Ciphertext.Authenticated.WithDedicatedMac(
-            this as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, *>,
-            encryptedData,
-            authTag,
-            authenticatedData
-        )
-
-    is CipherKind.Authenticated.Integrated ->
-        Ciphertext.Authenticated.Integrated(
-            this as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>,
-            encryptedData,
-            authTag,
-            authenticatedData
-        )
-} as Ciphertext<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, I>>
+) = Ciphertext.Authenticated<A, SymmetricEncryptionAlgorithm<A, I>>(
+    this,
+    encryptedData,
+    authTag,
+    authenticatedData
+)
 
 
 sealed interface SymmetricEncryptionAlgorithm<out A : CipherKind, out I : IV> :
@@ -165,17 +155,35 @@ sealed interface SymmetricEncryptionAlgorithm<out A : CipherKind, out I : IV> :
                 override val name = super.name + " Plain"
             }
 
-            class HMAC(innerCipher: Plain, mac: at.asitplus.signum.indispensable.mac.HMAC) :
+            class HMAC
+            private constructor(
+                innerCipher: Plain,
+                mac: at.asitplus.signum.indispensable.mac.HMAC,
+                dedicatedMacInputCalculation: DedicatedMacInputCalculation
+            ) :
                 CBC<CipherKind.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC, IV.Required>>(
                     innerCipher.keySize
                 ) {
+                constructor(innerCipher: Plain, mac: at.asitplus.signum.indispensable.mac.HMAC) : this(
+                    innerCipher,
+                    mac,
+                    DefaultDedicatedMacInputCalculation
+                )
+
                 override val cipher =
                     CipherKind.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC, IV.Required>(
                         innerCipher,
                         mac,
-                        mac.outputLength
+                        mac.outputLength,
+                        dedicatedMacInputCalculation
                     )
                 override val name = super.name + " $mac"
+
+                /**
+                 * Instantiates a new [CBC.HMAC] with a custom [dedicatedMacInputCalculation]
+                 */
+                fun Custom(dedicatedMacInputCalculation: DedicatedMacInputCalculation) =
+                    CBC.HMAC(cipher.innerCipher as Plain, cipher.mac, dedicatedMacInputCalculation)
             }
         }
     }
@@ -201,7 +209,8 @@ sealed interface CipherKind {
         class WithDedicatedMac<M : MAC, I : IV>(
             val innerCipher: SymmetricEncryptionAlgorithm<Unauthenticated, I>,
             val mac: M,
-            tagLen: BitLength
+            tagLen: BitLength,
+            val dedicatedMacInputCalculation: DedicatedMacInputCalculation
         ) : Authenticated(tagLen)
     }
 
@@ -210,6 +219,22 @@ sealed interface CipherKind {
      */
     object Unauthenticated : CipherKind
 }
+
+/**
+ * Typealias defining the signature of the lambda for defining a custom MAC input calculation scheme.
+ */
+typealias DedicatedMacInputCalculation = MAC.(ciphertext: ByteArray, iv: ByteArray?, aad: ByteArray?) -> ByteArray
+
+/**
+ * The default dedicated mac input calculation:
+ * ```kotlin
+ * (iv?: byteArrayOf()) + (aad ?: byteArrayOf()) + ciphertext
+ * ```
+ */
+val DefaultDedicatedMacInputCalculation: DedicatedMacInputCalculation =
+    fun MAC.(ciphertext: ByteArray, iv: ByteArray?, aad: ByteArray?): ByteArray =
+        (iv ?: byteArrayOf()) + (aad ?: byteArrayOf()) + ciphertext
+
 
 sealed class IV {
     /**
