@@ -4,6 +4,7 @@ import at.asitplus.signum.indispensable.symmetric.Ciphertext
 import at.asitplus.signum.indispensable.symmetric.IV
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricKey
+import at.asitplus.signum.indispensable.symmetric.authTag
 import at.asitplus.signum.indispensable.symmetric.iv
 import at.asitplus.signum.supreme.symmetric.decrypt
 import at.asitplus.signum.supreme.symmetric.encrypt
@@ -57,7 +58,7 @@ class JvmAESTest : FreeSpec({
                             //GCM need to cast key, because alg is AES with no mode of ops, since we mix CBC and GCM in the test input
                             val own = (secretKey as SymmetricKey<CipherKind.Authenticated,IV.Required>).encrypt(iv = iv, data = data,aad)
                                 .getOrThrow()
-                            own.ciphertext.shouldBeInstanceOf<Ciphertext.Authenticated<*,*>>()
+                            own.cipherKind.shouldBeInstanceOf<CipherKind.Authenticated>()
                             jcaCipher.init(
                                 Cipher.ENCRYPT_MODE,
                                 SecretKeySpec(secretKey.secretKey, "AES"),
@@ -70,7 +71,7 @@ class JvmAESTest : FreeSpec({
 
                             val encrypted = jcaCipher.doFinal(data)
 
-                            (own.ciphertext.encryptedData + (own.ciphertext as Ciphertext.Authenticated).authTag) shouldBe encrypted
+                            (own.encryptedData + own.authTag) shouldBe encrypted
 
                             jcaCipher.init(
                                 Cipher.DECRYPT_MODE,
@@ -94,7 +95,7 @@ class JvmAESTest : FreeSpec({
                             )
                             val encrypted = jcaCipher.doFinal(data)
 
-                            own.ciphertext.encryptedData shouldBe encrypted
+                            own.encryptedData shouldBe encrypted
 
                             jcaCipher.init(
                                 Cipher.DECRYPT_MODE,
