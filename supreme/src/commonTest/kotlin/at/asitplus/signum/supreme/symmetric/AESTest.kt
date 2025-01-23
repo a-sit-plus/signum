@@ -1,19 +1,9 @@
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1ContentBytes
-import at.asitplus.signum.supreme.symmetric.encryptionKeyFrom
-import at.asitplus.signum.supreme.symmetric.randomIV
-import at.asitplus.signum.supreme.symmetric.randomKey
 import at.asitplus.signum.indispensable.mac.MAC
-import at.asitplus.signum.indispensable.symmetric.CipherKind
-import at.asitplus.signum.indispensable.symmetric.Ciphertext
-import at.asitplus.signum.indispensable.symmetric.IV
-import at.asitplus.signum.indispensable.symmetric.SealedBox
-import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
-import at.asitplus.signum.indispensable.symmetric.SymmetricKey
-import at.asitplus.signum.indispensable.symmetric.authenticatedCiphertext
-import at.asitplus.signum.indispensable.symmetric.sealedBox
-import at.asitplus.signum.supreme.symmetric.*
+import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.succeed
+import at.asitplus.signum.supreme.symmetric.*
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
@@ -124,7 +114,7 @@ class AESTest : FreeSpec({
                 ) { keyBytes ->
 
                 //prohibited!
-                 alg.encryptionKeyFrom(keyBytes) shouldNot succeed
+                alg.encryptionKeyFrom(keyBytes) shouldNot succeed
 
                 //so we try to out-smart ourselves and it must fail later on
                 val key = (when (alg.randomKey()) {
@@ -295,16 +285,13 @@ class AESTest : FreeSpec({
                         val wrongDecrypted = ciphertext.decrypt(alg.randomKey().secretKey)
                         wrongDecrypted shouldNot succeed
 
-                        val wrongCiphertext =
-                            SealedBox.WithIV<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>>(
-                                iv = ciphertext.iv,
-                                Ciphertext.Authenticated.Integrated(
-                                    ciphertext.ciphertext.algorithm as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>,
-                                    Random.Default.nextBytes(ciphertext.ciphertext.encryptedData.size),
-                                    authTag = ciphertext.authenticatedCiphertext.authTag,
-                                    authenticatedData = ciphertext.authenticatedCiphertext.authenticatedData,
-                                ) as Ciphertext<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>>
-                            )
+                        val wrongCiphertext = alg.sealedBox(
+                            ciphertext.iv,
+                            Random.Default.nextBytes(ciphertext.ciphertext.encryptedData.size),
+                            authTag = ciphertext.authenticatedCiphertext.authTag,
+                            authenticatedData = ciphertext.authenticatedCiphertext.authenticatedData
+                        )
+
 
                         val wrongWrongDecrypted = wrongCiphertext.decrypt(alg.randomKey().secretKey)
                         wrongWrongDecrypted shouldNot succeed
@@ -312,42 +299,33 @@ class AESTest : FreeSpec({
                         val wrongRightDecrypted = wrongCiphertext.decrypt(key)
                         wrongRightDecrypted shouldNot succeed
 
-                        val wrongIV =
-                            SealedBox.WithIV<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>>(
-                                iv = ciphertext.iv.asList().shuffled().toByteArray(),
-                                Ciphertext.Authenticated.Integrated(
-                                    ciphertext.ciphertext.algorithm as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>,
-                                    ciphertext.ciphertext.encryptedData,
-                                    authTag = ciphertext.authenticatedCiphertext.authTag,
-                                    authenticatedData = ciphertext.authenticatedCiphertext.authenticatedData
-                                ) as Ciphertext<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>>
-                            )
+                        val wrongIV = alg.sealedBox(
+                            iv = ciphertext.iv.asList().shuffled().toByteArray(),
+                            ciphertext.ciphertext.encryptedData,
+                            authTag = ciphertext.authenticatedCiphertext.authTag,
+                            authenticatedData = ciphertext.authenticatedCiphertext.authenticatedData
+                        )
 
                         val wrongIVDecrypted = wrongIV.decrypt(key)
                         wrongIVDecrypted shouldNot succeed
 
 
                         if (aad != null) {
-                            SealedBox.WithIV<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>>(
+                            //missing aad
+                            alg.sealedBox(
                                 iv = ciphertext.iv,
-                                Ciphertext.Authenticated.Integrated(
-                                    ciphertext.ciphertext.algorithm as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>,
-                                    ciphertext.ciphertext.encryptedData,
-                                    authTag = ciphertext.authenticatedCiphertext.authTag,
-                                    authenticatedData = null
-                                ) as Ciphertext<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>>
+                                encryptedData = ciphertext.ciphertext.encryptedData,
+                                authTag = ciphertext.authenticatedCiphertext.authTag,
+                                authenticatedData = null
                             ).decrypt(key) shouldNot succeed
 
                         }
-                        SealedBox.WithIV<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>>(
+                        //shuffled auth tag
+                        alg.sealedBox(
                             iv = ciphertext.iv,
-                            Ciphertext.Authenticated.Integrated(
-                                ciphertext.ciphertext.algorithm as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>,
-                                ciphertext.ciphertext.encryptedData,
-                                authTag = ciphertext.authenticatedCiphertext.authTag.asList().shuffled().toByteArray(),
-                                authenticatedData = ciphertext.authenticatedCiphertext.authenticatedData
-                            )
-                                    as Ciphertext<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>>
+                            ciphertext.ciphertext.encryptedData,
+                            authTag = ciphertext.authenticatedCiphertext.authTag.asList().shuffled().toByteArray(),
+                            authenticatedData = ciphertext.authenticatedCiphertext.authenticatedData,
                         ).decrypt(key) shouldNot succeed
                     }
                 }
@@ -487,27 +465,21 @@ class AESTest : FreeSpec({
                                         dedicatedMacInputCalculation = macInputFun
                                     )
                                 wrongIVDecrypted shouldNot succeed
-                                SealedBox.WithIV<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>(
+                                ciphertext.ciphertext.algorithm.sealedBox(
                                     iv = ciphertext.iv.asList().shuffled().toByteArray(),
-                                    Ciphertext.Authenticated.WithDedicatedMac(
-                                        ciphertext.ciphertext.algorithm,
-                                        ciphertext.ciphertext.encryptedData,
-                                        authTag = ciphertext.authenticatedCiphertext.authTag,
-                                        authenticatedData = ciphertext.authenticatedCiphertext.authenticatedData,
-                                    ) as Ciphertext<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>
+                                    ciphertext.ciphertext.encryptedData,
+                                    authTag = ciphertext.authenticatedCiphertext.authTag,
+                                    authenticatedData = ciphertext.authenticatedCiphertext.authenticatedData,
                                 ).decrypt(
                                     key,
                                     dedicatedMacInputCalculation = macInputFun
                                 ) shouldNot succeed
 
-                                SealedBox.WithIV<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>(
+                                ciphertext.ciphertext.algorithm.sealedBox(
                                     iv = ciphertext.iv,
-                                    Ciphertext.Authenticated.WithDedicatedMac(
-                                        ciphertext.ciphertext.algorithm,
-                                        ciphertext.ciphertext.encryptedData,
-                                        authTag = ciphertext.authenticatedCiphertext.authTag,
-                                        authenticatedData = ciphertext.authenticatedCiphertext.authenticatedData,
-                                    ) as Ciphertext<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>
+                                    ciphertext.ciphertext.encryptedData,
+                                    authTag = ciphertext.authenticatedCiphertext.authTag,
+                                    authenticatedData = ciphertext.authenticatedCiphertext.authenticatedData,
                                 ).decrypt(
                                     SymmetricKey.WithDedicatedMac<IV>(
                                         ciphertext.ciphertext.algorithm,
@@ -562,8 +534,8 @@ class AESTest : FreeSpec({
 
         //define parameters
         val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
-        val key =
-            algorithm.randomKey(dedicatedMacKeyOverride = secureRandom.nextBytesOf(algorithm.keySize.bytes.toInt()))
+        //any size is fine, really. omitting the override just uses the encryption key as mac key
+        val key = algorithm.randomKey(dedicatedMacKeyOverride = secureRandom.nextBytesOf(32))
         val aad = Clock.System.now().toString().encodeToByteArray()
 
         //we want to customise what is fed into the MAC
@@ -580,7 +552,7 @@ class AESTest : FreeSpec({
                 payload,
                 authenticatedData = aad,
                 dedicatedMacAuthTagCalculation = customMacInputFn
-            ).getOrThrow(/*TODO Error Handling*/)
+            ).getOrThrow(/*handle error*/)
 
         //The sealed box object is correctly typed:
         //  * It is a SealedBox.WithIV
@@ -595,7 +567,7 @@ class AESTest : FreeSpec({
 
         //because everything is structured, decryption is simple
         val recovered =
-            sealedBox.decrypt(key, dedicatedMacInputCalculation = customMacInputFn).getOrThrow(/*TODO Error handling*/)
+            sealedBox.decrypt(key, dedicatedMacInputCalculation = customMacInputFn).getOrThrow(/*handle error*/)
         recovered shouldBe payload //success!
 
         //we can also manually construct the sealed box, if we know the algorithm:
@@ -609,8 +581,14 @@ class AESTest : FreeSpec({
         val manuallyRecovered = reconstructed.decrypt(
             key,
             dedicatedMacInputCalculation = customMacInputFn
-        ).getOrThrow(/*TODO Error handling*/)
+        ).getOrThrow(/*handle error*/)
 
         manuallyRecovered shouldBe payload //great success!
+
+        //if we just know algorithm and key bytes, we can also construct a symmetric key
+        val constructedKey =
+            algorithm.encryptionKeyFrom(key.secretKey, key.dedicatedMacKey).getOrThrow(/*handle error*/)
+
+        reconstructed.decrypt(constructedKey).getOrThrow(/*handle error*/) shouldBe payload //greatest success!
     }
 })

@@ -2,21 +2,40 @@ package at.asitplus.signum.indispensable.symmetric
 
 import kotlin.jvm.JvmName
 
-
+/**
+ * Shorthand to access the contained ciphertext as a [Ciphertext.Authenticated.WithDedicatedMac] to access:
+ *  * [CipherKind.Authenticated.tagLen]
+ *  * [CipherKind.Authenticated.WithDedicatedMac.mac]
+ *  * [CipherKind.Authenticated.WithDedicatedMac.innerCipher]
+ */
 val SealedBox.WithIV<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>.authenticatedCiphertext:
-Ciphertext.Authenticated<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, *>
-@JvmName("authCipherTextWithDedicatedMac")
+        Ciphertext.Authenticated<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, *>
+    @JvmName("authCipherTextWithDedicatedMac")
     get() = ciphertext as Ciphertext.Authenticated<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>
 
+/**
+ * Shorthand to access the contained ciphertext as a [Ciphertext.Authenticated] to access:
+ *  * [CipherKind.Authenticated.tagLen]
+ */
 val SealedBox.WithIV<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>>.authenticatedCiphertext:
         Ciphertext.Authenticated<CipherKind.Authenticated, *>
     get() = ciphertext as Ciphertext.Authenticated<CipherKind.Authenticated, IV.Required>
 
+/**
+ * Represents symmetrically encrypted data. This is a separate class to more easily enforce type safety wrt. presence of
+ * an IV.
+ * The contained [ciphertext]'s `algorithm` must match the generic type information of a `SealedBox`.
+ * Construct using [SymmetricEncryptionAlgorithm.sealedBox]
+ */
 sealed class SealedBox<A : CipherKind, I : IV, E : SymmetricEncryptionAlgorithm<A, I>>(
     val ciphertext: Ciphertext<A, E>
 ) {
 
-    class WithoutIV<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, IV.Without>>(ciphertext: Ciphertext<A, E>) :
+    /**
+     * A sealed box without an IV. Key wrapping and electronic codebook block cipher mode of operation come to mind.
+     *  Construct using [SymmetricEncryptionAlgorithm.sealedBox]
+     */
+    class WithoutIV<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, IV.Without>> internal constructor(ciphertext: Ciphertext<A, E>) :
         SealedBox<A, IV.Without, E>(ciphertext) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -32,7 +51,11 @@ sealed class SealedBox<A : CipherKind, I : IV, E : SymmetricEncryptionAlgorithm<
         override fun toString(): String = "SealedBox.WithoutIV(ciphertext=$ciphertext)"
     }
 
-    class WithIV<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, IV.Required>>(
+    /**
+     * A sealed box consisting of an [iv] and the actual [ciphertext].
+     * Construct using [SymmetricEncryptionAlgorithm.sealedBox]
+     */
+    class WithIV<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, IV.Required>> internal constructor(
         val iv: ByteArray,
         ciphertext: Ciphertext<A, E>
     ) : SealedBox<A, IV.Required, E>(ciphertext) {

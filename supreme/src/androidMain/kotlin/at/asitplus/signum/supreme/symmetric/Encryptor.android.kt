@@ -1,10 +1,6 @@
 package at.asitplus.signum.supreme.symmetric
 
-import at.asitplus.signum.indispensable.symmetric.CipherKind
-import at.asitplus.signum.indispensable.symmetric.Ciphertext
-import at.asitplus.signum.indispensable.symmetric.IV
-import at.asitplus.signum.indispensable.symmetric.SealedBox
-import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.symmetric.*
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
@@ -66,24 +62,49 @@ actual internal fun <A : CipherKind, I : IV> CipherParam<*, A>.doEncrypt(data: B
             aad
         )
     else Ciphertext.Unauthenticated(alg as SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>, ciphertext)
+    return (if (alg.iv is IV.Without) when (alg.cipher) {
+        is CipherKind.Unauthenticated -> (alg as SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Without>).sealedBox(
+            result.encryptedData
+        )
 
-    return (if (alg.iv is IV.Without) SealedBox.WithoutIV<CipherKind, SymmetricEncryptionAlgorithm<CipherKind, IV.Without>>(
-        result as Ciphertext<CipherKind, SymmetricEncryptionAlgorithm<CipherKind, IV.Without>>
-    )
-    else SealedBox.WithIV<CipherKind, SymmetricEncryptionAlgorithm<CipherKind, IV.Required>>(
-        iv!!,
-        result as Ciphertext<CipherKind, SymmetricEncryptionAlgorithm<CipherKind, IV.Required>>
-    )) as SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>
+        is CipherKind.Authenticated -> {
+            val res = result as Ciphertext.Authenticated
+            (alg as SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Without>).sealedBox(
+                res.encryptedData,
+                res.authTag,
+                res.authenticatedData
+            )
+        }
+
+        else -> throw IllegalArgumentException("Unreachable code")
+    } else when (alg.cipher) {
+        is CipherKind.Unauthenticated -> (alg as SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>).sealedBox(
+            iv!!,
+            result.encryptedData
+        )
+
+        is CipherKind.Authenticated -> {
+            val res = result as Ciphertext.Authenticated
+            (alg as SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>).sealedBox(
+                iv!!,
+                res.encryptedData,
+                res.authTag,
+                res.authenticatedData
+            )
+        }
+
+        else -> throw IllegalArgumentException("Unreachable code")
+    }) as SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>
 }
 
-val SymmetricEncryptionAlgorithm<*,*>.jcaName: String
+val SymmetricEncryptionAlgorithm<*, *>.jcaName: String
     get() = when (this) {
         is SymmetricEncryptionAlgorithm.AES.GCM -> "AES/GCM/NoPadding"
         is SymmetricEncryptionAlgorithm.AES.CBC<*> -> "AES/CBC/PKCS5Padding"
         else -> TODO()
     }
 
-val SymmetricEncryptionAlgorithm<*,*>.jcaKeySpec: String
+val SymmetricEncryptionAlgorithm<*, *>.jcaKeySpec: String
     get() = when (this) {
         is SymmetricEncryptionAlgorithm.AES<*> -> "AES"
         else -> TODO()
