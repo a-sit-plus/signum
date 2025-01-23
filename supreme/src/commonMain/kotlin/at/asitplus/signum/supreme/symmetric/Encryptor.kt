@@ -133,27 +133,19 @@ internal class Encryptor<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>,
                 innerCipher.iv,
                 (aad ?: byteArrayOf())
             )
-
-        val maced = aMac.mac.mac(macKey, hmacInput).getOrThrow()
-
-        val ciphertext = Ciphertext.Authenticated(
-            algorithm as SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, *>, *>,
-            encrypted.encryptedData,
-            maced,
-            aad
-        )
+        val authTag = aMac.mac.mac(macKey, hmacInput).getOrThrow()
 
         (if (algorithm.iv is IV.Required) {
             (algorithm as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>).sealedBox(
                 (encrypted as SealedBox.WithIV<*, *>).iv,
-                ciphertext.encryptedData,
-                ciphertext.authTag,
-                ciphertext.authenticatedData
+                encrypted.encryptedData,
+                authTag,
+                aad
             )
         } else (algorithm as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Without>).sealedBox(
-            ciphertext.encryptedData,
-            ciphertext.authTag,
-            ciphertext.authenticatedData
+            encrypted.encryptedData,
+            authTag,
+            aad
         )) as C
 
     } else platformCipher.doEncrypt<A, IV>(data) as C
@@ -231,13 +223,12 @@ private fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncrypti
     if (!(mac.mac(macKey, hmacInput).getOrThrow().contentEquals(authTag)))
         throw IllegalArgumentException("Auth Tag mismatch!")
 
-    val innerCipherText: Ciphertext.Unauthenticated = Ciphertext.Unauthenticated(innerCipher, encryptedData)
     val box: SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>> =
         (if (this is SealedBox.WithIV<*, *>) (innerCipher as SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>).sealedBox(
             this.iv,
-            innerCipherText.encryptedData
+            encryptedData
         ) else (innerCipher as SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Without>).sealedBox(
-            innerCipherText.encryptedData
+            encryptedData
         )) as SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>>
     return box.doDecrypt(secretKey)
 }
@@ -260,4 +251,3 @@ internal expect fun <T, A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>> 
 ): CipherParam<T, A>
 
 internal expect fun <A : CipherKind, I : IV> CipherParam<*, A>.doEncrypt(data: ByteArray): SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>
-

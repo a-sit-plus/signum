@@ -272,7 +272,7 @@ class AESTest : FreeSpec({
                         ciphertext.iv.shouldNotBeNull()
                         ciphertext.iv.size shouldBe alg.iv.ivLen.bytes.toInt()
                         ciphertext.iv shouldBe iv
-                        ciphertext.shouldBeInstanceOf<Ciphertext.Authenticated<*, *>>()
+                        ciphertext.cipherKind.shouldBeInstanceOf<CipherKind.Authenticated>()
                         ciphertext.authenticatedData shouldBe aad
 
                         val decrypted = ciphertext.decrypt(key).getOrThrow()

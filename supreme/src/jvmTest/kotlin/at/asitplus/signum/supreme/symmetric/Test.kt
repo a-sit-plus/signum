@@ -1,6 +1,5 @@
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.CipherKind
-import at.asitplus.signum.indispensable.symmetric.Ciphertext
 import at.asitplus.signum.indispensable.symmetric.IV
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricKey
