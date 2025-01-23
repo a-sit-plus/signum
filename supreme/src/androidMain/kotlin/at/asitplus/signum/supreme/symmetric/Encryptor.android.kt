@@ -43,36 +43,20 @@ actual internal fun <A : CipherKind, I : IV> CipherParam<*, A>.doEncrypt(data: B
         if (alg.cipher is CipherKind.Authenticated) jcaCiphertext.dropLast(((alg.cipher as CipherKind.Authenticated).tagLen.bytes.toInt()).toInt())
             .toByteArray()
         else jcaCiphertext
-    val authtag =
+    val authTag =
         if (alg.cipher is CipherKind.Authenticated) jcaCiphertext.takeLast(((alg.cipher as CipherKind.Authenticated).tagLen.bytes.toInt()).toInt())
             .toByteArray() else null
 
-
-    val result = if (authtag != null)
-        if (alg.cipher is CipherKind.Authenticated.Integrated)
-            Ciphertext.Authenticated(
-                alg as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>,
-                ciphertext,
-                authtag,
-                aad
-            ) else Ciphertext.Authenticated(
-            alg as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, *>,
-            ciphertext,
-            authtag,
-            aad
-        )
-    else Ciphertext.Unauthenticated(alg as SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>, ciphertext)
     return (if (alg.iv is IV.Without) when (alg.cipher) {
         is CipherKind.Unauthenticated -> (alg as SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Without>).sealedBox(
-            result.encryptedData
+            ciphertext
         )
 
         is CipherKind.Authenticated -> {
-            val res = result as Ciphertext.Authenticated
             (alg as SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Without>).sealedBox(
-                res.encryptedData,
-                res.authTag,
-                res.authenticatedData
+                ciphertext,
+                authTag!!,
+                aad
             )
         }
 
@@ -80,16 +64,15 @@ actual internal fun <A : CipherKind, I : IV> CipherParam<*, A>.doEncrypt(data: B
     } else when (alg.cipher) {
         is CipherKind.Unauthenticated -> (alg as SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>).sealedBox(
             iv!!,
-            result.encryptedData
+            ciphertext
         )
 
         is CipherKind.Authenticated -> {
-            val res = result as Ciphertext.Authenticated
             (alg as SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>).sealedBox(
                 iv!!,
-                res.encryptedData,
-                res.authTag,
-                res.authenticatedData
+                ciphertext,
+                authTag!!,
+                aad
             )
         }
 
@@ -115,19 +98,18 @@ actual internal fun SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricE
     secretKey: ByteArray
 ): ByteArray {
 
-    if (ciphertext.algorithm !is SymmetricEncryptionAlgorithm.AES<*>)
+    if (algorithm !is SymmetricEncryptionAlgorithm.AES<*>)
         TODO()
     this as SealedBox.WithIV
 
-    val integrated = ciphertext as Ciphertext.Authenticated
-    val wholeInput = ciphertext.encryptedData + integrated.authTag
-    return Cipher.getInstance(ciphertext.algorithm.jcaName).also { cipher ->
+    val wholeInput = encryptedData + authTag
+    return Cipher.getInstance(algorithm.jcaName).also { cipher ->
         cipher.init(
             Cipher.DECRYPT_MODE,
-            SecretKeySpec(secretKey, ciphertext.algorithm.jcaKeySpec),
-            GCMParameterSpec(integrated.authTag.size * 8, this.iv)
+            SecretKeySpec(secretKey, algorithm.jcaKeySpec),
+            GCMParameterSpec(authTag.size * 8, this.iv)
         )
-        integrated.authenticatedData?.let {
+        authenticatedData?.let {
             cipher.updateAAD(it)
         }
     }.doFinal(wholeInput)
@@ -137,15 +119,15 @@ actual internal fun SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricE
 actual internal fun SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
-    if (ciphertext.algorithm !is SymmetricEncryptionAlgorithm.AES<*>)
+    if (algorithm !is SymmetricEncryptionAlgorithm.AES<*>)
         TODO()
     this as SealedBox.WithIV
-    return Cipher.getInstance(ciphertext.algorithm.jcaName).also { cipher ->
+    return Cipher.getInstance(algorithm.jcaName).also { cipher ->
         cipher.init(
             Cipher.DECRYPT_MODE,
-            SecretKeySpec(secretKey, ciphertext.algorithm.jcaKeySpec),
+            SecretKeySpec(secretKey, algorithm.jcaKeySpec),
             IvParameterSpec(iv)
         )
-    }.doFinal(ciphertext.encryptedData)
+    }.doFinal(encryptedData)
 }
 

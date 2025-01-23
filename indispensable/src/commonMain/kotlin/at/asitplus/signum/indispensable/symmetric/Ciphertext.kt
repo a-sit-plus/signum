@@ -84,7 +84,7 @@ sealed class SealedBox<A : CipherKind, I : IV, E : SymmetricEncryptionAlgorithm<
 /**
  * A generic ciphertext object, referencing the algorithm it was created by and an IV, if any.
  */
-sealed interface Ciphertext<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>> {
+internal sealed interface Ciphertext<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>> {
     val algorithm: E
     val encryptedData: ByteArray
 

@@ -80,17 +80,16 @@ private fun BlockCipher<*, *>.removePKCS7Padding(plainWithPadding: ByteArray): B
 actual internal fun SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
-    if (ciphertext.algorithm.iv !is IV.Required) TODO()
-    ciphertext as Ciphertext.Authenticated
+    if (algorithm.iv !is IV.Required) TODO()
     this as SealedBox.WithIV
-    require(ciphertext.algorithm is AES<*>) { "Only AES is supported" }
+    require(algorithm is AES<*>) { "Only AES is supported" }
     return swiftcall {
         GCM.decrypt(
-            ciphertext.encryptedData.toNSData(),
+            encryptedData.toNSData(),
             secretKey.toNSData(),
             iv.toNSData(),
-            (ciphertext as Ciphertext.Authenticated).authTag.toNSData(),
-            (ciphertext as Ciphertext.Authenticated).authenticatedData?.toNSData(),
+            authTag.toNSData(),
+            authenticatedData?.toNSData(),
             error
         )
     }.toByteArray()
@@ -100,17 +99,17 @@ actual internal fun SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricE
 actual internal fun SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
-    if (ciphertext.algorithm.iv !is IV.Required) TODO()
+    if (algorithm.iv !is IV.Required) TODO()
     this as SealedBox.WithIV
-    require(ciphertext.algorithm is AES<*>) { "Only AES is supported" }
+    require(algorithm is AES<*>) { "Only AES is supported" }
     val decrypted = swiftcall {
         CBC.crypt(
             kCCDecrypt.toLong(),
-            this@doDecrypt.ciphertext.encryptedData.toNSData(),
+            this@doDecrypt.encryptedData.toNSData(),
             secretKey.toNSData(),
             this@doDecrypt.iv!!.toNSData(),
             error
         )
     }.toByteArray()
-    return (ciphertext.algorithm as AES<*>).removePKCS7Padding(decrypted)
+    return (algorithm as AES<*>).removePKCS7Padding(decrypted)
 }
