@@ -14,8 +14,8 @@ fun SymmetricEncryptionAlgorithm<*, *>.randomKey(): SymmetricKey<*, *> =
     encryptionKeyFrom(secureRandom.nextBytesOf(keySize.bytes.toInt())).getOrThrow()
 
 @JvmName("randomKeyWithIV")
-fun SymmetricEncryptionAlgorithm<*, IV.Required>.randomKey(): SymmetricKey<*, IV.Required> =
-    (this as SymmetricEncryptionAlgorithm<*, *>).randomKey() as SymmetricKey<*, IV.Required>
+fun <A: CipherKind>SymmetricEncryptionAlgorithm<A, IV.Required>.randomKey(): SymmetricKey<A, IV.Required> =
+    (this as SymmetricEncryptionAlgorithm<*, *>).randomKey() as SymmetricKey<A, IV.Required>
 
 @JvmName("randomKeyUnauthenticated")
 fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>.randomKey(): SymmetricKey<CipherKind.Unauthenticated, *> =
