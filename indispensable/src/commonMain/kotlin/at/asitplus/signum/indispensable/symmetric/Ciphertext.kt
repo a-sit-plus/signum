@@ -1,13 +1,9 @@
 package at.asitplus.signum.indispensable.symmetric
 
-/**
- * Shorthand to access the contained ciphertext as a [Ciphertext.Authenticated] to access:
- *  * [CipherKind.Authenticated.tagLen]
- */
-val <A : CipherKind.Authenticated, I : IV> SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>.authenticatedCiphertext:
-        Ciphertext.Authenticated<A, *>
-    get() = ciphertext as Ciphertext.Authenticated<A, SymmetricEncryptionAlgorithm<A, I>>
 
+val <A : CipherKind.Authenticated, I : IV> SealedBox<out A, out I, SymmetricEncryptionAlgorithm<A, I>>.authTag: ByteArray get() = (ciphertext as Ciphertext.Authenticated<A, SymmetricEncryptionAlgorithm<A, I>>).authTag
+val <A : CipherKind.Authenticated, I : IV> SealedBox<out A, out I, SymmetricEncryptionAlgorithm<A, I>>.authenticatedData: ByteArray? get() = (ciphertext as Ciphertext.Authenticated<A, SymmetricEncryptionAlgorithm<A, I>>).authenticatedData
+val SealedBox<*, IV.Required, *>.iv: ByteArray get() = (this as SealedBox.WithIV<*, *>).iv
 
 /**
  * Represents symmetrically encrypted data. This is a separate class to more easily enforce type safety wrt. presence of
@@ -16,8 +12,11 @@ val <A : CipherKind.Authenticated, I : IV> SealedBox<A, I, SymmetricEncryptionAl
  * Construct using [SymmetricEncryptionAlgorithm.sealedBox]
  */
 sealed class SealedBox<A : CipherKind, I : IV, E : SymmetricEncryptionAlgorithm<A, I>>(
-    val ciphertext: Ciphertext<A, E>
+    internal val ciphertext: Ciphertext<A, E>
 ) {
+    val algorithm: E get()= ciphertext.algorithm
+    val encryptedData: ByteArray get() = ciphertext.encryptedData
+    val cipherKind: A = algorithm.cipher
 
     /**
      * A sealed box without an IV. Key wrapping and electronic codebook block cipher mode of operation come to mind.
@@ -44,7 +43,7 @@ sealed class SealedBox<A : CipherKind, I : IV, E : SymmetricEncryptionAlgorithm<
      * Construct using [SymmetricEncryptionAlgorithm.sealedBox]
      */
     class WithIV<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, IV.Required>> internal constructor(
-        val iv: ByteArray,
+        internal val iv: ByteArray,
         ciphertext: Ciphertext<A, E>
     ) : SealedBox<A, IV.Required, E>(ciphertext) {
 
@@ -81,7 +80,6 @@ sealed class SealedBox<A : CipherKind, I : IV, E : SymmetricEncryptionAlgorithm<
     }
 }
 
-val SealedBox<*, IV.Required, *>.iv: ByteArray get() = (this as SealedBox.WithIV<*, *>).iv
 
 /**
  * A generic ciphertext object, referencing the algorithm it was created by and an IV, if any.

@@ -129,7 +129,7 @@ internal class Encryptor<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>,
         val macInputCalculation = aMac.dedicatedMacInputCalculation
         val hmacInput: ByteArray =
             aMac.mac.macInputCalculation(
-                encrypted.ciphertext.encryptedData,
+                encrypted.encryptedData,
                 innerCipher.iv,
                 (aad ?: byteArrayOf())
             )
@@ -138,7 +138,7 @@ internal class Encryptor<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>,
 
         val ciphertext = Ciphertext.Authenticated(
             algorithm as SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, *>, *>,
-            encrypted.ciphertext.encryptedData,
+            encrypted.encryptedData,
             maced,
             aad
         )
@@ -174,8 +174,8 @@ internal class CipherParam<T, A : CipherKind>(
  */
 fun <A : CipherKind> SealedBox< A, IV.Required, SymmetricEncryptionAlgorithm<A, IV.Required>>.decrypt(key: SymmetricKey<in A, IV.Required>): KmmResult<ByteArray> =
     catching {
-        require(ciphertext.algorithm == key.algorithm) { "Somebody likes cursed casts!" }
-        when (ciphertext.algorithm.cipher as CipherKind) {
+        require(algorithm == key.algorithm) { "Somebody likes cursed casts!" }
+        when (algorithm.cipher as CipherKind) {
             is Authenticated.Integrated -> (this as SealedBox<Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>>).decryptInternal(
                 key.secretKey
             )
@@ -197,7 +197,7 @@ fun <A : CipherKind> SealedBox< A, IV.Required, SymmetricEncryptionAlgorithm<A, 
 private fun SealedBox<Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>>.decryptInternal(
     secretKey: ByteArray
 ): ByteArray {
-    require(secretKey.size.toUInt() == ciphertext.algorithm.keySize.bytes) { "Key must be exactly ${ciphertext.algorithm.keySize} bits long" }
+    require(secretKey.size.toUInt() == algorithm.keySize.bytes) { "Key must be exactly ${algorithm.keySize} bits long" }
     return doDecrypt(secretKey)
 }
 
@@ -205,7 +205,7 @@ private fun SealedBox<Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<
 private fun SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>>.decryptInternal(
     secretKey: ByteArray
 ): ByteArray {
-    require(secretKey.size.toUInt() == ciphertext.algorithm.keySize.bytes) { "Key must be exactly ${ciphertext.algorithm.keySize} bits long" }
+    require(secretKey.size.toUInt() == algorithm.keySize.bytes) { "Key must be exactly ${algorithm.keySize} bits long" }
     return doDecrypt(secretKey)
 }
 
@@ -219,19 +219,19 @@ private fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncrypti
     macKey: ByteArray = secretKey,
 ): ByteArray {
     val iv: ByteArray? = if (this is SealedBox.WithIV<*, *>) iv else null
-    val aad = (ciphertext as Ciphertext.Authenticated).authenticatedData
-    val authTag = (ciphertext as Ciphertext.Authenticated).authTag
+    val aad = authenticatedData
+    val authTag = authTag
 
-    val algorithm = ciphertext.algorithm
-    val innerCipher = ciphertext.algorithm.cipher.innerCipher
+    val algorithm = algorithm
+    val innerCipher = algorithm.cipher.innerCipher
     val mac = algorithm.cipher.mac
     val dedicatedMacInputCalculation = algorithm.cipher.dedicatedMacInputCalculation
-    val hmacInput = mac.dedicatedMacInputCalculation(ciphertext.encryptedData, iv, aad)
+    val hmacInput = mac.dedicatedMacInputCalculation(encryptedData, iv, aad)
 
     if (!(mac.mac(macKey, hmacInput).getOrThrow().contentEquals(authTag)))
         throw IllegalArgumentException("Auth Tag mismatch!")
 
-    val innerCipherText: Ciphertext.Unauthenticated = Ciphertext.Unauthenticated(innerCipher, ciphertext.encryptedData)
+    val innerCipherText: Ciphertext.Unauthenticated = Ciphertext.Unauthenticated(innerCipher, encryptedData)
     val box: SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>> =
         (if (this is SealedBox.WithIV<*, *>) (innerCipher as SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>).sealedBox(
             this.iv,
