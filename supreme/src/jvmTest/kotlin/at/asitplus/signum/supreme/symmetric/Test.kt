@@ -34,7 +34,7 @@ class JvmAESTest : FreeSpec({
 
             ) { alg ->
             withData(
-                nameFn = { "iv: ${it?.size} bytes" }, alg.randomIV(), alg.randomIV()
+                nameFn = { "iv: ${it.size} bytes" }, alg.randomIV(), alg.randomIV()
             ) { iv ->
                 withData(Random.nextBytes(19), null) { aad ->
                     withData(
@@ -56,7 +56,7 @@ class JvmAESTest : FreeSpec({
                             //GCM need to cast key, because alg is AES with no mode of ops, since we mix CBC and GCM in the test input
                             val own = (secretKey as SymmetricKey<CipherKind.Authenticated,IV.Required>).encrypt(iv = iv, data = data,aad)
                                 .getOrThrow()
-                            own.ciphertext.shouldBeInstanceOf<Ciphertext.Authenticated.Integrated>()
+                            own.ciphertext.shouldBeInstanceOf<Ciphertext.Authenticated<*,*>>()
                             jcaCipher.init(
                                 Cipher.ENCRYPT_MODE,
                                 SecretKeySpec(secretKey.secretKey, "AES"),

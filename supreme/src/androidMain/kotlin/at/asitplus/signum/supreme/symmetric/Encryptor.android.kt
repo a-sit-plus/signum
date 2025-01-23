@@ -50,12 +50,12 @@ actual internal fun <A : CipherKind, I : IV> CipherParam<*, A>.doEncrypt(data: B
 
     val result = if (authtag != null)
         if (alg.cipher is CipherKind.Authenticated.Integrated)
-            Ciphertext.Authenticated.Integrated(
+            Ciphertext.Authenticated(
                 alg as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>,
                 ciphertext,
                 authtag,
                 aad
-            ) else Ciphertext.Authenticated.WithDedicatedMac(
+            ) else Ciphertext.Authenticated(
             alg as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, *>,
             ciphertext,
             authtag,
@@ -119,7 +119,7 @@ actual internal fun SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricE
         TODO()
     this as SealedBox.WithIV
 
-    val integrated = ciphertext as Ciphertext.Authenticated.Integrated
+    val integrated = ciphertext as Ciphertext.Authenticated
     val wholeInput = ciphertext.encryptedData + integrated.authTag
     return Cipher.getInstance(ciphertext.algorithm.jcaName).also { cipher ->
         cipher.init(

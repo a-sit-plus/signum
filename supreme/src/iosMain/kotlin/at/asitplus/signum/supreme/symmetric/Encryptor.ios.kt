@@ -1,11 +1,6 @@
 package at.asitplus.signum.supreme.symmetric
 
-import at.asitplus.signum.indispensable.symmetric.BlockCipher
-import at.asitplus.signum.indispensable.symmetric.CipherKind
-import at.asitplus.signum.indispensable.symmetric.Ciphertext
-import at.asitplus.signum.indispensable.symmetric.IV
-import at.asitplus.signum.indispensable.symmetric.SealedBox
-import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
 import at.asitplus.signum.internals.swiftcall
 import at.asitplus.signum.internals.toByteArray
@@ -48,30 +43,17 @@ internal actual fun <A : CipherKind, I : IV> CipherParam<*, A>.doEncrypt(data: B
             val bytes: ByteArray = swiftcall {
                 CBC.crypt(kCCEncrypt.toLong(), padded.toNSData(), platformData.toNSData(), nsIV, error)
             }.toByteArray()
-            SealedBox.WithIV<A, SymmetricEncryptionAlgorithm<A, IV.Required>>(
-                iv,
-                Ciphertext.Unauthenticated(
-                    alg,
-                    bytes,
-                ) as Ciphertext<A, SymmetricEncryptionAlgorithm<A, IV.Required>>
-            ) as SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>
+            alg.sealedBox(iv, bytes)
         }
-
         is AES.GCM -> {
             val ciphertext = GCM.encrypt(data.toNSData(), platformData.toNSData(), nsIV, nsAAD)
             if (ciphertext == null) throw UnsupportedOperationException("Error from swift code!")
-            val integrated = Ciphertext.Authenticated.Integrated(
-                alg,
+            alg.sealedBox(ciphertext.iv().toByteArray(),
                 ciphertext.ciphertext().toByteArray(),
                 ciphertext.authTag().toByteArray(),
                 aad
             )
-            SealedBox.WithIV<CipherKind.Authenticated.Integrated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, IV.Required>>(
-                ciphertext.iv().toByteArray(),
-                integrated as Ciphertext<CipherKind.Authenticated.Integrated, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, IV.Required>>
-            ) as SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>
         }
-
         else -> TODO()
     } as SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>
 }
@@ -95,9 +77,11 @@ private fun BlockCipher<*, *>.removePKCS7Padding(plainWithPadding: ByteArray): B
 
 
 @OptIn(ExperimentalForeignApi::class)
-actual internal fun SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>>.doDecrypt(secretKey: ByteArray): ByteArray {
+actual internal fun SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>>.doDecrypt(
+    secretKey: ByteArray
+): ByteArray {
     if (ciphertext.algorithm.iv !is IV.Required) TODO()
-    ciphertext as Ciphertext.Authenticated.Integrated
+    ciphertext as Ciphertext.Authenticated
     this as SealedBox.WithIV
     require(ciphertext.algorithm is AES<*>) { "Only AES is supported" }
     return swiftcall {
@@ -105,15 +89,17 @@ actual internal fun SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricE
             ciphertext.encryptedData.toNSData(),
             secretKey.toNSData(),
             iv.toNSData(),
-            (ciphertext as Ciphertext.Authenticated.Integrated).authTag.toNSData(),
-            (ciphertext as Ciphertext.Authenticated.Integrated).authenticatedData?.toNSData(),
+            (ciphertext as Ciphertext.Authenticated).authTag.toNSData(),
+            (ciphertext as Ciphertext.Authenticated).authenticatedData?.toNSData(),
             error
         )
     }.toByteArray()
 }
 
 @OptIn(ExperimentalForeignApi::class)
-actual internal fun SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>>.doDecrypt(secretKey: ByteArray): ByteArray {
+actual internal fun SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>>.doDecrypt(
+    secretKey: ByteArray
+): ByteArray {
     if (ciphertext.algorithm.iv !is IV.Required) TODO()
     this as SealedBox.WithIV
     require(ciphertext.algorithm is AES<*>) { "Only AES is supported" }
