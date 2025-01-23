@@ -562,7 +562,6 @@ class AESTest : FreeSpec({
         //  * we can hence access `authenticatedCiphertext` for:
         //      * authTag
         //      * authenticatedData
-
         sealedBox.authenticatedCiphertext.authenticatedData shouldBe aad
 
         //because everything is structured, decryption is simple
@@ -586,9 +585,9 @@ class AESTest : FreeSpec({
         manuallyRecovered shouldBe payload //great success!
 
         //if we just know algorithm and key bytes, we can also construct a symmetric key
-        val constructedKey =
-            algorithm.encryptionKeyFrom(key.secretKey, key.dedicatedMacKey).getOrThrow(/*handle error*/)
-
-        reconstructed.decrypt(constructedKey).getOrThrow(/*handle error*/) shouldBe payload //greatest success!
+        reconstructed.decrypt(
+            algorithm.encryptionKeyFrom(key.secretKey, key.dedicatedMacKey).getOrThrow(/*handle error*/),
+            dedicatedMacInputCalculation = customMacInputFn
+        ).getOrThrow(/*handle error*/) shouldBe payload //greatest success!
     }
 })
