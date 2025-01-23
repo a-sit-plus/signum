@@ -51,7 +51,7 @@ fun <A : CipherKind, I : IV> SymmetricKey<A, I>.encrypt(
  * invalid parameters (e.g., key or IV length)
  */
 @HazardousMaterials
-fun <A: CipherKind.Authenticated>SymmetricKey<A, IV.Required>.encrypt(
+fun <A : CipherKind.Authenticated> SymmetricKey<A, IV.Required>.encrypt(
     iv: ByteArray,
     data: ByteArray,
     authenticatedData: ByteArray? = null
@@ -76,7 +76,7 @@ fun <A: CipherKind.Authenticated>SymmetricKey<A, IV.Required>.encrypt(
  * invalid parameters (e.g., key or IV length)
  */
 @JvmName("encryptAuthenticated")
-fun <A: CipherKind.Authenticated, I:IV>SymmetricKey<A, I>.encrypt(
+fun <A : CipherKind.Authenticated, I : IV> SymmetricKey<A, I>.encrypt(
     data: ByteArray,
     authenticatedData: ByteArray? = null
 ): KmmResult<SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>> = catching {
@@ -86,7 +86,7 @@ fun <A: CipherKind.Authenticated, I:IV>SymmetricKey<A, I>.encrypt(
         if (this is WithDedicatedMac) dedicatedMacKey else secretKey,
         null,
         authenticatedData,
-    ).encrypt(data)
+    ).encrypt(data) as SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>
 }
 
 
@@ -172,7 +172,7 @@ internal class CipherParam<T, A : CipherKind>(
  * Attempts to decrypt this ciphertext (which also holds IV, and in case of an authenticated ciphertext, AAD and auth tag) using the provided [key].
  * This is the function you typically want to use.
  */
-fun <A: CipherKind>SealedBox<in A,IV.Required, SymmetricEncryptionAlgorithm<A, IV.Required>>.decrypt(key: SymmetricKey< in A, IV.Required>): KmmResult<ByteArray> =
+fun <A : CipherKind> SealedBox< A, IV.Required, SymmetricEncryptionAlgorithm<A, IV.Required>>.decrypt(key: SymmetricKey<in A, IV.Required>): KmmResult<ByteArray> =
     catching {
         require(ciphertext.algorithm == key.algorithm) { "Somebody likes cursed casts!" }
         when (ciphertext.algorithm.cipher as CipherKind) {

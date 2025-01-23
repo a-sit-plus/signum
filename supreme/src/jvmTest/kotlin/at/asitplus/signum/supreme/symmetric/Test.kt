@@ -4,6 +4,7 @@ import at.asitplus.signum.indispensable.symmetric.Ciphertext
 import at.asitplus.signum.indispensable.symmetric.IV
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricKey
+import at.asitplus.signum.indispensable.symmetric.iv
 import at.asitplus.signum.supreme.symmetric.decrypt
 import at.asitplus.signum.supreme.symmetric.encrypt
 import at.asitplus.signum.supreme.symmetric.randomIV
@@ -80,7 +81,7 @@ class JvmAESTest : FreeSpec({
                                 )
                             )
                             if (aad != null) jcaCipher.updateAAD(aad)
-                            own.decrypt(secretKey.secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
+                            own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
 
 
                         } else {
@@ -100,7 +101,7 @@ class JvmAESTest : FreeSpec({
                                 SecretKeySpec(secretKey.secretKey, "AES"),
                                 IvParameterSpec(own.iv)/*use our own auto-generated IV, if null iv was provided*/
                             )
-                            own.decrypt(secretKey.secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
+                            own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
 
                         }
                     }
