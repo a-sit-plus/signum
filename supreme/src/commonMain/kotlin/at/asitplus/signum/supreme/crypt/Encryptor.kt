@@ -102,9 +102,9 @@ fun <A : CipherKind> SymmetricKey<A, *>.encrypt(
 /**
  * Encrypts [data] using a specified IV. Check yourself, before you really, really wreck yourself!
  * * [iv] =  _Initialization Vector_; **NEVER EVER RE-USE THIS!**
- * * [aad] = _Additional Authenticated Data_
+ * * [authenticatedData] = _Additional Authenticated Data_
  *
- * It is safe to discard the reference to [iv] and [aad], as both will be added to any [Ciphertext.Authenticated] resulting from an encryption.
+ * It is safe to discard the reference to [iv] and [authenticatedData], as both will be added to any [Ciphertext.Authenticated] resulting from an encryption.
  *
  * @return [KmmResult.success] containing a [Ciphertext.Authenticated] if valid parameters were provided or [KmmResult.failure] in case of
  * invalid parameters (e.g., key or IV length)
@@ -113,7 +113,7 @@ fun <A : CipherKind> SymmetricKey<A, *>.encrypt(
 fun SymmetricKey<Authenticated, IV.Required>.encrypt(
     iv: ByteArray,
     data: ByteArray,
-    aad: ByteArray? = null
+    authenticatedData: ByteArray? = null
 ): KmmResult<SealedBox.WithIV<Authenticated, SymmetricEncryptionAlgorithm<Authenticated, IV.Required>>> =
     catching {
         Encryptor(
@@ -121,7 +121,7 @@ fun SymmetricKey<Authenticated, IV.Required>.encrypt(
             secretKey,
             if (this is WithDedicatedMac) dedicatedMacKey else secretKey,
             iv,
-            aad,
+            authenticatedData,
             DefaultDedicatedMacInputCalculation
         ).encrypt(data) as SealedBox.WithIV<Authenticated, SymmetricEncryptionAlgorithm<Authenticated, IV.Required>>
     }
@@ -131,7 +131,7 @@ fun SymmetricKey<Authenticated, IV.Required>.encrypt(
 fun SymmetricKey<Authenticated.Integrated, IV.Required>.encrypt(
     iv: ByteArray,
     data: ByteArray,
-    aad: ByteArray? = null
+    authenticatedData: ByteArray? = null
 ): KmmResult<SealedBox.WithIV<Authenticated, SymmetricEncryptionAlgorithm<Authenticated, IV.Required>>> =
     catching {
         Encryptor(
@@ -139,7 +139,7 @@ fun SymmetricKey<Authenticated.Integrated, IV.Required>.encrypt(
             secretKey,
             if (this is WithDedicatedMac) dedicatedMacKey else secretKey,
             iv,
-            aad,
+            authenticatedData,
             DefaultDedicatedMacInputCalculation
         ).encrypt(data) as SealedBox.WithIV<Authenticated, SymmetricEncryptionAlgorithm<Authenticated, IV.Required>>
     }
@@ -147,9 +147,9 @@ fun SymmetricKey<Authenticated.Integrated, IV.Required>.encrypt(
 /**
  * Encrypts [data] and automagically generates a fresh IV if required by the cipher.
  * This is the method you want to use, as it generates a fresh IV, if the underlying cipher requires an IV.
- * * [aad] = _Additional Authenticated Data_
+ * * [autehnticatedData] = _Additional Authenticated Data_
  *
- * It is safe to discard the reference to [aad], as both IV and AAD will be added to any [Ciphertext.Authenticated] resulting from an encryption.
+ * It is safe to discard the reference to [autehnticatedData], as both IV and AAD will be added to any [Ciphertext.Authenticated] resulting from an encryption.
  *
  * @return [KmmResult.success] containing a [Ciphertext.Authenticated] if valid parameters were provided or [KmmResult.failure] in case of
  * invalid parameters (e.g., key or IV length)
@@ -157,7 +157,7 @@ fun SymmetricKey<Authenticated.Integrated, IV.Required>.encrypt(
 @JvmName("encryptAuthenticated")
 fun SymmetricKey<Authenticated, *>.encrypt(
     data: ByteArray,
-    aad: ByteArray? = null
+    autehnticatedData: ByteArray? = null
 ): KmmResult<SealedBox<Authenticated, *, SymmetricEncryptionAlgorithm<Authenticated, *>>> =
     catching {
         Encryptor(
@@ -165,7 +165,7 @@ fun SymmetricKey<Authenticated, *>.encrypt(
             secretKey,
             if (this is WithDedicatedMac) dedicatedMacKey else secretKey,
             null,
-            aad,
+            autehnticatedData,
             DefaultDedicatedMacInputCalculation
         ).encrypt(data)
     }
@@ -173,11 +173,11 @@ fun SymmetricKey<Authenticated, *>.encrypt(
 /**
  * Encrypts [data] using a specified IV. Check yourself, before you really, really wreck yourself!
  * * [iv] =  _Initialization Vector_; **NEVER EVER RE-USE THIS!**
- * * [aad] = _Additional Authenticated Data_
+ * * [authenticatedData] = _Additional Authenticated Data_
  * * [dedicatedMacKey] should be used to specify a dedicated MAC key, unless indicated otherwise. Defaults to [secretKey]
  * * [dedicatedMacAuthTagCalculation] can be used to specify a custom computation for the MAC input. Defaults to [DefaultDedicatedMacInputCalculation].
  *
- * It is safe to discard the reference to [iv] and [aad], as both will be added to any [Ciphertext.Authenticated.WithDedicatedMac] resulting from an encryption.
+ * It is safe to discard the reference to [iv] and [authenticatedData], as both will be added to any [Ciphertext.Authenticated.WithDedicatedMac] resulting from an encryption.
  *
  * @return [KmmResult.success] containing a [Ciphertext.Authenticated.WithDedicatedMac] if valid parameters were provided or [KmmResult.failure] in case of
  * invalid parameters (e.g., key or IV length)
@@ -186,7 +186,7 @@ fun SymmetricKey<Authenticated, *>.encrypt(
 fun SymmetricKey.WithDedicatedMac<IV.Required>.encrypt(
     iv: ByteArray,
     data: ByteArray,
-    aad: ByteArray? = null,
+    authenticatedData: ByteArray? = null,
     dedicatedMacAuthTagCalculation: DedicatedMacInputCalculation = DefaultDedicatedMacInputCalculation,
 ): KmmResult<SealedBox.WithIV<Authenticated.WithDedicatedMac<*, IV.Required>,
         SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>> = catching {
@@ -195,7 +195,7 @@ fun SymmetricKey.WithDedicatedMac<IV.Required>.encrypt(
         secretKey,
         dedicatedMacKey,
         iv,
-        aad,
+        authenticatedData,
         dedicatedMacAuthTagCalculation
     ).encrypt(data) as SealedBox.WithIV<Authenticated.WithDedicatedMac<*, IV.Required>,
             SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>
@@ -203,18 +203,18 @@ fun SymmetricKey.WithDedicatedMac<IV.Required>.encrypt(
 
 /**
  * Encrypts [data] and automagically generates a fresh IV if required by the cipher.
- * * [aad] = _Additional Authenticated Data_
+ * * [authenticatedData] = _Additional Authenticated Data_
  * * [dedicatedMacKey] should be used to specify a dedicated MAC key, unless indicated otherwise. Defaults to [secretKey]
  * * [dedicatedMacAuthTagCalculation] can be used to specify a custom computation for the MAC input. Defaults to [DefaultDedicatedMacInputCalculation].
  *
- * It is safe to discard the reference to [aad], as both AAD and iV will be added to any [Ciphertext.Authenticated.WithDedicatedMac] resulting from an encryption.
+ * It is safe to discard the reference to [authenticatedData], as both AAD and iV will be added to any [Ciphertext.Authenticated.WithDedicatedMac] resulting from an encryption.
  *
  * @return [KmmResult.success] containing a [Ciphertext.Authenticated.WithDedicatedMac] if valid parameters were provided or [KmmResult.failure] in case of
  * invalid parameters (e.g., key or IV length)
  */
 fun SymmetricKey.WithDedicatedMac<*>.encrypt(
     data: ByteArray,
-    aad: ByteArray? = null,
+    authenticatedData: ByteArray? = null,
     dedicatedMacAuthTagCalculation: DedicatedMacInputCalculation = DefaultDedicatedMacInputCalculation,
 ): KmmResult<SealedBox<Authenticated.WithDedicatedMac<*, *>, *,
         SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, *>, *>>> = catching {
@@ -223,7 +223,7 @@ fun SymmetricKey.WithDedicatedMac<*>.encrypt(
         secretKey,
         dedicatedMacKey,
         null,
-        aad,
+        authenticatedData,
         dedicatedMacAuthTagCalculation
     ).encrypt(data)
 }
