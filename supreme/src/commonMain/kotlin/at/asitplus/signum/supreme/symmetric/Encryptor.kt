@@ -3,15 +3,10 @@ package at.asitplus.signum.supreme.symmetric
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.indispensable.mac.MAC
+import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.CipherKind.Authenticated
 import at.asitplus.signum.indispensable.symmetric.SymmetricKey.WithDedicatedMac
-import at.asitplus.signum.indispensable.mac.MAC
-import at.asitplus.signum.indispensable.symmetric.CipherKind
-import at.asitplus.signum.indispensable.symmetric.Ciphertext
-import at.asitplus.signum.indispensable.symmetric.IV
-import at.asitplus.signum.indispensable.symmetric.SealedBox
-import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
-import at.asitplus.signum.indispensable.symmetric.SymmetricKey
 import at.asitplus.signum.supreme.mac.mac
 import org.kotlincrypto.SecureRandom
 import kotlin.jvm.JvmName
@@ -25,7 +20,10 @@ fun SymmetricKey<CipherKind.Authenticated, IV.Required>.encrypt(
     iv: ByteArray,
     data: ByteArray
 ): KmmResult<SealedBox.WithIV<CipherKind.Authenticated, SymmetricEncryptionAlgorithm<Authenticated, IV.Required>>> =
-    (this as SymmetricKey<*, IV.Required>).encrypt(iv,data) as KmmResult<SealedBox.WithIV<Authenticated, SymmetricEncryptionAlgorithm<Authenticated, IV.Required>>>
+    (this as SymmetricKey<*, IV.Required>).encrypt(
+        iv,
+        data
+    ) as KmmResult<SealedBox.WithIV<Authenticated, SymmetricEncryptionAlgorithm<Authenticated, IV.Required>>>
 
 
 @HazardousMaterials
@@ -34,7 +32,10 @@ fun SymmetricKey<CipherKind.Unauthenticated, IV.Required>.encrypt(
     iv: ByteArray,
     data: ByteArray
 ): KmmResult<SealedBox.WithIV<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>>> =
-    (this as SymmetricKey<*, IV.Required>).encrypt(iv,data) as KmmResult<SealedBox.WithIV<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>>>
+    (this as SymmetricKey<*, IV.Required>).encrypt(
+        iv,
+        data
+    ) as KmmResult<SealedBox.WithIV<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>>>
 
 
 @HazardousMaterials
@@ -238,8 +239,12 @@ fun SymmetricKey.WithDedicatedMac<IV.Required>.encrypt(
     authenticatedData: ByteArray? = null,
     dedicatedMacAuthTagCalculation: DedicatedMacInputCalculation = DefaultDedicatedMacInputCalculation,
 ): KmmResult<SealedBox.WithIV<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>,
-        SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>>
-= (this as SymmetricKey.WithDedicatedMac<*>).encrypt(data,authenticatedData,dedicatedMacAuthTagCalculation) as KmmResult<SealedBox.WithIV<Authenticated.WithDedicatedMac<*, IV.Required>, SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>>
+        SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>> =
+    (this as SymmetricKey.WithDedicatedMac<*>).encrypt(
+        data,
+        authenticatedData,
+        dedicatedMacAuthTagCalculation
+    ) as KmmResult<SealedBox.WithIV<Authenticated.WithDedicatedMac<*, IV.Required>, SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>>
 
 internal class Encryptor<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>, C : SealedBox<A, *, E>> internal constructor(
     private val algorithm: E,
@@ -267,7 +272,6 @@ internal class Encryptor<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>,
     fun encrypt(data: ByteArray): C = if (algorithm.cipher is Authenticated.WithDedicatedMac<*, *>) {
         val aMac = algorithm.cipher as Authenticated.WithDedicatedMac<*, *>
         aMac.innerCipher
-        val t = aMac.innerCipher::class
         val innerCipher =
             initCipher<Any, CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>>(
                 aMac.innerCipher,
@@ -296,15 +300,18 @@ internal class Encryptor<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>,
             aad
         )
 
-        (if (algorithm.iv is IV.Required)
-            SealedBox.WithIV<A, SymmetricEncryptionAlgorithm<A, IV.Required>>(
+        (if (algorithm.iv is IV.Required) {
+            (algorithm as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>).sealedBox(
                 (encrypted as SealedBox.WithIV<*, *>).iv,
-                ciphertext as Ciphertext<A, SymmetricEncryptionAlgorithm<A, IV.Required>>
+                ciphertext.encryptedData,
+                ciphertext.authTag,
+                ciphertext.authenticatedData
             )
-        else
-            SealedBox.WithoutIV<A, SymmetricEncryptionAlgorithm<A, IV.Without>>(ciphertext as Ciphertext<A, SymmetricEncryptionAlgorithm<A, IV.Without>>)
-                ) as C
-
+        } else (algorithm as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Without>).sealedBox(
+            ciphertext.encryptedData,
+            ciphertext.authTag,
+            ciphertext.authenticatedData
+        )) as C
 
     } else platformCipher.doEncrypt<A, IV>(data) as C
 
@@ -425,15 +432,12 @@ fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncryptionAlgori
     )
     val innerCipherText: Ciphertext.Unauthenticated = Ciphertext.Unauthenticated(innerCipher, ciphertext.encryptedData)
     val box: SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>> =
-        (
-                if (this is SealedBox.WithIV<*, *>) SealedBox.WithIV<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>>(
-                    iv!!,
-                    innerCipherText as Ciphertext<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>>
-                )
-                else SealedBox.WithoutIV<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Without>>(
-                    innerCipherText as Ciphertext<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Without>>
-                )
-                ) as SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>>
+        (if (this is SealedBox.WithIV<*, *>) (innerCipher as SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>).sealedBox(
+            this.iv,
+            innerCipherText.encryptedData
+        ) else (innerCipher as SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Without>).sealedBox(
+            innerCipherText.encryptedData
+        )) as SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>>
     box.doDecrypt(secretKey)
 }
 
