@@ -1,13 +1,13 @@
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.CipherKind
-import at.asitplus.signum.indispensable.symmetric.IV
+import at.asitplus.signum.indispensable.symmetric.Nonce
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricKey
 import at.asitplus.signum.indispensable.symmetric.authTag
-import at.asitplus.signum.indispensable.symmetric.iv
+import at.asitplus.signum.indispensable.symmetric.nonce
 import at.asitplus.signum.supreme.symmetric.decrypt
 import at.asitplus.signum.supreme.symmetric.encrypt
-import at.asitplus.signum.supreme.symmetric.randomIV
+import at.asitplus.signum.supreme.symmetric.randomNonce
 import at.asitplus.signum.supreme.symmetric.randomKey
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
@@ -35,7 +35,7 @@ class JvmAESTest : FreeSpec({
 
             ) { alg ->
             withData(
-                nameFn = { "iv: ${it.size} bytes" }, alg.randomIV(), alg.randomIV()
+                nameFn = { "iv: ${it.size} bytes" }, alg.randomNonce(), alg.randomNonce()
             ) { iv ->
                 withData(Random.nextBytes(19), null) { aad ->
                     withData(
@@ -55,7 +55,7 @@ class JvmAESTest : FreeSpec({
 
                         if (alg is SymmetricEncryptionAlgorithm.AES.GCM) {
                             //GCM need to cast key, because alg is AES with no mode of ops, since we mix CBC and GCM in the test input
-                            val own = (secretKey as SymmetricKey<CipherKind.Authenticated,IV.Required>).encrypt(iv = iv, data = data,aad)
+                            val own = (secretKey as SymmetricKey<CipherKind.Authenticated,Nonce.Required>).encrypt(iv = iv, data = data,aad)
                                 .getOrThrow()
                             own.cipherKind.shouldBeInstanceOf<CipherKind.Authenticated>()
                             jcaCipher.init(
@@ -63,7 +63,7 @@ class JvmAESTest : FreeSpec({
                                 SecretKeySpec(secretKey.secretKey, "AES"),
                                 GCMParameterSpec(
                                     alg.cipher.tagLen.bits.toInt(),
-                                    own.iv/*use our own auto-generated IV*/
+                                    own.nonce/*use our own auto-generated IV*/
                                 )
                             )
                             if (aad != null) jcaCipher.updateAAD(aad)
@@ -77,7 +77,7 @@ class JvmAESTest : FreeSpec({
                                 SecretKeySpec(secretKey.secretKey, "AES"),
                                 GCMParameterSpec(
                                     alg.cipher.tagLen.bits.toInt(),
-                                    own.iv/*use our own auto-generated IV*/
+                                    own.nonce/*use our own auto-generated IV*/
                                 )
                             )
                             if (aad != null) jcaCipher.updateAAD(aad)
@@ -90,7 +90,7 @@ class JvmAESTest : FreeSpec({
                             jcaCipher.init(
                                 Cipher.ENCRYPT_MODE,
                                 SecretKeySpec(secretKey.secretKey, "AES"),
-                                IvParameterSpec(own.iv)/*use our own auto-generated IV, if null iv was provided*/
+                                IvParameterSpec(own.nonce)/*use our own auto-generated IV, if null iv was provided*/
                             )
                             val encrypted = jcaCipher.doFinal(data)
 
@@ -99,7 +99,7 @@ class JvmAESTest : FreeSpec({
                             jcaCipher.init(
                                 Cipher.DECRYPT_MODE,
                                 SecretKeySpec(secretKey.secretKey, "AES"),
-                                IvParameterSpec(own.iv)/*use our own auto-generated IV, if null iv was provided*/
+                                IvParameterSpec(own.nonce)/*use our own auto-generated IV, if null iv was provided*/
                             )
                             own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
 

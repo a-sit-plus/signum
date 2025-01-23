@@ -10,63 +10,63 @@ import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 import kotlin.jvm.JvmName
 
-@JvmName("sealedUnauthedBoxWithIV")
-fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>.sealedBox(
-    iv: ByteArray,
+@JvmName("sealedBoxUnauthedWithNonce")
+fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Required>.sealedBox(
+    nonce: ByteArray,
     encryptedData: ByteArray
-) = SealedBox.WithIV<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>>(
-    iv,
+) = SealedBox.WithNonce<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Required>>(
+    nonce,
     Ciphertext.Unauthenticated(
         this,
         encryptedData
-    ) as Ciphertext<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>>
+    ) as Ciphertext<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Required>>
 )
 
-fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Without>.sealedBox(
+fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Without>.sealedBox(
     encryptedData: ByteArray
 ) =
-    SealedBox.WithoutIV<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Without>>(
+    SealedBox.WithoutNonce<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Without>>(
         Ciphertext.Unauthenticated(
             this,
             encryptedData
-        ) as Ciphertext<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Without>>
+        ) as Ciphertext<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Without>>
     )
 
 @JvmName("sealedBoxAuthenticatedDedicated")
-fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>.sealedBox(
-    iv: ByteArray,
+fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, Nonce.Required>, Nonce.Required>.sealedBox(
+    nonce: ByteArray,
     encryptedData: ByteArray,
     authTag: ByteArray,
     authenticatedData: ByteArray? = null
-) = (this as SymmetricEncryptionAlgorithm<CipherKind.Authenticated, IV.Required>).sealedBox(
-    iv,
+) = (this as SymmetricEncryptionAlgorithm<CipherKind.Authenticated, Nonce.Required>).sealedBox(
+    nonce,
     encryptedData,
     authTag,
     authenticatedData
-) as SealedBox.WithIV<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>>
+) as SealedBox.WithNonce<CipherKind.Authenticated.WithDedicatedMac<*, Nonce.Required>, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, Nonce.Required>, Nonce.Required>>
 
 @JvmName("sealedBoxAuthenticated")
-fun <A : CipherKind.Authenticated> SymmetricEncryptionAlgorithm<A, IV.Required>.sealedBox(
-    iv: ByteArray,
+fun <A : CipherKind.Authenticated> SymmetricEncryptionAlgorithm<A, Nonce.Required>.sealedBox(
+    nonce: ByteArray,
     encryptedData: ByteArray,
     authTag: ByteArray,
     authenticatedData: ByteArray? = null
-) = SealedBox.WithIV<A, SymmetricEncryptionAlgorithm<A, IV.Required>>(
-    iv,
+) = SealedBox.WithNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Required>>(
+    nonce,
     authenticatedCipherText(encryptedData, authTag, authenticatedData)
 )
 
 @JvmName("sealedBoxAuthenticated")
-fun <A : CipherKind.Authenticated> SymmetricEncryptionAlgorithm<A, IV.Without>.sealedBox(
+fun <A : CipherKind.Authenticated> SymmetricEncryptionAlgorithm<A, Nonce.Without>.sealedBox(
     encryptedData: ByteArray,
     authTag: ByteArray,
     authenticatedData: ByteArray? = null
-) = SealedBox.WithoutIV<A, SymmetricEncryptionAlgorithm<A, IV.Without>>(
+) = SealedBox.WithoutNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Without>>(
     authenticatedCipherText(encryptedData, authTag, authenticatedData)
 )
 
 
-private inline fun <A : CipherKind.Authenticated, reified I : IV> SymmetricEncryptionAlgorithm<A, I>.authenticatedCipherText(
+private inline fun <A : CipherKind.Authenticated, reified I : Nonce> SymmetricEncryptionAlgorithm<A, I>.authenticatedCipherText(
     encryptedData: ByteArray,
     authTag: ByteArray,
     authenticatedData: ByteArray? = null
@@ -78,10 +78,10 @@ private inline fun <A : CipherKind.Authenticated, reified I : IV> SymmetricEncry
 )
 
 
-sealed interface SymmetricEncryptionAlgorithm<out A : CipherKind, out I : IV> :
+sealed interface SymmetricEncryptionAlgorithm<out A : CipherKind, out I : Nonce> :
     Identifiable {
     val cipher: A
-    val iv: I
+    val nonce: I
 
     override fun toString(): String
 
@@ -98,12 +98,12 @@ sealed interface SymmetricEncryptionAlgorithm<out A : CipherKind, out I : IV> :
 
             class CbcDefinition(keySize: BitLength) {
                 @HazardousMaterials
-                val PLAIN = AES.CBC.Plain(keySize)
+                val PLAIN = AES.CBC.Unauthenticated(keySize)
 
                 @OptIn(HazardousMaterials::class)
                 val HMAC = HmacDefinition(PLAIN)
 
-                class HmacDefinition(innerCipher: AES.CBC.Plain) {
+                class HmacDefinition(innerCipher: AES.CBC.Unauthenticated) {
                     val SHA_256 = AES.CBC.HMAC(innerCipher, HMAC.SHA256)
                     val SHA_384 = AES.CBC.HMAC(innerCipher, HMAC.SHA384)
                     val SHA_512 = AES.CBC.HMAC(innerCipher, HMAC.SHA512)
@@ -122,14 +122,14 @@ sealed interface SymmetricEncryptionAlgorithm<out A : CipherKind, out I : IV> :
     val keySize: BitLength
 
     sealed class AES<A : CipherKind>(modeOfOps: ModeOfOperation, override val keySize: BitLength) :
-        BlockCipher<A, IV.Required>(modeOfOps, blockSize = 128.bit) {
+        BlockCipher<A, Nonce.Required>(modeOfOps, blockSize = 128.bit) {
         override val name: String = "AES-${keySize.bits} ${modeOfOps.acronym}"
 
         override fun toString(): String = name
 
         class GCM internal constructor(keySize: BitLength) :
             AES<CipherKind.Authenticated.Integrated>(ModeOfOperation.GCM, keySize) {
-            override val iv = IV.Required(96.bit)
+            override val nonce = Nonce.Required(96.bit)
             override val cipher = CipherKind.Authenticated.Integrated(blockSize)
             override val oid: ObjectIdentifier = when (keySize.bits) {
                 128u -> KnownOIDs.aes128_GCM
@@ -140,7 +140,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : CipherKind, out I : IV> :
         }
 
         sealed class CBC<A : CipherKind>(keySize: BitLength) : AES<A>(ModeOfOperation.CBC, keySize) {
-            override val iv = IV.Required(128u.bit)
+            override val nonce = Nonce.Required(128u.bit)
             override val oid: ObjectIdentifier = when (keySize.bits) {
                 128u -> KnownOIDs.aes128_CBC
                 192u -> KnownOIDs.aes192_CBC
@@ -148,7 +148,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : CipherKind, out I : IV> :
                 else -> throw IllegalStateException("$keySize This is an implementation flaw. Report this bug!")
             }
 
-            class Plain(
+            class Unauthenticated(
                 keySize: BitLength
             ) : CBC<CipherKind.Unauthenticated>(keySize) {
                 override val cipher = CipherKind.Unauthenticated
@@ -157,21 +157,21 @@ sealed interface SymmetricEncryptionAlgorithm<out A : CipherKind, out I : IV> :
 
             class HMAC
             private constructor(
-                innerCipher: Plain,
+                innerCipher: Unauthenticated,
                 mac: at.asitplus.signum.indispensable.mac.HMAC,
                 dedicatedMacInputCalculation: DedicatedMacInputCalculation
             ) :
-                CBC<CipherKind.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC, IV.Required>>(
+                CBC<CipherKind.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC, Nonce.Required>>(
                     innerCipher.keySize
                 ) {
-                constructor(innerCipher: Plain, mac: at.asitplus.signum.indispensable.mac.HMAC) : this(
+                constructor(innerCipher: Unauthenticated, mac: at.asitplus.signum.indispensable.mac.HMAC) : this(
                     innerCipher,
                     mac,
                     DefaultDedicatedMacInputCalculation
                 )
 
                 override val cipher =
-                    CipherKind.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC, IV.Required>(
+                    CipherKind.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC, Nonce.Required>(
                         innerCipher,
                         mac,
                         mac.outputLength,
@@ -183,7 +183,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : CipherKind, out I : IV> :
                  * Instantiates a new [CBC.HMAC] with a custom [dedicatedMacInputCalculation]
                  */
                 fun Custom(dedicatedMacInputCalculation: DedicatedMacInputCalculation) =
-                    CBC.HMAC(cipher.innerCipher as Plain, cipher.mac, dedicatedMacInputCalculation)
+                    CBC.HMAC(cipher.innerCipher as Unauthenticated, cipher.mac, dedicatedMacInputCalculation)
             }
         }
     }
@@ -206,7 +206,7 @@ sealed interface CipherKind {
         /**
          * An authenticated cipher construction based on an unauthenticated cipher with a dedicated MAC function.
          */
-        class WithDedicatedMac<M : MAC, I : IV>(
+        class WithDedicatedMac<M : MAC, I : Nonce>(
             val innerCipher: SymmetricEncryptionAlgorithm<Unauthenticated, I>,
             val mac: M,
             tagLen: BitLength,
@@ -223,29 +223,29 @@ sealed interface CipherKind {
 /**
  * Typealias defining the signature of the lambda for defining a custom MAC input calculation scheme.
  */
-typealias DedicatedMacInputCalculation = MAC.(ciphertext: ByteArray, iv: ByteArray?, aad: ByteArray?) -> ByteArray
+typealias DedicatedMacInputCalculation = MAC.(ciphertext: ByteArray, nonce: ByteArray?, aad: ByteArray?) -> ByteArray
 
 /**
  * The default dedicated mac input calculation:
  * ```kotlin
- * (iv?: byteArrayOf()) + (aad ?: byteArrayOf()) + ciphertext
+ * (nonce?: byteArrayOf()) + (aad ?: byteArrayOf()) + ciphertext
  * ```
  */
 val DefaultDedicatedMacInputCalculation: DedicatedMacInputCalculation =
-    fun MAC.(ciphertext: ByteArray, iv: ByteArray?, aad: ByteArray?): ByteArray =
-        (iv ?: byteArrayOf()) + (aad ?: byteArrayOf()) + ciphertext
+    fun MAC.(ciphertext: ByteArray, nonce: ByteArray?, aad: ByteArray?): ByteArray =
+        (nonce ?: byteArrayOf()) + (aad ?: byteArrayOf()) + ciphertext
 
 
-sealed class IV {
+sealed class Nonce {
     /**
      * Indicates that a cipher requires an initialization vector
      */
-    class Required(val ivLen: BitLength) : IV()
+    class Required(val length: BitLength) : Nonce()
 
-    object Without : IV()
+    object Without : Nonce()
 }
 
-sealed class BlockCipher<A : CipherKind, I : IV>(
+sealed class BlockCipher<A : CipherKind, I : Nonce>(
     val mode: ModeOfOperation,
     val blockSize: BitLength
 ) : SymmetricEncryptionAlgorithm<A, I> {

@@ -1,9 +1,9 @@
 package at.asitplus.signum.indispensable.symmetric
 
 
-val <A : CipherKind.Authenticated, I : IV> SealedBox<out A, out I, SymmetricEncryptionAlgorithm<A, I>>.authTag: ByteArray get() = (ciphertext as Ciphertext.Authenticated<A, SymmetricEncryptionAlgorithm<A, I>>).authTag
-val <A : CipherKind.Authenticated, I : IV> SealedBox<out A, out I, SymmetricEncryptionAlgorithm<A, I>>.authenticatedData: ByteArray? get() = (ciphertext as Ciphertext.Authenticated<A, SymmetricEncryptionAlgorithm<A, I>>).authenticatedData
-val SealedBox<*, IV.Required, *>.iv: ByteArray get() = (this as SealedBox.WithIV<*, *>).iv
+val <A : CipherKind.Authenticated, I : Nonce> SealedBox<out A, out I, SymmetricEncryptionAlgorithm<A, I>>.authTag: ByteArray get() = (ciphertext as Ciphertext.Authenticated<A, SymmetricEncryptionAlgorithm<A, I>>).authTag
+val <A : CipherKind.Authenticated, I : Nonce> SealedBox<out A, out I, SymmetricEncryptionAlgorithm<A, I>>.authenticatedData: ByteArray? get() = (ciphertext as Ciphertext.Authenticated<A, SymmetricEncryptionAlgorithm<A, I>>).authenticatedData
+val SealedBox<*, Nonce.Required, *>.nonce: ByteArray get() = (this as SealedBox.WithNonce<*, *>).nonce
 
 /**
  * Represents symmetrically encrypted data. This is a separate class to more easily enforce type safety wrt. presence of
@@ -11,7 +11,7 @@ val SealedBox<*, IV.Required, *>.iv: ByteArray get() = (this as SealedBox.WithIV
  * The contained [ciphertext]'s `algorithm` must match the generic type information of a `SealedBox`.
  * Construct using [SymmetricEncryptionAlgorithm.sealedBox]
  */
-sealed class SealedBox<A : CipherKind, I : IV, E : SymmetricEncryptionAlgorithm<A, I>>(
+sealed class SealedBox<A : CipherKind, I : Nonce, E : SymmetricEncryptionAlgorithm<A, I>>(
     internal val ciphertext: Ciphertext<A, E>
 ) {
     val algorithm: E get()= ciphertext.algorithm
@@ -22,11 +22,11 @@ sealed class SealedBox<A : CipherKind, I : IV, E : SymmetricEncryptionAlgorithm<
      * A sealed box without an IV. Key wrapping and electronic codebook block cipher mode of operation come to mind.
      *  Construct using [SymmetricEncryptionAlgorithm.sealedBox]
      */
-    class WithoutIV<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, IV.Without>> internal constructor(ciphertext: Ciphertext<A, E>) :
-        SealedBox<A, IV.Without, E>(ciphertext) {
+    class WithoutNonce<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, Nonce.Without>> internal constructor(ciphertext: Ciphertext<A, E>) :
+        SealedBox<A, Nonce.Without, E>(ciphertext) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
-            if (other !is WithoutIV<*, *>) return false
+            if (other !is WithoutNonce<*, *>) return false
             if (!super.equals(other)) return false
             return true
         }
@@ -35,36 +35,36 @@ sealed class SealedBox<A : CipherKind, I : IV, E : SymmetricEncryptionAlgorithm<
             return super.hashCode()
         }
 
-        override fun toString(): String = "SealedBox.WithoutIV(ciphertext=$ciphertext)"
+        override fun toString(): String = "SealedBox.WithoutNonce(ciphertext=$ciphertext)"
     }
 
     /**
-     * A sealed box consisting of an [iv] and the actual [ciphertext].
+     * A sealed box consisting of an [nonce] and the actual [ciphertext].
      * Construct using [SymmetricEncryptionAlgorithm.sealedBox]
      */
-    class WithIV<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, IV.Required>> internal constructor(
-        internal val iv: ByteArray,
+    class WithNonce<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, Nonce.Required>> internal constructor(
+        internal val nonce: ByteArray,
         ciphertext: Ciphertext<A, E>
-    ) : SealedBox<A, IV.Required, E>(ciphertext) {
+    ) : SealedBox<A, Nonce.Required, E>(ciphertext) {
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
-            if (other !is WithIV<*, *>) return false
+            if (other !is WithNonce<*, *>) return false
             if (!super.equals(other)) return false
-            if (!iv.contentEquals(other.iv)) return false
+            if (!this@WithNonce.nonce.contentEquals(other.nonce)) return false
 
             return true
         }
 
         override fun hashCode(): Int {
             var result = super.hashCode()
-            result = 31 * result + iv.contentHashCode()
+            result = 31 * result + nonce.contentHashCode()
             return result
         }
 
         @OptIn(ExperimentalStdlibApi::class)
         override fun toString(): String =
-            "SealedBox.WithIV(iv=${iv.toHexString(HexFormat.UpperCase)}, ciphertext=$ciphertext)"
+            "SealedBox.WithNonce(nonce=${nonce.toHexString(HexFormat.UpperCase)}, ciphertext=$ciphertext)"
     }
 
     override fun equals(other: Any?): Boolean {

@@ -15,22 +15,22 @@ import platform.CoreCrypto.kCCEncrypt
 internal actual fun <T, A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>> initCipher(
     algorithm: E,
     key: ByteArray,
-    iv: ByteArray?,
+    nonce: ByteArray?,
     aad: ByteArray?
 ): CipherParam<T, A> {
-    if (algorithm.iv !is IV.Required) TODO()
-    algorithm as SymmetricEncryptionAlgorithm<*, IV.Required>
-    val nonce = iv ?: algorithm.randomIV()
+    if (algorithm.nonce !is Nonce.Required) TODO()
+    algorithm as SymmetricEncryptionAlgorithm<*, Nonce.Required>
+    val nonce = nonce ?: algorithm.randomNonce()
     return CipherParam<ByteArray, A>(algorithm, key, nonce, aad) as CipherParam<T, A>
 }
 
 @OptIn(ExperimentalForeignApi::class)
-internal actual fun <A : CipherKind, I : IV> CipherParam<*, A>.doEncrypt(data: ByteArray): SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>> {
+internal actual fun <A : CipherKind, I : Nonce> CipherParam<*, A>.doEncrypt(data: ByteArray): SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>> {
     this as CipherParam<ByteArray, A>
-    if (alg.iv !is IV.Required) TODO()
+    if (alg.nonce !is Nonce.Required) TODO()
 
-    require(iv != null)
-    val nsIV = iv.toNSData()
+    require(nonce != null)
+    val nsIV = nonce.toNSData()
     val nsAAD = aad?.toNSData()
 
     if (alg !is SymmetricEncryptionAlgorithm.AES<*>)
@@ -38,12 +38,12 @@ internal actual fun <A : CipherKind, I : IV> CipherParam<*, A>.doEncrypt(data: B
 
 
     return when (alg) {
-        is AES.CBC.Plain -> {
+        is AES.CBC.Unauthenticated -> {
             val padded = (alg as AES<*>).addPKCS7Padding(data)
             val bytes: ByteArray = swiftcall {
                 CBC.crypt(kCCEncrypt.toLong(), padded.toNSData(), platformData.toNSData(), nsIV, error)
             }.toByteArray()
-            alg.sealedBox(iv, bytes)
+            alg.sealedBox(nonce, bytes)
         }
         is AES.GCM -> {
             val ciphertext = GCM.encrypt(data.toNSData(), platformData.toNSData(), nsIV, nsAAD)
@@ -80,14 +80,14 @@ private fun BlockCipher<*, *>.removePKCS7Padding(plainWithPadding: ByteArray): B
 actual internal fun SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
-    if (algorithm.iv !is IV.Required) TODO()
-    this as SealedBox.WithIV
+    if (algorithm.nonce !is Nonce.Required) TODO()
+    this as SealedBox.WithNonce
     require(algorithm is AES<*>) { "Only AES is supported" }
     return swiftcall {
         GCM.decrypt(
             encryptedData.toNSData(),
             secretKey.toNSData(),
-            iv.toNSData(),
+            this@doDecrypt.nonce.toNSData(),
             authTag.toNSData(),
             authenticatedData?.toNSData(),
             error
@@ -99,15 +99,15 @@ actual internal fun SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricE
 actual internal fun SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
-    if (algorithm.iv !is IV.Required) TODO()
-    this as SealedBox.WithIV
+    if (algorithm.nonce !is Nonce.Required) TODO()
+    this as SealedBox.WithNonce
     require(algorithm is AES<*>) { "Only AES is supported" }
     val decrypted = swiftcall {
         CBC.crypt(
             kCCDecrypt.toLong(),
             this@doDecrypt.encryptedData.toNSData(),
             secretKey.toNSData(),
-            this@doDecrypt.iv!!.toNSData(),
+            this@doDecrypt.nonce!!.toNSData(),
             error
         )
     }.toByteArray()

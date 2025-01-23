@@ -2,7 +2,7 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.Digest
-import at.asitplus.signum.indispensable.symmetric.SignatureAlgorithm
+import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.supreme.hash.digest
 import com.ionspin.kotlin.bignum.integer.BigInteger

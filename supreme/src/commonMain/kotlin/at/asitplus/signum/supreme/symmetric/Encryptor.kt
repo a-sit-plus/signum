@@ -14,21 +14,21 @@ internal val secureRandom = SecureRandom()
 
 @HazardousMaterials
 @JvmName("encryptWithIV")
-fun <A : CipherKind> SymmetricKey<A, IV.Required>.encrypt(
+fun <A : CipherKind> SymmetricKey<A, Nonce.Required>.encrypt(
     iv: ByteArray,
     data: ByteArray
-): KmmResult<SealedBox.WithIV<A, SymmetricEncryptionAlgorithm<A, IV.Required>>> = catching {
+): KmmResult<SealedBox.WithNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Required>>> = catching {
     Encryptor(
         algorithm,
         secretKey,
         if (this is WithDedicatedMac) dedicatedMacKey else secretKey,
         iv,
         null,
-    ).encrypt(data) as SealedBox.WithIV<A, SymmetricEncryptionAlgorithm<A, IV.Required>>
+    ).encrypt(data) as SealedBox.WithNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Required>>
 }
 
 @JvmName("encryptWithAutoGenIV")
-fun <A : CipherKind, I : IV> SymmetricKey<A, I>.encrypt(
+fun <A : CipherKind, I : Nonce> SymmetricKey<A, I>.encrypt(
     data: ByteArray
 ): KmmResult<SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>> = catching {
     Encryptor(
@@ -51,18 +51,18 @@ fun <A : CipherKind, I : IV> SymmetricKey<A, I>.encrypt(
  * invalid parameters (e.g., key or IV length)
  */
 @HazardousMaterials
-fun <A : CipherKind.Authenticated> SymmetricKey<A, IV.Required>.encrypt(
+fun <A : CipherKind.Authenticated> SymmetricKey<A, Nonce.Required>.encrypt(
     iv: ByteArray,
     data: ByteArray,
     authenticatedData: ByteArray? = null
-): KmmResult<SealedBox.WithIV<A, SymmetricEncryptionAlgorithm<A, IV.Required>>> = catching {
+): KmmResult<SealedBox.WithNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Required>>> = catching {
     Encryptor(
         algorithm,
         secretKey,
         if (this is WithDedicatedMac) dedicatedMacKey else secretKey,
         iv,
         authenticatedData,
-    ).encrypt(data) as SealedBox.WithIV<A, SymmetricEncryptionAlgorithm<A, IV.Required>>
+    ).encrypt(data) as SealedBox.WithNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Required>>
 }
 
 /**
@@ -76,7 +76,7 @@ fun <A : CipherKind.Authenticated> SymmetricKey<A, IV.Required>.encrypt(
  * invalid parameters (e.g., key or IV length)
  */
 @JvmName("encryptAuthenticated")
-fun <A : CipherKind.Authenticated, I : IV> SymmetricKey<A, I>.encrypt(
+fun <A : CipherKind.Authenticated, I : Nonce> SymmetricKey<A, I>.encrypt(
     data: ByteArray,
     authenticatedData: ByteArray? = null
 ): KmmResult<SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>> = catching {
@@ -99,8 +99,8 @@ internal class Encryptor<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>,
 ) {
 
     init {
-        if (algorithm.iv is IV.Required) iv?.let {
-            require(it.size.toUInt() == (algorithm.iv as IV.Required).ivLen.bytes) { "IV must be exactly ${(algorithm.iv as IV.Required).ivLen} bits long" }
+        if (algorithm.nonce is Nonce.Required) iv?.let {
+            require(it.size.toUInt() == (algorithm.nonce as Nonce.Required).length.bytes) { "IV must be exactly ${(algorithm.nonce as Nonce.Required).length} bits long" }
         }
         require(key.size.toUInt() == algorithm.keySize.bytes) { "Key must be exactly ${algorithm.keySize} bits long" }
     }
@@ -123,32 +123,32 @@ internal class Encryptor<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>,
                 aad
             )
 
-        require(innerCipher.iv != null) { "IV implementation error. Report this bug!" }
+        require(innerCipher.nonce != null) { "IV implementation error. Report this bug!" }
         require(macKey != null) { "MAC key implementation error. Report this bug!" }
-        val encrypted = innerCipher.doEncrypt<CipherKind.Unauthenticated, IV>(data)
+        val encrypted = innerCipher.doEncrypt<CipherKind.Unauthenticated, Nonce>(data)
         val macInputCalculation = aMac.dedicatedMacInputCalculation
         val hmacInput: ByteArray =
             aMac.mac.macInputCalculation(
                 encrypted.encryptedData,
-                innerCipher.iv,
+                innerCipher.nonce,
                 (aad ?: byteArrayOf())
             )
         val authTag = aMac.mac.mac(macKey, hmacInput).getOrThrow()
 
-        (if (algorithm.iv is IV.Required) {
-            (algorithm as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Required>).sealedBox(
-                (encrypted as SealedBox.WithIV<*, *>).iv,
+        (if (algorithm.nonce is Nonce.Required) {
+            (algorithm as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, Nonce.Required>, Nonce.Required>).sealedBox(
+                (encrypted as SealedBox.WithNonce<*, *>).nonce,
                 encrypted.encryptedData,
                 authTag,
                 aad
             )
-        } else (algorithm as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, IV.Required>, IV.Without>).sealedBox(
+        } else (algorithm as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, Nonce.Required>, Nonce.Without>).sealedBox(
             encrypted.encryptedData,
             authTag,
             aad
         )) as C
 
-    } else platformCipher.doEncrypt<A, IV>(data) as C
+    } else platformCipher.doEncrypt<A, Nonce>(data) as C
 
 
 }
@@ -156,7 +156,7 @@ internal class Encryptor<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>,
 internal class CipherParam<T, A : CipherKind>(
     val alg: SymmetricEncryptionAlgorithm<A, *>,
     val platformData: T,
-    val iv: ByteArray?,
+    val nonce: ByteArray?,
     val aad: ByteArray?
 )
 
@@ -164,7 +164,7 @@ internal class CipherParam<T, A : CipherKind>(
  * Attempts to decrypt this ciphertext (which also holds IV, and in case of an authenticated ciphertext, AAD and auth tag) using the provided [key].
  * This is the function you typically want to use.
  */
-fun <A : CipherKind> SealedBox< A, IV.Required, SymmetricEncryptionAlgorithm<A, IV.Required>>.decrypt(key: SymmetricKey<in A, IV.Required>): KmmResult<ByteArray> =
+fun <A : CipherKind> SealedBox< A, Nonce.Required, SymmetricEncryptionAlgorithm<A, Nonce.Required>>.decrypt(key: SymmetricKey<in A, Nonce.Required>): KmmResult<ByteArray> =
     catching {
         require(algorithm == key.algorithm) { "Somebody likes cursed casts!" }
         when (algorithm.cipher as CipherKind) {
@@ -210,7 +210,7 @@ private fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncrypti
     secretKey: ByteArray,
     macKey: ByteArray = secretKey,
 ): ByteArray {
-    val iv: ByteArray? = if (this is SealedBox.WithIV<*, *>) iv else null
+    val iv: ByteArray? = if (this is SealedBox.WithNonce<*, *>) this@doDecrypt.nonce else null
     val aad = authenticatedData
     val authTag = authTag
 
@@ -224,10 +224,10 @@ private fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncrypti
         throw IllegalArgumentException("Auth Tag mismatch!")
 
     val box: SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>> =
-        (if (this is SealedBox.WithIV<*, *>) (innerCipher as SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Required>).sealedBox(
-            this.iv,
+        (if (this is SealedBox.WithNonce<*, *>) (innerCipher as SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Required>).sealedBox(
+            this.nonce,
             encryptedData
-        ) else (innerCipher as SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, IV.Without>).sealedBox(
+        ) else (innerCipher as SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Without>).sealedBox(
             encryptedData
         )) as SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>>
     return box.doDecrypt(secretKey)
@@ -246,8 +246,8 @@ expect internal fun SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryption
 internal expect fun <T, A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>> initCipher(
     algorithm: E,
     key: ByteArray,
-    iv: ByteArray?,
+    nonce: ByteArray?,
     aad: ByteArray?
 ): CipherParam<T, A>
 
-internal expect fun <A : CipherKind, I : IV> CipherParam<*, A>.doEncrypt(data: ByteArray): SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>
+internal expect fun <A : CipherKind, I : Nonce> CipherParam<*, A>.doEncrypt(data: ByteArray): SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>
