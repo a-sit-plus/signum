@@ -1,9 +1,9 @@
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.CipherKind
-import at.asitplus.signum.indispensable.CipherKind.Unauthenticated
 import at.asitplus.signum.indispensable.Ciphertext
 import at.asitplus.signum.indispensable.IV
 import at.asitplus.signum.indispensable.SymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.SymmetricKey
 import at.asitplus.signum.supreme.crypt.decrypt
 import at.asitplus.signum.supreme.crypt.encrypt
 import at.asitplus.signum.supreme.crypt.randomIV
@@ -53,15 +53,17 @@ class JvmAESTest : FreeSpec({
                             Cipher.getInstance(if (alg.cipher is CipherKind.Unauthenticated) "AES/CBC/PKCS5PADDING" else "AES/GCM/NoPadding")
 
                         if (alg is SymmetricEncryptionAlgorithm.AES.GCM) {
-                            //GCM
-                            val own =
-                                ((alg as SymmetricEncryptionAlgorithm<CipherKind.Authenticated,IV.Required>).randomKey()) .encrypt(iv=iv,data=data)
-                                    .getOrThrow()
-                                    own.ciphertext.shouldBeInstanceOf<Ciphertext.Authenticated.Integrated>()
+                            //GCM need to cast key, because alg is AES with no mode of ops, since we mix CBC and GCM in the test input
+                            val own = (secretKey as SymmetricKey<CipherKind.Authenticated,IV.Required>).encrypt(iv = iv, data = data,aad)
+                                .getOrThrow()
+                            own.ciphertext.shouldBeInstanceOf<Ciphertext.Authenticated.Integrated>()
                             jcaCipher.init(
                                 Cipher.ENCRYPT_MODE,
                                 SecretKeySpec(secretKey.secretKey, "AES"),
-                                GCMParameterSpec(alg.cipher.tagLen.bytes.toInt(), own.iv/*use our own auto-generated IV*/)
+                                GCMParameterSpec(
+                                    alg.cipher.tagLen.bits.toInt(),
+                                    own.iv/*use our own auto-generated IV*/
+                                )
                             )
                             if (aad != null) jcaCipher.updateAAD(aad)
 
@@ -72,7 +74,10 @@ class JvmAESTest : FreeSpec({
                             jcaCipher.init(
                                 Cipher.DECRYPT_MODE,
                                 SecretKeySpec(secretKey.secretKey, "AES"),
-                                GCMParameterSpec(alg.cipher.tagLen.bytes.toInt(), own.iv/*use our own auto-generated IV*/)
+                                GCMParameterSpec(
+                                    alg.cipher.tagLen.bits.toInt(),
+                                    own.iv/*use our own auto-generated IV*/
+                                )
                             )
                             if (aad != null) jcaCipher.updateAAD(aad)
                             own.decrypt(secretKey.secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
@@ -80,7 +85,7 @@ class JvmAESTest : FreeSpec({
 
                         } else {
                             //CBC
-                            val own = alg.randomKey().encrypt(data).getOrThrow()
+                            val own = secretKey.encrypt(data).getOrThrow()
                             jcaCipher.init(
                                 Cipher.ENCRYPT_MODE,
                                 SecretKeySpec(secretKey.secretKey, "AES"),
