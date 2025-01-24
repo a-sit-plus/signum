@@ -1,8 +1,8 @@
 package at.asitplus.signum.supreme.symmetric
 
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.*
 import javax.crypto.Cipher
-import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
@@ -13,26 +13,17 @@ actual internal fun <T, A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>> 
     aad: ByteArray?
 ): CipherParam<T, A> {
     if (algorithm.nonce is Nonce.Without) TODO()
-    if (algorithm !is SymmetricEncryptionAlgorithm.AES<*>) TODO()
     algorithm as SymmetricEncryptionAlgorithm<*, Nonce.Required>
+
+
+    @OptIn(HazardousMaterials::class)
     val nonce = nonce ?: algorithm.randomNonce()
-    return Cipher.getInstance(algorithm.jcaName).apply {
-        val cipher = algorithm.cipher
-        if (cipher is CipherKind.Authenticated.Integrated)
-            init(
-                Cipher.ENCRYPT_MODE,
-                SecretKeySpec(key, algorithm.jcaKeySpec),
-                GCMParameterSpec(cipher.tagLen.bits.toInt(), nonce)
-            )
-        else if (algorithm is SymmetricEncryptionAlgorithm.AES.CBC<*>) //covers Plain and CBC, because CBC will delegate to here
-            init(
-                Cipher.ENCRYPT_MODE,
-                SecretKeySpec(key, algorithm.jcaKeySpec),
-                IvParameterSpec(nonce)
-            )
-        else TODO()
-        aad?.let { if (algorithm is SymmetricEncryptionAlgorithm.AES.GCM) updateAAD(it) /*CBC-HMAC we do ourselves*/ }
-    }.let { CipherParam<Cipher, A>(algorithm, it, nonce, aad) as CipherParam<T, A> }
+
+    return if (algorithm is SymmetricEncryptionAlgorithm.AES<*>)
+        AESJVM.initCipher(algorithm, key, nonce, aad) as CipherParam<T, A>
+    else if (algorithm is SymmetricEncryptionAlgorithm.ChaCha20Poly1305)
+        ChaChaJVM.initCipher(key, nonce, aad) as CipherParam<T, A>
+    else TODO()
 }
 
 actual internal fun <A : CipherKind, I : Nonce> CipherParam<*, A>.doEncrypt(data: ByteArray): SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>> {
@@ -84,12 +75,14 @@ val SymmetricEncryptionAlgorithm<*, *>.jcaName: String
     get() = when (this) {
         is SymmetricEncryptionAlgorithm.AES.GCM -> "AES/GCM/NoPadding"
         is SymmetricEncryptionAlgorithm.AES.CBC<*> -> "AES/CBC/PKCS5Padding"
+        is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20-Poly1305"
         else -> TODO()
     }
 
 val SymmetricEncryptionAlgorithm<*, *>.jcaKeySpec: String
     get() = when (this) {
         is SymmetricEncryptionAlgorithm.AES<*> -> "AES"
+        is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20"
         else -> TODO()
     }
 
@@ -97,30 +90,26 @@ val SymmetricEncryptionAlgorithm<*, *>.jcaKeySpec: String
 actual internal fun SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
-
-    if (algorithm !is SymmetricEncryptionAlgorithm.AES<*>)
-        TODO()
     this as SealedBox.WithNonce
+    if (algorithm !is SymmetricEncryptionAlgorithm.AES.GCM) TODO()
 
-    val wholeInput = encryptedData + authTag
-    return Cipher.getInstance(algorithm.jcaName).also { cipher ->
-        cipher.init(
-            Cipher.DECRYPT_MODE,
-            SecretKeySpec(secretKey, algorithm.jcaKeySpec),
-            GCMParameterSpec(authTag.size * 8, this.nonce)
-        )
-        authenticatedData?.let {
-            cipher.updateAAD(it)
-        }
-    }.doFinal(wholeInput)
+    return AESJVM.gcmDecrypt(
+        algorithm as SymmetricEncryptionAlgorithm.AES.GCM,
+        secretKey,
+        nonce,
+        encryptedData,
+        authTag,
+        authenticatedData
+    )
 }
 
 
 actual internal fun SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
-    if (algorithm !is SymmetricEncryptionAlgorithm.AES<*>)
+    if ((algorithm !is SymmetricEncryptionAlgorithm.AES<*>) && (algorithm !is SymmetricEncryptionAlgorithm.ChaCha20Poly1305))
         TODO()
+
     this as SealedBox.WithNonce
     return Cipher.getInstance(algorithm.jcaName).also { cipher ->
         cipher.init(

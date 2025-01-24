@@ -8,74 +8,6 @@ import at.asitplus.signum.indispensable.mac.HMAC
 import at.asitplus.signum.indispensable.mac.MAC
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
-import kotlin.jvm.JvmName
-
-@JvmName("sealedBoxUnauthedWithNonce")
-fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Required>.sealedBox(
-    nonce: ByteArray,
-    encryptedData: ByteArray
-) = SealedBox.WithNonce<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Required>>(
-    nonce,
-    Ciphertext.Unauthenticated(
-        this,
-        encryptedData
-    ) as Ciphertext<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Required>>
-)
-
-fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Without>.sealedBox(
-    encryptedData: ByteArray
-) =
-    SealedBox.WithoutNonce<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Without>>(
-        Ciphertext.Unauthenticated(
-            this,
-            encryptedData
-        ) as Ciphertext<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Without>>
-    )
-
-@JvmName("sealedBoxAuthenticatedDedicated")
-fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, Nonce.Required>, Nonce.Required>.sealedBox(
-    nonce: ByteArray,
-    encryptedData: ByteArray,
-    authTag: ByteArray,
-    authenticatedData: ByteArray? = null
-) = (this as SymmetricEncryptionAlgorithm<CipherKind.Authenticated, Nonce.Required>).sealedBox(
-    nonce,
-    encryptedData,
-    authTag,
-    authenticatedData
-) as SealedBox.WithNonce<CipherKind.Authenticated.WithDedicatedMac<*, Nonce.Required>, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, Nonce.Required>, Nonce.Required>>
-
-@JvmName("sealedBoxAuthenticated")
-fun <A : CipherKind.Authenticated> SymmetricEncryptionAlgorithm<A, Nonce.Required>.sealedBox(
-    nonce: ByteArray,
-    encryptedData: ByteArray,
-    authTag: ByteArray,
-    authenticatedData: ByteArray? = null
-) = SealedBox.WithNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Required>>(
-    nonce,
-    authenticatedCipherText(encryptedData, authTag, authenticatedData)
-)
-
-@JvmName("sealedBoxAuthenticated")
-fun <A : CipherKind.Authenticated> SymmetricEncryptionAlgorithm<A, Nonce.Without>.sealedBox(
-    encryptedData: ByteArray,
-    authTag: ByteArray,
-    authenticatedData: ByteArray? = null
-) = SealedBox.WithoutNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Without>>(
-    authenticatedCipherText(encryptedData, authTag, authenticatedData)
-)
-
-
-private inline fun <A : CipherKind.Authenticated, reified I : Nonce> SymmetricEncryptionAlgorithm<A, I>.authenticatedCipherText(
-    encryptedData: ByteArray,
-    authTag: ByteArray,
-    authenticatedData: ByteArray? = null
-) = Ciphertext.Authenticated<A, SymmetricEncryptionAlgorithm<A, I>>(
-    this,
-    encryptedData,
-    authTag,
-    authenticatedData
-)
 
 
 sealed interface SymmetricEncryptionAlgorithm<out A : CipherKind, out I : Nonce> :
@@ -86,7 +18,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : CipherKind, out I : Nonce>
     override fun toString(): String
 
     companion object {
-
+        //ChaChaPoly is already an object, so we don't need to redeclare here
         val AES_128 = AESDefinition(128.bit)
         val AES_192 = AESDefinition(192.bit)
         val AES_256 = AESDefinition(256.bit)
@@ -187,6 +119,15 @@ sealed interface SymmetricEncryptionAlgorithm<out A : CipherKind, out I : Nonce>
             }
         }
     }
+
+    object ChaCha20Poly1305 : StreamCipher<CipherKind.Authenticated, Nonce.Required>() {
+        override val cipher = CipherKind.Authenticated.Integrated(128.bit)
+        override val nonce = Nonce.Required(96.bit)
+        override val name: String ="ChaCha20-Poly1305"
+        override fun toString() = name
+        override val keySize = 256.bit
+        override val oid = KnownOIDs.chaCha20Poly1305
+    }
 }
 
 /**
@@ -255,3 +196,5 @@ sealed class BlockCipher<A : CipherKind, I : Nonce>(
         CBC("Cipherblock Chaining Mode", "CBC"),
     }
 }
+
+sealed class StreamCipher<A : CipherKind, I : Nonce> : SymmetricEncryptionAlgorithm<A, I>

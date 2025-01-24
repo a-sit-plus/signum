@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.symmetric
 
+import kotlin.jvm.JvmName
+
 
 val <A : CipherKind.Authenticated, I : Nonce> SealedBox<out A, out I, SymmetricEncryptionAlgorithm<A, I>>.authTag: ByteArray get() = (ciphertext as Ciphertext.Authenticated<A, SymmetricEncryptionAlgorithm<A, I>>).authTag
 val <A : CipherKind.Authenticated, I : Nonce> SealedBox<out A, out I, SymmetricEncryptionAlgorithm<A, I>>.authenticatedData: ByteArray? get() = (ciphertext as Ciphertext.Authenticated<A, SymmetricEncryptionAlgorithm<A, I>>).authenticatedData
@@ -153,3 +155,72 @@ internal sealed interface Ciphertext<A : CipherKind, E : SymmetricEncryptionAlgo
         }
     }
 }
+
+
+
+@JvmName("sealedBoxUnauthedWithNonce")
+fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Required>.sealedBox(
+    nonce: ByteArray,
+    encryptedData: ByteArray
+) = SealedBox.WithNonce<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Required>>(
+    nonce,
+    Ciphertext.Unauthenticated(
+        this,
+        encryptedData
+    ) as Ciphertext<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Required>>
+)
+
+fun SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Without>.sealedBox(
+    encryptedData: ByteArray
+) =
+    SealedBox.WithoutNonce<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Without>>(
+        Ciphertext.Unauthenticated(
+            this,
+            encryptedData
+        ) as Ciphertext<CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Without>>
+    )
+
+@JvmName("sealedBoxAuthenticatedDedicated")
+fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, Nonce.Required>, Nonce.Required>.sealedBox(
+    nonce: ByteArray,
+    encryptedData: ByteArray,
+    authTag: ByteArray,
+    authenticatedData: ByteArray? = null
+) = (this as SymmetricEncryptionAlgorithm<CipherKind.Authenticated, Nonce.Required>).sealedBox(
+    nonce,
+    encryptedData,
+    authTag,
+    authenticatedData
+) as SealedBox.WithNonce<CipherKind.Authenticated.WithDedicatedMac<*, Nonce.Required>, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, Nonce.Required>, Nonce.Required>>
+
+@JvmName("sealedBoxAuthenticated")
+fun <A : CipherKind.Authenticated> SymmetricEncryptionAlgorithm<A, Nonce.Required>.sealedBox(
+    nonce: ByteArray,
+    encryptedData: ByteArray,
+    authTag: ByteArray,
+    authenticatedData: ByteArray? = null
+) = SealedBox.WithNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Required>>(
+    nonce,
+    authenticatedCipherText(encryptedData, authTag, authenticatedData)
+)
+
+@JvmName("sealedBoxAuthenticated")
+fun <A : CipherKind.Authenticated> SymmetricEncryptionAlgorithm<A, Nonce.Without>.sealedBox(
+    encryptedData: ByteArray,
+    authTag: ByteArray,
+    authenticatedData: ByteArray? = null
+) = SealedBox.WithoutNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Without>>(
+    authenticatedCipherText(encryptedData, authTag, authenticatedData)
+)
+
+
+private inline fun <A : CipherKind.Authenticated, reified I : Nonce> SymmetricEncryptionAlgorithm<A, I>.authenticatedCipherText(
+    encryptedData: ByteArray,
+    authTag: ByteArray,
+    authenticatedData: ByteArray? = null
+) = Ciphertext.Authenticated<A, SymmetricEncryptionAlgorithm<A, I>>(
+    this,
+    encryptedData,
+    authTag,
+    authenticatedData
+)
