@@ -15,7 +15,7 @@ import kotlin.experimental.ExperimentalNativeApi
 import kotlin.native.ref.createCleaner
 
 @OptIn(ExperimentalNativeApi::class)
-internal class AutofreeVariable<T: CPointer<*>> internal constructor(
+class AutofreeVariable<T: CPointer<*>> internal constructor(
     arena: Arena,
     private val variable: CPointerVarOf<T>) {
     companion object {
