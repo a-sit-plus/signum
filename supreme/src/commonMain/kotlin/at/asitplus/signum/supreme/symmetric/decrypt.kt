@@ -53,7 +53,7 @@ private fun SealedBox<AECapability.Unauthenticated, *, SymmetricEncryptionAlgori
 /**
  * Attempts to decrypt this ciphertext using the provided raw [secretKey].
  * If no [macKey] is provided, [secretKey] will be used as MAC key.
- * [dedicatedMacInputCalculation] can be used to override the [DefaultDedicatedMacInputCalculation] used to compute MAC input.
+ * [dedicatedMacInputCalculation] can be used to override the [NistSP80038FMacInputCalculation] used to compute MAC input.
  */
 private fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, *>, *>>.decryptInternal(
     secretKey: ByteArray,
@@ -67,7 +67,7 @@ private fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncrypti
     val innerCipher = algorithm.cipher.innerCipher
     val mac = algorithm.cipher.mac
     val dedicatedMacInputCalculation = algorithm.cipher.dedicatedMacInputCalculation
-    val hmacInput = mac.dedicatedMacInputCalculation(encryptedData, iv, aad)
+    val hmacInput = mac.dedicatedMacInputCalculation(encryptedData, iv?:byteArrayOf(), aad?:byteArrayOf())
 
     if (!(mac.mac(macKey, hmacInput).getOrThrow().contentEquals(authTag)))
         throw IllegalArgumentException("Auth Tag mismatch!")
