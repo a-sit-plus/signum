@@ -1,9 +1,4 @@
-import at.asitplus.gradle.datetime
-import at.asitplus.gradle.exportIosFramework
-import at.asitplus.gradle.kmmresult
-import at.asitplus.gradle.napier
-import at.asitplus.gradle.serialization
-import at.asitplus.gradle.setupDokka
+import at.asitplus.gradle.*
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
@@ -56,15 +51,17 @@ kotlin {
     }
 }
 
-exportIosFramework(
+exportXCFramework(
     "IndispensableCosef",
     transitiveExports = false,
-    serialization("cbor"),
-    datetime(),
-    kmmresult(),
-    project(":indispensable"),
-    project(":indispensable-asn1"),
-    libs.bignum
+    additionalExports = arrayOf(
+        serialization("cbor"),
+        datetime(),
+        kmmresult(),
+        project(":indispensable"),
+        project(":indispensable-asn1"),
+        libs.bignum
+    )
 )
 
 val javadocJar = setupDokka(

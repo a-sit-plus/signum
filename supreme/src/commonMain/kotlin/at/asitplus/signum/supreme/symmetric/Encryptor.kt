@@ -1,7 +1,7 @@
 package at.asitplus.signum.supreme.symmetric
 
-import at.asitplus.signum.indispensable.symmetric.CipherKind
-import at.asitplus.signum.indispensable.symmetric.CipherKind.Authenticated
+import at.asitplus.signum.indispensable.symmetric.AECapability
+import at.asitplus.signum.indispensable.symmetric.AECapability.Authenticated
 import at.asitplus.signum.indispensable.symmetric.Nonce
 import at.asitplus.signum.indispensable.symmetric.SealedBox
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
@@ -10,7 +10,7 @@ import at.asitplus.signum.indispensable.symmetric.sealedBox
 import at.asitplus.signum.supreme.mac.mac
 
 
-internal class Encryptor<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>, C : SealedBox<A, *, E>> internal constructor(
+internal class Encryptor<A : AECapability, E : SymmetricEncryptionAlgorithm<A, *>, C : SealedBox<A, *, E>> internal constructor(
     private val algorithm: E,
     private val key: ByteArray,
     private val macKey: ByteArray?,
@@ -36,7 +36,7 @@ internal class Encryptor<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>,
         val aMac = algorithm.cipher as Authenticated.WithDedicatedMac<*, *>
         aMac.innerCipher
         val innerCipher =
-            initCipher<Any, CipherKind.Unauthenticated, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>>(
+            initCipher<Any, AECapability.Unauthenticated, SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, *>>(
                 aMac.innerCipher,
                 key,
                 iv,
@@ -45,7 +45,7 @@ internal class Encryptor<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>,
 
         require(innerCipher.nonce != null) { "IV implementation error. Report this bug!" }
         require(macKey != null) { "MAC key implementation error. Report this bug!" }
-        val encrypted = innerCipher.doEncrypt<CipherKind.Unauthenticated, Nonce>(data)
+        val encrypted = innerCipher.doEncrypt<AECapability.Unauthenticated, Nonce>(data)
         val macInputCalculation = aMac.dedicatedMacInputCalculation
         val hmacInput: ByteArray =
             aMac.mac.macInputCalculation(
@@ -56,13 +56,13 @@ internal class Encryptor<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>,
         val authTag = aMac.mac.mac(macKey, hmacInput).getOrThrow()
 
         (if (algorithm.nonce is Nonce.Required) {
-            (algorithm as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, Nonce.Required>, Nonce.Required>).sealedBox(
+            (algorithm as SymmetricEncryptionAlgorithm<AECapability.Authenticated.WithDedicatedMac<*, Nonce.Required>, Nonce.Required>).sealedBox(
                 (encrypted as SealedBox.WithNonce<*, *>).nonce,
                 encrypted.encryptedData,
                 authTag,
                 aad
             )
-        } else (algorithm as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, Nonce.Required>, Nonce.Without>).sealedBox(
+        } else (algorithm as SymmetricEncryptionAlgorithm<AECapability.Authenticated.WithDedicatedMac<*, Nonce.Required>, Nonce.Without>).sealedBox(
             encrypted.encryptedData,
             authTag,
             aad
@@ -73,7 +73,7 @@ internal class Encryptor<A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>,
 
 }
 
-internal class CipherParam<T, A : CipherKind>(
+internal class CipherParam<T, A : AECapability>(
     val alg: SymmetricEncryptionAlgorithm<A, *>,
     val platformData: T,
     val nonce: ByteArray?,
@@ -86,16 +86,16 @@ expect internal fun SealedBox<Authenticated.Integrated, *, SymmetricEncryptionAl
     secretKey: ByteArray
 ): ByteArray
 
-expect internal fun SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>>.doDecrypt(
+expect internal fun SealedBox<AECapability.Unauthenticated, *, SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, *>>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray
 
 
-internal expect fun <T, A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>> initCipher(
+internal expect fun <T, A : AECapability, E : SymmetricEncryptionAlgorithm<A, *>> initCipher(
     algorithm: E,
     key: ByteArray,
     nonce: ByteArray?,
     aad: ByteArray?
 ): CipherParam<T, A>
 
-internal expect fun <A : CipherKind, I : Nonce> CipherParam<*, A>.doEncrypt(data: ByteArray): SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>
+internal expect fun <A : AECapability, I : Nonce> CipherParam<*, A>.doEncrypt(data: ByteArray): SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>

@@ -1,10 +1,11 @@
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1ContentBytes
+import at.asitplus.signum.indispensable.asn1.encoding.encodeTo4Bytes
 import at.asitplus.signum.indispensable.mac.MAC
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.signum.supreme.symmetric.*
-import at.asitplus.signum.supreme.symmetric.discouraged.*
+import at.asitplus.signum.supreme.symmetric.discouraged.andPredefinedNonce
+import at.asitplus.signum.supreme.symmetric.discouraged.encrypt
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
@@ -64,16 +65,16 @@ class SymmetricTest : FreeSpec({
             ) { iv ->
 
                 val key = alg.randomKey()
-                if (iv != null) key.encrypt(iv, Random.nextBytes(32)) shouldNot succeed
+                if (iv != null) key.andPredefinedNonce(iv).encrypt(Random.nextBytes(32)) shouldNot succeed
                 else key.encrypt(Random.nextBytes(32)) should succeed
-                key.encrypt(alg.randomNonce(), Random.nextBytes(32)) should succeed
+                key.andPredefinedNonce(alg.randomNonce()).encrypt(Random.nextBytes(32)) should succeed
                 key.encrypt(Random.nextBytes(32)) should succeed
-                if (alg.cipher is CipherKind.Authenticated)
+                if (alg.cipher is AECapability.Authenticated)
                     key.encrypt(Random.nextBytes(32))
-                        .getOrThrow().cipherKind.shouldBeInstanceOf<CipherKind.Authenticated>()
-                else if (alg.cipher is CipherKind.Unauthenticated)
+                        .getOrThrow().cipherKind.shouldBeInstanceOf<AECapability.Authenticated>()
+                else if (alg.cipher is AECapability.Unauthenticated)
                     key.encrypt(Random.nextBytes(32))
-                        .getOrThrow().cipherKind.shouldBeInstanceOf<CipherKind.Unauthenticated>()
+                        .getOrThrow().cipherKind.shouldBeInstanceOf<AECapability.Unauthenticated>()
             }
         }
     }
@@ -127,28 +128,28 @@ class SymmetricTest : FreeSpec({
                     //Covers Unauthenticated and GCM
                     is SymmetricKey.Integrated<*, Nonce.Required> -> SymmetricKey.Integrated(alg, keyBytes)
                     is SymmetricKey.WithDedicatedMac<Nonce.Required> -> SymmetricKey.WithDedicatedMac(
-                        alg as SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>, Nonce.Required>,
+                        alg as SymmetricEncryptionAlgorithm<AECapability.Authenticated.WithDedicatedMac<*, *>, Nonce.Required>,
                         keyBytes
                     )
                 })
 
 
                 key.encrypt(Random.nextBytes(32)) shouldNot succeed
-                key.encrypt(iv = alg.randomNonce(), data = Random.nextBytes(32)) shouldNot succeed
+                key.andPredefinedNonce(alg.randomNonce()).encrypt(data = Random.nextBytes(32)) shouldNot succeed
 
-                if (alg.cipher is CipherKind.Authenticated)
+                if (alg.cipher is AECapability.Authenticated)
                     alg.randomKey().encrypt(
                         Random.nextBytes(32)
                     ).let {
                         it should succeed
-                        it.getOrThrow().cipherKind.shouldBeInstanceOf<CipherKind.Authenticated>()
+                        it.getOrThrow().cipherKind.shouldBeInstanceOf<AECapability.Authenticated>()
                     }
-                else if (alg.cipher is CipherKind.Unauthenticated)
+                else if (alg.cipher is AECapability.Unauthenticated)
                     alg.randomKey().encrypt(
                         Random.nextBytes(32)
                     ).let {
                         it should succeed
-                        it.getOrThrow().cipherKind.shouldBeInstanceOf<CipherKind.Unauthenticated>()
+                        it.getOrThrow().cipherKind.shouldBeInstanceOf<AECapability.Unauthenticated>()
                     }
             }
         }
@@ -186,14 +187,14 @@ class SymmetricTest : FreeSpec({
                 ) { iv ->
 
                     val ciphertext =
-                        if (iv != null) key.encrypt(iv, plaintext).getOrThrow()
+                        if (iv != null) key.andPredefinedNonce(iv).encrypt(plaintext).getOrThrow()
                         else key.encrypt(plaintext).getOrThrow()
 
                     ciphertext.nonce.shouldNotBeNull()
                     if (iv != null) ciphertext.nonce.size shouldBe iv.size
                     ciphertext.nonce.size shouldBe it.nonce.length.bytes.toInt()
                     iv?.let { ciphertext.nonce shouldBe iv }
-                    ciphertext.cipherKind.shouldBeInstanceOf<CipherKind.Unauthenticated>()
+                    ciphertext.cipherKind.shouldBeInstanceOf<AECapability.Unauthenticated>()
 
 
                     val decrypted = ciphertext.decrypt(key).getOrThrow()
@@ -280,13 +281,13 @@ class SymmetricTest : FreeSpec({
                     ) { aad ->
 
                         val ciphertext =
-                            if (iv != null) key.encrypt(iv, plaintext, aad).getOrThrow()
+                            if (iv != null) key.andPredefinedNonce(iv).encrypt(plaintext, aad).getOrThrow()
                             else key.encrypt(plaintext, aad).getOrThrow()
 
                         ciphertext.nonce.shouldNotBeNull()
                         ciphertext.nonce.size shouldBe alg.nonce.length.bytes.toInt()
                         if (iv != null) ciphertext.nonce shouldBe iv
-                        ciphertext.cipherKind.shouldBeInstanceOf<CipherKind.Authenticated>()
+                        ciphertext.cipherKind.shouldBeInstanceOf<AECapability.Authenticated>()
                         ciphertext.authenticatedData shouldBe aad
 
                         val decrypted = ciphertext.decrypt(key).getOrThrow()
@@ -411,7 +412,7 @@ class SymmetricTest : FreeSpec({
                                 null
                             ) { aad ->
                                 val ciphertext =
-                                    if (iv != null) key.encrypt(iv, plaintext, aad).getOrThrow()
+                                    if (iv != null) key.andPredefinedNonce(iv).encrypt(plaintext, aad).getOrThrow()
                                     else key.encrypt(plaintext, aad).getOrThrow()
                                 val manilaAlg = it.Custom { _, _, _ -> "Manila".encodeToByteArray() }
                                 val manilaKey = SymmetricKey.WithDedicatedMac<Nonce.Required>(
@@ -419,23 +420,21 @@ class SymmetricTest : FreeSpec({
                                     key.secretKey,
                                     key.dedicatedMacKey
                                 )
-                                if (iv != null) manilaKey.encrypt(iv, plaintext, aad)
+                                if (iv != null) manilaKey.andPredefinedNonce(iv).encrypt(plaintext, aad)
                                     .getOrThrow() shouldNotBe ciphertext
                                 manilaKey.encrypt(plaintext, aad).getOrThrow() shouldNotBe ciphertext
 
                                 //no randomness. must be equal
                                 val randomIV = it.randomNonce()
-                                manilaKey.encrypt(randomIV, plaintext, aad).getOrThrow() shouldBe manilaKey.encrypt(
-                                    randomIV,
-                                    plaintext,
-                                    aad
-                                ).getOrThrow()
-
+                                manilaKey.andPredefinedNonce(randomIV).encrypt(plaintext, aad)
+                                    .getOrThrow() shouldBe
+                                        manilaKey.andPredefinedNonce(randomIV).encrypt(plaintext, aad)
+                                            .getOrThrow()
 
                                 if (iv != null) ciphertext.nonce shouldBe iv
                                 ciphertext.nonce.shouldNotBeNull()
                                 ciphertext.nonce.size shouldBe it.nonce.length.bytes.toInt()
-                                ciphertext.cipherKind.shouldBeInstanceOf<CipherKind.Authenticated>()
+                                ciphertext.cipherKind.shouldBeInstanceOf<AECapability.Authenticated>()
                                 ciphertext.authenticatedData shouldBe aad
 
                                 val decrypted = ciphertext.decrypt(key).getOrThrow()
@@ -530,32 +529,18 @@ class SymmetricTest : FreeSpec({
     "README" {
         val secureRandom = SecureRandom()
 
-        val payload = "More matter, with less Art!".encodeToByteArray()
+        val payload = "More matter, with less art!".encodeToByteArray()
 
-        //we want to customise what is fed into the MAC
-        val customMacInputFn =
-            fun MAC.(ciphertext: ByteArray, iv: ByteArray?, aad: ByteArray?): ByteArray =
-                //this is the default
-                (iv ?: byteArrayOf()) + (aad ?: byteArrayOf()) + ciphertext +
-                        //but we augment it with the length of AAD:
-                        (aad?.size?.encodeToAsn1ContentBytes() ?: byteArrayOf())
-
-
-        //define parameters
+        //define algorithm parameters
         val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
             //with a custom HMAC input calculation function
-            .Custom { ciphertext, iv, aad ->
-                //this is the default
-                (iv ?: byteArrayOf()) + (aad ?: byteArrayOf()) + ciphertext +
-                        //but we augment it with the length of AAD:
-                        (aad?.size?.encodeToAsn1ContentBytes() ?: byteArrayOf()) //custom mac fun here
+            .Custom { ciphertext, _, aad -> //A shorter version of per RFC 7518
+                (aad ?: byteArrayOf()) + ciphertext + (aad?.size?.encodeTo4Bytes() ?: byteArrayOf())
             }
-
 
         //any size is fine, really. omitting the override just uses the encryption key as mac key
         val key = algorithm.randomKey(dedicatedMacKeyOverride = secureRandom.nextBytesOf(32))
         val aad = Clock.System.now().toString().encodeToByteArray()
-
 
         val sealedBox = key.encrypt(
             payload,
@@ -573,8 +558,8 @@ class SymmetricTest : FreeSpec({
         sealedBox.authenticatedData shouldBe aad
 
         //because everything is structured, decryption is simple
-        val recovered =
-            sealedBox.decrypt(key).getOrThrow(/*handle error*/)
+        val recovered = sealedBox.decrypt(key).getOrThrow(/*handle error*/)
+
         recovered shouldBe payload //success!
 
         //we can also manually construct the sealed box, if we know the algorithm:

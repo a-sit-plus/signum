@@ -58,7 +58,7 @@ a separate platform listing is omitted.
 | Elliptic Curves      | NIST Curves (P-256, P-384, P-521)                                                    |
 | Digests              | SHA-1 and SHA-2 family (SHA-256, SHA-384, SHA-512)                                   |
 | MAC                  | HMAC based on the SHA-1 and SHA-2 family (SHA-256, SHA-384, SHA-512)                 |
-| Symmetric Encryption | AES-CBC, AES-CBC-HMAC, AES-GCM                                                       |
+| Symmetric Encryption | AES-CBC, AES-CBC-HMAC, AES-GCM, ChaCha-Poly1503                                      |
 
 On the JVM and on Android, supporting more algorithms is rather easy, since Bouncy Castle works on both platforms
 and can be used to provide more algorithms than natively supported. However, we aim for tight platform integration,

@@ -1,6 +1,6 @@
 package at.asitplus.signum.supreme.symmetric
 
-import at.asitplus.signum.indispensable.symmetric.CipherKind
+import at.asitplus.signum.indispensable.symmetric.AECapability
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
@@ -11,7 +11,7 @@ internal object AESJVM {
     fun initCipher(algorithm: SymmetricEncryptionAlgorithm.AES<*>, key: ByteArray, nonce: ByteArray, aad: ByteArray?) =
         Cipher.getInstance(algorithm.jcaName).apply {
             val cipher = algorithm.cipher
-            if (cipher is CipherKind.Authenticated.Integrated)
+            if (cipher is AECapability.Authenticated.Integrated)
                 init(
                     Cipher.ENCRYPT_MODE,
                     SecretKeySpec(key, algorithm.jcaKeySpec),
@@ -25,5 +25,5 @@ internal object AESJVM {
                 )
             else TODO()
             aad?.let { if (algorithm is SymmetricEncryptionAlgorithm.AES.GCM) updateAAD(it) /*CBC-HMAC we do ourselves*/ }
-        }.let { CipherParam<Cipher, CipherKind>(algorithm, it, nonce, aad) }
+        }.let { CipherParam<Cipher, AECapability>(algorithm, it, nonce, aad) }
 }

@@ -6,7 +6,7 @@ import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.A
 import kotlinx.cinterop.ExperimentalForeignApi
 
 
-internal actual fun <T, A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>> initCipher(
+internal actual fun <T, A : AECapability, E : SymmetricEncryptionAlgorithm<A, *>> initCipher(
     algorithm: E,
     key: ByteArray,
     nonce: ByteArray?,
@@ -21,7 +21,7 @@ internal actual fun <T, A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>> 
 }
 
 @OptIn(ExperimentalForeignApi::class)
-internal actual fun <A : CipherKind, I : Nonce> CipherParam<*, A>.doEncrypt(data: ByteArray): SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>> {
+internal actual fun <A : AECapability, I : Nonce> CipherParam<*, A>.doEncrypt(data: ByteArray): SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>> {
     this as CipherParam<ByteArray, A>
     if (alg.nonce !is Nonce.Required) TODO()
 
@@ -35,7 +35,7 @@ internal actual fun <A : CipherKind, I : Nonce> CipherParam<*, A>.doEncrypt(data
 
 
 @OptIn(ExperimentalForeignApi::class)
-actual internal fun SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>>.doDecrypt(
+actual internal fun SealedBox<AECapability.Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<AECapability.Authenticated.Integrated, *>>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
     if (algorithm.nonce !is Nonce.Required) TODO()
@@ -53,7 +53,7 @@ actual internal fun SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricE
 }
 
 @OptIn(ExperimentalForeignApi::class)
-actual internal fun SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>>.doDecrypt(
+actual internal fun SealedBox<AECapability.Unauthenticated, *, SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, *>>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
     if (algorithm.nonce !is Nonce.Required) TODO()

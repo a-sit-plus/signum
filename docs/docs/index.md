@@ -13,7 +13,7 @@ types and functionality related to crypto and PKI applications:
   action
     * **Supports Attestation on iOS and Android**
     * **Biometric Authentication on Android and iOS without Callbacks or Activity Passing** (✨Magic!✨)
-* **Multiplatform AES**
+* **Multiplatform AES and ChaCha20-Poly1503**
 * **Multiplatform HMAC**
 * Public Keys (RSA and EC)
 * Private Keys (RSA and EC)
