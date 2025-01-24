@@ -1,3 +1,6 @@
+import CommonCrypto
+import CryptoKit
+import Foundation
 
 @objc public class ChaCha: NSObject {
 
