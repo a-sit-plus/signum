@@ -121,11 +121,11 @@ sealed interface SymmetricEncryptionAlgorithm<out A : CipherKind, out I : Nonce>
     }
 
     object ChaCha20Poly1305 : StreamCipher<CipherKind.Authenticated, Nonce.Required>() {
-        override val cipher = CipherKind.Authenticated.Integrated(128.bit)
-        override val nonce = Nonce.Required(96.bit)
+        override val cipher = CipherKind.Authenticated.Integrated(128u.bit)
+        override val nonce = Nonce.Required(96u.bit)
         override val name: String ="ChaCha20-Poly1305"
         override fun toString() = name
-        override val keySize = 256.bit
+        override val keySize = 256u.bit
         override val oid = KnownOIDs.chaCha20Poly1305
     }
 }
