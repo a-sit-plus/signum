@@ -26,23 +26,4 @@ internal object AESJVM {
             else TODO()
             aad?.let { if (algorithm is SymmetricEncryptionAlgorithm.AES.GCM) updateAAD(it) /*CBC-HMAC we do ourselves*/ }
         }.let { CipherParam<Cipher, CipherKind>(algorithm, it, nonce, aad) }
-
-
-    fun gcmDecrypt(
-        algorithm: SymmetricEncryptionAlgorithm.AES.GCM,
-        secretKey: ByteArray,
-        nonce: ByteArray,
-        encryptedData: ByteArray,
-        authTag: ByteArray,
-        aad: ByteArray?
-    ): ByteArray = Cipher.getInstance(algorithm.jcaName).also { cipher ->
-        cipher.init(
-            Cipher.DECRYPT_MODE,
-            SecretKeySpec(secretKey, algorithm.jcaKeySpec),
-            GCMParameterSpec(authTag.size * 8, nonce)
-        )
-        aad?.let {
-            cipher.updateAAD(it)
-        }
-    }.doFinal(encryptedData + authTag)
 }

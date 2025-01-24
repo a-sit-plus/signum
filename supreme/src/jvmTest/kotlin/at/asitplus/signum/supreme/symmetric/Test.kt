@@ -142,6 +142,8 @@ class JvmAESTest : FreeSpec({
                     secretKey.encrypt(nonce, data, aad).getOrThrow().let { own ->
                         own.cipherKind.shouldBeInstanceOf<CipherKind.Authenticated>()
                         (own.encryptedData + own.authTag) shouldBe fromJCA
+
+                        own.decrypt(secretKey).getOrThrow() shouldBe data
                     }
                 }
             }
