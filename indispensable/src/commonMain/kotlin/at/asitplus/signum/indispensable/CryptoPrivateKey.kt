@@ -18,11 +18,11 @@ private object EB_STRINGS {
     const val ENCRYPTED_PRIVATE_KEY = "ENCRYPTED PRIVATE KEY"
 }
 
-private inline fun <O, reified T> checkedAs(v: O): T =
+private inline fun <O, reified T : O> checkedAs(v: O): T =
     v as? T
         ?: throw IllegalArgumentException("Expected type was ${T::class.simpleName}, but was really ${if (v == null) "<null>" else v!!::class.simpleName}")
 
-private inline fun <I, O, reified T> checkedAsFn(crossinline fn: (I) -> O): (I) -> T = {
+private inline fun <I, O, reified T : O> checkedAsFn(crossinline fn: (I) -> O): (I) -> T = {
     checkedAs(fn(it))
 }
 
@@ -438,7 +438,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
 
             @Throws(Asn1Exception::class)
             override fun doDecode(src: Asn1Sequence): EC =
-                checkedAs(CryptoPublicKey.doDecode(src))
+                checkedAs(CryptoPrivateKey.doDecode(src))
 
             internal fun iosDecodeInternal(keyBytes: ByteArray): CryptoPrivateKey.EC.WithPublicKey {
                 val crv = ECCurve.fromIosEncodedPrivateKeyLength(keyBytes.size)

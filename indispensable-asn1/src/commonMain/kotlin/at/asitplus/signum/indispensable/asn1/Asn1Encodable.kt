@@ -133,5 +133,5 @@ interface Asn1Decodable<A : Asn1Element, T : Asn1Encodable<A>> {
      * Safe version of [decodeFromDer], wrapping the result into a [KmmResult]
      */
     fun decodeFromDerSafe(src: ByteArray, assertTag: Asn1Element.Tag? = null) =
-        catchingUnwrapped { decodeFromDer(src, assertTag) }
+        catching { decodeFromDer(src, assertTag) }
 }
