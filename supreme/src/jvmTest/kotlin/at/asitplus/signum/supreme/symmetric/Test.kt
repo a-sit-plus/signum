@@ -1,5 +1,6 @@
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.*
+import at.asitplus.signum.supreme.succeed
 import at.asitplus.signum.supreme.symmetric.decrypt
 import at.asitplus.signum.supreme.symmetric.discouraged.andPredefinedNonce
 import at.asitplus.signum.supreme.symmetric.discouraged.encrypt
@@ -10,6 +11,7 @@ import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNot
 import io.kotest.matchers.types.shouldBeInstanceOf
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
@@ -88,6 +90,10 @@ class JvmSymmetricTest : FreeSpec({
                                 if (aad != null) jcaCipher.updateAAD(aad)
                                 own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
 
+                                own.decrypt(own.algorithm.randomKey()) shouldNot succeed
+
+                                own.algorithm.sealedBox(own.algorithm.randomNonce(),own.encryptedData,own.authTag, own.authenticatedData).decrypt(secretKey) shouldNot succeed
+
 
                             } else {
                                 //CBC
@@ -107,6 +113,10 @@ class JvmSymmetricTest : FreeSpec({
                                     IvParameterSpec(own.nonce)/*use our own auto-generated IV, if null iv was provided*/
                                 )
                                 own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
+
+                                own.decrypt(own.algorithm.randomKey()) shouldNot succeed
+
+                                (alg as SymmetricEncryptionAlgorithm<AECapability.Unauthenticated,Nonce.Required>).sealedBox(own.algorithm.randomNonce(),own.encryptedData).decrypt(secretKey) shouldNot succeed
 
                             }
                         }

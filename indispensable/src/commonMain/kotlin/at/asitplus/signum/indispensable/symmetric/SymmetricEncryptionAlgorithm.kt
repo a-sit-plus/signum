@@ -110,7 +110,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AECapability, out I : Nonc
                 constructor(innerCipher: Unauthenticated, mac: at.asitplus.signum.indispensable.mac.HMAC) : this(
                     innerCipher,
                     mac,
-                    DefaultDedicatedMacInputCalculation
+                    NistSP80038FMacInputCalculation
                 )
 
                 override val cipher =
@@ -175,25 +175,23 @@ sealed interface AECapability {
 /**
  * Typealias defining the signature of the lambda for defining a custom MAC input calculation scheme.
  */
-typealias DedicatedMacInputCalculation = MAC.(ciphertext: ByteArray, nonce: ByteArray?, aad: ByteArray?) -> ByteArray
+typealias DedicatedMacInputCalculation = MAC.(ciphertext: ByteArray, nonce: ByteArray, aad: ByteArray) -> ByteArray
 
 /**
- * The default dedicated mac input calculation, analogous to TLS 1.2 AES-CBC-HMAC:
- * ```kotlin
- * (aad ?: byteArrayOf()) + ciphertext
- * ```
+ * The default dedicated mac input calculation as per NIST SP 800-38F, authenticating all inputs:
+ * `AAD || IV || Ciphertext || AAD Length`, where AAD_length is a 64 bit big-endian
  */
-val DefaultDedicatedMacInputCalculation: DedicatedMacInputCalculation =
-    fun MAC.(ciphertext: ByteArray, nonce: ByteArray?, aad: ByteArray?): ByteArray = (aad ?: byteArrayOf()) + ciphertext
+val NistSP80038FMacInputCalculation: DedicatedMacInputCalculation =
+    fun MAC.(ciphertext: ByteArray, iv: ByteArray, aad: ByteArray): ByteArray =
+        aad + iv + ciphertext + aad.size.toLong().encodeTo8Bytes()
 
 /**
  * RFC 7518 (AES_CBC_HMAC_SHA2) MAC input calculation:
  * `AAD || 0x2E || IV || Ciphertext || 0x2E || AAD_Length`, where AAD_length is a 64 bit big-endian
  */
 val RFC7518DedicatedMacInputCalculation: DedicatedMacInputCalculation =
-    fun MAC.(ciphertext: ByteArray, iv: ByteArray?, aad: ByteArray?): ByteArray =
-        (aad ?: byteArrayOf()) + 0x2E + (iv ?: byteArrayOf()) + ciphertext + 0x2E +
-                (aad?.size?.toLong()?.encodeTo8Bytes() ?: byteArrayOf())
+    fun MAC.(ciphertext: ByteArray, iv: ByteArray, aad: ByteArray): ByteArray =
+        aad + 0x2E + iv + ciphertext + 0x2E + aad.size.toLong().encodeTo8Bytes()
 
 sealed class Nonce {
     /**

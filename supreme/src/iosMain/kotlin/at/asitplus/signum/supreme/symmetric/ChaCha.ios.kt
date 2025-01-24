@@ -1,5 +1,8 @@
 package at.asitplus.signum.supreme.symmetric
 
+import at.asitplus.signum.indispensable.symmetric.AECapability
+import at.asitplus.signum.indispensable.symmetric.Nonce
+import at.asitplus.signum.indispensable.symmetric.SealedBox
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.sealedBox
 import at.asitplus.signum.internals.swiftcall
@@ -16,10 +19,10 @@ internal object ChaChaIOS {
         key: ByteArray,
         nonce: ByteArray,
         aad: ByteArray?
-    ) {
+    ): SealedBox.WithNonce<AECapability.Authenticated, SymmetricEncryptionAlgorithm<AECapability.Authenticated, Nonce.Required>> {
         val ciphertext = ChaCha.encrypt(data.toNSData(), key.toNSData(), nonce.toNSData(), aad?.toNSData())
         if (ciphertext == null) throw UnsupportedOperationException("Error from swift code!")
-        SymmetricEncryptionAlgorithm.ChaCha20Poly1305.sealedBox(
+      return  SymmetricEncryptionAlgorithm.ChaCha20Poly1305.sealedBox(
             ciphertext.iv().toByteArray(),
             ciphertext.ciphertext().toByteArray(),
             ciphertext.authTag().toByteArray(),

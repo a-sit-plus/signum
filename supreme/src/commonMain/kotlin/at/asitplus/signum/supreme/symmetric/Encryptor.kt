@@ -1,12 +1,7 @@
 package at.asitplus.signum.supreme.symmetric
 
-import at.asitplus.signum.indispensable.symmetric.AECapability
+import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.AECapability.Authenticated
-import at.asitplus.signum.indispensable.symmetric.Nonce
-import at.asitplus.signum.indispensable.symmetric.SealedBox
-import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
-import at.asitplus.signum.indispensable.symmetric.nonce
-import at.asitplus.signum.indispensable.symmetric.sealedBox
 import at.asitplus.signum.supreme.mac.mac
 
 
@@ -51,8 +46,9 @@ internal class Encryptor<A : AECapability, E : SymmetricEncryptionAlgorithm<A, *
             aMac.mac.macInputCalculation(
                 encrypted.encryptedData,
                 innerCipher.nonce,
-                (aad ?: byteArrayOf())
+                aad?:byteArrayOf()
             )
+
         val authTag = aMac.mac.mac(macKey, hmacInput).getOrThrow()
 
         (if (algorithm.nonce is Nonce.Required) {
@@ -79,7 +75,6 @@ internal class CipherParam<T, A : AECapability>(
     val nonce: ByteArray?,
     val aad: ByteArray?
 )
-
 
 
 expect internal fun SealedBox<Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<Authenticated.Integrated, *>>.doDecrypt(

@@ -348,7 +348,7 @@ class `00AASymmetricTest` : FreeSpec({
     "CBC+HMAC" - {
         withData(
             nameFn = { it.first },
-            "Default" to DefaultDedicatedMacInputCalculation,
+            "Default" to NistSP80038FMacInputCalculation,
             "Oklahoma MAC" to fun MAC.(ciphertext: ByteArray, iv: ByteArray?, aad: ByteArray?): ByteArray =
                 "Oklahoma".encodeToByteArray() + (iv ?: byteArrayOf()) + (aad
                     ?: byteArrayOf()) + ciphertext) { (_, macInputFun) ->
@@ -534,8 +534,8 @@ class `00AASymmetricTest` : FreeSpec({
         //define algorithm parameters
         val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
             //with a custom HMAC input calculation function
-            .Custom { ciphertext, _, aad -> //A shorter version of per RFC 7518
-                (aad ?: byteArrayOf()) + ciphertext + (aad?.size?.encodeTo4Bytes() ?: byteArrayOf())
+            .Custom { ciphertext, iv, aad -> //A shorter version of per RFC 7518
+                aad + iv + ciphertext + aad.size.encodeTo4Bytes()
             }
 
         //any size is fine, really. omitting the override just uses the encryption key as mac key
