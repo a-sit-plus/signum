@@ -1,16 +1,9 @@
 package at.asitplus.signum.supreme.symmetric.discouraged
 
 import at.asitplus.KmmResult
-import at.asitplus.KmmResult.Companion
-import at.asitplus.KmmResult.Companion.failure
-import at.asitplus.KmmResult.Companion.success
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.indispensable.symmetric.CipherKind
-import at.asitplus.signum.indispensable.symmetric.Nonce
-import at.asitplus.signum.indispensable.symmetric.SealedBox
-import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
-import at.asitplus.signum.indispensable.symmetric.SymmetricKey
+import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.SymmetricKey.WithDedicatedMac
 import at.asitplus.signum.supreme.symmetric.Encryptor
 import kotlin.jvm.JvmName
@@ -27,31 +20,51 @@ import kotlin.jvm.JvmName
  * invalid parameters (e.g., key or IV length)
  */
 @HazardousMaterials
-fun <A : CipherKind.Authenticated> SymmetricKey<A, Nonce.Required>.encrypt(
-    iv: ByteArray,
+@JvmName("encryptAuthenticatedWithNonce")
+fun <A : AECapability.Authenticated> KeyWithNonceAuthenticating<A>.encrypt(
     data: ByteArray,
     authenticatedData: ByteArray? = null
 ): KmmResult<SealedBox.WithNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Required>>> = catching {
     Encryptor(
-        algorithm,
-        secretKey,
-        if (this is WithDedicatedMac) dedicatedMacKey else secretKey,
-        iv,
+        second.algorithm,
+        second.secretKey,
+        if (second is WithDedicatedMac) (second as WithDedicatedMac<Nonce.Required>).dedicatedMacKey else second.secretKey,
+        first,
         authenticatedData,
     ).encrypt(data) as SealedBox.WithNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Required>>
 }
 
 @HazardousMaterials
-@JvmName("encryptWithIV")
-fun <A : CipherKind> SymmetricKey<A, Nonce.Required>.encrypt(
-    iv: ByteArray,
+@JvmName("encryptWithNonce")
+fun <A : AECapability> KeyWithNonce<A>.encrypt(
     data: ByteArray
 ): KmmResult<SealedBox.WithNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Required>>> = catching {
     Encryptor(
-        algorithm,
-        secretKey,
-        if (this is WithDedicatedMac) dedicatedMacKey else secretKey,
-        iv,
+        second.algorithm,
+        second.secretKey,
+        if (second is WithDedicatedMac) (second as WithDedicatedMac<Nonce.Required>).dedicatedMacKey else second.secretKey,
+        first,
         null,
     ).encrypt(data) as SealedBox.WithNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Required>>
 }
+
+/**
+ * This function can be used to feed a pre-set nonce into encryption functions.
+ * This is usually not required, since all algorithms requiting a nonce/IV generate them by default
+ * @see at.asitplus.signum.supreme.symmetric.randomNonce
+ */
+@HazardousMaterials("Nonce/IV re-use can have catastrophic consequences!")
+fun <A : AECapability> SymmetricKey<A, Nonce.Required>.andPredefinedNonce(nonce: ByteArray) = KeyWithNonce(nonce, this)
+
+/**
+ * This function can be used to feed a pre-set nonce into encryption functions.
+ * This is usually not required, since all algorithms requiting a nonce/IV generate them by default
+ * @see at.asitplus.signum.supreme.symmetric.randomNonce
+ */
+@HazardousMaterials("Nonce/IV re-use can have catastrophic consequences!")
+@JvmName("authedKeyWithNonce")
+fun <A : AECapability.Authenticated> SymmetricKey<A, Nonce.Required>.andPredefinedNonce(nonce: ByteArray) =
+    KeyWithNonceAuthenticating(nonce, this)
+
+private typealias KeyWithNonce<A> = Pair<ByteArray, SymmetricKey< A, Nonce.Required>>
+private typealias KeyWithNonceAuthenticating<A> = Pair<ByteArray, SymmetricKey< A, Nonce.Required>>

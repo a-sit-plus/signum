@@ -17,7 +17,7 @@ types and and platform-native functionality related to crypto and PKI applicatio
     * **Multiplatform HMAC**
     * **Hardware-Backed crypto on Android and iOS**
     * **Platform-native attestation on iOS and Android**
-   * **Configurable biometric authentication on Android and iOS without callbacks or activity passing** (✨Magic!✨)
+    * **Configurable biometric authentication on Android and iOS without callbacks or activity passing** (✨Magic!✨)
 * Public Keys (RSA and EC)
 * Private Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)

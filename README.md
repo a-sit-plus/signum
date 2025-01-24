@@ -232,37 +232,60 @@ println("Is it trustworthy? $isValid")
 ```
 
 ## Symmetric Encryption
-We currently support AES-CBC, AES-GCM, and a very flexible flavour of AES-CBC-HMAC.
+We currently support ChaCha20-Poly1503, AES-CBC, AES-GCM, and a very flexible flavour of AES-CBC-HMAC.
 This is supported across all _Supreme_ targets and works as follows:
 ```kotlin
-val payload = "More matter, with less Art!".encodeToByteArray()
+val payload = "More matter, with less art!".encodeToByteArray()
 
-//define parameters
+//define algorithm parameters
 val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
-val secretKey = algorithm.randomKey()
-val macKey = algorithm.randomKey()
+  //with a custom HMAC input calculation function
+  .Custom { ciphertext, _, aad -> //A shorter version of per RFC 7518
+    (aad ?: byteArrayOf()) + ciphertext + (aad?.size?.encodeTo4Bytes() ?: byteArrayOf())
+  }
+
+//any size is fine, really. omitting the override just uses the encryption key as mac key
+val key = algorithm.randomKey(dedicatedMacKeyOverride = secureRandom.nextBytesOf(32))
 val aad = Clock.System.now().toString().encodeToByteArray()
 
-val ciphertext =
-    //You typically chain encryptorFor and encrypt
-    //because you should never re-use an IV
-    algorithm.encryptorFor(
-        secretKey = secretKey,
-        dedicatedMacKey = macKey,
-        aad = aad
-    ).getOrThrow(/*TODO Error handling*/)
-        .encrypt(payload).getOrThrow(/*TODO Error Handling*/)
+val sealedBox = key.encrypt(
+  payload,
+  authenticatedData = aad,
+).getOrThrow(/*handle error*/)
 
-//The ciphertext object is of type Authenticated.WithDedicatedMac,
-//because AES-CBC-HMAC constrains it to this type.
-//The ciphertext object contains an IV, even though null was passed
-//it also contains AAD and an authTag, in addition to encryptedData.
-//Because everything is structured, and it contains the encryption
-//algorithm identifier, decryption is simple:
-val recovered = ciphertext.decrypt(secretKey, macKey)
-    .getOrThrow(/*TODO Error handling*/)
+//The sealed box object is correctly typed:
+//  * It is a SealedBox.WithIV
+//  * The generic type arguments indicate that
+//      * the ciphertext is authenticated
+//      * Using a dedicated MAC function atop an unauthenticated cipher
+//  * we can hence access `authenticatedCiphertext` for:
+//      * authTag
+//      * authenticatedData
+sealedBox.authenticatedData shouldBe aad
+
+//because everything is structured, decryption is simple
+val recovered = sealedBox.decrypt(key).getOrThrow(/*handle error*/)
 
 recovered shouldBe payload //success!
+
+//we can also manually construct the sealed box, if we know the algorithm:
+val reconstructed = algorithm.sealedBox(
+  sealedBox.nonce,
+  encryptedData = sealedBox.encryptedData, /*Could also access authenticatedCipherText*/
+  authTag = sealedBox.authTag,
+  authenticatedData = sealedBox.authenticatedData
+)
+
+val manuallyRecovered = reconstructed.decrypt(
+  key,
+).getOrThrow(/*handle error*/)
+
+manuallyRecovered shouldBe payload //great success!
+
+//if we just know algorithm and key bytes, we can also construct a symmetric key
+reconstructed.decrypt(
+  algorithm.keyFrom(key.secretKey, key.dedicatedMacKey).getOrThrow(/*handle error*/),
+).getOrThrow(/*handle error*/) shouldBe payload //greatest success!
 ```
 
 

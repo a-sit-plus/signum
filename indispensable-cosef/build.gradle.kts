@@ -56,15 +56,17 @@ kotlin {
     }
 }
 
-exportIosFramework(
+exportXCFramework(
     "IndispensableCosef",
     transitiveExports = false,
-    serialization("cbor"),
-    datetime(),
-    kmmresult(),
-    project(":indispensable"),
-    project(":indispensable-asn1"),
-    libs.bignum,
+    additionalExports = arrayOf(
+        serialization("cbor"),
+        datetime(),
+        kmmresult(),
+        project(":indispensable"),
+        project(":indispensable-asn1"),
+        libs.bignum
+    )
 )
 
 val javadocJar = setupDokka(

@@ -7,7 +7,7 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-actual internal fun <T, A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>> initCipher(
+actual internal fun <T, A : AECapability, E : SymmetricEncryptionAlgorithm<A, *>> initCipher(
     algorithm: E,
     key: ByteArray,
     nonce: ByteArray?,
@@ -26,25 +26,25 @@ actual internal fun <T, A : CipherKind, E : SymmetricEncryptionAlgorithm<A, *>> 
 
 }
 
-actual internal fun <A : CipherKind, I : Nonce> CipherParam<*, A>.doEncrypt(data: ByteArray): SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>> {
+actual internal fun <A : AECapability, I : Nonce> CipherParam<*, A>.doEncrypt(data: ByteArray): SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>> {
     (this as CipherParam<Cipher, A>)
     val jcaCiphertext = platformData.doFinal(data)
 
     val ciphertext =
-        if (alg.cipher is CipherKind.Authenticated) jcaCiphertext.dropLast(((alg.cipher as CipherKind.Authenticated).tagLen.bytes.toInt()).toInt())
+        if (alg.cipher is AECapability.Authenticated) jcaCiphertext.dropLast(((alg.cipher as AECapability.Authenticated).tagLen.bytes.toInt()).toInt())
             .toByteArray()
         else jcaCiphertext
     val authTag =
-        if (alg.cipher is CipherKind.Authenticated) jcaCiphertext.takeLast(((alg.cipher as CipherKind.Authenticated).tagLen.bytes.toInt()).toInt())
+        if (alg.cipher is AECapability.Authenticated) jcaCiphertext.takeLast(((alg.cipher as AECapability.Authenticated).tagLen.bytes.toInt()).toInt())
             .toByteArray() else null
 
     return (if (alg.nonce is Nonce.Without) when (alg.cipher) {
-        is CipherKind.Unauthenticated -> (alg as SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Without>).sealedBox(
+        is AECapability.Unauthenticated -> (alg as SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, Nonce.Without>).sealedBox(
             ciphertext
         )
 
-        is CipherKind.Authenticated -> {
-            (alg as SymmetricEncryptionAlgorithm<CipherKind.Authenticated, Nonce.Without>).sealedBox(
+        is AECapability.Authenticated -> {
+            (alg as SymmetricEncryptionAlgorithm<AECapability.Authenticated, Nonce.Without>).sealedBox(
                 ciphertext,
                 authTag!!,
                 aad
@@ -53,13 +53,13 @@ actual internal fun <A : CipherKind, I : Nonce> CipherParam<*, A>.doEncrypt(data
 
         else -> throw IllegalArgumentException("Unreachable code")
     } else when (alg.cipher) {
-        is CipherKind.Unauthenticated -> (alg as SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, Nonce.Required>).sealedBox(
+        is AECapability.Unauthenticated -> (alg as SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, Nonce.Required>).sealedBox(
             nonce!!,
             ciphertext
         )
 
-        is CipherKind.Authenticated -> {
-            (alg as SymmetricEncryptionAlgorithm<CipherKind.Authenticated, Nonce.Required>).sealedBox(
+        is AECapability.Authenticated -> {
+            (alg as SymmetricEncryptionAlgorithm<AECapability.Authenticated, Nonce.Required>).sealedBox(
                 nonce!!,
                 ciphertext,
                 authTag!!,
@@ -85,7 +85,7 @@ val SymmetricEncryptionAlgorithm<*, *>.jcaKeySpec: String
     }
 
 @JvmName("doEncryptAuthenticated")
-actual internal fun SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<CipherKind.Authenticated.Integrated, *>>.doDecrypt(
+actual internal fun SealedBox<AECapability.Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<AECapability.Authenticated.Integrated, *>>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
     this as SealedBox.WithNonce
@@ -93,7 +93,7 @@ actual internal fun SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricE
     if ((algorithm !is SymmetricEncryptionAlgorithm.ChaCha20Poly1305) && (algorithm !is SymmetricEncryptionAlgorithm.AES.GCM)) TODO()
 
     return gcmLikeDecrypt(
-        algorithm as SymmetricEncryptionAlgorithm<CipherKind.Authenticated, Nonce.Required>,
+        algorithm as SymmetricEncryptionAlgorithm<AECapability.Authenticated, Nonce.Required>,
         secretKey,
         nonce,
         encryptedData,
@@ -103,7 +103,7 @@ actual internal fun SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricE
 
 }
 
-actual internal fun SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryptionAlgorithm<CipherKind.Unauthenticated, *>>.doDecrypt(
+actual internal fun SealedBox<AECapability.Unauthenticated, *, SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, *>>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
     if (algorithm !is SymmetricEncryptionAlgorithm.AES<*>)
@@ -119,8 +119,8 @@ actual internal fun SealedBox<CipherKind.Unauthenticated, *, SymmetricEncryption
     }.doFinal(encryptedData)
 }
 
-fun gcmLikeDecrypt(
-    algorithm: SymmetricEncryptionAlgorithm<CipherKind.Authenticated, Nonce.Required>,
+internal fun gcmLikeDecrypt(
+    algorithm: SymmetricEncryptionAlgorithm<AECapability.Authenticated, Nonce.Required>,
     secretKey: ByteArray,
     nonce: ByteArray,
     encryptedData: ByteArray,
