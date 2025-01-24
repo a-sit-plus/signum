@@ -19,7 +19,7 @@ import kotlin.random.Random
 
 @OptIn(HazardousMaterials::class)
 @ExperimentalStdlibApi
-class AESTest : FreeSpec({
+class SymmetricTest : FreeSpec({
 
 
     "Illegal IV Size" - {
@@ -47,27 +47,32 @@ class AESTest : FreeSpec({
             SymmetricEncryptionAlgorithm.AES_192.GCM,
             SymmetricEncryptionAlgorithm.AES_256.GCM,
 
+            SymmetricEncryptionAlgorithm.ChaCha20Poly1305,
+
             ) { alg ->
 
             withData(
-                nameFn = { "${it.size} Bytes" },
+                nameFn = { "${it?.size} Bytes" },
                 Random.nextBytes(0),
                 Random.nextBytes(1),
                 Random.nextBytes(17),
                 Random.nextBytes(18),
                 Random.nextBytes(32),
                 Random.nextBytes(256),
-
-                ) { iv ->
+                null
+            ) { iv ->
 
                 val key = alg.randomKey()
-                key.encrypt(iv, Random.nextBytes(32)) shouldNot succeed
+                if (iv != null) key.encrypt(iv, Random.nextBytes(32)) shouldNot succeed
+                else key.encrypt(Random.nextBytes(32)) should succeed
                 key.encrypt(alg.randomNonce(), Random.nextBytes(32)) should succeed
                 key.encrypt(Random.nextBytes(32)) should succeed
                 if (alg.cipher is CipherKind.Authenticated)
-                    key.encrypt(Random.nextBytes(32)).getOrThrow().cipherKind.shouldBeInstanceOf<CipherKind.Authenticated>()
+                    key.encrypt(Random.nextBytes(32))
+                        .getOrThrow().cipherKind.shouldBeInstanceOf<CipherKind.Authenticated>()
                 else if (alg.cipher is CipherKind.Unauthenticated)
-                    key.encrypt(Random.nextBytes(32)).getOrThrow().cipherKind.shouldBeInstanceOf<CipherKind.Unauthenticated>()
+                    key.encrypt(Random.nextBytes(32))
+                        .getOrThrow().cipherKind.shouldBeInstanceOf<CipherKind.Unauthenticated>()
             }
         }
     }
@@ -98,7 +103,9 @@ class AESTest : FreeSpec({
             SymmetricEncryptionAlgorithm.AES_192.GCM,
             SymmetricEncryptionAlgorithm.AES_256.GCM,
 
-            ) { alg ->
+            SymmetricEncryptionAlgorithm.ChaCha20Poly1305
+
+        ) { alg ->
 
             withData(
                 nameFn = { "${it.size} Bytes" },
@@ -171,19 +178,20 @@ class AESTest : FreeSpec({
                 val key = it.randomKey()
 
                 withData(
-                    nameFn = { "IV: " + it.toHexString().substring(0..8) },
+                    nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
                     it.randomNonce(),
                     it.randomNonce(),
+                    null
                 ) { iv ->
 
-
-                    val ciphertext = key.encrypt(iv, plaintext).getOrThrow()
-
-
+                    val ciphertext =
+                        if (iv != null) key.encrypt(iv, plaintext).getOrThrow()
+                        else key.encrypt(plaintext).getOrThrow()
 
                     ciphertext.nonce.shouldNotBeNull()
-                    ciphertext.nonce.size shouldBe iv.size
-                    iv.let { ciphertext.nonce shouldBe it }
+                    if (iv != null) ciphertext.nonce.size shouldBe iv.size
+                    ciphertext.nonce.size shouldBe it.nonce.length.bytes.toInt()
+                    iv?.let { ciphertext.nonce shouldBe iv }
                     ciphertext.cipherKind.shouldBeInstanceOf<CipherKind.Unauthenticated>()
 
 
@@ -233,11 +241,13 @@ class AESTest : FreeSpec({
         }
     }
 
-    "GCM" - {
+    "GCM + ChaCha-Poly1503" - {
         withData(
             SymmetricEncryptionAlgorithm.AES_128.GCM,
             SymmetricEncryptionAlgorithm.AES_192.GCM,
-            SymmetricEncryptionAlgorithm.AES_256.GCM
+            SymmetricEncryptionAlgorithm.AES_256.GCM,
+
+            SymmetricEncryptionAlgorithm.ChaCha20Poly1305
         ) { alg ->
 
             withData(
@@ -259,6 +269,7 @@ class AESTest : FreeSpec({
                     nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
                     alg.randomNonce(),
                     alg.randomNonce(),
+                    null
                 ) { iv ->
 
                     withData(
@@ -268,11 +279,12 @@ class AESTest : FreeSpec({
                     ) { aad ->
 
                         val ciphertext =
-                            key.encrypt(iv, plaintext, aad).getOrThrow()
+                            if (iv != null) key.encrypt(iv, plaintext, aad).getOrThrow()
+                            else key.encrypt(plaintext, aad).getOrThrow()
 
                         ciphertext.nonce.shouldNotBeNull()
                         ciphertext.nonce.size shouldBe alg.nonce.length.bytes.toInt()
-                        ciphertext.nonce shouldBe iv
+                        if (iv != null) ciphertext.nonce shouldBe iv
                         ciphertext.cipherKind.shouldBeInstanceOf<CipherKind.Authenticated>()
                         ciphertext.authenticatedData shouldBe aad
 
@@ -387,9 +399,10 @@ class AESTest : FreeSpec({
                         val key = it.randomKey(macKey)
 
                         withData(
-                            nameFn = { "IV: " + it.toHexString().substring(0..8) },
+                            nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
                             Random.Default.nextBytes((it.nonce.length.bytes).toInt()),
                             Random.Default.nextBytes((it.nonce.length.bytes).toInt()),
+                            null
                         ) { iv ->
                             withData(
                                 nameFn = { "AAD: " + it?.toHexString()?.substring(0..8) },
@@ -397,14 +410,17 @@ class AESTest : FreeSpec({
                                 null
                             ) { aad ->
                                 val ciphertext =
-                                    key.encrypt(iv, plaintext, aad).getOrThrow()
+                                    if (iv != null) key.encrypt(iv, plaintext, aad).getOrThrow()
+                                    else key.encrypt(plaintext, aad).getOrThrow()
                                 val manilaAlg = it.Custom { _, _, _ -> "Manila".encodeToByteArray() }
                                 val manilaKey = SymmetricKey.WithDedicatedMac<Nonce.Required>(
                                     manilaAlg,
                                     key.secretKey,
                                     key.dedicatedMacKey
                                 )
-                                manilaKey.encrypt(iv, plaintext, aad).getOrThrow() shouldNotBe ciphertext
+                                if (iv != null) manilaKey.encrypt(iv, plaintext, aad)
+                                    .getOrThrow() shouldNotBe ciphertext
+                                manilaKey.encrypt(plaintext, aad).getOrThrow() shouldNotBe ciphertext
 
                                 //no randomness. must be equal
                                 val randomIV = it.randomNonce()
@@ -415,8 +431,9 @@ class AESTest : FreeSpec({
                                 ).getOrThrow()
 
 
-                                ciphertext.nonce shouldBe iv
+                                if (iv != null) ciphertext.nonce shouldBe iv
                                 ciphertext.nonce.shouldNotBeNull()
+                                ciphertext.nonce.size shouldBe it.nonce.length.bytes.toInt()
                                 ciphertext.cipherKind.shouldBeInstanceOf<CipherKind.Authenticated>()
                                 ciphertext.authenticatedData shouldBe aad
 

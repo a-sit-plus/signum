@@ -6,6 +6,7 @@ import at.asitplus.signum.supreme.symmetric.randomKey
 import at.asitplus.signum.supreme.symmetric.randomNonce
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import javax.crypto.Cipher
@@ -15,7 +16,7 @@ import javax.crypto.spec.SecretKeySpec
 import kotlin.random.Random
 
 @OptIn(HazardousMaterials::class)
-class JvmAESTest : FreeSpec({
+class JvmSymmetricTest : FreeSpec({
 
     "Against JCA" - {
         "AES" - {
@@ -114,7 +115,7 @@ class JvmAESTest : FreeSpec({
     "ChaCha20-Poly1305" - {
         val alg = SymmetricEncryptionAlgorithm.ChaCha20Poly1305
         withData(
-            nameFn = { "iv: ${it.size} bytes" }, alg.randomNonce(), alg.randomNonce()
+            nameFn = { "iv: ${it?.size} bytes" }, alg.randomNonce(), alg.randomNonce(), null
         ) { nonce ->
             withData(Random.nextBytes(19), null) { aad ->
                 withData(
@@ -129,22 +130,26 @@ class JvmAESTest : FreeSpec({
                 ) { data ->
                     val secretKey = alg.randomKey()
                     val jcaCipher = Cipher.getInstance("ChaCha20-Poly1305");
+
+                    val box = if (nonce != null) secretKey.encrypt(nonce, data, aad).getOrThrow()
+                    else secretKey.encrypt(data, aad).getOrThrow()
+
                     jcaCipher.init(
                         Cipher.ENCRYPT_MODE,
                         SecretKeySpec(secretKey.secretKey, "ChaCha"),
-                        IvParameterSpec(nonce)
+                        IvParameterSpec(box.nonce) /*need to do this, otherwise we get a random nonce*/
                     )
 
                     if (aad != null) jcaCipher.updateAAD(aad)
 
                     val fromJCA = jcaCipher.doFinal(data)
 
-                    secretKey.encrypt(nonce, data, aad).getOrThrow().let { own ->
-                        own.cipherKind.shouldBeInstanceOf<CipherKind.Authenticated>()
-                        (own.encryptedData + own.authTag) shouldBe fromJCA
+                    box.nonce.shouldNotBeNull()
+                    box.nonce.size shouldBe alg.nonce.length.bytes.toInt()
+                    box.cipherKind.shouldBeInstanceOf<CipherKind.Authenticated>()
+                    (box.encryptedData + box.authTag) shouldBe fromJCA
+                    box.decrypt(secretKey).getOrThrow() shouldBe data
 
-                        own.decrypt(secretKey).getOrThrow() shouldBe data
-                    }
                 }
             }
         }
