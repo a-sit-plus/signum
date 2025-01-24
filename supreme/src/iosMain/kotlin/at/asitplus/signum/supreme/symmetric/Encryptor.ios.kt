@@ -27,15 +27,9 @@ internal actual fun <A : CipherKind, I : Nonce> CipherParam<*, A>.doEncrypt(data
 
     require(nonce != null)
 
-    if (alg !is SymmetricEncryptionAlgorithm.AES<*>)
-        TODO()
-
-
     return when (alg) {
-
         is AES<*> -> AESIOS.encrypt(alg, data, platformData, nonce, aad)
-
-        else -> TODO()
+        is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaIOS.encrypt(data, platformData, nonce, aad)
     } as SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>
 }
 
@@ -46,10 +40,16 @@ actual internal fun SealedBox<CipherKind.Authenticated.Integrated, *, SymmetricE
 ): ByteArray {
     if (algorithm.nonce !is Nonce.Required) TODO()
     this as SealedBox.WithNonce
-    require(algorithm is AES<*>) { "Only AES is supported" }
-
-    return AESIOS.gcmDecrypt(encryptedData, secretKey, nonce, authTag, authenticatedData)
-
+    return when (algorithm) {
+        is AES<*> -> AESIOS.gcmDecrypt(encryptedData, secretKey, nonce, authTag, authenticatedData)
+        is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaIOS.decrypt(
+            encryptedData,
+            secretKey,
+            nonce,
+            authTag,
+            authenticatedData
+        )
+    }
 }
 
 @OptIn(ExperimentalForeignApi::class)
