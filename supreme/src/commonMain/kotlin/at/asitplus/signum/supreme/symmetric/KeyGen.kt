@@ -57,10 +57,12 @@ fun SymmetricEncryptionAlgorithm<CipherKind.Authenticated.WithDedicatedMac<*, *>
 }
 
 /**
- * Generates a new random Nonce matching the Nonce size of this algorithm
+ * Generates a new random Nonce matching the Nonce size of this algorithm.
+ * You typically don't want to use this, but have your nonces auto-generated.
  */
-internal fun SymmetricEncryptionAlgorithm<*, Nonce.Required>.randomNonce() =
-    @OptIn(HazardousMaterials::class) secureRandom.nextBytesOf((nonce.length.bytes).toInt())
+@HazardousMaterials("Don't explicitly generate nonces!")
+ fun SymmetricEncryptionAlgorithm<*, Nonce.Required>.randomNonce() =
+    secureRandom.nextBytesOf((nonce.length.bytes).toInt())
 
 
 fun SymmetricEncryptionAlgorithm<*, *>.keyFrom(bytes: ByteArray): KmmResult<SymmetricKey<*, *>> =
