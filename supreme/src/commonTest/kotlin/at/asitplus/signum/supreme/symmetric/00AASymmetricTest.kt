@@ -21,7 +21,7 @@ import kotlin.random.Random
 
 @OptIn(HazardousMaterials::class)
 @ExperimentalStdlibApi
-class SymmetricTest : FreeSpec({
+class `00AASymmetricTest` : FreeSpec({
 
 
     "Illegal IV Size" - {
@@ -374,10 +374,10 @@ class SymmetricTest : FreeSpec({
             ) {
                 withData(
                     nameFn = { "${it.size} Bytes" },
+                    Random.Default.nextBytes(16),
                     byteArrayOf(),
                     Random.Default.nextBytes(5),
                     Random.Default.nextBytes(15),
-                    Random.Default.nextBytes(16),
                     Random.Default.nextBytes(17),
                     Random.Default.nextBytes(31),
                     Random.Default.nextBytes(32),

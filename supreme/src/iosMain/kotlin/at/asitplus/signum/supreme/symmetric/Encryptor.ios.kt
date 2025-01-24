@@ -27,6 +27,7 @@ internal actual fun <A : AECapability, I : Nonce> CipherParam<*, A>.doEncrypt(da
 
     require(nonce != null)
 
+
     return when (alg) {
         is AES<*> -> AESIOS.encrypt(alg, data, platformData, nonce, aad)
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaIOS.encrypt(data, platformData, nonce, aad)

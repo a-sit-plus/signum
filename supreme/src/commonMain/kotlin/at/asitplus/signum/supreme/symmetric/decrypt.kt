@@ -59,7 +59,7 @@ private fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncrypti
     secretKey: ByteArray,
     macKey: ByteArray = secretKey,
 ): ByteArray {
-    val iv: ByteArray? = if (this is SealedBox.WithNonce<*, *>) this@decryptInternal.nonce else null
+    val iv: ByteArray? = if (this is SealedBox.WithNonce<*, *>) nonce else null
     val aad = authenticatedData
     val authTag = authTag
 
@@ -74,7 +74,7 @@ private fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncrypti
 
     val box: SealedBox<AECapability.Unauthenticated, *, SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, *>> =
         (if (this is SealedBox.WithNonce<*, *>) (innerCipher as SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, Nonce.Required>).sealedBox(
-            this.nonce,
+            nonce,
             encryptedData
         ) else (innerCipher as SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, Nonce.Without>).sealedBox(
             encryptedData

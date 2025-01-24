@@ -1,7 +1,8 @@
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.symmetric.decrypt
-import at.asitplus.signum.supreme.symmetric.discouraged.*
+import at.asitplus.signum.supreme.symmetric.discouraged.andPredefinedNonce
+import at.asitplus.signum.supreme.symmetric.discouraged.encrypt
 import at.asitplus.signum.supreme.symmetric.encrypt
 import at.asitplus.signum.supreme.symmetric.randomKey
 import at.asitplus.signum.supreme.symmetric.randomNonce
@@ -53,12 +54,14 @@ class JvmSymmetricTest : FreeSpec({
 
                             if (alg is SymmetricEncryptionAlgorithm.AES.GCM) {
                                 //GCM need to cast key, because alg is AES with no mode of ops, since we mix CBC and GCM in the test input
-                                val own = (secretKey as SymmetricKey<AECapability.Authenticated, Nonce.Required>).encrypt(
-                                    iv = iv,
-                                    data = data,
-                                    aad
-                                )
-                                    .getOrThrow()
+                                val own =
+                                    (secretKey as SymmetricKey<AECapability.Authenticated, Nonce.Required>).andPredefinedNonce(
+                                        iv
+                                    ).encrypt(
+                                        data = data,
+                                        aad
+                                    )
+                                        .getOrThrow()
                                 own.cipherKind.shouldBeInstanceOf<AECapability.Authenticated>()
                                 jcaCipher.init(
                                     Cipher.ENCRYPT_MODE,
@@ -132,7 +135,7 @@ class JvmSymmetricTest : FreeSpec({
                     val secretKey = alg.randomKey()
                     val jcaCipher = Cipher.getInstance("ChaCha20-Poly1305");
 
-                    val box = if (nonce != null) secretKey.encrypt(nonce, data, aad).getOrThrow()
+                    val box = if (nonce != null) secretKey.andPredefinedNonce(nonce).encrypt(data, aad).getOrThrow()
                     else secretKey.encrypt(data, aad).getOrThrow()
 
                     jcaCipher.init(

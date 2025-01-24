@@ -40,10 +40,10 @@ fun <A : AECapability> KeyWithNonce<A>.encrypt(
     data: ByteArray
 ): KmmResult<SealedBox.WithNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Required>>> = catching {
     Encryptor(
-        second.algorithm,
-        second.secretKey,
-        if (second is WithDedicatedMac) (second as WithDedicatedMac<Nonce.Required>).dedicatedMacKey else second.secretKey,
-        first,
+        first.algorithm,
+        first.secretKey,
+        if (first is WithDedicatedMac) (first as WithDedicatedMac<Nonce.Required>).dedicatedMacKey else first.secretKey,
+        second,
         null,
     ).encrypt(data) as SealedBox.WithNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Required>>
 }
@@ -54,7 +54,7 @@ fun <A : AECapability> KeyWithNonce<A>.encrypt(
  * @see at.asitplus.signum.supreme.symmetric.randomNonce
  */
 @HazardousMaterials("Nonce/IV re-use can have catastrophic consequences!")
-fun <A : AECapability> SymmetricKey<A, Nonce.Required>.andPredefinedNonce(nonce: ByteArray) = KeyWithNonce(nonce, this)
+fun <A : AECapability> SymmetricKey<A, Nonce.Required>.andPredefinedNonce(nonce: ByteArray) = KeyWithNonce( this, nonce)
 
 /**
  * This function can be used to feed a pre-set nonce into encryption functions.
@@ -66,5 +66,6 @@ fun <A : AECapability> SymmetricKey<A, Nonce.Required>.andPredefinedNonce(nonce:
 fun <A : AECapability.Authenticated> SymmetricKey<A, Nonce.Required>.andPredefinedNonce(nonce: ByteArray) =
     KeyWithNonceAuthenticating(nonce, this)
 
-private typealias KeyWithNonce<A> = Pair<ByteArray, SymmetricKey< A, Nonce.Required>>
+private typealias KeyWithNonce<A> = Pair< SymmetricKey< A, Nonce.Required>, ByteArray>
+//types first and second are deliberately swapped
 private typealias KeyWithNonceAuthenticating<A> = Pair<ByteArray, SymmetricKey< A, Nonce.Required>>
