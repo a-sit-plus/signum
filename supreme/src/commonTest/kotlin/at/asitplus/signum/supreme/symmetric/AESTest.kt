@@ -14,6 +14,7 @@ import io.kotest.matchers.shouldNot
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.datetime.Clock
+import org.kotlincrypto.SecureRandom
 import kotlin.random.Random
 
 @OptIn(HazardousMaterials::class)
@@ -111,7 +112,7 @@ class AESTest : FreeSpec({
                 ) { keyBytes ->
 
                 //prohibited!
-                alg.encryptionKeyFrom(keyBytes) shouldNot succeed
+                alg.keyFrom(keyBytes) shouldNot succeed
 
                 //so we try to out-smart ourselves and it must fail later on
                 val key = (when (alg.randomKey()) {
@@ -509,6 +510,8 @@ class AESTest : FreeSpec({
     }
 
     "README" {
+        val secureRandom = SecureRandom()
+
         val payload = "More matter, with less Art!".encodeToByteArray()
 
         //we want to customise what is fed into the MAC
@@ -572,7 +575,7 @@ class AESTest : FreeSpec({
 
         //if we just know algorithm and key bytes, we can also construct a symmetric key
         reconstructed.decrypt(
-            algorithm.encryptionKeyFrom(key.secretKey, key.dedicatedMacKey).getOrThrow(/*handle error*/),
+            algorithm.keyFrom(key.secretKey, key.dedicatedMacKey).getOrThrow(/*handle error*/),
         ).getOrThrow(/*handle error*/) shouldBe payload //greatest success!
     }
 })
