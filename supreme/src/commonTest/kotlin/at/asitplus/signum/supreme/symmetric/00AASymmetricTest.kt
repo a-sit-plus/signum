@@ -234,7 +234,7 @@ class `00AASymmetricTest` : FreeSpec({
 
                     if (plaintext.size > it.blockSize.bytes.toInt()) { //cannot test like that for ciphertexts shorter than IV
                         val wrongIVDecrypted = wrongIV.decrypt(key)
-                        wrongIVDecrypted should succeed
+                        wrongIVDecrypted should succeed //no padding errors!
                         wrongIVDecrypted shouldNotBe plaintext
                     }
 
