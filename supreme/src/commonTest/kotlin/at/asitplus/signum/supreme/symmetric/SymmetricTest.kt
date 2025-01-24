@@ -4,6 +4,7 @@ import at.asitplus.signum.indispensable.mac.MAC
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.signum.supreme.symmetric.*
+import at.asitplus.signum.supreme.symmetric.discouraged.*
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData

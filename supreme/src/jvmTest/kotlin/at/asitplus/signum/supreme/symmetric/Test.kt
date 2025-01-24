@@ -1,6 +1,7 @@
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.symmetric.decrypt
+import at.asitplus.signum.supreme.symmetric.discouraged.*
 import at.asitplus.signum.supreme.symmetric.encrypt
 import at.asitplus.signum.supreme.symmetric.randomKey
 import at.asitplus.signum.supreme.symmetric.randomNonce
