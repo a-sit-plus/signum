@@ -13,7 +13,7 @@ import kotlin.jvm.JvmName
  * invalid parameters (e.g., algorithm mismatch, key length, …)
  */
 @JvmName("encryptWithAutoGenIV")
-fun <K: KeyType,A : AECapability<out K>, I : Nonce> SymmetricKey<A, I,out K>.encrypt(
+fun <K: KeyType,A : AuthType<out K>, I : Nonce> SymmetricKey<A, I,out K>.encrypt(
     data: ByteArray
 ): KmmResult<SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>> = catching {
     Encryptor(
@@ -39,7 +39,7 @@ fun <K: KeyType,A : AECapability<out K>, I : Nonce> SymmetricKey<A, I,out K>.enc
  * invalid parameters (e.g., algorithm mismatch, key length, …)
  */
 @JvmName("encryptAuthenticated")
-fun <K: KeyType, A : AECapability.Authenticated<out K>, I : Nonce> SymmetricKey<A, I,out K>.encrypt(
+fun <K: KeyType, A : AuthType.Authenticated<out K>, I : Nonce> SymmetricKey<A, I,out K>.encrypt(
     data: ByteArray,
     authenticatedData: ByteArray? = null
 ): KmmResult<SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>> = catching {

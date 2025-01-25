@@ -21,7 +21,7 @@ import kotlin.jvm.JvmName
  */
 @HazardousMaterials
 @JvmName("encryptAuthenticatedWithNonce")
-fun <K : KeyType, A : AECapability.Authenticated<out K>> KeyWithNonceAuthenticating<A, out K>.encrypt(
+fun <K : KeyType, A : AuthType.Authenticated<out K>> KeyWithNonceAuthenticating<A, out K>.encrypt(
     data: ByteArray,
     authenticatedData: ByteArray? = null
 ): KmmResult<SealedBox.WithNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Required>>> = catching {
@@ -36,7 +36,7 @@ fun <K : KeyType, A : AECapability.Authenticated<out K>> KeyWithNonceAuthenticat
 
 @HazardousMaterials
 @JvmName("encryptWithNonce")
-fun <K : KeyType, A : AECapability<out K>> KeyWithNonce<A, out K>.encrypt(
+fun <K : KeyType, A : AuthType<out K>> KeyWithNonce<A, out K>.encrypt(
     data: ByteArray
 ): KmmResult<SealedBox.WithNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Required>>> = catching {
     Encryptor(
@@ -54,7 +54,7 @@ fun <K : KeyType, A : AECapability<out K>> KeyWithNonce<A, out K>.encrypt(
  * @see at.asitplus.signum.supreme.symmetric.randomNonce
  */
 @HazardousMaterials("Nonce/IV re-use can have catastrophic consequences!")
-fun <K : KeyType, A : AECapability<out K>> SymmetricKey<A, Nonce.Required, out K>.andPredefinedNonce(nonce: ByteArray) =
+fun <K : KeyType, A : AuthType<out K>> SymmetricKey<A, Nonce.Required, out K>.andPredefinedNonce(nonce: ByteArray) =
     KeyWithNonce(this, nonce)
 
 /**
@@ -64,7 +64,7 @@ fun <K : KeyType, A : AECapability<out K>> SymmetricKey<A, Nonce.Required, out K
  */
 @HazardousMaterials("Nonce/IV re-use can have catastrophic consequences!")
 @JvmName("authedKeyWithNonce")
-fun <K: KeyType, A : AECapability.Authenticated< out K>> SymmetricKey<out A, Nonce.Required,out K>.andPredefinedNonce(nonce: ByteArray) =
+fun <K: KeyType, A : AuthType.Authenticated< out K>> SymmetricKey<out A, Nonce.Required,out K>.andPredefinedNonce(nonce: ByteArray) =
     KeyWithNonceAuthenticating(nonce, this)
 
 private typealias KeyWithNonce<A, K> = Pair<SymmetricKey<A, Nonce.Required, K>, ByteArray>
