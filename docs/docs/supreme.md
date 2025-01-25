@@ -361,17 +361,17 @@ Signum also support custom HMAC-based authenticated encryption, letting you free
 You also have free rein over the MAC key:
 
 ```kotlin
-val payload = "More matter, with less art!".encodeToByteArray()
+    val payload = "More matter, with less art!".encodeToByteArray()
 
 //define algorithm parameters
 val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
     //with a custom HMAC input calculation function
-    .Custom { ciphertext, iv, aad -> //A shorter version of per RFC 7518
+    .Custom { ciphertext, iv, aad -> //A shorter version of RFC 7518
         aad + iv + ciphertext + aad.size.encodeTo4Bytes()
     }
 
-//any size is fine, really. omitting the override just uses the encryption key as mac key
-val key = algorithm.randomKey(dedicatedMacKeyOverride = secureRandom.nextBytesOf(32))
+//any size is fine, really. omitting the override generates a mac key of the same size as the encryption key
+val key = algorithm.randomKey(dedicatedMacKey = secureRandom.nextBytesOf(32))
 val aad = Clock.System.now().toString().encodeToByteArray()
 
 val sealedBox = key.encrypt(

@@ -27,8 +27,8 @@ internal class Encryptor<A : AECapability, E : SymmetricEncryptionAlgorithm<A, *
      * Encrypts [data] and returns a [at.asitplus.signum.indispensable.symmetric.Ciphertext] matching the algorithm type that was used to create this [Encryptor] object.
      * E.g., an authenticated encryption algorithm causes this function to return a [at.asitplus.signum.indispensable.symmetric.Ciphertext.Authenticated].
      */
-    fun encrypt(data: ByteArray): C = if (algorithm.cipher is Authenticated.WithDedicatedMac<*, *>) {
-        val aMac = algorithm.cipher as Authenticated.WithDedicatedMac<*, *>
+    fun encrypt(data: ByteArray): C = if (algorithm.authCapability is Authenticated.WithDedicatedMac<*, *>) {
+        val aMac = algorithm.authCapability as Authenticated.WithDedicatedMac<*, *>
         aMac.innerCipher
         val innerCipher =
             initCipher<Any, AECapability.Unauthenticated, SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, *>>(

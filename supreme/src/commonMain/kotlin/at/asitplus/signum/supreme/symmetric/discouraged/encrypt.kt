@@ -21,7 +21,7 @@ import kotlin.jvm.JvmName
  */
 @HazardousMaterials
 @JvmName("encryptAuthenticatedWithNonce")
-fun <A : AECapability.Authenticated> KeyWithNonceAuthenticating<A>.encrypt(
+fun <K : KeyType, A : AECapability.Authenticated<K>> KeyWithNonceAuthenticating<A, K>.encrypt(
     data: ByteArray,
     authenticatedData: ByteArray? = null
 ): KmmResult<SealedBox.WithNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Required>>> = catching {
@@ -36,7 +36,7 @@ fun <A : AECapability.Authenticated> KeyWithNonceAuthenticating<A>.encrypt(
 
 @HazardousMaterials
 @JvmName("encryptWithNonce")
-fun <A : AECapability> KeyWithNonce<A>.encrypt(
+fun <K : KeyType, A : AECapability<out K>> KeyWithNonce<A, out K>.encrypt(
     data: ByteArray
 ): KmmResult<SealedBox.WithNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Required>>> = catching {
     Encryptor(
@@ -54,7 +54,8 @@ fun <A : AECapability> KeyWithNonce<A>.encrypt(
  * @see at.asitplus.signum.supreme.symmetric.randomNonce
  */
 @HazardousMaterials("Nonce/IV re-use can have catastrophic consequences!")
-fun <A : AECapability> SymmetricKey<A, Nonce.Required>.andPredefinedNonce(nonce: ByteArray) = KeyWithNonce( this, nonce)
+fun <K : KeyType, A : AECapability<out K>> SymmetricKey<A, Nonce.Required, out K>.andPredefinedNonce(nonce: ByteArray) =
+    KeyWithNonce(this, nonce)
 
 /**
  * This function can be used to feed a pre-set nonce into encryption functions.
@@ -63,9 +64,9 @@ fun <A : AECapability> SymmetricKey<A, Nonce.Required>.andPredefinedNonce(nonce:
  */
 @HazardousMaterials("Nonce/IV re-use can have catastrophic consequences!")
 @JvmName("authedKeyWithNonce")
-fun <A : AECapability.Authenticated> SymmetricKey<A, Nonce.Required>.andPredefinedNonce(nonce: ByteArray) =
+fun <K: KeyType, A : AECapability.Authenticated< out K>> SymmetricKey<out A, Nonce.Required,out K>.andPredefinedNonce(nonce: ByteArray) =
     KeyWithNonceAuthenticating(nonce, this)
 
-private typealias KeyWithNonce<A> = Pair< SymmetricKey< A, Nonce.Required>, ByteArray>
+private typealias KeyWithNonce<A, K> = Pair<SymmetricKey<A, Nonce.Required, K>, ByteArray>
 //types first and second are deliberately swapped
-private typealias KeyWithNonceAuthenticating<A> = Pair<ByteArray, SymmetricKey< A, Nonce.Required>>
+private typealias KeyWithNonceAuthenticating<A, K> = Pair<ByteArray, SymmetricKey<A, Nonce.Required, K>>

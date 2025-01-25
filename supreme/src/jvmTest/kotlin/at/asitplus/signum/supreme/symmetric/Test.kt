@@ -52,7 +52,7 @@ class JvmSymmetricTest : FreeSpec({
                             val secretKey = alg.randomKey()
 
                             val jcaCipher =
-                                Cipher.getInstance(if (alg.cipher is AECapability.Unauthenticated) "AES/CBC/PKCS5PADDING" else "AES/GCM/NoPadding")
+                                Cipher.getInstance(if (alg.authCapability is AECapability.Unauthenticated) "AES/CBC/PKCS5PADDING" else "AES/GCM/NoPadding")
 
                             if (alg is SymmetricEncryptionAlgorithm.AES.GCM) {
                                 //GCM need to cast key, because alg is AES with no mode of ops, since we mix CBC and GCM in the test input
@@ -69,7 +69,7 @@ class JvmSymmetricTest : FreeSpec({
                                     Cipher.ENCRYPT_MODE,
                                     SecretKeySpec(secretKey.secretKey, "AES"),
                                     GCMParameterSpec(
-                                        alg.cipher.tagLen.bits.toInt(),
+                                        alg.authCapability.tagLen.bits.toInt(),
                                         own.nonce/*use our own auto-generated IV*/
                                     )
                                 )
@@ -83,7 +83,7 @@ class JvmSymmetricTest : FreeSpec({
                                     Cipher.DECRYPT_MODE,
                                     SecretKeySpec(secretKey.secretKey, "AES"),
                                     GCMParameterSpec(
-                                        alg.cipher.tagLen.bits.toInt(),
+                                        alg.authCapability.tagLen.bits.toInt(),
                                         own.nonce/*use our own auto-generated IV*/
                                     )
                                 )

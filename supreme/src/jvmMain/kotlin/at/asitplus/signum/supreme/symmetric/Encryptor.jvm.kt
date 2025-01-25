@@ -31,14 +31,14 @@ actual internal fun <A : AECapability, I : Nonce> CipherParam<*, A>.doEncrypt(da
     val jcaCiphertext = platformData.doFinal(data)
 
     val ciphertext =
-        if (alg.cipher is AECapability.Authenticated) jcaCiphertext.dropLast(((alg.cipher as AECapability.Authenticated).tagLen.bytes.toInt()).toInt())
+        if (alg.authCapability is AECapability.Authenticated) jcaCiphertext.dropLast(((alg.authCapability as AECapability.Authenticated).tagLen.bytes.toInt()).toInt())
             .toByteArray()
         else jcaCiphertext
     val authTag =
-        if (alg.cipher is AECapability.Authenticated) jcaCiphertext.takeLast(((alg.cipher as AECapability.Authenticated).tagLen.bytes.toInt()).toInt())
+        if (alg.authCapability is AECapability.Authenticated) jcaCiphertext.takeLast(((alg.authCapability as AECapability.Authenticated).tagLen.bytes.toInt()).toInt())
             .toByteArray() else null
 
-    return (if (alg.nonce is Nonce.Without) when (alg.cipher) {
+    return (if (alg.nonce is Nonce.Without) when (alg.authCapability) {
         is AECapability.Unauthenticated -> (alg as SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, Nonce.Without>).sealedBox(
             ciphertext
         )
@@ -52,7 +52,7 @@ actual internal fun <A : AECapability, I : Nonce> CipherParam<*, A>.doEncrypt(da
         }
 
         else -> throw IllegalArgumentException("Unreachable code")
-    } else when (alg.cipher) {
+    } else when (alg.authCapability) {
         is AECapability.Unauthenticated -> (alg as SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, Nonce.Required>).sealedBox(
             nonce!!,
             ciphertext
