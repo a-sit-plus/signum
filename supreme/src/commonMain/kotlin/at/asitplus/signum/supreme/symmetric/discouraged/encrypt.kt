@@ -21,7 +21,7 @@ import kotlin.jvm.JvmName
  */
 @HazardousMaterials
 @JvmName("encryptAuthenticatedWithNonce")
-fun <K : KeyType, A : AECapability.Authenticated<K>> KeyWithNonceAuthenticating<A, K>.encrypt(
+fun <K : KeyType, A : AECapability.Authenticated<out K>> KeyWithNonceAuthenticating<A, out K>.encrypt(
     data: ByteArray,
     authenticatedData: ByteArray? = null
 ): KmmResult<SealedBox.WithNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Required>>> = catching {
@@ -69,4 +69,4 @@ fun <K: KeyType, A : AECapability.Authenticated< out K>> SymmetricKey<out A, Non
 
 private typealias KeyWithNonce<A, K> = Pair<SymmetricKey<A, Nonce.Required, K>, ByteArray>
 //types first and second are deliberately swapped
-private typealias KeyWithNonceAuthenticating<A, K> = Pair<ByteArray, SymmetricKey<A, Nonce.Required, K>>
+private typealias KeyWithNonceAuthenticating<A, K> = Pair<ByteArray, SymmetricKey<out A, Nonce.Required, out K>>
