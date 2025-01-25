@@ -2,6 +2,7 @@ import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.encoding.encodeTo4Bytes
 import at.asitplus.signum.indispensable.mac.MAC
 import at.asitplus.signum.indispensable.misc.bit
+import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.signum.supreme.symmetric.*
@@ -282,7 +283,7 @@ class `00AASymmetricTest` : FreeSpec({
                         Random.Default.nextBytes(32),
                         null
                     ) { aad ->
-
+                        key.encrypt(plaintext, aad)
                         val ciphertext =
                             if (iv != null) key.andPredefinedNonce(iv).encrypt(plaintext, aad).getOrThrow()
                             else key.encrypt(plaintext, aad).getOrThrow()
@@ -290,7 +291,7 @@ class `00AASymmetricTest` : FreeSpec({
                         ciphertext.nonce.shouldNotBeNull()
                         ciphertext.nonce.size shouldBe alg.nonce.length.bytes.toInt()
                         if (iv != null) ciphertext.nonce shouldBe iv
-                        ciphertext.cipherKind.shouldBeInstanceOf<AECapability.Authenticated>()
+                        ciphertext.cipherKind.shouldBeInstanceOf<AECapability.Authenticated<*>>()
                         ciphertext.authenticatedData shouldBe aad
 
                         val decrypted = ciphertext.decrypt(key).getOrThrow()
@@ -394,14 +395,11 @@ class `00AASymmetricTest` : FreeSpec({
                     val secretKey = it.randomKey().secretKey
 
                     withData(
-                        nameFn = { "MAC KEY " + it.toHexString().substring(0..8) },
-                        Random.Default.nextBytes(8),
-                        Random.Default.nextBytes(16),
-                        Random.Default.nextBytes(32),
-                        secretKey
-                    ) { macKey ->
+                        nameFn = { "MAC KEY $it"},
+                        8,16,32,secretKey.size
+                    ) { macKeyLen ->
 
-                        val key = it.randomKey(macKey)
+                        val key = it.randomKey(macKeyLen.bytes)
 
                         withData(
                             nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
@@ -437,7 +435,7 @@ class `00AASymmetricTest` : FreeSpec({
                                 if (iv != null) ciphertext.nonce shouldBe iv
                                 ciphertext.nonce.shouldNotBeNull()
                                 ciphertext.nonce.size shouldBe it.nonce.length.bytes.toInt()
-                                ciphertext.cipherKind.shouldBeInstanceOf<AECapability.Authenticated>()
+                                ciphertext.cipherKind.shouldBeInstanceOf<AECapability.Authenticated<*>>()
                                 ciphertext.authenticatedData shouldBe aad
 
                                 val decrypted = ciphertext.decrypt(key).getOrThrow()
@@ -487,7 +485,7 @@ class `00AASymmetricTest` : FreeSpec({
                                     SymmetricKey.WithDedicatedMac<Nonce.Required>(
                                         ciphertext.algorithm,
                                         key.secretKey,
-                                        dedicatedMacKey = macKey.asList().shuffled().toByteArray()
+                                        dedicatedMacKey = key.dedicatedMacKey.asList().shuffled().toByteArray()
                                     )
                                 ) shouldNot succeed
 

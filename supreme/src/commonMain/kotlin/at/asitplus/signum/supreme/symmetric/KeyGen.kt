@@ -16,7 +16,7 @@ fun <K : KeyType, A : AECapability< out K>, I : Nonce> SymmetricEncryptionAlgori
         secureRandom.nextBytesOf(keySize.bytes.toInt()),
         if (authCapability.keyType is KeyType.WithDedicatedMacKey) secureRandom.nextBytesOf(keySize.bytes.toInt())
         else null
-    ) as SymmetricKey<A, out I, out K>
+    ) as SymmetricKey<A, I, out K>
 
 
 
