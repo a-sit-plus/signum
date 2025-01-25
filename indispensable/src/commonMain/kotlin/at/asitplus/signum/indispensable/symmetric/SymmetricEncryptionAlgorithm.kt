@@ -11,9 +11,9 @@ import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 
 
-sealed interface SymmetricEncryptionAlgorithm<out A : AECapability, out I : Nonce> :
+sealed interface SymmetricEncryptionAlgorithm<out A : AECapability<*>, out I : Nonce> :
     Identifiable {
-    val cipher: A
+    val authCapability: A
     val nonce: I
 
     override fun toString(): String
@@ -61,16 +61,16 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AECapability, out I : Nonc
     /**
      * Advanced Encryption Standard
      */
-    sealed class AES<A : AECapability>(modeOfOps: ModeOfOperation, override val keySize: BitLength) :
+    sealed class AES<K : KeyType, A : AECapability<K>>(modeOfOps: ModeOfOperation, override val keySize: BitLength) :
         BlockCipher<A, Nonce.Required>(modeOfOps, blockSize = 128.bit) {
         override val name: String = "AES-${keySize.bits} ${modeOfOps.acronym}"
 
         override fun toString(): String = name
 
         class GCM internal constructor(keySize: BitLength) :
-            AES<AECapability.Authenticated.Integrated>(ModeOfOperation.GCM, keySize) {
+            AES<KeyType.Integrated, AECapability.Authenticated.Integrated>(ModeOfOperation.GCM, keySize) {
             override val nonce = Nonce.Required(96.bit)
-            override val cipher = AECapability.Authenticated.Integrated(blockSize)
+            override val authCapability = AECapability.Authenticated.Integrated(blockSize)
             override val oid: ObjectIdentifier = when (keySize.bits) {
                 128u -> KnownOIDs.aes128_GCM
                 192u -> KnownOIDs.aes192_GCM
@@ -79,7 +79,8 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AECapability, out I : Nonc
             }
         }
 
-        sealed class CBC<A : AECapability>(keySize: BitLength) : AES<A>(ModeOfOperation.CBC, keySize) {
+        sealed class CBC<K : KeyType, A : AECapability<K>>(keySize: BitLength) :
+            AES<K, A>(ModeOfOperation.CBC, keySize) {
             override val nonce = Nonce.Required(128u.bit)
             override val oid: ObjectIdentifier = when (keySize.bits) {
                 128u -> KnownOIDs.aes128_CBC
@@ -90,8 +91,8 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AECapability, out I : Nonc
 
             class Unauthenticated(
                 keySize: BitLength
-            ) : CBC<AECapability.Unauthenticated>(keySize) {
-                override val cipher = AECapability.Unauthenticated
+            ) : CBC<KeyType.Integrated, AECapability.Unauthenticated>(keySize) {
+                override val authCapability = AECapability.Unauthenticated
                 override val name = super.name + " Plain"
             }
 
@@ -104,16 +105,16 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AECapability, out I : Nonc
                 mac: at.asitplus.signum.indispensable.mac.HMAC,
                 dedicatedMacInputCalculation: DedicatedMacInputCalculation
             ) :
-                CBC<AECapability.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC, Nonce.Required>>(
+                CBC<KeyType.WithDedicatedMacKey, AECapability.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC, Nonce.Required>>(
                     innerCipher.keySize
                 ) {
                 constructor(innerCipher: Unauthenticated, mac: at.asitplus.signum.indispensable.mac.HMAC) : this(
                     innerCipher,
                     mac,
-                    NistSP80038FMacInputCalculation
+                    DefaultDedicatedMacInputCalculation
                 )
 
-                override val cipher =
+                override val authCapability =
                     AECapability.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC, Nonce.Required>(
                         innerCipher,
                         mac,
@@ -126,13 +127,17 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AECapability, out I : Nonc
                  * Instantiates a new [CBC.HMAC] instance with a custom [DedicatedMacInputCalculation]
                  */
                 fun Custom(dedicatedMacInputCalculation: DedicatedMacInputCalculation) =
-                    CBC.HMAC(cipher.innerCipher as Unauthenticated, cipher.mac, dedicatedMacInputCalculation)
+                    CBC.HMAC(
+                        authCapability.innerCipher as Unauthenticated,
+                        authCapability.mac,
+                        dedicatedMacInputCalculation
+                    )
             }
         }
     }
 
-    object ChaCha20Poly1305 : StreamCipher<AECapability.Authenticated, Nonce.Required>() {
-        override val cipher = AECapability.Authenticated.Integrated(128u.bit)
+    object ChaCha20Poly1305 : StreamCipher<AECapability.Authenticated<KeyType.Integrated>, Nonce.Required>() {
+        override val authCapability = AECapability.Authenticated.Integrated(128u.bit)
         override val nonce = Nonce.Required(96u.bit)
         override val name: String = "ChaCha20-Poly1305"
         override fun toString() = name
@@ -144,16 +149,20 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AECapability, out I : Nonc
 /**
  * Defines whether a cipher is authenticated or not
  */
-sealed interface AECapability {
+sealed interface AECapability<K : KeyType> {
+    /**
+     * accessor to get the key type due to type erasure
+     */
+    val keyType:K
     /**
      * Indicates an authenticated cipher
      */
-    sealed class Authenticated(val tagLen: BitLength) : AECapability {
+    sealed class Authenticated<K : KeyType>(val tagLen: BitLength, override val keyType: K) : AECapability<K> {
 
         /**
          * An authenticated cipher construction that is inherently authenticated
          */
-        class Integrated(tagLen: BitLength) : Authenticated(tagLen)
+        class Integrated(tagLen: BitLength) : Authenticated<KeyType.Integrated>(tagLen, KeyType.Integrated)
 
         /**
          * An authenticated cipher construction based on an unauthenticated cipher with a dedicated MAC function.
@@ -163,13 +172,15 @@ sealed interface AECapability {
             val mac: M,
             tagLen: BitLength,
             val dedicatedMacInputCalculation: DedicatedMacInputCalculation
-        ) : Authenticated(tagLen)
+        ) : Authenticated<KeyType.WithDedicatedMacKey>(tagLen, KeyType.WithDedicatedMacKey)
     }
 
     /**
      * Indicates an unauthenticated cipher
      */
-    object Unauthenticated : AECapability
+    object Unauthenticated : AECapability<KeyType.Integrated> {
+        override val keyType= KeyType.Integrated
+    }
 }
 
 /**
@@ -178,20 +189,12 @@ sealed interface AECapability {
 typealias DedicatedMacInputCalculation = MAC.(ciphertext: ByteArray, nonce: ByteArray, aad: ByteArray) -> ByteArray
 
 /**
- * The default dedicated mac input calculation as per NIST SP 800-38F, authenticating all inputs:
+ * The default dedicated mac input calculation as per [FRC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1), authenticating all inputs:
  * `AAD || IV || Ciphertext || AAD Length`, where AAD_length is a 64 bit big-endian
  */
-val NistSP80038FMacInputCalculation: DedicatedMacInputCalculation =
+val DefaultDedicatedMacInputCalculation: DedicatedMacInputCalculation =
     fun MAC.(ciphertext: ByteArray, iv: ByteArray, aad: ByteArray): ByteArray =
         aad + iv + ciphertext + aad.size.toLong().encodeTo8Bytes()
-
-/**
- * RFC 7518 (AES_CBC_HMAC_SHA2) MAC input calculation:
- * `AAD || 0x2E || IV || Ciphertext || 0x2E || AAD_Length`, where AAD_length is a 64 bit big-endian
- */
-val RFC7518DedicatedMacInputCalculation: DedicatedMacInputCalculation =
-    fun MAC.(ciphertext: ByteArray, iv: ByteArray, aad: ByteArray): ByteArray =
-        aad + 0x2E + iv + ciphertext + 0x2E + aad.size.toLong().encodeTo8Bytes()
 
 sealed class Nonce {
     /**
@@ -202,7 +205,7 @@ sealed class Nonce {
     object Without : Nonce()
 }
 
-sealed class BlockCipher<A : AECapability, I : Nonce>(
+sealed class BlockCipher<A : AECapability<*>, I : Nonce>(
     val mode: ModeOfOperation,
     val blockSize: BitLength
 ) : SymmetricEncryptionAlgorithm<A, I> {
@@ -213,4 +216,4 @@ sealed class BlockCipher<A : AECapability, I : Nonce>(
     }
 }
 
-sealed class StreamCipher<A : AECapability, I : Nonce> : SymmetricEncryptionAlgorithm<A, I>
+sealed class StreamCipher<A : AECapability<*>, I : Nonce> : SymmetricEncryptionAlgorithm<A, I>

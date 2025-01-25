@@ -1,6 +1,7 @@
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.encoding.encodeTo4Bytes
 import at.asitplus.signum.indispensable.mac.MAC
+import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.signum.supreme.symmetric.*
@@ -64,15 +65,18 @@ class `00AASymmetricTest` : FreeSpec({
                 null
             ) { iv ->
 
-                val key = alg.randomKey()
+
+
+                 val key=   alg.randomKey()
                 if (iv != null) key.andPredefinedNonce(iv).encrypt(Random.nextBytes(32)) shouldNot succeed
                 else key.encrypt(Random.nextBytes(32)) should succeed
                 key.andPredefinedNonce(alg.randomNonce()).encrypt(Random.nextBytes(32)) should succeed
                 key.encrypt(Random.nextBytes(32)) should succeed
-                if (alg.cipher is AECapability.Authenticated)
+
+                if (alg.authCapability is AECapability.Authenticated)
                     key.encrypt(Random.nextBytes(32))
-                        .getOrThrow().cipherKind.shouldBeInstanceOf<AECapability.Authenticated>()
-                else if (alg.cipher is AECapability.Unauthenticated)
+                        .getOrThrow().cipherKind.shouldBeInstanceOf<AECapability.Authenticated<*>>()
+                else if (alg.authCapability is AECapability.Unauthenticated)
                     key.encrypt(Random.nextBytes(32))
                         .getOrThrow().cipherKind.shouldBeInstanceOf<AECapability.Unauthenticated>()
             }
@@ -120,16 +124,15 @@ class `00AASymmetricTest` : FreeSpec({
 
                 ) { keyBytes ->
 
-                //prohibited!
-                alg.keyFrom(keyBytes) shouldNot succeed
-
                 //so we try to out-smart ourselves and it must fail later on
                 val key = (when (alg.randomKey()) {
                     //Covers Unauthenticated and GCM
-                    is SymmetricKey.Integrated<*, Nonce.Required> -> SymmetricKey.Integrated(alg, keyBytes)
-                    is SymmetricKey.WithDedicatedMac<Nonce.Required> -> SymmetricKey.WithDedicatedMac(
+                    is SymmetricKey.Integrated<*, *> -> SymmetricKey.Integrated<AECapability<KeyType.Integrated>, Nonce.Required>(
+                        alg as SymmetricEncryptionAlgorithm<AECapability<KeyType.Integrated>, Nonce.Required>, keyBytes)
+                    is SymmetricKey.WithDedicatedMac<*> -> SymmetricKey.WithDedicatedMac(
                         alg as SymmetricEncryptionAlgorithm<AECapability.Authenticated.WithDedicatedMac<*, *>, Nonce.Required>,
-                        keyBytes
+                        keyBytes,
+                        keyBytes //fine for testing
                     )
                 })
 
@@ -137,14 +140,14 @@ class `00AASymmetricTest` : FreeSpec({
                 key.encrypt(Random.nextBytes(32)) shouldNot succeed
                 key.andPredefinedNonce(alg.randomNonce()).encrypt(data = Random.nextBytes(32)) shouldNot succeed
 
-                if (alg.cipher is AECapability.Authenticated)
+                if (alg.authCapability is AECapability.Authenticated)
                     alg.randomKey().encrypt(
                         Random.nextBytes(32)
                     ).let {
                         it should succeed
-                        it.getOrThrow().cipherKind.shouldBeInstanceOf<AECapability.Authenticated>()
+                        it.getOrThrow().cipherKind.shouldBeInstanceOf<AECapability.Authenticated<*>>()
                     }
-                else if (alg.cipher is AECapability.Unauthenticated)
+                else if (alg.authCapability is AECapability.Unauthenticated)
                     alg.randomKey().encrypt(
                         Random.nextBytes(32)
                     ).let {
@@ -348,7 +351,7 @@ class `00AASymmetricTest` : FreeSpec({
     "CBC+HMAC" - {
         withData(
             nameFn = { it.first },
-            "Default" to NistSP80038FMacInputCalculation,
+            "Default" to DefaultDedicatedMacInputCalculation,
             "Oklahoma MAC" to fun MAC.(ciphertext: ByteArray, iv: ByteArray?, aad: ByteArray?): ByteArray =
                 "Oklahoma".encodeToByteArray() + (iv ?: byteArrayOf()) + (aad
                     ?: byteArrayOf()) + ciphertext) { (_, macInputFun) ->
@@ -534,12 +537,12 @@ class `00AASymmetricTest` : FreeSpec({
         //define algorithm parameters
         val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
             //with a custom HMAC input calculation function
-            .Custom { ciphertext, iv, aad -> //A shorter version of per RFC 7518
+            .Custom { ciphertext, iv, aad -> //A shorter version of RFC 7518
                 aad + iv + ciphertext + aad.size.encodeTo4Bytes()
             }
 
-        //any size is fine, really. omitting the override just uses the encryption key as mac key
-        val key = algorithm.randomKey(dedicatedMacKeyOverride = secureRandom.nextBytesOf(32))
+        //any size is fine, really. omitting the override generates a mac key of the same size as the encryption key
+        val key = algorithm.randomKey(32.bit)
         val aad = Clock.System.now().toString().encodeToByteArray()
 
         val sealedBox = key.encrypt(

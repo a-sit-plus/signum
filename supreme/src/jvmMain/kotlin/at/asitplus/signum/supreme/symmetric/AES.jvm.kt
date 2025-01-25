@@ -10,7 +10,7 @@ import javax.crypto.spec.SecretKeySpec
 internal object AESJVM {
     fun initCipher(algorithm: SymmetricEncryptionAlgorithm.AES<*>, key: ByteArray, nonce: ByteArray, aad: ByteArray?) =
         Cipher.getInstance(algorithm.jcaName).apply {
-            val cipher = algorithm.cipher
+            val cipher = algorithm.authCapability
             if (cipher is AECapability.Authenticated.Integrated)
                 init(
                     Cipher.ENCRYPT_MODE,

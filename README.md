@@ -235,17 +235,17 @@ println("Is it trustworthy? $isValid")
 We currently support ChaCha20-Poly1503, AES-CBC, AES-GCM, and a very flexible flavour of AES-CBC-HMAC.
 This is supported across all _Supreme_ targets and works as follows:
 ```kotlin
-val payload = "More matter, with less art!".encodeToByteArray()
+    val payload = "More matter, with less art!".encodeToByteArray()
 
 //define algorithm parameters
 val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
   //with a custom HMAC input calculation function
-  .Custom { ciphertext, iv, aad -> //A shorter version of per RFC 7518
+  .Custom { ciphertext, iv, aad -> //A shorter version of RFC 7518
     aad + iv + ciphertext + aad.size.encodeTo4Bytes()
   }
 
-//any size is fine, really. omitting the override just uses the encryption key as mac key
-val key = algorithm.randomKey(dedicatedMacKeyOverride = secureRandom.nextBytesOf(32))
+//any size is fine, really. omitting the override generates a mac key of the same size as the encryption key
+val key = algorithm.randomKey(dedicatedMacKey = secureRandom.nextBytesOf(32))
 val aad = Clock.System.now().toString().encodeToByteArray()
 
 val sealedBox = key.encrypt(
