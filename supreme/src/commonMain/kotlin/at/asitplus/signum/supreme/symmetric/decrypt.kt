@@ -12,26 +12,27 @@ import kotlin.jvm.JvmName
  * Attempts to decrypt this ciphertext (which also holds IV, and in case of an authenticated ciphertext, AAD and auth tag) using the provided [key].
  * This is the function you typically want to use.
  */
-fun <K: KeyType, A : AECapability<K>> SealedBox<A, Nonce.Required, SymmetricEncryptionAlgorithm<A, Nonce.Required>>.decrypt(key: SymmetricKey<A, Nonce.Required,out K>): KmmResult<ByteArray> =
-    catching {
-        require(algorithm == key.algorithm) { "Somebody likes cursed casts!" }
-        when (algorithm.authCapability as AECapability) {
-            is Authenticated.Integrated -> (this as SealedBox<Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<AECapability.Authenticated.Integrated, *>>).decryptInternal(
-                key.secretKey
-            )
+fun <K : KeyType, A : AECapability<K>> SealedBox<A, Nonce.Required, SymmetricEncryptionAlgorithm<A, Nonce.Required>>.decrypt(
+    key: SymmetricKey<in A, Nonce.Required, out K>
+): KmmResult<ByteArray> = catching {
+    require(algorithm == key.algorithm) { "Somebody likes cursed casts!" }
+    when (algorithm.authCapability as AECapability<*>) {
+        is Authenticated.Integrated -> (this as SealedBox<Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<AECapability.Authenticated.Integrated, *>>).decryptInternal(
+            key.secretKey
+        )
 
-            is Authenticated.WithDedicatedMac<*, *> -> {
-                key as SymmetricKey.WithDedicatedMac
-                (this as SealedBox<Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, *>, *>>).decryptInternal(
-                    key.secretKey, key.dedicatedMacKey
-                )
-            }
-
-            is AECapability.Unauthenticated -> (this as SealedBox<AECapability.Unauthenticated, *, SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, *>>).decryptInternal(
-                key.secretKey
+        is Authenticated.WithDedicatedMac<*, *> -> {
+            key as SymmetricKey.WithDedicatedMac
+            (this as SealedBox<Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, *>, *>>).decryptInternal(
+                key.secretKey, key.dedicatedMacKey
             )
         }
+
+        is AECapability.Unauthenticated -> (this as SealedBox<AECapability.Unauthenticated, *, SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, *>>).decryptInternal(
+            key.secretKey
+        )
     }
+}
 
 
 @JvmName("decryptRawAuthenticated")
@@ -67,7 +68,7 @@ private fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncrypti
     val innerCipher = algorithm.authCapability.innerCipher
     val mac = algorithm.authCapability.mac
     val dedicatedMacInputCalculation = algorithm.authCapability.dedicatedMacInputCalculation
-    val hmacInput = mac.dedicatedMacInputCalculation(encryptedData, iv?:byteArrayOf(), aad?:byteArrayOf())
+    val hmacInput = mac.dedicatedMacInputCalculation(encryptedData, iv ?: byteArrayOf(), aad ?: byteArrayOf())
 
     if (!(mac.mac(macKey, hmacInput).getOrThrow().contentEquals(authTag)))
         throw IllegalArgumentException("Auth Tag mismatch!")

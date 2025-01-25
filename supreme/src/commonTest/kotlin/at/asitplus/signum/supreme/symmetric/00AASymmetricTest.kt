@@ -572,7 +572,7 @@ class `00AASymmetricTest` : FreeSpec({
         )
 
         val manuallyRecovered = reconstructed.decrypt(
-            key,
+            key
         ).getOrThrow(/*handle error*/)
 
         manuallyRecovered shouldBe payload //great success!

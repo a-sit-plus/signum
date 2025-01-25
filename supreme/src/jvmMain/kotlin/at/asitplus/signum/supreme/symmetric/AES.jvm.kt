@@ -8,7 +8,7 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 internal object AESJVM {
-    fun initCipher(algorithm: SymmetricEncryptionAlgorithm.AES<*>, key: ByteArray, nonce: ByteArray, aad: ByteArray?) =
+    fun initCipher(algorithm: SymmetricEncryptionAlgorithm.AES<*,*>, key: ByteArray, nonce: ByteArray, aad: ByteArray?) =
         Cipher.getInstance(algorithm.jcaName).apply {
             val cipher = algorithm.authCapability
             if (cipher is AECapability.Authenticated.Integrated)
@@ -17,7 +17,7 @@ internal object AESJVM {
                     SecretKeySpec(key, algorithm.jcaKeySpec),
                     GCMParameterSpec(cipher.tagLen.bits.toInt(), nonce)
                 )
-            else if (algorithm is SymmetricEncryptionAlgorithm.AES.CBC<*>) //covers Plain and CBC, because CBC will delegate to here
+            else if (algorithm is SymmetricEncryptionAlgorithm.AES.CBC<*,*>) //covers Plain and CBC, because CBC will delegate to here
                 init(
                     Cipher.ENCRYPT_MODE,
                     SecretKeySpec(key, algorithm.jcaKeySpec),
@@ -25,5 +25,5 @@ internal object AESJVM {
                 )
             else TODO()
             aad?.let { if (algorithm is SymmetricEncryptionAlgorithm.AES.GCM) updateAAD(it) /*CBC-HMAC we do ourselves*/ }
-        }.let { CipherParam<Cipher, AECapability>(algorithm, it, nonce, aad) }
+        }.let { CipherParam<Cipher, AECapability<*>>(algorithm, it, nonce, aad) }
 }

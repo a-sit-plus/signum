@@ -7,7 +7,7 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 internal object ChaChaJVM {
-    fun initCipher(key: ByteArray, nonce: ByteArray, aad: ByteArray?): CipherParam<Cipher, AECapability.Authenticated> =
+    fun initCipher(key: ByteArray, nonce: ByteArray, aad: ByteArray?): CipherParam<Cipher, AECapability.Authenticated<*>> =
         Cipher.getInstance(SymmetricEncryptionAlgorithm.ChaCha20Poly1305.jcaName).apply {
             init(
                 Cipher.ENCRYPT_MODE,
