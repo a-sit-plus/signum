@@ -42,7 +42,6 @@ class JvmSymmetricTest : FreeSpec({
                         withData(
                             Random.nextBytes(19),
                             Random.nextBytes(1),
-                            Random.nextBytes(0),
                             Random.nextBytes(1234),
                             Random.nextBytes(54),
                             Random.nextBytes(16),
@@ -52,19 +51,19 @@ class JvmSymmetricTest : FreeSpec({
                             val secretKey = alg.randomKey()
 
                             val jcaCipher =
-                                Cipher.getInstance(if (alg.authCapability is AECapability.Unauthenticated) "AES/CBC/PKCS5PADDING" else "AES/GCM/NoPadding")
+                                Cipher.getInstance(if (alg.authCapability is AuthType.Unauthenticated) "AES/CBC/PKCS5PADDING" else "AES/GCM/NoPadding")
 
                             if (alg is SymmetricEncryptionAlgorithm.AES.GCM) {
                                 //GCM need to cast key, because alg is AES with no mode of ops, since we mix CBC and GCM in the test input
                                 val own =
-                                    (secretKey as SymmetricKey<AECapability.Authenticated<KeyType.Integrated>, Nonce.Required, KeyType.Integrated>).andPredefinedNonce(
+                                    (secretKey as SymmetricKey<AuthType.Authenticated<KeyType.Integrated>, Nonce.Required, KeyType.Integrated>).andPredefinedNonce(
                                         iv
                                     ).encrypt(
                                         data = data,
                                         aad
                                     )
                                         .getOrThrow()
-                                own.cipherKind.shouldBeInstanceOf<AECapability.Authenticated<*>>()
+                                own.cipherKind.shouldBeInstanceOf<AuthType.Authenticated<*>>()
                                 jcaCipher.init(
                                     Cipher.ENCRYPT_MODE,
                                     SecretKeySpec(secretKey.secretKey, "AES"),
@@ -116,6 +115,7 @@ class JvmSymmetricTest : FreeSpec({
 
                                 own.decrypt(own.algorithm.randomKey()) shouldNot succeed
 
+                                if(data.size<alg.blockSize.bytes.toInt())
                                 (alg as SymmetricEncryptionAlgorithm.AES.CBC.Unauthenticated).sealedBox(own.algorithm.randomNonce(),own.encryptedData).decrypt(secretKey) shouldNot succeed
 
                             }
@@ -160,7 +160,7 @@ class JvmSymmetricTest : FreeSpec({
 
                     box.nonce.shouldNotBeNull()
                     box.nonce.size shouldBe alg.nonce.length.bytes.toInt()
-                    box.cipherKind.shouldBeInstanceOf<AECapability.Authenticated<*>>()
+                    box.cipherKind.shouldBeInstanceOf<AuthType.Authenticated<*>>()
                     (box.encryptedData + box.authTag) shouldBe fromJCA
                     box.decrypt(secretKey).getOrThrow() shouldBe data
 

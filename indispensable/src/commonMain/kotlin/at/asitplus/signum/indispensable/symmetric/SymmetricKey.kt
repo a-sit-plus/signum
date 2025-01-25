@@ -9,21 +9,21 @@ sealed interface KeyType{
 /**
  * Symmetric encryption key. Can only be used for the specified [algorithm].
  */
-sealed class SymmetricKey<A : AECapability<K>, I : Nonce, K: KeyType>(
-    val algorithm: SymmetricEncryptionAlgorithm<A, I>,
+sealed class SymmetricKey<A : AuthType<K>, I : Nonce, K: KeyType>(
+    val algorithm: SymmetricEncryptionAlgorithm<A, I,K>,
     val secretKey: ByteArray
 ) {
 
     /**
      * Self-Contained encryption key, i.e. a single byte array is sufficient
      */
-    class Integrated<A : AECapability<KeyType.Integrated>, I : Nonce>
+    class Integrated<A : AuthType<KeyType.Integrated>, I : Nonce>
     @HazardousMaterials("Does not check whether key size matched algorithm! Useful for testing, but not production!")
     /**
      * Do not invoke directly! use Supreme's `SymmetricEncryptionAlgorithm.randomKey()` and `SymmetricEncryptionAlgorithm.encryptionKeyFrom(bytes)`
      * This constructor does not check for matching key sizes to allow for testing error cases!
      */
-    constructor(algorithm: SymmetricEncryptionAlgorithm<A, I>, secretKey: ByteArray) :
+    constructor(algorithm: SymmetricEncryptionAlgorithm<A, I, KeyType.Integrated>, secretKey: ByteArray) :
         SymmetricKey<A, I,KeyType.Integrated>(algorithm, secretKey)
 
     /**
@@ -38,10 +38,10 @@ sealed class SymmetricKey<A : AECapability<K>, I : Nonce, K: KeyType>(
      * This constructor does not check for matching key sizes to allow for testing error cases!
      */
     constructor(
-        algorithm: SymmetricEncryptionAlgorithm<AECapability.Authenticated.WithDedicatedMac<*, *>, I>,
+        algorithm: SymmetricEncryptionAlgorithm<AuthType.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey>,
         secretKey: ByteArray,
         val dedicatedMacKey: ByteArray
-    ) : SymmetricKey<AECapability.Authenticated.WithDedicatedMac<*, *>, I, KeyType.WithDedicatedMacKey>(
+    ) : SymmetricKey<AuthType.Authenticated.WithDedicatedMac<*, *>, I, KeyType.WithDedicatedMacKey>(
         algorithm,
         secretKey
     )

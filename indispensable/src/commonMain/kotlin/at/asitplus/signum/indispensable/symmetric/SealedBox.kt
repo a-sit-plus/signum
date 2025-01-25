@@ -3,15 +3,15 @@ package at.asitplus.signum.indispensable.symmetric
 import kotlin.jvm.JvmName
 
 
-val <A : AECapability.Authenticated<*>, I : Nonce> SealedBox<out A, out I, SymmetricEncryptionAlgorithm<A, I>>.authTag: ByteArray get() = (ciphertext as Ciphertext.Authenticated<A, SymmetricEncryptionAlgorithm<A, I>>).authTag
-val <A : AECapability.Authenticated<*>, I : Nonce> SealedBox<out A, out I, SymmetricEncryptionAlgorithm<A, I>>.authenticatedData: ByteArray? get() = (ciphertext as Ciphertext.Authenticated<A, SymmetricEncryptionAlgorithm<A, I>>).authenticatedData
+val <A : AuthType.Authenticated<*>, I : Nonce> SealedBox<out A, out I, SymmetricEncryptionAlgorithm<A, I,*>>.authTag: ByteArray get() = (ciphertext as Ciphertext.Authenticated<A, SymmetricEncryptionAlgorithm<A, I,*>>).authTag
+val <A : AuthType.Authenticated<*>, I : Nonce> SealedBox<out A, out I, SymmetricEncryptionAlgorithm<A, I,*>>.authenticatedData: ByteArray? get() = (ciphertext as Ciphertext.Authenticated<A, SymmetricEncryptionAlgorithm<A, I,*>>).authenticatedData
 val SealedBox<*, Nonce.Required, *>.nonce: ByteArray get() = (this as SealedBox.WithNonce<*, *>).nonce
 
 /**
  * Represents symmetrically encrypted data. This is a separate class to more easily enforce type safety wrt. presence of
  * Construct using [SymmetricEncryptionAlgorithm.sealedBox]
  */
-sealed class SealedBox<A : AECapability<*>, I : Nonce, E : SymmetricEncryptionAlgorithm<A, I>>(
+sealed class SealedBox<A : AuthType<*>, I : Nonce, E : SymmetricEncryptionAlgorithm<A, I,*>>(
     internal val ciphertext: Ciphertext<A, E>
 ) {
     val algorithm: E get()= ciphertext.algorithm
@@ -23,7 +23,7 @@ sealed class SealedBox<A : AECapability<*>, I : Nonce, E : SymmetricEncryptionAl
      * The possibility to implement key wrapping and electronic codebook mode of operation for block ciphers come to mind.
      * Construct using [SymmetricEncryptionAlgorithm.sealedBox]
      */
-    class WithoutNonce<A : AECapability<*>, E : SymmetricEncryptionAlgorithm<A, Nonce.Without>> internal constructor(ciphertext: Ciphertext<A, E>) :
+    class WithoutNonce<A : AuthType<*>, E : SymmetricEncryptionAlgorithm<A, Nonce.Without,*>> internal constructor(ciphertext: Ciphertext<A, E>) :
         SealedBox<A, Nonce.Without, E>(ciphertext) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -43,7 +43,7 @@ sealed class SealedBox<A : AECapability<*>, I : Nonce, E : SymmetricEncryptionAl
      * A sealed box consisting of an [nonce] and the actual [ciphertext].
      * Construct using [SymmetricEncryptionAlgorithm.sealedBox]
      */
-    class WithNonce<A : AECapability<*>, E : SymmetricEncryptionAlgorithm<A, Nonce.Required>> internal constructor(
+    class WithNonce<A : AuthType<*>, E : SymmetricEncryptionAlgorithm<A, Nonce.Required,*>> internal constructor(
         internal val nonce: ByteArray,
         ciphertext: Ciphertext<A, E>
     ) : SealedBox<A, Nonce.Required, E>(ciphertext) {
@@ -85,14 +85,14 @@ sealed class SealedBox<A : AECapability<*>, I : Nonce, E : SymmetricEncryptionAl
 /**
  * A generic ciphertext object, referencing the algorithm it was created by.
  */
-internal sealed interface Ciphertext<A : AECapability<*>, E : SymmetricEncryptionAlgorithm<A, *>> {
+internal sealed interface Ciphertext<A : AuthType<*>, E : SymmetricEncryptionAlgorithm<A, *,*>> {
     val algorithm: E
     val encryptedData: ByteArray
 
     /**
      * An authenticated ciphertext, i.e. containing an [authTag], and, optionally [authenticatedData] (_Additional Authenticated Data_)
      */
-    class Authenticated<A : AECapability.Authenticated<*>, E : SymmetricEncryptionAlgorithm<A, *>>(
+    class Authenticated<A : AuthType.Authenticated<*>, E : SymmetricEncryptionAlgorithm<A, *,*>>(
         override val algorithm: E,
         override val encryptedData: ByteArray,
         val authTag: ByteArray,
@@ -130,10 +130,10 @@ internal sealed interface Ciphertext<A : AECapability<*>, E : SymmetricEncryptio
      * An Unauthenticated ciphertext
      */
     class Unauthenticated(
-        override val algorithm: SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, *>,
+        override val algorithm: SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, *, KeyType.Integrated>,
         override val encryptedData: ByteArray,
-    ) : Ciphertext<AECapability.Unauthenticated,
-            SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, *>> {
+    ) : Ciphertext<AuthType.Unauthenticated,
+            SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, *, KeyType.Integrated>> {
 
         @OptIn(ExperimentalStdlibApi::class)
         override fun toString(): String =
@@ -161,29 +161,29 @@ internal sealed interface Ciphertext<A : AECapability<*>, E : SymmetricEncryptio
  * Use this function to load external encrypted data for decryption.
  */
 @JvmName("sealedBoxUnauthedWithNonce")
-fun SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, Nonce.Required>.sealedBox(
+fun SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Required,*>.sealedBox(
     nonce: ByteArray,
     encryptedData: ByteArray
-) = SealedBox.WithNonce<AECapability.Unauthenticated, SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, Nonce.Required>>(
+) = SealedBox.WithNonce<AuthType.Unauthenticated, SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Required,*>>(
     nonce,
     Ciphertext.Unauthenticated(
         this,
         encryptedData
-    ) as Ciphertext<AECapability.Unauthenticated, SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, Nonce.Required>>
+    ) as Ciphertext<AuthType.Unauthenticated, SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Required>>
 )
 
 /**
  * Creates a [SealedBox] matching the characteristics of the [SymmetricEncryptionAlgorithm] is was created for.
  * Use this function to load external encrypted data for decryption.
  */
-fun SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, Nonce.Without>.sealedBox(
+fun SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Without>.sealedBox(
     encryptedData: ByteArray
 ) =
-    SealedBox.WithoutNonce<AECapability.Unauthenticated, SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, Nonce.Without>>(
+    SealedBox.WithoutNonce<AECapability.Unauthenticated, SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Without>>(
         Ciphertext.Unauthenticated(
             this,
             encryptedData
-        ) as Ciphertext<AECapability.Unauthenticated, SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, Nonce.Without>>
+        ) as Ciphertext<AuthType.Unauthenticated, SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Without>>
     )
 
 /**
@@ -191,24 +191,24 @@ fun SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, Nonce.Without>.se
  * Use this function to load external encrypted data for decryption.
  */
 @JvmName("sealedBoxAuthenticatedDedicated")
-fun SymmetricEncryptionAlgorithm<AECapability.Authenticated.WithDedicatedMac<*, Nonce.Required>, Nonce.Required>.sealedBox(
+fun SymmetricEncryptionAlgorithm<AuthType.Authenticated.WithDedicatedMac<*, Nonce.Required>, Nonce.Required>.sealedBox(
     nonce: ByteArray,
     encryptedData: ByteArray,
     authTag: ByteArray,
     authenticatedData: ByteArray? = null
-) = (this as SymmetricEncryptionAlgorithm<AECapability.Authenticated<KeyType.WithDedicatedMacKey>, Nonce.Required>).sealedBox(
+) = (this as SymmetricEncryptionAlgorithm<AuthType.Authenticated<KeyType.WithDedicatedMacKey>, Nonce.Required>).sealedBox(
     nonce,
     encryptedData,
     authTag,
     authenticatedData
-) as SealedBox.WithNonce<AECapability.Authenticated.WithDedicatedMac<*, Nonce.Required>, SymmetricEncryptionAlgorithm<AECapability.Authenticated.WithDedicatedMac<*, Nonce.Required>, Nonce.Required>>
+) as SealedBox.WithNonce<AuthType.Authenticated.WithDedicatedMac<*, Nonce.Required>, SymmetricEncryptionAlgorithm<AuthType.Authenticated.WithDedicatedMac<*, Nonce.Required>, Nonce.Required>>
 
 /**
  * Creates a [SealedBox] matching the characteristics of the [SymmetricEncryptionAlgorithm] is was created for.
  * Use this function to load external encrypted data for decryption.
  */
 @JvmName("sealedBoxAuthenticated")
-fun <A : AECapability.Authenticated<*>> SymmetricEncryptionAlgorithm<A, Nonce.Required>.sealedBox(
+fun <A : AuthType.Authenticated<*>> SymmetricEncryptionAlgorithm<A, Nonce.Required>.sealedBox(
     nonce: ByteArray,
     encryptedData: ByteArray,
     authTag: ByteArray,
@@ -223,7 +223,7 @@ fun <A : AECapability.Authenticated<*>> SymmetricEncryptionAlgorithm<A, Nonce.Re
  * Use this function to load external encrypted data for decryption.
  */
 @JvmName("sealedBoxAuthenticated")
-fun <A : AECapability.Authenticated<*>> SymmetricEncryptionAlgorithm<A, Nonce.Without>.sealedBox(
+fun <A : AuthType.Authenticated<*>> SymmetricEncryptionAlgorithm<A, Nonce.Without>.sealedBox(
     encryptedData: ByteArray,
     authTag: ByteArray,
     authenticatedData: ByteArray? = null
@@ -232,7 +232,7 @@ fun <A : AECapability.Authenticated<*>> SymmetricEncryptionAlgorithm<A, Nonce.Wi
 )
 
 
-private inline fun <A : AECapability.Authenticated<*>, reified I : Nonce> SymmetricEncryptionAlgorithm<A, I>.authenticatedCipherText(
+private inline fun <A : AuthType.Authenticated<*>, reified I : Nonce> SymmetricEncryptionAlgorithm<A, I>.authenticatedCipherText(
     encryptedData: ByteArray,
     authTag: ByteArray,
     authenticatedData: ByteArray? = null

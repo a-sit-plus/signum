@@ -74,12 +74,12 @@ class `00AASymmetricTest` : FreeSpec({
                 key.andPredefinedNonce(alg.randomNonce()).encrypt(Random.nextBytes(32)) should succeed
                 key.encrypt(Random.nextBytes(32)) should succeed
 
-                if (alg.authCapability is AECapability.Authenticated)
+                if (alg.authCapability is AuthType.Authenticated)
                     key.encrypt(Random.nextBytes(32))
-                        .getOrThrow().cipherKind.shouldBeInstanceOf<AECapability.Authenticated<*>>()
-                else if (alg.authCapability is AECapability.Unauthenticated)
+                        .getOrThrow().cipherKind.shouldBeInstanceOf<AuthType.Authenticated<*>>()
+                else if (alg.authCapability is AuthType.Unauthenticated)
                     key.encrypt(Random.nextBytes(32))
-                        .getOrThrow().cipherKind.shouldBeInstanceOf<AECapability.Unauthenticated>()
+                        .getOrThrow().cipherKind.shouldBeInstanceOf<AuthType.Unauthenticated>()
             }
         }
     }
@@ -128,10 +128,10 @@ class `00AASymmetricTest` : FreeSpec({
                 //so we try to out-smart ourselves and it must fail later on
                 val key = (when (alg.randomKey()) {
                     //Covers Unauthenticated and GCM
-                    is SymmetricKey.Integrated<*, *> -> SymmetricKey.Integrated<AECapability<KeyType.Integrated>, Nonce.Required>(
-                        alg as SymmetricEncryptionAlgorithm<AECapability<KeyType.Integrated>, Nonce.Required>, keyBytes)
+                    is SymmetricKey.Integrated<*, *> -> SymmetricKey.Integrated<AuthType<KeyType.Integrated>, Nonce.Required>(
+                        alg as SymmetricEncryptionAlgorithm<AuthType<KeyType.Integrated>, Nonce.Required>, keyBytes)
                     is SymmetricKey.WithDedicatedMac<*> -> SymmetricKey.WithDedicatedMac(
-                        alg as SymmetricEncryptionAlgorithm<AECapability.Authenticated.WithDedicatedMac<*, *>, Nonce.Required>,
+                        alg as SymmetricEncryptionAlgorithm<AuthType.Authenticated.WithDedicatedMac<*, *>, Nonce.Required>,
                         keyBytes,
                         keyBytes //fine for testing
                     )
@@ -141,19 +141,19 @@ class `00AASymmetricTest` : FreeSpec({
                 key.encrypt(Random.nextBytes(32)) shouldNot succeed
                 key.andPredefinedNonce(alg.randomNonce()).encrypt(data = Random.nextBytes(32)) shouldNot succeed
 
-                if (alg.authCapability is AECapability.Authenticated)
+                if (alg.authCapability is AuthType.Authenticated)
                     alg.randomKey().encrypt(
                         Random.nextBytes(32)
                     ).let {
                         it should succeed
-                        it.getOrThrow().cipherKind.shouldBeInstanceOf<AECapability.Authenticated<*>>()
+                        it.getOrThrow().cipherKind.shouldBeInstanceOf<AuthType.Authenticated<*>>()
                     }
-                else if (alg.authCapability is AECapability.Unauthenticated)
+                else if (alg.authCapability is AuthType.Unauthenticated)
                     alg.randomKey().encrypt(
                         Random.nextBytes(32)
                     ).let {
                         it should succeed
-                        it.getOrThrow().cipherKind.shouldBeInstanceOf<AECapability.Unauthenticated>()
+                        it.getOrThrow().cipherKind.shouldBeInstanceOf<AuthType.Unauthenticated>()
                     }
             }
         }
@@ -198,7 +198,7 @@ class `00AASymmetricTest` : FreeSpec({
                     if (iv != null) ciphertext.nonce.size shouldBe iv.size
                     ciphertext.nonce.size shouldBe it.nonce.length.bytes.toInt()
                     iv?.let { ciphertext.nonce shouldBe iv }
-                    ciphertext.cipherKind.shouldBeInstanceOf<AECapability.Unauthenticated>()
+                    ciphertext.cipherKind.shouldBeInstanceOf<AuthType.Unauthenticated>()
 
 
                     val decrypted = ciphertext.decrypt(key).getOrThrow()
@@ -291,7 +291,7 @@ class `00AASymmetricTest` : FreeSpec({
                         ciphertext.nonce.shouldNotBeNull()
                         ciphertext.nonce.size shouldBe alg.nonce.length.bytes.toInt()
                         if (iv != null) ciphertext.nonce shouldBe iv
-                        ciphertext.cipherKind.shouldBeInstanceOf<AECapability.Authenticated<*>>()
+                        ciphertext.cipherKind.shouldBeInstanceOf<AuthType.Authenticated<*>>()
                         ciphertext.authenticatedData shouldBe aad
 
                         val decrypted = ciphertext.decrypt(key).getOrThrow()
@@ -435,7 +435,7 @@ class `00AASymmetricTest` : FreeSpec({
                                 if (iv != null) ciphertext.nonce shouldBe iv
                                 ciphertext.nonce.shouldNotBeNull()
                                 ciphertext.nonce.size shouldBe it.nonce.length.bytes.toInt()
-                                ciphertext.cipherKind.shouldBeInstanceOf<AECapability.Authenticated<*>>()
+                                ciphertext.cipherKind.shouldBeInstanceOf<AuthType.Authenticated<*>>()
                                 ciphertext.authenticatedData shouldBe aad
 
                                 val decrypted = ciphertext.decrypt(key).getOrThrow()

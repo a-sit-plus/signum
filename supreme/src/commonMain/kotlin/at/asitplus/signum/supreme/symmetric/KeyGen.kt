@@ -12,7 +12,7 @@ import kotlin.jvm.JvmName
 private val secureRandom = SecureRandom()
 
 
-fun <K : KeyType, A : AECapability< out K>, I : Nonce> SymmetricEncryptionAlgorithm<A, I>.randomKey(): SymmetricKey<A, I,  out K> =
+fun <K : KeyType, A : AuthType< out K>, I : Nonce> SymmetricEncryptionAlgorithm<A, I>.randomKey(): SymmetricKey<A, I,  out K> =
     keyFromInternal(
         secureRandom.nextBytesOf(keySize.bytes.toInt()),
         if (authCapability.keyType is KeyType.WithDedicatedMacKey) secureRandom.nextBytesOf(keySize.bytes.toInt())
@@ -24,7 +24,7 @@ fun <K : KeyType, A : AECapability< out K>, I : Nonce> SymmetricEncryptionAlgori
 
 
 @JvmName("randomKeyAndMacKey")
-fun <I : Nonce> SymmetricEncryptionAlgorithm<AECapability.Authenticated.WithDedicatedMac<*, I>, I>.randomKey(
+fun <I : Nonce> SymmetricEncryptionAlgorithm<AuthType.Authenticated.WithDedicatedMac<*, I>, I>.randomKey(
     macKeyLength: BitLength = keySize
 ): SymmetricKey.WithDedicatedMac<I> =
     keyFromInternal(
@@ -48,13 +48,13 @@ private fun SymmetricEncryptionAlgorithm<*, *>.keyFromInternal(
     require(bytes.size == this.keySize.bytes.toInt()) { "Invalid key size: ${bytes.size * 8}. Required: keySize=${bytes.size.bitLength}" }
     @OptIn(HazardousMaterials::class)
     return when (this.authCapability.keyType) {
-        is KeyType.Integrated -> SymmetricKey.Integrated<AECapability<KeyType.Integrated>, Nonce>(
-            this as SymmetricEncryptionAlgorithm<AECapability<KeyType.Integrated>, Nonce>,
+        is KeyType.Integrated -> SymmetricKey.Integrated<AuthType<KeyType.Integrated>, Nonce>(
+            this as SymmetricEncryptionAlgorithm<AuthType<KeyType.Integrated>, Nonce>,
             bytes
         )
 
         is KeyType.WithDedicatedMacKey -> SymmetricKey.WithDedicatedMac(
-            this as SymmetricEncryptionAlgorithm<AECapability.Authenticated.WithDedicatedMac<*, Nonce>, Nonce>,
+            this as SymmetricEncryptionAlgorithm<AuthType.Authenticated.WithDedicatedMac<*, Nonce>, Nonce>,
             bytes,
             dedicatedMacKey!!
         )
@@ -63,23 +63,23 @@ private fun SymmetricEncryptionAlgorithm<*, *>.keyFromInternal(
 
 
 @JvmName("fixedKeyIntegrated")
-fun <I : Nonce> SymmetricEncryptionAlgorithm<AECapability<KeyType.Integrated>, I>.keyFrom(bytes: ByteArray): KmmResult<SymmetricKey<AECapability<KeyType.Integrated>, I, KeyType.Integrated>> =
+fun <I : Nonce> SymmetricEncryptionAlgorithm<AuthType<KeyType.Integrated>, I>.keyFrom(bytes: ByteArray): KmmResult<SymmetricKey<AuthType<KeyType.Integrated>, I, KeyType.Integrated>> =
     catching {
         (this as SymmetricEncryptionAlgorithm<*, *>).keyFromInternal(
             bytes,
             null
         )
-    } as KmmResult<SymmetricKey<AECapability<KeyType.Integrated>, I, KeyType.Integrated>>
+    } as KmmResult<SymmetricKey<AuthType<KeyType.Integrated>, I, KeyType.Integrated>>
 
 
 @JvmName("fixedKeyDedicatedMacKey")
-fun <I : Nonce> SymmetricEncryptionAlgorithm<AECapability<KeyType.WithDedicatedMacKey>, I>.keyFrom(
+fun <I : Nonce> SymmetricEncryptionAlgorithm<AuthType<KeyType.WithDedicatedMacKey>, I>.keyFrom(
     encryptionKey: ByteArray,
     macKey: ByteArray
-): KmmResult<SymmetricKey<AECapability<KeyType.WithDedicatedMacKey>, I, KeyType.WithDedicatedMacKey>> =
+): KmmResult<SymmetricKey<AuthType<KeyType.WithDedicatedMacKey>, I, KeyType.WithDedicatedMacKey>> =
     catching {
         (this as SymmetricEncryptionAlgorithm<*, *>).keyFromInternal(
             encryptionKey,
             macKey
         )
-    } as KmmResult<SymmetricKey<AECapability<KeyType.WithDedicatedMacKey>, I, KeyType.WithDedicatedMacKey>>
+    } as KmmResult<SymmetricKey<AuthType<KeyType.WithDedicatedMacKey>, I, KeyType.WithDedicatedMacKey>>
