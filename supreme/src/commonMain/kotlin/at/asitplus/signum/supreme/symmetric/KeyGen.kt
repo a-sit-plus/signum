@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.KmmResult
+import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.encoding.bitLength
 import at.asitplus.signum.indispensable.misc.BitLength
@@ -63,7 +64,7 @@ private fun SymmetricEncryptionAlgorithm<*, *>.keyFromInternal(
 
 @JvmName("fixedKeyIntegrated")
 fun <I : Nonce> SymmetricEncryptionAlgorithm<AECapability<KeyType.Integrated>, I>.keyFrom(bytes: ByteArray): KmmResult<SymmetricKey<AECapability<KeyType.Integrated>, I, KeyType.Integrated>> =
-    runCatching {
+    catching {
         (this as SymmetricEncryptionAlgorithm<*, *>).keyFromInternal(
             bytes,
             null
@@ -76,7 +77,7 @@ fun <I : Nonce> SymmetricEncryptionAlgorithm<AECapability<KeyType.WithDedicatedM
     encryptionKey: ByteArray,
     macKey: ByteArray
 ): KmmResult<SymmetricKey<AECapability<KeyType.WithDedicatedMacKey>, I, KeyType.WithDedicatedMacKey>> =
-    runCatching {
+    catching {
         (this as SymmetricEncryptionAlgorithm<*, *>).keyFromInternal(
             encryptionKey,
             macKey

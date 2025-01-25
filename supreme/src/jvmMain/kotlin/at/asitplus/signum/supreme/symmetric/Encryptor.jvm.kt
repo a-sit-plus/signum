@@ -7,7 +7,7 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-actual internal fun <T, A : AECapability, E : SymmetricEncryptionAlgorithm<A, *>> initCipher(
+actual internal fun <T, A : AECapability<*>, E : SymmetricEncryptionAlgorithm<A, *>> initCipher(
     algorithm: E,
     key: ByteArray,
     nonce: ByteArray?,
@@ -21,21 +21,21 @@ actual internal fun <T, A : AECapability, E : SymmetricEncryptionAlgorithm<A, *>
 
     return when (algorithm) {
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaJVM.initCipher(key, nonce, aad) as CipherParam<T, A>
-        is SymmetricEncryptionAlgorithm.AES<*> -> AESJVM.initCipher(algorithm, key, nonce, aad) as CipherParam<T, A>
+        is SymmetricEncryptionAlgorithm.AES<*,*> -> AESJVM.initCipher(algorithm, key, nonce, aad) as CipherParam<T, A>
     }
 
 }
 
-actual internal fun <A : AECapability, I : Nonce> CipherParam<*, A>.doEncrypt(data: ByteArray): SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>> {
+actual internal fun <A : AECapability<*>, I : Nonce> CipherParam<*, A>.doEncrypt(data: ByteArray): SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>> {
     (this as CipherParam<Cipher, A>)
     val jcaCiphertext = platformData.doFinal(data)
 
     val ciphertext =
-        if (alg.authCapability is AECapability.Authenticated) jcaCiphertext.dropLast(((alg.authCapability as AECapability.Authenticated).tagLen.bytes.toInt()).toInt())
+        if (alg.authCapability is AECapability.Authenticated<*>) jcaCiphertext.dropLast(((alg.authCapability as AECapability.Authenticated<*>).tagLen.bytes.toInt()).toInt())
             .toByteArray()
         else jcaCiphertext
     val authTag =
-        if (alg.authCapability is AECapability.Authenticated) jcaCiphertext.takeLast(((alg.authCapability as AECapability.Authenticated).tagLen.bytes.toInt()).toInt())
+        if (alg.authCapability is AECapability.Authenticated<*>) jcaCiphertext.takeLast(((alg.authCapability as AECapability.Authenticated<*>).tagLen.bytes.toInt()).toInt())
             .toByteArray() else null
 
     return (if (alg.nonce is Nonce.Without) when (alg.authCapability) {
@@ -43,8 +43,8 @@ actual internal fun <A : AECapability, I : Nonce> CipherParam<*, A>.doEncrypt(da
             ciphertext
         )
 
-        is AECapability.Authenticated -> {
-            (alg as SymmetricEncryptionAlgorithm<AECapability.Authenticated, Nonce.Without>).sealedBox(
+        is AECapability.Authenticated<*> -> {
+            (alg as SymmetricEncryptionAlgorithm<AECapability.Authenticated<*>, Nonce.Without>).sealedBox(
                 ciphertext,
                 authTag!!,
                 aad
@@ -58,8 +58,8 @@ actual internal fun <A : AECapability, I : Nonce> CipherParam<*, A>.doEncrypt(da
             ciphertext
         )
 
-        is AECapability.Authenticated -> {
-            (alg as SymmetricEncryptionAlgorithm<AECapability.Authenticated, Nonce.Required>).sealedBox(
+        is AECapability.Authenticated<*> -> {
+            (alg as SymmetricEncryptionAlgorithm<AECapability.Authenticated<*>, Nonce.Required>).sealedBox(
                 nonce!!,
                 ciphertext,
                 authTag!!,
@@ -74,13 +74,13 @@ actual internal fun <A : AECapability, I : Nonce> CipherParam<*, A>.doEncrypt(da
 val SymmetricEncryptionAlgorithm<*, *>.jcaName: String
     get() = when (this) {
         is SymmetricEncryptionAlgorithm.AES.GCM -> "AES/GCM/NoPadding"
-        is SymmetricEncryptionAlgorithm.AES.CBC<*> -> "AES/CBC/PKCS5Padding"
+        is SymmetricEncryptionAlgorithm.AES.CBC<*,*> -> "AES/CBC/PKCS5Padding"
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20-Poly1305"
     }
 
 val SymmetricEncryptionAlgorithm<*, *>.jcaKeySpec: String
     get() = when (this) {
-        is SymmetricEncryptionAlgorithm.AES<*> -> "AES"
+        is SymmetricEncryptionAlgorithm.AES<*,*> -> "AES"
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20"
     }
 
@@ -93,7 +93,7 @@ actual internal fun SealedBox<AECapability.Authenticated.Integrated, *, Symmetri
     if ((algorithm !is SymmetricEncryptionAlgorithm.ChaCha20Poly1305) && (algorithm !is SymmetricEncryptionAlgorithm.AES.GCM)) TODO()
 
     return gcmLikeDecrypt(
-        algorithm as SymmetricEncryptionAlgorithm<AECapability.Authenticated, Nonce.Required>,
+        algorithm as SymmetricEncryptionAlgorithm<AECapability.Authenticated<*>, Nonce.Required>,
         secretKey,
         nonce,
         encryptedData,
@@ -106,7 +106,7 @@ actual internal fun SealedBox<AECapability.Authenticated.Integrated, *, Symmetri
 actual internal fun SealedBox<AECapability.Unauthenticated, *, SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, *>>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
-    if (algorithm !is SymmetricEncryptionAlgorithm.AES<*>)
+    if (algorithm !is SymmetricEncryptionAlgorithm.AES<*,*>)
         TODO()
 
     this as SealedBox.WithNonce
@@ -120,7 +120,7 @@ actual internal fun SealedBox<AECapability.Unauthenticated, *, SymmetricEncrypti
 }
 
 internal fun gcmLikeDecrypt(
-    algorithm: SymmetricEncryptionAlgorithm<AECapability.Authenticated, Nonce.Required>,
+    algorithm: SymmetricEncryptionAlgorithm<AECapability.Authenticated<*>, Nonce.Required>,
     secretKey: ByteArray,
     nonce: ByteArray,
     encryptedData: ByteArray,

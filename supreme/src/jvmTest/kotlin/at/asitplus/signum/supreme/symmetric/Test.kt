@@ -57,14 +57,14 @@ class JvmSymmetricTest : FreeSpec({
                             if (alg is SymmetricEncryptionAlgorithm.AES.GCM) {
                                 //GCM need to cast key, because alg is AES with no mode of ops, since we mix CBC and GCM in the test input
                                 val own =
-                                    (secretKey as SymmetricKey<AECapability.Authenticated, Nonce.Required>).andPredefinedNonce(
+                                    (secretKey as SymmetricKey<AECapability.Authenticated<KeyType.Integrated>, Nonce.Required, KeyType.Integrated>).andPredefinedNonce(
                                         iv
                                     ).encrypt(
                                         data = data,
                                         aad
                                     )
                                         .getOrThrow()
-                                own.cipherKind.shouldBeInstanceOf<AECapability.Authenticated>()
+                                own.cipherKind.shouldBeInstanceOf<AECapability.Authenticated<*>>()
                                 jcaCipher.init(
                                     Cipher.ENCRYPT_MODE,
                                     SecretKeySpec(secretKey.secretKey, "AES"),
@@ -116,7 +116,7 @@ class JvmSymmetricTest : FreeSpec({
 
                                 own.decrypt(own.algorithm.randomKey()) shouldNot succeed
 
-                                (alg as SymmetricEncryptionAlgorithm<AECapability.Unauthenticated,Nonce.Required>).sealedBox(own.algorithm.randomNonce(),own.encryptedData).decrypt(secretKey) shouldNot succeed
+                                (alg as SymmetricEncryptionAlgorithm.AES.CBC.Unauthenticated).sealedBox(own.algorithm.randomNonce(),own.encryptedData).decrypt(secretKey) shouldNot succeed
 
                             }
                         }
@@ -160,7 +160,7 @@ class JvmSymmetricTest : FreeSpec({
 
                     box.nonce.shouldNotBeNull()
                     box.nonce.size shouldBe alg.nonce.length.bytes.toInt()
-                    box.cipherKind.shouldBeInstanceOf<AECapability.Authenticated>()
+                    box.cipherKind.shouldBeInstanceOf<AECapability.Authenticated<*>>()
                     (box.encryptedData + box.authTag) shouldBe fromJCA
                     box.decrypt(secretKey).getOrThrow() shouldBe data
 

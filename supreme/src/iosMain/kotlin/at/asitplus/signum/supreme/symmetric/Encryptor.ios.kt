@@ -6,7 +6,7 @@ import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.A
 import kotlinx.cinterop.ExperimentalForeignApi
 
 
-internal actual fun <T, A : AECapability, E : SymmetricEncryptionAlgorithm<A, *>> initCipher(
+internal actual fun <T, A : AECapability<*>, E : SymmetricEncryptionAlgorithm<A, *>> initCipher(
     algorithm: E,
     key: ByteArray,
     nonce: ByteArray?,
@@ -21,7 +21,7 @@ internal actual fun <T, A : AECapability, E : SymmetricEncryptionAlgorithm<A, *>
 }
 
 @OptIn(ExperimentalForeignApi::class)
-internal actual fun <A : AECapability, I : Nonce> CipherParam<*, A>.doEncrypt(data: ByteArray): SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>> {
+internal actual fun <A : AECapability<*>, I : Nonce> CipherParam<*, A>.doEncrypt(data: ByteArray): SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>> {
     this as CipherParam<ByteArray, A>
     if (alg.nonce !is Nonce.Required) TODO()
 
@@ -29,7 +29,7 @@ internal actual fun <A : AECapability, I : Nonce> CipherParam<*, A>.doEncrypt(da
 
 
     return when (alg) {
-        is AES<*> -> AESIOS.encrypt(alg, data, platformData, nonce, aad)
+        is AES<*,*> -> AESIOS.encrypt(alg, data, platformData, nonce, aad)
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaIOS.encrypt(data, platformData, nonce, aad)
     } as SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>
 }
@@ -42,7 +42,7 @@ actual internal fun SealedBox<AECapability.Authenticated.Integrated, *, Symmetri
     if (algorithm.nonce !is Nonce.Required) TODO()
     this as SealedBox.WithNonce
     return when (algorithm) {
-        is AES<*> -> AESIOS.gcmDecrypt(encryptedData, secretKey, nonce, authTag, authenticatedData)
+        is AES<*,*> -> AESIOS.gcmDecrypt(encryptedData, secretKey, nonce, authTag, authenticatedData)
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaIOS.decrypt(
             encryptedData,
             secretKey,
@@ -59,8 +59,8 @@ actual internal fun SealedBox<AECapability.Unauthenticated, *, SymmetricEncrypti
 ): ByteArray {
     if (algorithm.nonce !is Nonce.Required) TODO()
     this as SealedBox.WithNonce
-    require(algorithm is AES<*>) { "Only AES is supported" }
+    require(algorithm is AES<*,*>) { "Only AES is supported" }
 
-    return AESIOS.cbcDecrypt(algorithm as AES<*>, encryptedData, secretKey, nonce)
+    return AESIOS.cbcDecrypt(algorithm as AES<*,*>, encryptedData, secretKey, nonce)
 
 }
