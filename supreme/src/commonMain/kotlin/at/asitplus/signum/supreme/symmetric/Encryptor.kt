@@ -5,8 +5,8 @@ import at.asitplus.signum.indispensable.symmetric.AuthType.Authenticated
 import at.asitplus.signum.supreme.mac.mac
 
 
-internal class Encryptor<A : AuthType<*>, E : SymmetricEncryptionAlgorithm<A, *>, C : SealedBox<A, *, E>> internal constructor(
-    private val algorithm: E,
+internal class Encryptor<A : AuthType<K>, I : Nonce, K : KeyType> internal constructor(
+    private val algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
     private val key: ByteArray,
     private val macKey: ByteArray?,
     private val iv: ByteArray?,
@@ -21,17 +21,17 @@ internal class Encryptor<A : AuthType<*>, E : SymmetricEncryptionAlgorithm<A, *>
     }
 
 
-    private val platformCipher: CipherParam<*, A> = initCipher<Any, A, E>(algorithm, key, iv, aad)
+    private val platformCipher: CipherParam<*, A,K> = initCipher<Any, A, I, K>(algorithm, key, iv, aad)
 
     /**
      * Encrypts [data] and returns a [at.asitplus.signum.indispensable.symmetric.Ciphertext] matching the algorithm type that was used to create this [Encryptor] object.
      * E.g., an authenticated encryption algorithm causes this function to return a [at.asitplus.signum.indispensable.symmetric.Ciphertext.Authenticated].
      */
-    fun encrypt(data: ByteArray): C = if (algorithm.authCapability is Authenticated.WithDedicatedMac<*, *>) {
+    fun encrypt(data: ByteArray): SealedBox<A,I,K> = if (algorithm.authCapability is Authenticated.WithDedicatedMac<*, *>) {
         val aMac = algorithm.authCapability as Authenticated.WithDedicatedMac<*, *>
         aMac.innerCipher
         val innerCipher =
-            initCipher<Any, AECapability.Unauthenticated, SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, *>>(
+            initCipher<Any, AuthType.Unauthenticated, I, KeyType.Integrated>(
                 aMac.innerCipher,
                 key,
                 iv,
@@ -46,7 +46,7 @@ internal class Encryptor<A : AuthType<*>, E : SymmetricEncryptionAlgorithm<A, *>
             aMac.mac.macInputCalculation(
                 encrypted.encryptedData,
                 innerCipher.nonce,
-                aad?:byteArrayOf()
+                aad ?: byteArrayOf()
             )
 
         val authTag = aMac.mac.mac(macKey, hmacInput).getOrThrow()
@@ -62,15 +62,15 @@ internal class Encryptor<A : AuthType<*>, E : SymmetricEncryptionAlgorithm<A, *>
             encrypted.encryptedData,
             authTag,
             aad
-        )) as C
+        )) as SealedBox<A,I,K>
 
     } else platformCipher.doEncrypt<A, Nonce>(data) as C
 
 
 }
 
-internal class CipherParam<T, A : AuthType<*>>(
-    val alg: SymmetricEncryptionAlgorithm<A, *>,
+internal class CipherParam<T, A : AuthType<K>,K: KeyType>(
+    val alg: SymmetricEncryptionAlgorithm<A, *,K>,
     val platformData: T,
     val nonce: ByteArray?,
     val aad: ByteArray?
@@ -86,8 +86,8 @@ expect internal fun SealedBox<AuthType.Unauthenticated, *, SymmetricEncryptionAl
 ): ByteArray
 
 
-internal expect fun <T, A : AuthType<*>, E : SymmetricEncryptionAlgorithm<A, *>> initCipher(
-    algorithm: E,
+internal expect fun <T, A : AuthType<K>, I : Nonce, K : KeyType> initCipher(
+    algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
     key: ByteArray,
     nonce: ByteArray?,
     aad: ByteArray?
