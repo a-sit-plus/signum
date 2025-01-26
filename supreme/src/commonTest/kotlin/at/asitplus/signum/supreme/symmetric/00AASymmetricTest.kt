@@ -61,15 +61,15 @@ class `0SymmetricTest` : FreeSpec({
                 Random.nextBytes(1),
                 Random.nextBytes(17),
                 Random.nextBytes(18),
-                Random.nextBytes(32),
+                Random.nextBytes(33),
                 Random.nextBytes(256),
                 null
             ) { iv ->
 
                 val key = alg.randomKey()
-                if (iv != null) key.andPredefinedNonce(iv).encrypt(Random.nextBytes(32)) shouldNot succeed
+                if (iv != null) key.andPredefinedNonce(iv) shouldNot succeed
                 else key.encrypt(Random.nextBytes(32)) should succeed
-                key.andPredefinedNonce(alg.randomNonce()).encrypt(Random.nextBytes(32)) should succeed
+                key.andPredefinedNonce(alg.randomNonce()).getOrThrow().encrypt(Random.nextBytes(32)) should succeed
                 key.encrypt(Random.nextBytes(32)) should succeed
 
                 if (alg.authCapability is AuthType.Authenticated)
@@ -136,7 +136,7 @@ class `0SymmetricTest` : FreeSpec({
 
 
                 key.encrypt(Random.nextBytes(32)) should succeed
-                key.andPredefinedNonce(alg.randomNonce()).encrypt(data = Random.nextBytes(32)) should succeed
+                key.andPredefinedNonce(alg.randomNonce()).getOrThrow().encrypt(data = Random.nextBytes(32)) should succeed
 
                 if (alg.authCapability is AuthType.Authenticated)
                     alg.randomKey().encrypt(
@@ -188,7 +188,7 @@ class `0SymmetricTest` : FreeSpec({
                 ) { iv ->
 
                     val ciphertext =
-                        if (iv != null) key.andPredefinedNonce(iv).encrypt(plaintext).getOrThrow()
+                        if (iv != null) key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext).getOrThrow()
                         else key.encrypt(plaintext).getOrThrow()
 
                     ciphertext.nonce.shouldNotBeNull()
@@ -282,7 +282,7 @@ class `0SymmetricTest` : FreeSpec({
                     ) { aad ->
                         key.encrypt(plaintext, aad)
                         val ciphertext =
-                            if (iv != null) key.andPredefinedNonce(iv).encrypt(plaintext, aad).getOrThrow()
+                            if (iv != null) key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext, aad).getOrThrow()
                             else key.encrypt(plaintext, aad).getOrThrow()
 
                         ciphertext.nonce.shouldNotBeNull()
@@ -410,7 +410,7 @@ class `0SymmetricTest` : FreeSpec({
                                 null
                             ) { aad ->
                                 val ciphertext =
-                                    if (iv != null) key.andPredefinedNonce(iv).encrypt(plaintext, aad).getOrThrow()
+                                    if (iv != null) key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext, aad).getOrThrow()
                                     else key.encrypt(plaintext, aad).getOrThrow()
                                 val manilaAlg = it.Custom { _, _, _ -> "Manila".encodeToByteArray() }
                                 val manilaKey = SymmetricKey.WithDedicatedMac.RequiringNonce(
@@ -418,15 +418,15 @@ class `0SymmetricTest` : FreeSpec({
                                     key.secretKey,
                                     key.dedicatedMacKey
                                 )
-                                if (iv != null) manilaKey.andPredefinedNonce(iv).encrypt(plaintext, aad)
+                                if (iv != null) manilaKey.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext, aad)
                                     .getOrThrow() shouldNotBe ciphertext
                                 manilaKey.encrypt(plaintext, aad).getOrThrow() shouldNotBe ciphertext
 
                                 //no randomness. must be equal
                                 val randomIV = it.randomNonce()
-                                manilaKey.andPredefinedNonce(randomIV).encrypt(plaintext, aad)
+                                manilaKey.andPredefinedNonce(randomIV).getOrThrow().encrypt(plaintext, aad)
                                     .getOrThrow() shouldBe
-                                        manilaKey.andPredefinedNonce(randomIV).encrypt(plaintext, aad)
+                                        manilaKey.andPredefinedNonce(randomIV).getOrThrow().encrypt(plaintext, aad)
                                             .getOrThrow()
 
                                 if (iv != null) ciphertext.nonce shouldBe iv

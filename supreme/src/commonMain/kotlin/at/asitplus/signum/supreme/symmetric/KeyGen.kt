@@ -44,6 +44,9 @@ private fun SymmetricEncryptionAlgorithm<*, *, *>.keyFromInternal(
     dedicatedMacKey: ByteArray?
 ): SymmetricKey<*, *, *> {
     require(bytes.size == this.keySize.bytes.toInt()) { "Invalid key size: ${bytes.size * 8}. Required: keySize=${bytes.size.bitLength}" }
+    dedicatedMacKey?.let {
+        require(it.isNotEmpty()) { "Dedicated MAC key is empty!" }
+    }
     @OptIn(HazardousMaterials::class)
     return when (this.requiresNonce()) {
         true -> when (isAuthenticated()) {

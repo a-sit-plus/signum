@@ -378,11 +378,11 @@ To minimise the potential for error, everything (algorithms, keys, sealed boxes)
 Hence, a sealed box containing an authenticated ciphertext will only ever accept a symmetric key that is usable for AEAD.
 Additional runtime checks ensure that mo mixups can happen.
 
-Signum also support custom HMAC-based authenticated encryption, letting you freely define which data gets fed into the MAC.
+Signum also supports custom HMAC-based authenticated encryption, letting you freely define which data gets fed into the MAC.
 You also have free rein over the MAC key:
 
 ```kotlin
-    val payload = "More matter, with less art!".encodeToByteArray()
+val payload = "More matter, with less art!".encodeToByteArray()
 
 //define algorithm parameters
 val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
@@ -392,7 +392,7 @@ val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
     }
 
 //any size is fine, really. omitting the override generates a mac key of the same size as the encryption key
-val key = algorithm.randomKey(dedicatedMacKey = secureRandom.nextBytesOf(32))
+val key = algorithm.randomKey(32.bit)
 val aad = Clock.System.now().toString().encodeToByteArray()
 
 val sealedBox = key.encrypt(
@@ -423,9 +423,7 @@ val reconstructed = algorithm.sealedBox(
     authenticatedData = sealedBox.authenticatedData
 )
 
-val manuallyRecovered = reconstructed.decrypt(
-    key,
-).getOrThrow(/*handle error*/)
+val manuallyRecovered = reconstructed.decrypt(key).getOrThrow(/*handle error*/)
 
 manuallyRecovered shouldBe payload //great success!
 

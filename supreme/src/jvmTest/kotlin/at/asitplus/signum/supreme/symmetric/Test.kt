@@ -65,10 +65,7 @@ class JvmSymmetricTest : FreeSpec({
                                 val own =
                                     (secretKey as SymmetricKey<AuthType.Authenticated<KeyType.Integrated>, Nonce.Required, KeyType.Integrated>).andPredefinedNonce(
                                         iv
-                                    ).encrypt(
-                                        data = data,
-                                        aad
-                                    )
+                                    ).getOrThrow().encrypt(data = data, aad)
                                         .getOrThrow()
                                 own.isAuthenticated() shouldBe true
                                 jcaCipher.init(
@@ -82,18 +79,6 @@ class JvmSymmetricTest : FreeSpec({
                                 if (aad != null) jcaCipher.updateAAD(aad)
 
                                 val encrypted = jcaCipher.doFinal(data)
-
-println("""{
-    "${alg.mode.acronym}": {
-    "key": "${secretKey.secretKey.toHexString()}",
-    "iv": "${own.nonce.toHexString()}",
-    "plain": "${data.toHexString()}",
-    "aad": "${aad?.toHexString()}",
-    "encrypted": "${own.encryptedData.toHexString()}",
-    "authTag": "${own.authTag.toHexString()}"
-    }
-},
-""".trimMargin())
 
                                 (own.encryptedData + own.authTag) shouldBe encrypted
 
@@ -135,16 +120,7 @@ println("""{
                                 val encrypted = jcaCipher.doFinal(data)
 
                                 own.encryptedData shouldBe encrypted
-                                println("""
-{
-    "${alg.mode.acronym}": {
-    "key": "${secretKey.secretKey.toHexString()}",
-    "iv": "${own.nonce.toHexString()}",
-    "plain": "${data.toHexString()}",
-    "encrypted": "${encrypted.toHexString()}"
-    }
-},
-""".trimMargin())
+
                                 jcaCipher.init(
                                     Cipher.DECRYPT_MODE,
                                     SecretKeySpec(secretKey.secretKey, "AES"),
@@ -242,7 +218,7 @@ println("""{
                     val secretKey = alg.randomKey()
                     val jcaCipher = Cipher.getInstance("ChaCha20-Poly1305");
 
-                    val box = if (nonce != null) secretKey.andPredefinedNonce(nonce).encrypt(data, aad).getOrThrow()
+                    val box = if (nonce != null) secretKey.andPredefinedNonce(nonce).getOrThrow().encrypt(data, aad).getOrThrow()
                     else secretKey.encrypt(data, aad).getOrThrow()
 
 
@@ -255,17 +231,7 @@ println("""{
                     if (aad != null) jcaCipher.updateAAD(aad)
 
                     val fromJCA = jcaCipher.doFinal(data)
-println("""{
-    "CHACHA": {
-    "key": "${secretKey.secretKey.toHexString()}",
-    "iv": "${box.nonce.toHexString()}",
-    "plain": "${data.toHexString()}",
-    "aad": "${aad?.toHexString()}",
-    "encrypted": "${box.encryptedData.toHexString()}",
-    "authTag": "${box.authTag.toHexString()}"
-    }
-},
-""".trimMargin())
+
                     box.nonce.shouldNotBeNull()
                     box.nonce.size shouldBe alg.nonce.length.bytes.toInt()
                     box.isAuthenticated() shouldBe true

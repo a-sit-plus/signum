@@ -15,7 +15,7 @@ import kotlinx.serialization.json.jsonPrimitive
 
 @OptIn(HazardousMaterials::class)
 @ExperimentalStdlibApi
-class `00SymmetriAgainsJCATest` : FreeSpec({
+class `00SymmetricAgainstReference` : FreeSpec({
     "AES GCM+CBC and ChaCha20-Poly1305" - {
         val reference: JsonArray = Json.decodeFromString(pregenerated)
 
@@ -48,7 +48,7 @@ class `00SymmetriAgainsJCATest` : FreeSpec({
                     when (key.size) {
                         128 / 8 -> SymmetricEncryptionAlgorithm.AES_128.GCM.apply {
                             val key = keyFrom(key).getOrThrow()
-                            val box = key.andPredefinedNonce(iv).encrypt(plaintext, aad).getOrThrow()
+                            val box = key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext, aad).getOrThrow()
                             withClue(encrypted.toHexString()) {
                                 box.encryptedData shouldBe encrypted
                                 box.authTag shouldBe authTag
@@ -60,14 +60,14 @@ class `00SymmetriAgainsJCATest` : FreeSpec({
 
                         192 / 8 -> SymmetricEncryptionAlgorithm.AES_192.GCM.apply {
                             val key = keyFrom(key).getOrThrow()
-                            val box = key.andPredefinedNonce(iv).encrypt(plaintext).getOrThrow()
+                            val box = key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext).getOrThrow()
                             box.encryptedData shouldBe encrypted
                             box.decrypt(key).getOrThrow() shouldBe plaintext
                         }
 
                         256 / 8 -> SymmetricEncryptionAlgorithm.AES_256.GCM.apply {
                             val key = keyFrom(key).getOrThrow()
-                            val box = key.andPredefinedNonce(iv).encrypt(plaintext).getOrThrow()
+                            val box = key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext).getOrThrow()
                             box.encryptedData shouldBe encrypted
                             box.decrypt(key).getOrThrow() shouldBe plaintext
                         }
@@ -78,7 +78,7 @@ class `00SymmetriAgainsJCATest` : FreeSpec({
                     when (key.size) {
                         128 / 8 -> SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN.apply {
                             val key = keyFrom(key).getOrThrow()
-                            val box = key.andPredefinedNonce(iv).encrypt(plaintext).getOrThrow()
+                            val box = key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext).getOrThrow()
                             box.encryptedData shouldBe encrypted
                             box.decrypt(key).getOrThrow() shouldBe plaintext
 
@@ -87,14 +87,14 @@ class `00SymmetriAgainsJCATest` : FreeSpec({
 
                         192 / 8 -> SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN.apply {
                             val key = keyFrom(key).getOrThrow()
-                            val box = key.andPredefinedNonce(iv).encrypt(plaintext).getOrThrow()
+                            val box = key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext).getOrThrow()
                             box.encryptedData shouldBe encrypted
                             box.decrypt(key).getOrThrow() shouldBe plaintext
                         }
 
                         256 / 8 -> SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN.apply {
                             val key = keyFrom(key).getOrThrow()
-                            val box = key.andPredefinedNonce(iv).encrypt(plaintext).getOrThrow()
+                            val box = key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext).getOrThrow()
                             box.encryptedData shouldBe encrypted
                             box.decrypt(key).getOrThrow() shouldBe plaintext
                         }
@@ -104,7 +104,7 @@ class `00SymmetriAgainsJCATest` : FreeSpec({
                 "CHACHA" -> {
                     SymmetricEncryptionAlgorithm.ChaCha20Poly1305.apply {
                         val key = keyFrom(key).getOrThrow()
-                        val box = key.andPredefinedNonce(iv).encrypt(plaintext, aad).getOrThrow()
+                        val box = key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext, aad).getOrThrow()
                         withClue(encrypted.toHexString()) {
                             box.encryptedData shouldBe encrypted
                             box.authTag shouldBe authTag
