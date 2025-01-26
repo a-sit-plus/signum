@@ -14,9 +14,11 @@ actual internal fun <T, A : AuthType<out K>, I : Nonce, K : KeyType> initCipher(
     nonce: ByteArray?,
     aad: ByteArray?
 ): CipherParam<T, A, out K> {
-    if (!algorithm.requiresNonce()) TODO("UNSUPPORTED")
-    else {
-
+    if (!algorithm.requiresNonce()) {
+        @OptIn(HazardousMaterials::class)
+        if (algorithm !is SymmetricEncryptionAlgorithm.AES.ECB) TODO("UNSUPPORTED")
+        return AESJVM.initCipher(algorithm, key, nonce, aad) as CipherParam<T, A, K>
+    } else {
         @OptIn(HazardousMaterials::class)
         val nonce = nonce ?: algorithm.randomNonce()
 
@@ -27,7 +29,7 @@ actual internal fun <T, A : AuthType<out K>, I : Nonce, K : KeyType> initCipher(
                 aad
             )
 
-            is SymmetricEncryptionAlgorithm.AES<*, *> -> AESJVM.initCipher(
+            is SymmetricEncryptionAlgorithm.AES<*, *, *> -> AESJVM.initCipher(
                 algorithm,
                 key,
                 nonce,
@@ -39,7 +41,7 @@ actual internal fun <T, A : AuthType<out K>, I : Nonce, K : KeyType> initCipher(
     }
 }
 
-internal actual fun  <A : AuthType<out K>, I : Nonce, K : KeyType> CipherParam<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K> {
+internal actual fun <A : AuthType<out K>, I : Nonce, K : KeyType> CipherParam<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K> {
     (this as CipherParam<Cipher, A, K>)
     val jcaCiphertext = platformData.doFinal(data)
 
@@ -59,6 +61,7 @@ internal actual fun  <A : AuthType<out K>, I : Nonce, K : KeyType> CipherParam<*
                     (alg as SymmetricEncryptionAlgorithm<AuthType.Authenticated<*>, Nonce.Required, *>)
                     alg.sealedBox(nonce!!, ciphertext, authTag!!, aad)
                 }
+
                 false -> alg.sealedBox(nonce!!, ciphertext)
             }
         }
@@ -75,17 +78,19 @@ internal actual fun  <A : AuthType<out K>, I : Nonce, K : KeyType> CipherParam<*
     } as SealedBox<A, I, out K>
 }
 
-val SymmetricEncryptionAlgorithm<*, *,*>.jcaName: String
+val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
+    @OptIn(HazardousMaterials::class)
     get() = when (this) {
         is SymmetricEncryptionAlgorithm.AES.GCM -> "AES/GCM/NoPadding"
         is SymmetricEncryptionAlgorithm.AES.CBC<*, *> -> "AES/CBC/PKCS5Padding"
+        is SymmetricEncryptionAlgorithm.AES.ECB -> "AES/ECB/PKCS5Padding"
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20-Poly1305"
-        else-> TODO("UNSUPPORTED")
+        else -> TODO("UNSUPPORTED")
     }
 
-val SymmetricEncryptionAlgorithm<*, *,*>.jcaKeySpec: String
+val SymmetricEncryptionAlgorithm<*, *, *>.jcaKeySpec: String
     get() = when (this) {
-        is SymmetricEncryptionAlgorithm.AES<*, *> -> "AES"
+        is SymmetricEncryptionAlgorithm.AES<*, *, *> -> "AES"
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20"
         else -> TODO("UNSUPPORTED")
     }
@@ -94,7 +99,7 @@ val SymmetricEncryptionAlgorithm<*, *,*>.jcaKeySpec: String
 internal actual fun SealedBox<Authenticated.Integrated, *, out KeyType.Integrated>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
-    if(!this.hasNonce()) TODO("UNSUPPORTED")
+    if (!this.hasNonce()) TODO("UNSUPPORTED")
 
     if ((algorithm !is SymmetricEncryptionAlgorithm.ChaCha20Poly1305) && (algorithm !is SymmetricEncryptionAlgorithm.AES.GCM)) TODO()
 
@@ -112,8 +117,18 @@ internal actual fun SealedBox<Authenticated.Integrated, *, out KeyType.Integrate
 internal actual fun SealedBox<AuthType.Unauthenticated, *, out KeyType.Integrated>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
-    if (algorithm !is SymmetricEncryptionAlgorithm.AES<*, *>)
+    if (algorithm !is SymmetricEncryptionAlgorithm.AES<*, *, *>)
         TODO()
+
+    @OptIn(HazardousMaterials::class)
+    if (algorithm is SymmetricEncryptionAlgorithm.AES.ECB) {
+        return Cipher.getInstance(algorithm.jcaName).also { cipher ->
+            cipher.init(
+                Cipher.DECRYPT_MODE,
+                SecretKeySpec(secretKey, algorithm.jcaKeySpec),
+            )
+        }.doFinal(encryptedData)
+    }
 
     this as SealedBox.WithNonce
     return Cipher.getInstance(algorithm.jcaName).also { cipher ->
