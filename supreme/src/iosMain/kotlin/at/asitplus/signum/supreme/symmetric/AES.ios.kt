@@ -14,7 +14,7 @@ import platform.CoreCrypto.kCCDecrypt
 import platform.CoreCrypto.kCCEncrypt
 
 
-private fun BlockCipher<*, *>.addPKCS7Padding(plain: ByteArray): ByteArray {
+private fun BlockCipher<*, *, *>.addPKCS7Padding(plain: ByteArray): ByteArray {
     val blockBytes = blockSize.bytes.toInt()
     val diff = blockBytes - (plain.size % blockBytes)
     return if (diff == 0)
@@ -23,7 +23,7 @@ private fun BlockCipher<*, *>.addPKCS7Padding(plain: ByteArray): ByteArray {
 }
 
 
-private fun BlockCipher<*, *>.removePKCS7Padding(plainWithPadding: ByteArray): ByteArray {
+private fun BlockCipher<*, *, *>.removePKCS7Padding(plainWithPadding: ByteArray): ByteArray {
     val paddingBytes = plainWithPadding.last().toInt()
     require(paddingBytes > 0) { "Illegal padding: $paddingBytes" }
     require(plainWithPadding.takeLast(paddingBytes).all { it.toInt() == paddingBytes }) { "Padding not consistent" }
@@ -35,14 +35,14 @@ private fun BlockCipher<*, *>.removePKCS7Padding(plainWithPadding: ByteArray): B
 internal object AESIOS {
     @OptIn(ExperimentalForeignApi::class)
     fun encrypt(
-        alg: SymmetricEncryptionAlgorithm.AES<*>,
+        alg: SymmetricEncryptionAlgorithm.AES<*, *>,
         data: ByteArray,
         key: ByteArray,
         nonce: ByteArray,
         aad: ByteArray?
     ) = when (alg) {
         is AES.CBC.Unauthenticated -> {
-            val padded = (alg as AES<*>).addPKCS7Padding(data)
+            val padded = (alg as AES<*, *>).addPKCS7Padding(data)
             val bytes: ByteArray = swiftcall {
                 CBC.crypt(kCCEncrypt.toLong(), padded.toNSData(), key.toNSData(), nonce.toNSData(), error)
             }.toByteArray()
@@ -83,7 +83,7 @@ internal object AESIOS {
 
 
     internal fun cbcDecrypt(
-        algorithm: SymmetricEncryptionAlgorithm.AES<*>,
+        algorithm: SymmetricEncryptionAlgorithm.AES<*, *>,
         encryptedData: ByteArray,
         secretKey: ByteArray,
         nonce: ByteArray

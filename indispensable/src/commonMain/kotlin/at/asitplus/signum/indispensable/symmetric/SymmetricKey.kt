@@ -71,6 +71,22 @@ sealed interface SymmetricKey<A : AuthType<K>, I : Nonce, K : KeyType> {
                 secretKey: ByteArray
             ) : NonAuthenticating<Nonce.Without>(algorithm, secretKey)
         }
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is Integrated<*, *>) return false
+
+            if (algorithm != other.algorithm) return false
+            if (!secretKey.contentEquals(other.secretKey)) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = algorithm.hashCode()
+            result = 31 * result + secretKey.contentHashCode()
+            return result
+        }
     }
 
 
@@ -108,6 +124,24 @@ sealed interface SymmetricKey<A : AuthType<K>, I : Nonce, K : KeyType> {
             algorithm, secretKey, dedicatedMacKey
         ),
             SymmetricKey.WithoutNonce<AuthType.Authenticated.WithDedicatedMac<*, Nonce.Without>, KeyType.WithDedicatedMacKey>
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is WithDedicatedMac<*>) return false
+
+            if (algorithm != other.algorithm) return false
+            if (!secretKey.contentEquals(other.secretKey)) return false
+            if (!dedicatedMacKey.contentEquals(other.dedicatedMacKey)) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = algorithm.hashCode()
+            result = 31 * result + secretKey.contentHashCode()
+            result = 31 * result + dedicatedMacKey.contentHashCode()
+            return result
+        }
     }
 }
 
@@ -118,6 +152,15 @@ fun <A : AuthType<K>, K : KeyType, I : Nonce> SymmetricKey<A, I, K>.isAuthentica
         returns(false) implies (this@isAuthenticated is SymmetricKey.NonAuthenticating<I>)
     }
     return this.algorithm.authCapability is AuthType.Authenticated<*>
+}
+
+@OptIn(ExperimentalContracts::class)
+fun <A : AuthType<K>, K : KeyType, I : Nonce> SymmetricKey<A, I, K>.hasDedicatedMacKey(): Boolean {
+    contract {
+        returns(true) implies (this@hasDedicatedMacKey is SymmetricKey.WithDedicatedMac<I>)
+        returns(false) implies (this@hasDedicatedMacKey is SymmetricKey.Integrated<A, I>)
+    }
+    return this is SymmetricKey.WithDedicatedMac
 }
 
 

@@ -281,6 +281,11 @@ abstract class BlockCipher<A : AuthType<K>, I : Nonce, K : KeyType>(
 }
 
 abstract class StreamCipher<A : AuthType<K>, I : Nonce, K : KeyType> : SymmetricEncryptionAlgorithm<A, I, K>
+
+
+//Here come the contracts!
+
+/**Use to smart-cast this algorithm*/
 @JvmName("isBlockCipherAlias")
 @OptIn(ExperimentalContracts::class)
 fun  SymmetricEncryptionAlgorithm<*, *, *>.isBlockCipher(): Boolean {
@@ -290,6 +295,8 @@ fun  SymmetricEncryptionAlgorithm<*, *, *>.isBlockCipher(): Boolean {
     }
     return this is BlockCipher<*, *, *>
 }
+
+/**Use to smart-cast this algorithm*/
 @JvmName("isAuthenticatedAlias")
 @OptIn(ExperimentalContracts::class)
 fun  SymmetricEncryptionAlgorithm<*, *, *>.isAuthenticated(): Boolean {
@@ -300,6 +307,7 @@ fun  SymmetricEncryptionAlgorithm<*, *, *>.isAuthenticated(): Boolean {
     return this.authCapability is AuthType.Authenticated<*>
 }
 
+/**Use to smart-cast this algorithm*/
 @JvmName("hasDedicatedMacAlias")
 @OptIn(ExperimentalContracts::class)
 fun  SymmetricEncryptionAlgorithm<*, *, *>.hasDedicatedMac(): Boolean {
@@ -308,6 +316,8 @@ fun  SymmetricEncryptionAlgorithm<*, *, *>.hasDedicatedMac(): Boolean {
     }
     return this.authCapability is AuthType.Authenticated.WithDedicatedMac<*, *>
 }
+
+/**Use to smart-cast this algorithm*/
 @JvmName("isBlockCipher")
 @OptIn(ExperimentalContracts::class)
 fun <A : AuthType<K>, K : KeyType, I : Nonce> SymmetricEncryptionAlgorithm<A, I, K>.isBlockCipher(): Boolean {
@@ -317,6 +327,8 @@ fun <A : AuthType<K>, K : KeyType, I : Nonce> SymmetricEncryptionAlgorithm<A, I,
     }
     return this is BlockCipher<*, *, *>
 }
+
+/**Use to smart-cast this algorithm*/
 @JvmName("isAuthenticated")
 @OptIn(ExperimentalContracts::class)
 fun <A : AuthType<K>, K : KeyType, I : Nonce> SymmetricEncryptionAlgorithm<A, I, K>.isAuthenticated(): Boolean {
@@ -327,6 +339,8 @@ fun <A : AuthType<K>, K : KeyType, I : Nonce> SymmetricEncryptionAlgorithm<A, I,
     return this.authCapability is AuthType.Authenticated<*>
 }
 
+
+/**Use to smart-cast this algorithm*/
 @JvmName("hasDedicatedMac")
 @OptIn(ExperimentalContracts::class)
 fun <I : Nonce> SymmetricEncryptionAlgorithm<*, I, *>.hasDedicatedMac(): Boolean {
@@ -336,6 +350,8 @@ fun <I : Nonce> SymmetricEncryptionAlgorithm<*, I, *>.hasDedicatedMac(): Boolean
     return this.authCapability is AuthType.Authenticated.WithDedicatedMac<*, *>
 }
 
+
+/**Use to smart-cast this algorithm*/
 @JvmName("requiresNonceAlias")
 @OptIn(ExperimentalContracts::class)
 fun SymmetricEncryptionAlgorithm<*, *, *>.requiresNonce(): Boolean {
@@ -345,6 +361,8 @@ fun SymmetricEncryptionAlgorithm<*, *, *>.requiresNonce(): Boolean {
     }
     return this.nonce is Nonce.Required
 }
+
+/**Use to smart-cast this algorithm*/
 @JvmName("requiresNonce")
 @OptIn(ExperimentalContracts::class)
 fun <A : AuthType<K>, K : KeyType> SymmetricEncryptionAlgorithm<A, *, K>.requiresNonce(): Boolean {
@@ -355,7 +373,7 @@ fun <A : AuthType<K>, K : KeyType> SymmetricEncryptionAlgorithm<A, *, K>.require
     return this.nonce is Nonce.Required
 }
 
-
+/**Use to smart-cast this algorithm*/
 @JvmName("isIntegrated")
 @OptIn(ExperimentalContracts::class)
 fun < I : Nonce> SymmetricEncryptionAlgorithm.Authenticated<*, I, *>.isIntegrated(): Boolean {
@@ -370,6 +388,8 @@ fun < I : Nonce> SymmetricEncryptionAlgorithm.Authenticated<*, I, *>.isIntegrate
 //Second level A
 
 //A-WITHOUTNONCE
+
+/**Use to smart-cast this algorithm*/
 @JvmName("isAuthenticatedWithout")
 @OptIn(ExperimentalContracts::class)
 fun  SymmetricEncryptionAlgorithm.WithoutNonce<*, *>.isAuthenticated(): Boolean {
@@ -380,6 +400,7 @@ fun  SymmetricEncryptionAlgorithm.WithoutNonce<*, *>.isAuthenticated(): Boolean 
     return this.authCapability is AuthType.Authenticated<*>
 }
 
+/**Use to smart-cast this algorithm*/
 @JvmName("hasDedicatedMacWithout")
 @OptIn(ExperimentalContracts::class)
 fun  SymmetricEncryptionAlgorithm.WithoutNonce<*, *>.hasDedicatedMac(): Boolean {
@@ -393,6 +414,7 @@ fun  SymmetricEncryptionAlgorithm.WithoutNonce<*, *>.hasDedicatedMac(): Boolean 
     return this.authCapability is AuthType.Authenticated.WithDedicatedMac<*, *>
 }
 
+/**Use to smart-cast this algorithm*/
 @JvmName("isIntegratedWithout")
 @OptIn(ExperimentalContracts::class)
 fun  SymmetricEncryptionAlgorithm.WithoutNonce.Authenticated<*,*>.isIntegrated(): Boolean {
@@ -405,6 +427,8 @@ fun  SymmetricEncryptionAlgorithm.WithoutNonce.Authenticated<*,*>.isIntegrated()
 
 
 //A-NONCE
+
+/**Use to smart-cast this algorithm*/
 @JvmName("isAuthenticatedWith")
 @OptIn(ExperimentalContracts::class)
 fun  SymmetricEncryptionAlgorithm.RequiringNonce<*, *>.isAuthenticated(): Boolean {
@@ -414,6 +438,8 @@ fun  SymmetricEncryptionAlgorithm.RequiringNonce<*, *>.isAuthenticated(): Boolea
     }
     return this.authCapability is AuthType.Authenticated<*>
 }
+
+/**Use to smart-cast this algorithm*/
 @JvmName("hasDedicatedMacWith")
 @OptIn(ExperimentalContracts::class)
 fun  SymmetricEncryptionAlgorithm.RequiringNonce<*, *>.hasDedicatedMac(): Boolean {
@@ -427,6 +453,7 @@ fun  SymmetricEncryptionAlgorithm.RequiringNonce<*, *>.hasDedicatedMac(): Boolea
     return this.authCapability is AuthType.Authenticated.WithDedicatedMac<*, *>
 }
 
+/**Use to smart-cast this algorithm*/
 @JvmName("isIntegratedWith")
 @OptIn(ExperimentalContracts::class)
 fun  SymmetricEncryptionAlgorithm.RequiringNonce.Authenticated<*,*>.isIntegrated(): Boolean {
@@ -440,6 +467,7 @@ fun  SymmetricEncryptionAlgorithm.RequiringNonce.Authenticated<*,*>.isIntegrated
 
 //Second Level B
 
+/**Use to smart-cast this algorithm*/
 @JvmName("requiresNonceUnauth")
 @OptIn(ExperimentalContracts::class)
 fun  SymmetricEncryptionAlgorithm.Unauthenticated<*>.requiresNonce(): Boolean {
@@ -450,6 +478,7 @@ fun  SymmetricEncryptionAlgorithm.Unauthenticated<*>.requiresNonce(): Boolean {
     return this.nonce is Nonce.Required
 }
 
+/**Use to smart-cast this algorithm*/
 @JvmName("requiresNonceAuth")
 @OptIn(ExperimentalContracts::class)
 fun <A : AuthType.Authenticated<K>, K : KeyType> SymmetricEncryptionAlgorithm.Authenticated<A, *, K>.requiresNonce(): Boolean {
@@ -459,6 +488,8 @@ fun <A : AuthType.Authenticated<K>, K : KeyType> SymmetricEncryptionAlgorithm.Au
     }
     return this.nonce is Nonce.Required
 }
+
+/**Use to smart-cast this algorithm*/
 @JvmName("requiresNonceAuthAlias")
 @OptIn(ExperimentalContracts::class)
 fun SymmetricEncryptionAlgorithm.Authenticated<*, *, *>.requiresNonce(): Boolean {
@@ -469,6 +500,7 @@ fun SymmetricEncryptionAlgorithm.Authenticated<*, *, *>.requiresNonce(): Boolean
     return this.nonce is Nonce.Required
 }
 
+/**Use to smart-cast this algorithm*/
 @JvmName("requiresNonceAuthIntegrated")
 @OptIn(ExperimentalContracts::class)
 fun  SymmetricEncryptionAlgorithm.Authenticated.Integrated<*>.requiresNonce(): Boolean {
@@ -479,6 +511,7 @@ fun  SymmetricEncryptionAlgorithm.Authenticated.Integrated<*>.requiresNonce(): B
     return this.nonce is Nonce.Required
 }
 
+/**Use to smart-cast this algorithm*/
 @JvmName("requiresNonceWithDedicatedMac")
 @OptIn(ExperimentalContracts::class)
 fun SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac<*,*>.requiresNonce(): Boolean {

@@ -23,7 +23,7 @@ import kotlin.random.Random
 
 @OptIn(HazardousMaterials::class)
 @ExperimentalStdlibApi
-class `00AASymmetricTest` : FreeSpec({
+class `0SymmetricTest` : FreeSpec({
 
 
     "Illegal IV Size" - {

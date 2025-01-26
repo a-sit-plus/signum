@@ -2,47 +2,51 @@ package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.*
+import at.asitplus.signum.indispensable.symmetric.AuthType.Authenticated
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
 import kotlinx.cinterop.ExperimentalForeignApi
 
 
-internal actual fun <T, A : AuthType<*>, E : SymmetricEncryptionAlgorithm<A, *>> initCipher(
-    algorithm: E,
+actual internal fun <T, A : AuthType<out K>, I : Nonce, K : KeyType> initCipher(
+    algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
     key: ByteArray,
     nonce: ByteArray?,
     aad: ByteArray?
-): CipherParam<T, A> {
-    if (algorithm.nonce !is Nonce.Required) TODO()
-    algorithm as SymmetricEncryptionAlgorithm<*, Nonce.Required>
+): CipherParam<T, A, out K> {
+    if (algorithm.nonce !is Nonce.Required) TODO("ALGORITHM UNSUPPORTED")
+    algorithm as SymmetricEncryptionAlgorithm<A, Nonce.Required, K>
 
     @OptIn(HazardousMaterials::class)
     val nonce = nonce ?: algorithm.randomNonce()
-    return CipherParam<ByteArray, A>(algorithm, key, nonce, aad) as CipherParam<T, A>
+    return CipherParam<ByteArray, AuthType<KeyType>, KeyType>(
+        algorithm as SymmetricEncryptionAlgorithm<AuthType<KeyType>, Nonce.Required, KeyType>, key, nonce, aad
+    ) as CipherParam<T, A, K>
 }
 
 @OptIn(ExperimentalForeignApi::class)
-internal actual fun <A : AuthType<*>, I : Nonce> CipherParam<*, A>.doEncrypt(data: ByteArray): SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>> {
-    this as CipherParam<ByteArray, A>
-    if (alg.nonce !is Nonce.Required) TODO()
+internal actual fun <A : AuthType<out K>, I : Nonce, K : KeyType> CipherParam<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K> {
+    this as CipherParam<ByteArray, A, K>
+    if (alg.nonce !is Nonce.Required) TODO("ALGORITHM UNSUPPORTED")
 
     require(nonce != null)
 
 
     return when (alg) {
-        is AES<*,*> -> AESIOS.encrypt(alg, data, platformData, nonce, aad)
+        is AES<*, *> -> AESIOS.encrypt(alg, data, platformData, nonce, aad)
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaIOS.encrypt(data, platformData, nonce, aad)
-    } as SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>
+        else -> TODO("ALGORITHM UNSUPPORTED")
+    } as SealedBox<A, I, K>
 }
 
 
 @OptIn(ExperimentalForeignApi::class)
-actual internal fun SealedBox<AuthType.Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<AuthType.Authenticated.Integrated, *>>.doDecrypt(
+internal actual fun SealedBox<Authenticated.Integrated, *, out KeyType.Integrated>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
-    if (algorithm.nonce !is Nonce.Required) TODO()
+    if (algorithm.nonce !is Nonce.Required) TODO("ALGORITHM UNSUPPORTED")
     this as SealedBox.WithNonce
     return when (algorithm) {
-        is AES<*,*> -> AESIOS.gcmDecrypt(encryptedData, secretKey, nonce, authTag, authenticatedData)
+        is AES<*, *> -> AESIOS.gcmDecrypt(encryptedData, secretKey, nonce, authTag, authenticatedData)
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaIOS.decrypt(
             encryptedData,
             secretKey,
@@ -50,17 +54,19 @@ actual internal fun SealedBox<AuthType.Authenticated.Integrated, *, SymmetricEnc
             authTag,
             authenticatedData
         )
+
+        else -> TODO("ALGORITHM UNSUPPORTED")
     }
 }
 
 @OptIn(ExperimentalForeignApi::class)
-actual internal fun SealedBox<AuthType.Unauthenticated, *, SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, *>>.doDecrypt(
+internal actual fun SealedBox<AuthType.Unauthenticated, *, out KeyType.Integrated>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
     if (algorithm.nonce !is Nonce.Required) TODO()
     this as SealedBox.WithNonce
-    require(algorithm is AES<*,*>) { "Only AES is supported" }
+    require(algorithm is AES<*, *>) { "Only AES is supported" }
 
-    return AESIOS.cbcDecrypt(algorithm as AES<*,*>, encryptedData, secretKey, nonce)
+    return AESIOS.cbcDecrypt(algorithm as AES<*, *>, encryptedData, secretKey, nonce)
 
 }
