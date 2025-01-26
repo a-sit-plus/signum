@@ -57,10 +57,20 @@ sealed interface SymmetricKey<A : AuthType<K>, I : Nonce, K : KeyType> {
             ), SymmetricKey.WithoutNonce<AuthType.Authenticated.Integrated, KeyType.Integrated>
         }
 
-        class NonAuthenticating<I : Nonce>(
+        sealed class NonAuthenticating<I : Nonce>(
             algorithm: SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, I, KeyType.Integrated>,
             secretKey: ByteArray
-        ) : Integrated<AuthType.Unauthenticated, I>(algorithm, secretKey), SymmetricKey.NonAuthenticating<I>
+        ) : Integrated<AuthType.Unauthenticated, I>(algorithm, secretKey), SymmetricKey.NonAuthenticating<I> {
+            class RequiringNonce(
+                algorithm: SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Required, KeyType.Integrated>,
+                secretKey: ByteArray
+            ) : NonAuthenticating<Nonce.Required>(algorithm, secretKey)
+
+            class WithoutNonce(
+                algorithm: SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Without, KeyType.Integrated>,
+                secretKey: ByteArray
+            ) : NonAuthenticating<Nonce.Without>(algorithm, secretKey)
+        }
     }
 
 
@@ -114,7 +124,7 @@ fun <A : AuthType<K>, K : KeyType, I : Nonce> SymmetricKey<A, I, K>.isAuthentica
 @OptIn(ExperimentalContracts::class)
 fun <A : AuthType<K>, K : KeyType, I : Nonce> SymmetricKey<A, I, K>.requiresNonce(): Boolean {
     contract {
-        returns(true) implies (this@requiresNonce is SymmetricKey.RequiringNonce<A,K>)
+        returns(true) implies (this@requiresNonce is SymmetricKey.RequiringNonce<A, K>)
         returns(false) implies (this@requiresNonce is SymmetricKey.WithoutNonce<A, K>)
     }
     return algorithm.nonce is Nonce.Required

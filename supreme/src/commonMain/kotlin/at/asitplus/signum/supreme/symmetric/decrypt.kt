@@ -12,23 +12,23 @@ import kotlin.jvm.JvmName
  * Attempts to decrypt this ciphertext (which also holds IV, and in case of an authenticated ciphertext, AAD and auth tag) using the provided [key].
  * This is the function you typically want to use.
  */
-fun <K : KeyType, A : AuthType<K>> SealedBox<A, Nonce.Required, SymmetricEncryptionAlgorithm<A, Nonce.Required>>.decrypt(
-    key: SymmetricKey<in A, Nonce.Required, out K>
+fun <A: AuthType<K>, I:Nonce, K: KeyType> SealedBox<out A,I, K>.decrypt(
+    key: SymmetricKey<out A, I, out K>
 ): KmmResult<ByteArray> = catching {
     require(algorithm == key.algorithm) { "Somebody likes cursed casts!" }
     when (algorithm.authCapability as AuthType<*>) {
-        is Authenticated.Integrated -> (this as SealedBox<Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<AuthType.Authenticated.Integrated, *>>).decryptInternal(
+        is Authenticated.Integrated -> (this as SealedBox<Authenticated.Integrated, *, KeyType.Integrated>).decryptInternal(
             key.secretKey
         )
 
         is Authenticated.WithDedicatedMac<*, *> -> {
             key as SymmetricKey.WithDedicatedMac
-            (this as SealedBox<Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, *>, *>>).decryptInternal(
+            (this as SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedicatedMacKey>).decryptInternal(
                 key.secretKey, key.dedicatedMacKey
             )
         }
 
-        is AuthType.Unauthenticated -> (this as SealedBox<AuthType.Unauthenticated, *, SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, *>>).decryptInternal(
+        is AuthType.Unauthenticated -> (this as SealedBox<AuthType.Unauthenticated, *, KeyType.Integrated>).decryptInternal(
             key.secretKey
         )
     }
@@ -36,7 +36,7 @@ fun <K : KeyType, A : AuthType<K>> SealedBox<A, Nonce.Required, SymmetricEncrypt
 
 
 @JvmName("decryptRawAuthenticated")
-private fun SealedBox<Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<AuthType.Authenticated.Integrated, *>>.decryptInternal(
+private fun SealedBox<Authenticated.Integrated, *, KeyType.Integrated>.decryptInternal(
     secretKey: ByteArray
 ): ByteArray {
     require(secretKey.size.toUInt() == algorithm.keySize.bytes) { "Key must be exactly ${algorithm.keySize} bits long" }
@@ -44,7 +44,7 @@ private fun SealedBox<Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<
 }
 
 @JvmName("decryptRaw")
-private fun SealedBox<AuthType.Unauthenticated, *, SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, *>>.decryptInternal(
+private fun SealedBox<AuthType.Unauthenticated, *, KeyType.Integrated>.decryptInternal(
     secretKey: ByteArray
 ): ByteArray {
     require(secretKey.size.toUInt() == algorithm.keySize.bytes) { "Key must be exactly ${algorithm.keySize} bits long" }
@@ -56,10 +56,11 @@ private fun SealedBox<AuthType.Unauthenticated, *, SymmetricEncryptionAlgorithm<
  * If no [macKey] is provided, [secretKey] will be used as MAC key.
  * [dedicatedMacInputCalculation] can be used to override the [DefaultDedicatedMacInputCalculation] used to compute MAC input.
  */
-private fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncryptionAlgorithm<Authenticated.WithDedicatedMac<*, *>, *>>.decryptInternal(
+private fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedicatedMacKey>.decryptInternal(
     secretKey: ByteArray,
     macKey: ByteArray = secretKey,
 ): ByteArray {
+    require(this.isAuthenticated())
     val iv: ByteArray? = if (this is SealedBox.WithNonce<*, *>) nonce else null
     val aad = authenticatedData
     val authTag = authTag
@@ -73,12 +74,12 @@ private fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, SymmetricEncrypti
     if (!(mac.mac(macKey, hmacInput).getOrThrow().contentEquals(authTag)))
         throw IllegalArgumentException("Auth Tag mismatch!")
 
-    val box: SealedBox<AuthType.Unauthenticated, *, SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, *>> =
-        (if (this is SealedBox.WithNonce<*, *>) (innerCipher as SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Required>).sealedBox(
+    val box: SealedBox<AuthType.Unauthenticated, *, KeyType.Integrated> =
+        (if (this is SealedBox.WithNonce<*, *>) (innerCipher as SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Required, KeyType.Integrated>).sealedBox(
             nonce,
             encryptedData
-        ) else (innerCipher as SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Without>).sealedBox(
+        ) else (innerCipher as SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Without, KeyType.Integrated>).sealedBox(
             encryptedData
-        )) as SealedBox<AuthType.Unauthenticated, *, SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, *>>
+        )) as SealedBox<AuthType.Unauthenticated, *, KeyType.Integrated>
     return box.doDecrypt(secretKey)
 }

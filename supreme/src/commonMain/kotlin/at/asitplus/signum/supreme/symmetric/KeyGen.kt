@@ -12,7 +12,7 @@ import kotlin.jvm.JvmName
 private val secureRandom = SecureRandom()
 
 
-fun <K : KeyType, A : AuthType< out K>, I : Nonce> SymmetricEncryptionAlgorithm<A, I>.randomKey(): SymmetricKey<A, I,  out K> =
+fun <A : AuthType<out K>, I : Nonce, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.randomKey(): SymmetricKey<A, I, out K> =
     keyFromInternal(
         secureRandom.nextBytesOf(keySize.bytes.toInt()),
         if (authCapability.keyType is KeyType.WithDedicatedMacKey) secureRandom.nextBytesOf(keySize.bytes.toInt())
@@ -20,11 +20,8 @@ fun <K : KeyType, A : AuthType< out K>, I : Nonce> SymmetricEncryptionAlgorithm<
     ) as SymmetricKey<A, I, out K>
 
 
-
-
-
 @JvmName("randomKeyAndMacKey")
-fun <I : Nonce> SymmetricEncryptionAlgorithm<AuthType.Authenticated.WithDedicatedMac<*, I>, I>.randomKey(
+fun <I : Nonce> SymmetricEncryptionAlgorithm<AuthType.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey>.randomKey(
     macKeyLength: BitLength = keySize
 ): SymmetricKey.WithDedicatedMac<I> =
     keyFromInternal(
@@ -37,35 +34,43 @@ fun <I : Nonce> SymmetricEncryptionAlgorithm<AuthType.Authenticated.WithDedicate
  * You typically don't want to use this, but have your nonces auto-generated.
  */
 @HazardousMaterials("Don't explicitly generate nonces!")
-fun SymmetricEncryptionAlgorithm<*, Nonce.Required>.randomNonce(): ByteArray =
+fun SymmetricEncryptionAlgorithm<*, Nonce.Required, *>.randomNonce(): ByteArray =
     secureRandom.nextBytesOf((nonce.length.bytes).toInt())
 
 
-private fun SymmetricEncryptionAlgorithm<*, *>.keyFromInternal(
+@OptIn(HazardousMaterials::class)
+private fun SymmetricEncryptionAlgorithm<*, *, *>.keyFromInternal(
     bytes: ByteArray,
     dedicatedMacKey: ByteArray?
 ): SymmetricKey<*, *, *> {
     require(bytes.size == this.keySize.bytes.toInt()) { "Invalid key size: ${bytes.size * 8}. Required: keySize=${bytes.size.bitLength}" }
     @OptIn(HazardousMaterials::class)
-    return when (this.authCapability.keyType) {
-        is KeyType.Integrated -> SymmetricKey.Integrated<AuthType<KeyType.Integrated>, Nonce>(
-            this as SymmetricEncryptionAlgorithm<AuthType<KeyType.Integrated>, Nonce>,
-            bytes
-        )
+    return when (this.requiresNonce()) {
+        true -> when (isAuthenticated()) {
+            true -> when (this.isIntegrated()) {
+                false -> SymmetricKey.WithDedicatedMac.RequiringNonce(this, bytes, dedicatedMacKey!!)
+                true -> SymmetricKey.Integrated.Authenticating.RequiringNonce(this, bytes)
+            }
 
-        is KeyType.WithDedicatedMacKey -> SymmetricKey.WithDedicatedMac(
-            this as SymmetricEncryptionAlgorithm<AuthType.Authenticated.WithDedicatedMac<*, Nonce>, Nonce>,
-            bytes,
-            dedicatedMacKey!!
-        )
+            false -> SymmetricKey.Integrated.NonAuthenticating.RequiringNonce(this, bytes)
+        }
+
+        false -> when (isAuthenticated()) {
+            true -> when (this.isIntegrated()) {
+                false -> SymmetricKey.WithDedicatedMac.WithoutNonce(this, bytes, dedicatedMacKey!!)
+                true -> SymmetricKey.Integrated.Authenticating.WithoutNonce(this, bytes)
+            }
+
+            false -> SymmetricKey.Integrated.NonAuthenticating.WithoutNonce(this, bytes)
+        }
     }
 }
 
 
 @JvmName("fixedKeyIntegrated")
-fun <I : Nonce> SymmetricEncryptionAlgorithm<AuthType<KeyType.Integrated>, I>.keyFrom(bytes: ByteArray): KmmResult<SymmetricKey<AuthType<KeyType.Integrated>, I, KeyType.Integrated>> =
+fun <I : Nonce> SymmetricEncryptionAlgorithm<AuthType<KeyType.Integrated>, I, KeyType.Integrated>.keyFrom(bytes: ByteArray): KmmResult<SymmetricKey<AuthType<KeyType.Integrated>, I, KeyType.Integrated>> =
     catching {
-        (this as SymmetricEncryptionAlgorithm<*, *>).keyFromInternal(
+        (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(
             bytes,
             null
         )
@@ -73,12 +78,12 @@ fun <I : Nonce> SymmetricEncryptionAlgorithm<AuthType<KeyType.Integrated>, I>.ke
 
 
 @JvmName("fixedKeyDedicatedMacKey")
-fun <I : Nonce> SymmetricEncryptionAlgorithm<AuthType<KeyType.WithDedicatedMacKey>, I>.keyFrom(
+fun <I : Nonce> SymmetricEncryptionAlgorithm<AuthType<KeyType.WithDedicatedMacKey>, I, KeyType.WithDedicatedMacKey>.keyFrom(
     encryptionKey: ByteArray,
     macKey: ByteArray
 ): KmmResult<SymmetricKey<AuthType<KeyType.WithDedicatedMacKey>, I, KeyType.WithDedicatedMacKey>> =
     catching {
-        (this as SymmetricEncryptionAlgorithm<*, *>).keyFromInternal(
+        (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(
             encryptionKey,
             macKey
         )
