@@ -55,7 +55,10 @@ fun <K : KeyType, A : AuthType<out K>> KeyWithNonce<A, out K>.encrypt(
  */
 @HazardousMaterials("Nonce/IV re-use can have catastrophic consequences!")
 fun <K : KeyType, A : AuthType<out K>> SymmetricKey<A, Nonce.Required, out K>.andPredefinedNonce(nonce: ByteArray) =
-    KeyWithNonce(this, nonce)
+    catching {
+        require(nonce.size == algorithm.nonce.length.bytes.toInt()) { "Nonce is empty!" }
+        KeyWithNonce(this, nonce)
+    }
 
 /**
  * This function can be used to feed a pre-set nonce into encryption functions.
@@ -64,8 +67,11 @@ fun <K : KeyType, A : AuthType<out K>> SymmetricKey<A, Nonce.Required, out K>.an
  */
 @HazardousMaterials("Nonce/IV re-use can have catastrophic consequences!")
 @JvmName("authedKeyWithNonce")
-fun <K: KeyType, A : AuthType.Authenticated< out K>> SymmetricKey<out A, Nonce.Required,out K>.andPredefinedNonce(nonce: ByteArray) =
-    KeyWithNonceAuthenticating(nonce, this)
+fun <K : KeyType, A : AuthType.Authenticated<out K>> SymmetricKey<out A, Nonce.Required, out K>.andPredefinedNonce(nonce: ByteArray) =
+    catching {
+        require(nonce.size == algorithm.nonce.length.bytes.toInt()) { "Invalid nonce size!" }
+        KeyWithNonceAuthenticating(nonce, this)
+    }
 
 private typealias KeyWithNonce<A, K> = Pair<SymmetricKey<out A, Nonce.Required, out K>, ByteArray>
 //types first and second are deliberately swapped

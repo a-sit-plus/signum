@@ -36,8 +36,8 @@ data class JsonWebKey(
      * The "alg" (algorithm) parameter identifies the algorithm intended for
      * use with the key.  The values used should either be registered in the
      * IANA "JSON Web Signature and Encryption Algorithms" registry
-     * established by [JWA] or be a value that contains a Collision-
-     * Resistant Name.  The "alg" value is a case-sensitive ASCII string.
+     * established by [JWA] or be a value that contains a collision-resistant Name.
+     * The "alg" value is a case-sensitive ASCII string.
      * Use of this member is OPTIONAL.
      */
     @SerialName("alg")
