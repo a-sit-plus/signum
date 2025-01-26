@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.symmetric
 
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.BlockCipher
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
@@ -8,6 +9,7 @@ import at.asitplus.signum.internals.swiftcall
 import at.asitplus.signum.internals.toByteArray
 import at.asitplus.signum.internals.toNSData
 import at.asitplus.signum.supreme.aes.CBC
+import at.asitplus.signum.supreme.aes.ECB
 import at.asitplus.signum.supreme.aes.GCM
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.CoreCrypto.kCCDecrypt
@@ -33,24 +35,32 @@ private fun BlockCipher<*, *, *>.removePKCS7Padding(plainWithPadding: ByteArray)
 
 
 internal object AESIOS {
-    @OptIn(ExperimentalForeignApi::class)
+    @OptIn(ExperimentalForeignApi::class, HazardousMaterials::class)
     fun encrypt(
-        alg: SymmetricEncryptionAlgorithm.AES<*, *>,
+        alg: SymmetricEncryptionAlgorithm.AES<*, *, *>,
         data: ByteArray,
         key: ByteArray,
-        nonce: ByteArray,
+        nonce: ByteArray?,
         aad: ByteArray?
     ) = when (alg) {
         is AES.CBC.Unauthenticated -> {
-            val padded = (alg as AES<*, *>).addPKCS7Padding(data)
+            val padded = (alg as AES<*, *, *>).addPKCS7Padding(data)
             val bytes: ByteArray = swiftcall {
-                CBC.crypt(kCCEncrypt.toLong(), padded.toNSData(), key.toNSData(), nonce.toNSData(), error)
+                CBC.crypt(kCCEncrypt.toLong(), padded.toNSData(), key.toNSData(), nonce!!.toNSData(), error)
             }.toByteArray()
-            alg.sealedBox(nonce, bytes)
+            alg.sealedBox(nonce!!, bytes)
+        }
+
+        is AES.ECB -> {
+            val padded = (alg as AES<*, *, *>).addPKCS7Padding(data)
+            val bytes: ByteArray = swiftcall {
+                ECB.crypt(kCCEncrypt.toLong(), padded.toNSData(), key.toNSData(), error)
+            }.toByteArray()
+            alg.sealedBox(bytes)
         }
 
         is AES.GCM -> {
-            val ciphertext = GCM.encrypt(data.toNSData(), key.toNSData(), nonce.toNSData(), aad?.toNSData())
+            val ciphertext = GCM.encrypt(data.toNSData(), key.toNSData(), nonce?.toNSData(), aad?.toNSData())
             if (ciphertext == null) throw UnsupportedOperationException("Error from swift code!")
             alg.sealedBox(
                 ciphertext.iv().toByteArray(),
@@ -60,7 +70,7 @@ internal object AESIOS {
             )
         }
 
-        else -> TODO()
+        else -> TODO("ALGORITHM UNSUPPORTED")
     }
 
     internal fun gcmDecrypt(
@@ -82,21 +92,33 @@ internal object AESIOS {
     }.toByteArray()
 
 
-    internal fun cbcDecrypt(
-        algorithm: SymmetricEncryptionAlgorithm.AES<*, *>,
+    internal fun cbcEcbDecrypt(
+        algorithm: SymmetricEncryptionAlgorithm.AES<*, *, *>,
         encryptedData: ByteArray,
         secretKey: ByteArray,
-        nonce: ByteArray
+        nonce: ByteArray?
     ): ByteArray {
         val decrypted = swiftcall {
-            @OptIn(ExperimentalForeignApi::class)
-            CBC.crypt(
-                kCCDecrypt.toLong(),
-                encryptedData.toNSData(),
-                secretKey.toNSData(),
-                nonce.toNSData(),
-                error
-            )
+            @OptIn(ExperimentalForeignApi::class, HazardousMaterials::class)
+            when (algorithm) {
+                is AES.CBC.Unauthenticated -> CBC.crypt(
+                    kCCDecrypt.toLong(),
+                    encryptedData.toNSData(),
+                    secretKey.toNSData(),
+                    nonce!!.toNSData(),
+                    error
+                )
+
+                is AES.ECB -> ECB.crypt(
+                    kCCDecrypt.toLong(),
+                    encryptedData.toNSData(),
+                    secretKey.toNSData(),
+                    error
+                )
+                else -> TODO("UNSUPPORTED")
+            }
+
+
         }.toByteArray()
         return (algorithm).removePKCS7Padding(decrypted)
     }

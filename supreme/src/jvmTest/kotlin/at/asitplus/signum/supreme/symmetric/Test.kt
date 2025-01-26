@@ -20,7 +20,7 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.random.Random
 
-@OptIn(HazardousMaterials::class)
+@OptIn(HazardousMaterials::class, ExperimentalStdlibApi::class)
 class JvmSymmetricTest : FreeSpec({
 
     "Against JCA" - {
@@ -95,6 +95,15 @@ class JvmSymmetricTest : FreeSpec({
                                 )
                                 if (aad != null) jcaCipher.updateAAD(aad)
 
+println("""
+"${alg.mode.acronym}": {
+"key": "${secretKey.secretKey.toHexString()}",
+"iv": "${own.nonce.toHexString()}",
+"plain": "${data.toHexString()}",
+"encrypted": "${encrypted.toHexString()}"
+}
+""".trimMargin())
+
                                 own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
 
                                 val wrongKey = own.algorithm.randomKey()
@@ -121,7 +130,14 @@ class JvmSymmetricTest : FreeSpec({
                                 val encrypted = jcaCipher.doFinal(data)
 
                                 own.encryptedData shouldBe encrypted
-
+                                println("""
+"${alg.mode.acronym}": {
+"key": "${secretKey.secretKey.toHexString()}",
+"iv": "${own.nonce.toHexString()}",
+"plain": "${data.toHexString()}",
+"encrypted": "${encrypted.toHexString()}"
+}
+""".trimMargin())
                                 jcaCipher.init(
                                     Cipher.DECRYPT_MODE,
                                     SecretKeySpec(secretKey.secretKey, "AES"),
@@ -170,6 +186,8 @@ class JvmSymmetricTest : FreeSpec({
                             Cipher.getInstance("AES/ECB/PKCS5PADDING")
 
                         val secretKey = alg.randomKey()
+
+
                         //CBC
                         val own = secretKey.encrypt(data).getOrThrow()
                         jcaCipher.init(
