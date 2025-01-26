@@ -39,7 +39,7 @@ actual internal fun <T, A : AuthType<out K>, I : Nonce, K : KeyType> initCipher(
     }
 }
 
-actual internal fun  <A : AuthType<out K>, I : Nonce, K : KeyType> CipherParam<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K> {
+internal actual fun  <A : AuthType<out K>, I : Nonce, K : KeyType> CipherParam<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K> {
     (this as CipherParam<Cipher, A, K>)
     val jcaCiphertext = platformData.doFinal(data)
 

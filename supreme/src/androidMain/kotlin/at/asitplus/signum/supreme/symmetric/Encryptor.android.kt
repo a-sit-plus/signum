@@ -2,98 +2,104 @@ package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.*
+import at.asitplus.signum.indispensable.symmetric.AuthType.Authenticated
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-actual internal fun <T, A : AECapability<*>, E : SymmetricEncryptionAlgorithm<A, *>> initCipher(
-    algorithm: E,
+actual internal fun <T, A : AuthType<out K>, I : Nonce, K : KeyType> initCipher(
+    algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
     key: ByteArray,
     nonce: ByteArray?,
     aad: ByteArray?
-): CipherParam<T, A> {
-    if (algorithm.nonce is Nonce.Without) TODO()
-    algorithm as SymmetricEncryptionAlgorithm<*, Nonce.Required>
+): CipherParam<T, A, out K> {
+    if (!algorithm.requiresNonce()) TODO("UNSUPPORTED")
+    else {
 
-    @OptIn(HazardousMaterials::class)
-    val nonce = nonce ?: algorithm.randomNonce()
+        @OptIn(HazardousMaterials::class)
+        val nonce = nonce ?: algorithm.randomNonce()
 
-    return when (algorithm) {
-        is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaJVM.initCipher(key, nonce, aad) as CipherParam<T, A>
-        is SymmetricEncryptionAlgorithm.AES<*,*> -> AESJVM.initCipher(algorithm, key, nonce, aad) as CipherParam<T, A>
+        return when (algorithm) {
+            is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaJVM.initCipher(
+                key,
+                nonce,
+                aad
+            )
+
+            is SymmetricEncryptionAlgorithm.AES<*, *> -> AESJVM.initCipher(
+                algorithm,
+                key,
+                nonce,
+                aad
+            )
+
+            else -> TODO("UNSUPPORTED")
+        } as CipherParam<T, A, K>
     }
-
 }
 
-actual internal fun <A : AECapability<*>, I : Nonce> CipherParam<*, A>.doEncrypt(data: ByteArray): SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>> {
-    (this as CipherParam<Cipher, A>)
+actual internal fun  <A : AuthType<out K>, I : Nonce, K : KeyType> CipherParam<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K> {
+    (this as CipherParam<Cipher, A, K>)
     val jcaCiphertext = platformData.doFinal(data)
 
     val ciphertext =
-        if (alg.authCapability is AECapability.Authenticated<*>) jcaCiphertext.dropLast(((alg.authCapability as AECapability.Authenticated<*>).tagLen.bytes.toInt()).toInt())
+        if (alg.authCapability is AuthType.Authenticated<*>) jcaCiphertext.dropLast(((alg.authCapability as AuthType.Authenticated<*>).tagLen.bytes.toInt()).toInt())
             .toByteArray()
         else jcaCiphertext
     val authTag =
-        if (alg.authCapability is AECapability.Authenticated<*>) jcaCiphertext.takeLast(((alg.authCapability as AECapability.Authenticated<*>).tagLen.bytes.toInt()).toInt())
+        if (alg.authCapability is AuthType.Authenticated<*>) jcaCiphertext.takeLast(((alg.authCapability as AuthType.Authenticated<*>).tagLen.bytes.toInt()).toInt())
             .toByteArray() else null
 
-    return (if (alg.nonce is Nonce.Without) when (alg.authCapability) {
-        is AECapability.Unauthenticated -> (alg as SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, Nonce.Without>).sealedBox(
-            ciphertext
-        )
 
-        is AECapability.Authenticated<*> -> {
-            (alg as SymmetricEncryptionAlgorithm<AECapability.Authenticated<*>, Nonce.Without>).sealedBox(
-                ciphertext,
-                authTag!!,
-                aad
-            )
+    return when (alg.requiresNonce()) {
+        true -> {
+            when (alg.isAuthenticated()) {
+                true -> {
+                    (alg as SymmetricEncryptionAlgorithm<AuthType.Authenticated<*>, Nonce.Required, *>)
+                    alg.sealedBox(nonce!!, ciphertext, authTag!!, aad)
+                }
+                false -> alg.sealedBox(nonce!!, ciphertext)
+            }
         }
 
-        else -> throw IllegalArgumentException("Unreachable code")
-    } else when (alg.authCapability) {
-        is AECapability.Unauthenticated -> (alg as SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, Nonce.Required>).sealedBox(
-            nonce!!,
-            ciphertext
-        )
+        false -> when (alg.isAuthenticated()) {
+            true -> {
+                (alg as SymmetricEncryptionAlgorithm<AuthType.Authenticated<*>, Nonce.Without, *>)
+                alg.sealedBox(ciphertext, authTag!!, aad)
+            }
 
-        is AECapability.Authenticated<*> -> {
-            (alg as SymmetricEncryptionAlgorithm<AECapability.Authenticated<*>, Nonce.Required>).sealedBox(
-                nonce!!,
-                ciphertext,
-                authTag!!,
-                aad
-            )
+            false -> alg.sealedBox(ciphertext)
         }
 
-        else -> throw IllegalArgumentException("Unreachable code")
-    }) as SealedBox<A, I, SymmetricEncryptionAlgorithm<A, I>>
+    } as SealedBox<A, I, out K>
 }
 
-val SymmetricEncryptionAlgorithm<*, *>.jcaName: String
+val SymmetricEncryptionAlgorithm<*, *,*>.jcaName: String
     get() = when (this) {
         is SymmetricEncryptionAlgorithm.AES.GCM -> "AES/GCM/NoPadding"
-        is SymmetricEncryptionAlgorithm.AES.CBC<*,*> -> "AES/CBC/PKCS5Padding"
+        is SymmetricEncryptionAlgorithm.AES.CBC<*, *> -> "AES/CBC/PKCS5Padding"
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20-Poly1305"
+        else-> TODO("UNSUPPORTED")
     }
 
-val SymmetricEncryptionAlgorithm<*, *>.jcaKeySpec: String
+val SymmetricEncryptionAlgorithm<*, *,*>.jcaKeySpec: String
     get() = when (this) {
-        is SymmetricEncryptionAlgorithm.AES<*,*> -> "AES"
+        is SymmetricEncryptionAlgorithm.AES<*, *> -> "AES"
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20"
+        else -> TODO("UNSUPPORTED")
     }
 
 @JvmName("doEncryptAuthenticated")
-actual internal fun SealedBox<AECapability.Authenticated.Integrated, *, SymmetricEncryptionAlgorithm<AECapability.Authenticated.Integrated, *>>.doDecrypt(
+internal actual fun SealedBox<Authenticated.Integrated, *, out KeyType.Integrated>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
-    this as SealedBox.WithNonce
+    if(!this.hasNonce()) TODO("UNSUPPORTED")
 
     if ((algorithm !is SymmetricEncryptionAlgorithm.ChaCha20Poly1305) && (algorithm !is SymmetricEncryptionAlgorithm.AES.GCM)) TODO()
 
     return gcmLikeDecrypt(
-        algorithm as SymmetricEncryptionAlgorithm<AECapability.Authenticated<*>, Nonce.Required>,
+        algorithm as SymmetricEncryptionAlgorithm.RequiringNonce.Authenticated.Integrated,
         secretKey,
         nonce,
         encryptedData,
@@ -103,10 +109,10 @@ actual internal fun SealedBox<AECapability.Authenticated.Integrated, *, Symmetri
 
 }
 
-actual internal fun SealedBox<AECapability.Unauthenticated, *, SymmetricEncryptionAlgorithm<AECapability.Unauthenticated, *>>.doDecrypt(
+internal actual fun SealedBox<AuthType.Unauthenticated, *, out KeyType.Integrated>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
-    if (algorithm !is SymmetricEncryptionAlgorithm.AES<*,*>)
+    if (algorithm !is SymmetricEncryptionAlgorithm.AES<*, *>)
         TODO()
 
     this as SealedBox.WithNonce
@@ -120,7 +126,7 @@ actual internal fun SealedBox<AECapability.Unauthenticated, *, SymmetricEncrypti
 }
 
 internal fun gcmLikeDecrypt(
-    algorithm: SymmetricEncryptionAlgorithm<AECapability.Authenticated<*>, Nonce.Required>,
+    algorithm: SymmetricEncryptionAlgorithm<AuthType.Authenticated<KeyType.Integrated>, Nonce.Required, KeyType.Integrated>,
     secretKey: ByteArray,
     nonce: ByteArray,
     encryptedData: ByteArray,
@@ -130,7 +136,7 @@ internal fun gcmLikeDecrypt(
     cipher.init(
         Cipher.DECRYPT_MODE,
         SecretKeySpec(secretKey, algorithm.jcaKeySpec),
-        if(algorithm is SymmetricEncryptionAlgorithm.AES.GCM)
+        if (algorithm is SymmetricEncryptionAlgorithm.AES.GCM)
             GCMParameterSpec(authTag.size * 8, nonce)
         else IvParameterSpec(nonce)
     )

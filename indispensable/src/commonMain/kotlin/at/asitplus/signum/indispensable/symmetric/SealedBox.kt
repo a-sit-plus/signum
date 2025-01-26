@@ -4,14 +4,12 @@ import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 import kotlin.jvm.JvmName
 
-val SealedBox<out AuthType.Authenticated<*>, *,*>.authTag
+val SealedBox<out AuthType.Authenticated<*>, *, *>.authTag
     get() = (this as SealedBox.Authenticated<*, *>).authTag
 val SealedBox<out AuthType.Authenticated<*>, *, *>.authenticatedData
     get() = (this as SealedBox.Authenticated<*, *>).authenticatedData
 
-val SealedBox<*,Nonce.Required,*>.nonce
-    @JvmName("nonceAlias")
-    get()=(this as SealedBox.WithNonce<*,*>).nonce
+val SealedBox<*, Nonce.Required, *>.nonce get() = (this as SealedBox.WithNonce<*, *>).nonce
 
 /**
  * Represents symmetrically encrypted data. This is a separate class to more easily enforce type safety wrt. presence of
@@ -85,18 +83,18 @@ sealed interface SealedBox<A : AuthType<K>, I : Nonce, K : KeyType> {
         override val algorithm: SymmetricEncryptionAlgorithm<A, Nonce.Required, K> = ciphertext.algorithm
         override val encryptedData: ByteArray = ciphertext.encryptedData
 
+
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is WithNonce<*, *>) return false
-            if (!super.equals(other)) return false
-            if (!this@WithNonce.nonce.contentEquals(other.nonce)) return false
+
+            if (!nonce.contentEquals(other.nonce)) return false
+            if (ciphertext != other.ciphertext) return false
+            if (algorithm != other.algorithm) return false
+            if (!encryptedData.contentEquals(other.encryptedData)) return false
 
             return true
         }
-
-        @OptIn(ExperimentalStdlibApi::class)
-        override fun toString(): String =
-            "SealedBox.WithNonce(nonce=${nonce.toHexString(HexFormat.UpperCase)}, ciphertext=$ciphertext)"
 
         override fun hashCode(): Int {
             var result = nonce.contentHashCode()
@@ -105,6 +103,10 @@ sealed interface SealedBox<A : AuthType<K>, I : Nonce, K : KeyType> {
             result = 31 * result + encryptedData.contentHashCode()
             return result
         }
+
+        @OptIn(ExperimentalStdlibApi::class)
+        override fun toString(): String =
+            "SealedBox.WithNonce(nonce=${nonce.toHexString(HexFormat.UpperCase)}, ciphertext=$ciphertext)"
 
         class Unauthenticated
         internal constructor(nonce: ByteArray, ciphertext: Ciphertext.Unauthenticated<Nonce.Required>) :
@@ -151,6 +153,7 @@ internal sealed interface Ciphertext<A : AuthType<K>, I : Nonce, E : SymmetricEn
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is Authenticated<*, *, *, *>) return false
+
             if (algorithm != other.algorithm) return false
             if (!encryptedData.contentEquals(other.encryptedData)) return false
             if (!authTag.contentEquals(other.authTag)) return false
@@ -160,13 +163,13 @@ internal sealed interface Ciphertext<A : AuthType<K>, I : Nonce, E : SymmetricEn
         }
 
         override fun hashCode(): Int {
-            var result = super.hashCode()
-            result = 31 * result + algorithm.hashCode()
+            var result = algorithm.hashCode()
             result = 31 * result + encryptedData.contentHashCode()
             result = 31 * result + authTag.contentHashCode()
             result = 31 * result + (authenticatedData?.contentHashCode() ?: 0)
             return result
         }
+
     }
 
     /**
@@ -198,6 +201,7 @@ internal sealed interface Ciphertext<A : AuthType<K>, I : Nonce, E : SymmetricEn
     }
 }
 
+/**Use to smart-cast this algorithm*/
 @OptIn(ExperimentalContracts::class)
 fun <A : AuthType<K>, K : KeyType, I : Nonce> SealedBox<A, I, K>.isAuthenticated(): Boolean {
     contract {
@@ -207,7 +211,7 @@ fun <A : AuthType<K>, K : KeyType, I : Nonce> SealedBox<A, I, K>.isAuthenticated
     return this.algorithm.authCapability is AuthType.Authenticated<*>
 }
 
-
+/**Use to smart-cast this algorithm*/
 @OptIn(ExperimentalContracts::class)
 fun <A : AuthType<K>, K : KeyType, I : Nonce> SealedBox<A, I, out K>.hasNonce(): Boolean {
     contract {
@@ -229,7 +233,7 @@ fun SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Required, KeyTy
 ) = SealedBox.WithNonce.Unauthenticated(nonce, Ciphertext.Unauthenticated(this, encryptedData))
 
 /**
- * Creates a [SealedBox] matching the characteristics of the [SymmetricEncryptionAlgorithm] is was created for.
+ * Creates a [SealedBox] matching the characteristics of the [SymmetricEncryptionAlgorithm] it was created for.
  * Use this function to load external encrypted data for decryption.
  */
 fun SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Without, KeyType.Integrated>.sealedBox(
@@ -237,7 +241,7 @@ fun SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Without, KeyTyp
 ) = SealedBox.WithoutNonce.Unauthenticated(Ciphertext.Unauthenticated(this, encryptedData))
 
 /**
- * Creates a [SealedBox] matching the characteristics of the [SymmetricEncryptionAlgorithm] is was created for.
+ * Creates a [SealedBox] matching the characteristics of the [SymmetricEncryptionAlgorithm] it was created for.
  * Use this function to load external encrypted data for decryption.
  */
 @JvmName("sealedBoxAuthenticatedDedicated")
@@ -254,7 +258,7 @@ fun SymmetricEncryptionAlgorithm<AuthType.Authenticated.WithDedicatedMac<*, Nonc
 ) as SealedBox.WithNonce.Authenticated<KeyType.WithDedicatedMacKey>
 
 /**
- * Creates a [SealedBox] matching the characteristics of the [SymmetricEncryptionAlgorithm] is was created for.
+ * Creates a [SealedBox] matching the characteristics of the [SymmetricEncryptionAlgorithm] it was created for.
  * Use this function to load external encrypted data for decryption.
  */
 @JvmName("sealedBoxAuthenticated")
@@ -269,7 +273,7 @@ fun <A : AuthType.Authenticated<K>, K : KeyType> SymmetricEncryptionAlgorithm<A,
 )
 
 /**
- * Creates a [SealedBox] matching the characteristics of the [SymmetricEncryptionAlgorithm] is was created for.
+ * Creates a [SealedBox] matching the characteristics of the [SymmetricEncryptionAlgorithm] it was created for.
  * Use this function to load external encrypted data for decryption.
  */
 @JvmName("sealedBoxAuthenticatedAlias")
@@ -296,7 +300,7 @@ fun <A : AuthType.Authenticated<*>> SymmetricEncryptionAlgorithm<A, Nonce.Requir
 
 
 /**
- * Creates a [SealedBox] matching the characteristics of the [SymmetricEncryptionAlgorithm] is was created for.
+ * Creates a [SealedBox] matching the characteristics of the [SymmetricEncryptionAlgorithm] it was created for.
  * Use this function to load external encrypted data for decryption.
  */
 @JvmName("sealedBoxAuthenticatedAlias")
@@ -320,7 +324,7 @@ fun <A : AuthType.Authenticated<*>> SymmetricEncryptionAlgorithm<A, Nonce.Withou
 
 
 /**
- * Creates a [SealedBox] matching the characteristics of the [SymmetricEncryptionAlgorithm] is was created for.
+ * Creates a [SealedBox] matching the characteristics of the [SymmetricEncryptionAlgorithm] it was created for.
  * Use this function to load external encrypted data for decryption.
  */
 @JvmName("sealedBoxAuthenticated")
