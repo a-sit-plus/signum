@@ -83,6 +83,18 @@ class JvmSymmetricTest : FreeSpec({
 
                                 val encrypted = jcaCipher.doFinal(data)
 
+println("""{
+    "${alg.mode.acronym}": {
+    "key": "${secretKey.secretKey.toHexString()}",
+    "iv": "${own.nonce.toHexString()}",
+    "plain": "${data.toHexString()}",
+    "aad": "${aad?.toHexString()}",
+    "encrypted": "${own.encryptedData.toHexString()}",
+    "authTag": "${own.authTag.toHexString()}"
+    }
+},
+""".trimMargin())
+
                                 (own.encryptedData + own.authTag) shouldBe encrypted
 
                                 jcaCipher.init(
@@ -95,14 +107,7 @@ class JvmSymmetricTest : FreeSpec({
                                 )
                                 if (aad != null) jcaCipher.updateAAD(aad)
 
-println("""
-"${alg.mode.acronym}": {
-"key": "${secretKey.secretKey.toHexString()}",
-"iv": "${own.nonce.toHexString()}",
-"plain": "${data.toHexString()}",
-"encrypted": "${encrypted.toHexString()}"
-}
-""".trimMargin())
+
 
                                 own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
 
@@ -131,12 +136,14 @@ println("""
 
                                 own.encryptedData shouldBe encrypted
                                 println("""
-"${alg.mode.acronym}": {
-"key": "${secretKey.secretKey.toHexString()}",
-"iv": "${own.nonce.toHexString()}",
-"plain": "${data.toHexString()}",
-"encrypted": "${encrypted.toHexString()}"
-}
+{
+    "${alg.mode.acronym}": {
+    "key": "${secretKey.secretKey.toHexString()}",
+    "iv": "${own.nonce.toHexString()}",
+    "plain": "${data.toHexString()}",
+    "encrypted": "${encrypted.toHexString()}"
+    }
+},
 """.trimMargin())
                                 jcaCipher.init(
                                     Cipher.DECRYPT_MODE,
@@ -248,7 +255,17 @@ println("""
                     if (aad != null) jcaCipher.updateAAD(aad)
 
                     val fromJCA = jcaCipher.doFinal(data)
-
+println("""{
+    "CHACHA": {
+    "key": "${secretKey.secretKey.toHexString()}",
+    "iv": "${box.nonce.toHexString()}",
+    "plain": "${data.toHexString()}",
+    "aad": "${aad?.toHexString()}",
+    "encrypted": "${box.encryptedData.toHexString()}",
+    "authTag": "${box.authTag.toHexString()}"
+    }
+},
+""".trimMargin())
                     box.nonce.shouldNotBeNull()
                     box.nonce.size shouldBe alg.nonce.length.bytes.toInt()
                     box.isAuthenticated() shouldBe true

@@ -27,9 +27,6 @@ actual internal fun <T, A : AuthType<out K>, I : Nonce, K : KeyType> initCipher(
 internal actual fun <A : AuthType<out K>, I : Nonce, K : KeyType> CipherParam<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K> {
     this as CipherParam<ByteArray, A, K>
 
-
-
-
     return when (alg) {
         is AES<*, *, *> -> AESIOS.encrypt(alg, data, platformData, nonce, aad)
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaIOS.encrypt(data, platformData, nonce!!, aad)
