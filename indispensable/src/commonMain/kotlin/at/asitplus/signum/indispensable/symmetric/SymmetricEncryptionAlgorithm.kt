@@ -22,7 +22,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthType<out K>, out I : N
     override fun toString(): String
 
     companion object {
-        //ChaChaPoly is already an object, so we don't need to redeclare here
+        //ChaCha20Poly1305 is already an object, so we don't need to redeclare here
 
         val AES_128 = AESDefinition(128.bit)
         val AES_192 = AESDefinition(192.bit)
@@ -39,7 +39,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthType<out K>, out I : N
             val ECB = AES.ECB(keySize)
 
             class CbcDefinition(keySize: BitLength) {
-                @HazardousMaterials
+                @HazardousMaterials("Unauthenticated!")
                 val PLAIN = AES.CBC.Unauthenticated(keySize)
 
                 @OptIn(HazardousMaterials::class)
@@ -49,6 +49,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthType<out K>, out I : N
                     val SHA_256 = AES.CBC.HMAC(innerCipher, HMAC.SHA256)
                     val SHA_384 = AES.CBC.HMAC(innerCipher, HMAC.SHA384)
                     val SHA_512 = AES.CBC.HMAC(innerCipher, HMAC.SHA512)
+                    @HazardousMaterials("Insecure hash function!")
                     val SHA_1 = AES.CBC.HMAC(innerCipher, HMAC.SHA1)
                 }
             }
@@ -64,7 +65,9 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthType<out K>, out I : N
     val keySize: BitLength
 
     sealed interface Unauthenticated<out I : Nonce> :
-        SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, I, KeyType.Integrated>
+        SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, I, KeyType.Integrated>{
+            companion object
+        }
 
     sealed interface Authenticated<out A : AuthType.Authenticated<out K>, out I : Nonce, out K : KeyType> :
         SymmetricEncryptionAlgorithm<A, I, K> {
