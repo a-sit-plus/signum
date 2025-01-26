@@ -4,10 +4,13 @@
 
 ### NEXT
 * HMAC Support
-* AES Support
-    * CBC
-    * CBC-HMAC
-    * GCM
+* Symmetric Encryption
+    * AES
+        * GCM
+        * CBC-HMAC
+        * CBC
+        * ECB
+    * ChaCha-Poly1305
 * Moved `HazardousMaterials` annotation from `supreme` to `indispensable`
 
 
