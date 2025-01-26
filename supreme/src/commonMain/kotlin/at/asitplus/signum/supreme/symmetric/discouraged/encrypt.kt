@@ -24,28 +24,28 @@ import kotlin.jvm.JvmName
 fun <K : KeyType, A : AuthType.Authenticated<out K>> KeyWithNonceAuthenticating<A, out K>.encrypt(
     data: ByteArray,
     authenticatedData: ByteArray? = null
-): KmmResult<SealedBox.WithNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Required>>> = catching {
+): KmmResult<SealedBox.WithNonce.Authenticated<K>> = catching {
     Encryptor(
         second.algorithm,
         second.secretKey,
         if (second is WithDedicatedMac) (second as WithDedicatedMac<Nonce.Required>).dedicatedMacKey else second.secretKey,
         first,
         authenticatedData,
-    ).encrypt(data) as SealedBox.WithNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Required>>
+    ).encrypt(data) as SealedBox.WithNonce.Authenticated<K>
 }
 
 @HazardousMaterials
 @JvmName("encryptWithNonce")
-fun <K : KeyType, A : AuthType<out K>> KeyWithNonce<A, out K>.encrypt(
+fun <K : KeyType, A : AuthType< K>> KeyWithNonce<A,  K>.encrypt(
     data: ByteArray
-): KmmResult<SealedBox.WithNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Required>>> = catching {
+): KmmResult<SealedBox.WithNonce<A, K>> = catching {
     Encryptor(
         first.algorithm,
         first.secretKey,
         if (first is WithDedicatedMac) (first as WithDedicatedMac<Nonce.Required>).dedicatedMacKey else first.secretKey,
         second,
         null,
-    ).encrypt(data) as SealedBox.WithNonce<A, SymmetricEncryptionAlgorithm<A, Nonce.Required>>
+    ).encrypt(data) as SealedBox.WithNonce<A, K>
 }
 
 /**

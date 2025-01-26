@@ -1,13 +1,14 @@
 package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.indispensable.symmetric.AuthType
+import at.asitplus.signum.indispensable.symmetric.KeyType
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 internal object ChaChaJVM {
-    fun initCipher(key: ByteArray, nonce: ByteArray, aad: ByteArray?): CipherParam<Cipher, AuthType.Authenticated<*>> =
+    fun initCipher(key: ByteArray, nonce: ByteArray, aad: ByteArray?): CipherParam<Cipher, AuthType.Authenticated.Integrated, KeyType.Integrated> =
         Cipher.getInstance(SymmetricEncryptionAlgorithm.ChaCha20Poly1305.jcaName).apply {
             init(
                 Cipher.ENCRYPT_MODE,

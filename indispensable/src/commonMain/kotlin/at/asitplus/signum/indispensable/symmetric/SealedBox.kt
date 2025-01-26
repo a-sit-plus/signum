@@ -4,6 +4,19 @@ import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 import kotlin.jvm.JvmName
 
+val SealedBox<AuthType.Authenticated<*>, *,*>.authTag
+    get() = (this as SealedBox.Authenticated<*, *>).authTag
+val SealedBox<AuthType.Authenticated<*>, *, *>.authenticatedData
+    get() = (this as SealedBox.Authenticated<*, *>).authenticatedData
+
+val SealedBox<out AuthType.Authenticated<KeyType.Integrated>, *, KeyType.Integrated>.authTag
+    @JvmName("authTagIntegrated") get() = (this as SealedBox.Authenticated<*, *>).authTag
+val SealedBox<AuthType.Authenticated.Integrated, *, *>.authenticatedData
+    @JvmName("aadIntegrated") get() = (this as SealedBox.Authenticated<*, *>).authenticatedData
+
+val SealedBox<*,Nonce.Required,*>.nonce
+    @JvmName("nonceAlias")
+    get()=(this as SealedBox.WithNonce<*,*>).nonce
 
 /**
  * Represents symmetrically encrypted data. This is a separate class to more easily enforce type safety wrt. presence of
@@ -69,7 +82,7 @@ sealed interface SealedBox<A : AuthType<K>, I : Nonce, K : KeyType> {
      * Construct using [SymmetricEncryptionAlgorithm.sealedBox]
      */
     sealed class WithNonce<A : AuthType<K>, K : KeyType>(
-        internal val nonce: ByteArray,
+        val nonce: ByteArray,
         private val ciphertext: Ciphertext<A, Nonce.Required, SymmetricEncryptionAlgorithm<A, Nonce.Required, K>, K>
     ) : SealedBox<A, Nonce.Required, K> {
 
@@ -259,6 +272,57 @@ fun <A : AuthType.Authenticated<K>, K : KeyType> SymmetricEncryptionAlgorithm<A,
     nonce,
     authenticatedCipherText(encryptedData, authTag, authenticatedData)
 )
+
+/**
+ * Creates a [SealedBox] matching the characteristics of the [SymmetricEncryptionAlgorithm] is was created for.
+ * Use this function to load external encrypted data for decryption.
+ */
+@JvmName("sealedBoxAuthenticatedAlias")
+fun <A : AuthType.Authenticated<*>> SymmetricEncryptionAlgorithm<A, Nonce.Required, *>.sealedBox(
+    nonce: ByteArray,
+    encryptedData: ByteArray,
+    authTag: ByteArray,
+    authenticatedData: ByteArray? = null
+) = when (hasDedicatedMac()) {
+    true -> SealedBox.WithNonce.Authenticated<KeyType.WithDedicatedMacKey>(
+        nonce,
+        authenticatedCipherText(encryptedData, authTag, authenticatedData)
+    )
+
+    false -> SealedBox.WithNonce.Authenticated<KeyType.Integrated>(
+        nonce,
+        (this as SymmetricEncryptionAlgorithm.RequiringNonce.Authenticated.Integrated).authenticatedCipherText(
+            encryptedData,
+            authTag,
+            authenticatedData
+        )
+    )
+}
+
+
+/**
+ * Creates a [SealedBox] matching the characteristics of the [SymmetricEncryptionAlgorithm] is was created for.
+ * Use this function to load external encrypted data for decryption.
+ */
+@JvmName("sealedBoxAuthenticatedAlias")
+fun <A : AuthType.Authenticated<*>> SymmetricEncryptionAlgorithm<A, Nonce.Without, *>.sealedBox(
+    encryptedData: ByteArray,
+    authTag: ByteArray,
+    authenticatedData: ByteArray? = null
+) = when (hasDedicatedMac()) {
+    true -> SealedBox.WithoutNonce.Authenticated<KeyType.WithDedicatedMacKey>(
+        authenticatedCipherText(encryptedData, authTag, authenticatedData)
+    )
+
+    false -> SealedBox.WithoutNonce.Authenticated<KeyType.Integrated>(
+        (this as SymmetricEncryptionAlgorithm.WithoutNonce.Authenticated.Integrated).authenticatedCipherText(
+            encryptedData,
+            authTag,
+            authenticatedData
+        )
+    )
+}
+
 
 /**
  * Creates a [SealedBox] matching the characteristics of the [SymmetricEncryptionAlgorithm] is was created for.
