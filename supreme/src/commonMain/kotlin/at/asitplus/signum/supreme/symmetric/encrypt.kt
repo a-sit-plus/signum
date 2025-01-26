@@ -13,16 +13,16 @@ import kotlin.jvm.JvmName
  * invalid parameters (e.g., algorithm mismatch, key length, …)
  */
 @JvmName("encryptWithAutoGenIV")
-fun <K: KeyType,A : AuthType< K>, I : Nonce> SymmetricKey<A, I,out K>.encrypt(
+fun <K: KeyType,A : AuthType<out K>, I : Nonce> SymmetricKey<A, I,out K>.encrypt(
     data: ByteArray
-): KmmResult<SealedBox<A, I, K>> = catching {
+): KmmResult<SealedBox<A, I,out K>> = catching {
     Encryptor(
         algorithm,
         secretKey,
         if (this is WithDedicatedMac) dedicatedMacKey else secretKey,
         null,
         null,
-    ).encrypt(data) as SealedBox<A, I, K>
+    ).encrypt(data) as SealedBox<A, I,out  K>
 }
 
 

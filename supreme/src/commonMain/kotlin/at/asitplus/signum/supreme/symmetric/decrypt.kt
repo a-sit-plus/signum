@@ -12,7 +12,7 @@ import kotlin.jvm.JvmName
  * Attempts to decrypt this ciphertext (which also holds IV, and in case of an authenticated ciphertext, AAD and auth tag) using the provided [key].
  * This is the function you typically want to use.
  */
-fun <A: AuthType<K>, I:Nonce, K: KeyType> SealedBox<out A,I, K>.decrypt(
+fun <A: AuthType<K>, I:Nonce, K: KeyType> SealedBox<out A,I,out  K>.decrypt(
     key: SymmetricKey<out A, I, out K>
 ): KmmResult<ByteArray> = catching {
     require(algorithm == key.algorithm) { "Somebody likes cursed casts!" }

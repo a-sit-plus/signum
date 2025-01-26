@@ -8,12 +8,12 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-actual internal fun <T, A : AuthType<K>, I : Nonce, K : KeyType> initCipher(
+actual internal fun <T, A : AuthType<out K>, I : Nonce, K : KeyType> initCipher(
     algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
     key: ByteArray,
     nonce: ByteArray?,
     aad: ByteArray?
-): CipherParam<T, A, K> {
+): CipherParam<T, A, out K> {
     if (!algorithm.requiresNonce()) TODO("UNSUPPORTED")
     else {
 
@@ -39,7 +39,7 @@ actual internal fun <T, A : AuthType<K>, I : Nonce, K : KeyType> initCipher(
     }
 }
 
-actual internal fun <A : AuthType<K>, I : Nonce, K : KeyType> CipherParam<*, A, K>.doEncrypt(data: ByteArray): SealedBox<A, I, K> {
+actual internal fun  <A : AuthType<out K>, I : Nonce, K : KeyType> CipherParam<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K> {
     (this as CipherParam<Cipher, A, K>)
     val jcaCiphertext = platformData.doFinal(data)
 
@@ -72,7 +72,7 @@ actual internal fun <A : AuthType<K>, I : Nonce, K : KeyType> CipherParam<*, A, 
             false -> alg.sealedBox(ciphertext)
         }
 
-    } as SealedBox<A, I, K>
+    } as SealedBox<A, I, out K>
 }
 
 val SymmetricEncryptionAlgorithm<*, *,*>.jcaName: String
@@ -91,7 +91,7 @@ val SymmetricEncryptionAlgorithm<*, *,*>.jcaKeySpec: String
     }
 
 @JvmName("doEncryptAuthenticated")
-internal actual fun SealedBox<Authenticated.Integrated, *, KeyType.Integrated>.doDecrypt(
+internal actual fun SealedBox<Authenticated.Integrated, *, out KeyType.Integrated>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
     if(!this.hasNonce()) TODO("UNSUPPORTED")
@@ -109,7 +109,7 @@ internal actual fun SealedBox<Authenticated.Integrated, *, KeyType.Integrated>.d
 
 }
 
-internal actual fun SealedBox<AuthType.Unauthenticated, *, KeyType.Integrated>.doDecrypt(
+internal actual fun SealedBox<AuthType.Unauthenticated, *, out KeyType.Integrated>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
     if (algorithm !is SymmetricEncryptionAlgorithm.AES<*, *>)

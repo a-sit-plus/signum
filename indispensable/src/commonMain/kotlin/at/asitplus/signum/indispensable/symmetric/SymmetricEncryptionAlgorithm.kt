@@ -89,7 +89,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthType<out K>, out I : N
             interface WithDedicatedMac<M : MAC> :
                 Authenticated<AuthType.Authenticated.WithDedicatedMac<M, Nonce.Required>, KeyType.WithDedicatedMacKey>,
                 RequiringNonce<AuthType.Authenticated.WithDedicatedMac<M, Nonce.Required>, KeyType.WithDedicatedMacKey>,
-                SymmetricEncryptionAlgorithm.Authenticated<AuthType.Authenticated.WithDedicatedMac<M, Nonce.Required>, Nonce.Required, KeyType.WithDedicatedMacKey>
+                SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac<M,Nonce.Required>
         }
     }
 
@@ -109,7 +109,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthType<out K>, out I : N
             interface WithDedicatedMac<M : MAC> :
                 Authenticated<AuthType.Authenticated.WithDedicatedMac<M, Nonce.Without>, KeyType.WithDedicatedMacKey>,
                 WithoutNonce<AuthType.Authenticated.WithDedicatedMac<M, Nonce.Without>, KeyType.WithDedicatedMacKey>,
-                SymmetricEncryptionAlgorithm.Authenticated<AuthType.Authenticated.WithDedicatedMac<M, Nonce.Without>, Nonce.Without, KeyType.WithDedicatedMacKey>
+                SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac<M, Nonce.Without>
 
         }
     }
@@ -385,6 +385,10 @@ fun  SymmetricEncryptionAlgorithm.WithoutNonce<*, *>.isAuthenticated(): Boolean 
 fun  SymmetricEncryptionAlgorithm.WithoutNonce<*, *>.hasDedicatedMac(): Boolean {
     contract {
         returns(true) implies (this@hasDedicatedMac is SymmetricEncryptionAlgorithm.WithoutNonce.Authenticated.WithDedicatedMac<*>)
+        returns(false) implies (
+                (this@hasDedicatedMac is SymmetricEncryptionAlgorithm.WithoutNonce.Unauthenticated
+                        || this@hasDedicatedMac is SymmetricEncryptionAlgorithm.WithoutNonce.Authenticated.Integrated))
+
     }
     return this.authCapability is AuthType.Authenticated.WithDedicatedMac<*, *>
 }
@@ -415,6 +419,10 @@ fun  SymmetricEncryptionAlgorithm.RequiringNonce<*, *>.isAuthenticated(): Boolea
 fun  SymmetricEncryptionAlgorithm.RequiringNonce<*, *>.hasDedicatedMac(): Boolean {
     contract {
         returns(true) implies (this@hasDedicatedMac is SymmetricEncryptionAlgorithm.RequiringNonce.Authenticated.WithDedicatedMac<*>)
+        returns(false) implies (
+                (this@hasDedicatedMac is SymmetricEncryptionAlgorithm.RequiringNonce.Unauthenticated
+                || this@hasDedicatedMac is SymmetricEncryptionAlgorithm.RequiringNonce.Authenticated.Integrated))
+
     }
     return this.authCapability is AuthType.Authenticated.WithDedicatedMac<*, *>
 }

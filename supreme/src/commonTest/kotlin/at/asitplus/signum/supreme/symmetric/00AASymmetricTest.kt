@@ -20,7 +20,7 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.datetime.Clock
 import org.kotlincrypto.SecureRandom
 import kotlin.random.Random
-/*
+
 @OptIn(HazardousMaterials::class)
 @ExperimentalStdlibApi
 class `00AASymmetricTest` : FreeSpec({
@@ -66,9 +66,7 @@ class `00AASymmetricTest` : FreeSpec({
                 null
             ) { iv ->
 
-
-
-                 val key=   alg.randomKey()
+                val key = alg.randomKey()
                 if (iv != null) key.andPredefinedNonce(iv).encrypt(Random.nextBytes(32)) shouldNot succeed
                 else key.encrypt(Random.nextBytes(32)) should succeed
                 key.andPredefinedNonce(alg.randomNonce()).encrypt(Random.nextBytes(32)) should succeed
@@ -76,10 +74,10 @@ class `00AASymmetricTest` : FreeSpec({
 
                 if (alg.authCapability is AuthType.Authenticated)
                     key.encrypt(Random.nextBytes(32))
-                        .getOrThrow().cipherKind.shouldBeInstanceOf<AuthType.Authenticated<*>>()
+                        .getOrThrow().algorithm.isAuthenticated() shouldBe true
                 else if (alg.authCapability is AuthType.Unauthenticated)
                     key.encrypt(Random.nextBytes(32))
-                        .getOrThrow().cipherKind.shouldBeInstanceOf<AuthType.Unauthenticated>()
+                        .getOrThrow().algorithm.isAuthenticated() shouldBe false
             }
         }
     }
@@ -125,35 +123,34 @@ class `00AASymmetricTest` : FreeSpec({
 
                 ) { keyBytes ->
 
-                //so we try to out-smart ourselves and it must fail later on
-                val key = (when (alg.randomKey()) {
-                    //Covers Unauthenticated and GCM
-                    is SymmetricKey.Integrated<*, *> -> SymmetricKey.Integrated<AuthType<KeyType.Integrated>, Nonce.Required>(
-                        alg as SymmetricEncryptionAlgorithm<AuthType<KeyType.Integrated>, Nonce.Required>, keyBytes)
-                    is SymmetricKey.WithDedicatedMac<*> -> SymmetricKey.WithDedicatedMac(
-                        alg as SymmetricEncryptionAlgorithm<AuthType.Authenticated.WithDedicatedMac<*, *>, Nonce.Required>,
-                        keyBytes,
-                        keyBytes //fine for testing
-                    )
-                })
+               when(alg.hasDedicatedMac()) {
+                    true -> alg.keyFrom(keyBytes,keyBytes) //never do this in production!
+                    false -> alg.keyFrom(keyBytes)
+                } shouldNot succeed
+
+               val key =  when(alg.hasDedicatedMac()) {
+                    true -> alg.keyFrom(alg.randomKey().secretKey, alg.randomKey().secretKey)
+                    false -> alg.keyFrom(alg.randomKey().secretKey)
+                }.getOrThrow()
 
 
-                key.encrypt(Random.nextBytes(32)) shouldNot succeed
-                key.andPredefinedNonce(alg.randomNonce()).encrypt(data = Random.nextBytes(32)) shouldNot succeed
+
+                key.encrypt(Random.nextBytes(32)) should succeed
+                key.andPredefinedNonce(alg.randomNonce()).encrypt(data = Random.nextBytes(32)) should succeed
 
                 if (alg.authCapability is AuthType.Authenticated)
                     alg.randomKey().encrypt(
                         Random.nextBytes(32)
                     ).let {
                         it should succeed
-                        it.getOrThrow().cipherKind.shouldBeInstanceOf<AuthType.Authenticated<*>>()
+                        it.getOrThrow().algorithm.isAuthenticated() shouldBe true
                     }
                 else if (alg.authCapability is AuthType.Unauthenticated)
                     alg.randomKey().encrypt(
                         Random.nextBytes(32)
                     ).let {
                         it should succeed
-                        it.getOrThrow().cipherKind.shouldBeInstanceOf<AuthType.Unauthenticated>()
+                        it.getOrThrow().algorithm.isAuthenticated() shouldBe false
                     }
             }
         }
@@ -198,7 +195,7 @@ class `00AASymmetricTest` : FreeSpec({
                     if (iv != null) ciphertext.nonce.size shouldBe iv.size
                     ciphertext.nonce.size shouldBe it.nonce.length.bytes.toInt()
                     iv?.let { ciphertext.nonce shouldBe iv }
-                    ciphertext.cipherKind.shouldBeInstanceOf<AuthType.Unauthenticated>()
+                    ciphertext.algorithm.isAuthenticated() shouldBe false
 
 
                     val decrypted = ciphertext.decrypt(key).getOrThrow()
@@ -291,7 +288,7 @@ class `00AASymmetricTest` : FreeSpec({
                         ciphertext.nonce.shouldNotBeNull()
                         ciphertext.nonce.size shouldBe alg.nonce.length.bytes.toInt()
                         if (iv != null) ciphertext.nonce shouldBe iv
-                        ciphertext.cipherKind.shouldBeInstanceOf<AuthType.Authenticated<*>>()
+                        ciphertext.algorithm.authCapability.shouldBeInstanceOf<AuthType.Authenticated<*>>()
                         ciphertext.authenticatedData shouldBe aad
 
                         val decrypted = ciphertext.decrypt(key).getOrThrow()
@@ -395,8 +392,8 @@ class `00AASymmetricTest` : FreeSpec({
                     val secretKey = it.randomKey().secretKey
 
                     withData(
-                        nameFn = { "MAC KEY $it"},
-                        8,16,32,secretKey.size
+                        nameFn = { "MAC KEY $it" },
+                        8, 16, 32, secretKey.size
                     ) { macKeyLen ->
 
                         val key = it.randomKey(macKeyLen.bytes)
@@ -416,7 +413,7 @@ class `00AASymmetricTest` : FreeSpec({
                                     if (iv != null) key.andPredefinedNonce(iv).encrypt(plaintext, aad).getOrThrow()
                                     else key.encrypt(plaintext, aad).getOrThrow()
                                 val manilaAlg = it.Custom { _, _, _ -> "Manila".encodeToByteArray() }
-                                val manilaKey = SymmetricKey.WithDedicatedMac<Nonce.Required>(
+                                val manilaKey = SymmetricKey.WithDedicatedMac.RequiringNonce(
                                     manilaAlg,
                                     key.secretKey,
                                     key.dedicatedMacKey
@@ -435,7 +432,7 @@ class `00AASymmetricTest` : FreeSpec({
                                 if (iv != null) ciphertext.nonce shouldBe iv
                                 ciphertext.nonce.shouldNotBeNull()
                                 ciphertext.nonce.size shouldBe it.nonce.length.bytes.toInt()
-                                ciphertext.cipherKind.shouldBeInstanceOf<AuthType.Authenticated<*>>()
+                                ciphertext.algorithm.authCapability.shouldBeInstanceOf<AuthType.Authenticated<*>>()
                                 ciphertext.authenticatedData shouldBe aad
 
                                 val decrypted = ciphertext.decrypt(key).getOrThrow()
@@ -482,8 +479,8 @@ class `00AASymmetricTest` : FreeSpec({
                                     authTag = ciphertext.authTag,
                                     authenticatedData = ciphertext.authenticatedData,
                                 ).decrypt(
-                                    SymmetricKey.WithDedicatedMac<Nonce.Required>(
-                                        ciphertext.algorithm,
+                                    SymmetricKey.WithDedicatedMac.RequiringNonce(
+                                        ciphertext.algorithm as SymmetricEncryptionAlgorithm<AuthType.Authenticated.WithDedicatedMac<*, Nonce.Required>, Nonce.Required, KeyType.WithDedicatedMacKey>,
                                         key.secretKey,
                                         dedicatedMacKey = key.dedicatedMacKey.asList().shuffled().toByteArray()
                                     )
@@ -512,7 +509,7 @@ class `00AASymmetricTest` : FreeSpec({
                                 ).decrypt(it.Custom { _, _, _ ->
                                     "Szombathely".encodeToByteArray()
                                 }.let {
-                                    SymmetricKey.WithDedicatedMac<Nonce.Required>(
+                                    SymmetricKey.WithDedicatedMac.RequiringNonce(
                                         it,
                                         key.secretKey,
                                         key.dedicatedMacKey
@@ -584,4 +581,3 @@ class `00AASymmetricTest` : FreeSpec({
     }
 })
 
-*/
