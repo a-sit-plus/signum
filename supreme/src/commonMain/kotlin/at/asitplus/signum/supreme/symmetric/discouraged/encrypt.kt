@@ -36,16 +36,16 @@ fun <K : KeyType, A : AuthType.Authenticated<out K>> KeyWithNonceAuthenticating<
 
 @HazardousMaterials
 @JvmName("encryptWithNonce")
-fun <K : KeyType, A : AuthType< K>> KeyWithNonce<A,  K>.encrypt(
+fun <K : KeyType, A : AuthType<out K>> KeyWithNonce<A, out K>.encrypt(
     data: ByteArray
-): KmmResult<SealedBox.WithNonce<A, K>> = catching {
+): KmmResult<SealedBox.WithNonce<A, out K>> = catching {
     Encryptor(
         first.algorithm,
         first.secretKey,
         if (first is WithDedicatedMac) (first as WithDedicatedMac<Nonce.Required>).dedicatedMacKey else first.secretKey,
         second,
         null,
-    ).encrypt(data) as SealedBox.WithNonce<A, K>
+    ).encrypt(data) as SealedBox.WithNonce<A, out K>
 }
 
 /**
@@ -67,6 +67,6 @@ fun <K : KeyType, A : AuthType<out K>> SymmetricKey<A, Nonce.Required, out K>.an
 fun <K: KeyType, A : AuthType.Authenticated< out K>> SymmetricKey<out A, Nonce.Required,out K>.andPredefinedNonce(nonce: ByteArray) =
     KeyWithNonceAuthenticating(nonce, this)
 
-private typealias KeyWithNonce<A, K> = Pair<SymmetricKey<A, Nonce.Required, K>, ByteArray>
+private typealias KeyWithNonce<A, K> = Pair<SymmetricKey<out A, Nonce.Required, out K>, ByteArray>
 //types first and second are deliberately swapped
 private typealias KeyWithNonceAuthenticating<A, K> = Pair<ByteArray, SymmetricKey<out A, Nonce.Required, out K>>

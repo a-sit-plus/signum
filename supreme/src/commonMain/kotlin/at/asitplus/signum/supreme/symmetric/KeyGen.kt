@@ -66,6 +66,16 @@ private fun SymmetricEncryptionAlgorithm<*, *, *>.keyFromInternal(
     }
 }
 
+/*
+@JvmName("fixedKeyIntegrated")
+fun <I : Nonce> SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, I, KeyType.Integrated>.keyFrom(bytes: ByteArray): KmmResult<SymmetricKey<AuthType.Unauthenticated, I, KeyType.Integrated>> =
+    catching {
+        (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(
+            bytes,
+            null
+        )
+    } as KmmResult<SymmetricKey<AuthType.Unauthenticated, I, KeyType.Integrated>>
+*/
 
 @JvmName("fixedKeyIntegrated")
 fun <I : Nonce> SymmetricEncryptionAlgorithm<AuthType<KeyType.Integrated>, I, KeyType.Integrated>.keyFrom(bytes: ByteArray): KmmResult<SymmetricKey<AuthType<KeyType.Integrated>, I, KeyType.Integrated>> =

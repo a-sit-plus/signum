@@ -12,6 +12,7 @@ import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNot
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
@@ -38,8 +39,12 @@ class JvmSymmetricTest : FreeSpec({
                 withData(
                     nameFn = { "iv: ${it.size} bytes" }, alg.randomNonce(), alg.randomNonce()
                 ) { iv ->
-                    withData(Random.nextBytes(19), null) { aad ->
+                    withData(
+                        nameFn = { "aad: ${it?.size} bytes" }, alg.randomNonce(), alg.randomNonce(),
+
+                        Random.nextBytes(19), null) { aad ->
                         withData(
+                            nameFn = { "data: ${it.size} bytes" }, alg.randomNonce(), alg.randomNonce(),
                             Random.nextBytes(19),
                             Random.nextBytes(1),
                             Random.nextBytes(1234),
@@ -123,7 +128,10 @@ class JvmSymmetricTest : FreeSpec({
                                 )
                                 own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
 
-                                own.decrypt(own.algorithm.randomKey()) shouldNot succeed
+                                //this could succeed if we're lucky and padding works out
+                                own.decrypt(own.algorithm.randomKey()).onSuccess {
+                                    it shouldNotBe data
+                                }
 
                                 if (data.size < alg.blockSize.bytes.toInt())
                                     alg .sealedBox(

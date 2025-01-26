@@ -4,15 +4,10 @@ import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 import kotlin.jvm.JvmName
 
-val SealedBox<AuthType.Authenticated<*>, *,*>.authTag
+val SealedBox<out AuthType.Authenticated<*>, *,*>.authTag
     get() = (this as SealedBox.Authenticated<*, *>).authTag
-val SealedBox<AuthType.Authenticated<*>, *, *>.authenticatedData
+val SealedBox<out AuthType.Authenticated<*>, *, *>.authenticatedData
     get() = (this as SealedBox.Authenticated<*, *>).authenticatedData
-
-val SealedBox<out AuthType.Authenticated<KeyType.Integrated>, *, KeyType.Integrated>.authTag
-    @JvmName("authTagIntegrated") get() = (this as SealedBox.Authenticated<*, *>).authTag
-val SealedBox<AuthType.Authenticated.Integrated, *, *>.authenticatedData
-    @JvmName("aadIntegrated") get() = (this as SealedBox.Authenticated<*, *>).authenticatedData
 
 val SealedBox<*,Nonce.Required,*>.nonce
     @JvmName("nonceAlias")
@@ -214,7 +209,7 @@ fun <A : AuthType<K>, K : KeyType, I : Nonce> SealedBox<A, I, K>.isAuthenticated
 
 
 @OptIn(ExperimentalContracts::class)
-fun <A : AuthType<K>, K : KeyType, I : Nonce> SealedBox<A, I, K>.hasNonce(): Boolean {
+fun <A : AuthType<K>, K : KeyType, I : Nonce> SealedBox<A, I, out K>.hasNonce(): Boolean {
     contract {
         returns(true) implies (this@hasNonce is SealedBox.WithNonce<A, K>)
         returns(false) implies (this@hasNonce is SealedBox.WithoutNonce<A, K>)

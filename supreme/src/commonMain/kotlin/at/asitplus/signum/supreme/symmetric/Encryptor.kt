@@ -5,7 +5,7 @@ import at.asitplus.signum.indispensable.symmetric.AuthType.Authenticated
 import at.asitplus.signum.supreme.mac.mac
 
 
-internal class Encryptor<A : AuthType<K>, I : Nonce, K : KeyType> internal constructor(
+internal class Encryptor<A : AuthType<out K>, I : Nonce, out K : KeyType> internal constructor(
     private val algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
     private val key: ByteArray,
     private val macKey: ByteArray?,
@@ -21,13 +21,13 @@ internal class Encryptor<A : AuthType<K>, I : Nonce, K : KeyType> internal const
     }
 
 
-    private val platformCipher: CipherParam<*, A, K> = initCipher<Any, A, I, K>(algorithm, key, iv, aad)
+    private val platformCipher: CipherParam<*, A, out K> = initCipher<Any, A, I, K>(algorithm, key, iv, aad)
 
     /**
      * Encrypts [data] and returns a [at.asitplus.signum.indispensable.symmetric.Ciphertext] matching the algorithm type that was used to create this [Encryptor] object.
      * E.g., an authenticated encryption algorithm causes this function to return a [at.asitplus.signum.indispensable.symmetric.Ciphertext.Authenticated].
      */
-    fun encrypt(data: ByteArray): SealedBox<A, I, K> = (if (algorithm.hasDedicatedMac()) {
+    fun encrypt(data: ByteArray): SealedBox<A, I, out K> = (if (algorithm.hasDedicatedMac()) {
         val aMac = algorithm.authCapability as Authenticated.WithDedicatedMac<*, *>
         aMac.innerCipher
         val innerCipher =
@@ -78,20 +78,20 @@ internal class CipherParam<T, A : AuthType<K>, K : KeyType>(
 )
 
 
-expect internal fun SealedBox<Authenticated.Integrated, *, KeyType.Integrated>.doDecrypt(
+expect internal fun SealedBox<Authenticated.Integrated, *, out KeyType.Integrated>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray
 
-expect internal fun SealedBox<AuthType.Unauthenticated, *, KeyType.Integrated>.doDecrypt(
+expect internal fun SealedBox<AuthType.Unauthenticated, *, out KeyType.Integrated>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray
 
 
-internal expect fun <T, A : AuthType<K>, I : Nonce, K : KeyType> initCipher(
+internal expect fun <T, A : AuthType<out K>, I : Nonce,  K : KeyType> initCipher(
     algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
     key: ByteArray,
     nonce: ByteArray?,
     aad: ByteArray?
-): CipherParam<T, A, K>
+): CipherParam<T, A, out K>
 
-internal expect fun <A : AuthType<K>, I : Nonce, K : KeyType> CipherParam<*, A, K>.doEncrypt(data: ByteArray): SealedBox<A, I, K>
+internal expect fun <A : AuthType<out K>, I : Nonce, K : KeyType> CipherParam<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K>
