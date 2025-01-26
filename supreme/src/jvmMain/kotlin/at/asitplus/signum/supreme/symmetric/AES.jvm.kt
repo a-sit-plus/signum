@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.symmetric
 
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.AuthType
 import at.asitplus.signum.indispensable.symmetric.KeyType
 import at.asitplus.signum.indispensable.symmetric.Nonce
@@ -9,11 +10,12 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
+@OptIn(HazardousMaterials::class)
 internal object AESJVM {
     fun initCipher(
-        algorithm: SymmetricEncryptionAlgorithm.AES<*, *>,
+        algorithm: SymmetricEncryptionAlgorithm.AES<*, *, *>,
         key: ByteArray,
-        nonce: ByteArray,
+        nonce: ByteArray?,
         aad: ByteArray?
     ) =
         Cipher.getInstance(algorithm.jcaName).apply {
@@ -30,11 +32,16 @@ internal object AESJVM {
                     SecretKeySpec(key, algorithm.jcaKeySpec),
                     IvParameterSpec(nonce)
                 )
-            else TODO()
+            else if (algorithm is SymmetricEncryptionAlgorithm.AES.ECB) {
+                init(
+                    Cipher.ENCRYPT_MODE,
+                    SecretKeySpec(key, algorithm.jcaKeySpec),
+                )
+            } else TODO()
             aad?.let { if (algorithm is SymmetricEncryptionAlgorithm.AES.GCM) updateAAD(it) /*CBC-HMAC we do ourselves*/ }
         }.let {
             CipherParam<Cipher, AuthType<KeyType>, KeyType>(
-                algorithm as SymmetricEncryptionAlgorithm<AuthType<KeyType>, Nonce.Required, KeyType>,
+                algorithm as SymmetricEncryptionAlgorithm<AuthType<KeyType>,*, KeyType>,
                 it,
                 nonce,
                 aad

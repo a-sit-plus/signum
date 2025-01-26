@@ -10,10 +10,10 @@ import at.asitplus.signum.supreme.symmetric.randomNonce
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNot
 import io.kotest.matchers.shouldNotBe
-import io.kotest.matchers.types.shouldBeInstanceOf
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
@@ -42,7 +42,8 @@ class JvmSymmetricTest : FreeSpec({
                     withData(
                         nameFn = { "aad: ${it?.size} bytes" }, alg.randomNonce(), alg.randomNonce(),
 
-                        Random.nextBytes(19), null) { aad ->
+                        Random.nextBytes(19), null
+                    ) { aad ->
                         withData(
                             nameFn = { "data: ${it.size} bytes" }, alg.randomNonce(), alg.randomNonce(),
                             Random.nextBytes(19),
@@ -134,13 +135,63 @@ class JvmSymmetricTest : FreeSpec({
                                 }
 
                                 if (data.size < alg.blockSize.bytes.toInt())
-                                    alg .sealedBox(
+                                    alg.sealedBox(
                                         own.algorithm.randomNonce(),
                                         own.encryptedData
                                     ).decrypt(secretKey) shouldNot succeed
 
                             }
                         }
+                    }
+                }
+            }
+            "ECB" - {
+                withData(
+
+                    SymmetricEncryptionAlgorithm.AES_128.ECB,
+                    SymmetricEncryptionAlgorithm.AES_192.ECB,
+                    SymmetricEncryptionAlgorithm.AES_256.ECB,
+
+                    ) { alg ->
+
+                    withData(
+                        nameFn = { "data: ${it.size} bytes" },
+                        Random.nextBytes(19),
+                        Random.nextBytes(1),
+                        Random.nextBytes(1234),
+                        Random.nextBytes(54),
+                        Random.nextBytes(16),
+                        Random.nextBytes(32),
+                        Random.nextBytes(256),
+                    ) { data ->
+
+
+                        val jcaCipher =
+                            Cipher.getInstance("AES/ECB/PKCS5PADDING")
+
+                        val secretKey = alg.randomKey()
+                        //CBC
+                        val own = secretKey.encrypt(data).getOrThrow()
+                        jcaCipher.init(
+                            Cipher.ENCRYPT_MODE,
+                            SecretKeySpec(secretKey.secretKey, "AES"),
+                        )
+                        val encrypted = jcaCipher.doFinal(data)
+
+                        own.encryptedData shouldBe encrypted
+
+                        jcaCipher.init(
+                            Cipher.DECRYPT_MODE,
+                            SecretKeySpec(secretKey.secretKey, "AES"),
+                        )
+                        own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
+
+                        //we might get lucky here
+                        own.decrypt(own.algorithm.randomKey()).onSuccess {
+                            it shouldNotBe data
+                        }
+
+                        alg.sealedBox(own.encryptedData).decrypt(secretKey) should succeed
                     }
                 }
             }
