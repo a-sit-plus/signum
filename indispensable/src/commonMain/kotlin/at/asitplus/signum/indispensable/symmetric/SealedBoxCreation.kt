@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.symmetric
 
+import at.asitplus.KmmResult
 import at.asitplus.catching
 import kotlin.jvm.JvmName
 
@@ -47,9 +48,8 @@ fun SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Without, *>.sea
  *
  * @return [at.asitplus.KmmResult.failure] on illegal auth tag length
  */
-//TODO Why cant' we just use SymmetricEncryptionAlgorithm<A, Nonce.Required,*>????
 @JvmName("sealedBoxAuthenticatedWith")
-fun <A : AuthType.Authenticated<*>> SymmetricEncryptionAlgorithm<A, Nonce.Required, *>.sealedBox(
+fun SymmetricEncryptionAlgorithm<AuthType.Authenticated<*>, Nonce.Required, *>.sealedBox(
     nonce: ByteArray,
     encryptedData: ByteArray,
     authTag: ByteArray,
