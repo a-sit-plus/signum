@@ -35,8 +35,15 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthType<out K>, out I : N
 
             val GCM = AES.GCM(keySize)
             val CBC = CbcDefinition(keySize)
+
             @HazardousMaterials("ECB is almost always insecure!")
             val ECB = AES.ECB(keySize)
+
+            val WRAP = WrapDefinition(keySize)
+
+            class WrapDefinition(keySize: BitLength){
+                val RFC3394 = AES.WRAP.RFC3394(keySize)
+            }
 
             class CbcDefinition(keySize: BitLength) {
                 @HazardousMaterials("Unauthenticated!")
@@ -49,6 +56,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthType<out K>, out I : N
                     val SHA_256 = AES.CBC.HMAC(innerCipher, HMAC.SHA256)
                     val SHA_384 = AES.CBC.HMAC(innerCipher, HMAC.SHA384)
                     val SHA_512 = AES.CBC.HMAC(innerCipher, HMAC.SHA512)
+
                     @HazardousMaterials("Insecure hash function!")
                     val SHA_1 = AES.CBC.HMAC(innerCipher, HMAC.SHA1)
                 }
@@ -66,9 +74,9 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthType<out K>, out I : N
 
     //TODO: why are there ambiguities for sealed box creation?
     sealed interface Unauthenticated<out I : Nonce> :
-        SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, I, KeyType.Integrated>{
-            companion object
-        }
+        SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, I, KeyType.Integrated> {
+        companion object
+    }
 
     sealed interface Authenticated<out A : AuthType.Authenticated<out K>, out I : Nonce, out K : KeyType> :
         SymmetricEncryptionAlgorithm<A, I, K> {
@@ -144,6 +152,27 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthType<out K>, out I : N
                 256u -> KnownOIDs.aes256_GCM
                 else -> throw IllegalStateException("$keySize This is an implementation flaw. Report this bug!")
             }
+        }
+
+        sealed class WRAP<I : Nonce>(keySize: BitLength) :
+            SymmetricEncryptionAlgorithm.Unauthenticated<I>,
+            AES<I, KeyType.Integrated, AuthType.Unauthenticated>(ModeOfOperation.ECB, keySize) {
+            override val authCapability = AuthType.Unauthenticated
+
+            /**
+             * Key Wrapping as per [RFC 3394](https://datatracker.ietf.org/doc/rfc3394/)
+             */
+            class RFC3394(keySize: BitLength) : WRAP<Nonce.Without>(keySize),
+                SymmetricEncryptionAlgorithm.WithoutNonce.Unauthenticated {
+                override val nonce = Nonce.Without
+                override val oid: ObjectIdentifier = when (keySize.bits) {
+                    128u -> KnownOIDs.aes128_wrap
+                    192u -> KnownOIDs.aes192_wrap
+                    256u -> KnownOIDs.aes256_wrap
+                    else -> throw IllegalStateException("$keySize This is an implementation flaw. Report this bug!")
+                }
+            }
+            //on request, add RFC 5649  key wrapping here. requires manual work, though
         }
 
         @HazardousMaterials("ECB is almost always insecure!")

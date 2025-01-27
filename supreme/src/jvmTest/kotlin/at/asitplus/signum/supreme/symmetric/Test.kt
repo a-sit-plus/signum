@@ -1,3 +1,4 @@
+import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.succeed
@@ -144,12 +145,15 @@ class JvmSymmetricTest : FreeSpec({
                     }
                 }
             }
-            "ECB" - {
+            "ECB + WRAP" - {
                 withData(
 
                     SymmetricEncryptionAlgorithm.AES_128.ECB,
                     SymmetricEncryptionAlgorithm.AES_192.ECB,
                     SymmetricEncryptionAlgorithm.AES_256.ECB,
+                    SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394,
+                    SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394,
+                    SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394,
 
                     ) { alg ->
 
@@ -162,37 +166,85 @@ class JvmSymmetricTest : FreeSpec({
                         Random.nextBytes(16),
                         Random.nextBytes(32),
                         Random.nextBytes(256),
+                        Random.nextBytes(512),
+                        Random.nextBytes(1024),
+                        Random.nextBytes(8),
+                        Random.nextBytes(16),
+                        Random.nextBytes(48),
+                        Random.nextBytes(24),
+                        Random.nextBytes(72),
                     ) { data ->
-
-
-                        val jcaCipher =
-                            Cipher.getInstance("AES/ECB/PKCS5PADDING")
 
                         val secretKey = alg.randomKey()
 
-
                         //CBC
-                        val own = secretKey.encrypt(data).getOrThrow()
-                        jcaCipher.init(
-                            Cipher.ENCRYPT_MODE,
-                            SecretKeySpec(secretKey.secretKey, "AES"),
-                        )
-                        val encrypted = jcaCipher.doFinal(data)
+                        if (alg !is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394) {
+                            val jcaCipher =
+                                Cipher.getInstance("AES/ECB/PKCS5PADDING")
 
-                        own.encryptedData shouldBe encrypted
+                            val own = secretKey.encrypt(data).getOrThrow()
+                            jcaCipher.init(
+                                Cipher.ENCRYPT_MODE,
+                                SecretKeySpec(secretKey.secretKey, "AES"),
+                            )
+                            val encrypted = jcaCipher.doFinal(data)
 
-                        jcaCipher.init(
-                            Cipher.DECRYPT_MODE,
-                            SecretKeySpec(secretKey.secretKey, "AES"),
-                        )
-                        own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
+                            own.encryptedData shouldBe encrypted
 
-                        //we might get lucky here
-                        own.decrypt(own.algorithm.randomKey()).onSuccess {
-                            it shouldNotBe data
+                            jcaCipher.init(
+                                Cipher.DECRYPT_MODE,
+                                SecretKeySpec(secretKey.secretKey, "AES"),
+                            )
+                            own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
+
+                            //we might get lucky here
+                            own.decrypt(own.algorithm.randomKey()).onSuccess {
+                                it shouldNotBe data
+                            }
+
+                            alg.sealedBox(own.encryptedData).getOrThrow().decrypt(secretKey) should succeed
+                        } else {
+
+
+                            val shouldSucceed = (data.size >= 16) && (data.size % 8 == 0)
+                            val jcaCipher =
+                                Cipher.getInstance("AESWrap")
+                            val trial = secretKey.encrypt(data)
+
+                            if (shouldSucceed)
+                                trial should succeed
+                            else trial shouldNot succeed
+
+                            jcaCipher.init(
+                                Cipher.ENCRYPT_MODE,
+                                SecretKeySpec(secretKey.secretKey, "AES"),
+                            )
+                            val jcaTrail = catching {
+                                jcaCipher.doFinal(data)
+                            }
+                            if (shouldSucceed)
+                                jcaTrail should succeed
+                            else jcaTrail shouldNot succeed
+
+                            if (shouldSucceed) {
+                                val own = trial.getOrThrow()
+                                val encrypted = jcaTrail.getOrThrow()
+                                own.encryptedData shouldBe encrypted
+
+                                jcaCipher.init(
+                                    Cipher.DECRYPT_MODE,
+                                    SecretKeySpec(secretKey.secretKey, "AES"),
+                                )
+                                own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
+
+                                //we might get lucky here
+                                own.decrypt(own.algorithm.randomKey()).onSuccess {
+                                    it shouldNotBe data
+                                }
+
+                                alg.sealedBox(own.encryptedData).getOrThrow().decrypt(secretKey) should succeed
+                            }
                         }
-
-                        alg.sealedBox(own.encryptedData).getOrThrow().decrypt(secretKey) should succeed
                     }
                 }
             }
@@ -218,7 +270,8 @@ class JvmSymmetricTest : FreeSpec({
                     val secretKey = alg.randomKey()
                     val jcaCipher = Cipher.getInstance("ChaCha20-Poly1305");
 
-                    val box = if (nonce != null) secretKey.andPredefinedNonce(nonce).getOrThrow().encrypt(data, aad).getOrThrow()
+                    val box = if (nonce != null) secretKey.andPredefinedNonce(nonce).getOrThrow().encrypt(data, aad)
+                        .getOrThrow()
                     else secretKey.encrypt(data, aad).getOrThrow()
 
 

@@ -5,6 +5,7 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.CryptoPublicKey.*
 import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.fromUncompressed
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
@@ -301,7 +302,7 @@ data class JsonWebKey(
             }
 
             JwkType.RSA -> {
-                CryptoPublicKey.RSA(
+                RSA(
                     n = Asn1Integer.fromUnsignedByteArray(
                         n ?: throw IllegalArgumentException("Missing modulus n")),
                     e = Asn1Integer.fromUnsignedByteArray(
@@ -309,7 +310,12 @@ data class JsonWebKey(
                 ).apply { jwkId = keyId }
             }
 
-            else -> throw IllegalArgumentException("Illegal key type")
+            JwkType.SYM -> {
+                require(k!=null){"Missing symmetric key k"}
+                algorithm
+                TODO()
+            }
+            null -> throw IllegalArgumentException("Illegal key type")
         }
     }
 

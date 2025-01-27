@@ -16,7 +16,9 @@ actual internal fun <T, A : AuthType<out K>, I : Nonce, K : KeyType> initCipher(
 ): CipherParam<T, A, out K> {
     if (!algorithm.requiresNonce()) {
         @OptIn(HazardousMaterials::class)
-        if (algorithm !is SymmetricEncryptionAlgorithm.AES.ECB) TODO("UNSUPPORTED")
+        if ((algorithm !is SymmetricEncryptionAlgorithm.AES.ECB) && (algorithm !is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394)) TODO(
+            "UNSUPPORTED"
+        )
         return AESJVM.initCipher(algorithm, key, nonce, aad) as CipherParam<T, A, K>
     } else {
         @OptIn(HazardousMaterials::class)
@@ -84,6 +86,7 @@ val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
         is SymmetricEncryptionAlgorithm.AES.GCM -> "AES/GCM/NoPadding"
         is SymmetricEncryptionAlgorithm.AES.CBC<*, *> -> "AES/CBC/PKCS5Padding"
         is SymmetricEncryptionAlgorithm.AES.ECB -> "AES/ECB/PKCS5Padding"
+        is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> "AESWrap"
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20-Poly1305"
         else -> TODO("UNSUPPORTED")
     }
@@ -121,7 +124,7 @@ internal actual fun SealedBox<AuthType.Unauthenticated, *, out KeyType.Integrate
         TODO()
 
     @OptIn(HazardousMaterials::class)
-    if (algorithm is SymmetricEncryptionAlgorithm.AES.ECB) {
+    if ((algorithm is SymmetricEncryptionAlgorithm.AES.ECB) || (algorithm is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394)) {
         return Cipher.getInstance(algorithm.jcaName).also { cipher ->
             cipher.init(
                 Cipher.DECRYPT_MODE,

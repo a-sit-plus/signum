@@ -11,6 +11,7 @@ import at.asitplus.signum.internals.toNSData
 import at.asitplus.signum.supreme.aes.CBC
 import at.asitplus.signum.supreme.aes.ECB
 import at.asitplus.signum.supreme.aes.GCM
+import at.asitplus.signum.supreme.aes.WRAP
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.CoreCrypto.kCCDecrypt
 import platform.CoreCrypto.kCCEncrypt
@@ -56,6 +57,11 @@ internal object AESIOS {
             val bytes: ByteArray = swiftcall {
                 ECB.crypt(kCCEncrypt.toLong(), padded.toNSData(), key.toNSData(), error)
             }.toByteArray()
+            alg.sealedBox(bytes).getOrThrow()
+        }
+
+        is AES.WRAP.RFC3394 -> {
+            val bytes = swiftcall { WRAP.wrap(data.toNSData(), key.toNSData(), error) }.toByteArray()
             alg.sealedBox(bytes).getOrThrow()
         }
 
@@ -115,12 +121,17 @@ internal object AESIOS {
                     secretKey.toNSData(),
                     error
                 )
+
+                is AES.WRAP.RFC3394 -> WRAP.unwrap(encryptedData.toNSData(), secretKey.toNSData(), error)
+
                 else -> TODO("UNSUPPORTED")
             }
 
 
         }.toByteArray()
-        return (algorithm).removePKCS7Padding(decrypted)
+
+        return if(algorithm is AES.WRAP.RFC3394) decrypted
+        else algorithm.removePKCS7Padding(decrypted)
     }
 }
 

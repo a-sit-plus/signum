@@ -1,3 +1,4 @@
+import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.encoding.encodeTo4Bytes
 import at.asitplus.signum.indispensable.mac.MAC
@@ -518,6 +519,83 @@ class `0SymmetricTest` : FreeSpec({
                             }
 
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    "ECB + WRAP" - {
+        withData(
+
+            SymmetricEncryptionAlgorithm.AES_128.ECB,
+            SymmetricEncryptionAlgorithm.AES_192.ECB,
+            SymmetricEncryptionAlgorithm.AES_256.ECB,
+            SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394,
+            SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394,
+            SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394,
+
+            ) { alg ->
+
+            withData(
+                nameFn = { "data: ${it.size} bytes" },
+                Random.nextBytes(19),
+                Random.nextBytes(1),
+                Random.nextBytes(1234),
+                Random.nextBytes(54),
+                Random.nextBytes(16),
+                Random.nextBytes(32),
+                Random.nextBytes(256),
+                Random.nextBytes(512),
+                Random.nextBytes(1024),
+                Random.nextBytes(8),
+                Random.nextBytes(16),
+                Random.nextBytes(48),
+                Random.nextBytes(24),
+                Random.nextBytes(72),
+            ) { data ->
+
+                val secretKey = alg.randomKey()
+
+                //CBC
+                if (alg !is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394) {
+
+                    val own = secretKey.encrypt(data).getOrThrow()
+
+
+                    own.decrypt(secretKey).getOrThrow() shouldBe data
+
+                    //we might get lucky here
+                    own.decrypt(own.algorithm.randomKey()).onSuccess {
+                        it shouldNotBe data
+                    }
+
+                    alg.sealedBox(own.encryptedData).getOrThrow().decrypt(secretKey) should succeed
+                } else {
+
+
+                    val shouldSucceed = (data.size >= 16) && (data.size % 8 == 0)
+                    val trial = secretKey.encrypt(data)
+
+                    if (shouldSucceed)
+                        trial should succeed
+                    else trial shouldNot succeed
+
+
+
+
+                    if (shouldSucceed) {
+                        val own = trial.getOrThrow()
+
+
+                        own.decrypt(secretKey).getOrThrow() shouldBe data
+
+                        //we might get lucky here
+                        own.decrypt(own.algorithm.randomKey()).onSuccess {
+                            it shouldNotBe data
+                        }
+
+                        alg.sealedBox(own.encryptedData).getOrThrow().decrypt(secretKey) should succeed
                     }
                 }
             }

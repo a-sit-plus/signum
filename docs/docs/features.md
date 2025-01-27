@@ -54,15 +54,15 @@ The following matrix lists all supported algorithms and details.
 Since everything is supported on all platforms equally,
 a separate platform listing is omitted.
 
-| Primitive            | Details                                                                              |
-|----------------------|--------------------------------------------------------------------------------------|
-| Signature Creation   | RSA/ECDSA with SHA2-family hash functions + raw signatures on pre-hashed data        |
-| RSA Key Sizes        | 512 (useful for faster tests) up to 4096 (larger keys may not work on all platforms) |
-| RSA Padding          | PKCS1 and PSS (with sensible defaults)                                               |
-| Elliptic Curves      | NIST Curves (P-256, P-384, P-521)                                                    |
-| Digests              | SHA-1 and SHA-2 family (SHA-256, SHA-384, SHA-512)                                   |
-| MAC                  | HMAC based on the SHA-1 and SHA-2 family (SHA-256, SHA-384, SHA-512)                 |
-| Symmetric Encryption | ChaCha-Poly1503, AES-GCM, AES-CBC-HMAC, AES-CBC (Unauthenticated), AES-ECB           |
+| Primitive            | Details                                                                                           |
+|----------------------|---------------------------------------------------------------------------------------------------|
+| Signature Creation   | RSA/ECDSA with SHA2-family hash functions + raw signatures on pre-hashed data                     |
+| RSA Key Sizes        | 512 (useful for faster tests) up to 4096 (larger keys may not work on all platforms)              |
+| RSA Padding          | PKCS1 and PSS (with sensible defaults)                                                            |
+| Elliptic Curves      | NIST Curves (P-256, P-384, P-521)                                                                 |
+| Digests              | SHA-1 and SHA-2 family (SHA-256, SHA-384, SHA-512)                                                |
+| MAC                  | HMAC based on the SHA-1 and SHA-2 family (SHA-256, SHA-384, SHA-512)                              |
+| Symmetric Encryption | ChaCha-Poly1503, AES-GCM, AES-CBC-HMAC, AES KW (RFC RFC3394),  AES-CBC (Unauthenticated), AES-ECB |
 
 On the JVM and on Android, supporting more algorithms is rather easy, since Bouncy Castle works on both platforms
 and can be used to provide more algorithms than natively supported. However, we aim for tight platform integration,
