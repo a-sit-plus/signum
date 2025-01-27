@@ -51,7 +51,10 @@ private fun SymmetricEncryptionAlgorithm<*, *, *>.keyFromInternal(
     return when (this.requiresNonce()) {
         true -> when (isAuthenticated()) {
             true -> when (this.isIntegrated()) {
-                false -> SymmetricKey.WithDedicatedMac.RequiringNonce(this, bytes, dedicatedMacKey!!)
+
+                false -> {this
+                    SymmetricKey.WithDedicatedMac.RequiringNonce(this, bytes, dedicatedMacKey!!)
+                }
                 true -> SymmetricKey.Integrated.Authenticating.RequiringNonce(this, bytes)
             }
 

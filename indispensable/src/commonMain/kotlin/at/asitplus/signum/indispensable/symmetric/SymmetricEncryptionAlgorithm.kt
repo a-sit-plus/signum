@@ -88,45 +88,9 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthType<out K>, out I : N
     }
 
     sealed interface RequiringNonce<out A : AuthType<out K>, K : KeyType> :
-        SymmetricEncryptionAlgorithm<A, Nonce.Required, K> {
-        sealed interface Unauthenticated :
-            RequiringNonce<AuthType.Unauthenticated, KeyType.Integrated>,
-            SymmetricEncryptionAlgorithm.Unauthenticated<Nonce.Required>
-
-        sealed interface Authenticated<out A : AuthType.Authenticated<out K>, out K : KeyType> :
-            SymmetricEncryptionAlgorithm.Authenticated<A, Nonce.Required, K> {
-            interface Integrated :
-                Authenticated<AuthType.Authenticated.Integrated, KeyType.Integrated>,
-                RequiringNonce<AuthType.Authenticated.Integrated, KeyType.Integrated>,
-                SymmetricEncryptionAlgorithm.Authenticated.Integrated<Nonce.Required>
-
-            interface WithDedicatedMac<M : MAC> :
-                Authenticated<AuthType.Authenticated.WithDedicatedMac<M, Nonce.Required>, KeyType.WithDedicatedMacKey>,
-                RequiringNonce<AuthType.Authenticated.WithDedicatedMac<M, Nonce.Required>, KeyType.WithDedicatedMacKey>,
-                SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac<M, Nonce.Required>
-        }
-    }
-
+        SymmetricEncryptionAlgorithm<A, Nonce.Required, K>
     sealed interface WithoutNonce<out A : AuthType<out K>, K : KeyType> :
-        SymmetricEncryptionAlgorithm<A, Nonce.Without, K> {
-        sealed interface Unauthenticated :
-            WithoutNonce<AuthType.Unauthenticated, KeyType.Integrated>,
-            SymmetricEncryptionAlgorithm.Unauthenticated<Nonce.Without>
-
-        sealed interface Authenticated<out A : AuthType.Authenticated<out K>, out K : KeyType> :
-            SymmetricEncryptionAlgorithm.Authenticated<A, Nonce.Without, K> {
-            interface Integrated :
-                Authenticated<AuthType.Authenticated.Integrated, KeyType.Integrated>,
-                WithoutNonce<AuthType.Authenticated.Integrated, KeyType.Integrated>,
-                SymmetricEncryptionAlgorithm.Authenticated.Integrated<Nonce.Without>
-
-            interface WithDedicatedMac<M : MAC> :
-                Authenticated<AuthType.Authenticated.WithDedicatedMac<M, Nonce.Without>, KeyType.WithDedicatedMacKey>,
-                WithoutNonce<AuthType.Authenticated.WithDedicatedMac<M, Nonce.Without>, KeyType.WithDedicatedMacKey>,
-                SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac<M, Nonce.Without>
-
-        }
-    }
+        SymmetricEncryptionAlgorithm<A, Nonce.Without, K>
 
     /**
      * Advanced Encryption Standard
@@ -142,7 +106,6 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthType<out K>, out I : N
         override fun toString(): String = name
 
         class GCM internal constructor(keySize: BitLength) :
-            SymmetricEncryptionAlgorithm.RequiringNonce.Authenticated.Integrated,
             AES<Nonce.Required, KeyType.Integrated, AuthType.Authenticated.Integrated>(ModeOfOperation.GCM, keySize) {
             override val nonce = Nonce.Required(96.bit)
             override val authCapability = AuthType.Authenticated.Integrated(blockSize)
@@ -162,8 +125,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthType<out K>, out I : N
             /**
              * Key Wrapping as per [RFC 3394](https://datatracker.ietf.org/doc/rfc3394/)
              */
-            class RFC3394(keySize: BitLength) : WRAP<Nonce.Without>(keySize),
-                SymmetricEncryptionAlgorithm.WithoutNonce.Unauthenticated {
+            class RFC3394(keySize: BitLength) : WRAP<Nonce.Without>(keySize)                {
                 override val nonce = Nonce.Without
                 override val oid: ObjectIdentifier = when (keySize.bits) {
                     128u -> KnownOIDs.aes128_wrap
@@ -177,7 +139,6 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthType<out K>, out I : N
 
         @HazardousMaterials("ECB is almost always insecure!")
         class ECB internal constructor(keySize: BitLength) :
-            SymmetricEncryptionAlgorithm.WithoutNonce.Unauthenticated,
             AES<Nonce.Without, KeyType.Integrated, AuthType.Unauthenticated>(ModeOfOperation.ECB, keySize) {
             override val nonce = Nonce.Without
             override val authCapability = AuthType.Unauthenticated
@@ -190,7 +151,6 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthType<out K>, out I : N
         }
 
         sealed class CBC<K : KeyType, A : AuthType<K>>(keySize: BitLength) :
-            RequiringNonce<A, K>,
             AES<Nonce.Required, K, A>(ModeOfOperation.CBC, keySize) {
             override val nonce = Nonce.Required(128u.bit)
             override val oid: ObjectIdentifier = when (keySize.bits) {
@@ -217,7 +177,6 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthType<out K>, out I : N
                 mac: at.asitplus.signum.indispensable.mac.HMAC,
                 dedicatedMacInputCalculation: DedicatedMacInputCalculation
             ) :
-                SymmetricEncryptionAlgorithm.RequiringNonce.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC>,
                 CBC<KeyType.WithDedicatedMacKey, AuthType.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC, Nonce.Required>>(
                     innerCipher.keySize
                 ) {
@@ -250,7 +209,6 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthType<out K>, out I : N
     }
 
     object ChaCha20Poly1305 :
-        SymmetricEncryptionAlgorithm.RequiringNonce.Authenticated.Integrated,
         StreamCipher<AuthType.Authenticated.Integrated, Nonce.Required, KeyType.Integrated>() {
         override val authCapability = AuthType.Authenticated.Integrated(128u.bit)
         override val nonce = Nonce.Required(96u.bit)
@@ -374,61 +332,12 @@ fun SymmetricEncryptionAlgorithm<*, *, *>.hasDedicatedMac(): Boolean {
 }
 
 /**Use to smart-cast this algorithm*/
-@JvmName("isBlockCipher")
-@OptIn(ExperimentalContracts::class)
-fun <A : AuthType<K>, K : KeyType, I : Nonce> SymmetricEncryptionAlgorithm<A, I, K>.isBlockCipher(): Boolean {
-    contract {
-        returns(true) implies (this@isBlockCipher is BlockCipher<A, I, K>)
-        returns(false) implies (this@isBlockCipher is StreamCipher<A, I, K>)
-    }
-    return this is BlockCipher<*, *, *>
-}
-
-/**Use to smart-cast this algorithm*/
-@JvmName("isAuthenticated")
-@OptIn(ExperimentalContracts::class)
-fun <A : AuthType<K>, K : KeyType, I : Nonce> SymmetricEncryptionAlgorithm<A, I, K>.isAuthenticated(): Boolean {
-    contract {
-        returns(true) implies (this@isAuthenticated is SymmetricEncryptionAlgorithm.Authenticated<A, I, K>)
-        returns(false) implies (this@isAuthenticated is SymmetricEncryptionAlgorithm.Unauthenticated<I>)
-    }
-    return this.authCapability is AuthType.Authenticated<*>
-}
-
-
-/**Use to smart-cast this algorithm*/
-@JvmName("hasDedicatedMac")
-@OptIn(ExperimentalContracts::class)
-fun <I : Nonce> SymmetricEncryptionAlgorithm<*, I, *>.hasDedicatedMac(): Boolean {
-    contract {
-        returns(true) implies (this@hasDedicatedMac is SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac<*, I>)
-        returns(false) implies (
-                (this@hasDedicatedMac is SymmetricEncryptionAlgorithm.Unauthenticated<I>
-                        || this@hasDedicatedMac is SymmetricEncryptionAlgorithm.Authenticated.Integrated<I>))
-
-    }
-    return this.authCapability is AuthType.Authenticated.WithDedicatedMac<*, *>
-}
-
-
-/**Use to smart-cast this algorithm*/
 @JvmName("requiresNonceAlias")
 @OptIn(ExperimentalContracts::class)
 fun SymmetricEncryptionAlgorithm<*, *, *>.requiresNonce(): Boolean {
     contract {
         returns(true) implies (this@requiresNonce is SymmetricEncryptionAlgorithm.RequiringNonce<*, *>)
         returns(false) implies (this@requiresNonce is SymmetricEncryptionAlgorithm.WithoutNonce<*, *>)
-    }
-    return this.nonce is Nonce.Required
-}
-
-/**Use to smart-cast this algorithm*/
-@JvmName("requiresNonce")
-@OptIn(ExperimentalContracts::class)
-fun <A : AuthType<K>, K : KeyType> SymmetricEncryptionAlgorithm<A, *, K>.requiresNonce(): Boolean {
-    contract {
-        returns(true) implies (this@requiresNonce is SymmetricEncryptionAlgorithm.RequiringNonce<A, K>)
-        returns(false) implies (this@requiresNonce is SymmetricEncryptionAlgorithm.WithoutNonce<A, K>)
     }
     return this.nonce is Nonce.Required
 }
@@ -442,142 +351,4 @@ fun <I : Nonce> SymmetricEncryptionAlgorithm.Authenticated<*, I, *>.isIntegrated
         returns(false) implies (this@isIntegrated is SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac<*, I>)
     }
     return this.authCapability is AuthType.Authenticated.Integrated
-}
-
-
-//Second level A
-
-//A-WITHOUTNONCE
-
-/**Use to smart-cast this algorithm*/
-@JvmName("isAuthenticatedWithout")
-@OptIn(ExperimentalContracts::class)
-fun SymmetricEncryptionAlgorithm.WithoutNonce<*, *>.isAuthenticated(): Boolean {
-    contract {
-        returns(true) implies (this@isAuthenticated is SymmetricEncryptionAlgorithm.WithoutNonce.Authenticated<*, *>)
-        returns(false) implies (this@isAuthenticated is SymmetricEncryptionAlgorithm.WithoutNonce.Unauthenticated)
-    }
-    return this.authCapability is AuthType.Authenticated<*>
-}
-
-/**Use to smart-cast this algorithm*/
-@JvmName("hasDedicatedMacWithout")
-@OptIn(ExperimentalContracts::class)
-fun SymmetricEncryptionAlgorithm.WithoutNonce<*, *>.hasDedicatedMac(): Boolean {
-    contract {
-        returns(true) implies (this@hasDedicatedMac is SymmetricEncryptionAlgorithm.WithoutNonce.Authenticated.WithDedicatedMac<*>)
-        returns(false) implies (
-                (this@hasDedicatedMac is SymmetricEncryptionAlgorithm.WithoutNonce.Unauthenticated
-                        || this@hasDedicatedMac is SymmetricEncryptionAlgorithm.WithoutNonce.Authenticated.Integrated))
-
-    }
-    return this.authCapability is AuthType.Authenticated.WithDedicatedMac<*, *>
-}
-
-/**Use to smart-cast this algorithm*/
-@JvmName("isIntegratedWithout")
-@OptIn(ExperimentalContracts::class)
-fun SymmetricEncryptionAlgorithm.WithoutNonce.Authenticated<*, *>.isIntegrated(): Boolean {
-    contract {
-        returns(true) implies (this@isIntegrated is SymmetricEncryptionAlgorithm.WithoutNonce.Authenticated.Integrated)
-        returns(false) implies (this@isIntegrated is SymmetricEncryptionAlgorithm.WithoutNonce.Authenticated.WithDedicatedMac<*>)
-    }
-    return this.authCapability is AuthType.Authenticated.Integrated
-}
-
-
-//A-NONCE
-
-/**Use to smart-cast this algorithm*/
-@JvmName("isAuthenticatedWith")
-@OptIn(ExperimentalContracts::class)
-fun SymmetricEncryptionAlgorithm.RequiringNonce<*, *>.isAuthenticated(): Boolean {
-    contract {
-        returns(true) implies (this@isAuthenticated is SymmetricEncryptionAlgorithm.RequiringNonce.Authenticated<*, *>)
-        returns(false) implies (this@isAuthenticated is SymmetricEncryptionAlgorithm.RequiringNonce.Unauthenticated)
-    }
-    return this.authCapability is AuthType.Authenticated<*>
-}
-
-/**Use to smart-cast this algorithm*/
-@JvmName("hasDedicatedMacWith")
-@OptIn(ExperimentalContracts::class)
-fun SymmetricEncryptionAlgorithm.RequiringNonce<*, *>.hasDedicatedMac(): Boolean {
-    contract {
-        returns(true) implies (this@hasDedicatedMac is SymmetricEncryptionAlgorithm.RequiringNonce.Authenticated.WithDedicatedMac<*>)
-        returns(false) implies (
-                (this@hasDedicatedMac is SymmetricEncryptionAlgorithm.RequiringNonce.Unauthenticated
-                        || this@hasDedicatedMac is SymmetricEncryptionAlgorithm.RequiringNonce.Authenticated.Integrated))
-
-    }
-    return this.authCapability is AuthType.Authenticated.WithDedicatedMac<*, *>
-}
-
-/**Use to smart-cast this algorithm*/
-@JvmName("isIntegratedWith")
-@OptIn(ExperimentalContracts::class)
-fun SymmetricEncryptionAlgorithm.RequiringNonce.Authenticated<*, *>.isIntegrated(): Boolean {
-    contract {
-        returns(true) implies (this@isIntegrated is SymmetricEncryptionAlgorithm.RequiringNonce.Authenticated.Integrated)
-        returns(false) implies (this@isIntegrated is SymmetricEncryptionAlgorithm.RequiringNonce.Authenticated.WithDedicatedMac<*>)
-    }
-    return this.authCapability is AuthType.Authenticated.Integrated
-}
-
-
-//Second Level B
-
-/**Use to smart-cast this algorithm*/
-@JvmName("requiresNonceUnauth")
-@OptIn(ExperimentalContracts::class)
-fun SymmetricEncryptionAlgorithm.Unauthenticated<*>.requiresNonce(): Boolean {
-    contract {
-        returns(true) implies (this@requiresNonce is SymmetricEncryptionAlgorithm.RequiringNonce.Unauthenticated)
-        returns(false) implies (this@requiresNonce is SymmetricEncryptionAlgorithm.WithoutNonce.Unauthenticated)
-    }
-    return this.nonce is Nonce.Required
-}
-
-/**Use to smart-cast this algorithm*/
-@JvmName("requiresNonceAuth")
-@OptIn(ExperimentalContracts::class)
-fun <A : AuthType.Authenticated<K>, K : KeyType> SymmetricEncryptionAlgorithm.Authenticated<A, *, K>.requiresNonce(): Boolean {
-    contract {
-        returns(true) implies (this@requiresNonce is SymmetricEncryptionAlgorithm.RequiringNonce.Authenticated<A, K>)
-        returns(false) implies (this@requiresNonce is SymmetricEncryptionAlgorithm.WithoutNonce.Authenticated<A, K>)
-    }
-    return this.nonce is Nonce.Required
-}
-
-/**Use to smart-cast this algorithm*/
-@JvmName("requiresNonceAuthAlias")
-@OptIn(ExperimentalContracts::class)
-fun SymmetricEncryptionAlgorithm.Authenticated<*, *, *>.requiresNonce(): Boolean {
-    contract {
-        returns(true) implies (this@requiresNonce is SymmetricEncryptionAlgorithm.RequiringNonce.Authenticated<*, *>)
-        returns(false) implies (this@requiresNonce is SymmetricEncryptionAlgorithm.WithoutNonce.Authenticated<*, *>)
-    }
-    return this.nonce is Nonce.Required
-}
-
-/**Use to smart-cast this algorithm*/
-@JvmName("requiresNonceAuthIntegrated")
-@OptIn(ExperimentalContracts::class)
-fun SymmetricEncryptionAlgorithm.Authenticated.Integrated<*>.requiresNonce(): Boolean {
-    contract {
-        returns(true) implies (this@requiresNonce is SymmetricEncryptionAlgorithm.RequiringNonce.Authenticated.Integrated)
-        returns(false) implies (this@requiresNonce is SymmetricEncryptionAlgorithm.WithoutNonce.Authenticated.Integrated)
-    }
-    return this.nonce is Nonce.Required
-}
-
-/**Use to smart-cast this algorithm*/
-@JvmName("requiresNonceWithDedicatedMac")
-@OptIn(ExperimentalContracts::class)
-fun SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac<*, *>.requiresNonce(): Boolean {
-    contract {
-        returns(true) implies (this@requiresNonce is SymmetricEncryptionAlgorithm.RequiringNonce.Authenticated.WithDedicatedMac<*>)
-        returns(false) implies (this@requiresNonce is SymmetricEncryptionAlgorithm.WithoutNonce.Authenticated.WithDedicatedMac<*>)
-    }
-    return this.nonce is Nonce.Required
 }
