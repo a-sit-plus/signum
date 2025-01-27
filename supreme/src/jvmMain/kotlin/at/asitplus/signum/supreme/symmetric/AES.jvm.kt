@@ -32,12 +32,14 @@ internal object AESJVM {
                     SecretKeySpec(key, algorithm.jcaKeySpec),
                     IvParameterSpec(nonce)
                 )
-            else if (algorithm is SymmetricEncryptionAlgorithm.AES.ECB) {
+            else if ((algorithm is SymmetricEncryptionAlgorithm.AES.ECB) || algorithm is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394) {
                 init(
                     Cipher.ENCRYPT_MODE,
                     SecretKeySpec(key, algorithm.jcaKeySpec),
                 )
-            } else TODO()
+            }
+
+            else TODO()
             aad?.let { if (algorithm is SymmetricEncryptionAlgorithm.AES.GCM) updateAAD(it) /*CBC-HMAC we do ourselves*/ }
         }.let {
             CipherParam<Cipher, AuthType<KeyType>, KeyType>(

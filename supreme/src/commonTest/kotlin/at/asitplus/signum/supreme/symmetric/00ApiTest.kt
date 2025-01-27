@@ -19,7 +19,7 @@ class `00ApiTest` : FreeSpec({
             SymmetricEncryptionAlgorithm.ChaCha20Poly1305
         ) {
 
-            val algorithm = it as SymmetricEncryptionAlgorithm<*, *, *>
+            val algorithm = it// as SymmetricEncryptionAlgorithm<*, *, *>
 
             //create a key, encrypt and decrypt works!
             val key = algorithm.randomKey()
