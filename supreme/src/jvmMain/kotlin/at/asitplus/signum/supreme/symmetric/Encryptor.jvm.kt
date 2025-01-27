@@ -107,7 +107,7 @@ internal actual fun SealedBox<Authenticated.Integrated, *, out KeyType.Integrate
     if ((algorithm !is SymmetricEncryptionAlgorithm.ChaCha20Poly1305) && (algorithm !is SymmetricEncryptionAlgorithm.AES.GCM)) TODO()
 
     return gcmLikeDecrypt(
-        algorithm as SymmetricEncryptionAlgorithm.RequiringNonce.Authenticated.Integrated,
+        algorithm,
         secretKey,
         nonce,
         encryptedData,
