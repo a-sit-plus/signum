@@ -19,6 +19,14 @@ sealed interface SymmetricKey<A : AuthCapability<K>, I : NonceTrait, K : KeyType
      */
     val secretKey: ByteArray
 
+    /**
+     * This is meant for storing additional properties, which may be relevant for certain use cases.
+     * For example, Json Web Keys or Cose Keys may define an arbitrary key IDs.
+     * This is not meant for Algorithm parameters! If an algorithm needs parameters, the implementing classes should be extended
+     */
+    //must be serializable, therefore <String,String>
+    val additionalProperties: MutableMap<String,String>
+
     interface Authenticating<A : AuthCapability.Authenticated<K>, I : NonceTrait, K : KeyType> : SymmetricKey<A, I, K>
     interface NonAuthenticating<I : NonceTrait> : SymmetricKey<AuthCapability.Unauthenticated, I, KeyType.Integrated>
 
@@ -44,14 +52,16 @@ sealed interface SymmetricKey<A : AuthCapability<K>, I : NonceTrait, K : KeyType
 
             class RequiringNonce(
                 algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.Integrated, NonceTrait.Required, KeyType.Integrated>,
-                secretKey: ByteArray
+                secretKey: ByteArray,
+                override val additionalProperties: MutableMap<String, String> = mutableMapOf<String, String>()
             ) : Authenticating<NonceTrait.Required>(
                 algorithm, secretKey
             ), SymmetricKey.RequiringNonce<AuthCapability.Authenticated.Integrated, KeyType.Integrated>
 
             class WithoutNonce(
                 algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.Integrated, NonceTrait.Without, KeyType.Integrated>,
-                secretKey: ByteArray
+                secretKey: ByteArray,
+                override val additionalProperties: MutableMap<String, String> = mutableMapOf<String, String>()
             ) : Authenticating<NonceTrait.Without>(
                 algorithm, secretKey
             ), SymmetricKey.WithoutNonce<AuthCapability.Authenticated.Integrated, KeyType.Integrated>
@@ -63,12 +73,14 @@ sealed interface SymmetricKey<A : AuthCapability<K>, I : NonceTrait, K : KeyType
         ) : Integrated<AuthCapability.Unauthenticated, I>(algorithm, secretKey), SymmetricKey.NonAuthenticating<I> {
             class RequiringNonce(
                 algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Required, KeyType.Integrated>,
-                secretKey: ByteArray
+                secretKey: ByteArray,
+                override val additionalProperties: MutableMap<String, String> = mutableMapOf<String, String>()
             ) : NonAuthenticating<NonceTrait.Required>(algorithm, secretKey)
 
             class WithoutNonce(
                 algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Without, KeyType.Integrated>,
-                secretKey: ByteArray
+                secretKey: ByteArray,
+                override val additionalProperties: MutableMap<String, String> = mutableMapOf<String, String>()
             ) : NonAuthenticating<NonceTrait.Without>(algorithm, secretKey)
         }
 
@@ -116,7 +128,8 @@ sealed interface SymmetricKey<A : AuthCapability<K>, I : NonceTrait, K : KeyType
         class RequiringNonce(
             algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, NonceTrait.Required>, NonceTrait.Required, KeyType.WithDedicatedMacKey>,
             secretKey: ByteArray,
-            dedicatedMacKey: ByteArray
+            dedicatedMacKey: ByteArray,
+            override val additionalProperties: MutableMap<String, String> = mutableMapOf<String, String>()
         ) : WithDedicatedMac<NonceTrait.Required>(
             algorithm, secretKey, dedicatedMacKey
         ),
@@ -125,7 +138,8 @@ sealed interface SymmetricKey<A : AuthCapability<K>, I : NonceTrait, K : KeyType
         class WithoutNonce(
             algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, NonceTrait.Without>, NonceTrait.Without, KeyType.WithDedicatedMacKey>,
             secretKey: ByteArray,
-            dedicatedMacKey: ByteArray
+            dedicatedMacKey: ByteArray,
+            override val additionalProperties: MutableMap<String, String> = mutableMapOf<String, String>()
         ) : WithDedicatedMac<NonceTrait.Without>(
             algorithm, secretKey, dedicatedMacKey
         ),
