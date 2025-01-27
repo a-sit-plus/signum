@@ -26,8 +26,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
     Identifiable {
     val authCapability: A
 
-    /** If this algorithm has a nonce, access this property's [NonceTrait.Required.length] to get the nonce length
-     */
+    /** Indicates if this algorithm requires a nonce.*/
     val nonceTrait: I
 
     override fun toString(): String
@@ -407,3 +406,8 @@ fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*
     }
     return this.authCapability is AuthCapability.Authenticated.Integrated
 }
+
+
+val SymmetricEncryptionAlgorithm<*,NonceTrait.Required,*>.nonceLength : BitLength get() = nonceTrait.length
+val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*,*>,*, KeyType.WithDedicatedMacKey>.preferredMacKeyLength : BitLength get() = authCapability.preferredMacKeyLength
+val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>,*, *>.authTagLength : BitLength get() = authCapability.tagLength
