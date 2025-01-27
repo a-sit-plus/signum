@@ -5,7 +5,7 @@ import at.asitplus.signum.indispensable.symmetric.AuthCapability.Authenticated
 import at.asitplus.signum.supreme.mac.mac
 
 
-internal class Encryptor<A : AuthCapability<out K>, I : WithNonce, out K : KeyType> internal constructor(
+internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, out K : KeyType> internal constructor(
     private val algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
     private val key: ByteArray,
     private val macKey: ByteArray?,
@@ -14,8 +14,8 @@ internal class Encryptor<A : AuthCapability<out K>, I : WithNonce, out K : KeyTy
 ) {
 
     init {
-        if (algorithm.withNonce is WithNonce.Yes) iv?.let {
-            require(it.size.toUInt() == (algorithm.withNonce as WithNonce.Yes).length.bytes) { "IV must be exactly ${(algorithm.withNonce as WithNonce.Yes).length} bits long" }
+        if (algorithm.nonceTrait is NonceTrait.Required) iv?.let {
+            require(it.size.toUInt() == (algorithm.nonceTrait as NonceTrait.Required).length.bytes) { "IV must be exactly ${(algorithm.nonceTrait as NonceTrait.Required).length} bits long" }
         }
         require(key.size.toUInt() == algorithm.keySize.bytes) { "Key must be exactly ${algorithm.keySize} bits long" }
     }
@@ -89,11 +89,11 @@ expect internal fun SealedBox<AuthCapability.Unauthenticated, *, out KeyType.Int
 ): ByteArray
 
 
-internal expect fun <T, A : AuthCapability<out K>, I : WithNonce, K : KeyType> initCipher(
+internal expect fun <T, A : AuthCapability<out K>, I : NonceTrait, K : KeyType> initCipher(
     algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
     key: ByteArray,
     nonce: ByteArray?,
     aad: ByteArray?
 ): CipherParam<T, A, out K>
 
-internal expect fun <A : AuthCapability<out K>, I : WithNonce, K : KeyType> CipherParam<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K>
+internal expect fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> CipherParam<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K>

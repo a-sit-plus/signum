@@ -12,23 +12,23 @@ sealed interface KeyType {
 /**
  * Symmetric encryption key. Can only be used for the specified [algorithm].
  */
-sealed interface SymmetricKey<A : AuthCapability<K>, I : WithNonce, K : KeyType> {
+sealed interface SymmetricKey<A : AuthCapability<K>, I : NonceTrait, K : KeyType> {
     val algorithm: SymmetricEncryptionAlgorithm<A, I, K>
     /**
      * The actual encryption key bytes
      */
     val secretKey: ByteArray
 
-    interface Authenticating<A : AuthCapability.Authenticated<K>, I : WithNonce, K : KeyType> : SymmetricKey<A, I, K>
-    interface NonAuthenticating<I : WithNonce> : SymmetricKey<AuthCapability.Unauthenticated, I, KeyType.Integrated>
+    interface Authenticating<A : AuthCapability.Authenticated<K>, I : NonceTrait, K : KeyType> : SymmetricKey<A, I, K>
+    interface NonAuthenticating<I : NonceTrait> : SymmetricKey<AuthCapability.Unauthenticated, I, KeyType.Integrated>
 
-    interface RequiringNonce<A : AuthCapability<K>, K : KeyType> : SymmetricKey<A, WithNonce.Yes, K>
-    interface WithoutNonce<A : AuthCapability<K>, K : KeyType> : SymmetricKey<A, WithNonce.No, K>
+    interface RequiringNonce<A : AuthCapability<K>, K : KeyType> : SymmetricKey<A, NonceTrait.Required, K>
+    interface WithoutNonce<A : AuthCapability<K>, K : KeyType> : SymmetricKey<A, NonceTrait.Without, K>
 
     /**
      * Self-Contained encryption key, i.e. a single byte array is sufficient
      */
-    sealed class Integrated<A : AuthCapability<KeyType.Integrated>, I : WithNonce>
+    sealed class Integrated<A : AuthCapability<KeyType.Integrated>, I : NonceTrait>
     @HazardousMaterials("Does not check whether key size matched algorithm! Useful for testing, but not production!")
 
     constructor(
@@ -36,40 +36,40 @@ sealed interface SymmetricKey<A : AuthCapability<K>, I : WithNonce, K : KeyType>
         override val secretKey: ByteArray
     ) :
         SymmetricKey<A, I, KeyType.Integrated> {
-        sealed class Authenticating<I : WithNonce>(
+        sealed class Authenticating<I : NonceTrait>(
             algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated>,
             secretKey: ByteArray
         ) : Integrated<AuthCapability.Authenticated.Integrated, I>(algorithm, secretKey),
             SymmetricKey.Authenticating<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated> {
 
             class RequiringNonce(
-                algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.Integrated, WithNonce.Yes, KeyType.Integrated>,
+                algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.Integrated, NonceTrait.Required, KeyType.Integrated>,
                 secretKey: ByteArray
-            ) : Authenticating<WithNonce.Yes>(
+            ) : Authenticating<NonceTrait.Required>(
                 algorithm, secretKey
             ), SymmetricKey.RequiringNonce<AuthCapability.Authenticated.Integrated, KeyType.Integrated>
 
             class WithoutNonce(
-                algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.Integrated, WithNonce.No, KeyType.Integrated>,
+                algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.Integrated, NonceTrait.Without, KeyType.Integrated>,
                 secretKey: ByteArray
-            ) : Authenticating<WithNonce.No>(
+            ) : Authenticating<NonceTrait.Without>(
                 algorithm, secretKey
             ), SymmetricKey.WithoutNonce<AuthCapability.Authenticated.Integrated, KeyType.Integrated>
         }
 
-        sealed class NonAuthenticating<I : WithNonce>(
+        sealed class NonAuthenticating<I : NonceTrait>(
             algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, I, KeyType.Integrated>,
             secretKey: ByteArray
         ) : Integrated<AuthCapability.Unauthenticated, I>(algorithm, secretKey), SymmetricKey.NonAuthenticating<I> {
             class RequiringNonce(
-                algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, WithNonce.Yes, KeyType.Integrated>,
+                algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Required, KeyType.Integrated>,
                 secretKey: ByteArray
-            ) : NonAuthenticating<WithNonce.Yes>(algorithm, secretKey)
+            ) : NonAuthenticating<NonceTrait.Required>(algorithm, secretKey)
 
             class WithoutNonce(
-                algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, WithNonce.No, KeyType.Integrated>,
+                algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Without, KeyType.Integrated>,
                 secretKey: ByteArray
-            ) : NonAuthenticating<WithNonce.No>(algorithm, secretKey)
+            ) : NonAuthenticating<NonceTrait.Without>(algorithm, secretKey)
         }
 
         override fun equals(other: Any?): Boolean {
@@ -95,7 +95,7 @@ sealed interface SymmetricKey<A : AuthCapability<K>, I : WithNonce, K : KeyType>
      * bolt on AEAD capabilities, such as [SymmetricEncryptionAlgorithm.AES.GCM]
      * [dedicatedMacKey] defaults to [secretKey]
      */
-    sealed class WithDedicatedMac<I : WithNonce>
+    sealed class WithDedicatedMac<I : NonceTrait>
     @HazardousMaterials("Does not check whether key size matched algorithm! Useful for testing, but not production!")
     /**
      * Do not invoke directly! use Supreme's `SymmetricEncryptionAlgorithm.randomKey()` and `SymmetricEncryptionAlgorithm.encryptionKeyFrom(bytes)`
@@ -114,22 +114,22 @@ sealed interface SymmetricKey<A : AuthCapability<K>, I : WithNonce, K : KeyType>
     ) : SymmetricKey<AuthCapability.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey>,
         SymmetricKey.Authenticating<AuthCapability.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey> {
         class RequiringNonce(
-            algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, WithNonce.Yes>, WithNonce.Yes, KeyType.WithDedicatedMacKey>,
+            algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, NonceTrait.Required>, NonceTrait.Required, KeyType.WithDedicatedMacKey>,
             secretKey: ByteArray,
             dedicatedMacKey: ByteArray
-        ) : WithDedicatedMac<WithNonce.Yes>(
+        ) : WithDedicatedMac<NonceTrait.Required>(
             algorithm, secretKey, dedicatedMacKey
         ),
-            SymmetricKey.RequiringNonce<AuthCapability.Authenticated.WithDedicatedMac<*, WithNonce.Yes>, KeyType.WithDedicatedMacKey>
+            SymmetricKey.RequiringNonce<AuthCapability.Authenticated.WithDedicatedMac<*, NonceTrait.Required>, KeyType.WithDedicatedMacKey>
 
         class WithoutNonce(
-            algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, WithNonce.No>, WithNonce.No, KeyType.WithDedicatedMacKey>,
+            algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, NonceTrait.Without>, NonceTrait.Without, KeyType.WithDedicatedMacKey>,
             secretKey: ByteArray,
             dedicatedMacKey: ByteArray
-        ) : WithDedicatedMac<WithNonce.No>(
+        ) : WithDedicatedMac<NonceTrait.Without>(
             algorithm, secretKey, dedicatedMacKey
         ),
-            SymmetricKey.WithoutNonce<AuthCapability.Authenticated.WithDedicatedMac<*, WithNonce.No>, KeyType.WithDedicatedMacKey>
+            SymmetricKey.WithoutNonce<AuthCapability.Authenticated.WithDedicatedMac<*, NonceTrait.Without>, KeyType.WithDedicatedMacKey>
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -153,7 +153,7 @@ sealed interface SymmetricKey<A : AuthCapability<K>, I : WithNonce, K : KeyType>
 
 /**Use to smart cast*/
 @OptIn(ExperimentalContracts::class)
-fun <A : AuthCapability<K>, K : KeyType, I : WithNonce> SymmetricKey<A, I, K>.isAuthenticated(): Boolean {
+fun <A : AuthCapability<K>, K : KeyType, I : NonceTrait> SymmetricKey<A, I, K>.isAuthenticated(): Boolean {
     contract {
         returns(true) implies (this@isAuthenticated is SymmetricKey.Authenticating<A, I, K>)
         returns(false) implies (this@isAuthenticated is SymmetricKey.NonAuthenticating<I>)
@@ -163,7 +163,7 @@ fun <A : AuthCapability<K>, K : KeyType, I : WithNonce> SymmetricKey<A, I, K>.is
 
 /**Use to smart cast*/
 @OptIn(ExperimentalContracts::class)
-fun <A : AuthCapability.Authenticated<K>, K : KeyType, I : WithNonce> SymmetricKey<A, I, K>.isIntegrated(): Boolean {
+fun <A : AuthCapability.Authenticated<K>, K : KeyType, I : NonceTrait> SymmetricKey<A, I, K>.isIntegrated(): Boolean {
     contract {
         returns(true) implies (this@isIntegrated is SymmetricKey.Integrated.Authenticating<I>)
         returns(false) implies (this@isIntegrated is SymmetricKey.WithDedicatedMac<I>)
@@ -173,7 +173,7 @@ fun <A : AuthCapability.Authenticated<K>, K : KeyType, I : WithNonce> SymmetricK
 
 /**Use to smart cast*/
 @OptIn(ExperimentalContracts::class)
-fun <A : AuthCapability<K>, K : KeyType, I : WithNonce> SymmetricKey<A, I, K>.hasDedicatedMacKey(): Boolean {
+fun <A : AuthCapability<K>, K : KeyType, I : NonceTrait> SymmetricKey<A, I, K>.hasDedicatedMacKey(): Boolean {
     contract {
         returns(true) implies (this@hasDedicatedMacKey is SymmetricKey.WithDedicatedMac<I>)
         returns(false) implies (this@hasDedicatedMacKey is SymmetricKey.Integrated<A, I>)
@@ -183,11 +183,11 @@ fun <A : AuthCapability<K>, K : KeyType, I : WithNonce> SymmetricKey<A, I, K>.ha
 
 /**Use to smart cast*/
 @OptIn(ExperimentalContracts::class)
-fun <A : AuthCapability<K>, K : KeyType, I : WithNonce> SymmetricKey<A, I, K>.requiresNonce(): Boolean {
+fun <A : AuthCapability<K>, K : KeyType, I : NonceTrait> SymmetricKey<A, I, K>.requiresNonce(): Boolean {
     contract {
         returns(true) implies (this@requiresNonce is SymmetricKey.RequiringNonce<A, K>)
         returns(false) implies (this@requiresNonce is SymmetricKey.WithoutNonce<A, K>)
     }
-    return algorithm.withNonce is WithNonce.Yes
+    return algorithm.nonceTrait is NonceTrait.Required
 }
 

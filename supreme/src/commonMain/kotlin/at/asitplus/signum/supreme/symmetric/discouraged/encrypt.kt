@@ -28,7 +28,7 @@ fun <K : KeyType, A : AuthCapability.Authenticated<out K>> KeyWithNonceAuthentic
     Encryptor(
         second.algorithm,
         second.secretKey,
-        if (second is WithDedicatedMac) (second as WithDedicatedMac<WithNonce.Yes>).dedicatedMacKey else second.secretKey,
+        if (second is WithDedicatedMac) (second as WithDedicatedMac<NonceTrait.Required>).dedicatedMacKey else second.secretKey,
         first,
         authenticatedData,
     ).encrypt(data) as SealedBox.WithNonce.Authenticated<K>
@@ -51,7 +51,7 @@ fun <K : KeyType, A : AuthCapability<out K>> KeyWithNonce<A, out K>.encrypt(
     Encryptor(
         first.algorithm,
         first.secretKey,
-        if (first is WithDedicatedMac) (first as WithDedicatedMac<WithNonce.Yes>).dedicatedMacKey else first.secretKey,
+        if (first is WithDedicatedMac) (first as WithDedicatedMac<NonceTrait.Required>).dedicatedMacKey else first.secretKey,
         second,
         null,
     ).encrypt(data) as SealedBox.WithNonce<A, out K>
@@ -63,9 +63,9 @@ fun <K : KeyType, A : AuthCapability<out K>> KeyWithNonce<A, out K>.encrypt(
  * @see at.asitplus.signum.supreme.symmetric.randomNonce
  */
 @HazardousMaterials("Nonce/IV re-use can have catastrophic consequences!")
-fun <K : KeyType, A : AuthCapability<out K>> SymmetricKey<A, WithNonce.Yes, out K>.andPredefinedNonce(nonce: ByteArray) =
+fun <K : KeyType, A : AuthCapability<out K>> SymmetricKey<A, NonceTrait.Required, out K>.andPredefinedNonce(nonce: ByteArray) =
     catching {
-        require(nonce.size == algorithm.withNonce.length.bytes.toInt()) { "Nonce is empty!" }
+        require(nonce.size == algorithm.nonceTrait.length.bytes.toInt()) { "Nonce is empty!" }
         KeyWithNonce(this, nonce)
     }
 
@@ -76,17 +76,17 @@ fun <K : KeyType, A : AuthCapability<out K>> SymmetricKey<A, WithNonce.Yes, out 
  */
 @HazardousMaterials("Nonce/IV re-use can have catastrophic consequences!")
 @JvmName("authedKeyWithNonce")
-fun <K : KeyType, A : AuthCapability.Authenticated<out K>> SymmetricKey<out A, WithNonce.Yes, out K>.andPredefinedNonce(
+fun <K : KeyType, A : AuthCapability.Authenticated<out K>> SymmetricKey<out A, NonceTrait.Required, out K>.andPredefinedNonce(
     nonce: ByteArray
 ) =
     catching {
-        require(nonce.size == algorithm.withNonce.length.bytes.toInt()) { "Invalid nonce size!" }
+        require(nonce.size == algorithm.nonceTrait.length.bytes.toInt()) { "Invalid nonce size!" }
         KeyWithNonceAuthenticating(nonce, this)
     }
 
-private typealias KeyWithNonce<A, K> = Pair<SymmetricKey<out A, WithNonce.Yes, out K>, ByteArray>
+private typealias KeyWithNonce<A, K> = Pair<SymmetricKey<out A, NonceTrait.Required, out K>, ByteArray>
 //first and second are deliberately swapped
-private typealias KeyWithNonceAuthenticating<A, K> = Pair<ByteArray, SymmetricKey<out A, WithNonce.Yes, out K>>
+private typealias KeyWithNonceAuthenticating<A, K> = Pair<ByteArray, SymmetricKey<out A, NonceTrait.Required, out K>>
 
 
 val KeyWithNonceAuthenticating<*, *>.nonce: ByteArray @JvmName("nonceAuthenticating") get() = first

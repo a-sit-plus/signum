@@ -194,7 +194,7 @@ class `00SymmetricTest` : FreeSpec({
 
                     ciphertext.nonce.shouldNotBeNull()
                     if (iv != null) ciphertext.nonce.size shouldBe iv.size
-                    ciphertext.nonce.size shouldBe it.withNonce.length.bytes.toInt()
+                    ciphertext.nonce.size shouldBe it.nonceTrait.length.bytes.toInt()
                     iv?.let { ciphertext.nonce shouldBe iv }
                     ciphertext.algorithm.isAuthenticated() shouldBe false
 
@@ -287,7 +287,7 @@ class `00SymmetricTest` : FreeSpec({
                             else key.encrypt(plaintext, aad).getOrThrow()
 
                         ciphertext.nonce.shouldNotBeNull()
-                        ciphertext.nonce.size shouldBe alg.withNonce.length.bytes.toInt()
+                        ciphertext.nonce.size shouldBe alg.nonceTrait.length.bytes.toInt()
                         if (iv != null) ciphertext.nonce shouldBe iv
                         ciphertext.algorithm.authCapability.shouldBeInstanceOf<AuthCapability.Authenticated<*>>()
                         ciphertext.authenticatedData shouldBe aad
@@ -401,8 +401,8 @@ class `00SymmetricTest` : FreeSpec({
 
                         withData(
                             nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
-                            Random.Default.nextBytes((it.withNonce.length.bytes).toInt()),
-                            Random.Default.nextBytes((it.withNonce.length.bytes).toInt()),
+                            Random.Default.nextBytes((it.nonceTrait.length.bytes).toInt()),
+                            Random.Default.nextBytes((it.nonceTrait.length.bytes).toInt()),
                             null
                         ) { iv ->
                             withData(
@@ -433,7 +433,7 @@ class `00SymmetricTest` : FreeSpec({
 
                                 if (iv != null) ciphertext.nonce shouldBe iv
                                 ciphertext.nonce.shouldNotBeNull()
-                                ciphertext.nonce.size shouldBe it.withNonce.length.bytes.toInt()
+                                ciphertext.nonce.size shouldBe it.nonceTrait.length.bytes.toInt()
                                 ciphertext.algorithm.authCapability.shouldBeInstanceOf<AuthCapability.Authenticated<*>>()
                                 ciphertext.authenticatedData shouldBe aad
 
@@ -482,7 +482,7 @@ class `00SymmetricTest` : FreeSpec({
                                     authenticatedData = ciphertext.authenticatedData,
                                 ).getOrThrow().decrypt(
                                     SymmetricKey.WithDedicatedMac.RequiringNonce(
-                                        ciphertext.algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, WithNonce.Yes>, WithNonce.Yes, KeyType.WithDedicatedMacKey>,
+                                        ciphertext.algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, NonceTrait.Required>, NonceTrait.Required, KeyType.WithDedicatedMacKey>,
                                         key.secretKey,
                                         dedicatedMacKey = key.dedicatedMacKey.asList().shuffled().toByteArray()
                                     )
@@ -695,7 +695,7 @@ class `00SymmetricTest` : FreeSpec({
                 val wrongSized = mutableListOf<Int>()
                 while (wrongSized.size < 100) {
                     val wrong = Random.nextUInt(until = 1025u).toInt()
-                    if (wrong != alg.withNonce.length.bytes.toInt())
+                    if (wrong != alg.nonceTrait.length.bytes.toInt())
                         wrongSized += wrong
                 }
                 withData(wrongSized) { sz ->

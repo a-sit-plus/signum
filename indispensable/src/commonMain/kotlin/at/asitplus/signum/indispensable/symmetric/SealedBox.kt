@@ -8,32 +8,32 @@ val SealedBox<out AuthCapability.Authenticated<*>, *, *>.authTag
 val SealedBox<out AuthCapability.Authenticated<*>, *, *>.authenticatedData
     get() = (this as SealedBox.Authenticated<*, *>).authenticatedData
 
-val SealedBox<*, WithNonce.Yes, *>.nonce get() = (this as SealedBox.WithNonce<*, *>).nonce
+val SealedBox<*, NonceTrait.Required, *>.nonce get() = (this as SealedBox.WithNonce<*, *>).nonce
 
 /**
  * Represents symmetrically encrypted data. This is a separate class to more easily enforce type safety wrt. presence of
  * Construct using [SymmetricEncryptionAlgorithm.sealedBoxFrom]
  */
-sealed interface SealedBox<A : AuthCapability<K>, I : WithNonce, K : KeyType> {
+sealed interface SealedBox<A : AuthCapability<K>, I : NonceTrait, K : KeyType> {
     val algorithm: SymmetricEncryptionAlgorithm<A, I, K>
     val encryptedData: ByteArray
 
-    interface Authenticated<I : at.asitplus.signum.indispensable.symmetric.WithNonce, K : KeyType> : SealedBox<AuthCapability.Authenticated<K>, I, K> {
+    interface Authenticated<I : at.asitplus.signum.indispensable.symmetric.NonceTrait, K : KeyType> : SealedBox<AuthCapability.Authenticated<K>, I, K> {
         val authTag: ByteArray
         val authenticatedData: ByteArray?
     }
 
-    interface Unauthenticated<I : at.asitplus.signum.indispensable.symmetric.WithNonce> : SealedBox<AuthCapability.Unauthenticated, I, KeyType.Integrated>
+    interface Unauthenticated<I : at.asitplus.signum.indispensable.symmetric.NonceTrait> : SealedBox<AuthCapability.Unauthenticated, I, KeyType.Integrated>
 
     /**
      * A sealed box without an IV/nonce.
      * Construct using [SymmetricEncryptionAlgorithm.sealedBoxFrom]
      */
     sealed class WithoutNonce<A : AuthCapability<K>, K : KeyType>(
-        private val ciphertext: Ciphertext<A, WithNonce.No, SymmetricEncryptionAlgorithm<A, WithNonce.No, K>, K>
-    ) : SealedBox<A, WithNonce.No, K> {
+        private val ciphertext: Ciphertext<A, NonceTrait.Without, SymmetricEncryptionAlgorithm<A, NonceTrait.Without, K>, K>
+    ) : SealedBox<A, NonceTrait.Without, K> {
 
-        override val algorithm: SymmetricEncryptionAlgorithm<A, WithNonce.No, K> = ciphertext.algorithm
+        override val algorithm: SymmetricEncryptionAlgorithm<A, NonceTrait.Without, K> = ciphertext.algorithm
         override val encryptedData: ByteArray = ciphertext.encryptedData
 
         override fun toString(): String = "SealedBox.WithoutNonce(ciphertext=$ciphertext)"
@@ -56,13 +56,13 @@ sealed interface SealedBox<A : AuthCapability<K>, I : WithNonce, K : KeyType> {
         }
 
         class Unauthenticated
-        internal constructor(ciphertext: Ciphertext.Unauthenticated<WithNonce.No>) :
+        internal constructor(ciphertext: Ciphertext.Unauthenticated<NonceTrait.Without>) :
             WithoutNonce<AuthCapability.Unauthenticated, KeyType.Integrated>(ciphertext),
-            SealedBox.Unauthenticated<WithNonce.No>
+            SealedBox.Unauthenticated<NonceTrait.Without>
 
         class Authenticated<K : KeyType>
-        internal constructor(ciphertext: Ciphertext.Authenticated<AuthCapability.Authenticated<K>, WithNonce.No, SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<K>, WithNonce.No, K>, K>) :
-            WithoutNonce<AuthCapability.Authenticated<K>, K>(ciphertext), SealedBox.Authenticated<WithNonce.No, K> {
+        internal constructor(ciphertext: Ciphertext.Authenticated<AuthCapability.Authenticated<K>, NonceTrait.Without, SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<K>, NonceTrait.Without, K>, K>) :
+            WithoutNonce<AuthCapability.Authenticated<K>, K>(ciphertext), SealedBox.Authenticated<NonceTrait.Without, K> {
             override val authTag = ciphertext.authTag
             override val authenticatedData = ciphertext.authenticatedData
         }
@@ -74,11 +74,11 @@ sealed interface SealedBox<A : AuthCapability<K>, I : WithNonce, K : KeyType> {
      */
     sealed class WithNonce<A : AuthCapability<K>, K : KeyType>(
         val nonce: ByteArray,
-        private val ciphertext: Ciphertext<A, WithNonce.Yes, SymmetricEncryptionAlgorithm<A, WithNonce.Yes, K>, K>
-    ) : SealedBox<A, WithNonce.Yes, K> {
+        private val ciphertext: Ciphertext<A, NonceTrait.Required, SymmetricEncryptionAlgorithm<A, NonceTrait.Required, K>, K>
+    ) : SealedBox<A, NonceTrait.Required, K> {
 
 
-        override val algorithm: SymmetricEncryptionAlgorithm<A, WithNonce.Yes, K> = ciphertext.algorithm
+        override val algorithm: SymmetricEncryptionAlgorithm<A, NonceTrait.Required, K> = ciphertext.algorithm
         override val encryptedData: ByteArray = ciphertext.encryptedData
 
 
@@ -107,17 +107,17 @@ sealed interface SealedBox<A : AuthCapability<K>, I : WithNonce, K : KeyType> {
             "SealedBox.WithNonce(nonce=${nonce.toHexString(HexFormat.UpperCase)}, ciphertext=$ciphertext)"
 
         class Unauthenticated
-        internal constructor(nonce: ByteArray, ciphertext: Ciphertext.Unauthenticated<WithNonce.Yes>) :
+        internal constructor(nonce: ByteArray, ciphertext: Ciphertext.Unauthenticated<NonceTrait.Required>) :
             WithNonce<AuthCapability.Unauthenticated, KeyType.Integrated>(nonce, ciphertext),
-            SealedBox.Unauthenticated<WithNonce.Yes>
+            SealedBox.Unauthenticated<NonceTrait.Required>
 
         class Authenticated< K : KeyType>
         internal constructor(
             nonce: ByteArray,
-            ciphertext: Ciphertext.Authenticated<AuthCapability.Authenticated<K>, WithNonce.Yes, SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<K>, WithNonce.Yes, K>, K>
+            ciphertext: Ciphertext.Authenticated<AuthCapability.Authenticated<K>, NonceTrait.Required, SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<K>, NonceTrait.Required, K>, K>
         ) :
             WithNonce<AuthCapability.Authenticated<K>, K>(nonce, ciphertext),
-            SealedBox.Authenticated<WithNonce.Yes, K> {
+            SealedBox.Authenticated<NonceTrait.Required, K> {
             override val authTag = ciphertext.authTag
             override val authenticatedData = ciphertext.authenticatedData
         }
@@ -128,14 +128,14 @@ sealed interface SealedBox<A : AuthCapability<K>, I : WithNonce, K : KeyType> {
 /**
  * A generic ciphertext object, referencing the algorithm it was created by.
  */
-sealed interface Ciphertext<A : AuthCapability<K>, I : WithNonce, E : SymmetricEncryptionAlgorithm<A, I, K>, K : KeyType> {
+sealed interface Ciphertext<A : AuthCapability<K>, I : NonceTrait, E : SymmetricEncryptionAlgorithm<A, I, K>, K : KeyType> {
     val algorithm: E
     val encryptedData: ByteArray
 
     /**
      * An authenticated ciphertext, i.e. containing an [authTag], and, optionally [authenticatedData] (_Additional Authenticated Data_)
      */
-    class Authenticated<A : AuthCapability.Authenticated<K>, I : WithNonce, E : SymmetricEncryptionAlgorithm<A, I, K>, K : KeyType> internal constructor(
+    class Authenticated<A : AuthCapability.Authenticated<K>, I : NonceTrait, E : SymmetricEncryptionAlgorithm<A, I, K>, K : KeyType> internal constructor(
         override val algorithm: E,
         override val encryptedData: ByteArray,
         val authTag: ByteArray,
@@ -173,7 +173,7 @@ sealed interface Ciphertext<A : AuthCapability<K>, I : WithNonce, E : SymmetricE
     /**
      * An Unauthenticated ciphertext
      */
-    class Unauthenticated<I : WithNonce> internal constructor(
+    class Unauthenticated<I : NonceTrait> internal constructor(
         override val algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, I, KeyType.Integrated>,
         override val encryptedData: ByteArray,
     ) : Ciphertext<AuthCapability.Unauthenticated, I,
@@ -201,7 +201,7 @@ sealed interface Ciphertext<A : AuthCapability<K>, I : WithNonce, E : SymmetricE
 
 /**Use to smart-cast this sealed box*/
 @OptIn(ExperimentalContracts::class)
-fun <A : AuthCapability<K>, K : KeyType, I : WithNonce> SealedBox<A, I, K>.isAuthenticated(): Boolean {
+fun <A : AuthCapability<K>, K : KeyType, I : NonceTrait> SealedBox<A, I, K>.isAuthenticated(): Boolean {
     contract {
         returns(true) implies (this@isAuthenticated is SealedBox.Authenticated<I, K>)
         returns(false) implies (this@isAuthenticated is SealedBox.Unauthenticated<I>)
@@ -211,10 +211,10 @@ fun <A : AuthCapability<K>, K : KeyType, I : WithNonce> SealedBox<A, I, K>.isAut
 
 /**Use to smart-cast this sealed box*/
 @OptIn(ExperimentalContracts::class)
-fun <A : AuthCapability<K>, K : KeyType, I : WithNonce> SealedBox<A, I, out K>.hasNonce(): Boolean {
+fun <A : AuthCapability<K>, K : KeyType, I : NonceTrait> SealedBox<A, I, out K>.hasNonce(): Boolean {
     contract {
         returns(true) implies (this@hasNonce is SealedBox.WithNonce<A, K>)
         returns(false) implies (this@hasNonce is SealedBox.WithoutNonce<A, K>)
     }
-    return algorithm.withNonce is WithNonce.Yes
+    return algorithm.nonceTrait is NonceTrait.Required
 }

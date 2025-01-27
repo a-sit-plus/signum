@@ -64,7 +64,7 @@ class JvmSymmetricTest : FreeSpec({
                                 val secretKey = alg.randomKey()
                                 //GCM need to cast key, because alg is AES with no mode of ops, since we mix CBC and GCM in the test input
                                 val own =
-                                    (secretKey as SymmetricKey<AuthCapability.Authenticated<KeyType.Integrated>, WithNonce.Yes, KeyType.Integrated>).andPredefinedNonce(
+                                    (secretKey as SymmetricKey<AuthCapability.Authenticated<KeyType.Integrated>, NonceTrait.Required, KeyType.Integrated>).andPredefinedNonce(
                                         iv
                                     ).getOrThrow().encrypt(data = data, aad)
                                         .getOrThrow()
@@ -286,7 +286,7 @@ class JvmSymmetricTest : FreeSpec({
                     val fromJCA = jcaCipher.doFinal(data)
 
                     box.nonce.shouldNotBeNull()
-                    box.nonce.size shouldBe alg.withNonce.length.bytes.toInt()
+                    box.nonce.size shouldBe alg.nonceTrait.length.bytes.toInt()
                     box.isAuthenticated() shouldBe true
                     (box.encryptedData + box.authTag) shouldBe fromJCA
                     box.decrypt(secretKey).getOrThrow() shouldBe data
