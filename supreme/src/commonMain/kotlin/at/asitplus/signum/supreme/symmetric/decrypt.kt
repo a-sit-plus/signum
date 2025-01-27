@@ -3,7 +3,7 @@ package at.asitplus.signum.supreme.symmetric
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.symmetric.*
-import at.asitplus.signum.indispensable.symmetric.AuthType.Authenticated
+import at.asitplus.signum.indispensable.symmetric.AuthCapability.Authenticated
 import at.asitplus.signum.supreme.mac.mac
 import kotlin.jvm.JvmName
 
@@ -29,7 +29,7 @@ fun SealedBox<*,*,*>.decrypt(key: SymmetricKey<*,*,*>)  = catching {
             )
         }
 
-        is AuthType.Unauthenticated -> (this as SealedBox<AuthType.Unauthenticated, *, KeyType.Integrated>).decryptInternal(
+        is AuthCapability.Unauthenticated -> (this as SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated>).decryptInternal(
             key.secretKey
         )
     }
@@ -39,11 +39,11 @@ fun SealedBox<*,*,*>.decrypt(key: SymmetricKey<*,*,*>)  = catching {
  * Attempts to decrypt this ciphertext (which may hold IV, and in case of an authenticated ciphertext, authenticated data and auth tag) using the provided [key].
  * This is the function you typically want to use.
  */
-fun <A : AuthType<K>, I : Nonce, K : KeyType> SealedBox<out A, I, out K>.decrypt(
+fun <A : AuthCapability<K>, I : WithNonce, K : KeyType> SealedBox<out A, I, out K>.decrypt(
     key: SymmetricKey<out A, I, out K>
 ): KmmResult<ByteArray> = catching {
     require(algorithm == key.algorithm) { "Somebody likes cursed casts!" }
-    when (algorithm.authCapability as AuthType<*>) {
+    when (algorithm.authCapability as AuthCapability<*>) {
         is Authenticated.Integrated -> (this as SealedBox<Authenticated.Integrated, *, KeyType.Integrated>).decryptInternal(
             key.secretKey
         )
@@ -55,7 +55,7 @@ fun <A : AuthType<K>, I : Nonce, K : KeyType> SealedBox<out A, I, out K>.decrypt
             )
         }
 
-        is AuthType.Unauthenticated -> (this as SealedBox<AuthType.Unauthenticated, *, KeyType.Integrated>).decryptInternal(
+        is AuthCapability.Unauthenticated -> (this as SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated>).decryptInternal(
             key.secretKey
         )
     }
@@ -71,7 +71,7 @@ private fun SealedBox<Authenticated.Integrated, *, KeyType.Integrated>.decryptIn
 }
 
 @JvmName("decryptRaw")
-private fun SealedBox<AuthType.Unauthenticated, *, KeyType.Integrated>.decryptInternal(
+private fun SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated>.decryptInternal(
     secretKey: ByteArray
 ): ByteArray {
     require(secretKey.size.toUInt() == algorithm.keySize.bytes) { "Key must be exactly ${algorithm.keySize} bits long" }
@@ -101,12 +101,12 @@ private fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedic
     if (!(mac.mac(macKey, hmacInput).getOrThrow().contentEquals(authTag)))
         throw IllegalArgumentException("Auth Tag mismatch!")
 
-    val box: SealedBox<AuthType.Unauthenticated, *, KeyType.Integrated> =
-        (if (this is SealedBox.WithNonce<*, *>) (innerCipher as SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Required, KeyType.Integrated>).sealedBox(
+    val box: SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated> =
+        (if (this is SealedBox.WithNonce<*, *>) (innerCipher as SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, WithNonce.Yes, KeyType.Integrated>).sealedBoxFrom(
             nonce,
             encryptedData
-        ) else (innerCipher as SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Without, KeyType.Integrated>).sealedBox(
+        ) else (innerCipher as SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, WithNonce.No, KeyType.Integrated>).sealedBoxFrom(
             encryptedData
-        )).getOrThrow() as SealedBox<AuthType.Unauthenticated, *, KeyType.Integrated>
+        )).getOrThrow() as SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated>
     return box.doDecrypt(secretKey)
 }

@@ -6,6 +6,7 @@ import at.asitplus.signum.supreme.succeed
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.should
+import io.kotest.matchers.shouldBe
 
 @OptIn(HazardousMaterials::class)
 class `00ApiTest` : FreeSpec({
@@ -23,8 +24,9 @@ class `00ApiTest` : FreeSpec({
 
             //create a key, encrypt and decrypt works!
             val key = algorithm.randomKey()
-            val box = key.encrypt("Harvest".encodeToByteArray()).getOrThrow()
-            box.decrypt(key) should succeed
+            val plain = "Harvest".encodeToByteArray()
+            val box = key.encrypt(plain).getOrThrow()
+            box.decrypt(key).onSuccess { it shouldBe plain } should succeed
 
 
             //if you load a key, you are forced to know whether a dedicated MAC key is required
@@ -52,12 +54,12 @@ class `00ApiTest` : FreeSpec({
                         //algorithm.sealedBox(byteArrayOf())
                         //compile error
                         //algorithm.sealedBox(byteArrayOf(),byteArrayOf())
-                        algorithm.sealedBox(
+                        algorithm.sealedBoxFrom(
                             byteArrayOf(), //nonce
                             byteArrayOf(), //encrypted
                             byteArrayOf(), //nonce
                         )
-                        algorithm.sealedBox(
+                        algorithm.sealedBoxFrom(
                             byteArrayOf(),
                             byteArrayOf(),
                             byteArrayOf(),
@@ -68,7 +70,7 @@ class `00ApiTest` : FreeSpec({
                     false -> {
                         //Compile error
                         //algorithm.sealedBox(byteArrayOf())
-                        algorithm.sealedBox(byteArrayOf(), byteArrayOf())
+                        algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf())
                         //Compile error
                         //algorithm.sealedBox(byteArrayOf(), byteArrayOf(),byteArrayOf())
                         //Compile error
@@ -82,15 +84,15 @@ class `00ApiTest` : FreeSpec({
                     true -> {
                         //compile error
                         //algorithm.sealedBox(byteArrayOf())
-                        algorithm.sealedBox(byteArrayOf(), byteArrayOf())
+                        algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf())
                         //why ambiguous??
-                        algorithm.sealedBox(byteArrayOf(), byteArrayOf(), byteArrayOf())
+                        algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf(), byteArrayOf())
                         //compile error
                         //algorithm.sealedBox(byteArrayOf(), byteArrayOf(), byteArrayOf(), byteArrayOf())
                     }
 
                     false -> {
-                        algorithm.sealedBox(byteArrayOf())
+                        algorithm.sealedBoxFrom(byteArrayOf())
                         //compile error
                         //algorithm.sealedBox(byteArrayOf(),byteArrayOf())
                         //compile error
@@ -112,12 +114,12 @@ class `00ApiTest` : FreeSpec({
                         //compile error
                         //algorithm.sealedBox(byteArrayOf(),byteArrayOf())
                         //why ambiguous?
-                        algorithm.sealedBox(
+                        algorithm.sealedBoxFrom(
                             byteArrayOf(), //nonce
                             byteArrayOf(), //encrypted
                             byteArrayOf(), //nonce
                         )
-                        algorithm.sealedBox(
+                        algorithm.sealedBoxFrom(
                             byteArrayOf(), //nonce
                             byteArrayOf(), //nonce
                             byteArrayOf(), //nonce
@@ -128,8 +130,8 @@ class `00ApiTest` : FreeSpec({
                     false -> {
                         //Compile error
                         //algorithm.sealedBox(byteArrayOf())
-                        algorithm.sealedBox(byteArrayOf(), byteArrayOf())
-                        algorithm.sealedBox(byteArrayOf(), byteArrayOf(), byteArrayOf())
+                        algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf())
+                        algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf(), byteArrayOf())
                         //Compile error
                         //algorithm.sealedBox(byteArrayOf(), byteArrayOf(),byteArrayOf(), byteArrayOf())
 
@@ -141,7 +143,7 @@ class `00ApiTest` : FreeSpec({
                     true -> {
                         //compile error
                         //algorithm.sealedBox(byteArrayOf())
-                        algorithm.sealedBox(byteArrayOf(), byteArrayOf())
+                        algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf())
                         //compile error
                         //algorithm.sealedBox(byteArrayOf(), byteArrayOf(), byteArrayOf())
                         //compile error
@@ -149,7 +151,7 @@ class `00ApiTest` : FreeSpec({
                     }
 
                     false -> {
-                        algorithm.sealedBox(byteArrayOf())
+                        algorithm.sealedBoxFrom(byteArrayOf())
                         //compile error
                         //algorithm.sealedBox(byteArrayOf(),byteArrayOf())
                         //compile error
@@ -191,14 +193,14 @@ class `00ApiTest` : FreeSpec({
                         //algorithm.keyFrom(byteArrayOf(),byteArrayOf())
                     }
                 }
-                //TODO this should not compile
+                //compile error
                 //algorithm.sealedBox(byteArrayOf(), byteArrayOf())
 
-                //resolves correctly, but still
-                algorithm.sealedBox(byteArrayOf(), byteArrayOf(), byteArrayOf())
+                //correct
+                algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf(), byteArrayOf())
 
                 //correct
-                algorithm.sealedBox(byteArrayOf(), byteArrayOf(), byteArrayOf(), byteArrayOf())
+                algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf(), byteArrayOf(), byteArrayOf())
 
         }
     }

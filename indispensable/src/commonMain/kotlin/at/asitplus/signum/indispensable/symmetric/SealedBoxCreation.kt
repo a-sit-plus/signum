@@ -11,7 +11,7 @@ import kotlin.jvm.JvmName
  * Returns a KmmResult purely for the sake of consistency
  */
 @JvmName("sealedBoxUnauthedWithNonce")
-fun SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Required, KeyType.Integrated>.sealedBox(
+fun SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, WithNonce.Yes, KeyType.Integrated>.sealedBoxFrom(
     nonce: ByteArray,
     encryptedData: ByteArray
 ) = catching {
@@ -29,7 +29,7 @@ fun SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Required, KeyTy
  * Use this function to load external encrypted data for decryption.
  * Returns a KmmResult purely for the sake of consistency
  */
-fun SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Without, KeyType.Integrated>.sealedBox(
+fun SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, WithNonce.No, KeyType.Integrated>.sealedBoxFrom(
     encryptedData: ByteArray
 ) = catching {
     SealedBox.WithoutNonce.Unauthenticated(
@@ -48,13 +48,13 @@ fun SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Without, KeyTyp
  * @return [at.asitplus.KmmResult.failure] on illegal auth tag length
  */
 @JvmName("sealedBoxAuthenticatedWith")
-fun SymmetricEncryptionAlgorithm<AuthType.Authenticated<*>, Nonce.Required, *>.sealedBox(
+fun SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, WithNonce.Yes, *>.sealedBoxFrom(
     nonce: ByteArray,
     encryptedData: ByteArray,
     authTag: ByteArray,
     authenticatedData: ByteArray? = null
 ) = catching {
-    require(authTag.size == this.authCapability.tagLen.bytes.toInt()) { "Illegal auth tag length! expected: ${authTag.size * 8}, actual: ${this.authCapability.tagLen.bits}" }
+    require(authTag.size == this.authCapability.tagLength.bytes.toInt()) { "Illegal auth tag length! expected: ${authTag.size * 8}, actual: ${this.authCapability.tagLength.bits}" }
     when (isIntegrated()) {
         false -> SealedBox.WithNonce.Authenticated<KeyType.WithDedicatedMacKey>(
             nonce,
@@ -75,19 +75,19 @@ fun SymmetricEncryptionAlgorithm<AuthType.Authenticated<*>, Nonce.Required, *>.s
  * @return [at.asitplus.KmmResult.failure] on illegal auth tag length
  */
 @JvmName("sealedBoxAuthenticatedWithout")
-fun SymmetricEncryptionAlgorithm<AuthType.Authenticated<*>, Nonce.Without, *>.sealedBox(
+fun SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, WithNonce.No, *>.sealedBoxFrom(
     encryptedData: ByteArray,
     authTag: ByteArray,
     authenticatedData: ByteArray? = null
 ) = catching {
-    require(authTag.size == this.authCapability.tagLen.bytes.toInt()) { "Illegal auth tag length! expected: ${authTag.size * 8}, actual: ${this.authCapability.tagLen.bits}" }
+    require(authTag.size == this.authCapability.tagLength.bytes.toInt()) { "Illegal auth tag length! expected: ${authTag.size * 8}, actual: ${this.authCapability.tagLength.bits}" }
     when (hasDedicatedMac()) {
         true -> SealedBox.WithoutNonce.Authenticated<KeyType.WithDedicatedMacKey>(
             authenticatedCipherText(encryptedData, authTag, authenticatedData)
         )
 
         false -> SealedBox.WithoutNonce.Authenticated<KeyType.Integrated>(
-            (this as SymmetricEncryptionAlgorithm<AuthType.Authenticated.Integrated, Nonce.Without, KeyType.Integrated>).authenticatedCipherText(
+            (this as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.Integrated, WithNonce.No, KeyType.Integrated>).authenticatedCipherText(
                 encryptedData,
                 authTag,
                 authenticatedData
@@ -96,7 +96,7 @@ fun SymmetricEncryptionAlgorithm<AuthType.Authenticated<*>, Nonce.Without, *>.se
     }
 }
 
-private inline fun <reified A : AuthType.Authenticated<K>, reified I : Nonce, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.authenticatedCipherText(
+private inline fun <reified A : AuthCapability.Authenticated<K>, reified I : WithNonce, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.authenticatedCipherText(
     encryptedData: ByteArray,
     authTag: ByteArray,
     authenticatedData: ByteArray? = null

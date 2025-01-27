@@ -4,7 +4,7 @@ import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.BlockCipher
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
-import at.asitplus.signum.indispensable.symmetric.sealedBox
+import at.asitplus.signum.indispensable.symmetric.sealedBoxFrom
 import at.asitplus.signum.internals.swiftcall
 import at.asitplus.signum.internals.toByteArray
 import at.asitplus.signum.internals.toNSData
@@ -49,7 +49,7 @@ internal object AESIOS {
             val bytes: ByteArray = swiftcall {
                 CBC.crypt(kCCEncrypt.toLong(), padded.toNSData(), key.toNSData(), nonce!!.toNSData(), error)
             }.toByteArray()
-            alg.sealedBox(nonce!!, bytes).getOrThrow()
+            alg.sealedBoxFrom(nonce!!, bytes).getOrThrow()
         }
 
         is AES.ECB -> {
@@ -57,18 +57,18 @@ internal object AESIOS {
             val bytes: ByteArray = swiftcall {
                 ECB.crypt(kCCEncrypt.toLong(), padded.toNSData(), key.toNSData(), error)
             }.toByteArray()
-            alg.sealedBox(bytes).getOrThrow()
+            alg.sealedBoxFrom(bytes).getOrThrow()
         }
 
         is AES.WRAP.RFC3394 -> {
             val bytes = swiftcall { WRAP.wrap(data.toNSData(), key.toNSData(), error) }.toByteArray()
-            alg.sealedBox(bytes).getOrThrow()
+            alg.sealedBoxFrom(bytes).getOrThrow()
         }
 
         is AES.GCM -> {
             val ciphertext = GCM.encrypt(data.toNSData(), key.toNSData(), nonce?.toNSData(), aad?.toNSData())
             if (ciphertext == null) throw UnsupportedOperationException("Error from swift code!")
-            alg.sealedBox(
+            alg.sealedBoxFrom(
                 ciphertext.iv().toByteArray(),
                 ciphertext.ciphertext().toByteArray(),
                 ciphertext.authTag().toByteArray(),

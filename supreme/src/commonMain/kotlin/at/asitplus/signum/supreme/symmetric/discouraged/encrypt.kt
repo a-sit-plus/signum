@@ -21,14 +21,14 @@ import kotlin.jvm.JvmName
  */
 @HazardousMaterials
 @JvmName("encryptAuthenticatedWithNonce")
-fun <K : KeyType, A : AuthType.Authenticated<out K>> KeyWithNonceAuthenticating<A, out K>.encrypt(
+fun <K : KeyType, A : AuthCapability.Authenticated<out K>> KeyWithNonceAuthenticating<A, out K>.encrypt(
     data: ByteArray,
     authenticatedData: ByteArray? = null
 ): KmmResult<SealedBox.WithNonce.Authenticated<K>> = catching {
     Encryptor(
         second.algorithm,
         second.secretKey,
-        if (second is WithDedicatedMac) (second as WithDedicatedMac<Nonce.Required>).dedicatedMacKey else second.secretKey,
+        if (second is WithDedicatedMac) (second as WithDedicatedMac<WithNonce.Yes>).dedicatedMacKey else second.secretKey,
         first,
         authenticatedData,
     ).encrypt(data) as SealedBox.WithNonce.Authenticated<K>
@@ -36,13 +36,13 @@ fun <K : KeyType, A : AuthType.Authenticated<out K>> KeyWithNonceAuthenticating<
 
 @HazardousMaterials
 @JvmName("encryptWithNonce")
-fun <K : KeyType, A : AuthType<out K>> KeyWithNonce<A, out K>.encrypt(
+fun <K : KeyType, A : AuthCapability<out K>> KeyWithNonce<A, out K>.encrypt(
     data: ByteArray
 ): KmmResult<SealedBox.WithNonce<A, out K>> = catching {
     Encryptor(
         first.algorithm,
         first.secretKey,
-        if (first is WithDedicatedMac) (first as WithDedicatedMac<Nonce.Required>).dedicatedMacKey else first.secretKey,
+        if (first is WithDedicatedMac) (first as WithDedicatedMac<WithNonce.Yes>).dedicatedMacKey else first.secretKey,
         second,
         null,
     ).encrypt(data) as SealedBox.WithNonce<A, out K>
@@ -54,9 +54,9 @@ fun <K : KeyType, A : AuthType<out K>> KeyWithNonce<A, out K>.encrypt(
  * @see at.asitplus.signum.supreme.symmetric.randomNonce
  */
 @HazardousMaterials("Nonce/IV re-use can have catastrophic consequences!")
-fun <K : KeyType, A : AuthType<out K>> SymmetricKey<A, Nonce.Required, out K>.andPredefinedNonce(nonce: ByteArray) =
+fun <K : KeyType, A : AuthCapability<out K>> SymmetricKey<A, WithNonce.Yes, out K>.andPredefinedNonce(nonce: ByteArray) =
     catching {
-        require(nonce.size == algorithm.nonce.length.bytes.toInt()) { "Nonce is empty!" }
+        require(nonce.size == algorithm.withNonce.length.bytes.toInt()) { "Nonce is empty!" }
         KeyWithNonce(this, nonce)
     }
 
@@ -67,12 +67,12 @@ fun <K : KeyType, A : AuthType<out K>> SymmetricKey<A, Nonce.Required, out K>.an
  */
 @HazardousMaterials("Nonce/IV re-use can have catastrophic consequences!")
 @JvmName("authedKeyWithNonce")
-fun <K : KeyType, A : AuthType.Authenticated<out K>> SymmetricKey<out A, Nonce.Required, out K>.andPredefinedNonce(nonce: ByteArray) =
+fun <K : KeyType, A : AuthCapability.Authenticated<out K>> SymmetricKey<out A, WithNonce.Yes, out K>.andPredefinedNonce(nonce: ByteArray) =
     catching {
-        require(nonce.size == algorithm.nonce.length.bytes.toInt()) { "Invalid nonce size!" }
+        require(nonce.size == algorithm.withNonce.length.bytes.toInt()) { "Invalid nonce size!" }
         KeyWithNonceAuthenticating(nonce, this)
     }
 
-private typealias KeyWithNonce<A, K> = Pair<SymmetricKey<out A, Nonce.Required, out K>, ByteArray>
+private typealias KeyWithNonce<A, K> = Pair<SymmetricKey<out A, WithNonce.Yes, out K>, ByteArray>
 //types first and second are deliberately swapped
-private typealias KeyWithNonceAuthenticating<A, K> = Pair<ByteArray, SymmetricKey<out A, Nonce.Required, out K>>
+private typealias KeyWithNonceAuthenticating<A, K> = Pair<ByteArray, SymmetricKey<out A, WithNonce.Yes, out K>>
