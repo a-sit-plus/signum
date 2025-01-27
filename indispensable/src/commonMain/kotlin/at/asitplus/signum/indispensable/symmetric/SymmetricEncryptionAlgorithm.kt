@@ -64,6 +64,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthType<out K>, out I : N
      */
     val keySize: BitLength
 
+    //TODO: why are there ambiguities for sealed box creation?
     sealed interface Unauthenticated<out I : Nonce> :
         SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, I, KeyType.Integrated>{
             companion object
@@ -282,13 +283,13 @@ val DefaultDedicatedMacInputCalculation: DedicatedMacInputCalculation =
     fun MAC.(ciphertext: ByteArray, iv: ByteArray, aad: ByteArray): ByteArray =
         aad + iv + ciphertext + aad.size.toLong().encodeTo8Bytes()
 
-sealed class Nonce {
+sealed interface Nonce {
     /**
      * Indicates that a cipher requires an initialization vector
      */
-    class Required(val length: BitLength) : Nonce()
+    class Required(val length: BitLength) : Nonce
 
-    object Without : Nonce()
+    object Without : Nonce
 }
 
 abstract class BlockCipher<A : AuthType<K>, I : Nonce, K : KeyType>(
@@ -336,6 +337,9 @@ fun SymmetricEncryptionAlgorithm<*, *, *>.isAuthenticated(): Boolean {
 fun SymmetricEncryptionAlgorithm<*, *, *>.hasDedicatedMac(): Boolean {
     contract {
         returns(true) implies (this@hasDedicatedMac is SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac<*, *>)
+        returns(false) implies (
+                (this@hasDedicatedMac is SymmetricEncryptionAlgorithm.Unauthenticated
+                        || this@hasDedicatedMac is SymmetricEncryptionAlgorithm.Authenticated.Integrated))
     }
     return this.authCapability is AuthType.Authenticated.WithDedicatedMac<*, *>
 }
@@ -369,6 +373,10 @@ fun <A : AuthType<K>, K : KeyType, I : Nonce> SymmetricEncryptionAlgorithm<A, I,
 fun <I : Nonce> SymmetricEncryptionAlgorithm<*, I, *>.hasDedicatedMac(): Boolean {
     contract {
         returns(true) implies (this@hasDedicatedMac is SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac<*, I>)
+        returns(false) implies (
+                (this@hasDedicatedMac is SymmetricEncryptionAlgorithm.Unauthenticated<I>
+                        || this@hasDedicatedMac is SymmetricEncryptionAlgorithm.Authenticated.Integrated<I>))
+
     }
     return this.authCapability is AuthType.Authenticated.WithDedicatedMac<*, *>
 }

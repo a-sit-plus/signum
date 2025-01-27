@@ -9,10 +9,37 @@ import kotlin.jvm.JvmName
 
 
 /**
- * Attempts to decrypt this ciphertext (which also holds IV, and in case of an authenticated ciphertext, AAD and auth tag) using the provided [key].
+ * Attempts to decrypt this ciphertext (which also holds IV, and in case of an authenticated ciphertext, authenticated data and auth tag) using the provided [key].
+ * This is the generic, untyped decryption function should be avoided, but is required for convenience.
+ */
+@JvmName("decryptGeneric")
+@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE") //needed?
+@kotlin.internal.LowPriorityInOverloadResolution     //needed?
+fun SealedBox<*,*,*>.decrypt(key: SymmetricKey<*,*,*>)  = catching {
+    require(algorithm == key.algorithm) { "Algorithm mismatch! expected: $algorithm, actual: ${key.algorithm}" }
+    when (algorithm.authCapability) {
+        is Authenticated.Integrated -> (this as SealedBox<Authenticated.Integrated, *, KeyType.Integrated>).decryptInternal(
+            key.secretKey
+        )
+
+        is Authenticated.WithDedicatedMac<*, *> -> {
+            key as SymmetricKey.WithDedicatedMac
+            (this as SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedicatedMacKey>).decryptInternal(
+                key.secretKey, key.dedicatedMacKey
+            )
+        }
+
+        is AuthType.Unauthenticated -> (this as SealedBox<AuthType.Unauthenticated, *, KeyType.Integrated>).decryptInternal(
+            key.secretKey
+        )
+    }
+}
+
+/**
+ * Attempts to decrypt this ciphertext (which may hold IV, and in case of an authenticated ciphertext, authenticated data and auth tag) using the provided [key].
  * This is the function you typically want to use.
  */
-fun <A: AuthType<K>, I:Nonce, K: KeyType> SealedBox<out A,I,out  K>.decrypt(
+fun <A : AuthType<K>, I : Nonce, K : KeyType> SealedBox<out A, I, out K>.decrypt(
     key: SymmetricKey<out A, I, out K>
 ): KmmResult<ByteArray> = catching {
     require(algorithm == key.algorithm) { "Somebody likes cursed casts!" }
