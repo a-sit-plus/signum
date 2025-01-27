@@ -58,10 +58,10 @@ class `00ApiTest` : FreeSpec({
                             byteArrayOf(), //nonce
                         )
                         algorithm.sealedBox(
-                            byteArrayOf(), //nonce
-                            byteArrayOf(), //nonce
-                            byteArrayOf(), //nonce
-                            byteArrayOf(), //nonce
+                            byteArrayOf(),
+                            byteArrayOf(),
+                            byteArrayOf(),
+                            byteArrayOf(),
                         )
                     }
 
@@ -83,8 +83,9 @@ class `00ApiTest` : FreeSpec({
                         //compile error
                         //algorithm.sealedBox(byteArrayOf())
                         algorithm.sealedBox(byteArrayOf(), byteArrayOf())
+                        //why ambiguous??
                         algorithm.sealedBox(byteArrayOf(), byteArrayOf(), byteArrayOf())
-                        //this should not be possible, but somehow it is
+                        //compile error
                         //algorithm.sealedBox(byteArrayOf(), byteArrayOf(), byteArrayOf(), byteArrayOf())
                     }
 
@@ -110,6 +111,7 @@ class `00ApiTest` : FreeSpec({
                         //algorithm.sealedBox(byteArrayOf())
                         //compile error
                         //algorithm.sealedBox(byteArrayOf(),byteArrayOf())
+                        //why ambiguous?
                         algorithm.sealedBox(
                             byteArrayOf(), //nonce
                             byteArrayOf(), //encrypted
