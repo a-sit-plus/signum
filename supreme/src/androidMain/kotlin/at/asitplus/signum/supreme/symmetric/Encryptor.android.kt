@@ -8,7 +8,7 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-actual internal fun <T, A : AuthCapability<out K>, I : WithNonce, K : KeyType> initCipher(
+actual internal fun <T, A : AuthCapability<out K>, I : NonceTrait, K : KeyType> initCipher(
     algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
     key: ByteArray,
     nonce: ByteArray?,
@@ -43,7 +43,7 @@ actual internal fun <T, A : AuthCapability<out K>, I : WithNonce, K : KeyType> i
     }
 }
 
-internal actual fun <A : AuthCapability<out K>, I : WithNonce, K : KeyType> CipherParam<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K> {
+internal actual fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> CipherParam<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K> {
     (this as CipherParam<Cipher, A, K>)
     val jcaCiphertext = platformData.doFinal(data)
 
@@ -60,7 +60,7 @@ internal actual fun <A : AuthCapability<out K>, I : WithNonce, K : KeyType> Ciph
         true -> {
             when (alg.isAuthenticated()) {
                 true -> {
-                    (alg as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, WithNonce.Yes, *>)
+                    (alg as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Required, *>)
                     alg.sealedBoxFrom(nonce!!, ciphertext, authTag!!, aad)
                 }
 
@@ -70,7 +70,7 @@ internal actual fun <A : AuthCapability<out K>, I : WithNonce, K : KeyType> Ciph
 
         false -> when (alg.isAuthenticated()) {
             true -> {
-                (alg as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, WithNonce.No, *>)
+                (alg as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Without, *>)
                 alg.sealedBoxFrom(ciphertext, authTag!!, aad)
             }
 
@@ -144,7 +144,7 @@ internal actual fun SealedBox<AuthCapability.Unauthenticated, *, out KeyType.Int
 }
 
 internal fun gcmLikeDecrypt(
-    algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<KeyType.Integrated>, WithNonce.Yes, KeyType.Integrated>,
+    algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<KeyType.Integrated>, NonceTrait.Required, KeyType.Integrated>,
     secretKey: ByteArray,
     nonce: ByteArray,
     encryptedData: ByteArray,

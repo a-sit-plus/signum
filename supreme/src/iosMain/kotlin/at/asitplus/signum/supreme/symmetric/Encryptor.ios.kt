@@ -7,7 +7,7 @@ import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.A
 import kotlinx.cinterop.ExperimentalForeignApi
 
 
-actual internal fun <T, A : AuthCapability<out K>, I : WithNonce, K : KeyType> initCipher(
+actual internal fun <T, A : AuthCapability<out K>, I : NonceTrait, K : KeyType> initCipher(
     algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
     key: ByteArray,
     nonce: ByteArray?,
@@ -19,12 +19,12 @@ actual internal fun <T, A : AuthCapability<out K>, I : WithNonce, K : KeyType> i
         nonce ?: algorithm.randomNonce()
     else null
     return CipherParam<ByteArray, AuthCapability<KeyType>, KeyType>(
-        algorithm as SymmetricEncryptionAlgorithm<AuthCapability<KeyType>, WithNonce.Yes, KeyType>, key, nonce, aad
+        algorithm as SymmetricEncryptionAlgorithm<AuthCapability<KeyType>, NonceTrait.Required, KeyType>, key, nonce, aad
     ) as CipherParam<T, A, K>
 }
 
 @OptIn(ExperimentalForeignApi::class)
-internal actual fun <A : AuthCapability<out K>, I : WithNonce, K : KeyType> CipherParam<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K> {
+internal actual fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> CipherParam<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K> {
     this as CipherParam<ByteArray, A, K>
 
     return when (alg) {
@@ -39,7 +39,7 @@ internal actual fun <A : AuthCapability<out K>, I : WithNonce, K : KeyType> Ciph
 internal actual fun SealedBox<Authenticated.Integrated, *, out KeyType.Integrated>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
-    if (algorithm.withNonce !is WithNonce.Yes) TODO("ALGORITHM UNSUPPORTED")
+    if (algorithm.nonceTrait !is NonceTrait.Required) TODO("ALGORITHM UNSUPPORTED")
     this as SealedBox.WithNonce
     return when (algorithm) {
         is AES<*, *, *> -> AESIOS.gcmDecrypt(encryptedData, secretKey, nonce, authTag, authenticatedData)

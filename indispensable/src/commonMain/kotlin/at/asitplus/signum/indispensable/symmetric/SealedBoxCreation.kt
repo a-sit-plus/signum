@@ -11,7 +11,7 @@ import kotlin.jvm.JvmName
  * Returns a KmmResult purely for the sake of consistency
  */
 @JvmName("sealedBoxUnauthedWithNonce")
-fun SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, WithNonce.Yes, KeyType.Integrated>.sealedBoxFrom(
+fun SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Required, KeyType.Integrated>.sealedBoxFrom(
     nonce: ByteArray,
     encryptedData: ByteArray
 ) = catching {
@@ -29,7 +29,7 @@ fun SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, WithNonce.Yes, 
  * Use this function to load external encrypted data for decryption.
  * Returns a KmmResult purely for the sake of consistency
  */
-fun SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, WithNonce.No, KeyType.Integrated>.sealedBoxFrom(
+fun SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Without, KeyType.Integrated>.sealedBoxFrom(
     encryptedData: ByteArray
 ) = catching {
     SealedBox.WithoutNonce.Unauthenticated(
@@ -48,7 +48,7 @@ fun SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, WithNonce.No, K
  * @return [at.asitplus.KmmResult.failure] on illegal auth tag length
  */
 @JvmName("sealedBoxAuthenticatedWith")
-fun SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, WithNonce.Yes, *>.sealedBoxFrom(
+fun SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Required, *>.sealedBoxFrom(
     nonce: ByteArray,
     encryptedData: ByteArray,
     authTag: ByteArray,
@@ -75,7 +75,7 @@ fun SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, WithNonce.Yes,
  * @return [at.asitplus.KmmResult.failure] on illegal auth tag length
  */
 @JvmName("sealedBoxAuthenticatedWithout")
-fun SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, WithNonce.No, *>.sealedBoxFrom(
+fun SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Without, *>.sealedBoxFrom(
     encryptedData: ByteArray,
     authTag: ByteArray,
     authenticatedData: ByteArray? = null
@@ -87,7 +87,7 @@ fun SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, WithNonce.No, 
         )
 
         false -> SealedBox.WithoutNonce.Authenticated<KeyType.Integrated>(
-            (this as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.Integrated, WithNonce.No, KeyType.Integrated>).authenticatedCipherText(
+            (this as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.Integrated, NonceTrait.Without, KeyType.Integrated>).authenticatedCipherText(
                 encryptedData,
                 authTag,
                 authenticatedData
@@ -96,7 +96,7 @@ fun SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, WithNonce.No, 
     }
 }
 
-private inline fun <reified A : AuthCapability.Authenticated<K>, reified I : WithNonce, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.authenticatedCipherText(
+private inline fun <reified A : AuthCapability.Authenticated<K>, reified I : NonceTrait, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.authenticatedCipherText(
     encryptedData: ByteArray,
     authTag: ByteArray,
     authenticatedData: ByteArray? = null

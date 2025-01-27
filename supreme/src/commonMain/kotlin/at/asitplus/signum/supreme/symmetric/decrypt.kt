@@ -43,7 +43,7 @@ fun SealedBox<*,*,*>.decrypt(key: SymmetricKey<*,*,*>)  = catching {
  * a [AES.CBC] [SealedBox].
  * In such cases, this function will immediately return a [KmmResult.failure].
  */
-fun <A : AuthCapability<K>, I : WithNonce, K : KeyType> SealedBox< A, I, K>.decrypt(
+fun <A : AuthCapability<K>, I : NonceTrait, K : KeyType> SealedBox< A, I, K>.decrypt(
     key: SymmetricKey<A, I, K>
 ): KmmResult<ByteArray> = catching {
     require(algorithm == key.algorithm) { "Somebody likes cursed casts!" }
@@ -108,10 +108,10 @@ private fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedic
         throw IllegalArgumentException("Auth Tag mismatch!")
 
     val box: SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated> =
-        (if (this is SealedBox.WithNonce<*, *>) (innerCipher as SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, WithNonce.Yes, KeyType.Integrated>).sealedBoxFrom(
+        (if (this is SealedBox.WithNonce<*, *>) (innerCipher as SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Required, KeyType.Integrated>).sealedBoxFrom(
             nonce,
             encryptedData
-        ) else (innerCipher as SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, WithNonce.No, KeyType.Integrated>).sealedBoxFrom(
+        ) else (innerCipher as SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Without, KeyType.Integrated>).sealedBoxFrom(
             encryptedData
         )).getOrThrow() as SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated>
     return box.doDecrypt(secretKey)
