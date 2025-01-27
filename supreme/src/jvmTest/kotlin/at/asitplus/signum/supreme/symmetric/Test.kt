@@ -104,7 +104,7 @@ class JvmSymmetricTest : FreeSpec({
                                     own.encryptedData,
                                     own.authTag,
                                     own.authenticatedData
-                                ).decrypt(secretKey) shouldNot succeed
+                                ).getOrThrow().decrypt(secretKey) shouldNot succeed
 
 
                             } else {
@@ -137,7 +137,7 @@ class JvmSymmetricTest : FreeSpec({
                                     alg.sealedBox(
                                         own.algorithm.randomNonce(),
                                         own.encryptedData
-                                    ).decrypt(secretKey) shouldNot succeed
+                                    ).getOrThrow().decrypt(secretKey) shouldNot succeed
 
                             }
                         }
@@ -192,7 +192,7 @@ class JvmSymmetricTest : FreeSpec({
                             it shouldNotBe data
                         }
 
-                        alg.sealedBox(own.encryptedData).decrypt(secretKey) should succeed
+                        alg.sealedBox(own.encryptedData).getOrThrow().decrypt(secretKey) should succeed
                     }
                 }
             }

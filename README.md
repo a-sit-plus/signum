@@ -240,8 +240,9 @@ val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
     aad + iv + ciphertext + aad.size.encodeTo4Bytes()
   }
 
-//any size is fine, really. omitting the override generates a mac key of the same size as the encryption key
-val key = algorithm.randomKey(32.bit)
+//any size is fine, really. omitting the override generates a mac key of
+//the same size as the encryption key
+val key = algorithm.randomKey(macKeyLength = 32.bit)
 val aad = Clock.System.now().toString().encodeToByteArray()
 
 val sealedBox = key.encrypt(
@@ -270,7 +271,7 @@ val reconstructed = algorithm.sealedBox(
   encryptedData = sealedBox.encryptedData, /*Could also access authenticatedCipherText*/
   authTag = sealedBox.authTag,
   authenticatedData = sealedBox.authenticatedData
-)
+).getOrThrow()
 
 val manuallyRecovered = reconstructed.decrypt(key).getOrThrow(/*handle error*/)
 

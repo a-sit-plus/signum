@@ -48,7 +48,7 @@ internal object AESIOS {
             val bytes: ByteArray = swiftcall {
                 CBC.crypt(kCCEncrypt.toLong(), padded.toNSData(), key.toNSData(), nonce!!.toNSData(), error)
             }.toByteArray()
-            alg.sealedBox(nonce!!, bytes)
+            alg.sealedBox(nonce!!, bytes).getOrThrow()
         }
 
         is AES.ECB -> {
@@ -56,7 +56,7 @@ internal object AESIOS {
             val bytes: ByteArray = swiftcall {
                 ECB.crypt(kCCEncrypt.toLong(), padded.toNSData(), key.toNSData(), error)
             }.toByteArray()
-            alg.sealedBox(bytes)
+            alg.sealedBox(bytes).getOrThrow()
         }
 
         is AES.GCM -> {
@@ -67,7 +67,7 @@ internal object AESIOS {
                 ciphertext.ciphertext().toByteArray(),
                 ciphertext.authTag().toByteArray(),
                 aad
-            )
+            ).getOrThrow()
         }
 
         else -> TODO("ALGORITHM UNSUPPORTED")

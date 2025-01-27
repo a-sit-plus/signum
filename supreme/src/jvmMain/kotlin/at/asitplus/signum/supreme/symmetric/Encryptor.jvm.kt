@@ -75,7 +75,7 @@ internal actual fun <A : AuthType<out K>, I : Nonce, K : KeyType> CipherParam<*,
             false -> alg.sealedBox(ciphertext)
         }
 
-    } as SealedBox<A, I, out K>
+    }.getOrThrow() as SealedBox<A, I, out K>
 }
 
 val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
