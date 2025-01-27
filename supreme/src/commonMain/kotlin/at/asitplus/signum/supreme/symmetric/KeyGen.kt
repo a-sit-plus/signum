@@ -12,7 +12,7 @@ import kotlin.jvm.JvmName
 private val secureRandom = SecureRandom()
 
 
-fun <A : AuthType<out K>, I : Nonce, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.randomKey(): SymmetricKey<A, I, out K> =
+fun <A : AuthCapability<out K>, I : WithNonce, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.randomKey(): SymmetricKey<A, I, out K> =
     keyFromInternal(
         secureRandom.nextBytesOf(keySize.bytes.toInt()),
         if (authCapability.keyType is KeyType.WithDedicatedMacKey) secureRandom.nextBytesOf(keySize.bytes.toInt())
@@ -21,8 +21,8 @@ fun <A : AuthType<out K>, I : Nonce, K : KeyType> SymmetricEncryptionAlgorithm<A
 
 
 @JvmName("randomKeyAndMacKey")
-fun <I : Nonce> SymmetricEncryptionAlgorithm<AuthType.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey>.randomKey(
-    macKeyLength: BitLength = keySize
+fun <I : WithNonce> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey>.randomKey(
+    macKeyLength: BitLength = authCapability.preferredMacKeyLength
 ): SymmetricKey.WithDedicatedMac<I> =
     keyFromInternal(
         secureRandom.nextBytesOf(keySize.bytes.toInt()),
@@ -34,8 +34,8 @@ fun <I : Nonce> SymmetricEncryptionAlgorithm<AuthType.Authenticated.WithDedicate
  * You typically don't want to use this, but have your nonces auto-generated.
  */
 @HazardousMaterials("Don't explicitly generate nonces!")
-fun SymmetricEncryptionAlgorithm<*, Nonce.Required, *>.randomNonce(): ByteArray =
-    secureRandom.nextBytesOf((nonce.length.bytes).toInt())
+fun SymmetricEncryptionAlgorithm<*, WithNonce.Yes, *>.randomNonce(): ByteArray =
+    secureRandom.nextBytesOf((withNonce.length.bytes).toInt())
 
 
 @OptIn(HazardousMaterials::class)
@@ -74,34 +74,34 @@ private fun SymmetricEncryptionAlgorithm<*, *, *>.keyFromInternal(
 
 
 @JvmName("fixedKeyIntegrated")
-fun <I : Nonce> SymmetricEncryptionAlgorithm<AuthType<KeyType.Integrated>, I, KeyType.Integrated>.keyFrom(bytes: ByteArray): KmmResult<SymmetricKey<AuthType<KeyType.Integrated>, I, KeyType.Integrated>> =
+fun <I : WithNonce> SymmetricEncryptionAlgorithm<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated>.keyFrom(bytes: ByteArray): KmmResult<SymmetricKey<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated>> =
     catching {
         (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(
             bytes,
             null
         )
-    } as KmmResult<SymmetricKey<AuthType<KeyType.Integrated>, I, KeyType.Integrated>>
+    } as KmmResult<SymmetricKey<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated>>
 
 
 
 @JvmName("fixedKeyAuthenticatedIntegrated")
-fun <I : Nonce> SymmetricEncryptionAlgorithm<AuthType.Authenticated<KeyType.Integrated>, I, KeyType.Integrated>.keyFrom(bytes: ByteArray): KmmResult<SymmetricKey<AuthType.Authenticated.Integrated, I, KeyType.Integrated>> =
+fun <I : WithNonce> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<KeyType.Integrated>, I, KeyType.Integrated>.keyFrom(bytes: ByteArray): KmmResult<SymmetricKey<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated>> =
     catching {
         (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(
             bytes,
             null
         )
-    } as KmmResult<SymmetricKey<AuthType.Authenticated.Integrated, I, KeyType.Integrated>>
+    } as KmmResult<SymmetricKey<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated>>
 
 
 @JvmName("fixedKeyDedicatedMacKey")
-fun <I : Nonce> SymmetricEncryptionAlgorithm<AuthType<KeyType.WithDedicatedMacKey>, I, KeyType.WithDedicatedMacKey>.keyFrom(
+fun <I : WithNonce> SymmetricEncryptionAlgorithm<AuthCapability<KeyType.WithDedicatedMacKey>, I, KeyType.WithDedicatedMacKey>.keyFrom(
     encryptionKey: ByteArray,
     macKey: ByteArray
-): KmmResult<SymmetricKey<AuthType<KeyType.WithDedicatedMacKey>, I, KeyType.WithDedicatedMacKey>> =
+): KmmResult<SymmetricKey<AuthCapability<KeyType.WithDedicatedMacKey>, I, KeyType.WithDedicatedMacKey>> =
     catching {
         (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(
             encryptionKey,
             macKey
         )
-    } as KmmResult<SymmetricKey<AuthType<KeyType.WithDedicatedMacKey>, I, KeyType.WithDedicatedMacKey>>
+    } as KmmResult<SymmetricKey<AuthCapability<KeyType.WithDedicatedMacKey>, I, KeyType.WithDedicatedMacKey>>

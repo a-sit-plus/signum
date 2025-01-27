@@ -2,12 +2,12 @@ package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.*
-import at.asitplus.signum.indispensable.symmetric.AuthType.Authenticated
+import at.asitplus.signum.indispensable.symmetric.AuthCapability.Authenticated
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
 import kotlinx.cinterop.ExperimentalForeignApi
 
 
-actual internal fun <T, A : AuthType<out K>, I : Nonce, K : KeyType> initCipher(
+actual internal fun <T, A : AuthCapability<out K>, I : WithNonce, K : KeyType> initCipher(
     algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
     key: ByteArray,
     nonce: ByteArray?,
@@ -18,13 +18,13 @@ actual internal fun <T, A : AuthType<out K>, I : Nonce, K : KeyType> initCipher(
     val nonce = if (algorithm.requiresNonce())
         nonce ?: algorithm.randomNonce()
     else null
-    return CipherParam<ByteArray, AuthType<KeyType>, KeyType>(
-        algorithm as SymmetricEncryptionAlgorithm<AuthType<KeyType>, Nonce.Required, KeyType>, key, nonce, aad
+    return CipherParam<ByteArray, AuthCapability<KeyType>, KeyType>(
+        algorithm as SymmetricEncryptionAlgorithm<AuthCapability<KeyType>, WithNonce.Yes, KeyType>, key, nonce, aad
     ) as CipherParam<T, A, K>
 }
 
 @OptIn(ExperimentalForeignApi::class)
-internal actual fun <A : AuthType<out K>, I : Nonce, K : KeyType> CipherParam<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K> {
+internal actual fun <A : AuthCapability<out K>, I : WithNonce, K : KeyType> CipherParam<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K> {
     this as CipherParam<ByteArray, A, K>
 
     return when (alg) {
@@ -39,7 +39,7 @@ internal actual fun <A : AuthType<out K>, I : Nonce, K : KeyType> CipherParam<*,
 internal actual fun SealedBox<Authenticated.Integrated, *, out KeyType.Integrated>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
-    if (algorithm.nonce !is Nonce.Required) TODO("ALGORITHM UNSUPPORTED")
+    if (algorithm.withNonce !is WithNonce.Yes) TODO("ALGORITHM UNSUPPORTED")
     this as SealedBox.WithNonce
     return when (algorithm) {
         is AES<*, *, *> -> AESIOS.gcmDecrypt(encryptedData, secretKey, nonce, authTag, authenticatedData)
@@ -56,7 +56,7 @@ internal actual fun SealedBox<Authenticated.Integrated, *, out KeyType.Integrate
 }
 
 @OptIn(ExperimentalForeignApi::class)
-internal actual fun SealedBox<AuthType.Unauthenticated, *, out KeyType.Integrated>.doDecrypt(
+internal actual fun SealedBox<AuthCapability.Unauthenticated, *, out KeyType.Integrated>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
     require(algorithm is AES<*, *, *>) { "Only AES is supported" }
