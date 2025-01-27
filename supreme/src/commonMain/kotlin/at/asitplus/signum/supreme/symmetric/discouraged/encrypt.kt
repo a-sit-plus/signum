@@ -10,16 +10,16 @@ import kotlin.jvm.JvmName
 
 
 /**
- * Encrypts [data] using a specified IV. Check yourself, before you really, really wreck yourself!
- * * [iv] =  _Initialization Vector_; **NEVER EVER RE-USE THIS!**
+ * Encrypts [data] using the manually specified [nonce]. Check yourself, before you really, really wreck yourself!
+ * * [nonce] =  _Initialization Vector_; **NEVER EVER RE-USE THIS!**
  * * [authenticatedData] = _Additional Authenticated Data_
  *
- * It is safe to discard the reference to [iv] and [authenticatedData], as both will be added to any [at.asitplus.signum.indispensable.symmetric.Ciphertext.Authenticated] resulting from an encryption.
+ * It is safe to discard the reference to [nonce] and [authenticatedData], as both will be added to any  [SealedBox.Authenticated] resulting from an encryption.
  *
- * @return [KmmResult.success] containing a [at.asitplus.signum.indispensable.symmetric.Ciphertext.Authenticated] if valid parameters were provided or [KmmResult.failure] in case of
- * invalid parameters (e.g., key or IV length)
+ * @return [KmmResult.success] containing a [SealedBox.Authenticated] if valid parameters were provided or [KmmResult.failure] in case of
+ * invalid parameters (e.g., key or nonce length)
  */
-@HazardousMaterials
+@HazardousMaterials("NEVER re-use a nonce/IV! Have them auto-generated instead!")
 @JvmName("encryptAuthenticatedWithNonce")
 fun <K : KeyType, A : AuthCapability.Authenticated<out K>> KeyWithNonceAuthenticating<A, out K>.encrypt(
     data: ByteArray,
@@ -34,7 +34,16 @@ fun <K : KeyType, A : AuthCapability.Authenticated<out K>> KeyWithNonceAuthentic
     ).encrypt(data) as SealedBox.WithNonce.Authenticated<K>
 }
 
-@HazardousMaterials
+/**
+ * Encrypts [data] using the manually specified [nonce]. Check yourself, before you really, really wreck yourself!
+ * * [nonce] =  _Initialization Vector_; **NEVER EVER RE-USE THIS!**
+ *
+ * It is safe to discard the reference to [nonce] and [authenticatedData], as both will be added to any  [SealedBox.Authenticated] resulting from an encryption.
+ *
+ * @return [KmmResult.success] containing a [SealedBox.Authenticated] if valid parameters were provided or [KmmResult.failure] in case of
+ * invalid parameters (e.g., key or nonce length)
+ */
+@HazardousMaterials("NEVER re-use a nonce/IV! Have them auto-generated instead!")
 @JvmName("encryptWithNonce")
 fun <K : KeyType, A : AuthCapability<out K>> KeyWithNonce<A, out K>.encrypt(
     data: ByteArray
@@ -67,12 +76,18 @@ fun <K : KeyType, A : AuthCapability<out K>> SymmetricKey<A, WithNonce.Yes, out 
  */
 @HazardousMaterials("Nonce/IV re-use can have catastrophic consequences!")
 @JvmName("authedKeyWithNonce")
-fun <K : KeyType, A : AuthCapability.Authenticated<out K>> SymmetricKey<out A, WithNonce.Yes, out K>.andPredefinedNonce(nonce: ByteArray) =
+fun <K : KeyType, A : AuthCapability.Authenticated<out K>> SymmetricKey<out A, WithNonce.Yes, out K>.andPredefinedNonce(
+    nonce: ByteArray
+) =
     catching {
         require(nonce.size == algorithm.withNonce.length.bytes.toInt()) { "Invalid nonce size!" }
         KeyWithNonceAuthenticating(nonce, this)
     }
 
 private typealias KeyWithNonce<A, K> = Pair<SymmetricKey<out A, WithNonce.Yes, out K>, ByteArray>
-//types first and second are deliberately swapped
+//first and second are deliberately swapped
 private typealias KeyWithNonceAuthenticating<A, K> = Pair<ByteArray, SymmetricKey<out A, WithNonce.Yes, out K>>
+
+
+val KeyWithNonceAuthenticating<*, *>.nonce: ByteArray @JvmName("nonceAuthenticating") get() = first
+val KeyWithNonce<*, *>.nonce: ByteArray get() = second

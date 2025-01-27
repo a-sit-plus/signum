@@ -25,6 +25,9 @@ import kotlin.jvm.JvmName
 sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out I : WithNonce, out K : KeyType> :
     Identifiable {
     val authCapability: A
+
+    /** If this algorithm has a nonce, access this property's [WithNonce.Yes.length] to get the nonce length
+     */
     val withNonce: I
 
     override fun toString(): String
@@ -116,6 +119,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
 
         class GCM internal constructor(keySize: BitLength) :
             SymmetricEncryptionAlgorithm.Authenticated.Integrated<WithNonce.Yes>,
+            SymmetricEncryptionAlgorithm.RequiringNonce<AuthCapability.Authenticated.Integrated, KeyType.Integrated>,
             AES<WithNonce.Yes, KeyType.Integrated, AuthCapability.Authenticated.Integrated>(
                 ModeOfOperation.GCM,
                 keySize
@@ -132,6 +136,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
 
         sealed class WRAP(keySize: BitLength) :
             AES<WithNonce.No, KeyType.Integrated, AuthCapability.Unauthenticated>(ModeOfOperation.ECB, keySize),
+            SymmetricEncryptionAlgorithm.WithoutNonce<AuthCapability.Unauthenticated, KeyType.Integrated>,
             SymmetricEncryptionAlgorithm.Unauthenticated<WithNonce.No> {
             override val authCapability = AuthCapability.Unauthenticated
 
@@ -154,6 +159,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
         @HazardousMaterials("ECB is almost always insecure!")
         class ECB internal constructor(keySize: BitLength) :
             AES<WithNonce.No, KeyType.Integrated, AuthCapability.Unauthenticated>(ModeOfOperation.ECB, keySize),
+            SymmetricEncryptionAlgorithm.WithoutNonce<AuthCapability.Unauthenticated, KeyType.Integrated>,
             SymmetricEncryptionAlgorithm.Unauthenticated<WithNonce.No> {
             override val withNonce = WithNonce.No
             override val authCapability = AuthCapability.Unauthenticated
@@ -178,6 +184,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
             class Unauthenticated(
                 keySize: BitLength
             ) : CBC<KeyType.Integrated, AuthCapability.Unauthenticated>(keySize),
+                SymmetricEncryptionAlgorithm.RequiringNonce<AuthCapability.Unauthenticated, KeyType.Integrated>,
                 SymmetricEncryptionAlgorithm.Unauthenticated<WithNonce.Yes> {
                 override val authCapability = AuthCapability.Unauthenticated
                 override val name = super.name + " Plain"
@@ -192,6 +199,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
                 mac: at.asitplus.signum.indispensable.mac.HMAC,
                 dedicatedMacInputCalculation: DedicatedMacInputCalculation
             ) : SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC, WithNonce.Yes>,
+                SymmetricEncryptionAlgorithm.RequiringNonce<AuthCapability.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC, WithNonce.Yes>, KeyType.WithDedicatedMacKey>,
                 CBC<KeyType.WithDedicatedMacKey, AuthCapability.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC, WithNonce.Yes>>(
                     innerCipher.keySize
                 ) {
@@ -228,7 +236,9 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
      * ChaCha20 with Poly-1305 AEAD stream cipher
      */
     object ChaCha20Poly1305 :
-        StreamCipher<AuthCapability.Authenticated.Integrated, WithNonce.Yes, KeyType.Integrated>() {
+        StreamCipher<AuthCapability.Authenticated.Integrated, WithNonce.Yes, KeyType.Integrated>(),
+        SymmetricEncryptionAlgorithm.Authenticated.Integrated<WithNonce.Yes>,
+        SymmetricEncryptionAlgorithm.RequiringNonce<AuthCapability.Authenticated.Integrated, KeyType.Integrated> {
         override val authCapability = AuthCapability.Authenticated.Integrated(128u.bit)
         override val withNonce = WithNonce.Yes(96u.bit)
         override val name: String = "ChaCha20-Poly1305"

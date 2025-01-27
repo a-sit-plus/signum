@@ -5,16 +5,17 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.AuthCapability.Authenticated
 import at.asitplus.signum.supreme.mac.mac
+import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.*
 import kotlin.jvm.JvmName
 
 
 /**
- * Attempts to decrypt this ciphertext (which also holds IV, and in case of an authenticated ciphertext, authenticated data and auth tag) using the provided [key].
- * This is the generic, untyped decryption function should be avoided, but is required for convenience.
+ * Attempts to decrypt this ciphertext (which may also hold an IV/nonce, and in case of an authenticated ciphertext, authenticated data and auth tag) using the provided [key].
+ * This is the generic, untyped decryption function for convenience.
+ * Compared to its narrower-typed cousins, this is more likely to fail, because it is possible to mismatch the characteristics of
+ * [key] and [SealedBox].
  */
 @JvmName("decryptGeneric")
-@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE") //needed?
-@kotlin.internal.LowPriorityInOverloadResolution     //needed?
 fun SealedBox<*,*,*>.decrypt(key: SymmetricKey<*,*,*>)  = catching {
     require(algorithm == key.algorithm) { "Algorithm mismatch! expected: $algorithm, actual: ${key.algorithm}" }
     when (algorithm.authCapability) {
@@ -36,11 +37,14 @@ fun SealedBox<*,*,*>.decrypt(key: SymmetricKey<*,*,*>)  = catching {
 }
 
 /**
- * Attempts to decrypt this ciphertext (which may hold IV, and in case of an authenticated ciphertext, authenticated data and auth tag) using the provided [key].
- * This is the function you typically want to use.
+ * Attempts to decrypt this ciphertext (which may also hold an IV/nonce, and in case of an authenticated ciphertext, authenticated data and auth tag) using the provided [key].
+ * This constrains the [key]'s characteristics to the characteristics of the [SealedBox] to decrypt.
+ * It does not, however, prevent maxing up different encryption algorithms with the same characteristics. I.e., it is possible to feed a [AES.ECB] key into
+ * a [AES.CBC] [SealedBox].
+ * In such cases, this function will immediately return a [KmmResult.failure].
  */
-fun <A : AuthCapability<K>, I : WithNonce, K : KeyType> SealedBox<out A, I, out K>.decrypt(
-    key: SymmetricKey<out A, I, out K>
+fun <A : AuthCapability<K>, I : WithNonce, K : KeyType> SealedBox< A, I, K>.decrypt(
+    key: SymmetricKey<A, I, K>
 ): KmmResult<ByteArray> = catching {
     require(algorithm == key.algorithm) { "Somebody likes cursed casts!" }
     when (algorithm.authCapability as AuthCapability<*>) {
@@ -62,6 +66,13 @@ fun <A : AuthCapability<K>, I : WithNonce, K : KeyType> SealedBox<out A, I, out 
 }
 
 
+/**
+ * Attempts to decrypt this ciphertext (which may also hold an IV/nonce, and in case of an authenticated ciphertext, authenticated data and auth tag) using the provided [key].
+ * This constrains the [key]'s characteristics to the characteristics of the [SealedBox] to decrypt.
+ * It does not, however, prevent maxing up different encryption algorithms with the same characteristics. I.e., it is possible to feed a [SymmetricEncryptionAlgorithm.ChaCha20Poly1305] key into
+ * a [AES.GCM] [SealedBox].
+ * In such cases, this function will immediately return a [KmmResult.failure].
+ */
 @JvmName("decryptRawAuthenticated")
 private fun SealedBox<Authenticated.Integrated, *, KeyType.Integrated>.decryptInternal(
     secretKey: ByteArray
@@ -78,11 +89,6 @@ private fun SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated>.dec
     return doDecrypt(secretKey)
 }
 
-/**
- * Attempts to decrypt this ciphertext using the provided raw [secretKey].
- * If no [macKey] is provided, [secretKey] will be used as MAC key.
- * [dedicatedMacInputCalculation] can be used to override the [DefaultDedicatedMacInputCalculation] used to compute MAC input.
- */
 private fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedicatedMacKey>.decryptInternal(
     secretKey: ByteArray,
     macKey: ByteArray = secretKey,
