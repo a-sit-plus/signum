@@ -63,7 +63,7 @@ internal class Encryptor<A : AuthType<out K>, I : Nonce, out K : KeyType> intern
             encrypted.encryptedData,
             authTag,
             aad
-        )) as SealedBox<A, I, K>
+        )).getOrThrow() as SealedBox<A, I, K>
 
     } else platformCipher.doEncrypt(data))
 

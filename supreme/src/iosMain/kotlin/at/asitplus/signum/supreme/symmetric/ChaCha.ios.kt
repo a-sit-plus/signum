@@ -26,7 +26,7 @@ internal object ChaChaIOS {
             ciphertext.ciphertext().toByteArray(),
             ciphertext.authTag().toByteArray(),
             aad
-        )
+        ).getOrThrow() as SealedBox.WithNonce.Authenticated<KeyType.Integrated>
 
     }
 

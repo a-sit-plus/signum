@@ -107,6 +107,6 @@ private fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedic
             encryptedData
         ) else (innerCipher as SymmetricEncryptionAlgorithm<AuthType.Unauthenticated, Nonce.Without, KeyType.Integrated>).sealedBox(
             encryptedData
-        )) as SealedBox<AuthType.Unauthenticated, *, KeyType.Integrated>
+        )).getOrThrow() as SealedBox<AuthType.Unauthenticated, *, KeyType.Integrated>
     return box.doDecrypt(secretKey)
 }
