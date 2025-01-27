@@ -7,6 +7,7 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.memScoped
+import platform.Foundation.NSData
 import platform.Security.*
 
 val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm
@@ -41,6 +42,7 @@ val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm
 
         is SignatureAlgorithm.HMAC -> TODO("HMAC is unsupported")
     }!!
+
 val SpecializedSignatureAlgorithm.secKeyAlgorithm
     get() =
         this.algorithm.secKeyAlgorithm
@@ -88,14 +90,12 @@ val CryptoSignature.iosEncoded
         is CryptoSignature.RSAorHMAC -> this.rawByteArray
     }
 
-/**
- * Converts this privateKey into a [SecKeyRef], making it usable on iOS
- */
-fun CryptoPrivateKey.WithPublicKey<*>.toSecKey(): KmmResult<SecKeyRef> = catching {
+/** Converts this privateKey into a [SecKeyRef], making it usable on iOS */
+fun CryptoPrivateKey.WithPublicKey<*>.toSecKey(): KmmResult<OwnedCFValue<SecKeyRef>> = catching {
     memScoped {
         var data : ByteArray? = null
         val attr = createCFDictionary {
-            kSecAttrKeyClass mapsTo  kSecAttrKeyClassPrivate
+            kSecAttrKeyClass mapsTo kSecAttrKeyClassPrivate
             kSecPrivateKeyAttrs mapsTo cfDictionaryOf(kSecAttrIsPermanent to false)
             data = when (this@toSecKey) {
                 is CryptoPrivateKey.EC.WithPublicKey -> {
@@ -116,6 +116,12 @@ fun CryptoPrivateKey.WithPublicKey<*>.toSecKey(): KmmResult<SecKeyRef> = catchin
         }
         corecall {
             SecKeyCreateWithData(data!!.toNSData().giveToCF(), attr, error)
-        }
+        }.manage()
     }
 }
+
+fun SecKeyRef?.toCryptoPrivateKey() = catching {
+    corecall {
+        SecKeyCopyExternalRepresentation(this@toCryptoPrivateKey, error)
+    }.let { it.takeFromCF<NSData>() }.toByteArray()
+}.transform(CryptoPrivateKey::fromIosEncoded)

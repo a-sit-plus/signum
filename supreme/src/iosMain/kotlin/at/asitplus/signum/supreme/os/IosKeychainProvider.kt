@@ -176,7 +176,7 @@ sealed class IosSigner(final override val alias: String,
 
 
     @SecretExposure
-    override fun exportPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> = KmmResult.failure(IllegalStateException("Non-Exportable key"))
+    override fun exportPrivateKey(): KmmResult<Nothing> = KmmResult.failure(IllegalStateException("Non-Exportable key"))
 
     override val mayRequireUserUnlock get() = needsAuthentication
     val needsAuthentication get() = metadata.needsUnlock

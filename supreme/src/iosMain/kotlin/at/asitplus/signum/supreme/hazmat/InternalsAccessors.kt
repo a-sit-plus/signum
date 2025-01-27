@@ -1,7 +1,7 @@
 @file:OptIn(ExperimentalForeignApi::class)
 package at.asitplus.signum.supreme.hazmat
 
-import at.asitplus.signum.supreme.AutofreeVariable
+import at.asitplus.signum.internals.OwnedCFValue
 import at.asitplus.signum.supreme.HazardousMaterials
 import at.asitplus.signum.supreme.os.IosSigner
 import at.asitplus.signum.supreme.os.IosSignerSigningConfiguration
@@ -15,7 +15,7 @@ import platform.Security.SecKeyRef
 /** The underlying SecKeyRef referencing the ephemeral key's private key. */
 @HazardousMaterials
 @Suppress("UNCHECKED_CAST")
-val EphemeralKey.secKeyRef get() = (this as? EphemeralKeyBase<*>)?.privateKey as? AutofreeVariable<SecKeyRef>
+val EphemeralKey.secKeyRef get() = (this as? EphemeralKeyBase<*>)?.privateKey as? OwnedCFValue<SecKeyRef>
 
 /** The underlying SecKeyRef referencing the signer's private key.
  * **⚠️ If returned from a keychain signer, must be used immediately. Do not store long term. ⚠️** */

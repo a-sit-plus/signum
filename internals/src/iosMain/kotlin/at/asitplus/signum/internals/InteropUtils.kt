@@ -9,6 +9,7 @@ import platform.CoreFoundation.CFDictionaryRef
 import platform.CoreFoundation.CFDictionarySetValue
 import platform.CoreFoundation.CFErrorRefVar
 import platform.CoreFoundation.CFMutableDictionaryRef
+import platform.CoreFoundation.CFRelease
 import platform.CoreFoundation.CFTypeRef
 import platform.CoreFoundation.kCFBooleanFalse
 import platform.CoreFoundation.kCFBooleanTrue
@@ -20,6 +21,8 @@ import platform.Foundation.NSData
 import platform.Foundation.NSError
 import platform.Foundation.create
 import platform.posix.memcpy
+import kotlin.experimental.ExperimentalNativeApi
+import kotlin.native.ref.createCleaner
 
 fun NSData.toByteArray(): ByteArray = ByteArray(length.toInt()).apply {
     usePinned {
@@ -96,6 +99,12 @@ class swiftcall private constructor(val error: CPointer<ObjCObjectVar<NSError?>>
     }
 }
 
+@OptIn(ExperimentalNativeApi::class)
+class OwnedCFValue<T: CFTypeRef> constructor(val value: T) {
+    @Suppress("UNUSED")
+    private val cleaner = createCleaner(value, ::CFRelease)
+}
+inline fun <T: CFTypeRef> T.manage() = OwnedCFValue(this)
 
 inline fun <reified T: CFTypeRef?> Any?.giveToCF() = when(this) {
     null -> this
@@ -103,7 +112,9 @@ inline fun <reified T: CFTypeRef?> Any?.giveToCF() = when(this) {
     is CValuesRef<*> -> this
     else -> CFBridgingRetain(this)
 } as T
+
 inline fun <reified T> CFTypeRef?.takeFromCF() = CFBridgingRelease(this) as T
+
 fun MemScope.cfDictionaryOf(vararg pairs: Pair<*,*>): CFDictionaryRef {
     val dict = CFDictionaryCreateMutable(null, pairs.size.toLong(),
         kCFTypeDictionaryKeyCallBacks.ptr, kCFTypeDictionaryValueCallBacks.ptr)!!

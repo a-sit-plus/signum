@@ -100,12 +100,18 @@ interface Signer {
     interface ECDSA : AlgTrait {
         override val signatureAlgorithm: SignatureAlgorithm.ECDSA
         override val publicKey: CryptoPublicKey.EC
+
+        @SecretExposure
+        override fun exportPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicKey>
     }
 
     /** A [Signer] that signs using RSA. */
     interface RSA : AlgTrait {
         override val signatureAlgorithm: SignatureAlgorithm.RSA
         override val publicKey: CryptoPublicKey.RSA
+
+        @SecretExposure
+        override fun exportPrivateKey(): KmmResult<CryptoPrivateKey.RSA>
     }
 
     /** Some [Signer]s are retrieved from a signing provider, such as a key store, and have a string [alias]. */

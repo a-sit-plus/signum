@@ -6,6 +6,8 @@ import at.asitplus.signum.internals.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.cinterop.*
+import platform.CoreFoundation.CFRelease
+import platform.CoreFoundation.CFTypeRef
 import platform.Foundation.NSError
 import platform.Security.SecCopyErrorMessageString
 import platform.darwin.OSStatus
@@ -28,7 +30,6 @@ class AutofreeVariable<T: CPointer<*>> internal constructor(
     internal val ptr get() = variable.ptr
     internal val value get() = variable.value
 }
-
 
 class CFCryptoOperationFailed(thing: String, val osStatus: OSStatus) : CryptoOperationFailed(buildMessage(thing, osStatus)) {
     companion object {
