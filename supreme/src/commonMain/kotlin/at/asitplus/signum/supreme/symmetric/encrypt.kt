@@ -22,7 +22,7 @@ fun <K: KeyType,A : AuthCapability<out K>, I : WithNonce> SymmetricKey<A, I,out 
         if (this is WithDedicatedMac) dedicatedMacKey else secretKey,
         null,
         null,
-    ).encrypt(data) as SealedBox<A, I,out  K>
+    ).encrypt(data)
 }
 
 

@@ -3,6 +3,7 @@ package at.asitplus.signum.supreme.symmetric
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.succeed
+import at.asitplus.signum.supreme.symmetric.decrypt
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.should

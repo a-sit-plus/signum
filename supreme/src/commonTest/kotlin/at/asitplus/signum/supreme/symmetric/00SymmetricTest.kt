@@ -20,10 +20,11 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.datetime.Clock
 import org.kotlincrypto.SecureRandom
 import kotlin.random.Random
+import kotlin.random.nextUInt
 
 @OptIn(HazardousMaterials::class)
 @ExperimentalStdlibApi
-class `0SymmetricTest` : FreeSpec({
+class `00SymmetricTest` : FreeSpec({
 
 
     "Illegal IV Size" - {
@@ -57,7 +58,6 @@ class `0SymmetricTest` : FreeSpec({
 
             withData(
                 nameFn = { "${it?.size} Bytes" },
-                Random.nextBytes(0),
                 Random.nextBytes(1),
                 Random.nextBytes(17),
                 Random.nextBytes(18),
@@ -123,12 +123,12 @@ class `0SymmetricTest` : FreeSpec({
 
                 ) { keyBytes ->
 
-               when(alg.hasDedicatedMac()) {
-                    true -> alg.keyFrom(keyBytes,keyBytes) //never do this in production!
+                when (alg.hasDedicatedMac()) {
+                    true -> alg.keyFrom(keyBytes, keyBytes) //never do this in production!
                     false -> alg.keyFrom(keyBytes)
                 } shouldNot succeed
 
-               val key =  when(alg.hasDedicatedMac()) {
+                val key = when (alg.hasDedicatedMac()) {
                     true -> alg.keyFrom(alg.randomKey().secretKey, alg.randomKey().secretKey)
                     false -> alg.keyFrom(alg.randomKey().secretKey)
                 }.getOrThrow()
@@ -136,7 +136,8 @@ class `0SymmetricTest` : FreeSpec({
 
 
                 key.encrypt(Random.nextBytes(32)) should succeed
-                key.andPredefinedNonce(alg.randomNonce()).getOrThrow().encrypt(data = Random.nextBytes(32)) should succeed
+                key.andPredefinedNonce(alg.randomNonce()).getOrThrow()
+                    .encrypt(data = Random.nextBytes(32)) should succeed
 
                 if (alg.authCapability is AuthCapability.Authenticated)
                     alg.randomKey().encrypt(
@@ -410,7 +411,8 @@ class `0SymmetricTest` : FreeSpec({
                                 null
                             ) { aad ->
                                 val ciphertext =
-                                    if (iv != null) key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext, aad).getOrThrow()
+                                    if (iv != null) key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext, aad)
+                                        .getOrThrow()
                                     else key.encrypt(plaintext, aad).getOrThrow()
                                 val manilaAlg = it.Custom { _, _, _ -> "Manila".encodeToByteArray() }
                                 val manilaKey = SymmetricKey.WithDedicatedMac.RequiringNonce(
@@ -597,6 +599,109 @@ class `0SymmetricTest` : FreeSpec({
                         alg.sealedBoxFrom(own.encryptedData).getOrThrow().decrypt(secretKey) should succeed
                     }
                 }
+            }
+        }
+    }
+
+
+    "Edge Cases" - {
+
+        val allAlgorithms = listOf(
+            SymmetricEncryptionAlgorithm.AES_128.ECB,
+            SymmetricEncryptionAlgorithm.AES_192.ECB,
+            SymmetricEncryptionAlgorithm.AES_256.ECB,
+            SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
+            SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN,
+            SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN,
+            SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_256,
+            SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_256,
+            SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_256,
+            SymmetricEncryptionAlgorithm.AES_128.GCM,
+            SymmetricEncryptionAlgorithm.AES_192.GCM,
+            SymmetricEncryptionAlgorithm.AES_256.GCM,
+
+            SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394,
+            SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394,
+            SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394,
+
+            SymmetricEncryptionAlgorithm.ChaCha20Poly1305,
+        )
+
+        "all good" - {
+            withData(
+
+                SymmetricEncryptionAlgorithm.AES_128.ECB,
+                SymmetricEncryptionAlgorithm.AES_192.ECB,
+                SymmetricEncryptionAlgorithm.AES_256.ECB,
+                SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
+                SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN,
+                SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN,
+                SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_256,
+                SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_256,
+                SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_256,
+                SymmetricEncryptionAlgorithm.AES_128.GCM,
+                SymmetricEncryptionAlgorithm.AES_192.GCM,
+                SymmetricEncryptionAlgorithm.AES_256.GCM,
+                /*NO WRAP, because it has constraints on input size*/
+                SymmetricEncryptionAlgorithm.ChaCha20Poly1305,
+
+                ) { alg ->
+
+                withData(0, 1, 4096) { sz ->
+                    val data = Random.nextBytes(sz)
+                    val key = alg.randomKey()
+                    key.encrypt(data).getOrThrow().decrypt(key).getOrThrow() shouldBe data
+                }
+            }
+        }
+
+        "algorithm mismatch" - {
+            withData(allAlgorithms) { alg ->
+                withData(allAlgorithms.filterNot { it == alg }) { wrongAlg ->
+                    val encrypted = alg.randomKey().encrypt(Random.nextBytes(64)/*works with wrapping*/).getOrThrow()
+                    val wrongKey = wrongAlg.randomKey()
+                    encrypted.decrypt(wrongKey) shouldNot succeed
+                }
+            }
+        }
+        "illegal key sizes" - {
+            withData(allAlgorithms) { alg ->
+                val wrongSized = mutableListOf<Int>()
+                while (wrongSized.size < 100) {
+                    val wrong = Random.nextUInt(until = 1025u).toInt()
+                    if (wrong != alg.keySize.bytes.toInt())
+                        wrongSized += wrong
+                }
+                withData(wrongSized) { sz ->
+                    when (alg.hasDedicatedMac()) {
+                        true -> {
+                            alg.keyFrom(
+                                Random.nextBytes(sz),
+                                alg.randomKey().secretKey /*mac key should not trigger, as it is unconstrained*/
+                            )
+                        }
+
+                        false -> {
+                            alg.keyFrom(Random.nextBytes(sz))
+                        }
+                    } shouldNot succeed
+                }
+            }
+        }
+
+        "illegal nonce sizes" - {
+            withData(allAlgorithms.filter { it.requiresNonce() }) { alg ->
+                alg as SymmetricEncryptionAlgorithm.RequiringNonce<*, *>
+                val wrongSized = mutableListOf<Int>()
+                while (wrongSized.size < 100) {
+                    val wrong = Random.nextUInt(until = 1025u).toInt()
+                    if (wrong != alg.withNonce.length.bytes.toInt())
+                        wrongSized += wrong
+                }
+                withData(wrongSized) { sz ->
+                    alg.randomKey().andPredefinedNonce(Random.nextBytes(sz)) shouldNot succeed
+                }
+
             }
         }
     }
