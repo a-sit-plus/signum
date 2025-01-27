@@ -2,7 +2,6 @@ package at.asitplus.signum.indispensable.symmetric
 
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
-import kotlin.jvm.JvmName
 
 val SealedBox<out AuthType.Authenticated<*>, *, *>.authTag
     get() = (this as SealedBox.Authenticated<*, *>).authTag
