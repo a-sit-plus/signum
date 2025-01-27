@@ -5,12 +5,15 @@
 ### NEXT
 * HMAC Support
 * Symmetric Encryption
-    * AES
-        * GCM
-        * CBC-HMAC
-        * CBC
-        * ECB
-    * ChaCha-Poly1305
+    * Supported Algorithms
+        * AES
+            * GCM
+            * CBC-HMAC
+            * CBC
+            * ECB
+            * KW
+        * ChaCha-Poly1305
+    * Add algorithm mappings to indispensable-josef **This is a binary-incompatible change, if you were using JWE!**
 * Moved `HazardousMaterials` annotation from `supreme` to `indispensable`
 
 
