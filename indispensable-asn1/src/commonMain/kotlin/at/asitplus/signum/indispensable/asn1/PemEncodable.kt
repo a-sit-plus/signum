@@ -4,6 +4,7 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
+import kotlin.jvm.JvmInline
 
 /**
  * Specialization of [Asn1Encodable], able to produce PEM-encoded strings
@@ -19,16 +20,29 @@ interface PemEncodable<A : Asn1Element> : Asn1Encodable<A> {
     val canonicalPEMBoundary: String
 }
 
+private sealed interface PemDecoder<out T> {
+    @JvmInline value class Real<out T>(val fn: (ByteArray)->T): PemDecoder<T>
+    data object Default: PemDecoder<Nothing>
+    companion object {
+        inline operator fun <T> invoke(noinline fn: ((ByteArray)->T)?) = when (fn) {
+            null -> Default
+            else -> Real(fn)
+        }
+    }
+}
+
 /**
  * Specialization of [Asn1Decodable], able to parse PEM-encoded strings
  * as per [RFC 1421](https://datatracker.ietf.org/doc/html/rfc1421).
  * Use in tandem with [PemEncodable].
  */
 abstract class PemDecodable<A : Asn1Element, T : PemEncodable<A>>
-private constructor(private val decoders: Map<String, ((ByteArray) -> T)?>) : Asn1Decodable<A, T> {
+    private constructor(private val decoders: Map<String, PemDecoder<T>>)
+    : Asn1Decodable<A, T>
+{
 
-    constructor(vararg ebStrings: String) : this(ebStrings.associateWith { null })
-    constructor(vararg decoders: Pair<String, ((ByteArray) -> T)?>) : this(decoders.toMap())
+    constructor(vararg ebStrings: String) : this(ebStrings.associateWith { PemDecoder.Default })
+    constructor(vararg decoders: Pair<String, ((ByteArray)->T)?>) : this(decoders.associate { it.first to PemDecoder(it.second) })
 
     /** Decodes a PEM-encoded string into [T] */
     fun decodeFromPem(src: String): KmmResult<T> = catching {
@@ -40,12 +54,8 @@ private constructor(private val decoders: Map<String, ((ByteArray) -> T)?>) : As
                 require(hasNext()) { "No encapsulation boundary found" }
                 val firstLine = next()
                 val ebString = firstLine.substring(FENCE_PREFIX_BEGIN.length, firstLine.length - FENCE_SUFFIX.length)
-                val decoder: (ByteArray) -> T =
-                    if (decoders.containsKey(ebString) && decoders[ebString] == null)
-                        this@PemDecodable::decodeFromDer
-                    else decoders.getOrElse(ebString)
+                val decoder: PemDecoder<T> = decoders.getOrElse(ebString)
                     { throw IllegalArgumentException("Unknown encapsulation boundary string $ebString") }
-                        ?: { throw IllegalArgumentException("Unknown encapsulation boundary string $ebString") }
                 val b64data = StringBuilder()
                 while (hasNext()) {
                     val line = next()
@@ -59,6 +69,11 @@ private constructor(private val decoders: Map<String, ((ByteArray) -> T)?>) : As
                 }
                 throw IllegalArgumentException("End of string reached while parsing (no encapsulation terminator?)")
             }
+    }
+
+    private inline operator fun PemDecoder<T>.invoke(data: ByteArray) = when (this) {
+        is PemDecoder.Default -> this@PemDecodable.decodeFromDer(data)
+        is PemDecoder.Real<T> -> this@invoke.fn(data)
     }
 }
 
