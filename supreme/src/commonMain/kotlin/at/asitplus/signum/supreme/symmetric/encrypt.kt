@@ -39,15 +39,15 @@ fun <K: KeyType,A : AuthCapability<out K>, I : NonceTrait> SymmetricKey<A, I,out
  * invalid parameters (e.g., algorithm mismatch, key length, …)
  */
 @JvmName("encryptAuthenticated")
-fun <K: KeyType, A : AuthCapability.Authenticated<K>, I : NonceTrait> SymmetricKey<A, I,out K>.encrypt(
+fun <K: KeyType, A : AuthCapability.Authenticated<out K>, I : NonceTrait> SymmetricKey<A, I,out K>.encrypt(
     data: ByteArray,
     authenticatedData: ByteArray? = null
-): KmmResult<SealedBox<A, I,K>> = catching {
+): KmmResult<SealedBox<A, I,out K>> = catching {
     Encryptor(
         algorithm,
         secretKey,
         if (this is WithDedicatedMac) dedicatedMacKey else secretKey,
         null,
         authenticatedData,
-    ).encrypt(data) as SealedBox<A, I, K>
+    ).encrypt(data)
 }

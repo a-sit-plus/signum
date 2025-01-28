@@ -4,19 +4,19 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.AuthCapability.Authenticated
+import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
 import at.asitplus.signum.supreme.mac.mac
-import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.*
 import kotlin.jvm.JvmName
 
 
 /**
  * Attempts to decrypt this ciphertext (which may also hold an IV/nonce, and in case of an authenticated ciphertext, authenticated data and auth tag) using the provided [key].
  * This is the generic, untyped decryption function for convenience.
- * Compared to its narrower-typed cousins, this is more likely to fail, because it is possible to mismatch the characteristics of
- * [key] and [SealedBox].
+ * **Compared to its narrower-typed cousins is possible to mismatch the characteristics of
+ * [key] and [SealedBox].**
  */
 @JvmName("decryptGeneric")
-fun SealedBox<*,*,*>.decrypt(key: SymmetricKey<*,*,*>)  = catching {
+fun SealedBox<*, *, *>.decrypt(key: SymmetricKey<*, *, *>) = catching {
     require(algorithm == key.algorithm) { "Algorithm mismatch! expected: $algorithm, actual: ${key.algorithm}" }
     when (algorithm.authCapability) {
         is Authenticated.Integrated -> (this as SealedBox<Authenticated.Integrated, *, KeyType.Integrated>).decryptInternal(
@@ -43,7 +43,7 @@ fun SealedBox<*,*,*>.decrypt(key: SymmetricKey<*,*,*>)  = catching {
  * a [AES.CBC] [SealedBox].
  * In such cases, this function will immediately return a [KmmResult.failure].
  */
-fun <A : AuthCapability<K>, I : NonceTrait, K : KeyType> SealedBox< A, I, K>.decrypt(
+fun <A : AuthCapability<K>, I : NonceTrait, K : KeyType> SealedBox<A, I, K>.decrypt(
     key: SymmetricKey<A, I, K>
 ): KmmResult<ByteArray> = catching {
     require(algorithm == key.algorithm) { "Somebody likes cursed casts!" }
@@ -116,3 +116,51 @@ private fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedic
         )).getOrThrow() as SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated>
     return box.doDecrypt(secretKey)
 }
+
+
+//raw data decryption
+
+
+/**
+ * Directly decrypts raw [encryptedData], feeding [nonce] into the decryption process.
+ */
+@JvmName("decryptRawUnauthedWithNonce")
+fun SymmetricKey<AuthCapability.Unauthenticated, NonceTrait.Required, KeyType.Integrated>.decrypt(
+    nonce: ByteArray,
+    encryptedData: ByteArray
+): KmmResult<ByteArray> = algorithm.sealedBoxFrom(nonce, encryptedData).transform { it.decrypt(this) }
+
+
+/**
+ * Directly decrypts raw [encryptedData].
+ */
+@JvmName("decryptRawUnauthedNoNonce")
+fun SymmetricKey<AuthCapability.Unauthenticated, NonceTrait.Without, KeyType.Integrated>.decrypt(
+    encryptedData: ByteArray
+): KmmResult<ByteArray> = algorithm.sealedBoxFrom(encryptedData).transform { it.decrypt(this) }
+
+
+/**
+ * Directly decrypts raw [encryptedData], feeding [nonce], [authTag], and [authenticatedData] into the decryption process.
+ * @return [at.asitplus.KmmResult.failure] on illegal auth tag length
+ */
+@JvmName("decryptRawAuthedWithNonce")
+fun SymmetricKey<AuthCapability.Authenticated<*>, NonceTrait.Required, *>.decrypt(
+    nonce: ByteArray,
+    encryptedData: ByteArray,
+    authTag: ByteArray,
+    authenticatedData: ByteArray? = null
+): KmmResult<ByteArray> =
+    algorithm.sealedBoxFrom(nonce, encryptedData, authTag, authenticatedData).transform { it.decrypt(this) }
+
+/**
+ * Directly decrypts raw [encryptedData], feeding [authTag], and [authenticatedData] into the decryption process.
+ * @return [at.asitplus.KmmResult.failure] on illegal auth tag length
+ */
+@JvmName("decryptRawAuthedNoNonce")
+fun SymmetricKey<AuthCapability.Authenticated<*>, NonceTrait.Without, *>.decrypt(
+    encryptedData: ByteArray,
+    authTag: ByteArray,
+    authenticatedData: ByteArray? = null
+): KmmResult<ByteArray> =
+    algorithm.sealedBoxFrom(encryptedData, authTag, authenticatedData).transform { it.decrypt(this) }
