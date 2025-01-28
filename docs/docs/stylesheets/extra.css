@@ -72,6 +72,10 @@
     font-feature-settings: "kern", "liga";
 }
 
+.md-typeset details code {
+    font-size: .7rem;
+}
+
 .linenodiv {
     padding-top: .12rem;
 }

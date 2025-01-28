@@ -279,7 +279,7 @@ manuallyRecovered shouldBe payload //great success!
 
 //if we just know algorithm and key bytes, we can also construct a symmetric key
 reconstructed.decrypt(
-  algorithm.keyFrom(key.secretKey, key.dedicatedMacKey).getOrThrow(/*handle error*/),
+  algorithm.keyFrom(key.encryptionKey, key.macKey).getOrThrow(/*handle error*/),
 ).getOrThrow(/*handle error*/) shouldBe payload //greatest success!
 ```
 

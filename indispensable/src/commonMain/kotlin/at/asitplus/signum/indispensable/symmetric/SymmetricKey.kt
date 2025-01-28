@@ -14,10 +14,6 @@ sealed interface KeyType {
  */
 sealed interface SymmetricKey<A : AuthCapability<K>, I : NonceTrait, K : KeyType> {
     val algorithm: SymmetricEncryptionAlgorithm<A, I, K>
-    /**
-     * The actual encryption key bytes
-     */
-    val secretKey: ByteArray
 
     /**
      * This is meant for storing additional properties, which may be relevant for certain use cases.
@@ -25,7 +21,7 @@ sealed interface SymmetricKey<A : AuthCapability<K>, I : NonceTrait, K : KeyType
      * This is not meant for Algorithm parameters! If an algorithm needs parameters, the implementing classes should be extended
      */
     //must be serializable, therefore <String,String>
-    val additionalProperties: MutableMap<String,String>
+    val additionalProperties: MutableMap<String, String>
 
     interface Authenticating<A : AuthCapability.Authenticated<K>, I : NonceTrait, K : KeyType> : SymmetricKey<A, I, K>
     interface NonAuthenticating<I : NonceTrait> : SymmetricKey<AuthCapability.Unauthenticated, I, KeyType.Integrated>
@@ -41,7 +37,10 @@ sealed interface SymmetricKey<A : AuthCapability<K>, I : NonceTrait, K : KeyType
 
     constructor(
         override val algorithm: SymmetricEncryptionAlgorithm<A, I, KeyType.Integrated>,
-        override val secretKey: ByteArray
+        /**
+         * The actual encryption key bytes
+         */
+        val secretKey: ByteArray
     ) :
         SymmetricKey<A, I, KeyType.Integrated> {
         sealed class Authenticating<I : NonceTrait>(
@@ -105,7 +104,6 @@ sealed interface SymmetricKey<A : AuthCapability<K>, I : NonceTrait, K : KeyType
     /**
      * Encryption key with dedicated MAC key. Used for non-authenticated ciphers that use an external MAC function to
      * bolt on AEAD capabilities, such as [SymmetricEncryptionAlgorithm.AES.GCM]
-     * [dedicatedMacKey] defaults to [secretKey]
      */
     sealed class WithDedicatedMac<I : NonceTrait>
     @HazardousMaterials("Does not check whether key size matched algorithm! Useful for testing, but not production!")
@@ -118,11 +116,11 @@ sealed interface SymmetricKey<A : AuthCapability<K>, I : NonceTrait, K : KeyType
         /**
          * The actual encryption key bytes
          */
-        override val secretKey: ByteArray,
+        val encryptionKey: ByteArray,
         /**
          * The actual dedicated MAX key bytes
          */
-        val dedicatedMacKey: ByteArray
+        val macKey: ByteArray
     ) : SymmetricKey<AuthCapability.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey>,
         SymmetricKey.Authenticating<AuthCapability.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey> {
         class RequiringNonce(
@@ -150,16 +148,17 @@ sealed interface SymmetricKey<A : AuthCapability<K>, I : NonceTrait, K : KeyType
             if (other !is WithDedicatedMac<*>) return false
 
             if (algorithm != other.algorithm) return false
-            if (!secretKey.contentEquals(other.secretKey)) return false
-            if (!dedicatedMacKey.contentEquals(other.dedicatedMacKey)) return false
+            if (!encryptionKey.contentEquals(other.encryptionKey)) return false
+            if (!macKey.contentEquals(other.macKey)) return false
+            if (additionalProperties != other.additionalProperties) return false
 
             return true
         }
 
         override fun hashCode(): Int {
             var result = algorithm.hashCode()
-            result = 31 * result + secretKey.contentHashCode()
-            result = 31 * result + dedicatedMacKey.contentHashCode()
+            result = 31 * result + encryptionKey.contentHashCode()
+            result = 31 * result + macKey.contentHashCode()
             return result
         }
     }
@@ -177,17 +176,17 @@ fun <A : AuthCapability<K>, K : KeyType, I : NonceTrait> SymmetricKey<A, I, K>.i
 
 /**Use to smart cast*/
 @OptIn(ExperimentalContracts::class)
-fun <A : AuthCapability.Authenticated<K>, K : KeyType, I : NonceTrait> SymmetricKey<A, I, K>.isIntegrated(): Boolean {
+fun <A : AuthCapability.Authenticated<*>, I : NonceTrait> SymmetricKey<A, I, *>.isIntegrated(): Boolean {
     contract {
         returns(true) implies (this@isIntegrated is SymmetricKey.Integrated.Authenticating<I>)
         returns(false) implies (this@isIntegrated is SymmetricKey.WithDedicatedMac<I>)
     }
-    return this.algorithm.authCapability is AuthCapability.Authenticated.WithDedicatedMac<*,*>
+    return this.hasDedicatedMacKey()
 }
 
 /**Use to smart cast*/
 @OptIn(ExperimentalContracts::class)
-fun <A : AuthCapability<K>, K : KeyType, I : NonceTrait> SymmetricKey<A, I, K>.hasDedicatedMacKey(): Boolean {
+fun <A : AuthCapability<*>, I : NonceTrait> SymmetricKey<A, I, *>.hasDedicatedMacKey(): Boolean {
     contract {
         returns(true) implies (this@hasDedicatedMacKey is SymmetricKey.WithDedicatedMac<I>)
         returns(false) implies (this@hasDedicatedMacKey is SymmetricKey.Integrated<A, I>)
@@ -197,7 +196,7 @@ fun <A : AuthCapability<K>, K : KeyType, I : NonceTrait> SymmetricKey<A, I, K>.h
 
 /**Use to smart cast*/
 @OptIn(ExperimentalContracts::class)
-fun <A : AuthCapability<K>, K : KeyType, I : NonceTrait> SymmetricKey<A, I, K>.requiresNonce(): Boolean {
+fun <A : AuthCapability<K>, K : KeyType> SymmetricKey<A, *, K>.requiresNonce(): Boolean {
     contract {
         returns(true) implies (this@requiresNonce is SymmetricKey.RequiringNonce<A, K>)
         returns(false) implies (this@requiresNonce is SymmetricKey.WithoutNonce<A, K>)
@@ -205,3 +204,8 @@ fun <A : AuthCapability<K>, K : KeyType, I : NonceTrait> SymmetricKey<A, I, K>.r
     return algorithm.nonceTrait is NonceTrait.Required
 }
 
+/**
+ * The actual encryption key bytes
+ */
+val <A : AuthCapability<out K>, I : NonceTrait, K : KeyType.Integrated> SymmetricKey<A, I, out K >.secretKey get() = (this as SymmetricKey.Integrated).secretKey
+val <I : NonceTrait> SymmetricKey<AuthCapability.Authenticated.WithDedicatedMac<*,I>, I, out KeyType.WithDedicatedMacKey >.encryptionKey get() = (this as SymmetricKey.WithDedicatedMac).encryptionKey

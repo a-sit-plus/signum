@@ -3,6 +3,7 @@
 ## 3.0
 
 ### NEXT
+
 * HMAC Support
 * Symmetric Encryption
     * Supported Algorithms

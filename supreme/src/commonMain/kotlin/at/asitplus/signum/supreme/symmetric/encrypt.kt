@@ -3,7 +3,6 @@ package at.asitplus.signum.supreme.symmetric
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.symmetric.*
-import at.asitplus.signum.indispensable.symmetric.SymmetricKey.WithDedicatedMac
 import kotlin.jvm.JvmName
 
 /**
@@ -13,13 +12,13 @@ import kotlin.jvm.JvmName
  * invalid parameters (e.g., algorithm mismatch, key length, …)
  */
 @JvmName("encryptWithAutoGenIV")
-fun <K: KeyType,A : AuthCapability<out K>, I : NonceTrait> SymmetricKey<A, I,out K>.encrypt(
+fun <K : KeyType, A : AuthCapability<out K>, I : NonceTrait> SymmetricKey<A, I, out K>.encrypt(
     data: ByteArray
-): KmmResult<SealedBox<A, I,out K>> = catching {
+): KmmResult<SealedBox<A, I, out K>> = catching {
     Encryptor(
         algorithm,
-        secretKey,
-        if (this is WithDedicatedMac) dedicatedMacKey else secretKey,
+        if (this.hasDedicatedMacKey()) encryptionKey else secretKey,
+        if (this.hasDedicatedMacKey()) macKey else null,
         null,
         null,
     ).encrypt(data)
@@ -39,14 +38,14 @@ fun <K: KeyType,A : AuthCapability<out K>, I : NonceTrait> SymmetricKey<A, I,out
  * invalid parameters (e.g., algorithm mismatch, key length, …)
  */
 @JvmName("encryptAuthenticated")
-fun <K: KeyType, A : AuthCapability.Authenticated<out K>, I : NonceTrait> SymmetricKey<A, I,out K>.encrypt(
+fun <K : KeyType, A : AuthCapability.Authenticated<out K>, I : NonceTrait> SymmetricKey<A, I, out K>.encrypt(
     data: ByteArray,
     authenticatedData: ByteArray? = null
-): KmmResult<SealedBox<A, I,out K>> = catching {
+): KmmResult<SealedBox<A, I, out K>> = catching {
     Encryptor(
         algorithm,
-        secretKey,
-        if (this is WithDedicatedMac) dedicatedMacKey else secretKey,
+        if (this.hasDedicatedMacKey()) encryptionKey else secretKey,
+        if (this.hasDedicatedMacKey()) macKey else null,
         null,
         authenticatedData,
     ).encrypt(data)

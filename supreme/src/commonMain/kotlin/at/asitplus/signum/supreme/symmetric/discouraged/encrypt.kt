@@ -27,8 +27,8 @@ fun <K : KeyType, A : AuthCapability.Authenticated<out K>> KeyWithNonceAuthentic
 ): KmmResult<SealedBox.WithNonce.Authenticated<K>> = catching {
     Encryptor(
         second.algorithm,
-        second.secretKey,
-        if (second is WithDedicatedMac) (second as WithDedicatedMac<NonceTrait.Required>).dedicatedMacKey else second.secretKey,
+        if (second.hasDedicatedMacKey()) (second as WithDedicatedMac<NonceTrait.Required>).encryptionKey else (second as SymmetricKey.Integrated<out A, NonceTrait.Required>).secretKey,
+        if (second.hasDedicatedMacKey()) (second as WithDedicatedMac<NonceTrait.Required>).macKey else (second as SymmetricKey.Integrated<out A, NonceTrait.Required>).secretKey,
         first,
         authenticatedData,
     ).encrypt(data) as SealedBox.WithNonce.Authenticated<K>
@@ -50,8 +50,8 @@ fun <K : KeyType, A : AuthCapability<out K>> KeyWithNonce<A, out K>.encrypt(
 ): KmmResult<SealedBox.WithNonce<A, out K>> = catching {
     Encryptor(
         first.algorithm,
-        first.secretKey,
-        if (first is WithDedicatedMac) (first as WithDedicatedMac<NonceTrait.Required>).dedicatedMacKey else first.secretKey,
+        if (first.hasDedicatedMacKey()) (first as WithDedicatedMac<NonceTrait.Required>).encryptionKey else (first as SymmetricKey.Integrated<out A, NonceTrait.Required>).secretKey,
+        if (first.hasDedicatedMacKey()) (first as WithDedicatedMac<NonceTrait.Required>).macKey else null,
         second,
         null,
     ).encrypt(data) as SealedBox.WithNonce<A, out K>
