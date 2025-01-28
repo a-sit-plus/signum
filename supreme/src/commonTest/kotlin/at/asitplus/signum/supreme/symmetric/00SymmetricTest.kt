@@ -604,29 +604,193 @@ class `00SymmetricTest` : FreeSpec({
     }
 
 
-    "Edge Cases" - {
+    val allAlgorithms = listOf(
+        SymmetricEncryptionAlgorithm.AES_128.ECB,
+        SymmetricEncryptionAlgorithm.AES_192.ECB,
+        SymmetricEncryptionAlgorithm.AES_256.ECB,
+        SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
+        SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN,
+        SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN,
+        SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_256,
+        SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_256,
+        SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_256,
+        SymmetricEncryptionAlgorithm.AES_128.GCM,
+        SymmetricEncryptionAlgorithm.AES_192.GCM,
+        SymmetricEncryptionAlgorithm.AES_256.GCM,
 
-        val allAlgorithms = listOf(
-            SymmetricEncryptionAlgorithm.AES_128.ECB,
-            SymmetricEncryptionAlgorithm.AES_192.ECB,
-            SymmetricEncryptionAlgorithm.AES_256.ECB,
-            SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
-            SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN,
-            SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN,
-            SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_256,
-            SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_256,
-            SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_256,
-            SymmetricEncryptionAlgorithm.AES_128.GCM,
-            SymmetricEncryptionAlgorithm.AES_192.GCM,
-            SymmetricEncryptionAlgorithm.AES_256.GCM,
+        SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394,
+        SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394,
+        SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394,
 
-            SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394,
-            SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394,
-            SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394,
+        SymmetricEncryptionAlgorithm.ChaCha20Poly1305,
+    )
 
-            SymmetricEncryptionAlgorithm.ChaCha20Poly1305,
-        )
 
+    "Equality" - {
+        withData(allAlgorithms) { alg ->
+            withData(
+                nameFn = { "data: ${it.size} bytes" },
+                //multiples of 8, so AES-KW works
+                Random.nextBytes(192),
+                Random.nextBytes(24),
+                Random.nextBytes(32),
+                Random.nextBytes(56),
+                Random.nextBytes(64),
+                Random.nextBytes(256),
+                Random.nextBytes(1024),
+                Random.nextBytes(4096),
+            ) { plaintext ->
+                alg.randomKey().also { key ->
+                    when (alg.hasDedicatedMac()) {
+                        true -> {
+                            key shouldBe alg.keyFrom(
+                                key.secretKey,
+                                (key as SymmetricKey.WithDedicatedMac<*>).dedicatedMacKey
+                            ).getOrThrow()
+
+                            key shouldNotBe alg.keyFrom(
+                                key.secretKey,
+                                (key as SymmetricKey.WithDedicatedMac<*>).dedicatedMacKey.asList().shuffled()
+                                    .toByteArray()
+                            ).getOrThrow()
+                            key shouldNotBe alg.keyFrom(
+                                key.secretKey.asList().shuffled().toByteArray(),
+                                (key as SymmetricKey.WithDedicatedMac<*>).dedicatedMacKey
+                            ).getOrThrow()
+                            key shouldNotBe alg.keyFrom(
+                                key.secretKey.asList().shuffled().toByteArray(),
+                                (key as SymmetricKey.WithDedicatedMac<*>).dedicatedMacKey.asList().shuffled()
+                                    .toByteArray()
+                            ).getOrThrow()
+                        }
+
+                        false -> key shouldBe alg.keyFrom(key.secretKey).getOrThrow()
+                    }
+                }
+
+
+                if (alg.isAuthenticated()) {
+                    val aad = plaintext.asList().shuffled().toByteArray()
+                    if (!alg.requiresNonce()) alg.randomKey().let { key ->
+                        key.encrypt(plaintext, aad).getOrThrow() shouldBe key.encrypt(plaintext, aad).getOrThrow()
+                        key.encrypt(plaintext, plaintext).getOrThrow() shouldNotBe key.encrypt(plaintext, aad)
+                            .getOrThrow()
+                    }
+                    else alg.randomKey().let { key ->
+
+                        key.encrypt(plaintext, aad).getOrThrow() shouldNotBe key.encrypt(plaintext, aad).getOrThrow()
+
+                        val nonce = alg.randomNonce()
+                        key.andPredefinedNonce(nonce).getOrThrow()
+                            .encrypt(plaintext).getOrThrow() shouldBe key.andPredefinedNonce(nonce).getOrThrow()
+                            .encrypt(plaintext).getOrThrow()
+
+                        key.andPredefinedNonce(nonce).getOrThrow()
+                            .encrypt(plaintext).getOrThrow() shouldNotBe key.andPredefinedNonce(alg.randomNonce())
+                            .getOrThrow()
+                            .encrypt(plaintext).getOrThrow()
+                    }
+                } else {
+                    if (!alg.requiresNonce()) alg.randomKey().also { key ->
+                        key.encrypt(plaintext).getOrThrow() shouldBe key.encrypt(plaintext).getOrThrow()
+                    } else alg.randomKey().let { key ->
+
+                        key.encrypt(plaintext).getOrThrow() shouldNotBe key.encrypt(plaintext).getOrThrow()
+
+                        val nonce = alg.randomNonce()
+                        key.andPredefinedNonce(nonce).getOrThrow()
+                            .encrypt(plaintext).getOrThrow() shouldBe key.andPredefinedNonce(nonce).getOrThrow()
+                            .encrypt(plaintext).getOrThrow()
+
+                        key.andPredefinedNonce(nonce).getOrThrow()
+                            .encrypt(plaintext).getOrThrow() shouldNotBe key.andPredefinedNonce(alg.randomNonce())
+                            .getOrThrow()
+                            .encrypt(plaintext).getOrThrow()
+                    }
+                }
+
+                withData(allAlgorithms.filterNot { it /*check for same instance*/ === alg }) { wrongAlg ->
+                    alg shouldNotBe wrongAlg
+                    alg.randomKey() shouldNotBe wrongAlg.randomKey()
+                    if (alg.keySize == wrongAlg.keySize) {
+                        if (alg.isAuthenticated() && wrongAlg.isAuthenticated()) {
+                            if (alg.hasDedicatedMac() && wrongAlg.hasDedicatedMac()) {
+                                alg.randomKey().let { key ->
+                                    wrongAlg.keyFrom(
+                                        key.secretKey,
+                                        key.dedicatedMacKey /*size will not match, but it will get us a valid key*/
+                                    ).getOrThrow() shouldNotBe key
+                                }
+                            } else if (!wrongAlg.hasDedicatedMac() && !alg.hasDedicatedMac()) {
+                                alg.randomKey().let { key ->
+                                    wrongAlg.keyFrom(
+                                        key.secretKey,
+                                    ).getOrThrow() shouldNotBe key
+                                }
+                            }
+                        }
+                    }
+
+                    val box = when (alg.requiresNonce()) {
+                        true -> when (alg.isAuthenticated()) {
+                            true -> alg.sealedBoxFrom(
+                                alg.randomNonce(),
+                                plaintext,
+                                Random.nextBytes(alg.authTagLength.bytes.toInt()),
+                                plaintext
+                            )
+
+                            false -> alg.sealedBoxFrom(alg.randomNonce(), plaintext)
+                        }
+
+                        false -> when (alg.isAuthenticated()) {
+                            true -> alg.sealedBoxFrom(
+                                plaintext,
+                                Random.nextBytes(alg.authTagLength.bytes.toInt()),
+                                plaintext
+                            )
+
+                            false -> alg.sealedBoxFrom(plaintext)
+                        }
+                    }.getOrThrow()
+
+                    val box2 = when (wrongAlg.requiresNonce()) {
+                        true -> when (wrongAlg.isAuthenticated()) {
+                            true -> wrongAlg.sealedBoxFrom(
+                                if (box.hasNonce() && box.nonce.size == wrongAlg.nonceLength.bytes.toInt()) box.nonce else
+                                    wrongAlg.randomNonce(),
+                                plaintext,
+                                if (box.isAuthenticated() && box.authTag.size == wrongAlg.authTagLength.bytes.toInt()) box.authTag else
+                                    Random.nextBytes(wrongAlg.authTagLength.bytes.toInt()),
+                                plaintext
+                            )
+
+                            false -> wrongAlg.sealedBoxFrom(
+                                if (box.hasNonce() && box.nonce.size == wrongAlg.nonceLength.bytes.toInt()) box.nonce else
+                                    wrongAlg.randomNonce(), plaintext
+                            )
+                        }
+
+                        false -> when (wrongAlg.isAuthenticated()) {
+                            true -> wrongAlg.sealedBoxFrom(
+                                plaintext,
+                                if (box.isAuthenticated() && box.authTag.size == wrongAlg.authTagLength.bytes.toInt()) box.authTag else
+                                    Random.nextBytes(wrongAlg.authTagLength.bytes.toInt()),
+                                plaintext
+                            )
+
+                            false -> wrongAlg.sealedBoxFrom(plaintext)
+                        }
+                    }.getOrThrow()
+
+                    box shouldNotBe box2
+                }
+            }
+        }
+    }
+
+
+    "Edge Cases " - {
         "all good" - {
             withData(
 
@@ -660,7 +824,9 @@ class `00SymmetricTest` : FreeSpec({
                 withData(allAlgorithms.filterNot { it == alg }) { wrongAlg ->
                     val encrypted = alg.randomKey().encrypt(Random.nextBytes(64)/*works with wrapping*/).getOrThrow()
                     val wrongKey = wrongAlg.randomKey()
+
                     encrypted.decrypt(wrongKey) shouldNot succeed
+
                 }
             }
         }

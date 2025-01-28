@@ -115,6 +115,23 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
         override val name: String = "AES-${keySize.bits} ${modeOfOps.acronym}"
 
         override fun toString(): String = name
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is AES<*, *, *>) return false
+
+            if (keySize != other.keySize) return false
+            if (name != other.name) return false
+            if(authCapability != other.authCapability) return false
+            if(nonceTrait != other.nonceTrait) return false
+            if(oid != other.oid) return false
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = keySize.hashCode()
+            result = 31 * result + name.hashCode()
+            return result
+        }
 
         class GCM internal constructor(keySize: BitLength) :
             SymmetricEncryptionAlgorithm.Authenticated.Integrated<NonceTrait.Required>,
@@ -289,7 +306,46 @@ sealed interface AuthCapability<K : KeyType> {
              * Specifies how the inputs to the MAC are to be encoded/processed
              */
             val dedicatedMacInputCalculation: DedicatedMacInputCalculation
-        ) : Authenticated<KeyType.WithDedicatedMacKey>(tagLen, KeyType.WithDedicatedMacKey)
+        ) : Authenticated<KeyType.WithDedicatedMacKey>(tagLen, KeyType.WithDedicatedMacKey) {
+
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+                if (other !is WithDedicatedMac<*, *>) return false
+                if (!super.equals(other)) return false
+
+                if (innerCipher != other.innerCipher) return false
+                if (mac != other.mac) return false
+                if (preferredMacKeyLength != other.preferredMacKeyLength) return false
+                if (dedicatedMacInputCalculation != other.dedicatedMacInputCalculation) return false
+
+                return true
+            }
+
+            override fun hashCode(): Int {
+                var result = super.hashCode()
+                result = 31 * result + innerCipher.hashCode()
+                result = 31 * result + mac.hashCode()
+                result = 31 * result + preferredMacKeyLength.hashCode()
+                result = 31 * result + dedicatedMacInputCalculation.hashCode()
+                return result
+            }
+        }
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is Authenticated<*>) return false
+
+            if (tagLength != other.tagLength) return false
+            if (keyType != other.keyType) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = tagLength.hashCode()
+            result = 31 * result + keyType.hashCode()
+            return result
+        }
     }
 
     /**
@@ -352,12 +408,23 @@ abstract class StreamCipher<A : AuthCapability<K>, I : NonceTrait, K : KeyType> 
 /**Use to smart-cast this algorithm*/
 @JvmName("isBlockCipherAlias")
 @OptIn(ExperimentalContracts::class)
-fun SymmetricEncryptionAlgorithm<*, *, *>.isBlockCipher(): Boolean {
+fun < A : AuthCapability<out K>,  I : NonceTrait,  K : KeyType>SymmetricEncryptionAlgorithm<A, I, K>.isBlockCipher(): Boolean {
     contract {
         returns(true) implies (this@isBlockCipher is BlockCipher<*, *, *>)
         returns(false) implies (this@isBlockCipher is StreamCipher<*, *, *>)
     }
     return this is BlockCipher<*, *, *>
+}
+
+/**Use to smart-cast this algorithm*/
+@JvmName("isStreamCipherAlias")
+@OptIn(ExperimentalContracts::class)
+fun < A : AuthCapability<out K>,  I : NonceTrait,  K : KeyType>SymmetricEncryptionAlgorithm<A, I, K>.isStreamCipher(): Boolean {
+    contract {
+        returns(true) implies (this@isStreamCipher is StreamCipher<*, *, *>)
+        returns(false) implies (this@isStreamCipher is BlockCipher<*, *, *>)
+    }
+    return this is StreamCipher<*, *, *>
 }
 
 /**Use to smart-cast this algorithm*/
