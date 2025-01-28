@@ -150,7 +150,7 @@ data class Pkcs10CertificationRequest(
 
     companion object : PemDecodable<Asn1Sequence, Pkcs10CertificationRequest>(
         EB_STRINGS.DEFAULT,
-        Companion.EB_STRINGS.LEGACY
+        EB_STRINGS.LEGACY
     ) {
         private object EB_STRINGS {
             const val DEFAULT = "CERTIFICATE REQUEST"

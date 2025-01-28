@@ -13,3 +13,11 @@ fun ByteArray.ensureSize(size: Int): ByteArray = (this.size - size).let { toDrop
 
 @Suppress("NOTHING_TO_INLINE")
 inline fun ByteArray.ensureSize(size: UInt) = ensureSize(size.toInt())
+
+inline fun <O, reified T : O> checkedAs(v: O): T =
+    v as? T
+        ?: throw IllegalArgumentException("Expected type was ${T::class.simpleName}, but was really ${if (v == null) "<null>" else v!!::class.simpleName}")
+
+inline fun <I, O, reified T : O> checkedAsFn(crossinline fn: (I) -> O): (I) -> T = {
+    checkedAs(fn(it))
+}
