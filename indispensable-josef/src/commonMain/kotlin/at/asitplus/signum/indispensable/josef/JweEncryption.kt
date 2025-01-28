@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.signum.indispensable.misc.BitLength
+import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.authTagLength
 import at.asitplus.signum.indispensable.symmetric.hasDedicatedMac
@@ -30,16 +32,13 @@ enum class JweEncryption(val identifier: String, val algorithm: SymmetricEncrypt
     A256CBC_HS512("A256CBC-HS512", SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_512)
     ;
 
-    @Deprecated("Inaptly named", ReplaceWith("identifier"))
-    val text: String get() = identifier
 
-    val encryptionKeyLength get() = algorithm.keySize
+    val encryptionKeyLength: BitLength get() = algorithm.keySize
 
-
-    val ivLengthBits: Int
+    val ivLength: BitLength
         get() = when (algorithm.requiresNonce()) {
-            true -> algorithm.nonceTrait.length.bits.toInt()
-            false -> 0
+            true -> algorithm.nonceTrait.length
+            false -> 0.bit
         }
 
     /**

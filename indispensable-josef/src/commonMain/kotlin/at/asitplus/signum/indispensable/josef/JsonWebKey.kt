@@ -17,6 +17,7 @@ import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.josef.io.JwsCertificateSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.CertificateChain
+import at.asitplus.signum.indispensable.symmetric.SymmetricKey
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -373,6 +374,12 @@ fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
                 e = e.magnitude
             )
     }
+/**
+ * Converts a [at.asitplus.signum.indispensable.symmetric.SymmetricKey] to a [JsonWebKey]
+ */
+fun SymmetricKey<*,*,*>.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey? {
+    TODO("Define algorithms an map where possible")
+}
 
 private const val JWK_ID = "jwkIdentifier"
 
@@ -380,6 +387,14 @@ private const val JWK_ID = "jwkIdentifier"
  * Holds [JsonWebKey.keyId] when transforming a [JsonWebKey] to a [CryptoPublicKey]
  */
 var CryptoPublicKey.jwkId: String?
+    get() = additionalProperties[JWK_ID]
+    set(value) {
+        value?.also { additionalProperties[JWK_ID] = value } ?: additionalProperties.remove(JWK_ID)
+    }
+/**
+ * Holds [JsonWebKey.keyId] when transforming a [JsonWebKey] to a [CryptoPublicKey]
+ */
+var SymmetricKey<*,*,*>.jwkId: String?
     get() = additionalProperties[JWK_ID]
     set(value) {
         value?.also { additionalProperties[JWK_ID] = value } ?: additionalProperties.remove(JWK_ID)
