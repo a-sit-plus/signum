@@ -115,23 +115,6 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
         override val name: String = "AES-${keySize.bits} ${modeOfOps.acronym}"
 
         override fun toString(): String = name
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other !is AES<*, *, *>) return false
-
-            if (keySize != other.keySize) return false
-            if (name != other.name) return false
-            if(authCapability != other.authCapability) return false
-            if(nonceTrait != other.nonceTrait) return false
-            if(oid != other.oid) return false
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = keySize.hashCode()
-            result = 31 * result + name.hashCode()
-            return result
-        }
 
         class GCM internal constructor(keySize: BitLength) :
             SymmetricEncryptionAlgorithm.Authenticated.Integrated<NonceTrait.Required>,
