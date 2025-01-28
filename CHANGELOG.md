@@ -13,7 +13,9 @@
             * ECB
             * KW
         * ChaCha-Poly1305
-    * Add algorithm mappings to indispensable-josef **This is a binary-incompatible change, if you were using JWE!**
+    * Add algorithm mappings to indispensable-josef **This is a binary-incompatible change**
+      * `ivLength` and `encryptionKeyLength` now return `BitLength` instead of `Int`
+      * `text` is now properly called `identifier`
 * Moved `HazardousMaterials` annotation from `supreme` to `indispensable`
 
 
