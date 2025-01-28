@@ -391,10 +391,10 @@ abstract class StreamCipher<A : AuthCapability<K>, I : NonceTrait, K : KeyType> 
 /**Use to smart-cast this algorithm*/
 @JvmName("isBlockCipherAlias")
 @OptIn(ExperimentalContracts::class)
-fun < A : AuthCapability<out K>,  I : NonceTrait,  K : KeyType>SymmetricEncryptionAlgorithm<A, I, K>.isBlockCipher(): Boolean {
+fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.isBlockCipher(): Boolean {
     contract {
-        returns(true) implies (this@isBlockCipher is BlockCipher<*, *, *>)
-        returns(false) implies (this@isBlockCipher is StreamCipher<*, *, *>)
+        returns(true) implies (this@isBlockCipher is BlockCipher<A, I, K>)
+        returns(false) implies (this@isBlockCipher is StreamCipher<A, I, K>)
     }
     return this is BlockCipher<*, *, *>
 }
@@ -402,10 +402,10 @@ fun < A : AuthCapability<out K>,  I : NonceTrait,  K : KeyType>SymmetricEncrypti
 /**Use to smart-cast this algorithm*/
 @JvmName("isStreamCipherAlias")
 @OptIn(ExperimentalContracts::class)
-fun < A : AuthCapability<out K>,  I : NonceTrait,  K : KeyType>SymmetricEncryptionAlgorithm<A, I, K>.isStreamCipher(): Boolean {
+fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.isStreamCipher(): Boolean {
     contract {
-        returns(true) implies (this@isStreamCipher is StreamCipher<*, *, *>)
-        returns(false) implies (this@isStreamCipher is BlockCipher<*, *, *>)
+        returns(true) implies (this@isStreamCipher is StreamCipher<A, I, K>)
+        returns(false) implies (this@isStreamCipher is BlockCipher<A, I, K>)
     }
     return this is StreamCipher<*, *, *>
 }
@@ -458,6 +458,6 @@ fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*
 }
 
 
-val SymmetricEncryptionAlgorithm<*,NonceTrait.Required,*>.nonceLength : BitLength get() = nonceTrait.length
-val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*,*>,*, KeyType.WithDedicatedMacKey>.preferredMacKeyLength : BitLength get() = authCapability.preferredMacKeyLength
-val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>,*, *>.authTagLength : BitLength get() = authCapability.tagLength
+val SymmetricEncryptionAlgorithm<*, NonceTrait.Required, *>.nonceLength: BitLength get() = nonceTrait.length
+val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedicatedMacKey>.preferredMacKeyLength: BitLength get() = authCapability.preferredMacKeyLength
+val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, *, *>.authTagLength: BitLength get() = authCapability.tagLength

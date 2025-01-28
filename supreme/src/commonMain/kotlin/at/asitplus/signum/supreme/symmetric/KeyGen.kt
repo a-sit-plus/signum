@@ -27,7 +27,7 @@ fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEncryption
  */
 @JvmName("randomKeyAndMacKey")
 fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey>.randomKey(
-    macKeyLength: BitLength = authCapability.preferredMacKeyLength
+    macKeyLength: BitLength = preferredMacKeyLength
 ): SymmetricKey.WithDedicatedMac<I> =
     keyFromInternal(
         secureRandom.nextBytesOf(keySize.bytes.toInt()),
@@ -78,28 +78,28 @@ private fun SymmetricEncryptionAlgorithm<*, *, *>.keyFromInternal(
 }
 
 /**
- * Creates a [SymmetricKey] from the specified [bytes].
+ * Creates a [SymmetricKey] from the specified [secretKey].
  * Returns [KmmResult.failure] in case the provided bytes don't match [SymmetricEncryptionAlgorithm.keySize]
  */
 @JvmName("fixedKeyIntegrated")
-fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated>.keyFrom(bytes: ByteArray): KmmResult<SymmetricKey<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated>> =
+fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated>.keyFrom(secretKey: ByteArray): KmmResult<SymmetricKey<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated>> =
     catching {
         (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(
-            bytes,
+            secretKey,
             null
         )
     } as KmmResult<SymmetricKey<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated>>
 
 
 /**
- * Creates a [SymmetricKey] from the specified [bytes].
+ * Creates a [SymmetricKey] from the specified [secretKey].
  * Returns [KmmResult.failure] in case the provided bytes don't match [SymmetricEncryptionAlgorithm.keySize]
  */
 @JvmName("fixedKeyAuthenticatedIntegrated")
-fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<KeyType.Integrated>, I, KeyType.Integrated>.keyFrom(bytes: ByteArray): KmmResult<SymmetricKey<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated>> =
+fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<KeyType.Integrated>, I, KeyType.Integrated>.keyFrom(secretKey: ByteArray): KmmResult<SymmetricKey<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated>> =
     catching {
         (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(
-            bytes,
+            secretKey,
             null
         )
     } as KmmResult<SymmetricKey<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated>>

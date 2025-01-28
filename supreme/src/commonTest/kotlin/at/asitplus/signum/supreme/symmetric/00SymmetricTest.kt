@@ -129,7 +129,7 @@ class `00SymmetricTest` : FreeSpec({
                 } shouldNot succeed
 
                 val key = when (alg.hasDedicatedMac()) {
-                    true -> alg.keyFrom(alg.randomKey().secretKey, alg.randomKey().secretKey)
+                    true -> alg.keyFrom(alg.randomKey().encryptionKey, alg.randomKey().encryptionKey)
                     false -> alg.keyFrom(alg.randomKey().secretKey)
                 }.getOrThrow()
 
@@ -390,7 +390,7 @@ class `00SymmetricTest` : FreeSpec({
                     Random.Default.nextBytes(21257),
                 ) { plaintext ->
 
-                    val secretKey = it.randomKey().secretKey
+                    val secretKey = it.randomKey().encryptionKey
 
                     withData(
                         nameFn = { "MAC KEY $it" },
@@ -417,8 +417,8 @@ class `00SymmetricTest` : FreeSpec({
                                 val manilaAlg = it.Custom { _, _, _ -> "Manila".encodeToByteArray() }
                                 val manilaKey = SymmetricKey.WithDedicatedMac.RequiringNonce(
                                     manilaAlg,
-                                    key.secretKey,
-                                    key.dedicatedMacKey
+                                    key.encryptionKey,
+                                    key.macKey
                                 )
                                 if (iv != null) manilaKey.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext, aad)
                                     .getOrThrow() shouldNotBe ciphertext
@@ -483,8 +483,8 @@ class `00SymmetricTest` : FreeSpec({
                                 ).getOrThrow().decrypt(
                                     SymmetricKey.WithDedicatedMac.RequiringNonce(
                                         ciphertext.algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, NonceTrait.Required>, NonceTrait.Required, KeyType.WithDedicatedMacKey>,
-                                        key.secretKey,
-                                        dedicatedMacKey = key.dedicatedMacKey.asList().shuffled().toByteArray()
+                                        key.encryptionKey,
+                                        dedicatedMacKey = key.macKey.asList().shuffled().toByteArray()
                                     )
                                 ) shouldNot succeed
 
@@ -513,8 +513,8 @@ class `00SymmetricTest` : FreeSpec({
                                 }.let {
                                     SymmetricKey.WithDedicatedMac.RequiringNonce(
                                         it,
-                                        key.secretKey,
-                                        key.dedicatedMacKey
+                                        key.encryptionKey,
+                                        key.macKey
                                     )
                                 }) shouldNot succeed
                             }
@@ -644,27 +644,27 @@ class `00SymmetricTest` : FreeSpec({
                     when (alg.hasDedicatedMac()) {
                         true -> {
                             key shouldBe alg.keyFrom(
-                                key.secretKey,
-                                (key as SymmetricKey.WithDedicatedMac<*>).dedicatedMacKey
+                                (key as SymmetricKey.WithDedicatedMac).encryptionKey,
+                                (key as SymmetricKey.WithDedicatedMac<*>).macKey
                             ).getOrThrow()
 
                             key shouldNotBe alg.keyFrom(
-                                key.secretKey,
-                                (key as SymmetricKey.WithDedicatedMac<*>).dedicatedMacKey.asList().shuffled()
+                                key.encryptionKey,
+                                (key as SymmetricKey.WithDedicatedMac<*>).macKey.asList().shuffled()
                                     .toByteArray()
                             ).getOrThrow()
                             key shouldNotBe alg.keyFrom(
-                                key.secretKey.asList().shuffled().toByteArray(),
-                                (key as SymmetricKey.WithDedicatedMac<*>).dedicatedMacKey
+                                key.encryptionKey.asList().shuffled().toByteArray(),
+                                (key as SymmetricKey.WithDedicatedMac<*>).macKey
                             ).getOrThrow()
                             key shouldNotBe alg.keyFrom(
-                                key.secretKey.asList().shuffled().toByteArray(),
-                                (key as SymmetricKey.WithDedicatedMac<*>).dedicatedMacKey.asList().shuffled()
+                                key.encryptionKey.asList().shuffled().toByteArray(),
+                                (key as SymmetricKey.WithDedicatedMac<*>).macKey.asList().shuffled()
                                     .toByteArray()
                             ).getOrThrow()
                         }
 
-                        false -> key shouldBe alg.keyFrom(key.secretKey).getOrThrow()
+                        false -> key shouldBe alg.keyFrom((key as SymmetricKey.Integrated).secretKey).getOrThrow()
                     }
                 }
 
@@ -717,8 +717,8 @@ class `00SymmetricTest` : FreeSpec({
                             if (alg.hasDedicatedMac() && wrongAlg.hasDedicatedMac()) {
                                 alg.randomKey().let { key ->
                                     wrongAlg.keyFrom(
-                                        key.secretKey,
-                                        key.dedicatedMacKey /*size will not match, but it will get us a valid key*/
+                                        key.encryptionKey,
+                                        key.macKey /*size will not match, but it will get us a valid key*/
                                     ).getOrThrow() shouldNotBe key
                                 }
                             } else if (!wrongAlg.hasDedicatedMac() && !alg.hasDedicatedMac()) {
@@ -843,7 +843,7 @@ class `00SymmetricTest` : FreeSpec({
                         true -> {
                             alg.keyFrom(
                                 Random.nextBytes(sz),
-                                alg.randomKey().secretKey /*mac key should not trigger, as it is unconstrained*/
+                                alg.randomKey().encryptionKey /*mac key should not trigger, as it is unconstrained*/
                             )
                         }
 
@@ -924,7 +924,7 @@ class `00SymmetricTest` : FreeSpec({
 
         //if we just know algorithm and key bytes, we can also construct a symmetric key
         reconstructed.decrypt(
-            algorithm.keyFrom(key.secretKey, key.dedicatedMacKey).getOrThrow(/*handle error*/),
+            algorithm.keyFrom(key.encryptionKey, key.macKey).getOrThrow(/*handle error*/),
         ).getOrThrow(/*handle error*/) shouldBe payload //greatest success!
     }
 })

@@ -18,13 +18,13 @@ sealed interface SealedBox<A : AuthCapability<K>, I : NonceTrait, K : KeyType> {
     val algorithm: SymmetricEncryptionAlgorithm<A, I, K>
     val encryptedData: ByteArray
 
-    interface Authenticated<I : at.asitplus.signum.indispensable.symmetric.NonceTrait, K : KeyType> :
+    interface Authenticated<I : NonceTrait, K : KeyType> :
         SealedBox<AuthCapability.Authenticated<K>, I, K> {
         val authTag: ByteArray
         val authenticatedData: ByteArray?
     }
 
-    interface Unauthenticated<I : at.asitplus.signum.indispensable.symmetric.NonceTrait> :
+    interface Unauthenticated<I : NonceTrait> :
         SealedBox<AuthCapability.Unauthenticated, I, KeyType.Integrated>
 
     /**

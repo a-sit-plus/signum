@@ -20,18 +20,18 @@ fun SealedBox<*, *, *>.decrypt(key: SymmetricKey<*, *, *>) = catching {
     require(algorithm == key.algorithm) { "Algorithm mismatch! expected: $algorithm, actual: ${key.algorithm}" }
     when (algorithm.authCapability) {
         is Authenticated.Integrated -> (this as SealedBox<Authenticated.Integrated, *, KeyType.Integrated>).decryptInternal(
-            key.secretKey
+            (key as SymmetricKey.Integrated).secretKey
         )
 
         is Authenticated.WithDedicatedMac<*, *> -> {
             key as SymmetricKey.WithDedicatedMac
             (this as SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedicatedMacKey>).decryptInternal(
-                key.secretKey, key.dedicatedMacKey
+                key.encryptionKey, key.macKey
             )
         }
 
         is AuthCapability.Unauthenticated -> (this as SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated>).decryptInternal(
-            key.secretKey
+            (key as SymmetricKey.Integrated).secretKey
         )
     }
 }
@@ -49,18 +49,18 @@ fun <A : AuthCapability<K>, I : NonceTrait, K : KeyType> SealedBox<A, I, K>.decr
     require(algorithm == key.algorithm) { "Somebody likes cursed casts!" }
     when (algorithm.authCapability as AuthCapability<*>) {
         is Authenticated.Integrated -> (this as SealedBox<Authenticated.Integrated, *, KeyType.Integrated>).decryptInternal(
-            key.secretKey
+            (key as SymmetricKey.Integrated).secretKey
         )
 
         is Authenticated.WithDedicatedMac<*, *> -> {
             key as SymmetricKey.WithDedicatedMac
             (this as SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedicatedMacKey>).decryptInternal(
-                key.secretKey, key.dedicatedMacKey
+                key.encryptionKey, key.macKey
             )
         }
 
         is AuthCapability.Unauthenticated -> (this as SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated>).decryptInternal(
-            key.secretKey
+            (key as SymmetricKey.Integrated).secretKey
         )
     }
 }
