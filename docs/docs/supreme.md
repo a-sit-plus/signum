@@ -342,7 +342,7 @@ For a list of supported algorithms, check out the [feature matrix](features.md#s
 ## Symmetric Encryption
 
 !!! warning inline end
-    **NEVER** re-use an IV! Let Supreme auto-generate them!
+    **NEVER** re-use an IV! Let the Supreme KMP crypto provider auto-generate them!
 
 Symmetric encryption is implemented both flexible and type-safe. At the same time, the public interface is also rather lean:
 
@@ -350,15 +350,74 @@ Symmetric encryption is implemented both flexible and type-safe. At the same tim
 * Invoke `randomKey()` on it to obtain a `SymmetricKey` object.
 * Call `encrypt(data)` on the key and receive a `SealedBox`.
 
-Encryption is the same straight-forward affair:
+Decryption is the same straight-forward affair:
 Simply call `decrypt(key)` on a `SealedBox` to remover the plaintext.
+
+!!! tip inline end
+    All data classes (keys, algorithms, ciphertext, MAC, et.) are part of the _indispensable_ module.
+    The actual functionality is implemented as extensions in the Supreme KMP crypto provider.
 
 To minimise the potential for error, everything (algorithms, keys, sealed boxes) makes heavy use of generics.
 Hence, a sealed box containing an authenticated ciphertext will only ever accept a symmetric key that is usable for AEAD.
 Additional runtime checks ensure that mo mixups can happen.
 
-Signum also supports custom HMAC-based authenticated encryption, letting you freely define which data gets fed into the MAC.
-You also have free rein over the MAC key:
+The API tries to be as type-safe as possible, e.g., it is impossible to specify a dedicated MAC key, or dedicated MAC function for AES-GCM,
+and non-authenticated AES-CBC does not even support passing additional authenticated data to the encryption process.
+The same constraints apply to the resulting ciphertexts, making it much harder
+to accidentally confuse an authenticated encryption algorithm with a non-authenticated one.
+
+This approach does come with one caveat: It forces you to know what you are dealing with.
+Luckily, there is a very effective remedy: [contracts](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.contracts/).
+The Supreme KMP crypto provider makes heavy use of contracts, to communicate type information to the compiler.
+Every one of the following subsections has their own part on contracts.
+
+
+### Algorithms
+The foundation of symmetric encryption is the class `SymmetricEncryptionAlgorithm`. Every operation and all related data classes
+need a reference to a specific `SymmetricEncryptionAlgorithm`. 
+An algorithm features the following properties
+
+* Underlying cipher (AES and ChaCha branch off `SymmetricEncryptionAlgorithm` at the root level)
+* `AuthCapability` indicating whether it is an authenticated cipher, and if so, how:
+    * `Unauthenticated`: Non-authenticated encryption algorithm
+    * `Authenticated`: AEAD algorithm
+        * `Integrated`: The cipher constuction is inherently authenticated
+        * `WithDedicatedMac`: An encrypt-then-MAC cipher construction (e.g. AES-CBC-HMAC)
+* `NonceTrait` indicating whether a nonce is required
+    * `Without`: No nonce/IV may be fed into the encryption process
+    * `Required`:  A nonce/IV of a length specific to the cipher is required. By default, a nonce will be auto-generated during encryption.
+* `KeyType` denoting how the encryption key is structured
+    * `Integrated`: The key consists of a single byte array, from which encryption key and (if required by the algorithm) a mac key is derived.
+    * `WithDedicatedMac`: The key consists of an encryption key and a dedicated MAC key to compute the auth tag.
+
+In the end this results in the following class definition:
+
+```kotlin
+SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out I : NonceTrait, out K : KeyType>
+```
+
+As can be seen, this leaves quite some degrees of freedom, especially for AES-based encryption algorithms, which do exhaust
+this space. As of 01-2025, the following algorithms are implemented:
+
+* `SymmetricEncryptionAlgorithm.ChaCha20Poly1305`
+* `SymmetricEncryptionAlgorithm.AES_128.GCM`
+* `SymmetricEncryptionAlgorithm.AES_192.GCM`
+* `SymmetricEncryptionAlgorithm.AES_256.GCM`
+* `SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_256`
+* `SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_256`
+* `SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_256`
+* `SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394`
+* `SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394`
+* `SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394`
+* `SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN`
+* `SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN`
+* `SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN`
+* `SymmetricEncryptionAlgorithm.AES_128.ECB`
+* `SymmetricEncryptionAlgorithm.AES_192.ECB`
+* `SymmetricEncryptionAlgorithm.AES_256.ECB`
+
+In addition, it is possible to customise AES-CBC-HMAC by freely defining which data gets fed into the MAC.
+There are also no constraints on the MAC key length, except that it must not be empty:
 
 ```kotlin
 val payload = "More matter, with less art!".encodeToByteArray()
@@ -413,12 +472,14 @@ reconstructed.decrypt(
 ).getOrThrow(/*handle error*/) shouldBe payload //greatest success!
 ```
 
-The `encryptorFor` and `decrypt` functions of less complex algorithms only support the parameters that actually get
-passed to the encryption process. E.g., it is impossible to specify a dedicated MAC key, or dedicated MAC function for AES-GCM,
-and non-authenticated AES-CBC does not even support passing additional authenticated data, since it is not an
-authenticated encryption algorithm. The same constraints apply to the resulting ciphertexts, making it much harder
-to accidentally confuse an authenticated encryption algorithm with a non-authenticated one.
+#### Contracts
+The following functions aid in fixing type parameters of an algorithm object:
 
+* `isBlockCipher` smart-casts the algorihtm to either a block cipher or a stream cipher
+* `isStreamC` smart-casts the algorihtm to either a block cipher or a stream cipher
+
+### Key Generation and Key Loading
+The main function for key generation is `SymmetricEncryptionalgorithm.randomKey()`. 
 
 
 ## Attestation
