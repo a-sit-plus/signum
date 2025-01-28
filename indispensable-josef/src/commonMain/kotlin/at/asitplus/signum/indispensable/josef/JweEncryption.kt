@@ -58,12 +58,12 @@ object JweEncryptionSerializer : KSerializer<JweEncryption?> {
         PrimitiveSerialDescriptor("JweEncryptionSerializer", PrimitiveKind.STRING)
 
     override fun serialize(encoder: Encoder, value: JweEncryption?) {
-        value?.let { encoder.encodeString(it.text) }
+        value?.let { encoder.encodeString(it.identifier) }
     }
 
     override fun deserialize(decoder: Decoder): JweEncryption? {
         val decoded = decoder.decodeString()
-        return JweEncryption.entries.firstOrNull { it.text == decoded }
+        return JweEncryption.entries.firstOrNull { it.identifier == decoded }
     }
 }
 
