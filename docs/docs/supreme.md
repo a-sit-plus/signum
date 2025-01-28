@@ -361,6 +361,7 @@ To minimise the potential for error, everything (algorithms, keys, sealed boxes)
 Hence, a sealed box containing an authenticated ciphertext will only ever accept a symmetric key that is usable for AEAD.
 Additional runtime checks ensure that mo mixups can happen.
 
+### Type Safety and Contracts 
 The API tries to be as type-safe as possible, e.g., it is impossible to specify a dedicated MAC key, or dedicated MAC function for AES-GCM,
 and non-authenticated AES-CBC does not even support passing additional authenticated data to the encryption process.
 The same constraints apply to the resulting ciphertexts, making it much harder
@@ -370,7 +371,8 @@ This approach does come with one caveat: It forces you to know what you are deal
 Luckily, there is a very effective remedy: [contracts](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.contracts/).
 The Supreme KMP crypto provider makes heavy use of contracts, to communicate type information to the compiler.
 Every one of the following subsections has their own part on contracts.
-
+<br>
+All contracts can be combined, meaning it is possible to steadily narrow down the properties of an object.
 
 ### Algorithms
 The foundation of symmetric encryption is the class `SymmetricEncryptionAlgorithm`. Every operation and all related data classes
@@ -475,11 +477,27 @@ reconstructed.decrypt(
 #### Contracts
 The following functions aid in fixing type parameters of an algorithm object:
 
-* `isBlockCipher` smart-casts the algorihtm to either a block cipher or a stream cipher
-* `isStreamC` smart-casts the algorihtm to either a block cipher or a stream cipher
+* `isAuthenticated()`
+    * if `true`, smart-casts the algorithm to `SymmetricEncryptionalgorithm<AuthCapability<*>,*,*>`
+    * if `false` smart-casts the algorithm to `SymmetricEncryptionalgorithm<AuthCapability.Unathenticated,*,KeyType.Integrated>`
+* `hasDedicatedMac()`
+    * if `true`, smart-casts the algorithm to `SymmetricEncryptionalgorithm<AuthCapability.Authenticated.WithDedicatedMac<*,I>,*,KeyType.WithDedicatedMac<*,I>>>`
+    * if `false`, smart-casts the algorithm to a union type of `SymmetricEncryptionalgorithm<AuthCapability<*>,*,KeyType.Integrated>`
+    and `SymmetricEncryptionalgorithm<AuthCapability.Unauthenticated,*,KeyType.Integrated>`
+* `requiresNonce()`
+    * if `true` smart-casts the algorithm to `SymmetricEncryptionalgorithm<*,Nonce.Required,*>`
+    * if `false` smart-casts the algorithm to `SymmetricEncryptionalgorithm<*,Nonce.Without,*>`
+* `isBlockCipher()` smart-casts the algorithm to `BlockCipher` if true and `StreamCipher` otherwise. This is purely informational
+* `isStreamCipher()` smart-casts the algorithm to `StreamCipher` if true and `BlockCipher` otherwise
+
+In addition, there's `isIntegrated()`, which is only defined for authenticated encryption algorithms:
+
+* if `true` smart-casts the algorithm to `SymmetricEncryptionalgorithm<AuthCapability.Authenticated.Integrated,*,KeyType.Integrated>`
+* if `false` smart-casts the algorithm to `SymmetricEncryptionalgorithm<AuthCapability.Authenticated.WithDedicatedMac<*,I>,*,KeyType.WithDedicatedMac<*,I>>>`
+
 
 ### Key Generation and Key Loading
-The main function for key generation is `SymmetricEncryptionalgorithm.randomKey()`. 
+The main function for key generation is `SymmetricEncryptionAlgorithm.randomKey()`. 
 
 
 ## Attestation
