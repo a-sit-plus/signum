@@ -20,6 +20,6 @@ inline fun <@kotlin.internal.OnlyInputTypes O, reified T : O> checkedAs(v: O): T
         ?: throw IllegalArgumentException("Expected type was ${T::class.simpleName}, but was really ${if (v == null) "<null>" else v!!::class.simpleName}")
 
 @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
-inline fun <I, @kotlin.internal.OnlyInputTypes O, reified T : O> checkedAsFn(crossinline fn: (I) -> O): (I) -> T = {
+inline fun <I, O, reified T : O> checkedAsFn(crossinline fn: (I) -> O): (I) -> T = {
     checkedAs(fn(it))
 }
