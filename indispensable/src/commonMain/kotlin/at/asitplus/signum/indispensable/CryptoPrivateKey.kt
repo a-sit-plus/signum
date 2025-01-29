@@ -432,7 +432,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
 
             @Throws(Asn1Exception::class)
             override fun doDecode(src: Asn1Sequence): EC =
-                checkedAs(CryptoPublicKey.doDecode(src))
+                checkedAs(CryptoPrivateKey.doDecode(src))
 
             internal fun iosDecodeInternal(keyBytes: ByteArray): CryptoPrivateKey.EC.WithPublicKey {
                 val crv = ECCurve.fromIosEncodedPrivateKeyLength(keyBytes.size)
