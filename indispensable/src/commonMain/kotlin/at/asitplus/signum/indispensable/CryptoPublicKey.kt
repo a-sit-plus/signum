@@ -64,7 +64,7 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
 
 
     companion object : PemDecodable<Asn1Sequence, CryptoPublicKey>(
-        PEM_BOUNDARY to null,
+        PEM_BOUNDARY to DEFAULT_PEM_DECODER,
         "RSA PUBLIC KEY" to checkedAsFn(RSA::fromPKCS1encoded),
         ) {
         /**
