@@ -4,6 +4,7 @@
 
 ### NEXT
 
+* Fix ASN.1 decoding flaw for a very specific length encoding
 * Performance optimization: Instantiate fewer KmmResults
 * Move `PemEncodable`/`PemDecodable` from _indispensable_ to _indispensable-asn1_ module.
 * More comprehensive PEM encoding/decoding support:

@@ -176,7 +176,7 @@ This also means, a direct serialization of such custom types is valuable for deb
 
 In addition, `CryptoPublicKey`, `CryptoPrivateKey`, `X509Certificate`, `Pkcs10CertificationRequest` also implement `PemEncodable`,
 while their respective companions implement `PemDecodable`.
-As the names suggest, this brings about `encodeToPem` and `decodeFromPem` functions doing what their names imply:
+This brings about the `encodeToPem` and `decodeFromPem` functions doing what their names imply:
 Encode/decode to/from PEM strings.
 
 #### Low-Level Addons
