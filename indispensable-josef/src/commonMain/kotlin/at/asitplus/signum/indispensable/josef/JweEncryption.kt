@@ -37,7 +37,7 @@ enum class JweEncryption(val text: String) {
 
     val ivLengthBits
         get() = when (this) {
-            A128GCM, A192GCM, A256GCM -> 128 // all AES-based
+            A128GCM, A192GCM, A256GCM -> 96 // GCM: 96 bits
             A128CBC_HS256, A192CBC_HS384, A256CBC_HS512 -> 128 // all AES-based
         }
 
