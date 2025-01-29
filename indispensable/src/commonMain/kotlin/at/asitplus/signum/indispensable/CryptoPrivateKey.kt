@@ -533,18 +533,22 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
             val attributes: List<Asn1Element>? =
                 if (src.hasMoreChildren()) src.nextChild().asStructure().assertTag(0uL).children
                 else null
-            return if (algIdentifier == RSA.oid) {
-                algParams.readNull()
-                RSA.FromPKCS1.doDecode(privateKeyStructure, attributes)
-            } else if (algIdentifier == EC.oid) {
-                val predefinedCurve = ECCurve.entries.first { it.oid == ObjectIdentifier.decodeFromTlv(algParams) }
-                EC.FromSEC1.doDecode(privateKeyStructure, attributes).let {
-                    when (it) {
-                        is EC.WithPublicKey -> it.also { require(it.curve == predefinedCurve) }
-                        is EC.WithoutPublicKey -> it.withCurve(predefinedCurve, encodeCurve = false)
+            return when (algIdentifier) {
+                RSA.oid -> {
+                    algParams.readNull()
+                    RSA.FromPKCS1.doDecode(privateKeyStructure, attributes)
+                }
+                EC.oid -> {
+                    val predefinedCurve = ECCurve.entries.first { it.oid == ObjectIdentifier.decodeFromTlv(algParams) }
+                    EC.FromSEC1.doDecode(privateKeyStructure, attributes).let {
+                        when (it) {
+                            is EC.WithPublicKey -> it.also { require(it.curve == predefinedCurve) }
+                            is EC.WithoutPublicKey -> it.withCurve(predefinedCurve, encodeCurve = false)
+                        }
                     }
                 }
-            } else throw IllegalArgumentException("Unknown Algorithm: $algIdentifier")
+                else -> throw IllegalArgumentException("Unknown Algorithm: $algIdentifier")
+            }
         }
     }
 }
