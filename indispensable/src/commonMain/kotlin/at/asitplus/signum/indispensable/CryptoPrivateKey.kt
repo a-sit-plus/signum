@@ -7,6 +7,8 @@ import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.asPublicKey
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
+import at.asitplus.signum.internals.checkedAs
+import at.asitplus.signum.internals.checkedAsFn
 import at.asitplus.signum.internals.ensureSize
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -16,14 +18,6 @@ private object EB_STRINGS {
     const val RSA_PRIVATE_KEY_PKCS1 = "RSA PRIVATE KEY"
     const val EC_PRIVATE_KEY_SEC1 = "EC PRIVATE KEY"
     const val ENCRYPTED_PRIVATE_KEY = "ENCRYPTED PRIVATE KEY"
-}
-
-private inline fun <O, reified T : O> checkedAs(v: O): T =
-    v as? T
-        ?: throw IllegalArgumentException("Expected type was ${T::class.simpleName}, but was really ${if (v == null) "<null>" else v!!::class.simpleName}")
-
-private inline fun <I, O, reified T : O> checkedAsFn(crossinline fn: (I) -> O): (I) -> T = {
-    checkedAs(fn(it))
 }
 
 /**
@@ -539,18 +533,22 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
             val attributes: List<Asn1Element>? =
                 if (src.hasMoreChildren()) src.nextChild().asStructure().assertTag(0uL).children
                 else null
-            return if (algIdentifier == RSA.oid) {
-                algParams.readNull()
-                RSA.FromPKCS1.doDecode(privateKeyStructure, attributes)
-            } else if (algIdentifier == EC.oid) {
-                val predefinedCurve = ECCurve.entries.first { it.oid == ObjectIdentifier.decodeFromTlv(algParams) }
-                EC.FromSEC1.doDecode(privateKeyStructure, attributes).let {
-                    when (it) {
-                        is EC.WithPublicKey -> it.also { require(it.curve == predefinedCurve) }
-                        is EC.WithoutPublicKey -> it.withCurve(predefinedCurve, encodeCurve = false)
+            return when (algIdentifier) {
+                RSA.oid -> {
+                    algParams.readNull()
+                    RSA.FromPKCS1.doDecode(privateKeyStructure, attributes)
+                }
+                EC.oid -> {
+                    val predefinedCurve = ECCurve.entries.first { it.oid == ObjectIdentifier.decodeFromTlv(algParams) }
+                    EC.FromSEC1.doDecode(privateKeyStructure, attributes).let {
+                        when (it) {
+                            is EC.WithPublicKey -> it.also { require(it.curve == predefinedCurve) }
+                            is EC.WithoutPublicKey -> it.withCurve(predefinedCurve, encodeCurve = false)
+                        }
                     }
                 }
-            } else throw IllegalArgumentException("Unknown Algorithm: $algIdentifier")
+                else -> throw IllegalArgumentException("Unknown Algorithm: $algIdentifier")
+            }
         }
     }
 }

@@ -470,10 +470,17 @@ private fun Source.decodeLength(): Pair<Long, Int> =
             Pair(firstByte.toUByte().toLong(), 1)
         } else { // its BER long form!
             val numberOfLengthOctets = (firstByte byteMask 0x7F).toInt()
-            (0 until numberOfLengthOctets).fold(0L) { acc, index ->
+            val length = (0 until numberOfLengthOctets).fold(0L) { acc, index ->
                 require(!exhausted()) { "Can't decode length" }
-                acc + (readUByte().toLong() shl Byte.SIZE_BITS * (numberOfLengthOctets - index - 1))
-            }.let { Pair(it, 1 + numberOfLengthOctets) }
+                val thisByte = readUByte().also {
+                    if ((index == 0) && (it == 0u.toUByte())) {
+                        throw Asn1Exception("Illegal DER length encoding; long form length with leading zeros")
+                    }
+                }.toLong()
+                acc or (thisByte shl Byte.SIZE_BITS * (numberOfLengthOctets - index - 1))
+            }
+            if (length < 128) throw Asn1Exception("Illegal DER length encoding; length $length < 128 using long form")
+            Pair(length, 1 + numberOfLengthOctets)
         }
     }
 

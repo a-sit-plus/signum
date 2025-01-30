@@ -117,8 +117,9 @@ data class Pkcs10CertificationRequest(
     val tbsCsr: TbsCertificationRequest,
     val signatureAlgorithm: X509SignatureAlgorithm,
     val signature: CryptoSignature
-) : Asn1Encodable<Asn1Sequence> {
+) : PemEncodable<Asn1Sequence> {
 
+    override val canonicalPEMBoundary: String = EB_STRINGS.DEFAULT
 
     @Throws(Asn1Exception::class)
     override fun encodeToTlv() = Asn1.Sequence {
@@ -147,8 +148,14 @@ data class Pkcs10CertificationRequest(
         return result
     }
 
-    companion object : Asn1Decodable<Asn1Sequence, Pkcs10CertificationRequest> {
-
+    companion object : PemDecodable<Asn1Sequence, Pkcs10CertificationRequest>(
+        EB_STRINGS.DEFAULT,
+        EB_STRINGS.LEGACY
+    ) {
+        private object EB_STRINGS {
+            const val DEFAULT = "CERTIFICATE REQUEST"
+            const val LEGACY = "NEW CERTIFICATE REQUEST"
+        }
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): Pkcs10CertificationRequest = runRethrowing {
             val tbsCsr = TbsCertificationRequest.decodeFromTlv(src.nextChild() as Asn1Sequence)

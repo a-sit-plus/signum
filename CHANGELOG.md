@@ -3,15 +3,23 @@
 ## 3.0
 
 ### NEXT
-* performance optimization: Instantiate fewer KmmResults
 
+* Fix ASN.1 decoding flaw for a very specific length encoding
+* Performance optimization: Instantiate fewer KmmResults
 * Move `PemEncodable`/`PemDecodable` from _indispensable_ to _indispensable-asn1_ module.
+* More comprehensive PEM encoding/decoding support:
+    * `CryptoPublicKey`
+      * Note that PKCS1 encoding of RSA keys is not supported as it is discouraged (decoding is supported)
+      * ANSI encoding and decoding is also unsupported, because decoding requires context and encoding this way is incomplete
+    * `X509Certificate`
+    * CSR (`Pkcs10CertificationRequest`)
 
 ### 3.12.1 (Supreme 0.6.3)
 
 * Add COSE object creation with detached payload, i.e. setting a `null` payload in `CoseSigned`, and clients are responsible to transport the payload separately
 
 ### 3.12.0 (Supreme 0.6.2)
+
 * Fix COSE signature verification (this is breaking change in `indispensable-cosef`):
     * Introduce class `CoseSignedBytes` which holds the bytes as transmitted on the wire
     * Add property `wireFormat` to `CoseSigned` to hold those bytes
@@ -21,6 +29,7 @@
     * In `CoseSigned`, member `rawSignature` (`ByteArray`) is now `signature` (`CryptoSignature.RawByteEncodable`)
 
 ### 3.11.1 (Supreme 0.6.1)
+
 * Fix `CoseSigned` JSON serialization
 
 ### 3.11.0 (Supreme 0.6.0)
