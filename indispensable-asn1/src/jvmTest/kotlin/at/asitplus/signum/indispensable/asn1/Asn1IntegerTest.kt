@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.io.UVarInt
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToAsn1Integer
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
@@ -8,6 +7,7 @@ import io.kotest.core.names.TestName
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
@@ -59,15 +59,15 @@ class Asn1IntegerTest : FreeSpec({
         "Fixed values" - {
             "XOR producing two zero high bytes" {
                 (
-                    VarUInt(ubyteArrayOf(0x80u, 0x7Fu, 0x03u)) xor
-                    VarUInt(ubyteArrayOf(0x80u, 0x7Fu, 0x05u))
-                ).words shouldBe ubyteArrayOf(0x06u)
+                        VarUInt(ubyteArrayOf(0x80u, 0x7Fu, 0x03u)) xor
+                                VarUInt(ubyteArrayOf(0x80u, 0x7Fu, 0x05u))
+                        ).words shouldBe ubyteArrayOf(0x06u)
             }
             "AND producing two zero high bytes" {
                 (
-                    VarUInt(ubyteArrayOf(0x80u, 0x4Fu, 0x15u)) and
-                    VarUInt(ubyteArrayOf(0x03u, 0xA0u, 0x34u))
-                ).words shouldBe ubyteArrayOf(0x14u)
+                        VarUInt(ubyteArrayOf(0x80u, 0x4Fu, 0x15u)) and
+                                VarUInt(ubyteArrayOf(0x03u, 0xA0u, 0x34u))
+                        ).words shouldBe ubyteArrayOf(0x14u)
             }
             "Left Shift producing a zero high byte" {
                 VarUInt(ubyteArrayOf(0x18u, 0x43u)).shl(3).words shouldBe ubyteArrayOf(0xC2u, 0x18u)
@@ -77,7 +77,7 @@ class Asn1IntegerTest : FreeSpec({
             }
         }
         "Random values" - {
-            checkAll(iterations = 100, Arb.byteArray(Arb.int(100,200), Arb.byte())) {
+            checkAll(iterations = 100, Arb.byteArray(Arb.int(100, 200), Arb.byte())) {
                 val bigint = JavaBigInteger(1, it)
                 val varuint = VarUInt(it)
                 registerContainer(TestName("Left Bitshift"), false, null) {
@@ -104,11 +104,14 @@ class Asn1IntegerTest : FreeSpec({
     }
     "Java BigInteger <-> Asn1Integer" - {
         "Specific values" - {
-            withData(nameFn={it.first}, sequenceOf(
-                Triple("Zero", JavaBigInteger.ZERO, Asn1Integer(0)),
-                Triple("Zero from Long", JavaBigInteger.valueOf(0L), Asn1Integer(0uL)),
-                Triple("One", JavaBigInteger.ONE, Asn1Integer(1)),
-                Triple("Negative One", JavaBigInteger.ONE.unaryMinus(), Asn1Integer(-1))))
+            withData(
+                nameFn = { it.first }, sequenceOf(
+                    Triple("Zero", JavaBigInteger.ZERO, Asn1Integer(0)),
+                    Triple("Zero from Long", JavaBigInteger.valueOf(0L), Asn1Integer(0uL)),
+                    Triple("One", JavaBigInteger.ONE, Asn1Integer(1)),
+                    Triple("Negative One", JavaBigInteger.ONE.unaryMinus(), Asn1Integer(-1))
+                )
+            )
             { (_, bigint, asn1int) ->
                 bigint.toAsn1Integer() shouldBe asn1int
                 asn1int.toJavaBigInteger() shouldBe bigint
@@ -144,6 +147,18 @@ class Asn1IntegerTest : FreeSpec({
                 asn1int.shouldBeTypeOf<Asn1Integer.Positive>()
                 bigint.toAsn1Integer() shouldBe asn1int
                 asn1int.toJavaBigInteger() shouldBe bigint
+            }
+        }
+        "Equality" - {
+            val arb = Arb.byteArray(Arb.int(1500..2500), Arb.byte())
+            val randoms = List<ByteArray>(10) { arb.next() }
+
+            withData(randoms) { outer ->
+                val i1 = Asn1Integer.fromUnsignedByteArray(outer)
+                i1 shouldBe Asn1Integer.fromUnsignedByteArray(outer)
+                withData(randoms.filterNot { it contentEquals outer }) { inner ->
+                    i1 shouldNotBe Asn1Integer.fromUnsignedByteArray(inner)
+                }
             }
         }
     }

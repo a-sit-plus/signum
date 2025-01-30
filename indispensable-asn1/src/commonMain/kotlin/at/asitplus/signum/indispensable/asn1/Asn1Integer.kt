@@ -58,7 +58,7 @@ sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign): Asn1Encoda
         if (other !is Asn1Integer) return false
 
         if (sign != other.sign) return false
-        return (uint.words contentEquals other.uint.words)
+        return (uint.isEqualTo(other.uint))
     }
 
     override fun hashCode(): Int {

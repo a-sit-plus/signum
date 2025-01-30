@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decodeAsn1VarBigInt
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
+import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import com.ionspin.kotlin.bignum.integer.util.toTwosComplementByteArray
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
@@ -58,9 +59,9 @@ class Asn1IntegerRepresentationTest : FreeSpec({
 
     "UUIDs" - {
         withData(nameFn = { it.toHexString() }, List<Uuid>(100) { Uuid.random() }) {
-            val hex = it.toHexString().uppercase()
-            val bigint = BigInteger.fromByteArray(it.toByteArray(), Sign.POSITIVE)
-            val own = VarUInt(it.toByteArray())
+            val bigint = BigInteger.fromByteArray(it.toByteArray(), Sign.POSITIVE).toJavaBigInteger()
+            val own = Asn1Integer.fromUnsignedByteArray(it.toByteArray()).toJavaBigInteger()
+            own shouldBe bigint
         }
     }
 
