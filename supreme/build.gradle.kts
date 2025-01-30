@@ -34,6 +34,7 @@ version = supremeVersion
 wireAndroidInstrumentedTests()
 
 kotlin {
+    applyDefaultHierarchyTemplate()
     jvm()
     androidTarget {
         publishLibraryVariants("release")
@@ -41,26 +42,37 @@ kotlin {
         instrumentedTestVariant.sourceSetTree.set(test)
     }
     listOf(
-    iosX64(),
-    iosArm64(),
-    iosSimulatorArm64()).forEach {
-        it.compilations{
+        iosX64(),
+        iosArm64(),
+        iosSimulatorArm64()
+    ).forEach {
+        it.compilations {
             val main by getting {
                 cinterops.create("AESwift")
             }
         }
     }
 
-    sourceSets.commonMain.dependencies {
-        api(project(":indispensable"))
-        implementation(project(":internals"))
-        implementation(coroutines())
-        implementation(napier())
-        implementation(libs.securerandom)
-    }
+    sourceSets {
+        commonMain.dependencies {
+            api(project(":indispensable"))
+            implementation(project(":internals"))
+            implementation(coroutines())
+            implementation(napier())
+            implementation(libs.securerandom)
+        }
+        val androidJvmMain by creating { dependsOn(commonMain.get()) }
 
-    sourceSets.androidMain.dependencies {
-        implementation("androidx.biometric:biometric:1.2.0-alpha05")
+        jvmMain {
+            dependsOn(androidJvmMain)
+        }
+
+        androidMain {
+            dependsOn(androidJvmMain)
+            dependencies {
+                implementation("androidx.biometric:biometric:1.2.0-alpha05")
+            }
+        }
     }
 }
 
