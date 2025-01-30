@@ -35,9 +35,7 @@ class Asn1IntegerRepresentationTest : FreeSpec({
             val varInt = own.toAsn1VarInt()
             val refVarint = BigInteger.parseString(bigInt.toString()).toAsn1VarInt()
             varInt shouldBe refVarint
-            refVarint.decodeAsn1VarBigInt()
-            refVarint.decodeAsn1VarBigInt().first.uint shouldBe own
-
+            refVarint.decodeAsn1VarBigInt().first.uint.words shouldBe own.words
         }
     }
 
