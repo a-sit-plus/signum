@@ -90,16 +90,22 @@ implementation("at.asitplus.signum:supreme:0.2.0")
 
 ## Rationale
 Looking for a KMP cryptography framework, you have undoubtedly come across
-[cryptography-kotlin](https://github.com/whyoleg/cryptography-kotlin) by Oleg Yukhnevich. So have we and it is a powerful
+[cryptography-kotlin](https://github.com/whyoleg/cryptography-kotlin). So have we and it is a powerful
 library, supporting more platforms and more cryptographic operations than Signum Supreme.
 This begs the question: Why implement another, incompatible
-cryptography framework from scratch? The short answer is: Signum and cryptography-kotlin pursue different goals and priorities.
+cryptography framework from scratch? The short answer is: Signum and cryptography-kotlin pursue different goals and priorities.<br>
+cryptography-kotlin strives for covering a wide range of targets and a broad range of operations based on a flexible provider architecture.
+Signum, on the other hand, focuses on tight platform integration (**including hardware-backed crypto and attestation!**),
+and comprehensive ASN.1, JOSE, and COSE support.
+
+<details>
+<summary>More…</summary>
 
 Signum was born from the need to have cryptographic data structures available across platforms, such as public keys, signatures,
-certificates, CRSr, as well as COSE and JOSE data. Hence, we needed a fully-featured ASN.1 engine and mappings from
+certificates, CSRs, as well as COSE and JOSE data. Hence, we needed a fully-featured ASN.1 engine and mappings from
 X.509 to COSE and JOSE datatypes. We required comprehensive ASN.1 introspection and builder capabilities across platforms.
 Most notably, Apple has been notoriously lacking anything even remotely usable
-and [SwiftASN1](https://github.com/apple/swift-asn1/commits/main/) was out of the question for a couple of reasons.
+and [SwiftASN1](https://github.com/apple/swift-asn1) was out of the question for a couple of reasons.
 Most notably, it did not exist, when we started work on Signum.
 As it stands now, our ASN.1 engine can handle almost anything you throw at it, in some areas even exceeding Bouncy Castle!
 cryptography-kotlin only added basic ASN.1 capabilities over a year after Signum's development started.
@@ -121,7 +127,10 @@ This tight integration and our focus on mobile comes at the cost of the **Suprem
 Android, and iOS**.
 cryptography-kotlin, on the other hand allows you to perform a wider range of cryptographic functions an all KMP targets,
 Most prominently, it already supports RSA encryption, key stretching, and key derivation, which Signum currently lacks.
-On the other hand, cryptography-kotlin currently offers neither hardware-backed crypto, nor attestation capabilities.<br>
+On the other hand, cryptography-kotlin currently offers neither hardware-backed crypto, nor attestation capabilities.
+
+</details>
+
 The following table provides a detailed comparison between Signum and cryptography-kotlin.
 
 |                             | Signum               | cryptography-kotlin       |

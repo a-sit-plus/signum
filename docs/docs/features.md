@@ -93,9 +93,9 @@ Combined these two modules provide the following abstractions:
 
 ## Signum vs. cryptography-kotlin
 
-Signum an Oleg Yukhnevich's cryptography-kotlin pursue different goals but their features sets
-overlap considerable.
-The following table provides overview about the feature sets of Signum and cryptography-kotlin.
+Signum and [cryptography-kotlin](https://github.com/whyoleg/cryptography-kotlin) pursue different goals but their features sets have grown to
+overlap considerably.
+The following table provides overview about what is supported by Signum and cryptography-kotlin, respectively.
 
 !!! tip inline end
     For a rationale behind Signum's design, see the corresponding section in the [project overview](index.md#rationale).
