@@ -14,6 +14,7 @@ private val secureRandom = SecureRandom()
 /**
  * Generates a fresh random key for this algorithm.
  */
+@Suppress("UNCHECKED_CAST")
 fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.randomKey(): SymmetricKey<A, I, out K> =
     keyFromInternal(
         secureRandom.nextBytesOf(keySize.bytes.toInt()),
@@ -26,6 +27,7 @@ fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEncryption
  * [macKeyLength] can be specified to override [AuthCapability.Authenticated.WithDedicatedMac.preferredMacKeyLength].
  */
 @JvmName("randomKeyAndMacKey")
+@Suppress("UNCHECKED_CAST")
 fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey>.randomKey(
     macKeyLength: BitLength = preferredMacKeyLength
 ): SymmetricKey.WithDedicatedMac<I> =
@@ -55,11 +57,8 @@ private fun SymmetricEncryptionAlgorithm<*, *, *>.keyFromInternal(
     @OptIn(HazardousMaterials::class)
     return when (this.requiresNonce()) {
         true -> when (isAuthenticated()) {
-            true -> when (this.isIntegrated()) {
-
-                false -> {this
-                    SymmetricKey.WithDedicatedMac.RequiringNonce(this, bytes, dedicatedMacKey!!)
-                }
+            true -> when (isIntegrated()) {
+                false -> SymmetricKey.WithDedicatedMac.RequiringNonce(this, bytes, dedicatedMacKey!!)
                 true -> SymmetricKey.Integrated.Authenticating.RequiringNonce(this, bytes)
             }
 
@@ -67,7 +66,7 @@ private fun SymmetricEncryptionAlgorithm<*, *, *>.keyFromInternal(
         }
 
         false -> when (isAuthenticated()) {
-            true -> when (this.isIntegrated()) {
+            true -> when (isIntegrated()) {
                 false -> SymmetricKey.WithDedicatedMac.WithoutNonce(this, bytes, dedicatedMacKey!!)
                 true -> SymmetricKey.Integrated.Authenticating.WithoutNonce(this, bytes)
             }
@@ -82,12 +81,12 @@ private fun SymmetricEncryptionAlgorithm<*, *, *>.keyFromInternal(
  * Returns [KmmResult.failure] in case the provided bytes don't match [SymmetricEncryptionAlgorithm.keySize]
  */
 @JvmName("fixedKeyIntegrated")
-fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated>.keyFrom(secretKey: ByteArray): KmmResult<SymmetricKey<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated>> =
+@Suppress("UNCHECKED_CAST")
+fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated>.keyFrom(
+    secretKey: ByteArray
+): KmmResult<SymmetricKey<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated>> =
     catching {
-        (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(
-            secretKey,
-            null
-        )
+        (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(secretKey, null)
     } as KmmResult<SymmetricKey<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated>>
 
 
@@ -96,12 +95,12 @@ fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability<KeyType.Integra
  * Returns [KmmResult.failure] in case the provided bytes don't match [SymmetricEncryptionAlgorithm.keySize]
  */
 @JvmName("fixedKeyAuthenticatedIntegrated")
-fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<KeyType.Integrated>, I, KeyType.Integrated>.keyFrom(secretKey: ByteArray): KmmResult<SymmetricKey<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated>> =
+@Suppress("UNCHECKED_CAST")
+fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<KeyType.Integrated>, I, KeyType.Integrated>.keyFrom(
+    secretKey: ByteArray
+): KmmResult<SymmetricKey<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated>> =
     catching {
-        (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(
-            secretKey,
-            null
-        )
+        (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(secretKey, null)
     } as KmmResult<SymmetricKey<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated>>
 
 /**
@@ -109,13 +108,11 @@ fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<K
  * Returns [KmmResult.failure] in case the provided bytes don't match [SymmetricEncryptionAlgorithm.keySize] or the specified [macKey] is empty.
  */
 @JvmName("fixedKeyDedicatedMacKey")
+@Suppress("UNCHECKED_CAST")
 fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability<KeyType.WithDedicatedMacKey>, I, KeyType.WithDedicatedMacKey>.keyFrom(
     encryptionKey: ByteArray,
     macKey: ByteArray
 ): KmmResult<SymmetricKey<AuthCapability<KeyType.WithDedicatedMacKey>, I, KeyType.WithDedicatedMacKey>> =
     catching {
-        (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(
-            encryptionKey,
-            macKey
-        )
+        (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(encryptionKey, macKey)
     } as KmmResult<SymmetricKey<AuthCapability<KeyType.WithDedicatedMacKey>, I, KeyType.WithDedicatedMacKey>>
