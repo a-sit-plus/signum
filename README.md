@@ -88,9 +88,62 @@ implementation("at.asitplus.signum:indispensable-cosef:$version")
 implementation("at.asitplus.signum:supreme:0.2.0")
 ```
 
+## Rationale
+Looking for a KMP cryptography framework, you have undoubtedly come across
+[cryptography-kotlin](https://github.com/whyoleg/cryptography-kotlin) by Oleg Yukhnevich. So have we and it is a powerful
+library, supporting more platforms and more cryptographic operations than Signum Supreme.
+This begs the question: Why implement another, incompatible
+cryptography framework from scratch? The short answer is: Signum and cryptography-kotlin pursue different goals and priorities.
+
+Signum was born from the need to have cryptographic data structures available across platforms, such as public keys, signatures,
+certificates, CRSr, as well as COSE and JOSE data. Hence, we needed a fully-featured ASN.1 engine and mappings from
+X.509 to COSE and JOSE datatypes. We required comprehensive ASN.1 introspection and builder capabilities across platforms.
+Most notably, Apple has been notoriously lacking anything even remotely usable
+and [SwiftASN1](https://github.com/apple/swift-asn1/commits/main/) was out of the question for a couple of reasons.
+Most notably, it did not exist, when we started work on Signum.
+As it stands now, our ASN.1 engine can handle almost anything you throw at it, in some areas even exceeding Bouncy Castle!
+cryptography-kotlin only added basic ASN.1 capabilities over a year after Signum's development started.
+<br>
+We are also unaware of any other library offering comprehensive JOSE and COSE data structures based on kotlinx-serialization.
+Hence, we implemented those ourselves, with first-class interop to our generic cryptographic data structures.
+We also support platform-native interop meaning that you can easily convert a Json Web Key to a JCA key or even a `SecKeyRef`.
+
+Having actual implementations of cryptographic operations available was only second on our list of priorities. From the
+get-go, it was clear that we wanted the tightest possible platform integration on Android and iOS, including hardware-backed
+storage of key material and in-hardware execution of cryptographic operations whenever possible.
+We also needed platform-native attestation capabilities (and so will you sooner or later, if you are doing anything
+mission-critical on mobile targets!).
+While this approach does limit the number of available cryptographic operations, it also means that all cryptographic operations
+involving secrets (e.g. private keys) provide the same security guarantees as platform-native implementations do &mdash;
+**because they are the same** under the hood. Most notably: private keys never leave the platform and **hardware-backed private keys
+never even leave the hardware crypto modules**!<br>
+This tight integration and our focus on mobile comes at the cost of the **Supreme KMP crypto provider only supporting JVM,
+Android, and iOS**.
+cryptography-kotlin, on the other hand allows you to perform a wider range of cryptographic functions an all KMP targets,
+Most prominently, it already supports RSA encryption, key stretching, and key derivation, which Signum currently lacks.
+On the other hand, cryptography-kotlin currently offers neither hardware-backed crypto, nor attestation capabilities.<br>
+The following table provides a detailed comparison between Signum and cryptography-kotlin.
+
+|                             | Signum               | cryptography-kotlin       |
+|-----------------------------|----------------------|---------------------------|
+| Digital Signatures          | ✔ (ECDSA, RSA)       | ✔ (ECDSA, RSA)            |
+| Symmetric Encryption        | ✔ (AES + ChaChaPoly) | ✔ (AES)                   |
+| Public-Key Encryption       | ✗                    | ✔ (RSA)                   |
+| Digest                      | ✔ (SHA-1, SHA-2)     | ✔ (MD5, SHA-1, SHA-2)     |
+| MAC                         | ✔ (HMAC)             | ✔ (HMAC)                  |
+| Key Agreement               | ✔ (ECDH)             | ✔ (ECDH)                  |
+| KDF/PRF/KSF                 | ✗                    | ✔ (PBKDF2, HKDF)          |
+| Hardware-Backed Crypto      | ✔                    | ✗                         |
+| Attestation                 | ✔                    | ✗                         |
+| Fully-Features ASN.1 Engine | ✔                    | ✗                         |
+| COSE                        | ✔                    | ✗                         |
+| JOSE                        | ✔                    | ✗                         |
+| Provider Targets            | JVM, Android, iOS    | All KMP-supported targets |
+
+
 ## _Supreme_ Demo Reel
-The _Supreme_ KMP crypto provider works differently from JCA. Configuration is type-safe, more expressive and you'll
-end up less code. **Nothing throws! Do not discard the results returned from any operation!**
+The _Supreme_ KMP crypto provider works differently from JCA. Configuration is type-safe, more expressive and more concise,
+meaning you'll end up with less code. **Nothing throws! Do not discard the results returned from any operation!**
 
 ### Signature Creation
 
