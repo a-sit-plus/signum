@@ -10,7 +10,7 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 @OptIn(HazardousMaterials::class)
-internal object AESJVM {
+internal object AESJCA {
     fun initCipher(
         algorithm: SymmetricEncryptionAlgorithm.AES<*, *, *>,
         key: ByteArray,

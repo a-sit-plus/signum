@@ -8,38 +8,40 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-actual internal fun <T, A : AuthCapability<out K>, I : NonceTrait, K : KeyType> initCipher(
+internal actual fun <T, A : AuthCapability<out K>, I : NonceTrait, K : KeyType> initCipher(
     algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
     key: ByteArray,
     nonce: ByteArray?,
     aad: ByteArray?
 ): CipherParam<T, A, out K> {
-    if (!algorithm.requiresNonce()) {
-        @OptIn(HazardousMaterials::class)
-        if ((algorithm !is SymmetricEncryptionAlgorithm.AES.ECB) && (algorithm !is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394)) TODO(
-            "UNSUPPORTED"
-        )
-        return AESJVM.initCipher(algorithm, key, nonce, aad) as CipherParam<T, A, K>
-    } else {
-        @OptIn(HazardousMaterials::class)
-        val nonce = nonce ?: algorithm.randomNonce()
+    when {
+        algorithm.requiresNonce() -> {
+            @OptIn(HazardousMaterials::class)
+            val nonce = nonce ?: algorithm.randomNonce()
 
-        return when (algorithm) {
-            is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaJVM.initCipher(
-                key,
-                nonce,
-                aad
+            return when (algorithm) {
+                is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaJVM.initCipher(
+                    key,
+                    nonce,
+                    aad
+                )
+
+                is SymmetricEncryptionAlgorithm.AES<*, *, *> -> AESJCA.initCipher(
+                    algorithm,
+                    key,
+                    nonce,
+                    aad
+                )
+            } as CipherParam<T, A, K>
+        }
+
+        else -> {
+            @OptIn(HazardousMaterials::class)
+            if ((algorithm !is SymmetricEncryptionAlgorithm.AES.ECB) && (algorithm !is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394)) TODO(
+                "$algorithm is UNSUPPORTED"
             )
-
-            is SymmetricEncryptionAlgorithm.AES<*, *, *> -> AESJVM.initCipher(
-                algorithm,
-                key,
-                nonce,
-                aad
-            )
-
-            else -> TODO("UNSUPPORTED")
-        } as CipherParam<T, A, K>
+            return AESJCA.initCipher(algorithm, key, nonce, aad) as CipherParam<T, A, K>
+        }
     }
 }
 
@@ -47,6 +49,7 @@ internal actual fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> Cip
     (this as CipherParam<Cipher, A, K>)
     val jcaCiphertext = platformData.doFinal(data)
 
+    //JCA simply concatenates ciphertext and authtag, so we need to split
     val ciphertext =
         if (alg.authCapability is AuthCapability.Authenticated<*>) jcaCiphertext.dropLast(((alg.authCapability as AuthCapability.Authenticated<*>).tagLength.bytes.toInt()).toInt())
             .toByteArray()
@@ -56,25 +59,23 @@ internal actual fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> Cip
             .toByteArray() else null
 
 
-    return when (alg.requiresNonce()) {
-        true -> {
-            when (alg.isAuthenticated()) {
-                true -> {
-                    (alg as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Required, *>)
-                    alg.sealedBoxFrom(nonce!!, ciphertext, authTag!!, aad)
-                }
-
-                false -> alg.sealedBoxFrom(nonce!!, ciphertext)
+    return when {
+        alg.requiresNonce() -> when {
+            alg.isAuthenticated() -> {
+                (alg as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Required, *>)
+                alg.sealedBoxFrom(nonce!!, ciphertext, authTag!!, aad)
             }
+
+            else -> alg.sealedBoxFrom(nonce!!, ciphertext)
         }
 
-        false -> when (alg.isAuthenticated()) {
-            true -> {
+        else -> when {
+            alg.isAuthenticated() -> {
                 (alg as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Without, *>)
                 alg.sealedBoxFrom(ciphertext, authTag!!, aad)
             }
 
-            false -> alg.sealedBoxFrom(ciphertext)
+            else -> alg.sealedBoxFrom(ciphertext)
         }
 
     }.getOrThrow() as SealedBox<A, I, out K>
@@ -88,25 +89,26 @@ val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
         is SymmetricEncryptionAlgorithm.AES.ECB -> "AES/ECB/PKCS5Padding"
         is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> "AESWrap"
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20-Poly1305"
-        else -> TODO("UNSUPPORTED")
+        else -> TODO("$this is unsupported")
     }
 
 val SymmetricEncryptionAlgorithm<*, *, *>.jcaKeySpec: String
     get() = when (this) {
         is SymmetricEncryptionAlgorithm.AES<*, *, *> -> "AES"
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20"
-        else -> TODO("UNSUPPORTED")
+        else -> TODO("$this keyspec is unsupported UNSUPPORTED")
     }
 
-@JvmName("doEncryptAuthenticated")
+@JvmName("doDecryptAuthenticated")
 internal actual fun SealedBox<Authenticated.Integrated, *, out KeyType.Integrated>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
-    if (!this.hasNonce()) TODO("UNSUPPORTED")
+    if (!this.hasNonce()) TODO("AEAD algorithm $algorithm is UNSUPPORTED")
 
-    if ((algorithm !is SymmetricEncryptionAlgorithm.ChaCha20Poly1305) && (algorithm !is SymmetricEncryptionAlgorithm.AES.GCM)) TODO()
+    if ((algorithm !is SymmetricEncryptionAlgorithm.ChaCha20Poly1305) && (algorithm !is SymmetricEncryptionAlgorithm.AES.GCM))
+        TODO("AEAD algorithm $algorithm is UNSUPPORTED")
 
-    return gcmLikeDecrypt(
+    return aeadDecrypt(
         algorithm,
         secretKey,
         nonce,
@@ -121,7 +123,7 @@ internal actual fun SealedBox<AuthCapability.Unauthenticated, *, out KeyType.Int
     secretKey: ByteArray
 ): ByteArray {
     if (algorithm !is SymmetricEncryptionAlgorithm.AES<*, *, *>)
-        TODO()
+        TODO("unauthenticated algorithm $algorithm is UNSUPPORTED")
 
     @OptIn(HazardousMaterials::class)
     if ((algorithm is SymmetricEncryptionAlgorithm.AES.ECB) || (algorithm is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394)) {
@@ -143,7 +145,7 @@ internal actual fun SealedBox<AuthCapability.Unauthenticated, *, out KeyType.Int
     }.doFinal(encryptedData)
 }
 
-internal fun gcmLikeDecrypt(
+internal fun aeadDecrypt(
     algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<KeyType.Integrated>, NonceTrait.Required, KeyType.Integrated>,
     secretKey: ByteArray,
     nonce: ByteArray,
@@ -158,8 +160,6 @@ internal fun gcmLikeDecrypt(
             GCMParameterSpec(authTag.size * 8, nonce)
         else IvParameterSpec(nonce)
     )
-    aad?.let {
-        cipher.updateAAD(it)
-    }
+    aad?.let { cipher.updateAAD(it) }
 }.doFinal(encryptedData + authTag)
 
