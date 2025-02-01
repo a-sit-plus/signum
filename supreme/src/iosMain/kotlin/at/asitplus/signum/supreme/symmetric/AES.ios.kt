@@ -1,21 +1,18 @@
 package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.ImplementationError
 import at.asitplus.signum.indispensable.symmetric.BlockCipher
+import at.asitplus.signum.indispensable.symmetric.KeyType
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
 import at.asitplus.signum.indispensable.symmetric.sealedBoxFrom
 import at.asitplus.signum.internals.swiftcall
 import at.asitplus.signum.internals.toByteArray
 import at.asitplus.signum.internals.toNSData
-import at.asitplus.signum.supreme.aes.CBC
-import at.asitplus.signum.supreme.aes.ECB
-import at.asitplus.signum.supreme.aes.GCM
-import at.asitplus.signum.supreme.aes.WRAP
-import kotlinx.cinterop.ExperimentalForeignApi
-import platform.CoreCrypto.kCCDecrypt
-import platform.CoreCrypto.kCCEncrypt
-
+import at.asitplus.signum.supreme.symmetric.ios.GCM
+import kotlinx.cinterop.*
+import platform.CoreCrypto.*
 
 private fun BlockCipher<*, *, *>.addPKCS7Padding(plain: ByteArray): ByteArray {
     val blockBytes = blockSize.bytes.toInt()
@@ -45,23 +42,17 @@ internal object AESIOS {
         aad: ByteArray?
     ) = when (alg) {
         is AES.CBC.Unauthenticated -> {
-            val padded = (alg as AES<*, *, *>).addPKCS7Padding(data)
-            val bytes: ByteArray = swiftcall {
-                CBC.crypt(kCCEncrypt.toLong(), padded.toNSData(), key.toNSData(), nonce!!.toNSData(), error)
-            }.toByteArray()
+            val bytes = cbcEcbCrypt(alg, encrypt = true, key, nonce, data, pad = true)
             alg.sealedBoxFrom(nonce!!, bytes).getOrThrow()
         }
 
         is AES.ECB -> {
-            val padded = (alg as AES<*, *, *>).addPKCS7Padding(data)
-            val bytes: ByteArray = swiftcall {
-                ECB.crypt(kCCEncrypt.toLong(), padded.toNSData(), key.toNSData(), error)
-            }.toByteArray()
+            val bytes = cbcEcbCrypt(alg, encrypt = true, key, nonce, data, pad = true)
             alg.sealedBoxFrom(bytes).getOrThrow()
         }
 
         is AES.WRAP.RFC3394 -> {
-            val bytes = swiftcall { WRAP.wrap(data.toNSData(), key.toNSData(), error) }.toByteArray()
+            val bytes = cbcEcbCrypt(alg, encrypt = true, key, nonce, data, pad = false)
             alg.sealedBoxFrom(bytes).getOrThrow()
         }
 
@@ -97,41 +88,93 @@ internal object AESIOS {
         )
     }.toByteArray()
 
-
-    internal fun cbcEcbDecrypt(
-        algorithm: SymmetricEncryptionAlgorithm.AES<*, *, *>,
-        encryptedData: ByteArray,
+    @OptIn(ExperimentalForeignApi::class, HazardousMaterials::class)
+    fun cbcEcbCrypt(
+        algorithm: SymmetricEncryptionAlgorithm.AES<*, KeyType.Integrated, *>,
+        encrypt: Boolean,
         secretKey: ByteArray,
-        nonce: ByteArray?
+        nonce: ByteArray?,
+        data: ByteArray,
+        pad: Boolean
     ): ByteArray {
-        val decrypted = swiftcall {
-            @OptIn(ExperimentalForeignApi::class, HazardousMaterials::class)
-            when (algorithm) {
-                is AES.CBC.Unauthenticated -> CBC.crypt(
-                    kCCDecrypt.toLong(),
-                    encryptedData.toNSData(),
-                    secretKey.toNSData(),
-                    nonce!!.toNSData(),
-                    error
-                )
+        //better safe than sorry
+        val keySize = when (secretKey.size) {
+            SymmetricEncryptionAlgorithm.AES_128.keySize.bytes.toInt() -> kCCKeySizeAES128
+            SymmetricEncryptionAlgorithm.AES_192.keySize.bytes.toInt() -> kCCKeySizeAES192
+            SymmetricEncryptionAlgorithm.AES_256.keySize.bytes.toInt() -> kCCKeySizeAES256
+            else -> throw ImplementationError("Illegal AES key size: ${secretKey.size}")
+        }
 
-                is AES.ECB -> ECB.crypt(
-                    kCCDecrypt.toLong(),
-                    encryptedData.toNSData(),
-                    secretKey.toNSData(),
-                    error
-                )
+        //must be CBC
+        nonce?.let { nonce ->
+            if (nonce.size != kCCBlockSizeAES128.toInt())
+                throw ImplementationError("Illegal AES nonce length: ${nonce.size}")
+        }
 
-                is AES.WRAP.RFC3394 -> WRAP.unwrap(encryptedData.toNSData(), secretKey.toNSData(), error)
+        if (Int.MAX_VALUE - kCCBlockSizeAES128.toInt() < data.size)
+            throw ImplementationError("Input data too large: ${data.size}")
 
-                else -> TODO("UNSUPPORTED")
+        val bytesEncrypted = ULongArray(1)
+        //account for padding
+        val destination = ByteArray(kCCBlockSizeAES128.toInt() + data.size)
+        val result = destination.usePinned { output ->
+            secretKey.usePinned { secretKey ->
+                data.let { if (encrypt && pad) algorithm.addPKCS7Padding(it) else it }.usePinned { input ->
+                    bytesEncrypted.usePinned { bytesEncrypted ->
+                        when (algorithm) {
+                            is AES.CBC.Unauthenticated, is AES.ECB -> {
+                                CCCrypt(
+                                    (if (encrypt) kCCEncrypt else kCCDecrypt),
+                                    (kCCAlgorithmAES),
+                                    algorithm.iosOptions,
+                                    secretKey.addressOf(0), keySize.toULong(),
+                                    nonce?.refTo(0),
+                                    input.addressOf(0), input.get().size.toULong(),
+                                    output.addressOf(0), output.get().size.toULong(),
+                                    bytesEncrypted.addressOf(0)
+                                )
+                            }
+
+                            is AES.WRAP.RFC3394 -> {
+                                //Why Apple, why???
+                                bytesEncrypted.get()[0] = output.get().size.toULong()
+                                //Why, Apple, Why are these separate operations and not parameterized as others???
+                                if (encrypt) CCSymmetricKeyWrap(
+                                    kCCWRAPAES,
+                                    CCrfc3394_iv, CCrfc3394_ivLen,
+                                    //Why, Apple, Why is it ubyte for wrap and byte for others???
+                                    secretKey.addressOf(0) as CValuesRef<UByteVarOf<UByte>>, keySize.toULong(),
+                                    input.addressOf(0) as CValuesRef<UByteVarOf<UByte>>, input.get().size.toULong(),
+                                    output.addressOf(0) as CValuesRef<UByteVarOf<UByte>>, bytesEncrypted.addressOf(0)
+                                )
+                                else CCSymmetricKeyUnwrap(
+                                    kCCWRAPAES,
+                                    CCrfc3394_iv, CCrfc3394_ivLen,
+                                    //why is it ubyte for wrap and byte for others???
+                                    secretKey.addressOf(0) as CValuesRef<UByteVarOf<UByte>>, keySize.toULong(),
+                                    input.addressOf(0) as CValuesRef<UByteVarOf<UByte>>, input.get().size.toULong(),
+                                    output.addressOf(0) as CValuesRef<UByteVarOf<UByte>>, bytesEncrypted.addressOf(0)
+                                )
+                            }
+
+                            else -> throw ImplementationError("Illegal State in AES ${if (encrypt) "encryption" else "decryption"}.")
+                        }
+                    }
+                }
             }
-
-
-        }.toByteArray()
-
-        return if(algorithm is AES.WRAP.RFC3394) decrypted
-        else algorithm.removePKCS7Padding(decrypted)
+        }
+        return when {
+            (result != kCCSuccess) -> throw IllegalStateException("Invalid state returned by Core Foundation call: $result")
+            else -> destination.sliceArray(0..<bytesEncrypted.first().toInt()/*remove superfluous bytes*/).let {
+                if (!encrypt && pad) algorithm.removePKCS7Padding(it) else it
+            }
+        }
     }
 }
 
+val SymmetricEncryptionAlgorithm.AES<*, KeyType.Integrated, *>.iosOptions: UInt
+    get() = @OptIn(HazardousMaterials::class) when (this) {
+        is AES.CBC.Unauthenticated, is AES.WRAP.RFC3394 -> 0u //no options (=manual padding).
+        is AES.ECB -> kCCOptionECBMode
+        else -> throw ImplementationError()
+    }
