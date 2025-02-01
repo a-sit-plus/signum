@@ -18,6 +18,7 @@ import kotlin.jvm.JvmName
 @JvmName("decryptGeneric")
 fun SealedBox<*, *, *>.decrypt(key: SymmetricKey<*, *, *>) = catching {
     require(algorithm == key.algorithm) { "Algorithm mismatch! expected: $algorithm, actual: ${key.algorithm}" }
+    @Suppress("UNCHECKED_CAST")
     when (algorithm.authCapability) {
         is Authenticated.Integrated -> (this as SealedBox<Authenticated.Integrated, *, KeyType.Integrated>).decryptInternal(
             (key as SymmetricKey.Integrated).secretKey
@@ -46,7 +47,8 @@ fun SealedBox<*, *, *>.decrypt(key: SymmetricKey<*, *, *>) = catching {
 fun <A : AuthCapability<K>, I : NonceTrait, K : KeyType> SealedBox<A, I, K>.decrypt(
     key: SymmetricKey<A, I, K>
 ): KmmResult<ByteArray> = catching {
-    require(algorithm == key.algorithm) { "Somebody likes cursed casts!" }
+    require(algorithm == key.algorithm) { "Algorithm mismatch! expected: $algorithm, actual: ${key.algorithm}" }
+    @Suppress("UNCHECKED_CAST")
     when (algorithm.authCapability as AuthCapability<*>) {
         is Authenticated.Integrated -> (this as SealedBox<Authenticated.Integrated, *, KeyType.Integrated>).decryptInternal(
             (key as SymmetricKey.Integrated).secretKey
@@ -78,7 +80,7 @@ private fun SealedBox<Authenticated.Integrated, *, KeyType.Integrated>.decryptIn
     secretKey: ByteArray
 ): ByteArray {
     require(secretKey.size.toUInt() == algorithm.keySize.bytes) { "Key must be exactly ${algorithm.keySize} bits long" }
-    return doDecrypt(secretKey)
+    return doDecryptAEAD(secretKey)
 }
 
 @JvmName("decryptRaw")
@@ -107,7 +109,7 @@ private fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedic
     if (!(mac.mac(macKey, hmacInput).getOrThrow().contentEquals(authTag)))
         throw IllegalArgumentException("Auth Tag mismatch!")
 
-    val box: SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated> =
+    @Suppress("UNCHECKED_CAST") val box: SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated> =
         (if (this is SealedBox.WithNonce<*, *>) (innerCipher as SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Required, KeyType.Integrated>).sealedBoxFrom(
             nonce,
             encryptedData

@@ -17,7 +17,7 @@ sealed interface SymmetricKey<A : AuthCapability<K>, I : NonceTrait, K : KeyType
 
     /**
      * This is meant for storing additional properties, which may be relevant for certain use cases.
-     * For example, Json Web Keys or Cose Keys may define an arbitrary key IDs.
+     * For example, Json Web Keys or COSE keys may define an arbitrary key IDs.
      * This is not meant for Algorithm parameters! If an algorithm needs parameters, the implementing classes should be extended
      */
     //must be serializable, therefore <String,String>
@@ -207,5 +207,5 @@ fun <A : AuthCapability<K>, K : KeyType> SymmetricKey<A, *, K>.requiresNonce(): 
 /**
  * The actual encryption key bytes
  */
-val <A : AuthCapability<out K>, I : NonceTrait, K : KeyType.Integrated> SymmetricKey<A, I, out K >.secretKey get() = (this as SymmetricKey.Integrated).secretKey
+val <A : AuthCapability<out KeyType.Integrated>, I : NonceTrait> SymmetricKey<A, I, out KeyType.Integrated>.secretKey get() = (this as SymmetricKey.Integrated).secretKey
 val <I : NonceTrait> SymmetricKey<AuthCapability.Authenticated.WithDedicatedMac<*,I>, I, out KeyType.WithDedicatedMacKey >.encryptionKey get() = (this as SymmetricKey.WithDedicatedMac).encryptionKey

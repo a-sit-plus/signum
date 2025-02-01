@@ -85,7 +85,7 @@ fun <K : KeyType, A : AuthCapability.Authenticated<out K>> SymmetricKey<out A, N
     }
 
 private typealias KeyWithNonce<A, K> = Pair<SymmetricKey<out A, NonceTrait.Required, out K>, ByteArray>
-//first and second are deliberately swapped
+//first and second are deliberately swapped to avoid mixups
 private typealias KeyWithNonceAuthenticating<A, K> = Pair<ByteArray, SymmetricKey<out A, NonceTrait.Required, out K>>
 
 

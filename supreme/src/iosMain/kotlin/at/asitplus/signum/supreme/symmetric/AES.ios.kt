@@ -58,7 +58,7 @@ internal object AESIOS {
 
         is AES.GCM -> {
             val ciphertext = GCM.encrypt(data.toNSData(), key.toNSData(), nonce?.toNSData(), aad?.toNSData())
-            if (ciphertext == null) throw UnsupportedOperationException("Error from swift code!")
+            if (ciphertext == null) throw IllegalStateException("Error from swift code!")
             alg.sealedBoxFrom(
                 ciphertext.iv().toByteArray(),
                 ciphertext.ciphertext().toByteArray(),
@@ -139,7 +139,7 @@ internal object AESIOS {
                                 //Why Apple, why???
                                 bytesEncrypted.get()[0] = output.get().size.toULong()
                                 //Why, Apple, Why are these separate operations and not parameterized as others???
-                                if (encrypt) CCSymmetricKeyWrap(
+                                if (encrypt) @Suppress("UNCHECKED_CAST") CCSymmetricKeyWrap(
                                     kCCWRAPAES,
                                     CCrfc3394_iv, CCrfc3394_ivLen,
                                     //Why, Apple, Why is it ubyte for wrap and byte for others???
@@ -147,7 +147,7 @@ internal object AESIOS {
                                     input.addressOf(0) as CValuesRef<UByteVarOf<UByte>>, input.get().size.toULong(),
                                     output.addressOf(0) as CValuesRef<UByteVarOf<UByte>>, bytesEncrypted.addressOf(0)
                                 )
-                                else CCSymmetricKeyUnwrap(
+                                else @Suppress("UNCHECKED_CAST") CCSymmetricKeyUnwrap(
                                     kCCWRAPAES,
                                     CCrfc3394_iv, CCrfc3394_ivLen,
                                     //why is it ubyte for wrap and byte for others???

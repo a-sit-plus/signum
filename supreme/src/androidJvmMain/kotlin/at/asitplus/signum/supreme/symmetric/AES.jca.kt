@@ -38,9 +38,10 @@ internal object AESJCA {
                 )
             }
 
-            else TODO()
+            else TODO("Algorithm $algorithm is unsupported ")
             aad?.let { if (algorithm is SymmetricEncryptionAlgorithm.AES.GCM) updateAAD(it) /*CBC-HMAC we do ourselves*/ }
         }.let {
+            @Suppress("UNCHECKED_CAST")
             CipherParam<Cipher, AuthCapability<KeyType>, KeyType>(
                 algorithm as SymmetricEncryptionAlgorithm<AuthCapability<KeyType>,*, KeyType>,
                 it,

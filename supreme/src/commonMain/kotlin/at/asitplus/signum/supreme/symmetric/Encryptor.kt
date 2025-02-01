@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.symmetric
 
+import at.asitplus.signum.ImplementationError
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.AuthCapability.Authenticated
 import at.asitplus.signum.supreme.mac.mac
@@ -20,7 +21,6 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, out K : KeyT
         require(key.size.toUInt() == algorithm.keySize.bytes) { "Key must be exactly ${algorithm.keySize} bits long" }
     }
 
-
     private val platformCipher: CipherParam<*, A, out K> = initCipher<Any, A, I, K>(algorithm, key, iv, aad)
 
     /**
@@ -34,15 +34,15 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, out K : KeyT
                 aMac.innerCipher
                 val innerCipher =
                     initCipher<Any, AuthCapability.Unauthenticated, I, KeyType.Integrated>(
-                        aMac.innerCipher as SymmetricEncryptionAlgorithm.Unauthenticated<I>,
+                        aMac.innerCipher,
                         key,
                         iv,
                         aad
                     )
 
-                if (aMac.innerCipher.requiresNonce())
-                    require(innerCipher.nonce != null) { "Nonce implementation error. Report this bug!" }
-                require(macKey != null) { "MAC key implementation error. Report this bug!" }
+                if (!aMac.innerCipher.requiresNonce()) throw ImplementationError("AES-CBC-HMAC Nonce inconsistency")
+                if (macKey == null) throw ImplementationError("AES-CBC-HMAC MAC key is null")
+
                 val encrypted = innerCipher.doEncrypt<AuthCapability.Unauthenticated, I, KeyType.Integrated>(data)
                 val macInputCalculation = aMac.dedicatedMacInputCalculation
                 val hmacInput: ByteArray =
@@ -54,6 +54,7 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, out K : KeyT
 
                 val authTag = aMac.mac.mac(macKey, hmacInput).getOrThrow()
 
+                @Suppress("UNCHECKED_CAST")
                 (if (algorithm.requiresNonce()) {
                     (algorithm).sealedBoxFrom(
                         (encrypted as SealedBox.WithNonce<*, *>).nonce,
@@ -68,23 +69,20 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, out K : KeyT
                 )).getOrThrow() as SealedBox<A, I, K>
 
             } else platformCipher.doEncrypt(data))
-
-
 }
 
-internal class CipherParam<T, A : AuthCapability<K>, K : KeyType>(
+internal class CipherParam<T, A : AuthCapability<out K>, K : KeyType>(
     val alg: SymmetricEncryptionAlgorithm<A, *, K>,
     val platformData: T,
     val nonce: ByteArray?,
     val aad: ByteArray?
 )
 
-
-expect internal fun SealedBox<Authenticated.Integrated, *, out KeyType.Integrated>.doDecrypt(
+internal expect fun SealedBox<Authenticated.Integrated, *, out KeyType.Integrated>.doDecryptAEAD(
     secretKey: ByteArray
 ): ByteArray
 
-expect internal fun SealedBox<AuthCapability.Unauthenticated, *, out KeyType.Integrated>.doDecrypt(
+internal expect fun SealedBox<AuthCapability.Unauthenticated, *, out KeyType.Integrated>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray
 
