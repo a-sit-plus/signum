@@ -87,6 +87,7 @@ fun SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Wit
         )
 
         false -> SealedBox.WithoutNonce.Authenticated<KeyType.Integrated>(
+            @Suppress("UNCHECKED_CAST")
             (this as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.Integrated, NonceTrait.Without, KeyType.Integrated>).authenticatedCipherText(
                 encryptedData,
                 authTag,
