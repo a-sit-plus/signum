@@ -67,7 +67,7 @@ kotlin {
 swiftklib {
     create("AESwift") {
         path = file("src/iosMain/swift")
-        packageName("at.asitplus.signum.supreme.aes")
+        packageName("at.asitplus.signum.supreme.symmetric.ios")
     }
 }
 

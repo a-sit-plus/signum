@@ -7,7 +7,7 @@ import at.asitplus.signum.indispensable.symmetric.sealedBoxFrom
 import at.asitplus.signum.internals.swiftcall
 import at.asitplus.signum.internals.toByteArray
 import at.asitplus.signum.internals.toNSData
-import at.asitplus.signum.supreme.aes.ChaCha
+import at.asitplus.signum.supreme.symmetric.ios.ChaCha
 import kotlinx.cinterop.ExperimentalForeignApi
 
 

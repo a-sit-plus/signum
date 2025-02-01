@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.ImplementationError
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.AuthCapability.Authenticated
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
@@ -55,17 +56,24 @@ internal actual fun SealedBox<Authenticated.Integrated, *, out KeyType.Integrate
     }
 }
 
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, HazardousMaterials::class)
 internal actual fun SealedBox<AuthCapability.Unauthenticated, *, out KeyType.Integrated>.doDecrypt(
     secretKey: ByteArray
 ): ByteArray {
     require(algorithm is AES<*, *, *>) { "Only AES is supported" }
 
-    return AESIOS.cbcEcbDecrypt(
-        algorithm as AES<*, *, *>,
-        encryptedData,
+    return AESIOS.cbcEcbCrypt(
+        algorithm as AES<*, KeyType.Integrated, *>,
+        encrypt = false,
         secretKey,
-        if (this is SealedBox.WithNonce) nonce else null
+        if (this is SealedBox.WithNonce) nonce else null,
+        encryptedData,
+        pad= when(algorithm){
+            is AES.CBC.Unauthenticated,  is AES.ECB ->true
+            is AES.WRAP.RFC3394 -> false
+            else -> throw ImplementationError("Illegal AES encryption state.")
+
+        }
     )
 
 }
