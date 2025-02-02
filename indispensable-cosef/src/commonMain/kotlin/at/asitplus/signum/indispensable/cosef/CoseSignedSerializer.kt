@@ -66,7 +66,7 @@ class CoseSignedSerializer<P : Any?>(
     ): CryptoSignature.RawByteEncodable =
         if (protectedHeader.usesEC() ?: unprotectedHeader?.usesEC() ?: (size < 2048))
             CryptoSignature.EC.fromRawBytes(this)
-        else CryptoSignature.RSAorHMAC(this)
+        else CryptoSignature.RSA(this)
 
     private fun ByteArray?.toNullablePayload(): P? = when (this) {
         null -> null

@@ -213,7 +213,7 @@ constructor(
 val CryptoSignature.x509Encoded
     get() = when (this) {
         is CryptoSignature.EC -> encodeToDer().encodeToAsn1BitStringPrimitive()
-        is CryptoSignature.RSAorHMAC -> encodeToTlv()
+        is CryptoSignature.RSA -> encodeToTlv()
     }
 
 /**
@@ -224,7 +224,7 @@ val CryptoSignature.x509Encoded
 fun CryptoSignature.Companion.fromX509Encoded(alg: X509SignatureAlgorithm, it: Asn1Primitive) =
     when (alg.isEc) {
         true -> CryptoSignature.EC.decodeFromDer(it.asAsn1BitString().rawBytes)
-        false -> CryptoSignature.RSAorHMAC.decodeFromTlv(it)
+        false -> CryptoSignature.RSA.decodeFromTlv(it)
     }
 
 /**

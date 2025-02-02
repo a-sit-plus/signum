@@ -100,9 +100,9 @@ The following functions provide interop functionality with platform types.
 ### JVM/Android
 
 * `SignatureAlgorithm.getJCASignatureInstance()` gets a pre-configured JCA instance for this algorithm
-* `SpecializedSignatureAlgorithm.getJCASignatureInstance()` gets a pre-configured JCA instance for this algorithm
+* `X509SignatureAlgorithm.getJCASignatureInstance()` gets a pre-configured JCA instance for this algorithm
 * `SignatureAlgorithm.getJCASignatureInstancePreHashed()` gets  a pre-configured JCA instance for pre-hashed data for this algorithm
-* `SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed()` gets  a pre-configured JCA instance for pre-hashed data for this algorithm
+* `X509SignatureAlgorithm.getJCASignatureInstancePreHashed()` gets  a pre-configured JCA instance for pre-hashed data for this algorithm
 
 <br>
 
@@ -144,7 +144,7 @@ The following functions provide interop functionality with platform types.
 * `CryptoSignature.jcaSignatureBytes` returns the JCA-native encoded representation of a signature
 * `CryptoSignature.parseFromJca()` returns a signature object form a JCA-native encoded representation of a signature
 * `CryptoSignature.EC.parseFromJca()` returns an EC signature object form a JCA-native encoded representation of a signature
-* `CryptoSignature.RSAorHMAC.parseFromJca()` returns an RSA signature object form a JCA-native encoded representation of a signature
+* `CryptoSignature.RSA.parseFromJca()` returns an RSA signature object form a JCA-native encoded representation of a signature
 * `CryptoSignature.EC.parseFromJcaP1363` parses a signature produced by the JCA digestWithECDSAinP1363Format algorithm.
 * `X509Certificate.toJcaCertificate()` converts the certificate to a JCA-native `X509Certificate`
 * `java.security.cert.X509Certificate.toKmpCertificate()` converts a JCA-native certificate to a Signum `X509Certificate`

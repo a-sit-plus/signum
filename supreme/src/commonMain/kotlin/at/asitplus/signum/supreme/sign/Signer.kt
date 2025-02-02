@@ -147,7 +147,6 @@ fun SignatureAlgorithm.signerFor(privateKey: CryptoPrivateKey.WithPublicKey<*>):
     ) { "Algorithm and Key mismatch: ${this::class.simpleName} + ${privateKey::class.simpleName}" }
     when (this) {
         is SignatureAlgorithm.ECDSA -> makePrivateKeySigner(privateKey as CryptoPrivateKey.EC.WithPublicKey, this)
-        is SignatureAlgorithm.HMAC -> throw UnsupportedOperationException("HMAC is not yet supported!")
         is SignatureAlgorithm.RSA -> makePrivateKeySigner(privateKey as CryptoPrivateKey.RSA, this)
     }
 }

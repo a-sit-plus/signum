@@ -45,7 +45,6 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.SpecializedSignatureAlgorithm
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.indispensable.pki.X509Certificate
@@ -115,7 +114,7 @@ internal fun App() {
             X509SignatureAlgorithm.RS512
         )
         var keyAlgorithm by remember {
-            mutableStateOf<SpecializedSignatureAlgorithm>(
+            mutableStateOf<X509SignatureAlgorithm>(
                 X509SignatureAlgorithm.ES256
             )
         }

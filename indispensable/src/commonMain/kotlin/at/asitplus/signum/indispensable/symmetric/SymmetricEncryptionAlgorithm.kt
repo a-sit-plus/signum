@@ -7,7 +7,7 @@ import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.encoding.encodeTo8Bytes
 import at.asitplus.signum.indispensable.mac.HMAC
-import at.asitplus.signum.indispensable.mac.MAC
+import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 import kotlin.contracts.ExperimentalContracts
@@ -93,7 +93,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
         interface Integrated<I : NonceTrait> :
             Authenticated<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated>
 
-        interface WithDedicatedMac<M : MAC, I : NonceTrait> :
+        interface WithDedicatedMac<M : MessageAuthenticationCode, I : NonceTrait> :
             Authenticated<AuthCapability.Authenticated.WithDedicatedMac<M, I>, I, KeyType.WithDedicatedMacKey>
     }
 
@@ -270,7 +270,7 @@ sealed interface AuthCapability<K : KeyType> {
          * An authenticated cipher construction based on an unauthenticated cipher with a dedicated MAC function, requiring a dedicated MAC key.
          * _Encrypt-then-MAC_
          */
-        class WithDedicatedMac<M : MAC, I : NonceTrait>(
+        class WithDedicatedMac<M : MessageAuthenticationCode, I : NonceTrait>(
             /**
              * The inner unauthenticated cipher
              */
@@ -342,14 +342,14 @@ sealed interface AuthCapability<K : KeyType> {
 /**
  * Typealias defining the signature of the lambda for defining a custom MAC input calculation scheme.
  */
-typealias DedicatedMacInputCalculation = MAC.(ciphertext: ByteArray, nonce: ByteArray, aad: ByteArray) -> ByteArray
+typealias DedicatedMacInputCalculation = MessageAuthenticationCode.(ciphertext: ByteArray, nonce: ByteArray, aad: ByteArray) -> ByteArray
 
 /**
  * The default dedicated mac input calculation as per [FRC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1), authenticating all inputs:
  * `AAD || IV || Ciphertext || AAD Length`, where AAD_length is a 64 bit big-endian
  */
 val DefaultDedicatedMacInputCalculation: DedicatedMacInputCalculation =
-    fun MAC.(ciphertext: ByteArray, iv: ByteArray, aad: ByteArray): ByteArray =
+    fun MessageAuthenticationCode.(ciphertext: ByteArray, iv: ByteArray, aad: ByteArray): ByteArray =
         aad + iv + ciphertext + aad.size.toLong().encodeTo8Bytes()
 
 /**

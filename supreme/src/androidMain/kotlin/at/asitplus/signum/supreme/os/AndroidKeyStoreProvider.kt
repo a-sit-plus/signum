@@ -387,7 +387,7 @@ sealed class AndroidKeystoreSigner private constructor(
 
         return@signCatching when (this@AndroidKeystoreSigner) {
             is ECDSA -> CryptoSignature.EC.parseFromJca(jcaSig).withCurve(publicKey.curve)
-            is RSA -> CryptoSignature.RSAorHMAC.parseFromJca(jcaSig)
+            is RSA -> CryptoSignature.RSA.parseFromJca(jcaSig)
         }
     }}
 

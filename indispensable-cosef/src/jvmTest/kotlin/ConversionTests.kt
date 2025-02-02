@@ -23,7 +23,7 @@ class ConversionTests : FreeSpec({
         }
     }
     "COSE -> X509 -> COSE is stable" - {
-        withData(CoseAlgorithm.entries) {
+        withData(CoseAlgorithm.signatureAlgorithms) {
             it.toX509SignatureAlgorithm().getOrNull()?.let { x509 ->
                 x509.toCoseAlgorithm() shouldSucceedWith it
             }

@@ -17,7 +17,7 @@ class ConversionTest : FreeSpec({
         }
     }
     "JWS -> X509 -> JWS is stable" - {
-        withData(JwsAlgorithm.entries) {
+        withData(JwsAlgorithm.signatureAlgorithms) {
             it.toX509SignatureAlgorithm().getOrNull()?.let { x509 ->
                 x509.toJwsAlgorithm() shouldSucceedWith it
             }

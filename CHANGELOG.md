@@ -5,6 +5,10 @@
 ### NEXT
 
 * HMAC Support
+    * **Clean up `RSAorHMAC` mess**
+        * Introduce `DataAuthenticationAlgorithm` encompassing Signatures and MACs
+        * Rename `RSAorHMAC` to `RSA` and introduce dedicated `MessageAuthenticationCode` and `HMAC` classes
+        * This caused **some breaking shifts and cleanups** in conversion methods between indispensable, josef, cosef, and JCA types
 * Symmetric Encryption
     * Supported Algorithms
         * AES
