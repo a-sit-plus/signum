@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.cosef
 
+import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.mac.HMAC
@@ -106,7 +107,7 @@ object CoseAlgorithmSerializer : KSerializer<CoseAlgorithm> {
 }
 
 /** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
-fun DataIntegrityAlgorithm.toCoseAlgorithm() = catching {
+fun DataIntegrityAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm> = catching {
     when (this) {
         is SignatureAlgorithm.ECDSA -> when (this.digest) {
             Digest.SHA256 -> CoseAlgorithm.ES256
@@ -137,6 +138,8 @@ fun DataIntegrityAlgorithm.toCoseAlgorithm() = catching {
             Digest.SHA512 -> CoseAlgorithm.HS512
             else -> throw IllegalArgumentException("HMAC with ${this.digest} is unsupported by COSE")
         }
+
+        else -> throw IllegalArgumentException("UnsupportedAlgorithm $this")
     }
 }
 

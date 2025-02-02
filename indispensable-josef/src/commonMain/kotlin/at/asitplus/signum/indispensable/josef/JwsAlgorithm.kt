@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.mac.HMAC
@@ -109,7 +110,7 @@ object JwsAlgorithmSerializer : KSerializer<JwsAlgorithm> {
 }
 
 /** Tries to find a matching JWS algorithm. Note that JWS imposes curve restrictions on ECDSA based on the digest. */
-fun DataIntegrityAlgorithm.toJwsAlgorithm() = catching {
+fun DataIntegrityAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
     when (this) {
         is SignatureAlgorithm.ECDSA -> when (this.digest) {
             Digest.SHA256 -> JwsAlgorithm.ES256
@@ -132,6 +133,7 @@ fun DataIntegrityAlgorithm.toJwsAlgorithm() = catching {
                 Digest.SHA512 -> JwsAlgorithm.PS512
                 else -> throw IllegalArgumentException("RSA-PSS with ${this.digest} is unsupported by JWS")
             }
+
         }
 
         is HMAC -> when (this.digest) {
@@ -140,11 +142,10 @@ fun DataIntegrityAlgorithm.toJwsAlgorithm() = catching {
             Digest.SHA512 -> JwsAlgorithm.HS512
             else -> throw IllegalArgumentException("HMAC with ${this.digest} is unsupported by JWS")
         }
+
+        else -> throw IllegalArgumentException("UnsupportedAlgorithm $this")
+
     }
 }
-
-/** Tries to find a matching JWS algorithm. Note that JWS imposes curve restrictions on ECDSA based on the digest. */
-fun SpecializedDataIntegrityAlgorithm.toJwsAlgorithm() =
-    this.algorithm.toJwsAlgorithm()
 
 
