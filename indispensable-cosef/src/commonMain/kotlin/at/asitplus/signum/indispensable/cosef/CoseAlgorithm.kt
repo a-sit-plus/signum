@@ -106,6 +106,11 @@ object CoseAlgorithmSerializer : KSerializer<CoseAlgorithm> {
 
 }
 
+fun SpecializedDataIntegrityAlgorithm.toJwsAlgorithm(): KmmResult<CoseAlgorithm> =
+    if (this is DataIntegrityAlgorithm) (this as DataIntegrityAlgorithm).toCoseAlgorithm() else KmmResult.failure(
+        IllegalArgumentException("Unsupported Algorithm: $this")
+    )
+
 /** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
 fun DataIntegrityAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm> = catching {
     when (this) {

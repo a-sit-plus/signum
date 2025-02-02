@@ -41,7 +41,7 @@ class JwsSignedTest : FreeSpec({
         }.getOrThrow() //TODO handle error
 
         val header = JwsHeader(
-            algorithm = signer.toJwsAlgorithm().getOrThrow(),
+            algorithm = signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
             jsonWebKey = signer.publicKey.toJsonWebKey()
         )
         val payload = byteArrayOf(1, 3, 3, 7)

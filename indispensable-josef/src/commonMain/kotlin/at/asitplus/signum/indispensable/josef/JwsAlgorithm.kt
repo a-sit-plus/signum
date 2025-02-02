@@ -109,6 +109,12 @@ object JwsAlgorithmSerializer : KSerializer<JwsAlgorithm> {
     }
 }
 
+
+fun SpecializedDataIntegrityAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> =
+    if (this is DataIntegrityAlgorithm) (this as DataIntegrityAlgorithm).toJwsAlgorithm() else KmmResult.failure(
+        IllegalArgumentException("Unsupported Algorithm: $this")
+    )
+
 /** Tries to find a matching JWS algorithm. Note that JWS imposes curve restrictions on ECDSA based on the digest. */
 fun DataIntegrityAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
     when (this) {
