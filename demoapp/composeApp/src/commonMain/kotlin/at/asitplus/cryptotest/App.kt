@@ -48,28 +48,31 @@ import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SpecializedSignatureAlgorithm
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.nativeDigest
-import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.supreme.dsl.PREFERRED
 import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.supreme.sign.makeVerifier
 import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.cryptotest.theme.AppTheme
 import at.asitplus.cryptotest.theme.LocalThemeIsDark
+import at.asitplus.signum.indispensable.CryptoPrivateKey
+import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.jsonEncoded
+import at.asitplus.signum.supreme.SecretExposure
+import at.asitplus.signum.supreme.agree.keyAgreement
 import at.asitplus.signum.supreme.asKmmResult
 import at.asitplus.signum.supreme.os.PlatformSignerConfigurationBase
 import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase
-import at.asitplus.signum.supreme.os.PlatformSigningProvider
 import at.asitplus.signum.supreme.os.SignerConfiguration
 import at.asitplus.signum.supreme.os.SigningProvider
 import at.asitplus.signum.supreme.sign.Verifier
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
-import io.ktor.util.decodeBase64Bytes
+import io.ktor.util.encodeBase64
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newSingleThreadContext
+import kotlin.io.encoding.Base64
 import kotlin.random.Random
 import kotlin.reflect.KProperty
 import kotlin.time.Duration.Companion.seconds
@@ -98,7 +101,7 @@ private class getter<T>(private val fn: () -> T) {
     operator fun getValue(nothing: Nothing?, property: KProperty<*>): T = fn()
 }
 
-@OptIn(ExperimentalStdlibApi::class, ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalStdlibApi::class, ExperimentalCoroutinesApi::class, kotlin.io.encoding.ExperimentalEncodingApi::class)
 @Composable
 internal fun App() {
 
@@ -311,8 +314,8 @@ internal fun App() {
                                 when (val alg = keyAlgorithm.algorithm) {
                                     is SignatureAlgorithm.ECDSA -> {
                                         this@createSigningKey.ec {
-                                            curve = alg.requiredCurve ?:
-                                                    ECCurve.entries.find { it.nativeDigest == alg.digest }!!
+                                            curve = alg.requiredCurve
+                                                ?: ECCurve.entries.find { it.nativeDigest == alg.digest }!!
                                             digests = setOf(alg.digest)
                                         }
                                     }
@@ -430,25 +433,74 @@ internal fun App() {
                 textStyle = TextStyle.Default.copy(fontSize = 10.sp),
                 onValueChange = { inputData = it; verifyState = null },
                 label = { Text("Data to be signed") })
+            Row(modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween) {
 
-            Button(
-                onClick = {
+                Button(
+                    onClick = {
 
-                    Napier.w { "input: $inputData" }
-                    Napier.w { "signingKey: $currentKey" }
-                    CoroutineScope(context).launch {
-                        val data = inputData.encodeToByteArray()
-                        currentSigner!!
-                            .transform { it.sign(data).asKmmResult() }
-                            .also { signatureData = it; verifyState = null }
-                    }
+                        Napier.w { "input: $inputData" }
+                        Napier.w { "signingKey: $currentKey" }
+                        CoroutineScope(context).launch {
+                            val data = inputData.encodeToByteArray()
+                            currentSigner!!
+                                .transform { it.sign(data).asKmmResult() }
+                                .also { signatureData = it; verifyState = null }
+                        }
 
-                },
+                    },
 
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                enabled = signingPossible
-            ) {
-                Text("Sign")
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    enabled = signingPossible
+                ) {
+                    Text("Sign")
+                }
+
+                Button(
+                    onClick = {
+
+                        Napier.w { "input: $inputData" }
+                        Napier.w { "signingKey: $currentKey" }
+                        CoroutineScope(context).launch {
+                            val alg = keyAlgorithm.algorithm as SignatureAlgorithm.ECDSA
+                            val eph = Signer.Ephemeral {
+                                ec {
+                                    curve = alg.requiredCurve
+                                        ?: ECCurve.entries.find { it.nativeDigest == alg.digest }!!
+                                    digests = setOf(alg.digest)
+
+                                }
+                            }.getOrThrow()
+                            val pub = eph.publicKey as CryptoPublicKey.EC
+                            Napier.i { "Got Pubkey: $pub" }
+
+                            val agreed3 =
+                                (currentSigner!!.getOrThrow().publicKey as CryptoPublicKey.EC).keyAgreement(
+                                    @OptIn(SecretExposure::class)
+                                    eph.exportPrivateKey()
+                                        .getOrThrow() as CryptoPrivateKey.EC.WithPublicKey
+                                ).getOrThrow()
+                            Napier.i { "AGREED3: ${agreed3.encodeBase64()}" }
+
+
+                            val agreed =
+                                pub.keyAgreement(currentSigner!!.getOrThrow() as Signer.ECDSA)
+                                    .getOrThrow()
+                            Napier.i { "AGREED1: ${agreed.encodeBase64()}" }
+                            val agreed2 =
+                                (currentSigner!!.getOrThrow() as Signer.ECDSA).keyAgreement(pub)
+                                    .getOrThrow()
+                            Napier.i { "AGREED2: ${agreed2.encodeBase64()}" }
+
+                             }
+
+                    },
+
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                   // enabled = keyAlgorithm is SignatureAlgorithm.ECDSA
+                ) {
+                    Text("ECDH")
+                }
             }
 
             if (signatureData != null) {
