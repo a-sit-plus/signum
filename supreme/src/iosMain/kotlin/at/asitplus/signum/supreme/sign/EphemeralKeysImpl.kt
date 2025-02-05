@@ -2,10 +2,10 @@
 
 package at.asitplus.signum.supreme.sign
 
+import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.*
-import at.asitplus.signum.supreme.AutofreeVariable
 import kotlinx.cinterop.*
 import platform.CoreFoundation.CFRelease
 import platform.Foundation.NSData
@@ -13,6 +13,17 @@ import platform.Security.*
 
 actual class EphemeralSigningKeyConfiguration internal actual constructor() : EphemeralSigningKeyConfigurationBase()
 actual class EphemeralSignerConfiguration internal actual constructor() : EphemeralSignerConfigurationBase()
+
+internal fun performKeyAgreement(privateKey: SecKeyRef?, publicValue: KeyAgreementPublicValue.ECDH) =
+    corecall {
+        platform.Security.SecKeyCopyKeyExchangeResult(
+            privateKey,
+            platform.Security.kSecKeyAlgorithmECDHKeyExchangeStandard,
+            publicValue.asCryptoPublicKey().toSecKey().getOrThrow().value,
+            parameters = null,
+            error
+        )
+    }.takeFromCF<NSData>().toByteArray()
 
 sealed class EphemeralSigner(internal val privateKey: OwnedCFValue<SecKeyRef>) : Signer {
     final override val mayRequireUserUnlock: Boolean get() = false
@@ -36,6 +47,10 @@ sealed class EphemeralSigner(internal val privateKey: OwnedCFValue<SecKeyRef>) :
         @SecretExposure
         override fun exportPrivateKey() =
             privateKey.value.toCryptoPrivateKey().mapCatching { it as CryptoPrivateKey.EC.WithPublicKey }
+
+        override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH) = catching {
+            performKeyAgreement(privateKey.value, publicValue)
+        }
     }
 
     class RSA internal constructor(
@@ -112,3 +127,16 @@ internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfigura
     }
 }
 
+@OptIn(ExperimentalForeignApi::class)
+actual fun makePrivateKeySigner(
+    key: CryptoPrivateKey.RSA,
+    algorithm: SignatureAlgorithm.RSA
+): Signer.RSA =
+    key.toSecKey().mapCatching { EphemeralSigner.RSA(EphemeralSignerConfiguration(), it, key.publicKey, algorithm) }.getOrThrow()
+
+@OptIn(ExperimentalForeignApi::class)
+actual fun makePrivateKeySigner(
+    key: CryptoPrivateKey.EC.WithPublicKey,
+    algorithm: SignatureAlgorithm.ECDSA
+): Signer.ECDSA =
+    key.toSecKey().mapCatching { EphemeralSigner.EC(EphemeralSignerConfiguration(), it, key.publicKey, algorithm) }.getOrThrow()

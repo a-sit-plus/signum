@@ -351,7 +351,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
             val encodeCurve: Boolean,
             val encodePublicKey: Boolean,
             attributes: List<Asn1Element>? = null
-        ) : EC(privateKey, attributes), CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC> {
+        ) : EC(privateKey, attributes), CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>, KeyAgreementPrivateValue.ECDH {
 
             constructor(privateKey: BigInteger, curve: ECCurve,
                         encodeCurve: Boolean, encodePublicKey: Boolean, attributes: List<Asn1Element>? = null) :
@@ -370,6 +370,8 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
 
             override val privateKeyBytes: ByteArray
                 get() = privateKey.toByteArray().ensureSize(curve.scalarLength.bytes)
+
+            override val publicValue get() = this.publicKey
         }
 
         class WithoutPublicKey constructor(

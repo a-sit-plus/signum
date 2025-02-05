@@ -36,7 +36,7 @@ private sealed interface PemDecoder<out T> {
  * as per [RFC 1421](https://datatracker.ietf.org/doc/html/rfc1421).
  * Use in tandem with [PemEncodable].
  */
-abstract class PemDecodable<A : Asn1Element, T : PemEncodable<A>>
+abstract class PemDecodable<A : Asn1Element, out T : PemEncodable<A>>
     private constructor(private val decoders: Map<String, PemDecoder<T>>)
     : Asn1Decodable<A, T>
 {
@@ -50,30 +50,28 @@ abstract class PemDecodable<A : Asn1Element, T : PemEncodable<A>>
             .map(String::trim)
             .dropWhile { !(it.startsWith(FENCE_PREFIX_BEGIN) && it.endsWith(FENCE_SUFFIX)) }
             .iterator()
-            .run {
-                require(hasNext()) { "No encapsulation boundary found" }
-                val firstLine = next()
+            .let {
+                require(it.hasNext()) { "No encapsulation boundary found" }
+                val firstLine = it.next()
                 val ebString = firstLine.substring(FENCE_PREFIX_BEGIN.length, firstLine.length - FENCE_SUFFIX.length)
                 val decoder: PemDecoder<T> = decoders.getOrElse(ebString)
                     { throw IllegalArgumentException("Unknown encapsulation boundary string $ebString") }
                 val b64data = StringBuilder()
-                while (hasNext()) {
-                    val line = next()
+                while (it.hasNext()) {
+                    val line = it.next()
                     if (line.startsWith(FENCE_PREFIX_END) && line.endsWith(FENCE_SUFFIX)) {
                         val afterEbString = line.substring(FENCE_PREFIX_END.length, line.length - FENCE_SUFFIX.length)
                         require(afterEbString == ebString) { "Boundary string mismatch: $ebString vs $afterEbString" }
                         @OptIn(ExperimentalEncodingApi::class)
-                        return@run decoder(Base64.Mime.decode(b64data.toString()))
+                        return@let Base64.Mime.decode(b64data.toString()).let { data -> when(decoder) {
+                            is PemDecoder.Default -> decodeFromDer(data)
+                            is PemDecoder.Real<T> -> decoder.fn(data)
+                        }}
                     }
                     b64data.append(line)
                 }
                 throw IllegalArgumentException("End of string reached while parsing (no encapsulation terminator?)")
             }
-    }
-
-    private inline operator fun PemDecoder<T>.invoke(data: ByteArray) = when (this) {
-        is PemDecoder.Default -> this@PemDecodable.decodeFromDer(data)
-        is PemDecoder.Real<T> -> this@invoke.fn(data)
     }
 }
 

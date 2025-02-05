@@ -4,6 +4,7 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.Attestation
 import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.dsl.DISCOURAGED
@@ -67,6 +68,21 @@ open class PlatformSigningKeyConfigurationBase<SignerConfigurationT: PlatformSig
 
     /** Require that this key is stored in some kind of hardware-backed storage, such as Android Keymaster or Apple Secure Enclave. */
     open val hardware = childOrNull(::SecureHardwareConfiguration)
+
+    open class PurposeConfiguration: DSL.Data() {
+        /** Whether this key can be used for signing data */
+        var signing = true
+        /** Whether this key can be used for ECDH key agreement */
+        var keyAgreement = false
+    }
+
+    open val purposes = childOrDefault(::PurposeConfiguration)
+
+    override fun validate() {
+        super.validate()
+        if (this.purposes.v.keyAgreement)
+            require(this._algSpecific.v is ECConfiguration) { "ECDH key agreement requires an EC keypair" }
+    }
 }
 
 open class ECSignerConfiguration internal constructor(): DSL.Data() {
@@ -155,6 +171,14 @@ interface PlatformSigningProviderSigner
     override suspend fun sign(data: SignatureInput) = sign(data, null)
     override suspend fun sign(data: ByteArray) = sign(SignatureInput(data), null)
     override suspend fun sign(data: Sequence<ByteArray>) = sign(SignatureInput(data), null)
+
+    interface ECDSA
+    <SigningConfiguration: PlatformSigningProviderSignerSigningConfigurationBase, AttestationT: Attestation>
+        : PlatformSigningProviderSigner<SigningConfiguration, AttestationT>, Signer.ECDSA
+    {
+        suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH, configure: DSLConfigureFn<SigningConfiguration> = null): KmmResult<ByteArray>
+        override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH) = keyAgreement(publicValue, null)
+    }
 }
 
 open class PlatformSigningProviderConfigurationBase internal constructor(): DSL.Data()

@@ -147,7 +147,6 @@ fun CryptoPublicKey.EC.toJcaPublicKey(): KmmResult<ECPublicKey> = catching {
     val ecPoint = parameterSpec.curve.createPoint(x, y)
     val ecPublicKeySpec = ECPublicKeySpec(ecPoint, parameterSpec)
     JCEECPublicKey("EC", ecPublicKeySpec)
-
 }
 
 private val rsaFactory = KeyFactory.getInstance("RSA")

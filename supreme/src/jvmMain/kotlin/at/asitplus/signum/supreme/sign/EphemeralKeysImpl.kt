@@ -1,5 +1,7 @@
 package at.asitplus.signum.supreme.sign
 
+import at.asitplus.KmmResult
+import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.supreme.SecretExposure
 import at.asitplus.signum.supreme.signCatching
@@ -11,6 +13,7 @@ import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.RSAPrivateKey
 import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
+import javax.crypto.KeyAgreement
 
 actual class EphemeralSigningKeyConfiguration internal actual constructor(): EphemeralSigningKeyConfigurationBase() {
     var provider: String? = null
@@ -51,6 +54,14 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
 
         @SecretExposure
         final override fun exportPrivateKey() = (privateKey as ECPrivateKey).toCryptoPrivateKey()
+
+        override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH) = catching {
+            KeyAgreement.getInstance("ECDH").let {
+                it.init(privateKey)
+                it.doPhase(publicValue.asCryptoPublicKey().toJcaPublicKey().getOrThrow(), true)
+                it.generateSecret()
+            }
+        }
     }
 
     open class RSA internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
@@ -70,7 +81,7 @@ internal fun getKPGInstance(alg: String, provider: String? = null) =
         else -> KeyPairGenerator.getInstance(alg, provider)
     }
 
-internal sealed interface AndroidEphemeralKey {
+internal sealed interface JVMEphemeralKey {
     class EC(pair: KeyPair, digests: Set<Digest?>)
         : EphemeralKeyBase.EC<ECPrivateKey, EphemeralSigner.EC>(EphemeralSigner::EC,
         pair.private as ECPrivateKey, pair.public.toCryptoPublicKey().getOrThrow() as CryptoPublicKey.EC,
@@ -96,12 +107,12 @@ internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfigura
             getKPGInstance("EC", configuration.provider).run {
                 initialize(ECGenParameterSpec(alg.curve.jcaName))
                 generateKeyPair()
-            }.let { pair -> AndroidEphemeralKey.EC(pair, digests = alg.digests) }
+            }.let { pair -> JVMEphemeralKey.EC(pair, digests = alg.digests) }
         }
         is SigningKeyConfiguration.RSAConfiguration -> {
             getKPGInstance("RSA", configuration.provider).run {
                 initialize(RSAKeyGenParameterSpec(alg.bits, alg.publicExponent.toJavaBigInteger()))
                 generateKeyPair()
-            }.let { pair -> AndroidEphemeralKey.RSA(pair, digests = alg.digests, paddings = alg.paddings) }
+            }.let { pair -> JVMEphemeralKey.RSA(pair, digests = alg.digests, paddings = alg.paddings) }
         }
     }

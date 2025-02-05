@@ -5,6 +5,7 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.getJCASignatureInstancePreHashed
@@ -12,6 +13,7 @@ import at.asitplus.signum.indispensable.jcaName
 import at.asitplus.signum.indispensable.parseFromJca
 import at.asitplus.signum.indispensable.toCryptoPrivateKey
 import at.asitplus.signum.indispensable.toCryptoPublicKey
+import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.supreme.SecretExposure
 import at.asitplus.signum.supreme.signCatching
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
@@ -48,6 +50,13 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
         @SecretExposure
         override fun exportPrivateKey() =
             catching { privateKey as ECPrivateKey }.transform(ECPrivateKey::toCryptoPrivateKey)
+
+        override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH) = catching {
+            javax.crypto.KeyAgreement.getInstance("ECDH").also {
+                it.init(this.privateKey)
+                it.doPhase(publicValue.asCryptoPublicKey().toJcaPublicKey().getOrThrow(), true)
+            }.generateSecret()
+        }
     }
 
     class RSA (config: EphemeralSignerConfiguration, privateKey: PrivateKey,
