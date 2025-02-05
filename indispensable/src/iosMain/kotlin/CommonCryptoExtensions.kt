@@ -90,6 +90,20 @@ val CryptoSignature.iosEncoded
         is CryptoSignature.RSAorHMAC -> this.rawByteArray
     }
 
+fun CryptoPublicKey.toSecKey() = catching {
+    memScoped {
+        val attr = cfDictionaryOf(
+            kSecAttrKeyClass to kSecAttrKeyClassPublic,
+            kSecAttrKeyType to when (this@toSecKey) {
+                is CryptoPublicKey.EC -> kSecAttrKeyTypeEC
+                is CryptoPublicKey.RSA -> kSecAttrKeyTypeRSA
+            })
+        corecall {
+            SecKeyCreateWithData(this@toSecKey.iosEncoded.toNSData().giveToCF(), attr, error)
+        }.manage()
+    }
+}
+
 /** Converts this privateKey into a [SecKeyRef], making it usable on iOS */
 fun CryptoPrivateKey.WithPublicKey<*>.toSecKey(): KmmResult<OwnedCFValue<SecKeyRef>> = catching {
     memScoped {

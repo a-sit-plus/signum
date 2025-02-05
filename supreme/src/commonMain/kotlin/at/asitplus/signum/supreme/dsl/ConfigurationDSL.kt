@@ -14,7 +14,7 @@ object DSL {
 
     /** A collection of equivalent DSL configuration structures which shadow each other.
      * @see getProperty */
-    internal class ConfigStack<S: DSL.Data>(private vararg val stackedData: S): Iterable<S> by stackedData.asIterable() {
+    class ConfigStack<S: DSL.Data>(private vararg val stackedData: S): Iterable<S> by stackedData.asIterable() {
         /** Retrieve a property from a stack of (partially-)configured DSL data.
          * Each element of the stack should have an indication of whether the property is set, and a value of the property (which is only accessed if the property is set).
          * This is commonly implemented using `lateinit var`s (with `internal val .. get() = this::prop.isInitialized` as the property checker).*/
@@ -155,7 +155,7 @@ object DSL {
          *
          * Use as `internal val _foo = Stackable<Int>(); var foo by _foo`, then access as `stack.getProperty(DSLType::_foo, default = 42)`.
          */
-        internal class Stackable<T>() {
+        class Stackable<T>() {
             private var _storage: T? = null
             @Suppress("UNCHECKED_CAST")
             internal val value: T get() { check(isSet); return _storage as T }

@@ -15,8 +15,6 @@ import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.dsl.PREFERRED
 import at.asitplus.signum.supreme.dsl.REQUIRED
 import at.asitplus.signum.supreme.hash.digest
-import at.asitplus.signum.supreme.sign.SignatureInput
-import at.asitplus.signum.supreme.sign.Signer
 import io.github.aakira.napier.Napier
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.MemScope
@@ -88,8 +86,8 @@ import at.asitplus.signum.supreme.AutofreeVariable
 import at.asitplus.signum.supreme.SecretExposure
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.UnlockFailed
-import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
-import at.asitplus.signum.supreme.sign.preHashedSignatureFormat
+import at.asitplus.signum.supreme.sign.*
+import at.asitplus.signum.supreme.sign.performKeyAgreement
 import at.asitplus.signum.supreme.signCatching
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -310,7 +308,8 @@ sealed class IosSigner(final override val alias: String,
 
     class ECDSA internal constructor
         (alias: String, override val publicKey: CryptoPublicKey.EC, metadata: IosKeyMetadata, config: IosSignerConfiguration)
-        : IosSigner(alias, metadata, config), Signer.ECDSA
+        : IosSigner(alias, metadata, config),
+            PlatformSigningProviderSigner.ECDSA<IosSignerSigningConfiguration, IosHomebrewAttestation>
     {
         override val signatureAlgorithm: SignatureAlgorithm.ECDSA
         init {
@@ -326,6 +325,14 @@ sealed class IosSigner(final override val alias: String,
         }
         override fun bytesToSignature(sigBytes: ByteArray) =
             CryptoSignature.EC.decodeFromDer(sigBytes).withCurve(publicKey.curve)
+
+        final override suspend fun keyAgreement(
+            publicValue: KeyAgreementPublicValue.ECDH,
+            configure: DSLConfigureFn<IosSignerSigningConfiguration>
+        ) = catching {
+            val config = DSL.resolve(::IosSignerSigningConfiguration, configure)
+            performKeyAgreement(privateKeyManager.get(config).value, publicValue)
+        }
     }
 
     class RSA internal constructor
