@@ -56,8 +56,10 @@ import at.asitplus.cryptotest.theme.AppTheme
 import at.asitplus.cryptotest.theme.LocalThemeIsDark
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
 import at.asitplus.signum.indispensable.jsonEncoded
 import at.asitplus.signum.supreme.SecretExposure
+import at.asitplus.signum.supreme.agree.Ephemeral
 import at.asitplus.signum.supreme.agree.keyAgreement
 import at.asitplus.signum.supreme.asKmmResult
 import at.asitplus.signum.supreme.os.PlatformSignerConfigurationBase
@@ -101,7 +103,11 @@ private class getter<T>(private val fn: () -> T) {
     operator fun getValue(nothing: Nothing?, property: KProperty<*>): T = fn()
 }
 
-@OptIn(ExperimentalStdlibApi::class, ExperimentalCoroutinesApi::class, kotlin.io.encoding.ExperimentalEncodingApi::class)
+@OptIn(
+    ExperimentalStdlibApi::class,
+    ExperimentalCoroutinesApi::class,
+    kotlin.io.encoding.ExperimentalEncodingApi::class
+)
 @Composable
 internal fun App() {
 
@@ -141,9 +147,16 @@ internal fun App() {
         }
         val signingPossible by getter { currentKey?.isSuccess == true }
         var signatureData by remember { mutableStateOf<KmmResult<CryptoSignature>?>(null) }
+        var ecdhData by remember { mutableStateOf<KmmResult<ByteArray>?>(null) }
         val signatureDataStr by getter {
             signatureData?.fold(onSuccess = Any::toString) {
                 Napier.e("Signature failed", it)
+                "${it::class.simpleName ?: "<unnamed>"}: ${it.message}"
+            } ?: ""
+        }
+        val ecdhDataStr by getter {
+            ecdhData?.fold(onSuccess = { it.encodeBase64() }) {
+                Napier.e("Key Agreement Failed", it)
                 "${it::class.simpleName ?: "<unnamed>"}: ${it.message}"
             } ?: ""
         }
@@ -311,9 +324,15 @@ internal fun App() {
                             canGenerate = false
                             genTextOverride = "Creating…"
                             currentSigner = Provider.createSigningKey(ALIAS) {
+                                purposes {
+                                    keyAgreement =
+                                        (keyAlgorithm.algorithm is SignatureAlgorithm.ECDSA)
+                                    signing = true
+                                }
                                 when (val alg = keyAlgorithm.algorithm) {
                                     is SignatureAlgorithm.ECDSA -> {
                                         this@createSigningKey.ec {
+
                                             curve = alg.requiredCurve
                                                 ?: ECCurve.entries.find { it.nativeDigest == alg.digest }!!
                                             digests = setOf(alg.digest)
@@ -331,29 +350,27 @@ internal fun App() {
                                     else -> error("unreachable")
                                 }
 
-                                if (this is PlatformSigningKeyConfigurationBase) {
-                                    signer(SIGNER_CONFIG)
+                                signer(SIGNER_CONFIG)
 
-                                    val timeout = runCatching {
-                                        biometricAuth.substringBefore("s").trim().toInt()
-                                    }.getOrNull()
+                                val timeout = runCatching {
+                                    biometricAuth.substringBefore("s").trim().toInt()
+                                }.getOrNull()
 
-                                    if (attestation || timeout != null) {
-                                        hardware {
-                                            backing = PREFERRED
-                                            if (attestation) {
-                                                attestation {
-                                                    challenge = Random.nextBytes(16)
-                                                }
+                                if (attestation || timeout != null) {
+                                    hardware {
+                                        backing = PREFERRED
+                                        if (attestation) {
+                                            attestation {
+                                                challenge = Random.nextBytes(16)
                                             }
+                                        }
 
-                                            if (timeout != null) {
-                                                protection {
-                                                    this.timeout = timeout.seconds
-                                                    factors {
-                                                        biometry = true
-                                                        deviceLock = true
-                                                    }
+                                        if (timeout != null) {
+                                            protection {
+                                                this.timeout = timeout.seconds
+                                                factors {
+                                                    biometry = true
+                                                    deviceLock = true
                                                 }
                                             }
                                         }
@@ -433,8 +450,10 @@ internal fun App() {
                 textStyle = TextStyle.Default.copy(fontSize = 10.sp),
                 onValueChange = { inputData = it; verifyState = null },
                 label = { Text("Data to be signed") })
-            Row(modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
 
                 Button(
                     onClick = {
@@ -458,49 +477,23 @@ internal fun App() {
 
                 Button(
                     onClick = {
-
                         Napier.w { "input: $inputData" }
                         Napier.w { "signingKey: $currentKey" }
                         CoroutineScope(context).launch {
-                            val alg = keyAlgorithm.algorithm as SignatureAlgorithm.ECDSA
-                            val eph = Signer.Ephemeral {
-                                ec {
-                                    curve = alg.requiredCurve
-                                        ?: ECCurve.entries.find { it.nativeDigest == alg.digest }!!
-                                    digests = setOf(alg.digest)
-
-                                }
-                            }.getOrThrow()
-                            val pub = eph.publicKey as CryptoPublicKey.EC
+                            val alg =
+                                currentSigner!!.getOrThrow().signatureAlgorithm as SignatureAlgorithm.ECDSA
+                            val eph =
+                                KeyAgreementPrivateValue.ECDH.Ephemeral(curve = alg.requiredCurve!!)
+                            val pub = eph.getOrThrow().publicValue
                             Napier.i { "Got Pubkey: $pub" }
 
-                            val agreed3 =
-                                (currentSigner!!.getOrThrow().publicKey as CryptoPublicKey.EC).keyAgreement(
-                                    @OptIn(SecretExposure::class)
-                                    eph.exportPrivateKey()
-                                        .getOrThrow() as CryptoPrivateKey.EC.WithPublicKey
-                                ).getOrThrow()
-                            Napier.i { "AGREED3: ${agreed3.encodeBase64()}" }
-
-
-                            val agreed =
+                            ecdhData =
                                 pub.keyAgreement(currentSigner!!.getOrThrow() as Signer.ECDSA)
-                                    .getOrThrow()
-                            Napier.i { "AGREED1: ${agreed.encodeBase64()}" }
-                            val agreed2 =
-                                (currentSigner!!.getOrThrow() as Signer.ECDSA).keyAgreement(pub)
-                                    .getOrThrow()
-                            Napier.i { "AGREED2: ${agreed2.encodeBase64()}" }
-
-                             }
-
+                        }
                     },
-
                     modifier = Modifier.padding(horizontal = 16.dp),
-                   // enabled = keyAlgorithm is SignatureAlgorithm.ECDSA
-                ) {
-                    Text("ECDH")
-                }
+                    enabled = signingPossible && (currentSigner!!.getOrThrow().signatureAlgorithm is SignatureAlgorithm.ECDSA)
+                ) { Text("ECDH") }
             }
 
             if (signatureData != null) {
@@ -509,6 +502,13 @@ internal fun App() {
                     minLines = 1,
                     textStyle = TextStyle.Default.copy(fontSize = 10.sp),
                     readOnly = true, onValueChange = {}, label = { Text("Detached Signature") })
+            }
+            if (ecdhData != null) {
+                OutlinedTextField(value = ecdhDataStr,
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    minLines = 1,
+                    textStyle = TextStyle.Default.copy(fontSize = 10.sp),
+                    readOnly = true, onValueChange = {}, label = { Text("Agreed Key") })
             }
 
             if (verifyPossible) {

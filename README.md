@@ -31,6 +31,7 @@ types and functionality related to crypto and PKI applications:
 * **Multiplatform ECDSA and RSA Signer and Verifier** &rarr; Check out the included [CMP demo App](demoapp) to see it in action
   * **Supports Attestation on iOS and Android**
   * **Biometric Authentication on Android and iOS without Callbacks or Activity Passing** (✨Magic!✨)
+* **Multiplatform, hardware-backed ECDH key agreement**
 * Public Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)
 * X509 Certificate Class (create, encode, decode)

@@ -13,6 +13,7 @@ types and functionality related to crypto and PKI applications:
   action
     * **Supports Attestation on iOS and Android**
     * **Biometric Authentication on Android and iOS without Callbacks or Activity Passing** (✨Magic!✨)
+* **Multiplatform, hardware-backed ECDH key agreement**
 * Public Keys (RSA and EC)
 * Private Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)
