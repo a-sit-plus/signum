@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -54,16 +55,13 @@ import at.asitplus.signum.supreme.sign.makeVerifier
 import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.cryptotest.theme.AppTheme
 import at.asitplus.cryptotest.theme.LocalThemeIsDark
-import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
 import at.asitplus.signum.indispensable.jsonEncoded
 import at.asitplus.signum.supreme.SecretExposure
 import at.asitplus.signum.supreme.agree.Ephemeral
-import at.asitplus.signum.supreme.agree.keyAgreement
 import at.asitplus.signum.supreme.asKmmResult
 import at.asitplus.signum.supreme.os.PlatformSignerConfigurationBase
-import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.supreme.os.SignerConfiguration
 import at.asitplus.signum.supreme.os.SigningProvider
 import at.asitplus.signum.supreme.sign.Verifier
@@ -74,7 +72,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newSingleThreadContext
-import kotlin.io.encoding.Base64
 import kotlin.random.Random
 import kotlin.reflect.KProperty
 import kotlin.time.Duration.Companion.seconds
@@ -104,9 +101,8 @@ private class getter<T>(private val fn: () -> T) {
 }
 
 @OptIn(
-    ExperimentalStdlibApi::class,
     ExperimentalCoroutinesApi::class,
-    kotlin.io.encoding.ExperimentalEncodingApi::class
+    SecretExposure::class
 )
 @Composable
 internal fun App() {
@@ -147,16 +143,15 @@ internal fun App() {
         }
         val signingPossible by getter { currentKey?.isSuccess == true }
         var signatureData by remember { mutableStateOf<KmmResult<CryptoSignature>?>(null) }
-        var ecdhData by remember { mutableStateOf<KmmResult<ByteArray>?>(null) }
+        var ephemeralKey by remember {
+            mutableStateOf<KeyAgreementPrivateValue.ECDH?>(
+                null
+            )
+        }
+        var agreedKey by remember { mutableStateOf<KmmResult<ByteArray>?>(null) }
         val signatureDataStr by getter {
             signatureData?.fold(onSuccess = Any::toString) {
                 Napier.e("Signature failed", it)
-                "${it::class.simpleName ?: "<unnamed>"}: ${it.message}"
-            } ?: ""
-        }
-        val ecdhDataStr by getter {
-            ecdhData?.fold(onSuccess = { it.encodeBase64() }) {
-                Napier.e("Key Agreement Failed", it)
                 "${it::class.simpleName ?: "<unnamed>"}: ${it.message}"
             } ?: ""
         }
@@ -173,6 +168,14 @@ internal fun App() {
 
         var genTextOverride by remember { mutableStateOf<String?>(null) }
         val genText by getter { genTextOverride ?: "Generate" }
+
+        fun genEphemeralKey(){
+            ephemeralKey = if (currentKey?.getOrNull() is CryptoPublicKey.EC)
+                KeyAgreementPrivateValue.ECDH.Ephemeral((currentKey!!.getOrThrow() as CryptoPublicKey.EC).curve).getOrNull()
+                else null
+            agreedKey=null
+        }
+
 
         Column(
             modifier = Modifier.fillMaxSize().verticalScroll(ScrollState(0), enabled = true)
@@ -325,14 +328,12 @@ internal fun App() {
                             genTextOverride = "Creating…"
                             currentSigner = Provider.createSigningKey(ALIAS) {
                                 purposes {
-                                    keyAgreement =
-                                        (keyAlgorithm.algorithm is SignatureAlgorithm.ECDSA)
-                                    signing = true
+                                    keyAgreement = keyAlgorithm.algorithm is SignatureAlgorithm.ECDSA
                                 }
+
                                 when (val alg = keyAlgorithm.algorithm) {
                                     is SignatureAlgorithm.ECDSA -> {
                                         this@createSigningKey.ec {
-
                                             curve = alg.requiredCurve
                                                 ?: ECCurve.entries.find { it.nativeDigest == alg.digest }!!
                                             digests = setOf(alg.digest)
@@ -383,6 +384,8 @@ internal fun App() {
                             Napier.w { "Signing possible: ${currentKey?.isSuccess}" }
                             canGenerate = true
                             genTextOverride = null
+
+                            genEphemeralKey()
                         }
                     },
                     modifier = Modifier.padding(start = 16.dp)
@@ -406,6 +409,7 @@ internal fun App() {
                             //loadPubKey().let { Napier.w { "PubKey retrieved from native: $it" } }
                             canGenerate = true
                             genTextOverride = null
+                            genEphemeralKey()
                         }
                     },
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp)
@@ -450,50 +454,72 @@ internal fun App() {
                 textStyle = TextStyle.Default.copy(fontSize = 10.sp),
                 onValueChange = { inputData = it; verifyState = null },
                 label = { Text("Data to be signed") })
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
 
-                Button(
-                    onClick = {
+            Button(
+                onClick = {
+                    Napier.w { "input: $inputData" }
+                    Napier.w { "signingKey: $currentKey" }
+                    CoroutineScope(context).launch {
+                        val data = inputData.encodeToByteArray()
+                        currentSigner!!
+                            .transform { it.sign(data).asKmmResult() }
+                            .also { signatureData = it; verifyState = null }
+                    }
+                },
+                modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+                enabled = signingPossible
+            ) { Text("Sign") }
 
-                        Napier.w { "input: $inputData" }
-                        Napier.w { "signingKey: $currentKey" }
-                        CoroutineScope(context).launch {
-                            val data = inputData.encodeToByteArray()
-                            currentSigner!!
-                                .transform { it.sign(data).asKmmResult() }
-                                .also { signatureData = it; verifyState = null }
-                        }
+            if (signingPossible && (currentKey?.getOrNull() is CryptoPublicKey.EC)) {
+                Napier.i { "Ephemeral key: $ephemeralKey" }
+                Spacer(Modifier.height(8.dp))
+                ephemeralKey?.let { ephemeralKey ->
+                    OutlinedTextField(value = ephemeralKey.publicValue.toString(),
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        minLines = 1,
+                        textStyle = TextStyle.Default.copy(fontSize = 10.sp),
+                        readOnly = true,
+                        onValueChange = {},
+                        label = { Text("Random faux-external key for ECDH") })
+                    Button(
+                        onClick = {
+                            Napier.w { "input: $inputData" }
+                            Napier.w { "signingKey: $currentKey" }
+                            CoroutineScope(context).launch {
 
-                    },
+                                agreedKey =
+                                    (currentSigner!!.getOrThrow() as Signer.ECDSA).keyAgreement(
+                                        ephemeralKey.publicValue
+                                    )
+                                Napier.i {
+                                    "ECDH Key of ext_piv + hardware-backed_pub: ${
+                                        agreedKey?.getOrNull()?.encodeBase64()
+                                    }"
+                                }
 
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    enabled = signingPossible
-                ) {
-                    Text("Sign")
+                                Napier.i {
+                                    "ECDH Key of ext_pub + hardware-backed_priv: ${
+                                        agreedKey?.getOrNull()?.encodeBase64()
+                                    }"
+                                }
+                            }
+
+                        },
+                        modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+                    ) { Text("Perform ECDH key agreement") }
                 }
 
-                Button(
-                    onClick = {
-                        Napier.w { "input: $inputData" }
-                        Napier.w { "signingKey: $currentKey" }
-                        CoroutineScope(context).launch {
-                            val alg =
-                                currentSigner!!.getOrThrow().signatureAlgorithm as SignatureAlgorithm.ECDSA
-                            val eph =
-                                KeyAgreementPrivateValue.ECDH.Ephemeral(curve = alg.requiredCurve!!)
-                            val pub = eph.getOrThrow().publicValue
-                            Napier.i { "Got Pubkey: $pub" }
-
-                            ecdhData =
-                                pub.keyAgreement(currentSigner!!.getOrThrow() as Signer.ECDSA)
-                        }
-                    },
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    enabled = signingPossible && (currentSigner!!.getOrThrow().signatureAlgorithm is SignatureAlgorithm.ECDSA)
-                ) { Text("ECDH") }
+                if (agreedKey != null) {
+                    OutlinedTextField(value =
+                    "Computed from ext_pub + hardware-backed_priv:\n" + agreedKey?.map { it.encodeBase64() }
+                        ?.getOrElse { it.message ?: it::class.simpleName ?: "" },
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        minLines = 1,
+                        textStyle = TextStyle.Default.copy(fontSize = 10.sp),
+                        readOnly = true,
+                        onValueChange = {},
+                        label = { Text("Agreed-upon secret") })
+                }
             }
 
             if (signatureData != null) {
@@ -502,13 +528,6 @@ internal fun App() {
                     minLines = 1,
                     textStyle = TextStyle.Default.copy(fontSize = 10.sp),
                     readOnly = true, onValueChange = {}, label = { Text("Detached Signature") })
-            }
-            if (ecdhData != null) {
-                OutlinedTextField(value = ecdhDataStr,
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    minLines = 1,
-                    textStyle = TextStyle.Default.copy(fontSize = 10.sp),
-                    readOnly = true, onValueChange = {}, label = { Text("Agreed Key") })
             }
 
             if (verifyPossible) {
