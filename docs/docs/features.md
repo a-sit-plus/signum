@@ -53,8 +53,8 @@ Additional details are described in the [Attestation](supreme.md#attestation) se
     use a timeout of at leas one second!**
 
 Key Agreement support in Hardware is spotty on Android: It is only implemented starting with SDK&nbsp;31 (Android&nbsp;12).
-Since this is indeed dependent on the crypto hardware (and *KeyMaster* version, etc.), not every device running Android&nbsp;12 or later
-will support key agreement in hardware. The reason for this is that devices launche with an earlier version of Android are exempt
+Since this is indeed dependent on the crypto hardware (and _KeyMaster_/_KeyMint_ version, etc.), not every device running Android&nbsp;12 or later
+will support key agreement in hardware. The reason for this is that devices launched with an earlier version of Android are exempt
 from certain (otherwise) hard requirements for Devices launched with later Android versions.
 Hence, a device launched with Android&nbsp;10, and later updated to Android&nbsp;12 may still not support key agreement in
 hardware.

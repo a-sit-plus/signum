@@ -54,7 +54,7 @@ The main package housing all data classes is `at.asitplus.signum.indispensable`.
 It contains essentials such as:
 
 * `CryptoPublicKey` representing a public key. Currently, we support RSA and EC public keys on NIST curves.
-* `CryptoPrivateKey` representing a private key. Currently, we support RSA and EC private keys on NIST curves. RSA keys always include the public key, EC keys may or may not contain a public key and/or curve.
+* `CryptoPrivateKey` representing a private key. Currently, we support RSA (`CryptoPrivateKey.RSA`) and EC (`CryptoPrivateKey.EC`) private keys on NIST curves. RSA keys always include the public key, EC keys may or may not contain a public key and/or curve.
     * Has an additional specialization `CryptoPrivateKey.WithPublicKey` that always includes a public key
     * Encodes to PKCS#8 by default
     * RSA keys also support PKCS#1 encoding (`.asPKCS1`)
@@ -69,6 +69,10 @@ It contains essentials such as:
     * `AndroidKeystoreAttestation` contains the certificate chain from Google's root certificate down to the attested key
     * `IosHomebrewAttestation` contains the new iOS attestation format introduces in Supreme 0.2.0 (see the [Attestation](supreme.md#attestation) section of the _Supreme_ manual for details).
     * `SelfAttestation` is used on the JVM. It has no specific semantics, but could be used, if an attestation-supporting HSM is used on the JVM. WIP!
+* `KeyAgreementPrivateValue` denotes what the name implies. Currently, only ECDH is implemented, hence, there is a single subinterface `KeyAgreementPrivateValue.ECDH`,
+which is implemented by `CryptoPrivateKey.EC`
+* `KeyAgreementPublicValue` denotes what the name implies. Currently, only ECDH is implemented, hence, there is a single subinterface `KeyAgreementPublicValue.ECDH`,
+which is implemented by `CryptoPublicKey.EC`
 
 #### PKI-Related data Structures
 The `pki` package contains data classes relevant in the PKI context:

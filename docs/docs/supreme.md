@@ -11,6 +11,7 @@ types and functionality related to crypto and PKI applications:
   action
 * Biometric Authentication on Android and iOS without Callbacks or Activity Passing** (✨Magic!✨)
 * Support Attestation on Android and iOS
+* Multiplatform, hardware-backed ECDH key agreement
 
 !!! tip
     **Do check out the full API docs [here](dokka/supreme/index.html)**!
@@ -142,6 +143,21 @@ prov.createSigningKey(alias = "sig") {
 For EC keys, the digest is optional and if none is set, it defaults to the curve's native digest.
 For RSA keys, the set of digests defaults to SHA-256 and the padding defaults to PSS.
 It is also possible to override the public exponent, although not all platform respect this override.
+
+#### Key Agreement
+If you want to use a hardware-backed key for key agreement, you need to specify the corresponding purpose:
+```kotlin
+Provider.createSigningKey(ALIAS) {
+    purposes {
+        keyAgreement = true //defaults to false
+        signing = true //defaults to true
+    }
+}
+```
+On Android this is currently enforced by hardware, on iOS and the JVM no strict checks are enforced
+(but this may change in the future). Also note that the `keyAgreement` purpose currently only makes sense for EC keys,
+hence specifying it for RSA keys will lead to failure.
+
 
 #### iOS and Android
 Both iOS and Android support attestation, hardware-backed key storage and authentication to use a key.
@@ -297,11 +313,10 @@ println("Looks good? $isValid")
 ```
 
 !!! tip
-
-      Not every platform supports every algorithm parameter. For example, iOS does not support raw ECDSA verification (of pre-hashed data) for curve P-521.
-      If you use `.verifierFor`, and this happens, the library will transparently substitute a pure-Kotlin implementation.  
-      If this is not desired, you can specifically enforce a platform verifier by using `.platformVerifierFor`.
-      That way, the library will only ever act as a proxy to platform APIs (JCA, CryptoKit, etc.), and will not use its own implementations.
+    Not every platform supports every algorithm parameter. For example, iOS does not support raw ECDSA verification (of pre-hashed data) for curve P-521.
+    If you use `.verifierFor`, and this happens, the library will transparently substitute a pure-Kotlin implementation.  
+    If this is not desired, you can specifically enforce a platform verifier by using `.platformVerifierFor`.
+    That way, the library will only ever act as a proxy to platform APIs (JCA, CryptoKit, etc.), and will not use its own implementations.
 
 You can also further configure the verifier, for example to specify the `provider` to use on the JVM.
 To do this, pass a DSL configuration lambda to `verifierFor`/`platformVerifierFor`.
@@ -355,3 +370,19 @@ However, if you plug an HSM that supports attestation to the JCA, you can make u
 
 The [feature matrix](features.md) also contains remarks on attestation, while
 details on the attestation format can be found in the corresponding [API documentation](dokka/indispensable/at.asitplus.signum.indispensable/-attestation/index.html).
+
+## Key Agreement
+In general, key agreement requires one private and _n_ public values. Key distribution/exchange may happen by any means and
+is not modelled in Signum.
+In addition, iOS only supports ECDH key agreement, hence only ECDH key agreement with a single public value is supported.
+Private key agreement material is usually generated locally (preferably in hardware), as outlined in the key generation subsection
+on this matter. However, it is also possible to import an EC private key.
+
+!!! tip inline end
+    To generate an ephemeral private value for ECDH key agreement, simply invoke `KeyAgreementPrivateValue.ECDH.Companion.Ephemeral()`.
+    Every `KeyAgreementPrivateValue` comes with the corresponding public value attached. This may come in handy for testing.
+
+Once a private and a public value have been obtained, simply call `theOneValue.keyAgreement(theOtherValue)`.
+The `keyAgreement()` extension function is present on both `KeyAgreementPublicValue` and `KeyAgreementPrivateValue`, thus making it irrelevant
+whether the function is invoked on the public value or on the private value.
+The return value of a key agreement is always a (KmmResult-wrapped) `ByteArray` without additional semantics.
