@@ -384,6 +384,15 @@ In addition, iOS only supports ECDH key agreement, hence only ECDH key agreement
 Private key agreement material is usually generated locally (preferably in hardware), as outlined in the key generation subsection
 on this matter. However, it is also possible to import an EC private key.
 
+!!! bug inline end
+    The Android OS has a bug related to key agreement in hardware. See [important remarks](features.md#android-key-agreement) on key agreement!
+
+
+On iOS and Android (starting with Android&nbsp;12), key agreement is possible in hardware and can
+require biometric authentication for hardware-backed keys. Custom biometric prompt text can be set
+in the same manner as [for signing](#signature-creation).
+
+
 !!! tip inline end
     To generate an ephemeral private value for ECDH key agreement, simply invoke `KeyAgreementPrivateValue.ECDH.Companion.Ephemeral()`.
     Every `KeyAgreementPrivateValue` comes with the corresponding public value attached. This may come in handy for testing.

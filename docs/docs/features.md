@@ -45,7 +45,7 @@ through application-layer logic encapsulated by the Supreme crypto provider.
 Additional details are described in the [Attestation](supreme.md#attestation) section of the _Supreme_ manual.
 
 ### † Android Key Agreement
-!!! warning inline end
+!!! bug inline end
     All Android versions supporting key agreement contain a bug, which makes it impossible
     to perform key agreement using an auth-on-every-use key. The bugfix is hidden behind a disabled-by-default
     feature flag in the Android source code.

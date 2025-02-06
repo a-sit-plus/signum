@@ -2,7 +2,7 @@
 
 <p align="center">
 
-![img.png](img.png)
+![app.png](app.png)
 
 </p>
 
@@ -36,4 +36,4 @@ To run the application on iPhone device/simulator:
 
 **Attestation and biometric auth is not supported on the simulator!** Only Apple could fix this, but this is unlikely to ever happen.
 
-
+For more information on what the app does, check out its [user guide](https://a-sit-plus.github.io/signum/app)!
