@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.internals.ensureSize
 import at.asitplus.signum.indispensable.misc.BitLength
+import at.asitplus.signum.indispensable.misc.ensureSize
 import at.asitplus.signum.indispensable.misc.max
 import at.asitplus.signum.indispensable.misc.min
 import com.ionspin.kotlin.bignum.integer.BigInteger

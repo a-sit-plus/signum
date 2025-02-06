@@ -4,7 +4,7 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.mac.HMAC
 import at.asitplus.signum.indispensable.mac.MAC
-import at.asitplus.signum.internals.xor
+import at.asitplus.signum.indispensable.misc.xor
 import at.asitplus.signum.supreme.hash.digest
 
 

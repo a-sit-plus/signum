@@ -1,9 +1,8 @@
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.encoding.*
-import at.asitplus.signum.internals.ensureSize
+import at.asitplus.signum.indispensable.misc.ensureSize
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.integer.util.fromTwosComplementByteArray

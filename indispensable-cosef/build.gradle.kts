@@ -1,5 +1,6 @@
 import at.asitplus.gradle.datetime
 import at.asitplus.gradle.exportIosFramework
+import at.asitplus.gradle.exportXCFramework
 import at.asitplus.gradle.kmmresult
 import at.asitplus.gradle.napier
 import at.asitplus.gradle.serialization

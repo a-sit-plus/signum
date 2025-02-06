@@ -7,9 +7,9 @@ import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.asPublicKey
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
-import at.asitplus.signum.internals.checkedAs
-import at.asitplus.signum.internals.checkedAsFn
-import at.asitplus.signum.internals.ensureSize
+import at.asitplus.signum.indispensable.misc.checkedAs
+import at.asitplus.signum.indispensable.misc.checkedAsFn
+import at.asitplus.signum.indispensable.misc.ensureSize
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 
