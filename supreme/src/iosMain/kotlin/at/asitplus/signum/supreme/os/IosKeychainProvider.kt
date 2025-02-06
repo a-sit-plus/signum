@@ -5,26 +5,16 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.internals.*
-import at.asitplus.signum.supreme.swiftasync
-import at.asitplus.signum.supreme.CFCryptoOperationFailed
-import at.asitplus.signum.supreme.CryptoOperationFailed
-import at.asitplus.signum.supreme.UnsupportedCryptoException
-import at.asitplus.signum.supreme.dsl.DISCOURAGED
-import at.asitplus.signum.supreme.dsl.DSL
-import at.asitplus.signum.supreme.dsl.DSLConfigureFn
-import at.asitplus.signum.supreme.dsl.PREFERRED
-import at.asitplus.signum.supreme.dsl.REQUIRED
+import at.asitplus.signum.supreme.*
+import at.asitplus.signum.supreme.dsl.*
 import at.asitplus.signum.supreme.hash.digest
+import at.asitplus.signum.supreme.sign.*
 import io.github.aakira.napier.Napier
-import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.MemScope
-import kotlinx.cinterop.alloc
-import kotlinx.cinterop.memScoped
-import kotlinx.cinterop.ptr
-import kotlinx.cinterop.reinterpret
-import kotlinx.cinterop.value
+import kotlinx.cinterop.*
 import kotlinx.coroutines.newFixedThreadPoolContext
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import platform.CoreFoundation.CFDictionaryRefVar
@@ -32,73 +22,8 @@ import platform.DeviceCheck.DCAppAttestService
 import platform.Foundation.CFBridgingRelease
 import platform.Foundation.NSBundle
 import platform.Foundation.NSData
-import platform.LocalAuthentication.LAContext
-import platform.Security.SecAccessControlCreateWithFlags
-import platform.Security.SecItemCopyMatching
-import platform.Security.SecItemDelete
-import platform.Security.SecItemUpdate
-import platform.Security.SecKeyCopyExternalRepresentation
-import platform.Security.SecKeyCreateSignature
-import platform.Security.SecKeyGeneratePair
-import platform.Security.SecKeyIsAlgorithmSupported
-import platform.Security.SecKeyRef
-import platform.Security.SecKeyRefVar
-import platform.Security.errSecItemNotFound
-import platform.Security.errSecSuccess
-import platform.Security.kSecAccessControlBiometryAny
-import platform.Security.kSecAccessControlDevicePasscode
-import platform.Security.kSecAccessControlPrivateKeyUsage
-import platform.Security.kSecAccessControlUserPresence
-import platform.Security.kSecAttrAccessControl
-import platform.Security.kSecAttrAccessible
-import platform.Security.kSecAttrAccessibleAfterFirstUnlock
-import platform.Security.kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-import platform.Security.kSecAttrAccessibleAlways
-import platform.Security.kSecAttrAccessibleAlwaysThisDeviceOnly
-import platform.Security.kSecAttrAccessibleWhenUnlocked
-import platform.Security.kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-import platform.Security.kSecAttrApplicationLabel
-import platform.Security.kSecAttrApplicationTag
-import platform.Security.kSecAttrIsPermanent
-import platform.Security.kSecAttrKeyClass
-import platform.Security.kSecAttrKeyClassPrivate
-import platform.Security.kSecAttrKeyClassPublic
-import platform.Security.kSecAttrKeySizeInBits
-import platform.Security.kSecAttrKeyType
-import platform.Security.kSecAttrKeyTypeEC
-import platform.Security.kSecAttrKeyTypeRSA
-import platform.Security.kSecAttrLabel
-import platform.Security.kSecAttrTokenID
-import platform.Security.kSecAttrTokenIDSecureEnclave
-import platform.Security.kSecClass
-import platform.Security.kSecClassKey
-import platform.Security.kSecKeyOperationTypeSign
-import platform.Security.kSecMatchLimit
-import platform.Security.kSecMatchLimitOne
-import platform.Security.kSecPrivateKeyAttrs
-import platform.Security.kSecPublicKeyAttrs
-import platform.Security.kSecReturnAttributes
-import platform.Security.kSecReturnRef
-import platform.Security.kSecUseAuthenticationContext
-import platform.Security.kSecUseAuthenticationUI
-import platform.Security.kSecUseAuthenticationUIAllow
-import at.asitplus.signum.supreme.AutofreeVariable
-import at.asitplus.signum.supreme.SecretExposure
-import at.asitplus.signum.supreme.SignatureResult
-import at.asitplus.signum.supreme.UnlockFailed
-import at.asitplus.signum.supreme.sign.*
-import at.asitplus.signum.supreme.sign.performKeyAgreement
-import at.asitplus.signum.supreme.signCatching
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import platform.LocalAuthentication.LAErrorAuthenticationFailed
-import platform.LocalAuthentication.LAErrorBiometryLockout
-import platform.LocalAuthentication.LAErrorDomain
-import platform.LocalAuthentication.LAErrorUserCancel
-import platform.Security.errSecAuthFailed
-import platform.Security.errSecUserCanceled
-import platform.Security.kSecAccessControlBiometryCurrentSet
-import platform.Security.kSecUseAuthenticationUIFail
+import platform.LocalAuthentication.*
+import platform.Security.*
 import kotlin.math.min
 import kotlin.time.Duration
 import kotlin.time.TimeSource
@@ -168,7 +93,7 @@ private object LAContextStorage {
 
 typealias IosSignerSigningConfiguration = PlatformSigningProviderSignerSigningConfigurationBase
 sealed class IosSigner(final override val alias: String,
-                       private val metadata: IosKeyMetadata,
+                       internal/*cannot be protected, as IosKeyMetadata is internal*/ val metadata: IosKeyMetadata,
                        private val signerConfig: IosSignerConfiguration)
     : PlatformSigningProviderSigner<IosSignerSigningConfiguration, IosHomebrewAttestation> {
 
@@ -285,6 +210,7 @@ sealed class IosSigner(final override val alias: String,
     final override suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<IosSignerSigningConfiguration>): SignatureResult<*> =
     withContext(keychainThreads) { signCatching {
         require(data.format == null) { "Pre-hashed data is unsupported on iOS" }
+        require(metadata.allowSigning) { "Signing key purpose not set! Signing disallowed!" }
         val signingConfig = DSL.resolve(::IosSignerSigningConfiguration, configure)
         val algorithm = signatureAlgorithm.secKeyAlgorithmPreHashed
         val plaintext = data.convertTo(signatureAlgorithm.preHashedSignatureFormat).getOrThrow().data.first().toNSData()
@@ -330,6 +256,7 @@ sealed class IosSigner(final override val alias: String,
             publicValue: KeyAgreementPublicValue.ECDH,
             configure: DSLConfigureFn<IosSignerSigningConfiguration>
         ) = catching {
+            require(metadata.allowKeyAgreement) { "Key agreement purpose not set! Key agreement disallowed!" }
             val config = DSL.resolve(::IosSignerSigningConfiguration, configure)
             performKeyAgreement(privateKeyManager.get(config).value, publicValue)
         }
@@ -375,7 +302,9 @@ internal sealed interface IosKeyAlgSpecificMetadata {
 internal data class IosKeyMetadata(
     val attestation: IosHomebrewAttestation?,
     private val rawUnlockTimeout: Duration?,
-    val algSpecific: IosKeyAlgSpecificMetadata
+    val algSpecific: IosKeyAlgSpecificMetadata,
+    val allowSigning: Boolean = true,
+    val allowKeyAgreement: Boolean = false,
 ) {
     val needsUnlock inline get() = (rawUnlockTimeout != null)
     val unlockTimeout inline get() = rawUnlockTimeout ?: Duration.INFINITE
@@ -467,6 +396,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                     is SigningKeyConfiguration.RSAConfiguration -> {
                         kSecAttrKeyType mapsTo kSecAttrKeyTypeRSA
                         kSecAttrKeySizeInBits mapsTo alg.bits
+                        require(!config.purposes.v.keyAgreement) { "Key Agreement is unsupported for RSA keys!" }
                     }
                 }
                 if (useSecureEnclave) {
@@ -566,6 +496,8 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
         val metadata = IosKeyMetadata(
             attestation = attestation,
             rawUnlockTimeout = config.hardware.v.protection.v?.timeout,
+            allowSigning = config.purposes.v.signing,
+            allowKeyAgreement = config.purposes.v.keyAgreement,
             algSpecific = when (val alg = config._algSpecific.v) {
                 is SigningKeyConfiguration.ECConfiguration -> IosKeyAlgSpecificMetadata.ECDSA(alg.digests)
                 is SigningKeyConfiguration.RSAConfiguration -> IosKeyAlgSpecificMetadata.RSA(alg.digests, alg.paddings)
