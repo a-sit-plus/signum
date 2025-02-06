@@ -146,17 +146,23 @@ It is also possible to override the public exponent, although not all platform r
 
 #### Key Agreement
 If you want to use a hardware-backed key for key agreement, you need to specify the corresponding purpose:
+
 ```kotlin
 Provider.createSigningKey(ALIAS) {
     purposes {
         keyAgreement = true //defaults to false
-        signing = true //defaults to true
+        signing = true //defaults to true, no impact on key agreement
     }
 }
 ```
-On Android this is currently enforced by hardware, on iOS and the JVM no strict checks are enforced
+
+!!! warning inline end
+    Key generated using Supreme &leg;0.6.3 don't have the key agreement purpose set and cannot be used for key agreement.
+    Regenerate such keys, if you want to use them for key agreement!
+
+On Android, key usage purposes are enforced by hardware, on iOS this enforcement is done in software. On the JVM, no strict checks are enforced
 (but this may change in the future). Also note that the `keyAgreement` purpose currently only makes sense for EC keys,
-hence specifying it for RSA keys will lead to failure.
+hence specifying it for RSA keys will lead to failure on iOS and Android.
 
 
 #### iOS and Android
