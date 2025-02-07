@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.symmetric
 
 import at.asitplus.catching
+import at.asitplus.signum.indispensable.misc.bytes
 import kotlin.jvm.JvmName
 
 
@@ -54,7 +55,7 @@ fun SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Req
     authTag: ByteArray,
     authenticatedData: ByteArray? = null
 ) = catching {
-    require(authTag.size == this.authCapability.tagLength.bytes.toInt()) { "Illegal auth tag length! expected: ${authTag.size * 8}, actual: ${this.authCapability.tagLength.bits}" }
+    require(authTag.size.bytes == this.authCapability.tagLength) { "Illegal auth tag length! expected: ${authTag.size * 8}, actual: ${this.authCapability.tagLength.bits}" }
     when (isIntegrated()) {
         false -> SealedBox.WithNonce.Authenticated<KeyType.WithDedicatedMacKey>(
             nonce,

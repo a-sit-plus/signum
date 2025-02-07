@@ -52,7 +52,8 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, out K : KeyT
                         aad ?: byteArrayOf()
                     )
 
-                val authTag = aMac.mac.mac(macKey, hmacInput).getOrThrow()
+                val outputTransform = aMac.dedicatedMacAuthTagTransform
+                val authTag = aMac.outputTransform(aMac.mac.mac(macKey, hmacInput).getOrThrow())
 
                 @Suppress("UNCHECKED_CAST")
                 (if (algorithm.requiresNonce()) {

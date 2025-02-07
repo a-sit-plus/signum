@@ -1,10 +1,4 @@
-import at.asitplus.gradle.coroutines
-import at.asitplus.gradle.datetime
-import at.asitplus.gradle.exportIosFramework
-import at.asitplus.gradle.kmmresult
-import at.asitplus.gradle.napier
-import at.asitplus.gradle.serialization
-import at.asitplus.gradle.setupDokka
+import at.asitplus.gradle.*
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
@@ -45,10 +39,11 @@ kotlin {
         instrumentedTestVariant.sourceSetTree.set(test)
     }
     listOf(
-    iosX64(),
-    iosArm64(),
-    iosSimulatorArm64()).forEach {
-        it.compilations{
+        iosX64(),
+        iosArm64(),
+        iosSimulatorArm64()
+    ).forEach {
+        it.compilations {
             val main by getting {
                 cinterops.create("AESwift")
             }
@@ -70,7 +65,7 @@ kotlin {
         jvmMain {
             dependsOn(androidJvmMain)
         }
-        androidMain{
+        androidMain {
             dependsOn(androidJvmMain)
             dependencies {
                 implementation("androidx.biometric:biometric:1.2.0-alpha05")
@@ -255,15 +250,17 @@ fun wireAndroidInstrumentedTests() {
         }
 }
 
-exportIosFramework(
+exportXCFramework(
     "SignumSupreme",
-    transitiveExports=false,
-    serialization("json"),
-    datetime(),
-    kmmresult(),
-    project(":indispensable"),
-    project(":indispensable-asn1"),
-    libs.bignum
+    transitiveExports = false,
+    additionalExports = arrayOf(
+        serialization("json"),
+        datetime(),
+        kmmresult(),
+        project(":indispensable"),
+        project(":indispensable-asn1"),
+        libs.bignum
+    )
 )
 
 project.gradle.taskGraph.whenReady {

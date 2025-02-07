@@ -59,12 +59,29 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
                 @HazardousMaterials("Unauthenticated!")
                 val PLAIN = AES.CBC.Unauthenticated(keySize)
 
+                /**
+                 * AES-CBC-HMAC as per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1)
+                 */
                 @OptIn(HazardousMaterials::class)
                 val HMAC = HmacDefinition(PLAIN)
 
+                /**
+                 * AES-CBC-HMAC as per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1)
+                 */
                 class HmacDefinition(innerCipher: AES.CBC.Unauthenticated) {
+                    /**
+                     * AES-CBC-HMAC as per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1)
+                     */
                     val SHA_256 = AES.CBC.HMAC(innerCipher, HMAC.SHA256)
+
+                    /**
+                     * AES-CBC-HMAC as per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1)
+                     */
                     val SHA_384 = AES.CBC.HMAC(innerCipher, HMAC.SHA384)
+
+                    /**
+                     * AES-CBC-HMAC as per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1)
+                     */
                     val SHA_512 = AES.CBC.HMAC(innerCipher, HMAC.SHA512)
 
                     @HazardousMaterials("Insecure hash function!")
@@ -196,7 +213,9 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
             private constructor(
                 innerCipher: Unauthenticated,
                 mac: at.asitplus.signum.indispensable.mac.HMAC,
-                dedicatedMacInputCalculation: DedicatedMacInputCalculation
+                dedicatedMacInputCalculation: DedicatedMacInputCalculation,
+                dedicatedMacAuthTagTransformation: DedicatedMacAuthTagTransformation,
+                tagLength: BitLength
             ) : SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC, NonceTrait.Required>,
                 SymmetricEncryptionAlgorithm.RequiringNonce<AuthCapability.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC, NonceTrait.Required>, KeyType.WithDedicatedMacKey>,
                 CBC<KeyType.WithDedicatedMacKey, AuthCapability.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC, NonceTrait.Required>>(
@@ -205,7 +224,9 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
                 constructor(innerCipher: Unauthenticated, mac: at.asitplus.signum.indispensable.mac.HMAC) : this(
                     innerCipher,
                     mac,
-                    DefaultDedicatedMacInputCalculation
+                    DefaultDedicatedMacInputCalculation,
+                    DefaultDedicatedMacAuthTagTransformation,
+                    tagLength = BitLength(mac.outputLength.bits / 2u)
                 )
 
                 override val authCapability =
@@ -213,19 +234,39 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
                         innerCipher,
                         mac,
                         innerCipher.keySize,
-                        mac.outputLength,
-                        dedicatedMacInputCalculation
+                        tagLength,
+                        dedicatedMacInputCalculation,
+                        dedicatedMacAuthTagTransformation
                     )
                 override val name = super.name + " $mac"
 
                 /**
-                 * Instantiates a new [CBC.HMAC] instance with a custom [DedicatedMacInputCalculation]
+                 * Instantiates a new [CBC.HMAC] instance with
+                 * * custom [tagLength]
+                 * * custom [DedicatedMacInputCalculation]
                  */
-                fun Custom(dedicatedMacInputCalculation: DedicatedMacInputCalculation) =
+                fun Custom(
+                    tagLength: BitLength,
+                    dedicatedMacInputCalculation: DedicatedMacInputCalculation
+                ) = Custom  (tagLength,DefaultDedicatedMacAuthTagTransformation, dedicatedMacInputCalculation)
+
+                /**
+                 * Instantiates a new [CBC.HMAC] instance with
+                 * * custom [tagLength]
+                 * * custom [dedicatedMacAuthTagTransformation]
+                 * * custom [DedicatedMacInputCalculation]
+                 */
+                fun Custom(
+                    tagLength: BitLength,
+                    dedicatedMacAuthTagTransformation: DedicatedMacAuthTagTransformation,
+                    dedicatedMacInputCalculation: DedicatedMacInputCalculation
+                ) =
                     CBC.HMAC(
                         authCapability.innerCipher as Unauthenticated,
                         authCapability.mac,
-                        dedicatedMacInputCalculation
+                        dedicatedMacInputCalculation,
+                        dedicatedMacAuthTagTransformation,
+                        tagLength
                     )
             }
         }
@@ -274,21 +315,29 @@ sealed interface AuthCapability<K : KeyType> {
             /**
              * The inner unauthenticated cipher
              */
+
             val innerCipher: SymmetricEncryptionAlgorithm<Unauthenticated, I, KeyType.Integrated>,
             /**
              * The mac function used to provide authenticated encryption
              */
             val mac: M,
+
             /**
              * The preferred length pf the MAC key. Can be overridden during key generation and is unconstrained.
              */
             val preferredMacKeyLength: BitLength,
+
             tagLen: BitLength,
 
             /**
              * Specifies how the inputs to the MAC are to be encoded/processed
              */
-            val dedicatedMacInputCalculation: DedicatedMacInputCalculation
+            val dedicatedMacInputCalculation: DedicatedMacInputCalculation,
+
+            /**
+             * Specifies how the inputs to the MAC are to be encoded/processed
+             */
+            val dedicatedMacAuthTagTransform: DedicatedMacAuthTagTransformation
         ) : Authenticated<KeyType.WithDedicatedMacKey>(tagLen, KeyType.WithDedicatedMacKey) {
 
             override fun equals(other: Any?): Boolean {
@@ -340,17 +389,32 @@ sealed interface AuthCapability<K : KeyType> {
 }
 
 /**
+ * Typealias defining the signature of the lambda for processing the MAC output into an auth tag.
+ */
+typealias DedicatedMacAuthTagTransformation = AuthCapability.Authenticated.WithDedicatedMac<*, *>.(macOutput: ByteArray) -> ByteArray
+
+
+/**
+ * The default dedicated mac output transform as per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1),
+ * taking the first [authTagLength] many bytes of the MAC output as auth tag.
+ */
+val DefaultDedicatedMacAuthTagTransformation: DedicatedMacAuthTagTransformation =
+    fun AuthCapability.Authenticated.WithDedicatedMac<*, *>.(
+        macOutput: ByteArray
+    ): ByteArray = macOutput.take(tagLength.bytes.toInt()).toByteArray()
+
+/**
  * Typealias defining the signature of the lambda for defining a custom MAC input calculation scheme.
  */
 typealias DedicatedMacInputCalculation = MAC.(ciphertext: ByteArray, nonce: ByteArray, aad: ByteArray) -> ByteArray
 
 /**
- * The default dedicated mac input calculation as per [FRC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1), authenticating all inputs:
- * `AAD || IV || Ciphertext || AAD Length`, where AAD_length is a 64 bit big-endian
+ * The default dedicated mac input calculation as per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1), authenticating all inputs:
+ * `AAD || IV || Ciphertext || AAD Length`, where AAD_length is a 64 bit big-endian representation of the aad length in bits
  */
 val DefaultDedicatedMacInputCalculation: DedicatedMacInputCalculation =
     fun MAC.(ciphertext: ByteArray, iv: ByteArray, aad: ByteArray): ByteArray =
-        aad + iv + ciphertext + aad.size.toLong().encodeTo8Bytes()
+        aad + iv + ciphertext + (aad.size.toLong()*8L).encodeTo8Bytes()
 
 /**
  * Marker, indicating whether a symmetric encryption algorithms requires or prohibits the use of a nonce/IV

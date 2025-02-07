@@ -240,7 +240,7 @@ val payload = "More matter, with less art!".encodeToByteArray()
 //define algorithm parameters
 val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
   //with a custom HMAC input calculation function
-  .Custom { ciphertext, iv, aad -> //A shorter version of RFC 7518
+  .Custom(32.bytes) { ciphertext, iv, aad -> //A shorter version of RFC 7518
     aad + iv + ciphertext + aad.size.encodeTo4Bytes()
   }
 

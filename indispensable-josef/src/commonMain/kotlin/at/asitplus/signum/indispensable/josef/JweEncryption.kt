@@ -2,10 +2,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
-import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
-import at.asitplus.signum.indispensable.symmetric.authTagLength
-import at.asitplus.signum.indispensable.symmetric.hasDedicatedMac
-import at.asitplus.signum.indispensable.symmetric.requiresNonce
+import at.asitplus.signum.indispensable.symmetric.*
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -23,7 +20,6 @@ import kotlinx.serialization.encoding.Encoder
 @Serializable(with = JweEncryptionSerializer::class)
 enum class JweEncryption(val identifier: String, val algorithm: SymmetricEncryptionAlgorithm<*, *, *>) {
 
-
     A128GCM("A128GCM", SymmetricEncryptionAlgorithm.AES_128.GCM),
     A192GCM("A192GCM", SymmetricEncryptionAlgorithm.AES_192.GCM),
     A256GCM("A256GCM", SymmetricEncryptionAlgorithm.AES_256.GCM),
@@ -33,6 +29,9 @@ enum class JweEncryption(val identifier: String, val algorithm: SymmetricEncrypt
     ;
 
 
+    @Deprecated("Clumsy name", ReplaceWith("identifier"))
+    val text get() = identifier
+
     val encryptionKeyLength: BitLength get() = algorithm.keySize
 
     val ivLength: BitLength
@@ -41,15 +40,12 @@ enum class JweEncryption(val identifier: String, val algorithm: SymmetricEncrypt
             false -> 0.bit
         }
 
-    /**
-     * Per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.3),
-     * where the MAC output bytes need to be truncated to this size for use in JWE.
-     */
-    val macLength: Int?
-        get() = when (algorithm.hasDedicatedMac()) {
-            true -> algorithm.authTagLength.bits.toInt() / 2
-            false -> null
-        }
+    val dedicatedMacKeyLength: BitLength get() = if (algorithm.hasDedicatedMac()) algorithm.preferredMacKeyLength else 0.bit
+
+    val combinedEncryptionKeyLength: BitLength get() = encryptionKeyLength + dedicatedMacKeyLength
+
+    val authTagLength: BitLength get() = if (algorithm.isAuthenticated()) algorithm.authTagLength else 0.bit
+
 }
 
 object JweEncryptionSerializer : KSerializer<JweEncryption?> {

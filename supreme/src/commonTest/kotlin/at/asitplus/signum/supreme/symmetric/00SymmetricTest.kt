@@ -1,5 +1,6 @@
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.encoding.encodeTo4Bytes
+import at.asitplus.signum.indispensable.mac.HMAC
 import at.asitplus.signum.indispensable.mac.MAC
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.misc.bytes
@@ -25,6 +26,63 @@ import kotlin.random.nextUInt
 @OptIn(HazardousMaterials::class)
 @ExperimentalStdlibApi
 class `00SymmetricTest` : FreeSpec({
+
+
+    "README" {
+        val secureRandom = SecureRandom()
+
+        val payload = "More matter, with less art!".encodeToByteArray()
+
+        //define algorithm parameters
+        val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
+            //with a custom HMAC input calculation function
+            .Custom(32.bytes) { ciphertext, iv, aad -> //A shorter version of RFC 7518
+                aad + iv + ciphertext + aad.size.encodeTo4Bytes()
+            }
+
+        //any size is fine, really. omitting the override generates a mac key of the same size as the encryption key
+        val key = algorithm.randomKey(macKeyLength = 32.bit)
+        val aad = Clock.System.now().toString().encodeToByteArray()
+
+        val sealedBox = key.encrypt(
+            payload,
+            authenticatedData = aad,
+        ).getOrThrow(/*handle error*/)
+
+        //The sealed box object is correctly typed:
+        //  * It is a SealedBox.WithIV
+        //  * The generic type arguments indicate that
+        //      * the ciphertext is authenticated
+        //      * Using a dedicated MAC function atop an unauthenticated cipher
+        //  * we can hence access `authenticatedCiphertext` for:
+        //      * authTag
+        //      * authenticatedData
+        sealedBox.authenticatedData shouldBe aad
+
+        //because everything is structured, decryption is simple
+        val recovered = sealedBox.decrypt(key).getOrThrow(/*handle error*/)
+
+        recovered shouldBe payload //success!
+
+        //we can also manually construct the sealed box, if we know the algorithm:
+        val reconstructed = algorithm.sealedBoxFrom(
+            sealedBox.nonce,
+            encryptedData = sealedBox.encryptedData, /*Could also access authenticatedCipherText*/
+            authTag = sealedBox.authTag,
+            authenticatedData = sealedBox.authenticatedData
+        ).getOrThrow()
+
+        val manuallyRecovered = reconstructed.decrypt(
+            key
+        ).getOrThrow(/*handle error*/)
+
+        manuallyRecovered shouldBe payload //great success!
+
+        //if we just know algorithm and key bytes, we can also construct a symmetric key
+        reconstructed.decrypt(
+            algorithm.keyFrom(key.encryptionKey, key.macKey).getOrThrow(/*handle error*/),
+        ).getOrThrow(/*handle error*/) shouldBe payload //greatest success!
+    }
 
 
     "Illegal IV Size" - {
@@ -355,24 +413,63 @@ class `00SymmetricTest` : FreeSpec({
                 "Oklahoma".encodeToByteArray() + (iv ?: byteArrayOf()) + (aad
                     ?: byteArrayOf()) + ciphertext) { (_, macInputFun) ->
             withData(
-                SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_1.Custom(macInputFun),
-                SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_1.Custom(macInputFun),
-                SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_1.Custom(macInputFun),
+                SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_1.Custom(
+                    HMAC.SHA1.outputLength,
+                    DefaultDedicatedMacAuthTagTransformation,
+                    macInputFun
+                ),
+                SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_1.Custom(
+                    HMAC.SHA1.outputLength,
+                    DefaultDedicatedMacAuthTagTransformation,
+                    macInputFun
+                ),
+                SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_1.Custom(
+                    HMAC.SHA1.outputLength,
+                    DefaultDedicatedMacAuthTagTransformation,
+                    macInputFun
+                ),
 
 
-                SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_256.Custom(macInputFun),
-                SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_256.Custom(macInputFun),
-                SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_256.Custom(macInputFun),
+                SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_256.Custom(
+                    HMAC.SHA256.outputLength,
+                    macInputFun
+                ),
+                SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_256.Custom(
+                    HMAC.SHA256.outputLength,
+                    macInputFun
+                ),
+                SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_256.Custom(
+                    HMAC.SHA256.outputLength,
+                    macInputFun
+                ),
 
 
-                SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_384.Custom(macInputFun),
-                SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_384.Custom(macInputFun),
-                SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_384.Custom(macInputFun),
+                SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_384.Custom(
+                    HMAC.SHA384.outputLength,
+                    macInputFun
+                ),
+                SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_384.Custom(
+                    HMAC.SHA384.outputLength,
+                    macInputFun
+                ),
+                SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_384.Custom(
+                    HMAC.SHA384.outputLength,
+                    macInputFun
+                ),
 
 
-                SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_512.Custom(macInputFun),
-                SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512.Custom(macInputFun),
-                SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_512.Custom(macInputFun),
+                SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_512.Custom(
+                    HMAC.SHA512.outputLength,
+                    macInputFun,
+                ),
+                SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512.Custom(
+                    HMAC.SHA512.outputLength,
+                    macInputFun,
+                ),
+                SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_512.Custom(
+                    HMAC.SHA512.outputLength,
+                    macInputFun,
+                ),
             ) {
                 withData(
                     nameFn = { "${it.size} Bytes" },
@@ -414,7 +511,9 @@ class `00SymmetricTest` : FreeSpec({
                                     if (iv != null) key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext, aad)
                                         .getOrThrow()
                                     else key.encrypt(plaintext, aad).getOrThrow()
-                                val manilaAlg = it.Custom { _, _, _ -> "Manila".encodeToByteArray() }
+                                val manilaAlg = it.Custom(ciphertext.authTag.size.bytes)
+                                { _, _, _ -> "Manila".encodeToByteArray() }
+
                                 val manilaKey = SymmetricKey.WithDedicatedMac.RequiringNonce(
                                     manilaAlg,
                                     key.encryptionKey,
@@ -508,7 +607,7 @@ class `00SymmetricTest` : FreeSpec({
                                     ciphertext.encryptedData,
                                     ciphertext.authTag.asList().shuffled().toByteArray(),
                                     ciphertext.authenticatedData
-                                ).getOrThrow().decrypt(it.Custom { _, _, _ ->
+                                ).getOrThrow().decrypt(it.Custom(ciphertext.authTag.size.bytes) { _, _, _ ->
                                     "Szombathely".encodeToByteArray()
                                 }.let {
                                     SymmetricKey.WithDedicatedMac.RequiringNonce(
@@ -872,60 +971,6 @@ class `00SymmetricTest` : FreeSpec({
         }
     }
 
-    "README" {
-        val secureRandom = SecureRandom()
 
-        val payload = "More matter, with less art!".encodeToByteArray()
-
-        //define algorithm parameters
-        val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
-            //with a custom HMAC input calculation function
-            .Custom { ciphertext, iv, aad -> //A shorter version of RFC 7518
-                aad + iv + ciphertext + aad.size.encodeTo4Bytes()
-            }
-
-        //any size is fine, really. omitting the override generates a mac key of the same size as the encryption key
-        val key = algorithm.randomKey(macKeyLength = 32.bit)
-        val aad = Clock.System.now().toString().encodeToByteArray()
-
-        val sealedBox = key.encrypt(
-            payload,
-            authenticatedData = aad,
-        ).getOrThrow(/*handle error*/)
-
-        //The sealed box object is correctly typed:
-        //  * It is a SealedBox.WithIV
-        //  * The generic type arguments indicate that
-        //      * the ciphertext is authenticated
-        //      * Using a dedicated MAC function atop an unauthenticated cipher
-        //  * we can hence access `authenticatedCiphertext` for:
-        //      * authTag
-        //      * authenticatedData
-        sealedBox.authenticatedData shouldBe aad
-
-        //because everything is structured, decryption is simple
-        val recovered = sealedBox.decrypt(key).getOrThrow(/*handle error*/)
-
-        recovered shouldBe payload //success!
-
-        //we can also manually construct the sealed box, if we know the algorithm:
-        val reconstructed = algorithm.sealedBoxFrom(
-            sealedBox.nonce,
-            encryptedData = sealedBox.encryptedData, /*Could also access authenticatedCipherText*/
-            authTag = sealedBox.authTag,
-            authenticatedData = sealedBox.authenticatedData
-        ).getOrThrow()
-
-        val manuallyRecovered = reconstructed.decrypt(
-            key
-        ).getOrThrow(/*handle error*/)
-
-        manuallyRecovered shouldBe payload //great success!
-
-        //if we just know algorithm and key bytes, we can also construct a symmetric key
-        reconstructed.decrypt(
-            algorithm.keyFrom(key.encryptionKey, key.macKey).getOrThrow(/*handle error*/),
-        ).getOrThrow(/*handle error*/) shouldBe payload //greatest success!
-    }
 })
 

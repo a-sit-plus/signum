@@ -105,8 +105,8 @@ private fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedic
     val mac = algorithm.authCapability.mac
     val dedicatedMacInputCalculation = algorithm.authCapability.dedicatedMacInputCalculation
     val hmacInput = mac.dedicatedMacInputCalculation(encryptedData, iv ?: byteArrayOf(), aad ?: byteArrayOf())
-
-    if (!(mac.mac(macKey, hmacInput).getOrThrow().contentEquals(authTag)))
+    val transform = algorithm.authCapability.dedicatedMacAuthTagTransform
+    if (!algorithm.authCapability.transform(mac.mac(macKey, hmacInput).getOrThrow()).contentEquals(authTag))
         throw IllegalArgumentException("Auth Tag mismatch!")
 
     @Suppress("UNCHECKED_CAST") val box: SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated> =

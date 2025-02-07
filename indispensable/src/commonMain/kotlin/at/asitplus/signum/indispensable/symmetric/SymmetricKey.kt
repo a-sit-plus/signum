@@ -12,7 +12,7 @@ sealed interface KeyType {
 /**
  * Symmetric encryption key. Can only be used for the specified [algorithm].
  */
-sealed interface SymmetricKey<A : AuthCapability<K>, I : NonceTrait, K : KeyType> {
+sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : KeyType> {
     val algorithm: SymmetricEncryptionAlgorithm<A, I, K>
 
     /**
