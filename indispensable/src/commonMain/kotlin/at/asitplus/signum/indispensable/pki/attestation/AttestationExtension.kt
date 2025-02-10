@@ -1,12 +1,16 @@
 package at.asitplus.signum.indispensable.pki.attestation
 
-import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.Asn1Decodable
+import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.Asn1Encodable
+import at.asitplus.signum.indispensable.asn1.Asn1Primitive
+import at.asitplus.signum.indispensable.asn1.Asn1Sequence
+import at.asitplus.signum.indispensable.asn1.BERTags
+import at.asitplus.signum.indispensable.asn1.Identifiable
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToEnum
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1ContentBytes
-import at.asitplus.signum.indispensable.pki.X509Certificate
 
 /**
  * Attestation certificate extension [used by Google](https://source.android.com/docs/security/features/keystore/attestation#schema).
@@ -43,11 +47,13 @@ class AttestationKeyDescription(
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is AttestationKeyDescription) return false
+        if (javaClass != other?.javaClass) return false
+
+        other as AttestationKeyDescription
 
         if (attestationVersion != other.attestationVersion) return false
-        if (keyMintVersion != other.keyMintVersion) return false
         if (attestationSecurityLevel != other.attestationSecurityLevel) return false
+        if (keyMintVersion != other.keyMintVersion) return false
         if (keyMintSecurityLevel != other.keyMintSecurityLevel) return false
         if (!attestationChallenge.contentEquals(other.attestationChallenge)) return false
         if (!uniqueId.contentEquals(other.uniqueId)) return false
@@ -115,25 +121,18 @@ class AttestationKeyDescription(
             Asn1Primitive(BERTags.ENUMERATED, intValue.encodeToAsn1ContentBytes())
 
         companion object : Asn1Decodable<Asn1Primitive, SecurityLevel> {
-            /**
-             * returns the [SecurityLevel] represented by [intValue]
-             */
-            fun valueOf(intValue: Int) = entries.first { it.intValue == intValue }
-            override fun doDecode(src: Asn1Primitive) = src.decodeToEnum<SecurityLevel>()
+            fun valueOf(int: Int) = entries.first { it.intValue == int }
+            override fun doDecode(src: Asn1Primitive) =
+                valueOf(
+                    src.decodeToInt(
+                        assertTag = Asn1Element.Tag(
+                            BERTags.ENUMERATED.toULong(),
+                            constructed = false
+                        )
+                    )
+                )
         }
+
     }
 }
 
-/**
- * Tries to parse an [AttestationKeyDescription] certificate extension, if present.
- * Never throws.
- */
-val X509Certificate.androidAttestationExtension: AttestationKeyDescription?
-    get() = tbsCertificate.extensions?.firstOrNull { it.oid == AttestationKeyDescription.oid }
-        ?.let {
-            catchingUnwrapped {
-                AttestationKeyDescription.decodeFromTlv(
-                    it.value.asEncapsulatingOctetString().children.first().asSequence()
-                )
-            }.getOrNull()
-        }
