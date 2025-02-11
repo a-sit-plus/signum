@@ -2,8 +2,9 @@
 
 ## 3.0
 
-### NEXT
+### 3.13.0 (Supreme 0.6.4)
 
+* Fix COSE key serialization
 * Refactor `Asn1Integer` to use `UByteArray` internally instead of a list
 * Fix ASN.1 decoding flaw for a very specific length encoding
 * Performance optimization: Instantiate fewer `KmmResults`
