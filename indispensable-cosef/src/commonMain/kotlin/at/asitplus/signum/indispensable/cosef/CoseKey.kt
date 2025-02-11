@@ -474,28 +474,28 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                 when (label) {
                     labels["kty"] -> type =
                         decodeSerializableElement(
-                            CoseKeyTypeSerializer.descriptor,
+                           descriptor,
                             index,
                             CoseKeyTypeSerializer
                         )
 
                     labels["kid"] -> keyId =
                         decodeNullableSerializableElement(
-                            ByteArraySerializer().descriptor,
+                            descriptor,
                             index,
                             ByteArraySerializer()
                         )
 
                     labels["alg"] -> alg =
                         decodeNullableSerializableElement(
-                            CoseAlgorithmSerializer.descriptor,
+                            descriptor,
                             index,
                             CoseAlgorithmSerializer
                         )
 
                     labels["key_ops"] -> keyOps =
                         decodeNullableSerializableElement(
-                            ArraySerializer(CoseKeyOperationSerializer).descriptor,
+                            descriptor,
                             index,
                             ArraySerializer(CoseKeyOperationSerializer)
                         )
@@ -505,7 +505,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                             CoseKeyType.EC2 -> {
                                 val deser = CoseEllipticCurveSerializer
                                 crv = decodeNullableSerializableElement(
-                                    CoseEllipticCurveSerializer.descriptor,
+                                    descriptor,
                                     index,
                                     deser
                                 )
@@ -514,7 +514,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                             CoseKeyType.RSA -> {
                                 val deser = ByteArraySerializer()
                                 n = decodeNullableSerializableElement(
-                                    deser.descriptor,
+                                    descriptor,
                                     index,
                                     deser
                                 )
@@ -523,7 +523,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                             CoseKeyType.SYMMETRIC -> {
                                 val deser = ByteArraySerializer()
                                 k = decodeNullableSerializableElement(
-                                    deser.descriptor,
+                                    descriptor,
                                     index,
                                     deser
                                 )
@@ -534,21 +534,21 @@ object CoseKeySerializer : KSerializer<CoseKey> {
 
                     labels["x/e"] -> xOrE =
                         decodeNullableSerializableElement(
-                            ByteArraySerializer().descriptor,
+                           descriptor,
                             index,
                             ByteArraySerializer()
                         )
 
                     labels["y"] -> catching {
                         y = decodeNullableSerializableElement(
-                            ByteArraySerializer().descriptor,
+                            descriptor,
                             index,
                             ByteArraySerializer()
                         )
                     }.getOrElse {
                         isCompressed = true
                         yBool = decodeNullableSerializableElement(
-                            Boolean.serializer().descriptor,
+                            descriptor,
                             index,
                             Boolean.serializer()
                         )
@@ -556,7 +556,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
 
                     labels["d"] -> d =
                         decodeNullableSerializableElement(
-                            ByteArraySerializer().descriptor,
+                           descriptor,
                             index,
                             ByteArraySerializer()
                         )
