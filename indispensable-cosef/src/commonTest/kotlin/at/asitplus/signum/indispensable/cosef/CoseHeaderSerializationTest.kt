@@ -6,9 +6,50 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromHexString
+import kotlinx.serialization.encodeToHexString
 
 @OptIn(ExperimentalSerializationApi::class)
 class CoseHeaderSerializationTest : FreeSpec({
+
+    "COSE header with one certificate" {
+        val input = """
+        a1                                     #         map(1)
+           18 21                               #           unsigned(33)
+           59 01b7                             #           bytes(439)
+              308201b330820158a003020102021475 #             "0\x82\x01\xb30\x82\x01X\xa0\x03\x02\x01\x02\x02\x14u"
+              52715f6add323d4934a1ba175dc94575 #             "Rq_j\xdd2=I4\xa1\xba\x17]\xc9Eu"
+              5d8b50300a06082a8648ce3d04030230 #             "]\x8bP0\n\x06\x08*\x86H\xce=\x04\x03\x020"
+              163114301206035504030c0b72656164 #             "\x161\x140\x12\x06\x03U\x04\x03\x0c\x0bread"
+              657220726f6f74301e170d3230313030 #             "er root0\x1e\x17\r20100"
+              313030303030305a170d323331323331 #             "1000000Z\x17\r231231"
+              3030303030305a3011310f300d060355 #             "000000Z0\x111\x0f0\r\x06\x03U"
+              04030c06726561646572305930130607 #             "\x04\x03\x0c\x06reader0Y0\x13\x06\x07"
+              2a8648ce3d020106082a8648ce3d0301 #             "*\x86H\xce=\x02\x01\x06\x08*\x86H\xce=\x03\x01"
+              0703420004f8912ee0f912b6be683ba2 #             "\x07\x03B\x00\x04\xf8\x91.\xe0\xf9\x12\xb6\xbeh;\xa2"
+              fa0121b2630e601b2b628dff3b44f639 #             "\xfa\x01!\xb2c\x0e`\x1b+b\x8d\xff;D\xf69"
+              4eaa9abdbcc2149d29d6ff1a3e091135 #             "N\xaa\x9a\xbd\xbc\xc2\x14\x9d)\xd6\xff\x1a>\t\x115"
+              177e5c3d9c57f3bf839761eed02c64dd #             "\x17~\\=\x9cW\xf3\xbf\x83\x97a\xee\xd0,d\xdd"
+              82ae1d3bbfa38188308185301c060355 #             "\x82\xae\x1d;\xbf\xa3\x81\x880\x81\x850\x1c\x06\x03U"
+              1d1f041530133011a00fa00d820b6578 #             "\x1d\x1f\x04\x150\x130\x11\xa0\x0f\xa0\r\x82\x0bex"
+              616d706c652e636f6d301d0603551d0e #             "ample.com0\x1d\x06\x03U\x1d\x0e"
+              04160414f2dfc4acafc5f30b464fada2 #             "\x04\x16\x04\x14\xf2\xdf\xc4\xac\xaf\xc5\xf3\x0bFO\xad\xa2"
+              0bfcd533af5e07f5301f0603551d2304 #             "\x0b\xfc\xd53\xaf^\x07\xf50\x1f\x06\x03U\x1d#\x04"
+              1830168014cfb7a881baea5f32b6fb91 #             "\x180\x16\x80\x14\xcf\xb7\xa8\x81\xba\xea_2\xb6\xfb\x91"
+              cc29590c50dfac416e300e0603551d0f #             "\xcc)Y\x0cP\xdf\xacAn0\x0e\x06\x03U\x1d\x0f"
+              0101ff04040302078030150603551d25 #             "\x01\x01\xff\x04\x04\x03\x02\x07\x800\x15\x06\x03U\x1d%"
+              0101ff040b3009060728818c5d050106 #             "\x01\x01\xff\x04\x0b0\t\x06\x07(\x81\x8c]\x05\x01\x06"
+              300a06082a8648ce3d04030203490030 #             "0\n\x06\x08*\x86H\xce=\x04\x03\x02\x03I\x000"
+              46022100fb9ea3b686fd7ea2f0234858 #             "F\x02!\x00\xfb\x9e\xa3\xb6\x86\xfd~\xa2\xf0#HX"
+              ff8328b4efef6a1ef71ec4aae4e30720 #             "\xff\x83(\xb4\xef\xefj\x1e\xf7\x1e\xc4\xaa\xe4\xe3\x07 "
+              6f9214930221009b94f0d739dfa84cca #             "o\x92\x14\x93\x02!\x00\x9b\x94\xf0\xd79\xdf\xa8L\xca"
+              29efed529dd4838acfd8b6bee212dc63 #             ")\xef\xedR\x9d\xd4\x83\x8a\xcf\xd8\xb6\xbe\xe2\x12\xdcc"
+              20c46feb839a35                   #             " \xc4o\xeb\x83\x9a5"
+        """.trimIndent().split("\n").joinToString("") { it.split("#").first().replace(" ", "") }
+
+        coseCompliantSerializer.decodeFromHexString<CoseHeader>(input).also {
+            it.certificateChain.shouldNotBeNull().shouldHaveSize(1)
+        }
+    }
 
     "COSE header with two certificates" {
         val input = """
@@ -98,8 +139,6 @@ class CoseHeaderSerializationTest : FreeSpec({
                 af558b61d6b6f1cc23f4c566479902bd         #                 "\xafU\x8ba\xd6\xb6\xf1\xcc#\xf4\xc5fG\x99\x02\xbd"
                 915cb19fc18f7d7dbb108cf3b3               #                 "\x91\\\xb1\x9f\xc1\x8f}}\xbb\x10\x8c\xf3\xb3"
         """.trimIndent().split("\n").joinToString("") { it.split("#").first().replace(" ", "") }
-
-        println(input)
 
         coseCompliantSerializer.decodeFromHexString<CoseHeader>(input).also {
             it.certificateChain.shouldNotBeNull().shouldHaveSize(2)

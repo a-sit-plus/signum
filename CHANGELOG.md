@@ -2,6 +2,11 @@
 
 ## 3.0
 
+### 3.12.2 (Supreme 0.6.4)
+
+* Change `CoseHeader.certificateChain` (CBOR element 33 `x5chain`) from a single byte array to a list of byte arrays, acc. to specification
+* Remove `CoseHeader.coseKey`, which has been an unofficial addition from OID4VCI, but has been removed since
+
 ### 3.12.1 (Supreme 0.6.3)
 
 * Add COSE object creation with detached payload, i.e. setting a `null` payload in `CoseSigned`, and clients are responsible to transport the payload separately

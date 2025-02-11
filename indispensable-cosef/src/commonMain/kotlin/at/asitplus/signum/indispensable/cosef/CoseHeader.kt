@@ -4,13 +4,9 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import kotlinx.serialization.*
 import kotlinx.serialization.cbor.ByteString
 import kotlinx.serialization.cbor.CborLabel
-import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.encodeToByteArray
 
 /**
  * Protected header of a [CoseSigned].
@@ -18,7 +14,7 @@ import kotlinx.serialization.encodeToByteArray
  * See [RFC 9052](https://www.rfc-editor.org/rfc/rfc9052.html).
  */
 @OptIn(ExperimentalSerializationApi::class)
-@Serializable
+@Serializable(with = CoseHeaderSerializer::class)
 data class CoseHeader(
     /**
      * This header parameter is used to indicate the algorithm used for the security processing. This header parameter
@@ -93,13 +89,6 @@ data class CoseHeader(
     val partialIv: ByteArray? = null,
 
     /**
-     * OID4VCI: COSE key material the new Credential shall be bound to.
-     */
-    @SerialName("COSE_Key")
-    @ByteString
-    val coseKey: ByteArray? = null,
-
-    /**
      * This header parameter contains an ordered array of X.509 certificates. The certificates are to be ordered
      * starting with the certificate containing the end-entity key followed by the certificate that signed it, and so
      * on. There is no requirement for the entire chain to be present in the element if there is reason to believe that
@@ -114,8 +103,7 @@ data class CoseHeader(
     @CborLabel(33)
     @SerialName("x5chain")
     @ByteString
-    // TODO Might also be an array, if there is a real chain, not only one cert
-    val certificateChain: ByteArray? = null,
+    val certificateChain: List<ByteArray>? = null,
 
     /**
      * https://www.rfc-editor.org/rfc/rfc9596
@@ -133,7 +121,6 @@ data class CoseHeader(
 ) {
 
     fun serialize() = coseCompliantSerializer.encodeToByteArray(this)
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -143,26 +130,15 @@ data class CoseHeader(
         if (algorithm != other.algorithm) return false
         if (criticalHeaders != other.criticalHeaders) return false
         if (contentType != other.contentType) return false
-        if (kid != null) {
-            if (other.kid == null) return false
-            if (!kid.contentEquals(other.kid)) return false
-        } else if (other.kid != null) return false
-        if (iv != null) {
-            if (other.iv == null) return false
-            if (!iv.contentEquals(other.iv)) return false
-        } else if (other.iv != null) return false
-        if (partialIv != null) {
-            if (other.partialIv == null) return false
-            if (!partialIv.contentEquals(other.partialIv)) return false
-        } else if (other.partialIv != null) return false
-        if (coseKey != null) {
-            if (other.coseKey == null) return false
-            if (!coseKey.contentEquals(other.coseKey)) return false
-        } else if (other.coseKey != null) return false
+        if (!kid.contentEquals(other.kid)) return false
+        if (!iv.contentEquals(other.iv)) return false
+        if (!partialIv.contentEquals(other.partialIv)) return false
         if (certificateChain != null) {
             if (other.certificateChain == null) return false
-            if (!certificateChain.contentEquals(other.certificateChain)) return false
+            if (!certificateChain.all { t -> other.certificateChain.any { it.contentEquals(t) } }) return false
+            if (!other.certificateChain.all { o -> certificateChain.any { it.contentEquals(o) } }) return false
         } else if (other.certificateChain != null) return false
+        if (type != other.type) return false
 
         return true
     }
@@ -174,22 +150,23 @@ data class CoseHeader(
         result = 31 * result + (kid?.contentHashCode() ?: 0)
         result = 31 * result + (iv?.contentHashCode() ?: 0)
         result = 31 * result + (partialIv?.contentHashCode() ?: 0)
-        result = 31 * result + (coseKey?.contentHashCode() ?: 0)
-        result = 31 * result + (certificateChain?.contentHashCode() ?: 0)
+        result = 31 * result + (certificateChain?.hashCode() ?: 0)
+        result = 31 * result + (type?.hashCode() ?: 0)
         return result
     }
 
     override fun toString(): String {
-        return "CoseHeader(algorithm=$algorithm," +
-                " criticalHeaders=$criticalHeaders," +
-                " contentType=$contentType," +
-                " kid=${kid?.encodeToString(Base16Strict)}," +
-                " iv=${iv?.encodeToString(Base16Strict)}," +
-                " partialIv=${partialIv?.encodeToString(Base16Strict)}," +
-                " coseKey=${coseKey?.encodeToString(Base16Strict)}," +
-                " certificateChain=${certificateChain?.encodeToString(Base16Strict)})"
+        return "CoseHeader(" +
+                "algorithm=$algorithm, " +
+                "criticalHeaders=$criticalHeaders, " +
+                "contentType=$contentType, " +
+                "kid=${kid?.encodeToString(Base16Strict)}, " +
+                "iv=${iv?.encodeToString(Base16Strict)}, " +
+                "partialIv=${partialIv?.encodeToString(Base16Strict)}, " +
+                "certificateChain=${certificateChain?.joinToString { it.encodeToString(Base16Strict) }}, " +
+                "type=$type" +
+                ")"
     }
-
 
     companion object {
         fun deserialize(it: ByteArray) = catching {
