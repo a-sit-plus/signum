@@ -1,29 +1,16 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
-import at.asitplus.signum.indispensable.CryptoPrivateKey
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.fromJcaPublicKey
-import at.asitplus.signum.indispensable.getJCASignatureInstance
-import at.asitplus.signum.indispensable.getJCASignatureInstancePreHashed
-import at.asitplus.signum.indispensable.jcaName
-import at.asitplus.signum.indispensable.parseFromJca
+import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.supreme.SecretExposure
 import at.asitplus.signum.supreme.signCatching
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
+import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
+import java.security.interfaces.ECPrivateKey
+import java.security.interfaces.RSAPrivateKey
 import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
-
-
-@SecretExposure
-internal actual fun EphemeralKeyBase<*>.exportPrivate(): CryptoPrivateKey.WithPublicKey<*> =
-    CryptoPrivateKey.decodeFromDer((privateKey as PrivateKey).encoded) as CryptoPrivateKey.WithPublicKey<*>
-
 
 actual class EphemeralSigningKeyConfiguration internal actual constructor(): EphemeralSigningKeyConfigurationBase() {
     var provider: String? = null
@@ -54,10 +41,6 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
         }
     }
 
-    @SecretExposure
-    override fun exportPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> = catching { CryptoPrivateKey.decodeFromDer(
-        privateKey.encoded) as CryptoPrivateKey.WithPublicKey<*> }
-
     protected abstract fun parseFromJca(bytes: ByteArray): CryptoSignature.RawByteEncodable
 
     open class EC internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
@@ -65,6 +48,9 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
         : EphemeralSigner(privateKey, config.provider), Signer.ECDSA {
 
         override fun parseFromJca(bytes: ByteArray) = CryptoSignature.EC.parseFromJca(bytes).withCurve(publicKey.curve)
+
+        @SecretExposure
+        final override fun exportPrivateKey() = (privateKey as ECPrivateKey).toCryptoPrivateKey()
     }
 
     open class RSA internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
@@ -72,6 +58,9 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
         : EphemeralSigner(privateKey, config.provider), Signer.RSA {
 
         override fun parseFromJca(bytes: ByteArray) = CryptoSignature.RSAorHMAC.parseFromJca(bytes)
+
+        @SecretExposure
+        final override fun exportPrivateKey() = (privateKey as RSAPrivateKey).toCryptoPrivateKey()
     }
 }
 
@@ -81,26 +70,38 @@ internal fun getKPGInstance(alg: String, provider: String? = null) =
         else -> KeyPairGenerator.getInstance(alg, provider)
     }
 
+internal sealed interface AndroidEphemeralKey {
+    class EC(pair: KeyPair, digests: Set<Digest?>)
+        : EphemeralKeyBase.EC<ECPrivateKey, EphemeralSigner.EC>(EphemeralSigner::EC,
+        pair.private as ECPrivateKey, pair.public.toCryptoPublicKey().getOrThrow() as CryptoPublicKey.EC,
+        digests = digests)
+    {
+        @SecretExposure
+        override fun exportPrivateKey() = privateKey.toCryptoPrivateKey()
+    }
+
+    class RSA(pair: KeyPair, digests: Set<Digest>, paddings: Set<RSAPadding>)
+        : EphemeralKeyBase.RSA<RSAPrivateKey, EphemeralSigner.RSA>(EphemeralSigner::RSA,
+        pair.private as RSAPrivateKey, pair.public.toCryptoPublicKey().getOrThrow() as CryptoPublicKey.RSA,
+        digests = digests, paddings = paddings)
+    {
+        @SecretExposure
+        override fun exportPrivateKey() = privateKey.toCryptoPrivateKey()
+    }
+}
+
 internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey =
     when (val alg = configuration._algSpecific.v) {
         is SigningKeyConfiguration.ECConfiguration -> {
             getKPGInstance("EC", configuration.provider).run {
                 initialize(ECGenParameterSpec(alg.curve.jcaName))
                 generateKeyPair()
-            }.let { pair ->
-                EphemeralKeyBase.EC(EphemeralSigner::EC,
-                    pair.private, CryptoPublicKey.fromJcaPublicKey(pair.public).getOrThrow() as CryptoPublicKey.EC,
-                    digests = alg.digests)
-            }
+            }.let { pair -> AndroidEphemeralKey.EC(pair, digests = alg.digests) }
         }
         is SigningKeyConfiguration.RSAConfiguration -> {
             getKPGInstance("RSA", configuration.provider).run {
                 initialize(RSAKeyGenParameterSpec(alg.bits, alg.publicExponent.toJavaBigInteger()))
                 generateKeyPair()
-            }.let { pair ->
-                EphemeralKeyBase.RSA(EphemeralSigner::RSA,
-                    pair.private, CryptoPublicKey.fromJcaPublicKey(pair.public).getOrThrow() as CryptoPublicKey.RSA,
-                    digests = alg.digests, paddings = alg.paddings)
-            }
+            }.let { pair -> AndroidEphemeralKey.RSA(pair, digests = alg.digests, paddings = alg.paddings) }
         }
     }

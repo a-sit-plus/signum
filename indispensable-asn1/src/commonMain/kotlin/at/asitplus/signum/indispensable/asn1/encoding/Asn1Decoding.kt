@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.asn1.encoding
 
 import at.asitplus.catching
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.BERTags.BMP_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.IA5_STRING
@@ -176,7 +177,7 @@ fun Asn1Primitive.decodeToBoolean(assertTag: Asn1Element.Tag = Asn1Element.Tag.B
 
 /** Exception-free version of [decodeToBoolean] */
 fun Asn1Primitive.decodeToBooleanOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.BOOL) =
-    catching { decodeToBoolean(assertTag) }.getOrNull()
+    catchingUnwrapped { decodeToBoolean(assertTag) }.getOrNull()
 
 /**
  * decodes this [Asn1Primitive]'s content into an [Int]. [assertTag] defaults to [Asn1Element.Tag.INT], but can be
@@ -189,7 +190,7 @@ fun Asn1Primitive.decodeToInt(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) 
 
 /** Exception-free version of [decodeToInt] */
 fun Asn1Primitive.decodeToIntOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
-    catching { decodeToInt(assertTag) }.getOrNull()
+    catchingUnwrapped { decodeToInt(assertTag) }.getOrNull()
 
 /**
  * decodes this [Asn1Primitive]'s content into a [Long]. [assertTag] defaults to [Asn1Element.Tag.INT], but can be
@@ -202,7 +203,7 @@ fun Asn1Primitive.decodeToLong(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT)
 
 /** Exception-free version of [decodeToLong] */
 inline fun Asn1Primitive.decodeToLongOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
-    catching { decodeToLong(assertTag) }.getOrNull()
+    catchingUnwrapped { decodeToLong(assertTag) }.getOrNull()
 
 /**
  * decodes this [Asn1Primitive]'s content into an [UInt]√. [assertTag] defaults to [Asn1Element.Tag.INT], but can be
@@ -215,7 +216,7 @@ fun Asn1Primitive.decodeToUInt(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT)
 
 /** Exception-free version of [decodeToUInt] */
 inline fun Asn1Primitive.decodeToUIntOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
-    catching { decodeToUInt(assertTag) }.getOrNull()
+    catchingUnwrapped { decodeToUInt(assertTag) }.getOrNull()
 
 /**
  * decodes this [Asn1Primitive]'s content into an [ULong]. [assertTag] defaults to [Asn1Element.Tag.INT], but can be
@@ -228,7 +229,7 @@ fun Asn1Primitive.decodeToULong(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT
 
 /** Exception-free version of [decodeToULong] */
 inline fun Asn1Primitive.decodeToULongOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
-    catching { decodeToULong(assertTag) }.getOrNull()
+    catchingUnwrapped { decodeToULong(assertTag) }.getOrNull()
 
 /** Decode the [Asn1Primitive] as a [Asn1Integer]
  * @throws [Asn1Exception] on invalid input */
@@ -238,7 +239,7 @@ fun Asn1Primitive.decodeToAsn1Integer(assertTag: Asn1Element.Tag = Asn1Element.T
 
 /** Exception-free version of [decodeToAsn1Integer] */
 inline fun Asn1Primitive.decodeToAsn1IntegerOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
-    catching { decodeToAsn1Integer() }.getOrNull()
+    catchingUnwrapped { decodeToAsn1Integer() }.getOrNull()
 
 /**
  * Decodes a [Asn1Integer] from [bytes] assuming the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 INTEGER
@@ -274,7 +275,7 @@ fun Asn1Primitive.asAsn1String(): Asn1String = runRethrowing {
 fun Asn1Primitive.decodeToString() = runRethrowing { asAsn1String().value }
 
 /** Exception-free version of [decodeToString] */
-fun Asn1Primitive.decodeToStringOrNull() = catching { decodeToString() }.getOrNull()
+fun Asn1Primitive.decodeToStringOrNull() = catchingUnwrapped { decodeToString() }.getOrNull()
 
 /**
  * decodes this [Asn1Primitive]'s content into an [Instant] if it is encoded as UTC TIME or GENERALIZED TIME
@@ -300,7 +301,7 @@ fun Asn1Primitive.decodeToInstant() =
 /**
  * Exception-free version of [decodeToInstant]
  */
-fun Asn1Primitive.decodeToInstantOrNull() = catching { decodeToInstant() }.getOrNull()
+fun Asn1Primitive.decodeToInstantOrNull() = catchingUnwrapped { decodeToInstant() }.getOrNull()
 
 /**
  * Transforms this [Asn1Primitive]' into an [Asn1BitString], assuming it was encoded as BIT STRING
@@ -320,7 +321,7 @@ fun Asn1Primitive.readNull() = decode(Asn1Element.Tag.NULL) {}
 /**
  * Name seems odd, but this is just an exception-free version of [readNull]
  */
-fun Asn1Primitive.readNullOrNull() = catching { readNull() }.getOrNull()
+fun Asn1Primitive.readNullOrNull() = catchingUnwrapped { readNull() }.getOrNull()
 
 /**
  * Generic decoding function. Verifies that this [Asn1Primitive]'s tag matches [assertTag]
@@ -348,7 +349,7 @@ inline fun <reified T> Asn1Primitive.decode(assertTag: Asn1Element.Tag, transfor
  * Exception-free version of [decode]
  */
 inline fun <reified T> Asn1Primitive.decodeOrNull(tag: ULong, transform: (content: ByteArray) -> T) =
-    catching { decode(tag, transform) }.getOrNull()
+    catchingUnwrapped { decode(tag, transform) }.getOrNull()
 
 /**
  * Decodes an [Instant] from [bytes] assuming the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 UTC TIME
@@ -469,10 +470,17 @@ private fun Source.decodeLength(): Pair<Long, Int> =
             Pair(firstByte.toUByte().toLong(), 1)
         } else { // its BER long form!
             val numberOfLengthOctets = (firstByte byteMask 0x7F).toInt()
-            (0 until numberOfLengthOctets).fold(0L) { acc, index ->
+            val length = (0 until numberOfLengthOctets).fold(0L) { acc, index ->
                 require(!exhausted()) { "Can't decode length" }
-                acc + (readUByte().toLong() shl Byte.SIZE_BITS * (numberOfLengthOctets - index - 1))
-            }.let { Pair(it, 1 + numberOfLengthOctets) }
+                val thisByte = readUByte().also {
+                    if ((index == 0) && (it == 0u.toUByte())) {
+                        throw Asn1Exception("Illegal DER length encoding; long form length with leading zeros")
+                    }
+                }.toLong()
+                acc or (thisByte shl Byte.SIZE_BITS * (numberOfLengthOctets - index - 1))
+            }
+            if (length < 128) throw Asn1Exception("Illegal DER length encoding; length $length < 128 using long form")
+            Pair(length, 1 + numberOfLengthOctets)
         }
     }
 

@@ -1,27 +1,27 @@
 package at.asitplus.signum.supreme.sign
 
 import android.security.keystore.KeyProperties
-import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.fromJcaPublicKey
 import at.asitplus.signum.indispensable.getJCASignatureInstancePreHashed
 import at.asitplus.signum.indispensable.jcaName
 import at.asitplus.signum.indispensable.parseFromJca
+import at.asitplus.signum.indispensable.toCryptoPrivateKey
+import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.supreme.SecretExposure
 import at.asitplus.signum.supreme.signCatching
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
+import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
+import java.security.interfaces.ECPrivateKey
+import java.security.interfaces.RSAPrivateKey
 import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
-
-@SecretExposure
-internal actual fun EphemeralKeyBase<*>.exportPrivate(): CryptoPrivateKey.WithPublicKey<*> =
-    CryptoPrivateKey.decodeFromDer((privateKey as PrivateKey).encoded) as CryptoPrivateKey.WithPublicKey<*>
 
 actual class EphemeralSigningKeyConfiguration internal actual constructor(): EphemeralSigningKeyConfigurationBase()
 actual class EphemeralSignerConfiguration internal actual constructor(): EphemeralSignerConfigurationBase()
@@ -37,10 +37,6 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
         }
     }
 
-    @SecretExposure
-    override fun exportPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> = catching { CryptoPrivateKey.decodeFromDer(
-        privateKey.encoded) as CryptoPrivateKey.WithPublicKey<*> }
-
     protected abstract fun parseFromJca(bytes: ByteArray): CryptoSignature.RawByteEncodable
 
     class EC (config: EphemeralSignerConfiguration, privateKey: PrivateKey,
@@ -48,6 +44,10 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
         : AndroidEphemeralSigner(privateKey), Signer.ECDSA {
 
         override fun parseFromJca(bytes: ByteArray) = CryptoSignature.EC.parseFromJca(bytes).withCurve(publicKey.curve)
+
+        @SecretExposure
+        override fun exportPrivateKey() =
+            catching { privateKey as ECPrivateKey }.transform(ECPrivateKey::toCryptoPrivateKey)
     }
 
     class RSA (config: EphemeralSignerConfiguration, privateKey: PrivateKey,
@@ -55,6 +55,30 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
         : AndroidEphemeralSigner(privateKey), Signer.RSA {
 
         override fun parseFromJca(bytes: ByteArray) = CryptoSignature.RSAorHMAC.parseFromJca(bytes)
+
+        @SecretExposure
+        override fun exportPrivateKey() =
+            catching { privateKey as RSAPrivateKey }.transform(RSAPrivateKey::toCryptoPrivateKey)
+    }
+}
+
+internal sealed interface AndroidEphemeralKey {
+    class EC(pair: KeyPair, digests: Set<Digest?>)
+        : EphemeralKeyBase.EC<ECPrivateKey, AndroidEphemeralSigner.EC>(AndroidEphemeralSigner::EC,
+        pair.private as ECPrivateKey, pair.public.toCryptoPublicKey().getOrThrow() as CryptoPublicKey.EC,
+        digests = digests)
+    {
+        @SecretExposure
+        override fun exportPrivateKey() = privateKey.toCryptoPrivateKey()
+    }
+
+    class RSA(pair: KeyPair, digests: Set<Digest>, paddings: Set<RSAPadding>)
+        : EphemeralKeyBase.RSA<RSAPrivateKey, AndroidEphemeralSigner.RSA>(AndroidEphemeralSigner::RSA,
+        pair.private as RSAPrivateKey, pair.public.toCryptoPublicKey().getOrThrow() as CryptoPublicKey.RSA,
+        digests = digests, paddings = paddings)
+    {
+        @SecretExposure
+        override fun exportPrivateKey() = privateKey.toCryptoPrivateKey()
     }
 }
 
@@ -65,9 +89,7 @@ internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfigura
                 initialize(ECGenParameterSpec(alg.curve.jcaName))
                 generateKeyPair()
             }.let { pair ->
-                EphemeralKeyBase.EC(AndroidEphemeralSigner::EC,
-                    pair.private, CryptoPublicKey.fromJcaPublicKey(pair.public).getOrThrow() as CryptoPublicKey.EC,
-                    digests = alg.digests)
+                AndroidEphemeralKey.EC(pair, alg.digests)
             }
         }
         is SigningKeyConfiguration.RSAConfiguration -> {
@@ -75,9 +97,7 @@ internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfigura
                 initialize(RSAKeyGenParameterSpec(alg.bits, alg.publicExponent.toJavaBigInteger()))
                 generateKeyPair()
             }.let { pair ->
-                EphemeralKeyBase.RSA(AndroidEphemeralSigner::RSA,
-                    pair.private, CryptoPublicKey.fromJcaPublicKey(pair.public).getOrThrow() as CryptoPublicKey.RSA,
-                    digests = alg.digests, paddings = alg.paddings)
+                AndroidEphemeralKey.RSA(pair, alg.digests, alg.paddings)
             }
         }
     }

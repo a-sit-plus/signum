@@ -174,6 +174,11 @@ These interfaces essentially provide a mapping between custom types and low-leve
 This also means, a direct serialization of such custom types is valuable for debugging, but not for encoding.
 **Hence, decoding a kotlinx.serialization output of those classes is unsupported.**
 
+In addition, `CryptoPublicKey`, `CryptoPrivateKey`, `X509Certificate`, `Pkcs10CertificationRequest` also implement `PemEncodable`,
+while their respective companions implement `PemDecodable`.
+This brings about the `encodeToPem` and `decodeFromPem` functions doing what their names imply:
+Encode/decode to/from PEM strings.
+
 #### Low-Level Addons
 
 This module provides the following low-level addons for [Kotlin MP BigNum](https://github.com/ionspin/kotlin-multiplatform-bignum):

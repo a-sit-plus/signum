@@ -4,6 +4,7 @@ package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 
@@ -22,7 +23,7 @@ interface Asn1Encodable<A : Asn1Element> {
     /**
      * Exception-free version of [encodeToTlv]
      */
-    fun encodeToTlvOrNull() = catching { encodeToTlv() }.getOrNull()
+    fun encodeToTlvOrNull() = catchingUnwrapped { encodeToTlv() }.getOrNull()
 
     /**
      * Safe version of [encodeToTlv], wrapping the result into a [KmmResult]
@@ -38,7 +39,7 @@ interface Asn1Encodable<A : Asn1Element> {
     /**
      * Exception-free version of [encodeToDer]
      */
-    fun encodeToDerOrNull() = catching { encodeToDer() }.getOrNull()
+    fun encodeToDerOrNull() = catchingUnwrapped { encodeToDer() }.getOrNull()
 
     /**
      * Safe version of [encodeToDer], wrapping the result into a [KmmResult]
@@ -106,7 +107,7 @@ interface Asn1Decodable<A : Asn1Element, T : Asn1Encodable<A>> {
      * Exception-free version of [decodeFromTlv]
      */
     fun decodeFromTlvOrNull(src: A, assertTag: Asn1Element.Tag? = null) =
-        catching { decodeFromTlv(src, assertTag) }.getOrNull()
+        catchingUnwrapped { decodeFromTlv(src, assertTag) }.getOrNull()
 
     /**
      * Safe version of [decodeFromTlv], wrapping the result into a [KmmResult]
@@ -126,7 +127,7 @@ interface Asn1Decodable<A : Asn1Element, T : Asn1Encodable<A>> {
      * Exception-free version of [decodeFromDer]
      */
     fun decodeFromDerOrNull(src: ByteArray, assertTag: Asn1Element.Tag? = null) =
-        catching { decodeFromDer(src, assertTag) }.getOrNull()
+        catchingUnwrapped { decodeFromDer(src, assertTag) }.getOrNull()
 
     /**
      * Safe version of [decodeFromDer], wrapping the result into a [KmmResult]

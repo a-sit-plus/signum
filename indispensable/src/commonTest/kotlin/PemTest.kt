@@ -1,13 +1,124 @@
 import at.asitplus.signum.indispensable.CryptoPrivateKey
+import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
+import at.asitplus.signum.indispensable.pki.Pkcs10CertificationRequest
+import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlin.random.Random
 
 @OptIn(ExperimentalStdlibApi::class)
 class PemTest : FreeSpec({
+
+    "Cert"  {
+        val pemEC= """
+            -----BEGIN CERTIFICATE-----
+            MIIBGzCBwqADAgECAhRNToTfnnyTUnaag1qQmgGR+b3WhjAKBggqhkjOPQQDAjAO
+            MQwwCgYDVQQDDANmb28wHhcNMjQwOTE2MDczMDUzWhcNMjUwOTE2MDczMDUzWjAO
+            MQwwCgYDVQQDDANmb28wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASnuk0LMIGG
+            YF2uoFYQhu/K6j4B9fJSBAWtxIUIUbzPUhu0OdDHJ9KkRFxwdk9NAW1PfJp/K7oK
+            4J+lV0nW7Ms5MAoGCCqGSM49BAMCA0gAMEUCIQDTFPR4YuQWSFB42aC0EQLIzPVS
+            dezRKC3czsyJJ5ofHAIgFFejWT9Fzphb+Mfx51bDRlJo9sd27a3RS7bj5euMliI=
+            -----END CERTIFICATE-----
+        """.trimIndent()
+
+        val cert= X509Certificate.decodeFromPem(pemEC).getOrThrow()
+        cert.encodeToPEM().getOrThrow() shouldBe pemEC
+        val pemRSA= """
+            -----BEGIN CERTIFICATE-----
+            MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
+            TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
+            cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMTUwNjA0MTEwNDM4
+            WhcNMzUwNjA0MTEwNDM4WjBPMQswCQYDVQQGEwJVUzEpMCcGA1UEChMgSW50ZXJu
+            ZXQgU2VjdXJpdHkgUmVzZWFyY2ggR3JvdXAxFTATBgNVBAMTDElTUkcgUm9vdCBY
+            MTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAK3oJHP0FDfzm54rVygc
+            h77ct984kIxuPOZXoHj3dcKi/vVqbvYATyjb3miGbESTtrFj/RQSa78f0uoxmyF+
+            0TM8ukj13Xnfs7j/EvEhmkvBioZxaUpmZmyPfjxwv60pIgbz5MDmgK7iS4+3mX6U
+            A5/TR5d8mUgjU+g4rk8Kb4Mu0UlXjIB0ttov0DiNewNwIRt18jA8+o+u3dpjq+sW
+            T8KOEUt+zwvo/7V3LvSye0rgTBIlDHCNAymg4VMk7BPZ7hm/ELNKjD+Jo2FR3qyH
+            B5T0Y3HsLuJvW5iB4YlcNHlsdu87kGJ55tukmi8mxdAQ4Q7e2RCOFvu396j3x+UC
+            B5iPNgiV5+I3lg02dZ77DnKxHZu8A/lJBdiB3QW0KtZB6awBdpUKD9jf1b0SHzUv
+            KBds0pjBqAlkd25HN7rOrFleaJ1/ctaJxQZBKT5ZPt0m9STJEadao0xAH0ahmbWn
+            OlFuhjuefXKnEgV4We0+UXgVCwOPjdAvBbI+e0ocS3MFEvzG6uBQE3xDk3SzynTn
+            jh8BCNAw1FtxNrQHusEwMFxIt4I7mKZ9YIqioymCzLq9gwQbooMDQaHWBfEbwrbw
+            qHyGO0aoSCqI3Haadr8faqU9GY/rOPNk3sgrDQoo//fb4hVC1CLQJ13hef4Y53CI
+            rU7m2Ys6xt0nUW7/vGT1M0NPAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwIBBjAPBgNV
+            HRMBAf8EBTADAQH/MB0GA1UdDgQWBBR5tFnme7bl5AFzgAiIyBpY9umbbjANBgkq
+            hkiG9w0BAQsFAAOCAgEAVR9YqbyyqFDQDLHYGmkgJykIrGF1XIpu+ILlaS/V9lZL
+            ubhzEFnTIZd+50xx+7LSYK05qAvqFyFWhfFQDlnrzuBZ6brJFe+GnY+EgPbk6ZGQ
+            3BebYhtF8GaV0nxvwuo77x/Py9auJ/GpsMiu/X1+mvoiBOv/2X/qkSsisRcOj/KK
+            NFtY2PwByVS5uCbMiogziUwthDyC3+6WVwW6LLv3xLfHTjuCvjHIInNzktHCgKQ5
+            ORAzI4JMPJ+GslWYHb4phowim57iaztXOoJwTdwJx4nLCgdNbOhdjsnvzqvHu7Ur
+            TkXWStAmzOVyyghqpZXjFaH3pO3JLF+l+/+sKAIuvtd7u+Nxe5AW0wdeRlN8NwdC
+            jNPElpzVmbUq4JUagEiuTDkHzsxHpFKVK7q4+63SM1N95R1NbdWhscdCb+ZAJzVc
+            oyi3B43njTOQ5yOf+1CceWxG1bQVs5ZufpsMljq4Ui0/1lvh+wjChP4kqKOJ2qxq
+            4RgqsahDYVvTH9w7jXbyLeiNdd8XM2w9U/t7y0Ff/9yi0GE44Za4rF2LN9d11TPA
+            mRGunUHBcnWEvgJBQl9nJEiU0Zsnvgc/ubhPgXRR4Xq37Z0j4r7g1SgEEzwxA57d
+            emyPxgcYxn/eR44/KJ4EBs+lVDR3veyJm+kXQ99b21/+jh5Xos1AnX5iItreGCc=
+            -----END CERTIFICATE-----
+        """.trimIndent()
+
+        val certRSA= X509Certificate.decodeFromPem(pemRSA).getOrThrow()
+        certRSA.encodeToPEM().getOrThrow() shouldBe pemRSA
+    }
+
+    "EC Public Key" {
+        val pem = """
+            -----BEGIN PUBLIC KEY-----
+            MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEp7pNCzCBhmBdrqBWEIbvyuo+AfXy
+            UgQFrcSFCFG8z1IbtDnQxyfSpERccHZPTQFtT3yafyu6CuCfpVdJ1uzLOQ==
+            -----END PUBLIC KEY-----
+        """.trimIndent()
+
+        val key = CryptoPublicKey.decodeFromPem(pem).getOrThrow().shouldBeInstanceOf<CryptoPublicKey.EC>()
+    }
+    "CSR" {
+        val pem = """
+        -----BEGIN CERTIFICATE REQUEST-----
+        MIHIMHACAQAwDjEMMAoGA1UEAwwDZm9vMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEp7pNCzCB
+        hmBdrqBWEIbvyuo+AfXyUgQFrcSFCFG8z1IbtDnQxyfSpERccHZPTQFtT3yafyu6CuCfpVdJ1uzL
+        OaAAMAoGCCqGSM49BAMCA0gAMEUCIHoyk9gs6Dr/KInrGScLAPz95B0oM69wTSCEJJS8vd6KAiEA
+        tu/uftQ1s6YROFuJp5Tn5OddM1B73uZa6HnFhYv7VF0=
+        -----END CERTIFICATE REQUEST-----
+        """.trimIndent()
+
+        val csr  = Pkcs10CertificationRequest.decodeFromPem(pem).getOrThrow().shouldBeInstanceOf<Pkcs10CertificationRequest>()
+        csr.tbsCsr.publicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()
+    }
+
+    "RSA Public Key" {
+        val pem = """
+           -----BEGIN PUBLIC KEY-----
+            MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAregkc/QUN/ObnitXKByH
+            vty33ziQjG485legePd1wqL+9Wpu9gBPKNveaIZsRJO2sWP9FBJrvx/S6jGbIX7R
+            Mzy6SPXded+zuP8S8SGaS8GKhnFpSmZmbI9+PHC/rSkiBvPkwOaAruJLj7eZfpQD
+            n9NHl3yZSCNT6DiuTwpvgy7RSVeMgHS22i/QOI17A3AhG3XyMDz6j67d2mOr6xZP
+            wo4RS37PC+j/tXcu9LJ7SuBMEiUMcI0DKaDhUyTsE9nuGb8Qs0qMP4mjYVHerIcH
+            lPRjcewu4m9bmIHhiVw0eWx27zuQYnnm26SaLybF0BDhDt7ZEI4W+7f3qPfH5QIH
+            mI82CJXn4jeWDTZ1nvsOcrEdm7wD+UkF2IHdBbQq1kHprAF2lQoP2N/VvRIfNS8o
+            F2zSmMGoCWR3bkc3us6sWV5onX9y1onFBkEpPlk+3Sb1JMkRp1qjTEAfRqGZtac6
+            UW6GO559cqcSBXhZ7T5ReBULA4+N0C8Fsj57ShxLcwUS/Mbq4FATfEOTdLPKdOeO
+            HwEI0DDUW3E2tAe6wTAwXEi3gjuYpn1giqKjKYLMur2DBBuigwNBodYF8RvCtvCo
+            fIY7RqhIKojcdpp2vx9qpT0Zj+s482TeyCsNCij/99viFULUItAnXeF5/hjncIit
+            TubZizrG3SdRbv+8ZPUzQ08CAwEAAQ==
+            -----END PUBLIC KEY-----
+        """.trimIndent()
+
+        val rsa = CryptoPublicKey.decodeFromPem(pem).getOrThrow().shouldBeInstanceOf<CryptoPublicKey.RSA>()
+
+        val pkcs1= """
+            -----BEGIN RSA PUBLIC KEY-----
+            MIIBigKCAYEAq3DnhgYgLVJknvDA3clATozPtjI7yauqD4/ZuqgZn4KzzzkQ4BzJ
+            ar4jRygpzbghlFn0Luk1mdVKzPUgYj0VkbRlHyYfcahbgOHixOOnXkKXrtZW7yWG
+            jXPqy/ZJ/+...
+            -----END RSA PUBLIC KEY-----
+        """.trimIndent()
+
+         CryptoPublicKey.decodeFromPem(pem).getOrThrow().shouldBeInstanceOf<CryptoPublicKey.RSA>()
+    }
+
+
     val rnd = Random.nextBytes(35).toHexString() + "\n                  "
     "SEC1" {
         val sec1 = """

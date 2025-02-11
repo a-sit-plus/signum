@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.catching
+import at.asitplus.catchingUnwrapped
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -244,7 +245,7 @@ class BitSet private constructor(private val buffer: MutableList<Byte>) : Iterab
         /**
          * Exception-free version of [fromBitString]
          */
-        fun fromBitStringOrNull(bitString: String) = catching { fromBitString(bitString) }.getOrNull()
+        fun fromBitStringOrNull(bitString: String) = catchingUnwrapped { fromBitString(bitString) }.getOrNull()
     }
 }
 

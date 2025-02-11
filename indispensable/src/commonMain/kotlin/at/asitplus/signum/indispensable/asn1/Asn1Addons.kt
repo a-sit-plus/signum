@@ -134,7 +134,7 @@ fun Asn1Primitive.decodeToBigInteger(assertTag: Asn1Element.Tag = Asn1Element.Ta
 
 /** Exception-free version of [decodeToBigInteger] */
 inline fun Asn1Primitive.decodeToBigIntegerOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
-    catching { decodeToBigInteger(assertTag) }.getOrNull()
+    catchingUnwrapped { decodeToBigInteger(assertTag) }.getOrNull()
 
 /**
  * Decodes a [BigInteger] from [bytes] assuming the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 INTEGER
@@ -142,3 +142,5 @@ inline fun Asn1Primitive.decodeToBigIntegerOrNull(assertTag: Asn1Element.Tag = A
 @Throws(Asn1Exception::class)
 fun BigInteger.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): BigInteger =
     runRethrowing { fromTwosComplementByteArray(bytes) }
+
+internal val DEFAULT_PEM_DECODER: ((ByteArray)->Nothing)? = null

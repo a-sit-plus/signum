@@ -90,4 +90,11 @@ class PrivateKeyCommonTests : FreeSpec({
 
         signer.signatureAlgorithm.verifierFor(signer.publicKey).getOrThrow().verify(data, sig).isSuccess shouldBe true
     }
+
+    "Regressions" - {
+        "#233" {
+            @OptIn(ExperimentalStdlibApi::class)
+            CryptoPrivateKey.decodeFromDer("3041020100301306072a8648ce3d020106082a8648ce3d03010704273025020101042001811d2b378be969f614283650e8ca3b07eba2289841239513e24fd230e5a538".hexToByteArray())
+        }
+    }
 })

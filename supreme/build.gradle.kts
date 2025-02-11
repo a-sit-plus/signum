@@ -1,5 +1,9 @@
 import at.asitplus.gradle.coroutines
+import at.asitplus.gradle.datetime
+import at.asitplus.gradle.exportIosFramework
+import at.asitplus.gradle.kmmresult
 import at.asitplus.gradle.napier
+import at.asitplus.gradle.serialization
 import at.asitplus.gradle.setupDokka
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
@@ -224,6 +228,17 @@ fun wireAndroidInstrumentedTests() {
             }
         }
 }
+
+exportIosFramework(
+    "SignumSupreme",
+    transitiveExports=false,
+    serialization("json"),
+    datetime(),
+    kmmresult(),
+    project(":indispensable"),
+    project(":indispensable-asn1"),
+    libs.bignum
+)
 
 project.gradle.taskGraph.whenReady {
     tasks.getByName("testDebugUnitTest") {

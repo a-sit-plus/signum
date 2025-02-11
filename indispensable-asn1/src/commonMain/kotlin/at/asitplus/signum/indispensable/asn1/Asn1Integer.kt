@@ -6,6 +6,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.UVARINT_MASK_UBYTE
 import at.asitplus.signum.indispensable.asn1.encoding.UVARINT_SINGLEBYTE_MAXVALUE
 import at.asitplus.signum.indispensable.asn1.encoding.bitLength
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToAsn1Integer
+import at.asitplus.signum.indispensable.asn1.encoding.toTwosComplementByteArray
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import kotlinx.io.*
 import kotlinx.serialization.KSerializer
@@ -56,14 +57,12 @@ sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign): Asn1Encoda
         if (this === other) return true
         if (other !is Asn1Integer) return false
 
-        if (uint != other.uint) return false
         if (sign != other.sign) return false
-
-        return true
+        return (uint.isEqualTo(other.uint))
     }
 
     override fun hashCode(): Int {
-        var result = uint.hashCode()
+        var result = uint.words.contentHashCode()
         result = 31 * result + sign.hashCode()
         return result
     }
@@ -71,12 +70,12 @@ sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign): Asn1Encoda
     fun isZero() = uint.isZero()
 
     /** The minimum-size unsigned bytearray encoding of this number's absolute value. Non-empty. */
-    val magnitude by lazy { uint.bytes.toUByteArray().toByteArray() }
+    val magnitude by lazy { uint.bytes.asByteArray() }
 
     class Positive internal constructor(uint: VarUInt) : Asn1Integer(uint, Sign.POSITIVE) {
         override fun twosComplement(): ByteArray = uint.bytes.let {
             if (it.first().countLeadingZeroBits() == 0) listOf(0.toUByte()) + it else it
-        }.toUByteArray().toByteArray()
+        }.toUByteArray().asByteArray()
 
         /** The number of bits required to represent this value */
         fun bitLength() = uint.bitLength().toUInt()
@@ -96,7 +95,7 @@ sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign): Asn1Encoda
                 val list = if (diff == 0) it else (MutableList<UByte>(diff) { 0.toUByte() }) + it
                 if (list.first().toByte() >= 0) listOf((-1).toUByte()) + list
                 else it
-            }.toUByteArray().toByteArray()
+            }.toUByteArray().asByteArray()
         }
     }
 
@@ -145,27 +144,31 @@ sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign): Asn1Encoda
     }
 }
 
+// ?????????????????????????????????????????????????????????????????????????????????????????????
+// ??? WHY DOES THIS NOT EXIST IN THE STANDARD LIBRARY ????? ????? ????? ????? ????? ????? ?????
+// ?????????????????????????????????????????????????????????????????????????????????????????????
+private inline infix fun UByte.shr(bitCount: Int) =
+    (toUInt() shr bitCount).toUByte()
+
+private inline infix fun UByte.shl(bitCount: Int) =
+    (toUInt() shl bitCount).toUByte()
+
+private inline fun combine(highByte: UByte, lowByte: UByte, highBits: Int) =
+    ((highByte.toUInt() shl (8-highBits)) or (lowByte.toUInt() shr highBits)).toUByte()
+
+
 
 @JvmInline
-internal value class VarUInt(private val words: MutableList<UByte> = mutableListOf(0u)) {
-
-
-    constructor(uInt: UInt) : this(uInt.toString())
-    constructor(uLong: ULong) : this(uLong.toString())
-    constructor(uByte: UByte) : this(mutableListOf(uByte))
-    constructor(value: String) : this(value.parseAsBase10())
-    constructor(byteArray: ByteArray) : this(byteArray.map { it.toUByte() }.toMutableList())
+internal value class VarUInt private constructor(val words: UByteArray) {
 
     init {
-        trim()
+        check(!words.isEmpty())
+        check((words.size == 1) || (words.first() != 0x00u.toUByte()))
     }
 
-    val bytes: List<UByte> get() = words
+    inline fun isEqualTo(other: VarUInt) = (words contentEquals other.words)
 
-    private fun trim() {
-        if (words.isEmpty()) words.add(0u)
-        else words.apply { while (size > 1 && first() == 0.toUByte()) removeFirst() }
-    }
+    val bytes get() = words.copyOf()
 
     override fun toString() = words.iterator().toDecimalString()
     fun toHexString() = StringBuilder().apply {
@@ -178,63 +181,61 @@ internal value class VarUInt(private val words: MutableList<UByte> = mutableList
     infix fun and(other: VarUInt): VarUInt {
         val (shorter, longer) = if (other.words.size < words.size) other to this else this to other
         val diff = longer.words.size - shorter.words.size
-        return VarUInt(MutableList<UByte>(shorter.words.size) {
+        return constructFromUntrimmed(UByteArray(shorter.words.size) {
             shorter.words[it] and longer.words[it + diff]
-        }).apply { trim() }
+        }, isOwned = true)
     }
 
     infix fun or(other: VarUInt): VarUInt {
         val (shorter, longer) = if (other.words.size < words.size) other to this else this to other
         val diff = longer.words.size - shorter.words.size
-        return VarUInt(MutableList<UByte>(longer.words.size) {
+        return VarUInt(UByteArray(longer.words.size) {
             if (it >= diff) shorter.words[it - diff] or longer.words[it]
             else longer.words[it]
-        }).apply { trim() }
+        })
     }
 
     infix fun xor(other: VarUInt): VarUInt {
         val (shorter, longer) = if (other.words.size < words.size) other to this else this to other
         val diff = longer.words.size - shorter.words.size
-        return VarUInt(MutableList<UByte>(longer.words.size) {
+        return constructFromUntrimmed(UByteArray(longer.words.size) {
             if (it >= diff) shorter.words[it - diff] xor longer.words[it]
             else longer.words[it]
-        })
+        }, isOwned = true)
     }
 
     infix fun shl(offset: Int): VarUInt {
         require(offset >= 0) { "offset must be non-negative: $offset" }
-        if (offset == 0) return VarUInt(words.toMutableList())
-        val byteOffset = offset / 8
+        if ((offset == 0) || this.isZero()) return this
 
-        val bitOffset = offset % 8
-        val result = MutableList<UByte>(words.size + 1) { 0u }
-        result.indices.drop(1).forEach { index ->
-            val tmp = words[index - 1].toInt() shl bitOffset
-            val tmpH = (tmp ushr 8).toUByte()
-            val tmpL = tmp.toUByte()
-            result[index - 1] = result[index - 1] or tmpH
-            result[index] = tmpL
-        }
-        return VarUInt(result.apply { repeat(byteOffset) { add(0u) } })
+        val highWordBits = 8-(offset % 8)
+        if (highWordBits == 8) return VarUInt(words.copyOf(words.size + (offset/8)))
+
+        val newSize = words.size + (offset/8) + 1
+
+        return constructFromUntrimmed(UByteArray(newSize) { i ->
+            when {
+                i == 0 -> words[i] shr highWordBits
+                i < words.size -> combine(words[i-1], words[i], highWordBits)
+                i == words.size -> words[i-1] shl 8-highWordBits
+                else -> 0x00u
+            }
+        }, isOwned = true)
     }
 
     infix fun shr(offset: Int): VarUInt {
-        //we use it only internally require(offset >= 0) { "offset must be non-negative: $offset" }
-        if (offset == 0) return VarUInt(words.toMutableList())
-        val byteOffset = offset / 8
-        if (byteOffset >= words.size) return VarUInt()
+        require(offset >= 0) { "offset must be non-negative: $offset" }
+        if ((offset == 0) || this.isZero()) return this
 
-        val bitOffset = offset % 8
-        val dropped = words.dropLast(byteOffset).toMutableList()
+        val newSize = words.size - (offset / 8)
+        if (newSize <= 0) return ZERO
 
-        val result = MutableList<UByte>(dropped.size) { 0u }
-        result[result.lastIndex] = (dropped.last().toInt() ushr bitOffset).toUByte()
-        for (index in result.lastIndex - 1 downTo 0) {
-            val tmp = dropped[index].toInt() shl (8 - bitOffset)
-            result[index] = tmp.ushr(8).toUByte()
-            result[index + 1] = result[index + 1] or tmp.toUByte()
-        }
-        return VarUInt(result)
+        val highWordBits = offset % 8
+        if (highWordBits == 0) return VarUInt(words.copyOfRange(0, newSize))
+        return constructFromUntrimmed(UByteArray(newSize) { i -> when {
+            i > 0 -> combine(words[i-1], words[i], highWordBits)
+            else -> words[i] shr highWordBits
+        }}, true)
     }
 
     fun toAsn1VarInt(): ByteArray = throughBuffer { it.writeAsn1VarInt(this) }
@@ -243,7 +244,7 @@ internal value class VarUInt(private val words: MutableList<UByte> = mutableList
 
     fun bitLength(): Int = 8*(words.size-1) + words.first().bitLength
 
-    fun inv(): VarUInt = VarUInt(MutableList(words.size) { words[it].inv() })
+    fun inv(): VarUInt = constructFromUntrimmed(UByteArray(words.size) { words[it].inv() }, true)
 
 
     operator fun compareTo(byte: UByte): Int = if (words.size > 1) 1 else words.last().compareTo(byte)
@@ -260,6 +261,25 @@ internal value class VarUInt(private val words: MutableList<UByte> = mutableList
 
 
     companion object {
+        val ZERO = VarUInt(ubyteArrayOf(0x00u))
+
+        private fun constructFromUntrimmed(untrimmed: UByteArray, isOwned: Boolean): VarUInt {
+            val i = untrimmed.indexOfFirst { it != 0x00u.toUByte() }
+            return when {
+                (i == -1) -> ZERO
+                (i == 0 && isOwned) -> VarUInt(untrimmed)
+                else -> VarUInt(untrimmed.copyOfRange(i, untrimmed.size))
+            }
+        }
+
+        operator fun invoke(uByte: UByte = 0x00u) = constructFromUntrimmed(ubyteArrayOf(uByte), true)
+        operator fun invoke(value: String) = constructFromUntrimmed(value.parseAsBase10().toUByteArray(), true)
+        operator fun invoke(ubyteArray: UByteArray) = constructFromUntrimmed(ubyteArray, false)
+        operator fun invoke(byteArray: ByteArray) = constructFromUntrimmed(byteArray.asUByteArray(), false)
+        operator fun invoke(uLong: ULong) = constructFromUntrimmed(uLong.toTwosComplementByteArray().asUByteArray(), true)
+        operator fun invoke(uInt: UInt) = constructFromUntrimmed(uInt.toTwosComplementByteArray().asUByteArray(), true)
+
+        internal fun constructUnsafe(ownedArray: UByteArray) = constructFromUntrimmed(ownedArray, true)
 
         internal fun Sink.writeAsn1VarInt(number: VarUInt): Int {
             if (number.isZero()) {
@@ -277,29 +297,31 @@ internal value class VarUInt(private val words: MutableList<UByte> = mutableList
             return numBytes
         }
 
-        private fun String.parseAsBase10(): MutableList<UByte> {
+        private fun MutableList<Char>.divRem(d: Int) : Pair<MutableList<Char>, Int> {
+            val result = mutableListOf<Char>()
+            var residue = 0
+            // result * 256 + residue == (string[0..i])
+            for (char in this) {
+                val currentDigit = residue * 10 + char.digitToInt()
+                result.add((currentDigit / d).digitToChar()) // Append the quotient
+                residue = currentDigit % d // Update remainder
+            }
+            result.apply { while (isNotEmpty() && first() == '0') removeFirst() }
+            return Pair(result, residue)
+        }
+
+        private fun String.parseAsBase10(): UByteArray {
             if (!matches(REGEX_BASE10)) throw Asn1Exception("Illegal input!")
-            if (matches(REGEX_ZERO)) return mutableListOf(0u)
+            if (matches(REGEX_ZERO)) return ubyteArrayOf(0x00u)
             var currentValue = toMutableList()
             val byteList = mutableListOf<UByte>()
-            var resultBuffer = mutableListOf<Char>()
-            var residue: Int
             while ((currentValue.size > 1) || (currentValue.size == 1 && currentValue.first() != '0')) {
-                resultBuffer.clear()
-                residue = 0
-                for (char in currentValue) {
-                    val currentDigit = residue * 10 + char.digitToInt()
-                    resultBuffer.add((currentDigit / 256).digitToChar()) // Append the quotient
-                    residue = currentDigit % 256 // Update remainder
+                currentValue.divRem(256).let { (newValue, rem) ->
+                    currentValue = newValue
+                    byteList.add(rem.toUByte())
                 }
-                // swap
-                val tmp = currentValue
-                currentValue = resultBuffer.apply { while (isNotEmpty() && first() == '0') removeFirst() }
-                resultBuffer = tmp
-                //end swap
-                byteList.add(0, residue.toUByte())
             }
-            return byteList
+            return UByteArray(byteList.size) { byteList[byteList.size-it-1] }
         }
 
 

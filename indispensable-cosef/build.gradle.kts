@@ -64,7 +64,7 @@ exportIosFramework(
     kmmresult(),
     project(":indispensable"),
     project(":indispensable-asn1"),
-    libs.bignum
+    libs.bignum,
 )
 
 val javadocJar = setupDokka(

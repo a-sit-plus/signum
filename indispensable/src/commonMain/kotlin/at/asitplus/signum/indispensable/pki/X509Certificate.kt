@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.catching
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
@@ -235,7 +236,9 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     val tbsCertificate: TbsCertificate,
     val signatureAlgorithm: X509SignatureAlgorithm,
     val signature: CryptoSignature
-) : Asn1Encodable<Asn1Sequence> {
+) : PemEncodable<Asn1Sequence> {
+
+    override val canonicalPEMBoundary: String = EB_STRINGS.DEFAULT
 
     @Throws(Asn1Exception::class)
     override fun encodeToTlv() = Asn1.Sequence {
@@ -266,7 +269,12 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
 
     val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
 
-    companion object : Asn1Decodable<Asn1Sequence, X509Certificate> {
+    companion object : PemDecodable<Asn1Sequence, X509Certificate>(EB_STRINGS.DEFAULT, EB_STRINGS.LEGACY) {
+
+        private object EB_STRINGS {
+            const val DEFAULT = "CERTIFICATE"
+            const val LEGACY = "TRUSTED CERTIFICATE"
+        }
 
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): X509Certificate = runRethrowing {
@@ -282,19 +290,11 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
          * or by decoding from Base64, or by decoding to a String, stripping PEM headers
          * (`-----BEGIN CERTIFICATE-----`) and then decoding from Base64.
          */
-        fun decodeFromByteArray(src: ByteArray): X509Certificate? = catching {
+        fun decodeFromByteArray(src: ByteArray): X509Certificate? = catchingUnwrapped {
             X509Certificate.decodeFromTlv(Asn1Element.parse(src) as Asn1Sequence)
-        }.getOrNull() ?: catching {
+        }.getOrNull() ?: catchingUnwrapped {
             X509Certificate.decodeFromTlv(Asn1Element.parse(src.decodeToByteArray(Base64())) as Asn1Sequence)
-        }.getOrNull() ?: catching {
-            X509Certificate.decodeFromTlv(Asn1Element.parse(src.decodeX5c()) as Asn1Sequence)
-        }.getOrNull()
-
-        private fun ByteArray.decodeX5c() = decodeToString()
-            .replace("-----BEGIN CERTIFICATE-----\n", "")
-            .replace("\n-----END CERTIFICATE-----", "")
-            .decodeToByteArray(Base64())
-
+        }.getOrNull() ?: X509Certificate.decodeFromPem(src.decodeToString()).getOrNull()
     }
 }
 

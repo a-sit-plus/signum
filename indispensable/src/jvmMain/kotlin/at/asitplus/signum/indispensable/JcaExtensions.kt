@@ -271,17 +271,11 @@ fun CryptoPrivateKey.EC.WithPublicKey.toJcaPrivateKey(): KmmResult<ECPrivateKey>
 fun CryptoPrivateKey.RSA.toJcaPrivateKey(): KmmResult<RSAPrivateKey> =
     (this as CryptoPrivateKey.WithPublicKey<*>).toJcaPrivateKey().mapCatching { it as RSAPrivateKey }
 
-fun PrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> = catching {
-    CryptoPrivateKey.decodeFromDer(encoded) as CryptoPrivateKey.WithPublicKey<*>
-}
+fun PrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.WithPublicKey<*>> =
+    CryptoPrivateKey.decodeFromDerSafe(encoded).mapCatching { it as CryptoPrivateKey.WithPublicKey<*> }
 
-fun ECPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicKey> = catching {
-    CryptoPrivateKey.decodeFromDer(encoded) as CryptoPrivateKey.EC.WithPublicKey
-}
+fun ECPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicKey> =
+    CryptoPrivateKey.EC.decodeFromDerSafe(encoded).mapCatching { it as CryptoPrivateKey.EC.WithPublicKey }
 
-fun RSAPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.RSA> = catching {
-    CryptoPrivateKey.decodeFromDer(encoded) as CryptoPrivateKey.RSA
-}
-
-
-
+fun RSAPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.RSA> =
+    CryptoPrivateKey.RSA.decodeFromDerSafe(encoded)
