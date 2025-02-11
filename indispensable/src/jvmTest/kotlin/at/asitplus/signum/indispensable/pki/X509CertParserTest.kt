@@ -1,8 +1,11 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.Asn1Sequence
+import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.asn1.encoding.readAsn1Element
+import at.asitplus.signum.indispensable.asn1.wrapInUnsafeSource
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
@@ -23,7 +26,6 @@ import java.io.File
 import java.io.FileReader
 import java.io.InputStream
 import java.security.cert.CertificateFactory
-import java.util.*
 import kotlin.random.Random
 import kotlin.random.nextInt
 import java.security.cert.X509Certificate as JcaCertificate
@@ -143,6 +145,12 @@ class X509CertParserTest : FreeSpec({
                 val src = Asn1Element.parse(it.second) as Asn1Sequence
                 val decoded = X509Certificate.decodeFromTlv(src)
                 decoded shouldBe X509Certificate.decodeFromByteArray(it.second)
+
+                if (it.first != "ok-uniqueid-incomplete-byte.der") { // ignore incomplete unique id
+                    withClue(decoded.encodeToPEM().getOrNull()) {
+                        decoded.encodeToDer() shouldBe it.second
+                    }
+                }
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
                 val bytes = (it.second + garbage).wrapInUnsafeSource()

@@ -4,6 +4,8 @@
 
 ### NEXT
 
+ * Parse X.509 certificates in V1 too
+
 ### 3.13.0 (Supreme 0.6.4)
 
 * Fix COSE key serialization
