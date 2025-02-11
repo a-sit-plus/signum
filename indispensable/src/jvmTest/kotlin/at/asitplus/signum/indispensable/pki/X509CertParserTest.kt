@@ -125,7 +125,7 @@ class X509CertParserTest : FreeSpec({
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
                 val bytes = (crt.encoded + garbage).wrapInUnsafeSource()
-                bytes.readAsn1Element().let { (parsed,_) ->
+                bytes.readAsn1Element().let { (parsed, _) ->
                     parsed.derEncoded shouldBe own
                     bytes.readByteArray() shouldBe garbage
                 }
@@ -146,15 +146,13 @@ class X509CertParserTest : FreeSpec({
                 val decoded = X509Certificate.decodeFromTlv(src)
                 decoded shouldBe X509Certificate.decodeFromByteArray(it.second)
 
-                if (it.first != "ok-uniqueid-incomplete-byte.der") { // ignore incomplete unique id
-                    withClue(decoded.encodeToPEM().getOrNull()) {
-                        decoded.encodeToDer() shouldBe it.second
-                    }
+                withClue(decoded.encodeToPEM().getOrNull()) {
+                    decoded.encodeToDer() shouldBe it.second
                 }
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
                 val bytes = (it.second + garbage).wrapInUnsafeSource()
-                bytes.readAsn1Element().let { (parsed,_) ->
+                bytes.readAsn1Element().let { (parsed, _) ->
                     parsed.derEncoded shouldBe it.second
                     bytes.readByteArray() shouldBe garbage
                 }
@@ -198,7 +196,7 @@ class X509CertParserTest : FreeSpec({
 
                 val garbage = Random.nextBytes(Random.nextInt(0..128))
                 val input = (jcaCert.encoded + garbage).wrapInUnsafeSource()
-                input.readAsn1Element().let { (parsed,_) ->
+                input.readAsn1Element().let { (parsed, _) ->
                     parsed.derEncoded shouldBe jcaCert.encoded
                     input.readByteArray() shouldBe garbage
                 }

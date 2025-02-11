@@ -4,7 +4,9 @@
 
 ### NEXT
 
- * Parse X.509 certificates in V1 too
+* Certificate Improvements:
+    * Parse X.509 certificates in V1 too
+    * Change UniqueIDs from BitSet to `Asn1BitString`, enabling correct encoding of borked bit strings 
 
 ### 3.13.0 (Supreme 0.6.4)
 
