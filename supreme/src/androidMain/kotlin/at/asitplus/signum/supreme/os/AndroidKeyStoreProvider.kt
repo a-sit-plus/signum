@@ -157,7 +157,10 @@ object AndroidKeyStoreProvider:
         val config = DSL.resolve(::AndroidSigningKeyConfiguration, configure)
         val spec = KeyGenParameterSpec.Builder(
             alias,
-            KeyProperties.PURPOSE_SIGN
+            config._algSpecific.v.let {
+                (if (it.allowsSigning) KeyProperties.PURPOSE_SIGN else 0) or
+                (if (it.allowsKeyAgreement) KeyProperties.PURPOSE_AGREE_KEY else 0)
+            }
         ).apply {
             when(val algSpec = config._algSpecific.v) {
                 is SigningKeyConfiguration.RSAConfiguration -> {
@@ -290,7 +293,7 @@ sealed class AndroidKeystoreSigner private constructor(
     internal val jcaPrivateKey: PrivateKey,
     final override val alias: String,
     val keyInfo: KeyInfo,
-    private val config: AndroidSignerConfiguration,
+    protected val config: AndroidSignerConfiguration,
     final override val attestation: AndroidKeystoreAttestation?
 ) : PlatformSigningProviderSigner<AndroidSignerSigningConfiguration, AndroidKeystoreAttestation> {
 
@@ -304,7 +307,7 @@ sealed class AndroidKeystoreSigner private constructor(
         data class Error(val code: Int, val message: String): AuthResult
     }
 
-    private suspend fun attemptBiometry(config: DSL.ConfigStack<AndroidUnlockPromptConfiguration>, forSpecificKey: CryptoObject?) {
+    protected suspend fun attemptBiometry(config: DSL.ConfigStack<AndroidUnlockPromptConfiguration>, forSpecificKey: CryptoObject?) {
         val channel = Channel<AuthResult>(capacity = Channel.RENDEZVOUS)
         val effectiveContext = config.getProperty(AndroidUnlockPromptConfiguration::explicitContext,
             checker = AndroidUnlockPromptConfiguration::hasExplicitContext, default = {
@@ -398,7 +401,27 @@ sealed class AndroidKeystoreSigner private constructor(
                                      override val publicKey: CryptoPublicKey.EC,
                                      attestation: AndroidKeystoreAttestation?,
                                      override val signatureAlgorithm: SignatureAlgorithm.ECDSA)
-        : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, config, attestation), SignerI.ECDSA
+        : AndroidKeystoreSigner(jcaPrivateKey, alias, keyInfo, config, attestation),
+        PlatformSigningProviderSigner.ECDSA<AndroidSignerSigningConfiguration, AndroidKeystoreAttestation>
+    {
+        override suspend fun keyAgreement(
+            publicValue: KeyAgreementPublicValue.ECDH,
+            configure: DSLConfigureFn<AndroidSignerSigningConfiguration>
+        ) = catching {
+            val signingConfig = DSL.resolve(::AndroidSignerSigningConfiguration, configure)
+            javax.crypto.KeyAgreement.getInstance("ECDH", "AndroidKeyStore").run {
+                //Android bug here: impossible to do for auth-on-every use keys. Earliest possible fix: Android 16, if ever
+                try {
+                    init(jcaPrivateKey)
+                } catch (_: UserNotAuthenticatedException) {
+                    attemptBiometry(DSL.ConfigStack(signingConfig.unlockPrompt.v, config.unlockPrompt.v), null)
+                    init(jcaPrivateKey)
+                }
+                doPhase(publicValue.asCryptoPublicKey().toJcaPublicKey().getOrThrow(), true)
+                generateSecret()
+            }
+        }
+    }
 
     class RSA internal constructor(jcaPrivateKey: PrivateKey,
                                    alias: String,

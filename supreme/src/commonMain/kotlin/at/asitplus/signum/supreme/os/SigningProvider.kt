@@ -4,6 +4,7 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.Attestation
 import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.dsl.DISCOURAGED
@@ -67,7 +68,46 @@ open class PlatformSigningKeyConfigurationBase<SignerConfigurationT: PlatformSig
 
     /** Require that this key is stored in some kind of hardware-backed storage, such as Android Keymaster or Apple Secure Enclave. */
     open val hardware = childOrNull(::SecureHardwareConfiguration)
+
+    open class RSAPurposeConfiguration internal constructor(): DSL.Data() {
+        /** Whether this key can be used for signing data */
+        var signing = true
+    }
+
+    open class RSAConfiguration internal constructor(): SigningKeyConfiguration.RSAConfiguration() {
+        open val purposes = childOrDefault(::RSAPurposeConfiguration)
+    }
+
+    override val rsa = _algSpecific.option(::RSAConfiguration)
+
+
+    open class ECPurposeConfiguration internal constructor(): DSL.Data() {
+        /** Whether this key can be used for signing data */
+        var signing = true
+        /** Whether this key can be used for ECDH key agreement */
+        var keyAgreement = false
+    }
+
+    open class ECConfiguration internal constructor(): SigningKeyConfiguration.ECConfiguration() {
+        open val purposes = childOrDefault(::ECPurposeConfiguration)
+    }
+
+    override val ec = _algSpecific.option(::ECConfiguration)
 }
+
+internal inline val SigningKeyConfiguration.AlgorithmSpecific.allowsSigning get() =
+    when (this) {
+        is PlatformSigningKeyConfigurationBase.ECConfiguration -> this.purposes.v.signing
+        is PlatformSigningKeyConfigurationBase.RSAConfiguration -> this.purposes.v.signing
+        else -> true
+    }
+
+internal inline val SigningKeyConfiguration.AlgorithmSpecific.allowsKeyAgreement get() =
+    when (this) {
+        is PlatformSigningKeyConfigurationBase.ECConfiguration -> this.purposes.v.keyAgreement
+        is SigningKeyConfiguration.ECConfiguration -> true
+        else -> false
+    }
 
 open class ECSignerConfiguration internal constructor(): DSL.Data() {
     /**
@@ -155,6 +195,14 @@ interface PlatformSigningProviderSigner
     override suspend fun sign(data: SignatureInput) = sign(data, null)
     override suspend fun sign(data: ByteArray) = sign(SignatureInput(data), null)
     override suspend fun sign(data: Sequence<ByteArray>) = sign(SignatureInput(data), null)
+
+    interface ECDSA
+    <SigningConfiguration: PlatformSigningProviderSignerSigningConfigurationBase, AttestationT: Attestation>
+        : PlatformSigningProviderSigner<SigningConfiguration, AttestationT>, Signer.ECDSA
+    {
+        suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH, configure: DSLConfigureFn<SigningConfiguration> = null): KmmResult<ByteArray>
+        override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH) = keyAgreement(publicValue, null)
+    }
 }
 
 open class PlatformSigningProviderConfigurationBase internal constructor(): DSL.Data()

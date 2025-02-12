@@ -259,7 +259,9 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
     data class EC private constructor(
         val publicPoint: ECPoint.Normalized,
         val preferCompressedRepresentation: Boolean = true
-    ) : CryptoPublicKey() {
+    ) : CryptoPublicKey(), KeyAgreementPublicValue.ECDH {
+
+        override fun asCryptoPublicKey() = this
 
         override val canonicalPEMBoundary: String = PEM_BOUNDARY
 

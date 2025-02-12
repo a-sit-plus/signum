@@ -7,13 +7,16 @@
 * Certificate Improvements:
     * Parse X.509 certificates in V1 too
     * Change UniqueIDs from BitSet to `Asn1BitString`, enabling correct encoding of borked bit strings 
+* Change variance of generic on `Asn1Encodable` and `Asn1Decodable`
+* **Key Agreement Support**
+    * ECDH
 
 ### 3.13.0 (Supreme 0.6.4)
 
 * Fix COSE key serialization
 * Refactor `Asn1Integer` to use `UByteArray` internally instead of a list
 * Fix ASN.1 decoding flaw for a very specific length encoding
-* Performance optimization: Instantiate fewer `KmmResults`
+* Performance optimization: Instantiate fewer `KmmResult`s
 * Move `PemEncodable`/`PemDecodable` from _indispensable_ to _indispensable-asn1_ module.
 * More comprehensive PEM encoding/decoding support:
     * `CryptoPublicKey`

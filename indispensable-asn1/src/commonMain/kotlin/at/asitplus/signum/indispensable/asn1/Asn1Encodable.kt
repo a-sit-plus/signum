@@ -11,7 +11,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.parse
 /**
  * Interface providing methods to encode to ASN.1
  */
-interface Asn1Encodable<A : Asn1Element> {
+interface Asn1Encodable<out A : Asn1Element> {
 
     /**
      * Encodes the implementing object into an [A]
@@ -72,7 +72,7 @@ interface Asn1Encodable<A : Asn1Element> {
  * Interface providing convenience methods to decode from ASN.1.
  * Especially useful when companion objects of classes implementing [Asn1Encodable] implement it.
  */
-interface Asn1Decodable<A : Asn1Element, T : Asn1Encodable<A>> {
+interface Asn1Decodable<A : Asn1Element, out T : Asn1Encodable<A>> {
     /**
      * Processes an [A], parsing it into an instance of [T]
      * @throws Asn1Exception if invalid data is provided.
