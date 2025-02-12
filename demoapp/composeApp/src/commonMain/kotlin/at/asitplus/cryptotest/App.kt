@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -46,28 +45,26 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.SpecializedSignatureAlgorithm
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.nativeDigest
+import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.supreme.dsl.PREFERRED
 import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.supreme.sign.makeVerifier
 import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.cryptotest.theme.AppTheme
 import at.asitplus.cryptotest.theme.LocalThemeIsDark
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
 import at.asitplus.signum.indispensable.jsonEncoded
-import at.asitplus.signum.supreme.SecretExposure
-import at.asitplus.signum.supreme.agree.Ephemeral
 import at.asitplus.signum.supreme.asKmmResult
 import at.asitplus.signum.supreme.os.PlatformSignerConfigurationBase
+import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase
+import at.asitplus.signum.supreme.os.PlatformSigningProvider
 import at.asitplus.signum.supreme.os.SignerConfiguration
 import at.asitplus.signum.supreme.os.SigningProvider
 import at.asitplus.signum.supreme.sign.Verifier
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
-import io.ktor.util.encodeBase64
+import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -100,10 +97,7 @@ private class getter<T>(private val fn: () -> T) {
     operator fun getValue(nothing: Nothing?, property: KProperty<*>): T = fn()
 }
 
-@OptIn(
-    ExperimentalCoroutinesApi::class,
-    SecretExposure::class
-)
+@OptIn(ExperimentalStdlibApi::class, ExperimentalCoroutinesApi::class)
 @Composable
 internal fun App() {
 
@@ -120,7 +114,7 @@ internal fun App() {
             X509SignatureAlgorithm.RS512
         )
         var keyAlgorithm by remember {
-            mutableStateOf<SpecializedSignatureAlgorithm>(
+            mutableStateOf<X509SignatureAlgorithm>(
                 X509SignatureAlgorithm.ES256
             )
         }
@@ -143,12 +137,6 @@ internal fun App() {
         }
         val signingPossible by getter { currentKey?.isSuccess == true }
         var signatureData by remember { mutableStateOf<KmmResult<CryptoSignature>?>(null) }
-        var ephemeralKey by remember {
-            mutableStateOf<KeyAgreementPrivateValue.ECDH?>(
-                null
-            )
-        }
-        var agreedKey by remember { mutableStateOf<KmmResult<ByteArray>?>(null) }
         val signatureDataStr by getter {
             signatureData?.fold(onSuccess = Any::toString) {
                 Napier.e("Signature failed", it)
@@ -168,14 +156,6 @@ internal fun App() {
 
         var genTextOverride by remember { mutableStateOf<String?>(null) }
         val genText by getter { genTextOverride ?: "Generate" }
-
-        fun genEphemeralKey(){
-            ephemeralKey = if (currentKey?.getOrNull() is CryptoPublicKey.EC)
-                KeyAgreementPrivateValue.ECDH.Ephemeral((currentKey!!.getOrThrow() as CryptoPublicKey.EC).curve).getOrNull()
-                else null
-            agreedKey=null
-        }
-
 
         Column(
             modifier = Modifier.fillMaxSize().verticalScroll(ScrollState(0), enabled = true)
@@ -327,16 +307,12 @@ internal fun App() {
                             canGenerate = false
                             genTextOverride = "Creating…"
                             currentSigner = Provider.createSigningKey(ALIAS) {
-
                                 when (val alg = keyAlgorithm.algorithm) {
                                     is SignatureAlgorithm.ECDSA -> {
                                         this@createSigningKey.ec {
-                                            curve = alg.requiredCurve
-                                                ?: ECCurve.entries.find { it.nativeDigest == alg.digest }!!
+                                            curve = alg.requiredCurve ?:
+                                                    ECCurve.entries.find { it.nativeDigest == alg.digest }!!
                                             digests = setOf(alg.digest)
-                                            purposes {
-                                                keyAgreement = true
-                                            }
                                         }
                                     }
 
@@ -351,27 +327,29 @@ internal fun App() {
                                     else -> error("unreachable")
                                 }
 
-                                signer(SIGNER_CONFIG)
+                                if (this is PlatformSigningKeyConfigurationBase) {
+                                    signer(SIGNER_CONFIG)
 
-                                val timeout = runCatching {
-                                    biometricAuth.substringBefore("s").trim().toInt()
-                                }.getOrNull()
+                                    val timeout = runCatching {
+                                        biometricAuth.substringBefore("s").trim().toInt()
+                                    }.getOrNull()
 
-                                if (attestation || timeout != null) {
-                                    hardware {
-                                        backing = PREFERRED
-                                        if (attestation) {
-                                            attestation {
-                                                challenge = Random.nextBytes(16)
+                                    if (attestation || timeout != null) {
+                                        hardware {
+                                            backing = PREFERRED
+                                            if (attestation) {
+                                                attestation {
+                                                    challenge = Random.nextBytes(16)
+                                                }
                                             }
-                                        }
 
-                                        if (timeout != null) {
-                                            protection {
-                                                this.timeout = timeout.seconds
-                                                factors {
-                                                    biometry = true
-                                                    deviceLock = true
+                                            if (timeout != null) {
+                                                protection {
+                                                    this.timeout = timeout.seconds
+                                                    factors {
+                                                        biometry = true
+                                                        deviceLock = true
+                                                    }
                                                 }
                                             }
                                         }
@@ -384,8 +362,6 @@ internal fun App() {
                             Napier.w { "Signing possible: ${currentKey?.isSuccess}" }
                             canGenerate = true
                             genTextOverride = null
-
-                            genEphemeralKey()
                         }
                     },
                     modifier = Modifier.padding(start = 16.dp)
@@ -409,7 +385,6 @@ internal fun App() {
                             //loadPubKey().let { Napier.w { "PubKey retrieved from native: $it" } }
                             canGenerate = true
                             genTextOverride = null
-                            genEphemeralKey()
                         }
                     },
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp)
@@ -457,6 +432,7 @@ internal fun App() {
 
             Button(
                 onClick = {
+
                     Napier.w { "input: $inputData" }
                     Napier.w { "signingKey: $currentKey" }
                     CoroutineScope(context).launch {
@@ -465,61 +441,13 @@ internal fun App() {
                             .transform { it.sign(data).asKmmResult() }
                             .also { signatureData = it; verifyState = null }
                     }
+
                 },
-                modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 enabled = signingPossible
-            ) { Text("Sign") }
-
-            if (signingPossible && (currentKey?.getOrNull() is CryptoPublicKey.EC)) {
-                Napier.i { "Ephemeral key: $ephemeralKey" }
-                Spacer(Modifier.height(8.dp))
-                ephemeralKey?.let { ephemeralKey ->
-                    OutlinedTextField(value = ephemeralKey.publicValue.toString(),
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        minLines = 1,
-                        textStyle = TextStyle.Default.copy(fontSize = 10.sp),
-                        readOnly = true,
-                        onValueChange = {},
-                        label = { Text("Random faux-external key for ECDH") })
-                    Button(
-                        onClick = {
-                            Napier.w { "input: $inputData" }
-                            Napier.w { "signingKey: $currentKey" }
-                            CoroutineScope(context).launch {
-
-                                agreedKey =
-                                    (currentSigner!!.getOrThrow() as Signer.ECDSA).keyAgreement(
-                                        ephemeralKey.publicValue
-                                    )
-                                Napier.i {
-                                    "ECDH Key of ext_piv + hardware-backed_pub: ${
-                                        agreedKey?.getOrNull()?.encodeBase64()
-                                    }"
-                                }
-
-                                Napier.i {
-                                    "ECDH Key of ext_pub + hardware-backed_priv: ${
-                                        agreedKey?.getOrNull()?.encodeBase64()
-                                    }"
-                                }
-                            }
-
-                        },
-                        modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
-                    ) { Text("Perform ECDH key agreement") }
-                }
-
-                if (agreedKey != null) {
-                    OutlinedTextField(value =
-                    "Computed from ext_pub + hardware-backed_priv:\n" + agreedKey?.map { it.encodeBase64() }
-                        ?.getOrElse { it.message ?: it::class.simpleName ?: "" },
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        minLines = 1,
-                        textStyle = TextStyle.Default.copy(fontSize = 10.sp),
-                        readOnly = true,
-                        onValueChange = {},
-                        label = { Text("Agreed-upon secret") })
-                }
+            ) {
+                Text("Sign")
             }
 
             if (signatureData != null) {

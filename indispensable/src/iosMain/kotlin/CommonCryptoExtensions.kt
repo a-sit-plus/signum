@@ -40,12 +40,7 @@ val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm
             }
         }
 
-        is SignatureAlgorithm.HMAC -> TODO("HMAC is unsupported")
     }!!
-
-val SpecializedSignatureAlgorithm.secKeyAlgorithm
-    get() =
-        this.algorithm.secKeyAlgorithm
 
 val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm
     get() = when (this) {
@@ -77,17 +72,16 @@ val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm
             }
         }
 
-        is SignatureAlgorithm.HMAC -> TODO("HMAC is unsupported")
     }!!
 
-val SpecializedSignatureAlgorithm.secKeyAlgorithmPreHashed
+val X509SignatureAlgorithm.secKeyAlgorithmPreHashed
     get() =
         this.algorithm.secKeyAlgorithmPreHashed
 
 val CryptoSignature.iosEncoded
     get() = when (this) {
         is CryptoSignature.EC -> this.encodeToDer()
-        is CryptoSignature.RSAorHMAC -> this.rawByteArray
+        is CryptoSignature.RSA -> this.rawByteArray
     }
 
 fun CryptoPublicKey.toSecKey() = catching {
