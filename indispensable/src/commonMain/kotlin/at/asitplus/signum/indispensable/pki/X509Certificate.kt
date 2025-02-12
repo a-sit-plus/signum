@@ -1,13 +1,14 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
+import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.EXTENSIONS
@@ -15,8 +16,10 @@ import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.ISSUER
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.SUBJECT_UID
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
+import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import kotlinx.serialization.builtins.serializer
 
 /**
  * Very simple implementation of the meat of an X.509 Certificate:
@@ -26,7 +29,7 @@ import kotlinx.serialization.Transient
 data class TbsCertificate
 @Throws(Asn1Exception::class)
 constructor(
-    val version: Int = 2,
+    val version: Int? = 2,
     @Serializable(with = ByteArrayBase64Serializer::class) val serialNumber: ByteArray,
     val signatureAlgorithm: X509SignatureAlgorithm,
     val issuerName: List<RelativeDistinguishedName>,
@@ -34,9 +37,11 @@ constructor(
     val validUntil: Asn1Time,
     val subjectName: List<RelativeDistinguishedName>,
     val publicKey: CryptoPublicKey,
-    val issuerUniqueID: BitSet? = null,
-    val subjectUniqueID: BitSet? = null,
-    val extensions: List<X509CertificateExtension>? = null
+    @Serializable(with = Asn1TimeSerializer::class)
+    val issuerUniqueID: Asn1BitString? = null,
+    @Serializable(with = Asn1TimeSerializer::class)
+    val subjectUniqueID: Asn1BitString? = null,
+    val extensions: List<X509CertificateExtension>? = null,
 ) : Asn1Encodable<Asn1Sequence> {
 
     init {
@@ -68,7 +73,7 @@ constructor(
     @Throws(Asn1Exception::class)
     override fun encodeToTlv() = runRethrowing {
         Asn1.Sequence {
-            +Version(version)
+            version?.let { +Version(it) }
             +Asn1Primitive(Asn1Element.Tag.INT, serialNumber)
             +signatureAlgorithm
             +Asn1.Sequence { issuerName.forEach { +it } }
@@ -83,8 +88,8 @@ constructor(
             //subject public key
             +publicKey
 
-            issuerUniqueID?.let { +(Asn1BitString(it) withImplicitTag ISSUER_UID) }
-            subjectUniqueID?.let { +(Asn1BitString(it) withImplicitTag SUBJECT_UID) }
+            issuerUniqueID?.let { +(it withImplicitTag ISSUER_UID) }
+            subjectUniqueID?.let { +(it withImplicitTag SUBJECT_UID) }
 
             extensions?.let {
                 if (it.isNotEmpty()) {
@@ -120,7 +125,7 @@ constructor(
     }
 
     override fun hashCode(): Int {
-        var result = version
+        var result = version?.hashCode() ?: 0
         result = 31 * result + serialNumber.contentHashCode()
         result = 31 * result + signatureAlgorithm.hashCode()
         result = 31 * result + issuerName.hashCode()
@@ -145,8 +150,13 @@ constructor(
 
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence) = runRethrowing {
-            val version = src.nextChild().let {
-                ((it as Asn1ExplicitlyTagged).verifyTag(Tags.VERSION).single() as Asn1Primitive).decodeToInt()
+            val version = src.peek().let {
+                if (it is Asn1ExplicitlyTagged) {
+                    (it.verifyTag(Tags.VERSION).single() as Asn1Primitive).decodeToInt()
+                        .also { src.nextChild() } // actually read it, so next child is serial number
+                } else {
+                    null
+                }
             }
             val serialNumber = (src.nextChild() as Asn1Primitive).decode(Asn1Element.Tag.INT) { it }
             val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
@@ -190,8 +200,8 @@ constructor(
                 validUntil = timestamps.second,
                 subjectName = subject,
                 publicKey = cryptoPublicKey,
-                issuerUniqueID = issuerUniqueID?.toBitSet(),
-                subjectUniqueID = subjectUniqueID?.toBitSet(),
+                issuerUniqueID = issuerUniqueID,
+                subjectUniqueID = subjectUniqueID,
                 extensions = extensions,
             )
         }
@@ -235,7 +245,7 @@ fun CryptoSignature.Companion.fromX509Encoded(alg: X509SignatureAlgorithm, it: A
 data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     val tbsCertificate: TbsCertificate,
     val signatureAlgorithm: X509SignatureAlgorithm,
-    val signature: CryptoSignature
+    val signature: CryptoSignature,
 ) : PemEncodable<Asn1Sequence> {
 
     override val canonicalPEMBoundary: String = EB_STRINGS.DEFAULT
@@ -302,3 +312,14 @@ typealias CertificateChain = List<X509Certificate>
 
 val CertificateChain.leaf: X509Certificate get() = first()
 val CertificateChain.root: X509Certificate get() = last()
+
+private
+/** De-/serializes Base64 strings to/from [ByteArray] */
+object Asn1BitStringSerializer : TransformingSerializerTemplate<Asn1BitString?, String>(
+    parent = String.serializer(),
+    encodeAs = { if (it == null) "" else byteArrayOf(it.numPaddingBits, *it.rawBytes).encodeToString(Base64Strict) },
+    decodeAs = {
+        if (it == "") null
+        else Asn1BitString.decodeFromTlv(Asn1Primitive(Asn1Element.Tag.BIT_STRING, it.decodeToByteArray(Base64Strict)))
+    }
+)
