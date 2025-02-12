@@ -101,7 +101,6 @@ android {
 }
 
 
-
 compose.desktop {
     application {
         mainClass = "at.asitplus.cryptotest.MainKt"
