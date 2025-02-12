@@ -329,7 +329,7 @@ You can also further configure the verifier, for example to specify the `provide
 To do this, pass a DSL configuration lambda to `verifierFor`/`platformVerifierFor`.
 
 There really is not much more to it. This pattern works the same on all platforms.
-Details on how to parse cryptographic material can be found in the [section on decoding](indispensable.md#decoding) in
+Details on how to parse cryptographic material can be found in the [section on decoding](indispensable.md#asn1-engine-addons) in
 of the Indispensable module description.
 
 
