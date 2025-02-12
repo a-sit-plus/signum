@@ -13,7 +13,9 @@ class Asn1TagMismatchException(val expected: Asn1Element.Tag, val actual: Asn1El
 
 class Asn1StructuralException(message: String, cause: Throwable? = null) : Asn1Exception(message, cause)
 
-class Asn1OidException(message: String, val oid: ObjectIdentifier) : Asn1Exception(message)
+class Asn1OidException(message: String, val oid: ObjectIdentifier) : Asn1Exception(message){
+    constructor(oid: ObjectIdentifier):this("Unknown oid $oid", oid)
+}
 
 /**
  * Runs [block] inside [catching] and encapsulates any thrown exception in an [Asn1Exception] unless it already is one
