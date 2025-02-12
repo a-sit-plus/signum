@@ -35,7 +35,7 @@ suspend fun KeyAgreementPrivateValue.keyAgreement(publicValue: KeyAgreementPubli
 suspend fun CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>.keyAgreement(publicValue: KeyAgreementPublicValue) =
     (this as KeyAgreementPrivateValue.ECDH).keyAgreement(publicValue)
 
-    suspend fun KeyAgreementPublicValue.keyAgreement(privateValue: KeyAgreementPrivateValue) =
+suspend fun KeyAgreementPublicValue.keyAgreement(privateValue: KeyAgreementPrivateValue) =
     privateValue.keyAgreement(this)
 
 /**
