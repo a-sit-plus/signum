@@ -16,7 +16,7 @@
 * Fix COSE key serialization
 * Refactor `Asn1Integer` to use `UByteArray` internally instead of a list
 * Fix ASN.1 decoding flaw for a very specific length encoding
-* Performance optimization: Instantiate fewer KmmResults
+* Performance optimization: Instantiate fewer `KmmResult`s
 * Move `PemEncodable`/`PemDecodable` from _indispensable_ to _indispensable-asn1_ module.
 * More comprehensive PEM encoding/decoding support:
     * `CryptoPublicKey`
