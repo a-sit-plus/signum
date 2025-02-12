@@ -149,9 +149,11 @@ If you want to use a hardware-backed key for key agreement, you need to specify 
 
 ```kotlin
 Provider.createSigningKey(ALIAS) {
-    purposes {
-        keyAgreement = true //defaults to false
-        signing = true //defaults to true, no impact on key agreement
+    ec {
+        purposes {
+            keyAgreement = true //defaults to false
+            signing = true //defaults to true, no impact on key agreement
+        } 
     }
 }
 ```
@@ -161,8 +163,7 @@ Provider.createSigningKey(ALIAS) {
     Regenerate such keys, if you want to use them for key agreement!
 
 On Android, key usage purposes are enforced by hardware, on iOS this enforcement is done in software. On the JVM, no strict checks are enforced
-(but this may change in the future). Also note that the `keyAgreement` purpose currently only makes sense for EC keys,
-hence specifying it for RSA keys will lead to failure on iOS and Android.
+(but this may change in the future). Also note that only EC key agreement is currently supported. Hence, the `keyAgreement` purpose can only be set for EC keys!
 
 
 #### iOS and Android
