@@ -18,17 +18,12 @@ import kotlinx.serialization.encoding.Encoder
 enum class X509SignatureAlgorithm(
     override val oid: ObjectIdentifier,
     val isEc: Boolean = false
-) : Asn1Encodable<Asn1Sequence>, Identifiable, SpecializedSignatureAlgorithm {
+) : Asn1Encodable<Asn1Sequence>, Identifiable, SpecializedDataIntegrityAlgorithm {
 
     // ECDSA with SHA-size
     ES256(KnownOIDs.ecdsaWithSHA256, true),
     ES384(KnownOIDs.ecdsaWithSHA384, true),
     ES512(KnownOIDs.ecdsaWithSHA512, true),
-
-    // HMAC-size with SHA-size
-    HS256(KnownOIDs.hmacWithSHA256),
-    HS384(KnownOIDs.hmacWithSHA384),
-    HS512(KnownOIDs.hmacWithSHA512),
 
     // RSASSA-PSS with SHA-size
     PS256(KnownOIDs.rsaPSS),
@@ -84,7 +79,6 @@ enum class X509SignatureAlgorithm(
 
         PS512 -> encodePSSParams(512)
 
-        HS256, HS384, HS512,
         RS256, RS384, RS512, RS1 -> Asn1.Sequence {
             +oid
             +Null()
@@ -93,15 +87,14 @@ enum class X509SignatureAlgorithm(
 
     val digest: Digest get() = when(this) {
         RS1 -> Digest.SHA1
-        ES256, HS256, PS256, RS256 -> Digest.SHA256
-        ES384, HS384, PS384, RS384 -> Digest.SHA384
-        ES512, HS512, PS512, RS512 -> Digest.SHA512
+        ES256, PS256, RS256 -> Digest.SHA256
+        ES384, PS384, RS384 -> Digest.SHA384
+        ES512, PS512, RS512 -> Digest.SHA512
     }
 
     override val algorithm: SignatureAlgorithm
         get() = when(this) {
         ES256, ES384, ES512 -> SignatureAlgorithm.ECDSA(this.digest, null)
-        HS256, HS384, HS512 -> SignatureAlgorithm.HMAC(this.digest)
         PS256, PS384, PS512 -> SignatureAlgorithm.RSA(this.digest, RSAPadding.PSS)
         RS1, RS256, RS384, RS512 -> SignatureAlgorithm.RSA(this.digest, RSAPadding.PKCS1)
     }
@@ -119,8 +112,7 @@ enum class X509SignatureAlgorithm(
                 ES512.oid, ES384.oid, ES256.oid -> fromOid(oid)
 
                 RS1.oid -> RS1
-                RS256.oid, RS384.oid, RS512.oid,
-                HS256.oid, HS384.oid, HS512.oid -> fromOid(oid).also {
+                RS256.oid, RS384.oid, RS512.oid-> fromOid(oid).also {
                     val tag = src.nextChild().tag
                     if (tag != Asn1Element.Tag.NULL)
                         throw Asn1TagMismatchException(Asn1Element.Tag.NULL, tag, "RSA Params not allowed.")
@@ -192,17 +184,8 @@ fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
                 else -> throw IllegalArgumentException("Digest ${this.digest} is unsupported by X.509 RSA-PSS")
             }
         }
-        is SignatureAlgorithm.HMAC -> when (this.digest) {
-            Digest.SHA256 -> X509SignatureAlgorithm.HS256
-            Digest.SHA384 -> X509SignatureAlgorithm.HS384
-            Digest.SHA512 -> X509SignatureAlgorithm.HS512
-            else -> throw IllegalArgumentException("Digest ${this.digest} is unsupported by X.509 HMAC")
-        }
     }
 }
-/** Finds a X.509 signature algorithm matching this algorithm. Curve restrictions are not preserved. */
-fun SpecializedSignatureAlgorithm.toX509SignatureAlgorithm() =
-    this.algorithm.toX509SignatureAlgorithm()
 
 object X509SignatureAlgorithmSerializer : KSerializer<X509SignatureAlgorithm> {
 

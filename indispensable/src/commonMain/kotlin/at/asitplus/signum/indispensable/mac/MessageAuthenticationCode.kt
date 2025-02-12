@@ -7,7 +7,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.readNull
 import at.asitplus.signum.indispensable.misc.BitLength
 
-sealed interface MessageAuthenticationCode {
+sealed interface MessageAuthenticationCode : DataIntegrityAlgorithm {
     /** output size of MAC */
     val outputLength: BitLength
 
@@ -52,7 +52,7 @@ enum class HMAC(val digest: Digest, override val oid: ObjectIdentifier) : Messag
             val oid = src.nextChild().asPrimitive().readOid()
             src.nextChild().asPrimitive().readNull()
             require(!src.hasMoreChildren()) { "Superfluous ANS.1 data in HMAC" }
-            return byOID(oid) ?: throw Asn1OidException("Unknown OID", oid)
+            return byOID(oid) ?: throw Asn1OidException(oid)
         }
     }
 
