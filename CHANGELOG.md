@@ -21,7 +21,7 @@
 * More comprehensive PEM encoding/decoding support:
     * `CryptoPublicKey`
       * Note that PKCS1 encoding of RSA keys is not supported as it is discouraged (decoding is supported)
-        * ANSI encoding and decoding is also unsupported, because decoding requires context and encoding this way is incomplete
+      * ANSI encoding and decoding is also unsupported, because decoding requires context and encoding this way is incomplete
     * `X509Certificate`
     * CSR (`Pkcs10CertificationRequest`)
 * Change `CoseHeader.certificateChain` (CBOR element 33 `x5chain`) from a single byte array to a list of byte arrays, acc. to specification
