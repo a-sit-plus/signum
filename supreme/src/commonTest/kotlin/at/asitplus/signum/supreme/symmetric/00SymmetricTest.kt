@@ -1,7 +1,7 @@
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.encoding.encodeTo4Bytes
 import at.asitplus.signum.indispensable.mac.HMAC
-import at.asitplus.signum.indispensable.mac.MAC
+import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.indispensable.symmetric.*
@@ -409,7 +409,7 @@ class `00SymmetricTest` : FreeSpec({
         withData(
             nameFn = { it.first },
             "Default" to DefaultDedicatedMacInputCalculation,
-            "Oklahoma MAC" to fun MAC.(ciphertext: ByteArray, iv: ByteArray?, aad: ByteArray?): ByteArray =
+            "Oklahoma MAC" to fun MessageAuthenticationCode.(ciphertext: ByteArray, iv: ByteArray?, aad: ByteArray?): ByteArray =
                 "Oklahoma".encodeToByteArray() + (iv ?: byteArrayOf()) + (aad
                     ?: byteArrayOf()) + ciphertext) { (_, macInputFun) ->
             withData(
