@@ -396,7 +396,6 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                     is SigningKeyConfiguration.RSAConfiguration -> {
                         kSecAttrKeyType mapsTo kSecAttrKeyTypeRSA
                         kSecAttrKeySizeInBits mapsTo alg.bits
-                        require(!config.purposes.v.keyAgreement) { "Key Agreement is unsupported for RSA keys!" }
                     }
                 }
                 if (useSecureEnclave) {
@@ -496,8 +495,8 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
         val metadata = IosKeyMetadata(
             attestation = attestation,
             rawUnlockTimeout = config.hardware.v.protection.v?.timeout,
-            allowSigning = config.purposes.v.signing,
-            allowKeyAgreement = config.purposes.v.keyAgreement,
+            allowSigning = config._algSpecific.v.allowsSigning,
+            allowKeyAgreement = config._algSpecific.v.allowsKeyAgreement,
             algSpecific = when (val alg = config._algSpecific.v) {
                 is SigningKeyConfiguration.ECConfiguration -> IosKeyAlgSpecificMetadata.ECDSA(alg.digests)
                 is SigningKeyConfiguration.RSAConfiguration -> IosKeyAlgSpecificMetadata.RSA(alg.digests, alg.paddings)

@@ -327,9 +327,6 @@ internal fun App() {
                             canGenerate = false
                             genTextOverride = "Creating…"
                             currentSigner = Provider.createSigningKey(ALIAS) {
-                                purposes {
-                                    keyAgreement = keyAlgorithm.algorithm is SignatureAlgorithm.ECDSA
-                                }
 
                                 when (val alg = keyAlgorithm.algorithm) {
                                     is SignatureAlgorithm.ECDSA -> {
@@ -337,6 +334,9 @@ internal fun App() {
                                             curve = alg.requiredCurve
                                                 ?: ECCurve.entries.find { it.nativeDigest == alg.digest }!!
                                             digests = setOf(alg.digest)
+                                            purposes {
+                                                keyAgreement = true
+                                            }
                                         }
                                     }
 

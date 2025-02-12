@@ -157,9 +157,9 @@ object AndroidKeyStoreProvider:
         val config = DSL.resolve(::AndroidSigningKeyConfiguration, configure)
         val spec = KeyGenParameterSpec.Builder(
             alias,
-            config.purposes.v.let {
-                (if (it.signing) KeyProperties.PURPOSE_SIGN else 0) or
-                (if (it.keyAgreement) KeyProperties.PURPOSE_AGREE_KEY else 0)
+            config._algSpecific.v.let {
+                (if (it.allowsSigning) KeyProperties.PURPOSE_SIGN else 0) or
+                (if (it.allowsKeyAgreement) KeyProperties.PURPOSE_AGREE_KEY else 0)
             }
         ).apply {
             when(val algSpec = config._algSpecific.v) {

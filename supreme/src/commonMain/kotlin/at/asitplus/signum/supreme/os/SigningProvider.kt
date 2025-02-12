@@ -69,21 +69,45 @@ open class PlatformSigningKeyConfigurationBase<SignerConfigurationT: PlatformSig
     /** Require that this key is stored in some kind of hardware-backed storage, such as Android Keymaster or Apple Secure Enclave. */
     open val hardware = childOrNull(::SecureHardwareConfiguration)
 
-    open class PurposeConfiguration: DSL.Data() {
+    open class RSAPurposeConfiguration internal constructor(): DSL.Data() {
+        /** Whether this key can be used for signing data */
+        var signing = true
+    }
+
+    open class RSAConfiguration internal constructor(): SigningKeyConfiguration.RSAConfiguration() {
+        open val purposes = childOrDefault(::RSAPurposeConfiguration)
+    }
+
+    override val rsa = _algSpecific.option(::RSAConfiguration)
+
+
+    open class ECPurposeConfiguration internal constructor(): DSL.Data() {
         /** Whether this key can be used for signing data */
         var signing = true
         /** Whether this key can be used for ECDH key agreement */
         var keyAgreement = false
     }
 
-    open val purposes = childOrDefault(::PurposeConfiguration)
-
-    override fun validate() {
-        super.validate()
-        if (this.purposes.v.keyAgreement)
-            require(this._algSpecific.v is ECConfiguration) { "ECDH key agreement requires an EC keypair" }
+    open class ECConfiguration internal constructor(): SigningKeyConfiguration.ECConfiguration() {
+        open val purposes = childOrDefault(::ECPurposeConfiguration)
     }
+
+    override val ec = _algSpecific.option(::ECConfiguration)
 }
+
+internal inline val SigningKeyConfiguration.AlgorithmSpecific.allowsSigning get() =
+    when (this) {
+        is PlatformSigningKeyConfigurationBase.ECConfiguration -> this.purposes.v.signing
+        is PlatformSigningKeyConfigurationBase.RSAConfiguration -> this.purposes.v.signing
+        else -> true
+    }
+
+internal inline val SigningKeyConfiguration.AlgorithmSpecific.allowsKeyAgreement get() =
+    when (this) {
+        is PlatformSigningKeyConfigurationBase.ECConfiguration -> this.purposes.v.keyAgreement
+        is SigningKeyConfiguration.ECConfiguration -> true
+        else -> false
+    }
 
 open class ECSignerConfiguration internal constructor(): DSL.Data() {
     /**
