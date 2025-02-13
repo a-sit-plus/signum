@@ -63,7 +63,7 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
                override val publicKey: CryptoPublicKey.RSA, override val signatureAlgorithm: SignatureAlgorithm.RSA)
         : AndroidEphemeralSigner(privateKey), Signer.RSA {
 
-        override fun parseFromJca(bytes: ByteArray) = CryptoSignature.RSA.parseFromJca(bytes)
+        override fun parseFromJca(bytes: ByteArray) = CryptoSignature.RSAorHMAC.parseFromJca(bytes)
 
         @SecretExposure
         override fun exportPrivateKey() =
