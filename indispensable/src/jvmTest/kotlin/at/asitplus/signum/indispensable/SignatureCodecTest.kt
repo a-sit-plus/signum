@@ -72,7 +72,7 @@ class SignatureCodecTest : FreeSpec({
                 sign()
             }
 
-            CryptoSignature.RSA.parseFromJca(sig).jcaSignatureBytes shouldBe sig
+            CryptoSignature.RSAorHMAC.parseFromJca(sig).jcaSignatureBytes shouldBe sig
             CryptoSignature.parseFromJca(
                 sig,
                 SignatureAlgorithm.RSA(Digest.valueOf(digest), RSAPadding.PKCS1)
@@ -99,7 +99,7 @@ class SignatureCodecTest : FreeSpec({
             val bcSig =
                 (ASN1Sequence.fromByteArray(certificateHolder.encoded) as DLSequence).elementAt(2)
                     .toASN1Primitive().encoded
-            CryptoSignature.RSA.parseFromJca(certificateHolder.signature).encodeToDer() shouldBe bcSig
+            CryptoSignature.RSAorHMAC.parseFromJca(certificateHolder.signature).encodeToDer() shouldBe bcSig
             CryptoSignature.parseFromJca(
                 certificateHolder.signature,
                 SignatureAlgorithm.RSA(Digest.valueOf(digest), RSAPadding.PKCS1)

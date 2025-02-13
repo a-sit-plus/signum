@@ -138,9 +138,7 @@ class JvmSymmetricTest : FreeSpec({
                                     alg.sealedBoxFrom(
                                         own.algorithm.randomNonce(),
                                         own.encryptedData
-                                    ).getOrThrow().decrypt(secretKey).onSuccess {
-                                        it shouldNotBe data
-                                    }
+                                    ).getOrThrow().decrypt(secretKey) shouldNot succeed
 
                             }
                         }

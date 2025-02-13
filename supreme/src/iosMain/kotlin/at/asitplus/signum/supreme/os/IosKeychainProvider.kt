@@ -279,7 +279,7 @@ sealed class IosSigner(final override val alias: String,
             )
         }
         override fun bytesToSignature(sigBytes: ByteArray) =
-            CryptoSignature.RSA(sigBytes)
+            CryptoSignature.RSAorHMAC(sigBytes)
     }
 
 }

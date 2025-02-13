@@ -74,7 +74,7 @@ data class JwsSigned<out P : Any>(
             val payload = inputParts[1]
             val signature = with(inputParts[2]) {
                 when (val curve = header.algorithm.ecCurve) {
-                    null -> CryptoSignature.RSA(this)
+                    null -> CryptoSignature.RSAorHMAC(this)
                     else -> CryptoSignature.EC.fromRawBytes(curve, this)
                 }
             }

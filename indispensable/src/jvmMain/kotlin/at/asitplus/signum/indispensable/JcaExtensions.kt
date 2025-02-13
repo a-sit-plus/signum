@@ -4,7 +4,6 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.asn1.toJavaBigInteger
-import at.asitplus.signum.indispensable.mac.HMAC
 import at.asitplus.signum.internals.isAndroid
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
@@ -56,6 +55,9 @@ fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) = catch
         is SignatureAlgorithm.ECDSA ->
             sigGetInstance("${this.digest.jcaAlgorithmComponent}withECDSA", provider)
 
+        is SignatureAlgorithm.HMAC ->
+            sigGetInstance("Hmac${this.digest.jcaAlgorithmComponent}", provider)
+
         is SignatureAlgorithm.RSA -> when (this.padding) {
             RSAPadding.PKCS1 ->
                 sigGetInstance("${this.digest.jcaAlgorithmComponent}withRSA", provider)
@@ -74,7 +76,7 @@ fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) = catch
 }
 
 /** Get a pre-configured JCA instance for this algorithm */
-fun X509SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =
+fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =
     this.algorithm.getJCASignatureInstance(provider)
 
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
@@ -98,7 +100,7 @@ fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null
 }
 
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
-fun X509SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) =
+fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) =
     this.algorithm.getJCASignatureInstancePreHashed(provider)
 
 val Digest.jcaName
@@ -145,7 +147,6 @@ fun CryptoPublicKey.EC.toJcaPublicKey(): KmmResult<ECPublicKey> = catching {
     val ecPoint = parameterSpec.curve.createPoint(x, y)
     val ecPublicKeySpec = ECPublicKeySpec(ecPoint, parameterSpec)
     JCEECPublicKey("EC", ecPublicKeySpec)
-
 }
 
 private val rsaFactory = KeyFactory.getInstance("RSA")
@@ -196,7 +197,7 @@ fun CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<
 val CryptoSignature.jcaSignatureBytes: ByteArray
     get() = when (this) {
         is CryptoSignature.EC -> encodeToDer()
-        is CryptoSignature.RSA -> rawByteArray
+        is CryptoSignature.RSAorHMAC -> rawByteArray
     }
 
 /**
@@ -209,11 +210,11 @@ fun CryptoSignature.Companion.parseFromJca(
     if (algorithm is SignatureAlgorithm.ECDSA)
         CryptoSignature.EC.parseFromJca(input)
     else
-        CryptoSignature.RSA.parseFromJca(input)
+        CryptoSignature.RSAorHMAC.parseFromJca(input)
 
 fun CryptoSignature.Companion.parseFromJca(
     input: ByteArray,
-    algorithm: X509SignatureAlgorithm
+    algorithm: SpecializedSignatureAlgorithm
 ) = parseFromJca(input, algorithm.algorithm)
 
 /**
@@ -228,8 +229,8 @@ fun CryptoSignature.EC.Companion.parseFromJca(input: ByteArray) =
 fun CryptoSignature.EC.Companion.parseFromJcaP1363(input: ByteArray) =
     CryptoSignature.EC.fromRawBytes(input)
 
-fun CryptoSignature.RSA.Companion.parseFromJca(input: ByteArray) =
-    CryptoSignature.RSA(input)
+fun CryptoSignature.RSAorHMAC.Companion.parseFromJca(input: ByteArray) =
+    CryptoSignature.RSAorHMAC(input)
 
 /**
  * Converts this [X509Certificate] to a [java.security.cert.X509Certificate].

@@ -13,14 +13,6 @@
     * This note will be prepended to the changelog entries for all point releases leading up to and including
       Indispensable 4.0.0 / Supreme 1.0.0
 * HMAC Support
-    * **Clean up `RSAorHMAC` mess**
-        * Introduce `DataAuthenticationAlgorithm` encompassing Signatures and MACs
-        * Rename `RSAorHMAC` to `RSA` and introduce dedicated `MessageAuthenticationCode` and `HMAC` classes
-        * This caused **some breaking shifts and cleanups** in conversion methods between indispensable, josef, cosef, and JCA types
-            * There is no direct mapping between `SignatureAlgorithm` and COSE/JOSE algorithms anymore, because JOSE/COSE also incorporate MAC
-            * Hence, for both `JwsAlgorithm` and `CoseAlgorithm`, the following properties have been introduced on the companions:
-                * `signatureAlgorithms`
-                * `messageAuthenticationCodes`
 * Symmetric Encryption
     * Supported Algorithms
         * AES
