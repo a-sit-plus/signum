@@ -217,7 +217,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
 
     }
 
-    class RSAorHMAC private constructor (rawBytes: ByteArray?, x509Element: Asn1Primitive?) : CryptoSignature, RawByteEncodable {
+    class RSA private constructor (rawBytes: ByteArray?, x509Element: Asn1Primitive?) : CryptoSignature, RawByteEncodable {
         constructor(rawBytes: ByteArray) : this(rawBytes, null)
         constructor(x509Element: Asn1Primitive) : this(null, x509Element)
 
@@ -241,16 +241,16 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
             if (this === other) return true
             if (other == null || this::class != other::class) return false
 
-            other as RSAorHMAC
+            other as RSA
 
             return signature == other.signature
         }
 
-        companion object : Asn1Decodable<Asn1Element, RSAorHMAC> {
+        companion object : Asn1Decodable<Asn1Element, RSA> {
             @Throws(Asn1Exception::class)
-            override fun doDecode(src: Asn1Element): RSAorHMAC {
+            override fun doDecode(src: Asn1Element): RSA {
                 src as Asn1Primitive
-                return RSAorHMAC(src)
+                return RSA(src)
             }
         }
     }
@@ -259,7 +259,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Element): CryptoSignature = runRethrowing {
             when (src.tag) {
-                Asn1Element.Tag.BIT_STRING -> RSAorHMAC.decodeFromTlv(src)
+                Asn1Element.Tag.BIT_STRING -> RSA.decodeFromTlv(src)
                 Asn1Element.Tag.SEQUENCE -> EC.decodeFromTlv(src)
 
                 else -> throw Asn1Exception("Unknown Signature Format")

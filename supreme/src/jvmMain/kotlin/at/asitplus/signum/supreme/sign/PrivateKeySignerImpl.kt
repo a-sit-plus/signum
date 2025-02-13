@@ -56,7 +56,6 @@ fun SignatureAlgorithm.signerFor(
             signatureAlgorithm = this
         )
 
-        is SignatureAlgorithm.HMAC -> throw UnsupportedOperationException("HMAC is not yet supported!")
         is SignatureAlgorithm.RSA -> EphemeralSigner.RSA(
             config = DSL.resolve(
                 ::EphemeralSignerConfiguration,
