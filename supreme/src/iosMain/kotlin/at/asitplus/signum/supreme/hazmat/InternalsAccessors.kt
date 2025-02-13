@@ -2,7 +2,7 @@
 package at.asitplus.signum.supreme.hazmat
 
 import at.asitplus.signum.internals.OwnedCFValue
-import at.asitplus.signum.supreme.HazardousMaterials
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.supreme.os.IosSigner
 import at.asitplus.signum.supreme.os.IosSignerSigningConfiguration
 import at.asitplus.signum.supreme.sign.EphemeralKey

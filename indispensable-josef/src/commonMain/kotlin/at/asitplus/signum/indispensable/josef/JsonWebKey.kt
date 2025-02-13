@@ -5,6 +5,7 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.CryptoPublicKey.*
 import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.fromUncompressed
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
@@ -16,6 +17,7 @@ import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.josef.io.JwsCertificateSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.CertificateChain
+import at.asitplus.signum.indispensable.symmetric.SymmetricKey
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -36,8 +38,8 @@ data class JsonWebKey(
      * The "alg" (algorithm) parameter identifies the algorithm intended for
      * use with the key.  The values used should either be registered in the
      * IANA "JSON Web Signature and Encryption Algorithms" registry
-     * established by [JWA] or be a value that contains a Collision-
-     * Resistant Name.  The "alg" value is a case-sensitive ASCII string.
+     * established by [JWA] or be a value that contains a collision-resistant Name.
+     * The "alg" value is a case-sensitive ASCII string.
      * Use of this member is OPTIONAL.
      */
     @SerialName("alg")
@@ -301,7 +303,7 @@ data class JsonWebKey(
             }
 
             JwkType.RSA -> {
-                CryptoPublicKey.RSA(
+                RSA(
                     n = Asn1Integer.fromUnsignedByteArray(
                         n ?: throw IllegalArgumentException("Missing modulus n")),
                     e = Asn1Integer.fromUnsignedByteArray(
@@ -309,7 +311,12 @@ data class JsonWebKey(
                 ).apply { jwkId = keyId }
             }
 
-            else -> throw IllegalArgumentException("Illegal key type")
+            JwkType.SYM -> {
+                require(k!=null){"Missing symmetric key k"}
+                algorithm
+                TODO()
+            }
+            null -> throw IllegalArgumentException("Illegal key type")
         }
     }
 
@@ -367,6 +374,12 @@ fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
                 e = e.magnitude
             )
     }
+/**
+ * Converts a [at.asitplus.signum.indispensable.symmetric.SymmetricKey] to a [JsonWebKey]
+ */
+fun SymmetricKey<*,*,*>.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey? {
+    TODO("Define algorithms an map where possible")
+}
 
 private const val JWK_ID = "jwkIdentifier"
 
@@ -374,6 +387,14 @@ private const val JWK_ID = "jwkIdentifier"
  * Holds [JsonWebKey.keyId] when transforming a [JsonWebKey] to a [CryptoPublicKey]
  */
 var CryptoPublicKey.jwkId: String?
+    get() = additionalProperties[JWK_ID]
+    set(value) {
+        value?.also { additionalProperties[JWK_ID] = value } ?: additionalProperties.remove(JWK_ID)
+    }
+/**
+ * Holds [JsonWebKey.keyId] when transforming a [JsonWebKey] to a [CryptoPublicKey]
+ */
+var SymmetricKey<*,*,*>.jwkId: String?
     get() = additionalProperties[JWK_ID]
     set(value) {
         value?.also { additionalProperties[JWK_ID] = value } ?: additionalProperties.remove(JWK_ID)
