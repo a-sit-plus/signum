@@ -20,9 +20,9 @@ class CryptoSignatureTest : FreeSpec({
             val ec1 = CryptoSignature.EC.fromRS(first.toBigInteger(), second.toBigInteger())
             val ec2 = CryptoSignature.EC.fromRS(first.toBigInteger(), second.toBigInteger())
             val ec3 = CryptoSignature.EC.fromRS(second.toBigInteger(), first.toBigInteger())
-            val rsa1 = CryptoSignature.RSA(first.toTwosComplementByteArray())
-            val rsa2 = CryptoSignature.RSA(first.toTwosComplementByteArray())
-            val rsa3 = CryptoSignature.RSA(second.toTwosComplementByteArray())
+            val rsa1 = CryptoSignature.RSAorHMAC(first.toTwosComplementByteArray())
+            val rsa2 = CryptoSignature.RSAorHMAC(first.toTwosComplementByteArray())
+            val rsa3 = CryptoSignature.RSAorHMAC(second.toTwosComplementByteArray())
 
             ec1 shouldBe ec1
             ec1 shouldBe ec2

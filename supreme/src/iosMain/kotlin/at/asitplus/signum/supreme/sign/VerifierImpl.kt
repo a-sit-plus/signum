@@ -77,6 +77,6 @@ internal actual fun verifyECDSAImpl
 
 internal actual fun verifyRSAImpl
             (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
-             data: SignatureInput, signature: CryptoSignature.RSA,
+             data: SignatureInput, signature: CryptoSignature.RSAorHMAC,
              config: PlatformVerifierConfiguration) =
 verifyImpl(signatureAlgorithm, publicKey, data, signature, config)
