@@ -23,9 +23,9 @@ class ConversionTests : FreeSpec({
         }
     }
     "COSE -> X509 -> COSE is stable" - {
-        withData(CoseAlgorithm.signatureAlgorithms/*here we filter by using only sig alg*/) {
+        withData(CoseAlgorithm.entries) {
             it.toX509SignatureAlgorithm().getOrNull()?.let { x509 ->
-                x509.toCoseAlgorithm().onSuccess { it.algorithm } shouldSucceedWith it.toCoseAlgorithm().getOrThrow() //here we go back to cose, after initially filtering, because cose does not discriminate between MAC and sig
+                x509.toCoseAlgorithm() shouldSucceedWith it
             }
         }
     }
