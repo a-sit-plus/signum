@@ -25,7 +25,7 @@
 ## Kotlin Multiplatform Crypto/PKI Library with ASN1 Parser + Encoder
 
 
-* **Multiplatform, platform-native crypto** &rarr; Check out the included [CMP demo App](https://a-sit-plus.github.io/signum/app) to see it in
+* **Multiplatform, platform-native crypto** &rarr; Check out the included [CMP demo App](app.md) to see it in
   action!
   * **ECDSA and RSA Signer and Verifier**
   * **Multiplatform ECDH key agreement**
@@ -48,6 +48,7 @@
   including [Matthew Nelson's smashing Base16, Base32, and Base64 encoders](https://github.com/05nelsonm/encoding)
 * **ASN.1 Parser and Encoder including a DSL to generate ASN.1 structures**
   * Parse, create, explore certificates, public keys, CSRs, and **arbitrary ASN.1* structures* on all supported platforms
+  * Powerful, expressive, type-safe ASN.1 DSL on all KMP targets!
 
 This last bit means that you can share ASN.1-related logic across platforms.
 The very first bit means that you can create and verify signatures on the JVM, Android and on iOS, using platform-native

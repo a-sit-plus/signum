@@ -8,23 +8,32 @@
 
 
 This [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html) library provides platform-independent data
-types and and platform-native functionality related to crypto and PKI applications:
+types and platform-native functionality related to crypto and PKI applications:
 
 * **Multiplatform, platform-native crypto** &rarr; Check out the included [CMP demo App](app.md) to see it in
   action!
-  * **ECDSA and RSA Signer and Verifier**
-  * **Multiplatform ECDH key agreement**
-  * **Hardware-Backed crypto on Android and iOS**
-  * **Platform-native attestation on iOS and Android**
-  * **Configurable biometric authentication on Android and iOS without callbacks or activity passing** (✨Magic!✨)
+    * **ECDSA and RSA Signer and Verifier**
+    * **Multiplatform ECDH key agreement**
+    * **Hardware-Backed crypto on Android and iOS**
+    * **Platform-native attestation on iOS and Android**
+    * **Configurable biometric authentication on Android and iOS without callbacks or activity passing** (✨Magic!✨)
 * Public Keys (RSA and EC)
 * Private Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)
-  @@ -28,10 +31,11 @@ types and functionality related to crypto and PKI applications:
+* X509 Certificate Class (create, encode, decode)
+* Certification Request (CSR)
+* ObjectIdentifier Class with human-readable notation (e.g. 1.2.9.6245.3.72.13.4.7.6)
+* Generic ASN.1 abstractions to operate on and create arbitrary ASN.1 Data
+* JOSE-related data structures (JSON Web Keys, JWT, etc…)
+* COSE-related data structures (COSE Keys, CWT, etc…)
+* Serializability of all ASN.1 classes for debugging **and only for debugging!!!** *Seriously, do not try to deserialize
+  ASN.1 classes through kotlinx.serialization! Use `decodeFromDer()` and its companions!*
+* 100% pure Kotlin BitSet
 * Exposes Multibase Encoder/Decoder as an API dependency
   including [Matthew Nelson's smashing Base16, Base32, and Base64 encoders](https://github.com/05nelsonm/encoding)
 * **ASN.1 Parser and Encoder including a DSL to generate ASN.1 structures**
-  * Parse, create, explore certificates, public keys, CSRs, and **arbitrary ASN.1* structures* on all supported platforms
+    * Parse, create, explore certificates, public keys, CSRs, and **arbitrary ASN.1* structures* on all supported platforms
+    * Powerful, expressive, type-safe ASN.1 DSL on all KMP targets!
 
 This last bit means that you can share ASN.1-related logic across platforms.
 The very first bit means that you can create and verify signatures on the JVM, Android and on iOS, using platform-native

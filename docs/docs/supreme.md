@@ -159,7 +159,7 @@ Provider.createSigningKey(ALIAS) {
 ```
 
 !!! warning inline end
-    Key generated using Supreme &leg;0.6.3 don't have the key agreement purpose set and cannot be used for key agreement.
+    Key generated using Supreme &leq;0.6.4 don't have the key agreement purpose set and cannot be used for key agreement.
     Regenerate such keys, if you want to use them for key agreement!
 
 On Android, key usage purposes are enforced by hardware, on iOS this enforcement is done in software. On the JVM, no strict checks are enforced
@@ -379,19 +379,33 @@ The [feature matrix](features.md) also contains remarks on attestation, while
 details on the attestation format can be found in the corresponding [API documentation](dokka/indispensable/at.asitplus.signum.indispensable/-attestation/index.html).
 
 ## Key Agreement
+
+!!! bug inline end
+    The Android OS has a bug related to key agreement in hardware. See [important remarks](features.md#android-key-agreement) on key agreement!
+
 In general, key agreement requires one private and _n_ public values. Key distribution/exchange may happen by any means and
 is not modelled in Signum.
 In addition, iOS only supports ECDH key agreement, hence only ECDH key agreement with a single public value is supported.
 Private key agreement material is usually generated locally (preferably in hardware), as outlined in the key generation subsection
 on this matter. However, it is also possible to import an EC private key.
 
-!!! bug inline end
-    The Android OS has a bug related to key agreement in hardware. See [important remarks](features.md#android-key-agreement) on key agreement!
-
-
 On iOS and Android (starting with Android&nbsp;12), key agreement is possible in hardware and can
 require biometric authentication for hardware-backed keys. Custom biometric prompt text can be set
 in the same manner as [for signing](#signature-creation).
+
+!!! warning
+    Key generated using Supreme &leq;0.6.4 don't have the key agreement purpose set and cannot be used for key agreement.
+    Regenerate such keys, if you want to use them for key agreement:
+    ```kotlin
+    Provider.createSigningKey(ALIAS) {
+      ec {
+        purposes {
+          keyAgreement = true //defaults to false
+          signing = true //defaults to true, no impact on key agreement
+        }
+      }
+    }
+    ```
 
 
 !!! tip inline end

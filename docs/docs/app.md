@@ -80,5 +80,5 @@ Since the app is especially aimed at demonstrating interactions with hardware-ba
     14. _Verify_ the signature from _13_ on the data from _8_.
     15. Key attestation display: shows attestation data from a generated/loaded key (if any).
 
-![App Legend](assets/app.png){width="400"}
+![App Legend](assets/legend.png){width="400"}
 
