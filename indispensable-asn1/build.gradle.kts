@@ -12,6 +12,7 @@ buildscript {
 }
 
 plugins {
+    id("com.android.library")
     kotlin("multiplatform")
     kotlin("plugin.serialization")
     id("signing")
@@ -135,8 +136,11 @@ fun generateKnownOIDs() {
                                             )
                                         }`: ${oidTriple.comment}"
                                     ).apply {
-                                        if(name.matches(Regex("^[0.-9].*")))
-                                            this.addAnnotation(AnnotationSpec.builder(ClassName("kotlin.js","JsName")).addMember("\"_$name\"").build())
+                                        if (name.matches(Regex("^[0.-9].*")))
+                                            this.addAnnotation(
+                                                AnnotationSpec.builder(ClassName("kotlin.js", "JsName"))
+                                                    .addMember("\"_$name\"").build()
+                                            )
                                     }
 
 
@@ -157,6 +161,7 @@ fun generateKnownOIDs() {
 
 kotlin {
     jvm()
+    androidTarget { publishLibraryVariants("release") }
     macosArm64()
     macosX64()
     tvosArm64()
@@ -206,12 +211,43 @@ kotlin {
     }
 }
 
+android {
+    namespace = "at.asitplus.signum.indispensable.asn1"
+    packaging {
+        listOf(
+            "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
+            "org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties",
+            "org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties",
+            "org/bouncycastle/x509/CertPathReviewerMessages_de.properties",
+            "org/bouncycastle/x509/CertPathReviewerMessages.properties",
+            "org/bouncycastle/pkix/CertPathReviewerMessages_de.properties",
+            "org/bouncycastle/pkix/CertPathReviewerMessages.properties",
+            "/META-INF/{AL2.0,LGPL2.1}",
+            "win32-x86-64/attach_hotspot_windows.dll",
+            "win32-x86/attach_hotspot_windows.dll",
+            "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
+            "META-INF/licenses/*",
+        ).forEach { resources.excludes.add(it) }
+    }
+
+}
+
+
+plugins.withId("com.android.library") {
+    extensions.findByName("android")?.let { android ->
+        println("Configuring $android")
+    }
+}
+
+
 exportXCFramework(
     "IndispensableAsn1",
     transitiveExports = false,
+    static = false,
     serialization("json"),
     datetime(),
-    kmmresult(),
+    kmmresult()
+
 )
 
 val javadocJar = setupDokka(

@@ -1,12 +1,8 @@
-import at.asitplus.gradle.datetime
-import at.asitplus.gradle.exportIosFramework
-import at.asitplus.gradle.kmmresult
-import at.asitplus.gradle.napier
-import at.asitplus.gradle.serialization
-import at.asitplus.gradle.setupDokka
+import at.asitplus.gradle.*
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
+    id("com.android.library")
     kotlin("multiplatform")
     kotlin("plugin.serialization")
     id("signing")
@@ -17,6 +13,7 @@ val artifactVersion: String by extra
 version = artifactVersion
 
 kotlin {
+    androidTarget { publishLibraryVariants("release") }
     jvm()
     macosArm64()
     macosX64()
@@ -43,7 +40,7 @@ kotlin {
             languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
         }
 
-         commonMain {
+        commonMain {
             dependencies {
                 api(project(":indispensable"))
                 implementation(project(":internals"))
@@ -54,7 +51,7 @@ kotlin {
         }
 
 
-         jvmTest {
+        jvmTest {
             dependencies {
                 implementation(libs.jose)
                 implementation(project(":supreme"))
@@ -63,16 +60,41 @@ kotlin {
     }
 }
 
-exportIosFramework(
+exportXCFramework(
     "IndispensableJosef",
-    transitiveExports=false,
+    transitiveExports = false,
+    static = false,
     serialization("json"),
     datetime(),
     kmmresult(),
     project(":indispensable"),
     project(":indispensable-asn1"),
     libs.bignum
+
 )
+
+
+android {
+    namespace = "at.asitplus.signum.indisensable.josef"
+
+
+    packaging {
+        listOf(
+            "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
+            "org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties",
+            "org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties",
+            "org/bouncycastle/x509/CertPathReviewerMessages_de.properties",
+            "org/bouncycastle/x509/CertPathReviewerMessages.properties",
+            "org/bouncycastle/pkix/CertPathReviewerMessages_de.properties",
+            "org/bouncycastle/pkix/CertPathReviewerMessages.properties",
+            "/META-INF/{AL2.0,LGPL2.1}",
+            "win32-x86-64/attach_hotspot_windows.dll",
+            "win32-x86/attach_hotspot_windows.dll",
+            "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
+            "META-INF/licenses/*",
+        ).forEach { resources.excludes.add(it) }
+    }
+}
 
 val javadocJar = setupDokka(
     baseUrl = "https://github.com/a-sit-plus/signum/tree/main/",

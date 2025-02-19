@@ -1,10 +1,4 @@
-import at.asitplus.gradle.coroutines
-import at.asitplus.gradle.datetime
-import at.asitplus.gradle.exportIosFramework
-import at.asitplus.gradle.kmmresult
-import at.asitplus.gradle.napier
-import at.asitplus.gradle.serialization
-import at.asitplus.gradle.setupDokka
+import at.asitplus.gradle.*
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
@@ -30,7 +24,6 @@ buildscript {
     }
 }
 
-
 val supremeVersion: String by extra
 version = supremeVersion
 
@@ -39,7 +32,6 @@ wireAndroidInstrumentedTests()
 kotlin {
     jvm()
     androidTarget {
-        publishLibraryVariants("release")
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         instrumentedTestVariant.sourceSetTree.set(test)
     }
@@ -63,9 +55,7 @@ kotlin {
 
 android {
     namespace = "at.asitplus.signum.supreme"
-    compileSdk = 34
     defaultConfig {
-        minSdk = 30
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -96,12 +86,12 @@ android {
     }
 
     testOptions {
-        targetSdk = 30
+        targetSdk = androidMinSdk
         managedDevices {
             localDevices {
                 create("pixel2api33") {
                     device = "Pixel 2"
-                    apiLevel = 30
+                    apiLevel = androidMinSdk!!
                     systemImageSource = "aosp-atd"
                 }
             }
@@ -229,9 +219,10 @@ fun wireAndroidInstrumentedTests() {
         }
 }
 
-exportIosFramework(
+exportXCFramework(
     "SignumSupreme",
-    transitiveExports=false,
+    transitiveExports = false,
+    static = false,
     serialization("json"),
     datetime(),
     kmmresult(),
