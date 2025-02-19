@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.symmetric
 
+import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.misc.bytes
 import kotlin.jvm.JvmName
@@ -49,24 +50,23 @@ fun SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.With
  * @return [at.asitplus.KmmResult.failure] on illegal auth tag length
  */
 @JvmName("sealedBoxAuthenticatedWith")
-fun SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Required, *>.sealedBoxFrom(
+fun<A: AuthCapability.Authenticated<out K>, K: KeyType> SymmetricEncryptionAlgorithm<A, NonceTrait.Required, K>.sealedBoxFrom(
     nonce: ByteArray,
     encryptedData: ByteArray,
     authTag: ByteArray,
-    authenticatedData: ByteArray? = null
-) = catching {
+) : KmmResult<SealedBox<A, NonceTrait.Required,K>> =catching {
     require(authTag.size.bytes == this.authCapability.tagLength) { "Illegal auth tag length! expected: ${authTag.size * 8}, actual: ${this.authCapability.tagLength.bits}" }
     when (isIntegrated()) {
         false -> SealedBox.WithNonce.Authenticated<KeyType.WithDedicatedMacKey>(
             nonce,
-            authenticatedCipherText(encryptedData, authTag, authenticatedData)
+            authenticatedCipherText(encryptedData, authTag)
         )
 
         true -> SealedBox.WithNonce.Authenticated<KeyType.Integrated>(
             nonce,
-            authenticatedCipherText(encryptedData, authTag, authenticatedData)
+            authenticatedCipherText(encryptedData, authTag)
         )
-    }
+    } as SealedBox<A, NonceTrait.Required,K>
 }
 
 /**
@@ -79,12 +79,11 @@ fun SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Req
 fun SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Without, *>.sealedBoxFrom(
     encryptedData: ByteArray,
     authTag: ByteArray,
-    authenticatedData: ByteArray? = null
-) = catching {
+) : KmmResult<SealedBox<AuthCapability.Authenticated<*>, NonceTrait.Without,*>> = catching {
     require(authTag.size == this.authCapability.tagLength.bytes.toInt()) { "Illegal auth tag length! expected: ${authTag.size * 8}, actual: ${this.authCapability.tagLength.bits}" }
     when (hasDedicatedMac()) {
         true -> SealedBox.WithoutNonce.Authenticated<KeyType.WithDedicatedMacKey>(
-            authenticatedCipherText(encryptedData, authTag, authenticatedData)
+            authenticatedCipherText(encryptedData, authTag)
         )
 
         false -> SealedBox.WithoutNonce.Authenticated<KeyType.Integrated>(
@@ -92,19 +91,16 @@ fun SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Wit
             (this as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.Integrated, NonceTrait.Without, KeyType.Integrated>).authenticatedCipherText(
                 encryptedData,
                 authTag,
-                authenticatedData
             )
         )
-    }
+    }as SealedBox<AuthCapability.Authenticated<*>, NonceTrait.Without,*>
 }
 
-private inline fun <reified A : AuthCapability.Authenticated<K>, reified I : NonceTrait, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.authenticatedCipherText(
+private inline fun <reified A : AuthCapability.Authenticated< out K>, reified I : NonceTrait, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.authenticatedCipherText(
     encryptedData: ByteArray,
     authTag: ByteArray,
-    authenticatedData: ByteArray? = null
 ) = Ciphertext.Authenticated<A, I, SymmetricEncryptionAlgorithm<A, I, K>, K>(
     this,
     encryptedData,
     authTag,
-    authenticatedData
 )

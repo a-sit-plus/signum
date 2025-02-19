@@ -39,7 +39,8 @@ internal actual fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> Cip
 
 @OptIn(ExperimentalForeignApi::class)
 internal actual fun SealedBox<Authenticated.Integrated, *, out KeyType.Integrated>.doDecryptAEAD(
-    secretKey: ByteArray
+    secretKey: ByteArray,
+    authenticatedData: ByteArray
 ): ByteArray {
     if (algorithm.nonceTrait !is NonceTrait.Required) TODO("ALGORITHM $algorithm UNSUPPORTED")
     this as SealedBox.WithNonce

@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.symmetric
 import at.asitplus.signum.HazardousMaterials
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
+import kotlin.jvm.JvmName
 
 sealed interface KeyType {
     object Integrated : KeyType
@@ -208,4 +209,3 @@ fun <A : AuthCapability<K>, K : KeyType> SymmetricKey<A, *, K>.requiresNonce(): 
  * The actual encryption key bytes
  */
 val <A : AuthCapability<out KeyType.Integrated>, I : NonceTrait> SymmetricKey<A, I, out KeyType.Integrated>.secretKey get() = (this as SymmetricKey.Integrated).secretKey
-val <I : NonceTrait> SymmetricKey<AuthCapability.Authenticated.WithDedicatedMac<*,I>, I, out KeyType.WithDedicatedMacKey >.encryptionKey get() = (this as SymmetricKey.WithDedicatedMac).encryptionKey

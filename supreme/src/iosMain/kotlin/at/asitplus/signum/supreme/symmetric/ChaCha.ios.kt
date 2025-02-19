@@ -27,8 +27,7 @@ internal object ChaChaIOS {
         return SymmetricEncryptionAlgorithm.ChaCha20Poly1305.sealedBoxFrom(
             ciphertext.iv().toByteArray(),
             ciphertext.ciphertext().toByteArray(),
-            ciphertext.authTag().toByteArray(),
-            aad
+            ciphertext.authTag().toByteArray()
         ).getOrThrow() as SealedBox<AuthCapability.Authenticated.Integrated, NonceTrait.Required, KeyType.Integrated>
 
     }
