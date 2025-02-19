@@ -9,6 +9,7 @@ buildscript {
 }
 
 plugins {
+    id("com.android.library")
     kotlin("multiplatform")
     kotlin("plugin.serialization")
     id("signing")
@@ -20,6 +21,7 @@ version = artifactVersion
 
 
 kotlin {
+    androidTarget { publishLibraryVariants("release") }
     jvm()
     macosArm64()
     macosX64()
@@ -66,6 +68,8 @@ exportXCFramework(
     kmmresult()
 
 )
+
+android { namespace = "at.asitplus.signum.indisensable.internals" }
 
 val javadocJar = setupDokka(
     baseUrl = "https://github.com/a-sit-plus/signum/tree/main/",

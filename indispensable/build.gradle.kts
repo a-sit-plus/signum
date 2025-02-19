@@ -66,6 +66,13 @@ kotlin {
             }
         }
 
+        //TODO: figure out a clean way in conventions to already access androidJvmMain here
+        androidMain {
+            dependencies {
+                api(bouncycastle("bcpkix"))
+                api(coroutines("jvm"))
+            }
+        }
         jvmMain {
             dependencies {
                 api(bouncycastle("bcpkix"))
