@@ -22,5 +22,3 @@ inline fun <@kotlin.internal.OnlyInputTypes O, reified T : O> checkedAs(v: O): T
 inline fun <I, O, reified T : O> checkedAsFn(crossinline fn: (I) -> O): (I) -> T = {
     checkedAs(fn(it))
 }
-
-expect val isAndroid:Boolean
