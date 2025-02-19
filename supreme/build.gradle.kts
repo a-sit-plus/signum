@@ -4,6 +4,8 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.TypeSpec
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.dsl.KotlinJsCompile
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree.Companion.test
 import java.io.FileInputStream
 import java.util.regex.Pattern
@@ -39,6 +41,22 @@ kotlin {
     iosArm64()
     iosSimulatorArm64()
 
+    listOf(
+        js(IR),
+        @OptIn(ExperimentalWasmDsl::class)
+        wasmJs()
+    ).forEach {
+        it.browser {
+            testTask { enabled = false }
+            webpackTask {
+                mainOutputFileName = "supreme.js"
+            }
+        }
+        it.binaries.executable()
+        it.nodejs()
+    }
+
+
     sourceSets.commonMain.dependencies {
         api(project(":indispensable"))
         implementation(project(":internals"))
@@ -52,6 +70,13 @@ kotlin {
     }
 
 }
+
+tasks.withType<KotlinJsCompile>().configureEach {
+    compilerOptions {
+        target.set("es2015")
+    }
+}
+
 
 android {
     namespace = "at.asitplus.signum.supreme"

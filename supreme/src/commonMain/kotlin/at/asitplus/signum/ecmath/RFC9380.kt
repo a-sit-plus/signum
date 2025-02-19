@@ -12,6 +12,7 @@ import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
 import org.kotlincrypto.SecureRandom
 import kotlin.experimental.xor
+import kotlin.js.JsExport
 import kotlin.jvm.JvmInline
 
 private typealias HashToFieldFn = (msg: Sequence<ByteArray>, count: Int) -> Array<ModularBigInteger>
@@ -42,6 +43,7 @@ private inline val ECCurve.L get() = when(this) {
 /** per RFC9794 4.7.2.
  * @param L security parameter controlling the drift from uniform;
  *            defaults to `log2(modulus) * (3/2)`, which is the value used in RFC9794 */
+@JsExport
 fun ECCurve.randomScalar(L: Int = this.L) = SecureRandom().nextBytesOf(L)
     .let { BigInteger.fromByteArray(it, Sign.POSITIVE).toModularBigInteger(this.order) }
 
@@ -303,6 +305,7 @@ object RFC9380 {
  * @param L security parameter controlling the drift from uniform;
  *            defaults to `log2(modulus) * (3/2)`, which is the value used in RFC9380 suites
  * @return a function mapping arbitrary bytes to a scalar multiplier in [0, [ECCurve.order]) */
+@JsExport
 fun ECCurve.hashToScalar(domain: ByteArray, L: Int = this.L) = RFC9380.HashToECScalar(when (this) {
     ECCurve.SECP_256_R_1, ECCurve.SECP_384_R_1, ECCurve.SECP_521_R_1 ->
         hashToFieldRFC9380ForPrimeField(expandMessageXMD(this.nativeDigest), this.order, L, domain)
@@ -314,6 +317,7 @@ fun ECCurve.hashToScalar(domain: ByteArray, L: Int = this.L) = RFC9380.HashToECS
  *                   see [RFC9380 3.1 Domain Separation Requirements](https://www.rfc-editor.org/rfc/rfc9380#name-domain-separation-requireme)
  *                      for guidance
  * @return a function mapping arbitrary bytes to a point on the curve */
+@JsExport
 inline fun ECCurve.hashToCurve(domain: ByteArray) = when (this) {
     ECCurve.SECP_256_R_1 -> RFC9380.`P256_XMD∶SHA-256_SSWU_RO_`(domain)
     ECCurve.SECP_384_R_1 -> RFC9380.`P384_XMD∶SHA-384_SSWU_RO_`(domain)
