@@ -60,6 +60,15 @@ kotlin {
     }
 }
 
+
+
+//we don't have native android tests
+project.gradle.taskGraph.whenReady {
+    tasks.getByName("testDebugUnitTest") {
+        enabled = false
+    }
+}
+
 exportXCFramework(
     "IndispensableJosef",
     transitiveExports = false,

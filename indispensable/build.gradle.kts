@@ -65,21 +65,24 @@ kotlin {
                 implementation(kotest("property"))
             }
         }
-
-        //TODO: figure out a clean way in conventions to already access androidJvmMain here
-        androidMain {
+    }
+}
+//TODO: this needs fixing in the conventions plugin, so we can access it inside the regular sourceSets block and don't need to wait
+afterEvaluate {
+    kotlin.sourceSets {
+        val androidJvmMain by getting {
             dependencies {
                 api(bouncycastle("bcpkix"))
                 api(coroutines("jvm"))
             }
         }
-        jvmMain {
-            dependencies {
-                api(bouncycastle("bcpkix"))
-                api(coroutines("jvm"))
-            }
-        }
+    }
+}
 
+//we don't have native android tests
+project.gradle.taskGraph.whenReady {
+    tasks.getByName("testDebugUnitTest") {
+        enabled = false
     }
 }
 

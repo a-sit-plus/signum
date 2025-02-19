@@ -240,6 +240,12 @@ plugins.withId("com.android.library") {
 }
 
 
+//we don't have native android tests
+project.gradle.taskGraph.whenReady {
+    tasks.getByName("testDebugUnitTest") {
+        enabled = false
+    }
+}
 exportXCFramework(
     "IndispensableAsn1",
     transitiveExports = false,

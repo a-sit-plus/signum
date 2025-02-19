@@ -43,7 +43,7 @@ val Digest.jcaPSSParams
         Digest.SHA512 -> PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 64, 1)
     }
 
-private fun sigGetInstance(alg: String, provider: String?) =
+internal fun sigGetInstance(alg: String, provider: String?) =
     when (provider) {
         null -> Signature.getInstance(alg)
         else -> Signature.getInstance(alg, provider)
@@ -58,22 +58,11 @@ fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) = catch
         is SignatureAlgorithm.HMAC ->
             sigGetInstance("Hmac${this.digest.jcaAlgorithmComponent}", provider)
 
-        is SignatureAlgorithm.RSA -> when (this.padding) {
-            RSAPadding.PKCS1 ->
-                sigGetInstance("${this.digest.jcaAlgorithmComponent}withRSA", provider)
-
-            RSAPadding.PSS -> when (isAndroid) {
-                true ->
-                    sigGetInstance("${this.digest.jcaAlgorithmComponent}withRSA/PSS", provider)
-
-                false ->
-                    sigGetInstance("RSASSA-PSS", provider).also {
-                        it.setParameter(this.digest.jcaPSSParams)
-                    }
-            }
-        }
+        is SignatureAlgorithm.RSA -> getPlatformSignatureInstance(provider)
     }
 }
+
+expect fun SignatureAlgorithm.RSA.getPlatformSignatureInstance(provider: String?) : Signature
 
 /** Get a pre-configured JCA instance for this algorithm */
 fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =
