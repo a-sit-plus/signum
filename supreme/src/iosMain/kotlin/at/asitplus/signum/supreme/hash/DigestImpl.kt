@@ -47,7 +47,7 @@ private inline fun <reified T: CVariable> digestTemplate(
         return output.toByteArray()
     }
 }
-internal actual fun doDigest(digest: Digest, data: Sequence<ByteArray>): ByteArray = when(digest) {
+suspend internal actual fun doDigest(digest: Digest, data: Sequence<ByteArray>): ByteArray = when(digest) {
     Digest.SHA1 -> digestTemplate(data, digest.outputLength.bytes.toInt(), ::CC_SHA1_Init, ::CC_SHA1_Update, ::CC_SHA1_Final)
     Digest.SHA256 -> digestTemplate(data, digest.outputLength.bytes.toInt(), ::CC_SHA256_Init, ::CC_SHA256_Update, ::CC_SHA256_Final)
     Digest.SHA384 -> digestTemplate(data, digest.outputLength.bytes.toInt(), ::CC_SHA384_Init, ::CC_SHA384_Update, ::CC_SHA384_Final)

@@ -25,7 +25,7 @@ class SignatureInput private constructor (
         }
     }
 
-    fun convertTo(format: SignatureInputFormat) = catching {
+    suspend fun convertTo(format: SignatureInputFormat) = catching {
         if (this.format == format) return@catching this
         if (this.format != RAW_BYTES) throw IllegalStateException("Cannot convert from ${this.format} to $format")
         format!! /* RAW_BYTES is null; this is for the compiler */
