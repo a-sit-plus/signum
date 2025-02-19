@@ -95,17 +95,17 @@ class JvmSymmetricTest : FreeSpec({
 
 
 
-                                own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
+                                own.decrypt(secretKey, aad?:byteArrayOf()).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
 
                                 val wrongKey = own.algorithm.randomKey()
                                 own.decrypt(wrongKey) shouldNot succeed
 
-                                own.algorithm.sealedBoxFrom(
+                                val box = own.algorithm.sealedBoxFrom(
                                     own.algorithm.randomNonce(),
                                     own.encryptedData,
                                     own.authTag,
-                                    own.authenticatedData
-                                ).getOrThrow().decrypt(secretKey) shouldNot succeed
+                                ).getOrThrow()
+                                box.decrypt(secretKey, aad?:byteArrayOf()) shouldNot succeed
 
 
                             } else {
@@ -289,7 +289,7 @@ class JvmSymmetricTest : FreeSpec({
                     box.nonce.size shouldBe alg.nonceTrait.length.bytes.toInt()
                     box.isAuthenticated() shouldBe true
                     (box.encryptedData + box.authTag) shouldBe fromJCA
-                    box.decrypt(secretKey).getOrThrow() shouldBe data
+                    box.decrypt(secretKey, aad?:byteArrayOf()).getOrThrow() shouldBe data
 
                 }
             }

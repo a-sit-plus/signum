@@ -2,6 +2,9 @@ package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.ImplementationError
+import at.asitplus.signum.indispensable.mac.HMAC
+import at.asitplus.signum.indispensable.mac.MAC
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.AuthCapability.Authenticated
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
@@ -16,18 +19,18 @@ import kotlin.jvm.JvmName
  * [key] and [SealedBox].**
  */
 @JvmName("decryptGeneric")
-fun SealedBox<*, *, *>.decrypt(key: SymmetricKey<*, *, *>) = catching {
+fun SealedBox<*, *, *>.decrypt(key: SymmetricKey<*, *, *>): KmmResult<ByteArray> = catching {
     require(algorithm == key.algorithm) { "Algorithm mismatch! expected: $algorithm, actual: ${key.algorithm}" }
     @Suppress("UNCHECKED_CAST")
     when (algorithm.authCapability) {
         is Authenticated.Integrated -> (this as SealedBox<Authenticated.Integrated, *, KeyType.Integrated>).decryptInternal(
-            (key as SymmetricKey.Integrated).secretKey
+            (key as SymmetricKey.Integrated).secretKey, byteArrayOf()
         )
 
         is Authenticated.WithDedicatedMac<*, *> -> {
             key as SymmetricKey.WithDedicatedMac
             (this as SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedicatedMacKey>).decryptInternal(
-                key.encryptionKey, key.macKey
+                key.encryptionKey, key.macKey, byteArrayOf()
             )
         }
 
@@ -37,74 +40,110 @@ fun SealedBox<*, *, *>.decrypt(key: SymmetricKey<*, *, *>) = catching {
     }
 }
 
+
+
+
+//required because we don't store MAC info all the way
+@JvmName("decryptAuthenticatedIntegrated")
+fun <I: NonceTrait, M: MAC>SealedBox<AuthCapability.Authenticated.WithDedicatedMac<M, I>,I, KeyType.WithDedicatedMacKey>.decrypt(
+    key: SymmetricKey.WithDedicatedMac<*>,
+    authenticatedData: ByteArray = byteArrayOf()
+) = catching {
+    (this as SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedicatedMacKey>).decryptInternal(
+        key.encryptionKey,
+        key.macKey,
+        authenticatedData
+    )
+}
+
 /**
- * Attempts to decrypt this ciphertext (which may also hold an IV/nonce, and in case of an authenticated ciphertext, authenticated data and auth tag) using the provided [key].
- * This constrains the [key]'s characteristics to the characteristics of the [SealedBox] to decrypt.
- * It does not, however, prevent maxing up different encryption algorithms with the same characteristics. I.e., it is possible to feed a [AES.ECB] key into
- * a [AES.CBC] [SealedBox].
- * In such cases, this function will immediately return a [KmmResult.failure].
+ * Attempts to decrypt this ciphertext (which may also hold an IV/nonce) using the provided [key].
+ * Do provide [authenticatedData] if required, or else decryption will fail!
+ * This is the generic, untyped decryption function for convenience.
+ * **Compared to its narrower-typed cousins is possible to mismatch the characteristics of
+ * [key] and [SealedBox].**
  */
-fun <A : AuthCapability<K>, I : NonceTrait, K : KeyType> SealedBox<A, I, K>.decrypt(
-    key: SymmetricKey<A, I, K>
+@JvmName("decryptAuthenticatedGeneric")
+fun <A : AuthCapability.Authenticated<out K>, K : KeyType> SealedBox<A, *, out K>.decrypt(
+    key: SymmetricKey<A, *, out K>,
+    authenticatedData: ByteArray = byteArrayOf()
 ): KmmResult<ByteArray> = catching {
     require(algorithm == key.algorithm) { "Algorithm mismatch! expected: $algorithm, actual: ${key.algorithm}" }
     @Suppress("UNCHECKED_CAST")
-    when (algorithm.authCapability as AuthCapability<*>) {
+    when (algorithm.authCapability) {
         is Authenticated.Integrated -> (this as SealedBox<Authenticated.Integrated, *, KeyType.Integrated>).decryptInternal(
-            (key as SymmetricKey.Integrated).secretKey
+            (key as SymmetricKey.Integrated).secretKey, authenticatedData
         )
 
         is Authenticated.WithDedicatedMac<*, *> -> {
             key as SymmetricKey.WithDedicatedMac
             (this as SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedicatedMacKey>).decryptInternal(
-                key.encryptionKey, key.macKey
+                key.encryptionKey, key.macKey, authenticatedData
             )
         }
 
-        is AuthCapability.Unauthenticated -> (this as SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated>).decryptInternal(
-            (key as SymmetricKey.Integrated).secretKey
-        )
+        else -> throw ImplementationError("Authenticated Decryption")
     }
+}
+
+
+/**
+ * Attempts to decrypt this ciphertext (which may also hold an IV/nonce) using the provided [key].
+ * This constrains the [key]'s characteristics to the characteristics of the [SealedBox] to decrypt.
+ * It does not, however, prevent mixing up different encryption algorithms with the same characteristics. I.e., it is possible to feed a [AES.ECB] key into
+ * a [AES.CBC] [SealedBox].
+ * In such cases, this function will immediately return a [KmmResult.failure].
+ */
+fun <I : NonceTrait> SealedBox<AuthCapability.Unauthenticated, I, KeyType.Integrated>.decrypt(
+    key: SymmetricKey<AuthCapability.Unauthenticated, I, KeyType.Integrated>
+): KmmResult<ByteArray> = catching {
+    require(algorithm == key.algorithm) { "Algorithm mismatch! expected: $algorithm, actual: ${key.algorithm}" }
+    @Suppress("UNCHECKED_CAST")
+    (this as SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated>).decryptInternal(
+        (key as SymmetricKey.Integrated).secretKey
+    )
+
 }
 
 
 /**
  * Attempts to decrypt this ciphertext (which may also hold an IV/nonce, and in case of an authenticated ciphertext, authenticated data and auth tag) using the provided [key].
  * This constrains the [key]'s characteristics to the characteristics of the [SealedBox] to decrypt.
- * It does not, however, prevent maxing up different encryption algorithms with the same characteristics. I.e., it is possible to feed a [SymmetricEncryptionAlgorithm.ChaCha20Poly1305] key into
+ * It does not, however, prevent mixing up different encryption algorithms with the same characteristics. I.e., it is possible to feed a [SymmetricEncryptionAlgorithm.ChaCha20Poly1305] key into
  * a [AES.GCM] [SealedBox].
  * In such cases, this function will immediately return a [KmmResult.failure].
  */
 @JvmName("decryptRawAuthenticated")
-private fun SealedBox<Authenticated.Integrated, *, KeyType.Integrated>.decryptInternal(
-    secretKey: ByteArray
+private fun SealedBox<Authenticated.Integrated, *, out KeyType.Integrated>.decryptInternal(
+    secretKey: ByteArray,
+    authenticatedData: ByteArray
 ): ByteArray {
     require(secretKey.size.toUInt() == algorithm.keySize.bytes) { "Key must be exactly ${algorithm.keySize} bits long" }
-    return doDecryptAEAD(secretKey)
+    return doDecryptAEAD(secretKey, authenticatedData)
 }
 
 @JvmName("decryptRaw")
-private fun SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated>.decryptInternal(
+private fun SealedBox<AuthCapability.Unauthenticated, *, out KeyType.Integrated>.decryptInternal(
     secretKey: ByteArray
 ): ByteArray {
     require(secretKey.size.toUInt() == algorithm.keySize.bytes) { "Key must be exactly ${algorithm.keySize} bits long" }
     return doDecrypt(secretKey)
 }
 
-private fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedicatedMacKey>.decryptInternal(
+private fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, out KeyType.WithDedicatedMacKey>.decryptInternal(
     secretKey: ByteArray,
     macKey: ByteArray = secretKey,
+    authenticatedData: ByteArray
 ): ByteArray {
     require(this.isAuthenticated())
     val iv: ByteArray? = if (this is SealedBox.WithNonce<*, *>) nonce else null
-    val aad = authenticatedData
     val authTag = authTag
 
     val algorithm = algorithm
     val innerCipher = algorithm.authCapability.innerCipher
     val mac = algorithm.authCapability.mac
     val dedicatedMacInputCalculation = algorithm.authCapability.dedicatedMacInputCalculation
-    val hmacInput = mac.dedicatedMacInputCalculation(encryptedData, iv ?: byteArrayOf(), aad ?: byteArrayOf())
+    val hmacInput = mac.dedicatedMacInputCalculation(encryptedData, iv ?: byteArrayOf(), authenticatedData)
     val transform = algorithm.authCapability.dedicatedMacAuthTagTransform
     if (!algorithm.authCapability.transform(mac.mac(macKey, hmacInput).getOrThrow()).contentEquals(authTag))
         throw IllegalArgumentException("Auth Tag mismatch!")
@@ -151,9 +190,9 @@ fun SymmetricKey<AuthCapability.Authenticated<*>, NonceTrait.Required, *>.decryp
     nonce: ByteArray,
     encryptedData: ByteArray,
     authTag: ByteArray,
-    authenticatedData: ByteArray? = null
+    authenticatedData: ByteArray = byteArrayOf()
 ): KmmResult<ByteArray> =
-    algorithm.sealedBoxFrom(nonce, encryptedData, authTag, authenticatedData).transform { it.decrypt(this) }
+    algorithm.sealedBoxFrom(nonce, encryptedData, authTag).transform { it.decrypt(this, authenticatedData) }
 
 /**
  * Directly decrypts raw [encryptedData], feeding [authTag], and [authenticatedData] into the decryption process.
@@ -163,6 +202,6 @@ fun SymmetricKey<AuthCapability.Authenticated<*>, NonceTrait.Required, *>.decryp
 fun SymmetricKey<AuthCapability.Authenticated<*>, NonceTrait.Without, *>.decrypt(
     encryptedData: ByteArray,
     authTag: ByteArray,
-    authenticatedData: ByteArray? = null
+    authenticatedData: ByteArray = byteArrayOf()
 ): KmmResult<ByteArray> =
-    algorithm.sealedBoxFrom(encryptedData, authTag, authenticatedData).transform { it.decrypt(this) }
+    algorithm.sealedBoxFrom(encryptedData, authTag).transform { it.decrypt(this, authenticatedData) }

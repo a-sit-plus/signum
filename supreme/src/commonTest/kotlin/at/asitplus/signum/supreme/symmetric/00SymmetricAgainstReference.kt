@@ -3,7 +3,7 @@ package at.asitplus.signum.supreme.symmetric
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.authTag
-import at.asitplus.signum.indispensable.symmetric.authenticatedData
+import at.asitplus.signum.indispensable.symmetric.nonce
 import at.asitplus.signum.supreme.symmetric.discouraged.andPredefinedNonce
 import at.asitplus.signum.supreme.symmetric.discouraged.encrypt
 import io.kotest.assertions.withClue
@@ -54,10 +54,9 @@ class `00SymmetricAgainstReference` : FreeSpec({
                             withClue(encrypted.toHexString()) {
                                 box.encryptedData shouldBe encrypted
                                 box.authTag shouldBe authTag
-                                box.authenticatedData shouldBe aad
                                 box.nonce shouldBe iv
                             }
-                            box.decrypt(key).getOrThrow() shouldBe plaintext
+                            box.decrypt(key, aad?:byteArrayOf()).getOrThrow() shouldBe plaintext
                         }
 
                         192 / 8 -> SymmetricEncryptionAlgorithm.AES_192.GCM.apply {
@@ -110,10 +109,9 @@ class `00SymmetricAgainstReference` : FreeSpec({
                         withClue(encrypted.toHexString()) {
                             box.encryptedData shouldBe encrypted
                             box.authTag shouldBe authTag
-                            box.authenticatedData shouldBe aad
                             box.nonce shouldBe iv
                         }
-                        box.decrypt(key).getOrThrow() shouldBe plaintext
+                        box.decrypt(key, aad?:byteArrayOf()).getOrThrow() shouldBe plaintext
                     }
                 }
 
@@ -4543,7 +4541,7 @@ val ecb =
 
 """.trimIndent()
 
-val wrap="""
+val wrap = """
 [
    {
       "key":"85ca1d468f4436f8f0e9ae2d780264d2",
