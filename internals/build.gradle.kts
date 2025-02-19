@@ -1,11 +1,5 @@
 import at.asitplus.gradle.*
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.TypeSpec
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
-import java.io.FileInputStream
-import java.util.regex.Pattern
 
 
 buildscript {
@@ -63,12 +57,14 @@ kotlin {
     }
 }
 
-exportIosFramework(
+exportXCFramework(
     "Internals",
     transitiveExports = false,
+    static = false,
     serialization("json"),
     datetime(),
-    kmmresult(),
+    kmmresult()
+
 )
 
 val javadocJar = setupDokka(

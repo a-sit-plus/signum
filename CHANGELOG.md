@@ -3,6 +3,7 @@
 ## 3.0
 
 ### NEXT
+* Add dedicated Android targets (SDK 30 /JDK 1.8) to all modules
 
 ### 3.14.0 (Supreme 0.7.0)
 
