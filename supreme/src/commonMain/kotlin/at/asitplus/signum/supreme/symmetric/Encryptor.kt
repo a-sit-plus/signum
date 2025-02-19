@@ -60,13 +60,11 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, out K : KeyT
                     (algorithm).sealedBoxFrom(
                         (encrypted as SealedBox.WithNonce<*, *>).nonce,
                         encrypted.encryptedData,
-                        authTag,
-                        aad
+                        authTag
                     )
                 } else (algorithm).sealedBoxFrom(
                     encrypted.encryptedData,
-                    authTag,
-                    aad
+                    authTag
                 )).getOrThrow() as SealedBox<A, I, K>
 
             } else platformCipher.doEncrypt(data))
@@ -80,7 +78,8 @@ internal class CipherParam<T, A : AuthCapability<out K>, K : KeyType>(
 )
 
 internal expect fun SealedBox<Authenticated.Integrated, *, out KeyType.Integrated>.doDecryptAEAD(
-    secretKey: ByteArray
+    secretKey: ByteArray,
+    authenticatedData: ByteArray
 ): ByteArray
 
 internal expect fun SealedBox<AuthCapability.Unauthenticated, *, out KeyType.Integrated>.doDecrypt(

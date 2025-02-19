@@ -55,7 +55,7 @@ internal actual fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> Cip
         alg.requiresNonce() -> when {
             alg.isAuthenticated() -> {
                 (alg as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Required, *>)
-                alg.sealedBoxFrom(nonce!!, ciphertext, authTag!!, aad)
+                alg.sealedBoxFrom(nonce!!, ciphertext, authTag!!)
             }
 
             else -> alg.sealedBoxFrom(nonce!!, ciphertext)
@@ -64,7 +64,7 @@ internal actual fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> Cip
         else -> when {
             alg.isAuthenticated() -> {
                 (alg as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Without, *>)
-                alg.sealedBoxFrom(ciphertext, authTag!!, aad)
+                alg.sealedBoxFrom(ciphertext, authTag!!)
             }
 
             else -> alg.sealedBoxFrom(ciphertext)
@@ -93,7 +93,8 @@ val SymmetricEncryptionAlgorithm<*, *, *>.jcaKeySpec: String
 
 @JvmName("doDecryptAuthenticated")
 internal actual fun SealedBox<Authenticated.Integrated, *, out KeyType.Integrated>.doDecryptAEAD(
-    secretKey: ByteArray
+    secretKey: ByteArray,
+    authenticatedData: ByteArray
 ): ByteArray {
     if (!this.hasNonce()) TODO("AEAD algorithm $algorithm is UNSUPPORTED")
 

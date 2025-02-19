@@ -24,14 +24,14 @@ import kotlin.jvm.JvmName
 fun <K : KeyType, A : AuthCapability.Authenticated<out K>> KeyWithNonceAuthenticating<A, out K>.encrypt(
     data: ByteArray,
     authenticatedData: ByteArray? = null
-): KmmResult<SealedBox.WithNonce.Authenticated<K>> = catching {
+): KmmResult<SealedBox<A, NonceTrait.Required, out K>> = catching {
     Encryptor(
         second.algorithm,
         if (second.hasDedicatedMacKey()) (second as WithDedicatedMac<NonceTrait.Required>).encryptionKey else (second as SymmetricKey.Integrated<out A, NonceTrait.Required>).secretKey,
         if (second.hasDedicatedMacKey()) (second as WithDedicatedMac<NonceTrait.Required>).macKey else (second as SymmetricKey.Integrated<out A, NonceTrait.Required>).secretKey,
         first,
         authenticatedData,
-    ).encrypt(data) as SealedBox.WithNonce.Authenticated<K>
+    ).encrypt(data) as SealedBox<A, NonceTrait.Required,K>
 }
 
 /**
