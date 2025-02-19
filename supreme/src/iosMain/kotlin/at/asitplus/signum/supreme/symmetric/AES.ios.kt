@@ -62,8 +62,7 @@ internal object AESIOS {
             alg.sealedBoxFrom(
                 ciphertext.iv().toByteArray(),
                 ciphertext.ciphertext().toByteArray(),
-                ciphertext.authTag().toByteArray(),
-                aad
+                ciphertext.authTag().toByteArray()
             ).getOrThrow()
         }
 
