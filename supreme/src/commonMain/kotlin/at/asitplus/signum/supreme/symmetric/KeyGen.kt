@@ -109,10 +109,10 @@ fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<K
  */
 @JvmName("fixedKeyDedicatedMacKey")
 @Suppress("UNCHECKED_CAST")
-fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability<KeyType.WithDedicatedMacKey>, I, KeyType.WithDedicatedMacKey>.keyFrom(
+fun <A:AuthCapability<KeyType.WithDedicatedMacKey>, I : NonceTrait> SymmetricEncryptionAlgorithm<A, I, KeyType.WithDedicatedMacKey>.keyFrom(
     encryptionKey: ByteArray,
     macKey: ByteArray
-): KmmResult<SymmetricKey<AuthCapability<KeyType.WithDedicatedMacKey>, I, KeyType.WithDedicatedMacKey>> =
+): KmmResult<SymmetricKey<A, I, KeyType.WithDedicatedMacKey>> =
     catching {
         (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(encryptionKey, macKey)
-    } as KmmResult<SymmetricKey<AuthCapability<KeyType.WithDedicatedMacKey>, I, KeyType.WithDedicatedMacKey>>
+    } as KmmResult<SymmetricKey<A, I, KeyType.WithDedicatedMacKey>>
