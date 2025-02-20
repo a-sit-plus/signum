@@ -323,6 +323,9 @@ Decrypting data received from external sources is also straight-forward:
 ```kotlin
 val box = algo.sealedBoxFrom(nonce, ciphertext, authTag).getOrThrow(/*handle error*/)
 box.decrypt(preSharedKey, /*also pass AAD*/ externalAAD).getOrThrow(/*handle error*/) shouldBe secret
+
+//alternatively, pass raw data:
+preSharedKey.decrypt(nonce, ciphertext,authTag, externalAAD).getOrThrow(/*handle error*/) shouldBe secret
 ```
 
 ### Custom AES-CBC-HMAC
