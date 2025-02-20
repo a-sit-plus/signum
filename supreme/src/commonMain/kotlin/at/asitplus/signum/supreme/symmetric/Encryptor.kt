@@ -21,7 +21,7 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, out K : KeyT
         require(key.size.toUInt() == algorithm.keySize.bytes) { "Key must be exactly ${algorithm.keySize} bits long" }
     }
 
-    private val platformCipher: CipherParam<*, A, out K> = initCipher<Any, A, I, K>(algorithm, key, iv, aad)
+    private val platformCipher: PlatformCipher<*, A, out K> = initCipher<Any, A, I, K>(algorithm, key, iv, aad)
 
     /**
      * Encrypts [data] and returns a [at.asitplus.signum.indispensable.symmetric.Ciphertext] matching the algorithm type that was used to create this [Encryptor] object.
@@ -70,7 +70,7 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, out K : KeyT
             } else platformCipher.doEncrypt(data))
 }
 
-internal class CipherParam<T, A : AuthCapability<out K>, K : KeyType>(
+internal class PlatformCipher<T, A : AuthCapability<out K>, K : KeyType>(
     val alg: SymmetricEncryptionAlgorithm<A, *, K>,
     val platformData: T,
     val nonce: ByteArray?,
@@ -92,6 +92,6 @@ internal expect fun <T, A : AuthCapability<out K>, I : NonceTrait, K : KeyType> 
     key: ByteArray,
     nonce: ByteArray?,
     aad: ByteArray?
-): CipherParam<T, A, out K>
+): PlatformCipher<T, A, out K>
 
-internal expect fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> CipherParam<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K>
+internal expect fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> PlatformCipher<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K>
