@@ -25,14 +25,14 @@
 ## Kotlin Multiplatform Crypto/PKI Library with ASN1 Parser + Encoder
 
 * **Multiplatform, platform-native crypto** &rarr; Check out the included [CMP demo App](https://a-sit-plus.github.io/signum/app) to see it in
-  action!
-    * **ECDSA and RSA Signer and Verifier**
-    * **Multiplatform ECDH key agreement**
-    * **Hardware-Backed crypto on Android and iOS**
-    * **Platform-native attestation on iOS and Android**
-    * **Configurable biometric authentication on Android and iOS without callbacks or activity passing** (✨Magic!✨)
-    * **Multiplatform AES**
-    * **Multiplatform HMAC**
+action!
+  * **ECDSA and RSA Signer and Verifier**
+  * **Multiplatform ECDH key agreement**
+  * **Hardware-Backed crypto on Android and iOS**
+  * **Platform-native attestation on iOS and Android**
+  * **Configurable biometric authentication on Android and iOS without callbacks or activity passing** (✨Magic!✨)
+  * **Multiplatform AES**
+  * **Multiplatform HMAC**
 * Public Keys (RSA and EC)
 * Private Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)
@@ -112,7 +112,8 @@ certificates, CSRs, as well as COSE and JOSE data. Hence, we needed a fully-feat
 X.509 to COSE and JOSE datatypes. We required comprehensive ASN.1 introspection and builder capabilities across platforms.
 Most notably, Apple has been notoriously lacking anything even remotely usable
 and [SwiftASN1](https://github.com/apple/swift-asn1) was out of the question for a couple of reasons.
-Most notably, it did not exist, when we started work on Signum.
+Most notably, it did not exist, when we started work on Signum. Hence, there was **neither ASN.1 parser, nor encoder on Apple platforms**
+that was actually usable. In effect: there way no KMP ASN.1 codec in sight, much less a type-safe, user-friendly one.
 As it stands now, our ASN.1 engine can handle almost anything you throw at it, in some areas even exceeding Bouncy Castle!
 cryptography-kotlin only added basic ASN.1 capabilities over a year after Signum's development started.
 <br>
@@ -127,7 +128,7 @@ We also needed platform-native attestation capabilities (and so will you sooner 
 mission-critical on mobile targets!).
 While this approach does limit the number of available cryptographic operations, it also means that all cryptographic operations
 involving secrets (e.g. private keys) provide the same security guarantees as platform-native implementations do &mdash;
-**because they are the same** under the hood. Most notably: private keys never leave the platform and **hardware-backed private keys
+**because they are the same** under the hood. Most notably: **hardware-backed private keys
 never even leave the hardware crypto modules**!<br>
 This tight integration and our focus on mobile comes at the cost of the **Supreme KMP crypto provider only supporting JVM,
 Android, and iOS**.
@@ -294,7 +295,37 @@ println("Is it trustworthy? $isValid")
 ```
 
 ## Symmetric Encryption
-We currently support ChaCha20-Poly1503, AES-CBC, AES-GCM, and a very flexible flavour of AES-CBC-HMAC.
+We currently support ChaCha20-Poly1503, AES-CBC, AES-GCM, AES-KW, AES-ECB, and a very flexible flavour of AES-CBC-HMAC.
+Every symmetric operation is rooted in an algorithm, since the algorithm defines characteristics, such as nonce requirement,
+authentication capabilities, etc. Hence, you need to know the algorithm.
+
+### Baseline Usage
+Once you know decided on an encryption algorithm, encryption itself is straight-forward:
+
+```kotlin
+val secret = "Top Secret".encodeToByteArray()
+val authenticatedData = "Bottom Secret".encodeToByteArray()
+val secretKey = SymmetricEncryptionAlgorithm.ChaCha20Poly1305.randomKey()
+val encrypted = secretKey.encrypt(secret, authenticatedData).getOrThrow(/*handle error*/)
+encrypted.decrypt(secretKey, authenticatedData).getOrThrow(/*handle error*/) shouldBe secret
+```
+
+Encrypted data is always structured and the individual components are easily accessible:
+```kotlin
+ val nonce = encrypted.nonce
+val ciphertext = encrypted.encryptedData
+val authTag = encrypted.authTag
+val keyBytes = secretKey.secretKey /*for algorithms with a dedicated MAC key, there's encryptionKey and macKey*/
+```
+
+Decrypting data received from external sources is also straight-forward:
+```kotlin
+val box = algo.sealedBoxFrom(nonce, ciphertext, authTag).getOrThrow(/*handle error*/)
+box.decrypt(preSharedKey, /*also pass AAD*/ externalAAD).getOrThrow(/*handle error*/) shouldBe secret
+```
+
+### Custom AES-CBC-HMAC
+Supreme supports AES-CBC with customizable HMAC to provide AEAD.
 This is supported across all _Supreme_ targets and works as follows:
 ```kotlin
 val payload = "More matter, with less art!".encodeToByteArray()
@@ -306,8 +337,7 @@ val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
     aad + iv + ciphertext + aad.size.encodeTo4Bytes()
   }
 
-//any size is fine, really. omitting the override generates a mac key of
-//the same size as the encryption key
+//any size is fine, really. omitting the override generates a mac key of the same size as the encryption key
 val key = algorithm.randomKey(macKeyLength = 32.bit)
 val aad = Clock.System.now().toString().encodeToByteArray()
 
@@ -316,36 +346,29 @@ val sealedBox = key.encrypt(
   authenticatedData = aad,
 ).getOrThrow(/*handle error*/)
 
-//The sealed box object is correctly typed:
-//  * It is a SealedBox.WithIV
-//  * The generic type arguments indicate that
-//      * the ciphertext is authenticated
-//      * Using a dedicated MAC function atop an unauthenticated cipher
-//  * we can hence access `authenticatedCiphertext` for:
-//      * authTag
-//      * authenticatedData
-sealedBox.authenticatedData shouldBe aad
-
 //because everything is structured, decryption is simple
-val recovered = sealedBox.decrypt(key).getOrThrow(/*handle error*/)
+val recovered = sealedBox.decrypt(key, aad).getOrThrow(/*handle error*/)
 
 recovered shouldBe payload //success!
 
 //we can also manually construct the sealed box, if we know the algorithm:
-val reconstructed = algorithm.sealedBox(
+val reconstructed = algorithm.sealedBoxFrom(
   sealedBox.nonce,
   encryptedData = sealedBox.encryptedData, /*Could also access authenticatedCipherText*/
   authTag = sealedBox.authTag,
-  authenticatedData = sealedBox.authenticatedData
 ).getOrThrow()
 
-val manuallyRecovered = reconstructed.decrypt(key).getOrThrow(/*handle error*/)
+val manuallyRecovered = reconstructed.decrypt(
+  key,
+  authenticatedData = aad,
+).getOrThrow(/*handle error*/)
 
 manuallyRecovered shouldBe payload //great success!
 
 //if we just know algorithm and key bytes, we can also construct a symmetric key
 reconstructed.decrypt(
   algorithm.keyFrom(key.encryptionKey, key.macKey).getOrThrow(/*handle error*/),
+  aad
 ).getOrThrow(/*handle error*/) shouldBe payload //greatest success!
 ```
 
