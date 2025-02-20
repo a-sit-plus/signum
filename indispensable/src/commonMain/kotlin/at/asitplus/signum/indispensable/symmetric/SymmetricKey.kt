@@ -110,7 +110,7 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
     sealed class WithDedicatedMac<I : NonceTrait>
     protected constructor(
         override val algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey>,
-        override val additionalProperties: MutableMap<String, String> = mutableMapOf<String, String>()
+        override val additionalProperties: MutableMap<String, String> = mutableMapOf<String, String>(),
         /**
          * The actual encryption key bytes
          */
