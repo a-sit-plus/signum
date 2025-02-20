@@ -91,7 +91,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
         }
     }
 
-    /**Humanly-readable name**/
+    /**Human-readable name**/
     val name: String
 
     /**
