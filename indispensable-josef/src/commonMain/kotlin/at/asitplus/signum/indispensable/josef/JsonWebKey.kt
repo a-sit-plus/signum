@@ -311,12 +311,7 @@ data class JsonWebKey(
                 ).apply { jwkId = keyId }
             }
 
-            JwkType.SYM -> {
-                require(k!=null){"Missing symmetric key k"}
-                algorithm
-                TODO()
-            }
-            null -> throw IllegalArgumentException("Illegal key type")
+            else -> throw IllegalArgumentException("Illegal key type")
         }
     }
 
@@ -374,12 +369,7 @@ fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
                 e = e.magnitude
             )
     }
-/**
- * Converts a [at.asitplus.signum.indispensable.symmetric.SymmetricKey] to a [JsonWebKey]
- */
-fun SymmetricKey<*,*,*>.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey? {
-    TODO("Define algorithms an map where possible")
-}
+
 
 private const val JWK_ID = "jwkIdentifier"
 
