@@ -384,7 +384,7 @@ Hence, a sealed box containing an authenticated ciphertext will only ever accept
 Additional runtime checks ensure that mo mixups can happen.
 
 ### On Type Safety 
-The API tries to be as type-safe as possible, e.g., it is impossible to specify a dedicated MAC key, or dedicated MAC function for AES-GCM,
+The API tries to be as type-safe as possible, e.g., it is impossible to specify a dedicated MAC key (or function) for AES-GCM,
 and non-authenticated AES-CBC does not even support passing additional authenticated data to the encryption process.
 The same constraints apply to the resulting ciphertexts, making it much harder
 to accidentally confuse an authenticated encryption algorithm with a non-authenticated one.
