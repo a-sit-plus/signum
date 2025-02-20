@@ -3,13 +3,13 @@ package at.asitplus.signum.indispensable.symmetric
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
-val <I : NonceTrait>SealedBox<out AuthCapability.Authenticated<*>, I, *>.authTag
+val <I : NonceTrait> SealedBox<out AuthCapability.Authenticated<*>, I, *>.authTag
     get() = (this as SealedBox.Authenticated<*, *>).authTag
 
 val SealedBox<*, NonceTrait.Required, *>.nonce get() = (this as SealedBox.WithNonce<*, *>).nonce
 
 /**
- * Represents symmetrically encrypted data. This is a separate class to more easily enforce type safety wrt. presence of
+ * Represents symmetrically encrypted data in a structured manner.
  * Construct using [SymmetricEncryptionAlgorithm.sealedBoxFrom]
  */
 sealed interface SealedBox<A : AuthCapability<out K>, I : NonceTrait, K : KeyType> {
@@ -42,7 +42,6 @@ sealed interface SealedBox<A : AuthCapability<out K>, I : NonceTrait, K : KeyTyp
 
             if (ciphertext != other.ciphertext) return false
             if (algorithm != other.algorithm) return false
-            if (!encryptedData.contentEquals(other.encryptedData)) return false
 
             return true
         }
@@ -50,7 +49,6 @@ sealed interface SealedBox<A : AuthCapability<out K>, I : NonceTrait, K : KeyTyp
         override fun hashCode(): Int {
             var result = ciphertext.hashCode()
             result = 31 * result + algorithm.hashCode()
-            result = 31 * result + encryptedData.contentHashCode()
             return result
         }
 
@@ -71,11 +69,10 @@ sealed interface SealedBox<A : AuthCapability<out K>, I : NonceTrait, K : KeyTyp
      * A sealed box consisting of an [nonce] and the actual [ciphertext].
      * Construct using [SymmetricEncryptionAlgorithm.sealedBoxFrom]
      */
-    sealed class WithNonce<A : AuthCapability< out K>, K : KeyType>(
+    sealed class WithNonce<A : AuthCapability<out K>, K : KeyType>(
         val nonce: ByteArray,
         private val ciphertext: Ciphertext<A, NonceTrait.Required, SymmetricEncryptionAlgorithm<A, NonceTrait.Required, K>, K>
     ) : SealedBox<A, NonceTrait.Required, K> {
-
 
         override val algorithm: SymmetricEncryptionAlgorithm<A, NonceTrait.Required, K> = ciphertext.algorithm
         override val encryptedData: ByteArray = ciphertext.encryptedData
@@ -88,7 +85,6 @@ sealed interface SealedBox<A : AuthCapability<out K>, I : NonceTrait, K : KeyTyp
             if (!nonce.contentEquals(other.nonce)) return false
             if (ciphertext != other.ciphertext) return false
             if (algorithm != other.algorithm) return false
-            if (!encryptedData.contentEquals(other.encryptedData)) return false
 
             return true
         }
@@ -97,7 +93,6 @@ sealed interface SealedBox<A : AuthCapability<out K>, I : NonceTrait, K : KeyTyp
             var result = nonce.contentHashCode()
             result = 31 * result + ciphertext.hashCode()
             result = 31 * result + algorithm.hashCode()
-            result = 31 * result + encryptedData.contentHashCode()
             return result
         }
 
