@@ -3,7 +3,6 @@ package at.asitplus.signum.supreme.symmetric
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.ImplementationError
-import at.asitplus.signum.indispensable.mac.HMAC
 import at.asitplus.signum.indispensable.mac.MAC
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.AuthCapability.Authenticated
@@ -41,8 +40,6 @@ fun SealedBox<*, *, *>.decrypt(key: SymmetricKey<*, *, *>): KmmResult<ByteArray>
 }
 
 
-
-
 //required because we don't store MAC info all the way
 /**
  * Attempts to decrypt this ciphertext (which may also hold an IV/nonce) using the provided [key].
@@ -52,7 +49,7 @@ fun SealedBox<*, *, *>.decrypt(key: SymmetricKey<*, *, *>): KmmResult<ByteArray>
  * [key] and [SealedBox].**
  */
 @JvmName("decryptAuthenticatedIntegrated")
-fun <I: NonceTrait, M: MAC>SealedBox<AuthCapability.Authenticated.WithDedicatedMac<M, I>,I, KeyType.WithDedicatedMacKey>.decrypt(
+fun <I : NonceTrait, M : MAC> SealedBox<AuthCapability.Authenticated.WithDedicatedMac<M, I>, I, KeyType.WithDedicatedMacKey>.decrypt(
     key: SymmetricKey.WithDedicatedMac<*>,
     authenticatedData: ByteArray = byteArrayOf()
 ) = catching {
@@ -193,7 +190,7 @@ fun SymmetricKey<AuthCapability.Unauthenticated, NonceTrait.Without, KeyType.Int
  * @return [at.asitplus.KmmResult.failure] on illegal auth tag length
  */
 @JvmName("decryptRawAuthedWithNonce")
-fun SymmetricKey<AuthCapability.Authenticated<*>, NonceTrait.Required, *>.decrypt(
+fun <A : AuthCapability.Authenticated<*>> SymmetricKey<A, NonceTrait.Required, *>.decrypt(
     nonce: ByteArray,
     encryptedData: ByteArray,
     authTag: ByteArray,
@@ -206,9 +203,15 @@ fun SymmetricKey<AuthCapability.Authenticated<*>, NonceTrait.Required, *>.decryp
  * @return [at.asitplus.KmmResult.failure] on illegal auth tag length
  */
 @JvmName("decryptRawAuthedNoNonce")
-fun SymmetricKey<AuthCapability.Authenticated<*>, NonceTrait.Without, *>.decrypt(
+fun <A : AuthCapability.Authenticated<*>> SymmetricKey<A, NonceTrait.Without, *>.decrypt(
     encryptedData: ByteArray,
     authTag: ByteArray,
     authenticatedData: ByteArray = byteArrayOf()
 ): KmmResult<ByteArray> =
-    algorithm.sealedBoxFrom(encryptedData, authTag).transform { it.decrypt(this, authenticatedData) }
+    algorithm.sealedBoxFrom(encryptedData, authTag).transform {
+        it.decrypt(
+            @Suppress("UNCHECKED_CAST")
+            this as SymmetricKey<AuthCapability.Authenticated<*>, NonceTrait.Without, *>,
+            authenticatedData
+        )
+    }

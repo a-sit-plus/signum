@@ -21,6 +21,7 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.datetime.Clock
 import kotlin.random.Random
 import kotlin.random.nextUInt
+import at.asitplus.signum.supreme.symmetric.decrypt
 
 @OptIn(HazardousMaterials::class)
 @ExperimentalStdlibApi
@@ -49,6 +50,9 @@ class `00SymmetricTest` : FreeSpec({
 
         val box = algo.sealedBoxFrom(nonce, ciphertext, authTag).getOrThrow(/*handle error*/)
         box.decrypt(preSharedKey, /*also pass AAD*/ externalAAD).getOrThrow(/*handle error*/) shouldBe secret
+
+        //direct decryption
+        preSharedKey.decrypt(nonce, ciphertext,authTag, externalAAD).getOrThrow(/*handle error*/) shouldBe secret
 
         val payload = "More matter, with less art!".encodeToByteArray()
 
