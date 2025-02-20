@@ -119,7 +119,7 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
          */
         val encryptionKey: ByteArray,
         /**
-         * The actual dedicated MAX key bytes
+         * The actual dedicated MAC key bytes
          */
         val macKey: ByteArray
     ) : SymmetricKey<AuthCapability.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey>,
