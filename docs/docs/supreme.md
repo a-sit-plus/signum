@@ -436,7 +436,7 @@ All contracts can be combined, meaning it is possible to steadily narrow down th
 In addition, there's `isIntegrated()`, which is only defined for objects having the `Authenticated.Integrated` characteristic:
 
 * if `true`, smart-casts the object's
-    * AuthCapability to `SymmetricEncryptionalgorithm<AuthCapability.Authenticated.Integrated`
+    * AuthCapability to `SymmetricEncryptionalgorithm<AuthCapability.Authenticated.Integrated>`
     * KeyType to `KeyType.Integrated`
 * if `false`, smart-casts the object's
     * KeyType to `KeyType.WithDedicatedMac`

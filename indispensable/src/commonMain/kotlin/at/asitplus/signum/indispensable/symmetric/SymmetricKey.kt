@@ -34,9 +34,7 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
      * Self-Contained encryption key, i.e. a single byte array is sufficient
      */
     sealed class Integrated<A : AuthCapability<KeyType.Integrated>, I : NonceTrait>
-    @HazardousMaterials("Does not check whether key size matched algorithm! Useful for testing, but not production!")
-
-    constructor(
+    protected constructor(
         override val algorithm: SymmetricEncryptionAlgorithm<A, I, KeyType.Integrated>,
         /**
          * The actual encryption key bytes
@@ -107,12 +105,7 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
      * bolt on AEAD capabilities, such as [SymmetricEncryptionAlgorithm.AES.GCM]
      */
     sealed class WithDedicatedMac<I : NonceTrait>
-    @HazardousMaterials("Does not check whether key size matched algorithm! Useful for testing, but not production!")
-    /**
-     * Do not invoke directly! use Supreme's `SymmetricEncryptionAlgorithm.randomKey()` and `SymmetricEncryptionAlgorithm.encryptionKeyFrom(bytes)`
-     * This constructor does not check for matching key sizes to allow for testing error cases!
-     */
-    constructor(
+    protected constructor(
         override val algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey>,
         /**
          * The actual encryption key bytes
