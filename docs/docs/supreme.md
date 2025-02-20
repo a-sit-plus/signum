@@ -461,9 +461,18 @@ this space. As of 01-2025, the following algorithms are implemented:
 * `SymmetricEncryptionAlgorithm.AES_128.GCM`
 * `SymmetricEncryptionAlgorithm.AES_192.GCM`
 * `SymmetricEncryptionAlgorithm.AES_256.GCM`
+* `SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_1`
 * `SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_256`
+* `SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_384`
+* `SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_512`
+* `SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_1`
 * `SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_256`
+* `SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_384`
+* `SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512`
+* `SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_1`
 * `SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_256`
+* `SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_384`
+* `SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_512`
 * `SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394`
 * `SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394`
 * `SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394`
@@ -497,6 +506,9 @@ Decrypting data received from external sources is also straight-forward:
 ```kotlin
 val box = algo.sealedBoxFrom(nonce, ciphertext, authTag).getOrThrow(/*handle error*/)
 box.decrypt(preSharedKey, /*also pass AAD*/ externalAAD).getOrThrow(/*handle error*/) shouldBe secret
+
+//alternatively, pass raw data:
+preSharedKey.decrypt(nonce, ciphertext,authTag, externalAAD).getOrThrow(/*handle error*/) shouldBe secret
 ```
 
 ### Custom AES-CBC-HMAC
