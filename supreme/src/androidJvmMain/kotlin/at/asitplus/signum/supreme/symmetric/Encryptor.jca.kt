@@ -13,7 +13,7 @@ internal actual fun <T, A : AuthCapability<out K>, I : NonceTrait, K : KeyType> 
     key: ByteArray,
     nonce: ByteArray?,
     aad: ByteArray?
-): CipherParam<T, A, out K> = when {
+): PlatformCipher<T, A, out K> = when {
     algorithm.requiresNonce() -> {
         @OptIn(HazardousMaterials::class)
         val nonce = nonce ?: algorithm.randomNonce()
@@ -22,7 +22,7 @@ internal actual fun <T, A : AuthCapability<out K>, I : NonceTrait, K : KeyType> 
         when (algorithm) {
             is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaJVM.initCipher(key, nonce, aad)
             is SymmetricEncryptionAlgorithm.AES<*, *, *> -> AESJCA.initCipher(algorithm, key, nonce, aad)
-        } as CipherParam<T, A, K>
+        } as PlatformCipher<T, A, K>
     }
 
     else -> {
@@ -30,12 +30,12 @@ internal actual fun <T, A : AuthCapability<out K>, I : NonceTrait, K : KeyType> 
         if ((algorithm !is SymmetricEncryptionAlgorithm.AES.ECB) && (algorithm !is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394))
             TODO("$algorithm is UNSUPPORTED")
 
-        AESJCA.initCipher(algorithm, key, nonce, aad) as CipherParam<T, A, K>
+        AESJCA.initCipher(algorithm, key, nonce, aad) as PlatformCipher<T, A, K>
     }
 }
 
-internal actual fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> CipherParam<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K> {
-    @Suppress("UNCHECKED_CAST") (this as CipherParam<Cipher, A, K>)
+internal actual fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> PlatformCipher<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K> {
+    @Suppress("UNCHECKED_CAST") (this as PlatformCipher<Cipher, A, K>)
     val jcaCiphertext = platformData.doFinal(data)
 
     //JCA simply concatenates ciphertext and authtag, so we need to split
