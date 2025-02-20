@@ -25,7 +25,7 @@ internal object AESJCA {
                     SecretKeySpec(key, algorithm.jcaKeySpec),
                     GCMParameterSpec(cipher.tagLength.bits.toInt(), nonce)
                 )
-            else if (algorithm is SymmetricEncryptionAlgorithm.AES.CBC<*, *>) //covers Plain and CBC, because CBC will delegate to here
+            else if (algorithm is SymmetricEncryptionAlgorithm.AES.CBC<*, *>) //covers unauthenticated and CBC-HMAC, because CBC will always delegate to here
                 init(
                     Cipher.ENCRYPT_MODE,
                     SecretKeySpec(key, algorithm.jcaKeySpec),

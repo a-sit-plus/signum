@@ -77,7 +77,7 @@ which is implemented by `CryptoPublicKey.EC`
     * `HMAC` defines HMAC for all supported `Digest` algorithms. The [Supreme](supreme.md) KMP crypto provider implements the actual HMAC functionality.
 * `SymmetricEncryptionAlgorithm` represents symmetric encryption algorithms. _Indispensable_ currently ships with definitions for AES-CBC, a flexible AES-CBC-HMAC, and AES-GCM, while the [Supreme](supreme.md) KMP crypto provider implements the actual AES functionality. 
     * `BlockCipher` denotes a BlockCipher 
-    * `WithIV` denotes a Cipher requiring or supporting an initialization vector
+    * `WithIV` denotes a Cipher requiring an initialization vector
     * `Unauthenticated` denotes a non-authenticated encryption algorithm
     * `Authenticated` denotes an authenticated encryption algorithm
     * `Authenticated.WithDedicatedMac` describes an encryption authenticated encryption algorithm based on a non-authenticated one and a dedicated `MAC`, to achieve authenticated encryption

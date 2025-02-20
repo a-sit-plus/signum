@@ -43,12 +43,25 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
          */
         class AESDefinition(val keySize: BitLength) {
 
+            /**
+             * AES in Galois Counter Mode
+             */
             val GCM = AES.GCM(keySize)
+
+            /**
+             * AES in Cipher Block Chaining Mode
+             */
             val CBC = CbcDefinition(keySize)
 
+            /**
+             * AES in Electronic Codebook Mode. You almost certainly don't want to use this
+             */
             @HazardousMaterials("ECB is almost always insecure!")
             val ECB = AES.ECB(keySize)
 
+            /**
+             * AES Key Wrapping as per [RFC 3394](https://www.rfc-editor.org/rfc/rfc3394)
+             */
             val WRAP = WrapDefinition(keySize)
 
             class WrapDefinition(keySize: BitLength) {
@@ -56,6 +69,10 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
             }
 
             class CbcDefinition(keySize: BitLength) {
+                /**
+                 * Plain, Unauthenticated AES in Cipher Block Chaining mode.
+                 * You almost certainly don't want to use this as is, but rather some [HMAC]-authenticated variant
+                 */
                 @HazardousMaterials("Unauthenticated!")
                 val PLAIN = AES.CBC.Unauthenticated(keySize)
 
@@ -248,7 +265,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
                 fun Custom(
                     tagLength: BitLength,
                     dedicatedMacInputCalculation: DedicatedMacInputCalculation
-                ) = Custom  (tagLength,DefaultDedicatedMacAuthTagTransformation, dedicatedMacInputCalculation)
+                ) = Custom(tagLength, DefaultDedicatedMacAuthTagTransformation, dedicatedMacInputCalculation)
 
                 /**
                  * Instantiates a new [CBC.HMAC] instance with
@@ -260,14 +277,13 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
                     tagLength: BitLength,
                     dedicatedMacAuthTagTransformation: DedicatedMacAuthTagTransformation,
                     dedicatedMacInputCalculation: DedicatedMacInputCalculation
-                ) =
-                    CBC.HMAC(
-                        authCapability.innerCipher as Unauthenticated,
-                        authCapability.mac,
-                        dedicatedMacInputCalculation,
-                        dedicatedMacAuthTagTransformation,
-                        tagLength
-                    )
+                ) = CBC.HMAC(
+                    authCapability.innerCipher as Unauthenticated,
+                    authCapability.mac,
+                    dedicatedMacInputCalculation,
+                    dedicatedMacAuthTagTransformation,
+                    tagLength
+                )
             }
         }
     }
@@ -414,14 +430,14 @@ typealias DedicatedMacInputCalculation = MAC.(ciphertext: ByteArray, nonce: Byte
  */
 val DefaultDedicatedMacInputCalculation: DedicatedMacInputCalculation =
     fun MAC.(ciphertext: ByteArray, iv: ByteArray, aad: ByteArray): ByteArray =
-        aad + iv + ciphertext + (aad.size.toLong()*8L).encodeTo8Bytes()
+        aad + iv + ciphertext + (aad.size.toLong() * 8L).encodeTo8Bytes()
 
 /**
  * Marker, indicating whether a symmetric encryption algorithms requires or prohibits the use of a nonce/IV
  */
 sealed interface NonceTrait {
     /**
-     * Indicates that a cipher requires an initialization vector
+     * Indicates that a cipher requires a nonce/IV
      */
     class Required(val length: BitLength) : NonceTrait
 
@@ -439,7 +455,7 @@ abstract class BlockCipher<A : AuthCapability<K>, I : NonceTrait, K : KeyType>(
 
     enum class ModeOfOperation(val friendlyName: String, val acronym: String) {
         GCM("Galois Counter Mode", "GCM"),
-        CBC("Cipherblock Chaining Mode", "CBC"),
+        CBC("Cipher Block Chaining Mode", "CBC"),
         ECB("Electronic Codebook Mode", "ECB"),
     }
 }
