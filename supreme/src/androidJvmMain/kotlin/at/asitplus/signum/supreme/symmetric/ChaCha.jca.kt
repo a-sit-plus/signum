@@ -8,7 +8,7 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 internal object ChaChaJVM {
-    fun initCipher(key: ByteArray, nonce: ByteArray, aad: ByteArray?): CipherParam<Cipher, AuthCapability.Authenticated.Integrated, KeyType.Integrated> =
+    fun initCipher(key: ByteArray, nonce: ByteArray, aad: ByteArray?): PlatformCipher<Cipher, AuthCapability.Authenticated.Integrated, KeyType.Integrated> =
         Cipher.getInstance(SymmetricEncryptionAlgorithm.ChaCha20Poly1305.jcaName).apply {
             init(
                 Cipher.ENCRYPT_MODE,
@@ -16,5 +16,5 @@ internal object ChaChaJVM {
                 IvParameterSpec(nonce)
             )
             aad?.let {  updateAAD(it) }
-        }.let { CipherParam(SymmetricEncryptionAlgorithm.ChaCha20Poly1305, it, nonce, aad) }
+        }.let { PlatformCipher(SymmetricEncryptionAlgorithm.ChaCha20Poly1305, it, nonce, aad) }
 }

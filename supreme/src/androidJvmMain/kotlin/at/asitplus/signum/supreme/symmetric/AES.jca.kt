@@ -42,7 +42,7 @@ internal object AESJCA {
             aad?.let { if (algorithm is SymmetricEncryptionAlgorithm.AES.GCM) updateAAD(it) /*CBC-HMAC we do ourselves*/ }
         }.let {
             @Suppress("UNCHECKED_CAST")
-            CipherParam<Cipher, AuthCapability<KeyType>, KeyType>(
+            PlatformCipher<Cipher, AuthCapability<KeyType>, KeyType>(
                 algorithm as SymmetricEncryptionAlgorithm<AuthCapability<KeyType>,*, KeyType>,
                 it,
                 nonce,

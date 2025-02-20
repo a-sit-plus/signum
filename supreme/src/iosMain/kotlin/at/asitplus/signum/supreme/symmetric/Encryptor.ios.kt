@@ -13,20 +13,20 @@ internal actual fun <T, A : AuthCapability<out K>, I : NonceTrait, K : KeyType> 
     key: ByteArray,
     nonce: ByteArray?,
     aad: ByteArray?
-): CipherParam<T, A, out K> {
+): PlatformCipher<T, A, out K> {
 
     @OptIn(HazardousMaterials::class)
     val nonce = if (algorithm.requiresNonce()) nonce ?: algorithm.randomNonce() else null
 
     @Suppress("UNCHECKED_CAST")
-    return CipherParam<ByteArray, AuthCapability<out KeyType>, KeyType>(
+    return PlatformCipher<ByteArray, AuthCapability<out KeyType>, KeyType>(
         algorithm, key, nonce, aad
-    ) as CipherParam<T, A, K>
+    ) as PlatformCipher<T, A, K>
 }
 
 @OptIn(ExperimentalForeignApi::class)
-internal actual fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> CipherParam<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K> {
-    @Suppress("UNCHECKED_CAST") (this as CipherParam<ByteArray, A, K>)
+internal actual fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> PlatformCipher<*, A, out K>.doEncrypt(data: ByteArray): SealedBox<A, I, out K> {
+    @Suppress("UNCHECKED_CAST") (this as PlatformCipher<ByteArray, A, K>)
 
     @Suppress("UNCHECKED_CAST")
     return when (alg) {
