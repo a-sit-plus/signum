@@ -49,47 +49,40 @@ class `00ApiTest` : FreeSpec({
                     true -> {
                         algorithm
                         //compile error
-                        //algorithm.sealedBox(byteArrayOf())
+                        //algorithm.sealedBoxFrom(byteArrayOf())
                         //compile error
-                        //algorithm.sealedBox(byteArrayOf(),byteArrayOf())
+                        //algorithm.sealedBoxFrom(byteArrayOf(),byteArrayOf())
                         algorithm.sealedBoxFrom(
                             byteArrayOf(), //nonce
                             byteArrayOf(), //encrypted
                             byteArrayOf(), //auth tag
                         )
-
                     }
 
                     false -> {
                         //Compile error
-                        //algorithm.sealedBox(byteArrayOf())
+                        //algorithm.sealedBoxFrom(byteArrayOf())
                         algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf())
                         //Compile error
-                        //algorithm.sealedBox(byteArrayOf(), byteArrayOf(),byteArrayOf())
-                        //Compile error
-                        //algorithm.sealedBox(byteArrayOf(), byteArrayOf(),byteArrayOf(), byteArrayOf())
-
-
+                        //algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf(),byteArrayOf())
                     }
                 }
 
                 false -> when (algorithm.isAuthenticated()) {
                     true -> {
                         //compile error
-                        //algorithm.sealedBox(byteArrayOf())
+                        //algorithm.sealedBoxFrom(byteArrayOf())
                         algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf())
-                        //compile error
-                        //algorithm.sealedBox(byteArrayOf(), byteArrayOf(), byteArrayOf())
+                        //TODO @Jakob, I need help. this should not compile, but it does.
+                        algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf(), byteArrayOf())
                     }
 
                     false -> {
                         algorithm.sealedBoxFrom(byteArrayOf())
                         //compile error
-                        //algorithm.sealedBox(byteArrayOf(),byteArrayOf())
+                        //algorithm.sealedBoxFrom(byteArrayOf(),byteArrayOf())
                         //compile error
-                        //algorithm.sealedBox(byteArrayOf(),byteArrayOf(),byteArrayOf())
-                        //compile error
-                        //algorithm.sealedBox(byteArrayOf(),byteArrayOf(),byteArrayOf())
+                        //algorithm.sealedBoxFrom(byteArrayOf(),byteArrayOf(),byteArrayOf())
                     }
                 }
             }
@@ -101,9 +94,9 @@ class `00ApiTest` : FreeSpec({
                     true -> {
                         algorithm
                         //compile error
-                        //algorithm.sealedBox(byteArrayOf())
+                        //algorithm.sealedBoxFrom(byteArrayOf())
                         //compile error
-                        //algorithm.sealedBox(byteArrayOf(),byteArrayOf())
+                        //algorithm.sealedBoxFrom(byteArrayOf(),byteArrayOf())
                         //why ambiguous?
                         algorithm.sealedBoxFrom(
                             byteArrayOf(), //nonce
@@ -114,10 +107,10 @@ class `00ApiTest` : FreeSpec({
 
                     false -> {
                         //Compile error
-                        //algorithm.sealedBox(byteArrayOf())
+                        //algorithm.sealedBoxFrom(byteArrayOf())
                         algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf())
-                        //Compile error
-                        //algorithm.sealedBox(byteArrayOf(), byteArrayOf(),byteArrayOf())
+                        //TODO @Jakob, I need help. this should not compile, but it does.
+                        algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf(),byteArrayOf())
 
 
                     }
@@ -126,22 +119,19 @@ class `00ApiTest` : FreeSpec({
                 false -> when (algorithm.requiresNonce()) {
                     true -> {
                         //compile error
-                        //algorithm.sealedBox(byteArrayOf())
+                        //algorithm.sealedBoxFrom(byteArrayOf())
                         algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf())
                         //compile error
-                        //algorithm.sealedBox(byteArrayOf(), byteArrayOf(), byteArrayOf())
-                        //compile error
-                        //algorithm.sealedBox(byteArrayOf(), byteArrayOf(), byteArrayOf(), byteArrayOf())
+                        //algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf(), byteArrayOf())
                     }
 
                     false -> {
                         algorithm.sealedBoxFrom(byteArrayOf())
                         //compile error
-                        //algorithm.sealedBox(byteArrayOf(),byteArrayOf())
+                        //algorithm.sealedBoxFrom(byteArrayOf(),byteArrayOf())
                         //compile error
-                        //algorithm.sealedBox(byteArrayOf(),byteArrayOf(),byteArrayOf())
-                        //compile error
-                        //algorithm.sealedBox(byteArrayOf(),byteArrayOf(),byteArrayOf())
+                        //algorithm.sealedBoxFrom(byteArrayOf(),byteArrayOf(),byteArrayOf())
+
                     }
                 }
             }
