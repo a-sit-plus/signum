@@ -474,6 +474,34 @@ this space. As of 01-2025, the following algorithms are implemented:
 * `SymmetricEncryptionAlgorithm.AES_192.ECB`
 * `SymmetricEncryptionAlgorithm.AES_256.ECB`
 
+### Baseline Usage
+Once you know decided on an encryption algorithm, encryption itself is straight-forward:
+
+```kotlin
+val secret = "Top Secret".encodeToByteArray()
+val authenticatedData = "Bottom Secret".encodeToByteArray()
+val secretKey = SymmetricEncryptionAlgorithm.ChaCha20Poly1305.randomKey()
+val encrypted = secretKey.encrypt(secret, authenticatedData).getOrThrow(/*handle error*/)
+encrypted.decrypt(secretKey, authenticatedData).getOrThrow(/*handle error*/) shouldBe secret
+```
+
+Encrypted data is always structured and the individual components are easily accessible:
+```kotlin
+ val nonce = encrypted.nonce
+val ciphertext = encrypted.encryptedData
+val authTag = encrypted.authTag
+val keyBytes = secretKey.secretKey /*for algorithms with a dedicated MAC key, there's encryptionKey and macKey*/
+```
+
+Decrypting data received from external sources is also straight-forward:
+```kotlin
+val box = algo.sealedBoxFrom(nonce, ciphertext, authTag).getOrThrow(/*handle error*/)
+box.decrypt(preSharedKey, /*also pass AAD*/ externalAAD).getOrThrow(/*handle error*/) shouldBe secret
+```
+
+### Custom AES-CBC-HMAC
+Supreme supports AES-CBC with customizable HMAC to provide AEAD.
+This is supported across all _Supreme_ targets and works as follows:
 In addition, it is possible to customise AES-CBC-HMAC by freely defining which data gets fed into the MAC.
 There are also no constraints on the MAC key length, except that it must not be empty:
 

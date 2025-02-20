@@ -44,6 +44,13 @@ fun SealedBox<*, *, *>.decrypt(key: SymmetricKey<*, *, *>): KmmResult<ByteArray>
 
 
 //required because we don't store MAC info all the way
+/**
+ * Attempts to decrypt this ciphertext (which may also hold an IV/nonce) using the provided [key].
+ * Do provide [authenticatedData] if required, or else decryption will fail!
+ * This is the generic, untyped decryption function for convenience.
+ * **Compared to its narrower-typed cousins is possible to mismatch the characteristics of
+ * [key] and [SealedBox].**
+ */
 @JvmName("decryptAuthenticatedIntegrated")
 fun <I: NonceTrait, M: MAC>SealedBox<AuthCapability.Authenticated.WithDedicatedMac<M, I>,I, KeyType.WithDedicatedMacKey>.decrypt(
     key: SymmetricKey.WithDedicatedMac<*>,
