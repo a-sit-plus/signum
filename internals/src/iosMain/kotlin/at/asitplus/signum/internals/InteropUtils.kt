@@ -9,12 +9,14 @@ import platform.posix.memcpy
 import kotlin.experimental.ExperimentalNativeApi
 import kotlin.native.ref.createCleaner
 
-fun NSData.toByteArray(): ByteArray = ByteArray(length.toInt()).apply {
+fun NSData.toByteArray(): ByteArray {
     if(length>Int.MAX_VALUE.toULong()) throw IndexOutOfBoundsException("length is too large")
-    if (length > 0uL)
-        usePinned {
-            memcpy(it.addressOf(0), bytes, length)
-        }
+    return ByteArray(length.toInt()).apply {
+        if (length > 0uL)
+            usePinned {
+                memcpy(it.addressOf(0), bytes, length)
+            }
+    }
 }
 
 @OptIn(BetaInteropApi::class)
