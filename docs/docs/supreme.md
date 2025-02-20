@@ -363,9 +363,6 @@ For a list of supported algorithms, check out the [feature matrix](features.md#s
 
 ## Symmetric Encryption
 
-!!! warning inline end
-    **NEVER** re-use an IV! Let the Supreme KMP crypto provider auto-generate them!
-
 Symmetric encryption is implemented both flexible and type-safe. At the same time, the public interface is also rather lean:
 
 * Reference an algorithm such as `SymmetricEncryptionAlgorithm.ChaCha20Poly1305`.
@@ -381,7 +378,7 @@ Simply call `decrypt(key)` on a `SealedBox` to recover the plaintext.
 
 To minimise the potential for error, everything (algorithms, keys, sealed boxes) makes heavy use of generics.
 Hence, a sealed box containing an authenticated ciphertext will only ever accept a symmetric key that is usable for AEAD.
-Additional runtime checks ensure that mo mixups can happen.
+Additional runtime checks ensure that no mixups can happen.
 
 ### On Type Safety 
 The API tries to be as type-safe as possible, e.g., it is impossible to specify a dedicated MAC key (or function) for AES-GCM,
@@ -407,6 +404,10 @@ These are:
 * `KeyType` denoting how the encryption key is structured
     * `Integrated`: The key consists of a single byte array, from which encryption key and (if required by the algorithm) a mac key is derived.
     * `WithDedicatedMac`: The key consists of an encryption key and a dedicated MAC key to compute the auth tag.
+
+
+!!! warning inline end
+    **NEVER** re-use an IV! Let the Supreme KMP crypto provider auto-generate them!
 
 In addition to runtime checks for matching algorithms and parameters, 
 algorithms, keys and sealed boxes need matching characteristics to be used with each other.
@@ -496,7 +497,7 @@ encrypted.decrypt(secretKey, authenticatedData).getOrThrow(/*handle error*/) sho
 
 Encrypted data is always structured and the individual components are easily accessible:
 ```kotlin
- val nonce = encrypted.nonce
+val nonce = encrypted.nonce
 val ciphertext = encrypted.encryptedData
 val authTag = encrypted.authTag
 val keyBytes = secretKey.secretKey /*for algorithms with a dedicated MAC key, there's encryptionKey and macKey*/
