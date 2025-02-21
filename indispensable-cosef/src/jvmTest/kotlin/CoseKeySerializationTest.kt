@@ -39,7 +39,7 @@ class CoseKeySerializationTest : FreeSpec({
                 ).getOrThrow().run {
                     this as CryptoPublicKey.EC
                     this.withCompressionPreference(true)
-                }.toCoseKey(CoseAlgorithm.ES256).getOrThrow()
+                }.toCoseKey(CoseAlgorithm.Signature.ES256).getOrThrow()
             )
             val coseUncompressed = CryptoPublicKey.fromJcaPublicKey(
                 KeyPairGenerator.getInstance("EC").apply {
@@ -160,7 +160,7 @@ class CoseKeySerializationTest : FreeSpec({
                 ) { pubKey ->
                     val coseKey: CoseKey =
                         CryptoPublicKey.fromJcaPublicKey(pubKey).getOrThrow()
-                            .toCoseKey(CoseAlgorithm.RS256)
+                            .toCoseKey(CoseAlgorithm.Signature.RS256)
                             .getOrThrow()
                     val cose = coseKey.serialize()
 

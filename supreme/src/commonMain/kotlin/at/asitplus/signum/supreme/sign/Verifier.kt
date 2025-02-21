@@ -191,8 +191,6 @@ private fun SignatureAlgorithm.verifierForImpl
             else
                 verifierForImpl(publicKey, configure, allowKotlin)
         }
-        is SignatureAlgorithm.HMAC ->
-            KmmResult.failure(IllegalArgumentException("HMAC is unsupported"))
     }
 
 /**

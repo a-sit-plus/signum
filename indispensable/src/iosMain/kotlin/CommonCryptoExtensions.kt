@@ -39,8 +39,6 @@ val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm
                 }
             }
         }
-
-        is SignatureAlgorithm.HMAC -> TODO("HMAC is unsupported")
     }!!
 
 val SpecializedSignatureAlgorithm.secKeyAlgorithm
@@ -76,8 +74,6 @@ val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm
                 }
             }
         }
-
-        is SignatureAlgorithm.HMAC -> TODO("HMAC is unsupported")
     }!!
 
 val SpecializedSignatureAlgorithm.secKeyAlgorithmPreHashed
