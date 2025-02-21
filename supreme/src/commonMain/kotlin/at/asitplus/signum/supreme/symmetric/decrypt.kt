@@ -3,7 +3,7 @@ package at.asitplus.signum.supreme.symmetric
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.ImplementationError
-import at.asitplus.signum.indispensable.mac.MAC
+import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.AuthCapability.Authenticated
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
@@ -49,7 +49,7 @@ fun SealedBox<*, *, *>.decrypt(key: SymmetricKey<*, *, *>): KmmResult<ByteArray>
  * [key] and [SealedBox].**
  */
 @JvmName("decryptAuthenticatedIntegrated")
-fun <I : NonceTrait, M : MAC> SealedBox<AuthCapability.Authenticated.WithDedicatedMac<M, I>, I, KeyType.WithDedicatedMacKey>.decrypt(
+fun <I : NonceTrait, M : MessageAuthenticationCode> SealedBox<AuthCapability.Authenticated.WithDedicatedMac<M, I>, I, KeyType.WithDedicatedMacKey>.decrypt(
     key: SymmetricKey.WithDedicatedMac<*>,
     authenticatedData: ByteArray = byteArrayOf()
 ) = catching {
