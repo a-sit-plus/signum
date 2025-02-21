@@ -24,7 +24,11 @@ import kotlinx.serialization.encoding.Encoder
 @Serializable(with = CoseAlgorithmSerializer::class)
 sealed interface CoseAlgorithm {
 
-    sealed interface Symmetric : CoseAlgorithm
+    sealed interface Symmetric : CoseAlgorithm {
+        companion object {
+            val entries : Collection<Symmetric> = MAC.entries + SymmetricEncryption.entries
+        }
+    }
 
     val value: Int
 
@@ -33,7 +37,7 @@ sealed interface CoseAlgorithm {
     @Serializable(with = CoseAlgorithmSerializer::class)
     sealed class DataIntegrity<D : DataIntegrityAlgorithm>(override val value: Int, val algorithm: D) : CoseAlgorithm {
         companion object {
-            val entries: Collection<CoseAlgorithm> = Signature.entries + MAC.entries
+            val entries: Collection<DataIntegrity<*>> = Signature.entries + MAC.entries
         }
     }
 
@@ -191,6 +195,13 @@ fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = c
     }
 }
 
+fun DataIntegrityAlgorithm.toCoseAlgorithm() : KmmResult<CoseAlgorithm> = catching {
+    when (this) {
+        is SignatureAlgorithm -> toCoseAlgorithm().getOrThrow()
+        is MessageAuthenticationCode -> toCoseAlgorithm().getOrThrow()
+        else -> throw IllegalArgumentException("Algorithm $this not supported by COSE")
+    }
+}
 
 /** Tries to find a matching COSE algorithm. Note that [CoseAlgorithm.MAC.HS256_64] cannot be mapped automatically. */
 fun MessageAuthenticationCode.toCoseAlgorithm(): KmmResult<CoseAlgorithm.MAC> = catching {

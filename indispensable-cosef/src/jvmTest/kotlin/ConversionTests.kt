@@ -17,13 +17,20 @@ infix fun <T> KmmResult<T>.shouldSucceedWith(b: T) : T =
 
 class ConversionTests : FreeSpec({
     "COSE -> SigAlg -> COSE is stable" - {
-        withData(CoseAlgorithm.entries) {
-            it.toCoseAlgorithm() shouldSucceedWith  it
-            it.algorithm.toCoseAlgorithm() shouldSucceedWith it
+
+        "All" - {
+            withData(CoseAlgorithm.DataIntegrity.entries) {
+                it.algorithm.toCoseAlgorithm() shouldSucceedWith it
+            }
+        }
+        "Specialized Signature Algorithms" - {
+            withData(CoseAlgorithm.Signature.entries) {
+                it.toCoseAlgorithm() shouldSucceedWith it
+            }
         }
     }
     "COSE -> X509 -> COSE is stable" - {
-        withData(CoseAlgorithm.entries) {
+        withData(CoseAlgorithm.Signature.entries) {
             it.toX509SignatureAlgorithm().getOrNull()?.let { x509 ->
                 x509.toCoseAlgorithm() shouldSucceedWith it
             }
