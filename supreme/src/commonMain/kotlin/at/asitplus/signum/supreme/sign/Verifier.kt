@@ -96,7 +96,7 @@ internal expect fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
 /** data is guaranteed to be in RAW_BYTES format. failure should throw. */
 internal expect fun verifyRSAImpl
             (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
-             data: SignatureInput, signature: CryptoSignature.RSAorHMAC,
+             data: SignatureInput, signature: CryptoSignature.RSA,
              config: PlatformVerifierConfiguration)
 
 class PlatformRSAVerifier
@@ -109,7 +109,7 @@ class PlatformRSAVerifier
         checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier(signatureAlgorithm, publicKey, config)
     }
     override fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
-        require (sig is CryptoSignature.RSAorHMAC)
+        require (sig is CryptoSignature.RSA)
             { "Attempted to validate non-RSA signature using RSA public key" }
         if (data.format != null)
             throw UnsupportedOperationException("RSA with pre-hashed input is unsupported")

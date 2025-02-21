@@ -30,7 +30,7 @@ class CoseSerializationTest : FreeSpec({
                 protectedHeader = CoseHeader(algorithm = CoseAlgorithm.ES256),
                 unprotectedHeader = null,
                 payload = payload,
-                signature = CryptoSignature.RSAorHMAC(byteArrayOf()),
+                signature = CryptoSignature.RSA(byteArrayOf()),
                 payloadSerializer = ByteStringWrapper.serializer(String.serializer())
             )
         }
@@ -42,7 +42,7 @@ class CoseSerializationTest : FreeSpec({
             protectedHeader = CoseHeader(algorithm = CoseAlgorithm.RS256),
             unprotectedHeader = null,
             payload = payload,
-            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()),
+            signature = CryptoSignature.RSA("bar".encodeToByteArray()),
             payloadSerializer = ByteArraySerializer(),
         )
 
@@ -55,7 +55,7 @@ class CoseSerializationTest : FreeSpec({
             protectedHeader = CoseHeader(algorithm = CoseAlgorithm.RS256),
             unprotectedHeader = null,
             payload = payload,
-            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()),
+            signature = CryptoSignature.RSA("bar".encodeToByteArray()),
             payloadSerializer = DataClass.serializer(),
         )
 
@@ -68,7 +68,7 @@ class CoseSerializationTest : FreeSpec({
             protectedHeader = CoseHeader(algorithm = CoseAlgorithm.RS256),
             unprotectedHeader = null,
             payload = payload,
-            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
+            signature = CryptoSignature.RSA("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
             payloadSerializer = ByteArraySerializer(),
         )
         val serialized = cose.serialize(ByteArraySerializer())
@@ -86,7 +86,7 @@ class CoseSerializationTest : FreeSpec({
             protectedHeader = CoseHeader(algorithm = CoseAlgorithm.RS256),
             unprotectedHeader = null,
             payload = null,
-            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
+            signature = CryptoSignature.RSA("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
             payloadSerializer = ByteArraySerializer(),
         )
         val serialized = cose.serialize(ByteArraySerializer())
@@ -129,7 +129,7 @@ class CoseSerializationTest : FreeSpec({
             protectedHeader = CoseHeader(algorithm = CoseAlgorithm.RS256),
             unprotectedHeader = null,
             payload = payload,
-            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
+            signature = CryptoSignature.RSA("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
             payloadSerializer = DataClass.serializer(),
         )
         val serialized = cose.serialize(DataClass.serializer())
@@ -195,7 +195,7 @@ class CoseSerializationTest : FreeSpec({
         val inputObject = CoseSigned.create(
             protectedHeader = header,
             payload = payload,
-            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()),
+            signature = CryptoSignature.RSA("bar".encodeToByteArray()),
             payloadSerializer = ByteArraySerializer(),
         ).prepareCoseSignatureInput(byteArrayOf())
             .encodeToString(Base16())
@@ -217,7 +217,7 @@ class CoseSerializationTest : FreeSpec({
         val inputObject = CoseSigned.create(
             protectedHeader = header,
             payload = payload,
-            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()),
+            signature = CryptoSignature.RSA("bar".encodeToByteArray()),
             payloadSerializer = DataClass.serializer(),
         ).prepareCoseSignatureInput(byteArrayOf())
             .encodeToString(Base16())

@@ -8,7 +8,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.readNull
 import at.asitplus.signum.indispensable.misc.BitLength
 
-sealed interface MessageAuthenticationCode {
+sealed interface MessageAuthenticationCode: DataIntegrityAlgorithm {
     /** output size of MAC */
     val outputLength: BitLength
 

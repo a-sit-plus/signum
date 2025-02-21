@@ -115,7 +115,7 @@ class JKSProviderTest : FreeSpec({
             CryptoSignature.parseFromJca(signature.jcaSignatureBytes, signer.signatureAlgorithm) shouldBe signature
             when (signer.signatureAlgorithm) {
                 is SignatureAlgorithm.RSA, is SignatureAlgorithm.HMAC ->
-                    CryptoSignature.RSAorHMAC.parseFromJca(signature.jcaSignatureBytes) shouldBe signature
+                    CryptoSignature.RSA.parseFromJca(signature.jcaSignatureBytes) shouldBe signature
                 is SignatureAlgorithm.ECDSA ->
                     CryptoSignature.EC.parseFromJca(signature.jcaSignatureBytes) shouldBe signature
             }
