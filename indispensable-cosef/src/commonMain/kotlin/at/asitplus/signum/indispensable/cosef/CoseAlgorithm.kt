@@ -26,13 +26,11 @@ sealed interface CoseAlgorithm {
 
     sealed interface Symmetric : CoseAlgorithm {
         companion object {
-            val entries : Collection<Symmetric> = MAC.entries + SymmetricEncryption.entries
+            val entries: Collection<Symmetric> = MAC.entries + SymmetricEncryption.entries
         }
     }
 
     val value: Int
-
-
 
     @Serializable(with = CoseAlgorithmSerializer::class)
     sealed class DataIntegrity<D : DataIntegrityAlgorithm>(override val value: Int, val algorithm: D) : CoseAlgorithm {
@@ -45,10 +43,18 @@ sealed interface CoseAlgorithm {
     sealed class SymmetricEncryption(override val value: Int, val algorithm: SymmetricEncryptionAlgorithm<*, *, *>) :
         CoseAlgorithm.Symmetric {
 
+
+        @Serializable(with = CoseAlgorithmSerializer::class)
         object A128GCM : SymmetricEncryption(1, SymmetricEncryptionAlgorithm.AES_128.GCM)
+
+        @Serializable(with = CoseAlgorithmSerializer::class)
         object A192GCM : SymmetricEncryption(2, SymmetricEncryptionAlgorithm.AES_192.GCM)
+
+        @Serializable(with = CoseAlgorithmSerializer::class)
         object A256GCM : SymmetricEncryption(3, SymmetricEncryptionAlgorithm.AES_256.GCM)
 
+
+        @Serializable(with = CoseAlgorithmSerializer::class)
         object ChaCha20Poly1305 : SymmetricEncryption(24, SymmetricEncryptionAlgorithm.ChaCha20Poly1305)
 
         companion object {
@@ -119,6 +125,8 @@ sealed interface CoseAlgorithm {
 
     }
 
+
+    @Serializable(with = CoseAlgorithmSerializer::class)
     sealed class MAC(
         value: Int, algorithm: MessageAuthenticationCode,
         /**
@@ -129,10 +137,20 @@ sealed interface CoseAlgorithm {
         DataIntegrity<MessageAuthenticationCode>(value, algorithm), Symmetric {
         // HMAC-size with SHA-size
         /**HMAC w/ SHA-256 truncated to 64 bits*/
+
+        @Serializable(with = CoseAlgorithmSerializer::class)
         object HS256_64 : MAC(5, HMAC.SHA256, 64.bit)
+
+        @Serializable(with = CoseAlgorithmSerializer::class)
         object HS256 : MAC(5, HMAC.SHA256, 256.bit)
+
+        @Serializable(with = CoseAlgorithmSerializer::class)
         object HS384 : MAC(6, HMAC.SHA384, 384.bit)
+
+        @Serializable(with = CoseAlgorithmSerializer::class)
         object HS512 : MAC(7, HMAC.SHA512, 512.bit)
+
+        @Serializable(with = CoseAlgorithmSerializer::class)
         object UNOFFICIAL_HS1 : MAC(-2341169 /*random inside private use range*/, HMAC.SHA1, 160.bit)
 
         companion object {
@@ -195,7 +213,7 @@ fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = c
     }
 }
 
-fun DataIntegrityAlgorithm.toCoseAlgorithm() : KmmResult<CoseAlgorithm> = catching {
+fun DataIntegrityAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm> = catching {
     when (this) {
         is SignatureAlgorithm -> toCoseAlgorithm().getOrThrow()
         is MessageAuthenticationCode -> toCoseAlgorithm().getOrThrow()
@@ -214,7 +232,7 @@ fun MessageAuthenticationCode.toCoseAlgorithm(): KmmResult<CoseAlgorithm.MAC> = 
 }
 
 /** Tries to find a matching COSE algorithm. Note that only AES-GCM and ChaCha/Poly are supported. */
-fun SymmetricEncryptionAlgorithm<*,*,*>.toCoseAlgorithm(): KmmResult<CoseAlgorithm.SymmetricEncryption> = catching {
+fun SymmetricEncryptionAlgorithm<*, *, *>.toCoseAlgorithm(): KmmResult<CoseAlgorithm.SymmetricEncryption> = catching {
     when (this) {
         SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> CoseAlgorithm.SymmetricEncryption.ChaCha20Poly1305
         SymmetricEncryptionAlgorithm.AES_128.GCM -> CoseAlgorithm.SymmetricEncryption.A128GCM

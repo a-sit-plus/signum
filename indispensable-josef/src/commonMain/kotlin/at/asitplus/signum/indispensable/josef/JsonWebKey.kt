@@ -5,13 +5,11 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoPublicKey.*
 import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.fromUncompressed
+import at.asitplus.signum.indispensable.CryptoPublicKey.RSA
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
-import at.asitplus.signum.indispensable.asn1.encoding.decodeFromAsn1ContentBytes
-import at.asitplus.signum.indispensable.asn1.encoding.toTwosComplementByteArray
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.josef.io.JwsCertificateSerializer
@@ -305,9 +303,11 @@ data class JsonWebKey(
             JwkType.RSA -> {
                 RSA(
                     n = Asn1Integer.fromUnsignedByteArray(
-                        n ?: throw IllegalArgumentException("Missing modulus n")),
+                        n ?: throw IllegalArgumentException("Missing modulus n")
+                    ),
                     e = Asn1Integer.fromUnsignedByteArray(
-                        e ?: throw IllegalArgumentException("Missing or invalid exponent e"))
+                        e ?: throw IllegalArgumentException("Missing or invalid exponent e")
+                    )
                 ).apply { jwkId = keyId }
             }
 
@@ -381,10 +381,11 @@ var CryptoPublicKey.jwkId: String?
     set(value) {
         value?.also { additionalProperties[JWK_ID] = value } ?: additionalProperties.remove(JWK_ID)
     }
+
 /**
  * Holds [JsonWebKey.keyId] when transforming a [JsonWebKey] to a [CryptoPublicKey]
  */
-var SymmetricKey<*,*,*>.jwkId: String?
+var SymmetricKey<*, *, *>.jwkId: String?
     get() = additionalProperties[JWK_ID]
     set(value) {
         value?.also { additionalProperties[JWK_ID] = value } ?: additionalProperties.remove(JWK_ID)
