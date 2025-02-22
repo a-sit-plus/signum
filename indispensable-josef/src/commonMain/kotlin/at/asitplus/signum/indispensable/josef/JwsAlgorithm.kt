@@ -5,7 +5,8 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.josef.JwsAlgorithm.MAC.UNOFFICIAL_HS1
+import at.asitplus.signum.indispensable.josef.JwsAlgorithm.MAC.*
+import at.asitplus.signum.indispensable.josef.JwsAlgorithm.Signature.*
 import at.asitplus.signum.indispensable.mac.HMAC
 import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import kotlinx.serialization.KSerializer
@@ -122,7 +123,23 @@ sealed class JwsAlgorithm<D : DataIntegrityAlgorithm>(override val identifier: S
     }
 
     companion object {
-        val entries: Collection<JwsAlgorithm<*>> = Signature.entries + MAC.entries
+        //work around compiler bug ny not referencing the other entries and combining them. Report if still present with 2.1.20!
+        val entries: Collection<JwsAlgorithm<*>> = listOf(
+            ES256,
+            ES384,
+            ES512,
+            PS256,
+            PS384,
+            PS512,
+            RS256,
+            RS384,
+            RS512,
+            NON_JWS_SHA1_WITH_RSA,
+            HS256,
+            HS384,
+            HS512,
+            UNOFFICIAL_HS1
+        )
     }
 }
 
