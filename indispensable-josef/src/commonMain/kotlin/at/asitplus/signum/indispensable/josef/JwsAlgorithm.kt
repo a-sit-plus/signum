@@ -1,3 +1,5 @@
+@file:Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
+
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.KmmResult
@@ -22,24 +24,42 @@ import kotlinx.serialization.encoding.Encoder
 sealed class JwsAlgorithm<D : DataIntegrityAlgorithm>(override val identifier: String, val algorithm: D) :
     JsonWebAlgorithm {
 
-
+    @Serializable(with = JwsAlgorithmSerializer::class)
     sealed class Signature(identifier: String, algorithm: SignatureAlgorithm) :
         JwsAlgorithm<SignatureAlgorithm>(identifier, algorithm),
         SpecializedSignatureAlgorithm {
-
+        @Serializable(with = JwsAlgorithmSerializer::class)
         object ES256 : Signature("ES256", SignatureAlgorithm.ECDSAwithSHA256)
+
+        @Serializable(with = JwsAlgorithmSerializer::class)
         object ES384 : Signature("ES384", SignatureAlgorithm.ECDSAwithSHA384)
+
+        @Serializable(with = JwsAlgorithmSerializer::class)
         object ES512 : Signature("ES512", SignatureAlgorithm.ECDSAwithSHA512)
 
+
+        @Serializable(with = JwsAlgorithmSerializer::class)
         object PS256 : Signature("PS256", SignatureAlgorithm.RSAwithSHA256andPSSPadding)
+
+        @Serializable(with = JwsAlgorithmSerializer::class)
         object PS384 : Signature("PS384", SignatureAlgorithm.RSAwithSHA384andPSSPadding)
+
+        @Serializable(with = JwsAlgorithmSerializer::class)
         object PS512 : Signature("PS512", SignatureAlgorithm.RSAwithSHA512andPSSPadding)
 
+
+        @Serializable(with = JwsAlgorithmSerializer::class)
         object RS256 : Signature("RS256", SignatureAlgorithm.RSAwithSHA256andPKCS1Padding)
+
+        @Serializable(with = JwsAlgorithmSerializer::class)
         object RS384 : Signature("RS384", SignatureAlgorithm.RSAwithSHA384andPKCS1Padding)
+
+        @Serializable(with = JwsAlgorithmSerializer::class)
         object RS512 : Signature("RS512", SignatureAlgorithm.RSAwithSHA512andPKCS1Padding)
 
         /** The one exception, which is not a valid JWS algorithm identifier */
+
+        @Serializable(with = JwsAlgorithmSerializer::class)
         object NON_JWS_SHA1_WITH_RSA : Signature("RS1", SignatureAlgorithm.RSA(Digest.SHA1, RSAPadding.PKCS1))
 
         /** The curve to create signatures on.
@@ -75,12 +95,22 @@ sealed class JwsAlgorithm<D : DataIntegrityAlgorithm>(override val identifier: S
 
     }
 
+    @Serializable(with = JwsAlgorithmSerializer::class)
     sealed class MAC(identifier: String, algorithm: MessageAuthenticationCode) :
         JwsAlgorithm<MessageAuthenticationCode>(identifier, algorithm) {
+
+        @Serializable(with = JwsAlgorithmSerializer::class)
         object HS256 : MAC("HS256", HMAC.SHA256)
+
+        @Serializable(with = JwsAlgorithmSerializer::class)
         object HS384 : MAC("HS384", HMAC.SHA384)
+
+        @Serializable(with = JwsAlgorithmSerializer::class)
         object HS512 : MAC("HS512", HMAC.SHA512)
+
+        @Serializable(with = JwsAlgorithmSerializer::class)
         object UNOFFICIAL_HS1 : MAC("H1", HMAC.SHA1)
+
         companion object {
             val entries: Collection<MAC> = listOf(
                 HS256,
@@ -111,7 +141,7 @@ object JwsAlgorithmSerializer : KSerializer<JwsAlgorithm<*>> {
 }
 
 /** Tries to find a matching JWS algorithm. Note that JWS imposes curve restrictions on ECDSA based on the digest. */
-fun SignatureAlgorithm.toJwsAlgorithm() = catching {
+fun SignatureAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm<SignatureAlgorithm>> = catching {
     when (this) {
         is SignatureAlgorithm.ECDSA -> when (this.digest) {
             Digest.SHA256 -> JwsAlgorithm.Signature.ES256
@@ -146,7 +176,7 @@ fun DataIntegrityAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm<*>> = catchi
     }
 }
 
-fun MessageAuthenticationCode.toJwsAlgorithm() = catching {
+fun MessageAuthenticationCode.toJwsAlgorithm(): KmmResult<JwsAlgorithm<MessageAuthenticationCode>> = catching {
     when (this) {
         HMAC.SHA1 -> UNOFFICIAL_HS1
         HMAC.SHA256 -> JwsAlgorithm.MAC.HS256
