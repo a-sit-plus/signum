@@ -54,7 +54,7 @@ enum class JweEncryption(val identifier: String, val algorithm: SymmetricEncrypt
     /**
      * For integrated AEAD algorithms, this is the length of the sole key.
      * For bolted-on AEAD algorithms with a dedicated MAC key, such as AES-CBC+HMAC,
-     * this is the **length of the encryption key without plus the length dedicated MAC key**.
+     * this is the **length of the encryption key plus the length dedicated MAC key**.
      */
     val combinedEncryptionKeyLength: BitLength get() = encryptionKeyLength + dedicatedMacKeyLength
 
