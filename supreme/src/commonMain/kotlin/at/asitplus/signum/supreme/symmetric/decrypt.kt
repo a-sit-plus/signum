@@ -67,8 +67,8 @@ suspend fun <I : NonceTrait, M : MessageAuthenticationCode> SealedBox<AuthCapabi
  * [key] and [SealedBox].**
  */
 @JvmName("decryptAuthenticatedGeneric")
-suspend fun <A : AuthCapability.Authenticated<out K>, K : KeyType> SealedBox<A, *, out K>.decrypt(
-    key: SymmetricKey<A, *, out K>,
+suspend fun <A : AuthCapability.Authenticated<out K>,I: NonceTrait, K : KeyType> SealedBox<A, I, out K>.decrypt(
+    key: SymmetricKey<A, I, out K>,
     authenticatedData: ByteArray = byteArrayOf()
 ): KmmResult<ByteArray> = catching {
     require(algorithm == key.algorithm) { "Algorithm mismatch! expected: $algorithm, actual: ${key.algorithm}" }
