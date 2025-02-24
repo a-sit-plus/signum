@@ -321,7 +321,7 @@ val keyBytes = secretKey.secretKey /*for algorithms with a dedicated MAC key, th
 
 Decrypting data received from external sources is also straight-forward:
 ```kotlin
-val box = algo.sealedBoxFrom(nonce, ciphertext, authTag).getOrThrow(/*handle error*/)
+val box = algo.sealedBox.withNonce(nonce).from(ciphertext, authTag).getOrThrow(/*handle error*/)
 box.decrypt(preSharedKey, /*also pass AAD*/ externalAAD).getOrThrow(/*handle error*/) shouldBe secret
 
 //alternatively, pass raw data:
@@ -356,8 +356,7 @@ val recovered = sealedBox.decrypt(key, aad).getOrThrow(/*handle error*/)
 recovered shouldBe payload //success!
 
 //we can also manually construct the sealed box, if we know the algorithm:
-val reconstructed = algorithm.sealedBoxFrom(
-  sealedBox.nonce,
+val reconstructed = algorithm.sealedBox.withNonce(sealedBox.nonce).from(
   encryptedData = sealedBox.encryptedData, /*Could also access authenticatedCipherText*/
   authTag = sealedBox.authTag,
 ).getOrThrow()

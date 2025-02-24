@@ -505,7 +505,7 @@ val keyBytes = secretKey.secretKey /*for algorithms with a dedicated MAC key, th
 
 Decrypting data received from external sources is also straight-forward:
 ```kotlin
-val box = algo.sealedBoxFrom(nonce, ciphertext, authTag).getOrThrow(/*handle error*/)
+val box = algo.sealedBox.withNonce(nonce).from(ciphertext, authTag).getOrThrow(/*handle error*/)
 box.decrypt(preSharedKey, /*also pass AAD*/ externalAAD).getOrThrow(/*handle error*/) shouldBe secret
 
 //alternatively, pass raw data:
@@ -538,27 +538,15 @@ val sealedBox = key.encrypt(
     authenticatedData = aad,
 ).getOrThrow(/*handle error*/)
 
-//The sealed box object is correctly typed:
-//  * It is a SealedBox.WithIV
-//  * The generic type arguments indicate that
-//      * the ciphertext is authenticated
-//      * Using a dedicated MAC function atop an unauthenticated cipher
-//  * we can hence access `authenticatedCiphertext` for:
-//      * authTag
-//      * authenticatedData
-sealedBox.authenticatedData shouldBe aad
-
 //because everything is structured, decryption is simple
 val recovered = sealedBox.decrypt(key).getOrThrow(/*handle error*/)
 
 recovered shouldBe payload //success!
 
 //we can also manually construct the sealed box, if we know the algorithm:
-val reconstructed = algorithm.sealedBox(
-    sealedBox.nonce,
+val reconstructed = algorithm.sealedBox.withNonce(sealedBox.Nonce).from(
     encryptedData = sealedBox.encryptedData, /*Could also access authenticatedCipherText*/
-    authTag = sealedBox.authTag,
-    authenticatedData = sealedBox.authenticatedData
+    authTag = sealedBox.authTag
 ).getOrThrow()
 
 val manuallyRecovered = reconstructed.decrypt(key).getOrThrow(/*handle error*/)
