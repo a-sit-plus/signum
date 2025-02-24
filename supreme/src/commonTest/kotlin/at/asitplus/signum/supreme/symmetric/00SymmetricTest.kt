@@ -21,7 +21,6 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.datetime.Clock
 import kotlin.random.Random
 import kotlin.random.nextUInt
-import at.asitplus.signum.supreme.symmetric.decrypt
 
 @OptIn(HazardousMaterials::class)
 @ExperimentalStdlibApi
@@ -48,11 +47,11 @@ class `00SymmetricTest` : FreeSpec({
 
         val preSharedKey = algo.keyFrom(keyBytes).getOrThrow()
 
-        val box = algo.sealedBoxFrom(nonce, ciphertext, authTag).getOrThrow(/*handle error*/)
+        val box = algo.sealedBox.withNonce(nonce).from(ciphertext, authTag).getOrThrow(/*handle error*/)
         box.decrypt(preSharedKey, /*also pass AAD*/ externalAAD).getOrThrow(/*handle error*/) shouldBe secret
 
         //direct decryption
-        preSharedKey.decrypt(nonce, ciphertext,authTag, externalAAD).getOrThrow(/*handle error*/) shouldBe secret
+        preSharedKey.decrypt(nonce, ciphertext, authTag, externalAAD).getOrThrow(/*handle error*/) shouldBe secret
 
         val payload = "More matter, with less art!".encodeToByteArray()
 
@@ -78,8 +77,7 @@ class `00SymmetricTest` : FreeSpec({
         recovered shouldBe payload //success!
 
         //we can also manually construct the sealed box, if we know the algorithm:
-        val reconstructed = algorithm.sealedBoxFrom(
-            sealedBox.nonce,
+        val reconstructed = algorithm.sealedBox.withNonce(sealedBox.nonce).from(
             encryptedData = sealedBox.encryptedData, /*Could also access authenticatedCipherText*/
             authTag = sealedBox.authTag,
         ).getOrThrow()
@@ -280,8 +278,7 @@ class `00SymmetricTest` : FreeSpec({
                     wrongDecrypted.onSuccess { value -> value shouldNotBe plaintext }
 
                     val wrongCiphertext =
-                        ciphertext.algorithm.sealedBoxFrom(
-                            ciphertext.nonce,
+                        ciphertext.algorithm.sealedBox.withNonce(ciphertext.nonce).from(
                             Random.Default.nextBytes(ciphertext.encryptedData.size)
                         ).getOrThrow()
 
@@ -300,10 +297,10 @@ class `00SymmetricTest` : FreeSpec({
                         wrongRightDecrypted.onSuccess { value -> value shouldNotBe plaintext }
                     }
                     val wrongIV =
-                        ciphertext.algorithm.sealedBoxFrom(
-                            nonce = ciphertext.nonce.asList().shuffled().toByteArray(),
-                            encryptedData = ciphertext.encryptedData
-                        ).getOrThrow()
+                        ciphertext.algorithm.sealedBox.withNonce(ciphertext.nonce.asList().shuffled().toByteArray())
+                            .from(
+                                encryptedData = ciphertext.encryptedData
+                            ).getOrThrow()
 
 
                     if (plaintext.size > it.blockSize.bytes.toInt()) { //cannot test like that for ciphertexts shorter than IV
@@ -369,8 +366,7 @@ class `00SymmetricTest` : FreeSpec({
                         val wrongDecrypted = ciphertext.decrypt(alg.randomKey())
                         wrongDecrypted shouldNot succeed
 
-                        val wrongCiphertext = alg.sealedBoxFrom(
-                            ciphertext.nonce,
+                        val wrongCiphertext = alg.sealedBox.withNonce(ciphertext.nonce).from(
                             Random.Default.nextBytes(ciphertext.encryptedData.size),
                             authTag = ciphertext.authTag,
                         ).getOrThrow()
@@ -382,8 +378,7 @@ class `00SymmetricTest` : FreeSpec({
                         val wrongRightDecrypted = wrongCiphertext.decrypt(key)
                         wrongRightDecrypted shouldNot succeed
 
-                        val wrongIV = alg.sealedBoxFrom(
-                            nonce = ciphertext.nonce.asList().shuffled().toByteArray(),
+                        val wrongIV = alg.sealedBox.withNonce(ciphertext.nonce.asList().shuffled().toByteArray()).from(
                             ciphertext.encryptedData,
                             authTag = ciphertext.authTag,
                         ).getOrThrow()
@@ -394,16 +389,14 @@ class `00SymmetricTest` : FreeSpec({
 
                         if (aad != null) {
                             //missing aad
-                            alg.sealedBoxFrom(
-                                nonce = ciphertext.nonce,
+                            alg.sealedBox.withNonce(ciphertext.nonce).from(
                                 encryptedData = ciphertext.encryptedData,
                                 authTag = ciphertext.authTag,
                             ).getOrThrow().decrypt(key) shouldNot succeed
 
                         }
                         //shuffled auth tag
-                        alg.sealedBoxFrom(
-                            nonce = ciphertext.nonce,
+                        alg.sealedBox.withNonce(ciphertext.nonce).from(
                             ciphertext.encryptedData,
                             authTag = ciphertext.authTag.asList().shuffled().toByteArray(),
                         ).getOrThrow().decrypt(key, aad ?: byteArrayOf()) shouldNot succeed
@@ -417,7 +410,11 @@ class `00SymmetricTest` : FreeSpec({
         withData(
             nameFn = { it.first },
             "Default" to DefaultDedicatedMacInputCalculation,
-            "Oklahoma MAC" to fun MessageAuthenticationCode.(ciphertext: ByteArray, iv: ByteArray?, aad: ByteArray?): ByteArray =
+            "Oklahoma MAC" to fun MessageAuthenticationCode.(
+                ciphertext: ByteArray,
+                iv: ByteArray?,
+                aad: ByteArray?
+            ): ByteArray =
                 "Oklahoma".encodeToByteArray() + (iv ?: byteArrayOf()) + (aad
                     ?: byteArrayOf()) + ciphertext) { (_, macInputFun) ->
             withData(
@@ -550,8 +547,7 @@ class `00SymmetricTest` : FreeSpec({
                                 wrongDecrypted shouldNot succeed
 
                                 val wrongCiphertext =
-                                    ciphertext.algorithm.sealedBoxFrom(
-                                        ciphertext.nonce,
+                                    ciphertext.algorithm.sealedBox.withNonce(ciphertext.nonce).from(
                                         Random.Default.nextBytes(ciphertext.encryptedData.size),
                                         authTag = ciphertext.authTag,
                                     ).getOrThrow()
@@ -564,22 +560,23 @@ class `00SymmetricTest` : FreeSpec({
                                 wrongRightDecrypted shouldNot succeed
 
                                 val wrongIV =
-                                    ciphertext.algorithm.sealedBoxFrom(
-                                        nonce = ciphertext.nonce.asList().shuffled().toByteArray(),
+                                    ciphertext.algorithm.sealedBox.withNonce(
+                                        ciphertext.nonce.asList().shuffled().toByteArray()
+                                    ).from(
                                         ciphertext.encryptedData,
                                         ciphertext.authTag,
                                     ).getOrThrow()
 
                                 val wrongIVDecrypted = wrongIV.decrypt(key, aad ?: byteArrayOf())
                                 wrongIVDecrypted shouldNot succeed
-                                ciphertext.algorithm.sealedBoxFrom(
-                                    nonce = ciphertext.nonce.asList().shuffled().toByteArray(),
+                                ciphertext.algorithm.sealedBox.withNonce(
+                                    ciphertext.nonce.asList().shuffled().toByteArray()
+                                ).from(
                                     ciphertext.encryptedData,
                                     authTag = ciphertext.authTag,
                                 ).getOrThrow().decrypt(key, aad ?: byteArrayOf()) shouldNot succeed
 
-                                ciphertext.algorithm.sealedBoxFrom(
-                                    nonce = ciphertext.nonce,
+                                ciphertext.algorithm.sealedBox.withNonce(ciphertext.nonce).from(
                                     ciphertext.encryptedData,
                                     authTag = ciphertext.authTag,
                                 ).getOrThrow().decrypt(
@@ -591,20 +588,17 @@ class `00SymmetricTest` : FreeSpec({
                                 ) shouldNot succeed
 
                                 if (aad != null) {
-                                    ciphertext.algorithm.sealedBoxFrom(
-                                        ciphertext.nonce,
+                                    ciphertext.algorithm.sealedBox.withNonce(ciphertext.nonce).from(
                                         ciphertext.encryptedData,
                                         ciphertext.authTag,
                                     ).getOrThrow().decrypt(key) shouldNot succeed
                                 }
 
-                                ciphertext.algorithm.sealedBoxFrom(
-                                    ciphertext.nonce,
+                                ciphertext.algorithm.sealedBox.withNonce(ciphertext.nonce).from(
                                     ciphertext.encryptedData,
                                     ciphertext.authTag.asList().shuffled().toByteArray(),
                                 ).getOrThrow().decrypt(key, aad ?: byteArrayOf()) shouldNot succeed
-                                ciphertext.algorithm.sealedBoxFrom(
-                                    ciphertext.nonce,
+                                ciphertext.algorithm.sealedBox.withNonce(ciphertext.nonce).from(
                                     ciphertext.encryptedData,
                                     ciphertext.authTag.asList().shuffled().toByteArray(),
                                 ).getOrThrow().decrypt(it.Custom(ciphertext.authTag.size.bytes) { _, _, _ ->
@@ -670,7 +664,7 @@ class `00SymmetricTest` : FreeSpec({
                         it shouldNotBe data
                     }
 
-                    alg.sealedBoxFrom(own.encryptedData).getOrThrow().decrypt(secretKey) should succeed
+                    alg.sealedBox.from(own.encryptedData).getOrThrow().decrypt(secretKey) should succeed
                 } else {
 
 
@@ -695,7 +689,7 @@ class `00SymmetricTest` : FreeSpec({
                             it shouldNotBe data
                         }
 
-                        alg.sealedBoxFrom(own.encryptedData).getOrThrow().decrypt(secretKey) should succeed
+                        alg.sealedBox.from(own.encryptedData).getOrThrow().decrypt(secretKey) should succeed
                     }
                 }
             }
@@ -832,49 +826,50 @@ class `00SymmetricTest` : FreeSpec({
 
                     val box = when (alg.requiresNonce()) {
                         true -> when (alg.isAuthenticated()) {
-                            true -> alg.sealedBoxFrom(
-                                alg.randomNonce(),
+                            true -> alg.sealedBox.withNonce(alg.randomNonce()).from(
                                 plaintext,
                                 Random.nextBytes(alg.authTagLength.bytes.toInt()),
                             )
 
-                            false -> alg.sealedBoxFrom(alg.randomNonce(), plaintext)
+                            false -> alg.sealedBox.withNonce(alg.randomNonce()).from(plaintext)
                         }
 
                         false -> when (alg.isAuthenticated()) {
-                            true -> alg.sealedBoxFrom(
+                            true -> alg.sealedBox.from(
                                 plaintext,
                                 Random.nextBytes(alg.authTagLength.bytes.toInt()),
                             )
 
-                            false -> alg.sealedBoxFrom(plaintext)
+                            false -> alg.sealedBox.from(plaintext)
                         }
                     }.getOrThrow()
 
                     val box2 = when (wrongAlg.requiresNonce()) {
                         true -> when (wrongAlg.isAuthenticated()) {
-                            true -> wrongAlg.sealedBoxFrom(
+                            true -> wrongAlg.sealedBox.withNonce(
                                 if (box.hasNonce() && box.nonce.size == wrongAlg.nonceLength.bytes.toInt()) box.nonce else
-                                    wrongAlg.randomNonce(),
+                                    wrongAlg.randomNonce()
+                            ).from(
+
                                 plaintext,
                                 if (box.isAuthenticated() && box.authTag.size == wrongAlg.authTagLength.bytes.toInt()) box.authTag else
                                     Random.nextBytes(wrongAlg.authTagLength.bytes.toInt()),
                             )
 
-                            false -> wrongAlg.sealedBoxFrom(
-                                if (box.hasNonce() && box.nonce.size == wrongAlg.nonceLength.bytes.toInt()) box.nonce else
-                                    wrongAlg.randomNonce(), plaintext
+                            false -> wrongAlg.sealedBox.withNonce(if (box.hasNonce() && box.nonce.size == wrongAlg.nonceLength.bytes.toInt()) box.nonce else
+                                wrongAlg.randomNonce()).from(
+                                 plaintext
                             )
                         }
 
                         false -> when (wrongAlg.isAuthenticated()) {
-                            true -> wrongAlg.sealedBoxFrom(
+                            true -> wrongAlg.sealedBox.from(
                                 plaintext,
                                 if (box.isAuthenticated() && box.authTag.size == wrongAlg.authTagLength.bytes.toInt()) box.authTag else
                                     Random.nextBytes(wrongAlg.authTagLength.bytes.toInt()),
                             )
 
-                            false -> wrongAlg.sealedBoxFrom(plaintext)
+                            false -> wrongAlg.sealedBox.from(plaintext)
                         }
                     }.getOrThrow()
 

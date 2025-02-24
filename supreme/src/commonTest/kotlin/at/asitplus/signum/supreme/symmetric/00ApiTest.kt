@@ -18,7 +18,7 @@ class `00ApiTest` : FreeSpec({
             SymmetricEncryptionAlgorithm.AES_128.GCM,
             SymmetricEncryptionAlgorithm.AES_128.ECB,
             SymmetricEncryptionAlgorithm.ChaCha20Poly1305
-        ) { algorithm->
+        ) { algorithm ->
 
             //create a key, encrypt and decrypt works!
             val key = algorithm.randomKey()
@@ -47,42 +47,60 @@ class `00ApiTest` : FreeSpec({
             when (algorithm.requiresNonce()) {
                 true -> when (algorithm.isAuthenticated()) {
                     true -> {
-                        algorithm
-                        //compile error
-                        //algorithm.sealedBoxFrom(byteArrayOf())
-                        //compile error
-                        //algorithm.sealedBoxFrom(byteArrayOf(),byteArrayOf())
-                        algorithm.sealedBoxFrom(
-                            byteArrayOf(), //nonce
-                            byteArrayOf(), //encrypted
-                            byteArrayOf(), //auth tag
-                        )
+                        // compile error
+                        // algorithm.sealedBox.from(byteArrayOf(), byteArrayOf())
+
+                        // compile error
+                        // algorithm.sealedBox.from(byteArrayOf())
+
+                        // compile error
+                        // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf())
+
+                        algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf(), byteArrayOf())
+
+
                     }
 
                     false -> {
-                        //Compile error
-                        //algorithm.sealedBoxFrom(byteArrayOf())
-                        algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf())
-                        //Compile error
-                        //algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf(),byteArrayOf())
+                        // compile error
+                        // algorithm.sealedBox.from(byteArrayOf())
+
+                        // compile error
+                        // algorithm.sealedBox.from(byteArrayOf(), byteArrayOf())
+
+                        algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf())
+
+                        // compile error
+                        // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf(), byteArrayOf())
+
                     }
                 }
 
                 false -> when (algorithm.isAuthenticated()) {
                     true -> {
+                        // compile error
+                        // algorithm.sealedBox.from(byteArrayOf())
+
+                        algorithm.sealedBox.from(byteArrayOf(), byteArrayOf())
+
+                        // compile error
+                        // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf())
+
                         //compile error
-                        //algorithm.sealedBoxFrom(byteArrayOf())
-                        algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf())
-                        //TODO @Jakob, I need help. this should not compile, but it does.
-                        algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf(), byteArrayOf())
+                        // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf(), byteArrayOf())
                     }
 
                     false -> {
-                        algorithm.sealedBoxFrom(byteArrayOf())
-                        //compile error
-                        //algorithm.sealedBoxFrom(byteArrayOf(),byteArrayOf())
-                        //compile error
-                        //algorithm.sealedBoxFrom(byteArrayOf(),byteArrayOf(),byteArrayOf())
+                        algorithm.sealedBox.from(byteArrayOf())
+
+                        // compile error
+                        // algorithm.sealedBox.from(byteArrayOf(),byteArrayOf())
+
+                        // compile error
+                        // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf())
+
+                        // compile error
+                        // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf(), byteArrayOf())
                     }
                 }
             }
@@ -92,25 +110,29 @@ class `00ApiTest` : FreeSpec({
             when (algorithm.isAuthenticated()) {
                 true -> when (algorithm.requiresNonce()) {
                     true -> {
-                        algorithm
-                        //compile error
-                        //algorithm.sealedBoxFrom(byteArrayOf())
-                        //compile error
-                        //algorithm.sealedBoxFrom(byteArrayOf(),byteArrayOf())
-                        //why ambiguous?
-                        algorithm.sealedBoxFrom(
-                            byteArrayOf(), //nonce
-                            byteArrayOf(), //encrypted
-                            byteArrayOf(), //authTag
-                        )
+                        // compile error
+                        // algorithm.sealedBox.from(byteArrayOf(), byteArrayOf())
+
+                        // compile error
+                        // algorithm.sealedBox.from(byteArrayOf())
+
+                        // compile error
+                        // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf())
+
+                        algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf(), byteArrayOf())
                     }
 
                     false -> {
-                        //Compile error
-                        //algorithm.sealedBoxFrom(byteArrayOf())
-                        algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf())
-                        //TODO @Jakob, I need help. this should not compile, but it does.
-                        algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf(),byteArrayOf())
+                        // compile error
+                        // algorithm.sealedBox.from(byteArrayOf())
+
+                        algorithm.sealedBox.from(byteArrayOf(), byteArrayOf())
+
+                        // compile error
+                        // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf())
+
+                        //compile error
+                        // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf(), byteArrayOf())
 
 
                     }
@@ -118,19 +140,29 @@ class `00ApiTest` : FreeSpec({
 
                 false -> when (algorithm.requiresNonce()) {
                     true -> {
-                        //compile error
-                        //algorithm.sealedBoxFrom(byteArrayOf())
-                        algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf())
-                        //compile error
-                        //algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf(), byteArrayOf())
+                        // compile error
+                        // algorithm.sealedBox.from(byteArrayOf())
+
+                        // compile error
+                        // algorithm.sealedBox.from(byteArrayOf(), byteArrayOf())
+
+                        algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf())
+
+                        // compile error
+                        // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf(), byteArrayOf())
+
                     }
 
                     false -> {
-                        algorithm.sealedBoxFrom(byteArrayOf())
-                        //compile error
-                        //algorithm.sealedBoxFrom(byteArrayOf(),byteArrayOf())
-                        //compile error
-                        //algorithm.sealedBoxFrom(byteArrayOf(),byteArrayOf(),byteArrayOf())
+                        algorithm.sealedBox.from(byteArrayOf())
+                        // compile error
+                        // algorithm.sealedBox.from(byteArrayOf(),byteArrayOf())
+
+                        // compile error
+                        // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf())
+
+                        // compile error
+                        // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf(), byteArrayOf())
 
                     }
                 }
@@ -138,43 +170,47 @@ class `00ApiTest` : FreeSpec({
         }
     }
 
-        "Authenticated" - {
-            withData(
-                SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_512,
-                SymmetricEncryptionAlgorithm.AES_128.GCM,
-                SymmetricEncryptionAlgorithm.ChaCha20Poly1305
-            ) {
+    "Authenticated" - {
+        withData(
+            SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_512,
+            SymmetricEncryptionAlgorithm.AES_128.GCM,
+            SymmetricEncryptionAlgorithm.ChaCha20Poly1305
+        ) {
 
-                val algorithm = it
+            val algorithm = it
 
-                //create a key, encrypt and decrypt works!
-                val key = algorithm.randomKey()
-                val box = key.encrypt("Harvest".encodeToByteArray()).getOrThrow()
-                box.decrypt(key) should succeed
+            //create a key, encrypt and decrypt works!
+            val key = algorithm.randomKey()
+            val box = key.encrypt("Harvest".encodeToByteArray()).getOrThrow()
+            box.decrypt(key) should succeed
 
 
-                //if you load a key, you are forced to know whether a dedicated MAC key is required
-                val loadedKey = when (algorithm.hasDedicatedMac()) {
-                    true -> {
-                        algorithm.keyFrom(byteArrayOf(), byteArrayOf())
-                        //Compile error
-                        //algorithm.keyFrom(byteArrayOf())
-                    }
-
-                    false -> {
-                        algorithm.keyFrom(byteArrayOf())
-                        //Compile error
-                        //algorithm.keyFrom(byteArrayOf(),byteArrayOf())
-                    }
+            //if you load a key, you are forced to know whether a dedicated MAC key is required
+            val loadedKey = when (algorithm.hasDedicatedMac()) {
+                true -> {
+                    algorithm.keyFrom(byteArrayOf(), byteArrayOf())
+                    //Compile error
+                    //algorithm.keyFrom(byteArrayOf())
                 }
-                //compile error
-                //algorithm.sealedBox(byteArrayOf(), byteArrayOf())
 
-                //correct
-                algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf(), byteArrayOf())
+                false -> {
+                    algorithm.keyFrom(byteArrayOf())
+                    //Compile error
+                    //algorithm.keyFrom(byteArrayOf(),byteArrayOf())
+                }
+            }
+            // compile error
+            // algorithm.sealedBox.from(byteArrayOf())
 
-                //correct
-                algorithm.sealedBoxFrom(byteArrayOf(), byteArrayOf(), byteArrayOf())
+            // compile error
+            // algorithm.sealedBox.from(byteArrayOf(), byteArrayOf())
+
+            // compile error
+            // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf())
+
+            //correct
+            algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf(), byteArrayOf())
+
 
         }
     }
