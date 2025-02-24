@@ -12,15 +12,14 @@ import kotlin.jvm.JvmName
  * invalid parameters (e.g., algorithm mismatch, key length, …)
  */
 @JvmName("encryptWithAutoGenIV")
-fun <K : KeyType, A : AuthCapability<out K>, I : NonceTrait> SymmetricKey<A, I, out K>.encrypt(
+suspend fun <K : KeyType, A : AuthCapability<out K>, I : NonceTrait> SymmetricKey<A, I, out K>.encrypt(
     data: ByteArray
 ): KmmResult<SealedBox<A, I, out K>> = catching {
     Encryptor(
         algorithm,
         if (this.hasDedicatedMacKey()) encryptionKey else secretKey,
         if (this.hasDedicatedMacKey()) macKey else null,
-        null,
-        null,
+        aad = null
     ).encrypt(data)
 }
 
@@ -38,7 +37,7 @@ fun <K : KeyType, A : AuthCapability<out K>, I : NonceTrait> SymmetricKey<A, I, 
  * invalid parameters (e.g., algorithm mismatch, key length, …)
  */
 @JvmName("encryptAuthenticated")
-fun <K : KeyType, A : AuthCapability.Authenticated<out K>, I : NonceTrait> SymmetricKey<A, I, out K>.encrypt(
+suspend fun <K : KeyType, A : AuthCapability.Authenticated<out K>, I : NonceTrait> SymmetricKey<A, I, out K>.encrypt(
     data: ByteArray,
     authenticatedData: ByteArray? = null
 ): KmmResult<SealedBox<A, I, out K>> = catching {
@@ -46,7 +45,6 @@ fun <K : KeyType, A : AuthCapability.Authenticated<out K>, I : NonceTrait> Symme
         algorithm,
         if (this.hasDedicatedMacKey()) encryptionKey else secretKey,
         if (this.hasDedicatedMacKey()) macKey else null,
-        null,
-        authenticatedData,
+        aad = authenticatedData,
     ).encrypt(data)
 }

@@ -15,7 +15,7 @@ private val secureRandom = SecureRandom()
  * Generates a fresh random key for this algorithm.
  */
 @Suppress("UNCHECKED_CAST")
-fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.randomKey(): SymmetricKey<A, I, out K> =
+suspend fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.randomKey(): SymmetricKey<A, I, out K> =
     keyFromInternal(
         secureRandom.nextBytesOf(keySize.bytes.toInt()),
         if (authCapability.keyType is KeyType.WithDedicatedMacKey) secureRandom.nextBytesOf(keySize.bytes.toInt())
@@ -28,7 +28,7 @@ fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEncryption
  */
 @JvmName("randomKeyAndMacKey")
 @Suppress("UNCHECKED_CAST")
-fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey>.randomKey(
+suspend fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey>.randomKey(
     macKeyLength: BitLength = preferredMacKeyLength
 ): SymmetricKey.WithDedicatedMac<I> =
     keyFromInternal(
