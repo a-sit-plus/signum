@@ -21,7 +21,7 @@ import kotlin.jvm.JvmName
  */
 @HazardousMaterials("NEVER re-use a nonce/IV! Have them auto-generated instead!")
 @JvmName("encryptAuthenticatedWithNonce")
-fun <K : KeyType, A : AuthCapability.Authenticated<out K>> KeyWithNonceAuthenticating<A, out K>.encrypt(
+suspend fun <K : KeyType, A : AuthCapability.Authenticated<out K>> KeyWithNonceAuthenticating<A, out K>.encrypt(
     data: ByteArray,
     authenticatedData: ByteArray? = null
 ): KmmResult<SealedBox<A, NonceTrait.Required, out K>> = catching {
@@ -45,7 +45,7 @@ fun <K : KeyType, A : AuthCapability.Authenticated<out K>> KeyWithNonceAuthentic
  */
 @HazardousMaterials("NEVER re-use a nonce/IV! Have them auto-generated instead!")
 @JvmName("encryptWithNonce")
-fun <K : KeyType, A : AuthCapability<out K>> KeyWithNonce<A, out K>.encrypt(
+suspend fun <K : KeyType, A : AuthCapability<out K>> KeyWithNonce<A, out K>.encrypt(
     data: ByteArray
 ): KmmResult<SealedBox.WithNonce<A, out K>> = catching {
     Encryptor(
