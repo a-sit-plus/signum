@@ -30,8 +30,7 @@ suspend fun <K : KeyType, A : AuthCapability<out K>, I : NonceTrait> SymmetricKe
  * @param authenticatedData Additional data to be authenticated (i.e. fed into the auth tag generation) but not encrypted.
  * -
  * It is safe to discard the reference to this data, as the [SealedBox] resulting from this operation will carry the
- * corresponding type information. Hence, it is possible to simply access
- * [at.asitplus.signum.indispensable.symmetric.authenticatedData]
+ * corresponding type information.
  *
  * @return [KmmResult.success] containing a [SealedBox] if valid parameters were provided or [KmmResult.failure] in case of
  * invalid parameters (e.g., algorithm mismatch, key length, …)
