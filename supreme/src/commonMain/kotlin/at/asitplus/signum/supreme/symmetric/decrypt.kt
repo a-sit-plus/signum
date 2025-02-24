@@ -7,7 +7,6 @@ import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.AuthCapability.Authenticated
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
-import at.asitplus.signum.supreme.mac.mac
 import kotlin.jvm.JvmName
 
 
@@ -123,7 +122,7 @@ private suspend fun SealedBox<Authenticated.Integrated, *, out KeyType.Integrate
     authenticatedData: ByteArray
 ): ByteArray {
     require(secretKey.size.toUInt() == algorithm.keySize.bytes) { "Key must be exactly ${algorithm.keySize} bits long" }
-    return initDecrypt(secretKey, authenticatedData).doDecrypt(encryptedData, authTag)
+    return initDecrypt(secretKey, null, authenticatedData).decrypt(encryptedData)
 }
 
 @JvmName("decryptRaw")
@@ -131,7 +130,7 @@ private suspend fun SealedBox<AuthCapability.Unauthenticated, *, out KeyType.Int
     secretKey: ByteArray
 ): ByteArray {
     require(secretKey.size.toUInt() == algorithm.keySize.bytes) { "Key must be exactly ${algorithm.keySize} bits long" }
-    return initDecrypt(secretKey, null).doDecrypt(encryptedData, null)
+    return initDecrypt(secretKey, null, null).decrypt(encryptedData)
 }
 
 private suspend fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, out KeyType.WithDedicatedMacKey>.decryptInternal(
@@ -139,27 +138,7 @@ private suspend fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, out KeyTy
     macKey: ByteArray = secretKey,
     authenticatedData: ByteArray
 ): ByteArray {
-    require(this.isAuthenticated())
-    val iv: ByteArray? = if (this is SealedBox.WithNonce<*, *>) nonce else null
-    val authTag = authTag
-
-    val algorithm = algorithm
-    val innerCipher = algorithm.authCapability.innerCipher
-    val mac = algorithm.authCapability.mac
-    val dedicatedMacInputCalculation = algorithm.authCapability.dedicatedMacInputCalculation
-    val hmacInput = mac.dedicatedMacInputCalculation(encryptedData, iv ?: byteArrayOf(), authenticatedData)
-    val transform = algorithm.authCapability.dedicatedMacAuthTagTransform
-    if (!algorithm.authCapability.transform(mac.mac(macKey, hmacInput).getOrThrow()).contentEquals(authTag))
-        throw IllegalArgumentException("Auth Tag mismatch!")
-
-    @Suppress("UNCHECKED_CAST") val box: SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated> =
-        (if (this is SealedBox.WithNonce<*, *>) (innerCipher as SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Required, KeyType.Integrated>).sealedBoxFrom(
-            nonce,
-            encryptedData
-        ) else (innerCipher as SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Without, KeyType.Integrated>).sealedBoxFrom(
-            encryptedData
-        )).getOrThrow() as SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated>
-    return box.initDecrypt(secretKey, null).doDecrypt(box.encryptedData, null)
+    return initDecrypt(secretKey, macKey, authenticatedData).decrypt(encryptedData)
 }
 
 
