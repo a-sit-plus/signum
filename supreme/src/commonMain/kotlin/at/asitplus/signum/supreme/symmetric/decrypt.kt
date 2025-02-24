@@ -152,7 +152,7 @@ private suspend fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, out KeyTy
 suspend fun SymmetricKey<AuthCapability.Unauthenticated, NonceTrait.Required, KeyType.Integrated>.decrypt(
     nonce: ByteArray,
     encryptedData: ByteArray
-): KmmResult<ByteArray> = algorithm.sealedBoxFrom(nonce, encryptedData).transform { it.decrypt(this) }
+): KmmResult<ByteArray> = algorithm.sealedBox.withNonce(nonce).from(encryptedData).transform { it.decrypt(this) }
 
 
 /**
@@ -161,7 +161,7 @@ suspend fun SymmetricKey<AuthCapability.Unauthenticated, NonceTrait.Required, Ke
 @JvmName("decryptRawUnauthedNoNonce")
 suspend fun SymmetricKey<AuthCapability.Unauthenticated, NonceTrait.Without, KeyType.Integrated>.decrypt(
     encryptedData: ByteArray
-): KmmResult<ByteArray> = algorithm.sealedBoxFrom(encryptedData).transform { it.decrypt(this) }
+): KmmResult<ByteArray> = algorithm.sealedBox.from(encryptedData).transform { it.decrypt(this) }
 
 
 /**
@@ -175,7 +175,7 @@ suspend fun <A : AuthCapability.Authenticated<*>> SymmetricKey<A, NonceTrait.Req
     authTag: ByteArray,
     authenticatedData: ByteArray = byteArrayOf()
 ): KmmResult<ByteArray> =
-    algorithm.sealedBoxFrom(nonce, encryptedData, authTag).transform { it.decrypt(this, authenticatedData) }
+    algorithm.sealedBox.withNonce(nonce).from(encryptedData, authTag).transform { it.decrypt(this, authenticatedData) }
 
 /**
  * Directly decrypts raw [encryptedData], feeding [authTag], and [authenticatedData] into the decryption process.
@@ -187,7 +187,7 @@ suspend fun <A : AuthCapability.Authenticated<*>> SymmetricKey<A, NonceTrait.Wit
     authTag: ByteArray,
     authenticatedData: ByteArray = byteArrayOf()
 ): KmmResult<ByteArray> =
-    algorithm.sealedBoxFrom(encryptedData, authTag).transform {
+    algorithm.sealedBox.from(encryptedData, authTag).transform {
         it.decrypt(
             @Suppress("UNCHECKED_CAST")
             this as SymmetricKey<AuthCapability.Authenticated<*>, NonceTrait.Without, *>,

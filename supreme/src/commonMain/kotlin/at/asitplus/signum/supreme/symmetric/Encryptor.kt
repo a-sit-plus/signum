@@ -80,12 +80,11 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, K : KeyType>
 
             @Suppress("UNCHECKED_CAST")
             return (if (algorithm.requiresNonce()) {
-                (algorithm).sealedBoxFrom(
-                    (encrypted as SealedBox.WithNonce<*, *>).nonce,
+                algorithm.sealedBox.withNonce( (encrypted as SealedBox.WithNonce<*, *>).nonce).from(
                     encrypted.encryptedData,
                     authTag
                 )
-            } else (algorithm).sealedBoxFrom(
+            } else (algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Without, *>).sealedBox.from(
                 encrypted.encryptedData,
                 authTag
             )).getOrThrow() as SealedBox<A, I, K>
