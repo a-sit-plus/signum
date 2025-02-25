@@ -288,3 +288,10 @@ val SymmetricEncryptionAlgorithm<*, *, *>.jcaKeySpec: String
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20"
         else -> TODO("$this keyspec is unsupported UNSUPPORTED")
     }
+
+val HMAC.jcaName: String get() = when(this) {
+    HMAC.SHA1 ->   "HmacSHA1"
+    HMAC.SHA256 -> "HmacSHA256"
+    HMAC.SHA384 -> "HmacSHA384"
+    HMAC.SHA512 -> "HmacSHA512"
+}
