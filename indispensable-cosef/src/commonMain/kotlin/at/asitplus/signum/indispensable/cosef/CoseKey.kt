@@ -160,7 +160,7 @@ data class CoseKey(
  * Creates a CoseKey matching, if the key's [SymmetricKey.algorithm] has a COSE mapping.
  * If you want to add a KID, simply set it prior to encoding the key
  */
-fun SymmetricKey<*, *, *>.fromSymmetricKey(baseIv: ByteArray? = null, vararg includedOps: CoseKeyOperation) = catching {
+fun SymmetricKey<*, *, *>.toCoseKey(baseIv: ByteArray? = null, vararg includedOps: CoseKeyOperation) = catching {
     //fail fast
     val alg = algorithm.toCoseAlgorithm().getOrThrow()
     require(this is SymmetricKey.Integrated) //we don't support anything else

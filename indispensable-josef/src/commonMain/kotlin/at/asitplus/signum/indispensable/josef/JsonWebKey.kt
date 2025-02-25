@@ -15,7 +15,10 @@ import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.josef.io.JwsCertificateSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.CertificateChain
+import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricKey
+import at.asitplus.signum.indispensable.symmetric.hasDedicatedMacKey
+import at.asitplus.signum.supreme.symmetric.keyFrom
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -349,6 +352,48 @@ data class JsonWebKey(
         fun fromCoordinates(curve: ECCurve, x: ByteArray, y: ByteArray): KmmResult<JsonWebKey> =
             catching { fromUncompressed(curve, x, y).toJsonWebKey() }
     }
+
+    /**
+     * Transforms this JsonWebKey into a [SymmetricKey] if an algorithm mapping exists.
+     * Note: for [JweEncryption], see [JweEncryption.symmetricKeyFromJsonWebKeyBytes].
+     * Supported algorithms are:
+     * * [SymmetricEncryptionAlgorithm.AES.GCM]
+     * * [SymmetricEncryptionAlgorithm.AES.WRAP]
+     *
+     */
+    fun toSymmetricKey(): KmmResult<SymmetricKey<*, *, *>> = catching {
+        require(algorithm != null) { "Algorithm is null" }
+        require(algorithm is JweAlgorithm) { "Not a JweAlgorithm" }
+        require(k != null) { "key bytes not present" }
+        when (val alg = algorithm.toSymmetricEncryptionAlgorithm()) {
+            is SymmetricEncryptionAlgorithm.AES.GCM -> alg.keyFrom(k).getOrThrow()
+            is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> alg.keyFrom(k).getOrThrow()
+            else -> throw IllegalArgumentException("Unsupported algorithm $algorithm")
+        }
+    }
+}
+
+/**
+ * Converts this symmetric key to a [JsonWebKey]. [algorithm] may be null for algorithms, which do not directly
+ * correspond to a valid JWA `alg` identifier but will still be encoded.
+ * * If you want to add a KID, simply set it prior to encoding the key
+ * * Allowed key operations can be restricted by specifying [includedOps]
+ * */
+fun SymmetricKey<*, *, *>.toJsonWebKey(vararg includedOps: String): JsonWebKey =
+    JsonWebKey(
+        k = jsonWebKeyBytes,
+        type = JwkType.SYM,
+        keyId = jwkId,
+        algorithm = algorithm.toJweAlgorithm(),
+        keyOperations = includedOps.toSet()
+    )
+
+/**
+ * converts a symmetric key to its JWE serializable form (i.e. a single bytearray)
+ */
+val SymmetricKey<*,*,*>.jsonWebKeyBytes get() = when (hasDedicatedMacKey()) {
+    true -> macKey + encryptionKey
+    false -> secretKey
 }
 
 /**
