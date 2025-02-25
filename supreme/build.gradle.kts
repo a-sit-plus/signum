@@ -31,6 +31,8 @@ version = supremeVersion
 wireAndroidInstrumentedTests()
 
 kotlin {
+    compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
+    applyDefaultHierarchyTemplate()
     jvm()
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
@@ -59,7 +61,6 @@ kotlin {
     sourceSets.androidMain.dependencies {
         implementation("androidx.biometric:biometric:1.2.0-alpha05")
     }
-
 }
 
 swiftklib {
