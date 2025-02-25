@@ -55,7 +55,6 @@ kotlin {
         implementation(project(":internals"))
         implementation(coroutines())
         implementation(napier())
-        implementation(libs.securerandom)
     }
 
     sourceSets.androidMain.dependencies {
