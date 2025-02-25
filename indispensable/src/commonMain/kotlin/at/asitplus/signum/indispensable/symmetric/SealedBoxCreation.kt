@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.symmetric
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.misc.bytes
+import kotlin.jvm.JvmName
 
 /**
  * Creates a [SealedBox] matching the characteristics of the underlying [SealedBoxBuilder.algorithm].
@@ -43,6 +44,7 @@ fun SealedBoxBuilder.WithNonce.Having<AuthCapability.Unauthenticated, KeyType.In
  *
  *  @return [at.asitplus.KmmResult.failure] on illegal auth tag length
  */
+@JvmName("fromAuthenticatedGeneric")
 fun SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<*>, *>.from(
     encryptedData: ByteArray,
     authTag: ByteArray
@@ -59,6 +61,7 @@ fun SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<*>, *>.f
  *
  * @return [at.asitplus.KmmResult.failure] on illegal auth tag length
  */
+@JvmName("fromAuthenticatedWihtKeyType")
 fun <K : KeyType> SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<out K>, K>.from(
     encryptedData: ByteArray,
     authTag: ByteArray
@@ -75,6 +78,7 @@ fun <K : KeyType> SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenti
  * Use this function to load external encrypted data for decryption.
  * Returns a KmmResult purely for the sake of consistency
  */
+@JvmName("fromUnauthenticatedWithoutNonce")
 fun SealedBoxBuilder.Without<AuthCapability.Unauthenticated, KeyType.Integrated>.from(
     encryptedData: ByteArray,
 ): KmmResult<SealedBox<AuthCapability.Unauthenticated, NonceTrait.Without, KeyType.Integrated>> = catching {
