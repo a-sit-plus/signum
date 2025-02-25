@@ -1,42 +1,11 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.jcaName
-import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
-
-val JweEncryption.jcaName
-    get() = when (this) {
-        JweEncryption.A128GCM, JweEncryption.A192GCM, JweEncryption.A256GCM -> "AES/GCM/NoPadding"
-        JweEncryption.A128CBC_HS256, JweEncryption.A192CBC_HS384, JweEncryption.A256CBC_HS512 -> "AES/CBC/PKCS5Padding"
-    }
-
-val JweEncryption.isAuthenticatedEncryption
-    get() = when (this) {
-        JweEncryption.A128GCM, JweEncryption.A192GCM, JweEncryption.A256GCM -> true
-        JweEncryption.A128CBC_HS256, JweEncryption.A192CBC_HS384, JweEncryption.A256CBC_HS512 -> false
-    }
-
-val JweEncryption.jcaKeySpecName
-    get() = when (this) {
-        JweEncryption.A128GCM, JweEncryption.A192GCM, JweEncryption.A256GCM -> "AES"
-        JweEncryption.A128CBC_HS256, JweEncryption.A192CBC_HS384, JweEncryption.A256CBC_HS512 -> "AES"
-    }
-
-val JweEncryption.jcaHmacName: String?
-    get() = when (this) {
-        JweEncryption.A128CBC_HS256 -> "HMACSHA256"
-        JweEncryption.A192CBC_HS384 -> "HMACSHA384"
-        JweEncryption.A256CBC_HS512 -> "HMACSHA512"
-        else -> null
-    }
-
 
 val JweAlgorithm.jcaName: String?
     get() = when (this) {
         JweAlgorithm.ECDH_ES -> "ECDH"
-        JweAlgorithm.A128KW, JweAlgorithm.A192KW, JweAlgorithm.A256KW -> "AES"
         JweAlgorithm.RSA_OAEP_256, JweAlgorithm.RSA_OAEP_384, JweAlgorithm.RSA_OAEP_512 -> "RSA/ECB/OAEPPadding"
         is JweAlgorithm.UNKNOWN -> null
-        JweAlgorithm.A128GCMKW, ->SymmetricEncryptionAlgorithm.AES_128.GCM.jcaName
-        JweAlgorithm.A192GCMKW -> SymmetricEncryptionAlgorithm.AES_192.GCM.jcaName
-        JweAlgorithm.A256GCMKW -> SymmetricEncryptionAlgorithm.AES_256.GCM.jcaName
+        else -> toSymmetricEncryptionAlgorithm()?.jcaName
     }
