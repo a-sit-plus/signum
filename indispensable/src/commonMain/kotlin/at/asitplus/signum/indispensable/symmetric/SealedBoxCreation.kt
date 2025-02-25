@@ -144,7 +144,9 @@ sealed class SealedBoxBuilder<A : AuthCapability<out K>, I : NonceTrait, out K :
  */
 val SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Required, KeyType.Integrated>.sealedBox:
         SealedBoxBuilder.WithNonce.Awaiting<AuthCapability.Unauthenticated, KeyType.Integrated>
-    get() = SealedBoxBuilder.WithNonce.Awaiting<AuthCapability.Unauthenticated, KeyType.Integrated>(this)
+    @JvmName("boxWithNonceUnauthenticated") get() = SealedBoxBuilder.WithNonce.Awaiting<AuthCapability.Unauthenticated, KeyType.Integrated>(
+        this
+    )
 
 
 /**
@@ -154,7 +156,7 @@ val SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Requ
  */
 val SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Without, KeyType.Integrated>.sealedBox:
         SealedBoxBuilder.Without<AuthCapability.Unauthenticated, KeyType.Integrated>
-    get() = SealedBoxBuilder.Without.Unauthenticated(this)
+    @JvmName("boxWithoutNonceUnauthenticated") get() = SealedBoxBuilder.Without.Unauthenticated(this)
 
 
 /**
@@ -164,7 +166,7 @@ val SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.With
  */
 val <K : KeyType, A : AuthCapability.Authenticated<out K>> SymmetricEncryptionAlgorithm<A, NonceTrait.Required, K>.sealedBox:
         SealedBoxBuilder.WithNonce.Awaiting<A, K>
-    get() = SealedBoxBuilder.WithNonce.Awaiting<A, K>(this)
+    @JvmName("boxWithNonceAuthenticated") get() = SealedBoxBuilder.WithNonce.Awaiting<A, K>(this)
 
 
 // we need both this one and the next two to work around https://youtrack.jetbrains.com/issue/KT-75444
@@ -175,7 +177,7 @@ val <K : KeyType, A : AuthCapability.Authenticated<out K>> SymmetricEncryptionAl
  */
 val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Without, *>.sealedBox:
         SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<*>, *>
-    get() = SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<*>, KeyType>(this)
+    @JvmName("boxWithoutNonceAuthenticatedGeneric")  get() = SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<*>, KeyType>(this)
 
 /**
  * Creates a [SealedBoxBuilder] matching this algorithm's characteristics:
@@ -184,7 +186,7 @@ val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Wit
  */
 val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<KeyType.Integrated>, NonceTrait.Without, KeyType.Integrated>.sealedBox:
         SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<KeyType.Integrated>, KeyType.Integrated>
-    get() = SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<KeyType.Integrated>, KeyType.Integrated>(
+    @JvmName("boxWithoutNonceAuthenticatedIntegrated")  get() = SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<KeyType.Integrated>, KeyType.Integrated>(
         this
     )
 
@@ -195,7 +197,7 @@ val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<KeyType.Integrated
  */
 val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<KeyType.WithDedicatedMacKey>, NonceTrait.Without, KeyType.WithDedicatedMacKey>.sealedBox:
         SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<KeyType.WithDedicatedMacKey>, KeyType.WithDedicatedMacKey>
-    get() = SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<KeyType.WithDedicatedMacKey>, KeyType.WithDedicatedMacKey>(
+    @JvmName("boxWithoutNonceAuthenticatedDedicated") get() = SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<KeyType.WithDedicatedMacKey>, KeyType.WithDedicatedMacKey>(
         this
     )
 
