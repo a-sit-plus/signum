@@ -31,7 +31,8 @@ version = supremeVersion
 wireAndroidInstrumentedTests()
 
 kotlin {
-
+    compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
+    applyDefaultHierarchyTemplate()
     jvm()
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)

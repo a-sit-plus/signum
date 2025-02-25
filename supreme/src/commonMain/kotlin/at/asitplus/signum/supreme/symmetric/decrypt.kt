@@ -52,6 +52,7 @@ suspend fun <I : NonceTrait, M : MessageAuthenticationCode> SealedBox<AuthCapabi
     key: SymmetricKey.WithDedicatedMac<*>,
     authenticatedData: ByteArray = byteArrayOf()
 ) = catching {
+    @Suppress("UNCHECKED_CAST")
     (this as SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedicatedMacKey>).decryptInternal(
         key.encryptionKey,
         key.macKey,
@@ -84,7 +85,7 @@ suspend fun <A : AuthCapability.Authenticated<out K>,I: NonceTrait, K : KeyType>
                 key.encryptionKey, key.macKey, authenticatedData
             )
         }
-
+        //compiler knows its exhaustive, but IDEA complains
         else -> throw ImplementationError("Authenticated Decryption")
     }
 }
@@ -188,8 +189,8 @@ suspend fun <A : AuthCapability.Authenticated<*>> SymmetricKey<A, NonceTrait.Wit
     authenticatedData: ByteArray = byteArrayOf()
 ): KmmResult<ByteArray> =
     algorithm.sealedBox.from(encryptedData, authTag).transform {
+        @Suppress("UNCHECKED_CAST")
         it.decrypt(
-            @Suppress("UNCHECKED_CAST")
             this as SymmetricKey<AuthCapability.Authenticated<*>, NonceTrait.Without, *>,
             authenticatedData
         )
