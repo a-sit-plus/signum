@@ -159,7 +159,8 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
         }
 
         /**
-         * Casts out the evil demons that haunt OID components encoded into [rawValue]
+         * Casts out the evil demons that haunt OID components encoded into ASN.1 content [rawValue].
+         * If you want to parse human-readable OID representations, just use the ObjectIdentifier constructor!
          * @return ObjectIdentifier if decoding succeeded
          * @throws Asn1Exception all sorts of errors on invalid input
          */

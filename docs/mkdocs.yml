@@ -49,6 +49,9 @@ repo_name: a-sit-plus/signum
 
 copyright: Copyright &copy; 2024-2025 A-SIT Plus GmbH
 
+plugins:
+  - social
+
 extra:
   social:
     - icon: fontawesome/solid/earth-americas
