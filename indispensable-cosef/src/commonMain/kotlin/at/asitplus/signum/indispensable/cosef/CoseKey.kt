@@ -12,6 +12,9 @@ import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.symmetric.SymmetricKey
+import at.asitplus.signum.indispensable.symmetric.isAuthenticated
+import at.asitplus.signum.indispensable.symmetric.isIntegrated
+import at.asitplus.signum.supreme.symmetric.keyFrom
 import com.ionspin.kotlin.bignum.integer.Sign
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -153,6 +156,17 @@ data class CoseKey(
             )
         }
     }
+
+    /**
+     * Tries to transform this CoseKey into a corresponding [SymmetricKey]
+     */
+    fun toSymmetricKey(): KmmResult<SymmetricKey<*, *, *>> = catching {
+        require(algorithm is CoseAlgorithm.SymmetricEncryption) { "Not a symmetric algorithm" }
+        require(keyParams is CoseKeyParams.SymmKeyParams) { "No symmetric key bytes present" }
+        val alg = algorithm.algorithm
+        require(alg.isAuthenticated() && alg.isIntegrated())
+        alg.keyFrom(keyParams.k).getOrThrow()
+    }
 }
 
 
@@ -174,6 +188,7 @@ fun SymmetricKey<*, *, *>.toCoseKey(baseIv: ByteArray? = null, vararg includedOp
         keyParams = CoseKeyParams.SymmKeyParams(secretKey)
     )
 }
+
 
 /**
  * Converts [CryptoPublicKey] into a KmmResult wrapped [CoseKey]
