@@ -87,24 +87,6 @@ internal class JcaPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : 
     }
 }
 
-val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
-    @OptIn(HazardousMaterials::class)
-    get() = when (this) {
-        is SymmetricEncryptionAlgorithm.AES.GCM -> "AES/GCM/NoPadding"
-        is SymmetricEncryptionAlgorithm.AES.CBC<*, *> -> "AES/CBC/PKCS5Padding"
-        is SymmetricEncryptionAlgorithm.AES.ECB -> "AES/ECB/PKCS5Padding"
-        is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> "AESWrap"
-        is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20-Poly1305"
-        else -> TODO("$this is unsupported")
-    }
-
-val SymmetricEncryptionAlgorithm<*, *, *>.jcaKeySpec: String
-    get() = when (this) {
-        is SymmetricEncryptionAlgorithm.AES<*, *, *> -> "AES"
-        is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20"
-        else -> TODO("$this keyspec is unsupported UNSUPPORTED")
-    }
-
 internal val PlatformCipher.Mode.jcaCipherMode
     get() = when (this) {
         PlatformCipher.Mode.ENCRYPT -> Cipher.ENCRYPT_MODE
