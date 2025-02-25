@@ -362,7 +362,6 @@ data class JsonWebKey(
      *
      */
     fun toSymmetricKey(): KmmResult<SymmetricKey<*, *, *>> = catching {
-        require(algorithm != null) { "Algorithm is null" }
         require(algorithm is JweAlgorithm) { "Not a JweAlgorithm" }
         require(k != null) { "key bytes not present" }
         when (val alg = algorithm.toSymmetricEncryptionAlgorithm()) {

@@ -139,7 +139,7 @@ sealed interface CoseAlgorithm {
         /**HMAC w/ SHA-256 truncated to 64 bits*/
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        object HS256_64 : MAC(5, HMAC.SHA256, 64.bit)
+        object HS256_64 : MAC(4, HMAC.SHA256, 64.bit)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
         object HS256 : MAC(5, HMAC.SHA256, 256.bit)
