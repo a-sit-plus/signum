@@ -49,7 +49,7 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
         ) : Integrated<AuthCapability.Authenticated.Integrated, I>(algorithm, additionalProperties, secretKey),
             SymmetricKey.Authenticating<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated> {
 
-            class RequiringNonce(
+            class RequiringNonce internal constructor(
                 algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.Integrated, NonceTrait.Required, KeyType.Integrated>,
                 secretKey: ByteArray,
                 additionalProperties: MutableMap<String, String> = mutableMapOf<String, String>()
@@ -57,7 +57,7 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
                 algorithm, additionalProperties, secretKey
             ), SymmetricKey.RequiringNonce<AuthCapability.Authenticated.Integrated, KeyType.Integrated>
 
-            class WithoutNonce(
+            class WithoutNonce internal constructor(
                 algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.Integrated, NonceTrait.Without, KeyType.Integrated>,
                 secretKey: ByteArray,
                 additionalProperties: MutableMap<String, String> = mutableMapOf<String, String>()
@@ -72,13 +72,13 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
             secretKey: ByteArray
         ) : Integrated<AuthCapability.Unauthenticated, I>(algorithm, additionalProperties, secretKey),
             SymmetricKey.NonAuthenticating<I> {
-            class RequiringNonce(
+            class RequiringNonce internal constructor(
                 algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Required, KeyType.Integrated>,
                 secretKey: ByteArray,
                 additionalProperties: MutableMap<String, String> = mutableMapOf<String, String>()
             ) : NonAuthenticating<NonceTrait.Required>(algorithm, additionalProperties, secretKey)
 
-            class WithoutNonce(
+            class WithoutNonce internal constructor(
                 algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Without, KeyType.Integrated>,
                 secretKey: ByteArray,
                 additionalProperties: MutableMap<String, String> = mutableMapOf<String, String>()
@@ -121,7 +121,7 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
         val macKey: ByteArray
     ) : SymmetricKey<AuthCapability.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey>,
         SymmetricKey.Authenticating<AuthCapability.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey> {
-        class RequiringNonce(
+        class RequiringNonce internal constructor(
             algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, NonceTrait.Required>, NonceTrait.Required, KeyType.WithDedicatedMacKey>,
             secretKey: ByteArray,
             dedicatedMacKey: ByteArray,
@@ -131,15 +131,14 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
         ),
             SymmetricKey.RequiringNonce<AuthCapability.Authenticated.WithDedicatedMac<*, NonceTrait.Required>, KeyType.WithDedicatedMacKey>
 
-        class WithoutNonce(
+        class WithoutNonce internal constructor(
             algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, NonceTrait.Without>, NonceTrait.Without, KeyType.WithDedicatedMacKey>,
             secretKey: ByteArray,
             dedicatedMacKey: ByteArray,
             additionalProperties: MutableMap<String, String> = mutableMapOf<String, String>()
         ) : WithDedicatedMac<NonceTrait.Without>(
             algorithm, additionalProperties, secretKey, dedicatedMacKey
-        ),
-            SymmetricKey.WithoutNonce<AuthCapability.Authenticated.WithDedicatedMac<*, NonceTrait.Without>, KeyType.WithDedicatedMacKey>
+        ),            SymmetricKey.WithoutNonce<AuthCapability.Authenticated.WithDedicatedMac<*, NonceTrait.Without>, KeyType.WithDedicatedMacKey>
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
