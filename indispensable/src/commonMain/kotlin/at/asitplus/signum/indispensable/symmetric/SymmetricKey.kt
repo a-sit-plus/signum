@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.symmetric
 
+import at.asitplus.signum.HazardousMaterials
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
@@ -121,7 +122,8 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
         val macKey: ByteArray
     ) : SymmetricKey<AuthCapability.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey>,
         SymmetricKey.Authenticating<AuthCapability.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey> {
-        class RequiringNonce internal constructor(
+
+        class RequiringNonce @HazardousMaterials("This constructor is public to enable testing. DO NOT USE IT!") constructor(
             algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, NonceTrait.Required>, NonceTrait.Required, KeyType.WithDedicatedMacKey>,
             secretKey: ByteArray,
             dedicatedMacKey: ByteArray,
@@ -138,7 +140,8 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
             additionalProperties: MutableMap<String, String> = mutableMapOf<String, String>()
         ) : WithDedicatedMac<NonceTrait.Without>(
             algorithm, additionalProperties, secretKey, dedicatedMacKey
-        ),            SymmetricKey.WithoutNonce<AuthCapability.Authenticated.WithDedicatedMac<*, NonceTrait.Without>, KeyType.WithDedicatedMacKey>
+        ),
+            SymmetricKey.WithoutNonce<AuthCapability.Authenticated.WithDedicatedMac<*, NonceTrait.Without>, KeyType.WithDedicatedMacKey>
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
