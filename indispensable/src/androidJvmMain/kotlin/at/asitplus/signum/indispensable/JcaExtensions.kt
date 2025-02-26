@@ -54,10 +54,6 @@ fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) = catch
     when (this) {
         is SignatureAlgorithm.ECDSA ->
             sigGetInstance("${this.digest.jcaAlgorithmComponent}withECDSA", provider)
-
-        is SignatureAlgorithm.HMAC ->
-            sigGetInstance("Hmac${this.digest.jcaAlgorithmComponent}", provider)
-
         is SignatureAlgorithm.RSA -> getRSAPlatformSignatureInstance(provider)
     }
 }
