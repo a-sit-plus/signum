@@ -1,5 +1,8 @@
+@file:OptIn(SecretExposure::class)
+
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.signum.supreme.symmetric.decrypt
@@ -71,7 +74,7 @@ class JvmSymmetricTest : FreeSpec({
                                 own.isAuthenticated() shouldBe true
                                 jcaCipher.init(
                                     Cipher.ENCRYPT_MODE,
-                                    SecretKeySpec(secretKey.secretKey, "AES"),
+                                    SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
                                     GCMParameterSpec(
                                         alg.authCapability.tagLength.bits.toInt(),
                                         own.nonce/*use our own auto-generated IV*/
@@ -85,7 +88,7 @@ class JvmSymmetricTest : FreeSpec({
 
                                 jcaCipher.init(
                                     Cipher.DECRYPT_MODE,
-                                    SecretKeySpec(secretKey.secretKey, "AES"),
+                                    SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
                                     GCMParameterSpec(
                                         alg.authCapability.tagLength.bits.toInt(),
                                         own.nonce/*use our own auto-generated IV*/
@@ -116,7 +119,7 @@ class JvmSymmetricTest : FreeSpec({
                                 val own = secretKey.encrypt(data).getOrThrow()
                                 jcaCipher.init(
                                     Cipher.ENCRYPT_MODE,
-                                    SecretKeySpec(secretKey.secretKey, "AES"),
+                                    SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
                                     IvParameterSpec(own.nonce)/*use our own auto-generated IV, if null iv was provided*/
                                 )
                                 val encrypted = jcaCipher.doFinal(data)
@@ -125,7 +128,7 @@ class JvmSymmetricTest : FreeSpec({
 
                                 jcaCipher.init(
                                     Cipher.DECRYPT_MODE,
-                                    SecretKeySpec(secretKey.secretKey, "AES"),
+                                    SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
                                     IvParameterSpec(own.nonce)/*use our own auto-generated IV, if null iv was provided*/
                                 )
                                 own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
@@ -185,7 +188,7 @@ class JvmSymmetricTest : FreeSpec({
                             val own = secretKey.encrypt(data).getOrThrow()
                             jcaCipher.init(
                                 Cipher.ENCRYPT_MODE,
-                                SecretKeySpec(secretKey.secretKey, "AES"),
+                                SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
                             )
                             val encrypted = jcaCipher.doFinal(data)
 
@@ -193,7 +196,7 @@ class JvmSymmetricTest : FreeSpec({
 
                             jcaCipher.init(
                                 Cipher.DECRYPT_MODE,
-                                SecretKeySpec(secretKey.secretKey, "AES"),
+                                SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
                             )
                             own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
 
@@ -217,7 +220,7 @@ class JvmSymmetricTest : FreeSpec({
 
                             jcaCipher.init(
                                 Cipher.ENCRYPT_MODE,
-                                SecretKeySpec(secretKey.secretKey, "AES"),
+                                SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
                             )
                             val jcaTrail = catching {
                                 jcaCipher.doFinal(data)
@@ -233,7 +236,7 @@ class JvmSymmetricTest : FreeSpec({
 
                                 jcaCipher.init(
                                     Cipher.DECRYPT_MODE,
-                                    SecretKeySpec(secretKey.secretKey, "AES"),
+                                    SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
                                 )
                                 own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
 
@@ -277,7 +280,7 @@ class JvmSymmetricTest : FreeSpec({
 
                     jcaCipher.init(
                         Cipher.ENCRYPT_MODE,
-                        SecretKeySpec(secretKey.secretKey, "ChaCha"),
+                        SecretKeySpec(secretKey.secretKey.getOrThrow(), "ChaCha"),
                         IvParameterSpec(box.nonce) /*need to do this, otherwise we get a random nonce*/
                     )
 
