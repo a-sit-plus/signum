@@ -166,6 +166,9 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
          */
         @Throws(Asn1Exception::class)
         fun decodeFromAsn1ContentBytes(bytes: ByteArray): ObjectIdentifier = ObjectIdentifier(bytes = bytes, nodes = null)
+        @Deprecated("misleading mane", ReplaceWith("decodeFromAsn1ContentBytes(rawValue)"))
+        fun parse(rawValue: ByteArray): ObjectIdentifier = decodeFromAsn1ContentBytes(rawValue)
+
 
         private fun UIntArray.toOidBytes(): ByteArray {
             return map { it.toAsn1VarInt() }.foldIndexed(
