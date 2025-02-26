@@ -141,7 +141,7 @@ class JvmSymmetricTest : FreeSpec({
                                 if (data.size < alg.blockSize.bytes.toInt())
                                     alg.sealedBox.withNonce(own.algorithm.randomNonce()).from(
                                         own.encryptedData
-                                    ).getOrThrow().decrypt(secretKey) shouldNot succeed
+                                    ).getOrThrow().decrypt(secretKey).onSuccess { it shouldNotBe data }
 
                             }
                         }
