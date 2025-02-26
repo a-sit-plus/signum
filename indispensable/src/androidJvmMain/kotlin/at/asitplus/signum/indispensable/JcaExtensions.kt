@@ -58,11 +58,11 @@ fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) = catch
         is SignatureAlgorithm.HMAC ->
             sigGetInstance("Hmac${this.digest.jcaAlgorithmComponent}", provider)
 
-        is SignatureAlgorithm.RSA -> getPlatformSignatureInstance(provider)
+        is SignatureAlgorithm.RSA -> getRSAPlatformSignatureInstance(provider)
     }
 }
 
-internal expect fun SignatureAlgorithm.RSA.getPlatformSignatureInstance(provider: String?) : Signature
+internal expect fun SignatureAlgorithm.RSA.getRSAPlatformSignatureInstance(provider: String?) : Signature
 
 /** Get a pre-configured JCA instance for this algorithm */
 fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =

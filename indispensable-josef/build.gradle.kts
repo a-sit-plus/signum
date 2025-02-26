@@ -83,7 +83,7 @@ exportXCFramework(
 
 
 android {
-    namespace = "at.asitplus.signum.indisensable.josef"
+    namespace = "at.asitplus.signum.indispensable.josef"
 
 
     packaging {

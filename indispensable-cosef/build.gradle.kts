@@ -76,7 +76,7 @@ exportXCFramework(
 
 
 android {
-    namespace = "at.asitplus.signum.indisensable.cosef"
+    namespace = "at.asitplus.signum.indispensable.cosef"
 
 
     packaging {
