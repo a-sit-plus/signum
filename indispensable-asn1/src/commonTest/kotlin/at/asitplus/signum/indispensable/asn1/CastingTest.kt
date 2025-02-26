@@ -12,7 +12,7 @@ class CastingTest : FreeSpec({
         shouldThrow<Asn1StructuralException> { Asn1.Int(0).asExplicitlyTagged() }
         shouldThrow<Asn1StructuralException> { Asn1.Int(0).asStructure() }
         shouldThrow<Asn1StructuralException> { Asn1.Int(0).asSequence() }
-        shouldThrow<Asn1StructuralException> { Asn1.Int(0).asPrimitiveOctetString() }
+        shouldThrow<Asn1StructuralException> { Asn1.Int(0).asOctetString() }
         shouldThrow<Asn1StructuralException> { Asn1.Int(0).asEncapsulatingOctetString() }
         Asn1.Int(0).let { it.asPrimitive() shouldBe it }
     }
@@ -20,7 +20,7 @@ class CastingTest : FreeSpec({
     "Set" {
         shouldThrow<Asn1StructuralException> { Asn1.Set { +Asn1.Null() }.asSequence() }
         shouldThrow<Asn1StructuralException> { Asn1.Set { +Asn1.Null() }.asExplicitlyTagged() }
-        shouldThrow<Asn1StructuralException> { Asn1.Set { +Asn1.Null() }.asPrimitiveOctetString() }
+        shouldThrow<Asn1StructuralException> { Asn1.Set { +Asn1.Null() }.asOctetString() }
         shouldThrow<Asn1StructuralException> { Asn1.Set { +Asn1.Null() }.asEncapsulatingOctetString() }
 
         Asn1.Set { +Asn1.Null() }.let { it.asStructure() shouldBe it }
@@ -45,7 +45,7 @@ class CastingTest : FreeSpec({
         shouldThrow<Asn1StructuralException> { Asn1PrimitiveOctetString(byteArrayOf()).asSequence() }
         shouldThrow<Asn1StructuralException> { Asn1PrimitiveOctetString(byteArrayOf()).asExplicitlyTagged() }
         shouldThrow<Asn1StructuralException> { Asn1PrimitiveOctetString(byteArrayOf()).asEncapsulatingOctetString() }
-        Asn1PrimitiveOctetString(byteArrayOf()).let { it.asPrimitiveOctetString() shouldBe it }
+        Asn1PrimitiveOctetString(byteArrayOf()).let { it.asOctetString() shouldBe it }
         Asn1PrimitiveOctetString(byteArrayOf()).let { it.asPrimitive() shouldBe it }
     }
 
@@ -53,7 +53,7 @@ class CastingTest : FreeSpec({
     "Custom Structure" {
         shouldThrow<Asn1StructuralException> { Asn1.ExplicitlyTagged(19u) { +Asn1.Null() }.asSequence() }
         shouldThrow<Asn1StructuralException> { Asn1.ExplicitlyTagged(19u) { +Asn1.Null() }.asSet() }
-        shouldThrow<Asn1StructuralException> { Asn1.ExplicitlyTagged(19u) { +Asn1.Null() }.asPrimitiveOctetString() }
+        shouldThrow<Asn1StructuralException> { Asn1.ExplicitlyTagged(19u) { +Asn1.Null() }.asOctetString() }
         shouldThrow<Asn1StructuralException> {
             Asn1.ExplicitlyTagged(19u) { +Asn1.Null() }.asEncapsulatingOctetString()
         }

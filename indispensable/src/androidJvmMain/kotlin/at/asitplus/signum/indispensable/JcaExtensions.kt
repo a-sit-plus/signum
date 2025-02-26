@@ -4,8 +4,8 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.asn1.toJavaBigInteger
-import at.asitplus.signum.internals.isAndroid
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.internals.isAndroid
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -62,7 +62,7 @@ fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) = catch
     }
 }
 
-internal expect fun SignatureAlgorithm.RSA.getRSAPlatformSignatureInstance(provider: String?) : Signature
+internal expect fun SignatureAlgorithm.RSA.getRSAPlatformSignatureInstance(provider: String?): Signature
 
 /** Get a pre-configured JCA instance for this algorithm */
 fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =
@@ -120,15 +120,11 @@ val ECCurve.jcaName
 fun ECCurve.Companion.byJcaName(name: String): ECCurve? = ECCurve.entries.find { it.jcaName == name }
 
 
-@Deprecated("renamed", ReplaceWith("toJcaPublicKey()"))
-fun CryptoPublicKey.getJcaPublicKey() = toJcaPublicKey()
 fun CryptoPublicKey.toJcaPublicKey() = when (this) {
     is CryptoPublicKey.EC -> toJcaPublicKey()
     is CryptoPublicKey.RSA -> toJcaPublicKey()
 }
 
-@Deprecated("renamed", ReplaceWith("toJcaPublicKey()"))
-fun CryptoPublicKey.EC.getJcaPublicKey() = toJcaPublicKey()
 fun CryptoPublicKey.EC.toJcaPublicKey(): KmmResult<ECPublicKey> = catching {
     val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.jwkName)
     val x = x.residue.toJavaBigInteger()
@@ -140,8 +136,6 @@ fun CryptoPublicKey.EC.toJcaPublicKey(): KmmResult<ECPublicKey> = catching {
 
 private val rsaFactory = KeyFactory.getInstance("RSA")
 
-@Deprecated("renamed", ReplaceWith("toJcaPublicKey()"))
-fun CryptoPublicKey.RSA.getJcaPublicKey(): KmmResult<RSAPublicKey> =toJcaPublicKey()
 fun CryptoPublicKey.RSA.toJcaPublicKey(): KmmResult<RSAPublicKey> = catching {
     rsaFactory.generatePublic(
         RSAPublicKeySpec(n.toJavaBigInteger(), e.toJavaBigInteger())
@@ -149,34 +143,29 @@ fun CryptoPublicKey.RSA.toJcaPublicKey(): KmmResult<RSAPublicKey> = catching {
 }
 
 
-fun ECPublicKey.toCryptoPublicKey() : KmmResult<CryptoPublicKey.EC> = CryptoPublicKey.EC.fromJcaPublicKey(this)
-@Deprecated("replaced by extension", ReplaceWith("publicKey.toCryptoPublicKey()"))
-fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey.EC> = catching {
+fun ECPublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey.EC> = catching {
     val curve = ECCurve.byJcaName(
         SECNamedCurves.getName(
             SubjectPublicKeyInfo.getInstance(
-                ASN1Sequence.getInstance(publicKey.encoded)
+                ASN1Sequence.getInstance(encoded)
             ).algorithm.parameters as ASN1ObjectIdentifier
         )
     ) ?: throw SerializationException("Unknown Jca name")
-    fromUncompressed(
+    CryptoPublicKey.EC.fromUncompressed(
         curve,
-        publicKey.w.affineX.toByteArray(),
-        publicKey.w.affineY.toByteArray()
+        w.affineX.toByteArray(),
+        w.affineY.toByteArray()
     )
 }
 
-fun RSAPublicKey.toCryptoPublicKey() : KmmResult<CryptoPublicKey.RSA> = CryptoPublicKey.RSA.fromJcaPublicKey(this)
-@Deprecated("replaced by extension", ReplaceWith("publicKey.toCryptoPublicKey()"))
-fun CryptoPublicKey.RSA.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey.RSA> =
-    catching { CryptoPublicKey.RSA(publicKey.modulus.toAsn1Integer(), publicKey.publicExponent.toAsn1Integer()) }
+fun RSAPublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey.RSA> =
+    catching { CryptoPublicKey.RSA(modulus.toAsn1Integer(), publicExponent.toAsn1Integer()) }
 
-fun PublicKey.toCryptoPublicKey() : KmmResult<CryptoPublicKey> = CryptoPublicKey.fromJcaPublicKey(this)
-@Deprecated("replaced by extension", ReplaceWith("publicKey.toCryptoPublicKey()"))
-fun CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
-    when (publicKey) {
-        is RSAPublicKey -> CryptoPublicKey.RSA.fromJcaPublicKey(publicKey)
-        is ECPublicKey -> CryptoPublicKey.EC.fromJcaPublicKey(publicKey)
+
+fun PublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
+    when (this) {
+        is RSAPublicKey -> toCryptoPublicKey()
+        is ECPublicKey -> toCryptoPublicKey()
         else -> KmmResult.failure(IllegalArgumentException("Unsupported Key Type"))
     }
 

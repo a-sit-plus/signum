@@ -4,16 +4,15 @@ import at.asitplus.signum.indispensable.cosef.CoseKey
 import at.asitplus.signum.indispensable.cosef.CoseKeyParams
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.cosef.toCoseKey
-import at.asitplus.signum.indispensable.fromJcaPublicKey
-import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.indispensable.io.Base64Strict
+import at.asitplus.signum.indispensable.toCryptoPublicKey
+import at.asitplus.signum.indispensable.toJcaPublicKey
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
-import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
@@ -26,26 +25,23 @@ import java.security.interfaces.RSAPublicKey
 private fun CryptoPublicKey.EC.withCompressionPreference(v: Boolean) =
     if (v) CryptoPublicKey.EC.fromCompressed(curve, xBytes, yCompressed)
     else CryptoPublicKey.EC.fromUncompressed(curve, xBytes, yBytes)
+
 class CoseKeySerializationTest : FreeSpec({
     Security.addProvider(BouncyCastleProvider())
 
     "Serializing" - {
         "Manual" - {
             val compressed = coseCompliantSerializer.encodeToByteArray(
-                CryptoPublicKey.fromJcaPublicKey(
-                    KeyPairGenerator.getInstance("EC").apply {
-                        initialize(256)
-                    }.genKeyPair().public
-                ).getOrThrow().run {
+                KeyPairGenerator.getInstance("EC").apply {
+                    initialize(256)
+                }.genKeyPair().public.toCryptoPublicKey().getOrThrow().run {
                     this as CryptoPublicKey.EC
                     this.withCompressionPreference(true)
                 }.toCoseKey(CoseAlgorithm.ES256).getOrThrow()
             )
-            val coseUncompressed = CryptoPublicKey.fromJcaPublicKey(
-                KeyPairGenerator.getInstance("EC").apply {
-                    initialize(256)
-                }.genKeyPair().public
-            ).getOrThrow().toCoseKey().getOrThrow()
+            val coseUncompressed = KeyPairGenerator.getInstance("EC").apply {
+                initialize(256)
+            }.genKeyPair().public.toCryptoPublicKey().getOrThrow().toCoseKey().getOrThrow()
             val uncompressed = coseUncompressed.serialize()
 
             uncompressed.size shouldBeGreaterThan compressed.size
@@ -101,8 +97,7 @@ class CoseKeySerializationTest : FreeSpec({
                     withClue("Uncompressed")
                     {
                         val coseKey: CoseKey =
-                            CryptoPublicKey.fromJcaPublicKey(pubKey)
-                                .getOrThrow().toCoseKey().getOrThrow()
+                            pubKey.toCryptoPublicKey().getOrThrow().toCoseKey().getOrThrow()
                         val cose = coseKey.serialize()
                         val decoded = CoseKey.deserialize(cose).getOrThrow()
                         decoded.toCryptoPublicKey().getOrThrow()
@@ -117,7 +112,7 @@ class CoseKeySerializationTest : FreeSpec({
                     withClue("Compressed")
                     {
                         val coseKey: CoseKey =
-                            CryptoPublicKey.EC.fromJcaPublicKey(pubKey)
+                            pubKey.toCryptoPublicKey()
                                 .getOrThrow()
                                 .run {
                                     this as CryptoPublicKey.EC
@@ -159,7 +154,7 @@ class CoseKeySerializationTest : FreeSpec({
                     keys
                 ) { pubKey ->
                     val coseKey: CoseKey =
-                        CryptoPublicKey.fromJcaPublicKey(pubKey).getOrThrow()
+                        pubKey.toCryptoPublicKey().getOrThrow()
                             .toCoseKey(CoseAlgorithm.RS256)
                             .getOrThrow()
                     val cose = coseKey.serialize()

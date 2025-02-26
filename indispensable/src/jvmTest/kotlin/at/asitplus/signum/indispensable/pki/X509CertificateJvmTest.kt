@@ -46,7 +46,7 @@ class X509CertificateJvmTest : FreeSpec({
 
     "Certificates match" {
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = CryptoPublicKey.EC.fromJcaPublicKey(ecPublicKey).getOrThrow()
+        val cryptoPublicKey = ecPublicKey.toCryptoPublicKey().getOrThrow()
 
         // create certificate with bouncycastle
         val notBeforeDate = Date.from(Instant.now())
@@ -102,7 +102,7 @@ class X509CertificateJvmTest : FreeSpec({
 
     "Certificates Conversions" {
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = CryptoPublicKey.EC.fromJcaPublicKey(ecPublicKey).getOrThrow()
+        val cryptoPublicKey = ecPublicKey.toCryptoPublicKey().getOrThrow()
 
         // create certificate with bouncycastle
         val notBeforeDate = Date.from(Instant.now())
@@ -192,7 +192,7 @@ class X509CertificateJvmTest : FreeSpec({
             TbsCertificate
         */
         val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = CryptoPublicKey.EC.fromJcaPublicKey(ecPublicKey).getOrThrow()
+        val cryptoPublicKey = ecPublicKey.toCryptoPublicKey().getOrThrow()
 
         // create certificate with bouncycastle
         val notBeforeDate = Date.from(Instant.now())

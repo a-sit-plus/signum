@@ -26,13 +26,17 @@ private inline val ECCurve.Z get() = BigInteger(when (this) {
     ECCurve.SECP_521_R_1 -> -4
 }).toModularBigInteger(this.modulus)
 
+@Suppress("NOTHING_TO_INLINE")
 private inline fun ModularBigInteger.sqrt() =
     pow(modulus.plus(1).div(4))
 
+@Suppress("NOTHING_TO_INLINE")
 private inline val ECCurve.c1 get() = this.modulus.minus(3).div(4)
+@Suppress("NOTHING_TO_INLINE")
 private inline val ECCurve.c2 get() = (-Z).sqrt()
 
 /** log2(modulus) * (3/2), this matches RFC9380 NIST curve suites, and also matches RFC9497 */
+@Suppress("NOTHING_TO_INLINE")
 private inline val ECCurve.L get() = when(this) {
     ECCurve.SECP_256_R_1 -> 48
     ECCurve.SECP_384_R_1 -> 72
@@ -45,6 +49,7 @@ private inline val ECCurve.L get() = when(this) {
 fun ECCurve.randomScalar(L: Int = this.L) = SecureRandom().nextBytesOf(L)
     .let { BigInteger.fromByteArray(it, Sign.POSITIVE).toModularBigInteger(this.order) }
 
+@Suppress("NOTHING_TO_INLINE")
 private inline fun clearCofactorTrivial(p: ECPoint) = p.curve.cofactor * p
 
 private infix fun ByteArray.xor(other: ByteArray): ByteArray {
@@ -53,21 +58,25 @@ private infix fun ByteArray.xor(other: ByteArray): ByteArray {
 }
 
 /** I2OSP (Integer To Octet String Primitive) for case len = 1 only */
+@Suppress("NOTHING_TO_INLINE")
 private inline fun i2ospForLen1(value: Byte): ByteArray = byteArrayOf(value)
 
 /** I2OSP (Integer To Octet String Primitive) for case len = 1 only */
+@Suppress("NOTHING_TO_INLINE")
 private inline fun i2ospForLen1(value: Int): ByteArray {
     require (value in 0..0xff)
     return i2ospForLen1((value and 0xff).toByte())
 }
 
 /** I2OSP (Integer To Octet String Primitive) for case len = 2 only */
+@Suppress("NOTHING_TO_INLINE")
 private inline fun i2ospForLen2(value: Int): ByteArray {
     require(value in 0..0xffff)
     return byteArrayOf(((value shr 8) and 0xff).toByte(), (value and 0xff).toByte())
 }
 
 /** RFC9380: expand_message_xmd */
+@Suppress("NOTHING_TO_INLINE")
 private inline fun expandMessageXMD(digest: Digest): ExpandMessageFn {
     check(digest.outputLength.bitSpacing == 0u) { "RFC9380 requirement: b mod 8 = 0 " }
     check(digest.outputLength <= digest.inputBlockSize) { "RFC9380 requirement: b <= s" }
@@ -110,8 +119,10 @@ private inline fun hashToFieldRFC9380ForPrimeField
             (crossinline em: ExpandMessageFn, curve: ECCurve, domain: ByteArray): HashToFieldFn =
     hashToFieldRFC9380ForPrimeField(em, curve.modulus, curve.L, domain)
 
+@Suppress("NOTHING_TO_INLINE")
 private inline fun sgn0ForPrimeFields(a: ModularBigInteger): Int = a.toBigInteger().mod(BigInteger.TWO).intValue()
 /** RFC9380: appendix F.2.1.2. (sqrt_ratio_3mod4); only works for p mod 4 = 3 */
+@Suppress("NOTHING_TO_INLINE")
 private inline fun ECCurve.sqrtRatio3mod4(u: ModularBigInteger, v: ModularBigInteger): Pair<Boolean, ModularBigInteger> {
     var tv1: ModularBigInteger; var tv2: ModularBigInteger; var tv3: ModularBigInteger;
     var y1: ModularBigInteger;  val y2: ModularBigInteger; val y: ModularBigInteger
@@ -129,6 +140,7 @@ private inline fun ECCurve.sqrtRatio3mod4(u: ModularBigInteger, v: ModularBigInt
 }
 
 /** this only works for weierstrass curves with A != 0, B != 0; taken from RFC9380 appendix F.2  */
+@Suppress("NOTHING_TO_INLINE")
 private inline fun mapToCurveSimplifiedSWUWeierstrassABNonZero(curve: ECCurve)
         : MapToCurveFn
 {
@@ -169,6 +181,7 @@ private inline fun mapToCurveSimplifiedSWUWeierstrassABNonZero(curve: ECCurve)
 }
 
 /** RFC9380: encode_to_curve */
+@Suppress("NOTHING_TO_INLINE")
 private inline fun encodeToCurveComposition
             (crossinline htf: HashToFieldFn, crossinline mtc: MapToCurveFn, crossinline ccf: ClearCofactorFn) =
 RFC9380.HashToEllipticCurve { msg: Sequence<ByteArray> ->
@@ -179,6 +192,7 @@ RFC9380.HashToEllipticCurve { msg: Sequence<ByteArray> ->
 }
 
 /** RFC9380: hash_to_curve */
+@Suppress("NOTHING_TO_INLINE")
 private inline fun hashToCurveComposition
             (crossinline htf: HashToFieldFn, crossinline mtc: MapToCurveFn, crossinline ccf: ClearCofactorFn) =
 RFC9380.HashToEllipticCurve { msg: Sequence<ByteArray> ->
@@ -190,6 +204,7 @@ RFC9380.HashToEllipticCurve { msg: Sequence<ByteArray> ->
     /*return*/ P
 }
 
+@Suppress("NOTHING_TO_INLINE")
 private inline fun <T> CMOV(a: T, b: T, c: Boolean) = if (c) b else a
 
 object RFC9380 {
@@ -314,6 +329,7 @@ fun ECCurve.hashToScalar(domain: ByteArray, L: Int = this.L) = RFC9380.HashToECS
  *                   see [RFC9380 3.1 Domain Separation Requirements](https://www.rfc-editor.org/rfc/rfc9380#name-domain-separation-requireme)
  *                      for guidance
  * @return a function mapping arbitrary bytes to a point on the curve */
+@Suppress("NOTHING_TO_INLINE")
 inline fun ECCurve.hashToCurve(domain: ByteArray) = when (this) {
     ECCurve.SECP_256_R_1 -> RFC9380.`P256_XMD∶SHA-256_SSWU_RO_`(domain)
     ECCurve.SECP_384_R_1 -> RFC9380.`P384_XMD∶SHA-384_SSWU_RO_`(domain)

@@ -162,7 +162,6 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
     }
 
     /** RSA Public key */
-    @ConsistentCopyVisibility
     data class RSA
     @Throws(IllegalArgumentException::class)
     constructor(
@@ -176,9 +175,6 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
         override val canonicalPEMBoundary: String = PEM_BOUNDARY
 
         val bits = n.bitLength().let { Size.of(it) ?: throw IllegalArgumentException("Unsupported key size $it bits") }
-
-        @Deprecated(message="Use a BigInteger-capable constructor instead")
-        constructor(n: ByteArray, e: Int): this(Asn1Integer.fromUnsignedByteArray(n), Asn1Integer(e) as Asn1Integer.Positive)
 
         constructor(n: Asn1Integer, e: Asn1Integer): this(n as Asn1Integer.Positive, e as Asn1Integer.Positive)
         constructor(n: BigInteger, e: BigInteger): this(n.toAsn1Integer(), e.toAsn1Integer())
@@ -241,6 +237,7 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
                 return RSA(n, e)
             }
 
+            @Suppress("NOTHING_TO_INLINE")
             inline operator fun invoke(n: BigInteger, e: Int) =
                 RSA(n, e.also { require(it > 0) }.toUInt())
 
@@ -343,19 +340,6 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
             @Suppress("NOTHING_TO_INLINE")
             inline fun fromUncompressed(curve: ECCurve, x: ByteArray, y: ByteArray) =
                 ECPoint.fromUncompressed(curve, x, y).asPublicKey(false)
-
-            @Deprecated(
-                "Explicitly specify what you want",
-                ReplaceWith("fromCompressed(curve, x, usePositiveY)")
-            )
-            @Suppress("NOTHING_TO_INLINE")
-            inline operator fun invoke(curve: ECCurve, x: ByteArray, usePositiveY: Boolean) =
-                fromCompressed(curve, x, usePositiveY)
-
-            @Deprecated("Explicitly specify what you want", ReplaceWith("fromUncompressed(curve, x, y)"))
-            @Suppress("NOTHING_TO_INLINE")
-            inline operator fun invoke(curve: ECCurve, x: ByteArray, y: ByteArray) =
-                fromUncompressed(curve, x, y)
 
             /** Decodes a key from its ANSI X9.63 representation */
             @Throws(Throwable::class)

@@ -244,7 +244,7 @@ object AndroidKeyStoreProvider:
                         Napier.v { "Correcting Android 10 AKS signature bug" }
                         publicKey = CertificateFactory.getInstance("X.509")
                             .generateCertificate(chain.first().encoded.inputStream())
-                            .publicKey.let(CryptoPublicKey::fromJcaPublicKey).getOrThrow()
+                            .publicKey.toCryptoPublicKey().getOrThrow()
                         attestation = null
                     } else throw it
                 }

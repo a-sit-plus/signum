@@ -133,6 +133,7 @@ fun Asn1Primitive.decodeToBigInteger(assertTag: Asn1Element.Tag = Asn1Element.Ta
     runRethrowing { decode(assertTag) { BigInteger.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [decodeToBigInteger] */
+@Suppress("NOTHING_TO_INLINE")
 inline fun Asn1Primitive.decodeToBigIntegerOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
     catchingUnwrapped { decodeToBigInteger(assertTag) }.getOrNull()
 

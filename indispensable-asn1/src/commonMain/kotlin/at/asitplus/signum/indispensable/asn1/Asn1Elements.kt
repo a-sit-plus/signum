@@ -38,14 +38,6 @@ sealed class Asn1Element(
     }
 
     companion object {
-        /**
-         * Convenience method to directly parse a HEX-string representation of DER-encoded data.
-         * Ignores and strips all whitespace.
-         * @throws [Throwable] all sorts of errors on invalid input
-         */
-        @Throws(Throwable::class)
-        @Deprecated("Misleading name", ReplaceWith("parseFromDerHexString"))
-        fun decodeFromDerHexString(derEncoded: String) = parseFromDerHexString(derEncoded)
 
         /**
          * Convenience method to directly parse a HEX-string representation of DER-encoded data.
@@ -129,7 +121,9 @@ sealed class Asn1Element(
      */
     @Throws(Asn1StructuralException::class)
     fun asPrimitive() = when (this) {
-        is Asn1EncapsulatingOctetString -> @Suppress("DEPRECATED") this.asPrimitiveOctetString()
+        //this absolutely needs to be a primitive here and copying is typically OK,
+        //because this will be part of a parser pipeline that needs the raw bytes anyway
+        is Asn1EncapsulatingOctetString ->  @Suppress("DEPRECATION") this.asPrimitiveOctetString()
         else -> thisAs<Asn1Primitive>()
     }
 
@@ -180,8 +174,9 @@ sealed class Asn1Element(
      * @throws Asn1StructuralException if this element is not an octet string containing raw data
      */
     @Throws(Asn1StructuralException::class)
-    @Deprecated("Use asOctetString instead to avoid copying")
-    fun asPrimitiveOctetString() = when (this) {
+    @Deprecated("Use asOctetString instead to avoid copying, if possible")
+    @Suppress("NOTHING_TO_INLINE")
+    private inline fun asPrimitiveOctetString() = when (this) {
         is Asn1EncapsulatingOctetString -> Asn1PrimitiveOctetString(this.content)
         else -> thisAs<Asn1PrimitiveOctetString>()
     }
@@ -198,6 +193,7 @@ sealed class Asn1Element(
      * use `element withImplicitTag (tag withClass TagClass.CONTEXT_SPECIFIC)`!. If a CONSTRUCTED Tag is applied to an ASN.1 Primitive,
      * the CONSTRUCTED bit is overridden and set to zero.
      */
+    @Suppress("NOTHING_TO_INLINE")
     inline infix fun withImplicitTag(tag: Tag): Asn1Element = when (this) {
         is Asn1Structure -> {
             if (tag.isConstructed) Asn1CustomStructure(
@@ -222,6 +218,7 @@ sealed class Asn1Element(
      * Creates a new implicitly tagged ASN.1 Element from this ASN.1 Element.
      * Sets the class of the resulting structure to [TagClass.CONTEXT_SPECIFIC]
      */
+    @Suppress("NOTHING_TO_INLINE")
     inline infix fun withImplicitTag(tagValue: ULong) = withImplicitTag(tagValue withClass TagClass.CONTEXT_SPECIFIC)
 
 
@@ -230,6 +227,7 @@ sealed class Asn1Element(
      * If the provided [template]'s tagClass is not set, the class of the resulting structure defaults to [TagClass.CONTEXT_SPECIFIC].
      * If a CONSTRUCTED Tag is applied to an ASN.1 Primitive, the CONSTRUCTED bit is overridden and set to zero.
      */
+    @Suppress("NOTHING_TO_INLINE")
     inline infix fun withImplicitTag(template: Tag.Template) = when (this) {
         is Asn1Structure -> (this as Asn1Structure).withImplicitTag(
             Tag(
@@ -383,6 +381,7 @@ sealed class Asn1Element(
             /**
              * Creates a new tag template from this template, negating the passed property
              */
+            @Suppress("NOTHING_TO_INLINE")
             inline infix fun without(negated: TagProperty) = when (negated) {
                 is CONSTRUCTED -> Template(this.tagValue, this.tagClass, false)
             }
@@ -391,12 +390,14 @@ sealed class Asn1Element(
                 /**
                  * Convenience function to construct a tag template from an ULong tag value and class
                  */
+                @Suppress("NOTHING_TO_INLINE")
                 inline infix fun ULong.withClass(tagClass: TagClass) =
                     Template(tagValue = this, tagClass = tagClass, constructed = null)
 
                 /**
                  * Convenience function to construct a tag from an ULong tag value and property
                  */
+                @Suppress("NOTHING_TO_INLINE")
                 inline infix fun ULong.without(negated: TagProperty) = when (negated) {
                     is CONSTRUCTED -> Template(tagValue = this, tagClass = null, constructed = false)
                 }

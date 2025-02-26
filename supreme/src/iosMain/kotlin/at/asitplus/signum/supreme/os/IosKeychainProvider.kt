@@ -11,6 +11,7 @@ import at.asitplus.signum.supreme.hash.digest
 import at.asitplus.signum.supreme.sign.*
 import io.github.aakira.napier.Napier
 import kotlinx.cinterop.*
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.newFixedThreadPoolContext
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
@@ -28,7 +29,7 @@ import kotlin.math.min
 import kotlin.time.Duration
 import kotlin.time.TimeSource
 
-
+@OptIn(DelicateCoroutinesApi::class)
 private val keychainThreads = newFixedThreadPoolContext(nThreads = 4, name = "iOS Keychain Operations")
 
 private fun isSecureEnclaveSupportedConfiguration(c: SigningKeyConfiguration.AlgorithmSpecific): Boolean {

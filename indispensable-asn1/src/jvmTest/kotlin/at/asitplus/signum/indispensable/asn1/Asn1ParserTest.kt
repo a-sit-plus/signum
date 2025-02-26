@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.signum.indispensable.asn1.encoding.readFullyToAsn1Elements
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
@@ -67,7 +68,10 @@ class Asn1ParserTest : FreeSpec({
             repeat(9) { source.readAsn1Element().first shouldBe childIterator.next() }
 
 
-            shouldThrow<Asn1Exception> { Asn1Element.parseAll(withGarbage.iterator()) shouldBe seq.children }
+            shouldThrow<Asn1Exception> { run {
+                withGarbage.iterator()
+                source.readFullyToAsn1Elements()
+            } shouldBe seq.children }
 
             shouldThrow<Asn1Exception> { Asn1Element.parse(withGarbage) }
             shouldThrow<Asn1Exception> { Asn1Element.parse(withGarbage.iterator()) }

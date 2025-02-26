@@ -28,9 +28,12 @@ open class EphemeralSigningKeyConfigurationBase internal constructor(): SigningK
     }
     override val rsa = _algSpecific.option(::RSAConfiguration)
 }
+
+@Suppress("NOTHING_TO_INLINE")
 expect class EphemeralSigningKeyConfiguration internal constructor(): EphemeralSigningKeyConfigurationBase
 
 typealias EphemeralSignerConfigurationBase = SignerConfiguration
+@Suppress("NOTHING_TO_INLINE")
 expect class EphemeralSignerConfiguration internal constructor(): SignerConfiguration
 
 /**

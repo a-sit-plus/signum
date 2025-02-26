@@ -2,8 +2,10 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.asn1.toBigInteger
 import at.asitplus.signum.indispensable.io.Base64Strict
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
@@ -46,7 +48,7 @@ class KeyTest : FreeSpec({
                 keys
             ) { (privKey, pubKey) ->
 
-                val own = CryptoPublicKey.EC.fromJcaPublicKey(pubKey).getOrThrow()
+                val own = pubKey.toCryptoPublicKey().getOrThrow()
 
                 val ownPrivate = CryptoPrivateKey.decodeFromDer(privKey.encoded) as CryptoPrivateKey.WithPublicKey<*>
 
@@ -109,7 +111,7 @@ class KeyTest : FreeSpec({
                 keys
             ) { (privKey, pubKey) ->
 
-                val own = CryptoPublicKey.RSA(pubKey.modulus.toByteArray(), pubKey.publicExponent.toInt())
+                val own = CryptoPublicKey.RSA(pubKey.modulus.toAsn1Integer(), pubKey.publicExponent.toAsn1Integer())
 
                 val ownPrivate =CryptoPrivateKey.decodeFromDer(privKey.encoded) as CryptoPrivateKey.WithPublicKey<*>
                 ownPrivate.publicKey shouldBe own
@@ -118,8 +120,8 @@ class KeyTest : FreeSpec({
 
 
                 val own1 = CryptoPublicKey.RSA(
-                    ByteArray((0..10).random()) { 0 } + pubKey.modulus.toByteArray(),
-                    pubKey.publicExponent.toInt()
+                    Asn1Integer.fromUnsignedByteArray(ByteArray((0..10).random()) { 0 } + pubKey.modulus.toByteArray()),
+                    Asn1Integer.fromUnsignedByteArray(pubKey.publicExponent.toByteArray())
                 )
 
                 // Correctly drops leading zeros

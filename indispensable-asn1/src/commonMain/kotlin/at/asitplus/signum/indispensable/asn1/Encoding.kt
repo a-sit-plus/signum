@@ -31,8 +31,9 @@ internal fun wrapInUnsafeSource(bytes: ByteArray, startIndex: Int = 0, endIndex:
 internal inline fun throughBuffer(operation: (Buffer) -> Unit): ByteArray =
     Buffer().also(operation).readByteArray()
 
+@OptIn(UnsafeIoApi::class)
 internal inline fun <reified T> ByteArray.throughBuffer(operation: (Source) -> T): T =
-    wrapInUnsafeSource().let { operation(it) }
+    operation(wrapInUnsafeSource())
 
 
 /**
@@ -41,6 +42,7 @@ internal inline fun <reified T> ByteArray.throughBuffer(operation: (Source) -> T
  * Therefore, operating on these bytes after wrapping leads to undefined behaviour.
  * [startIndex] is inclusive, [endIndex] is exclusive.
  */
+@OptIn(DelicateIoApi::class, UnsafeIoApi::class)
 internal fun Sink.appendUnsafe(bytes: ByteArray, startIndex: Int = 0, endIndex: Int = bytes.size): Int {
     require(startIndex in 0..<endIndex) { "StartIndex must be between 0 and $endIndex" }
     writeToInternalBuffer {
