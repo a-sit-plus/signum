@@ -4,6 +4,7 @@ import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.failure
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
 import at.asitplus.signum.indispensable.cosef.CoseKey.Companion.deserialize
@@ -185,7 +186,7 @@ fun SymmetricKey<*, *, *>.toCoseKey(baseIv: ByteArray? = null, vararg includedOp
         algorithm = alg,
         operations = includedOps.let { if (it.isEmpty()) null else it.asList().toTypedArray() },
         baseIv = baseIv,
-        keyParams = CoseKeyParams.SymmKeyParams(secretKey)
+        keyParams =  @OptIn(SecretExposure::class) CoseKeyParams.SymmKeyParams(secretKey.getOrThrow())
     )
 }
 

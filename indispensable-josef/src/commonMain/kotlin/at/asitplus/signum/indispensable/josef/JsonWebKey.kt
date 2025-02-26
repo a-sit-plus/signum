@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.fromUncompressed
 import at.asitplus.signum.indispensable.CryptoPublicKey.RSA
 import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
@@ -23,7 +24,6 @@ import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okio.ByteString.Companion.toByteString
 
@@ -315,10 +315,11 @@ data class JsonWebKey(
             }
 
             JwkType.SYM -> {
-                require(k!=null){"Missing symmetric key k"}
+                require(k != null) { "Missing symmetric key k" }
                 algorithm
                 TODO()
             }
+
             null -> throw IllegalArgumentException("Illegal key type")
         }
     }
@@ -378,22 +379,28 @@ data class JsonWebKey(
  * * If you want to add a KID, simply set it prior to encoding the key
  * * Allowed key operations can be restricted by specifying [includedOps]
  * */
-fun SymmetricKey<*, *, *>.toJsonWebKey(vararg includedOps: String): JsonWebKey =
+fun SymmetricKey<*, *, *>.toJsonWebKey(vararg includedOps: String): KmmResult<JsonWebKey> = catching {
+    @OptIn(SecretExposure::class)
     JsonWebKey(
-        k = jsonWebKeyBytes,
+        k = jsonWebKeyBytes.getOrThrow(),
         type = JwkType.SYM,
         keyId = jwkId,
         algorithm = algorithm.toJweAlgorithm(),
         keyOperations = includedOps.toSet()
     )
+}
 
 /**
  * converts a symmetric key to its JWE serializable form (i.e. a single bytearray)
  */
-val SymmetricKey<*,*,*>.jsonWebKeyBytes get() = when (hasDedicatedMacKey()) {
-    true -> macKey + encryptionKey
-    false -> secretKey
-}
+@OptIn(SecretExposure::class)
+val SymmetricKey<*, *, *>.jsonWebKeyBytes
+    get() = catching {
+        when (hasDedicatedMacKey()) {
+            true -> macKey.getOrThrow() + encryptionKey.getOrThrow()
+            false -> secretKey.getOrThrow()
+        }
+    }
 
 /**
  * Converts a [CryptoPublicKey] to a [JsonWebKey]
@@ -418,10 +425,11 @@ fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
                 e = e.magnitude
             )
     }
+
 /**
  * Converts a [at.asitplus.signum.indispensable.symmetric.SymmetricKey] to a [JsonWebKey]
  */
-fun SymmetricKey<*,*,*>.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey? {
+fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey? {
     TODO("Define algorithms an map where possible")
 }
 
