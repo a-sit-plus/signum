@@ -3,6 +3,7 @@ package at.asitplus.signum.supreme.symmetric
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.ImplementationError
+import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.AuthCapability.Authenticated
@@ -22,18 +23,21 @@ suspend fun SealedBox<*, *, *>.decrypt(key: SymmetricKey<*, *, *>): KmmResult<By
     @Suppress("UNCHECKED_CAST")
     when (algorithm.authCapability) {
         is Authenticated.Integrated -> (this as SealedBox<Authenticated.Integrated, *, KeyType.Integrated>).decryptInternal(
-            (key as SymmetricKey.Integrated).secretKey, byteArrayOf()
+            @OptIn(SecretExposure::class) (key as SymmetricKey.Integrated).secretKey.getOrThrow(),
+            byteArrayOf()
         )
 
         is Authenticated.WithDedicatedMac<*, *> -> {
             key as SymmetricKey.WithDedicatedMac
             (this as SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedicatedMacKey>).decryptInternal(
-                key.encryptionKey, key.macKey, byteArrayOf()
+                @OptIn(SecretExposure::class) key.encryptionKey.getOrThrow(),
+                @OptIn(SecretExposure::class) key.macKey.getOrThrow(),
+                byteArrayOf()
             )
         }
 
         is AuthCapability.Unauthenticated -> (this as SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated>).decryptInternal(
-            (key as SymmetricKey.Integrated).secretKey
+            @OptIn(SecretExposure::class) (key as SymmetricKey.Integrated).secretKey.getOrThrow()
         )
     }
 }
@@ -54,8 +58,10 @@ suspend fun <I : NonceTrait, M : MessageAuthenticationCode> SealedBox<AuthCapabi
 ) = catching {
     @Suppress("UNCHECKED_CAST")
     (this as SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedicatedMacKey>).decryptInternal(
-        key.encryptionKey,
-        key.macKey,
+        @OptIn(SecretExposure::class)
+        key.encryptionKey.getOrThrow(),
+        @OptIn(SecretExposure::class)
+        key.macKey.getOrThrow(),
         authenticatedData
     )
 }
@@ -68,7 +74,7 @@ suspend fun <I : NonceTrait, M : MessageAuthenticationCode> SealedBox<AuthCapabi
  * [key] and [SealedBox].**
  */
 @JvmName("decryptAuthenticatedGeneric")
-suspend fun <A : AuthCapability.Authenticated<out K>,I: NonceTrait, K : KeyType> SealedBox<A, I, out K>.decrypt(
+suspend fun <A : AuthCapability.Authenticated<out K>, I : NonceTrait, K : KeyType> SealedBox<A, I, out K>.decrypt(
     key: SymmetricKey<A, I, out K>,
     authenticatedData: ByteArray = byteArrayOf()
 ): KmmResult<ByteArray> = catching {
@@ -76,13 +82,16 @@ suspend fun <A : AuthCapability.Authenticated<out K>,I: NonceTrait, K : KeyType>
     @Suppress("UNCHECKED_CAST")
     when (algorithm.authCapability) {
         is Authenticated.Integrated -> (this as SealedBox<Authenticated.Integrated, *, KeyType.Integrated>).decryptInternal(
-            (key as SymmetricKey.Integrated).secretKey, authenticatedData
+            @OptIn(SecretExposure::class) (key as SymmetricKey.Integrated).secretKey.getOrThrow(),
+            authenticatedData
         )
 
         is Authenticated.WithDedicatedMac<*, *> -> {
             key as SymmetricKey.WithDedicatedMac
             (this as SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedicatedMacKey>).decryptInternal(
-                key.encryptionKey, key.macKey, authenticatedData
+                @OptIn(SecretExposure::class) key.encryptionKey.getOrThrow(),
+                @OptIn(SecretExposure::class) key.macKey.getOrThrow(),
+                authenticatedData
             )
         }
         //compiler knows its exhaustive, but IDEA complains
@@ -104,7 +113,7 @@ suspend fun <I : NonceTrait> SealedBox<AuthCapability.Unauthenticated, I, KeyTyp
     require(algorithm == key.algorithm) { "Algorithm mismatch! expected: $algorithm, actual: ${key.algorithm}" }
     @Suppress("UNCHECKED_CAST")
     (this as SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated>).decryptInternal(
-        (key as SymmetricKey.Integrated).secretKey
+        @OptIn(SecretExposure::class) (key as SymmetricKey.Integrated).secretKey.getOrThrow()
     )
 
 }

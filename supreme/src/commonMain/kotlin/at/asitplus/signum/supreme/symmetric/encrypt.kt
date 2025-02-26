@@ -2,6 +2,7 @@ package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.symmetric.*
 import kotlin.jvm.JvmName
 
@@ -15,10 +16,10 @@ import kotlin.jvm.JvmName
 suspend fun <K : KeyType, A : AuthCapability<out K>, I : NonceTrait> SymmetricKey<A, I, out K>.encrypt(
     data: ByteArray
 ): KmmResult<SealedBox<A, I, out K>> = catching {
-    Encryptor(
+    @OptIn(SecretExposure::class)    Encryptor(
         algorithm,
-        if (this.hasDedicatedMacKey()) encryptionKey else secretKey,
-        if (this.hasDedicatedMacKey()) macKey else null,
+        if (this.hasDedicatedMacKey()) encryptionKey.getOrThrow() else secretKey.getOrThrow(),
+        if (this.hasDedicatedMacKey()) macKey.getOrThrow() else null,
         aad = null
     ).encrypt(data)
 }
@@ -40,10 +41,10 @@ suspend fun <K : KeyType, A : AuthCapability.Authenticated<out K>, I : NonceTrai
     data: ByteArray,
     authenticatedData: ByteArray? = null
 ): KmmResult<SealedBox<A, I, out K>> = catching {
-    Encryptor(
+    @OptIn(SecretExposure::class) Encryptor(
         algorithm,
-        if (this.hasDedicatedMacKey()) encryptionKey else secretKey,
-        if (this.hasDedicatedMacKey()) macKey else null,
+        if (this.hasDedicatedMacKey()) encryptionKey.getOrThrow() else secretKey.getOrThrow(),
+        if (this.hasDedicatedMacKey()) macKey.getOrThrow() else null,
         aad = authenticatedData,
     ).encrypt(data)
 }

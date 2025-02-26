@@ -3,6 +3,7 @@ package at.asitplus.signum.supreme.symmetric.discouraged
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.SymmetricKey.WithDedicatedMac
 import at.asitplus.signum.supreme.symmetric.Encryptor
@@ -25,13 +26,13 @@ suspend fun <K : KeyType, A : AuthCapability.Authenticated<out K>> KeyWithNonceA
     data: ByteArray,
     authenticatedData: ByteArray? = null
 ): KmmResult<SealedBox<A, NonceTrait.Required, out K>> = catching {
-    Encryptor(
+    @OptIn(SecretExposure::class) Encryptor(
         second.algorithm,
-        if (second.hasDedicatedMacKey()) (second as WithDedicatedMac<NonceTrait.Required>).encryptionKey else (second as SymmetricKey.Integrated<out A, NonceTrait.Required>).secretKey,
-        if (second.hasDedicatedMacKey()) (second as WithDedicatedMac<NonceTrait.Required>).macKey else (second as SymmetricKey.Integrated<out A, NonceTrait.Required>).secretKey,
+        if (second.hasDedicatedMacKey()) (second as WithDedicatedMac<NonceTrait.Required>).encryptionKey.getOrThrow() else (second as SymmetricKey.Integrated<out A, NonceTrait.Required>).secretKey.getOrThrow(),
+        if (second.hasDedicatedMacKey()) (second as WithDedicatedMac<NonceTrait.Required>).macKey.getOrThrow() else (second as SymmetricKey.Integrated<out A, NonceTrait.Required>).secretKey.getOrThrow(),
         first,
         authenticatedData,
-    ).encrypt(data) as SealedBox<A, NonceTrait.Required,K>
+    ).encrypt(data) as SealedBox<A, NonceTrait.Required, K>
 }
 
 /**
@@ -48,10 +49,10 @@ suspend fun <K : KeyType, A : AuthCapability.Authenticated<out K>> KeyWithNonceA
 suspend fun <K : KeyType, A : AuthCapability<out K>> KeyWithNonce<A, out K>.encrypt(
     data: ByteArray
 ): KmmResult<SealedBox.WithNonce<A, out K>> = catching {
-    Encryptor(
+    @OptIn(SecretExposure::class) Encryptor(
         first.algorithm,
-        if (first.hasDedicatedMacKey()) (first as WithDedicatedMac<NonceTrait.Required>).encryptionKey else (first as SymmetricKey.Integrated<out A, NonceTrait.Required>).secretKey,
-        if (first.hasDedicatedMacKey()) (first as WithDedicatedMac<NonceTrait.Required>).macKey else null,
+        if (first.hasDedicatedMacKey()) (first as WithDedicatedMac<NonceTrait.Required>).encryptionKey.getOrThrow() else (first as SymmetricKey.Integrated<out A, NonceTrait.Required>).secretKey.getOrThrow(),
+        if (first.hasDedicatedMacKey()) (first as WithDedicatedMac<NonceTrait.Required>).macKey.getOrThrow() else null,
         second,
         null,
     ).encrypt(data) as SealedBox.WithNonce<A, out K>

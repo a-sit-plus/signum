@@ -7,6 +7,15 @@
  * Remove code elements deprecated in 3.15.0, related to OID4VCI and HAIP
 
 ### NEXT
+* **Note: We are deprecating and will soon be removing the debug-only serialization for cryptographic datatypes like certificates, public keys, etc.**
+    * We support robust ASN.1 encoding and mapping from/to JOSE and COSE datatypes and our ASN.1 structures support pretty printing
+    * -> There is no need for this misleading serialization support for debugging anymore
+    * `@Serializable` suggests deserialization from JSON, CBOR, etc. works, which was never universally true
+    * kotlinx-serialization is not the way to go, given how robust Signum's ASN.1 engine has become
+    * `indispensable-asn1` is only lacking ASN.1 REAL for a proper kotlinx-serialization plugin supporting ASN.1
+        * Once there, getting native ASN.1 serialization for kotlinx-serialization becomes a no-brainer
+    * This note will be prepended to the changelog entries for all point releases leading up to and including
+      Indispensable 4.0.0 / Supreme 1.0.0
 * HMAC Support
 * Symmetric Encryption
     * Supported Algorithms
@@ -20,7 +29,9 @@
     * Add algorithm mappings to indispensable-josef **This is a binary-incompatible change**
         * `ivLength` and `encryptionKeyLength` now return `BitLength` instead of `Int`
         * `text` is now properly called `identifier`
-* Moved `HazardousMaterials` annotation from `supreme` to `indispensable`
+* Move `HazardousMaterials` annotation from `supreme` to `indispensable`
+* Move `SecretExposure` annotation from `supreme` to `indispensable`
+* Expose `SecureRandom` as API dependency in `indispensable`
 
 * Fix COSE key parsing for unordered properties
 
