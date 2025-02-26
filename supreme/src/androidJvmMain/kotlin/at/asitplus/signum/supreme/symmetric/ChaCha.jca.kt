@@ -1,5 +1,7 @@
 package at.asitplus.signum.supreme.symmetric
 
+import at.asitplus.signum.indispensable.jcaKeySpec
+import at.asitplus.signum.indispensable.jcaName
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
