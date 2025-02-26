@@ -189,7 +189,7 @@ fun CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<
 val CryptoSignature.jcaSignatureBytes: ByteArray
     get() = when (this) {
         is CryptoSignature.EC -> encodeToDer()
-        is CryptoSignature.RSA -> rawByteArray
+        is CryptoSignature.RSAorHMAC -> rawByteArray
     }
 
 /**
@@ -202,7 +202,7 @@ fun CryptoSignature.Companion.parseFromJca(
     if (algorithm is SignatureAlgorithm.ECDSA)
         CryptoSignature.EC.parseFromJca(input)
     else
-        CryptoSignature.RSA.parseFromJca(input)
+        CryptoSignature.RSAorHMAC.parseFromJca(input)
 
 fun CryptoSignature.Companion.parseFromJca(
     input: ByteArray,
@@ -221,8 +221,8 @@ fun CryptoSignature.EC.Companion.parseFromJca(input: ByteArray) =
 fun CryptoSignature.EC.Companion.parseFromJcaP1363(input: ByteArray) =
     CryptoSignature.EC.fromRawBytes(input)
 
-fun CryptoSignature.RSA.Companion.parseFromJca(input: ByteArray) =
-    CryptoSignature.RSA(input)
+fun CryptoSignature.RSAorHMAC.Companion.parseFromJca(input: ByteArray) =
+    CryptoSignature.RSAorHMAC(input)
 
 /**
  * Converts this [X509Certificate] to a [java.security.cert.X509Certificate].
