@@ -62,7 +62,7 @@ fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) = catch
     }
 }
 
-expect fun SignatureAlgorithm.RSA.getPlatformSignatureInstance(provider: String?) : Signature
+internal expect fun SignatureAlgorithm.RSA.getPlatformSignatureInstance(provider: String?) : Signature
 
 /** Get a pre-configured JCA instance for this algorithm */
 fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =

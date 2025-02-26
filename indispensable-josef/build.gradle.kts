@@ -60,9 +60,8 @@ kotlin {
     }
 }
 
-
-
-//we don't have native android tests
+// we don't have native android tests independent of our regular test suite.
+// this task expect those and fails, since no tests are present, so we disable it.
 project.gradle.taskGraph.whenReady {
     tasks.getByName("testDebugUnitTest") {
         enabled = false

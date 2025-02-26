@@ -69,7 +69,7 @@ exportXCFramework(
 
 )
 
-android { namespace = "at.asitplus.signum.indisensable.internals" }
+android { namespace = "at.asitplus.signum.indispensable.internals" }
 
 val javadocJar = setupDokka(
     baseUrl = "https://github.com/a-sit-plus/signum/tree/main/",

@@ -232,15 +232,8 @@ android {
 
 }
 
-
-plugins.withId("com.android.library") {
-    extensions.findByName("android")?.let { android ->
-        println("Configuring $android")
-    }
-}
-
-
-//we don't have native android tests
+// we don't have native android tests independent of our regular test suite.
+// this task expect those and fails, since no tests are present, so we disable it.
 project.gradle.taskGraph.whenReady {
     tasks.getByName("testDebugUnitTest") {
         enabled = false
