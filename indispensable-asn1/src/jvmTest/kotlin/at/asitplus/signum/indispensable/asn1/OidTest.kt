@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -47,7 +46,7 @@ class OidTest : FreeSpec({
 
         "Full Root Arc" - {
             withData(nameFn = { "Byte $it" }, List(127) { it }) {
-                val oid = ObjectIdentifier.parse(byteArrayOf(it.toUByte().toByte()))
+                val oid = ObjectIdentifier.decodeFromAsn1ContentBytes(byteArrayOf(it.toUByte().toByte()))
                 val fromBC = ASN1ObjectIdentifier.fromContents(byteArrayOf(it.toByte()))
                 oid.encodeToDer() shouldBe fromBC.encoded
                 ObjectIdentifier(oid.toString()).let {
@@ -90,7 +89,7 @@ class OidTest : FreeSpec({
         "Failing Root Arc" - {
             withData(nameFn = { "Byte $it" }, List(128) { it + 128 }) {
                 shouldThrow<Asn1Exception> {
-                    ObjectIdentifier.parse(byteArrayOf(it.toUByte().toByte()))
+                    ObjectIdentifier.decodeFromAsn1ContentBytes(byteArrayOf(it.toUByte().toByte()))
                 }
             }
             val stringRepesentations = mutableListOf<String>()

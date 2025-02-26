@@ -3,7 +3,7 @@
 ## 3.0
 
 ### NEXT
-
+* Rename `ObjectIdentifier.parse` -> `ObjectIdentifier.decodeFromAsn1ContentBytes` in accordance with other similar functions
 ### 3.14.0 (Supreme 0.7.0)
 
 * Certificate Improvements:

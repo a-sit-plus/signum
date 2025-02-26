@@ -154,17 +154,18 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
         override fun doDecode(src: Asn1Primitive): ObjectIdentifier {
             if (src.length < 1) throw Asn1StructuralException("Empty OIDs are not supported")
 
-            return parse(src.content)
+            return decodeFromAsn1ContentBytes(src.content)
 
         }
 
         /**
-         * Casts out the evil demons that haunt OID components encoded into [rawValue]
+         * Casts out the evil demons that haunt OID components encoded into ASN.1 content [bytes].
+         * If you want to parse human-readable OID representations, just use the ObjectIdentifier constructor!
          * @return ObjectIdentifier if decoding succeeded
          * @throws Asn1Exception all sorts of errors on invalid input
          */
         @Throws(Asn1Exception::class)
-        fun parse(rawValue: ByteArray): ObjectIdentifier = ObjectIdentifier(bytes = rawValue, nodes = null)
+        fun decodeFromAsn1ContentBytes(bytes: ByteArray): ObjectIdentifier = ObjectIdentifier(bytes = bytes, nodes = null)
 
         private fun UIntArray.toOidBytes(): ByteArray {
             return map { it.toAsn1VarInt() }.foldIndexed(
@@ -207,5 +208,5 @@ interface Identifiable {
  */
 @Throws(Asn1Exception::class)
 fun Asn1Primitive.readOid() = runRethrowing {
-    decode(Asn1Element.Tag.OID) { ObjectIdentifier.parse(it) }
+    decode(Asn1Element.Tag.OID) { ObjectIdentifier.decodeFromAsn1ContentBytes(it) }
 }

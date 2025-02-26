@@ -51,7 +51,7 @@ private constructor(private val extensions: List<Asn1Element>) {
             (it as Asn1Sequence).also {
                 if (it.children.size != 2) throw Asn1StructuralException("Invalid otherName Alternative Name found (!=2 children): ${it.toDerHexString()}")
                 if (it.children.last().tag != SubjectAltNameImplicitTags.otherName) throw Asn1StructuralException("Invalid otherName Alternative Name found (implicit tag != 0): ${it.toDerHexString()}")
-                ObjectIdentifier.parse((it.children.first() as Asn1Primitive).content) //this throws if something is off
+                ObjectIdentifier.decodeFromAsn1ContentBytes((it.children.first() as Asn1Primitive).content) //this throws if something is off
             }
         }
     val ediPartyNames: List<Asn1Sequence> =
@@ -85,7 +85,7 @@ private constructor(private val extensions: List<Asn1Element>) {
             forEach {
                 if (it !is Asn1Primitive) throw Asn1StructuralException("Invalid registeredID Alternative Name found: ${it.toDerHexString()}")
             }
-        }.map { ObjectIdentifier.parse((it as Asn1Primitive).content) }
+        }.map { ObjectIdentifier.decodeFromAsn1ContentBytes((it as Asn1Primitive).content) }
 
     private fun parseStringSANs(implicitTag: Asn1Element.Tag) =
         extensions.filter { it.tag == implicitTag }.apply {
