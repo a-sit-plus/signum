@@ -12,7 +12,10 @@ class RealTest: FreeSpec( {
     val input = data.lines().map { it.split("; ").let { it.first().toDouble()  to it.last().hexToByteArray(HexFormat.Default)} }
     "Encoding from Ref" - {
         withData(input) {(double, bytes) ->
-            Asn1Real(double).getOrThrow().encodeToDer() shouldBe bytes
+            val own = Asn1Real(double).getOrThrow()
+            own.encodeToDer() shouldBe bytes
+            Asn1Real.decodeFromDer(bytes) shouldBe own
+            own.toDouble() shouldBe double
         }
     }
 

@@ -2,8 +2,10 @@ package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.indispensable.asn1.encoding.fromTwosComplementByteArray
 import at.asitplus.signum.indispensable.asn1.encoding.toTwosComplementByteArray
 import at.asitplus.signum.indispensable.asn1.encoding.toUnsignedByteArray
+import kotlin.math.pow
 import kotlin.math.sign
 
 
@@ -14,6 +16,17 @@ private const val IEEE754_BIAS = 1023
  * This type is irrelevant for PKI applications, but required for generic ASN.1 serialization
  */
 sealed class Asn1Real : Asn1Encodable<Asn1Primitive> {
+
+
+    /**
+     * Converts this Asn1Real to a [Double]. **Beware of possible loss of precision and the fact that ANS.1 REAL zero knows no sign!**
+     */
+    fun toDouble() = when (this) {
+        is Finite -> (normalizedMantissa.toDouble() * 2.0.pow(normalizedExponent.toDouble())).let { if (sign == Asn1Integer.Sign.NEGATIVE) it * -1.0 else it }
+        NegativeInfinity -> Double.NEGATIVE_INFINITY
+        PositiveInfinity -> Double.POSITIVE_INFINITY
+        Zero -> 0.0
+    }
 
     object Zero : Asn1Real()
     object PositiveInfinity : Asn1Real()
@@ -54,7 +67,7 @@ sealed class Asn1Real : Asn1Encodable<Asn1Primitive> {
             }
         }
 
-    companion object {
+    companion object : Asn1Decodable<Asn1Primitive, Asn1Real> {
         operator fun invoke(number: Double): KmmResult<Asn1Real> = catching {
             when (number) {
                 Double.NaN -> throw IllegalArgumentException("NaN cannot be encoded into ASN.1")
@@ -91,6 +104,54 @@ sealed class Asn1Real : Asn1Encodable<Asn1Primitive> {
                 normalizedExponent.toLong(),
                 normalizedMantissa
             )
+        }
+
+        override fun doDecode(src: Asn1Primitive): Asn1Real {
+            if (src.content.isEmpty()) return Asn1Real.Zero
+            val identifierOctet = src.content.first().toInt()
+            return when (identifierOctet) {
+                0x40 -> Asn1Real.PositiveInfinity
+                0x41 -> Asn1Real.NegativeInfinity
+                else -> {
+                    require(identifierOctet < 0) { "ASN.1 REAL is not binary encoded" }
+                    val sign =
+                        if ((1 shl 6) and identifierOctet == 0) Asn1Integer.Sign.POSITIVE else Asn1Integer.Sign.NEGATIVE
+                    val exponentLength = when (identifierOctet and 0b11) {
+                        0 -> 1
+                        1 -> 2
+                        2 -> 3
+                        else -> null
+                    }
+
+                    val exponent = when (exponentLength) {
+                        1 -> src.content[1].toLong()
+                        2 -> Long.fromTwosComplementByteArray(src.content.sliceArray(1..2))
+                        3 -> Long.fromTwosComplementByteArray(src.content.sliceArray(1..3))
+                        else -> Long.fromTwosComplementByteArray(
+                            src.content.sliceArray(
+                                2..Int.fromTwosComplementByteArray(
+                                    byteArrayOf(0, src.content[1])
+                                )
+                            )
+                        )
+                    }
+                    val mantissaOffset = when (exponentLength) {
+                        1 -> 2
+                        2 -> 3
+                        3 -> 4
+                        else -> 2 + Int.fromTwosComplementByteArray(byteArrayOf(0, src.content[1]))
+                    }
+
+                    val mantissa = ULong.fromTwosComplementByteArray(
+                        byteArrayOf(
+                            0,
+                            *src.content.sliceArray(mantissaOffset..<src.content.size)
+                        )
+                    )
+
+                    Asn1Real.Finite(sign, mantissa, exponent)
+                }
+            }
         }
     }
 }
