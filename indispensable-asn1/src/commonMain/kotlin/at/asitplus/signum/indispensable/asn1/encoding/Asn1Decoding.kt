@@ -16,6 +16,7 @@ import kotlinx.io.Source
 import kotlinx.io.UnsafeIoApi
 import kotlinx.io.readByteArray
 import kotlinx.io.readUByte
+import kotlin.enums.enumEntries
 import kotlin.experimental.and
 
 
@@ -182,6 +183,40 @@ fun Asn1Primitive.decodeToBoolean(assertTag: Asn1Element.Tag = Asn1Element.Tag.B
 /** Exception-free version of [decodeToBoolean] */
 fun Asn1Primitive.decodeToBooleanOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.BOOL) =
     catchingUnwrapped { decodeToBoolean(assertTag) }.getOrNull()
+
+/**
+ * decodes this [Asn1Primitive]'s content into an enum ordinal represented as [Long]. [assertTag] defaults to [Asn1Element.Tag.ENUM], but can be
+ * overridden (for implicitly tagged enums, for example)
+ * @throws [Asn1Exception] on invalid input
+ */
+@Throws(Asn1Exception::class)
+fun Asn1Primitive.decodeToEnumOrdinal(assertTag: Asn1Element.Tag = Asn1Element.Tag.ENUM) = decodeToLong(assertTag)
+
+
+/** Exception-free version of [decodeToEnumOrdinal]*/
+@Suppress("NOTHING_TO_INLINE")
+inline fun Asn1Primitive.decodeToEnumOrdinalOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.ENUM) =
+    catchingUnwrapped { decodeToEnumOrdinal(assertTag) }.getOrNull()
+
+/**
+ * decodes this [Asn1Primitive]'s content into an enum Entry based on the decoded ordinal. [assertTag] defaults to [Asn1Element.Tag.ENUM], but can be
+ * overridden (for implicitly tagged enums, for example).
+ *
+ * **Note that ASN.1 allows for negative ordinals and ordinals beyond 32 bit integers, exceeding Kotlin's enums!**
+ * @throws [Asn1Exception] on invalid input
+ */
+@Throws(Asn1Exception::class)
+inline fun <reified E : Enum<E>> Asn1Primitive.decodeToEnum(assertTag: Asn1Element.Tag = Asn1Element.Tag.ENUM): E =
+    runRethrowing {
+        val ordinal = decodeToEnumOrdinal(assertTag)
+        require(ordinal >= 0) { "Negative ordinal $ordinal cannot be auto-mapped to an enum value" }
+        require(ordinal <= Int.MAX_VALUE.toLong()) { "Ordinal $ordinal too large!" }
+        enumEntries<E>().get(ordinal.toInt())
+    }
+
+/** Exception-free version of [decodeToEnum]*/
+inline fun <reified E : Enum<E>> Asn1Primitive.decodeToEnumOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.ENUM): E? =
+    catchingUnwrapped { decodeToEnum<E>(assertTag) }.getOrNull()
 
 /**
  * decodes this [Asn1Primitive]'s content into an [Int]. [assertTag] defaults to [Asn1Element.Tag.INT], but can be

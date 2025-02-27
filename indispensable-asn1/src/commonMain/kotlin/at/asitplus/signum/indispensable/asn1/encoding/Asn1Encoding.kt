@@ -4,6 +4,10 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Sequence
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Set
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.SetOf
 import kotlinx.datetime.Instant
 
 /**
@@ -202,6 +206,15 @@ object Asn1 {
      */
     fun ExplicitlyTaggedSafe(tag: ULong, root: Asn1TreeBuilder.() -> Unit) =
         catching { ExplicitlyTagged(tag, root) }
+
+    /** Creates an ENUMERATED [Asn1Primitive] from [ordinal]*/
+    fun Enumerated(ordinal: Long) = Asn1Primitive(Asn1Element.Tag.ENUM, ordinal.encodeToAsn1ContentBytes())
+
+    /** Creates an ENUMERATED [Asn1Primitive] from [ordinal]*/
+    fun Enumerated(ordinal: Int) = Asn1Primitive(Asn1Element.Tag.ENUM, ordinal.encodeToAsn1ContentBytes())
+
+    /** Creates an ENUMERATED [Asn1Primitive] from [enum] by encoding its ordinal*/
+    fun Enumerated(enum: Enum<*>) = Asn1Primitive(Asn1Element.Tag.ENUM, enum.ordinal.encodeToAsn1ContentBytes())
 
     /**
      * Adds a BOOL [Asn1Primitive] to this ASN.1 structure

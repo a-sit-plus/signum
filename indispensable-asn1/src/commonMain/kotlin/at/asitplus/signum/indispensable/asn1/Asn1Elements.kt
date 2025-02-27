@@ -304,6 +304,7 @@ sealed class Asn1Element(
             val INT = Tag(tagValue = BERTags.INTEGER.toULong(), constructed = false)
             val REAL = Tag(tagValue = BERTags.REAL.toULong(), constructed = false)
             val OID = Tag(tagValue = BERTags.OBJECT_IDENTIFIER.toULong(), constructed = false)
+            val ENUM = Tag(tagValue = BERTags.ENUMERATED.toULong(), constructed = false)
 
             val OCTET_STRING = Tag(tagValue = BERTags.OCTET_STRING.toULong(), constructed = false)
             val BIT_STRING = Tag(tagValue = BERTags.BIT_STRING.toULong(), constructed = false)
