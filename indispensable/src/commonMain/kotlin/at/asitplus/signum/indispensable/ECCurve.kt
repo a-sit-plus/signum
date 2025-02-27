@@ -52,6 +52,30 @@ enum class ECCurve(
     /** the number of bits/bytes needed to store point coordinates (such as public key coordinates) in unsigned form */
     inline val coordinateLength get() = BitLength.of(modulus)
 
+    /** the number of bits needed to store a private key in unsigned form */
+    @Deprecated(
+        "Use scalarLength to express private key lengths",
+        ReplaceWith("scalarLength.bits"),
+        DeprecationLevel.ERROR
+    )
+    inline val keyLengthBits: UInt get() = scalarLength.bits
+
+    /** the number of bytes needed to store a public key coordinate in unsigned form */
+    @Deprecated(
+        "Use coordinateLength.bytes",
+        ReplaceWith("coordinateLength.bytes"),
+        DeprecationLevel.ERROR
+    )
+    inline val coordinateLengthBytes: UInt get() = coordinateLength.bytes
+
+    /** the number of bytes needed to store a raw signature (r and s concatenated) over this curve */
+    @Deprecated(
+        "use scalarLength to express raw signature size",
+        ReplaceWith("scalarLength.bytes * 2u"),
+        DeprecationLevel.ERROR
+    )
+    inline val signatureLengthBytes: UInt get() = scalarLength.bytes * 2u
+
     internal val coordinateCreator by lazy { ModularBigInteger.creatorForModulo(this.modulus) }
     internal val scalarCreator by lazy { ModularBigInteger.creatorForModulo(this.order) }
 

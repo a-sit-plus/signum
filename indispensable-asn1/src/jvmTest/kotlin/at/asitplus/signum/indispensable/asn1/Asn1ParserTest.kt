@@ -7,6 +7,10 @@ import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import kotlin.random.Random
 
+
+//this copied over to not change delicate test behaviour, as the original function is not deprecated, with DeprecationLevel.ERROR
+fun Asn1Element.Companion.parseInternal(input: ByteIterator)=parse(mutableListOf<Byte>().also { while (input.hasNext()) it.add(input.nextByte()) }.toByteArray())
+
 class Asn1ParserTest : FreeSpec({
 
     "Multiple Elements" - {
@@ -43,7 +47,7 @@ class Asn1ParserTest : FreeSpec({
             Asn1Element.parseAll(rawChildren) shouldBe seq.children
 
             shouldThrow<Asn1Exception> { Asn1Element.parse(rawChildren) }
-            shouldThrow<Asn1Exception> { Asn1Element.parse(rawChildren.iterator()) }
+            shouldThrow<Asn1Exception> { Asn1Element.parseInternal(rawChildren.iterator()) }
         }
 
         "with Garbage" {
@@ -74,7 +78,7 @@ class Asn1ParserTest : FreeSpec({
             } shouldBe seq.children }
 
             shouldThrow<Asn1Exception> { Asn1Element.parse(withGarbage) }
-            shouldThrow<Asn1Exception> { Asn1Element.parse(withGarbage.iterator()) }
+            shouldThrow<Asn1Exception> { Asn1Element.parseInternal(withGarbage.iterator()) }
         }
     }
 })

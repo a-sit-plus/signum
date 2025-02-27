@@ -2,15 +2,34 @@ package at.asitplus.signum.supreme.os
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.RSAPadding
+import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.Asn1Time
-import at.asitplus.signum.indispensable.pki.*
+import at.asitplus.signum.indispensable.fromJcaPublicKey
+import at.asitplus.signum.indispensable.getJCASignatureInstance
+import at.asitplus.signum.indispensable.jcaName
+import at.asitplus.signum.indispensable.parseFromJca
+import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
+import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
+import at.asitplus.signum.indispensable.pki.TbsCertificate
+import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.leaf
+import at.asitplus.signum.indispensable.toCryptoPublicKey
+import at.asitplus.signum.indispensable.toJcaCertificate
 import at.asitplus.signum.supreme.UnsupportedCryptoException
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.dsl.REQUIRED
-import at.asitplus.signum.supreme.sign.*
+import at.asitplus.signum.supreme.sign.EphemeralSigner
+import at.asitplus.signum.supreme.sign.JvmEphemeralSignerCompatibleConfiguration
+import at.asitplus.signum.supreme.sign.Signer
+import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
+import at.asitplus.signum.supreme.sign.getKPGInstance
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.datetime.Clock
 import java.nio.channels.Channels
@@ -29,37 +48,32 @@ import kotlin.io.path.extension
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 
-class JKSSigningKeyConfiguration : PlatformSigningKeyConfigurationBase<JKSSignerConfiguration>() {
+class JKSSigningKeyConfiguration: PlatformSigningKeyConfigurationBase<JKSSignerConfiguration>() {
     /** The registered JCA provider to use. */
     var provider: String? = null
-
     /** The password with which to protect the private key. */
     var privateKeyPassword: CharArray? = null
-
     /** The lifetime of the private key's certificate. */
-    var certificateValidityPeriod: Duration = (365 * 100).days
+    var certificateValidityPeriod: Duration = (365*100).days
 }
 
-class JKSSignerConfiguration : PlatformSignerConfigurationBase(), JvmEphemeralSignerCompatibleConfiguration {
+class JKSSignerConfiguration: PlatformSignerConfigurationBase(), JvmEphemeralSignerCompatibleConfiguration {
     /** The registered JCA provider to use. */
     override var provider: String? = null
-
     /** The password protecting the stored private key. */
     var privateKeyPassword: CharArray? = null
 }
 
-interface JKSSigner : Signer, Signer.WithAlias {
-    class EC internal constructor(
-        config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
-        publicKey: CryptoPublicKey.EC, signatureAlgorithm: SignatureAlgorithm.ECDSA,
-        override val alias: String
-    ) : EphemeralSigner.EC(config, privateKey, publicKey, signatureAlgorithm), JKSSigner
+interface JKSSigner: Signer, Signer.WithAlias {
+    class EC internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
+                                   publicKey: CryptoPublicKey.EC, signatureAlgorithm: SignatureAlgorithm.ECDSA,
+                                   override val alias: String)
+        : EphemeralSigner.EC(config, privateKey, publicKey, signatureAlgorithm), JKSSigner
 
-    class RSA internal constructor(
-        config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
-        publicKey: CryptoPublicKey.RSA, signatureAlgorithm: SignatureAlgorithm.RSA,
-        override val alias: String
-    ) : EphemeralSigner.RSA(config, privateKey, publicKey, signatureAlgorithm), JKSSigner
+    class RSA internal constructor (config: JvmEphemeralSignerCompatibleConfiguration, privateKey: PrivateKey,
+                                    publicKey: CryptoPublicKey.RSA, signatureAlgorithm: SignatureAlgorithm.RSA,
+                                    override val alias: String)
+        : EphemeralSigner.RSA(config, privateKey, publicKey, signatureAlgorithm), JKSSigner
 }
 
 private fun keystoreGetInstance(type: String, provider: String?) = when (provider) {
@@ -69,22 +83,19 @@ private fun keystoreGetInstance(type: String, provider: String?) = when (provide
 
 /** Read handle, [requested][JKSAccessor.forReading] whenever the provider needs to perform a read operation.
  * This handle should serve as a shared lock on the underlying data to avoid data races. */
-interface ReadAccessorBase : AutoCloseable {
+interface ReadAccessorBase: AutoCloseable {
     /** An ephemeral JCA [KeyStore] object which the provider may read from within the lifetime of the [ReadAccessorBase]. */
     val ks: KeyStore
 }
 
 /** Write handle, [requested][JKSAccessor.forWriting] whenever the provider needs to perform a write operation.
  * This handle should serve as an exclusive lock on the underlying data to avoid data races. */
-abstract class WriteAccessorBase : AutoCloseable {
+abstract class WriteAccessorBase: AutoCloseable {
     /** An ephemeral JCA [KeyStore] object which the provider may read from and write to within the lifetime of the [WriteAccessorBase]. */
     abstract val ks: KeyStore
-
     /** If the provider has made changes to the keystore data, this is set to `true` before calling `.close()`. */
     protected var dirty = false; private set
-    fun markAsDirty() {
-        dirty = true
-    }
+    fun markAsDirty() { dirty = true }
 }
 
 /**
@@ -98,15 +109,14 @@ interface JKSAccessor {
     /** Obtains an accessor handle for reading from the KeyStore.
      * The handle will be closed when the provider is done reading from the KeyStore. */
     fun forReading(): ReadAccessorBase
-
     /** Obtains an accessor handle for reading from and writing to the KeyStore.
      * The handle will be closed when the provider is done.
      * Check the [dirty][WriteAccessorBase.dirty] flag to see if changes were made to the data. */
     fun forWriting(): WriteAccessorBase
 }
 
-class JKSProvider internal constructor(private val access: JKSAccessor) :
-    SigningProviderI<JKSSigner, JKSSignerConfiguration, JKSSigningKeyConfiguration> {
+class JKSProvider internal constructor (private val access: JKSAccessor)
+    : SigningProviderI<JKSSigner, JKSSignerConfiguration, JKSSigningKeyConfiguration> {
 
     override suspend fun createSigningKey(
         alias: String,
@@ -119,14 +129,9 @@ class JKSProvider internal constructor(private val access: JKSAccessor) :
             if (ctx.ks.containsAlias(alias))
                 throw NoSuchElementException("Key with alias $alias already exists")
 
-            val (jcaAlg, jcaSpec, certAlg) = when (val algSpec = config._algSpecific.v) {
+            val (jcaAlg,jcaSpec,certAlg) = when (val algSpec = config._algSpecific.v) {
                 is SigningKeyConfiguration.RSAConfiguration ->
-                    Triple(
-                        "RSA",
-                        RSAKeyGenParameterSpec(algSpec.bits, algSpec.publicExponent.toJavaBigInteger()),
-                        X509SignatureAlgorithm.RS256
-                    )
-
+                    Triple("RSA", RSAKeyGenParameterSpec(algSpec.bits, algSpec.publicExponent.toJavaBigInteger()), X509SignatureAlgorithm.RS256)
                 is SigningKeyConfiguration.ECConfiguration ->
                     Triple("EC", ECGenParameterSpec(algSpec.curve.jcaName), X509SignatureAlgorithm.ES256)
             }
@@ -150,10 +155,8 @@ class JKSProvider internal constructor(private val access: JKSAccessor) :
                 update(tbsCert.encodeToDer())
                 sign()
             }.let { X509Certificate(tbsCert, certAlg, CryptoSignature.parseFromJca(it, certAlg)) }
-            ctx.ks.setKeyEntry(
-                alias, keyPair.private, config.privateKeyPassword,
-                arrayOf(cert.toJcaCertificate().getOrThrow())
-            )
+            ctx.ks.setKeyEntry(alias, keyPair.private, config.privateKeyPassword,
+                            arrayOf(cert.toJcaCertificate().getOrThrow()))
             ctx.markAsDirty()
 
             getSigner(alias, DSL.resolve(::JKSSignerConfiguration, config.signer.v), keyPair.private, cert)
@@ -166,23 +169,16 @@ class JKSProvider internal constructor(private val access: JKSAccessor) :
         privateKey: PrivateKey,
         certificate: X509Certificate
     ): JKSSigner = when (val publicKey = certificate.publicKey) {
-        is CryptoPublicKey.EC -> JKSSigner.EC(
-            config, privateKey as ECPrivateKey, publicKey,
+        is CryptoPublicKey.EC -> JKSSigner.EC(config, privateKey as ECPrivateKey, publicKey,
             SignatureAlgorithm.ECDSA(
                 digest = if (config.ec.v.digestSpecified) config.ec.v.digest else Digest.SHA256,
-                requiredCurve = publicKey.curve
-            ),
-            alias
-        )
-
-        is CryptoPublicKey.RSA -> JKSSigner.RSA(
-            config, privateKey as RSAPrivateKey, publicKey,
+                requiredCurve = publicKey.curve),
+            alias)
+        is CryptoPublicKey.RSA -> JKSSigner.RSA(config, privateKey as RSAPrivateKey, publicKey,
             SignatureAlgorithm.RSA(
                 digest = if (config.rsa.v.digestSpecified) config.rsa.v.digest else Digest.SHA256,
-                padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else RSAPadding.PSS
-            ),
-            alias
-        )
+                padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else RSAPadding.PSS),
+            alias)
     }
 
     override suspend fun getSignerForKey(
@@ -210,26 +206,22 @@ class JKSProvider internal constructor(private val access: JKSAccessor) :
         operator fun invoke(configure: DSLConfigureFn<JKSProviderConfiguration> = null) = catching {
             makePlatformSigningProvider(DSL.resolve(::JKSProviderConfiguration, configure))
         }
-
         fun Ephemeral(type: String = KeyStore.getDefaultType(), provider: String? = null) = catching {
             JKSProvider(DummyJKSAccessor(keystoreGetInstance(type, provider).apply { load(null) }))
         }
     }
 }
 
-internal class DummyJKSAccessor(override val ks: KeyStore) : JKSAccessor, ReadAccessorBase, WriteAccessorBase() {
+internal class DummyJKSAccessor(override val ks: KeyStore): JKSAccessor, ReadAccessorBase, WriteAccessorBase() {
     override fun forReading() = this
     override fun forWriting() = this
     override fun close() {}
 }
 
-internal class CallbackJKSAccessor(override val ks: KeyStore, private val callback: ((KeyStore) -> Unit)?) :
-    ReadAccessorBase, JKSAccessor {
-    inner class WriteAccessor : WriteAccessorBase() {
+internal class CallbackJKSAccessor(override val ks: KeyStore, private val callback: ((KeyStore)->Unit)?): ReadAccessorBase, JKSAccessor {
+    inner class WriteAccessor: WriteAccessorBase() {
         override val ks: KeyStore get() = this@CallbackJKSAccessor.ks
-        override fun close() {
-            if (dirty) this@CallbackJKSAccessor.callback?.invoke(this@CallbackJKSAccessor.ks)
-        }
+        override fun close() { if (dirty) this@CallbackJKSAccessor.callback?.invoke(this@CallbackJKSAccessor.ks) }
     }
 
     override fun close() {}
@@ -243,29 +235,24 @@ internal class JKSFileAccessor(opt: JKSProviderConfiguration.KeyStoreFile) : JKS
     val password = opt.password
     val readOnly = opt.readOnly
     val provider = opt.provider
-
     init {
         if (opt.createIfMissing && !readOnly) {
             try {
                 FileChannel.open(file, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
-            } catch (_: java.nio.file.FileAlreadyExistsException) {
-                null
-            }
-                ?.use { channel ->
-                    channel.lock().use {
-                        channel.truncate(0L)
-                        keystoreGetInstance(type, provider).apply { load(null) }
-                            .store(Channels.newOutputStream(channel), password)
-                    }
+            } catch (_: java.nio.file.FileAlreadyExistsException) { null }
+            ?.use { channel ->
+                channel.lock().use {
+                    channel.truncate(0L)
+                    keystoreGetInstance(type, provider).apply { load(null) }
+                        .store(Channels.newOutputStream(channel), password)
                 }
+            }
         }
     }
-
-    inner class ReadAccessor : ReadAccessorBase {
+    inner class ReadAccessor: ReadAccessorBase {
         private val channel: FileChannel
         private val lock: FileLock
         override val ks: KeyStore
-
         init {
             channel = FileChannel.open(file, StandardOpenOption.READ)
             try {
@@ -283,21 +270,14 @@ internal class JKSFileAccessor(opt: JKSProviderConfiguration.KeyStoreFile) : JKS
             }
         }
 
-        override fun close() {
-            try {
-                lock.close(); } finally {
-                channel.close()
-            }
-        }
+        override fun close() { try { lock.close(); } finally { channel.close() } }
     }
-
     override fun forReading() = ReadAccessor()
 
-    inner class WriteAccessor : WriteAccessorBase() {
+    inner class WriteAccessor: WriteAccessorBase() {
         private val channel: FileChannel
         private val lock: FileLock
         override val ks: KeyStore
-
         init {
             channel = FileChannel.open(file, StandardOpenOption.READ, StandardOpenOption.WRITE)
             try {
@@ -328,7 +308,6 @@ internal class JKSFileAccessor(opt: JKSProviderConfiguration.KeyStoreFile) : JKS
             }
         }
     }
-
     override fun forWriting() = WriteAccessor()
 }
 
@@ -343,31 +322,26 @@ internal class JKSFileAccessor(opt: JKSProviderConfiguration.KeyStoreFile) : JKS
  *
  * @see JKSSignerConfiguration
  */
-class JKSProviderConfiguration internal constructor() : PlatformSigningProviderConfigurationBase() {
-    sealed class KeyStoreConfiguration constructor() : DSL.Data()
-
+class JKSProviderConfiguration internal constructor(): PlatformSigningProviderConfigurationBase() {
+    sealed class KeyStoreConfiguration constructor(): DSL.Data()
     internal val _keystore = subclassOf<KeyStoreConfiguration>(default = EphemeralKeyStore())
 
     /** Constructs an ephemeral keystore. This is the default. */
     val ephemeral = _keystore.option(::EphemeralKeyStore)
-
-    class EphemeralKeyStore internal constructor() : KeyStoreConfiguration() {
+    class EphemeralKeyStore internal constructor(): KeyStoreConfiguration() {
         /** The KeyStore type to use. */
         var storeType: String = KeyStore.getDefaultType()
-
         /** The JCA provider to use. Leave `null` to not care. */
         var provider: String? = null
     }
 
     /** Constructs a keystore that accesses the provided Java [KeyStore] object. Use `withBackingObject { store = ... }`. */
     val withBackingObject = _keystore.option(::KeyStoreObject)
-
-    class KeyStoreObject internal constructor() : KeyStoreConfiguration() {
+    class KeyStoreObject internal constructor(): KeyStoreConfiguration() {
         /** The KeyStore object to use */
         lateinit var store: KeyStore
-
         /** The function to be called after the keystore has been modified. Can be `null`. */
-        var flushCallback: ((KeyStore) -> Unit)? = null
+        var flushCallback: ((KeyStore)->Unit)? = null
         override fun validate() {
             super.validate()
             require(this::store.isInitialized)
@@ -376,8 +350,7 @@ class JKSProviderConfiguration internal constructor() : PlatformSigningProviderC
 
     /** Accesses a keystore on disk. Automatically flushes back to disk. Use `file { path = ... }.`*/
     val file = _keystore.option(::KeyStoreFile)
-
-    class KeyStoreFile internal constructor() : KeyStoreConfiguration() {
+    class KeyStoreFile internal constructor(): KeyStoreConfiguration() {
         companion object {
             /** file-based keystore types per
              * [spec](https://docs.oracle.com/en/java/javase/17/docs/specs/security/standard-names.html#keystore-types) */
@@ -389,28 +362,18 @@ class JKSProviderConfiguration internal constructor() : PlatformSigningProviderC
                     else -> null
                 }
         }
-
         private var _storeType: String? = null
-
         /** The KeyStore type to use. By default, auto-detects from the file extension, and falls back to [KeyStore.getDefaultType]. */
-        var storeType
-            get() = _storeType ?: typeForFile(file) ?: KeyStore.getDefaultType()
-            set(v) {
-                _storeType = v
-            }
-
+        var storeType get() = _storeType ?: typeForFile(file) ?: KeyStore.getDefaultType()
+                      set(v) { _storeType = v }
         /** The file to use */
         lateinit var file: Path
-
         /** The password to protect the keystore with */
         var password: CharArray? = null
-
         /** The JCA provider to use. Leave `null` to use any. */
         var provider: String? = null
-
         /** Whether to open the keystore file in read-only mode. Changes can be made, but will not be flushed to disk. Defaults to false. */
         var readOnly = false
-
         /** Whether to create the keystore file if missing. Defaults to true. Will be forced to false if `readOnly = true` is set. */
         var createIfMissing = true
 
@@ -422,8 +385,7 @@ class JKSProviderConfiguration internal constructor() : PlatformSigningProviderC
 
     /** Accesses a keystore via a custom [JKSAccessor]. Use `keystoreCustomAccessor { accessor = ... }` */
     val customAccessor = _keystore.option(::KeyStoreAccessor)
-
-    class KeyStoreAccessor internal constructor() : KeyStoreConfiguration() {
+    class KeyStoreAccessor internal constructor(): KeyStoreConfiguration() {
         /** A custom [JKSAccessor] to use. */
         lateinit var accessor: JKSAccessor
 
@@ -438,16 +400,13 @@ internal /*actual*/ fun makePlatformSigningProvider(config: JKSProviderConfigura
     when (val opt = config._keystore.v) {
         is JKSProviderConfiguration.EphemeralKeyStore ->
             JKSProvider.Ephemeral(opt.storeType, opt.provider).getOrThrow()
-
         is JKSProviderConfiguration.KeyStoreObject ->
             JKSProvider(opt.flushCallback?.let { CallbackJKSAccessor(opt.store, it) } ?: DummyJKSAccessor(opt.store))
-
         is JKSProviderConfiguration.KeyStoreFile ->
             JKSProvider(JKSFileAccessor(opt))
-
         is JKSProviderConfiguration.KeyStoreAccessor ->
             JKSProvider(opt.accessor)
     }
 
-internal actual fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProviderI<*, *, *> =
+internal actual fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProviderI<*,*,*> =
     throw UnsupportedOperationException("No default persistence mode is available on the JVM. Use JKSProvider {file {}} or similar. This will be natively available from the getPlatformSigningProvider {} DSL in a future release. (Blocked by KT-71036.)")

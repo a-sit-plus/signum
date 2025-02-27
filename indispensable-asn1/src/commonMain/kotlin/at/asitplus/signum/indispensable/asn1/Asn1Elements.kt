@@ -5,6 +5,7 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
+import at.asitplus.signum.indispensable.asn1.Asn1PrimitiveOctetString
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import kotlinx.io.Buffer
 import kotlinx.io.Sink
@@ -38,6 +39,14 @@ sealed class Asn1Element(
     }
 
     companion object {
+        /**
+         * Convenience method to directly parse a HEX-string representation of DER-encoded data.
+         * Ignores and strips all whitespace.
+         * @throws [Throwable] all sorts of errors on invalid input
+         */
+        @Throws(Throwable::class)
+        @Deprecated("Misleading name", ReplaceWith("parseFromDerHexString(derEncoded)"), DeprecationLevel.ERROR)
+        fun decodeFromDerHexString(derEncoded: String) = parseFromDerHexString(derEncoded)
 
         /**
          * Convenience method to directly parse a HEX-string representation of DER-encoded data.
@@ -123,7 +132,7 @@ sealed class Asn1Element(
     fun asPrimitive() = when (this) {
         //this absolutely needs to be a primitive here and copying is typically OK,
         //because this will be part of a parser pipeline that needs the raw bytes anyway
-        is Asn1EncapsulatingOctetString ->  @Suppress("DEPRECATION") this.asPrimitiveOctetString()
+        is Asn1EncapsulatingOctetString -> Asn1PrimitiveOctetString(this.content)
         else -> thisAs<Asn1Primitive>()
     }
 
@@ -174,9 +183,8 @@ sealed class Asn1Element(
      * @throws Asn1StructuralException if this element is not an octet string containing raw data
      */
     @Throws(Asn1StructuralException::class)
-    @Deprecated("Use asOctetString instead to avoid copying, if possible")
-    @Suppress("NOTHING_TO_INLINE")
-    private inline fun asPrimitiveOctetString() = when (this) {
+    @Deprecated("Use asOctetString instead to avoid copying", ReplaceWith("asOctetString"), DeprecationLevel.ERROR)
+    fun asPrimitiveOctetString() = when (this) {
         is Asn1EncapsulatingOctetString -> Asn1PrimitiveOctetString(this.content)
         else -> thisAs<Asn1PrimitiveOctetString>()
     }

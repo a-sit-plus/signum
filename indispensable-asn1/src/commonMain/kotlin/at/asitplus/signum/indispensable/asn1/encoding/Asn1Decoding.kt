@@ -26,9 +26,10 @@ import kotlin.experimental.and
 @Throws(Asn1Exception::class)
 @Deprecated(
     "Use a ByteArray or (even better) a kotlinx.io Source as input when possible. This method copies all bytes from the input twice and is inefficient.",
-    ReplaceWith("source.readAsn1Element(); require(source.exhausted())")
+    ReplaceWith("source.readAsn1Element(); require(source.exhausted())"),
+    DeprecationLevel.ERROR
 )
-internal fun Asn1Element.Companion.parse(input: ByteIterator): Asn1Element =
+fun Asn1Element.Companion.parse(input: ByteIterator): Asn1Element =
     parse(mutableListOf<Byte>().also { while (input.hasNext()) it.add(input.nextByte()) }.toByteArray())
 
 /**
@@ -53,6 +54,15 @@ fun Asn1Element.Companion.parse(source: ByteArray): Asn1Element =
  * @throws Asn1Exception on invalid input or if more than a single root structure was contained in the [input]
  *
  */
+@Deprecated(
+    "Use a ByteArray or (even better) a kotlinx.io Source as input when possible. This method copies all bytes from the input twice and is inefficient.",
+    ReplaceWith("source.readFullyToAsn1Elements()"),
+    DeprecationLevel.ERROR
+)
+@Throws(Asn1Exception::class)
+fun Asn1Element.Companion.parseAll(input: ByteIterator): List<Asn1Element> =
+    mutableListOf<Byte>().also { while (input.hasNext()) it.add(input.nextByte()) }.toByteArray().wrapInUnsafeSource()
+        .readFullyToAsn1Elements().first
 
 /**
  * Convenience wrapper around [parseAll], taking a [ByteArray] as [source]
