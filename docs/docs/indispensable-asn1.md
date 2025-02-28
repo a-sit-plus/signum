@@ -168,6 +168,15 @@ In addition, the following self-describing shorthands are defined:
 | `Asn1Primitive.decodeToAsn1Real()`          | throws                                                                              |
 | `Asn1Primitive.decodeToAsn1RealOrNull()`    | returns `null` on error                                                             |
 |                                             |                                                                                     |
+| `Asn1Primitive.decodeToEnumOrdinal()`       | throws                                                                              |
+| `Asn1Primitive.decodeToEnumOrdinalOrNull()` | returns `null` on error                                                             |
+|                                             |                                                                                     |
+| `Asn1Primitive.decodeToEnum()`              | throws                                                                              |
+| `Asn1Primitive.decodeToEnumOrNull()`        | returns `null` on error                                                             |
+|                                             |                                                                                     |
+| `Asn1Primitive.decodeToEnumOrdinal()`       | throws                                                                              |
+| `Asn1Primitive.decodeToEnumOrdinalOrNull()` | returns `null` on error                                                             |
+|                                             |                                                                                     |
 | `Asn1Primitive.decodeToString()`            | throws                                                                              |
 | `Asn1Primitive.decodeToStringOrNull()`      | returns `null` on error                                                             |
 |                                             |                                                                                     |
@@ -230,9 +239,9 @@ On the other hand, there are functions responsible for producing only the conten
 Both kind of encoding functions follow a simple naming convention:
 
 * `encodeToAsn1Primitive()` produces an ASN.1 primitive corresponding to the input.
-This is implemented for `Int`, `UInt`, `Long`, `ULong`, `Double`,  `Float`, `Asn1Integer`, `Asn1Real`, `Boolean`, and `String`
+This is implemented for `Int`, `UInt`, `Long`, `ULong`, `Double`,  `Float`, `Asn1Integer`, `Asn1Real`, `Boolean`, `Enum` and `String`
 * `encodeToAsn1ContentBytes()` producing the content bytes of an `Asn1Primitive`.
-This is implemented for `Int`, `UInt`, `Long`, `ULong`, `Double`, `Float`, `Asn1Integer`, `Asn1Real` and `Boolean`.
+This is implemented for `Int`, `UInt`, `Long`, `ULong`, `Double`, `Float`, `Asn1Integer`, `Asn1Real`, `Boolean`, and `Enum`.
 * As for strings: An UTF-8 string is just its bytes.
 
 In addition, some more specialized encoding functions exist for cases that are not as straight-forward:

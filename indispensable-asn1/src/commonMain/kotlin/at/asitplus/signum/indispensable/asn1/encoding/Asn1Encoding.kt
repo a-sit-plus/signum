@@ -214,7 +214,7 @@ object Asn1 {
     fun Enumerated(ordinal: Int) = Asn1Primitive(Asn1Element.Tag.ENUM, ordinal.encodeToAsn1ContentBytes())
 
     /** Creates an ENUMERATED [Asn1Primitive] from [enum] by encoding its ordinal*/
-    fun Enumerated(enum: Enum<*>) = Asn1Primitive(Asn1Element.Tag.ENUM, enum.ordinal.encodeToAsn1ContentBytes())
+    fun Enumerated(enum: Enum<*>) = enum.encodeToAsn1Primitive()
 
     /**
      * Adds a BOOL [Asn1Primitive] to this ASN.1 structure
@@ -330,6 +330,9 @@ fun UInt.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.INT, encodeToAs
 /** Produces an INTEGER as [Asn1Primitive] */
 fun ULong.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.INT, encodeToAsn1ContentBytes())
 
+/** Encodes an ENUMERATED containing this Enum's ordinal as [Asn1Primitive] */
+fun Enum<*>.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.ENUM, ordinal.encodeToAsn1ContentBytes())
+
 /** Produces an INTEGER as [Asn1Primitive] */
 fun Asn1Integer.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.INT, encodeToAsn1ContentBytes())
 
@@ -392,6 +395,9 @@ fun UInt.encodeToAsn1ContentBytes() = toTwosComplementByteArray()
 
 /** Encodes this number into a [ByteArray] using the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 INTEGER */
 fun ULong.encodeToAsn1ContentBytes() = toTwosComplementByteArray()
+
+/** Encodes this Enum's ordinal into a [ByteArray] using the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 ENUMERATED */
+fun Enum<*>.encodeToAsn1ContentBytes() = ordinal.encodeToAsn1ContentBytes()
 
 /** Encodes this number into a [ByteArray] using the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 INTEGER */
 fun Asn1Integer.encodeToAsn1ContentBytes() = twosComplement()
