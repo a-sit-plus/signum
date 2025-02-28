@@ -2,7 +2,8 @@
 
 ## 3.0
 
-### 3.14.1
+### NEXT
+* ASN.1 REAL
 * Rename `ObjectIdentifier.parse` -> `ObjectIdentifier.decodeFromAsn1ContentBytes` in accordance with other similar functions
 * Add dedicated Android targets (SDK 30 / JDK 1.8) to all modules
 * Fix internal deprecations

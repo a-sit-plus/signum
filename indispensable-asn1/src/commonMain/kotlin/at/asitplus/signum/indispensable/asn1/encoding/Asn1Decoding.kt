@@ -238,7 +238,7 @@ fun Asn1Primitive.decodeToULong(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT
 inline fun Asn1Primitive.decodeToULongOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
     catchingUnwrapped { decodeToULong(assertTag) }.getOrNull()
 
-/** Decode the [Asn1Primitive] as a [Asn1Integer]
+/** Decode the [Asn1Primitive] as an [Asn1Integer]
  * @throws [Asn1Exception] on invalid input */
 @Throws(Asn1Exception::class)
 fun Asn1Primitive.decodeToAsn1Integer(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
@@ -255,6 +255,36 @@ inline fun Asn1Primitive.decodeToAsn1IntegerOrNull(assertTag: Asn1Element.Tag = 
 @Throws(Asn1Exception::class)
 fun Asn1Integer.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): Asn1Integer =
     runRethrowing { fromTwosComplement(bytes) }
+
+/** Decode the [Asn1Primitive] as an [Asn1Real]
+ * @throws [Asn1Exception] on invalid input*/
+@Throws(Asn1Exception::class)
+fun Asn1Primitive.decodeToAsn1Real(assertTag: Asn1Element.Tag = Asn1Element.Tag.REAL) =
+    runRethrowing { decode(assertTag) { Asn1Real.decodeFromAsn1ContentBytes(it) } }
+
+/** Exception-free version of [decodeToAsn1Real] */
+@Suppress("NOTHING_TO_INLINE")
+inline fun Asn1Primitive.decodeToAsn1RealOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.REAL): Asn1Real? =
+    catchingUnwrapped { decodeToAsn1Real(assertTag) }.getOrNull()
+
+/** Decode the [Asn1Primitive] as a [Double]. **Beware of possible loss of precision!**
+ * @throws [Asn1Exception] on invalid input*/
+@Throws(Asn1Exception::class)
+fun Asn1Primitive.decodeToDouble(assertTag: Asn1Element.Tag = Asn1Element.Tag.REAL) = decodeToAsn1Real(assertTag).toDouble()
+
+/** Exception-free version of [decodeToDouble]. **Beware of possible loss of precision!** */
+@Suppress("NOTHING_TO_INLINE")
+inline fun Asn1Primitive.decodeToDoubleOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.REAL) = catchingUnwrapped { decodeToDouble(assertTag) }.getOrNull()
+
+/** Decode the [Asn1Primitive] as a [Float]. **Beware of *probable* loss of precision!**
+ * @throws [Asn1Exception] on invalid input*/
+@Throws(Asn1Exception::class)
+@Suppress("NOTHING_TO_INLINE")
+inline fun Asn1Primitive.decodeToFloat(assertTag: Asn1Element.Tag = Asn1Element.Tag.REAL) = decodeToAsn1Real(assertTag).toFloat()
+
+/** Exception-free version of [decodeToFloat]. **Beware of *probable* loss of precision!** */
+@Suppress("NOTHING_TO_INLINE")
+inline fun Asn1Primitive.decodeToFloatOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.REAL) = catchingUnwrapped { decodeToFloat(assertTag) }.getOrNull()
 
 /**
  * transforms this [Asn1Primitive] into an [Asn1String] subtype based on its tag
