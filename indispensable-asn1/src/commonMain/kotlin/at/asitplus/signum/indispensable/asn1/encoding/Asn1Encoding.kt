@@ -320,6 +320,31 @@ fun ULong.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.INT, encodeToA
 /** Produces an INTEGER as [Asn1Primitive] */
 fun Asn1Integer.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.INT, encodeToAsn1ContentBytes())
 
+/** Produces a REAL as [Asn1Primitive] */
+fun Asn1Real.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.REAL, encodeToAsn1ContentBytes())
+
+/** Produces a REAL as [Asn1Primitive]
+ * @throws Asn1Exception when passing [Double.NaN]
+ * */
+@Throws(Asn1Exception::class)
+fun Double.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.REAL, Asn1Real(this).encodeToAsn1ContentBytes())
+
+/** Exception-free version of [encodeToAsn1Primitive]*/
+@Throws(Asn1Exception::class)
+fun Double.encodeToAsn1PrimitiveOrNull() = catchingUnwrapped { encodeToAsn1Primitive() }.getOrNull()
+
+
+/** Produces a REAL as [Asn1Primitive]
+ * @throws Asn1Exception when passing [Float.NaN]
+ * */
+@Throws(Asn1Exception::class)
+fun Float.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.REAL, Asn1Real(this.toDouble()).encodeToAsn1ContentBytes())
+
+/** Exception-free version of [encodeToAsn1Primitive]*/
+@Throws(Asn1Exception::class)
+fun Float.encodeToAsn1PrimitiveOrNull() = catchingUnwrapped { encodeToAsn1Primitive() }.getOrNull()
+
+
 /** Produces an ASN.1 UTF8 STRING as [Asn1Primitive] */
 fun String.encodeToAsn1Primitive() = Asn1String.UTF8(this).encodeToTlv()
 
