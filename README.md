@@ -313,10 +313,10 @@ encrypted.decrypt(secretKey, authenticatedData).getOrThrow(/*handle error*/) sho
 
 Encrypted data is always structured and the individual components are easily accessible:
 ```kotlin
- val nonce = encrypted.nonce
+val nonce = encrypted.nonce
 val ciphertext = encrypted.encryptedData
 val authTag = encrypted.authTag
-val keyBytes = secretKey.secretKey /*for algorithms with a dedicated MAC key, there's encryptionKey and macKey*/
+val keyBytes = secretKey.secretKey.getOrThrow() /*for algorithms with a dedicated MAC key, there's encryptionKey and macKey*/
 ```
 
 Decrypting data received from external sources is also straight-forward:
@@ -325,7 +325,7 @@ val box = algo.sealedBox.withNonce(nonce).from(ciphertext, authTag).getOrThrow(/
 box.decrypt(preSharedKey, /*also pass AAD*/ externalAAD).getOrThrow(/*handle error*/) shouldBe secret
 
 //alternatively, pass raw data:
-preSharedKey.decrypt(nonce, ciphertext,authTag, externalAAD).getOrThrow(/*handle error*/) shouldBe secret
+preSharedKey.decrypt(nonce, ciphertext, authTag, externalAAD).getOrThrow(/*handle error*/) shouldBe secret
 ```
 
 ### Custom AES-CBC-HMAC
@@ -370,7 +370,7 @@ manuallyRecovered shouldBe payload //great success!
 
 //if we just know algorithm and key bytes, we can also construct a symmetric key
 reconstructed.decrypt(
-  algorithm.keyFrom(key.encryptionKey, key.macKey).getOrThrow(/*handle error*/),
+  algorithm.keyFrom(key.encryptionKey.getOrThrow(), key.macKey.getOrThrow()).getOrThrow(/*handle error*/),
   aad
 ).getOrThrow(/*handle error*/) shouldBe payload //greatest success!
 ```
