@@ -500,7 +500,7 @@ Encrypted data is always structured and the individual components are easily acc
 val nonce = encrypted.nonce
 val ciphertext = encrypted.encryptedData
 val authTag = encrypted.authTag
-val keyBytes = secretKey.secretKey /*for algorithms with a dedicated MAC key, there's encryptionKey and macKey*/
+val keyBytes = secretKey.secretKey.getOrThrow() /*for algorithms with a dedicated MAC key, there's encryptionKey and macKey*/
 ```
 
 Decrypting data received from external sources is also straight-forward:
@@ -509,7 +509,7 @@ val box = algo.sealedBox.withNonce(nonce).from(ciphertext, authTag).getOrThrow(/
 box.decrypt(preSharedKey, /*also pass AAD*/ externalAAD).getOrThrow(/*handle error*/) shouldBe secret
 
 //alternatively, pass raw data:
-preSharedKey.decrypt(nonce, ciphertext,authTag, externalAAD).getOrThrow(/*handle error*/) shouldBe secret
+preSharedKey.decrypt(nonce, ciphertext, authTag, externalAAD).getOrThrow(/*handle error*/) shouldBe secret
 ```
 
 ### Custom AES-CBC-HMAC
@@ -539,23 +539,27 @@ val sealedBox = key.encrypt(
 ).getOrThrow(/*handle error*/)
 
 //because everything is structured, decryption is simple
-val recovered = sealedBox.decrypt(key).getOrThrow(/*handle error*/)
+val recovered = sealedBox.decrypt(key, aad).getOrThrow(/*handle error*/)
 
 recovered shouldBe payload //success!
 
 //we can also manually construct the sealed box, if we know the algorithm:
-val reconstructed = algorithm.sealedBox.withNonce(sealedBox.Nonce).from(
+val reconstructed = algorithm.sealedBox.withNonce(sealedBox.nonce).from(
     encryptedData = sealedBox.encryptedData, /*Could also access authenticatedCipherText*/
-    authTag = sealedBox.authTag
+    authTag = sealedBox.authTag,
 ).getOrThrow()
 
-val manuallyRecovered = reconstructed.decrypt(key).getOrThrow(/*handle error*/)
+val manuallyRecovered = reconstructed.decrypt(
+    key,
+    authenticatedData = aad,
+).getOrThrow(/*handle error*/)
 
 manuallyRecovered shouldBe payload //great success!
 
 //if we just know algorithm and key bytes, we can also construct a symmetric key
 reconstructed.decrypt(
-    algorithm.keyFrom(key.encryptionKey, key.macKey).getOrThrow(/*handle error*/),
+    algorithm.keyFrom(key.encryptionKey.getOrThrow(), key.macKey.getOrThrow()).getOrThrow(/*handle error*/),
+    aad
 ).getOrThrow(/*handle error*/) shouldBe payload //greatest success!
 ```
 
