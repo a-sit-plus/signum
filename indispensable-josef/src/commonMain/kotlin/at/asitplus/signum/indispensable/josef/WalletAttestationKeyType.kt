@@ -9,6 +9,7 @@ import kotlinx.serialization.Serializable
  * See [OpenID4VC High Assurance Interoperability Profile with SD-JWT VC](https://openid.net/specs/openid4vc-high-assurance-interoperability-profile-sd-jwt-vc-1_0.html#name-wallet-attestation-schema)
  */
 @Serializable
+@Deprecated("Removed in OID4VC HAIP")
 enum class WalletAttestationKeyType {
     /** It MUST be used when the Wallet uses software-based key management. */
     @SerialName("software")
