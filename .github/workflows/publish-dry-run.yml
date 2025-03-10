@@ -48,4 +48,4 @@ jobs:
       - name: Build Dokka HTML
         run: |
           export DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib
-          ./gradlew mkDocsBuild
+          ./gradlew mkDocsSite

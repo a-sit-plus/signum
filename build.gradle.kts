@@ -53,3 +53,9 @@ tasks.register<Exec>("mkDocsBuild") {
     workingDir("${rootDir}/docs")
     commandLine("mkdocs", "build", "--clean", "--strict")
 }
+
+tasks.register<Copy>("mkDocsSite") {
+    dependsOn("mkDocsBuild")
+    into(rootDir.resolve("docs/site/assets/images/social"))
+    from(rootDir.resolve("docs/docs/assets/images/social"))
+}
