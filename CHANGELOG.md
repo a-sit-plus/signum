@@ -13,6 +13,12 @@
 * Introduce support for ASN.1 REAL
 * Add built-in ASN.1 ENUMERATED support
 * Rename `ObjectIdentifier.parse` -> `ObjectIdentifier.decodeFromAsn1ContentBytes` in accordance with other similar functions
+* Update data classes for Wallet Attestation from [OpenID4VC HAIP](https://openid.net/specs/openid4vc-high-assurance-interoperability-profile-1_0.html) and [OpenID4VCI](https://openid.net/specs/openid4vc-high-assurance-interoperability-profile-1_0.html):
+    * Deprecate `authenticationLevel` (`aal`) in `JsonWebToken`, removed from standards
+    * Deprecate `key_type`, `user_authentication` in `ConfirmationClaim`, removed from standards
+    * Deprecate types `WalletAttestationUserAuthentication`, `WalletAttestationKeyType`, removed from standards
+    * Add `wallet_name`, `wallet_link`, `status` to `JsonWebToken`, used in Key Attestation JWT
+    * Add `KeyAttestationJwt` from OpenID4VCI
 * Add dedicated Android targets (SDK 30 / JDK 1.8) to all modules
 * Fix internal deprecations
 * Raise deprecation level to ERROR for deprecated functions:
