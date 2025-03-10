@@ -23,6 +23,14 @@ jobs:
         with:
           python-version: 3.x
       - run: pip install mkdocs-material==9.5.40
+      - run: pip install mkdocs-material[imaging]==9.5.40
+      - name: Set up Homebrew
+        id: set-up-homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+      - name: Install deps
+        run: brew install cairo freetype libffi libjpeg libpng zlib
+      - name: cario workaround
+        run: export DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib
       - name: Build Dokka HTML
         run: ./gradlew mkDocsBuild
       - name: Setup Pages
