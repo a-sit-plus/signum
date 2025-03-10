@@ -9,7 +9,7 @@ import kotlin.random.Random
 
 
 //this copied over to not change delicate test behaviour, as the original function is not deprecated, with DeprecationLevel.ERROR
-fun Asn1Element.Companion.parseInternal(input: ByteIterator)=parse(mutableListOf<Byte>().also { while (input.hasNext()) it.add(input.nextByte()) }.toByteArray())
+private fun Asn1Element.Companion.parseInternal(input: ByteIterator)=parse(mutableListOf<Byte>().also { while (input.hasNext()) it.add(input.nextByte()) }.toByteArray())
 
 class Asn1ParserTest : FreeSpec({
 
@@ -73,8 +73,7 @@ class Asn1ParserTest : FreeSpec({
 
 
             shouldThrow<Asn1Exception> { run {
-                withGarbage.iterator()
-                source.readFullyToAsn1Elements()
+                withGarbage.wrapInUnsafeSource().readFullyToAsn1Elements()
             } shouldBe seq.children }
 
             shouldThrow<Asn1Exception> { Asn1Element.parse(withGarbage) }

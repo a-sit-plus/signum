@@ -1,5 +1,3 @@
-@file:Suppress("ERROR_SUPPRESSION")
-
 package at.asitplus.signum.internals
 
 infix fun <T: Any> T?.orLazy(block: ()->T) = if (this != null) lazyOf(this) else lazy(block)
