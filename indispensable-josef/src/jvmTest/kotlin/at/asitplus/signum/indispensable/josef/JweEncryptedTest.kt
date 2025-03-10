@@ -1,8 +1,7 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.fromJcaPublicKey
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
+import at.asitplus.signum.indispensable.toCryptoPublicKey
 import com.nimbusds.jose.*
 import com.nimbusds.jose.crypto.AESEncrypter
 import com.nimbusds.jose.crypto.ECDHEncrypter
@@ -75,7 +74,7 @@ class JweEncryptedTest : FreeSpec({
         parsed.header.agreementPartyUInfo shouldBe apu
         parsed.header.agreementPartyVInfo shouldBe apv
         parsed.header.jsonWebKeyUrl shouldBe jku
-        val ourJwk = CryptoPublicKey.EC.fromJcaPublicKey(jwk.toECPublicKey()).getOrThrow().toJsonWebKey()
+        val ourJwk = jwk.toECPublicKey().toCryptoPublicKey().getOrThrow().toJsonWebKey()
         parsed.header.jsonWebKey shouldBe ourJwk
         parsed.header.keyId shouldBe kid
         parsed.header.type shouldBe typ

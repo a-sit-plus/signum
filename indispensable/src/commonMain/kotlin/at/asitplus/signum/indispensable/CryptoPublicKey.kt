@@ -162,7 +162,6 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
     }
 
     /** RSA Public key */
-    @ConsistentCopyVisibility
     data class RSA
     @Throws(IllegalArgumentException::class)
     constructor(
@@ -177,7 +176,7 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
 
         val bits = n.bitLength().let { Size.of(it) ?: throw IllegalArgumentException("Unsupported key size $it bits") }
 
-        @Deprecated(message="Use a BigInteger-capable constructor instead")
+        @Deprecated(message="Use a BigInteger-capable constructor instead", level = DeprecationLevel.ERROR)
         constructor(n: ByteArray, e: Int): this(Asn1Integer.fromUnsignedByteArray(n), Asn1Integer(e) as Asn1Integer.Positive)
 
         constructor(n: Asn1Integer, e: Asn1Integer): this(n as Asn1Integer.Positive, e as Asn1Integer.Positive)
@@ -241,6 +240,7 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
                 return RSA(n, e)
             }
 
+            @Suppress("NOTHING_TO_INLINE")
             inline operator fun invoke(n: BigInteger, e: Int) =
                 RSA(n, e.also { require(it > 0) }.toUInt())
 
@@ -346,13 +346,18 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
 
             @Deprecated(
                 "Explicitly specify what you want",
-                ReplaceWith("fromCompressed(curve, x, usePositiveY)")
+                ReplaceWith("fromCompressed(curve, x, usePositiveY)"),
+                DeprecationLevel.ERROR
             )
             @Suppress("NOTHING_TO_INLINE")
             inline operator fun invoke(curve: ECCurve, x: ByteArray, usePositiveY: Boolean) =
                 fromCompressed(curve, x, usePositiveY)
 
-            @Deprecated("Explicitly specify what you want", ReplaceWith("fromUncompressed(curve, x, y)"))
+            @Deprecated(
+                "Explicitly specify what you want",
+                ReplaceWith("fromUncompressed(curve, x, y)"),
+                DeprecationLevel.ERROR
+            )
             @Suppress("NOTHING_TO_INLINE")
             inline operator fun invoke(curve: ECCurve, x: ByteArray, y: ByteArray) =
                 fromUncompressed(curve, x, y)

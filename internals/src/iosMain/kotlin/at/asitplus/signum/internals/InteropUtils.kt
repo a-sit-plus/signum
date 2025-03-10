@@ -104,7 +104,8 @@ class OwnedCFValue<T: CFTypeRef> constructor(val value: T) {
     @Suppress("UNUSED")
     private val cleaner = createCleaner(value, ::CFRelease)
 }
-inline fun <T: CFTypeRef> T.manage() = OwnedCFValue(this)
+
+@Suppress("NOTHING_TO_INLINE") inline fun <T: CFTypeRef> T.manage() = OwnedCFValue(this)
 
 inline fun <reified T: CFTypeRef?> Any?.giveToCF() = when(this) {
     null -> this
@@ -139,5 +140,6 @@ fun MemScope.createCFDictionary(pairs: CFDictionaryInitScope.()->Unit) =
 inline operator fun <reified T> CFDictionaryRef.get(key: Any?): T =
     CFDictionaryGetValue(this, key.giveToCF()).takeFromCF<T>()
 
+@Suppress("NOTHING_TO_INLINE")
 inline operator fun CFMutableDictionaryRef.set(key: Any?, value: Any?) =
     CFDictionarySetValue(this, key.giveToCF(), value.giveToCF())

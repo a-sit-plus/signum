@@ -2,9 +2,25 @@
 
 ## 3.0
 
-### NEXT
+### 3.14.1
 * Rename `ObjectIdentifier.parse` -> `ObjectIdentifier.decodeFromAsn1ContentBytes` in accordance with other similar functions
-* Add dedicated Android targets (SDK 30 /JDK 1.8) to all modules
+* Add dedicated Android targets (SDK 30 / JDK 1.8) to all modules
+* Fix internal deprecations
+* Raise deprecation level to ERROR for deprecated functions:
+    * `Asn1Element.Companion.parseAll`
+    * `Asn1Element.Companion.parse`
+    * `Asn1Element.Companion.decodeFromDerHexString`
+    * `Asn1Element.asPrimitiveOctetString`
+    * `CryptoPublicKey.fromJcaPublicKey`
+    * `CryptoPublicKey.RSA.fromJcaPublicKey`
+    * `CryptoPublicKey.EC.fromJcaPublicKey`
+    * `CryptoSignature.invoke`
+    * `CryptoPublicKey.RSA(n: ByteArray, e: ByteArray)`
+    * `CryptoPublicKey.EC(curve: ECCurve, x: ByteArray, usePositiveY: Boolean)`
+    * `CryptoPublicKey.EC(curve: ECCurve, x: ByteArray, y: ByteArray)`
+    * `ECCurve.keyLengthBits`
+    * `ECCurve.coordinateLengthBytes`
+    * `ECCurve.signatureLengthBytes`
 
 ### 3.14.0 (Supreme 0.7.0)
 

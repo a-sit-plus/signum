@@ -36,7 +36,7 @@ class SignatureCodecTest : FreeSpec({
                 it.initialize(ECGenParameterSpec(curve))
             }.generateKeyPair()
         }
-        withData(nameFn = { CryptoPublicKey.fromJcaPublicKey(it.public).getOrThrow().didEncoded }, preGen) { keys ->
+        withData(nameFn = { it.public.toCryptoPublicKey().getOrThrow().didEncoded }, preGen) { keys ->
             val sig = Signature.getInstance("${digest}withECDSA").run {
                 initSign(keys.private)
                 update(data)
@@ -64,7 +64,7 @@ class SignatureCodecTest : FreeSpec({
         val digest = ("SHA256")
 
         val preGen = List(500) { KeyPairGenerator.getInstance("RSA").apply { initialize(512) }.generateKeyPair() }
-        withData(nameFn = { CryptoPublicKey.fromJcaPublicKey(it.public).getOrThrow().didEncoded }, preGen) { keys ->
+        withData(nameFn = { it.public.toCryptoPublicKey().getOrThrow().didEncoded }, preGen) { keys ->
             val data = Random.nextBytes(256)
             val sig = Signature.getInstance("${digest}withRSA").run {
                 initSign(keys.private)

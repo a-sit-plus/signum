@@ -30,6 +30,7 @@ version = supremeVersion
 wireAndroidInstrumentedTests()
 
 kotlin {
+
     jvm()
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
@@ -51,6 +52,13 @@ kotlin {
         implementation("androidx.biometric:biometric:1.2.0-alpha05")
     }
 
+    targets.configureEach {
+        compilations.configureEach {
+            compileTaskProvider.get().compilerOptions {
+                freeCompilerArgs.add("-Xexpect-actual-classes")
+            }
+        }
+    }
 }
 
 android {

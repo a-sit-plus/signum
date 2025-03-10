@@ -37,7 +37,7 @@ class Asn1EncodingTest : FreeSpec({
             "30 1D 06 03 55 1D 0E 04 16 04 14 EB 92 86 2F 31 C3 DB 96 A3 49 FF CB A5 15 64 23 14 B3 D2 3D"
         ) {
 
-            Asn1Element.decodeFromDerHexString(it).toDerHexString() shouldBe it.replace(" ", "")
+            Asn1Element.Companion.parseFromDerHexString(it).toDerHexString() shouldBe it.replace(" ", "")
         }
     }
 

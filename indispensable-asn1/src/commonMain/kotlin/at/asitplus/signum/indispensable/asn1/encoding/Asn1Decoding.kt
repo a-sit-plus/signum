@@ -11,9 +11,9 @@ import at.asitplus.signum.indispensable.asn1.BERTags.T61_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.UNIVERSAL_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.UTF8_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.VISIBLE_STRING
-import at.asitplus.signum.indispensable.asn1.wrapInUnsafeSource
 import kotlinx.datetime.Instant
 import kotlinx.io.Source
+import kotlinx.io.UnsafeIoApi
 import kotlinx.io.readByteArray
 import kotlinx.io.readUByte
 import kotlin.experimental.and
@@ -26,7 +26,8 @@ import kotlin.experimental.and
 @Throws(Asn1Exception::class)
 @Deprecated(
     "Use a ByteArray or (even better) a kotlinx.io Source as input when possible. This method copies all bytes from the input twice and is inefficient.",
-    ReplaceWith("source.readAsn1Element(); require(source.exhausted())")
+    ReplaceWith("source.readAsn1Element(); require(source.exhausted())"),
+    DeprecationLevel.ERROR
 )
 fun Asn1Element.Companion.parse(input: ByteIterator): Asn1Element =
     parse(mutableListOf<Byte>().also { while (input.hasNext()) it.add(input.nextByte()) }.toByteArray())
@@ -37,6 +38,7 @@ fun Asn1Element.Companion.parse(input: ByteIterator): Asn1Element =
  *
  * @throws Asn1Exception on invalid input or if more than a single root structure was contained in the [input]
  */
+@OptIn(UnsafeIoApi::class)
 @Throws(Asn1Exception::class)
 fun Asn1Element.Companion.parse(source: ByteArray): Asn1Element =
     source.wrapInUnsafeSource().readFullyToAsn1Elements().first.let {
@@ -55,7 +57,7 @@ fun Asn1Element.Companion.parse(source: ByteArray): Asn1Element =
 @Deprecated(
     "Use a ByteArray or (even better) a kotlinx.io Source as input when possible. This method copies all bytes from the input twice and is inefficient.",
     ReplaceWith("source.readFullyToAsn1Elements()"),
-    DeprecationLevel.WARNING
+    DeprecationLevel.ERROR
 )
 @Throws(Asn1Exception::class)
 fun Asn1Element.Companion.parseAll(input: ByteIterator): List<Asn1Element> =
@@ -66,6 +68,7 @@ fun Asn1Element.Companion.parseAll(input: ByteIterator): List<Asn1Element> =
  * Convenience wrapper around [parseAll], taking a [ByteArray] as [source]
  * @see parse
  */
+@OptIn(UnsafeIoApi::class)
 @Throws(Asn1Exception::class)
 fun Asn1Element.Companion.parseAll(source: ByteArray): List<Asn1Element> =
     source.wrapInUnsafeSource().readFullyToAsn1Elements().first
@@ -75,6 +78,7 @@ fun Asn1Element.Companion.parseAll(source: ByteArray): List<Asn1Element> =
  * @return a pair of the first parsed [Asn1Element] mapped to the remaining bytes
  * @see readAsn1Element
  */
+@OptIn(UnsafeIoApi::class)
 @Throws(Asn1Exception::class)
 fun Asn1Element.Companion.parseFirst(source: ByteArray): Pair<Asn1Element, ByteArray> =
     source.wrapInUnsafeSource().readAsn1Element()
@@ -202,6 +206,7 @@ fun Asn1Primitive.decodeToLong(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT)
     runRethrowing { decode(assertTag) { Long.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [decodeToLong] */
+@Suppress("NOTHING_TO_INLINE")
 inline fun Asn1Primitive.decodeToLongOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
     catchingUnwrapped { decodeToLong(assertTag) }.getOrNull()
 
@@ -215,6 +220,7 @@ fun Asn1Primitive.decodeToUInt(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT)
     runRethrowing { decode(assertTag) { UInt.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [decodeToUInt] */
+@Suppress("NOTHING_TO_INLINE")
 inline fun Asn1Primitive.decodeToUIntOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
     catchingUnwrapped { decodeToUInt(assertTag) }.getOrNull()
 
@@ -228,6 +234,7 @@ fun Asn1Primitive.decodeToULong(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT
     runRethrowing { decode(assertTag) { ULong.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [decodeToULong] */
+@Suppress("NOTHING_TO_INLINE")
 inline fun Asn1Primitive.decodeToULongOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
     catchingUnwrapped { decodeToULong(assertTag) }.getOrNull()
 
@@ -238,6 +245,7 @@ fun Asn1Primitive.decodeToAsn1Integer(assertTag: Asn1Element.Tag = Asn1Element.T
     runRethrowing { decode(assertTag) { Asn1Integer.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [decodeToAsn1Integer] */
+@Suppress("NOTHING_TO_INLINE")
 inline fun Asn1Primitive.decodeToAsn1IntegerOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
     catchingUnwrapped { decodeToAsn1Integer() }.getOrNull()
 

@@ -39,8 +39,7 @@ class JwkTest : FreeSpec({
                 keys
             ) { pubKey ->
 
-                val cryptoPubKey =
-                    CryptoPublicKey.EC.fromJcaPublicKey(pubKey).getOrThrow().also { it.jwkId = it.didEncoded }
+                val cryptoPubKey = pubKey.toCryptoPublicKey().getOrThrow().also { it.jwkId = it.didEncoded }
                 val own = cryptoPubKey.toJsonWebKey()
                 own.keyId shouldBe cryptoPubKey.jwkId
                 own.shouldNotBeNull()
@@ -126,8 +125,8 @@ private fun randomCertificate() = X509Certificate(
     TbsCertificate(
         serialNumber = Random.nextBytes(16),
         issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.Printable("Test")))),
-        publicKey = CryptoPublicKey.EC.fromJcaPublicKey(KeyPairGenerator.getInstance("EC").apply { initialize(256) }
-            .genKeyPair().public as ECPublicKey).getOrThrow(),
+        publicKey = KeyPairGenerator.getInstance("EC").apply { initialize(256) }
+            .genKeyPair().public.toCryptoPublicKey().getOrThrow(),
         signatureAlgorithm = X509SignatureAlgorithm.ES256,
         subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.Printable("Test")))),
         validFrom = Asn1Time(Clock.System.now()),

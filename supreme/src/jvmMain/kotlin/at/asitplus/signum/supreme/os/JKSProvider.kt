@@ -19,6 +19,7 @@ import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.leaf
+import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.indispensable.toJcaCertificate
 import at.asitplus.signum.supreme.UnsupportedCryptoException
 import at.asitplus.signum.supreme.dsl.DSL
@@ -139,7 +140,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 generateKeyPair()
             }
             val cn = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(alias))))
-            val publicKey = CryptoPublicKey.fromJcaPublicKey(keyPair.public).getOrThrow()
+            val publicKey = keyPair.public.toCryptoPublicKey().getOrThrow()
             val tbsCert = TbsCertificate(
                 serialNumber = ByteArray(32).also { SecureRandom().nextBytes(it) },
                 signatureAlgorithm = certAlg,
