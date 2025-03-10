@@ -17,15 +17,15 @@ private const val IEEE754_BIAS = 1023
  * ASN.1 REAL number. Mind possible loss of precision compared to Kotlin's built-in types.
  * This type is irrelevant for PKI applications, but required for generic ASN.1 serialization
  */
-sealed class Asn1Real : Asn1Encodable<Asn1Primitive> {
+sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
 
     /**
-     * Converts this Asn1Real to a [Float]. **Beware of *probable* loss of precision and the fact that ANS.1 REAL zero knows no sign!**
+     * Converts this Asn1Real to a [Float]. **Beware of *probable* loss of precision and the fact that ASN.1 REAL zero knows no sign!**
      */
     fun toFloat() = toDouble().toFloat()
 
     /**
-     * Converts this Asn1Real to a [Double]. **Beware of possible loss of precision and the fact that ANS.1 REAL zero knows no sign!**
+     * Converts this Asn1Real to a [Double]. **Beware of possible loss of precision and the fact that ASN.1 REAL zero knows no sign!**
      */
     fun toDouble() = when (this) {
         is Finite -> (normalizedMantissa.toDouble() * 2.0.pow(normalizedExponent.toDouble())).let { if (sign == Asn1Integer.Sign.NEGATIVE) it * -1.0 else it }
@@ -34,12 +34,12 @@ sealed class Asn1Real : Asn1Encodable<Asn1Primitive> {
         Zero -> 0.0
     }
 
-    object Zero : Asn1Real()
-    object PositiveInfinity : Asn1Real()
-    object NegativeInfinity : Asn1Real()
+    object Zero : Asn1Real
+    object PositiveInfinity : Asn1Real
+    object NegativeInfinity : Asn1Real
 
     data class Finite(val sign: Asn1Integer.Sign, val normalizedMantissa: ULong, val normalizedExponent: Long) :
-        Asn1Real()
+        Asn1Real
 
     override fun encodeToTlv(): Asn1Primitive = encodeToAsn1Primitive()
 
@@ -51,18 +51,15 @@ sealed class Asn1Real : Asn1Encodable<Asn1Primitive> {
         is Finite -> {
             val exponentOctets = normalizedExponent.toTwosComplementByteArray()
             val mantissaOctets = normalizedMantissa.toTwosComplementByteArray()
-            val exponentLengthEncoding = when (exponentOctets.size) {
-                1 -> 0
-                2 -> 1
-                3 -> 2
-                else -> 3 //this will never exceed 255 bytes, because Long spans 8 bytes at most
+            val (exponentLengthEncoding, exponentLengthOctets) = when (exponentOctets.size) {
+                1 -> 0 to byteArrayOf()
+                2 -> 1 to byteArrayOf()
+                3 -> 2 to byteArrayOf()
+                else -> 3 to exponentOctets.size.toUnsignedByteArray() //this will never exceed 255 bytes, because Long spans 8 bytes at most
             }
 
-            val signEncoding = if (sign == Asn1Integer.Sign.NEGATIVE) 1 shl 6 else 0
-            val binaryEncoding = 1 shl 7
-
-            val exponentLengthOctets =
-                if (exponentLengthEncoding == 3) exponentOctets.size.toUnsignedByteArray() else byteArrayOf()
+            val signEncoding = if (sign == Asn1Integer.Sign.NEGATIVE) 0x40 else 0
+            val binaryEncoding = 0x80
 
             byteArrayOf(
                 (binaryEncoding or signEncoding or exponentLengthEncoding).toByte(),
@@ -76,6 +73,7 @@ sealed class Asn1Real : Asn1Encodable<Asn1Primitive> {
     companion object : Asn1Decodable<Asn1Primitive, Asn1Real> {
         /**
          * Converts a Double into an ASN.1 REAL.
+         * **Beware of the fact that ASN.1 REAL zero knows no sign!**
          *
          * @throws Asn1Exception when passing [Double.NaN]
          */
@@ -116,12 +114,12 @@ sealed class Asn1Real : Asn1Encodable<Asn1Primitive> {
             }
             var normalizedExponent = exponent
             var normalizedMantissa = mantissa
-            while (normalizedMantissa % 2u == 0uL) {
+            while (normalizedMantissa.countTrailingZeroBits() > 0) {
                 normalizedMantissa = normalizedMantissa shr 1
                 normalizedExponent++
             }
             return Triple(
-                if (sign == 1.0) Asn1Integer.Sign.POSITIVE else Asn1Integer.Sign.NEGATIVE,
+                if (this.sign == 1.0) Asn1Integer.Sign.POSITIVE else Asn1Integer.Sign.NEGATIVE,
                 normalizedExponent.toLong(),
                 normalizedMantissa
             )
@@ -141,7 +139,7 @@ sealed class Asn1Real : Asn1Encodable<Asn1Primitive> {
                 else -> {
                     require(identifierOctet < 0) { "ASN.1 REAL is not binary encoded" }
                     val sign =
-                        if ((1 shl 6) and identifierOctet == 0) Asn1Integer.Sign.POSITIVE else Asn1Integer.Sign.NEGATIVE
+                        if (0x40 and identifierOctet == 0) Asn1Integer.Sign.POSITIVE else Asn1Integer.Sign.NEGATIVE
                     val exponentLength = when (identifierOctet and 0b11) {
                         0 -> 1
                         1 -> 2

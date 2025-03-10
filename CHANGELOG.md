@@ -8,9 +8,8 @@
     * -> There is no need for this misleading serialization support for debugging anymore
     * `@Serializable` suggests deserialization from JSON, CBOR, etc. works, which was never universally true
     * Getting native ASN.1 serialization for kotlinx-serialization is now a no-brainer given we support every primitive required.
-    * This note will be prepended to the changelog entries until the `@Serialization` annotations have been remove.
-        * At the very latest, this will be Indispensable 4.0.0 / Supreme 1.0.0.
-        * Probably, this will happen earlier in reality.
+    * This note will be prepended to the changelog entries until the `@Serialization` annotations have been removed.
+        * This will happen by Indispensable 4.0.0 / Supreme 1.0.0, if not before then.
 * Introduce support for ASN.1 REAL
 * Add built-in ASN.1 ENUMERATED support
 * Rename `ObjectIdentifier.parse` -> `ObjectIdentifier.decodeFromAsn1ContentBytes` in accordance with other similar functions

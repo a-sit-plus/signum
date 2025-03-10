@@ -325,7 +325,7 @@ length signed floating point numbers to write and read them from ASN.1 structure
 It natively supports encoding from/to Kotlin's built-in `FLoat` and `Double`.
 
 Encoding and Decoding a Kotlin double-precision floating point number will result in the same `Double`.
-**However**, an ASN.1 REAL can use a higher precision than 64 bit. Hence, decoding arbitryty ASN.1 REAL numbers
+**However**, an ASN.1 REAL can use a higher precision than 64 bit. Hence, decoding arbitrary ASN.1 REAL numbers
 can result in a loss of precision.
 When decoding to `Float`, this is even more likely to happen.
 
