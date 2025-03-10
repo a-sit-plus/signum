@@ -322,12 +322,13 @@ and JVM's `BigInteger`.
 ### ASN.1 Real
 The ASN.1 engine provides its variable-precision floating-point class, `Asn1Real`. It is capable of encoding arbitrary
 length signed floating point numbers to write and read them from ASN.1 structures.
-It natively supports encoding from/to Kotlin's built-in `FLoat` and `Double`.
+It natively supports encoding from/to Kotlin's built-in `Float` and `Double`.
 
 Encoding and Decoding a Kotlin double-precision floating point number will result in the same `Double`.
-**However**, an ASN.1 REAL can use a higher precision than 64 bit. Hence, decoding arbitrary ASN.1 REAL numbers
+**However**, an ASN.1 REAL can use a higher precision than 64 bit. Hence, decoding arbitrary ASN.1 REAL numbers to `Double`
 can result in a loss of precision.
 When decoding to `Float`, this is even more likely to happen.
+To avoid this, simply keep the `Asn1Real` as-is.
 
 ### ASN.1 Builder DSL
 So far, custom high-level types and manually constructing low-level types was discussed.

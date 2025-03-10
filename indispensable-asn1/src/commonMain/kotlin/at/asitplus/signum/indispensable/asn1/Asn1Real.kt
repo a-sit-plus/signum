@@ -1,12 +1,6 @@
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToAsn1Real
-import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
-import at.asitplus.signum.indispensable.asn1.encoding.fromTwosComplementByteArray
-import at.asitplus.signum.indispensable.asn1.encoding.toTwosComplementByteArray
-import at.asitplus.signum.indispensable.asn1.encoding.toUnsignedByteArray
+import at.asitplus.signum.indispensable.asn1.encoding.*
 import kotlin.math.pow
 import kotlin.math.sign
 
@@ -20,15 +14,15 @@ private const val IEEE754_BIAS = 1023
 sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
 
     /**
-     * Converts this Asn1Real to a [Float]. **Beware of *probable* loss of precision and the fact that ASN.1 REAL zero knows no sign!**
+     * Converts this Asn1Real to a [Float]. **Beware of *probable* loss of precision!**
      */
     fun toFloat() = toDouble().toFloat()
 
     /**
-     * Converts this Asn1Real to a [Double]. **Beware of possible loss of precision and the fact that ASN.1 REAL zero knows no sign!**
+     * Converts this Asn1Real to a [Double]. **Beware of possible loss of precision!**
      */
     fun toDouble() = when (this) {
-        is Finite -> (normalizedMantissa.toDouble() * 2.0.pow(normalizedExponent.toDouble())).let { if (sign == Asn1Integer.Sign.NEGATIVE) it * -1.0 else it }
+        is Finite -> (normalizedMantissa.toString().toDouble() * 2.0.pow(normalizedExponent.toDouble()))
         NegativeInfinity -> Double.NEGATIVE_INFINITY
         PositiveInfinity -> Double.POSITIVE_INFINITY
         Zero -> 0.0
@@ -38,7 +32,7 @@ sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
     object PositiveInfinity : Asn1Real
     object NegativeInfinity : Asn1Real
 
-    data class Finite(val sign: Asn1Integer.Sign, val normalizedMantissa: ULong, val normalizedExponent: Long) :
+    data class Finite internal constructor(val normalizedMantissa: Asn1Integer, val normalizedExponent: Long) :
         Asn1Real
 
     override fun encodeToTlv(): Asn1Primitive = encodeToAsn1Primitive()
@@ -50,7 +44,10 @@ sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
         Zero -> byteArrayOf()
         is Finite -> {
             val exponentOctets = normalizedExponent.toTwosComplementByteArray()
-            val mantissaOctets = normalizedMantissa.toTwosComplementByteArray()
+            val mantissaOctets = normalizedMantissa.magnitude.let {
+                if (it.first().countLeadingZeroBits() == 0) byteArrayOf(0, *it)
+                else it
+            }
             val (exponentLengthEncoding, exponentLengthOctets) = when (exponentOctets.size) {
                 1 -> 0 to byteArrayOf()
                 2 -> 1 to byteArrayOf()
@@ -58,7 +55,7 @@ sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
                 else -> 3 to exponentOctets.size.toUnsignedByteArray() //this will never exceed 255 bytes, because Long spans 8 bytes at most
             }
 
-            val signEncoding = if (sign == Asn1Integer.Sign.NEGATIVE) 0x40 else 0
+            val signEncoding = if (normalizedMantissa.sign == Asn1Integer.Sign.NEGATIVE) 0x40 else 0
             val binaryEncoding = 0x80
 
             byteArrayOf(
@@ -85,7 +82,7 @@ sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
                 Double.NEGATIVE_INFINITY -> NegativeInfinity
                 Double.POSITIVE_INFINITY -> PositiveInfinity
                 else -> number.getAsn1RealComponents()
-                    ?.let { (sign, exponent, mantissa) -> Finite(sign, mantissa, exponent) } ?: Zero
+                    ?.let { (exponent, mantissa) -> Finite(mantissa, exponent) } ?: Zero
             }
         }
 
@@ -98,31 +95,30 @@ sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
         @Suppress("NOTHING_TO_INLINE")
         inline operator fun invoke(number: Float): Asn1Real = invoke(number.toDouble())
 
-        private fun Double.getAsn1RealComponents(): Triple<Asn1Integer.Sign, Long, ULong>? {
+        private fun Double.getAsn1RealComponents(): Pair<Long, Asn1Integer>? {
             val bits = this.toBits()
             val rawExponent = ((bits ushr 52) and 0x7FF).toInt() // 11 bits
-            val rawMantissa = (bits and 0xFFFFFFFFFFFFF).toULong()// 52 bits
+            val rawMantissa = (bits and 0xFFFFFFFFFFFFF)// 52 bits
 
             val exponent = rawExponent - IEEE754_BIAS - 52
             // Normal: rawExponent != 0 => implicit leading 1
-            val mantissa = if (rawExponent != 0) (1uL shl 52) or rawMantissa else rawMantissa
+            val mantissa = if (rawExponent != 0) (1L shl 52) or rawMantissa else rawMantissa
 
-            if (mantissa == 0uL) {
+            if (mantissa == 0L) {
                 // If we end up with no bits in the mantissa => effectively 0.0
                 // Could happen if fraction=0 for subnormal
                 return null
             }
             var normalizedExponent = exponent
             var normalizedMantissa = mantissa
-            while (normalizedMantissa.countTrailingZeroBits() > 0) {
-                normalizedMantissa = normalizedMantissa shr 1
-                normalizedExponent++
+            normalizedMantissa.countTrailingZeroBits().let { bits ->
+                normalizedMantissa = normalizedMantissa shr bits
+                normalizedExponent += bits
             }
-            return Triple(
-                if (this.sign == 1.0) Asn1Integer.Sign.POSITIVE else Asn1Integer.Sign.NEGATIVE,
-                normalizedExponent.toLong(),
-                normalizedMantissa
-            )
+
+            return normalizedExponent.toLong() to
+                    if (this.sign == 1.0) Asn1Integer.Positive(VarUInt(normalizedMantissa.toUnsignedByteArray()))
+                    else Asn1Integer.Negative(VarUInt(normalizedMantissa.toUnsignedByteArray()))
         }
 
         /**
@@ -166,11 +162,9 @@ sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
                         else -> 2 + Int.fromTwosComplementByteArray(byteArrayOf(0, bytes[1]))
                     }
 
-                    val mantissa = ULong.fromTwosComplementByteArray(
-                        byteArrayOf(0, *bytes.sliceArray(mantissaOffset..<bytes.size))
-                    )
-
-                    Asn1Real.Finite(sign, mantissa, exponent)
+                    val mantissa = VarUInt(bytes.sliceArray(mantissaOffset..<bytes.size))
+                    if (sign == Asn1Integer.Sign.POSITIVE) Asn1Real.Finite(Asn1Integer.Positive(mantissa), exponent)
+                    else Asn1Real.Finite(Asn1Integer.Negative(mantissa), exponent)
                 }
             }
         }
