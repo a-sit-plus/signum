@@ -4,6 +4,10 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Sequence
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Set
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.SetOf
 import kotlinx.datetime.Instant
 
 /**
@@ -203,6 +207,15 @@ object Asn1 {
     fun ExplicitlyTaggedSafe(tag: ULong, root: Asn1TreeBuilder.() -> Unit) =
         catching { ExplicitlyTagged(tag, root) }
 
+    /** Creates an ENUMERATED [Asn1Primitive] from [ordinal]*/
+    fun Enumerated(ordinal: Long) = Asn1Primitive(Asn1Element.Tag.ENUM, ordinal.encodeToAsn1ContentBytes())
+
+    /** Creates an ENUMERATED [Asn1Primitive] from [ordinal]*/
+    fun Enumerated(ordinal: Int) = Asn1Primitive(Asn1Element.Tag.ENUM, ordinal.encodeToAsn1ContentBytes())
+
+    /** Creates an ENUMERATED [Asn1Primitive] from [enum] by encoding its ordinal*/
+    fun Enumerated(enum: Enum<*>) = enum.encodeToAsn1Primitive()
+
     /**
      * Adds a BOOL [Asn1Primitive] to this ASN.1 structure
      */
@@ -317,8 +330,36 @@ fun UInt.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.INT, encodeToAs
 /** Produces an INTEGER as [Asn1Primitive] */
 fun ULong.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.INT, encodeToAsn1ContentBytes())
 
+/** Encodes an ENUMERATED containing this Enum's ordinal as [Asn1Primitive] */
+fun Enum<*>.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.ENUM, ordinal.encodeToAsn1ContentBytes())
+
 /** Produces an INTEGER as [Asn1Primitive] */
 fun Asn1Integer.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.INT, encodeToAsn1ContentBytes())
+
+/** Produces a REAL as [Asn1Primitive] */
+fun Asn1Real.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.REAL, encodeToAsn1ContentBytes())
+
+/** Produces a REAL as [Asn1Primitive]
+ * @throws Asn1Exception when passing [Double.NaN]
+ * */
+@Throws(Asn1Exception::class)
+fun Double.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.REAL, Asn1Real(this).encodeToAsn1ContentBytes())
+
+/** Exception-free version of [encodeToAsn1Primitive]*/
+@Throws(Asn1Exception::class)
+fun Double.encodeToAsn1PrimitiveOrNull() = catchingUnwrapped { encodeToAsn1Primitive() }.getOrNull()
+
+
+/** Produces a REAL as [Asn1Primitive]
+ * @throws Asn1Exception when passing [Float.NaN]
+ * */
+@Throws(Asn1Exception::class)
+fun Float.encodeToAsn1Primitive() = Asn1Primitive(Asn1Element.Tag.REAL, Asn1Real(this.toDouble()).encodeToAsn1ContentBytes())
+
+/** Exception-free version of [encodeToAsn1Primitive]*/
+@Throws(Asn1Exception::class)
+fun Float.encodeToAsn1PrimitiveOrNull() = catchingUnwrapped { encodeToAsn1Primitive() }.getOrNull()
+
 
 /** Produces an ASN.1 UTF8 STRING as [Asn1Primitive] */
 fun String.encodeToAsn1Primitive() = Asn1String.UTF8(this).encodeToTlv()
@@ -354,6 +395,9 @@ fun UInt.encodeToAsn1ContentBytes() = toTwosComplementByteArray()
 
 /** Encodes this number into a [ByteArray] using the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 INTEGER */
 fun ULong.encodeToAsn1ContentBytes() = toTwosComplementByteArray()
+
+/** Encodes this Enum's ordinal into a [ByteArray] using the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 ENUMERATED */
+fun Enum<*>.encodeToAsn1ContentBytes() = ordinal.encodeToAsn1ContentBytes()
 
 /** Encodes this number into a [ByteArray] using the same encoding as the [Asn1Primitive.content] property of an [Asn1Primitive] containing an ASN.1 INTEGER */
 fun Asn1Integer.encodeToAsn1ContentBytes() = twosComplement()
