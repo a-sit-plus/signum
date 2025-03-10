@@ -139,7 +139,7 @@ An alternative exists, taking a `Tag` instead of an `Ulong`. in both cases a tag
 the content of the ASN.1 primitive. Moreover, a non-throwing `decodeOrNull` variant is present.
 In addition, the following self-describing shorthands are defined:
 
-| Function                                    | Descrption                                                                          |
+| Function                                    | Description                                                                         |
 |---------------------------------------------|-------------------------------------------------------------------------------------|
 | `Asn1Primitive.decodeToBoolean()`           | throws                                                                              |
 | `Asn1Primitive.decodeToBooleanOrNull()`     | returns `null` on error                                                             |
@@ -155,9 +155,27 @@ In addition, the following self-describing shorthands are defined:
 |                                             |                                                                                     |
 | `Asn1Primitive.decodeToULong()`             | throws                                                                              |
 | `Asn1Primitive.decodeToULongOrNull()`       | returns `null` on error                                                             |
+|                                             |                                                                                     | 
+| `Asn1Primitive.decodeToDouble()`            | throws                                                                              |
+| `Asn1Primitive.decodeToDoubleOrNull()`      | returns `null` on error                                                             |
+|                                             |                                                                                     | 
+| `Asn1Primitive.decodeToFloat()`             | throws                                                                              |
+| `Asn1Primitive.decodeToFloatOrNull()`       | returns `null` on error                                                             |
 |                                             |                                                                                     |
 | `Asn1Primitive.decodeToAsn1Integer()`       | throws                                                                              |
 | `Asn1Primitive.decodeToAsn1IntegerOrNull()` | returns `null` on error                                                             |
+|                                             |                                                                                     |
+| `Asn1Primitive.decodeToAsn1Real()`          | throws                                                                              |
+| `Asn1Primitive.decodeToAsn1RealOrNull()`    | returns `null` on error                                                             |
+|                                             |                                                                                     |
+| `Asn1Primitive.decodeToEnumOrdinal()`       | throws                                                                              |
+| `Asn1Primitive.decodeToEnumOrdinalOrNull()` | returns `null` on error                                                             |
+|                                             |                                                                                     |
+| `Asn1Primitive.decodeToEnum()`              | throws                                                                              |
+| `Asn1Primitive.decodeToEnumOrNull()`        | returns `null` on error                                                             |
+|                                             |                                                                                     |
+| `Asn1Primitive.decodeToEnumOrdinal()`       | throws                                                                              |
+| `Asn1Primitive.decodeToEnumOrdinalOrNull()` | returns `null` on error                                                             |
 |                                             |                                                                                     |
 | `Asn1Primitive.decodeToString()`            | throws                                                                              |
 | `Asn1Primitive.decodeToStringOrNull()`      | returns `null` on error                                                             |
@@ -175,7 +193,10 @@ Manually working on DER-encoded payloads is also supported through the following
 * `UInt.decodeFromAsn1ContentBytes()`
 * `Long.decodeFromAsn1ContentBytes()`
 * `ULong.decodeFromAsn1ContentBytes()`
+* `Double.decodeFromAsn1ContentBytes()`
+* `Float.decodeFromAsn1ContentBytes()`
 * `Asn1Integer.decodeFromAsn1ContentBytes()`
+* `Asn1Real.decodeFromAsn1ContentBytes()`
 * `Boolean.decodeFromAsn1ContentBytes()`
 * `String.decodeFromAsn1ContentBytes()`
 * `Instant.decodeGeneralizedTimeFromAsn1ContentBytes()`
@@ -218,9 +239,9 @@ On the other hand, there are functions responsible for producing only the conten
 Both kind of encoding functions follow a simple naming convention:
 
 * `encodeToAsn1Primitive()` produces an ASN.1 primitive corresponding to the input.
-This is implemented for `Int`, `UInt`, `Long`, `ULong`, `Asn1Integer`, `Boolean`, and `String`
+This is implemented for `Int`, `UInt`, `Long`, `ULong`, `Double`,  `Float`, `Asn1Integer`, `Asn1Real`, `Boolean`, `Enum` and `String`
 * `encodeToAsn1ContentBytes()` producing the content bytes of an `Asn1Primitive`.
-This is implemented for `Int`, `UInt`, `Long`, `ULong`, `Asn1Integer`, and `Boolean`.
+This is implemented for `Int`, `UInt`, `Long`, `ULong`, `Double`, `Float`, `Asn1Integer`, `Asn1Real`, `Boolean`, and `Enum`.
 * As for strings: An UTF-8 string is just its bytes.
 
 In addition, some more specialized encoding functions exist for cases that are not as straight-forward:
@@ -297,6 +318,17 @@ to write and read them from ASN.1 structures.
 It natively supports encoding from/to a two's complement `ByteArray`, and sign + magnitude representation,
 making it interoperable with [Kotlin MP BigNum](https://github.com/ionspin/kotlin-multiplatform-bignum)
 and JVM's `BigInteger`.
+
+### ASN.1 Real
+The ASN.1 engine provides its variable-precision floating-point class, `Asn1Real`. It is capable of encoding arbitrary
+length signed floating point numbers to write and read them from ASN.1 structures.
+It natively supports encoding from/to Kotlin's built-in `Float` and `Double`.
+
+Encoding and Decoding a Kotlin double-precision floating point number will result in the same `Double`.
+**However**, an ASN.1 REAL can use a higher precision than 64 bit. Hence, decoding arbitrary ASN.1 REAL numbers to `Double`
+can result in a loss of precision.
+When decoding to `Float`, this is even more likely to happen.
+To avoid this, simply keep the `Asn1Real` as-is.
 
 ### ASN.1 Builder DSL
 So far, custom high-level types and manually constructing low-level types was discussed.

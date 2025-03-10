@@ -5,6 +5,7 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
+import at.asitplus.signum.indispensable.asn1.Asn1PrimitiveOctetString
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import kotlinx.io.Buffer
 import kotlinx.io.Sink
@@ -44,7 +45,7 @@ sealed class Asn1Element(
          * @throws [Throwable] all sorts of errors on invalid input
          */
         @Throws(Throwable::class)
-        @Deprecated("Misleading name", ReplaceWith("parseFromDerHexString"))
+        @Deprecated("Misleading name", ReplaceWith("parseFromDerHexString(derEncoded)"), DeprecationLevel.ERROR)
         fun decodeFromDerHexString(derEncoded: String) = parseFromDerHexString(derEncoded)
 
         /**
@@ -129,7 +130,9 @@ sealed class Asn1Element(
      */
     @Throws(Asn1StructuralException::class)
     fun asPrimitive() = when (this) {
-        is Asn1EncapsulatingOctetString -> @Suppress("DEPRECATED") this.asPrimitiveOctetString()
+        //this absolutely needs to be a primitive here and copying is typically OK,
+        //because this will be part of a parser pipeline that needs the raw bytes anyway
+        is Asn1EncapsulatingOctetString -> Asn1PrimitiveOctetString(this.content)
         else -> thisAs<Asn1Primitive>()
     }
 
@@ -180,7 +183,7 @@ sealed class Asn1Element(
      * @throws Asn1StructuralException if this element is not an octet string containing raw data
      */
     @Throws(Asn1StructuralException::class)
-    @Deprecated("Use asOctetString instead to avoid copying")
+    @Deprecated("Use asOctetString instead to avoid copying", ReplaceWith("asOctetString"), DeprecationLevel.ERROR)
     fun asPrimitiveOctetString() = when (this) {
         is Asn1EncapsulatingOctetString -> Asn1PrimitiveOctetString(this.content)
         else -> thisAs<Asn1PrimitiveOctetString>()
@@ -198,6 +201,7 @@ sealed class Asn1Element(
      * use `element withImplicitTag (tag withClass TagClass.CONTEXT_SPECIFIC)`!. If a CONSTRUCTED Tag is applied to an ASN.1 Primitive,
      * the CONSTRUCTED bit is overridden and set to zero.
      */
+    @Suppress("NOTHING_TO_INLINE")
     inline infix fun withImplicitTag(tag: Tag): Asn1Element = when (this) {
         is Asn1Structure -> {
             if (tag.isConstructed) Asn1CustomStructure(
@@ -222,6 +226,7 @@ sealed class Asn1Element(
      * Creates a new implicitly tagged ASN.1 Element from this ASN.1 Element.
      * Sets the class of the resulting structure to [TagClass.CONTEXT_SPECIFIC]
      */
+    @Suppress("NOTHING_TO_INLINE")
     inline infix fun withImplicitTag(tagValue: ULong) = withImplicitTag(tagValue withClass TagClass.CONTEXT_SPECIFIC)
 
 
@@ -230,6 +235,7 @@ sealed class Asn1Element(
      * If the provided [template]'s tagClass is not set, the class of the resulting structure defaults to [TagClass.CONTEXT_SPECIFIC].
      * If a CONSTRUCTED Tag is applied to an ASN.1 Primitive, the CONSTRUCTED bit is overridden and set to zero.
      */
+    @Suppress("NOTHING_TO_INLINE")
     inline infix fun withImplicitTag(template: Tag.Template) = when (this) {
         is Asn1Structure -> (this as Asn1Structure).withImplicitTag(
             Tag(
@@ -296,7 +302,9 @@ sealed class Asn1Element(
             val NULL = Tag(tagValue = BERTags.ASN1_NULL.toULong(), constructed = false)
             val BOOL = Tag(tagValue = BERTags.BOOLEAN.toULong(), constructed = false)
             val INT = Tag(tagValue = BERTags.INTEGER.toULong(), constructed = false)
+            val REAL = Tag(tagValue = BERTags.REAL.toULong(), constructed = false)
             val OID = Tag(tagValue = BERTags.OBJECT_IDENTIFIER.toULong(), constructed = false)
+            val ENUM = Tag(tagValue = BERTags.ENUMERATED.toULong(), constructed = false)
 
             val OCTET_STRING = Tag(tagValue = BERTags.OCTET_STRING.toULong(), constructed = false)
             val BIT_STRING = Tag(tagValue = BERTags.BIT_STRING.toULong(), constructed = false)
@@ -383,6 +391,7 @@ sealed class Asn1Element(
             /**
              * Creates a new tag template from this template, negating the passed property
              */
+            @Suppress("NOTHING_TO_INLINE")
             inline infix fun without(negated: TagProperty) = when (negated) {
                 is CONSTRUCTED -> Template(this.tagValue, this.tagClass, false)
             }
@@ -391,12 +400,14 @@ sealed class Asn1Element(
                 /**
                  * Convenience function to construct a tag template from an ULong tag value and class
                  */
+                @Suppress("NOTHING_TO_INLINE")
                 inline infix fun ULong.withClass(tagClass: TagClass) =
                     Template(tagValue = this, tagClass = tagClass, constructed = null)
 
                 /**
                  * Convenience function to construct a tag from an ULong tag value and property
                  */
+                @Suppress("NOTHING_TO_INLINE")
                 inline infix fun ULong.without(negated: TagProperty) = when (negated) {
                     is CONSTRUCTED -> Template(tagValue = this, tagClass = null, constructed = false)
                 }

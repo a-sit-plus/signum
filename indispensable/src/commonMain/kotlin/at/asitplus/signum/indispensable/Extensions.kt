@@ -13,6 +13,7 @@ inline infix fun <reified T> Any.contentEqualsIfArray(other: T) = when(this) {
     else -> (this == other)
 }
 
+@Suppress("NOTHING_TO_INLINE")
 inline fun Any.contentHashCodeIfArray() = when(this) {
     is Array<*> -> this.contentHashCode()
     is ByteArray -> this.contentHashCode()

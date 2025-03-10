@@ -24,6 +24,7 @@ private sealed interface PemDecoder<out T> {
     @JvmInline value class Real<out T>(val fn: (ByteArray)->T): PemDecoder<T>
     data object Default: PemDecoder<Nothing>
     companion object {
+        @Suppress("NOTHING_TO_INLINE")
         inline operator fun <T> invoke(noinline fn: ((ByteArray)->T)?) = when (fn) {
             null -> Default
             else -> Real(fn)

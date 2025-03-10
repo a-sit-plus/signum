@@ -3,14 +3,39 @@
 ## 3.0
 
 ### NEXT
+* **Note: We are deprecating and will soon be removing the debug-only serialization for cryptographic datatypes like certificates, public keys, etc.**
+    * We support robust ASN.1 encoding and mapping from/to JOSE and COSE datatypes and our ASN.1 structures support pretty printing.
+    * -> There is no need for this misleading serialization support for debugging anymore
+    * `@Serializable` suggests deserialization from JSON, CBOR, etc. works, which was never universally true
+    * Getting native ASN.1 serialization for kotlinx-serialization is now a no-brainer given we support every primitive required.
+    * This note will be prepended to the changelog entries until the `@Serialization` annotations have been removed.
+        * This will happen by Indispensable 4.0.0 / Supreme 1.0.0, if not before then.
+* Introduce support for ASN.1 REAL
+* Add built-in ASN.1 ENUMERATED support
 * Rename `ObjectIdentifier.parse` -> `ObjectIdentifier.decodeFromAsn1ContentBytes` in accordance with other similar functions
-* Add dedicated Android targets (SDK 30 /JDK 1.8) to all modules
 * Update data classes for Wallet Attestation from [OpenID4VC HAIP](https://openid.net/specs/openid4vc-high-assurance-interoperability-profile-1_0.html) and [OpenID4VCI](https://openid.net/specs/openid4vc-high-assurance-interoperability-profile-1_0.html):
     * Deprecate `authenticationLevel` (`aal`) in `JsonWebToken`, removed from standards
     * Deprecate `key_type`, `user_authentication` in `ConfirmationClaim`, removed from standards
     * Deprecate types `WalletAttestationUserAuthentication`, `WalletAttestationKeyType`, removed from standards
     * Add `wallet_name`, `wallet_link`, `status` to `JsonWebToken`, used in Key Attestation JWT
     * Add `KeyAttestationJwt` from OpenID4VCI
+* Add dedicated Android targets (SDK 30 / JDK 1.8) to all modules
+* Fix internal deprecations
+* Raise deprecation level to ERROR for deprecated functions:
+    * `Asn1Element.Companion.parseAll`
+    * `Asn1Element.Companion.parse`
+    * `Asn1Element.Companion.decodeFromDerHexString`
+    * `Asn1Element.asPrimitiveOctetString`
+    * `CryptoPublicKey.fromJcaPublicKey`
+    * `CryptoPublicKey.RSA.fromJcaPublicKey`
+    * `CryptoPublicKey.EC.fromJcaPublicKey`
+    * `CryptoSignature.invoke`
+    * `CryptoPublicKey.RSA(n: ByteArray, e: ByteArray)`
+    * `CryptoPublicKey.EC(curve: ECCurve, x: ByteArray, usePositiveY: Boolean)`
+    * `CryptoPublicKey.EC(curve: ECCurve, x: ByteArray, y: ByteArray)`
+    * `ECCurve.keyLengthBits`
+    * `ECCurve.coordinateLengthBytes`
+    * `ECCurve.signatureLengthBytes`
 
 ### 3.14.0 (Supreme 0.7.0)
 

@@ -1,10 +1,15 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.signum.indispensable.asn1.encoding.readFullyToAsn1Elements
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import kotlin.random.Random
+
+
+//this copied over to not change delicate test behaviour, as the original function is not deprecated, with DeprecationLevel.ERROR
+private fun Asn1Element.Companion.parseInternal(input: ByteIterator)=parse(mutableListOf<Byte>().also { while (input.hasNext()) it.add(input.nextByte()) }.toByteArray())
 
 class Asn1ParserTest : FreeSpec({
 
@@ -42,7 +47,7 @@ class Asn1ParserTest : FreeSpec({
             Asn1Element.parseAll(rawChildren) shouldBe seq.children
 
             shouldThrow<Asn1Exception> { Asn1Element.parse(rawChildren) }
-            shouldThrow<Asn1Exception> { Asn1Element.parse(rawChildren.iterator()) }
+            shouldThrow<Asn1Exception> { Asn1Element.parseInternal(rawChildren.iterator()) }
         }
 
         "with Garbage" {
@@ -67,10 +72,12 @@ class Asn1ParserTest : FreeSpec({
             repeat(9) { source.readAsn1Element().first shouldBe childIterator.next() }
 
 
-            shouldThrow<Asn1Exception> { Asn1Element.parseAll(withGarbage.iterator()) shouldBe seq.children }
+            shouldThrow<Asn1Exception> { run {
+                withGarbage.wrapInUnsafeSource().readFullyToAsn1Elements()
+            } shouldBe seq.children }
 
             shouldThrow<Asn1Exception> { Asn1Element.parse(withGarbage) }
-            shouldThrow<Asn1Exception> { Asn1Element.parse(withGarbage.iterator()) }
+            shouldThrow<Asn1Exception> { Asn1Element.parseInternal(withGarbage.iterator()) }
         }
     }
 })

@@ -37,9 +37,9 @@ constructor(
     val validUntil: Asn1Time,
     val subjectName: List<RelativeDistinguishedName>,
     val publicKey: CryptoPublicKey,
-    @Serializable(with = Asn1TimeSerializer::class)
+    @Serializable(with = Asn1BitStringSerializer::class)
     val issuerUniqueID: Asn1BitString? = null,
-    @Serializable(with = Asn1TimeSerializer::class)
+    @Serializable(with = Asn1BitStringSerializer::class)
     val subjectUniqueID: Asn1BitString? = null,
     val extensions: List<X509CertificateExtension>? = null,
 ) : Asn1Encodable<Asn1Sequence> {

@@ -11,11 +11,12 @@ import at.asitplus.signum.indispensable.asn1.BERTags.T61_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.UNIVERSAL_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.UTF8_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.VISIBLE_STRING
-import at.asitplus.signum.indispensable.asn1.wrapInUnsafeSource
 import kotlinx.datetime.Instant
 import kotlinx.io.Source
+import kotlinx.io.UnsafeIoApi
 import kotlinx.io.readByteArray
 import kotlinx.io.readUByte
+import kotlin.enums.enumEntries
 import kotlin.experimental.and
 
 
@@ -26,7 +27,8 @@ import kotlin.experimental.and
 @Throws(Asn1Exception::class)
 @Deprecated(
     "Use a ByteArray or (even better) a kotlinx.io Source as input when possible. This method copies all bytes from the input twice and is inefficient.",
-    ReplaceWith("source.readAsn1Element(); require(source.exhausted())")
+    ReplaceWith("source.readAsn1Element(); require(source.exhausted())"),
+    DeprecationLevel.ERROR
 )
 fun Asn1Element.Companion.parse(input: ByteIterator): Asn1Element =
     parse(mutableListOf<Byte>().also { while (input.hasNext()) it.add(input.nextByte()) }.toByteArray())
@@ -37,6 +39,7 @@ fun Asn1Element.Companion.parse(input: ByteIterator): Asn1Element =
  *
  * @throws Asn1Exception on invalid input or if more than a single root structure was contained in the [input]
  */
+@OptIn(UnsafeIoApi::class)
 @Throws(Asn1Exception::class)
 fun Asn1Element.Companion.parse(source: ByteArray): Asn1Element =
     source.wrapInUnsafeSource().readFullyToAsn1Elements().first.let {
@@ -55,7 +58,7 @@ fun Asn1Element.Companion.parse(source: ByteArray): Asn1Element =
 @Deprecated(
     "Use a ByteArray or (even better) a kotlinx.io Source as input when possible. This method copies all bytes from the input twice and is inefficient.",
     ReplaceWith("source.readFullyToAsn1Elements()"),
-    DeprecationLevel.WARNING
+    DeprecationLevel.ERROR
 )
 @Throws(Asn1Exception::class)
 fun Asn1Element.Companion.parseAll(input: ByteIterator): List<Asn1Element> =
@@ -66,6 +69,7 @@ fun Asn1Element.Companion.parseAll(input: ByteIterator): List<Asn1Element> =
  * Convenience wrapper around [parseAll], taking a [ByteArray] as [source]
  * @see parse
  */
+@OptIn(UnsafeIoApi::class)
 @Throws(Asn1Exception::class)
 fun Asn1Element.Companion.parseAll(source: ByteArray): List<Asn1Element> =
     source.wrapInUnsafeSource().readFullyToAsn1Elements().first
@@ -75,6 +79,7 @@ fun Asn1Element.Companion.parseAll(source: ByteArray): List<Asn1Element> =
  * @return a pair of the first parsed [Asn1Element] mapped to the remaining bytes
  * @see readAsn1Element
  */
+@OptIn(UnsafeIoApi::class)
 @Throws(Asn1Exception::class)
 fun Asn1Element.Companion.parseFirst(source: ByteArray): Pair<Asn1Element, ByteArray> =
     source.wrapInUnsafeSource().readAsn1Element()
@@ -180,6 +185,40 @@ fun Asn1Primitive.decodeToBooleanOrNull(assertTag: Asn1Element.Tag = Asn1Element
     catchingUnwrapped { decodeToBoolean(assertTag) }.getOrNull()
 
 /**
+ * decodes this [Asn1Primitive]'s content into an enum ordinal represented as [Long]. [assertTag] defaults to [Asn1Element.Tag.ENUM], but can be
+ * overridden (for implicitly tagged enums, for example)
+ * @throws [Asn1Exception] on invalid input
+ */
+@Throws(Asn1Exception::class)
+fun Asn1Primitive.decodeToEnumOrdinal(assertTag: Asn1Element.Tag = Asn1Element.Tag.ENUM) = decodeToLong(assertTag)
+
+
+/** Exception-free version of [decodeToEnumOrdinal]*/
+@Suppress("NOTHING_TO_INLINE")
+inline fun Asn1Primitive.decodeToEnumOrdinalOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.ENUM) =
+    catchingUnwrapped { decodeToEnumOrdinal(assertTag) }.getOrNull()
+
+/**
+ * decodes this [Asn1Primitive]'s content into an enum Entry based on the decoded ordinal. [assertTag] defaults to [Asn1Element.Tag.ENUM], but can be
+ * overridden (for implicitly tagged enums, for example).
+ *
+ * **Note that ASN.1 allows for negative ordinals and ordinals beyond 32 bit integers, exceeding Kotlin's enums!**
+ * @throws [Asn1Exception] on invalid input
+ */
+@Throws(Asn1Exception::class)
+inline fun <reified E : Enum<E>> Asn1Primitive.decodeToEnum(assertTag: Asn1Element.Tag = Asn1Element.Tag.ENUM): E =
+    runRethrowing {
+        val ordinal = decodeToEnumOrdinal(assertTag)
+        require(ordinal >= 0) { "Negative ordinal $ordinal cannot be auto-mapped to an enum value" }
+        require(ordinal <= Int.MAX_VALUE.toLong()) { "Ordinal $ordinal too large!" }
+        enumEntries<E>().get(ordinal.toInt())
+    }
+
+/** Exception-free version of [decodeToEnum]*/
+inline fun <reified E : Enum<E>> Asn1Primitive.decodeToEnumOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.ENUM): E? =
+    catchingUnwrapped { decodeToEnum<E>(assertTag) }.getOrNull()
+
+/**
  * decodes this [Asn1Primitive]'s content into an [Int]. [assertTag] defaults to [Asn1Element.Tag.INT], but can be
  *  overridden (for implicitly tagged integers, for example)
  * @throws [Asn1Exception] on invalid input
@@ -202,6 +241,7 @@ fun Asn1Primitive.decodeToLong(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT)
     runRethrowing { decode(assertTag) { Long.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [decodeToLong] */
+@Suppress("NOTHING_TO_INLINE")
 inline fun Asn1Primitive.decodeToLongOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
     catchingUnwrapped { decodeToLong(assertTag) }.getOrNull()
 
@@ -215,6 +255,7 @@ fun Asn1Primitive.decodeToUInt(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT)
     runRethrowing { decode(assertTag) { UInt.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [decodeToUInt] */
+@Suppress("NOTHING_TO_INLINE")
 inline fun Asn1Primitive.decodeToUIntOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
     catchingUnwrapped { decodeToUInt(assertTag) }.getOrNull()
 
@@ -228,16 +269,18 @@ fun Asn1Primitive.decodeToULong(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT
     runRethrowing { decode(assertTag) { ULong.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [decodeToULong] */
+@Suppress("NOTHING_TO_INLINE")
 inline fun Asn1Primitive.decodeToULongOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
     catchingUnwrapped { decodeToULong(assertTag) }.getOrNull()
 
-/** Decode the [Asn1Primitive] as a [Asn1Integer]
+/** Decode the [Asn1Primitive] as an [Asn1Integer]
  * @throws [Asn1Exception] on invalid input */
 @Throws(Asn1Exception::class)
 fun Asn1Primitive.decodeToAsn1Integer(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
     runRethrowing { decode(assertTag) { Asn1Integer.decodeFromAsn1ContentBytes(it) } }
 
 /** Exception-free version of [decodeToAsn1Integer] */
+@Suppress("NOTHING_TO_INLINE")
 inline fun Asn1Primitive.decodeToAsn1IntegerOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.INT) =
     catchingUnwrapped { decodeToAsn1Integer() }.getOrNull()
 
@@ -247,6 +290,36 @@ inline fun Asn1Primitive.decodeToAsn1IntegerOrNull(assertTag: Asn1Element.Tag = 
 @Throws(Asn1Exception::class)
 fun Asn1Integer.Companion.decodeFromAsn1ContentBytes(bytes: ByteArray): Asn1Integer =
     runRethrowing { fromTwosComplement(bytes) }
+
+/** Decode the [Asn1Primitive] as an [Asn1Real]
+ * @throws [Asn1Exception] on invalid input*/
+@Throws(Asn1Exception::class)
+fun Asn1Primitive.decodeToAsn1Real(assertTag: Asn1Element.Tag = Asn1Element.Tag.REAL) =
+    runRethrowing { decode(assertTag) { Asn1Real.decodeFromAsn1ContentBytes(it) } }
+
+/** Exception-free version of [decodeToAsn1Real] */
+@Suppress("NOTHING_TO_INLINE")
+inline fun Asn1Primitive.decodeToAsn1RealOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.REAL): Asn1Real? =
+    catchingUnwrapped { decodeToAsn1Real(assertTag) }.getOrNull()
+
+/** Decode the [Asn1Primitive] as a [Double]. **Beware of possible loss of precision!**
+ * @throws [Asn1Exception] on invalid input*/
+@Throws(Asn1Exception::class)
+fun Asn1Primitive.decodeToDouble(assertTag: Asn1Element.Tag = Asn1Element.Tag.REAL) = decodeToAsn1Real(assertTag).toDouble()
+
+/** Exception-free version of [decodeToDouble]. **Beware of possible loss of precision!** */
+@Suppress("NOTHING_TO_INLINE")
+inline fun Asn1Primitive.decodeToDoubleOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.REAL) = catchingUnwrapped { decodeToDouble(assertTag) }.getOrNull()
+
+/** Decode the [Asn1Primitive] as a [Float]. **Beware of *probable* loss of precision!**
+ * @throws [Asn1Exception] on invalid input*/
+@Throws(Asn1Exception::class)
+@Suppress("NOTHING_TO_INLINE")
+inline fun Asn1Primitive.decodeToFloat(assertTag: Asn1Element.Tag = Asn1Element.Tag.REAL) = decodeToAsn1Real(assertTag).toFloat()
+
+/** Exception-free version of [decodeToFloat]. **Beware of *probable* loss of precision!** */
+@Suppress("NOTHING_TO_INLINE")
+inline fun Asn1Primitive.decodeToFloatOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.REAL) = catchingUnwrapped { decodeToFloat(assertTag) }.getOrNull()
 
 /**
  * transforms this [Asn1Primitive] into an [Asn1String] subtype based on its tag

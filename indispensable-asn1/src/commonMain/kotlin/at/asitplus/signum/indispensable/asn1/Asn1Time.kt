@@ -85,7 +85,7 @@ object Asn1TimeSerializer : KSerializer<Asn1Time> {
     override val descriptor = PrimitiveSerialDescriptor("Asn1Time", PrimitiveKind.STRING)
 
     override fun deserialize(decoder: Decoder) =
-        Asn1Time.decodeFromTlv(Asn1Element.decodeFromDerHexString(decoder.decodeString()) as Asn1Primitive)
+        Asn1Time.decodeFromTlv(Asn1Element.parseFromDerHexString(decoder.decodeString()) as Asn1Primitive)
 
     override fun serialize(encoder: Encoder, value: Asn1Time) {
         encoder.encodeString(value.encodeToTlv().toDerHexString())
