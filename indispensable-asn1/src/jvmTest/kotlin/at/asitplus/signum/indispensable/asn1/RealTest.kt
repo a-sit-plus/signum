@@ -3,18 +3,21 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToDouble
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
+import com.ionspin.kotlin.bignum.decimal.BigDecimal
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
+import io.kotest.matchers.longs.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
-
+import io.kotest.matchers.types.shouldBeInstanceOf
 
 
 @OptIn(ExperimentalStdlibApi::class)
-class RealTest: FreeSpec( {
+class RealTest : FreeSpec({
 
-    val input = data.lines().map { it.split("; ").let { it.first().toDouble()  to it.last().hexToByteArray(HexFormat.Default)} }
+    val input =
+        data.lines().map { it.split("; ").let { it.first().toDouble() to it.last().hexToByteArray(HexFormat.Default) } }
     "Encoding from Ref" - {
-        withData(input) {(double, bytes) ->
+        withData(input) { (double, bytes) ->
             val own = Asn1Real(double)
             own.encodeToDer() shouldBe bytes
             Asn1Real.decodeFromDer(bytes) shouldBe own
@@ -26,7 +29,26 @@ class RealTest: FreeSpec( {
     }
 
     "Special values" - {
-        withData ( 0.0 to byteArrayOf(9,0),Double.NEGATIVE_INFINITY to byteArrayOf(9,1,0x41), Double.POSITIVE_INFINITY to byteArrayOf(9,1,0x40), ) { (double, bytes) ->
+        "1.1897314953572317650857593266280070162123456789009876543456789098765432123456789876543212345678987654323456789876532345678765432345678876543234567" {
+            val number = this.testCase.name.testName
+            val bigDecimal = BigDecimal.parseString(number)
+            bigDecimal.precision shouldBeGreaterThan 64L
+            val wrongScaledMantissa = bigDecimal.significand.toAsn1Integer()
+            val exponent = bigDecimal.exponent
+            bigDecimal.toString() shouldBe number
+            val encoded = Asn1Real.Finite(wrongScaledMantissa, exponent).encodeToDer()
+            Asn1Real.decodeFromDer(encoded).apply {
+                this.shouldBeInstanceOf<Asn1Real.Finite>()
+                this.normalizedMantissa shouldBe wrongScaledMantissa
+                this.normalizedExponent shouldBe exponent
+            }
+        }
+
+        withData(
+            0.0 to byteArrayOf(9, 0),
+            Double.NEGATIVE_INFINITY to byteArrayOf(9, 1, 0x41),
+            Double.POSITIVE_INFINITY to byteArrayOf(9, 1, 0x40),
+        ) { (double, bytes) ->
             val own = Asn1Real(double)
             own.encodeToDer() shouldBe bytes
             Asn1Real.decodeFromDer(bytes) shouldBe own
