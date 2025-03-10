@@ -2,6 +2,8 @@
 
 ## 3.0
 
+### NEXT
+
 ### 3.15.0 (Supreme 0.7.1)
 * **Note: We are deprecating and will soon be removing the debug-only serialization for cryptographic datatypes like certificates, public keys, etc.**
     * We support robust ASN.1 encoding and mapping from/to JOSE and COSE datatypes and our ASN.1 structures support pretty printing.
