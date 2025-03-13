@@ -11,6 +11,7 @@
     * This note will be prepended to the changelog entries until the `@Serialization` annotations have been removed.
         * This will happen by Indispensable 4.0.0 / Supreme 1.0.0, if not before then.
 * HMAC Support
+  * **This finally cleans up the `RSAorHMAC` mess, which is a breaking change**
 * Symmetric Encryption
     * Supported Algorithms
         * AES
@@ -74,6 +75,7 @@
     * `ECCurve.keyLengthBits`
     * `ECCurve.coordinateLengthBytes`
     * `ECCurve.signatureLengthBytes`
+
 
 
 

@@ -5,11 +5,7 @@ enum class RSAPadding {
     PSS;
 }
 
-sealed interface SignatureAlgorithm {
-    data class HMAC(
-        /** The digest to use */
-        val digest: Digest
-    ) : SignatureAlgorithm
+sealed interface SignatureAlgorithm: DataIntegrityAlgorithm {
 
     data class ECDSA(
         /** The digest to apply to the data, or `null` to directly process the raw data. */
@@ -38,12 +34,20 @@ sealed interface SignatureAlgorithm {
         val RSAwithSHA384andPSSPadding = RSA(Digest.SHA384, RSAPadding.PSS)
         val RSAwithSHA512andPSSPadding = RSA(Digest.SHA512, RSAPadding.PSS)
 
-        @Deprecated("Not yet implemented", level = DeprecationLevel.ERROR)
-        val HMACwithSHA256 = HMAC(Digest.SHA256)
-        @Deprecated("Not yet implemented", level = DeprecationLevel.ERROR)
-        val HMACwithSHA384 = HMAC(Digest.SHA384)
-        @Deprecated("Not yet implemented", level = DeprecationLevel.ERROR)
-        val HMACwithSHA512 = HMAC(Digest.SHA512)
+        val entries: Iterable<SignatureAlgorithm> = listOf(
+            ECDSAwithSHA256,
+            ECDSAwithSHA384,
+            ECDSAwithSHA512,
+
+            RSAwithSHA256andPSSPadding,
+            RSAwithSHA384andPSSPadding,
+            RSAwithSHA512andPSSPadding,
+
+            RSAwithSHA256andPKCS1Padding,
+            RSAwithSHA384andPKCS1Padding,
+            RSAwithSHA512andPKCS1Padding
+        )
+
     }
 }
 

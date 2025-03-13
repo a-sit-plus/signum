@@ -59,13 +59,13 @@ data class JwsSigned<out P : Any>(
     companion object {
         /**
          * Deserializes the input, expected to contain a valid JWS (three Base64-URL strings joined by `.`),
-         * into a [JwsSigned] with [ByteArray] as the type of the payload.
+         * into a [JwsSigned] with `ByteArray` as the type of the payload.
          */
         @Suppress("NOTHING_TO_INLINE")
         inline fun deserialize(input: String): KmmResult<JwsSigned<ByteArray>> = catching {
             val stringList = input.replace("[^A-Za-z0-9-_.]".toRegex(), "").split(".")
             if (stringList.size != 3)
-                throw IllegalArgumentException("not three parts in input: $input")
+                throw IllegalArgumentException("not three parts in input: $this")
             val inputParts = stringList.map { it.decodeToByteArray(Base64UrlStrict) }
             val header = with(inputParts[0]) {
                 JwsHeader.deserialize(decodeToString())
@@ -74,8 +74,9 @@ data class JwsSigned<out P : Any>(
             }
             val payload = inputParts[1]
             val signature = with(inputParts[2]) {
+                require(header.algorithm is JwsAlgorithm.Signature)
                 when (val curve = header.algorithm.ecCurve) {
-                    null -> CryptoSignature.RSAorHMAC(this)
+                    null -> CryptoSignature.RSA(this)
                     else -> CryptoSignature.EC.fromRawBytes(curve, this)
                 }
             }
@@ -114,7 +115,7 @@ data class JwsSigned<out P : Any>(
          * Called by JWS signing implementations to get the string that will be
          * used as the input for signature calculation
          */
-        @Suppress("unused", "NOTHING_TO_INLINE")
+        @Suppress("unused")
         inline fun <T : Any> prepareJwsSignatureInput(
             header: JwsHeader,
             payload: T,
