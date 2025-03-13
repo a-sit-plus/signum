@@ -11,13 +11,19 @@ infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
 
 class ConversionTest : FreeSpec({
     "JWS -> SigAlg -> JWS is stable" - {
-        withData(JwsAlgorithm.entries) {
-            it.toJwsAlgorithm() shouldSucceedWith it
-            it.algorithm.toJwsAlgorithm() shouldSucceedWith it
+        "All" - {
+            withData(JwsAlgorithm.entries) {
+                it.algorithm.toJwsAlgorithm() shouldSucceedWith it
+            }
+        }
+        "Specialized SignatureAlgorithm" - {
+            withData(JwsAlgorithm.Signature.entries) {
+                it.toJwsAlgorithm() shouldSucceedWith it
+            }
         }
     }
     "JWS -> X509 -> JWS is stable" - {
-        withData(JwsAlgorithm.entries) {
+        withData(JwsAlgorithm.Signature.entries) {
             it.toX509SignatureAlgorithm().getOrNull()?.let { x509 ->
                 x509.toJwsAlgorithm() shouldSucceedWith it
             }

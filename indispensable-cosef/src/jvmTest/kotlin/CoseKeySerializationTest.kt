@@ -13,6 +13,7 @@ import io.kotest.datatest.withData
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
@@ -37,7 +38,7 @@ class CoseKeySerializationTest : FreeSpec({
                 }.genKeyPair().public.toCryptoPublicKey().getOrThrow().run {
                     this as CryptoPublicKey.EC
                     this.withCompressionPreference(true)
-                }.toCoseKey(CoseAlgorithm.ES256).getOrThrow()
+                }.toCoseKey(CoseAlgorithm.Signature.ES256).getOrThrow()
             )
             val coseUncompressed = KeyPairGenerator.getInstance("EC").apply {
                 initialize(256)
@@ -115,7 +116,7 @@ class CoseKeySerializationTest : FreeSpec({
                             pubKey.toCryptoPublicKey()
                                 .getOrThrow()
                                 .run {
-                                    this as CryptoPublicKey.EC
+                                    this
                                     this.withCompressionPreference(true)
                                 }.toCoseKey()
                                 .getOrThrow()
@@ -155,7 +156,7 @@ class CoseKeySerializationTest : FreeSpec({
                 ) { pubKey ->
                     val coseKey: CoseKey =
                         pubKey.toCryptoPublicKey().getOrThrow()
-                            .toCoseKey(CoseAlgorithm.RS256)
+                            .toCoseKey(CoseAlgorithm.Signature.RS256)
                             .getOrThrow()
                     val cose = coseKey.serialize()
 

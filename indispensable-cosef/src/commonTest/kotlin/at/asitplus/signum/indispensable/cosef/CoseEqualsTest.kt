@@ -21,14 +21,14 @@ class CoseEqualsTest : FreeSpec({
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = bytes,
-                signature = CryptoSignature.RSAorHMAC(bytes),
+                signature = CryptoSignature.RSA(bytes),
                 payloadSerializer = ByteArraySerializer(),
             )
             val bytesSigned2 = CoseSigned.create(
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = bytes,
-                signature = CryptoSignature.RSAorHMAC(bytes),
+                signature = CryptoSignature.RSA(bytes),
                 payloadSerializer = ByteArraySerializer(),
             )
 
@@ -42,14 +42,14 @@ class CoseEqualsTest : FreeSpec({
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = reversed,
-                signature = CryptoSignature.RSAorHMAC(reversed),
+                signature = CryptoSignature.RSA(reversed),
                 payloadSerializer = ByteArraySerializer(),
             )
             val reversedSigned2 = CoseSigned.create(
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = reversed,
-                signature = CryptoSignature.RSAorHMAC(reversed),
+                signature = CryptoSignature.RSA(reversed),
                 payloadSerializer = ByteArraySerializer(),
             )
 
@@ -80,14 +80,14 @@ class CoseEqualsTest : FreeSpec({
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = payload,
-                signature = CryptoSignature.RSAorHMAC(bytes),
+                signature = CryptoSignature.RSA(bytes),
                 payloadSerializer = DataClass.serializer(),
             )
             val bytesSigned2 = CoseSigned.create(
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = payload,
-                signature = CryptoSignature.RSAorHMAC(bytes),
+                signature = CryptoSignature.RSA(bytes),
                 payloadSerializer = DataClass.serializer(),
             )
 
@@ -102,14 +102,14 @@ class CoseEqualsTest : FreeSpec({
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = reversed,
-                signature = CryptoSignature.RSAorHMAC(bytes),
+                signature = CryptoSignature.RSA(bytes),
                 payloadSerializer = DataClass.serializer(),
             )
             val reversedSigned2 = CoseSigned.create(
                 protectedHeader = CoseHeader(),
                 unprotectedHeader = null,
                 payload = reversed,
-                signature = CryptoSignature.RSAorHMAC(bytes),
+                signature = CryptoSignature.RSA(bytes),
                 payloadSerializer = DataClass.serializer(),
             )
 

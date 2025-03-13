@@ -15,22 +15,15 @@ import java.security.Signature
 import java.security.spec.ECGenParameterSpec
 import kotlin.random.Random
 
-class VerifierTests : FreeSpec({
-    withData(
-        mapOf<String, (SignatureAlgorithm.ECDSA, CryptoPublicKey.EC) -> Verifier.EC>(
-            "BC -> PlatformVerifier" to { a, k ->
-                a.verifierFor(k) { provider = "BC" }.getOrThrow()
-                    .also { it.shouldBeInstanceOf<PlatformECDSAVerifier>() }
-            },
-            "BC -> KotlinVerifier" to ::KotlinECDSAVerifier
-        )
-    ) { factory ->
+class VerifierTests: FreeSpec({
+    withData(mapOf<String, (SignatureAlgorithm.ECDSA, CryptoPublicKey.EC)-> Verifier.EC>(
+        "BC -> PlatformVerifier" to { a,k ->
+            a.verifierFor(k) { provider = "BC" }.getOrThrow().also { it.shouldBeInstanceOf<PlatformECDSAVerifier>() }
+        },
+        "BC -> KotlinVerifier" to ::KotlinECDSAVerifier)) { factory ->
         withData(ECCurve.entries) { curve ->
-            withData(
-                nameFn = SignatureInputFormat::jcaAlgorithmComponent,
-                listOf<Digest?>(null) + Digest.entries
-            ) { digest ->
-                withData(nameFn = { (key, _, _) -> key.publicPoint.toString() }, generateSequence {
+            withData(nameFn = SignatureInputFormat::jcaAlgorithmComponent, listOf<Digest?>(null) + Digest.entries) { digest ->
+                withData(nameFn = { (key,_,_) -> key.publicPoint.toString() }, generateSequence {
                     val keypair = KeyPairGenerator.getInstance("EC", "BC").also {
                         it.initialize(ECGenParameterSpec(curve.jcaName))
                     }.genKeyPair()
@@ -59,9 +52,4 @@ class VerifierTests : FreeSpec({
             }
         }
     }
-}) {
-    companion object { init {
-        Security.addProvider(BouncyCastleProvider())
-    }
-    }
-}
+}) { companion object { init { Security.addProvider(BouncyCastleProvider())}}}

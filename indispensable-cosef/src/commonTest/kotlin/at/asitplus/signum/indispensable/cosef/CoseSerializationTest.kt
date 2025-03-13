@@ -27,10 +27,10 @@ class CoseSerializationTest : FreeSpec({
         val payload = ByteStringWrapper("StringType")
         shouldThrow<IllegalArgumentException> {
             CoseSigned.create(
-                protectedHeader = CoseHeader(algorithm = CoseAlgorithm.ES256),
+                protectedHeader = CoseHeader(algorithm = CoseAlgorithm.Signature.ES256),
                 unprotectedHeader = null,
                 payload = payload,
-                signature = CryptoSignature.RSAorHMAC(byteArrayOf()),
+                signature = CryptoSignature.RSA(byteArrayOf()),
                 payloadSerializer = ByteStringWrapper.serializer(String.serializer())
             )
         }
@@ -39,10 +39,10 @@ class CoseSerializationTest : FreeSpec({
     "Serialization is correct with JSON" {
         val payload = "This is the content.".encodeToByteArray()
         val cose = CoseSigned.create(
-            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.RS256),
+            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.Signature.RS256),
             unprotectedHeader = null,
             payload = payload,
-            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()),
+            signature = CryptoSignature.RSA("bar".encodeToByteArray()),
             payloadSerializer = ByteArraySerializer(),
         )
 
@@ -52,10 +52,10 @@ class CoseSerializationTest : FreeSpec({
     "Serialization is correct with JSON for data class" {
         val payload = DataClass("This is the content.")
         val cose = CoseSigned.create(
-            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.RS256),
+            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.Signature.RS256),
             unprotectedHeader = null,
             payload = payload,
-            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()),
+            signature = CryptoSignature.RSA("bar".encodeToByteArray()),
             payloadSerializer = DataClass.serializer(),
         )
 
@@ -65,10 +65,10 @@ class CoseSerializationTest : FreeSpec({
     "Serialization is correct for byte array" {
         val payload = "This is the content.".encodeToByteArray()
         val cose = CoseSigned.create(
-            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.RS256),
+            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.Signature.RS256),
             unprotectedHeader = null,
             payload = payload,
-            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
+            signature = CryptoSignature.RSA("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
             payloadSerializer = ByteArraySerializer(),
         )
         val serialized = cose.serialize(ByteArraySerializer())
@@ -83,10 +83,10 @@ class CoseSerializationTest : FreeSpec({
 
     "Serialization is correct for null" {
         val cose = CoseSigned.create(
-            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.RS256),
+            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.Signature.RS256),
             unprotectedHeader = null,
             payload = null,
-            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
+            signature = CryptoSignature.RSA("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
             payloadSerializer = ByteArraySerializer(),
         )
         val serialized = cose.serialize(ByteArraySerializer())
@@ -126,10 +126,10 @@ class CoseSerializationTest : FreeSpec({
     "Serialization is correct for data class" {
         val payload = DataClass("This is the content.")
         val cose = CoseSigned.create(
-            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.RS256),
+            protectedHeader = CoseHeader(algorithm = CoseAlgorithm.Signature.RS256),
             unprotectedHeader = null,
             payload = payload,
-            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
+            signature = CryptoSignature.RSA("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
             payloadSerializer = DataClass.serializer(),
         )
         val serialized = cose.serialize(DataClass.serializer())
@@ -162,7 +162,7 @@ class CoseSerializationTest : FreeSpec({
     }
 
     "Serialize header" {
-        val header = CoseHeader(algorithm = CoseAlgorithm.ES256, kid = "11".encodeToByteArray())
+        val header = CoseHeader(algorithm = CoseAlgorithm.Signature.ES256, kid = "11".encodeToByteArray())
 
         val deserialized = CoseHeader.deserialize(header.serialize()).getOrThrow().shouldNotBeNull()
 
@@ -184,7 +184,7 @@ class CoseSerializationTest : FreeSpec({
 
     "CoseSignatureInput is correct for ByteArray" {
         val payload = Random.nextBytes(32)
-        val header = CoseHeader(algorithm = CoseAlgorithm.ES256)
+        val header = CoseHeader(algorithm = CoseAlgorithm.Signature.ES256)
         val inputManual = CoseSignatureInput(
             contextString = "Signature1",
             protectedHeader = coseCompliantSerializer.encodeToByteArray(header),
@@ -195,7 +195,7 @@ class CoseSerializationTest : FreeSpec({
         val inputObject = CoseSigned.create(
             protectedHeader = header,
             payload = payload,
-            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()),
+            signature = CryptoSignature.RSA("bar".encodeToByteArray()),
             payloadSerializer = ByteArraySerializer(),
         ).prepareCoseSignatureInput(byteArrayOf())
             .encodeToString(Base16())
@@ -206,7 +206,7 @@ class CoseSerializationTest : FreeSpec({
 
     "CoseSignatureInput is correct for custom types" {
         val payload = DataClass(Random.nextBytes(32).encodeToString(Base16Strict))
-        val header = CoseHeader(algorithm = CoseAlgorithm.ES256)
+        val header = CoseHeader(algorithm = CoseAlgorithm.Signature.ES256)
         val inputManual = CoseSignatureInput(
             contextString = "Signature1",
             protectedHeader = coseCompliantSerializer.encodeToByteArray(header),
@@ -217,7 +217,7 @@ class CoseSerializationTest : FreeSpec({
         val inputObject = CoseSigned.create(
             protectedHeader = header,
             payload = payload,
-            signature = CryptoSignature.RSAorHMAC("bar".encodeToByteArray()),
+            signature = CryptoSignature.RSA("bar".encodeToByteArray()),
             payloadSerializer = DataClass.serializer(),
         ).prepareCoseSignatureInput(byteArrayOf())
             .encodeToString(Base16())
