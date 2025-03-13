@@ -6,19 +6,9 @@ import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.UnsupportedCryptoException
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.MemScope
-import kotlinx.cinterop.memScoped
-import platform.CoreFoundation.CFRelease
 import platform.Foundation.NSOSStatusErrorDomain
-import platform.Security.SecKeyCreateWithData
-import platform.Security.SecKeyRef
 import platform.Security.SecKeyVerifySignature
 import platform.Security.errSecVerifyFailed
-import platform.Security.kSecAttrKeyClass
-import platform.Security.kSecAttrKeyClassPublic
-import platform.Security.kSecAttrKeyType
-import platform.Security.kSecAttrKeyTypeEC
-import platform.Security.kSecAttrKeyTypeRSA
 
 /**
  * Configures iOS-specific properties.
@@ -77,6 +67,6 @@ internal actual fun verifyECDSAImpl
 
 internal actual fun verifyRSAImpl
             (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
-             data: SignatureInput, signature: CryptoSignature.RSAorHMAC,
+             data: SignatureInput, signature: CryptoSignature.RSA,
              config: PlatformVerifierConfiguration) =
 verifyImpl(signatureAlgorithm, publicKey, data, signature, config)

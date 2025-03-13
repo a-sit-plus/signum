@@ -66,7 +66,7 @@ data class JwsHeader(
      * implementations.
      */
     @SerialName("alg")
-    val algorithm: JwsAlgorithm,
+    val algorithm: JwsAlgorithm<*>,
 
     /**
      * The "cty" (content type) Header Parameter is used by JWS applications
@@ -213,13 +213,6 @@ data class JwsHeader(
      */
     @SerialName("jwt")
     val attestationJwt: String? = null,
-
-    /**
-     * OpenID4VCI: Optional. JOSE Header containing a key attestation as described in Appendix D.
-     * See [keyAttestationParsed].
-     */
-    @SerialName("key_attestation")
-    val keyAttestation: String? = null,
 ) {
 
     fun serialize() = joseCompliantSerializer.encodeToString(this)
@@ -250,7 +243,6 @@ data class JwsHeader(
             if (!certificateSha256Thumbprint.contentEquals(other.certificateSha256Thumbprint)) return false
         } else if (other.certificateSha256Thumbprint != null) return false
         if (attestationJwt != other.attestationJwt) return false
-        if (keyAttestation != other.keyAttestation) return false
 
         return true
     }
@@ -270,7 +262,6 @@ data class JwsHeader(
         result = 31 * result + (certificateSha1Thumbprint?.contentHashCode() ?: 0)
         result = 31 * result + (certificateSha256Thumbprint?.contentHashCode() ?: 0)
         result = 31 * result + (attestationJwt?.hashCode() ?: 0)
-        result = 31 * result + (keyAttestation?.hashCode() ?: 0)
         return result
     }
 
@@ -284,12 +275,6 @@ data class JwsHeader(
             ?: certificateChain?.leaf?.publicKey
     }
 
-    val keyAttestationParsed: JwsSigned<KeyAttestationJwt>? by lazy {
-        keyAttestation?.let {
-            JwsSigned.deserialize<KeyAttestationJwt>(KeyAttestationJwt.serializer(), it, joseCompliantSerializer)
-                .getOrNull()
-        }
-    }
 
     companion object {
         fun deserialize(it: String) = catching {

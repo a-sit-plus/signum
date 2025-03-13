@@ -58,9 +58,6 @@ fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) = catch
         is SignatureAlgorithm.ECDSA ->
             sigGetInstance("${this.digest.jcaAlgorithmComponent}withECDSA", provider)
 
-        is SignatureAlgorithm.HMAC ->
-            sigGetInstance("Hmac${this.digest.jcaAlgorithmComponent}", provider)
-
         is SignatureAlgorithm.RSA -> getRSAPlatformSignatureInstance(provider)
     }
 }
@@ -188,7 +185,7 @@ fun PublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
 val CryptoSignature.jcaSignatureBytes: ByteArray
     get() = when (this) {
         is CryptoSignature.EC -> encodeToDer()
-        is CryptoSignature.RSAorHMAC -> rawByteArray
+        is CryptoSignature.RSA -> rawByteArray
     }
 
 /**
@@ -201,7 +198,7 @@ fun CryptoSignature.Companion.parseFromJca(
     if (algorithm is SignatureAlgorithm.ECDSA)
         CryptoSignature.EC.parseFromJca(input)
     else
-        CryptoSignature.RSAorHMAC.parseFromJca(input)
+        CryptoSignature.RSA.parseFromJca(input)
 
 fun CryptoSignature.Companion.parseFromJca(
     input: ByteArray,
@@ -220,8 +217,8 @@ fun CryptoSignature.EC.Companion.parseFromJca(input: ByteArray) =
 fun CryptoSignature.EC.Companion.parseFromJcaP1363(input: ByteArray) =
     CryptoSignature.EC.fromRawBytes(input)
 
-fun CryptoSignature.RSAorHMAC.Companion.parseFromJca(input: ByteArray) =
-    CryptoSignature.RSAorHMAC(input)
+fun CryptoSignature.RSA.Companion.parseFromJca(input: ByteArray) =
+    CryptoSignature.RSA(input)
 
 /**
  * Converts this [X509Certificate] to a [java.security.cert.X509Certificate].

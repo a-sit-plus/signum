@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.mac
 
+import at.asitplus.signum.indispensable.DataIntegrityAlgorithm
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
@@ -7,7 +8,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.readNull
 import at.asitplus.signum.indispensable.misc.BitLength
 
-sealed interface MessageAuthenticationCode {
+sealed interface MessageAuthenticationCode: DataIntegrityAlgorithm {
     /** output size of MAC */
     val outputLength: BitLength
 

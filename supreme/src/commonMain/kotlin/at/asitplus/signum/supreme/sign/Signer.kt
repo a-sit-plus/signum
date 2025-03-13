@@ -154,7 +154,6 @@ fun SignatureAlgorithm.signerFor(privateKey: CryptoPrivateKey.WithPublicKey<*>):
                 (this is SignatureAlgorithm.RSA && privateKey is CryptoPrivateKey.RSA)) {
         when (this) {
             is SignatureAlgorithm.ECDSA -> this.signerFor(privateKey as CryptoPrivateKey.EC.WithPublicKey)
-            is SignatureAlgorithm.HMAC -> KmmResult.failure(UnsupportedOperationException("HMAC is not yet supported!"))
             is SignatureAlgorithm.RSA -> this.signerFor(privateKey as CryptoPrivateKey.RSA)
         }
     } else {
