@@ -65,11 +65,7 @@ kotlin {
                 implementation(kotest("property"))
             }
         }
-    }
-}
-//TODO: this needs fixing in the conventions plugin, so we can access it inside the regular sourceSets block and don't need to wait
-afterEvaluate {
-    kotlin.sourceSets {
+
         val androidJvmMain by getting {
             dependencies {
                 api(bouncycastle("bcpkix"))
