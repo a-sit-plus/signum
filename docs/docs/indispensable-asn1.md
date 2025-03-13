@@ -139,7 +139,7 @@ An alternative exists, taking a `Tag` instead of an `Ulong`. in both cases a tag
 the content of the ASN.1 primitive. Moreover, a non-throwing `decodeOrNull` variant is present.
 In addition, the following self-describing shorthands are defined:
 
-| Function                                    | Description                                                                         |
+| Function                                    | Descrption                                                                          |
 |---------------------------------------------|-------------------------------------------------------------------------------------|
 | `Asn1Primitive.decodeToBoolean()`           | throws                                                                              |
 | `Asn1Primitive.decodeToBooleanOrNull()`     | returns `null` on error                                                             |
