@@ -74,7 +74,9 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
          */
         @Throws(Throwable::class)
         fun fromDid(input: String): CryptoPublicKey {
-            val bytes = multiKeyRemovePrefix(input)
+            val bytes = multiKeyRemovePrefix(input).let {
+                if (it.contains("#")) it.substringBefore("#") else it
+            }
             var decoded = catching { bytes.multibaseDecode() }.getOrThrow()
                 ?: throw IndexOutOfBoundsException("Unsupported multibase encoding")
             val codec = UVarInt.fromByteArray(decoded.sliceArray(0..1)).toULong().let { codec ->
