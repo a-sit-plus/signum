@@ -3,6 +3,29 @@
 ## 3.0
 
 ### NEXT
+* **Note: We are deprecating and will soon be removing the debug-only serialization for cryptographic datatypes like certificates, public keys, etc.**
+    * We support robust ASN.1 encoding and mapping from/to JOSE and COSE datatypes and our ASN.1 structures support pretty printing.
+    * -> There is no need for this misleading serialization support for debugging anymore
+    * `@Serializable` suggests deserialization from JSON, CBOR, etc. works, which was never universally true
+    * Getting native ASN.1 serialization for kotlinx-serialization is now a no-brainer given we support every primitive required.
+    * This note will be prepended to the changelog entries until the `@Serialization` annotations have been removed.
+        * This will happen by Indispensable 4.0.0 / Supreme 1.0.0, if not before then.
+* HMAC Support
+* Symmetric Encryption
+    * Supported Algorithms
+        * AES
+            * GCM
+            * CBC-HMAC
+            * CBC
+            * ECB
+            * KW
+        * ChaCha-Poly1305
+    * Add algorithm mappings to indispensable-josef **This is a binary-incompatible change**
+        * `ivLength` and `encryptionKeyLength` now return `BitLength` instead of `Int`
+        * `text` is now properly called `identifier`
+* Move `HazardousMaterials` annotation from `supreme` to `indispensable`
+* Move `SecretExposure` annotation from `supreme` to `indispensable`
+* Expose `SecureRandom` as API dependency in `indispensable`
 
 ### 3.15.1 (Supreme 0.7.2)
 
@@ -44,6 +67,8 @@
     * `ECCurve.keyLengthBits`
     * `ECCurve.coordinateLengthBytes`
     * `ECCurve.signatureLengthBytes`
+
+
 
 ### 3.14.0 (Supreme 0.7.0)
 

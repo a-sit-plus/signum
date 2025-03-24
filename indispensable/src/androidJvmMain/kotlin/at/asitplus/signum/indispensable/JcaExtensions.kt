@@ -2,10 +2,13 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.asn1.toJavaBigInteger
+import at.asitplus.signum.indispensable.mac.HMAC
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.internals.isAndroid
+import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -266,3 +269,29 @@ fun ECPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicK
 
 fun RSAPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.RSA> =
     CryptoPrivateKey.RSA.decodeFromDerSafe(encoded)
+
+
+val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
+    @OptIn(HazardousMaterials::class)
+    get() = when (this) {
+        is SymmetricEncryptionAlgorithm.AES.GCM -> "AES/GCM/NoPadding"
+        is SymmetricEncryptionAlgorithm.AES.CBC<*, *> -> "AES/CBC/PKCS5Padding"
+        is SymmetricEncryptionAlgorithm.AES.ECB -> "AES/ECB/PKCS5Padding"
+        is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> "AESWrap"
+        is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20-Poly1305"
+        else -> TODO("$this is unsupported")
+    }
+
+val SymmetricEncryptionAlgorithm<*, *, *>.jcaKeySpec: String
+    get() = when (this) {
+        is SymmetricEncryptionAlgorithm.AES<*, *, *> -> "AES"
+        is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20"
+        else -> TODO("$this keyspec is unsupported UNSUPPORTED")
+    }
+
+val HMAC.jcaName: String get() = when(this) {
+    HMAC.SHA1 ->   "HmacSHA1"
+    HMAC.SHA256 -> "HmacSHA256"
+    HMAC.SHA384 -> "HmacSHA384"
+    HMAC.SHA512 -> "HmacSHA512"
+}
