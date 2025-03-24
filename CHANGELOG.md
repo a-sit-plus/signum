@@ -2,6 +2,8 @@
 
 ## 3.0
 
+### NEXT
+
 ### 3.15.1 (Supreme 0.7.2)
 
 * Fix decoding `did:key:` key identifiers containing a `#`
