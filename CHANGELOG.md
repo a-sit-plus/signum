@@ -2,9 +2,11 @@
 
 ## 3.0
 
-### NEXT
+### 3.15.1 (Supreme 0.7.2)
 
 * Fix decoding `did:key:` key identifiers containing a `#`
+* Fix missing android artefact publishing for Supreme (thanks to @ephemient)
+* Kotlin 2.1.20
 
 ### 3.15.0 (Supreme 0.7.1)
 * **Note: We are deprecating and will soon be removing the debug-only serialization for cryptographic datatypes like certificates, public keys, etc.**
