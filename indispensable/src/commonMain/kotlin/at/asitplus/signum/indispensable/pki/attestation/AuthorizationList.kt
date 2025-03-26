@@ -1,24 +1,8 @@
 package at.asitplus.signum.indispensable.pki.attestation
 
 import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.indispensable.asn1.Asn1Decodable
-import at.asitplus.signum.indispensable.asn1.Asn1Element
-import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
-import at.asitplus.signum.indispensable.asn1.Asn1Encodable
-import at.asitplus.signum.indispensable.asn1.Asn1ExplicitlyTagged
-import at.asitplus.signum.indispensable.asn1.Asn1Integer
-import at.asitplus.signum.indispensable.asn1.Asn1OctetString
-import at.asitplus.signum.indispensable.asn1.Asn1Primitive
-import at.asitplus.signum.indispensable.asn1.Asn1Sequence
-import at.asitplus.signum.indispensable.asn1.Asn1Set
-import at.asitplus.signum.indispensable.asn1.BERTags
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1TreeBuilder
-import at.asitplus.signum.indispensable.asn1.encoding.decodeFromAsn1ContentBytes
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToAsn1Integer
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToUInt
-import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1ContentBytes
-import at.asitplus.signum.indispensable.asn1.encoding.readNull
+import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.misc.BitLength
 import kotlinx.datetime.Instant
 import kotlinx.datetime.Month
@@ -177,7 +161,8 @@ class AuthorizationList(
             val creationDateTime: CreationDateTime? = CreationDateTime.decode(src)
             val origin: Origin? = Origin.decode(src)
             val rollbackResistent: RollbackResistent? = RollbackResistent.decodeNull(src)
-            val rootOfTrust: RootOfTrust? = RootOfTrust.decode(src)
+            val rootOfTrust: RootOfTrust? =
+                src[RootOfTrust.explicitTag]?.let { catchingUnwrapped { RootOfTrust.decodeFromTlv(it.asSequence()) }.getOrNull() }
             val osVersion: OsVersion? = OsVersion.decode(src)
             val osPatchLevel: OsPatchLevel? = OsPatchLevel.decode(src)
             val appInfos = (src.children.firstOrNull {
@@ -185,7 +170,7 @@ class AuthorizationList(
                     it.tag == Asn1.ExplicitTag(AttestationApplicationInfo.explicitTag)
             } as Asn1ExplicitlyTagged?)?.nextChildOrNull()?.let {
                 if (it is Asn1EncapsulatingOctetString) it.nextChildOrNull()
-                    ?.let { if (it is Asn1Sequence) it else null } else null
+                    ?.let { it as? Asn1Sequence } else null
             }
             val attestationApplicationInfo: Set<AttestationApplicationInfo>? =
                 appInfos?.nextChildOrNull()?.let {
@@ -286,6 +271,18 @@ class AuthorizationList(
                     )
                 }
             }?.toSet()?.let { if (it.isEmpty()) null else it }
+
+        private inline fun <reified T : Tagged, reified D : Asn1Encodable<Asn1Element>> T.decodeSequence(
+            src: Asn1Sequence
+        ): List<D>? =
+            src[explicitTag]?.let {
+                @Suppress("UNCHECKED_CAST")
+                (it as Asn1Sequence).children.mapNotNull {
+                    (this as Asn1Decodable<Asn1Element, D>).decodeFromTlvOrNull(
+                        it.asPrimitive()
+                    )
+                }
+            }?.toList()?.let { if (it.isEmpty()) null else it }
 
 
         private operator fun Asn1Sequence.get(tag: ULong): Asn1Element? {
@@ -737,8 +734,15 @@ class AuthorizationList(
         val verifiedBootState: VerifiedBootState,
         val verifiedBootHash: ByteArray
     ) : Asn1Encodable<Asn1Sequence>, Tagged.WithTag<Asn1Sequence> {
-        companion object Tag : Tagged(704uL) {
+        companion object Tag : Tagged(704uL), Asn1Decodable<Asn1Sequence, RootOfTrust> {
+            override fun doDecode(src: Asn1Sequence) = RootOfTrust(
+                src.nextChild().asPrimitive().content,
+                src.nextChild().asPrimitive().decodeToBoolean(),
+                VerifiedBootState.decodeFromTlv(src.nextChild().asPrimitive()),
+                src.nextChild().asPrimitive().content
+            )
         }
+
 
         override val tagged get() = Tag
 
@@ -748,7 +752,6 @@ class AuthorizationList(
             +verifiedBootState
             +Asn1.OctetString(verifiedBootHash)
         }
-
 
 
         @OptIn(ExperimentalStdlibApi::class)
@@ -788,15 +791,7 @@ class AuthorizationList(
 
             companion object : Asn1Decodable<Asn1Primitive, VerifiedBootState> {
                 fun valueOf(int: UInt) = entries.first { it.intValue == int }
-                override fun doDecode(src: Asn1Primitive) =
-                    valueOf(
-                        src.decodeToUInt(
-                            assertTag = Asn1Element.Tag(
-                                BERTags.ENUMERATED.toULong(),
-                                constructed = false
-                            )
-                        )
-                    )
+                override fun doDecode(src: Asn1Primitive) = src.decodeToEnum<VerifiedBootState>()
             }
 
         }
@@ -1074,7 +1069,7 @@ class AuthorizationList(
      *
      * This `moduleHash` serves as a fingerprint of the software environment, allowing verification processes to detect any unauthorized changes to the modules. By including the `moduleHash` in the attestation data, the system provides assurance that the key is used within a trusted and unaltered software environment.
      *
-     * For a detailed definition of the `Modules` and `Module` structures, as well as the computation of `moduleHash`, you can refer to the Android Open Source Project's documentation on Keymaster's attestation process. citeturn0search0
+     * For a detailed definition of the `Modules` and `Module` structures, as well as the computation of `moduleHash`, you can refer to the Android Open Source Project's documentation on Keymaster's attestation process.
      */
     class ModuleHash(val sha256Digest: ByteArray) : Asn1Encodable<Asn1Primitive>,
         Tagged.WithTag<Asn1Primitive> {
