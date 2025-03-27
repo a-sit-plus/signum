@@ -12,6 +12,7 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.property.azstring
@@ -68,6 +69,28 @@ class JwkTest : FreeSpec({
         val parsed = JsonWebKey.deserialize(serialized).getOrThrow()
 
         parsed shouldBe jwk
+    }
+
+    "Deserialize BP keys" {
+        val input = """
+            {
+              "alg": "ECDH-ES",
+              "crv": "BP-256",
+              "kid": "9d1db5b5-0a76-11f0-858d-026b3e565740",
+              "kty": "EC",
+              "use": "enc",
+              "x": "fk-0X35Cj8-8TDmfEn8grS5f2x7AzmAnkxc17i8Lae8",
+              "y": "XIj2dcra7tC9cQ6HRlM1kae5fGVQyoIj_bOFlpA4w5k"
+            }
+        """.trimIndent()
+
+        val parsed = JsonWebKey.deserialize(input).getOrThrow()
+
+        parsed.algorithm shouldBe JweAlgorithm.ECDH_ES
+        parsed.curve.shouldBeNull()
+        parsed.keyId shouldBe "9d1db5b5-0a76-11f0-858d-026b3e565740"
+        parsed.type shouldBe JwkType.EC
+        parsed.publicKeyUse shouldBe "enc"
     }
 
     "Serialize and deserialize Algos" - {
