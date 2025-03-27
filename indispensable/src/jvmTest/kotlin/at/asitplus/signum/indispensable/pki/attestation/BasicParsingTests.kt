@@ -310,6 +310,42 @@ fun AuthorizationList.compareWith(signum: at.asitplus.signum.indispensable.pki.a
         } ?: signum.attestationApplicationInfo.shouldBeNull()
 
     }
+    this.attestationIdBrand().getOrNull()?.toByteArray()
+        ?.contentEquals(signum.attestationIdBrand!!.stringValue.toByteArray())
+        ?: signum.attestationIdBrand.shouldBeNull()
+
+    this.attestationIdImei().getOrNull()?.toByteArray()
+        ?.contentEquals(signum.attestationIdImei!!.stringValue.toByteArray())
+        ?: signum.attestationIdImei.shouldBeNull()
+
+    this.attestationIdSecondImei().getOrNull()?.toByteArray()
+        ?.contentEquals(signum.attestationIdSecondImei!!.stringValue.toByteArray())
+        ?: signum.attestationIdSecondImei.shouldBeNull()
+
+    this.attestationIdSerial().getOrNull()?.toByteArray()
+        ?.contentEquals(signum.attestationIdSerial!!.stringValue.toByteArray())
+        ?: signum.attestationIdSerial.shouldBeNull()
+
+    this.attestationIdMeid().getOrNull()?.toByteArray()
+        ?.contentEquals(signum.attestationIdMeid!!.stringValue.toByteArray())
+        ?: signum.attestationIdMeid.shouldBeNull()
+
+    this.attestationIdDevice().getOrNull()?.toByteArray()
+        ?.contentEquals(signum.attestationIdDevice!!.stringValue.toByteArray())
+        ?: signum.attestationIdDevice.shouldBeNull()
+
+    this.attestationIdManufacturer().getOrNull()?.toByteArray()
+        ?.contentEquals(signum.attestationIdManufacturer!!.stringValue.toByteArray())
+        ?: signum.attestationIdManufacturer.shouldBeNull()
+
+    this.attestationIdModel().getOrNull()?.toByteArray()
+        ?.contentEquals(signum.attestationIdModel!!.stringValue.toByteArray())
+        ?: signum.attestationIdModel.shouldBeNull()
+
+    this.attestationIdProduct().getOrNull()?.toByteArray()
+        ?.contentEquals(signum.attestationIdProduct!!.stringValue.toByteArray())
+        ?: signum.attestationIdProduct.shouldBeNull()
+
 }
 
 
