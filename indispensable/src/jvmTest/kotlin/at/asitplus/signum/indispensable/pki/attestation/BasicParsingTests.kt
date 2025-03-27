@@ -2,7 +2,10 @@
 
 package at.asitplus.signum.indispensable.pki.attestation
 
+import at.asitplus.attestation.android.*
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.attestation.AttestationData.Level
+import com.google.android.attestation.AuthorizationList
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.collections.shouldNotBeEmpty
@@ -10,6 +13,9 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import org.bouncycastle.util.encoders.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
+import kotlin.jvm.optionals.getOrNull
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 @OptIn(ExperimentalStdlibApi::class)
 class BasicParsingTests : FreeSpec({
@@ -76,7 +82,8 @@ class BasicParsingTests : FreeSpec({
                         "bwifUHXH1wt9pBKCRack0zFJQ6i8CsRmPgsI7SXW6OZzwz5Jzu1stjFXRzTgcmNBkBHjkigU5SNAancp6+LMFdMCAwEA" +
                         "AQ==",
                 packageName = "at.asitplus.atttest",
-                expectedDigest = Base64.decode("NLl2LE1skNSEMZQMV73nMUJYsmQg7+Fqx/cnTw0zCtU=")
+                expectedDigest = Base64.decode("NLl2LE1skNSEMZQMV73nMUJYsmQg7+Fqx/cnTw0zCtU="),
+                attestationLevel = AttestationData.Level.SOFTWARE
             ),
             AttestationData(
                 "bq Aquaris X with LineageOS",
@@ -90,7 +97,8 @@ class BasicParsingTests : FreeSpec({
                 packageName = "com.example.trustedapplication",
                 expectedDigest = "88E5C393EAEF36829800B41DF786A52FF0A58215850CA8A65073859ADCF0190F".hexToByteArray(
                     HexFormat.UpperCase
-                )
+                ),
+                attestationLevel = AttestationData.Level.NOUGAT
             ),
             AttestationData(
                 "Nokia X10",
@@ -249,6 +257,100 @@ class BasicParsingTests : FreeSpec({
             digests.shouldNotBeNull()
             digests.shouldNotBeEmpty()
             digests.first() shouldBe it.expectedDigest
+
+            //this means that every field that has been parsed is correctly re-encoded into the same generic structure found in the certificate extension
+            attestation.encodeToTlv() shouldBe certParsed.tbsCertificate.extensions!!.first { it.oid == AttestationKeyDescription.oid }.value.asEncapsulatingOctetString().children.first()
+
+            //we get the result, so that there's a parsed attestation record in there
+            val result = attestationService(
+                it.attestationLevel,
+                it.packageName,
+                listOf(it.expectedDigest)
+            ).verifyAttestation(it.attestationCertChain, it.verificationDate, it.challenge)
+
+            //now we compare
+            result.softwareEnforced()
         }
     }
 })
+
+fun AuthorizationList.compareWith(signum: at.asitplus.signum.indispensable.pki.attestation.AuthorizationList) {
+    this.algorithm().getOrNull()?.let { it.ordinal shouldBe signum.algorithm?.ordinal }
+    this.keySize().getOrNull()?.let { it shouldBe signum.keySize }
+
+}
+
+
+fun attestationService(
+    attestationLevel: Level,
+    androidPackageName: String,
+    androidAppSignatureDigest: List<ByteArray>,
+    androidVersion: Int? = null,
+    androidAppVersion: Int? = null,
+    androidPatchLevel: PatchLevel? = null,
+    requireStrongBox: Boolean = false,
+    unlockedBootloaderAllowed: Boolean = false,
+    requireRollbackResistance: Boolean = false,
+    attestationStatementValiditiy: Duration = 5.minutes
+) = when (attestationLevel) {
+    Level.HARDWARE -> HardwareAttestationChecker(
+        AndroidAttestationConfiguration(
+            listOf(
+                AndroidAttestationConfiguration.AppData(
+                    packageName = androidPackageName,
+                    signatureDigests = androidAppSignatureDigest,
+                    appVersion = androidAppVersion
+                )
+            ),
+            androidVersion = androidVersion,
+            patchLevel = androidPatchLevel,
+            requireStrongBox = requireStrongBox,
+            allowBootloaderUnlock = unlockedBootloaderAllowed,
+            requireRollbackResistance = requireRollbackResistance,
+            attestationStatementValiditySeconds = attestationStatementValiditiy.inWholeSeconds.toInt(),
+            ignoreLeafValidity = true
+        )
+    )
+
+    Level.SOFTWARE -> SoftwareAttestationChecker(
+        AndroidAttestationConfiguration(
+            listOf(
+                AndroidAttestationConfiguration.AppData(
+                    packageName = androidPackageName,
+                    signatureDigests = androidAppSignatureDigest,
+                    appVersion = androidAppVersion
+                )
+            ),
+            disableHardwareAttestation = true,
+            enableSoftwareAttestation = true,
+            androidVersion = androidVersion,
+            patchLevel = androidPatchLevel,
+            requireStrongBox = requireStrongBox,
+            allowBootloaderUnlock = unlockedBootloaderAllowed,
+            requireRollbackResistance = requireRollbackResistance,
+            attestationStatementValiditySeconds = attestationStatementValiditiy.inWholeSeconds.toInt(),
+            ignoreLeafValidity = true
+        )
+    )
+
+    Level.NOUGAT -> NougatHybridAttestationChecker(
+        AndroidAttestationConfiguration(
+            listOf(
+                AndroidAttestationConfiguration.AppData(
+                    packageName = androidPackageName,
+                    signatureDigests = androidAppSignatureDigest,
+                    appVersion = androidAppVersion
+                )
+            ),
+            disableHardwareAttestation = true,
+            enableNougatAttestation = true,
+            androidVersion = androidVersion,
+            patchLevel = androidPatchLevel,
+            requireStrongBox = requireStrongBox,
+            allowBootloaderUnlock = unlockedBootloaderAllowed,
+            requireRollbackResistance = requireRollbackResistance,
+            attestationStatementValiditySeconds = attestationStatementValiditiy.inWholeSeconds.toInt(),
+            ignoreLeafValidity = true
+        )
+    )
+}

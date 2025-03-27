@@ -10,8 +10,10 @@ jose = "9.31"
 kotlinpoet = "1.16.0"
 runner = "1.5.2"
 secureRandom = "0.3.2"
+warden = "1.7.2"
 
 [libraries]
+warden = { group = "at.asitplus", name = "warden-roboto", version.ref = "warden"}
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }
 core = { module = "androidx.test:core", version.ref = "core" }
 kotest-extensions-android = { module = "br.com.colman:kotest-extensions-android", version.ref = "kotestExtensionsAndroid" }
