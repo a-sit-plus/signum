@@ -38,6 +38,10 @@ class AttestationData(
         NOUGAT
     }
 
+    enum class Level {
+        HARDWARE, SOFTWARE, NOUGAT
+    }
+
     val verificationDate: Date = Date.from(Instant.parse(isoDate))
 
     val challenge by lazy { mimeDecoder.decode(challengeB64) }
