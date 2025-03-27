@@ -72,6 +72,8 @@ kotlin {
                 api(coroutines("jvm"))
             }
         }
+
+        jvmTest.dependencies { implementation(libs.warden) }
     }
 }
 
