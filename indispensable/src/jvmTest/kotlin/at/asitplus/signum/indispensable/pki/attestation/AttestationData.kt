@@ -6,8 +6,7 @@ import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
-import java.util.Base64
-import java.util.Date
+import java.util.*
 
 
 internal val certificateFactory = CertificateFactory.getInstance("X.509")
@@ -22,8 +21,13 @@ class AttestationData(
     isoDate: String,
     val pubKeyB64: String? = null,
     val packageName: String,
-    val expectedDigest: ByteArray
+    val expectedDigest: ByteArray,
+    val attestationLevel: Level = Level.HARDWARE
 ) {
+
+    enum class Level {
+        HARDWARE, SOFTWARE, NOUGAT
+    }
 
     val verificationDate: Date = Date.from(Instant.parse(isoDate))
 
