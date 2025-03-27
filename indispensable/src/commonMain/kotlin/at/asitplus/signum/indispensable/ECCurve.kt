@@ -212,19 +212,18 @@ enum class ECCurve(
 
 }
 
-object ECCurveSerializer : KSerializer<ECCurve> {
+object ECCurveSerializer : KSerializer<ECCurve?> {
 
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("EcCurveSerializer", PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, value: ECCurve) {
-        encoder.encodeString(value.jwkName)
+    override fun serialize(encoder: Encoder, value: ECCurve?) {
+        value?.jwkName?.let { encoder.encodeString(it) } ?: encoder.encodeNull()
     }
 
-    override fun deserialize(decoder: Decoder): ECCurve {
+    override fun deserialize(decoder: Decoder): ECCurve? {
         val decoded = decoder.decodeString()
         return ECCurve.entries.firstOrNull { it.jwkName == decoded }
-            ?: throw SerializationException("Unsupported EC Curve Type $decoded")
     }
 
 }

@@ -4,6 +4,8 @@
 
 ### NEXT
 
+ * Parse not-implemented EC curves as `null`, e.g. in Json Web Keys
+
 ### 3.15.1 (Supreme 0.7.2)
 
 * Fix decoding `did:key:` key identifiers containing a `#`
