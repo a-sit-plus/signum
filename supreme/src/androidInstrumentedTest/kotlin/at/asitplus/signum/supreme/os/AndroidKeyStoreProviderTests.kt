@@ -5,10 +5,9 @@ import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.signum.supreme.signature
-import at.asitplus.signum.supreme.succeed
+import at.asitplus.succeed
 import br.com.colman.kotest.FreeSpec
 import io.kotest.matchers.should
-import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.azstring
 import kotlin.random.Random
