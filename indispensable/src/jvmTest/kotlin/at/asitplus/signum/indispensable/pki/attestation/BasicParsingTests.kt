@@ -262,7 +262,6 @@ class BasicParsingTests : FreeSpec({
             attestation.encodeToTlv() shouldBe certParsed.tbsCertificate.extensions!!.first { it.oid == AttestationKeyDescription.oid }.value.asEncapsulatingOctetString().children.first()
 
             //we get the result, so that there's a parsed attestation record in there
-            //we don't care for strict attestation checks, only for parsing
             val result = attestationService(
                 it.attestationLevel,
                 it.packageName,
