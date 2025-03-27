@@ -107,6 +107,7 @@ android {
         androidTestImplementation(libs.core)
         androidTestImplementation(libs.rules)
         androidTestImplementation(libs.kotest.runner.android)
+        androidTestImplementation("at.asitplus:kmmresult-test:${AspVersions.kmmresult}")
         testImplementation(libs.kotest.extensions.android)
     }
 
