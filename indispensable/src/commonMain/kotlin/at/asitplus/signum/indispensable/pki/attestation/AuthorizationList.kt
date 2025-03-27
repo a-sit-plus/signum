@@ -11,6 +11,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
+ * #### Intro
  * Authorization List ASN.1 sequence as [defined by Google](https://source.android.com/docs/security/features/keystore/attestation#schema).
  * This is the meat of the [AttestationKeyDescription] attestation certificate extension.
  * It is also used for secure key import.
@@ -19,12 +20,27 @@ import kotlin.time.Duration.Companion.seconds
  * once for software-enforced values, and once for hardware-enforced value.
  * The actual values are scattered across both instances.
  *
- * **Parsing is lenient:** If a value fails to parse, it is set to zero. In reality,
+ * #### On Parsing
+ * **Parsing is lenient:** If a value fails to parse, it is set to null. In reality,
  * you won't care whether a value is structurally illegal or absent:
- * * If you want to enforce it, it must be present and structurally valid, fulfilling to your constraints
+ * * If you want to enforce it, it must be present and structurally valid, fulfilling your constraints
  * * If you don't care for it, you don't care whether it is present, invalid, or absent altogether
  * In case you still want to explore the raw value, check the raw ASN.1 Sequence from the certificate extension and fetch
  * the raw value according to the explicit tag denoting said value.
+ *
+ * #### Structural Properties and Design Decisions
+ * **Structurally, this data structure follows the ASN.1 schema _exactly_**, meaning that it is a structural 1:1 mapping
+ * if the underlying ASN.1 structure.
+ * This as both advantages and disadvantages. The main disadvantage is that it is a bit cumbersome to use. The benefits
+ * far outweigh the shortcomings of this approach, though:
+ * * Just check the schema, and you know what's what. That means that there are no booleans, but an object indicating
+ * `true` or `false` is either present or absent
+ * * Re-Encoding produces the exact same ASN.1 structure that was parsed, byte-for-byte!
+ * * Creating Attestation statements for testing, fun, profit, or malicious intentions is a peak no-brainer;
+ * just follow the schema and set values!
+ *
+ * #### Closing Remarks
+ * > Thou shalt eat no wood.
  */
 class AuthorizationList(
     val purpose: Set<KeyPurpose>? = null,
@@ -683,17 +699,13 @@ class AuthorizationList(
         }
     }
 
-    object AllowWhileOnBody : Tagged(506uL) {
-    }
+    object AllowWhileOnBody : Tagged(506uL)
 
-    object TrustedUserPresenceRequired : Tagged(507uL) {
-    }
+    object TrustedUserPresenceRequired : Tagged(507uL)
 
-    object TrustedConfirmationRequired : Tagged(508uL) {
-    }
+    object TrustedConfirmationRequired : Tagged(508uL)
 
-    object UnlockedDeviceRequired : Tagged(509uL) {
-    }
+    object UnlockedDeviceRequired : Tagged(509uL)
 
     class CreationDateTime private constructor(override val intValue: Asn1Integer) : IntEncodable {
         constructor(timestamp: Instant) : this(Asn1Integer(timestamp.toEpochMilliseconds()))
@@ -898,13 +910,13 @@ class AuthorizationList(
             return "AttestationId(stringValue='$stringValue')"
         }
 
-        class Brand(packageName: String) : AttestationId(packageName) {
+        class Brand(name: String) : AttestationId(name) {
             companion object Tag : Tagged(710uL)
 
             override val tagged get() = Tag
         }
 
-        class Device(packageName: String) : AttestationId(packageName) {
+        class Device(name: String) : AttestationId(name) {
             companion object Tag : Tagged(711uL), Asn1Decodable<Asn1Primitive, Device> {
                 override fun doDecode(src: Asn1Primitive) =
                     Device(src.asOctetString().content.decodeToString())
