@@ -3,12 +3,14 @@
 package at.asitplus.signum.indispensable.pki.attestation
 
 import at.asitplus.attestation.android.*
+import at.asitplus.signum.indispensable.asn1.toBigInteger
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.attestation.AttestationData.Level
 import com.google.android.attestation.AuthorizationList
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.collections.shouldNotBeEmpty
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import org.bouncycastle.util.encoders.Base64
@@ -270,15 +272,44 @@ class BasicParsingTests : FreeSpec({
             ).verifyAttestation(it.attestationCertChain, it.verificationDate, it.challenge)
 
             //now we compare
-            result.softwareEnforced()
+            result.softwareEnforced().compareWith(attestation.softwareEnforced)
+            result.teeEnforced().compareWith(attestation.hardwareEnforced)
         }
     }
 })
 
 fun AuthorizationList.compareWith(signum: at.asitplus.signum.indispensable.pki.attestation.AuthorizationList) {
     this.algorithm().getOrNull()?.let { it.ordinal shouldBe signum.algorithm?.ordinal }
-    this.keySize().getOrNull()?.let { it shouldBe signum.keySize }
+        ?: signum.algorithm.shouldBeNull()
+    this.keySize().getOrNull()?.let { it shouldBe signum.keySize!!.intValue.toBigInteger().intValue(true) }
+        ?: signum.keySize.shouldBeNull()
+    this.digest()?.let {
+        if (it.isNotEmpty()) {
+            it.forEach { value -> signum.digest!!.find { it.ordinal == value.ordinal } }
+        } else signum.digest.shouldBeNull()
+    } ?: signum.digest.shouldBeNull()
 
+    this.activeDateTime().getOrNull()
+        ?.let { it.toEpochMilli() shouldBe signum.activeDateTime!!.intValue.toBigInteger().longValue(true) }
+        ?: signum.activeDateTime.shouldBeNull()
+
+    if (this.allowWhileOnBody()) signum.allowWhileOnBody.shouldNotBeNull() else signum.allowWhileOnBody.shouldBeNull()
+
+    this.attestationApplicationId().getOrNull()?.let { info ->
+        signum.attestationApplicationInfo.shouldNotBeNull().let {
+            info.packageInfos()?.let { pInfos ->
+                pInfos.forEach { pInfo ->
+                    it.first { it.packageName == pInfo.packageName() && it.version == pInfo.version().toUInt() }
+                }
+            }
+            info.signatureDigests()?.let { digests ->
+                signum.attestationApplicationDigest.shouldNotBeNull().let {
+                    digests.forEach { digest -> it.first { digest.toByteArray().contentEquals(it) } }
+                }
+            }
+        } ?: signum.attestationApplicationInfo.shouldBeNull()
+
+    }
 }
 
 
