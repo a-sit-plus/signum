@@ -67,27 +67,6 @@ data class ConfirmationClaim(
      */
     @SerialName("jkt")
     val jsonWebKeyThumbprint: String? = null,
-
-
-    /**
-     * OID4VC HAIP: String that asserts the security mechanism the Wallet uses to manage the private key associated with
-     * the public key given in the `cnf` claim. This mechanism is based on the capabilities of the execution environment
-     * of the Wallet, this might be a secure element (in case of a wallet residing on a smartphone) or a
-     * Cloud-HSM (in case of a cloud Wallet).
-     */
-    @SerialName("key_type")
-    @Suppress("DEPRECATION")
-    @Deprecated("Removed in OID4VC HAIP")
-    val keyType: WalletAttestationKeyType? = null,
-
-    /**
-     * OID4VC HAIP: String that asserts the security mechanism the Wallet uses to authenticate the user to authorize
-     * access to the private key associated with the public key given in the `cnf` claim.
-     */
-    @SerialName("user_authentication")
-    @Suppress("DEPRECATION")
-    @Deprecated("Removed in OID4VC HAIP")
-    val userAuthentication: WalletAttestationUserAuthentication? = null,
 ) {
 
     fun serialize() = joseCompliantSerializer.encodeToString(this)
