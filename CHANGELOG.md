@@ -4,9 +4,11 @@
 
 ### NEXT
 
+* Fix COSE key parsing for unordered properties
+
 ### 3.15.2
 
- * Parse not-implemented EC curves as `null`, e.g. in Json Web Keys
+* Parse not-implemented EC curves as `null`, e.g. in Json Web Keys
 
 ### 3.15.1 (Supreme 0.7.2)
 
