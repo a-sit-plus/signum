@@ -14,6 +14,7 @@ runner = "1.5.2"
 kotlincryptoRandom = "0.5.0"
 kotest= "6.0.0.M6"
 warden = "1.7.2"
+kotest-plugin = "6.0.0.M3"
 
 [libraries]
 warden = { group = "at.asitplus", name = "warden-roboto", version.ref = "warden"}
