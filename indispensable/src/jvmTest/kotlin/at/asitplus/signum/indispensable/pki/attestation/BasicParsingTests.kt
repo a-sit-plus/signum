@@ -3,6 +3,7 @@
 package at.asitplus.signum.indispensable.pki.attestation
 
 import at.asitplus.attestation.android.*
+import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.toBigInteger
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.attestation.AttestationData.Level
@@ -21,6 +22,13 @@ import kotlin.time.Duration.Companion.minutes
 
 @OptIn(ExperimentalStdlibApi::class)
 class BasicParsingTests : FreeSpec({
+
+
+    "Calyx" {
+        val crt= Asn1Element.parseFromDerHexString("30 82 02 99 30 82 02 3F A0 03 02 01 02 02 01 01 30 0A 06 08 2A 86 48 CE 3D 04 03 02 30 39 31 29 30 27 06 03 55 04 03 13 20 62 38 34 62 32 37 35 33 33 63 62 63 32 39 34 38 64 39 62 31 39 37 66 34 32 63 62 63 39 65 64 66 31 0C 30 0A 06 03 55 04 0A 13 03 54 45 45 30 1E 17 0D 32 35 30 33 33 31 31 30 32 31 32 37 5A 17 0D 34 38 30 31 30 31 30 30 30 30 30 30 5A 30 19 31 17 30 15 06 03 55 04 03 0C 0E 42 61 72 74 73 63 68 6C C3 BC 73 73 65 6C 30 59 30 13 06 07 2A 86 48 CE 3D 02 01 06 08 2A 86 48 CE 3D 03 01 07 03 42 00 04 DC F1 96 F5 38 E7 2E B7 08 96 11 7D 1C 8F 81 C7 78 E1 CC 3F 53 AA 9A A0 18 87 A6 11 EE A3 E7 7C 94 9F 38 01 65 19 04 D4 2D 10 A3 90 50 3C 77 C8 0B 87 CF 35 E2 53 0C B9 9C F9 55 36 9E 95 45 60 A3 82 01 56 30 82 01 52 30 0E 06 03 55 1D 0F 01 01 FF 04 04 03 02 07 80 30 82 01 3E 06 0A 2B 06 01 04 01 D6 79 02 01 11 04 82 01 2E 30 82 01 2A 02 02 01 2C 0A 01 01 02 02 01 2C 0A 01 01 04 10 8D 37 55 49 8F 93 5F 38 1F 74 15 9A 3A 55 50 1F 04 00 30 62 BF 85 3D 08 02 06 01 95 EB B8 6D 6F BF 85 45 52 04 50 30 4E 31 28 30 26 04 21 61 74 2E 61 73 69 74 70 6C 75 73 2E 63 72 79 70 74 6F 74 65 73 74 2E 61 6E 64 72 6F 69 64 41 70 70 02 01 01 31 22 04 20 94 1A 45 13 A3 02 75 63 D3 A6 EA 48 EE E8 5B A4 5E B9 F6 9C EE A1 9E F0 EB B1 7F 10 0B FC 88 78 30 81 A1 A1 05 31 03 02 01 02 A2 03 02 01 03 A3 04 02 02 01 00 A5 05 31 03 02 01 04 AA 03 02 01 01 BF 83 77 02 05 00 BF 85 3E 03 02 01 00 BF 85 40 4C 30 4A 04 20 4A B5 28 25 88 ED 1A 1F B0 8E 84 89 48 48 01 A3 71 04 CA ED F1 81 61 EC 45 30 4A 33 05 86 05 B8 01 01 FF 0A 01 01 04 20 52 10 6A 40 6C CD E0 D1 D9 90 91 A9 AA 6C A9 CD C4 93 15 73 11 43 8D AF D8 DC D1 92 08 4D 00 49 BF 85 41 05 02 03 02 49 F0 BF 85 42 05 02 03 03 17 06 BF 85 4E 06 02 04 01 34 FE 5D BF 85 4F 06 02 04 01 34 FE 5D 30 0A 06 08 2A 86 48 CE 3D 04 03 02 03 48 00 30 45 02 21 00 F9 05 C0 C9 8A B0 63 4E 69 A1 A7 85 D0 78 DE CE 00 34 36 7E 2E A7 5C 84 50 90 DB 10 73 5C 11 0D 02 20 72 DA 09 AF A7 5C 86 D3 23 FE F9 84 9F 60 C6 28 72 21 2E CF 03 E7 FB B3 E5 0F B1 D9 04 A7 94 3D")
+        val attestationExtension = X509Certificate.decodeFromTlv(crt.asSequence()).androidAttestationExtension
+        println(attestationExtension!!.encodeToTlv().prettyPrint())
+    }
 
     "From Warden" - {
         withData(
