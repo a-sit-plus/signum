@@ -130,7 +130,7 @@ data class CoseKey(
         fun fromCoordinates(
             curve: CoseEllipticCurve,
             x: ByteArray,
-            y: ByteArray
+            y: ByteArray,
         ): KmmResult<CoseKey> =
             catching {
                 CryptoPublicKey.EC.fromUncompressed(curve.toEcCurve(), x, y).toCoseKey()
@@ -512,21 +512,18 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                                 deser
                             )
                         } else {
-                            //Get down and dirty
+                            // We don't know yet if its EC2 or RSA, so try bytes first, then Curve
                             nKCrv = catchingUnwrapped {
                                 decodeNullableSerializableElement(
                                     descriptor,
                                     index,
                                     ByteArraySerializer()
                                 )
-                            }.getOrNull()
-                            if (nKCrv == null) {
-                                nKCrv = decodeNullableSerializableElement(
-                                    descriptor,
-                                    index,
-                                    CoseEllipticCurveSerializer
-                                )
-                            }
+                            }.getOrNull() ?: decodeNullableSerializableElement(
+                                descriptor,
+                                index,
+                                CoseEllipticCurveSerializer
+                            )
                         }
                     }
 
@@ -537,7 +534,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                             ByteArraySerializer()
                         )
 
-                    labels["y"] -> catching {
+                    labels["y"] -> catchingUnwrapped {
                         y = decodeNullableSerializableElement(
                             descriptor,
                             index,
