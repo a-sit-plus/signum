@@ -2,6 +2,10 @@
 
 ## 3.0
 
+### 3.16.0
+
+ * Remove code elements deprecated in 3.15.0, related to OID4VCI and HAIP
+
 ### NEXT
 
 ### 3.15.2
