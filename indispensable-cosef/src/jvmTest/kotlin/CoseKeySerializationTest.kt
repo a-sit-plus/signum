@@ -15,6 +15,7 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.decodeFromHexString
 import kotlinx.serialization.encodeToByteArray
@@ -54,6 +55,9 @@ class CoseKeySerializationTest : FreeSpec({
 
     "Serializing" - {
         "Manual" - {
+            Cbor {
+                this.en
+            }
             val compressed = coseCompliantSerializer.encodeToByteArray(
                 KeyPairGenerator.getInstance("EC").apply {
                     initialize(256)
