@@ -24,6 +24,7 @@ class AttestationData(
     val expectedDigest: ByteArray,
     val attestationLevel: Level = Level.HARDWARE
 ) {
+    override fun toString() = "AttestationData($name)"
 
     enum class Level {
         HARDWARE, SOFTWARE, NOUGAT
