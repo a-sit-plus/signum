@@ -489,10 +489,9 @@ Once you know decided on an encryption algorithm, encryption itself is straight-
 
 ```kotlin
 val secret = "Top Secret".encodeToByteArray()
-val authenticatedData = "Bottom Secret".encodeToByteArray()
 val secretKey = SymmetricEncryptionAlgorithm.ChaCha20Poly1305.randomKey()
-val encrypted = secretKey.encrypt(secret, authenticatedData).getOrThrow(/*handle error*/)
-encrypted.decrypt(secretKey, authenticatedData).getOrThrow(/*handle error*/) shouldBe secret
+val encrypted = secretKey.encrypt(secret).getOrThrow(/*handle error*/)
+encrypted.decrypt(secretKey).getOrThrow(/*handle error*/) shouldBe secret
 ```
 
 Encrypted data is always structured and the individual components are easily accessible:
