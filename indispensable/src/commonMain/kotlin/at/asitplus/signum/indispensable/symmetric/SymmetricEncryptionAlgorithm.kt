@@ -324,8 +324,7 @@ sealed interface AuthCapability<K : KeyType> {
         class Integrated(tagLen: BitLength) : Authenticated<KeyType.Integrated>(tagLen, KeyType.Integrated)
 
         /**
-         * An authenticated cipher construction based on an unauthenticated cipher with a dedicated MAC function, requiring a dedicated MAC key.
-         * _Encrypt-then-MAC_
+         * An _Encrypt-then-MAC_ authenticated cipher construction based on an unauthenticated cipher with a dedicated MAC function, requiring a dedicated MAC key.
          */
         class WithDedicatedMac<M : MessageAuthenticationCode, I : NonceTrait>(
             /**
