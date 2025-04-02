@@ -363,7 +363,7 @@ For a list of supported algorithms, check out the [feature matrix](features.md#s
 
 ## Symmetric Encryption
 
-Symmetric encryption is implemented both flexible and type-safe. At the same time, the public interface is also rather lean:
+Symmetric encryption is implemented in a flexible and type-safe fashion. At the same time, the public interface is also rather lean:
 
 * Reference an algorithm such as `SymmetricEncryptionAlgorithm.ChaCha20Poly1305`.
 * Invoke `randomKey()` on it to obtain a `SymmetricKey` object.
