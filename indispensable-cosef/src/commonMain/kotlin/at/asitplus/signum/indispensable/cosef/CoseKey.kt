@@ -3,10 +3,10 @@ package at.asitplus.signum.indispensable.cosef
 import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.failure
 import at.asitplus.catching
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
-import at.asitplus.signum.indispensable.asn1.encoding.toTwosComplementByteArray
 import at.asitplus.signum.indispensable.cosef.CoseKey.Companion.deserialize
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
@@ -130,7 +130,7 @@ data class CoseKey(
         fun fromCoordinates(
             curve: CoseEllipticCurve,
             x: ByteArray,
-            y: ByteArray
+            y: ByteArray,
         ): KmmResult<CoseKey> =
             catching {
                 CryptoPublicKey.EC.fromUncompressed(curve.toEcCurve(), x, y).toCoseKey()
@@ -199,7 +199,8 @@ private const val COSE_KID = "coseKid"
 var CryptoPublicKey.coseKid: ByteArray?
     get() = additionalProperties[COSE_KID]?.decodeToByteArray(Base64UrlStrict)
     set(value) {
-        value?.also { additionalProperties[COSE_KID] = value.encodeToString(Base64UrlStrict) } ?: additionalProperties.remove(COSE_KID)
+        value?.also { additionalProperties[COSE_KID] = value.encodeToString(Base64UrlStrict) }
+            ?: additionalProperties.remove(COSE_KID)
     }
 
 /**
@@ -450,22 +451,21 @@ object CoseKeySerializer : KSerializer<CoseKey> {
             "d" to 4
         )
 
-        lateinit var type: CoseKeyType
+        var type: CoseKeyType? = null
         var keyId: ByteArray? = null
         var alg: CoseAlgorithm? = null
         var keyOps: Array<CoseKeyOperation>? = null
         var baseIv: ByteArray? = null
-        var n: ByteArray? = null
-        var crv: CoseEllipticCurve? = null
+        var nKCrv: Any? = null
         var xOrE: ByteArray? = null
         var y: ByteArray? = null
         var yBool: Boolean? = null
         var d: ByteArray? = null
-        var k: ByteArray? = null
-
         var isCompressed = false
 
         decoder.decodeStructure(descriptor) {
+
+
             while (true) {
                 val index = decodeElementIndex(descriptor)
                 if (index == -1) break
@@ -474,7 +474,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                 when (label) {
                     labels["kty"] -> type =
                         decodeSerializableElement(
-                           descriptor,
+                            descriptor,
                             index,
                             CoseKeyTypeSerializer
                         )
@@ -501,45 +501,40 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                         )
 
                     labels["k/n/crv"] -> {
-                        when (type) {
-                            CoseKeyType.EC2 -> {
-                                val deser = CoseEllipticCurveSerializer
-                                crv = decodeNullableSerializableElement(
+                        if (type != null) {
+                            val deser = when (type) {
+                                CoseKeyType.EC2 -> CoseEllipticCurveSerializer
+                                CoseKeyType.RSA, CoseKeyType.SYMMETRIC -> ByteArraySerializer()
+                            }
+                            nKCrv = decodeNullableSerializableElement(
+                                descriptor,
+                                index,
+                                deser
+                            )
+                        } else {
+                            // We don't know yet if its EC2 or RSA, so try bytes first, then Curve
+                            nKCrv = catchingUnwrapped {
+                                decodeNullableSerializableElement(
                                     descriptor,
                                     index,
-                                    deser
+                                    ByteArraySerializer()
                                 )
-                            }
-
-                            CoseKeyType.RSA -> {
-                                val deser = ByteArraySerializer()
-                                n = decodeNullableSerializableElement(
-                                    descriptor,
-                                    index,
-                                    deser
-                                )
-                            }
-
-                            CoseKeyType.SYMMETRIC -> {
-                                val deser = ByteArraySerializer()
-                                k = decodeNullableSerializableElement(
-                                    descriptor,
-                                    index,
-                                    deser
-                                )
-                            }
+                            }.getOrNull() ?: decodeNullableSerializableElement(
+                                descriptor,
+                                index,
+                                CoseEllipticCurveSerializer
+                            )
                         }
-
                     }
 
                     labels["x/e"] -> xOrE =
                         decodeNullableSerializableElement(
-                           descriptor,
+                            descriptor,
                             index,
                             ByteArraySerializer()
                         )
 
-                    labels["y"] -> catching {
+                    labels["y"] -> catchingUnwrapped {
                         y = decodeNullableSerializableElement(
                             descriptor,
                             index,
@@ -556,7 +551,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
 
                     labels["d"] -> d =
                         decodeNullableSerializableElement(
-                           descriptor,
+                            descriptor,
                             index,
                             ByteArraySerializer()
                         )
@@ -575,7 +570,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                     alg,
                     keyOps,
                     baseIv,
-                    crv,
+                    nKCrv as? CoseEllipticCurve?,
                     xOrE,
                     y,
                     d
@@ -586,7 +581,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                     alg,
                     keyOps,
                     baseIv,
-                    crv,
+                    nKCrv as? CoseEllipticCurve?,
                     xOrE,
                     yBool,
                     d
@@ -600,7 +595,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                     alg,
                     keyOps,
                     baseIv,
-                    n,
+                    nKCrv as ByteArray?,
                     xOrE,
                     d
                 ).toCoseKey()
@@ -613,9 +608,11 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                     alg,
                     keyOps,
                     baseIv,
-                    k
+                    nKCrv as ByteArray?,
                 ).toCoseKey()
             }
+
+            null -> throw SerializationException("No key type specified!")
         }
     }
 
