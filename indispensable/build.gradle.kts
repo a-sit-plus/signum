@@ -145,7 +145,7 @@ publishing {
                     developer {
                         id.set("iaik-jheher")
                         name.set("Jakob Heher")
-                        email.set("jakob.heher@iaik.tugraz.at")
+                        email.set("jakob.heher@tugraz.at")
                     }
                     developer {
                         id.set("nodh")

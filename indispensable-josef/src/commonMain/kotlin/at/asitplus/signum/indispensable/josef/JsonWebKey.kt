@@ -303,7 +303,7 @@ data class JsonWebKey(
             }
 
             JwkType.RSA -> {
-                RSA(
+                CryptoPublicKey.RSA(
                     n = Asn1Integer.fromUnsignedByteArray(
                         n ?: throw IllegalArgumentException("Missing modulus n")),
                     e = Asn1Integer.fromUnsignedByteArray(

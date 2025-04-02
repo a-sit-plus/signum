@@ -146,14 +146,14 @@ publishing {
                         email.set("bernd.pruenster@a-sit.at")
                     }
                     developer {
+                        id.set("iaik-jheher")
+                        name.set("Jakob Heher")
+                        email.set("jakob.heher@tugraz.at")
+                    }
+                    developer {
                         id.set("nodh")
                         name.set("Christian Kollmann")
                         email.set("christian.kollmann@a-sit.at")
-                    }
-                    developer {
-                        id.set("iaik-jheher")
-                        name.set("Jakob Heher")
-                        email.set("jakob.heher@iaik.tugraz.at")
                     }
                 }
                 scm {
