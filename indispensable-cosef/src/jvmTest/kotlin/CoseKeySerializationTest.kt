@@ -55,9 +55,6 @@ class CoseKeySerializationTest : FreeSpec({
 
     "Serializing" - {
         "Manual" - {
-            Cbor {
-                this.en
-            }
             val compressed = coseCompliantSerializer.encodeToByteArray(
                 KeyPairGenerator.getInstance("EC").apply {
                     initialize(256)

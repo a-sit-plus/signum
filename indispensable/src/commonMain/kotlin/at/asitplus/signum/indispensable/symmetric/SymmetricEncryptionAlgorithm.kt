@@ -116,7 +116,6 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
      */
     val keySize: BitLength
 
-    //TODO: why are there ambiguities for sealed box creation?
     sealed interface Unauthenticated<out I : NonceTrait> :
         SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, I, KeyType.Integrated> {
         companion object
@@ -177,7 +176,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
              * Key Wrapping as per [RFC 3394](https://datatracker.ietf.org/doc/rfc3394/)
              * Key must be at least 16 bytes and a multiple of 8 bytes
              */
-            class RFC3394(keySize: BitLength) : WRAP(keySize) {
+            class RFC3394 internal constructor(keySize: BitLength) : WRAP(keySize) {
                 override val nonceTrait = NonceTrait.Without
                 override val oid: ObjectIdentifier = when (keySize.bits) {
                     128u -> KnownOIDs.aes128_wrap
@@ -214,7 +213,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
                 else -> throw ImplementationError("AES CBC OID")
             }
 
-            class Unauthenticated(
+            class Unauthenticated internal constructor(
                 keySize: BitLength
             ) : CBC<KeyType.Integrated, AuthCapability.Unauthenticated>(keySize),
                 SymmetricEncryptionAlgorithm.RequiringNonce<AuthCapability.Unauthenticated, KeyType.Integrated>,
