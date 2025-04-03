@@ -15,7 +15,7 @@ import at.asitplus.signum.supreme.mac.mac
 internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, K : KeyType> private constructor(
     private val platformCipher: PlatformCipher<*, *, *>,
     private val algorithm: SymmetricEncryptionAlgorithm<A, I, K>,
-    /*this needs to go here, because we implement this here, not in PlatformCipher*/
+    /*this needs to go here, because we implement boltend-on AEAD in this file here, not in PlatformCipher*/
     private val macKey: ByteArray?,
 ) {
 
@@ -30,9 +30,10 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, K : KeyType>
             aad: ByteArray?,
 
             ): Encryptor<A, I, K> {
-            if (algorithm.nonceTrait is NonceTrait.Required) nonce?.let {
-                require(it.size.toUInt() == (algorithm.nonceTrait as NonceTrait.Required).length.bytes) { "IV must be exactly ${(algorithm.nonceTrait as NonceTrait.Required).length} bits long" }
-            }
+            if (algorithm.nonceTrait is NonceTrait.Required)
+                nonce?.let {
+                    require(it.size.toUInt() == (algorithm.nonceTrait as NonceTrait.Required).length.bytes) { "IV must be exactly ${(algorithm.nonceTrait as NonceTrait.Required).length} bits long" }
+                }
             require(key.size.toUInt() == algorithm.keySize.bytes) { "Key must be exactly ${algorithm.keySize} bits long" }
             val platformCipher = if (algorithm.hasDedicatedMac())
                 initCipher(
@@ -79,15 +80,17 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, K : KeyType>
             val authTag = aMac.outputTransform(aMac.mac.mac(macKey, hmacInput).getOrThrow())
 
             @Suppress("UNCHECKED_CAST")
-            return (if (algorithm.requiresNonce()) {
-                algorithm.sealedBox.withNonce( (encrypted as SealedBox.WithNonce<*, *>).nonce).from(
-                    encrypted.encryptedData,
-                    authTag
-                )
-            } else (algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Without, *>).sealedBox.from(
-                encrypted.encryptedData,
-                authTag
-            )).getOrThrow() as SealedBox<A, I, K>
+            return (
+                    if (algorithm.requiresNonce()) {
+                        algorithm.sealedBox.withNonce((encrypted as SealedBox.WithNonce<*, *>).nonce).from(
+                            encrypted.encryptedData,
+                            authTag
+                        )
+                    } else (algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Without, *>).sealedBox.from(
+                        encrypted.encryptedData,
+                        authTag
+                    )
+                ).getOrThrow() as SealedBox<A, I, K>
 
         } else @Suppress("UNCHECKED_CAST") return platformCipher.doEncrypt(data) as SealedBox<A, I, out K>
     }

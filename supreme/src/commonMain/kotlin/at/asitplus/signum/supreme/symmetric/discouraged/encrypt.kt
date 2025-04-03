@@ -12,10 +12,10 @@ import kotlin.jvm.JvmName
 
 /**
  * Encrypts [data] using the manually specified [nonce]. Check yourself, before you really, really wreck yourself!
- * * [nonce] =  _Initialization Vector_; **NEVER EVER RE-USE THIS!**
+ * * [nonce] =  nonce/IV; **NEVER EVER RE-USE THIS!**
  * * [authenticatedData] = _Additional Authenticated Data_
  *
- * It is safe to discard the reference to [nonce] and [authenticatedData], as both will be added to any  [SealedBox.Authenticated] resulting from an encryption.
+ * It is safe to discard the reference to [nonce], as it will be added to any  [SealedBox.Authenticated] resulting from an encryption.
  *
  * @return [KmmResult.success] containing a [SealedBox.Authenticated] if valid parameters were provided or [KmmResult.failure] in case of
  * invalid parameters (e.g., key or nonce length)
@@ -37,9 +37,9 @@ suspend fun <K : KeyType, A : AuthCapability.Authenticated<out K>> KeyWithNonceA
 
 /**
  * Encrypts [data] using the manually specified [nonce]. Check yourself, before you really, really wreck yourself!
- * * [nonce] =  _Initialization Vector_; **NEVER EVER RE-USE THIS!**
+ * * [nonce] =  nonce/IV; **NEVER EVER RE-USE THIS!**
  *
- * It is safe to discard the reference to [nonce] and [authenticatedData], as both will be added to any  [SealedBox.Authenticated] resulting from an encryption.
+ * It is safe to discard the reference to [nonce], as it will be added to any  [SealedBox.Authenticated] resulting from an encryption.
  *
  * @return [KmmResult.success] containing a [SealedBox.Authenticated] if valid parameters were provided or [KmmResult.failure] in case of
  * invalid parameters (e.g., key or nonce length)
