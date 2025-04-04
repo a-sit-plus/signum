@@ -81,7 +81,7 @@ publishing {
         withType<MavenPublication> {
             if (this.name != "relocation") artifact(javadocJar)
             pom {
-                name.set("Internals")
+                name.set("Indispensable Internals")
                 description.set("Kotlin Multiplatform Crypto Library, Internal Shared Helpers")
                 url.set("https://github.com/a-sit-plus/signum")
                 licenses {
@@ -97,6 +97,11 @@ publishing {
                         email.set("bernd.pruenster@a-sit.at")
                     }
                     developer {
+                        id.set("iaik-jheher")
+                        name.set("Jakob Heher")
+                        email.set("jakob.heher@tugraz.at")
+                    }
+                    developer {
                         id.set("nodh")
                         name.set("Christian Kollmann")
                         email.set("christian.kollmann@a-sit.at")
@@ -105,11 +110,6 @@ publishing {
                         id.set("n0900")
                         name.set("Simon Müller")
                         email.set("simon.mueller@a-sit.at")
-                    }
-                    developer {
-                        id.set("iaik-jheher")
-                        name.set("Jakob Heher")
-                        email.set("jakob.heher@iaik.tugraz.at")
                     }
                 }
                 scm {
