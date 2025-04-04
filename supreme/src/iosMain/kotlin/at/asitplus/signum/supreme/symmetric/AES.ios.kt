@@ -25,7 +25,7 @@ private fun BlockCipher<*, *, *>.removePKCS7Padding(plainWithPadding: ByteArray)
     require(paddingBytes > 0) { "Illegal padding: $paddingBytes" }
     require(plainWithPadding.takeLast(paddingBytes).all { it.toInt() == paddingBytes }) { "Padding not consistent" }
     require(plainWithPadding.size - paddingBytes >= 0) { "Too much padding: data ${plainWithPadding.joinToString()}" }
-    return plainWithPadding.sliceArray(0..<plainWithPadding.size - paddingBytes)
+    return plainWithPadding.sliceArray(0..<(plainWithPadding.size - paddingBytes))
 }
 
 
