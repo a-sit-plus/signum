@@ -23,21 +23,21 @@ suspend fun SealedBox<*, *, *>.decrypt(key: SymmetricKey<*, *, *>): KmmResult<By
     @Suppress("UNCHECKED_CAST")
     when (algorithm.authCapability) {
         is Authenticated.Integrated -> (this as SealedBox<Authenticated.Integrated, *, KeyType.Integrated>).decryptInternal(
-            @OptIn(SecretExposure::class) (key as SymmetricKey.Integrated).secretKey.getOrThrow(),
-            byteArrayOf()
+            secretKey = @OptIn(SecretExposure::class) (key as SymmetricKey.Integrated).secretKey.getOrThrow(),
+            authenticatedData = byteArrayOf()
         )
 
         is Authenticated.WithDedicatedMac<*, *> -> {
             key as SymmetricKey.WithDedicatedMac
             (this as SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedicatedMacKey>).decryptInternal(
-                @OptIn(SecretExposure::class) key.encryptionKey.getOrThrow(),
-                @OptIn(SecretExposure::class) key.macKey.getOrThrow(),
-                byteArrayOf()
+                secretKey = @OptIn(SecretExposure::class) key.encryptionKey.getOrThrow(),
+                macKey = @OptIn(SecretExposure::class) key.macKey.getOrThrow(),
+                authenticatedData = byteArrayOf()
             )
         }
 
         is AuthCapability.Unauthenticated -> (this as SealedBox<AuthCapability.Unauthenticated, *, KeyType.Integrated>).decryptInternal(
-            @OptIn(SecretExposure::class) (key as SymmetricKey.Integrated).secretKey.getOrThrow()
+            secretKey = @OptIn(SecretExposure::class) (key as SymmetricKey.Integrated).secretKey.getOrThrow()
         )
     }
 }

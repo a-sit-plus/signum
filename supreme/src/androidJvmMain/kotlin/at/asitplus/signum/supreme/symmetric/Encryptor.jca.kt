@@ -21,14 +21,14 @@ internal class JcaPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : 
 ) : PlatformCipher<A, I, K> {
 
 
-    internal val cipher: Cipher =
+    private val cipher: Cipher =
         when {
             algorithm.requiresNonce() -> {
-
+            require(nonce != null) { "Nonce is required for ${algorithm.name}!" }
 
                 @Suppress("UNCHECKED_CAST")
                 when (algorithm) {
-                    is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaJVM.initCipher(mode, key, nonce!!, aad)
+                    is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaJVM.initCipher(mode, key, nonce, aad)
                     is SymmetricEncryptionAlgorithm.AES<*, *, *> -> AESJCA.initCipher(mode, algorithm, key, nonce, aad)
                 }
             }
