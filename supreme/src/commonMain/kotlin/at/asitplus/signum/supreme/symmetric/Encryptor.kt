@@ -72,7 +72,7 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, K : KeyType>
             val hmacInput: ByteArray =
                 aMac.mac.macInputCalculation(
                     encrypted.encryptedData,
-                    platformCipher.nonce ?: byteArrayOf(),
+                    if (algorithm.requiresNonce()) platformCipher.nonce!! /*make it fail hard if not present*/ else byteArrayOf(),
                     platformCipher.aad ?: byteArrayOf()
                 )
 
@@ -90,7 +90,7 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, K : KeyType>
                         encrypted.encryptedData,
                         authTag
                     )
-                ).getOrThrow() as SealedBox<A, I, K>
+                    ).getOrThrow() as SealedBox<A, I, K>
 
         } else @Suppress("UNCHECKED_CAST") return platformCipher.doEncrypt(data) as SealedBox<A, I, out K>
     }
