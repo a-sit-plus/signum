@@ -4,7 +4,6 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.*
 import kotlinx.cinterop.*

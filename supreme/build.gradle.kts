@@ -66,7 +66,8 @@ kotlin {
 swiftklib {
     create("AESwift") {
         path = file("src/iosMain/swift")
-        packageName("at.asitplus.signum.supreme.symmetric.ios")
+        //Can't hide this in the iOS sources to consumers and using a discrete module is overkill -> so add "internal" to the package
+        packageName("at.asitplus.signum.supreme.symmetric.internal.ios")
     }
 }
 

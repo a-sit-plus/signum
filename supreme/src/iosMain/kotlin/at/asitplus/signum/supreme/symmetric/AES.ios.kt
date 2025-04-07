@@ -7,25 +7,24 @@ import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.A
 import at.asitplus.signum.internals.swiftcall
 import at.asitplus.signum.internals.toByteArray
 import at.asitplus.signum.internals.toNSData
-import at.asitplus.signum.supreme.symmetric.ios.GCM
+import at.asitplus.signum.supreme.symmetric.internal.ios.GCM
 import kotlinx.cinterop.*
 import platform.CoreCrypto.*
 
 private fun BlockCipher<*, *, *>.addPKCS7Padding(plain: ByteArray): ByteArray {
     val blockBytes = blockSize.bytes.toInt()
     val diff = blockBytes - (plain.size % blockBytes)
-    return if (diff == 0)
-        plain + ByteArray(blockBytes) { blockBytes.toByte() }
-    else plain + ByteArray(diff) { diff.toByte() }
+    return plain + ByteArray(diff) { diff.toByte() }
 }
 
 
 private fun BlockCipher<*, *, *>.removePKCS7Padding(plainWithPadding: ByteArray): ByteArray {
     val paddingBytes = plainWithPadding.last().toInt()
     require(paddingBytes > 0) { "Illegal padding: $paddingBytes" }
+    require(paddingBytes <= blockSize.bytes.toInt()) { "Illegal padding: $paddingBytes" }
     require(plainWithPadding.takeLast(paddingBytes).all { it.toInt() == paddingBytes }) { "Padding not consistent" }
-    require(plainWithPadding.size - paddingBytes >= 0) { "Too much padding: data ${plainWithPadding.joinToString()}" }
-    return plainWithPadding.sliceArray(0..<(plainWithPadding.size - paddingBytes))
+    require(plainWithPadding.size - paddingBytes >= 0) { "Illegal padding: $paddingBytes" }
+    return plainWithPadding.sliceArray(0..<plainWithPadding.size - paddingBytes)
 }
 
 
@@ -84,7 +83,7 @@ internal object AESIOS {
     }.toByteArray()
 
     @OptIn(ExperimentalForeignApi::class, HazardousMaterials::class)
-    fun cbcEcbCrypt(
+    internal fun cbcEcbCrypt(
         algorithm: SymmetricEncryptionAlgorithm.AES<*, KeyType.Integrated, *>,
         encrypt: Boolean,
         secretKey: ByteArray,
@@ -92,6 +91,9 @@ internal object AESIOS {
         data: ByteArray,
         pad: Boolean
     ): ByteArray {
+        //padding check == size check at this point, regardless of whether pad is set!
+        if (!encrypt) require(data.size % algorithm.blockSize.bytes.toInt() == 0) { "Illegal data size: ${data.size}" }
+
         //better safe than sorry
         val keySize = when (secretKey.size) {
             SymmetricEncryptionAlgorithm.AES_128.keySize.bytes.toInt() -> kCCKeySizeAES128
