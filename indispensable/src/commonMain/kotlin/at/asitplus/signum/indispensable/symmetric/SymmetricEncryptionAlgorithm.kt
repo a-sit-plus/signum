@@ -352,22 +352,28 @@ sealed interface AuthCapability<K : KeyType> {
              * Specifies how the inputs to the MAC are to be encoded/processed
              */
             val dedicatedMacAuthTagTransform: DedicatedMacAuthTagTransformation
-        ) : Authenticated<KeyType.WithDedicatedMacKey>(tagLen, KeyType.WithDedicatedMacKey)
+        ) : Authenticated<KeyType.WithDedicatedMacKey>(tagLen, KeyType.WithDedicatedMacKey) {
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+                if (other !is WithDedicatedMac<*, *>) return false
 
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other !is Authenticated<*>) return false
+                if (innerCipher != other.innerCipher) return false
+                if (mac != other.mac) return false
+                if (preferredMacKeyLength != other.preferredMacKeyLength) return false
+                if (dedicatedMacInputCalculation != other.dedicatedMacInputCalculation) return false
+                if (dedicatedMacAuthTagTransform != other.dedicatedMacAuthTagTransform) return false
 
-            if (tagLength != other.tagLength) return false
-            if (keyType != other.keyType) return false
+                return true
+            }
 
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = tagLength.hashCode()
-            result = 31 * result + keyType.hashCode()
-            return result
+            override fun hashCode(): Int {
+                var result = innerCipher.hashCode()
+                result = 31 * result + mac.hashCode()
+                result = 31 * result + preferredMacKeyLength.hashCode()
+                result = 31 * result + dedicatedMacInputCalculation.hashCode()
+                result = 31 * result + dedicatedMacAuthTagTransform.hashCode()
+                return result
+            }
         }
     }
 
