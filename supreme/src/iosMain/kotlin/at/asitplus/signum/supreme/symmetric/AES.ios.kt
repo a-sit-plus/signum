@@ -92,7 +92,9 @@ internal object AESIOS {
         pad: Boolean
     ): ByteArray {
         //padding check == size check at this point, regardless of whether pad is set!
-        if (!encrypt) require(data.size % algorithm.blockSize.bytes.toInt() == 0) { "Illegal data size: ${data.size}" }
+        //WRAP is cursed!
+        if (!encrypt && (algorithm !is AES.WRAP.RFC3394))
+            require(data.size % algorithm.blockSize.bytes.toInt() == 0) { "Illegal data size: ${data.size}" }
 
         //better safe than sorry
         val keySize = when (secretKey.size) {
