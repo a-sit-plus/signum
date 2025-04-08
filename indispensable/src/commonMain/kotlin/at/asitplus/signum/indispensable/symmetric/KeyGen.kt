@@ -25,7 +25,7 @@ suspend fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEn
 
 /**
  * Generates a fresh random key for this algorithm.
- * [macKeyLength] can be specified to override [AuthCapability.Authenticated.WithDedicatedMac.preferredMacKeyLength].
+ * [macKeyLength] can be specified to override [preferredMacKeyLength].
  */
 @JvmName("randomKeyAndMacKey")
 @Suppress("UNCHECKED_CAST")
