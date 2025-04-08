@@ -19,10 +19,9 @@ internal class Decryptor(
             authTag: ByteArray?,
             aad: ByteArray?
         ): Decryptor {
-            val authCapability = algorithm.authCapability
             //while ir could be argued that we should not check here. we are only calling this chained with decrypt(), so it is fine to fail fast
-            val actualAlgorithm = if (authCapability is AuthCapability.Authenticated.WithDedicatedMac<*, *>) {
-                authCapability.innerCipher
+            val actualAlgorithm = if (algorithm.hasDedicatedMac()) {
+                algorithm.innerCipher
             } else algorithm
             return Decryptor(
                 initCipher(PlatformCipher.Mode.DECRYPT, actualAlgorithm, key, nonce, aad),
@@ -35,15 +34,14 @@ internal class Decryptor(
 
     internal suspend fun decrypt(encryptedData: ByteArray): ByteArray {
         if (algorithm.hasDedicatedMac()) {
-            val mac = algorithm.authCapability.mac
-            val dedicatedMacInputCalculation = algorithm.authCapability.dedicatedMacInputCalculation
-            val hmacInput = mac.dedicatedMacInputCalculation(
+            val dedicatedMacInputCalculation = algorithm.macInputCalculation
+            val hmacInput = algorithm.dedicatedMacInputCalculation(
                 encryptedData,
                 platformCipher.nonce ?: byteArrayOf(),
                 platformCipher.aad!!
             )
-            val transform = algorithm.authCapability.dedicatedMacAuthTagTransform
-            if (!algorithm.authCapability.transform(mac.mac(macKey!!, hmacInput).getOrThrow()).contentEquals(authTag))
+            val macAuthTagTransform = algorithm.macAuthTagTransform
+            if (!algorithm.macAuthTagTransform(algorithm.mac.mac(macKey!!, hmacInput).getOrThrow()).contentEquals(authTag))
                 throw IllegalArgumentException("Auth Tag mismatch!")
         }
         return platformCipher.doDecrypt(encryptedData, authTag)

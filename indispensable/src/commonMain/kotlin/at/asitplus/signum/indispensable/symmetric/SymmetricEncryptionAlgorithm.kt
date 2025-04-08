@@ -118,16 +118,48 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
 
     sealed interface Unauthenticated<out I : NonceTrait> :
         SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, I, KeyType.Integrated> {
-        companion object
+
+        override val authCapability get() = AuthCapability.Unauthenticated
     }
 
     sealed interface Authenticated<out A : AuthCapability.Authenticated<out K>, out I : NonceTrait, out K : KeyType> :
         SymmetricEncryptionAlgorithm<A, I, K> {
+
+        val authTagSize: BitLength
+
         interface Integrated<I : NonceTrait> :
             Authenticated<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated>
+        {
+            override val authCapability get() = AuthCapability.Authenticated.Integrated
+        }
 
-        interface WithDedicatedMac<M : MessageAuthenticationCode, I : NonceTrait> :
-            Authenticated<AuthCapability.Authenticated.WithDedicatedMac<M, I>, I, KeyType.WithDedicatedMacKey>
+        interface EncryptThenMAC<M : MessageAuthenticationCode, I : NonceTrait> :
+            Authenticated<AuthCapability.Authenticated.WithDedicatedMac, I, KeyType.WithDedicatedMacKey>
+        {
+            override val authCapability get() = AuthCapability.Authenticated.WithDedicatedMac
+
+            val innerCipher: SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, I, KeyType.Integrated>
+            /**
+             * The mac function used to provide authenticated encryption
+             */
+            val mac: M
+
+            /**
+             * The preferred length pf the MAC key. Can be overridden during key generation and is unconstrained.
+             */
+            val preferredMacKeyLength: BitLength
+
+            /**
+             * Specifies how the inputs to the MAC are to be encoded/processed
+             */
+            val macInputCalculation: MacInputCalculation
+
+            /**
+             * Specifies how the inputs to the MAC are to be encoded/processed
+             */
+            val macAuthTagTransform: MacAuthTagTransformation
+
+        }
     }
 
     sealed interface RequiringNonce<out A : AuthCapability<out K>, K : KeyType> :
@@ -164,7 +196,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
                 keySize
             ) {
             override val nonceSize = 96.bit
-            override val authCapability = AuthCapability.Authenticated.Integrated(blockSize)
+            override val authTagSize = blockSize
             override val oid: ObjectIdentifier = when (keySize.bits) {
                 128u -> KnownOIDs.aes128_GCM
                 192u -> KnownOIDs.aes192_GCM
@@ -177,7 +209,6 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
             AES<NonceTrait.Without, KeyType.Integrated, AuthCapability.Unauthenticated>(ModeOfOperation.ECB, keySize),
             SymmetricEncryptionAlgorithm.WithoutNonce<AuthCapability.Unauthenticated, KeyType.Integrated>,
             SymmetricEncryptionAlgorithm.Unauthenticated<NonceTrait.Without> {
-            override val authCapability = AuthCapability.Unauthenticated
 
             /**
              * Key Wrapping as per [RFC 3394](https://datatracker.ietf.org/doc/rfc3394/)
@@ -232,58 +263,50 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
              */
             class HMAC
             private constructor(
-                innerCipher: Unauthenticated,
-                mac: at.asitplus.signum.indispensable.mac.HMAC,
-                dedicatedMacInputCalculation: DedicatedMacInputCalculation,
-                dedicatedMacAuthTagTransformation: DedicatedMacAuthTagTransformation,
-                tagLength: BitLength
-            ) : SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC, NonceTrait.Required>,
-                SymmetricEncryptionAlgorithm.RequiringNonce<AuthCapability.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC, NonceTrait.Required>, KeyType.WithDedicatedMacKey>,
-                CBC<KeyType.WithDedicatedMacKey, AuthCapability.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC, NonceTrait.Required>>(
+                override val innerCipher: Unauthenticated,
+                override val mac: at.asitplus.signum.indispensable.mac.HMAC,
+                override val macInputCalculation: MacInputCalculation,
+                override val macAuthTagTransform: MacAuthTagTransformation,
+                override val authTagSize: BitLength
+            ) : SymmetricEncryptionAlgorithm.Authenticated.EncryptThenMAC<at.asitplus.signum.indispensable.mac.HMAC, NonceTrait.Required>,
+                SymmetricEncryptionAlgorithm.RequiringNonce<AuthCapability.Authenticated.WithDedicatedMac, KeyType.WithDedicatedMacKey>,
+                CBC<KeyType.WithDedicatedMacKey, AuthCapability.Authenticated.WithDedicatedMac>(
                     innerCipher.keySize
                 ) {
                 constructor(innerCipher: Unauthenticated, mac: at.asitplus.signum.indispensable.mac.HMAC) : this(
                     innerCipher,
                     mac,
-                    DefaultDedicatedMacInputCalculation,
-                    DefaultDedicatedMacAuthTagTransformation,
-                    tagLength = BitLength(mac.outputLength.bits / 2u)
+                    DefaultMacInputCalculation,
+                    DefaultMacAuthTagTransformation,
+                    authTagSize = BitLength(mac.outputLength.bits / 2u)
                 )
 
-                override val authCapability =
-                    AuthCapability.Authenticated.WithDedicatedMac<at.asitplus.signum.indispensable.mac.HMAC, NonceTrait.Required>(
-                        innerCipher,
-                        mac,
-                        innerCipher.keySize,
-                        tagLength,
-                        dedicatedMacInputCalculation,
-                        dedicatedMacAuthTagTransformation
-                    )
                 override val name = super.name + " $mac"
+                override val preferredMacKeyLength: BitLength get() = innerCipher.keySize
 
                 /**
                  * Instantiates a new [CBC.HMAC] instance with
                  * * custom [tagLength]
-                 * * custom [DedicatedMacInputCalculation]
+                 * * custom [MacInputCalculation]
                  */
                 fun Custom(
                     tagLength: BitLength,
-                    dedicatedMacInputCalculation: DedicatedMacInputCalculation
-                ) = Custom(tagLength, DefaultDedicatedMacAuthTagTransformation, dedicatedMacInputCalculation)
+                    dedicatedMacInputCalculation: MacInputCalculation
+                ) = Custom(tagLength, DefaultMacAuthTagTransformation, dedicatedMacInputCalculation)
 
                 /**
                  * Instantiates a new [CBC.HMAC] instance with
                  * * custom [tagLength]
                  * * custom [dedicatedMacAuthTagTransformation]
-                 * * custom [DedicatedMacInputCalculation]
+                 * * custom [MacInputCalculation]
                  */
                 fun Custom(
                     tagLength: BitLength,
-                    dedicatedMacAuthTagTransformation: DedicatedMacAuthTagTransformation,
-                    dedicatedMacInputCalculation: DedicatedMacInputCalculation
+                    dedicatedMacAuthTagTransformation: MacAuthTagTransformation,
+                    dedicatedMacInputCalculation: MacInputCalculation
                 ) = CBC.HMAC(
-                    authCapability.innerCipher as Unauthenticated,
-                    authCapability.mac,
+                    innerCipher,
+                    mac,
                     dedicatedMacInputCalculation,
                     dedicatedMacAuthTagTransformation,
                     tagLength
@@ -299,7 +322,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
         StreamCipher<AuthCapability.Authenticated.Integrated, NonceTrait.Required, KeyType.Integrated>(),
         SymmetricEncryptionAlgorithm.Authenticated.Integrated<NonceTrait.Required>,
         SymmetricEncryptionAlgorithm.RequiringNonce<AuthCapability.Authenticated.Integrated, KeyType.Integrated> {
-        override val authCapability = AuthCapability.Authenticated.Integrated(128u.bit)
+        override val authTagSize = 128u.bit
         override val nonceSize = 96u.bit
         override val name: String = "ChaCha20-Poly1305"
         override fun toString() = name
@@ -320,102 +343,53 @@ sealed interface AuthCapability<K : KeyType> {
     /**
      * Indicates an authenticated cipher
      */
-    sealed class Authenticated<K : KeyType>(val tagLength: BitLength, override val keyType: K) : AuthCapability<K> {
+    sealed class Authenticated<K : KeyType>(override val keyType: K) : AuthCapability<K> {
 
         /**
          * An authenticated cipher construction that is inherently authenticated and thus permits no dedicated MAC key
          */
-        class Integrated(tagLen: BitLength) : Authenticated<KeyType.Integrated>(tagLen, KeyType.Integrated)
+        data object Integrated : Authenticated<KeyType.Integrated>(KeyType.Integrated)
 
         /**
          * An _Encrypt-then-MAC_ authenticated cipher construction based on an unauthenticated cipher with a dedicated MAC function, requiring a dedicated MAC key.
          */
-        class WithDedicatedMac<M : MessageAuthenticationCode, I : NonceTrait>(
-            /**
-             * The inner unauthenticated cipher
-             */
-
-            val innerCipher: SymmetricEncryptionAlgorithm<Unauthenticated, I, KeyType.Integrated>,
-            /**
-             * The mac function used to provide authenticated encryption
-             */
-            val mac: M,
-
-            /**
-             * The preferred length pf the MAC key. Can be overridden during key generation and is unconstrained.
-             */
-            val preferredMacKeyLength: BitLength,
-
-            tagLen: BitLength,
-
-            /**
-             * Specifies how the inputs to the MAC are to be encoded/processed
-             */
-            val dedicatedMacInputCalculation: DedicatedMacInputCalculation,
-
-            /**
-             * Specifies how the inputs to the MAC are to be encoded/processed
-             */
-            val dedicatedMacAuthTagTransform: DedicatedMacAuthTagTransformation
-        ) : Authenticated<KeyType.WithDedicatedMacKey>(tagLen, KeyType.WithDedicatedMacKey) {
-            override fun equals(other: Any?): Boolean {
-                if (this === other) return true
-                if (other !is WithDedicatedMac<*, *>) return false
-
-                if (innerCipher != other.innerCipher) return false
-                if (mac != other.mac) return false
-                if (preferredMacKeyLength != other.preferredMacKeyLength) return false
-                if (dedicatedMacInputCalculation != other.dedicatedMacInputCalculation) return false
-                if (dedicatedMacAuthTagTransform != other.dedicatedMacAuthTagTransform) return false
-
-                return true
-            }
-
-            override fun hashCode(): Int {
-                var result = innerCipher.hashCode()
-                result = 31 * result + mac.hashCode()
-                result = 31 * result + preferredMacKeyLength.hashCode()
-                result = 31 * result + dedicatedMacInputCalculation.hashCode()
-                result = 31 * result + dedicatedMacAuthTagTransform.hashCode()
-                return result
-            }
-        }
+        data object WithDedicatedMac : Authenticated<KeyType.WithDedicatedMacKey>(KeyType.WithDedicatedMacKey)
     }
 
     /**
      * Indicates an unauthenticated cipher
      */
     object Unauthenticated : AuthCapability<KeyType.Integrated> {
-        override val keyType = KeyType.Integrated
+        override val keyType get() = KeyType.Integrated
     }
 }
 
 /**
  * Typealias defining the signature of the lambda for processing the MAC output into an auth tag.
  */
-typealias DedicatedMacAuthTagTransformation = AuthCapability.Authenticated.WithDedicatedMac<*, *>.(macOutput: ByteArray) -> ByteArray
+typealias MacAuthTagTransformation = SymmetricEncryptionAlgorithm.Authenticated.EncryptThenMAC<*,*>.(macOutput: ByteArray) -> ByteArray
 
 
 /**
  * The default dedicated mac output transform as per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1),
- * taking the first [authTagLength] many bytes of the MAC output as auth tag.
+ * taking the first [authTagSize] many bytes of the MAC output as auth tag.
  */
-val DefaultDedicatedMacAuthTagTransformation: DedicatedMacAuthTagTransformation =
-    fun AuthCapability.Authenticated.WithDedicatedMac<*, *>.(
+val DefaultMacAuthTagTransformation: MacAuthTagTransformation =
+    fun SymmetricEncryptionAlgorithm.Authenticated.EncryptThenMAC<*,*>.(
         macOutput: ByteArray
-    ): ByteArray = macOutput.take(tagLength.bytes.toInt()).toByteArray()
+    ): ByteArray = macOutput.take(this.authTagSize.bytes.toInt()).toByteArray()
 
 /**
  * Typealias defining the signature of the lambda for defining a custom MAC input calculation scheme.
  */
-typealias DedicatedMacInputCalculation = MessageAuthenticationCode.(ciphertext: ByteArray, nonce: ByteArray, aad: ByteArray) -> ByteArray
+typealias MacInputCalculation = SymmetricEncryptionAlgorithm.Authenticated.EncryptThenMAC<*,*>.(ciphertext: ByteArray, nonce: ByteArray, aad: ByteArray) -> ByteArray
 
 /**
  * The default dedicated mac input calculation as per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1), authenticating all inputs:
  * `AAD || IV || Ciphertext || AAD Length`, where AAD_length is a 64 bit big-endian representation of the aad length in bits
  */
-val DefaultDedicatedMacInputCalculation: DedicatedMacInputCalculation =
-    fun MessageAuthenticationCode.(ciphertext: ByteArray, iv: ByteArray, aad: ByteArray): ByteArray =
+val DefaultMacInputCalculation: MacInputCalculation =
+    fun SymmetricEncryptionAlgorithm.Authenticated.EncryptThenMAC<*,*>.(ciphertext: ByteArray, iv: ByteArray, aad: ByteArray): ByteArray =
         aad + iv + ciphertext + (aad.size.toLong() * 8L).encodeTo8Bytes()
 
 /**
@@ -488,12 +462,12 @@ fun <I : NonceTrait, K : KeyType> SymmetricEncryptionAlgorithm<*, I, K>.isAuthen
 @OptIn(ExperimentalContracts::class)
 fun <I : NonceTrait> SymmetricEncryptionAlgorithm<*, I, *>.hasDedicatedMac(): Boolean {
     contract {
-        returns(true) implies (this@hasDedicatedMac is SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac<*, I>)
+        returns(true) implies (this@hasDedicatedMac is SymmetricEncryptionAlgorithm.Authenticated.EncryptThenMAC<*, I>)
         returns(false) implies (
                 (this@hasDedicatedMac is SymmetricEncryptionAlgorithm.Unauthenticated
                         || this@hasDedicatedMac is SymmetricEncryptionAlgorithm.Authenticated.Integrated<I>))
     }
-    return this.authCapability is AuthCapability.Authenticated.WithDedicatedMac<*, *>
+    return this.authCapability is AuthCapability.Authenticated.WithDedicatedMac
 }
 
 /**Use to smart-cast this algorithm*/
@@ -513,7 +487,7 @@ fun <A : AuthCapability<out K>, K : KeyType> SymmetricEncryptionAlgorithm<A, *, 
 fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, I, *>.isIntegrated(): Boolean {
     contract {
         returns(true) implies (this@isIntegrated is SymmetricEncryptionAlgorithm.Authenticated.Integrated<I>)
-        returns(false) implies (this@isIntegrated is SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac<*, I>)
+        returns(false) implies (this@isIntegrated is SymmetricEncryptionAlgorithm.Authenticated.EncryptThenMAC<*, I>)
 
     }
     return this.authCapability is AuthCapability.Authenticated.Integrated
@@ -521,5 +495,5 @@ fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*
 
 
 val SymmetricEncryptionAlgorithm<*, NonceTrait.Required, *>.nonceSize: BitLength get() = (this as SymmetricEncryptionAlgorithm.RequiringNonce<*,*>).nonceSize
-val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedicatedMacKey>.preferredMacKeyLength: BitLength get() = authCapability.preferredMacKeyLength
-val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, *, *>.authTagLength: BitLength get() = authCapability.tagLength
+val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac, *, KeyType.WithDedicatedMacKey>.preferredMacKeyLength: BitLength get() = (this as SymmetricEncryptionAlgorithm.Authenticated.EncryptThenMAC<*,*>).preferredMacKeyLength
+val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, *, *>.authTagSize: BitLength get() = (this as SymmetricEncryptionAlgorithm.Authenticated).authTagSize

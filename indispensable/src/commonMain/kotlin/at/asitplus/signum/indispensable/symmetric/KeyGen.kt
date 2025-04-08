@@ -1,4 +1,4 @@
-package at.asitplus.signum.supreme.symmetric
+package at.asitplus.signum.indispensable.symmetric
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
@@ -14,11 +14,12 @@ private val secureRandom = SecureRandom()
 /**
  * Generates a fresh random key for this algorithm.
  */
-@Suppress("UNCHECKED_CAST")
+@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "UNCHECKED_CAST")
+@kotlin.internal.LowPriorityInOverloadResolution
 suspend fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.randomKey(): SymmetricKey<A, I, out K> =
     keyFromInternal(
         secureRandom.nextBytesOf(keySize.bytes.toInt()),
-        if (authCapability.keyType is KeyType.WithDedicatedMacKey) secureRandom.nextBytesOf(keySize.bytes.toInt())
+        if (hasDedicatedMac()) secureRandom.nextBytesOf(preferredMacKeyLength.bytes.toInt())
         else null
     ) as SymmetricKey<A, I, out K>
 
@@ -28,8 +29,8 @@ suspend fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEn
  */
 @JvmName("randomKeyAndMacKey")
 @Suppress("UNCHECKED_CAST")
-suspend fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey>.randomKey(
-    macKeyLength: BitLength = preferredMacKeyLength
+suspend fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac, I, KeyType.WithDedicatedMacKey>.randomKey(
+    macKeyLength: BitLength
 ): SymmetricKey.WithDedicatedMac<I> =
     keyFromInternal(
         secureRandom.nextBytesOf(keySize.bytes.toInt()),
@@ -104,7 +105,7 @@ fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<K
     } as KmmResult<SymmetricKey<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated>>
 
 /**
- * Creates a [SymmetricKey] from the specified [bytes].
+ * Creates a [SymmetricKey] from the specified [encryptionKey] and [macKey].
  * Returns [KmmResult.failure] in case the provided bytes don't match [SymmetricEncryptionAlgorithm.keySize] or the specified [macKey] is empty.
  */
 @JvmName("fixedKeyDedicatedMacKey")

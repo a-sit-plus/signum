@@ -412,28 +412,29 @@ class `00SymmetricTest` : FreeSpec({
     "CBC+HMAC" - {
         withData(
             nameFn = { it.first },
-            "Default" to DefaultDedicatedMacInputCalculation,
-            "Oklahoma MAC" to fun MessageAuthenticationCode.(
-                ciphertext: ByteArray,
-                iv: ByteArray?,
-                aad: ByteArray?
-            ): ByteArray =
-                "Oklahoma".encodeToByteArray() + (iv ?: byteArrayOf()) + (aad
-                    ?: byteArrayOf()) + ciphertext) { (_, macInputFun) ->
+            "Default" to DefaultMacInputCalculation,
+            "Oklahoma MAC" to {
+                ciphertext: ByteArray, iv: ByteArray?, aad: ByteArray? ->
+                    "Oklahoma".encodeToByteArray() +
+                            (iv ?: byteArrayOf()) +
+                            (aad ?: byteArrayOf()) +
+                            ciphertext
+            })
+        { (_, macInputFun) ->
             withData(
                 SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_1.Custom(
                     HMAC.SHA1.outputLength,
-                    DefaultDedicatedMacAuthTagTransformation,
+                    DefaultMacAuthTagTransformation,
                     macInputFun
                 ),
                 SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_1.Custom(
                     HMAC.SHA1.outputLength,
-                    DefaultDedicatedMacAuthTagTransformation,
+                    DefaultMacAuthTagTransformation,
                     macInputFun
                 ),
                 SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_1.Custom(
                     HMAC.SHA1.outputLength,
-                    DefaultDedicatedMacAuthTagTransformation,
+                    DefaultMacAuthTagTransformation,
                     macInputFun
                 ),
 
@@ -584,7 +585,7 @@ class `00SymmetricTest` : FreeSpec({
                                     authTag = ciphertext.authTag,
                                 ).getOrThrow().decrypt(
                                     SymmetricKey.WithDedicatedMac.RequiringNonce(
-                                        ciphertext.algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, NonceTrait.Required>, NonceTrait.Required, KeyType.WithDedicatedMacKey>,
+                                        ciphertext.algorithm,
                                         key.encryptionKey.getOrThrow(),
                                         dedicatedMacKey = key.macKey.getOrThrow().asList().shuffled().toByteArray()
                                     ), aad ?: byteArrayOf()
@@ -831,7 +832,7 @@ class `00SymmetricTest` : FreeSpec({
                         true -> when (alg.isAuthenticated()) {
                             true -> alg.sealedBox.withNonce(alg.randomNonce()).from(
                                 plaintext,
-                                Random.nextBytes(alg.authTagLength.bytes.toInt()),
+                                Random.nextBytes(alg.authTagSize.bytes.toInt()),
                             )
 
                             false -> alg.sealedBox.withNonce(alg.randomNonce()).from(plaintext)
@@ -840,7 +841,7 @@ class `00SymmetricTest` : FreeSpec({
                         false -> when (alg.isAuthenticated()) {
                             true -> alg.sealedBox.from(
                                 plaintext,
-                                Random.nextBytes(alg.authTagLength.bytes.toInt()),
+                                Random.nextBytes(alg.authTagSize.bytes.toInt()),
                             )
 
                             false -> alg.sealedBox.from(plaintext)
@@ -855,8 +856,8 @@ class `00SymmetricTest` : FreeSpec({
                             ).from(
 
                                 plaintext,
-                                if (box.isAuthenticated() && box.authTag.size == wrongAlg.authTagLength.bytes.toInt()) box.authTag else
-                                    Random.nextBytes(wrongAlg.authTagLength.bytes.toInt()),
+                                if (box.isAuthenticated() && box.authTag.size == wrongAlg.authTagSize.bytes.toInt()) box.authTag else
+                                    Random.nextBytes(wrongAlg.authTagSize.bytes.toInt()),
                             )
 
                             false -> wrongAlg.sealedBox.withNonce(if (box.hasNonce() && box.nonce.size == wrongAlg.nonceSize.bytes.toInt()) box.nonce else
@@ -868,8 +869,8 @@ class `00SymmetricTest` : FreeSpec({
                         false -> when (wrongAlg.isAuthenticated()) {
                             true -> wrongAlg.sealedBox.from(
                                 plaintext,
-                                if (box.isAuthenticated() && box.authTag.size == wrongAlg.authTagLength.bytes.toInt()) box.authTag else
-                                    Random.nextBytes(wrongAlg.authTagLength.bytes.toInt()),
+                                if (box.isAuthenticated() && box.authTag.size == wrongAlg.authTagSize.bytes.toInt()) box.authTag else
+                                    Random.nextBytes(wrongAlg.authTagSize.bytes.toInt()),
                             )
 
                             false -> wrongAlg.sealedBox.from(plaintext)

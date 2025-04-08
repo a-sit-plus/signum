@@ -38,7 +38,7 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, K : KeyType>
             val platformCipher = if (algorithm.hasDedicatedMac())
                 initCipher(
                     PlatformCipher.Mode.ENCRYPT,
-                    algorithm.authCapability.innerCipher,
+                    algorithm.innerCipher,
                     key,
                     nonce,
                     aad
@@ -62,22 +62,21 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, K : KeyType>
     internal suspend fun encrypt(data: ByteArray): SealedBox<A, I, out K> {
         //Our own, flexible construction to make any unauthenticated cipher into an authenticated cipher
         if (algorithm.hasDedicatedMac()) {
-            val aMac = algorithm.authCapability
 
-            if (!aMac.innerCipher.requiresNonce()) throw ImplementationError("AES-CBC-HMAC Nonce inconsistency")
+            if (!algorithm.innerCipher.requiresNonce()) throw ImplementationError("AES-CBC-HMAC Nonce inconsistency")
             if (macKey == null) throw ImplementationError("AES-CBC-HMAC MAC key is null")
 
             val encrypted = platformCipher.doEncrypt(data)
-            val macInputCalculation = aMac.dedicatedMacInputCalculation
+            val macInputCalculation = algorithm.macInputCalculation
             val hmacInput: ByteArray =
-                aMac.mac.macInputCalculation(
+                algorithm.macInputCalculation(
                     encrypted.encryptedData,
                     if (algorithm.requiresNonce()) platformCipher.nonce!! /*make it fail hard if not present*/ else byteArrayOf(),
                     platformCipher.aad ?: byteArrayOf()
                 )
 
-            val outputTransform = aMac.dedicatedMacAuthTagTransform
-            val authTag = aMac.outputTransform(aMac.mac.mac(macKey, hmacInput).getOrThrow())
+            val outputTransform = algorithm.macAuthTagTransform
+            val authTag = algorithm.outputTransform(algorithm.mac.mac(macKey, hmacInput).getOrThrow())
 
             @Suppress("UNCHECKED_CAST")
             return (

@@ -143,11 +143,11 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
      * bolt on AEAD capabilities, such as [SymmetricEncryptionAlgorithm.AES.GCM]
      */
     sealed interface WithDedicatedMac<I : NonceTrait>
-        : SymmetricKey<AuthCapability.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey>,
-        SymmetricKey.Authenticating<AuthCapability.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey> {
+        : SymmetricKey<AuthCapability.Authenticated.WithDedicatedMac, I, KeyType.WithDedicatedMacKey>,
+        SymmetricKey.Authenticating<AuthCapability.Authenticated.WithDedicatedMac, I, KeyType.WithDedicatedMacKey> {
 
 
-        override val algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, I>, I, KeyType.WithDedicatedMacKey>
+        override val algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac, I, KeyType.WithDedicatedMacKey>
 
         /**
          * The actual encryption key bytes
@@ -163,12 +163,12 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
 
 
         class RequiringNonce @HazardousMaterials("This constructor is public to enable testing. DO NOT USE IT!") constructor(
-            override val algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, NonceTrait.Required>, NonceTrait.Required, KeyType.WithDedicatedMacKey>,
+            override val algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac, NonceTrait.Required, KeyType.WithDedicatedMacKey>,
             encryptionKey: ByteArray,
             dedicatedMacKey: ByteArray,
             override val additionalProperties: MutableMap<String, String> = mutableMapOf<String, String>()
         ) : WithDedicatedMac<NonceTrait.Required>,
-            SymmetricKey.RequiringNonce<AuthCapability.Authenticated.WithDedicatedMac<*, NonceTrait.Required>, KeyType.WithDedicatedMacKey> {
+            SymmetricKey.RequiringNonce<AuthCapability.Authenticated.WithDedicatedMac, KeyType.WithDedicatedMacKey> {
             /**
              * The actual encryption key bytes
              *
@@ -210,12 +210,12 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
         }
 
         class WithoutNonce internal constructor(
-            override val algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, NonceTrait.Without>, NonceTrait.Without, KeyType.WithDedicatedMacKey>,
+            override val algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac, NonceTrait.Without, KeyType.WithDedicatedMacKey>,
             encryptionKey: ByteArray,
             dedicatedMacKey: ByteArray,
             override val additionalProperties: MutableMap<String, String> = mutableMapOf<String, String>()
         ) : WithDedicatedMac<NonceTrait.Without>,
-            SymmetricKey.WithoutNonce<AuthCapability.Authenticated.WithDedicatedMac<*, NonceTrait.Without>, KeyType.WithDedicatedMacKey> {
+            SymmetricKey.WithoutNonce<AuthCapability.Authenticated.WithDedicatedMac, KeyType.WithDedicatedMacKey> {
             /**
              * The actual encryption key bytes
              *
@@ -310,7 +310,7 @@ val <A : AuthCapability<out KeyType.Integrated>, I : NonceTrait> SymmetricKey<A,
  * This will fail for hardware-backed keys!
  */
 @SecretExposure
-val <A : AuthCapability.Authenticated.WithDedicatedMac<*, I>, I : NonceTrait> SymmetricKey<A, I, out KeyType.WithDedicatedMacKey>.encryptionKey get() = (this as SymmetricKey.WithDedicatedMac).encryptionKey
+val <I : NonceTrait> SymmetricKey<AuthCapability.Authenticated.WithDedicatedMac, I, out KeyType.WithDedicatedMacKey>.encryptionKey get() = (this as SymmetricKey.WithDedicatedMac).encryptionKey
 
 /**
  * The dedicated MAC key bytes, if present.
@@ -318,4 +318,4 @@ val <A : AuthCapability.Authenticated.WithDedicatedMac<*, I>, I : NonceTrait> Sy
  * This will fail for hardware-backed keys!
  */
 @SecretExposure
-val <A : AuthCapability.Authenticated.WithDedicatedMac<*, I>, I : NonceTrait> SymmetricKey<A, I, out KeyType.WithDedicatedMacKey>.macKey get() = (this as SymmetricKey.WithDedicatedMac).macKey
+val <I : NonceTrait> SymmetricKey<AuthCapability.Authenticated.WithDedicatedMac, I, out KeyType.WithDedicatedMacKey>.macKey get() = (this as SymmetricKey.WithDedicatedMac).macKey

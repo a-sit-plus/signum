@@ -61,7 +61,7 @@ enum class JweEncryption(val identifier: String, val algorithm: SymmetricEncrypt
     /**
      * Auth tag length. Should we support unauthenticated encryption algorithms, this would be zero.
      */
-    val authTagLength: BitLength get() = if (algorithm.isAuthenticated()) algorithm.authTagLength else 0.bit
+    val authTagLength: BitLength get() = if (algorithm.isAuthenticated()) algorithm.authTagSize else 0.bit
 
 }
 

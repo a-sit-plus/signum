@@ -45,15 +45,14 @@ internal class JcaPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : 
         require(mode == PlatformCipher.Mode.ENCRYPT) { "Cipher not in ENCRYPT mode!" }
         val jcaCiphertext = cipher.doFinal(data)
         //JCA simply concatenates ciphertext and authtag, so we need to split
-        val ciphertext =
-            if (algorithm.authCapability is AuthCapability.Authenticated<*>)
-                jcaCiphertext.dropLast(((algorithm.authCapability as AuthCapability.Authenticated<*>).tagLength.bytes.toInt()).toInt())
-                    .toByteArray()
-            else jcaCiphertext
-        val authTag =
-            if (algorithm.authCapability is AuthCapability.Authenticated<*>)
-                jcaCiphertext.takeLast(((algorithm.authCapability as AuthCapability.Authenticated<*>).tagLength.bytes.toInt()).toInt())
-                    .toByteArray() else null
+
+        val (ciphertext, authTag) = when (algorithm.isAuthenticated()) {
+            true -> {
+                val tagSize = algorithm.authTagSize.bytes.toInt()
+                Pair(jcaCiphertext.dropLast(tagSize).toByteArray(), jcaCiphertext.takeLast(tagSize).toByteArray())
+            }
+            false -> Pair(jcaCiphertext, null)
+        }
 
         @Suppress("UNCHECKED_CAST")
         return when {

@@ -76,7 +76,7 @@ class JvmSymmetricTest : FreeSpec({
                                     Cipher.ENCRYPT_MODE,
                                     SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
                                     GCMParameterSpec(
-                                        alg.authCapability.tagLength.bits.toInt(),
+                                        alg.authTagSize.bits.toInt(),
                                         own.nonce/*use our own auto-generated IV*/
                                     )
                                 )
@@ -90,7 +90,7 @@ class JvmSymmetricTest : FreeSpec({
                                     Cipher.DECRYPT_MODE,
                                     SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
                                     GCMParameterSpec(
-                                        alg.authCapability.tagLength.bits.toInt(),
+                                        alg.authTagSize.bits.toInt(),
                                         own.nonce/*use our own auto-generated IV*/
                                     )
                                 )

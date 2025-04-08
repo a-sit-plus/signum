@@ -5,6 +5,8 @@ import at.asitplus.signum.indispensable.jcaKeySpec
 import at.asitplus.signum.indispensable.jcaName
 import at.asitplus.signum.indispensable.symmetric.AuthCapability
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.symmetric.isAuthenticated
+import at.asitplus.signum.indispensable.symmetric.isIntegrated
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
@@ -19,12 +21,11 @@ internal object AESJCA {
         nonce: ByteArray?,
         aad: ByteArray?
     ) = Cipher.getInstance(algorithm.jcaName).apply {
-        val cipher = algorithm.authCapability
-        if (cipher is AuthCapability.Authenticated.Integrated)
+        if (algorithm.isAuthenticated() && algorithm.isIntegrated())
             init(
                 mode.jcaCipherMode,
                 SecretKeySpec(key, algorithm.jcaKeySpec),
-                GCMParameterSpec(cipher.tagLength.bits.toInt(), nonce)
+                GCMParameterSpec(algorithm.authTagSize.bits.toInt(), nonce)
             )
         else if (algorithm is SymmetricEncryptionAlgorithm.AES.CBC<*, *>) //covers unauthenticated and CBC-HMAC, because CBC will always delegate to here
             init(

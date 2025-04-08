@@ -3,13 +3,34 @@ package at.asitplus.signum.supreme.symmetric
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.succeed
+import io.kotest.common.runBlocking
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import kotlin.random.Random
 
 @OptIn(HazardousMaterials::class)
 class `00ApiTest` : FreeSpec({
+
+    "Utterly Untyped v2" - {
+        withData(
+            sequenceOf(
+                SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_512,
+                SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
+                SymmetricEncryptionAlgorithm.AES_128.GCM,
+                SymmetricEncryptionAlgorithm.AES_128.ECB,
+                SymmetricEncryptionAlgorithm.ChaCha20Poly1305
+            ).map { runBlocking {
+                val key = it.randomKey()
+                val plain = Random.nextBytes(131)
+                val encrypted = key.encrypt(plain).getOrThrow()
+                Triple(key, plain, encrypted)
+            } }
+        ) { (key, plain, encrypted) ->
+            encrypted.decrypt(key) shouldBe plain
+        }
+    }
 
     "Utterly Untyped" - {
         withData(

@@ -4,7 +4,6 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.ImplementationError
 import at.asitplus.signum.indispensable.SecretExposure
-import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.AuthCapability.Authenticated
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
@@ -27,9 +26,9 @@ suspend fun SealedBox<*, *, *>.decrypt(key: SymmetricKey<*, *, *>): KmmResult<By
             authenticatedData = byteArrayOf()
         )
 
-        is Authenticated.WithDedicatedMac<*, *> -> {
+        is Authenticated.WithDedicatedMac -> {
             key as SymmetricKey.WithDedicatedMac
-            (this as SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedicatedMacKey>).decryptInternal(
+            (this as SealedBox<Authenticated.WithDedicatedMac, *, KeyType.WithDedicatedMacKey>).decryptInternal(
                 secretKey = @OptIn(SecretExposure::class) key.encryptionKey.getOrThrow(),
                 macKey = @OptIn(SecretExposure::class) key.macKey.getOrThrow(),
                 authenticatedData = byteArrayOf()
@@ -52,12 +51,12 @@ suspend fun SealedBox<*, *, *>.decrypt(key: SymmetricKey<*, *, *>): KmmResult<By
  * [key] and [SealedBox].**
  */
 @JvmName("decryptAuthenticatedIntegrated")
-suspend fun <I : NonceTrait, M : MessageAuthenticationCode> SealedBox<AuthCapability.Authenticated.WithDedicatedMac<M, I>, I, KeyType.WithDedicatedMacKey>.decrypt(
+suspend fun <I : NonceTrait> SealedBox<AuthCapability.Authenticated.WithDedicatedMac, I, KeyType.WithDedicatedMacKey>.decrypt(
     key: SymmetricKey.WithDedicatedMac<*>,
     authenticatedData: ByteArray = byteArrayOf()
 ) = catching {
     @Suppress("UNCHECKED_CAST")
-    (this as SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedicatedMacKey>).decryptInternal(
+    (this as SealedBox<Authenticated.WithDedicatedMac, *, KeyType.WithDedicatedMacKey>).decryptInternal(
         @OptIn(SecretExposure::class)
         key.encryptionKey.getOrThrow(),
         @OptIn(SecretExposure::class)
@@ -73,6 +72,8 @@ suspend fun <I : NonceTrait, M : MessageAuthenticationCode> SealedBox<AuthCapabi
  * **Compared to its narrower-typed cousins is possible to mismatch the characteristics of
  * [key] and [SealedBox].**
  */
+@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+@kotlin.internal.LowPriorityInOverloadResolution
 @JvmName("decryptAuthenticatedGeneric")
 suspend fun <A : AuthCapability.Authenticated<out K>, I : NonceTrait, K : KeyType> SealedBox<A, I, out K>.decrypt(
     key: SymmetricKey<A, I, out K>,
@@ -86,9 +87,9 @@ suspend fun <A : AuthCapability.Authenticated<out K>, I : NonceTrait, K : KeyTyp
             authenticatedData
         )
 
-        is Authenticated.WithDedicatedMac<*, *> -> {
+        is Authenticated.WithDedicatedMac -> {
             key as SymmetricKey.WithDedicatedMac
-            (this as SealedBox<Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedicatedMacKey>).decryptInternal(
+            (this as SealedBox<Authenticated.WithDedicatedMac, *, KeyType.WithDedicatedMacKey>).decryptInternal(
                 @OptIn(SecretExposure::class) key.encryptionKey.getOrThrow(),
                 @OptIn(SecretExposure::class) key.macKey.getOrThrow(),
                 authenticatedData
@@ -143,7 +144,7 @@ private suspend fun SealedBox<AuthCapability.Unauthenticated, *, out KeyType.Int
     return initDecrypt(secretKey, null, null).decrypt(encryptedData)
 }
 
-private suspend fun SealedBox<Authenticated.WithDedicatedMac<*, *>, *, out KeyType.WithDedicatedMacKey>.decryptInternal(
+private suspend fun SealedBox<Authenticated.WithDedicatedMac, *, out KeyType.WithDedicatedMacKey>.decryptInternal(
     secretKey: ByteArray,
     macKey: ByteArray = secretKey,
     authenticatedData: ByteArray

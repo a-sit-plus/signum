@@ -49,7 +49,7 @@ fun SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<*>, *>.f
     encryptedData: ByteArray,
     authTag: ByteArray
 ): KmmResult<SealedBox<AuthCapability.Authenticated<*>, NonceTrait.Without, *>> = catching {
-    require(authTag.size.bytes == algorithm.authCapability.tagLength) { "Illegal auth tag length! expected: ${authTag.size * 8}, actual: ${algorithm.authCapability.tagLength.bits}" }
+    require(authTag.size.bytes == algorithm.authTagSize) { "Illegal auth tag length! expected: ${authTag.size * 8}, actual: ${algorithm.authTagSize.bits}" }
     SealedBox.WithoutNonce.Authenticated<KeyType>(
         algorithm.authenticatedCipherText(encryptedData, authTag)
     )
@@ -66,7 +66,7 @@ fun <K : KeyType> SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenti
     encryptedData: ByteArray,
     authTag: ByteArray
 ): KmmResult<SealedBox<AuthCapability.Authenticated<out K>, NonceTrait.Without, K>> = catching {
-    require(authTag.size.bytes == algorithm.authCapability.tagLength) { "Illegal auth tag length! expected: ${authTag.size * 8}, actual: ${algorithm.authCapability.tagLength.bits}" }
+    require(authTag.size.bytes == algorithm.authTagSize) { "Illegal auth tag length! expected: ${authTag.size * 8}, actual: ${algorithm.authTagSize.bits}" }
     SealedBox.WithoutNonce.Authenticated<K>(
         algorithm.authenticatedCipherText(encryptedData, authTag)
     )
@@ -95,13 +95,13 @@ sealed class SealedBoxBuilder<A : AuthCapability<out K>, I : NonceTrait, out K :
         SealedBoxBuilder<A, NonceTrait.Required, K>(algorithm) {
         class Awaiting<A : AuthCapability<out K>, K : KeyType> internal constructor(algorithm: SymmetricEncryptionAlgorithm<A, NonceTrait.Required, K>) :
             WithNonce<A, K>(algorithm) {
-            fun withNonce(nonce: ByteArray): Having<A, K> = when (algorithm.authCapability) {
-                is AuthCapability.Authenticated<*> -> Having.Authenticated<AuthCapability.Authenticated<*>, KeyType>(
+            fun withNonce(nonce: ByteArray): Having<A, K> = when (algorithm.isAuthenticated()) {
+                true -> Having.Authenticated<AuthCapability.Authenticated<*>, KeyType>(
                     algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Required, KeyType>,
                     nonce
                 )
 
-                else -> Having.Unauthenticated(
+                false -> Having.Unauthenticated(
                     algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Unauthenticated, NonceTrait.Required, KeyType.Integrated>,
                     nonce
                 )
