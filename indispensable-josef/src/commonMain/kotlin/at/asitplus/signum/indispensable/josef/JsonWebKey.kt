@@ -9,18 +9,16 @@ import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.fromUncompr
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
-import at.asitplus.signum.indispensable.asn1.encoding.decodeFromAsn1ContentBytes
-import at.asitplus.signum.indispensable.asn1.encoding.toTwosComplementByteArray
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.josef.io.JwsCertificateSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.CertificateChain
+import at.asitplus.signum.indispensable.symmetric.SymmetricKey
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okio.ByteString.Companion.toByteString
 
@@ -36,8 +34,8 @@ data class JsonWebKey(
      * The "alg" (algorithm) parameter identifies the algorithm intended for
      * use with the key.  The values used should either be registered in the
      * IANA "JSON Web Signature and Encryption Algorithms" registry
-     * established by [JWA] or be a value that contains a Collision-
-     * Resistant Name.  The "alg" value is a case-sensitive ASCII string.
+     * established by [JWA] or be a value that contains a collision-resistant Name.
+     * The "alg" value is a case-sensitive ASCII string.
      * Use of this member is OPTIONAL.
      */
     @SerialName("alg")
@@ -368,12 +366,21 @@ fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
             )
     }
 
+
 private const val JWK_ID = "jwkIdentifier"
 
 /**
  * Holds [JsonWebKey.keyId] when transforming a [JsonWebKey] to a [CryptoPublicKey]
  */
 var CryptoPublicKey.jwkId: String?
+    get() = additionalProperties[JWK_ID]
+    set(value) {
+        value?.also { additionalProperties[JWK_ID] = value } ?: additionalProperties.remove(JWK_ID)
+    }
+/**
+ * Holds [JsonWebKey.keyId] when transforming a [JsonWebKey] to a [CryptoPublicKey]
+ */
+var SymmetricKey<*,*,*>.jwkId: String?
     get() = additionalProperties[JWK_ID]
     set(value) {
         value?.also { additionalProperties[JWK_ID] = value } ?: additionalProperties.remove(JWK_ID)

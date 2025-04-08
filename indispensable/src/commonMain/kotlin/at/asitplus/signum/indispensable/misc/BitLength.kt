@@ -30,6 +30,7 @@ data class BitLength(val bits: UInt) : Comparable<BitLength> {
     @Suppress("NOTHING_TO_INLINE", "OVERRIDE_BY_INLINE")
     override inline fun compareTo(other: BitLength): Int =
         bits.compareTo(other.bits)
+    operator fun plus(other: BitLength) = BitLength(bits + other.bits)
 }
 
 @Suppress("NOTHING_TO_INLINE")

@@ -9,6 +9,8 @@ types and functionality related to crypto and PKI applications:
 
 * **Multiplatform ECDSA and RSA Signer and Verifier** &rarr; Check out the included [CMP demo App](https://github.com/a-sit-plus/signum/tree/main/demoapp) to see it in
   action
+* **Multiplatform AES and ChaCha20-Poly1503**
+* **Multiplatform HMAC**
 * Biometric Authentication on Android and iOS without Callbacks or Activity Passing** (✨Magic!✨)
 * Support Attestation on Android and iOS
 * Multiplatform, hardware-backed ECDH key agreement
@@ -28,10 +30,13 @@ implementation("at.asitplus.signum:supreme:$supreme_version")
 ```
 
 ## Key Design Principles
-The Supreme KMP crypto provider works differently than JCA. It uses a `Provider` to manage private key material and create `Signer` instances,
+The Supreme KMP crypto provider works differently than the JCA. It uses a `Provider` to manage private key material and create `Signer` instances,
 and a `Verifier`, that is instantiated on a `SignatureAlgorithm`, taking a `CryptoPublicKey` as parameter.
 In addition, creating ephemeral keys is a dedicated operation, decoupled from a `Provider`.
 The actual implementation of cryptographic functionality is delegated to platform-native implementations.
+
+Symmetric encryption follows a similar paradigm, utilising structured representations of ciphertexts and type-safe APIs.
+This prevents misuse and mishaps much more effectively than the JCA.
 
 Moreover, the Supreme KMP crypto provider heavily relies on a type-safe DSL for configuration.
 This type-safety goes so far as to expose platform-specific configuration options only in platform-specific sources, even when
@@ -347,6 +352,274 @@ specified when creating the ephemeral key.
 ## Digest Calculation
 The Supreme KMP crypto provider introduces a `digest()` extension function on the `Digest` class.
 For a list of supported algorithms, check out the [feature matrix](features.md#supported-algorithms).
+
+## HMAC Calculation
+The Supreme KMP crypto provider introduces a `mac()` extension on the `MAC` class. It takes two arguments:
+
+* `key` denotes the MAC key
+* `msg` represents the payload to compute a MAC for
+
+For a list of supported algorithms, check out the [feature matrix](features.md#supported-algorithms).
+
+## Symmetric Encryption
+
+Symmetric encryption is implemented in a flexible and type-safe fashion. At the same time, the public interface is also rather lean:
+
+* Reference an algorithm such as `SymmetricEncryptionAlgorithm.ChaCha20Poly1305`.
+* Invoke `randomKey()` on it to obtain a `SymmetricKey` object.
+* Call `encrypt(data)` on the key and receive a `SealedBox`.
+
+Decryption is the same straight-forward affair:
+Simply call `decrypt(key)` on a `SealedBox` to recover the plaintext.
+
+!!! tip inline end
+    All data classes (keys, algorithms, ciphertext, MAC, et.) are part of the _indispensable_ module.
+    The actual functionality is implemented as extensions in the Supreme KMP crypto provider.
+
+To minimise the potential for error, everything (algorithms, keys, sealed boxes) makes heavy use of generics.
+Hence, a sealed box containing an authenticated ciphertext will only ever accept a symmetric key that is usable for AEAD.
+Additional runtime checks ensure that no mixups can happen.
+
+### On Type Safety 
+The API tries to be as type-safe as possible, e.g., it is impossible to specify a dedicated MAC key (or function) for AES-GCM,
+and non-authenticated AES-CBC does not even support passing additional authenticated data to the encryption process.
+The same constraints apply to the resulting ciphertexts, making it much harder
+to accidentally confuse an authenticated encryption algorithm with a non-authenticated one.
+Signum uses the term _characteristics_ for these defining properties of the whole symmetric encryption data model. 
+
+#### Characteristics
+Cryptographic algorithms have various obvious properties, such as the underlying cipher
+(AES and ChaCha branch off `SymmetricEncryptionAlgorithm` at the root level), `name`, and `keySize`.
+The broader _characteristics_ also apply to key and ciphertexts (called `SealedBox` in Signum.)
+These are:
+
+* `AuthCapability`: indicating whether it is an authenticated cipher, and if so, how:
+    * `Unauthenticated`: Non-authenticated encryption algorithm
+    * `Authenticated`: AEAD algorithm
+        * `Integrated`: The cipher construction is inherently authenticated
+        * `WithDedicatedMac`: An encrypt-then-MAC cipher construction (e.g. AES-CBC-HMAC)
+* `NonceTrait` indicating whether a nonce is required
+    * `Without`: No nonce/IV may be fed into the encryption process
+    * `Required`:  A nonce/IV of a length specific to the cipher is required. By default, a nonce will be auto-generated during encryption.
+* `KeyType` denoting how the encryption key is structured
+    * `Integrated`: The key consists of a single byte array, from which encryption key and (if required by the algorithm) a mac key is derived.
+    * `WithDedicatedMac`: The key consists of an encryption key and a dedicated MAC key to compute the auth tag.
+
+
+!!! warning inline end
+    **NEVER** re-use an IV! Let the Supreme KMP crypto provider auto-generate them!
+
+In addition to runtime checks for matching algorithms and parameters, 
+algorithms, keys and sealed boxes need matching characteristics to be used with each other.
+This approach does come with one caveat: It forces you to know what you are dealing with.
+Luckily, there is a very effective remedy: [contracts](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.contracts/).
+
+#### Contracts
+The Supreme KMP crypto provider makes heavy use of contracts, to communicate type information to the compiler.
+Every one of the following subsections has their own part on contracts.
+<br>
+All contracts can be combined, meaning it is possible to steadily narrow down the properties of an object.
+
+* `isAuthenticated()`
+    * if `true`, smart-casts the object's AuthCapability to `AuthCapability.Authenticated<*>`
+    * if `false` smart-casts the object's AuthCapability to `AuthCapability.Unathenticated`
+* `hasDedicatedMac()`
+    * if `true`, smart-casts the object's
+        * KeyType to `KeyType.WithDedicatedMac`
+        * AuthCapability to `AuthCapability.Authenticated.WithDedicatedMac`
+    * if `false`, smart-casts the object's 
+        * AuthCapability to a union type of `SymmetricEncryptionalgorithm<AuthCapability.Authenticated.Integrated` and `AuthCapability.Unauthenticated`
+        * KeyType to `KeyType.Integrated`
+* `requiresNonce()`
+    * if `true` smart-casts the object's NonceTrait  to `Nonce.Required`
+    * if `false` smart-casts the object's NonceTrait to `Nonce.Without`
+
+In addition, there's `isIntegrated()`, which is only defined for objects having the `Authenticated.Integrated` characteristic:
+
+* if `true`, smart-casts the object's
+    * AuthCapability to `SymmetricEncryptionalgorithm<AuthCapability.Authenticated.Integrated>`
+    * KeyType to `KeyType.Integrated`
+* if `false`, smart-casts the object's
+    * KeyType to `KeyType.WithDedicatedMac`
+    * AuthCapability to `AuthCapability.Authenticated.WithDedicatedMac`
+
+
+### Algorithms
+The foundation of symmetric encryption is the class `SymmetricEncryptionAlgorithm`. Every operation and all related data classes
+need a reference to a specific `SymmetricEncryptionAlgorithm`.
+Cryptographic algorithms have various obvious properties, such as the underlying cipher
+(AES and ChaCha branch off `SymmetricEncryptionAlgorithm` at the root level), `name`, and `keySize`.
+Taking all [characteristics](#characteristics) into account results in the following class definition:
+
+```kotlin
+SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out I : NonceTrait, out K : KeyType>
+```
+
+As can be seen, this leaves quite some degrees of freedom, especially for AES-based encryption algorithms, which do exhaust
+this space. As of 01-2025, the following algorithms are implemented:
+
+* `SymmetricEncryptionAlgorithm.ChaCha20Poly1305`
+* `SymmetricEncryptionAlgorithm.AES_128.GCM`
+* `SymmetricEncryptionAlgorithm.AES_192.GCM`
+* `SymmetricEncryptionAlgorithm.AES_256.GCM`
+* `SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_1`
+* `SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_256`
+* `SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_384`
+* `SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_512`
+* `SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_1`
+* `SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_256`
+* `SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_384`
+* `SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512`
+* `SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_1`
+* `SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_256`
+* `SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_384`
+* `SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_512`
+* `SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394`
+* `SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394`
+* `SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394`
+* `SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN`
+* `SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN`
+* `SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN`
+* `SymmetricEncryptionAlgorithm.AES_128.ECB`
+* `SymmetricEncryptionAlgorithm.AES_192.ECB`
+* `SymmetricEncryptionAlgorithm.AES_256.ECB`
+
+### Baseline Usage
+Once you know decided on an encryption algorithm, encryption itself is straight-forward:
+
+```kotlin
+val secret = "Top Secret".encodeToByteArray()
+val secretKey = SymmetricEncryptionAlgorithm.ChaCha20Poly1305.randomKey()
+val encrypted = secretKey.encrypt(secret).getOrThrow(/*handle error*/)
+encrypted.decrypt(secretKey).getOrThrow(/*handle error*/) shouldBe secret
+```
+
+Encrypted data is always structured and the individual components are easily accessible:
+```kotlin
+val nonce = encrypted.nonce
+val ciphertext = encrypted.encryptedData
+val authTag = encrypted.authTag
+val keyBytes = secretKey.secretKey.getOrThrow() /*for algorithms with a dedicated MAC key, there's encryptionKey and macKey*/
+```
+
+Decrypting data received from external sources is also straight-forward:
+```kotlin
+val box = algo.sealedBox.withNonce(nonce).from(ciphertext, authTag).getOrThrow(/*handle error*/)
+box.decrypt(preSharedKey, /*also pass AAD*/ externalAAD).getOrThrow(/*handle error*/) shouldBe secret
+
+//alternatively, pass raw data:
+preSharedKey.decrypt(nonce, ciphertext, authTag, externalAAD).getOrThrow(/*handle error*/) shouldBe secret
+```
+
+### Custom AES-CBC-HMAC
+Supreme supports AES-CBC with customizable HMAC to provide AEAD.
+This is supported across all _Supreme_ targets and works as follows:
+In addition, it is possible to customise AES-CBC-HMAC by freely defining which data gets fed into the MAC.
+There are also no constraints on the MAC key length, except that it must not be empty:
+
+```kotlin
+val payload = "More matter, with less art!".encodeToByteArray()
+
+//define algorithm parameters
+val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
+    //with a custom HMAC input calculation function
+    .Custom(32.bytes) { ciphertext, iv, aad -> //A shorter version of RFC 7518
+        aad + iv + ciphertext + aad.size.encodeTo4Bytes()
+    }
+
+//any size is fine, really. omitting the override generates a mac key
+//of the same size as the encryption key
+val key = algorithm.randomKey(macKeyLength = 32.bit)
+val aad = Clock.System.now().toString().encodeToByteArray()
+
+val sealedBox = key.encrypt(
+    payload,
+    authenticatedData = aad,
+).getOrThrow(/*handle error*/)
+
+//because everything is structured, decryption is simple
+val recovered = sealedBox.decrypt(key, aad).getOrThrow(/*handle error*/)
+
+recovered shouldBe payload //success!
+
+//we can also manually construct the sealed box, if we know the algorithm:
+val reconstructed = algorithm.sealedBox.withNonce(sealedBox.nonce).from(
+    encryptedData = sealedBox.encryptedData, /*Could also access authenticatedCipherText*/
+    authTag = sealedBox.authTag,
+).getOrThrow()
+
+val manuallyRecovered = reconstructed.decrypt(
+    key,
+    authenticatedData = aad,
+).getOrThrow(/*handle error*/)
+
+manuallyRecovered shouldBe payload //great success!
+
+//if we just know algorithm and key bytes, we can also construct a symmetric key
+reconstructed.decrypt(
+    algorithm.keyFrom(key.encryptionKey.getOrThrow(), key.macKey.getOrThrow()).getOrThrow(/*handle error*/),
+    aad
+).getOrThrow(/*handle error*/) shouldBe payload //greatest success!
+```
+
+#### Contracts
+Encryption algorithms feature one specific pair on contract-powered functions to determine the type of the cipher.
+While this knowledge of this property is purely informational, it might still come in handy:
+
+* `isBlockCipher()` smart-casts the algorithm to `BlockCipher` if true and `StreamCipher` otherwise.
+* `isStreamCipher()` smart-casts the algorithm to `StreamCipher` if true and `BlockCipher` otherwise.
+
+### Symmetric Keys
+Symmetric keys share the same characteristics as symmetric encryption algorithms, to ensure that keys can only be used
+with compatible algorithms.
+
+#### Generating, Importing, and Exporting
+The main function for key generation is `SymmetricEncryptionAlgorithm.randomKey()`.
+This always works, even without type information.
+For algorithms with a dedicated MAC key, an overloaded variant is available too:
+```kotlin
+SymmetricEncryptionalgorithm.randomKey(macKeyLength: BitLength = preferredMacKeyLength)
+```
+
+!!! Note inline end
+    Parameters and properties of the different key types are deliberately named distinctly and the functions are intentionally only available, if enough
+    type information about the algorithm is available. `hasDedicatedMac` is available on keys too!!
+
+It is, of course, possible to access the raw key bytes to export the,. Depending on the key type, these are:
+
+* `encryptionKey` and `macKey` for symmetric keys with a dedicated MAC key
+* `secretKey` for symmetric key which only use a single key
+
+Importing keys is also straight-forward. For encryption algorithms with a single key (and **only** for those),
+simply call `SymmetricEncryptionalgorithm.keyFrom(secretKey: ByteArray)`.
+In case of an AEAD algorithm with a dedicated MAC key, call `keyFrom(encryptionKey: ByteArray, macKey: ByteArray)`.
+
+
+??? warning "Danger Zone"
+    It is possible to manually generate a nonce/IV for algorithms that require an IV/nonce. However, you typically don't need this
+    since IVs/nonces are auto-generated when encrypting. If you insist, you can call `SymmetricEncryptionAlgorithm.randomKey()`
+    on algorithms that require a nonce. You must, however, explicitly add an opt-in for `@HazardousMaterials`!.
+    <br>
+    If you really want to feed a manually generated nonce/IV into the encryption process, call `andPredefinedNonce(nonce: ByteArray)`
+    on a symmetric key object, prior to calling `encrypt(data: ByteArray)`.
+
+### Sealed Boxes and Decryption
+Sealed boxes represent encrypted data. There's more to the ciphertext bytes to encrypted data. Most notably the nonce/IV, for
+algorithms which require them. In Signum's data model, the algorithm is also part of a sealed box in order to match characteristics.
+Yet, sealed boxes are a bit more relaxed. They don't really care for whether an AEAD algorithm requires a dedicated MAC key
+or not. Hence, there is no contract-backed function `hasDedicatedMacKey()`.
+
+
+!!! tip inline end
+    If you want to decrypt external data and don't need to pass it around as a `SealedBox`,
+    use `SymmetricKey.decrypt` rather than `SealedBox.decrypt`!
+
+Decryption is possible in two ways: On the on hand, you can create a `SealedBox` by calling `SymmetricEncryptionAlgorithm.sealedBox()` and then call `.decrypt(key)` on it.
+Alternatively, it is possible to directly call `SymmetricKey.decrypt()` and pass nonce/IV (if any), ciphertext bytes, auth tag (if any) and additional authenticated data (if any).
+The first variant will allow for arbitrary combinations of characteristics for convenience.
+The second option, however, will only allow passing a nonce/IV if the algorithm associated with a symmetric key
+has the corresponding characteristic.
+The same holds for the auth tag and additional authenticated data.
 
 ## Attestation
 

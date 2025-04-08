@@ -1,5 +1,8 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.signum.indispensable.misc.BitLength
+import at.asitplus.signum.indispensable.misc.bit
+import at.asitplus.signum.indispensable.symmetric.*
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -15,43 +18,51 @@ import kotlinx.serialization.encoding.Encoder
  * and also [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518)
  */
 @Serializable(with = JweEncryptionSerializer::class)
-enum class JweEncryption(val text: String) {
+enum class JweEncryption(val identifier: String, val algorithm: SymmetricEncryptionAlgorithm<*, *, *>) {
 
-    A128GCM("A128GCM"),
-    A192GCM("A192GCM"),
-    A256GCM("A256GCM"),
-    A128CBC_HS256("A128CBC-HS256"),
-    A192CBC_HS384("A192CBC-HS384"),
-    A256CBC_HS512("A256CBC-HS512")
+    A128GCM("A128GCM", SymmetricEncryptionAlgorithm.AES_128.GCM),
+    A192GCM("A192GCM", SymmetricEncryptionAlgorithm.AES_192.GCM),
+    A256GCM("A256GCM", SymmetricEncryptionAlgorithm.AES_256.GCM),
+    A128CBC_HS256("A128CBC-HS256", SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_256),
+    A192CBC_HS384("A192CBC-HS384", SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_384),
+    A256CBC_HS512("A256CBC-HS512", SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_512)
     ;
 
-    val encryptionKeyLength
-        get() = when (this) {
-            A128GCM -> 128
-            A192GCM -> 192
-            A256GCM -> 256
-            A128CBC_HS256 -> 256
-            A192CBC_HS384 -> 384
-            A256CBC_HS512 -> 512
-        }
 
-    val ivLengthBits
-        get() = when (this) {
-            A128GCM, A192GCM, A256GCM -> 96 // GCM: 96 bits
-            A128CBC_HS256, A192CBC_HS384, A256CBC_HS512 -> 128 // all AES-based
+    @Deprecated("Clumsy name", ReplaceWith("identifier"))
+    val text get() = identifier
+
+    /**
+     * For integrated AEAD algorithms, this is the length of the sole key.
+     * For bolted-on AEAD algorithms with a dedicated MAC key, such as AES-CBC+HMAC,
+     * this is the **length of the encryption key without the dedicated MAC key**.
+     */
+    val encryptionKeyLength: BitLength get() = algorithm.keySize
+
+    val ivLength: BitLength
+        get() = when (algorithm.requiresNonce()) {
+            true -> algorithm.nonceSize
+            false -> 0.bit
         }
 
     /**
-     * Per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.3),
-     * where the MAC output bytes need to be truncated to this size for use in JWE.
+     * for integrated AEAD algorithms, this is zero.
+     * For bolted-on AEAD algorithms with a dedicated MAC, this behaves as the name implies
      */
-    val macLength: Int?
-        get() = when (this) {
-            A128CBC_HS256 -> 16
-            A192CBC_HS384 -> 24
-            A256CBC_HS512 -> 32
-            else -> null
-        }
+    val dedicatedMacKeyLength: BitLength get() = if (algorithm.hasDedicatedMac()) algorithm.preferredMacKeyLength else 0.bit
+
+    /**
+     * For integrated AEAD algorithms, this is the length of the sole key.
+     * For bolted-on AEAD algorithms with a dedicated MAC key, such as AES-CBC+HMAC,
+     * this is the **length of the encryption key without plus the length dedicated MAC key**.
+     */
+    val combinedEncryptionKeyLength: BitLength get() = encryptionKeyLength + dedicatedMacKeyLength
+
+    /**
+     * Auth tag length. Should we support unauthenticated encryption algorithms, this would be zero.
+     */
+    val authTagLength: BitLength get() = if (algorithm.isAuthenticated()) algorithm.authTagSize else 0.bit
+
 }
 
 object JweEncryptionSerializer : KSerializer<JweEncryption?> {
@@ -60,12 +71,17 @@ object JweEncryptionSerializer : KSerializer<JweEncryption?> {
         PrimitiveSerialDescriptor("JweEncryptionSerializer", PrimitiveKind.STRING)
 
     override fun serialize(encoder: Encoder, value: JweEncryption?) {
-        value?.let { encoder.encodeString(it.text) }
+        value?.let { encoder.encodeString(it.identifier) }
     }
 
     override fun deserialize(decoder: Decoder): JweEncryption? {
         val decoded = decoder.decodeString()
-        return JweEncryption.entries.firstOrNull { it.text == decoded }
+        return JweEncryption.entries.firstOrNull { it.identifier == decoded }
     }
 }
 
+/**
+ * Convenience conversion function to get a matching [JweEncryption] algorithm (if any).
+ */
+fun SymmetricEncryptionAlgorithm<*, *, *>.toJweEncryptionAlgorithm(): JweEncryption? =
+    JweEncryption.entries.firstOrNull { it.algorithm == this }

@@ -58,7 +58,7 @@ import at.asitplus.cryptotest.theme.LocalThemeIsDark
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
 import at.asitplus.signum.indispensable.jsonEncoded
-import at.asitplus.signum.supreme.SecretExposure
+import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.supreme.agree.Ephemeral
 import at.asitplus.signum.supreme.asKmmResult
 import at.asitplus.signum.supreme.os.PlatformSignerConfigurationBase

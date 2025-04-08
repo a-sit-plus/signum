@@ -16,7 +16,6 @@ import kotlinx.coroutines.newFixedThreadPoolContext
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import platform.CoreFoundation.CFDictionaryRefVar
 import platform.DeviceCheck.DCAppAttestService

@@ -19,7 +19,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.supreme.AppLifecycleMonitor
-import at.asitplus.signum.supreme.SecretExposure
+import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.UnlockFailed
 import at.asitplus.signum.supreme.UnsupportedCryptoException
