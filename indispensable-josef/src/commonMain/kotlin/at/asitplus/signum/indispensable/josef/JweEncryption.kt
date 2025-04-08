@@ -41,7 +41,7 @@ enum class JweEncryption(val identifier: String, val algorithm: SymmetricEncrypt
 
     val ivLength: BitLength
         get() = when (algorithm.requiresNonce()) {
-            true -> algorithm.nonceTrait.length
+            true -> algorithm.nonceSize
             false -> 0.bit
         }
 
