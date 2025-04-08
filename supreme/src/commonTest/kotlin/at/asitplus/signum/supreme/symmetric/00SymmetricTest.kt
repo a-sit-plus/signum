@@ -267,7 +267,7 @@ class `00SymmetricTest` : FreeSpec({
 
                     ciphertext.nonce.shouldNotBeNull()
                     if (iv != null) ciphertext.nonce.size shouldBe iv.size
-                    ciphertext.nonce.size shouldBe it.nonceTrait.length.bytes.toInt()
+                    ciphertext.nonce.size shouldBe it.nonceSize.bytes.toInt()
                     iv?.let { ciphertext.nonce shouldBe iv }
                     ciphertext.algorithm.isAuthenticated() shouldBe false
 
@@ -359,7 +359,7 @@ class `00SymmetricTest` : FreeSpec({
                             else key.encrypt(plaintext, aad).getOrThrow()
 
                         ciphertext.nonce.shouldNotBeNull()
-                        ciphertext.nonce.size shouldBe alg.nonceTrait.length.bytes.toInt()
+                        ciphertext.nonce.size shouldBe alg.nonceSize.bytes.toInt()
                         if (iv != null) ciphertext.nonce shouldBe iv
                         ciphertext.algorithm.authCapability.shouldBeInstanceOf<AuthCapability.Authenticated<*>>()
                         val decrypted = ciphertext.decrypt(key, aad ?: byteArrayOf()).getOrThrow()
@@ -506,8 +506,8 @@ class `00SymmetricTest` : FreeSpec({
 
                         withData(
                             nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
-                            Random.Default.nextBytes((it.nonceTrait.length.bytes).toInt()),
-                            Random.Default.nextBytes((it.nonceTrait.length.bytes).toInt()),
+                            Random.Default.nextBytes((it.nonceSize.bytes).toInt()),
+                            Random.Default.nextBytes((it.nonceSize.bytes).toInt()),
                             null
                         ) { iv ->
                             withData(
@@ -540,7 +540,7 @@ class `00SymmetricTest` : FreeSpec({
 
                                 if (iv != null) ciphertext.nonce shouldBe iv
                                 ciphertext.nonce.shouldNotBeNull()
-                                ciphertext.nonce.size shouldBe it.nonceTrait.length.bytes.toInt()
+                                ciphertext.nonce.size shouldBe it.nonceSize.bytes.toInt()
                                 ciphertext.algorithm.authCapability.shouldBeInstanceOf<AuthCapability.Authenticated<*>>()
 
                                 val decrypted = ciphertext.decrypt(key, aad ?: byteArrayOf()).getOrThrow()
@@ -850,7 +850,7 @@ class `00SymmetricTest` : FreeSpec({
                     val box2 = when (wrongAlg.requiresNonce()) {
                         true -> when (wrongAlg.isAuthenticated()) {
                             true -> wrongAlg.sealedBox.withNonce(
-                                if (box.hasNonce() && box.nonce.size == wrongAlg.nonceLength.bytes.toInt()) box.nonce else
+                                if (box.hasNonce() && box.nonce.size == wrongAlg.nonceSize.bytes.toInt()) box.nonce else
                                     wrongAlg.randomNonce()
                             ).from(
 
@@ -859,7 +859,7 @@ class `00SymmetricTest` : FreeSpec({
                                     Random.nextBytes(wrongAlg.authTagLength.bytes.toInt()),
                             )
 
-                            false -> wrongAlg.sealedBox.withNonce(if (box.hasNonce() && box.nonce.size == wrongAlg.nonceLength.bytes.toInt()) box.nonce else
+                            false -> wrongAlg.sealedBox.withNonce(if (box.hasNonce() && box.nonce.size == wrongAlg.nonceSize.bytes.toInt()) box.nonce else
                                 wrongAlg.randomNonce()).from(
                                  plaintext
                             )
@@ -954,7 +954,7 @@ class `00SymmetricTest` : FreeSpec({
                 val wrongSized = mutableListOf<Int>()
                 while (wrongSized.size < 100) {
                     val wrong = Random.nextUInt(until = 1025u).toInt()
-                    if (wrong != alg.nonceTrait.length.bytes.toInt())
+                    if (wrong != alg.nonceSize.bytes.toInt())
                         wrongSized += wrong
                 }
                 withData(wrongSized) { sz ->

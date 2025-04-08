@@ -66,7 +66,7 @@ suspend fun <K : KeyType, A : AuthCapability<out K>> KeyWithNonce<A, out K>.encr
 @HazardousMaterials("Nonce/IV re-use can have catastrophic consequences!")
 fun <K : KeyType, A : AuthCapability<out K>> SymmetricKey<A, NonceTrait.Required, out K>.andPredefinedNonce(nonce: ByteArray) =
     catching {
-        require(nonce.size == algorithm.nonceTrait.length.bytes.toInt()) { "Nonce is empty!" }
+        require(nonce.size == algorithm.nonceSize.bytes.toInt()) { "$algorithm requires a nonce of size ${algorithm.nonceSize}!" }
         KeyWithNonce(this, nonce)
     }
 
@@ -81,7 +81,7 @@ fun <K : KeyType, A : AuthCapability.Authenticated<out K>> SymmetricKey<out A, N
     nonce: ByteArray
 ) =
     catching {
-        require(nonce.size == algorithm.nonceTrait.length.bytes.toInt()) { "Invalid nonce size!" }
+        require(nonce.size == algorithm.nonceSize.bytes.toInt()) { "$algorithm requires a nonce of size ${algorithm.nonceSize}!" }
         KeyWithNonceAuthenticating(nonce, this)
     }
 

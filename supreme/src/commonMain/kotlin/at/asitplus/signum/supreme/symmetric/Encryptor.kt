@@ -30,10 +30,10 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, K : KeyType>
             aad: ByteArray?,
 
             ): Encryptor<A, I, K> {
-            if (algorithm.nonceTrait is NonceTrait.Required)
-                nonce?.let {
-                    require(it.size.toUInt() == (algorithm.nonceTrait as NonceTrait.Required).length.bytes) { "IV must be exactly ${(algorithm.nonceTrait as NonceTrait.Required).length} bits long" }
-                }
+            if (algorithm.requiresNonce()) {
+                require(nonce != null) { "$algorithm requires a nonce" }
+                require(nonce.size.toUInt() == algorithm.nonceSize.bytes) { "$algorithm IV must be exactly ${algorithm.nonceSize} bits long" }
+            }
             require(key.size.toUInt() == algorithm.keySize.bytes) { "Key must be exactly ${algorithm.keySize} bits long" }
             val platformCipher = if (algorithm.hasDedicatedMac())
                 initCipher(

@@ -132,9 +132,16 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
 
     sealed interface RequiringNonce<out A : AuthCapability<out K>, K : KeyType> :
         SymmetricEncryptionAlgorithm<A, NonceTrait.Required, K>
+    {
+        override val nonceTrait get() = NonceTrait.Required
+        val nonceSize: BitLength
+    }
 
     sealed interface WithoutNonce<out A : AuthCapability<out K>, K : KeyType> :
         SymmetricEncryptionAlgorithm<A, NonceTrait.Without, K>
+    {
+        override val nonceTrait get() = NonceTrait.Without
+    }
 
     /**
      * Advanced Encryption Standard
@@ -156,7 +163,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
                 ModeOfOperation.GCM,
                 keySize
             ) {
-            override val nonceTrait = NonceTrait.Required(96.bit)
+            override val nonceSize = 96.bit
             override val authCapability = AuthCapability.Authenticated.Integrated(blockSize)
             override val oid: ObjectIdentifier = when (keySize.bits) {
                 128u -> KnownOIDs.aes128_GCM
@@ -177,7 +184,6 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
              * Key must be at least 16 bytes and a multiple of 8 bytes
              */
             class RFC3394 internal constructor(keySize: BitLength) : WRAP(keySize) {
-                override val nonceTrait = NonceTrait.Without
                 override val oid: ObjectIdentifier = when (keySize.bits) {
                     128u -> KnownOIDs.aes128_wrap
                     192u -> KnownOIDs.aes192_wrap
@@ -193,7 +199,6 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
             AES<NonceTrait.Without, KeyType.Integrated, AuthCapability.Unauthenticated>(ModeOfOperation.ECB, keySize),
             SymmetricEncryptionAlgorithm.WithoutNonce<AuthCapability.Unauthenticated, KeyType.Integrated>,
             SymmetricEncryptionAlgorithm.Unauthenticated<NonceTrait.Without> {
-            override val nonceTrait = NonceTrait.Without
             override val authCapability = AuthCapability.Unauthenticated
             override val oid: ObjectIdentifier = when (keySize.bits) {
                 128u -> KnownOIDs.aes128_ECB
@@ -205,7 +210,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
 
         sealed class CBC<K : KeyType, A : AuthCapability<K>>(keySize: BitLength) :
             AES<NonceTrait.Required, K, A>(ModeOfOperation.CBC, keySize) {
-            override val nonceTrait = NonceTrait.Required(128u.bit)
+            /*override*/ val nonceSize = 128u.bit
             override val oid: ObjectIdentifier = when (keySize.bits) {
                 128u -> KnownOIDs.aes128_CBC
                 192u -> KnownOIDs.aes192_CBC
@@ -295,7 +300,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
         SymmetricEncryptionAlgorithm.Authenticated.Integrated<NonceTrait.Required>,
         SymmetricEncryptionAlgorithm.RequiringNonce<AuthCapability.Authenticated.Integrated, KeyType.Integrated> {
         override val authCapability = AuthCapability.Authenticated.Integrated(128u.bit)
-        override val nonceTrait = NonceTrait.Required(96u.bit)
+        override val nonceSize = 96u.bit
         override val name: String = "ChaCha20-Poly1305"
         override fun toString() = name
         override val keySize = 256u.bit
@@ -417,12 +422,8 @@ val DefaultDedicatedMacInputCalculation: DedicatedMacInputCalculation =
  * Marker, indicating whether a symmetric encryption algorithms requires or prohibits the use of a nonce/IV
  */
 sealed interface NonceTrait {
-    /**
-     * Indicates that a cipher requires a nonce/IV
-     */
-    class Required(val length: BitLength) : NonceTrait
-
-    object Without : NonceTrait
+    data object Required : NonceTrait
+    data object Without : NonceTrait
 }
 
 
@@ -519,6 +520,6 @@ fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*
 }
 
 
-val SymmetricEncryptionAlgorithm<*, NonceTrait.Required, *>.nonceLength: BitLength get() = nonceTrait.length
+val SymmetricEncryptionAlgorithm<*, NonceTrait.Required, *>.nonceSize: BitLength get() = (this as SymmetricEncryptionAlgorithm.RequiringNonce<*,*>).nonceSize
 val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac<*, *>, *, KeyType.WithDedicatedMacKey>.preferredMacKeyLength: BitLength get() = authCapability.preferredMacKeyLength
 val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, *, *>.authTagLength: BitLength get() = authCapability.tagLength

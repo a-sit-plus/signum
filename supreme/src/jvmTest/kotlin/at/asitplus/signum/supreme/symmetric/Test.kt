@@ -289,7 +289,7 @@ class JvmSymmetricTest : FreeSpec({
                     val fromJCA = jcaCipher.doFinal(data)
 
                     box.nonce.shouldNotBeNull()
-                    box.nonce.size shouldBe alg.nonceTrait.length.bytes.toInt()
+                    box.nonce.size shouldBe alg.nonceSize.bytes.toInt()
                     box.isAuthenticated() shouldBe true
                     (box.encryptedData + box.authTag) shouldBe fromJCA
                     box.decrypt(secretKey, aad ?: byteArrayOf()).getOrThrow() shouldBe data
