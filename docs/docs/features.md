@@ -130,7 +130,7 @@ The following table provides overview about what is supported by Signum and cryp
 | KDF/PRF/KSF                 | ✗                    | ✔ (PBKDF2, HKDF)          |
 | Hardware-Backed Crypto      | ✔                    | ✗                         |
 | Attestation                 | ✔                    | ✗                         |
-| Fully-Features ASN.1 Engine | ✔                    | ✗                         |
+| Fully-Featured ASN.1 Engine | ✔                    | ✗                         |
 | COSE                        | ✔                    | ✗                         |
 | JOSE                        | ✔                    | ✗                         |
 | Provider Targets            | JVM, Android, iOS    | All KMP-supported targets |

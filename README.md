@@ -152,7 +152,7 @@ The following table provides a detailed comparison between Signum and cryptograp
 | KDF/PRF/KSF                 | ✗                    | ✔ (PBKDF2, HKDF)          |
 | Hardware-Backed Crypto      | ✔                    | ✗                         |
 | Attestation                 | ✔                    | ✗                         |
-| Fully-Features ASN.1 Engine | ✔                    | ✗                         |
+| Fully-Featured ASN.1 Engine | ✔                    | ✗                         |
 | COSE                        | ✔                    | ✗                         |
 | JOSE                        | ✔                    | ✗                         |
 | Provider Targets            | JVM, Android, iOS    | All KMP-supported targets |
