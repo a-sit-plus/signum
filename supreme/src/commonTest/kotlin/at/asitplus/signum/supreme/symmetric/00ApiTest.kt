@@ -28,7 +28,10 @@ class `00ApiTest` : FreeSpec({
                 Triple(key, plain, encrypted)
             } }
         ) { (key, plain, encrypted) ->
-            encrypted.decrypt(key) shouldBe plain
+            encrypted.decrypt(key).let {
+                it should succeed
+                it.getOrThrow() shouldBe plain
+            }
         }
     }
 
