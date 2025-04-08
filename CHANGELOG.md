@@ -2,10 +2,6 @@
 
 ## 3.0
 
-### 3.16.0
-
- * Remove code elements deprecated in 3.15.0, related to OID4VCI and HAIP
-
 ### NEXT
 * **Note: We are deprecating and will soon be removing the debug-only serialization for cryptographic datatypes like certificates, public keys, etc.**
     * We support robust ASN.1 encoding and mapping from/to JOSE and COSE datatypes and our ASN.1 structures support pretty printing.
@@ -27,11 +23,12 @@
     * Add algorithm mappings to indispensable-josef **This is a binary-incompatible change**
         * `ivLength` and `encryptionKeyLength` now return `BitLength` instead of `Int`
         * `text` is now properly called `identifier`
-* Move `HazardousMaterials` annotation from `supreme` to `indispensable`
-* Move `SecretExposure` annotation from `supreme` to `indispensable`
+* Move `HazardousMaterials` annotation from `supreme` to `indispensable` **This is a breaking change**
+* Move `SecretExposure` annotation from `supreme` to `indispensable` **This is a breaking change**
 * Expose `SecureRandom` as API dependency in `indispensable`
 
 * Fix COSE key parsing for unordered properties
+* Remove code elements deprecated in 3.15.0, related to OID4VCI and HAIP
 
 ### 3.15.2
 
