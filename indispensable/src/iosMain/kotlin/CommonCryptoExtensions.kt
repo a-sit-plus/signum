@@ -120,8 +120,6 @@ fun CryptoPrivateKey.WithPublicKey<*>.toSecKey(): KmmResult<OwnedCFValue<SecKeyR
                     kSecAttrKeySizeInBits mapsTo this@toSecKey.publicKey.bits.number.toInt()
                     asPKCS1.encodeToDer()
                 }
-
-                else -> TODO("Unreachable")
             }
         }
         corecall {

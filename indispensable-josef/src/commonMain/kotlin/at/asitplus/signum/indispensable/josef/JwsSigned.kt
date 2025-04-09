@@ -116,7 +116,7 @@ data class JwsSigned<out P : Any>(
          * Called by JWS signing implementations to get the string that will be
          * used as the input for signature calculation
          */
-        @Suppress("unused")
+        @Suppress("unused", "NOTHING_TO_INLINE")
         inline fun <T : Any> prepareJwsSignatureInput(
             header: JwsHeader,
             payload: T,

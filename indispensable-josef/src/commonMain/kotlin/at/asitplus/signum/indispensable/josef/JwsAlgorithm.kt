@@ -203,7 +203,6 @@ fun DataIntegrityAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching 
     when (this) {
         is SignatureAlgorithm -> toJwsAlgorithm().getOrThrow()
         is MessageAuthenticationCode -> toJwsAlgorithm().getOrThrow()
-        else -> throw IllegalArgumentException("Algorithm $this not supported by JWS")
     }
 }
 

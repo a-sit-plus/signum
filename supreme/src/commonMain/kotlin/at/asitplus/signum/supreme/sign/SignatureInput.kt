@@ -64,5 +64,4 @@ class SignatureInput private constructor (
 val SignatureAlgorithm.preHashedSignatureFormat: SignatureInputFormat get() = when(this) {
     is SignatureAlgorithm.RSA -> this.digest
     is SignatureAlgorithm.ECDSA -> this.digest
-    else -> TODO("HMAC unsupported")
 }

@@ -4,7 +4,6 @@ import at.asitplus.signum.indispensable.asn1.VarUInt.Companion.decodeAsn1VarBigU
 import at.asitplus.signum.indispensable.asn1.encoding.decode
 import at.asitplus.signum.indispensable.asn1.encoding.toAsn1VarInt
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
@@ -199,4 +198,16 @@ interface Identifiable {
 @Throws(Asn1Exception::class)
 fun Asn1Primitive.readOid() = runRethrowing {
     decode(Asn1Element.Tag.OID) { ObjectIdentifier.decodeFromAsn1ContentBytes(it) }
+}
+
+object ObjectIdentifierStringSerializer : KSerializer<ObjectIdentifier> {
+    override val descriptor = PrimitiveSerialDescriptor("OID", PrimitiveKind.STRING)
+
+    override fun deserialize(decoder: Decoder): ObjectIdentifier =
+        ObjectIdentifier(decoder.decodeString())
+
+    override fun serialize(encoder: Encoder, value: ObjectIdentifier) {
+        encoder.encodeString(value.toString())
+    }
+
 }
