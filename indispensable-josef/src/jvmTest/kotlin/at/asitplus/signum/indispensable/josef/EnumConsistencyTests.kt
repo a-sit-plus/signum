@@ -1,5 +1,7 @@
-package at.asitplus.signum.indispensable
+package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.signum.indispensable.DataIntegrityAlgorithm
+import at.asitplus.signum.indispensable.MessageAuthenticationCode
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -39,6 +41,5 @@ inline fun<reified T: Any> FreeSpec.enumConsistencyTest() {
 }
 
 class EnumConsistencyTests : FreeSpec({
-    enumConsistencyTest<MessageAuthenticationCode>()
-    enumConsistencyTest<DataIntegrityAlgorithm>()
+    enumConsistencyTest<JwsAlgorithm>()
 })

@@ -51,15 +51,27 @@ enum class ECCurve(
     /** the number of bits/bytes needed to store point coordinates (such as public key coordinates) in unsigned form */
     inline val coordinateLength get() = BitLength.of(modulus)
 
-    @Deprecated("Use scalarLength to express private key lengths", ReplaceWith("scalarLength.bits"))
+    @Deprecated(
+        "Use scalarLength to express private key lengths",
+        ReplaceWith("scalarLength.bits"),
+        DeprecationLevel.ERROR
+    )
     /** the number of bits needed to store a private key in unsigned form */
     inline val keyLengthBits: UInt get() = scalarLength.bits
 
-    @Deprecated("Use coordinateLength.bytes", ReplaceWith("coordinateLength.bytes"))
+    @Deprecated(
+        "Use coordinateLength.bytes",
+        ReplaceWith("coordinateLength.bytes"),
+        DeprecationLevel.ERROR
+    )
     /** the number of bytes needed to store a public key coordinate in unsigned form */
     inline val coordinateLengthBytes: UInt get() = coordinateLength.bytes
 
-    @Deprecated("use scalarLength to express raw signature size", ReplaceWith("scalarLength.bytes * 2u"))
+    @Deprecated(
+        "use scalarLength to express raw signature size",
+        ReplaceWith("scalarLength.bytes * 2u"),
+        DeprecationLevel.ERROR
+    )
     /** the number of bytes needed to store a raw signature (r and s concatenated) over this curve */
     inline val signatureLengthBytes: UInt get() = scalarLength.bytes * 2u
 

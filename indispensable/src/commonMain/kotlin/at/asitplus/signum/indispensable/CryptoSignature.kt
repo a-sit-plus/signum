@@ -210,7 +210,11 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
                 return fromRS(r, s)
             }
 
-            @Deprecated("use fromRawBytes", ReplaceWith("CryptoSignature.EC.fromRawBytes(input)"))
+            @Deprecated(
+                "use fromRawBytes",
+                ReplaceWith("CryptoSignature.EC.fromRawBytes(input)"),
+                DeprecationLevel.ERROR
+            )
             operator fun invoke(input: ByteArray): DefiniteLength = fromRawBytes(input)
 
         }
