@@ -6,6 +6,7 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
+import at.asitplus.signum.indispensable.io.CertificateChainBase64UrlSerializer
 import at.asitplus.signum.indispensable.josef.io.InstantLongSerializer
 import at.asitplus.signum.indispensable.josef.io.JwsCertificateSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
@@ -100,6 +101,7 @@ data class JwsHeader(
      * failure occurs.  Use of this Header Parameter is OPTIONAL.
      */
     @SerialName("x5c")
+    @Serializable(with = CertificateChainBase64UrlSerializer::class)
     val certificateChain: CertificateChain? = null,
 
     /**

@@ -12,6 +12,7 @@ import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
+import at.asitplus.signum.indispensable.io.CertificateChainBase64UrlSerializer
 import at.asitplus.signum.indispensable.josef.io.JwsCertificateSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.CertificateChain
@@ -135,6 +136,7 @@ data class JsonWebKey(
      * OPTIONAL.
      */
     @SerialName("x5c")
+    @Serializable(with = CertificateChainBase64UrlSerializer::class)
     val certificateChain: CertificateChain? = null,
 
     /**

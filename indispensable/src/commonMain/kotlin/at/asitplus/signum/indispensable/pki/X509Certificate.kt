@@ -8,7 +8,6 @@ import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
-import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
@@ -18,7 +17,6 @@ import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.SUBJEC
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlinx.serialization.builtins.serializer
 
@@ -30,16 +28,14 @@ data class TbsCertificate
 @Throws(Asn1Exception::class)
 constructor(
     val version: Int? = 2,
-    @Serializable(with = ByteArrayBase64Serializer::class) val serialNumber: ByteArray,
+    val serialNumber: ByteArray,
     val signatureAlgorithm: X509SignatureAlgorithm,
     val issuerName: List<RelativeDistinguishedName>,
     val validFrom: Asn1Time,
     val validUntil: Asn1Time,
     val subjectName: List<RelativeDistinguishedName>,
     val publicKey: CryptoPublicKey,
-    @Serializable(with = Asn1BitStringSerializer::class)
     val issuerUniqueID: Asn1BitString? = null,
-    @Serializable(with = Asn1BitStringSerializer::class)
     val subjectUniqueID: Asn1BitString? = null,
     val extensions: List<X509CertificateExtension>? = null,
 ) : Asn1Encodable<Asn1Sequence> {
