@@ -7,6 +7,7 @@ import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.io.Base64Strict
+import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
@@ -136,6 +137,10 @@ constructor(
         result = 31 * result + (subjectUniqueID?.hashCode() ?: 0)
         result = 31 * result + (extensions?.hashCode() ?: 0)
         return result
+    }
+
+    override fun toString(): String {
+        return "TbsCertificate(${encodeToDerOrNull()?.let { it.encodeToString(Base64UrlStrict) }})"
     }
 
     companion object : Asn1Decodable<Asn1Sequence, TbsCertificate> {
@@ -273,6 +278,10 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         result = 31 * result + signatureAlgorithm.hashCode()
         result = 31 * result + signature.hashCode()
         return result
+    }
+
+    override fun toString(): String {
+        return "X509Certificate(${encodeToDerOrNull()?.let { it.encodeToString(Base64UrlStrict) }})"
     }
 
     val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey

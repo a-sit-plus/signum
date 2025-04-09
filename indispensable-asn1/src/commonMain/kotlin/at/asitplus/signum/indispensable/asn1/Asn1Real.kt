@@ -1,6 +1,13 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.*
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlin.math.pow
 import kotlin.math.sign
 
@@ -11,6 +18,7 @@ private const val IEEE754_BIAS = 1023
  * ASN.1 REAL number. Mind possible loss of precision compared to Kotlin's built-in types.
  * This type is irrelevant for PKI applications, but required for generic ASN.1 serialization
  */
+@Serializable(with = Asn1RealSerializer::class)
 sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
 
     /**
@@ -28,10 +36,14 @@ sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
         Zero -> 0.0
     }
 
+    @Serializable(with = Asn1RealSerializer::class)
     object Zero : Asn1Real
+    @Serializable(with = Asn1RealSerializer::class)
     object PositiveInfinity : Asn1Real
+    @Serializable(with = Asn1RealSerializer::class)
     object NegativeInfinity : Asn1Real
 
+    @Serializable(with = Asn1RealSerializer::class)
     data class Finite internal constructor(val normalizedMantissa: Asn1Integer, val normalizedExponent: Long) :
         Asn1Real
 
@@ -171,4 +183,43 @@ sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
 
         override fun doDecode(src: Asn1Primitive): Asn1Real = src.decodeToAsn1Real()
     }
+}
+
+object Asn1RealSerializer : KSerializer<Asn1Real> {
+    override val descriptor: SerialDescriptor
+        get() = PrimitiveSerialDescriptor("Asn1Real", PrimitiveKind.STRING)
+
+    override fun serialize(
+        encoder: Encoder,
+        value: Asn1Real
+    ) {
+        val serializedValue = when (value) {
+            Asn1Real.Zero -> "0"
+            Asn1Real.PositiveInfinity -> "INF"
+            Asn1Real.NegativeInfinity -> "-INF"
+            is Asn1Real.Finite -> {
+                val mantissa = value.normalizedMantissa.toString()
+                val exponent = value.normalizedExponent
+                "$mantissa * 2^$exponent"
+            }
+        }
+        encoder.encodeString(serializedValue)
+    }
+
+    override fun deserialize(decoder: Decoder): Asn1Real {
+        val decodedString = decoder.decodeString()
+        return when {
+            decodedString == "0" -> Asn1Real.Zero
+            decodedString == "INF" -> Asn1Real.PositiveInfinity
+            decodedString == "-INF" -> Asn1Real.NegativeInfinity
+            else -> {
+                val parts = decodedString.replace("\\s".toRegex(), "").split("*2^")
+                require(parts.size == 2) { "Invalid format for Asn1Real" }
+                val mantissa = Asn1Integer.fromDecimalString(parts[0])
+                val exponent = parts[1].toLong()
+                Asn1Real.Finite(mantissa, exponent)
+            }
+        }
+    }
+
 }
