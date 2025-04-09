@@ -6,7 +6,6 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.fromUncompressed
-import at.asitplus.signum.indispensable.CryptoPublicKey.RSA
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
@@ -306,9 +305,11 @@ data class JsonWebKey(
             JwkType.RSA -> {
                 CryptoPublicKey.RSA(
                     n = Asn1Integer.fromUnsignedByteArray(
-                        n ?: throw IllegalArgumentException("Missing modulus n")),
+                        n ?: throw IllegalArgumentException("Missing modulus n")
+                    ),
                     e = Asn1Integer.fromUnsignedByteArray(
-                        e ?: throw IllegalArgumentException("Missing or invalid exponent e"))
+                        e ?: throw IllegalArgumentException("Missing or invalid exponent e")
+                    )
                 ).apply { jwkId = keyId }
             }
 
@@ -422,7 +423,14 @@ fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
  * Converts a [at.asitplus.signum.indispensable.symmetric.SymmetricKey] to a [JsonWebKey]
  */
 fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey? {
-    TODO("Define algorithms an map where possible")
+    val jwAlg = when (this.algorithm) {
+        SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394 -> JweAlgorithm.A128KW
+        SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394 -> JweAlgorithm.A192KW
+        SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394 -> JweAlgorithm.A256KW
+        else -> return null
+    }
+    return JsonWebKey(algorithm = jwAlg, keyId = keyId, k = jsonWebKeyBytes.getOrNull())
+    TODO("@nodh does this make sense?")
 }
 
 

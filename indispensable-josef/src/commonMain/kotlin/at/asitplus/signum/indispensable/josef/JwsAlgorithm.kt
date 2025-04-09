@@ -79,18 +79,20 @@ sealed class JwsAlgorithm<D : DataIntegrityAlgorithm>(override val identifier: S
             }
 
         companion object {
-            val entries: Collection<Signature> = listOf(
-                ES256,
-                ES384,
-                ES512,
-                PS256,
-                PS384,
-                PS512,
-                RS256,
-                RS384,
-                RS512,
-                NON_JWS_SHA1_WITH_RSA,
-            )
+            val entries: Collection<Signature> by lazy {
+                listOf(
+                    ES256,
+                    ES384,
+                    ES512,
+                    PS256,
+                    PS384,
+                    PS512,
+                    RS256,
+                    RS384,
+                    RS512,
+                    NON_JWS_SHA1_WITH_RSA,
+                )
+            }
         }
 
     }
@@ -112,12 +114,14 @@ sealed class JwsAlgorithm<D : DataIntegrityAlgorithm>(override val identifier: S
         object UNOFFICIAL_HS1 : MAC("H1", HMAC.SHA1)
 
         companion object {
-            val entries: Collection<MAC> = listOf(
-                HS256,
-                HS384,
-                HS512,
-                UNOFFICIAL_HS1,
-            )
+            val entries: Collection<MAC> by lazy {
+                listOf(
+                    HS256,
+                    HS384,
+                    HS512,
+                    UNOFFICIAL_HS1,
+                )
+            }
         }
     }
 
@@ -192,3 +196,8 @@ fun SpecializedSignatureAlgorithm.toJwsAlgorithm() =
     this.algorithm.toJwsAlgorithm()
 
 
+val JwsAlgorithm<SignatureAlgorithm>.ecCurve: ECCurve?
+    get() = (this as JwsAlgorithm.Signature).ecCurve
+
+val JwsAlgorithm<SignatureAlgorithm>.digest: Digest?
+    get() = (this as JwsAlgorithm.Signature).digest

@@ -35,7 +35,7 @@ sealed interface CoseAlgorithm {
     @Serializable(with = CoseAlgorithmSerializer::class)
     sealed class DataIntegrity<D : DataIntegrityAlgorithm>(override val value: Int, val algorithm: D) : CoseAlgorithm {
         companion object {
-            val entries: Collection<DataIntegrity<*>> = Signature.entries + MAC.entries
+            val entries: Collection<DataIntegrity<*>> by lazy { Signature.entries + MAC.entries }
         }
     }
 
@@ -58,7 +58,7 @@ sealed interface CoseAlgorithm {
         object ChaCha20Poly1305 : SymmetricEncryption(24, SymmetricEncryptionAlgorithm.ChaCha20Poly1305)
 
         companion object {
-            val entries: Collection<SymmetricEncryption> = listOf(A128GCM, A192GCM, A256GCM, ChaCha20Poly1305)
+            val entries: Collection<SymmetricEncryption> by lazy { listOf(A128GCM, A192GCM, A256GCM, ChaCha20Poly1305) }
         }
     }
 
@@ -109,18 +109,20 @@ sealed interface CoseAlgorithm {
             }
 
         companion object {
-            val entries: Collection<Signature> = listOf(
-                ES256,
-                ES384,
-                ES512,
-                PS256,
-                PS384,
-                PS512,
-                RS256,
-                RS384,
-                RS512,
-                RS1,
-            )
+            val entries: Collection<Signature> by lazy {
+                listOf(
+                    ES256,
+                    ES384,
+                    ES512,
+                    PS256,
+                    PS384,
+                    PS512,
+                    RS256,
+                    RS384,
+                    RS512,
+                    RS1,
+                )
+            }
         }
 
     }
@@ -154,17 +156,19 @@ sealed interface CoseAlgorithm {
         object UNOFFICIAL_HS1 : MAC(-2341169 /*random inside private use range*/, HMAC.SHA1, 160.bit)
 
         companion object {
-            val entries: Collection<MAC> = listOf(
-                HS256,
-                HS384,
-                HS512,
-                UNOFFICIAL_HS1,
-            )
+            val entries: Collection<MAC> by lazy {
+                listOf(
+                    HS256,
+                    HS384,
+                    HS512,
+                    UNOFFICIAL_HS1,
+                )
+            }
         }
     }
 
     companion object {
-        val entries: Collection<CoseAlgorithm> = DataIntegrity.entries + SymmetricEncryption.entries
+        val entries: Collection<CoseAlgorithm> by lazy { DataIntegrity.entries + SymmetricEncryption.entries }
     }
 
 }
