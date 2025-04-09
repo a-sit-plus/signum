@@ -1,15 +1,15 @@
 package at.asitplus.signum.indispensable.symmetric
 
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.ImplementationError
 import at.asitplus.signum.indispensable.asn1.Identifiable
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.encoding.encodeTo8Bytes
-import at.asitplus.signum.indispensable.mac.HMAC
-import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
+import at.asitplus.signum.indispensable.HMAC
+import at.asitplus.signum.indispensable.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
+import at.asitplus.signum.internals.ImplementationError
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 import kotlin.jvm.JvmName
@@ -264,16 +264,16 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
             class HMAC
             private constructor(
                 override val innerCipher: Unauthenticated,
-                override val mac: at.asitplus.signum.indispensable.mac.HMAC,
+                override val mac: at.asitplus.signum.indispensable.HMAC,
                 override val macInputCalculation: MacInputCalculation,
                 override val macAuthTagTransform: MacAuthTagTransformation,
                 override val authTagSize: BitLength
-            ) : SymmetricEncryptionAlgorithm.Authenticated.EncryptThenMAC<at.asitplus.signum.indispensable.mac.HMAC, NonceTrait.Required>,
+            ) : SymmetricEncryptionAlgorithm.Authenticated.EncryptThenMAC<at.asitplus.signum.indispensable.HMAC, NonceTrait.Required>,
                 SymmetricEncryptionAlgorithm.RequiringNonce<AuthCapability.Authenticated.WithDedicatedMac, KeyType.WithDedicatedMacKey>,
                 CBC<KeyType.WithDedicatedMacKey, AuthCapability.Authenticated.WithDedicatedMac>(
                     innerCipher.keySize
                 ) {
-                constructor(innerCipher: Unauthenticated, mac: at.asitplus.signum.indispensable.mac.HMAC) : this(
+                constructor(innerCipher: Unauthenticated, mac: at.asitplus.signum.indispensable.HMAC) : this(
                     innerCipher,
                     mac,
                     DefaultMacInputCalculation,

@@ -29,3 +29,5 @@ infix fun ByteArray.xor(other: ByteArray): ByteArray {
     check(this.size == other.size)
     return ByteArray(this.size) { i -> this[i] xor other[i] }
 }
+
+class ImplementationError(message: String?=null): Throwable("$message\nThis is an implementation error. Please report this bug at https://github.com/a-sit-plus/signum/issues/new/")

@@ -9,7 +9,7 @@ import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.indispensable.jcaAlgorithmComponent
 import at.asitplus.signum.indispensable.jcaSignatureBytes
 import at.asitplus.signum.supreme.dsl.DSL
-import at.asitplus.signum.supreme.UnsupportedCryptoException
+import at.asitplus.signum.UnsupportedCryptoException
 import java.security.Signature
 
 /**
@@ -79,7 +79,7 @@ internal actual fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
 @JvmSynthetic
 internal actual fun verifyRSAImpl
     (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
-     data: SignatureInput, signature: CryptoSignature.RSAorHMAC,
+     data: SignatureInput, signature: CryptoSignature.RSA,
      config: PlatformVerifierConfiguration)
 {
     getRSAInstance(signatureAlgorithm, config).run {

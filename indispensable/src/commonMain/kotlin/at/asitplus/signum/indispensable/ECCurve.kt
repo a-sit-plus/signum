@@ -21,7 +21,6 @@ import kotlinx.serialization.encoding.Encoder
 inline fun UInt.ceilDiv(other: UInt) =
     (floorDiv(other)) + (if (rem(other) != 0u) 1u else 0u)
 
-@Suppress("NOTHING_TO_INLINE")
 inline fun Int.ceilDiv(other: Int) =
     (floorDiv(other)) + (if (rem(other) != 0) 1 else 0)
 
@@ -52,28 +51,28 @@ enum class ECCurve(
     /** the number of bits/bytes needed to store point coordinates (such as public key coordinates) in unsigned form */
     inline val coordinateLength get() = BitLength.of(modulus)
 
-    /** the number of bits needed to store a private key in unsigned form */
     @Deprecated(
         "Use scalarLength to express private key lengths",
         ReplaceWith("scalarLength.bits"),
         DeprecationLevel.ERROR
     )
+    /** the number of bits needed to store a private key in unsigned form */
     inline val keyLengthBits: UInt get() = scalarLength.bits
 
-    /** the number of bytes needed to store a public key coordinate in unsigned form */
     @Deprecated(
         "Use coordinateLength.bytes",
         ReplaceWith("coordinateLength.bytes"),
         DeprecationLevel.ERROR
     )
+    /** the number of bytes needed to store a public key coordinate in unsigned form */
     inline val coordinateLengthBytes: UInt get() = coordinateLength.bytes
 
-    /** the number of bytes needed to store a raw signature (r and s concatenated) over this curve */
     @Deprecated(
         "use scalarLength to express raw signature size",
         ReplaceWith("scalarLength.bytes * 2u"),
         DeprecationLevel.ERROR
     )
+    /** the number of bytes needed to store a raw signature (r and s concatenated) over this curve */
     inline val signatureLengthBytes: UInt get() = scalarLength.bytes * 2u
 
     internal val coordinateCreator by lazy { ModularBigInteger.creatorForModulo(this.modulus) }

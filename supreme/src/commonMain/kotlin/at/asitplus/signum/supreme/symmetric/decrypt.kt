@@ -2,11 +2,11 @@ package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.ImplementationError
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.AuthCapability.Authenticated
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
+import at.asitplus.signum.internals.ImplementationError
 import kotlin.jvm.JvmName
 
 
@@ -40,6 +40,15 @@ suspend fun SealedBox<*, *, *>.decrypt(key: SymmetricKey<*, *, *>): KmmResult<By
         )
     }
 }
+
+/**
+ * Attempts to decrypt this ciphertext (which may also hold an IV/nonce, and in case of an authenticated ciphertext, authenticated data and auth tag) using the provided [key].
+ * This is the generic, untyped decryption function for convenience.
+ * **Compared to its narrower-typed cousins is possible to mismatch the characteristics of
+ * [key] and [SealedBox].**
+ */
+@JvmName("decryptGeneric")
+suspend fun SealedBox<*, *, *>.decrypt(key: SpecializedSymmetricKey): KmmResult<ByteArray> = key.toSymmetricKey().transform { decrypt(it) }
 
 
 //required because we don't store MAC info all the way

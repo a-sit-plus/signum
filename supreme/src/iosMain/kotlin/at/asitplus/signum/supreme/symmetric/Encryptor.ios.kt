@@ -1,9 +1,9 @@
 package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.HazardousMaterials
-import at.asitplus.signum.ImplementationError
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
+import at.asitplus.signum.internals.ImplementationError
 import kotlinx.cinterop.ExperimentalForeignApi
 
 

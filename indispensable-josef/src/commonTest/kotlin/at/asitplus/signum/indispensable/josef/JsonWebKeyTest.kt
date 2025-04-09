@@ -55,7 +55,7 @@ class JsonWebKeyTest : FreeSpec({
     }
 
     "Thumbprint for RSA Key with additional properties" - {
-        val newKey = JsonWebKey(type = JwkType.RSA, n = n, e = e, algorithm = JwsAlgorithm.RS256)
+        val newKey = JsonWebKey(type = JwkType.RSA, n = n, e = e, algorithm = JwsAlgorithm.Signature.RS256)
 
         newKey.jwkThumbprint shouldBe rsaKey.jwkThumbprint
     }

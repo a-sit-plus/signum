@@ -1,4 +1,4 @@
-package at.asitplus.signum.supreme
+package at.asitplus.signum
 
 sealed class CryptoException(message: String? = null, cause: Throwable? = null) : Throwable(message, cause)
 open class CryptoOperationFailed(message: String) : CryptoException(message)

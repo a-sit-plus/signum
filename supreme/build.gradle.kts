@@ -56,6 +56,7 @@ kotlin {
         implementation(project(":internals"))
         implementation(coroutines())
         implementation(napier())
+        implementation(libs.securerandom) //fix composite build
     }
 
     sourceSets.androidMain.dependencies {

@@ -1,5 +1,6 @@
-package at.asitplus.signum.indispensable
-
+import at.asitplus.signum.indispensable.DataIntegrityAlgorithm
+import at.asitplus.signum.indispensable.MessageAuthenticationCode
+import at.asitplus.signum.indispensable.cosef.CoseAlgorithm
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -34,11 +35,10 @@ inline fun<reified T: Any> FreeSpec.enumConsistencyTest() {
             cls.sealedSubclasses.forEach(queue::push)
         }
 
-        listed.toSet() shouldBe discovered.toSet()
+        listed.sortedBy { it.toString() }.toSet() shouldBe discovered.sortedBy { it.toString() }.toSet()
     }
 }
 
 class EnumConsistencyTests : FreeSpec({
-    enumConsistencyTest<MessageAuthenticationCode>()
-   // enumConsistencyTest<DataIntegrityAlgorithm>()
+    enumConsistencyTest<CoseAlgorithm>()
 })

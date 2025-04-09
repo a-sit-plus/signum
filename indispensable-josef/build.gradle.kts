@@ -56,6 +56,7 @@ kotlin {
                 implementation(libs.jose)
                 implementation(project(":supreme"))
             }
+
         }
     }
 }

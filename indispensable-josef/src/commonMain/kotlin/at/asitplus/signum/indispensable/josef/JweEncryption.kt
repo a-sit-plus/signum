@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.catching
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.symmetric.*
@@ -54,7 +55,7 @@ enum class JweEncryption(val identifier: String, val algorithm: SymmetricEncrypt
     /**
      * For integrated AEAD algorithms, this is the length of the sole key.
      * For bolted-on AEAD algorithms with a dedicated MAC key, such as AES-CBC+HMAC,
-     * this is the **length of the encryption key without plus the length dedicated MAC key**.
+     * this is the **length of the encryption key plus the length dedicated MAC key**.
      */
     val combinedEncryptionKeyLength: BitLength get() = encryptionKeyLength + dedicatedMacKeyLength
 
@@ -62,6 +63,17 @@ enum class JweEncryption(val identifier: String, val algorithm: SymmetricEncrypt
      * Auth tag length. Should we support unauthenticated encryption algorithms, this would be zero.
      */
     val authTagLength: BitLength get() = if (algorithm.isAuthenticated()) algorithm.authTagSize else 0.bit
+
+    /**
+     * parses KWE key bytes for this algorithm and converts them to a [SymmetricKey].
+     */
+    fun symmetricKeyFromJsonWebKeyBytes(bytes: ByteArray) = catching {
+        if (algorithm.hasDedicatedMac()) algorithm.keyFrom(
+            bytes.drop(bytes.size / 2).toByteArray(),
+            bytes.take(bytes.size / 2).toByteArray()
+        ).getOrThrow()
+        else algorithm.keyFrom(bytes).getOrThrow()
+    }
 
 }
 
