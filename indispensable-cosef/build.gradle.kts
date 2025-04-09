@@ -50,10 +50,6 @@ kotlin {
                 implementation(libs.bignum) //Intellij bug work-around
             }
         }
-        jvmTest.dependencies {
-            implementation("at.asitplus:kmmresult-test:${AspVersions.kmmresult}")
-         //   implementation(kotest("assertions-api")) //workaround dependency resolution bug
-        }
     }
 }
 

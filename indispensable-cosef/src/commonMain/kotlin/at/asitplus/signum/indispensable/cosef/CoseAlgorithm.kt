@@ -161,6 +161,7 @@ sealed interface CoseAlgorithm {
             val entries: Collection<MAC> by lazy {
                 listOf(
                     HS256,
+                    HS256_64,
                     HS384,
                     HS512,
                     UNOFFICIAL_HS1,

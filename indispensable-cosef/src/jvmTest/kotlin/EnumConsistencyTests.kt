@@ -35,7 +35,7 @@ inline fun<reified T: Any> FreeSpec.enumConsistencyTest() {
             cls.sealedSubclasses.forEach(queue::push)
         }
 
-        listed.toSet() shouldBe discovered.toSet()
+        listed.sortedBy { it.toString() }.toSet() shouldBe discovered.sortedBy { it.toString() }.toSet()
     }
 }
 

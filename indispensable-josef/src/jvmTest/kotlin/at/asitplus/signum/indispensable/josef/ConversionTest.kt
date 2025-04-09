@@ -1,9 +1,15 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.shouldSucceedWith
+import at.asitplus.KmmResult
 import at.asitplus.signum.indispensable.toX509SignatureAlgorithm
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
+import io.kotest.matchers.shouldBe
+
+//somehow including kmmresult-test makes this fail
+infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
+    (this.getOrThrow() shouldBe b)
+
 
 class ConversionTest : FreeSpec({
     "JWS -> SigAlg -> JWS is stable" - {

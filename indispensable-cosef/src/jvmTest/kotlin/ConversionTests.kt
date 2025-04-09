@@ -1,9 +1,7 @@
 import at.asitplus.KmmResult
-import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.cosef.CoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseKey
-import at.asitplus.signum.indispensable.fromJcaPublicKey
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.indispensable.toX509SignatureAlgorithm
 import io.kotest.core.spec.style.FreeSpec
@@ -13,19 +11,20 @@ import java.security.KeyPairGenerator
 import java.security.interfaces.ECPublicKey
 import kotlin.random.Random
 
-infix fun <T> KmmResult<T>.shouldSucceedWith(b: T) : T =
+//somehow including kmmresult-test makes this fail
+infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
     (this.getOrThrow() shouldBe b)
 
 class ConversionTests : FreeSpec({
     "COSE -> SigAlg -> COSE is stable" - {
 
         "All" - {
-            withData(CoseAlgorithm.DataIntegrity.entries) {
+            withData(CoseAlgorithm.DataIntegrity.entries.filterNot { it is CoseAlgorithm.MAC.HS256_64 /*this is special to COSE, so the mapping is one-way only!*/ }) {
                 it.algorithm.toCoseAlgorithm() shouldSucceedWith it
             }
         }
         "Specialized Signature Algorithms" - {
-            withData(CoseAlgorithm.DataIntegrity.entries) {
+            withData(CoseAlgorithm.DataIntegrity.entries.filterNot { it is CoseAlgorithm.MAC.HS256_64 /*this is special to COSE, so the mapping is one-way only!*/ }) {
                 it.toCoseAlgorithm() shouldSucceedWith it
             }
         }
@@ -50,4 +49,4 @@ class ConversionTests : FreeSpec({
 
 private fun randomPublicKey() =
     (KeyPairGenerator.getInstance("EC").apply { initialize(256) }
-            .genKeyPair().public as ECPublicKey).toCryptoPublicKey().getOrThrow()
+        .genKeyPair().public as ECPublicKey).toCryptoPublicKey().getOrThrow()
