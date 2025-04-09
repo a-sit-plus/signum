@@ -2,6 +2,8 @@
 
 ## 3.0
 
+### NEXT
+
 ### 3.16.0 (Supreme 0.8.0) Symmetric Encryption and Major Cleanups
 * **Note: All debug-only kotlinx.serialization for cryptographic datatypes like certificates, public keys, etc. was removed!**
     * We support robust ASN.1 encoding and mapping from/to JOSE and COSE datatypes and our ASN.1 structures support pretty printing.
