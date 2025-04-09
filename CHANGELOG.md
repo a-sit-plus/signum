@@ -11,10 +11,10 @@
     * This note will be prepended to the changelog entries until the `@Serialization` annotations have been removed.
         * This will happen by Indispensable 4.0.0 / Supreme 1.0.0, if not before then.
 * HMAC Support
-  * **This finally cleans up the `RSAorHMAC` mess, which is a breaking change**
-  * Introduce umbrella `DataIntegrityAlgorithms` which is the parent of `SignatureAlgorithm` and `MessageAuthenticationCode`
-  * `JwsAlgorithm` and `CoseAlgorihtm` are now abstract, having subclasses and have a `DataIntegrityAlgorithm` generic type argument
-  * `JwsAlgorithm`s and `CoseAlgorihtm`s are now available under `.Signature` and `.MAC` respectively. There are no toplevel constants of predefined algorithms anymore!
+    * **This finally cleans up the `RSAorHMAC` mess, which is a breaking change**
+    * Introduce umbrella `DataIntegrityAlgorithms` which is the parent of `SignatureAlgorithm` and `MessageAuthenticationCode`
+    * `JwsAlgorithm` and `CoseAlgorihtm` are now abstract, having subclasses and have a `DataIntegrityAlgorithm` generic type argument
+    * `JwsAlgorithm`s and `CoseAlgorihtm`s are now available under `.Signature` and `.MAC` respectively. There are no toplevel constants of predefined algorithms anymore!
 * Symmetric Encryption
     * Supported Algorithms
         * AES
