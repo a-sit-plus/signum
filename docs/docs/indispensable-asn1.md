@@ -26,7 +26,6 @@ This library was built for [Kotlin Multiplatform](https://kotlinlang.org/docs/mu
 the JVM, Android and iOS.
 
 Simply declare the desired dependency to get going:
-Simply declare the desired dependency to get going:
 
 ```kotlin 
 implementation("at.asitplus.signum:indispensable-asn1:$version")

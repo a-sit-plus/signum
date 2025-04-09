@@ -327,7 +327,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
         constructor(src: CoseKey) : this(
             src.type,
             src.keyId,
-            src.algorithm?.let { require(it is CoseAlgorithm.Signature); it },
+            src.algorithm?.let { it as CoseAlgorithm.Signature }
             src.operations,
             src.baseIv,
             if (src.keyParams is CoseKeyParams.EcKeyParams<*>) src.keyParams.curve else null,
@@ -631,7 +631,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                 if (!isCompressed) CoseUncompressedEcKeySerialContainer(
                     type,
                     keyId,
-                    alg?.let { require(it is CoseAlgorithm.Signature); it },
+                    alg?.let { it as CoseAlgorithm.Signature },
                     keyOps,
                     baseIv,
                     nKCrv as? CoseEllipticCurve?,
@@ -642,7 +642,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                 else CoseCompressedEcKeySerialContainer(
                     type,
                     keyId,
-                    alg?.let { require(it is CoseAlgorithm.Signature); it },
+                    alg?.let { it as CoseAlgorithm.Signature },
                     keyOps,
                     baseIv,
                     nKCrv as? CoseEllipticCurve?,
@@ -656,7 +656,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                 CoseRsaKeySerialContainer(
                     type,
                     keyId,
-                    alg?.let { require(it is CoseAlgorithm.Signature); it },
+                    alg?.let { it as CoseAlgorithm.Signature },
                     keyOps,
                     baseIv,
                     nKCrv as ByteArray?,
@@ -669,7 +669,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
                 CoseSymmKeySerialContainer(
                     type,
                     keyId,
-                    alg?.let { require(it is CoseAlgorithm.Symmetric); it },
+                    alg?.let { it as CoseAlgorithm.Symmetric },
                     keyOps,
                     baseIv,
                     nKCrv as ByteArray?,
@@ -742,7 +742,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
         constructor(src: CoseKey) : this(
             src.type,
             src.keyId,
-            src.algorithm?.let { require(it is CoseAlgorithm.Signature); it },
+            src.algorithm?.let { it as CoseAlgorithm.Signature },
             src.operations,
             src.baseIv,
             if (src.keyParams is CoseKeyParams.EcKeyParams<*>) src.keyParams.curve else null,
