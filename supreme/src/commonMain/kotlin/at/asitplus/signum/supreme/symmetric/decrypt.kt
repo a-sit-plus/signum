@@ -2,11 +2,11 @@ package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.ImplementationError
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.AuthCapability.Authenticated
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
+import at.asitplus.signum.internals.ImplementationError
 import kotlin.jvm.JvmName
 
 

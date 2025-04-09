@@ -1,7 +1,7 @@
 
 package at.asitplus.signum.supreme.mac
 
-import at.asitplus.signum.indispensable.mac.HMAC
+import at.asitplus.signum.indispensable.HMAC
 import at.asitplus.signum.supreme.b
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData

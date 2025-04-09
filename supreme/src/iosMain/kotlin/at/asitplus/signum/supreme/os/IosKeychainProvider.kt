@@ -3,6 +3,8 @@ package at.asitplus.signum.supreme.os
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.CryptoOperationFailed
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.*

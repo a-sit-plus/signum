@@ -2,8 +2,8 @@ package at.asitplus.signum.supreme.mac
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.mac.HMAC
-import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
+import at.asitplus.signum.indispensable.HMAC
+import at.asitplus.signum.indispensable.MessageAuthenticationCode
 import at.asitplus.signum.internals.xor
 import at.asitplus.signum.supreme.hash.digest
 

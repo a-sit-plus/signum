@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -41,4 +40,5 @@ inline fun<reified T: Any> FreeSpec.enumConsistencyTest() {
 
 class EnumConsistencyTests : FreeSpec({
     enumConsistencyTest<MessageAuthenticationCode>()
+    enumConsistencyTest<DataIntegrityAlgorithm>()
 })

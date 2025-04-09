@@ -90,28 +90,26 @@ sealed class JweAlgorithm(override val identifier: String) : JsonWebAlgorithm {
      */
     fun toSymmetricEncryptionAlgorithm(): SymmetricEncryptionAlgorithm<*, *, *>? =
         when (this) {
-            is A128KW -> SymmetricEncryptionAlgorithm.AES_128.WRAP
-            is A192KW -> SymmetricEncryptionAlgorithm.AES_192.WRAP
-            is A256KW -> SymmetricEncryptionAlgorithm.AES_256.WRAP
+            is A128KW -> SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394
+            is A192KW -> SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394
+            is A256KW -> SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394
             is A128GCMKW -> SymmetricEncryptionAlgorithm.AES_128.GCM
             is A192GCMKW -> SymmetricEncryptionAlgorithm.AES_192.GCM
             is A256GCMKW -> SymmetricEncryptionAlgorithm.AES_256.GCM
             else -> null
-        } as SymmetricEncryptionAlgorithm<*, *, *>? //Why is this needed?
-
+        }
 }
 
 /**
- * Tries to map this algorithm to a matching [JsonWebAlgorithm].
+ * Tries to map this algorithm to a matching [JsonWebAlgorithm] for key wrapping.
  * Mappings exist for the following algorithms (as others are not direct mappings of symmetric algorithms):
  * * [SymmetricEncryptionAlgorithm.AES.GCM]
  * * [SymmetricEncryptionAlgorithm.AES.WRAP]
  *
- * **Beware:** AES-GCM will be mapped to `JweAlgorithm.A***GCMKW`, not to be confused with *JweEncryption.A***GCM`
  *
  * @return `null` if no mapping exists
  */
-fun SymmetricEncryptionAlgorithm<*, *, *>.toJweAlgorithm(): JweAlgorithm? = when (this) {
+fun SymmetricEncryptionAlgorithm<*, *, *>.toJweKwAlgorithm(): JweAlgorithm? = when (this) {
     SymmetricEncryptionAlgorithm.AES_128.WRAP -> JweAlgorithm.A128KW
     SymmetricEncryptionAlgorithm.AES_192.WRAP -> JweAlgorithm.A192KW
     SymmetricEncryptionAlgorithm.AES_256.WRAP -> JweAlgorithm.A256KW

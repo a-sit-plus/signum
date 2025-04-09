@@ -55,6 +55,7 @@ kotlin {
             dependencies {
                 implementation(libs.jose)
                 implementation(project(":supreme"))
+                implementation("at.asitplus:kmmresult-test:${AspVersions.kmmresult}")
             }
         }
     }

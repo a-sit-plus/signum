@@ -66,7 +66,7 @@ data class JwsHeader(
      * implementations.
      */
     @SerialName("alg")
-    val algorithm: JwsAlgorithm<*>,
+    val algorithm: JwsAlgorithm,
 
     /**
      * The "cty" (content type) Header Parameter is used by JWS applications

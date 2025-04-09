@@ -4,19 +4,12 @@ import at.asitplus.KmmResult
 import at.asitplus.KmmResult.Companion.failure
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.SecretExposure
-import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
+import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.cosef.CoseKey.Companion.deserialize
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
-import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
-import at.asitplus.signum.indispensable.symmetric.SymmetricKey
-import at.asitplus.signum.indispensable.symmetric.isAuthenticated
-import at.asitplus.signum.indispensable.symmetric.isIntegrated
-import at.asitplus.signum.indispensable.symmetric.keyFrom
+import at.asitplus.signum.indispensable.symmetric.*
 import com.ionspin.kotlin.bignum.integer.Sign
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -55,7 +48,7 @@ data class CoseKey(
     val operations: Array<CoseKeyOperation>? = null,
     val baseIv: ByteArray? = null,
     val keyParams: CoseKeyParams?,
-) : SpecializedCryptoPublicKey {
+) : SpecializedCryptoPublicKey, SpecializedSymmetricKey {
     override fun toString(): String {
         return "CoseKey(type=$type," +
                 " keyId=${keyId?.encodeToString(Base16Strict)}," +
@@ -162,7 +155,7 @@ data class CoseKey(
     /**
      * Tries to transform this CoseKey into a corresponding [SymmetricKey]
      */
-    fun toSymmetricKey(): KmmResult<SymmetricKey<*, *, *>> = catching {
+    override fun toSymmetricKey(): KmmResult<SymmetricKey<*, *, *>> = catching {
         require(algorithm is CoseAlgorithm.SymmetricEncryption) { "Not a symmetric algorithm" }
         require(keyParams is CoseKeyParams.SymmKeyParams) { "No symmetric key bytes present" }
         val alg = algorithm.algorithm
@@ -174,20 +167,23 @@ data class CoseKey(
 
 /**
  * Creates a CoseKey matching, if the key's [SymmetricKey.algorithm] has a COSE mapping.
- * If you want to add a KID, simply set it prior to encoding the key
  */
-fun SymmetricKey<*, *, *>.toCoseKey(baseIv: ByteArray? = null, vararg includedOps: CoseKeyOperation) = catching {
+fun SymmetricKey<*, *, *>.toCoseKey(
+    baseIv: ByteArray? = null,
+    keyId: ByteArray? = this.coseKid,
+    vararg includedOps: CoseKeyOperation
+) = catching {
     //fail fast
     val alg = algorithm.toCoseAlgorithm().getOrThrow()
     require(this is SymmetricKey.Integrated) //we don't support anything else
 
     CoseKey(
         CoseKeyType.SYMMETRIC,
-        keyId = coseKid,
+        keyId = keyId,
         algorithm = alg,
         operations = includedOps.let { if (it.isEmpty()) null else it.asList().toTypedArray() },
         baseIv = baseIv,
-        keyParams =  @OptIn(SecretExposure::class) CoseKeyParams.SymmKeyParams(secretKey.getOrThrow())
+        keyParams = @OptIn(SecretExposure::class) CoseKeyParams.SymmKeyParams(secretKey.getOrThrow())
     )
 }
 
@@ -327,7 +323,7 @@ object CoseKeySerializer : KSerializer<CoseKey> {
         constructor(src: CoseKey) : this(
             src.type,
             src.keyId,
-            src.algorithm?.let { it as CoseAlgorithm.Signature }
+            src.algorithm?.let { it as CoseAlgorithm.Signature },
             src.operations,
             src.baseIv,
             if (src.keyParams is CoseKeyParams.EcKeyParams<*>) src.keyParams.curve else null,

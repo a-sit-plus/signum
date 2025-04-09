@@ -10,7 +10,6 @@ import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.Asn1Time
-import at.asitplus.signum.indispensable.fromJcaPublicKey
 import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.indispensable.jcaName
 import at.asitplus.signum.indispensable.parseFromJca
@@ -21,7 +20,7 @@ import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.indispensable.toJcaCertificate
-import at.asitplus.signum.supreme.UnsupportedCryptoException
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 import at.asitplus.signum.supreme.dsl.REQUIRED

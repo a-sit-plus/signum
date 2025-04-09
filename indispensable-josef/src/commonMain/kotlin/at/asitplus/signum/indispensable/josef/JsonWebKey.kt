@@ -15,10 +15,7 @@ import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.josef.io.JwsCertificateSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.CertificateChain
-import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
-import at.asitplus.signum.indispensable.symmetric.SymmetricKey
-import at.asitplus.signum.indispensable.symmetric.hasDedicatedMacKey
-import at.asitplus.signum.indispensable.symmetric.keyFrom
+import at.asitplus.signum.indispensable.symmetric.*
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -187,7 +184,7 @@ data class JsonWebKey(
     @SerialName("y")
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val y: ByteArray? = null,
-) : SpecializedCryptoPublicKey {
+) : SpecializedCryptoPublicKey, SpecializedSymmetricKey {
 
     /**
      * Thumbprint in the form of `urn:ietf:params:oauth:jwk-thumbprint:sha256:DEADBEEF`
@@ -355,7 +352,7 @@ data class JsonWebKey(
      * * [SymmetricEncryptionAlgorithm.AES.WRAP]
      *
      */
-    fun toSymmetricKey(): KmmResult<SymmetricKey<*, *, *>> = catching {
+    override fun toSymmetricKey(): KmmResult<SymmetricKey<*, *, *>> = catching {
         require(algorithm is JweAlgorithm) { "Not a JweAlgorithm" }
         require(k != null) { "key bytes not present" }
         when (val alg = algorithm.toSymmetricEncryptionAlgorithm()) {
@@ -369,19 +366,19 @@ data class JsonWebKey(
 /**
  * Converts this symmetric key to a [JsonWebKey]. [algorithm] may be null for algorithms, which do not directly
  * correspond to a valid JWA `alg` identifier but will still be encoded.
- * * If you want to add a KID, simply set it prior to encoding the key
  * * Allowed key operations can be restricted by specifying [includedOps]
  * */
-fun SymmetricKey<*, *, *>.toJsonWebKey(vararg includedOps: String): KmmResult<JsonWebKey> = catching {
-    @OptIn(SecretExposure::class)
-    JsonWebKey(
-        k = jsonWebKeyBytes.getOrThrow(),
-        type = JwkType.SYM,
-        keyId = jwkId,
-        algorithm = algorithm.toJweAlgorithm(),
-        keyOperations = includedOps.toSet()
-    )
-}
+fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId, vararg includedOps: String): KmmResult<JsonWebKey> =
+    catching {
+        @OptIn(SecretExposure::class)
+        JsonWebKey(
+            k = jsonWebKeyBytes.getOrThrow(),
+            type = JwkType.SYM,
+            keyId = keyId,
+            algorithm = algorithm.toJweKwAlgorithm(),
+            keyOperations = includedOps.toSet()
+        )
+    }
 
 /**
  * converts a symmetric key to its JWE serializable form (i.e. a single bytearray)
@@ -430,7 +427,6 @@ fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey?
         else -> return null
     }
     return JsonWebKey(algorithm = jwAlg, keyId = keyId, k = jsonWebKeyBytes.getOrNull())
-    TODO("@nodh does this make sense?")
 }
 
 

@@ -5,11 +5,12 @@ package at.asitplus.signum.indispensable.cosef
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.mac.HMAC
-import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
+import at.asitplus.signum.indispensable.HMAC
+import at.asitplus.signum.indispensable.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
+import at.asitplus.signum.UnsupportedCryptoException
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -30,32 +31,38 @@ sealed interface CoseAlgorithm {
         }
     }
 
-    val value: Int
+    /**
+     * See [COSE Algorithm Registry](https://www.iana.org/assignments/cose/cose.xhtml)
+     */
+    val coseValue: Int
+
+    @Deprecated("Use value instead", ReplaceWith("coseValue"))
+    val value get() = coseValue
 
     @Serializable(with = CoseAlgorithmSerializer::class)
-    sealed class DataIntegrity<D : DataIntegrityAlgorithm>(override val value: Int, val algorithm: D) : CoseAlgorithm {
+    sealed class DataIntegrity(override val coseValue: Int) : CoseAlgorithm, SpecializedDataIntegrityAlgorithm {
         companion object {
-            val entries: Collection<DataIntegrity<*>> by lazy { Signature.entries + MAC.entries }
+            val entries: Collection<DataIntegrity> by lazy { Signature.entries + MAC.entries }
         }
     }
 
     @Serializable(with = CoseAlgorithmSerializer::class)
-    sealed class SymmetricEncryption(override val value: Int, val algorithm: SymmetricEncryptionAlgorithm<*, *, *>) :
+    sealed class SymmetricEncryption(override val coseValue: Int, val algorithm: SymmetricEncryptionAlgorithm<*, *, *>) :
         CoseAlgorithm.Symmetric {
 
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        object A128GCM : SymmetricEncryption(1, SymmetricEncryptionAlgorithm.AES_128.GCM)
+        data object A128GCM : SymmetricEncryption(1, SymmetricEncryptionAlgorithm.AES_128.GCM)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        object A192GCM : SymmetricEncryption(2, SymmetricEncryptionAlgorithm.AES_192.GCM)
+        data object A192GCM : SymmetricEncryption(2, SymmetricEncryptionAlgorithm.AES_192.GCM)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        object A256GCM : SymmetricEncryption(3, SymmetricEncryptionAlgorithm.AES_256.GCM)
+        data object A256GCM : SymmetricEncryption(3, SymmetricEncryptionAlgorithm.AES_256.GCM)
 
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        object ChaCha20Poly1305 : SymmetricEncryption(24, SymmetricEncryptionAlgorithm.ChaCha20Poly1305)
+        data object ChaCha20Poly1305 : SymmetricEncryption(24, SymmetricEncryptionAlgorithm.ChaCha20Poly1305)
 
         companion object {
             val entries: Collection<SymmetricEncryption> by lazy { listOf(A128GCM, A192GCM, A256GCM, ChaCha20Poly1305) }
@@ -64,49 +71,43 @@ sealed interface CoseAlgorithm {
 
 
     @Serializable(with = CoseAlgorithmSerializer::class)
-    sealed class Signature(value: Int, algorithm: SignatureAlgorithm) :
-        DataIntegrity<SignatureAlgorithm>(value, algorithm),
+    sealed class Signature(value: Int, override val algorithm: SignatureAlgorithm) :
+        DataIntegrity(value),
         SpecializedSignatureAlgorithm {
 
         // ECDSA with SHA-size
         @Serializable(with = CoseAlgorithmSerializer::class)
-        object ES256 : Signature(-7, SignatureAlgorithm.ECDSAwithSHA256)
+        data object ES256 : Signature(-7, SignatureAlgorithm.ECDSAwithSHA256)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        object ES384 : Signature(-35, SignatureAlgorithm.ECDSAwithSHA384)
+        data object ES384 : Signature(-35, SignatureAlgorithm.ECDSAwithSHA384)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        object ES512 : Signature(-36, SignatureAlgorithm.ECDSAwithSHA512)
+        data object ES512 : Signature(-36, SignatureAlgorithm.ECDSAwithSHA512)
 
         // RSASSA-PSS with SHA-size
         @Serializable(with = CoseAlgorithmSerializer::class)
-        object PS256 : Signature(-37, SignatureAlgorithm.RSAwithSHA256andPSSPadding)
+        data object PS256 : Signature(-37, SignatureAlgorithm.RSAwithSHA256andPSSPadding)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        object PS384 : Signature(-38, SignatureAlgorithm.RSAwithSHA384andPSSPadding)
+        data object PS384 : Signature(-38, SignatureAlgorithm.RSAwithSHA384andPSSPadding)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        object PS512 : Signature(-39, SignatureAlgorithm.RSAwithSHA512andPSSPadding)
+        data object PS512 : Signature(-39, SignatureAlgorithm.RSAwithSHA512andPSSPadding)
 
         // RSASSA-PKCS1-v1_5 with SHA-size
         @Serializable(with = CoseAlgorithmSerializer::class)
-        object RS256 : Signature(-257, SignatureAlgorithm.RSAwithSHA256andPKCS1Padding)
+        data object RS256 : Signature(-257, SignatureAlgorithm.RSAwithSHA256andPKCS1Padding)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        object RS384 : Signature(-258, SignatureAlgorithm.RSAwithSHA384andPKCS1Padding)
+        data object RS384 : Signature(-258, SignatureAlgorithm.RSAwithSHA384andPKCS1Padding)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        object RS512 : Signature(-259, SignatureAlgorithm.RSAwithSHA512andPKCS1Padding)
+        data object RS512 : Signature(-259, SignatureAlgorithm.RSAwithSHA512andPKCS1Padding)
 
         // RSASSA-PKCS1-v1_5 using SHA-1
         @Serializable(with = CoseAlgorithmSerializer::class)
-        object RS1 : Signature(-65535, SignatureAlgorithm.RSA(Digest.SHA1, RSAPadding.PKCS1))
-
-        open val digest: Digest?
-            get() = when (algorithm) {
-                is SignatureAlgorithm.ECDSA -> digest
-                is SignatureAlgorithm.RSA -> digest
-            }
+        data object RS1 : Signature(-65535, SignatureAlgorithm.RSA(Digest.SHA1, RSAPadding.PKCS1))
 
         companion object {
             val entries: Collection<Signature> by lazy {
@@ -130,30 +131,31 @@ sealed interface CoseAlgorithm {
 
     @Serializable(with = CoseAlgorithmSerializer::class)
     sealed class MAC(
-        value: Int, algorithm: MessageAuthenticationCode,
+        value: Int,
+        override val algorithm: MessageAuthenticationCode,
         /**
          * The tag length for COSE might not be the same as for the underlying HMAC
          */
         val tagLength: BitLength
     ) :
-        DataIntegrity<MessageAuthenticationCode>(value, algorithm), Symmetric {
+        DataIntegrity(value), Symmetric, SpecializedMessageAuthenticationCode {
         // HMAC-size with SHA-size
         /**HMAC w/ SHA-256 truncated to 64 bits*/
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        object HS256_64 : MAC(4, HMAC.SHA256, 64.bit)
+        data object HS256_64 : MAC(4, HMAC.SHA256, 64.bit)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        object HS256 : MAC(5, HMAC.SHA256, 256.bit)
+        data object HS256 : MAC(5, HMAC.SHA256, 256.bit)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        object HS384 : MAC(6, HMAC.SHA384, 384.bit)
+        data object HS384 : MAC(6, HMAC.SHA384, 384.bit)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        object HS512 : MAC(7, HMAC.SHA512, 512.bit)
+        data object HS512 : MAC(7, HMAC.SHA512, 512.bit)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        object UNOFFICIAL_HS1 : MAC(-2341169 /*random inside private use range*/, HMAC.SHA1, 160.bit)
+        data object UNOFFICIAL_HS1 : MAC(-2341169 /*random inside private use range*/, HMAC.SHA1, 160.bit)
 
         companion object {
             val entries: Collection<MAC> by lazy {
@@ -179,12 +181,12 @@ object CoseAlgorithmSerializer : KSerializer<CoseAlgorithm> {
         PrimitiveSerialDescriptor("CoseAlgorithmSerializer", PrimitiveKind.INT)
 
     override fun serialize(encoder: Encoder, value: CoseAlgorithm) {
-        value.let { encoder.encodeInt(it.value) }
+        value.let { encoder.encodeInt(it.coseValue) }
     }
 
     override fun deserialize(decoder: Decoder): CoseAlgorithm {
         val decoded = decoder.decodeInt()
-        return CoseAlgorithm.entries.first { it.value == decoded }
+        return CoseAlgorithm.entries.first { it.coseValue == decoded }
     }
 
 }
@@ -196,7 +198,7 @@ fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = c
             Digest.SHA256 -> CoseAlgorithm.Signature.ES256
             Digest.SHA384 -> CoseAlgorithm.Signature.ES384
             Digest.SHA512 -> CoseAlgorithm.Signature.ES512
-            else -> throw IllegalArgumentException("ECDSA with ${this.digest} is unsupported by COSE")
+            else -> throw UnsupportedCryptoException("ECDSA with ${this.digest} is unsupported by COSE")
         }
 
         is SignatureAlgorithm.RSA -> when (this.padding) {
@@ -211,17 +213,16 @@ fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = c
                 Digest.SHA256 -> CoseAlgorithm.Signature.PS256
                 Digest.SHA384 -> CoseAlgorithm.Signature.PS384
                 Digest.SHA512 -> CoseAlgorithm.Signature.PS512
-                else -> throw IllegalArgumentException("RSA-PSS with ${this.digest} is unsupported by COSE")
+                else -> throw UnsupportedCryptoException("RSA-PSS with ${this.digest} is unsupported by COSE")
             }
         }
     }
 }
 
-fun DataIntegrityAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm> = catching {
-    when (this) {
+fun DataIntegrityAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.DataIntegrity> = catching {
+     when (this) {
         is SignatureAlgorithm -> toCoseAlgorithm().getOrThrow()
         is MessageAuthenticationCode -> toCoseAlgorithm().getOrThrow()
-        else -> throw IllegalArgumentException("Algorithm $this not supported by COSE")
     }
 }
 
@@ -242,10 +243,16 @@ fun SymmetricEncryptionAlgorithm<*, *, *>.toCoseAlgorithm(): KmmResult<CoseAlgor
         SymmetricEncryptionAlgorithm.AES_128.GCM -> CoseAlgorithm.SymmetricEncryption.A128GCM
         SymmetricEncryptionAlgorithm.AES_192.GCM -> CoseAlgorithm.SymmetricEncryption.A192GCM
         SymmetricEncryptionAlgorithm.AES_256.GCM -> CoseAlgorithm.SymmetricEncryption.A256GCM
-        else -> throw IllegalArgumentException("$this has no COSE algorithm mapping")
+        else -> throw UnsupportedCryptoException("$this has no COSE algorithm mapping")
     }
 }
 
 /** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
 fun SpecializedSignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> =
+    this.algorithm.toCoseAlgorithm()
+/** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
+fun SpecializedDataIntegrityAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.DataIntegrity> =
+    this.algorithm.toCoseAlgorithm()
+/** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
+fun SpecializedMessageAuthenticationCode.toCoseAlgorithm(): KmmResult<CoseAlgorithm.MAC> =
     this.algorithm.toCoseAlgorithm()

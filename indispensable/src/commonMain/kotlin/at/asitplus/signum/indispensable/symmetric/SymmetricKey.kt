@@ -319,3 +319,8 @@ val <I : NonceTrait> SymmetricKey<AuthCapability.Authenticated.WithDedicatedMac,
  */
 @SecretExposure
 val <I : NonceTrait> SymmetricKey<AuthCapability.Authenticated.WithDedicatedMac, I, out KeyType.WithDedicatedMacKey>.macKey get() = (this as SymmetricKey.WithDedicatedMac).macKey
+
+
+interface SpecializedSymmetricKey {
+    fun toSymmetricKey(): KmmResult<SymmetricKey<*, *, *>>
+}

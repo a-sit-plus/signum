@@ -22,7 +22,7 @@ import at.asitplus.signum.supreme.AppLifecycleMonitor
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.UnlockFailed
-import at.asitplus.signum.supreme.UnsupportedCryptoException
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.supreme.dsl.DISCOURAGED
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn

@@ -9,7 +9,7 @@ import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.indispensable.jcaAlgorithmComponent
 import at.asitplus.signum.indispensable.jcaSignatureBytes
 import at.asitplus.signum.supreme.dsl.DSL
-import at.asitplus.signum.supreme.UnsupportedCryptoException
+import at.asitplus.signum.UnsupportedCryptoException
 import java.security.Signature
 
 /**

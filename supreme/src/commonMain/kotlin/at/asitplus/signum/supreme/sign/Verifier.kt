@@ -9,7 +9,7 @@ import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SpecializedSignatureAlgorithm
 import at.asitplus.signum.ecmath.straussShamir
 import at.asitplus.signum.supreme.dsl.DSL
-import at.asitplus.signum.supreme.UnsupportedCryptoException
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 
 class InvalidSignature(message: String, cause: Throwable? = null): Throwable(message, cause)

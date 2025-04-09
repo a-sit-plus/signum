@@ -51,6 +51,6 @@ sealed interface SignatureAlgorithm: DataIntegrityAlgorithm {
     }
 }
 
-interface SpecializedSignatureAlgorithm {
-    val algorithm: SignatureAlgorithm
+interface SpecializedSignatureAlgorithm: SpecializedDataIntegrityAlgorithm {
+    override val algorithm: SignatureAlgorithm
 }

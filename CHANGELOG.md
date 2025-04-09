@@ -13,7 +13,7 @@
 * HMAC Support
     * **This finally cleans up the `RSAorHMAC` mess, which is a breaking change**
     * Introduce umbrella `DataIntegrityAlgorithms`, which is the parent of `SignatureAlgorithm` and `MessageAuthenticationCode`
-    * `JwsAlgorithm` and `CoseAlgorithm` are now abstract, having subclasses and have a `DataIntegrityAlgorithm` generic type argument
+    * `JwsAlgorithm` and `CoseAlgorithm` are now abstract, having subclasses.
     * `JwsAlgorithm`s and `CoseAlgorithm`s are now available under `.Signature` and `.MAC` respectively. There are no toplevel constants of predefined algorithms anymore!
 * Symmetric Encryption
     * Supported Algorithms
@@ -31,6 +31,7 @@
 * Move `SecretExposure` annotation from `supreme` to `indispensable` **This is a breaking change**
 * Expose `SecureRandom` as API dependency in `indispensable`
 
+* Rename `CoseAlgorithm.value` -> `CoseAlgorithm.coseValue`
 * Fix COSE key parsing for unordered properties
 * Remove code elements deprecated in 3.15.0, related to OID4VCI and HAIP
 

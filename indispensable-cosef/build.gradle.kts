@@ -50,6 +50,9 @@ kotlin {
                 implementation(libs.bignum) //Intellij bug work-around
             }
         }
+        commonTest.dependencies {
+            implementation("at.asitplus:kmmresult-test:${AspVersions.kmmresult}")
+        }
     }
 }
 
