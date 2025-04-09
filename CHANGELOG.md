@@ -13,8 +13,8 @@
 * HMAC Support
   * **This finally cleans up the `RSAorHMAC` mess, which is a breaking change**
   * Introduce umbrella `DataIntegrityAlgorithms` which is the parent of `SignatureAlgorithm` and `MessageAuthenticationCode`
-  * `JwsAlgorithm` and `CoseAlgorihtm` are now abstract and have a `DataIntegrityAlgorithm` generic type argument
-  * `JwsAlgorithm`s and `CoseAlgorihtm`s are now available under `.Signature` and `.MAC` respectively. There is no toplevel list of predefined algorithms any more
+  * `JwsAlgorithm` and `CoseAlgorihtm` are now abstract, having subclasses and have a `DataIntegrityAlgorithm` generic type argument
+  * `JwsAlgorithm`s and `CoseAlgorihtm`s are now available under `.Signature` and `.MAC` respectively. There are no toplevel constants of predefined algorithms anymore!
 * Symmetric Encryption
     * Supported Algorithms
         * AES
