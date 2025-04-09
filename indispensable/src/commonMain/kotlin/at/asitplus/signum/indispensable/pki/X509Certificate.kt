@@ -25,7 +25,6 @@ import kotlinx.serialization.builtins.serializer
  * Very simple implementation of the meat of an X.509 Certificate:
  * The structure that gets signed
  */
-@Serializable
 data class TbsCertificate
 @Throws(Asn1Exception::class)
 constructor(
@@ -241,7 +240,6 @@ fun CryptoSignature.Companion.fromX509Encoded(alg: X509SignatureAlgorithm, it: A
 /**
  * Very simple implementation of an X.509 Certificate
  */
-@Serializable
 data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     val tbsCertificate: TbsCertificate,
     val signatureAlgorithm: X509SignatureAlgorithm,

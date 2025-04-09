@@ -20,7 +20,6 @@ import kotlinx.serialization.Serializable
  * @param publicKey nomen est omen
  * @param attributes nomen est omen
  */
-@Serializable
 data class TbsCertificationRequest(
     val version: Int = 0,
     val subjectName: List<RelativeDistinguishedName>,
@@ -112,7 +111,6 @@ data class TbsCertificationRequest(
 /**
  * Very simple implementation of a PKCS#10 Certification Request
  */
-@Serializable
 data class Pkcs10CertificationRequest(
     val tbsCsr: TbsCertificationRequest,
     val signatureAlgorithm: X509SignatureAlgorithm,
