@@ -9,6 +9,7 @@
     * `@Serializable` suggests deserialization from JSON, CBOR, etc. works, which was never universally true.
     * Getting native ASN.1 serialization for kotlinx-serialization is now a no-brainer given we support every primitive required.
     * **Serializers like `X509CertificateBase64UrlSerializer` are here to stay because those are universally useful!**
+    * `ObjectIdSerializer` was renamed to `ObjectIdentifierStringSerializer`
 * HMAC Support
     * **This finally cleans up the `RSAorHMAC` mess, which is a breaking change**
     * Introduce umbrella `DataIntegrityAlgorithms`, which is the parent of `SignatureAlgorithm` and `MessageAuthenticationCode`
