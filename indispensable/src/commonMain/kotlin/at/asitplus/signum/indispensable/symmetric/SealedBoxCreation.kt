@@ -95,6 +95,7 @@ sealed class SealedBoxBuilder<A : AuthCapability<out K>, I : NonceTrait, out K :
         SealedBoxBuilder<A, NonceTrait.Required, K>(algorithm) {
         class Awaiting<A : AuthCapability<out K>, K : KeyType> internal constructor(algorithm: SymmetricEncryptionAlgorithm<A, NonceTrait.Required, K>) :
             WithNonce<A, K>(algorithm) {
+            @Suppress("UNCHECKED_CAST")
             fun withNonce(nonce: ByteArray): Having<A, K> = when (algorithm.isAuthenticated()) {
                 true -> Having.Authenticated<AuthCapability.Authenticated<*>, KeyType>(
                     algorithm as SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, NonceTrait.Required, KeyType>,

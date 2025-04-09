@@ -23,7 +23,7 @@ If you plan on contributing changes to this repository's contents, please
 1. Fork it
 2. Create a branch with a descriptive name (e.g. `feature/timeTravel` or `fix/gravitationalConstant`)
 3. Commit your changes to your branch
-4. Open a pull request
+4. Open a pull request against `development`
 
 We will then review the changes, provide feedback.
 Once we agree that the PR is ready, we will approve it, and your PR will be merged.

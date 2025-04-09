@@ -62,6 +62,7 @@ fun Asn1Element.Companion.parse(source: ByteArray): Asn1Element =
 )
 @Throws(Asn1Exception::class)
 fun Asn1Element.Companion.parseAll(input: ByteIterator): List<Asn1Element> =
+    @OptIn(UnsafeIoApi::class)
     mutableListOf<Byte>().also { while (input.hasNext()) it.add(input.nextByte()) }.toByteArray().wrapInUnsafeSource()
         .readFullyToAsn1Elements().first
 

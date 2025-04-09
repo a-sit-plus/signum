@@ -1,3 +1,5 @@
+@file:Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
+
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.*
@@ -44,6 +46,7 @@ sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
     object NegativeInfinity : Asn1Real
 
     @Serializable(with = Asn1RealSerializer::class)
+    @ConsistentCopyVisibility
     data class Finite internal constructor(val normalizedMantissa: Asn1Integer, val normalizedExponent: Long) :
         Asn1Real
 
