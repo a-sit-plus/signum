@@ -3,13 +3,12 @@
 ## 3.0
 
 ### NEXT
-* **Note: We are deprecating and will soon be removing the debug-only serialization for cryptographic datatypes like certificates, public keys, etc.**
+* **Note: All debug-only serialization for cryptographic datatypes like certificates, public keys, etc. was removed!**
     * We support robust ASN.1 encoding and mapping from/to JOSE and COSE datatypes and our ASN.1 structures support pretty printing.
-    * -> There is no need for this misleading serialization support for debugging anymore
-    * `@Serializable` suggests deserialization from JSON, CBOR, etc. works, which was never universally true
+    * -> There is no need for this misleading serialization support for debugging anymore.
+    * `@Serializable` suggests deserialization from JSON, CBOR, etc. works, which was never universally true.
     * Getting native ASN.1 serialization for kotlinx-serialization is now a no-brainer given we support every primitive required.
-    * This note will be prepended to the changelog entries until the `@Serialization` annotations have been removed.
-        * This will happen by Indispensable 4.0.0 / Supreme 1.0.0, if not before then.
+    * **Serializers like `X509CertificateBase64UrlSerializer` are here to stay because those are universally useful!**
 * HMAC Support
     * **This finally cleans up the `RSAorHMAC` mess, which is a breaking change**
     * Introduce umbrella `DataIntegrityAlgorithms`, which is the parent of `SignatureAlgorithm` and `MessageAuthenticationCode`

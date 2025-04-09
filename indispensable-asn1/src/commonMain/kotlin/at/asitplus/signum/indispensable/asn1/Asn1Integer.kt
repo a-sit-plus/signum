@@ -35,7 +35,7 @@ fun Asn1Integer(number: ULong) =
  * It has a [sign] though, and supports [twosComplement] representation and converting [fromTwosComplement].
  * Hence, it directly interoperates with [Kotlin MP BigNum](https://github.com/ionspin/kotlin-multiplatform-bignum) and the JVM BigInteger.
  */
-@Serializable(with = Asn1IntegerSerializer::class)
+@Serializable(with = Asn1IntegerSerializer::class) //this here stays, as it might be useful in general
 sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign): Asn1Encodable<Asn1Primitive> {
 
     override fun encodeToTlv(): Asn1Primitive = encodeToAsn1Primitive()

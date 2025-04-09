@@ -19,7 +19,6 @@ import kotlin.uuid.Uuid
  * @param nodes OID Tree nodes passed in order (e.g. 1u, 2u, 96u, …)
  * @throws Asn1Exception if less than two nodes are supplied, the first node is >2 or the second node is >39
  */
-@Serializable(with = ObjectIdSerializer::class)
 class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
     bytes: ByteArray?,
     nodes: List<VarUInt>?
@@ -184,18 +183,6 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
         }
     }
 }
-
-object ObjectIdSerializer : KSerializer<ObjectIdentifier> {
-    override val descriptor = PrimitiveSerialDescriptor("OID", PrimitiveKind.STRING)
-
-    override fun deserialize(decoder: Decoder): ObjectIdentifier = ObjectIdentifier(decoder.decodeString())
-
-    override fun serialize(encoder: Encoder, value: ObjectIdentifier) {
-        encoder.encodeString(value.toString())
-    }
-
-}
-
 
 /**
  * Adds [oid] to the implementing class

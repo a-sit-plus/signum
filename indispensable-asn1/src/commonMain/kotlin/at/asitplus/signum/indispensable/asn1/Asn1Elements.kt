@@ -22,7 +22,6 @@ import kotlin.native.ObjCName
 /**
  * Base ASN.1 data class. Can either be a primitive (holding a value), or a structure (holding other ASN.1 elements)
  */
-@Serializable(with = Asn1EncodableSerializer::class)
 sealed class Asn1Element(
     val tag: Tag
 ) {
@@ -254,7 +253,6 @@ sealed class Asn1Element(
     override fun hashCode(): Int = tag.hashCode()
 
 
-    @Serializable
     @ConsistentCopyVisibility
     data class Tag internal constructor(
         val tagValue: ULong,
@@ -437,18 +435,6 @@ inline fun <reified T : Asn1Element> T.assertTag(tag: Asn1Element.Tag): T {
 @Throws(Asn1TagMismatchException::class)
 inline fun <reified T : Asn1Element> T.assertTag(tagNumber: ULong): T = assertTag(tag withNumber tagNumber)
 
-object Asn1EncodableSerializer : KSerializer<Asn1Element> {
-    override val descriptor = PrimitiveSerialDescriptor("Asn1Encodable", PrimitiveKind.STRING)
-
-    override fun deserialize(decoder: Decoder): Asn1Element {
-        return Asn1Element.parse(decoder.decodeString().hexToByteArray(HexFormat.UpperCase))
-    }
-
-    override fun serialize(encoder: Encoder, value: Asn1Element) {
-        encoder.encodeString(value.derEncoded.toHexString(HexFormat.UpperCase))
-    }
-
-}
 
 /**
  * ASN.1 structure. Contains no data itself, but holds zero or more [children]
@@ -714,7 +700,6 @@ class Asn1CustomStructure private constructor(
  * @param children the elements to put into this sequence
  */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
-@Serializable(with = Asn1EncodableSerializer::class)
 class Asn1EncapsulatingOctetString(children: List<Asn1Element>) :
     Asn1Structure(Tag.OCTET_STRING, children, sortChildren = false, shouldBeSorted = false),
     Asn1OctetString {

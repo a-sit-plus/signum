@@ -21,7 +21,6 @@ private const val PEM_BOUNDARY = "PUBLIC KEY"
 /**
  * Representation of a public key structure
  */
-@Serializable
 sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
 
     /**
@@ -255,7 +254,6 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
      * The properties and constructor params are exactly what their names suggest
      * @param preferCompressedRepresentation indicates whether to use point compression where applicable
      */
-    @Serializable
     @SerialName("EC")
     @ConsistentCopyVisibility
     data class EC private constructor(
