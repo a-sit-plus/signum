@@ -4,7 +4,6 @@ import at.asitplus.signum.indispensable.asn1.VarUInt.Companion.decodeAsn1VarBigU
 import at.asitplus.signum.indispensable.asn1.encoding.decode
 import at.asitplus.signum.indispensable.asn1.encoding.toAsn1VarInt
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
@@ -19,7 +18,6 @@ import kotlin.uuid.Uuid
  * @param nodes OID Tree nodes passed in order (e.g. 1u, 2u, 96u, …)
  * @throws Asn1Exception if less than two nodes are supplied, the first node is >2 or the second node is >39
  */
-@Serializable(with = ObjectIdSerializer::class)
 class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
     bytes: ByteArray?,
     nodes: List<VarUInt>?
@@ -185,18 +183,6 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
     }
 }
 
-object ObjectIdSerializer : KSerializer<ObjectIdentifier> {
-    override val descriptor = PrimitiveSerialDescriptor("OID", PrimitiveKind.STRING)
-
-    override fun deserialize(decoder: Decoder): ObjectIdentifier = ObjectIdentifier(decoder.decodeString())
-
-    override fun serialize(encoder: Encoder, value: ObjectIdentifier) {
-        encoder.encodeString(value.toString())
-    }
-
-}
-
-
 /**
  * Adds [oid] to the implementing class
  */
@@ -212,4 +198,16 @@ interface Identifiable {
 @Throws(Asn1Exception::class)
 fun Asn1Primitive.readOid() = runRethrowing {
     decode(Asn1Element.Tag.OID) { ObjectIdentifier.decodeFromAsn1ContentBytes(it) }
+}
+
+object ObjectIdentifierStringSerializer : KSerializer<ObjectIdentifier> {
+    override val descriptor = PrimitiveSerialDescriptor("OID", PrimitiveKind.STRING)
+
+    override fun deserialize(decoder: Decoder): ObjectIdentifier =
+        ObjectIdentifier(decoder.decodeString())
+
+    override fun serialize(encoder: Encoder, value: ObjectIdentifier) {
+        encoder.encodeString(value.toString())
+    }
+
 }

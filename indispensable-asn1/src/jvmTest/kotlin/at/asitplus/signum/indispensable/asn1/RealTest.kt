@@ -9,6 +9,8 @@ import io.kotest.datatest.withData
 import io.kotest.matchers.longs.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 
 @OptIn(ExperimentalStdlibApi::class)
@@ -25,6 +27,17 @@ class RealTest : FreeSpec({
 
             double.encodeToAsn1Primitive().derEncoded shouldBe bytes
             Asn1Element.parse(bytes).asPrimitive().decodeToDouble() shouldBe double
+
+            val real = Json.encodeToString(own)
+            println(real)
+            Json.decodeFromString<Asn1Real>(" $real") shouldBe own
+            Json.decodeFromString<Asn1Real>(" $real ") shouldBe own
+            Json.decodeFromString<Asn1Real>("$real ") shouldBe own
+            Json.decodeFromString<Asn1Real>(real.replace(" *","*")) shouldBe own
+            Json.decodeFromString<Asn1Real>(real.replace(" * ","*")) shouldBe own
+            Json.decodeFromString<Asn1Real>(real.replace("^"," ^")) shouldBe own
+            Json.decodeFromString<Asn1Real>(real.replace("^"," ^ ")) shouldBe own
+            Json.decodeFromString<Asn1Real>(real) shouldBe own
         }
     }
 
@@ -41,7 +54,13 @@ class RealTest : FreeSpec({
                 this.shouldBeInstanceOf<Asn1Real.Finite>()
                 this.normalizedMantissa shouldBe wrongScaledMantissa
                 this.normalizedExponent shouldBe exponent
+
+                val real = Json.encodeToString(this)
+                println(real)
+                Json.decodeFromString<Asn1Real>(real) shouldBe this
             }
+
+
         }
 
         withData(
@@ -57,6 +76,10 @@ class RealTest : FreeSpec({
 
             double.encodeToAsn1Primitive().derEncoded shouldBe bytes
             Asn1Element.parse(bytes).asPrimitive().decodeToDouble() shouldBe double
+
+            val real = Json.encodeToString(own)
+            println(real)
+            Json.decodeFromString<Asn1Real>(real) shouldBe own
         }
     }
 

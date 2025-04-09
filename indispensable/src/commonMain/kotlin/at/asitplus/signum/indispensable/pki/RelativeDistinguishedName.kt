@@ -10,7 +10,6 @@ import kotlinx.serialization.Serializable
 /**
  * X.500 Name (used in X.509 Certificates)
  */
-@Serializable
 data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndValue>) : Asn1Encodable<Asn1Set> {
 
     constructor(singleItem: AttributeTypeAndValue) : this(listOf(singleItem))
@@ -32,14 +31,11 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
 }
 
 //TODO: value should be Asn1Primitive???
-@Serializable
 sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
     abstract val value: Asn1Element
 
     override fun toString() = value.toString()
 
-    @Serializable
-    @SerialName("CN")
     class CommonName(override val value: Asn1Element) : AttributeTypeAndValue() {
         override val oid = OID
 
@@ -50,8 +46,6 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
     }
 
-    @Serializable
-    @SerialName("C")
     class Country(override val value: Asn1Element) : AttributeTypeAndValue() {
         override val oid = OID
 
@@ -62,8 +56,6 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
     }
 
-    @Serializable
-    @SerialName("O")
     class Organization(override val value: Asn1Element) : AttributeTypeAndValue() {
         override val oid = OID
 
@@ -74,8 +66,6 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
     }
 
-    @Serializable
-    @SerialName("OU")
     class OrganizationalUnit(override val value: Asn1Element) : AttributeTypeAndValue() {
         override val oid = OID
 
@@ -86,8 +76,6 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
     }
 
-    @Serializable
-    @SerialName("?")
     class Other(override val oid: ObjectIdentifier, override val value: Asn1Element) : AttributeTypeAndValue() {
         constructor(oid: ObjectIdentifier, str: Asn1String) : this(
             oid,

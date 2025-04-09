@@ -7,7 +7,7 @@ import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.io.Base64Strict
-import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
+import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
@@ -17,7 +17,6 @@ import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.SUBJEC
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlinx.serialization.builtins.serializer
 
@@ -25,21 +24,18 @@ import kotlinx.serialization.builtins.serializer
  * Very simple implementation of the meat of an X.509 Certificate:
  * The structure that gets signed
  */
-@Serializable
 data class TbsCertificate
 @Throws(Asn1Exception::class)
 constructor(
     val version: Int? = 2,
-    @Serializable(with = ByteArrayBase64Serializer::class) val serialNumber: ByteArray,
+    val serialNumber: ByteArray,
     val signatureAlgorithm: X509SignatureAlgorithm,
     val issuerName: List<RelativeDistinguishedName>,
     val validFrom: Asn1Time,
     val validUntil: Asn1Time,
     val subjectName: List<RelativeDistinguishedName>,
     val publicKey: CryptoPublicKey,
-    @Serializable(with = Asn1BitStringSerializer::class)
     val issuerUniqueID: Asn1BitString? = null,
-    @Serializable(with = Asn1BitStringSerializer::class)
     val subjectUniqueID: Asn1BitString? = null,
     val extensions: List<X509CertificateExtension>? = null,
 ) : Asn1Encodable<Asn1Sequence> {
@@ -137,6 +133,10 @@ constructor(
         result = 31 * result + (subjectUniqueID?.hashCode() ?: 0)
         result = 31 * result + (extensions?.hashCode() ?: 0)
         return result
+    }
+
+    override fun toString(): String {
+        return "TbsCertificate(${encodeToDerOrNull()?.let { it.encodeToString(Base64UrlStrict) }})"
     }
 
     companion object : Asn1Decodable<Asn1Sequence, TbsCertificate> {
@@ -241,7 +241,6 @@ fun CryptoSignature.Companion.fromX509Encoded(alg: X509SignatureAlgorithm, it: A
 /**
  * Very simple implementation of an X.509 Certificate
  */
-@Serializable
 data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     val tbsCertificate: TbsCertificate,
     val signatureAlgorithm: X509SignatureAlgorithm,
@@ -275,6 +274,10 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         result = 31 * result + signatureAlgorithm.hashCode()
         result = 31 * result + signature.hashCode()
         return result
+    }
+
+    override fun toString(): String {
+        return "X509Certificate(${encodeToDerOrNull()?.let { it.encodeToString(Base64UrlStrict) }})"
     }
 
     val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey

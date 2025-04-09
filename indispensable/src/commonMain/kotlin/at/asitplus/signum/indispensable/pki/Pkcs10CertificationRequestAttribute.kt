@@ -4,7 +4,6 @@ import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import kotlinx.serialization.Serializable
 
-@Serializable
 data class Pkcs10CertificationRequestAttribute(
     override val oid: ObjectIdentifier,
     val value: List<Asn1Element>

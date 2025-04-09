@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
+import at.asitplus.signum.indispensable.io.CertificateChainBase64UrlSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import kotlinx.serialization.SerialName
@@ -180,6 +181,7 @@ data class JweHeader(
      * See [JwsHeader.certificateChain]
      */
     @SerialName("x5c")
+    @Serializable(with = CertificateChainBase64UrlSerializer::class)
     val certificateChain: CertificateChain? = null,
 
     /**

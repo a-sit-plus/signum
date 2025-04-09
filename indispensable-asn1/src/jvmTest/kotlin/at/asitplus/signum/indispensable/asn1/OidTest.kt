@@ -482,7 +482,6 @@ class OldOIDObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transien
 }
 
 
-@Serializable(with = ObjectIdSerializer::class)
 class BigIntObjectIdentifier @Throws(Asn1Exception::class) private constructor(
     bytes: ByteArray?,
     nodes: List<BigInteger>?

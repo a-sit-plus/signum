@@ -59,7 +59,7 @@ data class JwsSigned<out P : Any>(
     companion object {
         /**
          * Deserializes the input, expected to contain a valid JWS (three Base64-URL strings joined by `.`),
-         * into a [JwsSigned] with `ByteArray` as the type of the payload.
+         * into a [JwsSigned] with [ByteArray] as the type of the payload.
          */
         @Suppress("NOTHING_TO_INLINE")
         inline fun deserialize(input: String): KmmResult<JwsSigned<ByteArray>> = catching {
@@ -116,7 +116,7 @@ data class JwsSigned<out P : Any>(
          * Called by JWS signing implementations to get the string that will be
          * used as the input for signature calculation
          */
-        @Suppress("unused")
+        @Suppress("unused", "NOTHING_TO_INLINE")
         inline fun <T : Any> prepareJwsSignatureInput(
             header: JwsHeader,
             payload: T,
