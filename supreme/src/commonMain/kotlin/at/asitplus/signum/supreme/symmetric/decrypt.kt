@@ -41,6 +41,15 @@ suspend fun SealedBox<*, *, *>.decrypt(key: SymmetricKey<*, *, *>): KmmResult<By
     }
 }
 
+/**
+ * Attempts to decrypt this ciphertext (which may also hold an IV/nonce, and in case of an authenticated ciphertext, authenticated data and auth tag) using the provided [key].
+ * This is the generic, untyped decryption function for convenience.
+ * **Compared to its narrower-typed cousins is possible to mismatch the characteristics of
+ * [key] and [SealedBox].**
+ */
+@JvmName("decryptGeneric")
+suspend fun SealedBox<*, *, *>.decrypt(key: SpecializedSymmetricKey): KmmResult<ByteArray> = key.toSymmetricKey().transform { decrypt(it) }
+
 
 //required because we don't store MAC info all the way
 /**

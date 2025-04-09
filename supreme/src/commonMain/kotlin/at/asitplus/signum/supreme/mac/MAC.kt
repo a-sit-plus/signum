@@ -4,6 +4,7 @@ import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.HMAC
 import at.asitplus.signum.indispensable.MessageAuthenticationCode
+import at.asitplus.signum.indispensable.SpecializedMessageAuthenticationCode
 import at.asitplus.signum.internals.xor
 import at.asitplus.signum.supreme.hash.digest
 
@@ -14,6 +15,9 @@ fun MessageAuthenticationCode.mac(key: ByteArray, msg: Iterable<ByteArray>) = ma
 private val HMAC.blockLength get() = digest.inputBlockSize.bytes.toInt()
 private val HMAC.innerPad get() = ByteArray(blockLength) { 0x36 }
 private val HMAC.outerPad get() = ByteArray(blockLength) { 0x5C }
+
+fun SpecializedMessageAuthenticationCode.mac(key: ByteArray, msg: Sequence<ByteArray>): KmmResult<ByteArray> =
+    algorithm.mac(key, msg)
 
 fun MessageAuthenticationCode.mac(key: ByteArray, msg: Sequence<ByteArray>): KmmResult<ByteArray> = catching {
     when (this@mac) {
