@@ -142,6 +142,7 @@ sealed interface CoseAlgorithm {
         // HMAC-size with SHA-size
         /**HMAC w/ SHA-256 truncated to 64 bits*/
 
+        /**SHA-265 with truncated output. **Beware:** This maps to [HMAC.SHA256], but [HMAC.SHA256] maps to [HS256]!*/
         @Serializable(with = CoseAlgorithmSerializer::class)
         data object HS256_64 : MAC(4, HMAC.SHA256, 64.bit)
 
