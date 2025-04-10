@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.readNull
 import at.asitplus.signum.indispensable.misc.BitLength
+import at.asitplus.signum.indispensable.misc.bit
 
 sealed interface MessageAuthenticationCode : DataIntegrityAlgorithm {
     /** output size of MAC */
@@ -12,6 +13,24 @@ sealed interface MessageAuthenticationCode : DataIntegrityAlgorithm {
 
     companion object {
         val entries: Iterable<MessageAuthenticationCode> = HMAC.entries
+    }
+
+    @ConsistentCopyVisibility
+    data class Truncated
+        internal constructor(val inner: MessageAuthenticationCode, override val outputLength: BitLength)
+        : MessageAuthenticationCode
+    {
+        override fun toString() = "$inner (truncated to $outputLength)"
+    }
+
+    fun truncatedTo(length: BitLength): MessageAuthenticationCode = when {
+        this is Truncated -> this.inner.truncatedTo(length)
+        else -> when {
+            length <= 0.bit -> throw IllegalArgumentException("Cannot truncate to $outputLength <= 0")
+            length < this.outputLength -> Truncated(this, length)
+            length == this.outputLength -> this
+            else -> throw IllegalArgumentException("Cannot truncate $this to $outputLength bits (its own output length is only ${this.outputLength} bits")
+        }
     }
 }
 

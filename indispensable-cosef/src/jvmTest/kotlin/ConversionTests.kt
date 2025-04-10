@@ -19,12 +19,12 @@ class ConversionTests : FreeSpec({
     "COSE -> SigAlg -> COSE is stable" - {
 
         "All" - {
-            withData(CoseAlgorithm.DataIntegrity.entries.filterNot { it is CoseAlgorithm.MAC.HS256_64 /*this is special to COSE, so the mapping is one-way only!*/ }) {
+            withData(CoseAlgorithm.DataIntegrity.entries) {
                 it.algorithm.toCoseAlgorithm() shouldSucceedWith it
             }
         }
         "Specialized Signature Algorithms" - {
-            withData(CoseAlgorithm.DataIntegrity.entries.filterNot { it is CoseAlgorithm.MAC.HS256_64 /*this is special to COSE, so the mapping is one-way only!*/ }) {
+            withData(CoseAlgorithm.DataIntegrity.entries) {
                 it.toCoseAlgorithm() shouldSucceedWith it
             }
         }

@@ -2,6 +2,7 @@
 package at.asitplus.signum.supreme.mac
 
 import at.asitplus.signum.indispensable.HMAC
+import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.supreme.b
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
@@ -87,5 +88,10 @@ class MACTest : FreeSpec({
             HMAC.SHA384.mac(key=info.k, msg=info.d).getOrThrow() shouldBe info.ref384
             HMAC.SHA512.mac(key=info.k, msg=info.d).getOrThrow() shouldBe info.ref512
         }
+    }
+    "Truncated" {
+        HMAC.SHA256.truncatedTo(3.bit)
+            .mac(key=b("0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"), b("4869205468657265"))
+            .getOrThrow() shouldBe byteArrayOf(0xa0.toByte())
     }
 })

@@ -132,31 +132,26 @@ sealed interface CoseAlgorithm {
     @Serializable(with = CoseAlgorithmSerializer::class)
     sealed class MAC(
         value: Int,
-        override val algorithm: MessageAuthenticationCode,
-        /**
-         * The tag length for COSE might not be the same as for the underlying HMAC
-         */
-        val tagLength: BitLength
+        override val algorithm: MessageAuthenticationCode
     ) :
         DataIntegrity(value), Symmetric, SpecializedMessageAuthenticationCode {
-        // HMAC-size with SHA-size
-        /**HMAC w/ SHA-256 truncated to 64 bits*/
 
-        /**SHA-265 with truncated output. **Beware:** This maps to [HMAC.SHA256], but [HMAC.SHA256] maps to [HS256]!*/
-        @Serializable(with = CoseAlgorithmSerializer::class)
-        data object HS256_64 : MAC(4, HMAC.SHA256, 64.bit)
+        val tagLength get() = algorithm.outputLength
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object HS256 : MAC(5, HMAC.SHA256, 256.bit)
+        data object HS256_64 : MAC(4, HMAC.SHA256.truncatedTo(64.bit))
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object HS384 : MAC(6, HMAC.SHA384, 384.bit)
+        data object HS256 : MAC(5, HMAC.SHA256)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object HS512 : MAC(7, HMAC.SHA512, 512.bit)
+        data object HS384 : MAC(6, HMAC.SHA384)
 
         @Serializable(with = CoseAlgorithmSerializer::class)
-        data object UNOFFICIAL_HS1 : MAC(-2341169 /*random inside private use range*/, HMAC.SHA1, 160.bit)
+        data object HS512 : MAC(7, HMAC.SHA512)
+
+        @Serializable(with = CoseAlgorithmSerializer::class)
+        data object UNOFFICIAL_HS1 : MAC(-2341169 /*random inside private use range*/, HMAC.SHA1)
 
         companion object {
             val entries: Collection<MAC> by lazy {
@@ -235,6 +230,10 @@ fun MessageAuthenticationCode.toCoseAlgorithm(): KmmResult<CoseAlgorithm.MAC> = 
         HMAC.SHA256 -> CoseAlgorithm.MAC.HS256
         HMAC.SHA384 -> CoseAlgorithm.MAC.HS384
         HMAC.SHA512 -> CoseAlgorithm.MAC.HS512
+        is MessageAuthenticationCode.Truncated -> when {
+            (inner == HMAC.SHA256) && (outputLength == 64.bit) -> CoseAlgorithm.MAC.HS256_64
+            else -> throw UnsupportedCryptoException("$this has no COSE equivalent")
+        }
     }
 }
 
