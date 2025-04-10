@@ -4,6 +4,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.josef.JwsAlgorithm.MAC.UNOFFICIAL_HS1
 import kotlinx.serialization.KSerializer
@@ -212,6 +213,7 @@ fun MessageAuthenticationCode.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catchi
         HMAC.SHA256 -> JwsAlgorithm.MAC.HS256
         HMAC.SHA384 -> JwsAlgorithm.MAC.HS384
         HMAC.SHA512 -> JwsAlgorithm.MAC.HS512
+        else -> throw UnsupportedCryptoException("$this has no JWS equivalent")
     }
 }
 
