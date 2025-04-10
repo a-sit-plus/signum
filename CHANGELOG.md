@@ -2,7 +2,8 @@
 
 ## 3.0
 
-### NEXT
+### 3.16.1 (Supreme 0.8.1) Hotfix
+* Generalized, proper COSE to MAC mapping, preventing unexpected behaviour for `HS265_24`
 
 ### 3.16.0 (Supreme 0.8.0) Symmetric Encryption and Major Cleanups
 * **Note: All debug-only kotlinx.serialization for cryptographic datatypes like certificates, public keys, etc. was removed!**
