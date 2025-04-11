@@ -1,4 +1,7 @@
 package at.asitplus.signum.indispensable.pki.attestation
+import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.CryptoPublicKey.Companion.decodeFromDer
+import at.asitplus.signum.indispensable.toJcaPublicKey
 
 import java.security.KeyFactory
 import java.security.PublicKey
@@ -35,8 +38,7 @@ class AttestationData(
     val challenge by lazy { mimeDecoder.decode(challengeB64) }
 
     val publicKey: PublicKey? by lazy {
-        pubKeyB64?.let { mimeDecoder.decode(it) }
-            ?.let { (if (it.size < 2048) ecKeyFactory else rsaKeyFactory).generatePublic(X509EncodedKeySpec(it)) }
+        pubKeyB64?.let { CryptoPublicKey.decodeFromDer(mimeDecoder.decode(it)).toJcaPublicKey().getOrThrow() }
     }
 }
 
