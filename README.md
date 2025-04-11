@@ -692,10 +692,7 @@ Application 1337 (9 elem)
 ```
 
 ## Limitations
-
-* Multiplatform signature verification **only** based on platform verifiers (and a fallback 100% KMP verifier) ist included as a prerelease. signature creation is on its way.
-* While the ASN.1 parser will happily parse any valid **DER-encoded** ASN.1 structure you throw at it and the encoder will
-  write it back correctly too. (No, we don't care for BER, since we want to transport cryptographic material!)
+* Only DER encoding and parsing of ASN.1 structures is supported
 * Higher-level abstractions (such as `X509Certificate`) are too lenient in some aspects and
   too strict in others.
   For example: DSA-signed certificates will not parse to an instance of `X509Certificate`.
@@ -704,10 +701,7 @@ Application 1337 (9 elem)
   This is irrelevant in practice, since platform-specific code will perform the actual cryptographic operations on these
   data structures and complain anyway, if something is off.
 * No OCSP and CRL Checks (though it is perfectly possible to parse this data from a certificate and implement the checks)
-* We do need more comprehensive tests, but we're getting there, mostly thanks to [@iaik-jheher](https://github.com/iaik-jheher)
-  and [@n0900](https://github.com/n0900).
 * Number of supported Algorithms is limited to the usual suspects (sorry, no Bernstein curves )-:)
-
 
 
 ## Contributing
