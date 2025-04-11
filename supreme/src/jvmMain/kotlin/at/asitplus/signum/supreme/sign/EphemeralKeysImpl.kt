@@ -1,9 +1,8 @@
 package at.asitplus.signum.supreme.sign
 
-import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.supreme.SecretExposure
+import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.supreme.signCatching
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import java.security.KeyPair
@@ -68,7 +67,7 @@ sealed class EphemeralSigner (internal val privateKey: PrivateKey, private val p
                                          override val publicKey: CryptoPublicKey.RSA, override val signatureAlgorithm: SignatureAlgorithm.RSA)
         : EphemeralSigner(privateKey, config.provider), Signer.RSA {
 
-        override fun parseFromJca(bytes: ByteArray) = CryptoSignature.RSAorHMAC.parseFromJca(bytes)
+        override fun parseFromJca(bytes: ByteArray) = CryptoSignature.RSA.parseFromJca(bytes)
 
         @SecretExposure
         final override fun exportPrivateKey() = (privateKey as RSAPrivateKey).toCryptoPrivateKey()

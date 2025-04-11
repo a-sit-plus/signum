@@ -3,7 +3,9 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.supreme.SecretExposure
+import at.asitplus.signum.indispensable.RSAPadding
+import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.supreme.SignatureResult
 import at.asitplus.signum.supreme.agree.UsableECDHPrivateValue
 import at.asitplus.signum.supreme.dsl.DSL
@@ -152,7 +154,6 @@ fun SignatureAlgorithm.signerFor(privateKey: CryptoPrivateKey.WithPublicKey<*>):
                 (this is SignatureAlgorithm.RSA && privateKey is CryptoPrivateKey.RSA)) {
         when (this) {
             is SignatureAlgorithm.ECDSA -> this.signerFor(privateKey as CryptoPrivateKey.EC.WithPublicKey)
-            is SignatureAlgorithm.HMAC -> KmmResult.failure(UnsupportedOperationException("HMAC is not yet supported!"))
             is SignatureAlgorithm.RSA -> this.signerFor(privateKey as CryptoPrivateKey.RSA)
         }
     } else {

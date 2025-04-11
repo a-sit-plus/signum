@@ -1,7 +1,7 @@
 package at.asitplus.signum.supreme.os
 
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.supreme.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.supreme.sign.*
 import at.asitplus.signum.supreme.signature
 import at.asitplus.signum.supreme.succeed
@@ -114,8 +114,8 @@ class JKSProviderTest : FreeSpec({
             }
             CryptoSignature.parseFromJca(signature.jcaSignatureBytes, signer.signatureAlgorithm) shouldBe signature
             when (signer.signatureAlgorithm) {
-                is SignatureAlgorithm.RSA, is SignatureAlgorithm.HMAC ->
-                    CryptoSignature.RSAorHMAC.parseFromJca(signature.jcaSignatureBytes) shouldBe signature
+                is SignatureAlgorithm.RSA ->
+                    CryptoSignature.RSA.parseFromJca(signature.jcaSignatureBytes) shouldBe signature
                 is SignatureAlgorithm.ECDSA ->
                     CryptoSignature.EC.parseFromJca(signature.jcaSignatureBytes) shouldBe signature
             }

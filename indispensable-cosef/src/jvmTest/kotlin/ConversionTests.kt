@@ -8,20 +8,29 @@ import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import java.security.KeyPairGenerator
+import java.security.interfaces.ECPublicKey
 import kotlin.random.Random
 
+//somehow including kmmresult-test makes this fail
 infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
     (this.getOrThrow() shouldBe b)
 
 class ConversionTests : FreeSpec({
     "COSE -> SigAlg -> COSE is stable" - {
-        withData(CoseAlgorithm.entries) {
-            it.toCoseAlgorithm() shouldSucceedWith it
-            it.algorithm.toCoseAlgorithm() shouldSucceedWith it
+
+        "All" - {
+            withData(CoseAlgorithm.DataIntegrity.entries.filterNot { it is CoseAlgorithm.MAC.HS256_64 /*this is special to COSE, so the mapping is one-way only!*/ }) {
+                it.algorithm.toCoseAlgorithm() shouldSucceedWith it
+            }
+        }
+        "Specialized Signature Algorithms" - {
+            withData(CoseAlgorithm.DataIntegrity.entries.filterNot { it is CoseAlgorithm.MAC.HS256_64 /*this is special to COSE, so the mapping is one-way only!*/ }) {
+                it.toCoseAlgorithm() shouldSucceedWith it
+            }
         }
     }
     "COSE -> X509 -> COSE is stable" - {
-        withData(CoseAlgorithm.entries) {
+        withData(CoseAlgorithm.Signature.entries) {
             it.toX509SignatureAlgorithm().getOrNull()?.let { x509 ->
                 x509.toCoseAlgorithm() shouldSucceedWith it
             }
@@ -39,6 +48,5 @@ class ConversionTests : FreeSpec({
 })
 
 private fun randomPublicKey() =
-
-    KeyPairGenerator.getInstance("EC").apply { initialize(256) }
-        .genKeyPair().public.toCryptoPublicKey().getOrThrow()
+    (KeyPairGenerator.getInstance("EC").apply { initialize(256) }
+        .genKeyPair().public as ECPublicKey).toCryptoPublicKey().getOrThrow()

@@ -16,6 +16,7 @@ plugins {
     id("org.jetbrains.dokka")
     id("signing")
     id("at.asitplus.gradle.conventions")
+    id("io.github.ttypic.swiftklib") version "0.6.4"
 }
 
 buildscript {
@@ -30,27 +31,44 @@ version = supremeVersion
 wireAndroidInstrumentedTests()
 
 kotlin {
-
+    compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
+    applyDefaultHierarchyTemplate()
     jvm()
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         instrumentedTestVariant.sourceSetTree.set(test)
         publishLibraryVariants("release")
     }
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
+    listOf(
+        iosX64(),
+        iosArm64(),
+        iosSimulatorArm64()
+    ).forEach {
+        it.compilations {
+            val main by getting {
+                cinterops.create("AESwift")
+            }
+        }
+    }
 
     sourceSets.commonMain.dependencies {
         api(project(":indispensable"))
         implementation(project(":internals"))
         implementation(coroutines())
         implementation(napier())
-        implementation(libs.securerandom)
+        implementation(libs.securerandom) //fix composite build
     }
 
     sourceSets.androidMain.dependencies {
         implementation("androidx.biometric:biometric:1.2.0-alpha05")
+    }
+}
+
+swiftklib {
+    create("AESwift") {
+        path = file("src/iosMain/swift")
+        //Can't hide this in the iOS sources to consumers and using a discrete module is overkill -> so add "internal" to the package
+        packageName("at.asitplus.signum.supreme.symmetric.internal.ios")
     }
 }
 
@@ -131,14 +149,14 @@ publishing {
                         email.set("bernd.pruenster@a-sit.at")
                     }
                     developer {
+                        id.set("iaik-jheher")
+                        name.set("Jakob Heher")
+                        email.set("jakob.heher@tugraz.at")
+                    }
+                    developer {
                         id.set("nodh")
                         name.set("Christian Kollmann")
                         email.set("christian.kollmann@a-sit.at")
-                    }
-                    developer {
-                        id.set("iaik-jheher")
-                        name.set("Jakob Heher")
-                        email.set("jakob.heher@iaik.tugraz.at")
                     }
                 }
                 scm {

@@ -3,8 +3,8 @@ package at.asitplus.signum.indispensable
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -24,11 +24,6 @@ enum class X509SignatureAlgorithm(
     ES256(KnownOIDs.ecdsaWithSHA256, true),
     ES384(KnownOIDs.ecdsaWithSHA384, true),
     ES512(KnownOIDs.ecdsaWithSHA512, true),
-
-    // HMAC-size with SHA-size
-    HS256(KnownOIDs.hmacWithSHA256),
-    HS384(KnownOIDs.hmacWithSHA384),
-    HS512(KnownOIDs.hmacWithSHA512),
 
     // RSASSA-PSS with SHA-size
     PS256(KnownOIDs.rsaPSS),
@@ -51,29 +46,29 @@ enum class X509SignatureAlgorithm(
             else -> TODO()
         }.let { shaOid ->
             Asn1.Sequence {
-            +oid
-            +Asn1.Sequence {
-                +ExplicitlyTagged(0u) {
-                    +Asn1.Sequence {
-                        +shaOid
-                        +Null()
-                    }
-                }
-                +ExplicitlyTagged(1u) {
-                    +Asn1.Sequence {
-                        +KnownOIDs.pkcs1_MGF
+                +oid
+                +Asn1.Sequence {
+                    +ExplicitlyTagged(0u) {
                         +Asn1.Sequence {
                             +shaOid
                             +Null()
                         }
                     }
-                }
-                +ExplicitlyTagged(2u) {
-                    +Asn1.Int(bits / 8)
+                    +ExplicitlyTagged(1u) {
+                        +Asn1.Sequence {
+                            +KnownOIDs.pkcs1_MGF
+                            +Asn1.Sequence {
+                                +shaOid
+                                +Null()
+                            }
+                        }
+                    }
+                    +ExplicitlyTagged(2u) {
+                        +Asn1.Int(bits / 8)
+                    }
                 }
             }
         }
-    }
 
     override fun encodeToTlv() = when (this) {
         ES256, ES384, ES512 -> Asn1.Sequence { +oid }
@@ -84,26 +79,26 @@ enum class X509SignatureAlgorithm(
 
         PS512 -> encodePSSParams(512)
 
-        HS256, HS384, HS512,
         RS256, RS384, RS512, RS1 -> Asn1.Sequence {
             +oid
             +Null()
         }
     }
 
-    val digest: Digest get() = when(this) {
-        RS1 -> Digest.SHA1
-        ES256, HS256, PS256, RS256 -> Digest.SHA256
-        ES384, HS384, PS384, RS384 -> Digest.SHA384
-        ES512, HS512, PS512, RS512 -> Digest.SHA512
-    }
+    val digest: Digest
+        get() = when (this) {
+            RS1 -> Digest.SHA1
+            ES256, PS256, RS256 -> Digest.SHA256
+            ES384, PS384, RS384 -> Digest.SHA384
+            ES512, PS512, RS512 -> Digest.SHA512
+        }
 
-    override val algorithm: SignatureAlgorithm get() = when(this) {
-        ES256, ES384, ES512 -> SignatureAlgorithm.ECDSA(this.digest, null)
-        HS256, HS384, HS512 -> SignatureAlgorithm.HMAC(this.digest)
-        PS256, PS384, PS512 -> SignatureAlgorithm.RSA(this.digest, RSAPadding.PSS)
-        RS1, RS256, RS384, RS512 -> SignatureAlgorithm.RSA(this.digest, RSAPadding.PKCS1)
-    }
+    override val algorithm: SignatureAlgorithm
+        get() = when (this) {
+            ES256, ES384, ES512 -> SignatureAlgorithm.ECDSA(this.digest, null)
+            PS256, PS384, PS512 -> SignatureAlgorithm.RSA(this.digest, RSAPadding.PSS)
+            RS1, RS256, RS384, RS512 -> SignatureAlgorithm.RSA(this.digest, RSAPadding.PKCS1)
+        }
 
     companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithm> {
 
@@ -118,8 +113,7 @@ enum class X509SignatureAlgorithm(
                 ES512.oid, ES384.oid, ES256.oid -> fromOid(oid)
 
                 RS1.oid -> RS1
-                RS256.oid, RS384.oid, RS512.oid,
-                HS256.oid, HS384.oid, HS512.oid -> fromOid(oid).also {
+                RS256.oid, RS384.oid, RS512.oid -> fromOid(oid).also {
                     val tag = src.nextChild().tag
                     if (tag != Asn1Element.Tag.NULL)
                         throw Asn1TagMismatchException(Asn1Element.Tag.NULL, tag, "RSA Params not allowed.")
@@ -177,6 +171,7 @@ fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
             Digest.SHA512 -> X509SignatureAlgorithm.ES512
             else -> throw IllegalArgumentException("Digest ${this.digest} is unsupported by X.509 EC")
         }
+
         is SignatureAlgorithm.RSA -> when (this.padding) {
             RSAPadding.PKCS1 -> when (this.digest) {
                 Digest.SHA1 -> X509SignatureAlgorithm.RS1
@@ -184,6 +179,7 @@ fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
                 Digest.SHA384 -> X509SignatureAlgorithm.RS384
                 Digest.SHA512 -> X509SignatureAlgorithm.RS512
             }
+
             RSAPadding.PSS -> when (this.digest) {
                 Digest.SHA256 -> X509SignatureAlgorithm.PS256
                 Digest.SHA384 -> X509SignatureAlgorithm.PS384
@@ -191,14 +187,9 @@ fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
                 else -> throw IllegalArgumentException("Digest ${this.digest} is unsupported by X.509 RSA-PSS")
             }
         }
-        is SignatureAlgorithm.HMAC -> when (this.digest) {
-            Digest.SHA256 -> X509SignatureAlgorithm.HS256
-            Digest.SHA384 -> X509SignatureAlgorithm.HS384
-            Digest.SHA512 -> X509SignatureAlgorithm.HS512
-            else -> throw IllegalArgumentException("Digest ${this.digest} is unsupported by X.509 HMAC")
-        }
     }
 }
+
 /** Finds a X.509 signature algorithm matching this algorithm. Curve restrictions are not preserved. */
 fun SpecializedSignatureAlgorithm.toX509SignatureAlgorithm() =
     this.algorithm.toX509SignatureAlgorithm()

@@ -9,7 +9,7 @@ import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SpecializedSignatureAlgorithm
 import at.asitplus.signum.ecmath.straussShamir
 import at.asitplus.signum.supreme.dsl.DSL
-import at.asitplus.signum.supreme.UnsupportedCryptoException
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
 
 class InvalidSignature(message: String, cause: Throwable? = null): Throwable(message, cause)
@@ -96,7 +96,7 @@ internal expect fun checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier
 /** data is guaranteed to be in RAW_BYTES format. failure should throw. */
 internal expect fun verifyRSAImpl
             (signatureAlgorithm: SignatureAlgorithm.RSA, publicKey: CryptoPublicKey.RSA,
-             data: SignatureInput, signature: CryptoSignature.RSAorHMAC,
+             data: SignatureInput, signature: CryptoSignature.RSA,
              config: PlatformVerifierConfiguration)
 
 class PlatformRSAVerifier
@@ -109,7 +109,7 @@ class PlatformRSAVerifier
         checkAlgorithmKeyCombinationSupportedByRSAPlatformVerifier(signatureAlgorithm, publicKey, config)
     }
     override fun verify(data: SignatureInput, sig: CryptoSignature) = catching {
-        require (sig is CryptoSignature.RSAorHMAC)
+        require (sig is CryptoSignature.RSA)
             { "Attempted to validate non-RSA signature using RSA public key" }
         if (data.format != null)
             throw UnsupportedOperationException("RSA with pre-hashed input is unsupported")
@@ -191,8 +191,6 @@ private fun SignatureAlgorithm.verifierForImpl
             else
                 verifierForImpl(publicKey, configure, allowKotlin)
         }
-        is SignatureAlgorithm.HMAC ->
-            KmmResult.failure(IllegalArgumentException("HMAC is unsupported"))
     }
 
 /**

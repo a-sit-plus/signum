@@ -2,10 +2,12 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.asn1.toJavaBigInteger
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.internals.isAndroid
+import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -54,9 +56,6 @@ fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) = catch
     when (this) {
         is SignatureAlgorithm.ECDSA ->
             sigGetInstance("${this.digest.jcaAlgorithmComponent}withECDSA", provider)
-
-        is SignatureAlgorithm.HMAC ->
-            sigGetInstance("Hmac${this.digest.jcaAlgorithmComponent}", provider)
 
         is SignatureAlgorithm.RSA -> getRSAPlatformSignatureInstance(provider)
     }
@@ -185,7 +184,7 @@ fun PublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
 val CryptoSignature.jcaSignatureBytes: ByteArray
     get() = when (this) {
         is CryptoSignature.EC -> encodeToDer()
-        is CryptoSignature.RSAorHMAC -> rawByteArray
+        is CryptoSignature.RSA -> rawByteArray
     }
 
 /**
@@ -198,7 +197,7 @@ fun CryptoSignature.Companion.parseFromJca(
     if (algorithm is SignatureAlgorithm.ECDSA)
         CryptoSignature.EC.parseFromJca(input)
     else
-        CryptoSignature.RSAorHMAC.parseFromJca(input)
+        CryptoSignature.RSA.parseFromJca(input)
 
 fun CryptoSignature.Companion.parseFromJca(
     input: ByteArray,
@@ -217,8 +216,8 @@ fun CryptoSignature.EC.Companion.parseFromJca(input: ByteArray) =
 fun CryptoSignature.EC.Companion.parseFromJcaP1363(input: ByteArray) =
     CryptoSignature.EC.fromRawBytes(input)
 
-fun CryptoSignature.RSAorHMAC.Companion.parseFromJca(input: ByteArray) =
-    CryptoSignature.RSAorHMAC(input)
+fun CryptoSignature.RSA.Companion.parseFromJca(input: ByteArray) =
+    CryptoSignature.RSA(input)
 
 /**
  * Converts this [X509Certificate] to a [java.security.cert.X509Certificate].
@@ -266,3 +265,29 @@ fun ECPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.EC.WithPublicK
 
 fun RSAPrivateKey.toCryptoPrivateKey(): KmmResult<CryptoPrivateKey.RSA> =
     CryptoPrivateKey.RSA.decodeFromDerSafe(encoded)
+
+
+val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
+    @OptIn(HazardousMaterials::class)
+    get() = when (this) {
+        is SymmetricEncryptionAlgorithm.AES.GCM -> "AES/GCM/NoPadding"
+        is SymmetricEncryptionAlgorithm.AES.CBC<*, *> -> "AES/CBC/PKCS5Padding"
+        is SymmetricEncryptionAlgorithm.AES.ECB -> "AES/ECB/PKCS5Padding"
+        is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> "AESWrap"
+        is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20-Poly1305"
+        else -> TODO("$this is unsupported")
+    }
+
+val SymmetricEncryptionAlgorithm<*, *, *>.jcaKeySpec: String
+    get() = when (this) {
+        is SymmetricEncryptionAlgorithm.AES<*, *, *> -> "AES"
+        is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20"
+        else -> TODO("$this keyspec is unsupported UNSUPPORTED")
+    }
+
+val HMAC.jcaName: String get() = when(this) {
+    HMAC.SHA1 ->   "HmacSHA1"
+    HMAC.SHA256 -> "HmacSHA256"
+    HMAC.SHA384 -> "HmacSHA384"
+    HMAC.SHA512 -> "HmacSHA512"
+}

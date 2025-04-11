@@ -7,20 +7,19 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.fromUncompressed
 import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.SpecializedCryptoPublicKey
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
-import at.asitplus.signum.indispensable.asn1.encoding.decodeFromAsn1ContentBytes
-import at.asitplus.signum.indispensable.asn1.encoding.toTwosComplementByteArray
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.josef.io.JwsCertificateSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.CertificateChain
+import at.asitplus.signum.indispensable.symmetric.*
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okio.ByteString.Companion.toByteString
 
@@ -36,8 +35,8 @@ data class JsonWebKey(
      * The "alg" (algorithm) parameter identifies the algorithm intended for
      * use with the key.  The values used should either be registered in the
      * IANA "JSON Web Signature and Encryption Algorithms" registry
-     * established by [JWA] or be a value that contains a Collision-
-     * Resistant Name.  The "alg" value is a case-sensitive ASCII string.
+     * established by [JWA] or be a value that contains a collision-resistant Name.
+     * The "alg" value is a case-sensitive ASCII string.
      * Use of this member is OPTIONAL.
      */
     @SerialName("alg")
@@ -185,7 +184,7 @@ data class JsonWebKey(
     @SerialName("y")
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val y: ByteArray? = null,
-) : SpecializedCryptoPublicKey {
+) : SpecializedCryptoPublicKey, SpecializedSymmetricKey {
 
     /**
      * Thumbprint in the form of `urn:ietf:params:oauth:jwk-thumbprint:sha256:DEADBEEF`
@@ -303,9 +302,11 @@ data class JsonWebKey(
             JwkType.RSA -> {
                 CryptoPublicKey.RSA(
                     n = Asn1Integer.fromUnsignedByteArray(
-                        n ?: throw IllegalArgumentException("Missing modulus n")),
+                        n ?: throw IllegalArgumentException("Missing modulus n")
+                    ),
                     e = Asn1Integer.fromUnsignedByteArray(
-                        e ?: throw IllegalArgumentException("Missing or invalid exponent e"))
+                        e ?: throw IllegalArgumentException("Missing or invalid exponent e")
+                    )
                 ).apply { jwkId = keyId }
             }
 
@@ -342,7 +343,54 @@ data class JsonWebKey(
         fun fromCoordinates(curve: ECCurve, x: ByteArray, y: ByteArray): KmmResult<JsonWebKey> =
             catching { fromUncompressed(curve, x, y).toJsonWebKey() }
     }
+
+    /**
+     * Transforms this JsonWebKey into a [SymmetricKey] if an algorithm mapping exists.
+     * Note: for [JweEncryption], see [JweEncryption.symmetricKeyFromJsonWebKeyBytes].
+     * Supported algorithms are:
+     * * [SymmetricEncryptionAlgorithm.AES.GCM]
+     * * [SymmetricEncryptionAlgorithm.AES.WRAP]
+     *
+     */
+    override fun toSymmetricKey(): KmmResult<SymmetricKey<*, *, *>> = catching {
+        require(algorithm is JweAlgorithm) { "Not a JweAlgorithm" }
+        require(k != null) { "key bytes not present" }
+        when (val alg = algorithm.toSymmetricEncryptionAlgorithm()) {
+            is SymmetricEncryptionAlgorithm.AES.GCM -> alg.keyFrom(k).getOrThrow()
+            is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> alg.keyFrom(k).getOrThrow()
+            else -> throw IllegalArgumentException("Unsupported algorithm $algorithm")
+        }
+    }
 }
+
+/**
+ * Converts this symmetric key to a [JsonWebKey]. [algorithm] may be null for algorithms, which do not directly
+ * correspond to a valid JWA `alg` identifier but will still be encoded.
+ * * Allowed key operations can be restricted by specifying [includedOps]
+ * */
+fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId, vararg includedOps: String): KmmResult<JsonWebKey> =
+    catching {
+        @OptIn(SecretExposure::class)
+        JsonWebKey(
+            k = jsonWebKeyBytes.getOrThrow(),
+            type = JwkType.SYM,
+            keyId = keyId,
+            algorithm = algorithm.toJweKwAlgorithm(),
+            keyOperations = includedOps.toSet()
+        )
+    }
+
+/**
+ * converts a symmetric key to its JWE serializable form (i.e. a single bytearray)
+ */
+@OptIn(SecretExposure::class)
+val SymmetricKey<*, *, *>.jsonWebKeyBytes
+    get() = catching {
+        when (hasDedicatedMacKey()) {
+            true -> macKey.getOrThrow() + encryptionKey.getOrThrow()
+            false -> secretKey.getOrThrow()
+        }
+    }
 
 /**
  * Converts a [CryptoPublicKey] to a [JsonWebKey]
@@ -368,12 +416,35 @@ fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
             )
     }
 
+/**
+ * Converts a [at.asitplus.signum.indispensable.symmetric.SymmetricKey] to a [JsonWebKey]
+ */
+fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey? {
+    val jwAlg = when (this.algorithm) {
+        SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394 -> JweAlgorithm.A128KW
+        SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394 -> JweAlgorithm.A192KW
+        SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394 -> JweAlgorithm.A256KW
+        else -> return null
+    }
+    return JsonWebKey(algorithm = jwAlg, keyId = keyId, k = jsonWebKeyBytes.getOrNull())
+}
+
+
 private const val JWK_ID = "jwkIdentifier"
 
 /**
  * Holds [JsonWebKey.keyId] when transforming a [JsonWebKey] to a [CryptoPublicKey]
  */
 var CryptoPublicKey.jwkId: String?
+    get() = additionalProperties[JWK_ID]
+    set(value) {
+        value?.also { additionalProperties[JWK_ID] = value } ?: additionalProperties.remove(JWK_ID)
+    }
+
+/**
+ * Holds [JsonWebKey.keyId] when transforming a [JsonWebKey] to a [CryptoPublicKey]
+ */
+var SymmetricKey<*, *, *>.jwkId: String?
     get() = additionalProperties[JWK_ID]
     set(value) {
         value?.also { additionalProperties[JWK_ID] = value } ?: additionalProperties.remove(JWK_ID)

@@ -14,7 +14,7 @@ import at.asitplus.signum.indispensable.parseFromJca
 import at.asitplus.signum.indispensable.toCryptoPrivateKey
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.indispensable.toJcaPublicKey
-import at.asitplus.signum.supreme.SecretExposure
+import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.supreme.signCatching
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import java.security.KeyPair
@@ -63,7 +63,7 @@ sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Sign
                override val publicKey: CryptoPublicKey.RSA, override val signatureAlgorithm: SignatureAlgorithm.RSA)
         : AndroidEphemeralSigner(privateKey), Signer.RSA {
 
-        override fun parseFromJca(bytes: ByteArray) = CryptoSignature.RSAorHMAC.parseFromJca(bytes)
+        override fun parseFromJca(bytes: ByteArray) = CryptoSignature.RSA.parseFromJca(bytes)
 
         @SecretExposure
         override fun exportPrivateKey() =

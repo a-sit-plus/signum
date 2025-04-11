@@ -10,7 +10,6 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonObject
 
 /**
@@ -82,13 +81,6 @@ data class JsonWebToken(
     val accessTokenHash: String? = null,
 
     /**
-     * OID4VC HAIP: String asserting the authentication level of the Wallet and the key as asserted in the `cnf` claim.
-     */
-    @SerialName("aal")
-    @Deprecated("Removed in OID4VC HAIP")
-    val authenticationLevel: String? = null,
-
-    /**
      * OID4VCI: OPTIONAL. String containing a human-readable name of the Wallet.
      */
     @SerialName("wallet_name")
@@ -127,8 +119,6 @@ data class JsonWebToken(
         if (httpMethod != other.httpMethod) return false
         if (httpTargetUrl != other.httpTargetUrl) return false
         if (accessTokenHash != other.accessTokenHash) return false
-        @Suppress("DEPRECATION")
-        if (authenticationLevel != other.authenticationLevel) return false
         if (walletName != other.walletName) return false
         if (walletLink != other.walletLink) return false
         if (status != other.status) return false
@@ -149,8 +139,6 @@ data class JsonWebToken(
         result = 31 * result + (httpMethod?.hashCode() ?: 0)
         result = 31 * result + (httpTargetUrl?.hashCode() ?: 0)
         result = 31 * result + (accessTokenHash?.hashCode() ?: 0)
-        @Suppress("DEPRECATION")
-        result = 31 * result + (authenticationLevel?.hashCode() ?: 0)
         result = 31 * result + (walletName?.hashCode() ?: 0)
         result = 31 * result + (walletLink?.hashCode() ?: 0)
         result = 31 * result + (status?.hashCode() ?: 0)

@@ -20,9 +20,9 @@ class CryptoSignatureTest : FreeSpec({
             val ec1 = CryptoSignature.EC.fromRS(first.toBigInteger(), second.toBigInteger())
             val ec2 = CryptoSignature.EC.fromRS(first.toBigInteger(), second.toBigInteger())
             val ec3 = CryptoSignature.EC.fromRS(second.toBigInteger(), first.toBigInteger())
-            val rsa1 = CryptoSignature.RSAorHMAC(first.toTwosComplementByteArray())
-            val rsa2 = CryptoSignature.RSAorHMAC(first.toTwosComplementByteArray())
-            val rsa3 = CryptoSignature.RSAorHMAC(second.toTwosComplementByteArray())
+            val rsa1 = CryptoSignature.RSA(first.toTwosComplementByteArray())
+            val rsa2 = CryptoSignature.RSA(first.toTwosComplementByteArray())
+            val rsa3 = CryptoSignature.RSA(second.toTwosComplementByteArray())
 
             ec1 shouldBe ec1
             ec1 shouldBe ec2
@@ -41,7 +41,7 @@ class CryptoSignatureTest : FreeSpec({
             rsa1.hashCode() shouldNotBe rsa3.hashCode()
 
             val ec4 = ec3.guessCurve()
-            ec4.scalarByteLength shouldBe ECCurve.values().minOf { it.scalarLength.bytes }
+            ec4.scalarByteLength shouldBe ECCurve.entries.minOf { it.scalarLength.bytes }
             ec4 shouldBe ec4
             ec4 shouldBe ec3
             ec4.hashCode() shouldBe ec4.hashCode()
@@ -81,7 +81,7 @@ class CryptoSignatureTest : FreeSpec({
         sig3.scalarByteLength shouldBe sig1.scalarByteLength
         sig3.rawByteArray shouldBe encoded
 
-        val r2 = BigInteger.ONE.shl(ECCurve.values().maxOf { it.scalarLength.bits }.toInt() + 1)
+        val r2 = BigInteger.ONE.shl(ECCurve.entries.maxOf { it.scalarLength.bits }.toInt() + 1)
         shouldThrow<IllegalArgumentException> { CryptoSignature.EC.fromRS(r2, s).guessCurve() }
     }
 })

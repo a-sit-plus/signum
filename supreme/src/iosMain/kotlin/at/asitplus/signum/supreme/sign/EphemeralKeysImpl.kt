@@ -36,7 +36,7 @@ sealed class EphemeralSigner(internal val privateKey: OwnedCFValue<SecKeyRef>) :
         }.takeFromCF<NSData>().toByteArray()
         return@signCatching when (val pubkey = publicKey) {
             is CryptoPublicKey.EC -> CryptoSignature.EC.decodeFromDer(signatureBytes).withCurve(pubkey.curve)
-            is CryptoPublicKey.RSA -> CryptoSignature.RSAorHMAC(signatureBytes)
+            is CryptoPublicKey.RSA -> CryptoSignature.RSA(signatureBytes)
         }
     }
 

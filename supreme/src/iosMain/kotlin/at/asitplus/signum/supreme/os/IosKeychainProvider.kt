@@ -3,6 +3,8 @@ package at.asitplus.signum.supreme.os
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.CryptoOperationFailed
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.internals.*
 import at.asitplus.signum.supreme.*
@@ -16,7 +18,6 @@ import kotlinx.coroutines.newFixedThreadPoolContext
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import platform.CoreFoundation.CFDictionaryRefVar
 import platform.DeviceCheck.DCAppAttestService
@@ -278,7 +279,7 @@ sealed class IosSigner(final override val alias: String,
             )
         }
         override fun bytesToSignature(sigBytes: ByteArray) =
-            CryptoSignature.RSAorHMAC(sigBytes)
+            CryptoSignature.RSA(sigBytes)
     }
 
 }

@@ -11,10 +11,13 @@ import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.ints.shouldBeGreaterThan
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.decodeFromHexString
 import kotlinx.serialization.encodeToByteArray
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.KeyPairGenerator
@@ -29,6 +32,27 @@ private fun CryptoPublicKey.EC.withCompressionPreference(v: Boolean) =
 class CoseKeySerializationTest : FreeSpec({
     Security.addProvider(BouncyCastleProvider())
 
+    "Deserializing" - {
+        "Docaposte" {
+            val input = """
+      A4                                # map(4)
+         20                             # negative(0)
+         01                             # unsigned(1)
+         01                             # unsigned(1)
+         02                             # unsigned(2)
+         21                             # negative(1)
+         58 20                          # bytes(32)
+            E70CCC36827593AC6E8D0A4083C8EF09C0FCDA064B18E2A3D083AA5FB1B3DADB #
+         22                             # negative(2)
+         58 20                          # bytes(32)
+            3A1F97A09D54F18BD906405448E6FE7FAB9963866A9DD69286D09C0EC7C3621F #
+            """.trimIndent().split("\n").joinToString("") { it.split("#").first().replace(" ", "") }
+
+            coseCompliantSerializer.decodeFromHexString<CoseKey>(input)
+                .shouldNotBeNull()
+        }
+    }
+
     "Serializing" - {
         "Manual" - {
             val compressed = coseCompliantSerializer.encodeToByteArray(
@@ -37,7 +61,7 @@ class CoseKeySerializationTest : FreeSpec({
                 }.genKeyPair().public.toCryptoPublicKey().getOrThrow().run {
                     this as CryptoPublicKey.EC
                     this.withCompressionPreference(true)
-                }.toCoseKey(CoseAlgorithm.ES256).getOrThrow()
+                }.toCoseKey(CoseAlgorithm.Signature.ES256).getOrThrow()
             )
             val coseUncompressed = KeyPairGenerator.getInstance("EC").apply {
                 initialize(256)
@@ -115,7 +139,7 @@ class CoseKeySerializationTest : FreeSpec({
                             pubKey.toCryptoPublicKey()
                                 .getOrThrow()
                                 .run {
-                                    this as CryptoPublicKey.EC
+                                    this
                                     this.withCompressionPreference(true)
                                 }.toCoseKey()
                                 .getOrThrow()
@@ -155,7 +179,7 @@ class CoseKeySerializationTest : FreeSpec({
                 ) { pubKey ->
                     val coseKey: CoseKey =
                         pubKey.toCryptoPublicKey().getOrThrow()
-                            .toCoseKey(CoseAlgorithm.RS256)
+                            .toCoseKey(CoseAlgorithm.Signature.RS256)
                             .getOrThrow()
                     val cose = coseKey.serialize()
 
