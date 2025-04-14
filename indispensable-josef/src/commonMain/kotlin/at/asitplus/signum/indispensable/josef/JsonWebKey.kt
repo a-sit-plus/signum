@@ -377,7 +377,7 @@ fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId, vararg inclu
             k = jsonWebKeyBytes.getOrThrow(),
             type = JwkType.SYM,
             keyId = keyId,
-            algorithm = algorithm.toJweKwAlgorithm(),
+            algorithm = algorithm.toJweKwAlgorithm().getOrThrow(),
             keyOperations = includedOps.toSet()
         )
     }
@@ -421,9 +421,9 @@ fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
 /**
  * Converts a [at.asitplus.signum.indispensable.symmetric.SymmetricKey] to a [JsonWebKey]
  */
-fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey? {
-    val jwAlg = this.algorithm.toJweKwAlgorithm() ?: return null
-    return JsonWebKey(algorithm = jwAlg, keyId = keyId, k = jsonWebKeyBytes.getOrNull())
+fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId): KmmResult<JsonWebKey> = catching {
+    val jwAlg = this.algorithm.toJweKwAlgorithm().getOrThrow()
+    JsonWebKey(algorithm = jwAlg, keyId = keyId, k = jsonWebKeyBytes.getOrNull())
 }
 
 
