@@ -497,3 +497,7 @@ fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*
 val SymmetricEncryptionAlgorithm<*, NonceTrait.Required, *>.nonceSize: BitLength get() = (this as SymmetricEncryptionAlgorithm.RequiringNonce<*,*>).nonceSize
 val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac, *, KeyType.WithDedicatedMacKey>.preferredMacKeyLength: BitLength get() = (this as SymmetricEncryptionAlgorithm.Authenticated.EncryptThenMAC<*,*>).preferredMacKeyLength
 val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, *, *>.authTagSize: BitLength get() = (this as SymmetricEncryptionAlgorithm.Authenticated).authTagSize
+
+interface SpecializedSymmetricEncryptionAlgorithm {
+    val algorithm: SymmetricEncryptionAlgorithm<*,*,*>
+}

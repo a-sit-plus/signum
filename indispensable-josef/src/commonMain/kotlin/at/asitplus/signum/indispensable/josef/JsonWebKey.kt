@@ -422,12 +422,7 @@ fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
  * Converts a [at.asitplus.signum.indispensable.symmetric.SymmetricKey] to a [JsonWebKey]
  */
 fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey? {
-    val jwAlg = when (this.algorithm) {
-        SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394 -> JweAlgorithm.A128KW
-        SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394 -> JweAlgorithm.A192KW
-        SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394 -> JweAlgorithm.A256KW
-        else -> return null
-    }
+    val jwAlg = this.algorithm.toJweKwAlgorithm() ?: return null
     return JsonWebKey(algorithm = jwAlg, keyId = keyId, k = jsonWebKeyBytes.getOrNull())
 }
 

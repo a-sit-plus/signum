@@ -117,3 +117,6 @@ fun <A:AuthCapability<KeyType.WithDedicatedMacKey>, I : NonceTrait> SymmetricEnc
     catching {
         (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(encryptionKey, macKey)
     } as KmmResult<SymmetricKey<A, I, KeyType.WithDedicatedMacKey>>
+
+suspend fun SpecializedSymmetricEncryptionAlgorithm.randomKey() =
+    algorithm.randomKey()
