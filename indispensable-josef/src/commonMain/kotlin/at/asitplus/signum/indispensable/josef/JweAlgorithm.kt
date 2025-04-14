@@ -1,6 +1,8 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.symmetric.SpecializedSymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import kotlinx.serialization.KSerializer
@@ -101,16 +103,18 @@ sealed class JweAlgorithm(override val identifier: String) : JsonWebAlgorithm {
  *
  * @return `null` if no mapping exists
  */
-fun SymmetricEncryptionAlgorithm<*, *, *>.toJweKwAlgorithm(): JweAlgorithm.Symmetric? = when (this) {
-    SymmetricEncryptionAlgorithm.AES_128.WRAP -> JweAlgorithm.A128KW
-    SymmetricEncryptionAlgorithm.AES_192.WRAP -> JweAlgorithm.A192KW
-    SymmetricEncryptionAlgorithm.AES_256.WRAP -> JweAlgorithm.A256KW
+fun SymmetricEncryptionAlgorithm<*, *, *>.toJweKwAlgorithm(): KmmResult<JweAlgorithm.Symmetric> = catching {
+    when (this) {
+        SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394 -> JweAlgorithm.A128KW
+        SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394 -> JweAlgorithm.A192KW
+        SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394 -> JweAlgorithm.A256KW
 
-    SymmetricEncryptionAlgorithm.AES_128.GCM -> JweAlgorithm.A128GCMKW
-    SymmetricEncryptionAlgorithm.AES_192.GCM -> JweAlgorithm.A192GCMKW
-    SymmetricEncryptionAlgorithm.AES_256.GCM -> JweAlgorithm.A256GCMKW
+        SymmetricEncryptionAlgorithm.AES_128.GCM -> JweAlgorithm.A128GCMKW
+        SymmetricEncryptionAlgorithm.AES_192.GCM -> JweAlgorithm.A192GCMKW
+        SymmetricEncryptionAlgorithm.AES_256.GCM -> JweAlgorithm.A256GCMKW
 
-    else -> null
+        else -> throw UnsupportedCryptoException("$this is not a a supported key wrapping algorithm for JWE")
+    }
 }
 
 object JweAlgorithmSerializer : KSerializer<JweAlgorithm> {
