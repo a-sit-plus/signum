@@ -355,9 +355,9 @@ data class JsonWebKey(
      *
      */
     override fun toSymmetricKey(): KmmResult<SymmetricKey<*, *, *>> = catching {
-        require(algorithm is JweAlgorithm) { "Not a JweAlgorithm" }
+        require(algorithm is JweAlgorithm.Symmetric) { "Not a symmetric JweAlgorithm" }
         require(k != null) { "key bytes not present" }
-        when (val alg = algorithm.toSymmetricEncryptionAlgorithm()) {
+        when (val alg = algorithm.algorithm) {
             is SymmetricEncryptionAlgorithm.AES.GCM -> alg.keyFrom(k).getOrThrow()
             is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> alg.keyFrom(k).getOrThrow()
             else -> throw IllegalArgumentException("Unsupported algorithm $algorithm")
