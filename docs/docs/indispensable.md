@@ -187,8 +187,6 @@ The following section provides more details on the various patterns used for ASN
 As mentioned before, classes like `CryptoPublicKey`, `X509Certificate`, and `ObjectIdentifier` all implement `Asn1Encodable`
 while their companions implement `Asn1Decodable`.
 These interfaces essentially provide a mapping between custom types and low-level TLV structures that can directly be encoded, conforming to DER.
-This also means, a direct serialization of such custom types is valuable for debugging, but not for encoding.
-**Hence, decoding a kotlinx.serialization output of those classes is unsupported.**
 
 In addition, `CryptoPublicKey`, `CryptoPrivateKey`, `X509Certificate`, `Pkcs10CertificationRequest` also implement `PemEncodable`,
 while their respective companions implement `PemDecodable`.
