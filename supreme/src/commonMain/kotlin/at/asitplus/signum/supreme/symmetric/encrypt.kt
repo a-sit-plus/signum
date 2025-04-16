@@ -48,3 +48,14 @@ suspend fun <K : KeyType, A : AuthCapability.Authenticated<out K>, I : NonceTrai
         aad = authenticatedData,
     ).encrypt(data)
 }
+
+suspend fun SpecializedSymmetricKey.encrypt(data: ByteArray, authenticatedData: ByteArray? = null) =
+    this.toSymmetricKey().transform { key ->
+        when (key) {
+            is SymmetricKey.Authenticating -> key.encrypt(data, authenticatedData)
+            else -> {
+                require(authenticatedData == null) { "Cannot specify AAD with non-AAD cipher" }
+                key.encrypt(data)
+            }
+        }
+    }

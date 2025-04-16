@@ -355,9 +355,9 @@ data class JsonWebKey(
      *
      */
     override fun toSymmetricKey(): KmmResult<SymmetricKey<*, *, *>> = catching {
-        require(algorithm is JweAlgorithm) { "Not a JweAlgorithm" }
+        require(algorithm is JweAlgorithm.Symmetric) { "Not a symmetric JweAlgorithm" }
         require(k != null) { "key bytes not present" }
-        when (val alg = algorithm.toSymmetricEncryptionAlgorithm()) {
+        when (val alg = algorithm.algorithm) {
             is SymmetricEncryptionAlgorithm.AES.GCM -> alg.keyFrom(k).getOrThrow()
             is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> alg.keyFrom(k).getOrThrow()
             else -> throw IllegalArgumentException("Unsupported algorithm $algorithm")
@@ -377,7 +377,7 @@ fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId, vararg inclu
             k = jsonWebKeyBytes.getOrThrow(),
             type = JwkType.SYM,
             keyId = keyId,
-            algorithm = algorithm.toJweKwAlgorithm(),
+            algorithm = algorithm.toJweKwAlgorithm().getOrThrow(),
             keyOperations = includedOps.toSet()
         )
     }
@@ -421,14 +421,9 @@ fun CryptoPublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
 /**
  * Converts a [at.asitplus.signum.indispensable.symmetric.SymmetricKey] to a [JsonWebKey]
  */
-fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey? {
-    val jwAlg = when (this.algorithm) {
-        SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394 -> JweAlgorithm.A128KW
-        SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394 -> JweAlgorithm.A192KW
-        SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394 -> JweAlgorithm.A256KW
-        else -> return null
-    }
-    return JsonWebKey(algorithm = jwAlg, keyId = keyId, k = jsonWebKeyBytes.getOrNull())
+fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId): KmmResult<JsonWebKey> = catching {
+    val jwAlg = this.algorithm.toJweKwAlgorithm().getOrThrow()
+    JsonWebKey(algorithm = jwAlg, keyId = keyId, k = jsonWebKeyBytes.getOrNull())
 }
 
 

@@ -91,9 +91,3 @@ object JweEncryptionSerializer : KSerializer<JweEncryption?> {
         return JweEncryption.entries.firstOrNull { it.identifier == decoded }
     }
 }
-
-/**
- * Convenience conversion function to get a matching [JweEncryption] algorithm (if any).
- */
-fun SymmetricEncryptionAlgorithm<*, *, *>.toJweEncryptionAlgorithm(): JweEncryption? =
-    JweEncryption.entries.firstOrNull { it.algorithm == this }

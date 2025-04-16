@@ -32,6 +32,11 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
     override fun toString(): String
 
     companion object {
+
+        val entries by lazy {
+            listOf(ChaCha20Poly1305) + AES_128.entries + AES_192.entries + AES_256.entries
+        }
+
         //ChaCha20Poly1305 is already an object, so we don't need to redeclare here
 
         val AES_128 = AESDefinition(128.bit)
@@ -42,6 +47,11 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
          * AES configuration hierarchy
          */
         class AESDefinition(val keySize: BitLength) {
+
+            @OptIn(HazardousMaterials::class)
+            val entries by lazy {
+                listOf(GCM, ECB) + CBC.entries + WRAP.entries
+            }
 
             /**
              * AES in Galois Counter Mode
@@ -65,10 +75,13 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
             val WRAP = WrapDefinition(keySize)
 
             class WrapDefinition(keySize: BitLength) {
+                val entries by lazy { listOf(RFC3394) }
                 val RFC3394 = AES.WRAP.RFC3394(keySize)
             }
 
             class CbcDefinition(keySize: BitLength) {
+                @OptIn(HazardousMaterials::class)
+                val entries by lazy { listOf(PLAIN) + HMAC.entries }
                 /**
                  * Plain, Unauthenticated AES in Cipher Block Chaining mode.
                  * You almost certainly don't want to use this as is, but rather some [HMAC]-authenticated variant
@@ -86,6 +99,8 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
                  * AES-CBC-HMAC as per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1)
                  */
                 class HmacDefinition(innerCipher: AES.CBC.Unauthenticated) {
+                    @OptIn(HazardousMaterials::class)
+                    val entries by lazy { listOf(SHA_256, SHA_384, SHA_512, SHA_1) }
                     /**
                      * AES-CBC-HMAC as per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1)
                      */
@@ -497,3 +512,7 @@ fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*
 val SymmetricEncryptionAlgorithm<*, NonceTrait.Required, *>.nonceSize: BitLength get() = (this as SymmetricEncryptionAlgorithm.RequiringNonce<*,*>).nonceSize
 val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac, *, KeyType.WithDedicatedMacKey>.preferredMacKeyLength: BitLength get() = (this as SymmetricEncryptionAlgorithm.Authenticated.EncryptThenMAC<*,*>).preferredMacKeyLength
 val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, *, *>.authTagSize: BitLength get() = (this as SymmetricEncryptionAlgorithm.Authenticated).authTagSize
+
+interface SpecializedSymmetricEncryptionAlgorithm {
+    val algorithm: SymmetricEncryptionAlgorithm<*,*,*>
+}
