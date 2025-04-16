@@ -45,6 +45,31 @@ abstract class PemDecodable<A : Asn1Element, out T : PemEncodable<A>>
     constructor(vararg ebStrings: String) : this(ebStrings.associateWith { PemDecoder.Default })
     constructor(vararg decoders: Pair<String, ((ByteArray)->T)?>) : this(decoders.associate { it.first to PemDecoder(it.second) })
 
+    companion object {
+        private val KNOWN_DECODERS = mutableMapOf<String, MutableSet<String>>()
+    }
+
+    init {
+        val myName = this::class.simpleName
+        if (myName != null) {
+            decoders.keys.forEach { ebString ->
+                KNOWN_DECODERS.getOrPut(ebString) { mutableSetOf() }.add(myName)
+            }
+        }
+    }
+
+    class UnknownEncapsulationBoundaryException(val ebString: String)
+        : IllegalArgumentException(
+            "Unknown encapsulation boundary string $ebString" +
+            KNOWN_DECODERS[ebString].let { decoderClasses ->
+                when {
+                    (decoderClasses == null) -> ""
+                    (decoderClasses.size == 1) -> "\nDid you mean to use ${decoderClasses.first()}.decodeFromPem(...)?"
+                    else -> "\nDid you mean to use one of the following?\n${
+                        decoderClasses.joinToString("\n") { "- $it.decodeFromPem(...)" }}"
+                }
+            })
+
     /** Decodes a PEM-encoded string into [T] */
     fun decodeFromPem(src: String): KmmResult<T> = catching {
         src.lineSequence()
@@ -56,7 +81,7 @@ abstract class PemDecodable<A : Asn1Element, out T : PemEncodable<A>>
                 val firstLine = it.next()
                 val ebString = firstLine.substring(FENCE_PREFIX_BEGIN.length, firstLine.length - FENCE_SUFFIX.length)
                 val decoder: PemDecoder<T> = decoders.getOrElse(ebString)
-                    { throw IllegalArgumentException("Unknown encapsulation boundary string $ebString") }
+                    { throw UnknownEncapsulationBoundaryException(ebString) }
                 val b64data = StringBuilder()
                 while (it.hasNext()) {
                     val line = it.next()
