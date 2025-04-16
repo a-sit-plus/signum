@@ -1,5 +1,6 @@
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.signum.indispensable.pki.X509Certificate
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import io.kotest.common.Platform
@@ -7,6 +8,7 @@ import io.kotest.common.platform
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeTypeOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
@@ -85,5 +87,16 @@ class Asn1AddonsTest: FreeSpec({
                 }
             }
         }
+    }
+
+    "PemDecodable error messages" {
+        val x = X509Certificate.decodeFromPem("-----BEGIN PUBLIC KEY-----\n" +
+                "MFswDQYJKoZIhvcNAQEBBQADSgAwRwJAXWRPQyGlEY+SXz8Uslhe+MLjTgWd8lf/\n" +
+                "nA0hgCm9JFKC1tq1S73cQ9naClNXsMqY7pwPt1bSY8jYRqHHbdoUvwIDAQAB\n" +
+                "-----END PUBLIC KEY-----")
+            .exceptionOrNull()
+            .shouldBeTypeOf<PemDecodable.UnknownEncapsulationBoundaryException>()
+        x.ebString shouldBe "PUBLIC KEY"
+        x.message shouldContain "CryptoPublicKey.decodeFromPem"
     }
 })
