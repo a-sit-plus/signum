@@ -43,6 +43,36 @@ The reason for keeping this fourth parameter is convenience and efficiency: For 
 `JwsSigned`, so it would be a waste to discard it. After parsing a `JswSigned` from its serialized form, you also need the 
 `plainSignatureInput` to verify everything was signed correctly.
 
+## Verifying a `JwsSigned` Object
+Verifying a singed JSON web token is usually a straight-forward affair:
+1. Parse the string and check if a sensible algorithm is set
+2. Extract the public key from the header
+3. Check the trust of the key (depends on the application at hand)
+4. Verify the signature
+5. Check timing-related and other constraints
+
+```kotlin
+//parse serialized JWS
+val jwsObject = JwsSigned.deserialize(jws)
+//check if a sensible algorithm is set
+val jwsAlgorithm = jwsObject.header.algorithm
+//JWS is very permissive, so we need to check that the alg makes sense
+require(jwsAlgorithm is JwsAlgorithm.Signature) { "Algorithm not supported: $jwsAlgorithm" }
+val key = jwsObject.header.publicKey ?: pubKeyFromTrustedSource
+
+//TODO: check whether key is trusted by whatever means apply in your case
+
+val verifier = jwsAlgorithm.verifierFor(publicKey).getOrThrow()
+//Verify cryptographically
+val verified = verifier.verify(jwsObject.plainSignatureInput, jwsObject.signature).isSuccess
+
+//Now we know the JWS holds up **cryptographically**
+
+//TODO check the following for temporal validity
+jwsObject.header.issuedAt
+jwsObject.header.expiration
+//TODO check any other constraints
+```
 
 ## Creating a `CoseSigned` Object
 
