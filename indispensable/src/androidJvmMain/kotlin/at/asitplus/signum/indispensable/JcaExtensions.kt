@@ -5,9 +5,10 @@ import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.asn1.toJavaBigInteger
+import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.internals.isAndroid
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
+import at.asitplus.signum.internals.isAndroid
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -140,7 +141,7 @@ fun CryptoPublicKey.EC.toJcaPublicKey(): KmmResult<ECPublicKey> = catching {
 private val rsaFactory = KeyFactory.getInstance("RSA")
 
 @Deprecated("renamed", ReplaceWith("toJcaPublicKey()"), DeprecationLevel.ERROR)
-fun CryptoPublicKey.RSA.getJcaPublicKey(): KmmResult<RSAPublicKey> =toJcaPublicKey()
+fun CryptoPublicKey.RSA.getJcaPublicKey(): KmmResult<RSAPublicKey> = toJcaPublicKey()
 fun CryptoPublicKey.RSA.toJcaPublicKey(): KmmResult<RSAPublicKey> = catching {
     rsaFactory.generatePublic(
         RSAPublicKeySpec(n.toJavaBigInteger(), e.toJavaBigInteger())
@@ -148,7 +149,9 @@ fun CryptoPublicKey.RSA.toJcaPublicKey(): KmmResult<RSAPublicKey> = catching {
 }
 
 @Deprecated("replaced by extension", ReplaceWith("publicKey.toCryptoPublicKey()"), DeprecationLevel.ERROR)
-fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey.EC> = publicKey.toCryptoPublicKey()
+fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey.EC> =
+    publicKey.toCryptoPublicKey()
+
 fun ECPublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey.EC> = catching {
     val curve = ECCurve.byJcaName(
         SECNamedCurves.getName(
@@ -163,14 +166,19 @@ fun ECPublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey.EC> = catching {
         w.affineY.toByteArray()
     )
 }
+
 @Deprecated("replaced by extension", ReplaceWith("publicKey.toCryptoPublicKey()"), DeprecationLevel.ERROR)
-fun CryptoPublicKey.RSA.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey.RSA> = publicKey.toCryptoPublicKey()
+fun CryptoPublicKey.RSA.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey.RSA> =
+    publicKey.toCryptoPublicKey()
+
 fun RSAPublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey.RSA> =
     catching { CryptoPublicKey.RSA(modulus.toAsn1Integer(), publicExponent.toAsn1Integer()) }
 
 
 @Deprecated("replaced by extension", ReplaceWith("publicKey.toCryptoPublicKey()"), DeprecationLevel.ERROR)
-fun CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> = publicKey.toCryptoPublicKey()
+fun CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
+    publicKey.toCryptoPublicKey()
+
 fun PublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
     when (this) {
         is RSAPublicKey -> toCryptoPublicKey()
@@ -285,9 +293,23 @@ val SymmetricEncryptionAlgorithm<*, *, *>.jcaKeySpec: String
         else -> TODO("$this keyspec is unsupported UNSUPPORTED")
     }
 
-val HMAC.jcaName: String get() = when(this) {
-    HMAC.SHA1 ->   "HmacSHA1"
-    HMAC.SHA256 -> "HmacSHA256"
-    HMAC.SHA384 -> "HmacSHA384"
-    HMAC.SHA512 -> "HmacSHA512"
-}
+val HMAC.jcaName: String
+    get() = when (this) {
+        HMAC.SHA1 -> "HmacSHA1"
+        HMAC.SHA256 -> "HmacSHA256"
+        HMAC.SHA384 -> "HmacSHA384"
+        HMAC.SHA512 -> "HmacSHA512"
+    }
+
+val AsymmetricEncryptionAlgorithm.jcaName: String
+    get() = when (this) {
+        is AsymmetricEncryptionAlgorithm.RSA -> when (padding) {
+            at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA1 -> "RSA/ECB/OAEPWithSHA-1AndMGF1Padding"
+            at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA256 -> "RSA/ECB/OAEPWithSHA-256AndMGF1Padding"
+            at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA384 -> "RSA/ECB/OAEPWithSHA-384AndMGF1Padding"
+            at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA512 -> "RSA/ECB/OAEPWithSHA-512AndMGF1Padding"
+            at.asitplus.signum.indispensable.asymmetric.RSAPadding.PKCS1 -> "RSA/ECB/PKCS1Padding"
+            @OptIn(HazardousMaterials::class)
+            at.asitplus.signum.indispensable.asymmetric.RSAPadding.NONE -> "RSA/ECB/NoPadding"
+        }
+    }

@@ -72,6 +72,8 @@ open class PlatformSigningKeyConfigurationBase<SignerConfigurationT: PlatformSig
     open class RSAPurposeConfiguration internal constructor(): DSL.Data() {
         /** Whether this key can be used for signing data */
         var signing = true
+        /** Whether this key can be used for encrypting data*/
+        var encryption = false
     }
 
     open class RSAConfiguration internal constructor(): SigningKeyConfiguration.RSAConfiguration() {
@@ -99,6 +101,13 @@ internal inline val SigningKeyConfiguration.AlgorithmSpecific.allowsSigning get(
     when (this) {
         is PlatformSigningKeyConfigurationBase.ECConfiguration -> this.purposes.v.signing
         is PlatformSigningKeyConfigurationBase.RSAConfiguration -> this.purposes.v.signing
+        else -> true
+    }
+
+internal inline val SigningKeyConfiguration.AlgorithmSpecific.allowEncryption get() =
+    when (this) {
+        is PlatformSigningKeyConfigurationBase.ECConfiguration -> false
+        is PlatformSigningKeyConfigurationBase.RSAConfiguration -> this.purposes.v.encryption
         else -> true
     }
 
