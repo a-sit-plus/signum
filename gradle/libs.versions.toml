@@ -9,7 +9,7 @@ bignum = "0.3.10"
 jose = "9.31"
 kotlinpoet = "1.16.0"
 runner = "1.5.2"
-secureRandom = "0.3.2"
+kotlincryptoRandom = "0.5.0"
 
 [libraries]
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }
@@ -23,4 +23,4 @@ kotlinpoet = { group = "com.squareup", name = "kotlinpoet", version.ref = "kotli
 rules = { module = "androidx.test:rules", version.ref = "core" }
 runner = { module = "androidx.test:runner", version.ref = "runner" }
 multibase = { module = "at.asitplus:multibase", version.ref = "multibase" }
-securerandom = { module = "org.kotlincrypto:secure-random", version.ref = "secureRandom" }
+securerandom = { module = "org.kotlincrypto.random:crypto-rand", version.ref = "kotlincryptoRandom" }

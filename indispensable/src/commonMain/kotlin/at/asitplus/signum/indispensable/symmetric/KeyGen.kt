@@ -6,10 +6,10 @@ import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.encoding.bitLength
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.symmetric.*
-import org.kotlincrypto.SecureRandom
+import org.kotlincrypto.random.CryptoRand
 import kotlin.jvm.JvmName
 
-private val secureRandom = SecureRandom()
+private inline fun randomBytes(n: Int) = CryptoRand.Default.nextBytes(ByteArray(n))
 
 /**
  * Generates a fresh random key for this algorithm.
@@ -18,8 +18,8 @@ private val secureRandom = SecureRandom()
 @kotlin.internal.LowPriorityInOverloadResolution
 suspend fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.randomKey(): SymmetricKey<A, I, out K> =
     keyFromInternal(
-        secureRandom.nextBytesOf(keySize.bytes.toInt()),
-        if (hasDedicatedMac()) secureRandom.nextBytesOf(preferredMacKeyLength.bytes.toInt())
+        randomBytes(keySize.bytes.toInt()),
+        if (hasDedicatedMac()) randomBytes(preferredMacKeyLength.bytes.toInt())
         else null
     ) as SymmetricKey<A, I, out K>
 
@@ -33,8 +33,8 @@ suspend fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authent
     macKeyLength: BitLength
 ): SymmetricKey.WithDedicatedMac<I> =
     keyFromInternal(
-        secureRandom.nextBytesOf(keySize.bytes.toInt()),
-        secureRandom.nextBytesOf(macKeyLength.bytes.toInt())
+        randomBytes(keySize.bytes.toInt()),
+        randomBytes(macKeyLength.bytes.toInt())
     ) as SymmetricKey.WithDedicatedMac<I>
 
 /**
@@ -43,7 +43,7 @@ suspend fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authent
  */
 @HazardousMaterials("Don't explicitly generate nonces!")
 fun SymmetricEncryptionAlgorithm<*, NonceTrait.Required, *>.randomNonce(): ByteArray =
-    secureRandom.nextBytesOf((nonceSize.bytes).toInt())
+    randomBytes((nonceSize.bytes).toInt())
 
 
 @OptIn(HazardousMaterials::class)
