@@ -307,7 +307,11 @@ internal data class IosKeyMetadata(
     val algSpecific: IosKeyAlgSpecificMetadata,
     val allowSigning: Boolean = true,
     val allowKeyAgreement: Boolean = false,
+    val allowEncryption: Boolean = false,
 ) {
+    init {
+        require(!(allowSigning && allowEncryption)) //TODO is this really always illegal?
+    }
     val needsUnlock inline get() = (rawUnlockTimeout != null)
     val unlockTimeout inline get() = rawUnlockTimeout ?: Duration.INFINITE
 }
@@ -498,6 +502,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             attestation = attestation,
             rawUnlockTimeout = config.hardware.v.protection.v?.timeout,
             allowSigning = config._algSpecific.v.allowsSigning,
+            allowEncryption = config._algSpecific.v.allowEncryption,
             allowKeyAgreement = config._algSpecific.v.allowsKeyAgreement,
             algSpecific = when (val alg = config._algSpecific.v) {
                 is SigningKeyConfiguration.ECConfiguration -> IosKeyAlgSpecificMetadata.ECDSA(alg.digests)
