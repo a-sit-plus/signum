@@ -3,7 +3,14 @@
 ## 3.0
 
 ### NEXT
-
+* `kotlincrypto:secure-random:0.3.2` -> `kotlincrypto.random:crypto-rand:0.5.0`
+    * This fixes key generation in WASM/JS
+* Add `SpecializedSymmetricEncryptionAlgorithm`
+    * This allows `randomKey()` etc to operate on COSE/JWE algorithms
+* Clean up some function signatures:
+    * `SymmetricKey.toJsonWebKey` now returns `KmmResult`
+    * `SymmetricEncryptionAlgorithm.toJweKwAlgorithm` now returns `KmmResult`
+    * `SymmetricEncryptionAlgorithm.toJweEncryptionAlgorithm` removed
 
 ### 3.16.1 (Supreme 0.8.1) Hotfix
 * Generalized, proper COSE to MAC mapping, preventing unexpected behaviour for `HS265_24`
