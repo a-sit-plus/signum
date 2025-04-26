@@ -30,10 +30,10 @@ import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
-import java.security.spec.MGF1ParameterSpec
-import java.security.spec.PKCS8EncodedKeySpec
-import java.security.spec.PSSParameterSpec
-import java.security.spec.RSAPublicKeySpec
+import java.security.spec.*
+import javax.crypto.spec.OAEPParameterSpec
+import javax.crypto.spec.PSource
+
 
 private val certificateFactoryMutex = Mutex()
 private val certFactory = CertificateFactory.getInstance("X.509")
@@ -313,3 +313,41 @@ val AsymmetricEncryptionAlgorithm.jcaName: String
             at.asitplus.signum.indispensable.asymmetric.RSAPadding.NONE -> "RSA/ECB/NoPadding"
         }
     }
+
+val AsymmetricEncryptionAlgorithm.jcaParameterSpec: AlgorithmParameterSpec?
+    get() =
+        when (this) {
+            is AsymmetricEncryptionAlgorithm.RSA -> when (padding) {
+                @OptIn(HazardousMaterials::class)
+                at.asitplus.signum.indispensable.asymmetric.RSAPadding.NONE -> null
+
+                at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA1 -> OAEPParameterSpec(
+                    "SHA-1",
+                    "MGF1",
+                    MGF1ParameterSpec.SHA1,
+                    PSource.PSpecified.DEFAULT
+                )
+
+                at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA256 -> OAEPParameterSpec(
+                    "SHA-256",
+                    "MGF1",
+                    MGF1ParameterSpec.SHA256,
+                    PSource.PSpecified.DEFAULT
+                )
+
+                at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA384 -> OAEPParameterSpec(
+                    "SHA-384",
+                    "MGF1",
+                    MGF1ParameterSpec.SHA384,
+                    PSource.PSpecified.DEFAULT
+                )
+
+                at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA512 -> OAEPParameterSpec(
+                    "SHA-512",
+                    "MGF1",
+                    MGF1ParameterSpec.SHA512,
+                    PSource.PSpecified.DEFAULT
+                )
+                at.asitplus.signum.indispensable.asymmetric.RSAPadding.PKCS1 -> null
+            }
+        }
