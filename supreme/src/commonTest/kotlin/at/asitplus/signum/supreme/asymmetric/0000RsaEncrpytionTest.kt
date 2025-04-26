@@ -22,7 +22,7 @@ class `0000RsaEncrpytionTest` : FreeSpec({
 
         val pub = k.publicKey
         val data = "1337".encodeToByteArray()
-        withData(RSAPadding.PKCS1, RSAPadding.NONE, RSAPadding.OAEP.SHA256) {
+        withData(RSAPadding.PKCS1, RSAPadding.NONE, RSAPadding.OAEP.SHA256, RSAPadding.OAEP.SHA384, RSAPadding.OAEP.SHA512) {
             println(k.exportPrivateKey().getOrThrow().encodeToPEM().getOrThrow())
             val encrypted = AsymmetricEncryptionAlgorithm.RSA(it).encryptorFor(pub).encrypt(data).getOrThrow()
             println(encrypted.toHexString())

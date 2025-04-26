@@ -3,7 +3,9 @@ package at.asitplus.signum.supreme.asymmetric
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.asymmetric.RSAPadding
 import at.asitplus.signum.indispensable.jcaName
+import at.asitplus.signum.indispensable.jcaParameterSpec
 import at.asitplus.signum.indispensable.toJcaPrivateKey
 import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.supreme.dsl.DSL
@@ -18,8 +20,8 @@ internal actual fun encryptRSAImpl(
     publicKey: CryptoPublicKey.RSA,
     data: ByteArray,
 ): ByteArray = Cipher.getInstance(algorithm.jcaName).run {
-    init(Cipher.ENCRYPT_MODE, publicKey.toJcaPublicKey().getOrThrow())
-    doFinal()
+    init(Cipher.ENCRYPT_MODE, publicKey.toJcaPublicKey().getOrThrow(), algorithm.jcaParameterSpec)
+    doFinal(data)
 }
 
 internal actual suspend fun decryptRSAImpl(
@@ -28,6 +30,6 @@ internal actual suspend fun decryptRSAImpl(
     data: ByteArray,
     config: PlatformDecryptorConfiguration
 ): ByteArray  = Cipher.getInstance(algorithm.jcaName).run {
-    init(Cipher.DECRYPT_MODE, privateKey.toJcaPrivateKey().getOrThrow())
-    doFinal()
+    init(Cipher.DECRYPT_MODE, privateKey.toJcaPrivateKey().getOrThrow(), algorithm.jcaParameterSpec)
+    doFinal(data)
 }
