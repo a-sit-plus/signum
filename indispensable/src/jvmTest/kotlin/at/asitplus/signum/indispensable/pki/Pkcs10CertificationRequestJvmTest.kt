@@ -93,7 +93,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
         val signatureAlgorithm = X509SignatureAlgorithm.ES256
         val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
-        val keyUsage = KeyUsage(KeyUsage.digitalSignature)
+        val keyUsage = KeyUsage(X509KeyUsage.digitalSignature)
         val extendedKeyUsage = ExtendedKeyUsage(KeyPurposeId.anyExtendedKeyUsage)
         val bcCsr = PKCS10CertificationRequestBuilder(X500Name("CN=$commonName"), spki)
             .addAttribute(Extension.keyUsage, keyUsage)
@@ -148,7 +148,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
         val signatureAlgorithm = X509SignatureAlgorithm.ES256
         val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
-        val keyUsage = KeyUsage(KeyUsage.digitalSignature)
+        val keyUsage = KeyUsage(X509KeyUsage.digitalSignature)
         val extendedKeyUsage = ExtendedKeyUsage(KeyPurposeId.anyExtendedKeyUsage)
 
         val extGen = ExtensionsGenerator()
@@ -409,7 +409,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
             Pkcs10CertificationRequestAttribute
         */
 
-        val keyUsage = KeyUsage(KeyUsage.digitalSignature)
+        val keyUsage = KeyUsage(X509KeyUsage.digitalSignature)
         val extendedKeyUsage = ExtendedKeyUsage(KeyPurposeId.anyExtendedKeyUsage)
 
         val attr1 =
