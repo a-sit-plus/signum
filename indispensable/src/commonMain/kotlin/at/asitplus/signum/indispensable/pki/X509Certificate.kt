@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
+import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
@@ -20,6 +21,10 @@ import at.asitplus.signum.indispensable.requireSupported
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Transient
 import kotlinx.serialization.builtins.serializer
 
@@ -89,7 +94,19 @@ constructor(
     val issuerAlternativeNames: AlternativeNames? = extensions?.findIssuerAltNames()
 
 
-    private fun Asn1TreeBuilder.Version(value: Int) = Asn1.ExplicitlyTagged(Tags.VERSION.tagValue) { +Asn1.Int(value) }
+    private fun Asn1TreeBuilder.Version(value: Int) =
+        Asn1.ExplicitlyTagged(Tags.VERSION.tagValue) { +Asn1.Int(value) }
+
+    val keyUsage: Set<X509KeyUsage>
+        get() = extensions
+            ?.find { it.oid == ObjectIdentifier("2.5.29.15") }
+            ?.value
+            ?.asEncapsulatingOctetString()
+            ?.children
+            ?.getOrNull(0)
+            ?.let { Asn1BitString.decodeFromTlv(it as Asn1Primitive) }
+            ?.let(X509KeyUsage::decodeSet)
+            ?: emptySet()
 
 
     @Throws(Asn1Exception::class)
@@ -303,6 +320,52 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     @Suppress("DEPRECATION_ERROR")
     val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
 
+    fun pathLenConstraint(): Int? =
+        tbsCertificate.extensions
+            ?.firstOrNull { it.oid == ObjectIdentifier("2.5.29.19") }
+            ?.value
+            ?.asEncapsulatingOctetString()
+            ?.children?.firstOrNull()
+            ?.asSequence()
+            ?.children?.getOrNull(1)
+            ?.asPrimitive()
+            ?.decodeToInt()
+
+    fun isCA(): Boolean =
+        tbsCertificate.extensions
+            ?.firstOrNull { it.oid == ObjectIdentifier("2.5.29.19") }
+            ?.value
+            ?.asEncapsulatingOctetString()
+            ?.children?.firstOrNull()
+            ?.asSequence()
+            ?.children?.getOrNull(0)
+            ?.asPrimitive()
+            ?.decodeToBoolean()
+            ?: false
+
+    fun hasReplayingExtensions(): Boolean =
+        tbsCertificate.extensions?.size != tbsCertificate.extensions?.distinctBy { it.oid }?.size
+
+    fun checkValidity(date: Instant = Clock.System.now()) {
+        if (date > tbsCertificate.validUntil.instant) {
+            throw CertificateValidityException(
+                "certificate expired on " + tbsCertificate.validUntil.instant.toLocalDateTime(
+                    TimeZone.currentSystemDefault()
+                )
+            )
+        }
+
+        if (date < tbsCertificate.validFrom.instant) {
+            throw CertificateValidityException(
+                "certificate not valid till " + tbsCertificate.validFrom.instant.toLocalDateTime(
+                    TimeZone.currentSystemDefault()
+                )
+            )
+        }
+    }
+
+    companion object :
+        PemDecodable<Asn1Sequence, X509Certificate>(EB_STRINGS.DEFAULT, EB_STRINGS.LEGACY) {
     val rawPublicKey get() = tbsCertificate.rawPublicKey
     val decodedPublicKey get() = tbsCertificate.decodedPublicKey
 
