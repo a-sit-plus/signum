@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.catchingUnwrapped
+import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
@@ -17,6 +18,10 @@ import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.SUBJEC
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Transient
 import kotlinx.serialization.builtins.serializer
 
@@ -41,7 +46,10 @@ constructor(
 ) : Asn1Encodable<Asn1Sequence> {
 
     init {
-        if (extensions?.distinctBy { it.oid }?.size != extensions?.size) throw Asn1StructuralException("Multiple extensions with the same OID found")
+        if (extensions?.distinctBy { it.oid }?.size != extensions?.size) throw Asn1StructuralException(
+            "Multiple extensions with the same OID found"
+        )
+
     }
 
     /**
@@ -63,7 +71,19 @@ constructor(
     val issuerAlternativeNames: AlternativeNames? = extensions?.findIssuerAltNames()
 
 
-    private fun Asn1TreeBuilder.Version(value: Int) = Asn1.ExplicitlyTagged(Tags.VERSION.tagValue) { +Asn1.Int(value) }
+    private fun Asn1TreeBuilder.Version(value: Int) =
+        Asn1.ExplicitlyTagged(Tags.VERSION.tagValue) { +Asn1.Int(value) }
+
+    val keyUsage: Set<X509KeyUsage>
+        get() = extensions
+            ?.find { it.oid == ObjectIdentifier("2.5.29.15") }
+            ?.value
+            ?.asEncapsulatingOctetString()
+            ?.children
+            ?.getOrNull(0)
+            ?.let { Asn1BitString.decodeFromTlv(it as Asn1Primitive) }
+            ?.let(X509KeyUsage::decodeSet)
+            ?: emptySet()
 
 
     @Throws(Asn1Exception::class)
@@ -173,13 +193,23 @@ constructor(
 
             val issuerUniqueID = src.peek()?.let { next ->
                 if (next.tag == ISSUER_UID) {
-                    (src.nextChild() as Asn1Primitive).let { Asn1BitString.decodeFromTlv(it, ISSUER_UID) }
+                    (src.nextChild() as Asn1Primitive).let {
+                        Asn1BitString.decodeFromTlv(
+                            it,
+                            ISSUER_UID
+                        )
+                    }
                 } else null
             }
 
             val subjectUniqueID = src.peek()?.let { next ->
                 if (next.tag == SUBJECT_UID) {
-                    (src.nextChild() as Asn1Primitive).let { Asn1BitString.decodeFromTlv(it, SUBJECT_UID) }
+                    (src.nextChild() as Asn1Primitive).let {
+                        Asn1BitString.decodeFromTlv(
+                            it,
+                            SUBJECT_UID
+                        )
+                    }
                 } else null
             }
             val extensions = if (src.hasMoreChildren()) {
@@ -282,7 +312,52 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
 
     val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
 
-    companion object : PemDecodable<Asn1Sequence, X509Certificate>(EB_STRINGS.DEFAULT, EB_STRINGS.LEGACY) {
+    fun pathLenConstraint(): Int? =
+        tbsCertificate.extensions
+            ?.firstOrNull { it.oid == ObjectIdentifier("2.5.29.19") }
+            ?.value
+            ?.asEncapsulatingOctetString()
+            ?.children?.firstOrNull()
+            ?.asSequence()
+            ?.children?.getOrNull(1)
+            ?.asPrimitive()
+            ?.decodeToInt()
+
+    fun isCA(): Boolean =
+        tbsCertificate.extensions
+            ?.firstOrNull { it.oid == ObjectIdentifier("2.5.29.19") }
+            ?.value
+            ?.asEncapsulatingOctetString()
+            ?.children?.firstOrNull()
+            ?.asSequence()
+            ?.children?.getOrNull(0)
+            ?.asPrimitive()
+            ?.decodeToBoolean()
+            ?: false
+
+    fun hasReplayingExtensions(): Boolean =
+        tbsCertificate.extensions?.size != tbsCertificate.extensions?.distinctBy { it.oid }?.size
+    
+    fun checkValidity(date: Instant = Clock.System.now()) {
+        if (date > tbsCertificate.validUntil.instant) {
+            throw CertificateValidityException(
+                "certificate expired on " + tbsCertificate.validUntil.instant.toLocalDateTime(
+                    TimeZone.currentSystemDefault()
+                )
+            )
+        }
+
+        if (date < tbsCertificate.validFrom.instant) {
+            throw CertificateValidityException(
+                "certificate not valid till " + tbsCertificate.validFrom.instant.toLocalDateTime(
+                    TimeZone.currentSystemDefault()
+                )
+            )
+        }
+    }
+
+    companion object :
+        PemDecodable<Asn1Sequence, X509Certificate>(EB_STRINGS.DEFAULT, EB_STRINGS.LEGACY) {
 
         private object EB_STRINGS {
             const val DEFAULT = "CERTIFICATE"
@@ -293,7 +368,8 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         override fun doDecode(src: Asn1Sequence): X509Certificate = runRethrowing {
             val tbs = TbsCertificate.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val signature = CryptoSignature.fromX509Encoded(sigAlg, src.nextChild() as Asn1Primitive)
+            val signature =
+                CryptoSignature.fromX509Encoded(sigAlg, src.nextChild() as Asn1Primitive)
             if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous structure in Certificate Structure")
             return X509Certificate(tbs, sigAlg, signature)
         }
@@ -320,9 +396,19 @@ private
 /** De-/serializes Base64 strings to/from [ByteArray] */
 object Asn1BitStringSerializer : TransformingSerializerTemplate<Asn1BitString?, String>(
     parent = String.serializer(),
-    encodeAs = { if (it == null) "" else byteArrayOf(it.numPaddingBits, *it.rawBytes).encodeToString(Base64Strict) },
+    encodeAs = {
+        if (it == null) "" else byteArrayOf(
+            it.numPaddingBits,
+            *it.rawBytes
+        ).encodeToString(Base64Strict)
+    },
     decodeAs = {
         if (it == "") null
-        else Asn1BitString.decodeFromTlv(Asn1Primitive(Asn1Element.Tag.BIT_STRING, it.decodeToByteArray(Base64Strict)))
+        else Asn1BitString.decodeFromTlv(
+            Asn1Primitive(
+                Asn1Element.Tag.BIT_STRING,
+                it.decodeToByteArray(Base64Strict)
+            )
+        )
     }
 )
