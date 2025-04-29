@@ -10,7 +10,7 @@ import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
 import kotlinx.io.Buffer
 import kotlinx.io.readByteArray
-import org.kotlincrypto.SecureRandom
+import org.kotlincrypto.random.CryptoRand
 import kotlin.experimental.xor
 import kotlin.jvm.JvmInline
 
@@ -46,7 +46,7 @@ private inline val ECCurve.L get() = when(this) {
 /** per RFC9794 4.7.2.
  * @param L security parameter controlling the drift from uniform;
  *            defaults to `log2(modulus) * (3/2)`, which is the value used in RFC9794 */
-fun ECCurve.randomScalar(L: Int = this.L) = SecureRandom().nextBytesOf(L)
+fun ECCurve.randomScalar(L: Int = this.L) = CryptoRand.Default.nextBytes(ByteArray(L))
     .let { BigInteger.fromByteArray(it, Sign.POSITIVE).toModularBigInteger(this.order) }
 
 @Suppress("NOTHING_TO_INLINE")
