@@ -13,7 +13,7 @@ import platform.Security.errSecVerifyFailed
 /**
  * Configures iOS-specific properties.
  */
-actual class PlatformVerifierConfiguration internal actual constructor() : DSL.Data()
+actual class PlatformVerifierConfiguration actual constructor() : DSL.Data()
 
 @Throws(UnsupportedCryptoException::class)
 internal actual fun checkAlgorithmKeyCombinationSupportedByECDSAPlatformVerifier

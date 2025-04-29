@@ -54,7 +54,7 @@ sealed interface Verifier {
 fun Verifier.verify(data: ByteArray, sig: CryptoSignature) =
     verify(SignatureInput(data), sig)
 
-expect class PlatformVerifierConfiguration internal constructor(): DSL.Data
+expect class PlatformVerifierConfiguration(): DSL.Data
 typealias ConfigurePlatformVerifier = DSLConfigureFn<PlatformVerifierConfiguration>
 
 /** A distinguishing interface for verifiers that delegate to the underlying platform (JCA, CryptoKit, ...) */

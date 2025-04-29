@@ -14,13 +14,13 @@ import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
 import javax.crypto.KeyAgreement
 
-actual class EphemeralSigningKeyConfiguration internal actual constructor(): EphemeralSigningKeyConfigurationBase() {
+actual class EphemeralSigningKeyConfiguration actual constructor(): EphemeralSigningKeyConfigurationBase() {
     var provider: String? = null
 }
 interface JvmEphemeralSignerCompatibleConfiguration {
     var provider: String?
 }
-actual class EphemeralSignerConfiguration internal actual constructor(): EphemeralSignerConfigurationBase(), JvmEphemeralSignerCompatibleConfiguration {
+actual class EphemeralSignerConfiguration actual constructor(): EphemeralSignerConfigurationBase(), JvmEphemeralSignerCompatibleConfiguration {
     override var provider: String? = null
 }
 
@@ -101,7 +101,7 @@ internal sealed interface JVMEphemeralKey {
 }
 
 internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey =
-    when (val alg = configuration._algSpecific.v) {
+    when (val alg = configuration.ec.v) {
         is SigningKeyConfiguration.ECConfiguration -> {
             getKPGInstance("EC", configuration.provider).run {
                 initialize(ECGenParameterSpec(alg.curve.jcaName))

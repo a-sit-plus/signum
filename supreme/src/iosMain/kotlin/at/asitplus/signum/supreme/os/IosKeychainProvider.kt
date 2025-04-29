@@ -51,14 +51,14 @@ private object KeychainTags {
     val PUBLIC_KEYS get() = tags.second
 }
 
-class IosSecureEnclaveConfiguration internal constructor() : PlatformSigningKeyConfigurationBase.SecureHardwareConfiguration() {
+class IosSecureEnclaveConfiguration() : PlatformSigningKeyConfigurationBase.SecureHardwareConfiguration() {
     /** Set to true to allow this key to be backed up. */
     var allowBackup = false
     enum class Availability { ALWAYS, AFTER_FIRST_UNLOCK, WHILE_UNLOCKED }
     /** Specify when this key should be available */
     var availability = Availability.ALWAYS
 }
-class IosSigningKeyConfiguration internal constructor(): PlatformSigningKeyConfigurationBase<IosSignerConfiguration>() {
+class IosSigningKeyConfiguration(): PlatformSigningKeyConfigurationBase<IosSignerConfiguration>() {
     override val hardware = childOrDefault(::IosSecureEnclaveConfiguration) {
         backing = DISCOURAGED
     }
@@ -85,7 +85,7 @@ private inline fun <reified E> resolveOption(what: String, valid: Set<E>, spec: 
         }
     }
 
-class IosSignerConfiguration internal constructor(): PlatformSignerConfigurationBase()
+class IosSignerConfiguration(): PlatformSignerConfigurationBase()
 
 private object LAContextStorage {
     data class SuccessfulAuthentication(
@@ -388,13 +388,13 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
 
         val useSecureEnclave = when (config.hardware.v.backing) {
             is REQUIRED -> true
-            is PREFERRED -> isSecureEnclaveSupportedConfiguration(config._algSpecific.v)
+            is PREFERRED -> isSecureEnclaveSupportedConfiguration(config.ec.v)
             is DISCOURAGED -> false
         }
 
         val publicKeyBytes: ByteArray = memScoped {
             val attr = createCFDictionary {
-                when (val alg = config._algSpecific.v) {
+                when (val alg = config.ec.v) {
                     is SigningKeyConfiguration.ECConfiguration -> {
                         kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
                         kSecAttrKeySizeInBits mapsTo alg.curve.coordinateLength.bits.toInt()
@@ -455,14 +455,14 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 val x = CFCryptoOperationFailed(thing = "generate key", osStatus = status)
                 if ((status == -50) &&
                     useSecureEnclave &&
-                    !isSecureEnclaveSupportedConfiguration(config._algSpecific.v)) {
+                    !isSecureEnclaveSupportedConfiguration(config.ec.v)) {
                     throw UnsupportedCryptoException("The iOS Secure Enclave does not support this configuration.", x)
                 }
                 throw x
             }
         }
 
-        val publicKey = when (val alg = config._algSpecific.v) {
+        val publicKey = when (val alg = config.ec.v) {
             is SigningKeyConfiguration.ECConfiguration ->
                 CryptoPublicKey.EC.fromAnsiX963Bytes(alg.curve, publicKeyBytes)
             is SigningKeyConfiguration.RSAConfiguration ->
@@ -501,10 +501,10 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
         val metadata = IosKeyMetadata(
             attestation = attestation,
             rawUnlockTimeout = config.hardware.v.protection.v?.timeout,
-            allowSigning = config._algSpecific.v.allowsSigning,
-            allowEncryption = config._algSpecific.v.allowsDecrypting,
-            allowKeyAgreement = config._algSpecific.v.allowsKeyAgreement,
-            algSpecific = when (val alg = config._algSpecific.v) {
+            allowSigning = config.ec.v.allowsSigning,
+            allowEncryption = config.ec.v.allowsDecrypting,
+            allowKeyAgreement = config.ec.v.allowsKeyAgreement,
+            algSpecific = when (val alg = config.ec.v) {
                 is SigningKeyConfiguration.ECConfiguration -> IosKeyAlgSpecificMetadata.ECDSA(alg.digests)
                 is SigningKeyConfiguration.RSAConfiguration -> IosKeyAlgSpecificMetadata.RSA(alg.digests, alg.paddings)
             }
