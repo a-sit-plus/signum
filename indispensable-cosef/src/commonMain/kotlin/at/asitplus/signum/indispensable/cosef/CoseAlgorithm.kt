@@ -11,6 +11,7 @@ import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.symmetric.SpecializedSymmetricEncryptionAlgorithm
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -47,8 +48,8 @@ sealed interface CoseAlgorithm {
     }
 
     @Serializable(with = CoseAlgorithmSerializer::class)
-    sealed class SymmetricEncryption(override val coseValue: Int, val algorithm: SymmetricEncryptionAlgorithm<*, *, *>) :
-        CoseAlgorithm.Symmetric {
+    sealed class SymmetricEncryption(override val coseValue: Int, override val algorithm: SymmetricEncryptionAlgorithm<*, *, *>) :
+        CoseAlgorithm.Symmetric, SpecializedSymmetricEncryptionAlgorithm {
 
 
         @Serializable(with = CoseAlgorithmSerializer::class)
@@ -216,12 +217,11 @@ fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = c
     }
 }
 
-fun DataIntegrityAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.DataIntegrity> = catching {
+fun DataIntegrityAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.DataIntegrity> =
      when (this) {
-        is SignatureAlgorithm -> toCoseAlgorithm().getOrThrow()
-        is MessageAuthenticationCode -> toCoseAlgorithm().getOrThrow()
+        is SignatureAlgorithm -> toCoseAlgorithm()
+        is MessageAuthenticationCode -> toCoseAlgorithm()
     }
-}
 
 /** Tries to find a matching COSE algorithm. Note that [CoseAlgorithm.MAC.HS256_64] cannot be mapped automatically. */
 fun MessageAuthenticationCode.toCoseAlgorithm(): KmmResult<CoseAlgorithm.MAC> = catching {

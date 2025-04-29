@@ -38,11 +38,11 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.security.KeyStore
 import java.security.PrivateKey
-import java.security.SecureRandom
 import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.RSAPrivateKey
 import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
+import org.kotlincrypto.random.CryptoRand
 import kotlin.io.path.extension
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
@@ -141,7 +141,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
             val cn = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(alias))))
             val publicKey = keyPair.public.toCryptoPublicKey().getOrThrow()
             val tbsCert = TbsCertificate(
-                serialNumber = ByteArray(32).also { SecureRandom().nextBytes(it) },
+                serialNumber = CryptoRand.Default.nextBytes(ByteArray(32)),
                 signatureAlgorithm = certAlg,
                 issuerName = cn,
                 subjectName = cn,

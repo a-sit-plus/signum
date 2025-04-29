@@ -1,7 +1,10 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
+import at.asitplus.signum.indispensable.symmetric.randomKey
 import at.asitplus.signum.indispensable.toCryptoPublicKey
+import at.asitplus.signum.supreme.symmetric.decrypt
+import at.asitplus.signum.supreme.symmetric.encrypt
 import com.nimbusds.jose.*
 import com.nimbusds.jose.crypto.AESEncrypter
 import com.nimbusds.jose.crypto.ECDHEncrypter
@@ -9,6 +12,8 @@ import com.nimbusds.jose.jwk.Curve
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator
 import com.nimbusds.jose.util.Base64URL
 import io.kotest.core.spec.style.FreeSpec
+import io.kotest.datatest.withData
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -81,6 +86,15 @@ class JweEncryptedTest : FreeSpec({
         parsed.header.contentType shouldBe cty
         parsed.header.certificateUrl shouldBe x5u
         parsed.ciphertext shouldBe jweNimbus.cipherText.decode()
+    }
+
+    "JWE symmetric encryption" - {
+        withData(JweAlgorithm.Symmetric.entries) { alg ->
+            val plain = Random.nextBytes(32)
+            val key = alg.randomKey().toJsonWebKey().getOrThrow()
+            val ciphertext = key.encrypt(plain).getOrThrow()
+            ciphertext.decrypt(key) shouldSucceedWith plain
+        }
     }
 
 })
