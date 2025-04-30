@@ -1,8 +1,10 @@
 package at.asitplus.signum.supreme.kdf
 
 import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.HMAC
 import at.asitplus.signum.indispensable.kdf.HKDF
 import at.asitplus.signum.indispensable.kdf.PBKDF2
+import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.supreme.a
 import at.asitplus.signum.supreme.b
 import io.kotest.core.spec.style.FreeSpec
@@ -132,19 +134,19 @@ class KDFTest : FreeSpec({
                         "56 fa 6a a7 55 48 09 9d\n" +
                         "            cc 37 d7 f0 34 25 e0 c3"))
             }) { (P, S, c, ref) ->
-                PBKDF2.HMAC_SHA1(password=a(P),salt=a(S),iterations=c,dkLen=b(ref).size).getOrThrow() shouldBe b(ref)
+                PBKDF2(HMAC.SHA1,c).deriveKey(ikm=a(P),salt=a(S),dkLength=b(ref).size.bytes).getOrThrow() shouldBe b(ref)
             }
         }
         "PBKDF2-HMAC-SHA-256" - {
             "RFC7914: passwd" {
-                PBKDF2.HMAC_SHA256(password=a("passwd"), salt=a("salt"), iterations=1, dkLen=64).getOrThrow() shouldBe
+                PBKDF2(HMAC.SHA256, 1).deriveKey(ikm=a("passwd"), salt=a("salt"), dkLength=64.bytes).getOrThrow() shouldBe
                         b("55 ac 04 6e 56 e3 08 9f ec 16 91 c2 25 44 b6 05\n" +
                                 "   f9 41 85 21 6d de 04 65 e6 8b 9d 57 c2 0d ac bc\n" +
                                 "   49 ca 9c cc f1 79 b6 45 99 16 64 b3 9d 77 ef 31\n" +
                                 "   7c 71 b8 45 b1 e3 0b d5 09 11 20 41 d3 a1 97 83")
             }
             "RFC7914: Password" {
-                PBKDF2.HMAC_SHA256(password=a("Password"), salt=a("NaCl"), iterations=80000, dkLen=64).getOrThrow() shouldBe
+                PBKDF2(HMAC.SHA256,iterations=80000).deriveKey(ikm=a("Password"), salt=a("NaCl"), dkLength=64.bytes).getOrThrow() shouldBe
                         b("4d dc d8 f6 0b 98 be 21 83 0c ee 5e f2 27 01 f9\n" +
                                 "   64 1a 44 18 d0 4c 04 14 ae ff 08 87 6b 34 ab 56\n" +
                                 "   a1 d4 25 a1 22 58 33 54 9a db 84 1b 51 c9 b3 17\n" +
