@@ -680,15 +680,21 @@ For convenience, pre-configured `AsymmetricEncryptionAlgorithm` instances exist 
 ## Key Derivation / Key Stretching
 
 The Supreme KMP crypto provider implements the following key derivation functions:
+
 * _HKDF_ as per [RFC 5869](https://tools.ietf.org/html/rfc5869)
-* _PNKDF2_ in accordance with [RFC 2898](https://tools.ietf.org/html/rfc2898)
+* _PNKDF2_ in accordance with [RFC 8018](https://datatracker.ietf.org/doc/html/rfc8018)
 * _scrpyt_ as defined by [Colin Percival for the _Tarsnap_ online backup service](https://www.tarsnap.com/scrypt.html)
 
 Usage is the same across implementations:
-1. Instantiate a KDF implementation using algorithm-specific parameters as per the respective RFCs
+
+1. Instantiate a KDF implementation using algorithm-specific parameters as per the respective RFCs. These are:
+    * HKDF comes predefined for the SHA-1 and SHA-2 family of hash functions as `HKDF.SHA1`..`HKDF.SHA512`. Those enums require the instantiation of the nested `WithInfo(info)` class to obtain a fully instantiated object implementing the `KDF` interface.
+    * PBKDF2 comes predefined for HMAC based on the SHA-1 and SHA-2 family of hash functions as `PBKDF2.HMAC_SHA1`..`PBKDF2.HMAC_SHA512`. Those enums require the instantiation of the nested `WithIterations(iter)` class to obtain a fully instantiated object implementing the `KDF` interface.
+    * scrypt can simply be configured by calling the `SCrypt` constructor with parameter values as desired: `SCrypt(cost, parallelization, blockSize)`. This class directly implements the `KDF` interface.
 2. Invoke `deriveKey(salt, inputKeyMaterial, derivedKeyLength)` to obtain a derived key of length `derivedKeyLength` based on `inputKeyMaterial` and the provided `salt`.
 
-`deriveKey` returns a `KmmResult` indicating either success or failure.
+In line with other APIs, `deriveKey` returns a `KmmResult` indicating either success or failure.
+HKDF additionally exposes `extract(salt /*nullable*/, inputKeyMaterial)` and `expand(pseudoRandomKey, info, derivedKeyLength)` functions.
 
 ## Attestation
 

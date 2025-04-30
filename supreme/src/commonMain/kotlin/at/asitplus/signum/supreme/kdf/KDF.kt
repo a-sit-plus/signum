@@ -26,13 +26,13 @@ import kotlin.math.min
  */
 suspend fun KDF.deriveKey(salt: ByteArray, ikm: ByteArray, derivedKeyLength: BitLength): KmmResult<ByteArray> = catching {
     when (this) {
-        is PBKDF2 -> derive(ikm, salt, derivedKeyLength.bytes.toInt())
+        is PBKDF2.WithIterations -> derive(ikm, salt, derivedKeyLength.bytes.toInt())
         is SCrypt -> {
-            val B = PBKDF2(HMAC.SHA256, 1).derive(ikm, salt, parallelization * 128 * blockSize)
+            val B = PBKDF2.HMAC_SHA256.WithIterations(1).derive(ikm, salt, parallelization * 128 * blockSize)
             with(Mixer()) {
                 repeat(parallelization) { i -> scryptROMix(ByteArrayView(B, i * 128 * blockSize, 128 * blockSize)) }
             }
-            PBKDF2(HMAC.SHA256, 1).derive(ikm, B, derivedKeyLength.bytes.toInt())
+            PBKDF2.HMAC_SHA256.WithIterations( 1).derive(ikm, B, derivedKeyLength.bytes.toInt())
         }
         is HKDF.WithInfo -> derive(salt, ikm, derivedKeyLength)
     }
@@ -45,10 +45,10 @@ private suspend fun HKDF.WithInfo.derive(salt: ByteArray, ikm: ByteArray, derive
  * HKDF `expand` function
  * @param pseudoRandomKey the input key material, which should already be pseudo-random.
  * @param info context
- * @param dkLength derived key length
+ * @param derivedKeyLength derived key length
  */
-suspend fun HKDF.expand(pseudoRandomKey: ByteArray, info: ByteArray, dkLength: BitLength): KmmResult<ByteArray> = catching {
-    val output = ByteArray(dkLength.bytes.toInt())
+suspend fun HKDF.expand(pseudoRandomKey: ByteArray, info: ByteArray, derivedKeyLength: BitLength): KmmResult<ByteArray> = catching {
+    val output = ByteArray(derivedKeyLength.bytes.toInt())
     var T = byteArrayOf()
     var populated = 0
     var nextI = 1
@@ -66,16 +66,16 @@ suspend fun HKDF.expand(pseudoRandomKey: ByteArray, info: ByteArray, dkLength: B
 /**
  * HDKF `extract` function generating a pseudo-random key from `salt` and `ikm`
  * @param salt optional salt
- * @param ikm input key material
+ * @param inputKeyMaterial input key material
  */
-suspend fun HKDF.extract(salt: ByteArray?, ikm: ByteArray): KmmResult<ByteArray> =
-    hmac.mac(salt ?: ByteArray(outputLength), ikm)
+suspend fun HKDF.extract(salt: ByteArray?, inputKeyMaterial: ByteArray): KmmResult<ByteArray> =
+    hmac.mac(salt ?: ByteArray(outputLength), inputKeyMaterial)
 
 
 private fun PBKDF2.int(v: UInt) =
     v.toLong().toUnsignedByteArray().padStart(4, 0x00)
 
-private suspend fun PBKDF2.derive(password: ByteArray, salt: ByteArray, dkLen: Int): ByteArray {
+private suspend fun PBKDF2.WithIterations.derive(password: ByteArray, salt: ByteArray, dkLen: Int): ByteArray {
     require(iterations > 0) { "iterations must be greater than 0" }
     val result = ByteArray(dkLen)
     var populated = 0
@@ -84,10 +84,10 @@ private suspend fun PBKDF2.derive(password: ByteArray, salt: ByteArray, dkLen: I
         // the loop body is the RFC's "F"
         require(i < UInt.MAX_VALUE) { "derived key too long" }
         ++i
-        var U = prf.mac(password, sequenceOf(salt, int(i))).getOrThrow()
+        var U = pbkdF2.prf.mac(password, sequenceOf(salt, pbkdF2.int(i))).getOrThrow()
         var T = U
         repeat(iterations - 1) {
-            U = prf.mac(password, U).getOrThrow()
+            U = pbkdF2.prf.mac(password, U).getOrThrow()
             T = T xor U
         }
         val toCopy = min(T.size, dkLen - populated)
