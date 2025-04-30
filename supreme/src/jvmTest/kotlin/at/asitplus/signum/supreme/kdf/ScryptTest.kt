@@ -1,4 +1,4 @@
-package at.asitplus.signum.supreme.ksf
+package at.asitplus.signum.supreme.kdf
 
 import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.internals.ByteArrayView
@@ -6,7 +6,6 @@ import at.asitplus.signum.internals.toLEByteArray
 import at.asitplus.signum.internals.toUIntArrayLE
 import at.asitplus.signum.internals.view
 import at.asitplus.signum.supreme.b
-import at.asitplus.signum.supreme.kdf.deriveKey
 import com.lambdaworks.crypto.SCrypt
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
@@ -140,8 +139,8 @@ class ScryptTest : FreeSpec({
     "Against JVM reference" - {
         checkAll(iterations = 3, Arb.nonNegativeInt(8)) {
             val p = 2.0.pow(it + 1).toInt()
-            checkAll(iterations = 3, Arb.nonNegativeInt(10)) {
-                val N = 2.0.pow(it).toInt()
+            checkAll(iterations = 3, Arb.nonNegativeInt(9)) {
+                val N = 2.0.pow(it+1).toInt()
                 checkAll(iterations = 4, Arb.nonNegativeInt(20)) {
                     val r = it + 1
                     val scryptInstance = scrypt(N, blockSize = r, parallelization = p)
