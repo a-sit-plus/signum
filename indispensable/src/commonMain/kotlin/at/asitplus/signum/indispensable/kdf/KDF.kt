@@ -74,15 +74,17 @@ enum class PBKDF2(val prf: HMAC) {
  *
  * Parameters:
  * - CPU/memory [cost] parameter; must be a positive power of two; controls how many independent transformations of the input must be held in memory
- *      affects: scryptROMix
- * - [parallelization] parameter; must be >=1; controls how many blocks scryptROMix is run on in parallel
- *      affects: final key derivation
- * - [blockSize] factor; fine-tunes sequential memory read size and performance. (defaults to `8`, which is commonly used)
+ *     * affects: `scryptBlockMix`
+ * - [parallelization] parameter; must be >=1; controls how many blocks `scryptROMix` is run on in parallel
+ *     * affects: final key derivation
+ * - [blockSize] factor; must be >=1; fine-tunes sequential memory read size and performance. Defaults to `8`, which is commonly used.
+ *     * affects: `scryptBlockMix` and `scryptROMix`
  */
 class SCrypt(val cost: Int, val parallelization: Int, val blockSize: Int = 8) : KDF {
     init {
-        require((cost > 1) && cost.isPowerOfTwo())
-        require(parallelization >= 1)
+        require((cost >= 1) && cost.isPowerOfTwo()) { "cost must be a positive power of two" }
+        require(parallelization >= 1) { "parallelization must be >=1" }
+        require(blockSize >= 1) { "blockSize must be >=1" }
     }
 
     private val nMinus1 = (cost - 1).toULong()
@@ -140,7 +142,7 @@ class SCrypt(val cost: Int, val parallelization: Int, val blockSize: Int = 8) : 
                 val Yi = y.subview(64 * i, 64)
                 Yi.replaceWith(X)
                 Yi.xor_inplace(blocks.subview(64 * i, 64))
-                `salsa20_8core`(Yi)
+                salsa20_8core(Yi)
                 X = Yi
             }
             repeat(2 * blockSize) { i ->
