@@ -70,7 +70,7 @@ enum class PBKDF2(val prf: HMAC) {
 
 
 /**
- * scrypt as defined by [Colin Percival for the _Tarsnap_ online backup service](https://www.tarsnap.com/scrypt.html). Directly implements the [KDF] interface.
+ * `scrypt` as defined by [Colin Percival for the _Tarsnap_ online backup service](https://www.tarsnap.com/scrypt.html). Directly implements the [KDF] interface.
  *
  * Parameters:
  * - CPU/memory [cost] parameter; must be a positive power of two; controls how many independent transformations of the input must be held in memory
