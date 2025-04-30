@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.kdf
 
 import at.asitplus.signum.indispensable.Digest
-import at.asitplus.signum.indispensable.mac.HMAC
+import at.asitplus.signum.indispensable.HMAC
 
 
 sealed interface KDF {
