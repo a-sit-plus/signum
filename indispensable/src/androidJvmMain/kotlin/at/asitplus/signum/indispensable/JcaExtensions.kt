@@ -308,6 +308,7 @@ val AsymmetricEncryptionAlgorithm.jcaName: String
             at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA256 -> "RSA/ECB/OAEPWithSHA-256AndMGF1Padding"
             at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA384 -> "RSA/ECB/OAEPWithSHA-384AndMGF1Padding"
             at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA512 -> "RSA/ECB/OAEPWithSHA-512AndMGF1Padding"
+            @OptIn(HazardousMaterials::class)
             at.asitplus.signum.indispensable.asymmetric.RSAPadding.PKCS1 -> "RSA/ECB/PKCS1Padding"
             @OptIn(HazardousMaterials::class)
             at.asitplus.signum.indispensable.asymmetric.RSAPadding.NONE -> "RSA/ECB/NoPadding"
@@ -348,6 +349,8 @@ val AsymmetricEncryptionAlgorithm.jcaParameterSpec: AlgorithmParameterSpec?
                     MGF1ParameterSpec.SHA512,
                     PSource.PSpecified.DEFAULT
                 )
+
+                @OptIn(HazardousMaterials::class)
                 at.asitplus.signum.indispensable.asymmetric.RSAPadding.PKCS1 -> null
             }
         }
