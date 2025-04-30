@@ -20,45 +20,56 @@ import kotlin.math.min
  *
  * @param salt the salt to use
  * @param ikm the input key material
- * @param dkLength the length of the derived key
+ * @param derivedKeyLength the length of the derived key
  *
  * Any other parameters are set during instantiation of the [KDF] implementation.
  */
-suspend fun KDF.deriveKey(salt: ByteArray, ikm: ByteArray, dkLength: BitLength): KmmResult<ByteArray> = catching {
+suspend fun KDF.deriveKey(salt: ByteArray, ikm: ByteArray, derivedKeyLength: BitLength): KmmResult<ByteArray> = catching {
     when (this) {
-        is PBKDF2 -> derive(ikm, salt, dkLength.bytes.toInt())
+        is PBKDF2 -> derive(ikm, salt, derivedKeyLength.bytes.toInt())
         is SCrypt -> {
             val B = PBKDF2(HMAC.SHA256, 1).derive(ikm, salt, parallelization * 128 * blockSize)
             with(Mixer()) {
                 repeat(parallelization) { i -> scryptROMix(ByteArrayView(B, i * 128 * blockSize, 128 * blockSize)) }
             }
-            PBKDF2(HMAC.SHA256, 1).derive(ikm, B, dkLength.bytes.toInt())
+            PBKDF2(HMAC.SHA256, 1).derive(ikm, B, derivedKeyLength.bytes.toInt())
         }
-        is HKDF.WithInfo -> derive(salt, ikm, dkLength)
+        is HKDF.WithInfo -> derive(salt, ikm, derivedKeyLength)
     }
 }
 
-private suspend fun HKDF.WithInfo.derive(salt: ByteArray, ikm: ByteArray, dkLength: BitLength): ByteArray =
-    hkdf.extract(salt, ikm).getOrThrow().let { hkdf.expand(it, info, dkLength.bytes.toInt()).getOrThrow() }
+private suspend fun HKDF.WithInfo.derive(salt: ByteArray, ikm: ByteArray, derivedKeyLength: BitLength): ByteArray =
+    hkdf.extract(salt, ikm).getOrThrow().let { hkdf.expand(it, info, derivedKeyLength).getOrThrow() }
 
-suspend fun HKDF.expand(pseudoRandomKey: ByteArray, info: ByteArray, length: Int): KmmResult<ByteArray> = catching {
-    val output = ByteArray(length)
+/**
+ * HKDF `expand` function
+ * @param pseudoRandomKey the input key material, which should already be pseudo-random.
+ * @param info context
+ * @param dkLength derived key length
+ */
+suspend fun HKDF.expand(pseudoRandomKey: ByteArray, info: ByteArray, dkLength: BitLength): KmmResult<ByteArray> = catching {
+    val output = ByteArray(dkLength.bytes.toInt())
     var T = byteArrayOf()
     var populated = 0
     var nextI = 1
-    while (populated < length) {
+    while (populated < output.size) {
         check(nextI <= 255)
         T = hmac.mac(pseudoRandomKey, sequenceOf(T, info, byteArrayOf((nextI++).toUByte().toByte())))
             .getOrThrow()
-        val toCopy = min(length - populated, T.size)
+        val toCopy = min(output.size - populated, T.size)
         T.copyInto(output, populated, 0, toCopy)
         populated += toCopy
     }
     output
 }
 
-suspend fun HKDF.extract(salt: ByteArray?, InputKeyMaterial: ByteArray): KmmResult<ByteArray> =
-    hmac.mac(salt ?: ByteArray(outputLength), InputKeyMaterial)
+/**
+ * HDKF `extract` function generating a pseudo-random key from `salt` and `ikm`
+ * @param salt optional salt
+ * @param ikm input key material
+ */
+suspend fun HKDF.extract(salt: ByteArray?, ikm: ByteArray): KmmResult<ByteArray> =
+    hmac.mac(salt ?: ByteArray(outputLength), ikm)
 
 
 private fun PBKDF2.int(v: UInt) =

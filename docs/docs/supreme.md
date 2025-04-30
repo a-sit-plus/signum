@@ -12,6 +12,10 @@ types and functionality related to crypto and PKI applications:
 * **Multiplatform AES and ChaCha20-Poly1503**
 * **Multiplatform HMAC**
 * **Multiplatform RSA Encryption**
+* **Multiplatform KDF/KSF**
+    * PBKDF2
+    * HKDF
+    * scrypt
 * Biometric Authentication on Android and iOS without Callbacks or Activity Passing** (✨Magic!✨)
 * Support Attestation on Android and iOS
 * Multiplatform, hardware-backed ECDH key agreement
@@ -173,7 +177,7 @@ On Android, key usage purposes are enforced by hardware, on iOS this enforcement
 
 
 #### iOS and Android
-Both iOS and Android support attestation, hardware-backed key storage, and authentication to use a key.
+Both iOS and Android support attestation, hardware-backed key storage and authentication to use a key.
 Since all of this is, at least in part, hardware-dependent, the `PlatformSigningProvider` supports an additional
 `hardware` configuration block for key generation.
 The following snippet is a comprehensive example showcasing this feature set:
@@ -672,6 +676,19 @@ For convenience, pre-configured `AsymmetricEncryptionAlgorithm` instances exist 
 * `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256`
 * `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA384`
 * `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA512`
+
+## Key Derivation / Key Stretching
+
+The Supreme KMP crypto provider implements the following key derivation functions:
+* _HKDF_ as per [RFC 5869](https://tools.ietf.org/html/rfc5869)
+* _PNKDF2_ in accordance with [RFC 2898](https://tools.ietf.org/html/rfc2898)
+* _scrpyt_ as defined by [Colin Percival for the _Tarsnap_ online backup service](https://www.tarsnap.com/scrypt.html)
+
+Usage is the same across implementations:
+1. Instantiate a KDF implementation using algorithm-specific parameters as per the respective RFCs
+2. Invoke `deriveKey(salt, inputKeyMaterial, derivedKeyLength)` to obtain a derived key of length `derivedKeyLength` based on `inputKeyMaterial` and the provided `salt`.
+
+`deriveKey` returns a `KmmResult` indicating either success or failure.
 
 ## Attestation
 
