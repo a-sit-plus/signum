@@ -2,16 +2,17 @@ package at.asitplus.signum.indispensable.kdf
 
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.HMAC
-import at.asitplus.signum.internals.ByteArrayView
-import at.asitplus.signum.internals.isPowerOfTwo
-import at.asitplus.signum.internals.subview
-import at.asitplus.signum.internals.toLEByteArray
-import at.asitplus.signum.internals.toUIntArrayLE
+import at.asitplus.signum.indispensable.kdf.PBKDF2.WithIterations
+import at.asitplus.signum.internals.*
 
 
 sealed interface KDF
 
-/** RFC 5869 HKDF */
+/**
+ * [RFC 5869](https://tools.ietf.org/html/rfc5869) HKDF using an [HMAC] based on the passed [digest].
+ *
+ * Create an instance of [WithInfo] to obtain an actual [KDF] for key derivation.
+ * */
 enum class HKDF(val digest: Digest) {
     SHA1(Digest.SHA1),
     SHA256(Digest.SHA256),
@@ -36,12 +37,42 @@ enum class HKDF(val digest: Digest) {
     }
 }
 
+/**
+ *  [RFC 8018](https://datatracker.ietf.org/doc/html/rfc8018)-compliant PBKDF2 template using an [HMAC] as its [prf] (pseudo-random function).
+ *
+ *  Create an instance of [WithIterations] to obtain an actual [KDF] for key derivation.
+ */
+enum class PBKDF2(val prf: HMAC) {
+    HMAC_SHA1(HMAC.SHA1),
+    HMAC_SHA256(HMAC.SHA256),
+    HMAC_SHA384(HMAC.SHA384),
+    HMAC_SHA512(HMAC.SHA512);
 
-class PBKDF2(val prf: HMAC, val iterations: Int) : KDF
+    companion object {
+        operator fun invoke(prf: HMAC) = when (prf) {
+            HMAC.SHA1 -> HMAC_SHA1
+            HMAC.SHA256 -> HMAC_SHA256
+            HMAC.SHA384 -> HMAC_SHA384
+            HMAC.SHA512 -> HMAC_SHA512
+        }
 
+        operator fun invoke(digest: Digest) = invoke(HMAC(digest))
+
+    }
+
+    /**
+     * The actual [KDF] instance configured with [iterations].
+     */
+    inner class WithIterations(val iterations: Int) : KDF {
+        val pbkdF2 = this@PBKDF2
+    }
+}
 
 
 /**
+ * scrypt as defined by [Colin Percival for the _Tarsnap_ online backup service](https://www.tarsnap.com/scrypt.html). Directly implements the [KDF] interface.
+ *
+ * Parameters:
  * - CPU/memory [cost] parameter; must be a positive power of two; controls how many independent transformations of the input must be held in memory
  *      affects: scryptROMix
  * - [parallelization] parameter; must be >=1; controls how many blocks scryptROMix is run on in parallel
