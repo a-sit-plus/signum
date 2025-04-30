@@ -119,29 +119,6 @@ class ScryptTest : FreeSpec({
         }
         "Random Test Vectors" - {
 
-            checkAll(iterations = 3, Arb.nonNegativeInt(8)) {
-                val p = 2.0.pow(it + 1).toInt()
-                checkAll(iterations = 3, Arb.nonNegativeInt(10)) {
-                    val N = 2.0.pow(it).toInt()
-                    checkAll(iterations = 4, Arb.nonNegativeInt(20)) {
-                        val r = it + 1
-                        val scryptInstance = scrypt(N, blockSize = r, parallelization = p)
-                        checkAll(iterations = 6, Arb.byteArray(Arb.positiveInt(16), Arb.byte())) { salt ->
-                            checkAll(iterations = 6, Arb.byteArray(Arb.positiveInt(32), Arb.byte())) { ikm ->
-                                checkAll(iterations = 6, Arb.nonNegativeInt(256)) { len ->
-                                    scryptInstance.deriveKey(salt, ikm, len.bytes)
-                                    SCrypt.scrypt(ikm, salt, N, r, p, len) shouldBe scryptInstance.deriveKey(
-                                        salt,
-                                        ikm,
-                                        len.bytes
-                                    ).getOrThrow()
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
             val N = 512
             val r = 8
             val scryptInstance = scrypt(N, blockSize = r, parallelization = 1)
@@ -156,6 +133,31 @@ class ScryptTest : FreeSpec({
                     SCrypt.smix(it, 0, r, N, ByteArray(128 * r * N), ByteArray(256 * r))
                 }
 
+            }
+        }
+    }
+
+    "Against JVM reference" - {
+        checkAll(iterations = 3, Arb.nonNegativeInt(8)) {
+            val p = 2.0.pow(it + 1).toInt()
+            checkAll(iterations = 3, Arb.nonNegativeInt(10)) {
+                val N = 2.0.pow(it).toInt()
+                checkAll(iterations = 4, Arb.nonNegativeInt(20)) {
+                    val r = it + 1
+                    val scryptInstance = scrypt(N, blockSize = r, parallelization = p)
+                    checkAll(iterations = 6, Arb.byteArray(Arb.positiveInt(16), Arb.byte())) { salt ->
+                        checkAll(iterations = 6, Arb.byteArray(Arb.positiveInt(32), Arb.byte())) { ikm ->
+                            checkAll(iterations = 6, Arb.nonNegativeInt(256)) { len ->
+                                scryptInstance.deriveKey(salt, ikm, len.bytes)
+                                SCrypt.scrypt(ikm, salt, N, r, p, len) shouldBe scryptInstance.deriveKey(
+                                    salt,
+                                    ikm,
+                                    len.bytes
+                                ).getOrThrow()
+                            }
+                        }
+                    }
+                }
             }
         }
     }
