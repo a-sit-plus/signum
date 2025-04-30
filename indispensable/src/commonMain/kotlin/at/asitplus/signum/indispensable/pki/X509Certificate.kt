@@ -322,7 +322,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
 
     fun pathLenConstraint(): Int? =
         tbsCertificate.extensions
-            ?.firstOrNull { it.oid == ObjectIdentifier("2.5.29.19") }
+            ?.firstOrNull { it.oid == ObjectIdentifier(KnownOIDs.basicConstraints.toString()) }
             ?.value
             ?.asEncapsulatingOctetString()
             ?.children?.firstOrNull()
@@ -333,7 +333,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
 
     fun isCA(): Boolean =
         tbsCertificate.extensions
-            ?.firstOrNull { it.oid == ObjectIdentifier("2.5.29.19") }
+            ?.firstOrNull { it.oid == ObjectIdentifier(KnownOIDs.basicConstraints.toString()) }
             ?.value
             ?.asEncapsulatingOctetString()
             ?.children?.firstOrNull()
