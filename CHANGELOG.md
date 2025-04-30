@@ -4,6 +4,8 @@
 
 ### NEXT
 
+* **RSA encryption** for in-memory keys (no hardware-backed key management yet)
+
 
 ### 3.16.1 (Supreme 0.8.1) Hotfix
 * Generalized, proper COSE to MAC mapping, preventing unexpected behaviour for `HS265_24`
