@@ -2,7 +2,6 @@ package at.asitplus.signum.indispensable.kdf
 
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.HMAC
-import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.internals.ByteArrayView
 import at.asitplus.signum.internals.isPowerOfTwo
 import at.asitplus.signum.internals.subview
@@ -43,15 +42,16 @@ class PBKDF2(val prf: HMAC, val iterations: Int) : KDF
 
 
 /**
- * - [blockSize] factor; fine-tunes sequential memory read size and performance. (defaults to `8`, which is commonly used)
- * - CPU/memory [cost] parameter; controls how many independent transformations of the input must be held in memory
+ * - CPU/memory [cost] parameter; must be a positive power of two; controls how many independent transformations of the input must be held in memory
  *      affects: scryptROMix
- * - [parallelization] parameter; controls how many blocks scryptROMix is run on in parallel
- *      affects: scrypt
+ * - [parallelization] parameter; must be >=1; controls how many blocks scryptROMix is run on in parallel
+ *      affects: final key derivation
+ * - [blockSize] factor; fine-tunes sequential memory read size and performance. (defaults to `8`, which is commonly used)
  */
 class SCrypt(val cost: Int, val parallelization: Int, val blockSize: Int = 8) : KDF {
     init {
         require((cost > 1) && cost.isPowerOfTwo())
+        require(parallelization >= 1)
     }
 
     private val nMinus1 = (cost - 1).toULong()
@@ -83,9 +83,9 @@ class SCrypt(val cost: Int, val parallelization: Int, val blockSize: Int = 8) : 
         }
 
         /** in-place salsa20/8 permutation */
-        fun salsa20_8core(B: ByteArrayView) {
-            check(B.size == 64)
-            B.toUIntArrayLE(salsaInput)
+        fun salsa20_8core(block: ByteArrayView) {
+            check(block.size == 64)
+            block.toUIntArrayLE(salsaInput)
             salsaInput.copyInto(salsaScratch)
             repeat(4) {
                 salsa(4, 0, 12, 8)
@@ -98,22 +98,22 @@ class SCrypt(val cost: Int, val parallelization: Int, val blockSize: Int = 8) : 
                 salsa(12, 15, 14, 13)
             }
             repeat(16) { salsaScratch[it] += salsaInput[it] }
-            salsaScratch.toLEByteArray(B)
+            salsaScratch.toLEByteArray(block)
         }
 
         private val y = ByteArray(128 * blockSize)
-        fun scryptBlockMix(B: ByteArrayView) {
-            check(B.size == 128 * blockSize)
-            var X = B.subview(128 * blockSize - 64, 64)
+        fun scryptBlockMix(blocks: ByteArrayView) {
+            check(blocks.size == 128 * blockSize)
+            var X = blocks.subview(128 * blockSize - 64, 64)
             repeat(2 * blockSize) { i ->
                 val Yi = y.subview(64 * i, 64)
                 Yi.replaceWith(X)
-                Yi.xor_inplace(B.subview(64 * i, 64))
+                Yi.xor_inplace(blocks.subview(64 * i, 64))
                 `salsa20_8core`(Yi)
                 X = Yi
             }
             repeat(2 * blockSize) { i ->
-                B.subview(i * 64, 64).replaceWith(
+                blocks.subview(i * 64, 64).replaceWith(
                     when {
                         i < blockSize -> y.subview((2 * i) * 64, 64)
                         else -> y.subview((2 * (i - blockSize) + 1) * 64, 64)

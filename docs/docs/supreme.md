@@ -621,6 +621,19 @@ The second option, however, will only allow passing a nonce/IV if the algorithm 
 has the corresponding characteristic.
 The same holds for the auth tag and additional authenticated data.
 
+## Key Derivation / Key Stretching
+
+The Supreme KMP crypto provider implements the following key derivation functions:
+* _HKDF_ as per [RFC 5869](https://tools.ietf.org/html/rfc5869)
+* _PNKDF2_ in accordance with [RFC 2898](https://tools.ietf.org/html/rfc2898)
+* _scrpyt_ as defined by [Colin Percival for the _Tarsnap_ online backup service](https://www.tarsnap.com/scrypt.html)
+
+Usage is the same across implementations:
+1. Instantiate a KDF implementation using algorithm-specific parameters as per the respective RFCs
+2. Invoke `deriveKey(salt, inputKeyMaterial, derivedKeyLength)` to obtain a derived key of length `derivedKeyLength` based on `inputKeyMaterial` and the provided `salt`.
+
+`deriveKey` returns a `KmmResult` indicating either success or failure.
+
 ## Attestation
 
 The Android KeyStore offers key attestation certificates for hardware-backed keys.

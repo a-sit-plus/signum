@@ -1,23 +1,24 @@
 package at.asitplus.signum.supreme.ksf
 
-import at.asitplus.signum.indispensable.kdf.SCrypt as scrypt
+import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.internals.ByteArrayView
 import at.asitplus.signum.internals.toLEByteArray
 import at.asitplus.signum.internals.toUIntArrayLE
 import at.asitplus.signum.internals.view
 import at.asitplus.signum.supreme.b
+import at.asitplus.signum.supreme.kdf.deriveKey
 import com.lambdaworks.crypto.SCrypt
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.Exhaustive
-import io.kotest.property.arbitrary.byte
-import io.kotest.property.arbitrary.byteArray
-import io.kotest.property.arbitrary.constant
+import io.kotest.property.arbitrary.*
 import io.kotest.property.checkAll
 import io.kotest.property.exhaustive.ints
+import kotlin.math.pow
 import kotlin.random.Random
+import at.asitplus.signum.indispensable.kdf.SCrypt as scrypt
 
 
 @OptIn(ExperimentalStdlibApi::class)
@@ -37,7 +38,11 @@ class ScryptTest : FreeSpec({
             val r = 8
             checkAll(iterations = 64, Arb.byteArray(Arb.constant(128 * r), Arb.byte())) { input ->
                 withClue("input=${input.toHexString(HexFormat.UpperCase).let { it.substring(it.length - 128) }}") {
-                    scrypt(cost=N, blockSize = r, parallelization = 0).integerify(input.view) shouldBe SCrypt.integerify(input, 0, r).mod(N)
+                    scrypt(
+                        cost = N,
+                        blockSize = r,
+                        parallelization = 1
+                    ).integerify(input.view) shouldBe SCrypt.integerify(input, 0, r).mod(N)
                 }
             }
         }
@@ -58,7 +63,7 @@ class ScryptTest : FreeSpec({
                     "   e4 24 cc 10 2c 91 74 5c 24 ad 67 3d c7 61 8f 81"
         )
         input.also {
-            scrypt(cost = 2, blockSize = 1, parallelization = 0).Mixer().`salsa20_8core`(it.view)
+            scrypt(cost = 2, blockSize = 1, parallelization = 1).Mixer().`salsa20_8core`(it.view)
         } shouldBe output
     }
     "scryptBlockMix" {
@@ -83,7 +88,7 @@ class ScryptTest : FreeSpec({
                     "           5d 2a 22 58 77 d5 ed f5 84 2c b9 f1 4e ef e4 25"
         )
         input.also {
-            scrypt(cost = 2, blockSize = 1, parallelization = 0).Mixer().scryptBlockMix(it.view)
+            scrypt(cost = 2, blockSize = 1, parallelization = 1).Mixer().scryptBlockMix(it.view)
         } shouldBe output
     }
     "scryptROMix" - {
@@ -109,13 +114,40 @@ class ScryptTest : FreeSpec({
                         "       4e 90 87 cb 33 39 6a 68 73 e8 f9 d2 53 9a 4b 8e\n"
             )
             input.copyOf().also {
-                scrypt(cost = 16, blockSize = 1, parallelization = 0).Mixer().scryptROMix(it.view)
+                scrypt(cost = 16, blockSize = 1, parallelization = 1).Mixer().scryptROMix(it.view)
             } shouldBe output
         }
         "Random Test Vectors" - {
+
+            checkAll(iterations = 3, Arb.nonNegativeInt(8)) {
+                val p = 2.0.pow(it + 1).toInt()
+                checkAll(iterations = 3, Arb.nonNegativeInt(10)) {
+                    val N = 2.0.pow(it).toInt()
+                    checkAll(iterations = 4, Arb.nonNegativeInt(20)) {
+                        val r = it + 1
+                        val scryptInstance = scrypt(N, blockSize = r, parallelization = p)
+                        checkAll(iterations = 6, Arb.byteArray(Arb.positiveInt(16), Arb.byte())) { salt ->
+                            checkAll(iterations = 6, Arb.byteArray(Arb.positiveInt(32), Arb.byte())) { ikm ->
+                                checkAll(iterations = 6, Arb.nonNegativeInt(256)) { len ->
+                                    scryptInstance.deriveKey(salt, ikm, len.bytes)
+                                    SCrypt.scrypt(ikm, salt, N, r, p, len) shouldBe scryptInstance.deriveKey(
+                                        salt,
+                                        ikm,
+                                        len.bytes
+                                    ).getOrThrow()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             val N = 512
             val r = 8
-            with(scrypt(N, blockSize=r, parallelization = 0).Mixer()) {
+            val scryptInstance = scrypt(N, blockSize = r, parallelization = 1)
+
+
+            with(scryptInstance.Mixer()) {
                 val input = Random.nextBytes(128 * r)
                 val output = input.copyOf().also {
                     scryptROMix(ByteArrayView(it, 0, it.size))
@@ -123,6 +155,7 @@ class ScryptTest : FreeSpec({
                 output shouldBe input.copyOf().also {
                     SCrypt.smix(it, 0, r, N, ByteArray(128 * r * N), ByteArray(256 * r))
                 }
+
             }
         }
     }
