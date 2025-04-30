@@ -1,6 +1,6 @@
 package at.asitplus.signum.supreme.ksf
 
-import at.asitplus.signum.indispensable.ksf.SCrypt as scrypt
+import at.asitplus.signum.indispensable.kdf.SCrypt as scrypt
 import at.asitplus.signum.internals.ByteArrayView
 import at.asitplus.signum.internals.toLEByteArray
 import at.asitplus.signum.internals.toUIntArrayLE
@@ -21,7 +21,7 @@ import kotlin.random.Random
 
 
 @OptIn(ExperimentalStdlibApi::class)
-class KSFTest : FreeSpec({
+class ScryptTest : FreeSpec({
     "Little-Endian Bytearray converters" {
         ByteArray(8).also {
             uintArrayOf(0x31b2a3f4u, 0x72ff9813u).toLEByteArray(it.view)
@@ -37,7 +37,7 @@ class KSFTest : FreeSpec({
             val r = 8
             checkAll(iterations = 64, Arb.byteArray(Arb.constant(128 * r), Arb.byte())) { input ->
                 withClue("input=${input.toHexString(HexFormat.UpperCase).let { it.substring(it.length - 128) }}") {
-                    scrypt(N, r, parallelization = 0).integerify(input.view) shouldBe SCrypt.integerify(input, 0, r).mod(N)
+                    scrypt(cost=N, blockSize = r, parallelization = 0).integerify(input.view) shouldBe SCrypt.integerify(input, 0, r).mod(N)
                 }
             }
         }
@@ -58,7 +58,7 @@ class KSFTest : FreeSpec({
                     "   e4 24 cc 10 2c 91 74 5c 24 ad 67 3d c7 61 8f 81"
         )
         input.also {
-            scrypt(cost = 2, r = 1, parallelization = 0).Mixer().`salsa20_8core`(it.view)
+            scrypt(cost = 2, blockSize = 1, parallelization = 0).Mixer().`salsa20_8core`(it.view)
         } shouldBe output
     }
     "scryptBlockMix" {
@@ -83,7 +83,7 @@ class KSFTest : FreeSpec({
                     "           5d 2a 22 58 77 d5 ed f5 84 2c b9 f1 4e ef e4 25"
         )
         input.also {
-            scrypt(cost = 2, r = 1, parallelization = 0).Mixer().scryptBlockMix(it.view)
+            scrypt(cost = 2, blockSize = 1, parallelization = 0).Mixer().scryptBlockMix(it.view)
         } shouldBe output
     }
     "scryptROMix" - {
@@ -109,13 +109,13 @@ class KSFTest : FreeSpec({
                         "       4e 90 87 cb 33 39 6a 68 73 e8 f9 d2 53 9a 4b 8e\n"
             )
             input.copyOf().also {
-                scrypt(cost = 16, r = 1, parallelization = 0).Mixer().scryptROMix(it.view)
+                scrypt(cost = 16, blockSize = 1, parallelization = 0).Mixer().scryptROMix(it.view)
             } shouldBe output
         }
         "Random Test Vectors" - {
             val N = 512
             val r = 8
-            with(scrypt(N, r, parallelization = 0).Mixer()) {
+            with(scrypt(N, blockSize=r, parallelization = 0).Mixer()) {
                 val input = Random.nextBytes(128 * r)
                 val output = input.copyOf().also {
                     scryptROMix(ByteArrayView(it, 0, it.size))
