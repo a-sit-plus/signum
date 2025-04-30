@@ -64,7 +64,7 @@ enum class PBKDF2(val prf: HMAC) {
      * The actual [KDF] instance configured with [iterations].
      */
     inner class WithIterations(val iterations: Int) : KDF {
-        val pbkdF2 = this@PBKDF2
+        val pbkdf2 = this@PBKDF2
     }
 }
 

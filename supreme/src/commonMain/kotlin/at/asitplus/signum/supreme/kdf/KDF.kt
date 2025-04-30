@@ -2,7 +2,6 @@ package at.asitplus.signum.supreme.kdf
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.HMAC
 import at.asitplus.signum.indispensable.asn1.encoding.toUnsignedByteArray
 import at.asitplus.signum.indispensable.kdf.HKDF
 import at.asitplus.signum.indispensable.kdf.KDF
@@ -84,10 +83,10 @@ private suspend fun PBKDF2.WithIterations.derive(password: ByteArray, salt: Byte
         // the loop body is the RFC's "F"
         require(i < UInt.MAX_VALUE) { "derived key too long" }
         ++i
-        var U = pbkdF2.prf.mac(password, sequenceOf(salt, pbkdF2.int(i))).getOrThrow()
+        var U = pbkdf2.prf.mac(password, sequenceOf(salt, pbkdf2.int(i))).getOrThrow()
         var T = U
         repeat(iterations - 1) {
-            U = pbkdF2.prf.mac(password, U).getOrThrow()
+            U = pbkdf2.prf.mac(password, U).getOrThrow()
             T = T xor U
         }
         val toCopy = min(T.size, dkLen - populated)
