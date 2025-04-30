@@ -73,7 +73,7 @@ enum class PBKDF2(val prf: HMAC) {
  * `scrypt` as defined by [Colin Percival for the _Tarsnap_ online backup service](https://www.tarsnap.com/scrypt.html). Directly implements the [KDF] interface.
  *
  * Parameters:
- * - CPU/memory [cost] parameter; must be a positive power of two; controls how many independent transformations of the input must be held in memory
+ * - CPU/memory [cost] parameter; must be a positive power of two greater than 1; controls how many independent transformations of the input must be held in memory
  *     * affects: `scryptBlockMix`
  * - [parallelization] parameter; must be >=1; controls how many blocks `scryptROMix` is run on in parallel
  *     * affects: final key derivation
@@ -82,7 +82,7 @@ enum class PBKDF2(val prf: HMAC) {
  */
 class SCrypt(val cost: Int, val parallelization: Int, val blockSize: Int = 8) : KDF {
     init {
-        require((cost >= 1) && cost.isPowerOfTwo()) { "cost must be a positive power of two" }
+        require((cost > 1) && cost.isPowerOfTwo()) { "cost must be a positive power of two" }
         require(parallelization >= 1) { "parallelization must be >=1" }
         require(blockSize >= 1) { "blockSize must be >=1" }
     }
