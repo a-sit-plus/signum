@@ -119,18 +119,18 @@ The following table provides overview about what is supported by Signum and cryp
 !!! tip inline end
     For a rationale behind Signum's design, see the corresponding section in the [project overview](index.md#rationale).
 
-|                             | Signum               | cryptography-kotlin       |
-|-----------------------------|----------------------|---------------------------|
-| Digital Signatures          | ✔ (ECDSA, RSA)       | ✔ (ECDSA, RSA)            |
-| Symmetric Encryption        | ✔ (AES + ChaChaPoly) | ✔ (AES)                   |
-| Public-Key Encryption       | ✗                    | ✔ (RSA)                   |
-| Digest                      | ✔ (SHA-1, SHA-2)     | ✔ (MD5, SHA-1, SHA-2)     |
-| MAC                         | ✔ (HMAC)             | ✔ (HMAC)                  |
-| Key Agreement               | ✔ (ECDH)             | ✔ (ECDH)                  |
-| KDF/PRF/KSF                 | ✗                    | ✔ (PBKDF2, HKDF)          |
-| Hardware-Backed Crypto      | ✔                    | ✗                         |
-| Attestation                 | ✔                    | ✗                         |
-| Fully-Featured ASN.1 Engine | ✔                    | ✗                         |
-| COSE                        | ✔                    | ✗                         |
-| JOSE                        | ✔                    | ✗                         |
-| Provider Targets            | JVM, Android, iOS    | All KMP-supported targets |
+|                             | Signum                            | cryptography-kotlin               |
+|-----------------------------|-----------------------------------|-----------------------------------|
+| Digital Signatures          | ✔ (ECDSA, RSA)                    | ✔ (ECDSA, RSA)                    |
+| Symmetric Encryption        | ✔ (AES + ChaChaPoly)              | ✔ (AES)                           |
+| Asymmetric (RSA) Encryption | ✔ RAW, PKCS1, OAEP (SHA-1, SHA-2) | ✔ RAW, PKCS1, OAEP (SHA-1, SHA-2) |
+| Digest                      | ✔ (SHA-1, SHA-2)                  | ✔ (MD5, SHA-1, SHA-2)             |
+| MAC                         | ✔ (HMAC)                          | ✔ (HMAC)                          |
+| Key Agreement               | ✔ (ECDH)                          | ✔ (ECDH)                          |
+| KDF/PRF/KSF                 | ✗                                 | ✔ (PBKDF2, HKDF)                  |
+| Hardware-Backed Crypto      | ✔                                 | ✗                                 |
+| Attestation                 | ✔                                 | ✗                                 |
+| Fully-Featured ASN.1 Engine | ✔                                 | ✗                                 |
+| COSE                        | ✔                                 | ✗                                 |
+| JOSE                        | ✔                                 | ✗                                 |
+| Provider Targets            | JVM, Android, iOS                 | All KMP-supported targets         |
