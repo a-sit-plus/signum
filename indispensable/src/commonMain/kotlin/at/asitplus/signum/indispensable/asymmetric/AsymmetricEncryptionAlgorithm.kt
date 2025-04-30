@@ -6,7 +6,7 @@ import at.asitplus.signum.indispensable.SecretExposure
 
 
 sealed interface RSAPadding {
-    @HazardousMaterials("This padding Scheme is vulnerable to Bleichenbacher's attack. Use only with legacy application where you absolutely must")
+    @HazardousMaterials("This padding scheme is vulnerable to Bleichenbacher's attack. Use only with legacy application where you absolutely must")
     object PKCS1 : RSAPadding {
         override fun toString(): String = "PKCS1"
     }
