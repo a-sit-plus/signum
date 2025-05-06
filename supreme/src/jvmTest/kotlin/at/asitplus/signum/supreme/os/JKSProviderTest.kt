@@ -1,7 +1,7 @@
 package at.asitplus.signum.supreme.os
 
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.supreme.azString
 import at.asitplus.signum.supreme.sign.*
 import at.asitplus.signum.supreme.signature
 import at.asitplus.signum.supreme.succeed
@@ -10,7 +10,11 @@ import io.kotest.datatest.withData
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNot
-import io.kotest.property.azstring
+import io.kotest.property.Arb
+import io.kotest.property.RandomSource
+import io.kotest.property.arbitrary.Codepoint
+import io.kotest.property.arbitrary.az
+import io.kotest.property.arbitrary.string
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.random.Random
@@ -50,7 +54,7 @@ class JKSProviderTest : FreeSpec({
                 "96527B09"
     }
     "File-based persistence" {
-        val tempfile = Files.createTempFile(Random.azstring(16),null).also { Files.delete(it) }
+        val tempfile = Files.createTempFile(Random.azString(16), null).also { Files.delete(it) }
         try {
             val alias = "Elfenbeinturm"
             val correctPassword = "Schwertfischfilet".toCharArray()
@@ -93,11 +97,13 @@ class JKSProviderTest : FreeSpec({
 
             // check that ks1 "sees" the deletion that was made by ks3
             ks1.getSignerForKey(alias) shouldNot succeed
-        } finally { Files.deleteIfExists(tempfile) }
+        } finally {
+            Files.deleteIfExists(tempfile)
+        }
     }
     "Certificate encoding" - {
         withData(TestSuites.ALL) { test ->
-            val alias = Random.azstring(16)
+            val alias = Arb.string(minSize = 16, maxSize = 16, Codepoint.az()).sample(RandomSource.default()).value
             val ks = JKSProvider().getOrThrow()
             val signer = ks.createSigningKey(alias) {
                 test.configure(this)
@@ -116,6 +122,7 @@ class JKSProviderTest : FreeSpec({
             when (signer.signatureAlgorithm) {
                 is SignatureAlgorithm.RSA ->
                     CryptoSignature.RSA.parseFromJca(signature.jcaSignatureBytes) shouldBe signature
+
                 is SignatureAlgorithm.ECDSA ->
                     CryptoSignature.EC.parseFromJca(signature.jcaSignatureBytes) shouldBe signature
             }
