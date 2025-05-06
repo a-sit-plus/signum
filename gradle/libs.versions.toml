@@ -1,4 +1,6 @@
 [versions]
+kotlin = "2.1.20"
+agp = "8.10.0"
 core = "1.5.0"
 kotlinxIoCore = "0.5.4"
 multibase = "1.2.2"
@@ -9,6 +11,7 @@ jose = "9.31"
 kotlinpoet = "1.16.0"
 runner = "1.5.2"
 kotlincryptoRandom = "0.5.0"
+kotest= "6.0.0-SNAPSHOT"
 
 [libraries]
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }

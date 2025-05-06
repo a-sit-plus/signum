@@ -258,7 +258,7 @@ class JvmSymmetricTest : FreeSpec({
             nameFn = { "iv: ${it?.size} bytes" }, alg.randomNonce(), alg.randomNonce(), null
         ) { nonce ->
             withData(Random.nextBytes(19), null) { aad ->
-                withData(
+                withData( nameFn={"Random ${it.size} bytes"},
                     Random.nextBytes(19),
                     Random.nextBytes(1),
                     Random.nextBytes(0),
