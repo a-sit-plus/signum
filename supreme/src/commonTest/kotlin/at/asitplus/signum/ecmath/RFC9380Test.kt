@@ -4,6 +4,7 @@ import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.nativeDigest
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import io.kotest.core.names.TestName
+import io.kotest.core.names.TestNameBuilder
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.comparables.beGreaterThanOrEqualTo
@@ -14,10 +15,13 @@ import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.property.Arb
+import io.kotest.property.RandomSource
+import io.kotest.property.arbitrary.Codepoint
+import io.kotest.property.arbitrary.az
 import io.kotest.property.arbitrary.byte
 import io.kotest.property.arbitrary.byteArray
 import io.kotest.property.arbitrary.int
-import io.kotest.property.azstring
+import io.kotest.property.arbitrary.string
 import io.kotest.property.checkAll
 import kotlin.math.min
 import kotlin.random.Random
@@ -664,13 +668,13 @@ Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
             withData(nameFn={ "Input: \"${it.msg.substring(0,min(it.msg.length,10))}${if (it.msg.length>10) "…" else ""}\"" },
                 testcasePattern.findAll(suiteInfo.tests).map(::TestInfo))
             { test ->
-                registerTest(TestName("hash_to_curve"), false, null) {
+                registerTest(TestNameBuilder.builder("hash_to_curve").build(), false, null) {
                     val result = suite(test.msg.encodeToByteArray()).normalize()
                     result.curve shouldBe suiteInfo.curve
                     result.x.toString(16).padStart(test.Px.length, '0') shouldBe test.Px
                     result.y.toString(16).padStart(test.Py.length, '0') shouldBe test.Py
                 }
-                registerTest(TestName("hash_to_field"), false, null) {
+                registerTest(TestNameBuilder.builder("hash_to_field").build(), false, null) {
                     val htfA = RFC9380.hash_to_field(
                         RFC9380.expand_message_xmd(suiteInfo.curve.nativeDigest), suiteInfo.curve, suiteInfo.dstB)
                     if (test.u1 != null) {
@@ -682,7 +686,7 @@ Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
                         u.toString(16).padStart(test.u0.length, '0') shouldBe test.u0
                     }
                 }
-                registerTest(TestName("map_to_curve"), false, null) {
+                registerTest(TestNameBuilder.builder("map_to_curve").build(), false, null) {
                     val mtc = RFC9380.map_to_curve_simple_swu(suiteInfo.curve)
                     val u0 = BigInteger.parseString(test.u0, 16).toModularBigInteger(suiteInfo.curve.modulus)
                     val Q0 = mtc(u0).normalize()
@@ -701,7 +705,9 @@ Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
     }
     "HashToScalar" - {
         withData(ECCurve.entries) { curve ->
-            val hash_to_scalar = curve.hashToScalar(Random.azstring(32).encodeToByteArray())
+            val hash_to_scalar = curve.hashToScalar(Arb.string(minSize = 32, maxSize = 32, Codepoint.az()).sample(
+                RandomSource.default()
+            ).value.encodeToByteArray())
             checkAll(iterations = 5000, Arb.byteArray(Arb.int(25, 125), Arb.byte())) { input ->
                 val base = hash_to_scalar(input)
                 base.modulus shouldBe curve.order
