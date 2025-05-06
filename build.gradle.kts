@@ -1,11 +1,21 @@
 import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
 
 plugins {
-    id("at.asitplus.gradle.conventions") version "2.1.20+20250324"
+    id("at.asitplus.gradle.conventions") version "20250628"
+    id("io.kotest.multiplatform") version (System.getenv("KOTEST_VERSION_ENV")?.let { it.ifBlank { null } }
+        ?: libs.versions.kotest.get())
+    kotlin("multiplatform") version (System.getenv("KOTLIN_VERSION_ENV")?.let { it.ifBlank { null } }
+        ?: libs.versions.kotlin.get()) apply false
+    kotlin("plugin.serialization") version (System.getenv("KOTLIN_VERSION_ENV")?.let { it.ifBlank { null } }
+        ?: libs.versions.kotlin.get()) apply false
     id("com.android.library") version "8.6.1" apply (false)
 }
 group = "at.asitplus.signum"
 
+rootProject.also {
+    File(it.path+"/indispensable/src/iosTest/kotlin/Test.ktjsTest/").deleteRecursively()
+    File(it.path+"/indispensable/src/commonTest/kotlin/Asn1AddonsTest.ktjsTest/").deleteRecursively()
+}
 //work around nexus publish bug
 val artifactVersion: String by extra
 version = artifactVersion
@@ -26,6 +36,10 @@ allprojects {
 
     repositories {
         mavenLocal()
+        maven {
+            url = uri("https://raw.githubusercontent.com/a-sit-plus/gradle-conventions-plugin/mvn/repo")
+            name = "aspConventions"
+        }
     }
 }
 
