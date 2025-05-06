@@ -11,6 +11,15 @@
     * `SymmetricKey.toJsonWebKey` now returns `KmmResult`
     * `SymmetricEncryptionAlgorithm.toJweKwAlgorithm` now returns `KmmResult`
     * `SymmetricEncryptionAlgorithm.toJweEncryptionAlgorithm` removed
+* Update to latest conventions plugin:
+    * Bouncy Castle 1.80!!
+    * Serialization 1.8.1
+    * Coroutines 1.10.2
+    * Ktor 3.1.2
+    * Datetime 0.6.2
+    * Kotest 6.0.0.M4
+    * Kotest Plugin 6.0.0.M3
+
 
 ### 3.16.1 (Supreme 0.8.1) Hotfix
 * Generalized, proper COSE to MAC mapping, preventing unexpected behaviour for `HS265_24`

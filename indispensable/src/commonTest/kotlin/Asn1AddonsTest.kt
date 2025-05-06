@@ -2,8 +2,8 @@ import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
-import io.kotest.common.Platform
-import io.kotest.common.platform
+import io.kotest.core.Platform
+import io.kotest.core.platform
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe

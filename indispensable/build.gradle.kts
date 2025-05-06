@@ -67,7 +67,7 @@ kotlin {
             }
         }
 
-        val androidJvmMain by getting {
+         androidJvmMain {
             dependencies {
                 api(bouncycastle("bcpkix"))
                 api(coroutines("jvm"))

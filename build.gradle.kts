@@ -1,8 +1,10 @@
 import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
 
 plugins {
-    id("at.asitplus.gradle.conventions") version "2.1.20+20250324"
-    id("com.android.library") version "8.2.2" apply (false)
+    id("at.asitplus.gradle.conventions") version "20250506"
+    kotlin("multiplatform") version libs.versions.kotlin apply false
+    kotlin("plugin.serialization") version libs.versions.kotlin apply false
+    id("com.android.library") version libs.versions.agp apply (false)
 }
 group = "at.asitplus.signum"
 
