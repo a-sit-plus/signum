@@ -3,6 +3,14 @@
 ## 3.0
 
 ### NEXT
+* Update to latest conventions:
+    * Bouncy Castle 1.80!!
+    * Serialization 1.8.1
+    * Coroutines 1.10.2
+    * Ktor 3.1.2
+    * Datetime 0.6.2
+    * Kotest 6.0.0.M3 proper (without depending on old Kotest 5.9 plugins)
+* Migrate to `com.android.kotlin.multiplatform.library` gradle plugin
 * `kotlincrypto:secure-random:0.3.2` -> `kotlincrypto.random:crypto-rand:0.5.0`
     * This fixes key generation in WASM/JS
 * Add `SpecializedSymmetricEncryptionAlgorithm`
