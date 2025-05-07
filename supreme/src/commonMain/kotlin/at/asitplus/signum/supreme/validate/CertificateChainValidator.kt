@@ -77,8 +77,9 @@ private fun validateBasicConstraints(chain: CertificateChain) {
 
     for ((index, cert) in chain.dropLast(1).withIndex()) {
         val isSelfIssued = cert.tbsCertificate.subjectName == cert.tbsCertificate.issuerName
-
-        if (!cert.isCA()) {
+        val basicConstraints =
+            cert.findExtension(KnownOIDs.basicConstraints)?.decodeBasicConstraints()
+        if (basicConstraints != null && !basicConstraints.ca) {
             throw BasicConstraintsException("Missing CA flag.")
         }
 
@@ -93,11 +94,12 @@ private fun validateBasicConstraints(chain: CertificateChain) {
             remainingPathLength -= 1
         }
 
-        cert.pathLenConstraint()?.let {
-            if (remainingPathLength == null || it < remainingPathLength!!) {
-                remainingPathLength = it
+        basicConstraints?.pathLenConstraint?.let { constraint ->
+            if (remainingPathLength == null || constraint < remainingPathLength!!) {
+                remainingPathLength = constraint
             }
         }
+
     }
 }
 

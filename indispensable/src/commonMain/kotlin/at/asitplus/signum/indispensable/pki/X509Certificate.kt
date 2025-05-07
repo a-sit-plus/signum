@@ -317,31 +317,39 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     @Suppress("DEPRECATION_ERROR")
     val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
 
-    fun pathLenConstraint(): Int? =
-        tbsCertificate.extensions
-            ?.firstOrNull { it.oid == ObjectIdentifier(KnownOIDs.basicConstraints.toString()) }
-            ?.value
-            ?.asEncapsulatingOctetString()
-            ?.children?.firstOrNull()
-            ?.asSequence()
-            ?.children?.getOrNull(1)
-            ?.asPrimitive()
-            ?.decodeToInt()
-
-    fun isCA(): Boolean =
-        tbsCertificate.extensions
-            ?.firstOrNull { it.oid == ObjectIdentifier(KnownOIDs.basicConstraints.toString()) }
-            ?.value
-            ?.asEncapsulatingOctetString()
-            ?.children?.firstOrNull()
-            ?.asSequence()
-            ?.children?.getOrNull(0)
-            ?.asPrimitive()
-            ?.decodeToBoolean()
-            ?: false
+//    //    TODO refactor
+//    fun pathLenConstraint(): Int? =
+//        tbsCertificate.extensions
+//            ?.firstOrNull { it.oid == ObjectIdentifier(KnownOIDs.basicConstraints.toString()) }
+//            ?.value
+//            ?.asEncapsulatingOctetString()
+//            ?.children?.firstOrNull()
+//            ?.asSequence()
+//            ?.children?.getOrNull(1)
+//            ?.asPrimitive()
+//            ?.decodeToInt()
+//
+//    //    TODO refactor
+//    fun isCA(): Boolean =
+//        tbsCertificate.extensions
+//            ?.firstOrNull { it.oid == ObjectIdentifier(KnownOIDs.basicConstraints.toString()) }
+//            ?.value
+//            ?.asEncapsulatingOctetString()
+//            ?.children?.firstOrNull()
+//            ?.asSequence()
+//            ?.children?.getOrNull(0)
+//            ?.asPrimitive()
+//            ?.decodeToBoolean()
+//            ?: false
 
     fun hasReplayingExtensions(): Boolean =
         tbsCertificate.extensions?.size != tbsCertificate.extensions?.distinctBy { it.oid }?.size
+
+
+    fun isSelfIssued(): Boolean = tbsCertificate.subjectName == tbsCertificate.issuerName
+
+    fun findExtension(oid: ObjectIdentifier): X509CertificateExtension? =
+        tbsCertificate.extensions?.firstOrNull { it.oid == oid }
 
     fun checkValidity(date: Instant = Clock.System.now()) {
         if (date > tbsCertificate.validUntil.instant) {
