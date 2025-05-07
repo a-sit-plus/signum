@@ -1,19 +1,22 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.toBigInteger
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 
 class PolicyValidator(
-    initialPolicies: Set<String>,
+    initialPolicies: Set<ObjectIdentifier>,
     private val certPathLen: Int,
     private val expPolicyRequired: Boolean,
     private val polMappingInhibited: Boolean,
     private val anyPolicyInhibited: Boolean,
     private val rejectPolicyQualifiers: Boolean,
-    private var rootNode: PolicyNode
+    private var rootNode: PolicyNode?
 ) {
-    private val initPolicies: Set<String> = if (initialPolicies.isEmpty()) {
-        setOf(ANY_POLICY)
+    private val initPolicies: Set<ObjectIdentifier> = if (initialPolicies.isEmpty()) {
+        setOf(KnownOIDs.anyPolicy)
     } else {
         initialPolicies.toSet()
     }
@@ -23,10 +26,6 @@ class PolicyValidator(
     private var certIndex: Int = 0
 
     private var supportedExtensions: Set<String>? = null
-
-    companion object {
-        val ANY_POLICY = KnownOIDs.anyPolicy.toString()
-    }
 
     fun init() {
         certIndex = 1
@@ -47,391 +46,376 @@ class PolicyValidator(
         return supportedExtensions?.toMutableSet()
     }
 
-//    private fun checkPolicy(currCert: X509Certificate) {
-//
-//        val finalCert = certIndex == certPathLen
-//
-//        rootNode = processPolicies(
-//            certIndex,
-//            initPolicies,
-//            explicitPolicy,
-//            policyMapping,
-//            inhibitAnyPolicy,
-//            rejectPolicyQualifiers,
-//            rootNode,
-//            currCertImpl,
-//            finalCert
-//        )
-//
-//        if (!finalCert) {
-//            explicitPolicy = mergeExplicitPolicy(explicitPolicy, currCertImpl, false)
-//            policyMapping = mergePolicyMapping(policyMapping, currCertImpl)
-//            inhibitAnyPolicy = mergeInhibitAnyPolicy(inhibitAnyPolicy, currCertImpl)
-//        }
-//
-//        certIndex++
-//    }
+    private fun checkPolicy(currCert: X509Certificate) {
 
-    fun mergeExplicitPolicy(
-        explicitPolicy: Int,
-        currCert: X509Certificate,
-        finalCert: Boolean
+        val finalCert = certIndex == certPathLen
+
+        rootNode = processPolicies(
+            certIndex,
+            initPolicies,
+            explicitPolicy,
+            policyMapping,
+            inhibitAnyPolicy,
+            rejectPolicyQualifiers,
+            rootNode,
+            currCert,
+            finalCert
+        )
+
+        if (!finalCert) {
+            explicitPolicy = mergeExplicitPolicy(explicitPolicy, currCert, false)
+            policyMapping = mergePolicyMapping(policyMapping, currCert)
+            inhibitAnyPolicy = mergeInhibitAnyPolicy(inhibitAnyPolicy, currCert)
+        }
+
+        certIndex++
+    }
+
+    private fun mergeExplicitPolicy(
+        currentValue: Int, currentCert: X509Certificate, isFinalCert: Boolean
     ): Int {
-        var result = explicitPolicy
-//        TODO consider transfer is self issued logic into X509Certificate
-        if (result > 0 && currCert.tbsCertificate.subjectName!=currCert.tbsCertificate.issuerName) {
+        var result = currentValue
+
+        if (result > 0 && !currentCert.isSelfIssued()) {
             result--
         }
 
+        val constraints =
+            currentCert.findExtension(KnownOIDs.policyConstraints)?.decodePolicyConstraints()
+                ?: return result
+
+        val required = constraints.requireExplicitPolicy.toBigInteger().intValue()
+
+        result = when {
+            !isFinalCert && required != -1 && (result == -1 || required < result) -> required
+            isFinalCert && required == 0 -> 0
+            else -> result
+        }
+
         return result
-//        TODO create policyConstrainExtension class or just extract require flag from the constraint
-//        val polConstExt = currCert.policyConstraintsExtension ?: return result
-//        val require = polConstExt.require
-//
-//        if (!finalCert) {
-//            if (require != -1) {
-//                if (result == -1 || require < result) {
-//                    result = require
-//                }
-//            }
-//        } else {
-//            if (require == 0) {
-//                result = require
-//            }
-//        }
-//
-//        return result
     }
 
-    fun mergePolicyMapping(policyMapping: Int, currCert: X509Certificate): Int {
-        var updatedMapping = policyMapping
 
-        if (updatedMapping > 0 && currCert.tbsCertificate.subjectName!=currCert.tbsCertificate.issuerName) {
-            updatedMapping--
+    private fun mergePolicyMapping(
+        currentValue: Int, currentCert: X509Certificate
+    ): Int {
+        var result = currentValue
+
+        if (result > 0 && !currentCert.isSelfIssued()) {
+            result--
         }
 
-//        TODO create policyConstrainExtension class or just extract inhibit flag from the constraint
-//        val polConstExt = currCert.policyConstraintsExtension ?: return updatedMapping
-//
-//        val inhibit = polConstExt.inhibit
-//        debug?.println("PolicyChecker.mergePolicyMapping() inhibit Index from cert = $inhibit")
-//
-//        if (inhibit != -1) {
-//            if (updatedMapping == -1 || inhibit < updatedMapping) {
-//                updatedMapping = inhibit
-//            }
-//        }
+        val constraints =
+            currentCert.findExtension(KnownOIDs.policyConstraints)?.decodePolicyConstraints()
+                ?: return result
 
-        return updatedMapping
-    }
-
-    fun mergeInhibitAnyPolicy(inhibitAnyPolicy: Int, currCert: X509Certificate): Int {
-        var updatedInhibitAnyPolicy = inhibitAnyPolicy
-
-        if (updatedInhibitAnyPolicy > 0 && currCert.tbsCertificate.subjectName!=currCert.tbsCertificate.issuerName) {
-            updatedInhibitAnyPolicy--
+        val inhibitMapping = constraints.inhibitPolicyMapping.toBigInteger().intValue()
+        if (inhibitMapping != -1 && (result == -1 || inhibitMapping < result)) {
+            result = inhibitMapping
         }
 
-//        TODO create InhibitAnyPolicyExtension
-//        val inhAnyPolExt = currCert.getExtension(KnownOIDs.inhibitAnyPolicy) as? InhibitAnyPolicyExtension
-//            ?: return updatedInhibitAnyPolicy
-//
-//        val skipCerts = inhAnyPolExt.skipCerts
-//        debug?.println("PolicyChecker.mergeInhibitAnyPolicy() skipCerts Index from cert = $skipCerts")
-//
-//        if (skipCerts != -1 && skipCerts < updatedInhibitAnyPolicy) {
-//            updatedInhibitAnyPolicy = skipCerts
-//        }
-
-        return updatedInhibitAnyPolicy
+        return result
     }
 
-    fun processPolicies(
+
+    private fun mergeInhibitAnyPolicy(
+        currentValue: Int, currentCert: X509Certificate
+    ): Int {
+        var result = currentValue
+
+        if (result > 0 && !currentCert.isSelfIssued()) {
+            result--
+        }
+
+        val extensionValue =
+            currentCert.findExtension(KnownOIDs.inhibitAnyPolicy)?.decodeInhibitAnyPolicy()
+
+        return if (extensionValue != null && extensionValue != -1 && extensionValue < result) {
+            extensionValue
+        } else {
+            result
+        }
+    }
+
+    private fun processPolicies(
         certIndex: Int,
-        initPolicies: Set<String>,
+        initialPolicies: Set<ObjectIdentifier>,
         explicitPolicy: Int,
         policyMapping: Int,
         inhibitAnyPolicy: Int,
         rejectPolicyQualifiers: Boolean,
-        origRootNode: PolicyNode?,
-        currCert: X509Certificate,
-        finalCert: Boolean
+        originalRoot: PolicyNode?,
+        currentCert: X509Certificate,
+        isFinalCert: Boolean
     ): PolicyNode? {
-        var policiesCritical = false
-        val anyQuals = mutableSetOf<String>()
-        var rootNode: PolicyNode? = origRootNode?.copyTree()
+        var isCritical = false
+        val anyPolicyQualifiers = mutableSetOf<PolicyQualifierInfo>()
+        var root = originalRoot?.copyTree()
 
-        val currCertPolicies = currCert.getCertificatePoliciesExtension()
+        val policyExtension =
+            currentCert.findExtension(KnownOIDs.certificatePolicies_2_5_29_32)
 
-        if (currCertPolicies != null && rootNode != null) {
-            policiesCritical = currCertPolicies.isCritical
+        if (policyExtension != null && root != null) {
+            isCritical = policyExtension.critical
+            val policies = policyExtension.decodeCertificatePolicies()
 
-            val policyInfo = currCertPolicies.certPolicies
+            var containsAnyPolicy = false
 
-            var foundAnyPolicy = false
+            for (policyInfo in policies) {
+                val policyOid = policyInfo.oid
 
-            for (curPolInfo in policyInfo) {
-                val curPolicy = curPolInfo.policyIdentifier.identifier.toString()
-
-                if (curPolicy == ANY_POLICY) {
-                    foundAnyPolicy = true
-                    anyQuals.addAll(curPolInfo.policyQualifiers)
-                } else {
-
-                    val pQuals = curPolInfo.policyQualifiers
-
-                    if (pQuals.isNotEmpty() && rejectPolicyQualifiers && policiesCritical) {
-                        throw Exception(
-                            "critical policy qualifiers present in certificate",
-                        )
-                    }
-
-                    val foundMatch = processParents(
-                        certIndex, policiesCritical, rejectPolicyQualifiers,
-                        rootNode, curPolicy, pQuals, false
-                    )
-
-                    if (!foundMatch) {
-                        processParents(
-                            certIndex, policiesCritical, rejectPolicyQualifiers,
-                            rootNode, curPolicy, pQuals, true
-                        )
-                    }
+                if (policyOid == KnownOIDs.anyPolicy) {
+                    containsAnyPolicy = true
+                    anyPolicyQualifiers.addAll(policyInfo.policyQualifiers)
+                    continue
                 }
-            }
 
-            if (foundAnyPolicy) {
-                if (inhibitAnyPolicy > 0 || (!finalCert && currCert.tbsCertificate.subjectName==currCert.tbsCertificate.issuerName)) {
-                    processParents(
-                        certIndex, policiesCritical, rejectPolicyQualifiers,
-                        rootNode, ANY_POLICY, anyQuals, true
+                val qualifiers = policyInfo.policyQualifiers
+                if (qualifiers.isNotEmpty() && rejectPolicyQualifiers && isCritical) {
+                    throw Exception("Critical policy qualifiers present in certificate")
+                }
+
+                val matched = processParentNodes(
+                    certIndex,
+                    isCritical,
+                    rejectPolicyQualifiers,
+                    root,
+                    policyOid,
+                    qualifiers,
+                    matchAnyPolicy = false
+                )
+
+                if (!matched) {
+                    processParentNodes(
+                        certIndex,
+                        isCritical,
+                        rejectPolicyQualifiers,
+                        root,
+                        policyOid,
+                        qualifiers,
+                        matchAnyPolicy = true
                     )
                 }
             }
 
-            rootNode.prune(certIndex)
-            if (rootNode.children.hasNext() == false) {
-                rootNode = null
+            if (containsAnyPolicy) {
+                if (inhibitAnyPolicy > 0 || (!isFinalCert && currentCert.isSelfIssued())) {
+                    processParentNodes(
+                        certIndex,
+                        isCritical,
+                        rejectPolicyQualifiers,
+                        root,
+                        KnownOIDs.anyPolicy,
+                        anyPolicyQualifiers,
+                        matchAnyPolicy = true
+                    )
+                }
             }
-        } else if (currCertPolicies == null) {
-            rootNode = null
+
+            root.prune(certIndex)
+            if (root.children.isEmpty()) root = null
+        } else if (policyExtension == null) {
+            root = null
         }
 
-        if (rootNode != null && !finalCert) {
-            rootNode = processPolicyMappings(
-                currCert, certIndex, policyMapping,
-                rootNode, policiesCritical, anyQuals
+        if (root != null && !isFinalCert) {
+            root = processPolicyMappings(
+                currentCert, certIndex, policyMapping, root, isCritical, anyPolicyQualifiers
             )
         }
 
-        if (rootNode != null && !initPolicies.contains(ANY_POLICY)) {
-            rootNode = removeInvalidNodes(rootNode, certIndex, initPolicies, currCertPolicies)
+        if (root != null && !initialPolicies.contains(KnownOIDs.anyPolicy)) {
+            root = policyExtension?.let {
+                removeInvalidNodes(root!!, certIndex, initialPolicies, it)
+            }
 
-            if (rootNode != null && finalCert) {
-                rootNode = rewriteLeafNodes(certIndex, initPolicies, rootNode)
+            if (root != null && isFinalCert) {
+                root = rewriteLeafNodes(certIndex, initialPolicies, root)
             }
         }
 
-        if (finalCert) {
-            mergeExplicitPolicy(explicitPolicy, currCert, true).also {
-                if (it == 0 && rootNode == null) {
-                    throw Exception(
-                        "non-null policy tree required and policy tree is null",
-                    )
-                }
+        if (isFinalCert) {
+            val remainingExplicit = mergeExplicitPolicy(explicitPolicy, currentCert, true)
+            if (remainingExplicit == 0 && root == null) {
+                throw Exception("Non-null policy tree required but policy tree is null")
             }
         }
 
-        return rootNode
+        return root
     }
+
 
     private fun rewriteLeafNodes(
-        certIndex: Int,
-        initPolicies: Set<String>,
-        rootNode: PolicyNode
+        certIndex: Int, initialPolicies: Set<ObjectIdentifier>, root: PolicyNode
     ): PolicyNode? {
-        val anyNodes = rootNode.getPolicyNodesValid(certIndex, ANY_POLICY)
-        if (anyNodes.isEmpty()) {
-            return rootNode
+        val anyPolicyNodes = root.getPolicyNodesValid(certIndex, KnownOIDs.anyPolicy)
+        if (anyPolicyNodes.isEmpty()) return root
+
+        val anyNode = anyPolicyNodes.first()
+        val parent = anyNode.parent as PolicyNode
+        parent.deleteChild(anyNode)
+
+        val unmatchedPolicies = initialPolicies.toMutableSet().apply {
+            root.getPolicyNodes(certIndex).forEach { remove(it.validPolicy) }
         }
 
-        val anyNode = anyNodes.iterator().next()
-        val parentNode = anyNode.parent as PolicyNode
-        parentNode.deleteChild(anyNode)
-
-        val initial = initPolicies.toMutableSet()
-        for (node in rootNode.getPolicyNodes(certIndex)) {
-            initial.remove(node.validPolicy)
+        if (unmatchedPolicies.isEmpty()) {
+            root.prune(certIndex)
+            return root.takeIf { it.children.isEmpty() }
         }
 
-        return if (initial.isEmpty()) {
-            rootNode.prune(certIndex)
-            if (rootNode.children.isNotEmpty()) {
-                null
-            } else {
-                rootNode
-            }
-        } else {
-            val anyCritical = anyNode.criticalityIndicator
-            val anyQualifiers = anyNode.qualifierSet
-            for (policy in initial) {
-                val expectedPolicies = setOf(policy)
-                PolicyNode(
-                    parentNode, policy,
-                    anyQualifiers, anyCritical, expectedPolicies, false
-                )
-            }
-            rootNode
+        unmatchedPolicies.forEach { policyOid ->
+            PolicyNode(
+                parent = parent,
+                validPolicy = policyOid,
+                qualifierSet = anyNode.qualifierSet,
+                criticalityIndicator = anyNode.criticalityIndicator,
+                expectedPolicySet = setOf(policyOid),
+                generatedByPolicyMapping = false
+            )
         }
+
+        return root
     }
 
-    private fun processParents(
+    private fun processParentNodes(
         certIndex: Int,
-        policiesCritical: Boolean,
-        rejectPolicyQualifiers: Boolean,
-        rootNode: PolicyNode,
-        curPolicy: String,
-        pQuals: Set<String>,
-        matchAny: Boolean
+        isCritical: Boolean,
+        rejectQualifiers: Boolean,
+        root: PolicyNode,
+        currentPolicy: ObjectIdentifier,
+        qualifiers: Set<PolicyQualifierInfo>,
+        matchAnyPolicy: Boolean
     ): Boolean {
-        var foundMatch = false
+        val parentNodes = root.getPolicyNodesExpected(certIndex - 1, currentPolicy, matchAnyPolicy)
+        if (parentNodes.isEmpty()) return false
 
-
-        val parentNodes = rootNode.getPolicyNodesExpected(certIndex - 1, curPolicy, matchAny)
-
-        for (curParent in parentNodes) {
-            foundMatch = true
-
-            if (curPolicy == ANY_POLICY) {
-                val parExpPols = curParent.expectedPolicySet
-                parentExplicitPolicies@ for (curParExpPol in parExpPols) {
-                    for (childNode in curParent.children) {
-                        if (curParExpPol == childNode.validPolicy) {
-                            continue@parentExplicitPolicies
-                        }
-                    }
-
-                    val expPols = mutableSetOf(curParExpPol)
-                    PolicyNode(
-                        curParent, curParExpPol, pQuals,
-                        policiesCritical, expPols, false
-                    )
-                }
-            } else {
-                val curExpPols = mutableSetOf(curPolicy)
-                PolicyNode(
-                    curParent, curPolicy, pQuals,
-                    policiesCritical, curExpPols, false
-                )
-            }
-        }
-
-        return foundMatch
-    }
-
-    private fun processPolicyMappings(
-        currCert: X509Certificate,
-        certIndex: Int,
-        policyMapping: Int,
-        rootNode: PolicyNode,
-        policiesCritical: Boolean,
-        anyQuals: Set<String>
-    ): PolicyNode? {
-        val polMappingsExt = currCert.getPolicyMappingsExtension() ?: return rootNode
-
-        val maps = polMappingsExt.maps
-        var childDeleted = false
-
-        for (polMap in maps) {
-            val issuerDomain = polMap.issuerIdentifier.identifier.toString()
-            val subjectDomain = polMap.subjectIdentifier.identifier.toString()
-
-            if (issuerDomain == ANY_POLICY) {
-                throw Exception(
-                    "encountered an issuerDomainPolicy of ANY_POLICY"
-                )
-            }
-
-            if (subjectDomain == ANY_POLICY) {
-                throw Exception(
-                    "encountered a subjectDomainPolicy of ANY_POLICY"
-                )
-            }
-
-            val validNodes = rootNode.getPolicyNodesValid(certIndex, issuerDomain)
-            if (validNodes.isNotEmpty()) {
-                for (curNode in validNodes) {
-                    when {
-                        policyMapping > 0 || policyMapping == -1 -> {
-                            curNode.addExpectedPolicy(subjectDomain)
-                        }
-                        policyMapping == 0 -> {
-                            val parentNode = curNode.parent as PolicyNode
-                            parentNode.deleteChild(curNode)
-                            childDeleted = true
-                        }
-                    }
-                }
-            } else {
-                if (policyMapping > 0 || policyMapping == -1) {
-                    val validAnyNodes = rootNode.getPolicyNodesValid(certIndex, ANY_POLICY)
-                    for (curAnyNode in validAnyNodes) {
-                        val curAnyNodeParent = curAnyNode.parent as PolicyNode
-                        val expPols = setOf(subjectDomain)
-
+        for (parentNode in parentNodes) {
+            if (currentPolicy == KnownOIDs.anyPolicy) {
+                parentNode.expectedPolicySet.forEach { expectedPolicy ->
+                    val alreadyExists = parentNode.children.any { it.validPolicy == expectedPolicy }
+                    if (!alreadyExists) {
                         PolicyNode(
-                            curAnyNodeParent, issuerDomain, anyQuals,
-                            policiesCritical, expPols, true
+                            parent = parentNode,
+                            validPolicy = expectedPolicy,
+                            qualifierSet = qualifiers.toMutableSet(),
+                            criticalityIndicator = isCritical,
+                            expectedPolicySet = setOf(expectedPolicy),
+                            generatedByPolicyMapping = false
                         )
                     }
                 }
+            } else {
+                PolicyNode(
+                    parent = parentNode,
+                    validPolicy = currentPolicy,
+                    qualifierSet = qualifiers.toMutableSet(),
+                    criticalityIndicator = isCritical,
+                    expectedPolicySet = setOf(currentPolicy),
+                    generatedByPolicyMapping = false
+                )
             }
         }
-        if (childDeleted) {
-            rootNode.prune(certIndex)
-            if (rootNode.children.isEmpty()) {
-                return null
-            }
-        }
-        return rootNode
+
+        return true
     }
 
-    private fun removeInvalidNodes(
-        rootNode: PolicyNode,
-        certIndex: Int,
-        initPolicies: Set<String>,
-        currCertPolicies: CertificatePoliciesExtension
+    private fun processPolicyMappings(
+        certificate: X509Certificate,
+        certDepth: Int,
+        policyMappingValue: Int,
+        root: PolicyNode,
+        isCritical: Boolean,
+        anyPolicyQualifiers: Set<PolicyQualifierInfo>
     ): PolicyNode? {
-        val policyInfo = currCertPolicies.certPolicies
-        var childDeleted = false
+        val policyMappingsExtension =
+            certificate.findExtension(KnownOIDs.policyMappings) ?: return root
 
-        for (curPolInfo in policyInfo) {
-            val curPolicy = curPolInfo.policyIdentifier.identifier.toString()
+        val mappings = policyMappingsExtension.decodePolicyMappings()
+        var nodesRemoved = false
 
-            val validNodes = rootNode.getPolicyNodesValid(certIndex, curPolicy)
-            for (curNode in validNodes) {
-                val parentNode = curNode.parent as PolicyNode
-                if (parentNode.validPolicy == ANY_POLICY) {
-                    if (curPolicy != ANY_POLICY && curPolicy !in initPolicies) {
-                        parentNode.deleteChild(curNode)
-                        childDeleted = true
+        for (mapping in mappings) {
+            val issuerDomain = mapping.issuerDomain
+            val subjectDomain = mapping.subjectDomain
+            require(issuerDomain != KnownOIDs.anyPolicy) {
+                "issuerDomainPolicy must not be ANY_POLICY"
+            }
+
+            require(subjectDomain != KnownOIDs.anyPolicy) {
+                "subjectDomainPolicy must not be ANY_POLICY"
+            }
+
+            val issuerNodes = root.getPolicyNodesValid(certDepth, issuerDomain)
+
+            if (issuerNodes.isNotEmpty()) {
+                issuerNodes.forEach { node ->
+                    when {
+                        policyMappingValue > 0 || policyMappingValue == -1 -> {
+                            node.addExpectedPolicy(subjectDomain)
+                        }
+
+                        policyMappingValue == 0 -> {
+                            node.parent?.deleteChild(node)
+                            nodesRemoved = true
+                        }
                     }
+                }
+            } else if (policyMappingValue > 0 || policyMappingValue == -1) {
+                val anyPolicyNodes = root.getPolicyNodesValid(certDepth, KnownOIDs.anyPolicy)
+                for (anyNode in anyPolicyNodes) {
+                    val parent = anyNode.parent ?: continue
+                    PolicyNode(
+                        parent = parent,
+                        validPolicy = issuerDomain,
+                        qualifierSet = anyPolicyQualifiers.toMutableSet(),
+                        criticalityIndicator = isCritical,
+                        expectedPolicySet = setOf(subjectDomain),
+                        generatedByPolicyMapping = true
+                    )
                 }
             }
         }
 
-        if (childDeleted) {
-            rootNode.prune(certIndex)
-            if (rootNode.children.isEmpty()) {
-                return null
+        if (nodesRemoved) {
+            root.prune(certDepth)
+            if (root.children.isEmpty()) return null
+        }
+
+        return root
+    }
+
+    private fun removeInvalidNodes(
+        root: PolicyNode,
+        certDepth: Int,
+        initialPolicies: Set<ObjectIdentifier>,
+        currentExtension: X509CertificateExtension
+    ): PolicyNode? {
+        val currentPolicies = currentExtension.decodeCertificatePolicies()
+        var removedAny = false
+
+        for (policy in currentPolicies.map { it.oid }) {
+            val matchingNodes = root.getPolicyNodesValid(certDepth, policy)
+
+            for (node in matchingNodes) {
+                val parent = node.parent ?: continue
+
+                if (parent.validPolicy == KnownOIDs.anyPolicy && policy != KnownOIDs.anyPolicy && policy !in initialPolicies) {
+                    parent.deleteChild(node)
+                    removedAny = true
+                }
             }
         }
 
-        return rootNode
+        if (removedAny) {
+            root.prune(certDepth)
+            if (root.children.isEmpty()) return null
+        }
+
+        return root
     }
 
     fun getPolicyTree(): PolicyNode? {
-        return rootNode.copyTree().apply {
+        return rootNode?.copyTree()?.apply {
             isImmutable = true
         }
     }

@@ -1,0 +1,41 @@
+package at.asitplus.signum.supreme.validate
+
+import at.asitplus.signum.indispensable.asn1.Asn1Decodable
+import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.Asn1Encodable
+import at.asitplus.signum.indispensable.asn1.Asn1Integer
+import at.asitplus.signum.indispensable.asn1.Asn1Sequence
+import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
+import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
+import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1
+import at.asitplus.signum.indispensable.asn1.encoding.decodeToAsn1Integer
+import at.asitplus.signum.indispensable.pki.X509CertificateExtension
+
+class PolicyConstraints (
+    val requireExplicitPolicy: Asn1Integer,
+    val inhibitPolicyMapping: Asn1Integer
+) : Asn1Encodable<Asn1Sequence> {
+
+    override fun encodeToTlv() = Asn1.Sequence {
+        +requireExplicitPolicy
+        +inhibitPolicyMapping
+    }
+
+    companion object : Asn1Decodable<Asn1Sequence, PolicyConstraints> {
+        override fun doDecode(src: Asn1Sequence): PolicyConstraints {
+            val requireExplicitPolicy = src.children[0].asPrimitive().decodeToAsn1Integer()
+            val inhibitPolicyMapping = src.children[1].asPrimitive().decodeToAsn1Integer()
+            return PolicyConstraints(requireExplicitPolicy, inhibitPolicyMapping)
+        }
+    }
+}
+
+fun X509CertificateExtension.decodePolicyConstraints() : PolicyConstraints {
+    if (oid != KnownOIDs.policyConstraints) throw Asn1StructuralException(message = "This extension is not PolicyConstraints extension.")
+    if (value.tag != Asn1Element.Tag.OCTET_STRING) throw Asn1TagMismatchException(Asn1Element.Tag.OCTET_STRING, value.tag)
+    val elem = value.asEncapsulatingOctetString().children.firstOrNull() ?: throw Asn1StructuralException(message = "Not valid PolicyConstraints extension.")
+    if (elem.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, elem.tag)
+
+    return PolicyConstraints.doDecode(elem.asSequence())
+}
