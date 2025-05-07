@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.validate
 
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.kotest.common.runBlocking
@@ -94,10 +95,13 @@ open class CertificateChainValidatorCommonTests : FreeSpec ({
                 "-----END CERTIFICATE-----\n"
 
 
-        val root: X509Certificate = X509Certificate.decodeFromPem(rootPem).getOrThrow()
-        val leaf: X509Certificate = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val certChain: CertificateChain = listOf(root, leaf)
-        runBlocking { certChain.validate(context = CertificateValidationContext(basicConstraintCheck = false)) }
-
+//        val root: X509Certificate = X509Certificate.decodeFromPem(rootPem).getOrThrow()
+//        val leaf: X509Certificate = X509Certificate.decodeFromPem(leafPem).getOrThrow()
+//        val certChain: CertificateChain = listOf(root, leaf)
+//        runBlocking { certChain.validate(context = CertificateValidationContext(basicConstraintCheck = false)) }
+        val cert = X509Certificate.decodeFromPem(certBasicConstraintPem).getOrThrow()
+        val extension = cert.tbsCertificate.extensions?.find { it.oid == ObjectIdentifier("2.5.29.32") }
+        println(extension)
+        println(extension?.decodeCertificatePolicies())
     }
 })

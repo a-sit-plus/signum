@@ -1,46 +1,34 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 
 class PolicyNode(
     val parent: PolicyNode?,
-    val validPolicy: String,
-    qualifierSet: Set<String>?,
+    val validPolicy: ObjectIdentifier?,
+    qualifierSet: MutableSet<PolicyQualifierInfo>,
     val criticalityIndicator: Boolean,
-    expectedPolicySet: Set<String>?,
+    expectedPolicySet: Set<ObjectIdentifier>? = null,
     generatedByPolicyMapping: Boolean
 ) {
+    val children = mutableSetOf<PolicyNode>()
 
-    companion object {
-        val ANY_POLICY = KnownOIDs.anyPolicy.toString()
-    }
+    val qualifierSet = qualifierSet.toMutableSet()
 
-    val children: MutableSet<PolicyNode> = mutableSetOf()
+    val expectedPolicySet = expectedPolicySet?.toMutableSet() ?: mutableSetOf()
 
-    val qualifierSet: MutableSet<String> =
-        qualifierSet?.toMutableSet() ?: mutableSetOf()
+    private var originalExpectedPolicySet = !generatedByPolicyMapping
 
-    val expectedPolicySet: MutableSet<String> =
-        expectedPolicySet?.toMutableSet() ?: mutableSetOf()
-
-    val actualValidPolicy: String = validPolicy.ifEmpty { "" }
-
-    var originalExpectedPolicySet: Boolean = !generatedByPolicyMapping
-        private set
-
-    val depth: Int
+    private val depth: Int = (parent?.depth ?: -1) + 1
 
     var isImmutable: Boolean = false
 
     init {
-        depth = parent?.let {
-            it.addChild(this)
-            it.depth + 1
-        } ?: 0
+        parent?.addChild(this)
     }
 
     private fun addChild(child: PolicyNode) {
-        children.add(child)
+        children += child
     }
 
     constructor(parent: PolicyNode?, node: PolicyNode) : this(
@@ -52,17 +40,17 @@ class PolicyNode(
         generatedByPolicyMapping = false
     )
 
-    fun addExpectedPolicy(expectedPolicy: String) {
-        if (isImmutable) throw IllegalStateException("PolicyNode is immutable")
+    fun addExpectedPolicy(expectedPolicy: ObjectIdentifier) {
+        check(!isImmutable) { "PolicyNode is immutable" }
         if (originalExpectedPolicySet) {
             expectedPolicySet.clear()
             originalExpectedPolicySet = false
         }
-        expectedPolicySet.add(expectedPolicy)
+        expectedPolicySet += expectedPolicy
     }
 
     fun prune(minDepth: Int) {
-        if (isImmutable) throw IllegalStateException("PolicyNode is immutable")
+        check(!isImmutable) { "PolicyNode is immutable" }
 
         if (children.isEmpty()) return
 
@@ -76,61 +64,65 @@ class PolicyNode(
         }
     }
 
-    fun deleteChild(childNode: PolicyNode) {
-        if (isImmutable) throw IllegalStateException("PolicyNode is immutable")
-        children.remove(childNode)
+    fun deleteChild(child: PolicyNode) {
+        check(!isImmutable) { "PolicyNode is immutable" }
+        children -= child
     }
 
     fun copyTree(): PolicyNode = copyTreeInternal(null)
 
-    private fun copyTreeInternal(parent: PolicyNode?): PolicyNode {
-        val newNode = PolicyNode(parent, this)
-        children.forEach { it.copyTreeInternal(newNode) }
-        return newNode
-    }
+    private fun copyTreeInternal(parent: PolicyNode?): PolicyNode =
+        PolicyNode(parent, this).also { newNode ->
+            children.forEach { it.copyTreeInternal(newNode) }
+        }
 
-    fun getPolicyNodes(targetDepth: Int): Set<PolicyNode> {
-        val set = mutableSetOf<PolicyNode>()
-        getPolicyNodes(targetDepth, set)
-        return set
-    }
+    fun getPolicyNodes(targetDepth: Int): Set<PolicyNode> =
+        buildSet { getPolicyNodes(targetDepth, this) }
 
-    private fun getPolicyNodes(targetDepth: Int, set: MutableSet<PolicyNode>) {
-        if (this.depth == targetDepth) {
-            set.add(this)
+    private fun getPolicyNodes(targetDepth: Int, acc: MutableSet<PolicyNode>) {
+        if (depth == targetDepth) {
+            acc += this
         } else {
-            children.forEach { it.getPolicyNodes(targetDepth, set) }
+            children.forEach { it.getPolicyNodes(targetDepth, acc) }
         }
     }
 
-    fun getPolicyNodesExpected(depth: Int, expectedOID: String, matchAny: Boolean): Set<PolicyNode> {
-        return if (expectedOID == ANY_POLICY) {
-            getPolicyNodes(depth)
-        } else {
-            getPolicyNodesExpectedHelper(depth, expectedOID, matchAny)
-        }
+    fun getPolicyNodesExpected(
+        depth: Int,
+        expectedOID: ObjectIdentifier,
+        matchAny: Boolean
+    ): Set<PolicyNode> = if (expectedOID == KnownOIDs.anyPolicy) {
+        getPolicyNodes(depth)
+    } else {
+        getPolicyNodesExpectedHelper(depth, expectedOID, matchAny)
     }
 
-    private fun getPolicyNodesExpectedHelper(depth: Int, expectedOID: String, matchAny: Boolean): Set<PolicyNode> {
-        val set = mutableSetOf<PolicyNode>()
-        if (this.depth < depth) {
-            children.forEach { set.addAll(it.getPolicyNodesExpectedHelper(depth, expectedOID, matchAny)) }
+    private fun getPolicyNodesExpectedHelper(
+        depth: Int,
+        expectedOID: ObjectIdentifier,
+        matchAny: Boolean
+    ): Set<PolicyNode> = buildSet {
+        if (this@PolicyNode.depth < depth) {
+            children.forEach {
+                addAll(it.getPolicyNodesExpectedHelper(depth, expectedOID, matchAny))
+            }
         } else {
-            if ((matchAny && expectedPolicySet.contains(ANY_POLICY)) ||
-                (!matchAny && expectedPolicySet.contains(expectedOID))) {
-                set.add(this)
+            if (
+                (matchAny && KnownOIDs.anyPolicy in expectedPolicySet) ||
+                (!matchAny && expectedOID in expectedPolicySet)
+            ) {
+                add(this@PolicyNode)
             }
         }
-        return set
     }
 
-    fun getPolicyNodesValid(depth: Int, validOID: String): Set<PolicyNode> {
-        val set = mutableSetOf<PolicyNode>()
-        if (this.depth < depth) {
-            children.forEach { set.addAll(it.getPolicyNodesValid(depth, validOID)) }
-        } else if (this.validPolicy == validOID) {
-            set.add(this)
+    fun getPolicyNodesValid(depth: Int, validOID: ObjectIdentifier): Set<PolicyNode> =
+        buildSet {
+            if (this@PolicyNode.depth < depth) {
+                children.forEach { addAll(it.getPolicyNodesValid(depth, validOID)) }
+            } else if (validPolicy == validOID) {
+                add(this@PolicyNode)
+            }
         }
-        return set
-    }
 }
+
