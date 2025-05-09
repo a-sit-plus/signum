@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.dsl
 
+import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
 
 /**
@@ -45,28 +46,24 @@ object DSL {
         override operator fun invoke(configure: (T & Any).()->Unit) { _v = resolve(factory, configure) }
     }
 
-    /** Constructed by: [DSL.Data.subclassOf]. */
-    class Generalized<out T: DSL.Data?> internal constructor(default: T): Holder<T> {
-        private var _v: T = default
-        override val v: T get() = _v
+    sealed interface Option<out ResultT: DSL.Data?, out InvokeT: ResultT&Any> : Invokable<ResultT, InvokeT>
+    class MainOption<ResultT: DSL.Data?, InvokeT: ResultT&Any>(private val factory: ()->InvokeT, default: ResultT)
+        : Option<ResultT, InvokeT> {
+        private var _v: ResultT = default
+        override val v get() = _v
+        override operator fun invoke(configure: InvokeT.()->Unit) { _v = resolve(factory, configure) }
 
-        inner class option<out S:T&Any>
-        /**
-         * Adds a specialized invokable accessor for the underlying generalized storage.
-         * Use as `val specialized = _holder.option(::SpecializedClass).`
-         *
-         * User code can invoke this specialized accessor as `specialized { }`.
-         * This constructs a new specialized child, configures it using the specified block,
-         * and stores it in the underlying generalized storage.
-         */
-        constructor(private val factory: ()->S) : Invokable<T,S> {
-            override val v: T get() = this@Generalized.v
-            override operator fun invoke(configure: S.()->Unit) { _v = resolve(factory, configure) }
+        inner class Alternate<AlternateInvokeT: ResultT&Any>(private val factory: ()->AlternateInvokeT)
+            :Option<ResultT, AlternateInvokeT>
+        {
+            override val v get() = this@MainOption.v
+            override operator fun invoke(configure: AlternateInvokeT.()->Unit) { this@MainOption._v = resolve(factory, configure) }
+            internal val parent get() = this@MainOption
         }
     }
 
     /** Constructed by: [DSL.Data.integratedReceiver]. */
-    class Integrated<T: Any> internal constructor(): Invokable<(T.()->Unit)?, T> {
+    class Integrated<T: Any>(): Invokable<(T.()->Unit)?, T> {
         private var _v: (T.()->Unit)? = null
         override val v: (T.()->Unit)? get() = _v
         override operator fun invoke(configure: T.()->Unit) { _v = configure }
@@ -110,28 +107,46 @@ object DSL {
 
         /**
          * Specifies a generalized holder of type T.
-         * Use as `internal val _subHolder = subclassOf<GeneralTypeOfSub>()`.
+         * Use as `val option1 = firstOption(GeneralType::class, ::SpecializedType)`.
          *
-         * The generalized holder itself cannot be invoked, and should be marked `internal`.
-         * Defaults to `null`.
+         * Defaults to a default-constructed `SpecializedType`.
          *
-         * Specialized invokable accessors can be spun off via `.option(::SpecializedClass)`.
-         * @see DSL.Generalized.option
+         * Alternate options can be spun off using `val option2 = option1.alternate(::OtherSpecializedType)`
+         * All alternate options share to same storage, which can be accessed using [Option.v] on any of them.
          */
-        protected fun <T: DSL.Data> subclassOf(): Generalized<T?> =
-            Generalized<T?>(null)
+        protected fun <T: DSL.Data, S: T> firstOption(cls: KClass<T>, factory: ()->S): Option<T,S> =
+            MainOption<T,S>(factory, factory())
+
         /**
          * Specifies a generalized holder of type T.
-         * Use as `internal val _subHolder = subclassOf<GeneralTypeOfSub>(SpecializedClass())`.
+         * Use as `val option1 = firstOptionWithDefault(GeneralType::class, ::SpecializedType) { foo = true }`.
          *
-         * The generalized holder itself cannot be invoked, and should be marked `internal`.
-         * Defaults to the specified `default`.
+         * Defaults to a `SpecializedType` configured using the specified default block.
+         * Note that the specified default block is **not** applied if user code explicitly configures this element.
          *
-         * Specialized invokable accessors can be spun off via `.option(::SpecializedClass)`.
-         * @see DSL.Generalized.option
+         * Alternate options can be spun off using `val option2 = option1.alternate(::OtherSpecializedType)`
+         * All alternate options share to same storage, which can be accessed using [Option.v] on any of them.
          */
-        protected fun <T: DSL.Data> subclassOf(default: T): Generalized<T> =
-            Generalized<T>(default)
+        protected fun <T: DSL.Data, S: T> firstOptionWithDefault(cls: KClass<T>, factory: ()->S, default: (S.()->Unit)): Option<T,S> =
+            MainOption<T,S>(factory, factory().also(default).also(DSL.Data::doValidate))
+
+        /**
+         * Specifies a generalized holder of type T.
+         * Use as `val option1 = firstOptionOfOptional(GeneralType::class, ::SpecializedType)`.
+         *
+         * Defaults to `null`.
+         *
+         * Alternate options can be spun off using `val option2 = option1.alternate(::OtherSpecializedType)`
+         * All alternate options share to same storage, which can be accessed using [Option.v] on any of them.
+         */
+        protected fun <T: DSL.Data, S: T> firstOptionOfOptional(cls: KClass<T>, factory: ()->S): Option<T?,S> =
+            MainOption<T?,S>(factory, null)
+
+        protected fun <ResultT: DSL.Data?, InvokeT: ResultT&Any> Option<ResultT,*>.alternate(factory: ()->InvokeT): Option<ResultT, InvokeT> =
+            when(this) {
+                is MainOption<ResultT,*> -> this.Alternate(factory)
+                is MainOption<ResultT,*>.Alternate<*> -> this.parent.Alternate(factory)
+            }
 
         /**
          * Integrates an external configuration lambda into the DSL.

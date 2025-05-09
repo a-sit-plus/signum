@@ -11,8 +11,8 @@ import platform.CoreFoundation.CFRelease
 import platform.Foundation.NSData
 import platform.Security.*
 
-actual class EphemeralSigningKeyConfiguration internal actual constructor() : EphemeralSigningKeyConfigurationBase()
-actual class EphemeralSignerConfiguration internal actual constructor() : EphemeralSignerConfigurationBase()
+actual class EphemeralSigningKeyConfiguration actual constructor() : EphemeralSigningKeyConfigurationBase()
+actual class EphemeralSignerConfiguration actual constructor() : EphemeralSignerConfigurationBase()
 
 internal fun performKeyAgreement(privateKey: SecKeyRef?, publicValue: KeyAgreementPublicValue.ECDH) =
     corecall {
@@ -84,7 +84,7 @@ internal sealed interface IosEphemeralKey {
 internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration): EphemeralKey {
     memScoped {
         val attr = createCFDictionary {
-            when (val alg = configuration._algSpecific.v) {
+            when (val alg = configuration.ec.v) {
                 is SigningKeyConfiguration.ECConfiguration -> {
                     kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
                     kSecAttrKeySizeInBits mapsTo alg.curve.coordinateLength.bits.toInt()
@@ -108,7 +108,7 @@ internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfigura
             }
         }.takeFromCF<NSData>().toByteArray()
 
-        return when (val alg = configuration._algSpecific.v) {
+        return when (val alg = configuration.ec.v) {
             is SigningKeyConfiguration.ECConfiguration ->
                 IosEphemeralKey.EC(
                     privateKey,
