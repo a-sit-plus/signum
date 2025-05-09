@@ -6,6 +6,7 @@ import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.CryptoOperationFailed
 import at.asitplus.signum.KeyUsageException
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.X509KeyUsage
@@ -44,6 +45,11 @@ class CertificateValidationContext(
 //   Basic constraints should be ignored in SEAL certificate verification
     val basicConstraintCheck: Boolean = true,
     val date: Instant = Clock.System.now(),
+    val explicitPolicyRequired: Boolean = false,
+    val policyMappingInhibited: Boolean = false,
+    val anyPolicyInhibited: Boolean = false,
+    val policyQualifiersRejected: Boolean = false,
+    val initialPolicies: Set<ObjectIdentifier> = emptySet()
 )
 
 suspend fun CertificateChain.validate(
@@ -53,10 +59,27 @@ suspend fun CertificateChain.validate(
 
     if (context.basicConstraintCheck) validateBasicConstraints(this)
 
+    val rootNode = PolicyNode(
+        parent = null,
+        validPolicy = KnownOIDs.anyPolicy,
+        criticalityIndicator = false,
+        expectedPolicySet = setOf(KnownOIDs.anyPolicy),
+        generatedByPolicyMapping = false
+    )
+    val policyValidator = PolicyValidator(
+        initialPolicies = context.initialPolicies,
+        expPolicyRequired = context.explicitPolicyRequired,
+        polMappingInhibited = context.policyMappingInhibited,
+        anyPolicyInhibited = context.anyPolicyInhibited,
+        certPathLen = this.size,
+        rejectPolicyQualifiers = context.policyQualifiersRejected,
+        rootNode = rootNode
+    )
     onEach {
         it.checkValidity(context.date)
         verifyCriticalExtensions(it)
         validator(it)
+        policyValidator.checkPolicy(it)
     }
 
     for (i in 0 until lastIndex) {
@@ -76,7 +99,6 @@ private fun validateBasicConstraints(chain: CertificateChain) {
     var remainingPathLength: Int? = null
 
     for ((index, cert) in chain.dropLast(1).withIndex()) {
-        val isSelfIssued = cert.tbsCertificate.subjectName == cert.tbsCertificate.issuerName
         val basicConstraints =
             cert.findExtension(KnownOIDs.basicConstraints)?.decodeBasicConstraints()
         if (basicConstraints != null && !basicConstraints.ca) {
@@ -87,7 +109,7 @@ private fun validateBasicConstraints(chain: CertificateChain) {
             throw KeyUsageException("Digital signature key usage extension not present!")
         }
 
-        if (remainingPathLength != null && !isSelfIssued) {
+        if (remainingPathLength != null && !cert.isSelfIssued()) {
             if (remainingPathLength == 0) {
                 throw BasicConstraintsException("pathLenConstraint violated at cert index $index.")
             }
