@@ -6,50 +6,47 @@ import at.asitplus.signum.indispensable.asn1.toBigInteger
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 
+/*
+* PolicyValidator checks policy information on X509Certificate path
+* */
 class PolicyValidator(
     initialPolicies: Set<ObjectIdentifier>,
+    expPolicyRequired: Boolean,
+    polMappingInhibited: Boolean,
+    anyPolicyInhibited: Boolean,
     private val certPathLen: Int,
-    private val expPolicyRequired: Boolean,
-    private val polMappingInhibited: Boolean,
-    private val anyPolicyInhibited: Boolean,
     private val rejectPolicyQualifiers: Boolean,
     private var rootNode: PolicyNode?
 ) {
-    private val initPolicies: Set<ObjectIdentifier> = if (initialPolicies.isEmpty()) {
-        setOf(KnownOIDs.anyPolicy)
-    } else {
-        initialPolicies.toSet()
-    }
+    private val initPolicies: Set<ObjectIdentifier> =
+        initialPolicies.ifEmpty { setOf(KnownOIDs.anyPolicy) }.toSet()
     private var explicitPolicy: Int = 0
     private var policyMapping: Int = 0
     private var inhibitAnyPolicy: Int = 0
     private var certIndex: Int = 0
 
-    private var supportedExtensions: Set<String>? = null
+    private var supportedExtensions: Set<ObjectIdentifier>? = null
 
-    fun init() {
+    init {
         certIndex = 1
         explicitPolicy = if (expPolicyRequired) 0 else certPathLen + 1
         policyMapping = if (polMappingInhibited) 0 else certPathLen + 1
         inhibitAnyPolicy = if (anyPolicyInhibited) 0 else certPathLen + 1
     }
 
-    fun getSupportedExtensions(): MutableSet<String>? {
+    fun getSupportedExtensions(): MutableSet<ObjectIdentifier>? {
         if (supportedExtensions == null) {
             supportedExtensions = setOf(
-                KnownOIDs.certificatePolicies.toString(),
-                KnownOIDs.policyMappings.toString(),
-                KnownOIDs.policyConstraints.toString(),
-                KnownOIDs.inhibitAnyPolicy.toString()
+                KnownOIDs.certificatePolicies,
+                KnownOIDs.policyMappings,
+                KnownOIDs.policyConstraints,
+                KnownOIDs.inhibitAnyPolicy
             )
         }
         return supportedExtensions?.toMutableSet()
     }
 
-    private fun checkPolicy(currCert: X509Certificate) {
-
-        val finalCert = certIndex == certPathLen
-
+    fun checkPolicy(currCert: X509Certificate) {
         rootNode = processPolicies(
             certIndex,
             initPolicies,
@@ -59,19 +56,23 @@ class PolicyValidator(
             rejectPolicyQualifiers,
             rootNode,
             currCert,
-            finalCert
+            certIndex == certPathLen
         )
 
-        if (!finalCert) {
-            explicitPolicy = mergeExplicitPolicy(explicitPolicy, currCert, false)
-            policyMapping = mergePolicyMapping(policyMapping, currCert)
-            inhibitAnyPolicy = mergeInhibitAnyPolicy(inhibitAnyPolicy, currCert)
+        if (certIndex != certPathLen) {
+            explicitPolicy = updateExplicitPolicy(explicitPolicy, currCert, false)
+            policyMapping = updatePolicyMapping(policyMapping, currCert)
+            inhibitAnyPolicy = updateInhibitAnyPolicy(inhibitAnyPolicy, currCert)
         }
 
         certIndex++
     }
 
-    private fun mergeExplicitPolicy(
+    /*
+    * Adjusts value of explicitPolicy based on the requireExplicitPolicy value in the PolicyConstraints
+    * extension in currentCert
+    * */
+    private fun updateExplicitPolicy(
         currentValue: Int, currentCert: X509Certificate, isFinalCert: Boolean
     ): Int {
         var result = currentValue
@@ -95,8 +96,11 @@ class PolicyValidator(
         return result
     }
 
-
-    private fun mergePolicyMapping(
+    /*
+    * Adjusts value of policyMapping based on the inhibitPolicyMapping value in PolicyConstraint
+    * extension in currentCert
+    * */
+    private fun updatePolicyMapping(
         currentValue: Int, currentCert: X509Certificate
     ): Int {
         var result = currentValue
@@ -117,8 +121,10 @@ class PolicyValidator(
         return result
     }
 
-
-    private fun mergeInhibitAnyPolicy(
+    /*
+    * Adjusts value of inhibitAnyPolicy based on the inhibitAnyPolicy extension in currentCert
+    * */
+    private fun updateInhibitAnyPolicy(
         currentValue: Int, currentCert: X509Certificate
     ): Int {
         var result = currentValue
@@ -155,6 +161,7 @@ class PolicyValidator(
         val policyExtension =
             currentCert.findExtension(KnownOIDs.certificatePolicies_2_5_29_32)
 
+        // RFC 5280: 6.1.3 (d)
         if (policyExtension != null && root != null) {
             isCritical = policyExtension.critical
             val policies = policyExtension.decodeCertificatePolicies()
@@ -162,48 +169,49 @@ class PolicyValidator(
             var containsAnyPolicy = false
 
             for (policyInfo in policies) {
-                val policyOid = policyInfo.oid
+                val currentPolicyOid = policyInfo.oid
 
-                if (policyOid == KnownOIDs.anyPolicy) {
+                if (currentPolicyOid == KnownOIDs.anyPolicy) {
                     containsAnyPolicy = true
                     anyPolicyQualifiers.addAll(policyInfo.policyQualifiers)
                     continue
                 }
 
+                // RFC 5280: 6.1.3 (d)(1)
                 val qualifiers = policyInfo.policyQualifiers
                 if (qualifiers.isNotEmpty() && rejectPolicyQualifiers && isCritical) {
                     throw Exception("Critical policy qualifiers present in certificate")
                 }
 
+                // RFC 5280: 6.1.3 (d)(1)(i)
                 val matched = processParentNodes(
                     certIndex,
                     isCritical,
-                    rejectPolicyQualifiers,
                     root,
-                    policyOid,
+                    currentPolicyOid,
                     qualifiers,
                     matchAnyPolicy = false
                 )
 
+                // RFC 5280: 6.1.3 (d)(1)(ii)
                 if (!matched) {
                     processParentNodes(
                         certIndex,
                         isCritical,
-                        rejectPolicyQualifiers,
                         root,
-                        policyOid,
+                        currentPolicyOid,
                         qualifiers,
                         matchAnyPolicy = true
                     )
                 }
             }
 
+            // RFC 5280: 6.1.3 (d)(2)
             if (containsAnyPolicy) {
                 if (inhibitAnyPolicy > 0 || (!isFinalCert && currentCert.isSelfIssued())) {
                     processParentNodes(
                         certIndex,
                         isCritical,
-                        rejectPolicyQualifiers,
                         root,
                         KnownOIDs.anyPolicy,
                         anyPolicyQualifiers,
@@ -212,13 +220,16 @@ class PolicyValidator(
                 }
             }
 
+            // RFC 5280: 6.1.3 (d)(3)
             root.prune(certIndex)
             if (root.children.isEmpty()) root = null
         } else if (policyExtension == null) {
+            // RFC 5280: 6.1.3 (e)
             root = null
         }
 
         if (root != null && !isFinalCert) {
+            // RFC 5280: 6.1.4 (a)-(b)
             root = processPolicyMappings(
                 currentCert, certIndex, policyMapping, root, isCritical, anyPolicyQualifiers
             )
@@ -229,13 +240,16 @@ class PolicyValidator(
                 removeInvalidNodes(root!!, certIndex, initialPolicies, it)
             }
 
+            // RFC 5280: 6.1.5 (g)(iii)
             if (root != null && isFinalCert) {
                 root = rewriteLeafNodes(certIndex, initialPolicies, root)
             }
         }
 
         if (isFinalCert) {
-            val remainingExplicit = mergeExplicitPolicy(explicitPolicy, currentCert, true)
+            // RFC 5280: 6.1.5 (a)-(b)
+            val remainingExplicit = updateExplicitPolicy(explicitPolicy, currentCert, true)
+            // RFC 5280: 6.1.3 (f)
             if (remainingExplicit == 0 && root == null) {
                 throw Exception("Non-null policy tree required but policy tree is null")
             }
@@ -244,7 +258,11 @@ class PolicyValidator(
         return root
     }
 
-
+    /*
+    * RFC 5280: 6.1.5 (g)(iii)
+    * Called at the end of validation (only for final certificate in the chain).
+    * Replaces anyPolicy leaf nodes with nodes from initial policies that are not already leafs
+    * */
     private fun rewriteLeafNodes(
         certIndex: Int, initialPolicies: Set<ObjectIdentifier>, root: PolicyNode
     ): PolicyNode? {
@@ -278,10 +296,13 @@ class PolicyValidator(
         return root
     }
 
+    /*
+    * Attempts to add child policy nodes at the current depth (certIndex)
+    * for the given policy OID, based on matching parent nodes at depth certIndex - 1.
+    * */
     private fun processParentNodes(
         certIndex: Int,
         isCritical: Boolean,
-        rejectQualifiers: Boolean,
         root: PolicyNode,
         currentPolicy: ObjectIdentifier,
         qualifiers: Set<PolicyQualifierInfo>,
@@ -320,6 +341,10 @@ class PolicyValidator(
         return true
     }
 
+    /*
+    * RFC 5280: 6.1.4 (a)-(b)
+    * Handles policy mappings
+    * */
     private fun processPolicyMappings(
         certificate: X509Certificate,
         certDepth: Int,
@@ -384,6 +409,10 @@ class PolicyValidator(
         return root
     }
 
+    /*
+    * Part of the RFC 5280: 6.1.5 (g)(iii)
+    * Removes nodes that don't intersect with the initial policies
+    * */
     private fun removeInvalidNodes(
         root: PolicyNode,
         certDepth: Int,
@@ -412,11 +441,5 @@ class PolicyValidator(
         }
 
         return root
-    }
-
-    fun getPolicyTree(): PolicyNode? {
-        return rootNode?.copyTree()?.apply {
-            isImmutable = true
-        }
     }
 }
