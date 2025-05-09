@@ -5,23 +5,19 @@ import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 
 class PolicyNode(
     val parent: PolicyNode?,
-    val validPolicy: ObjectIdentifier?,
-    qualifierSet: MutableSet<PolicyQualifierInfo>,
+    val validPolicy: ObjectIdentifier,
+    qualifierSet: Set<PolicyQualifierInfo> = emptySet(),
     val criticalityIndicator: Boolean,
-    expectedPolicySet: Set<ObjectIdentifier>? = null,
+    expectedPolicySet: Set<ObjectIdentifier> = emptySet(),
     generatedByPolicyMapping: Boolean
 ) {
     val children = mutableSetOf<PolicyNode>()
-
-    val qualifierSet = qualifierSet.toMutableSet()
-
-    val expectedPolicySet = expectedPolicySet?.toMutableSet() ?: mutableSetOf()
-
+    val qualifierSet: MutableSet<PolicyQualifierInfo> = qualifierSet.toMutableSet()
+    val expectedPolicySet: MutableSet<ObjectIdentifier> = expectedPolicySet.toMutableSet()
     private var originalExpectedPolicySet = !generatedByPolicyMapping
-
     private val depth: Int = (parent?.depth ?: -1) + 1
-
     var isImmutable: Boolean = false
+        private set
 
     init {
         parent?.addChild(this)
@@ -30,6 +26,22 @@ class PolicyNode(
     private fun addChild(child: PolicyNode) {
         children += child
     }
+
+    constructor(
+        parent: PolicyNode?,
+        validPolicy: String?,
+        qualifierSet: Set<PolicyQualifierInfo>?,
+        criticalityIndicator: Boolean,
+        expectedPolicySet: Set<String>?,
+        generatedByPolicyMapping: Boolean
+    ) : this(
+        parent = parent,
+        validPolicy = ObjectIdentifier(validPolicy ?: ""),
+        qualifierSet = qualifierSet ?: emptySet(),
+        criticalityIndicator = criticalityIndicator,
+        expectedPolicySet = expectedPolicySet?.map { ObjectIdentifier(it) }?.toSet() ?: emptySet(),
+        generatedByPolicyMapping = generatedByPolicyMapping
+    )
 
     constructor(parent: PolicyNode?, node: PolicyNode) : this(
         parent = parent,
