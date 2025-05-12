@@ -1,9 +1,11 @@
 package at.asitplus.signum.supreme.validate
 
+import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
-import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import io.kotest.common.runBlocking
+import at.asitplus.signum.supreme.validate.pkiExtensions.RFC822Name
+import at.asitplus.signum.supreme.validate.pkiExtensions.decodeCertificatePolicies
+import at.asitplus.signum.supreme.validate.pkiExtensions.decodeNameConstraints
 import io.kotest.core.spec.style.FreeSpec
 
 open class CertificateChainValidatorCommonTests : FreeSpec ({
@@ -94,14 +96,37 @@ open class CertificateChainValidatorCommonTests : FreeSpec ({
                 "KBYnP1hBSz11CIZ1MTXazV+wEL1Ep45WDR1/Pb3+QzLbviujkatk3MMe\n" +
                 "-----END CERTIFICATE-----\n"
 
+        val certNameConstraintsPem = "-----BEGIN CERTIFICATE-----\n" +
+                "MIIDPzCCAiegAwIBAgIULfD3GEBBKGfotQCdDBx07Ek9fvgwDQYJKoZIhvcNAQEL\n" +
+                "BQAwFzEVMBMGA1UEAwwMVGVzdCBSb290IENBMB4XDTI1MDUxMjA4NTkwNloXDTM1\n" +
+                "MDUxMDA4NTkwNlowGTEXMBUGA1UEAwwOU3Vib3JkaW5hdGUgQ0EwggEiMA0GCSqG\n" +
+                "SIb3DQEBAQUAA4IBDwAwggEKAoIBAQDHa41Nu4uJ6OWVoNum60QYc1JrtPWXZdj9\n" +
+                "d75bjpPMsyxs5ocZFEJIklHtDcNCPW/hTkCbniT3UeZmMEWa1KqVKOm6G3G4neQP\n" +
+                "lG4QEqAblTBAbgCO6c+ZoFjpifkBin+/RtUJ6IjADDP3Y/HfXp1OYK+KKKopydK0\n" +
+                "5mKbrbRCI0xafrrcIsdAGQunjaA6koklilQV+vIhIOnVKQnoPMzi0InZI9maTSpb\n" +
+                "oXGIhIyc1ps5K6qZhqn03Nn7reRh4OGDkIUwuxg+YCpLQ3BWV4ZOQ4Wqv94PnrAp\n" +
+                "stqCKheYzpi6EPfULewTDSco8swPdvQW2/NAjBdlhRqunJBM65k1AgMBAAGjgYAw\n" +
+                "fjAPBgNVHRMBAf8EBTADAQH/MAsGA1UdDwQEAwIBBjAdBgNVHQ4EFgQUfu2pmh9o\n" +
+                "F6uJCQlzXYL2RBttXykwHwYDVR0jBBgwFoAUr996qI0ZigTlofGifs1QW4RPTpUw\n" +
+                "HgYDVR0eAQH/BBQwEqAQMA6BDC5leGFtcGxlLmNvbTANBgkqhkiG9w0BAQsFAAOC\n" +
+                "AQEANXFCDp5JBvrXoUnX23/EqyorQh6lc2tot3LIsMlG7b2Qxb1cPij+g2kB+WWE\n" +
+                "//ZD8dNAoaXF2zyHKHeyJsnZ93CIyfth8MlVUR7HDgCP39YYUbJXrgoi/sPDcMgr\n" +
+                "BdE9TwplgeSwbklB2dfk0LgJMYn9dvi6jCm+5Vg1Xfmloerc2b1/t0Yauk+PDUlr\n" +
+                "B42AvB3nQlf22JUTyKTikOPsHUAIWXxQiAltAzBUayVLLpMoo6JwBm6b7Fusg8x9\n" +
+                "HmZLqDZ0S4Cf5oCFez1rFEtwAOJO3CcRQIDDorudJ517SgrXI0827goWcm/Ntoww\n" +
+                "Dv3+phSDVM2G5J2fTf4kDkZ5nw==\n" +
+                "-----END CERTIFICATE-----\n"
+
 
 //        val root: X509Certificate = X509Certificate.decodeFromPem(rootPem).getOrThrow()
 //        val leaf: X509Certificate = X509Certificate.decodeFromPem(leafPem).getOrThrow()
 //        val certChain: CertificateChain = listOf(root, leaf)
 //        runBlocking { certChain.validate(context = CertificateValidationContext(basicConstraintCheck = false)) }
-        val cert = X509Certificate.decodeFromPem(certBasicConstraintPem).getOrThrow()
-        val extension = cert.tbsCertificate.extensions?.find { it.oid == ObjectIdentifier("2.5.29.32") }
+        val cert = X509Certificate.decodeFromPem(certNameConstraintsPem).getOrThrow()
+        val extension = cert.tbsCertificate.extensions?.find { it.oid == KnownOIDs.nameConstraints_2_5_29_30 }
         println(extension)
-        println(extension?.decodeCertificatePolicies())
+        println(extension?.decodeNameConstraints()?.permitted?.trees?.get(0)?.base?.name?.type)
+        println((extension?.decodeNameConstraints()?.permitted?.trees?.get(0)?.base?.name as RFC822Name).value.value)
+        println(extension?.decodeNameConstraints()?.permitted?.trees?.get(0)?.minimum)
     }
 })
