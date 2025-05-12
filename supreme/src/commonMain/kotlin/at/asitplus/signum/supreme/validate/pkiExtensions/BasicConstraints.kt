@@ -1,4 +1,4 @@
-package at.asitplus.signum.supreme.validate
+package at.asitplus.signum.supreme.validate.pkiExtensions
 
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
@@ -11,7 +11,6 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToBoolean
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
-import at.asitplus.signum.indispensable.asn1.readOid
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 
 class BasicConstraints(
