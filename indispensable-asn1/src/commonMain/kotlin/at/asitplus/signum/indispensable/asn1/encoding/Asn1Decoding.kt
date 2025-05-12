@@ -338,6 +338,9 @@ fun Asn1Primitive.asAsn1String(): Asn1String = runRethrowing {
         PRINTABLE_STRING.toULong() -> Asn1String.Printable(String.decodeFromAsn1ContentBytes(content))
         NUMERIC_STRING.toULong() -> Asn1String.Numeric(String.decodeFromAsn1ContentBytes(content))
         VISIBLE_STRING.toULong() -> Asn1String.Visible(String.decodeFromAsn1ContentBytes(content))
+        1.toUByte().toULong() -> {
+            Asn1String.IA5(String.decodeFromAsn1ContentBytes(content))
+        }
         else -> TODO("Support other string tag $tag")
     }
 }
