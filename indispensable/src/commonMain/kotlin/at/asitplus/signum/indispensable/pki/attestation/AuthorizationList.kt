@@ -13,6 +13,7 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * #### Intro
  * Authorization List ASN.1 sequence as [defined by Google](https://source.android.com/docs/security/features/keystore/attestation#schema).
+ * Enum values as [defined by Google](https://android.googlesource.com/platform/hardware/libhardware/+/refs/heads/main/include_all/hardware/keymaster_defs.h),
  * This is the meat of the [AttestationKeyDescription] attestation certificate extension.
  * It is also used for secure key import.
  *
@@ -64,6 +65,7 @@ class AuthorizationList(
     val trustedUserPresenceRequired: TrustedUserPresenceRequired? = null,
     val trustedConfirmationRequired: TrustedConfirmationRequired? = null,
     val unlockedDeviceRequired: UnlockedDeviceRequired? = null,
+    val allApplications: AllApplications? = null,
     val creationDateTime: CreationDateTime? = null,
     val origin: Origin? = null,
     val rollbackResistent: RollbackResistent? = null,
@@ -115,6 +117,7 @@ class AuthorizationList(
         add(trustedUserPresenceRequired)
         add(trustedConfirmationRequired)
         add(unlockedDeviceRequired)
+        add(allApplications)
         add(creationDateTime)
         add(origin)
         add(rollbackResistent)
@@ -174,6 +177,7 @@ class AuthorizationList(
             val trustedUserPresenceRequired = TrustedUserPresenceRequired.decodeNull(src)
             val trustedConfirmationRequired = TrustedConfirmationRequired.decodeNull(src)
             val unlockedDeviceRequired = UnlockedDeviceRequired.decodeNull(src)
+            val allApplications = AllApplications.decodeNull(src)
             val creationDateTime: CreationDateTime? = CreationDateTime.decode(src)
             val origin: Origin? = Origin.decode(src)
             val rollbackResistent: RollbackResistent? = RollbackResistent.decodeNull(src)
@@ -245,6 +249,7 @@ class AuthorizationList(
                 trustedUserPresenceRequired,
                 trustedConfirmationRequired,
                 unlockedDeviceRequired,
+                allApplications,
                 creationDateTime,
                 origin,
                 rollbackResistent,
@@ -368,6 +373,7 @@ class AuthorizationList(
                 "trustedUserPresenceRequired=${trustedUserPresenceRequired != null}, " +
                 "trustedConfirmationRequired=${trustedConfirmationRequired != null}, " +
                 "unlockedDeviceRequired=${unlockedDeviceRequired != null}, " +
+                "allApplications=${allApplications != null}, " +
                 "creationDateTime=$creationDateTime, " +
                 "origin=$origin, " +
                 "rollbackResistent=$rollbackResistent, " +
@@ -417,6 +423,7 @@ class AuthorizationList(
         if (trustedUserPresenceRequired != other.trustedUserPresenceRequired) return false
         if (trustedConfirmationRequired != other.trustedConfirmationRequired) return false
         if (unlockedDeviceRequired != other.unlockedDeviceRequired) return false
+        if (allApplications != other.allApplications) return false
         if (creationDateTime != other.creationDateTime) return false
         if (origin != other.origin) return false
         if (rollbackResistent != other.rollbackResistent) return false
@@ -464,6 +471,7 @@ class AuthorizationList(
         result = 31 * result + (trustedUserPresenceRequired?.hashCode() ?: 0)
         result = 31 * result + (trustedConfirmationRequired?.hashCode() ?: 0)
         result = 31 * result + (unlockedDeviceRequired?.hashCode() ?: 0)
+        result = 31 * result + (allApplications?.hashCode() ?: 0)
         result = 31 * result + (creationDateTime?.hashCode() ?: 0)
         result = 31 * result + (origin?.hashCode() ?: 0)
         result = 31 * result + (rollbackResistent?.hashCode() ?: 0)
@@ -501,14 +509,15 @@ class AuthorizationList(
         }
     }
 
-
     enum class KeyPurpose(override val intValue: Asn1Integer) : IntEncodable {
         ENCRYPT(Asn1Integer(0)),
         DECRYPT(Asn1Integer(1)),
         SIGN(Asn1Integer(2)),
         VERIFY(Asn1Integer(3)),
         DERIVE_KEY(Asn1Integer(4)),
-        WRAP_KEY(Asn1Integer(5));
+        WRAP_KEY(Asn1Integer(5)),
+        AGREE_KEY(Asn1Integer(6)),
+        ATTEST_KEY(Asn1Integer(7));
 
         companion object Tag : Tagged(1uL), Asn1Decodable<Asn1Primitive, KeyPurpose> {
             fun valueOf(int: Asn1Integer) = entries.first { it.intValue == int }
@@ -706,6 +715,8 @@ class AuthorizationList(
     object TrustedConfirmationRequired : Tagged(508uL)
 
     object UnlockedDeviceRequired : Tagged(509uL)
+
+    object AllApplications : Tagged(600uL)
 
     class CreationDateTime private constructor(override val intValue: Asn1Integer) : IntEncodable {
         constructor(timestamp: Instant) : this(Asn1Integer(timestamp.toEpochMilliseconds()))
