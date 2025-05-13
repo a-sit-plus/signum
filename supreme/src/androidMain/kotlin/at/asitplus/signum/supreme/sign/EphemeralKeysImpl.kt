@@ -25,8 +25,8 @@ import java.security.interfaces.RSAPrivateKey
 import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
 
-actual class EphemeralSigningKeyConfiguration internal actual constructor(): EphemeralSigningKeyConfigurationBase()
-actual class EphemeralSignerConfiguration internal actual constructor(): EphemeralSignerConfigurationBase()
+actual class EphemeralSigningKeyConfiguration actual constructor(): EphemeralSigningKeyConfigurationBase()
+actual class EphemeralSignerConfiguration actual constructor(): EphemeralSignerConfigurationBase()
 
 sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Signer {
     override val mayRequireUserUnlock = false
@@ -92,7 +92,7 @@ internal sealed interface AndroidEphemeralKey {
 }
 
 internal actual fun makeEphemeralKey(configuration: EphemeralSigningKeyConfiguration) : EphemeralKey =
-    when (val alg = configuration._algSpecific.v) {
+    when (val alg = configuration.ec.v) {
         is SigningKeyConfiguration.ECConfiguration -> {
             KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_EC).run {
                 initialize(ECGenParameterSpec(alg.curve.jcaName))
