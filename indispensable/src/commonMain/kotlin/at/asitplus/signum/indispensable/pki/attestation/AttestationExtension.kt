@@ -30,6 +30,17 @@ class AttestationKeyDescription(
     val softwareEnforced: AuthorizationList,
     val hardwareEnforced: AuthorizationList
 ) : Asn1Encodable<Asn1Sequence>, Identifiable {
+
+    /**
+        alias for [keyMintVersion] for backwards compatibility for attestationVersion<=4
+    */
+    val keymasterVersion: Int get() = keyMintVersion
+
+    /**
+    alias for [keyMintSecurityLevel] for backwards compatibility for attestationVersion<=4
+     */
+    val keymasterSecurityLevel: SecurityLevel get() = keyMintSecurityLevel
+
     override fun encodeToTlv() = Asn1.Sequence {
         +Asn1.Int(attestationVersion)
         +attestationSecurityLevel
@@ -46,8 +57,8 @@ class AttestationKeyDescription(
         if (other !is AttestationKeyDescription) return false
 
         if (attestationVersion != other.attestationVersion) return false
-        if (keyMintVersion != other.keyMintVersion) return false
         if (attestationSecurityLevel != other.attestationSecurityLevel) return false
+        if (keyMintVersion != other.keyMintVersion) return false
         if (keyMintSecurityLevel != other.keyMintSecurityLevel) return false
         if (!attestationChallenge.contentEquals(other.attestationChallenge)) return false
         if (!uniqueId.contentEquals(other.uniqueId)) return false
