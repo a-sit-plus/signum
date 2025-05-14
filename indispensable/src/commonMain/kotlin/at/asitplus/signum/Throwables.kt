@@ -9,3 +9,5 @@ open class CertificateChainValidatorException(message: String) : CertificateExce
 open class KeyUsageException(message: String) : CertificateException(message)
 open class CertificateValidityException(message: String) : CertificateException(message)
 open class BasicConstraintsException(message: String) : CertificateException(message)
+open class NameConstraintsException(message: String) : CertificateException(message)
+open class CertificateExtensionException(message: String) : CertificateException(message)

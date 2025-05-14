@@ -16,7 +16,7 @@ enum class X509KeyUsage(val bitNumber: Long, val description: String) {
     ;
 
     companion object {
-        fun decodeSet(encodedValue: Asn1BitString): Set<X509KeyUsage> {
+        fun doDecode(encodedValue: Asn1BitString): Set<X509KeyUsage> {
             val booleans = encodedValue.toBitSet()
             val result = mutableSetOf<X509KeyUsage>()
             for (usage in entries) {

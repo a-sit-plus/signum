@@ -26,10 +26,10 @@ interface GeneralNameOption {
 
     val type: NameType
 
-    fun constraints(input: GeneralNameOption?): ConstraintResult
+    fun constrains(input: GeneralNameOption?): ConstraintResult
 }
 
-class GeneralName(
+data class GeneralName(
     val name: GeneralNameOption
 ) : Asn1Encodable<Asn1Element> {
     override fun encodeToTlv(): Asn1Element {
@@ -39,6 +39,7 @@ class GeneralName(
             GeneralNameOption.NameType.IP -> (name as IPAddressName).encodeToTlv()
             GeneralNameOption.NameType.X400 -> (name as X400AddressName).encodeToTlv()
             GeneralNameOption.NameType.URI -> (name as UriName).encodeToTlv()
+            GeneralNameOption.NameType.DIRECTORY -> (name as X500Name).encodeToTlv()
             else -> throw IOException("Unrecognized GeneralName tag")
         }
     }
@@ -48,9 +49,10 @@ class GeneralName(
             return when (GeneralNameOption.NameType.fromTagValue(src.tag.tagValue)) {
                 GeneralNameOption.NameType.RFC822 -> GeneralName(RFC822Name.doDecode(src.asPrimitive()))
                 GeneralNameOption.NameType.DNS -> GeneralName(DNSName.doDecode(src.asPrimitive()))
-                GeneralNameOption.NameType.IP -> GeneralName(IPAddressName.doDecode(src))
+                GeneralNameOption.NameType.IP -> GeneralName(IPAddressName.doDecode(src.asPrimitive()))
                 GeneralNameOption.NameType.X400 -> GeneralName(X400AddressName.doDecode(src))
                 GeneralNameOption.NameType.URI -> GeneralName(UriName.doDecode(src.asPrimitive()))
+                GeneralNameOption.NameType.DIRECTORY-> GeneralName(X500Name.doDecode(src.asExplicitlyTagged().children.first().asSequence()))
                 else -> throw IOException("Unrecognized GeneralName tag")
             }
         }
