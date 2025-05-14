@@ -105,7 +105,7 @@ constructor(
             ?.children
             ?.getOrNull(0)
             ?.let { Asn1BitString.decodeFromTlv(it as Asn1Primitive) }
-            ?.let(X509KeyUsage::decodeSet)
+            ?.let(X509KeyUsage::doDecode)
             ?: emptySet()
 
 

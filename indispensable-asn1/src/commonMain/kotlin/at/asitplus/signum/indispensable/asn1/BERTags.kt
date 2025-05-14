@@ -46,6 +46,9 @@ object BERTags {
     const val DURATION: UByte = 0x22u
     const val OBJECT_IDENTIFIER_IRI: UByte = 0x23u
     const val RELATIVE_OID_IRI: UByte = 0x24u
+    const val RFC822_NAME: UByte = 1u
+    const val DNS_NAME: UByte = 2u
+    const val URI_NAME: UByte = 6u
 
     // 0x25..: Reserved for addenda to this Recommendation | International Standard
     const val CONSTRUCTED: UByte = 0x20u // decimal 32
