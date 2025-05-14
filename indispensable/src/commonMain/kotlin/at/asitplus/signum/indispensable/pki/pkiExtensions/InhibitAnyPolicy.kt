@@ -1,4 +1,4 @@
-package at.asitplus.signum.supreme.validate.pkiExtensions
+package at.asitplus.signum.indispensable.pki.pkiExtensions
 
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
