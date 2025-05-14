@@ -15,6 +15,7 @@ import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubje
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.EXTENSIONS
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.ISSUER_UID
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.SUBJECT_UID
+import at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -35,10 +36,10 @@ constructor(
     val version: Int? = 2,
     val serialNumber: ByteArray,
     val signatureAlgorithm: X509SignatureAlgorithm,
-    val issuerName: List<RelativeDistinguishedName>,
+    val issuerName: X500Name,
     val validFrom: Asn1Time,
     val validUntil: Asn1Time,
-    val subjectName: List<RelativeDistinguishedName>,
+    val subjectName: X500Name,
     val publicKey: CryptoPublicKey,
     val issuerUniqueID: Asn1BitString? = null,
     val subjectUniqueID: Asn1BitString? = null,
@@ -92,14 +93,14 @@ constructor(
             version?.let { +Version(it) }
             +Asn1Primitive(Asn1Element.Tag.INT, serialNumber)
             +signatureAlgorithm
-            +Asn1.Sequence { issuerName.forEach { +it } }
+            +issuerName
 
             +Asn1.Sequence {
                 +validFrom
                 +validUntil
             }
 
-            +Asn1.Sequence { subjectName.forEach { +it } }
+            +subjectName
 
             //subject public key
             +publicKey
@@ -180,14 +181,17 @@ constructor(
             }
             val serialNumber = (src.nextChild() as Asn1Primitive).decode(Asn1Element.Tag.INT) { it }
             val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val issuerNames = (src.nextChild() as Asn1Sequence).children.map {
-                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
-            }
+//            val issuerNames = (src.nextChild() as Asn1Sequence).children.map {
+//                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
+//            }
+            val issuerNames = X500Name.doDecode(src.nextChild() as Asn1Sequence)
 
             val timestamps = decodeTimestamps(src.nextChild() as Asn1Sequence)
-            val subject = (src.nextChild() as Asn1Sequence).children.map {
-                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
-            }
+//            val subject = (src.nextChild() as Asn1Sequence).children.map {
+//                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
+//            }
+            val subject = X500Name.doDecode(src.nextChild() as Asn1Sequence)
+
 
             val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(src.nextChild() as Asn1Sequence)
 

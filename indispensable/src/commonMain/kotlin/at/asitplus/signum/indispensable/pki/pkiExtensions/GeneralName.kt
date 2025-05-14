@@ -1,12 +1,8 @@
-package at.asitplus.signum.supreme.validate.pkiExtensions
+package at.asitplus.signum.indispensable.pki.pkiExtensions
 
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
-import at.asitplus.signum.indispensable.asn1.Asn1Primitive
-import at.asitplus.signum.indispensable.asn1.Asn1String
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
 import kotlinx.io.IOException
 
 interface GeneralNameOption {
