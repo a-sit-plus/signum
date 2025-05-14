@@ -1,14 +1,11 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
-import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.indispensable.pki.pkiExtensions.RFC822Name
-import at.asitplus.signum.indispensable.pki.pkiExtensions.decodeCertificatePolicies
 import at.asitplus.signum.indispensable.pki.pkiExtensions.decodeNameConstraints
 import io.kotest.core.spec.style.FreeSpec
 
-open class CertificateChainValidatorCommonTests : FreeSpec ({
+open class CertificateChainValidatorCommonTests : FreeSpec({
 
     "Valid chain" {
         val rootPem = "-----BEGIN CERTIFICATE-----\n" +
@@ -117,18 +114,97 @@ open class CertificateChainValidatorCommonTests : FreeSpec ({
                 "Dv3+phSDVM2G5J2fTf4kDkZ5nw==\n" +
                 "-----END CERTIFICATE-----\n"
 
+        val certSeveralNameConstraintsPem = "-----BEGIN CERTIFICATE-----\n" +
+                "MIIEgjCCA2qgAwIBAgIULfD3GEBBKGfotQCdDBx07Ek9fvwwDQYJKoZIhvcNAQEL\n" +
+                "BQAwFzEVMBMGA1UEAwwMVGVzdCBSb290IENBMB4XDTI1MDUxNjA3NTMxNFoXDTM1\n" +
+                "MDUxNDA3NTMxNFowGTEXMBUGA1UEAwwOU3Vib3JkaW5hdGUgQ0EwggIiMA0GCSqG\n" +
+                "SIb3DQEBAQUAA4ICDwAwggIKAoICAQCSJBytSBoa0wKZgpWzTUDryGHq7jWnpnzC\n" +
+                "iUjMHcl5gCyB/C+2KP7Egs2vmJRA71azKPxEzVBXgReOldVliEu+PvaKFpVUIzRt\n" +
+                "g8yx+Sd+DTjnwVpEFfZ+Ynt7LjtsypWe7rW2UspMDcfZ9IP+Y4WoADRba83PvFUQ\n" +
+                "yihLfoWWnPxSwtAx71cpQdCx6kAml10o5dSEaVa/W2UDhHK0zBHnPRb8rC9z7B3H\n" +
+                "p9tszFTxa1GYtWhMzObAH8zEcKFjIWLCqfomq2pZMnnEROVvCzWI6tU4ImSShfKT\n" +
+                "X+GFgsE6/jpL8upQn/4oV6InJ44QrTNA0xQeDRpWtOU5RRC3R+mSwHV/CUVRdOwB\n" +
+                "MqWCzXWMr5LDzc5YH848eyhXhtA9ktqvQoKXMUdXIpqMrB3yUjxa8mJ/GlNaBcCo\n" +
+                "B80ldGrWUsP+M0T3AqTbczcIeaE6+TseCiz2buoizfrCd4ATcWq70w80g3TzguRa\n" +
+                "kV0mFFnMC2RlWfZ9JcUTCGaID+il1UeCEmsWPGbtNITJ4Mg2px14PNDoQFJ+SbMI\n" +
+                "sN5hEMUMgxbb7viYjq9Go/AMfpYbrPd695YPsxPBgfJymUxoGSP+t0uQdeyvLA3G\n" +
+                "09uoORQfSTFCe6c/5hL+O+gPMMxyyJp1Fzlj0jdu1J575cxPl7TP4z53TKNE+t37\n" +
+                "xB/JRVm1KQIDAQABo4HDMIHAMA8GA1UdEwEB/wQFMAMBAf8wCwYDVR0PBAQDAgEG\n" +
+                "MB0GA1UdDgQWBBSHl3ksfqvoGg1PlLN6W3+bBvfcbzAfBgNVHSMEGDAWgBSv33qo\n" +
+                "jRmKBOWh8aJ+zVBbhE9OlTBgBgNVHR4BAf8EVjBUoFIwDYILZXhhbXBsZS5jb20w\n" +
+                "DoEMLmV4YW1wbGUuY29tMBSGEmh0dHA6Ly9leGFtcGxlLmNvbTAbpBkwFzEVMBMG\n" +
+                "A1UECgwMRXhhbXBsZSBDb3JwMA0GCSqGSIb3DQEBCwUAA4IBAQAPxXSzOgCZ0jdV\n" +
+                "M1MouDkZ0XWXQvenkLdfgty9OAerFpH7wl/aWPRFVTTT5CSeQ8gfLLwf8maWNGaS\n" +
+                "4SSUv+ICocu+j7Gj5HA5MhClJ523KKnJogmKWf8UG+QkKTW79GBJ9Hoy2irgEcT4\n" +
+                "SujmT3MCMu8ulXywRHE1m43fEkt6UA5RM1kg/vwSXDu2iG9ybBbPyTkcV4svLggL\n" +
+                "r5LDnChh6IlgZiZhvFukDxBTufNa0jb27A1VZ5WEKGIFhklv0Bs/D37BZpgscOH8\n" +
+                "1mqaml570pa/yjGqLDP8mMqRp/OetGCxRT1QD11j5xnfDN0ONIqaSwLAtTzci74K\n" +
+                "j4+zvg3l\n" +
+                "-----END CERTIFICATE-----\n"
 
-//        val root: X509Certificate = X509Certificate.decodeFromPem(rootPem).getOrThrow()
-//        val leaf: X509Certificate = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-//        val certChain: CertificateChain = listOf(root, leaf)
-//        runBlocking { certChain.validate(context = CertificateValidationContext(basicConstraintCheck = false)) }
-        val cert = X509Certificate.decodeFromPem(certNameConstraintsPem).getOrThrow()
-        println("ISSUER:${cert.tbsCertificate.issuerName}")
-        println("SUBJECT:${cert.tbsCertificate.subjectName}")
-//        val extension = cert.tbsCertificate.extensions?.find { it.oid == KnownOIDs.nameConstraints_2_5_29_30 }
-//        println(extension)
-//        println(extension?.decodeNameConstraints()?.permitted?.trees?.get(0)?.base?.name?.type)
-//        println((extension?.decodeNameConstraints()?.permitted?.trees?.get(0)?.base?.name as RFC822Name).value.value)
-//        println(extension?.decodeNameConstraints()?.permitted?.trees?.get(0)?.minimum)
+        val certNcpermitted = "-----BEGIN CERTIFICATE-----\n" +
+                "MIIC3DCCAcSgAwIBAgITBm/6kAXHpw8f3guDBcRXNLfl5DANBgkqhkiG9w0BAQsF\n" +
+                "ADAXMRUwEwYDVQQDDAxjcnlwdG9ncmFwaHkwHhcNMTUwNjI5MDkzMjQ5WhcNMTYw\n" +
+                "NjI4MDkzMjQ5WjAXMRUwEwYDVQQDDAxjcnlwdG9ncmFwaHkwggEiMA0GCSqGSIb3\n" +
+                "DQEBAQUAA4IBDwAwggEKAoIBAQCylTa0WkLvIXB4sWoPdv5iL3idlVHKR+ncODKL\n" +
+                "nwQ2Jtd990MfakOFRLrJFF1tfPL4qyRbbyMyrgCOoKBCAuIdBZfBDH3JWFjxGy8J\n" +
+                "Yls8yVeAVKreV18HmLvAsBL3bnr7Gk3vpznrfoG5rn5T/fL0cqqTXFV8zQhjHiEo\n" +
+                "zftSaoq0LOxsSgFdxXS8e8K6RMvLCZPcMpI4fo1Kq2QBT2J1x1/Hq/VnK132cs0g\n" +
+                "TOyiTyyJfvRmlqdXowh7Jf8LQB4mM6gc023fEdQ+HH6JYX1vDQVxaiTM6KMYJNv/\n" +
+                "l4gchP3jknOfZffwGGdXQrtUMhQmltnSqV5nY/G2OGm/Z0pdAgMBAAGjITAfMB0G\n" +
+                "A1UdHgEB/wQTMBGgDzANggt6b21iby5sb2NhbDANBgkqhkiG9w0BAQsFAAOCAQEA\n" +
+                "WcDkqLUsvIBfTzKncOSiy08lcwu+kq/8rybh4HoHEimcy47M+XLPnXqwA7jedz8M\n" +
+                "Znog64O9wZ1olWs+GGrGcJAth2BqdNtRvb6/o2Hq29vNbCQeYRlOTdNzGnb5v6fB\n" +
+                "HEPvuB7UNKyaJ2tF50oxqhg8ojgauX3fuanCtR9Obx/2U8e8zfBIauX13XfpoCyt\n" +
+                "efeL97kYz+XIQwG8TvXpNdHO0QjmA/ToR7E5BbSo2e4cicKEomtLhKI7EXa+Ofwg\n" +
+                "HoyVC8wl97nm7mwI7iFYK5f8YoqwILxKEP6O9+pZEOveqdKfx4+WAgeGyDvBwAjf\n" +
+                "Ej8vkawtdgV/96ajsIqzDQ==\n" +
+                "-----END CERTIFICATE-----"
+
+        val certInvalidNetMask = "-----BEGIN CERTIFICATE-----\n" +
+                "MIIC8TCCAdmgAwIBAgITBm/Wnt8Tt9uB01YkE0oW0WAn8DANBgkqhkiG9w0BAQsF\n" +
+                "ADAXMRUwEwYDVQQDDAxjcnlwdG9ncmFwaHkwHhcNMTUwNjI3MjMzNDI1WhcNMTYw\n" +
+                "NjI2MjMzNDI1WjAXMRUwEwYDVQQDDAxjcnlwdG9ncmFwaHkwggEiMA0GCSqGSIb3\n" +
+                "DQEBAQUAA4IBDwAwggEKAoIBAQCylTa0WkLvIXB4sWoPdv5iL3idlVHKR+ncODKL\n" +
+                "nwQ2Jtd990MfakOFRLrJFF1tfPL4qyRbbyMyrgCOoKBCAuIdBZfBDH3JWFjxGy8J\n" +
+                "Yls8yVeAVKreV18HmLvAsBL3bnr7Gk3vpznrfoG5rn5T/fL0cqqTXFV8zQhjHiEo\n" +
+                "zftSaoq0LOxsSgFdxXS8e8K6RMvLCZPcMpI4fo1Kq2QBT2J1x1/Hq/VnK132cs0g\n" +
+                "TOyiTyyJfvRmlqdXowh7Jf8LQB4mM6gc023fEdQ+HH6JYX1vDQVxaiTM6KMYJNv/\n" +
+                "l4gchP3jknOfZffwGGdXQrtUMhQmltnSqV5nY/G2OGm/Z0pdAgMBAAGjNjA0MDIG\n" +
+                "A1UdHgEB/wQoMCagJDAihyAA/wAAAAAAAAAAAAAAAAAA/////wAA/////wD/AAAA\n" +
+                "ADANBgkqhkiG9w0BAQsFAAOCAQEALGCUUKrfrDkuezZmG5ibkAYOMl2jwc6qmyRO\n" +
+                "GzAeh1xgJpyG4Cz6E57PZwFJiU7WsagW75xiuhyt3BvjEob9TaHmkPka16SdJBP2\n" +
+                "6fkzUHu9HKJbJ5GNzPrcJJG0IQB9Vdqs2D3qrpNC6IQ80PLPaT8Lq3L6Na8c2VrQ\n" +
+                "Y80eHVxiTllDFy8NGIu5nvuKinLSW/O/WNH7M0pkQ9clFR7R+bGNwGrTJ9pKhgGK\n" +
+                "fNJU7CT5HTViMQmN49c3B6JrdBblBI/q3SLTqxqa0Qwp2ZH2fYjCszO3QdpPlbQD\n" +
+                "N8kfs6qmNhkvfIDWMNdQBqhnhuOJ8FJLo1/xYP1ziigg+ajN8g==\n" +
+                "-----END CERTIFICATE-----"
+
+        val certNcPermittedExcluded = "-----BEGIN CERTIFICATE-----\n" +
+                "MIIC9DCCAdygAwIBAgITBm/3q66sET2C+Ko/TLr1EHnvdTANBgkqhkiG9w0BAQsF\n" +
+                "ADAXMRUwEwYDVQQDDAxjcnlwdG9ncmFwaHkwHhcNMTUwNjI5MDY0ODQ4WhcNMTYw\n" +
+                "NjI4MDY0ODQ4WjAXMRUwEwYDVQQDDAxjcnlwdG9ncmFwaHkwggEiMA0GCSqGSIb3\n" +
+                "DQEBAQUAA4IBDwAwggEKAoIBAQCylTa0WkLvIXB4sWoPdv5iL3idlVHKR+ncODKL\n" +
+                "nwQ2Jtd990MfakOFRLrJFF1tfPL4qyRbbyMyrgCOoKBCAuIdBZfBDH3JWFjxGy8J\n" +
+                "Yls8yVeAVKreV18HmLvAsBL3bnr7Gk3vpznrfoG5rn5T/fL0cqqTXFV8zQhjHiEo\n" +
+                "zftSaoq0LOxsSgFdxXS8e8K6RMvLCZPcMpI4fo1Kq2QBT2J1x1/Hq/VnK132cs0g\n" +
+                "TOyiTyyJfvRmlqdXowh7Jf8LQB4mM6gc023fEdQ+HH6JYX1vDQVxaiTM6KMYJNv/\n" +
+                "l4gchP3jknOfZffwGGdXQrtUMhQmltnSqV5nY/G2OGm/Z0pdAgMBAAGjOTA3MDUG\n" +
+                "A1UdHgEB/wQrMCmgDzANggt6b21iby5sb2NhbKEWMBSkEjAQMQ4wDAYDVQQDDAV6\n" +
+                "b21ibzANBgkqhkiG9w0BAQsFAAOCAQEAaSyuJlNVZkkwHn4V9EglOTm6DC/lzrLm\n" +
+                "1y/qcXsY2NXgCRfpZal0lx25M7Dl2G1IOBG+Ub1/ua0NASlpd6BeZ4prmcD4OBib\n" +
+                "oAhMJxt8QNNwkcMG5PnI6reQz5MiRwGOCEAZeX1opIijn/tO49RliEnEQCKbsvdr\n" +
+                "d+0ieNhLdoxazW/k3UCu+Vdd1b3TOLERrhm/xGj2W9AhWAv7GIovhBGGfuD6BFmC\n" +
+                "uHjxoG0So//NiHTfZ9eukgW3rNSbjQjtnC8BsRzUdhX/YBvw+SKkeVL2oz7+lRgD\n" +
+                "fhba3FtwUfCIX3y/UAc0E0+x9bLFDyQXYNHAXq+q72sOkLXgAH8bfQ==\n" +
+                "-----END CERTIFICATE-----"
+
+        val cert = X509Certificate.decodeFromPem(certNcPermittedExcluded).getOrThrow()
+        val extension =
+            cert.tbsCertificate.extensions?.find { it.oid == KnownOIDs.nameConstraints_2_5_29_30 }
+        println(extension)
+        val nc = extension?.decodeNameConstraints()
+        println(nc?.permitted?.trees)
+        println(nc?.excluded?.trees)
     }
 })
