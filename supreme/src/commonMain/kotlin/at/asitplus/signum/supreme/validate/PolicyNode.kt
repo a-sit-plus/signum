@@ -2,7 +2,7 @@ package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
-import at.asitplus.signum.supreme.validate.pkiExtensions.PolicyQualifierInfo
+import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyQualifierInfo
 
 class PolicyNode(
     val parent: PolicyNode?,

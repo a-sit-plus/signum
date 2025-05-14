@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.asn1.Asn1BitString
-import at.asitplus.signum.indispensable.asn1.BitSet
 
 enum class X509KeyUsage(val bitNumber: Long, val description: String) {
     DIGITAL_SIGNATURE(0, "Digital Signature"),

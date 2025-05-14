@@ -5,11 +5,11 @@ import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.toBigInteger
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
-import at.asitplus.signum.supreme.validate.pkiExtensions.PolicyQualifierInfo
-import at.asitplus.signum.supreme.validate.pkiExtensions.decodeCertificatePolicies
-import at.asitplus.signum.supreme.validate.pkiExtensions.decodeInhibitAnyPolicy
-import at.asitplus.signum.supreme.validate.pkiExtensions.decodePolicyConstraints
-import at.asitplus.signum.supreme.validate.pkiExtensions.decodePolicyMappings
+import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyQualifierInfo
+import at.asitplus.signum.indispensable.pki.pkiExtensions.decodeCertificatePolicies
+import at.asitplus.signum.indispensable.pki.pkiExtensions.decodeInhibitAnyPolicy
+import at.asitplus.signum.indispensable.pki.pkiExtensions.decodePolicyConstraints
+import at.asitplus.signum.indispensable.pki.pkiExtensions.decodePolicyMappings
 
 /*
 * PolicyValidator checks policy information on X509Certificate path
