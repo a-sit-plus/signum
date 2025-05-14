@@ -3,9 +3,9 @@ package at.asitplus.signum.supreme.validate
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.supreme.validate.pkiExtensions.RFC822Name
-import at.asitplus.signum.supreme.validate.pkiExtensions.decodeCertificatePolicies
-import at.asitplus.signum.supreme.validate.pkiExtensions.decodeNameConstraints
+import at.asitplus.signum.indispensable.pki.pkiExtensions.RFC822Name
+import at.asitplus.signum.indispensable.pki.pkiExtensions.decodeCertificatePolicies
+import at.asitplus.signum.indispensable.pki.pkiExtensions.decodeNameConstraints
 import io.kotest.core.spec.style.FreeSpec
 
 open class CertificateChainValidatorCommonTests : FreeSpec ({
@@ -123,10 +123,12 @@ open class CertificateChainValidatorCommonTests : FreeSpec ({
 //        val certChain: CertificateChain = listOf(root, leaf)
 //        runBlocking { certChain.validate(context = CertificateValidationContext(basicConstraintCheck = false)) }
         val cert = X509Certificate.decodeFromPem(certNameConstraintsPem).getOrThrow()
-        val extension = cert.tbsCertificate.extensions?.find { it.oid == KnownOIDs.nameConstraints_2_5_29_30 }
-        println(extension)
-        println(extension?.decodeNameConstraints()?.permitted?.trees?.get(0)?.base?.name?.type)
-        println((extension?.decodeNameConstraints()?.permitted?.trees?.get(0)?.base?.name as RFC822Name).value.value)
-        println(extension?.decodeNameConstraints()?.permitted?.trees?.get(0)?.minimum)
+        println("ISSUER:${cert.tbsCertificate.issuerName}")
+        println("SUBJECT:${cert.tbsCertificate.subjectName}")
+//        val extension = cert.tbsCertificate.extensions?.find { it.oid == KnownOIDs.nameConstraints_2_5_29_30 }
+//        println(extension)
+//        println(extension?.decodeNameConstraints()?.permitted?.trees?.get(0)?.base?.name?.type)
+//        println((extension?.decodeNameConstraints()?.permitted?.trees?.get(0)?.base?.name as RFC822Name).value.value)
+//        println(extension?.decodeNameConstraints()?.permitted?.trees?.get(0)?.minimum)
     }
 })
