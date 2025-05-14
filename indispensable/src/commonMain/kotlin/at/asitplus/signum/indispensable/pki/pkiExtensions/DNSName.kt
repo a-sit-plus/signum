@@ -83,7 +83,7 @@ class DNSName(
         }
     }
 
-    override fun constraints(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
+    override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
         if (input !is DNSName) {
             return GeneralNameOption.ConstraintResult.DIFF_TYPE
         }

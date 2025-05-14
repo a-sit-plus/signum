@@ -6,6 +6,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1Set
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.runRethrowing
+import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 
 class X500Name(
@@ -19,14 +20,15 @@ class X500Name(
 
     companion object : Asn1Decodable<Asn1Sequence, X500Name> {
         override fun doDecode(src: Asn1Sequence): X500Name = runRethrowing {
-            X500Name(src.children.map { RelativeDistinguishedName.decodeFromTlv(it as Asn1Set) })
+            X500Name(src.children.map {
+                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
+            })
         }
-
     }
 
     override fun toString() = "X500Name(RDNs=${relativeDistinguishedNames.joinToString()})"
 
-    override fun constraints(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
+    override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
         if (input !is X500Name) return GeneralNameOption.ConstraintResult.DIFF_TYPE
 
         if (this == input) return GeneralNameOption.ConstraintResult.MATCH
@@ -53,5 +55,16 @@ class X500Name(
         }
 
         return true
+    }
+
+    fun findMostSpecificCommonName(): AttributeTypeAndValue.CommonName? {
+        for (rdn in relativeDistinguishedNames.asReversed()) {
+            for (attr in rdn.attrsAndValues) {
+                if (attr is AttributeTypeAndValue.CommonName) {
+                    return attr
+                }
+            }
+        }
+        return null
     }
 }

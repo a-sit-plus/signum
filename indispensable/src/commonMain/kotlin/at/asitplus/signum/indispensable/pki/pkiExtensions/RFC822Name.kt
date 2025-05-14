@@ -4,26 +4,22 @@ import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1String
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
 
 class RFC822Name(
-    override val type: GeneralNameOption.NameType,
-    val value: Asn1String.IA5
+    val value: Asn1String.IA5,
+    override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.RFC822
 ) : GeneralNameOption, Asn1Encodable<Asn1Primitive> {
 
     override fun encodeToTlv() = value.encodeToTlv()
 
     companion object : Asn1Decodable<Asn1Primitive, RFC822Name> {
         override fun doDecode(src: Asn1Primitive): RFC822Name {
-            return RFC822Name(
-                type = GeneralNameOption.NameType.RFC822,
-                value = Asn1String.IA5(src.asAsn1String().value)
-            )
+            return RFC822Name(Asn1String.IA5(src.asAsn1String().value))
         }
     }
 
-    override fun constraints(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
+    override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
         if (input !is RFC822Name) {
             return GeneralNameOption.ConstraintResult.DIFF_TYPE
         }

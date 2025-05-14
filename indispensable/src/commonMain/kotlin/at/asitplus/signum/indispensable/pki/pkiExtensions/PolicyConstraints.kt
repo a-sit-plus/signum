@@ -24,8 +24,8 @@ class PolicyConstraints (
 
     companion object : Asn1Decodable<Asn1Sequence, PolicyConstraints> {
         override fun doDecode(src: Asn1Sequence): PolicyConstraints {
-            val requireExplicitPolicy = src.children[0].asPrimitive().decodeToAsn1Integer()
-            val inhibitPolicyMapping = src.children[1].asPrimitive().decodeToAsn1Integer()
+            val requireExplicitPolicy = src.nextChild().asPrimitive().decodeToAsn1Integer()
+            val inhibitPolicyMapping = src.nextChild().asPrimitive().decodeToAsn1Integer()
             return PolicyConstraints(requireExplicitPolicy, inhibitPolicyMapping)
         }
     }

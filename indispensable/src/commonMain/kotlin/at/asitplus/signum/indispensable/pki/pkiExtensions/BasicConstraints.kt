@@ -28,7 +28,7 @@ class BasicConstraints(
             val ca = src.children[0].asPrimitive().decodeToBoolean()
             var pathLenConstraint: Int = Int.MAX_VALUE
             if (src.children.size > 1) {
-                pathLenConstraint = src.children[0].asPrimitive().decodeToInt()
+                pathLenConstraint = src.children[1].asPrimitive().decodeToInt()
             }
             return BasicConstraints(ca, pathLenConstraint)
         }
