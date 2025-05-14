@@ -76,7 +76,7 @@ class UriName(
     }
 
 
-    override fun constraints(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
+    override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
         if (input !is UriName) {
             return GeneralNameOption.ConstraintResult.DIFF_TYPE
         }
@@ -98,7 +98,7 @@ class UriName(
         val thisDomain = thisHost.startsWith('.')
         val otherDomain = inputHost.startsWith('.')
 
-        var constraintResult = thisDNS.constraints(inputHostObject)
+        var constraintResult = thisDNS.constrains(inputHostObject)
         if (!thisDomain && !otherDomain &&
             (constraintResult == GeneralNameOption.ConstraintResult.WIDENS ||
                     constraintResult == GeneralNameOption.ConstraintResult.NARROWS)
