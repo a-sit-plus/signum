@@ -4,11 +4,14 @@ import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.BERTags.BMP_STRING
+import at.asitplus.signum.indispensable.asn1.BERTags.DNS_NAME
 import at.asitplus.signum.indispensable.asn1.BERTags.IA5_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.NUMERIC_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.PRINTABLE_STRING
+import at.asitplus.signum.indispensable.asn1.BERTags.RFC822_NAME
 import at.asitplus.signum.indispensable.asn1.BERTags.T61_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.UNIVERSAL_STRING
+import at.asitplus.signum.indispensable.asn1.BERTags.URI_NAME
 import at.asitplus.signum.indispensable.asn1.BERTags.UTF8_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.VISIBLE_STRING
 import kotlinx.io.Source
@@ -338,9 +341,9 @@ fun Asn1Primitive.asAsn1String(): Asn1String = runRethrowing {
         PRINTABLE_STRING.toULong() -> Asn1String.Printable(String.decodeFromAsn1ContentBytes(content))
         NUMERIC_STRING.toULong() -> Asn1String.Numeric(String.decodeFromAsn1ContentBytes(content))
         VISIBLE_STRING.toULong() -> Asn1String.Visible(String.decodeFromAsn1ContentBytes(content))
-        1.toUByte().toULong() -> {
-            Asn1String.IA5(String.decodeFromAsn1ContentBytes(content))
-        }
+        RFC822_NAME.toULong() -> { Asn1String.IA5(String.decodeFromAsn1ContentBytes(content)) }
+        DNS_NAME.toULong() -> { Asn1String.IA5(String.decodeFromAsn1ContentBytes(content)) }
+        URI_NAME.toULong() -> { Asn1String.IA5(String.decodeFromAsn1ContentBytes(content)) }
         else -> TODO("Support other string tag $tag")
     }
 }

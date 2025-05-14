@@ -1,31 +1,31 @@
 package at.asitplus.signum.indispensable.pki.pkiExtensions
 
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
-import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
-import at.asitplus.signum.indispensable.asn1.Asn1OctetString
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1
+import at.asitplus.signum.indispensable.asn1.Asn1Primitive
+import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1OctetStringPrimitive
 import kotlinx.io.IOException
 
 class IPAddressName(
-    val address: Asn1OctetString,
+    val address: ByteArray,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.IP
-) : GeneralNameOption, Asn1Encodable<Asn1Element> {
+) : GeneralNameOption, Asn1Encodable<Asn1Primitive> {
 
-    val isIPv4: Boolean = when (address.content.size) {
+    val isIPv4: Boolean = when (address.size) {
         4, 8 -> true
         16, 32 -> false
         else -> throw IOException("Invalid IPAddressName")
     }
 
-    override fun encodeToTlv() = Asn1.OctetString(address.content)
+    override fun encodeToTlv() = address.encodeToAsn1OctetStringPrimitive()
 
-    companion object : Asn1Decodable<Asn1Element, IPAddressName> {
-        override fun doDecode(src: Asn1Element): IPAddressName {
-            val address = src.asOctetString()
-            return IPAddressName(address)
+    companion object : Asn1Decodable<Asn1Primitive, IPAddressName> {
+        override fun doDecode(src: Asn1Primitive): IPAddressName {
+//            val address = src.asOctetString()
+            return IPAddressName(src.content)
         }
 
+        @Throws(IOException::class)
         fun fromString(name: String): IPAddressName {
             if (name.isEmpty()) throw IOException("IPAddress cannot be empty")
             if (name.endsWith('/')) throw IOException("Invalid IPAddress: $name")
@@ -36,12 +36,12 @@ class IPAddressName(
                 else -> throw IOException("Invalid IPAddress: $name")
             }
 
-            return IPAddressName(Asn1OctetString(bytes))
+            return IPAddressName(bytes)
         }
 
     }
 
-    override fun constraints(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
+    override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
         if (input !is IPAddressName) {
             return GeneralNameOption.ConstraintResult.DIFF_TYPE
         }
@@ -50,8 +50,8 @@ class IPAddressName(
             return GeneralNameOption.ConstraintResult.MATCH
         }
 
-        val thisAddress = address.content
-        val inputAddress = input.address.content
+        val thisAddress = address
+        val inputAddress = input.address
 
         return when {
             isHostAddressMatch(thisAddress, inputAddress) -> GeneralNameOption.ConstraintResult.SAME_TYPE
@@ -183,6 +183,7 @@ fun parseIPv6(name: String): ByteArray {
     }
 }
 
+@Throws(IOException::class)
 private fun parseIPv6Address(address: String): ByteArray {
     val parts = address.split("::")
     if (parts.size > 2) throw IOException("Invalid IPv6 address: too many '::'")
