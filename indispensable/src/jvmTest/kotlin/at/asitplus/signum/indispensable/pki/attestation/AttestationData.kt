@@ -1,5 +1,4 @@
 package at.asitplus.signum.indispensable.pki.attestation
-
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoPublicKey.Companion.decodeFromDer
 import at.asitplus.signum.indispensable.toJcaPublicKey
@@ -36,14 +35,6 @@ class AttestationData(
         HARDWARE,
         SOFTWARE,
         NOUGAT
-    }
-
-    enum class Level {
-        HARDWARE, SOFTWARE, NOUGAT
-    }
-
-    enum class Level {
-        HARDWARE, SOFTWARE, NOUGAT
     }
 
     val verificationDate: Date = Date.from(Instant.parse(isoDate))
