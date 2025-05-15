@@ -77,8 +77,7 @@ class KeyDescription(
     enum class KeyFormat(val intValue: Int) : Asn1Encodable<Asn1Primitive> {
         X509(0),
         PKCS8(1),
-        RAW(3),
-        ;
+        RAW(3);
 
         override fun encodeToTlv() = Asn1.Int(intValue)
 
