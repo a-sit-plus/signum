@@ -827,9 +827,7 @@ class AuthorizationList(
                 fun valueOf(int: UInt) = entries.first { it.intValue == int }
                 override fun doDecode(src: Asn1Primitive) = src.decodeToEnum<VerifiedBootState>()
             }
-
         }
-
     }
 
     class OsVersion(
@@ -894,7 +892,6 @@ class AuthorizationList(
                 src.nextChild().asOctetString().content.decodeToString(),
                 src.nextChild().asPrimitive().decodeToUInt()
             )
-
         }
 
         override val tagged get() = Tag
@@ -1009,8 +1006,6 @@ class AuthorizationList(
 
             override val tagged get() = Tag
         }
-
-
     }
 
     sealed class PatchLevel(
@@ -1077,6 +1072,7 @@ class AuthorizationList(
     object DeviceUniqueAttestation : Tagged(720uL) {
     }
 
+
     /**
      * #### Undocumented, ChatGPT-generated! Take with a grain of salt!
      * In the context of Android's Keymaster and Keystore systems, the `moduleHash` is a component within the attestation data structure, specifically in the `KeyDescription` sequence. It provides a cryptographic representation of the software environment associated with the key's creation and usage.
@@ -1126,13 +1122,11 @@ class AuthorizationList(
         override fun hashCode(): Int {
             return sha256Digest.contentHashCode()
         }
-
-
+        
         companion object Tag : Tagged(724uL), Asn1Decodable<Asn1Primitive, ModuleHash> {
             override fun doDecode(src: Asn1Primitive) = ModuleHash(src.asOctetString().content)
         }
 
         override val tagged get() = Tag
     }
-
 }
