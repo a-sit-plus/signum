@@ -1,5 +1,9 @@
 package at.asitplus.signum.indispensable.pki.attestation
 
+import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.CryptoPublicKey.Companion.decodeFromDer
+import at.asitplus.signum.indispensable.toJcaPublicKey
+
 import java.security.KeyFactory
 import java.security.PublicKey
 import java.security.cert.CertificateFactory
@@ -17,7 +21,9 @@ internal val rsaKeyFactory = KeyFactory.getInstance("RSA")
 
 
 class AttestationData(
-    val name: String, challengeB64: String, val attestationProofB64: List<String>,
+    val name: String,
+    challengeB64: String,
+    val attestationProofB64: List<String>,
     isoDate: String,
     val pubKeyB64: String? = null,
     val packageName: String,
@@ -27,7 +33,9 @@ class AttestationData(
     override fun toString() = "AttestationData($name)"
 
     enum class Level {
-        HARDWARE, SOFTWARE, NOUGAT
+        HARDWARE,
+        SOFTWARE,
+        NOUGAT
     }
 
     val verificationDate: Date = Date.from(Instant.parse(isoDate))
@@ -35,8 +43,7 @@ class AttestationData(
     val challenge by lazy { mimeDecoder.decode(challengeB64) }
 
     val publicKey: PublicKey? by lazy {
-        pubKeyB64?.let { mimeDecoder.decode(it) }
-            ?.let { (if (it.size < 2048) ecKeyFactory else rsaKeyFactory).generatePublic(X509EncodedKeySpec(it)) }
+        pubKeyB64?.let { CryptoPublicKey.decodeFromDer(mimeDecoder.decode(it)).toJcaPublicKey().getOrThrow() }
     }
 }
 
@@ -44,5 +51,4 @@ val AttestationData.attestationCertChain: List<X509Certificate>
     get() = attestationProofB64.map {
         certificateFactory
             .generateCertificate(mimeDecoder.decode(it).inputStream()) as X509Certificate
-
     }
