@@ -256,16 +256,21 @@ class BasicParsingTests : FreeSpec({
                 expectedDigest = Base64.decode("NLl2LE1skNSEMZQMV73nMUJYsmQg7+Fqx/cnTw0zCtU=")
             )
         ) {
+            it.attestationCertChain.forEach { cert ->
+                val bytes = cert.encoded
+                val certParsed = X509Certificate.decodeFromDer(bytes)
+                certParsed.encodeToDer() shouldBe bytes
+            }
+
             val bytes = it.attestationCertChain.first().encoded
             val certParsed = X509Certificate.decodeFromDer(bytes)
-            certParsed.encodeToDer() shouldBe bytes
-            val attestation = certParsed.androidAttestationExtension
-            attestation.shouldNotBeNull()
-            val info = attestation.softwareEnforced.attestationApplicationInfo
+            val attestation = certParsed.androidAttestationExtension.shouldNotBeNull()
+            val appId = attestation.softwareEnforced.attestationApplicationId.shouldNotBeNull()
+            val info = appId.packageInfos
             info.shouldNotBeNull()
             info.shouldNotBeEmpty()
             info.first().packageName shouldBe it.packageName
-            val digests = attestation.softwareEnforced.attestationApplicationDigest
+            val digests = appId.signatureDigests
             digests.shouldNotBeNull()
             digests.shouldNotBeEmpty()
             digests.first() shouldBe it.expectedDigest
@@ -288,199 +293,204 @@ class BasicParsingTests : FreeSpec({
     }
 })
 
-fun AuthorizationList.compareWith(signum: at.asitplus.signum.indispensable.pki.attestation.AuthorizationList) {
-    this.algorithm().getOrNull()?.let { it.ordinal shouldBe signum.algorithm?.ordinal }
-        ?: signum.algorithm.shouldBeNull()
-    this.keySize().getOrNull()?.let { it shouldBe signum.keySize!!.intValue.toBigInteger().intValue(true) }
-        ?: signum.keySize.shouldBeNull()
+fun AuthorizationList.compareWith(sAuthList: at.asitplus.signum.indispensable.pki.attestation.AuthorizationList) {
+    this.algorithm().getOrNull()?.let { it.ordinal shouldBe sAuthList.algorithm?.ordinal }
+        ?: sAuthList.algorithm.shouldBeNull()
+    this.keySize().getOrNull()?.let { it shouldBe sAuthList.keySize!!.intValue.toBigInteger().intValue(true) }
+        ?: sAuthList.keySize.shouldBeNull()
     this.digest()?.let {
         if (it.isNotEmpty()) {
-            it.forEach { value -> signum.digest!!.find { it.ordinal == value.ordinal } }
-        } else signum.digest.shouldBeNull()
-    } ?: signum.digest.shouldBeNull()
+            it.forEach { value -> sAuthList.digest!!.find { it.ordinal == value.ordinal } }
+        } else sAuthList.digest.shouldBeNull()
+    } ?: sAuthList.digest.shouldBeNull()
 
     this.activeDateTime().getOrNull()
-        ?.let { it.toEpochMilli() shouldBe signum.activeDateTime!!.intValue.toBigInteger().longValue(true) }
-        ?: signum.activeDateTime.shouldBeNull()
+        ?.let { it.toEpochMilli() shouldBe sAuthList.activeDateTime!!.intValue.toBigInteger().longValue(true) }
+        ?: sAuthList.activeDateTime.shouldBeNull()
 
-    if (this.allowWhileOnBody()) signum.allowWhileOnBody.shouldNotBeNull() else signum.allowWhileOnBody.shouldBeNull()
+    if (this.allowWhileOnBody()) sAuthList.allowWhileOnBody.shouldNotBeNull() else sAuthList.allowWhileOnBody.shouldBeNull()
 
-    this.attestationApplicationId().getOrNull()?.let { info ->
-        signum.attestationApplicationInfo.shouldNotBeNull().let {
-            info.packageInfos()?.let { pInfos ->
-                pInfos.forEach { pInfo ->
-                    it.first { it.packageName == pInfo.packageName() && it.version == pInfo.version().toUInt() }
-                }
-            }
-            info.signatureDigests()?.let { digests ->
-                signum.attestationApplicationDigest.shouldNotBeNull().let {
-                    digests.forEach { digest -> it.first { digest.toByteArray().contentEquals(it) } }
-                }
-            }
-        } ?: signum.attestationApplicationInfo.shouldBeNull()
+    val sAppId = sAuthList.attestationApplicationId
+    val gAppId = this.attestationApplicationId().getOrNull()
 
+    if (gAppId == null) {
+        sAppId.shouldBeNull()
+    } else {
+        sAppId.shouldNotBeNull()
+
+        gAppId.packageInfos().zip(sAppId.packageInfos).forEach { (gInfo, sInfo) ->
+            gInfo.packageName() shouldBe sInfo.packageName
+            gInfo.version().toUInt() shouldBe sInfo.version
+        }
+
+        gAppId.signatureDigests().zip(sAppId.signatureDigests).forEach { (gInfo, sInfo) ->
+            gInfo.toByteArray() shouldBe sInfo
+        }
     }
+
     this.attestationIdBrand().getOrNull()?.toByteArray()
-        ?.contentEquals(signum.attestationIdBrand!!.stringValue.toByteArray())
-        ?: signum.attestationIdBrand.shouldBeNull()
+        ?.contentEquals(sAuthList.attestationIdBrand!!.stringValue.toByteArray())
+        ?: sAuthList.attestationIdBrand.shouldBeNull()
 
     this.attestationIdImei().getOrNull()?.toByteArray()
-        ?.contentEquals(signum.attestationIdImei!!.stringValue.toByteArray())
-        ?: signum.attestationIdImei.shouldBeNull()
+        ?.contentEquals(sAuthList.attestationIdImei!!.stringValue.toByteArray())
+        ?: sAuthList.attestationIdImei.shouldBeNull()
 
     this.attestationIdSecondImei().getOrNull()?.toByteArray()
-        ?.contentEquals(signum.attestationIdSecondImei!!.stringValue.toByteArray())
-        ?: signum.attestationIdSecondImei.shouldBeNull()
+        ?.contentEquals(sAuthList.attestationIdSecondImei!!.stringValue.toByteArray())
+        ?: sAuthList.attestationIdSecondImei.shouldBeNull()
 
     this.attestationIdSerial().getOrNull()?.toByteArray()
-        ?.contentEquals(signum.attestationIdSerial!!.stringValue.toByteArray())
-        ?: signum.attestationIdSerial.shouldBeNull()
+        ?.contentEquals(sAuthList.attestationIdSerial!!.stringValue.toByteArray())
+        ?: sAuthList.attestationIdSerial.shouldBeNull()
 
     this.attestationIdMeid().getOrNull()?.toByteArray()
-        ?.contentEquals(signum.attestationIdMeid!!.stringValue.toByteArray())
-        ?: signum.attestationIdMeid.shouldBeNull()
+        ?.contentEquals(sAuthList.attestationIdMeid!!.stringValue.toByteArray())
+        ?: sAuthList.attestationIdMeid.shouldBeNull()
 
     this.attestationIdDevice().getOrNull()?.toByteArray()
-        ?.contentEquals(signum.attestationIdDevice!!.stringValue.toByteArray())
-        ?: signum.attestationIdDevice.shouldBeNull()
+        ?.contentEquals(sAuthList.attestationIdDevice!!.stringValue.toByteArray())
+        ?: sAuthList.attestationIdDevice.shouldBeNull()
 
     this.attestationIdManufacturer().getOrNull()?.toByteArray()
-        ?.contentEquals(signum.attestationIdManufacturer!!.stringValue.toByteArray())
-        ?: signum.attestationIdManufacturer.shouldBeNull()
+        ?.contentEquals(sAuthList.attestationIdManufacturer!!.stringValue.toByteArray())
+        ?: sAuthList.attestationIdManufacturer.shouldBeNull()
 
     this.attestationIdModel().getOrNull()?.toByteArray()
-        ?.contentEquals(signum.attestationIdModel!!.stringValue.toByteArray())
-        ?: signum.attestationIdModel.shouldBeNull()
+        ?.contentEquals(sAuthList.attestationIdModel!!.stringValue.toByteArray())
+        ?: sAuthList.attestationIdModel.shouldBeNull()
 
     this.attestationIdProduct().getOrNull()?.toByteArray()
-        ?.contentEquals(signum.attestationIdProduct!!.stringValue.toByteArray())
-        ?: signum.attestationIdProduct.shouldBeNull()
+        ?.contentEquals(sAuthList.attestationIdProduct!!.stringValue.toByteArray())
+        ?: sAuthList.attestationIdProduct.shouldBeNull()
 
 
     // Purpose comparison
     this.purpose()?.let {
         if (it.isNotEmpty()) {
-            signum.purpose.shouldNotBeNull()
-            it.forEach { value -> signum.purpose!!.find { it.ordinal == value.ordinal } }
-        } else signum.purpose.shouldBeNull()
-    } ?: signum.purpose.shouldBeNull()
+            sAuthList.purpose.shouldNotBeNull()
+            it.forEach { value -> sAuthList.purpose!!.find { it.ordinal == value.ordinal } }
+        } else sAuthList.purpose.shouldBeNull()
+    } ?: sAuthList.purpose.shouldBeNull()
 
     // Padding comparison
     this.padding()?.let {
         if (it.isNotEmpty()) {
-            signum.padding.shouldNotBeNull()
-            it.forEach { value -> signum.padding!!.find { it.ordinal == value.ordinal } }
-        } else signum.padding.shouldBeNull()
-    } ?: signum.padding.shouldBeNull()
+            sAuthList.padding.shouldNotBeNull()
+            it.forEach { value -> sAuthList.padding!!.find { it.ordinal == value.ordinal } }
+        } else sAuthList.padding.shouldBeNull()
+    } ?: sAuthList.padding.shouldBeNull()
 
     // EC Curve comparison
-    this.ecCurve().getOrNull()?.let { it.ordinal shouldBe signum.ecCurve?.ordinal }
-        ?: signum.ecCurve.shouldBeNull()
+    this.ecCurve().getOrNull()?.let { it.ordinal shouldBe sAuthList.ecCurve?.ordinal }
+        ?: sAuthList.ecCurve.shouldBeNull()
 
     // RSA Public Exponent comparison
     this.rsaPublicExponent().getOrNull()
-        ?.let { it shouldBe signum.rsaPublicExponent!!.intValue.toBigInteger().longValue(true) }
-        ?: signum.rsaPublicExponent.shouldBeNull()
+        ?.let { it shouldBe sAuthList.rsaPublicExponent!!.intValue.toBigInteger().longValue(true) }
+        ?: sAuthList.rsaPublicExponent.shouldBeNull()
 
 
     // RollbackResistance comparison
-    if (this.rollbackResistance()) signum.rollbackResistance.shouldNotBeNull() else signum.rollbackResistance.shouldBeNull()
+    if (this.rollbackResistance()) sAuthList.rollbackResistance.shouldNotBeNull() else sAuthList.rollbackResistance.shouldBeNull()
 
 
     // OriginationExpireDateTime comparison
     this.originationExpireDateTime().getOrNull()
-        ?.let { it.toEpochMilli() shouldBe signum.originationExpireDateTime!!.intValue.toBigInteger().longValue(true) }
-        ?: signum.originationExpireDateTime.shouldBeNull()
+        ?.let {
+            it.toEpochMilli() shouldBe sAuthList.originationExpireDateTime!!.intValue.toBigInteger().longValue(true)
+        }
+        ?: sAuthList.originationExpireDateTime.shouldBeNull()
 
     // UsageExpireDateTime comparison
     this.usageExpireDateTime().getOrNull()
-        ?.let { it.toEpochMilli() shouldBe signum.usageExpireDateTime!!.intValue.toBigInteger().longValue(true) }
-        ?: signum.usageExpireDateTime.shouldBeNull()
+        ?.let { it.toEpochMilli() shouldBe sAuthList.usageExpireDateTime!!.intValue.toBigInteger().longValue(true) }
+        ?: sAuthList.usageExpireDateTime.shouldBeNull()
 
 
     // NoAuthRequired comparison
-    if (this.noAuthRequired()) signum.noAuthRequired.shouldNotBeNull() else signum.noAuthRequired.shouldBeNull()
+    if (this.noAuthRequired()) sAuthList.noAuthRequired.shouldNotBeNull() else sAuthList.noAuthRequired.shouldBeNull()
 
     // UserAuthType comparison
-    this.userAuthType().forEach { it.ordinal shouldBe signum.userAuthType!!.intValue.toBigInteger().intValue(true) }
+    this.userAuthType().forEach { it.ordinal shouldBe sAuthList.userAuthType!!.intValue.toBigInteger().intValue(true) }
 
     // AuthTimeout comparison
     this.authTimeout().getOrNull()
-        ?.let { it.seconds shouldBe signum.authTimeout!!.intValue.toBigInteger().longValue(true) }
-        ?: signum.authTimeout.shouldBeNull()
+        ?.let { it.seconds shouldBe sAuthList.authTimeout!!.intValue.toBigInteger().longValue(true) }
+        ?: sAuthList.authTimeout.shouldBeNull()
 
     // TrustedUserPresenceRequired comparison
-    if (this.trustedUserPresenceRequired()) signum.trustedUserPresenceRequired.shouldNotBeNull()
-    else signum.trustedUserPresenceRequired.shouldBeNull()
+    if (this.trustedUserPresenceRequired()) sAuthList.trustedUserPresenceRequired.shouldNotBeNull()
+    else sAuthList.trustedUserPresenceRequired.shouldBeNull()
 
     // TrustedConfirmationRequired comparison
-    if (this.trustedConfirmationRequired()) signum.trustedConfirmationRequired.shouldNotBeNull()
-    else signum.trustedConfirmationRequired.shouldBeNull()
+    if (this.trustedConfirmationRequired()) sAuthList.trustedConfirmationRequired.shouldNotBeNull()
+    else sAuthList.trustedConfirmationRequired.shouldBeNull()
 
     // UnlockedDeviceRequired comparison
-    if (this.unlockedDeviceRequired()) signum.unlockedDeviceRequired.shouldNotBeNull()
-    else signum.unlockedDeviceRequired.shouldBeNull()
+    if (this.unlockedDeviceRequired()) sAuthList.unlockedDeviceRequired.shouldNotBeNull()
+    else sAuthList.unlockedDeviceRequired.shouldBeNull()
 
     // CreationDateTime comparison
     this.creationDateTime().getOrNull()
-        ?.let { it.toEpochMilli() shouldBe signum.creationDateTime!!.intValue.toBigInteger().longValue(true) }
-        ?: signum.creationDateTime.shouldBeNull()
+        ?.let { it.toEpochMilli() shouldBe sAuthList.creationDateTime!!.intValue.toBigInteger().longValue(true) }
+        ?: sAuthList.creationDateTime.shouldBeNull()
 
     // Origin comparison
-    this.origin().getOrNull()?.let { it.ordinal shouldBe signum.origin?.ordinal }
-        ?: signum.origin.shouldBeNull()
+    this.origin().getOrNull()?.let { it.ordinal shouldBe sAuthList.origin?.ordinal }
+        ?: sAuthList.origin.shouldBeNull()
 
 
     // RootOfTrust comparison
     this.rootOfTrust().getOrNull()?.let { root ->
-        signum.rootOfTrust.shouldNotBeNull().let {
+        sAuthList.rootOfTrust.shouldNotBeNull().let {
             root.verifiedBootKey().toByteArray().contentEquals(it.verifiedBootKeyDigest)
             root.deviceLocked() shouldBe it.deviceLocked
             root.verifiedBootState().ordinal shouldBe it.verifiedBootState.ordinal
             root.verifiedBootHash().getOrNull()?.toByteArray()?.contentEquals(it.verifiedBootHash)
                 ?: it.verifiedBootHash.shouldBeNull()
         }
-    } ?: signum.rootOfTrust.shouldBeNull()
+    } ?: sAuthList.rootOfTrust.shouldBeNull()
 
 // OsVersion comparison
     this.osVersion().getOrNull()
         ?.let { osVersion ->
-            signum.osVersion.shouldNotBeNull()
-            osVersion.toInt() shouldBe signum.osVersion.intValue.toBigInteger().intValue(true)
+            sAuthList.osVersion.shouldNotBeNull()
+            osVersion.toInt() shouldBe sAuthList.osVersion.intValue.toBigInteger().intValue(true)
         }
-        ?: signum.osVersion.shouldBeNull()
+        ?: sAuthList.osVersion.shouldBeNull()
 
 // OsPatchLevel comparison
     this.osPatchLevel().getOrNull()
         ?.let { date ->
-            signum.osPatchLevel.shouldNotBeNull()
+            sAuthList.osPatchLevel.shouldNotBeNull()
             // Ensure proper numeric type conversion for comparison
-            date.year.toInt() shouldBe signum.osPatchLevel.year.toInt()
-            date.monthValue.toInt() shouldBe signum.osPatchLevel.month.ordinal + 1
+            date.year.toInt() shouldBe sAuthList.osPatchLevel.year.toInt()
+            date.monthValue.toInt() shouldBe sAuthList.osPatchLevel.month.ordinal + 1
         }
-        ?: signum.osPatchLevel.shouldBeNull()
+        ?: sAuthList.osPatchLevel.shouldBeNull()
 
 // VendorPatchLevel comparison
     this.vendorPatchLevel().getOrNull()
         ?.let { date ->
-            signum.vendorPatchLevel.shouldNotBeNull()
+            sAuthList.vendorPatchLevel.shouldNotBeNull()
             // Ensure proper numeric type conversion for comparison
-            date.year.toInt() shouldBe signum.vendorPatchLevel.year.toInt()
-            date.monthValue.toInt() shouldBe signum.vendorPatchLevel.month.ordinal + 1
-            date.dayOfMonth.toInt() shouldBe signum.vendorPatchLevel.day.toInt()
+            date.year.toInt() shouldBe sAuthList.vendorPatchLevel.year.toInt()
+            date.monthValue.toInt() shouldBe sAuthList.vendorPatchLevel.month.ordinal + 1
+            date.dayOfMonth.toInt() shouldBe sAuthList.vendorPatchLevel.day.toInt()
         }
-        ?: signum.vendorPatchLevel.shouldBeNull()
+        ?: sAuthList.vendorPatchLevel.shouldBeNull()
 
 // BootPatchLevel comparison
     this.bootPatchLevel().getOrNull()
         ?.let { date ->
-            signum.bootPatchLevel.shouldNotBeNull()
+            sAuthList.bootPatchLevel.shouldNotBeNull()
             // Ensure proper numeric type conversion for comparison
-            date.year.toInt() shouldBe signum.bootPatchLevel.year.toInt()
-            date.monthValue.toInt() shouldBe signum.bootPatchLevel.month.ordinal + 1
-            date.dayOfMonth.toInt() shouldBe signum.bootPatchLevel.day.toInt()
+            date.year.toInt() shouldBe sAuthList.bootPatchLevel.year.toInt()
+            date.monthValue.toInt() shouldBe sAuthList.bootPatchLevel.month.ordinal + 1
+            date.dayOfMonth.toInt() shouldBe sAuthList.bootPatchLevel.day.toInt()
         }
-        ?: signum.bootPatchLevel.shouldBeNull()
+        ?: sAuthList.bootPatchLevel.shouldBeNull()
 
 
 }
