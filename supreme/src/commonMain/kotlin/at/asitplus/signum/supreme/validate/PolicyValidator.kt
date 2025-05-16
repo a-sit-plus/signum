@@ -22,7 +22,7 @@ class PolicyValidator(
     private val certPathLen: Int,
     private val rejectPolicyQualifiers: Boolean,
     private var rootNode: PolicyNode?
-) {
+) : Validator {
     private val initPolicies: Set<ObjectIdentifier> =
         initialPolicies.ifEmpty { setOf(KnownOIDs.anyPolicy) }.toSet()
     private var explicitPolicy: Int = 0
@@ -51,7 +51,7 @@ class PolicyValidator(
         return supportedExtensions?.toMutableSet()
     }
 
-    fun checkPolicy(currCert: X509Certificate) {
+    override fun check(currCert: X509Certificate) {
         rootNode = processPolicies(
             certIndex,
             initPolicies,

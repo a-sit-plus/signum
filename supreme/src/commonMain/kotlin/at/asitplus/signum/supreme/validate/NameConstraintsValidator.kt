@@ -12,9 +12,9 @@ class NameConstraintsValidator(
     private val pathLength: Int,
     private val currentCertIndex: Int = 0,
     private var previousNameConstraints: NameConstraints? = null
-) {
+) : Validator {
 
-    fun checkNameConstraints(currCert: X509Certificate) {
+    override fun check(currCert: X509Certificate) {
         if (previousNameConstraints != null && (currentCertIndex == pathLength || !currCert.isSelfIssued())) {
 
             try {
