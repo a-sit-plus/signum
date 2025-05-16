@@ -1,18 +1,14 @@
 package at.asitplus.signum.supreme.validate
 
-import at.asitplus.signum.BasicConstraintsException
 import at.asitplus.signum.CertificateChainValidatorException
 import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.CryptoOperationFailed
-import at.asitplus.signum.KeyUsageException
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.indispensable.pki.X509KeyUsage
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
-import at.asitplus.signum.indispensable.pki.pkiExtensions.decodeBasicConstraints
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
@@ -29,6 +25,10 @@ val supportedCriticalExtensionOids = setOf(
     KnownOIDs.subjectAltName,
     KnownOIDs.nameConstraints
 )
+
+sealed interface Validator {
+    fun check(currCert: X509Certificate)
+}
 
 sealed interface CertValiditySource {
     data object ALWAYS_ACCEPT : CertValiditySource
@@ -58,7 +58,7 @@ suspend fun CertificateChain.validate(
     validator: suspend (x509Certificate: X509Certificate) -> CertValiditySource = { CertValiditySource.ALWAYS_ACCEPT }
 ) {
 
-    if (context.basicConstraintCheck) validateBasicConstraints(this)
+    val validators = mutableListOf<Validator>()
 
     val rootNode = PolicyNode(
         parent = null,
@@ -67,20 +67,25 @@ suspend fun CertificateChain.validate(
         expectedPolicySet = setOf(KnownOIDs.anyPolicy),
         generatedByPolicyMapping = false
     )
-    val policyValidator = PolicyValidator(
-        initialPolicies = context.initialPolicies,
-        expPolicyRequired = context.explicitPolicyRequired,
-        polMappingInhibited = context.policyMappingInhibited,
-        anyPolicyInhibited = context.anyPolicyInhibited,
-        certPathLen = this.size,
-        rejectPolicyQualifiers = context.policyQualifiersRejected,
-        rootNode = rootNode
+    validators.add(
+        PolicyValidator(
+            initialPolicies = context.initialPolicies,
+            expPolicyRequired = context.explicitPolicyRequired,
+            polMappingInhibited = context.policyMappingInhibited,
+            anyPolicyInhibited = context.anyPolicyInhibited,
+            certPathLen = this.size,
+            rejectPolicyQualifiers = context.policyQualifiersRejected,
+            rootNode = rootNode
+        )
     )
-    onEach {
-        it.checkValidity(context.date)
-        verifyCriticalExtensions(it)
-        validator(it)
-        policyValidator.checkPolicy(it)
+    validators.add(NameConstraintsValidator(this.size))
+    if (context.basicConstraintCheck) validators.add(BasicConstraintsValidator(this.size))
+
+    onEach { currCert ->
+        currCert.checkValidity(context.date)
+        verifyCriticalExtensions(currCert)
+        validator(currCert)
+        validators.forEach { it.check(currCert) }
     }
 
     for (i in 0 until lastIndex) {
@@ -93,36 +98,6 @@ suspend fun CertificateChain.validate(
             cert.tbsCertificate.validFrom.instant,
             issuer
         )
-    }
-}
-
-private fun validateBasicConstraints(chain: CertificateChain) {
-    var remainingPathLength: Int? = null
-
-    for ((index, cert) in chain.dropLast(1).withIndex()) {
-        val basicConstraints =
-            cert.findExtension(KnownOIDs.basicConstraints)?.decodeBasicConstraints()
-        if (basicConstraints != null && !basicConstraints.ca) {
-            throw BasicConstraintsException("Missing CA flag.")
-        }
-
-        if (!cert.tbsCertificate.keyUsage.contains(X509KeyUsage.KEY_CERT_SIGN)) {
-            throw KeyUsageException("Digital signature key usage extension not present!")
-        }
-
-        if (remainingPathLength != null && !cert.isSelfIssued()) {
-            if (remainingPathLength == 0) {
-                throw BasicConstraintsException("pathLenConstraint violated at cert index $index.")
-            }
-            remainingPathLength -= 1
-        }
-
-        basicConstraints?.pathLenConstraint?.let { constraint ->
-            if (remainingPathLength == null || constraint < remainingPathLength!!) {
-                remainingPathLength = constraint
-            }
-        }
-
     }
 }
 
