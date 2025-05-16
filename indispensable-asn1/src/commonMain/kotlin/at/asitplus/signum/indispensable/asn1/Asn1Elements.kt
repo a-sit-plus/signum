@@ -778,7 +778,7 @@ open class Asn1Set private constructor(children: List<Asn1Element>, dontSort: Bo
          * Explicitly discard DER requirements and DON'T sort children. Useful when parsing Structures which might not
          * conform to DER
          */
-        internal fun fromPresorted(children: List<Asn1Element>) = Asn1Set(children, true)
+        fun fromPresorted(children: List<Asn1Element>) = Asn1Set(children, true)
     }
 }
 
