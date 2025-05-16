@@ -5,9 +5,11 @@ import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.misc.BitLength
+import at.asitplus.signum.indispensable.pki.attestation.AuthorizationList.MgfDigest
 import kotlinx.datetime.Instant
 import kotlinx.datetime.Month
 import kotlinx.datetime.number
+import kotlin.collections.Set
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -56,7 +58,7 @@ class AuthorizationList(
     val padding: Set<Padding>? = null,
     val ecCurve: ECCurve? = null,
     val rsaPublicExponent: RsaPublicExponent? = null,
-    val mgfDigest: MgfDigest? = null,
+    val mgfDigest: Set<MgfDigest>? = null,
     val rollbackResistance: RollbackResistance? = null,
     val earlyBootOnly: EarlyBootOnly? = null,
     val activeDateTime: ActiveDateTime? = null,
@@ -77,8 +79,7 @@ class AuthorizationList(
     val rootOfTrust: RootOfTrust? = null,
     val osVersion: OsVersion? = null,
     val osPatchLevel: OsPatchLevel? = null,
-    val attestationApplicationInfo: Set<AttestationApplicationInfo>? = null, // attestationApplicationPackageInfos ??? // TODO
-    val attestationApplicationDigest: Set<ByteArray>? = null, // attestationApplicationSignatureDigests ???
+    val attestationApplicationId: AttestationApplicationId? = null,
     val attestationIdBrand: AttestationId.Brand? = null,
     val attestationIdDevice: AttestationId.Device? = null,
     val attestationIdProduct: AttestationId.Product? = null,
@@ -129,19 +130,7 @@ class AuthorizationList(
         add(rootOfTrust)
         add(osVersion)
         add(osPatchLevel)
-        if (attestationApplicationInfo != null || attestationApplicationDigest != null)
-            +Asn1.ExplicitlyTagged(AttestationApplicationInfo.explicitTag) {
-                +Asn1.OctetStringEncapsulating {
-                    +Asn1.Sequence {
-                        attestationApplicationInfo?.let { infos -> +Asn1.SetOf { infos.forEach { +it } } }
-                        attestationApplicationDigest?.let {
-                            +Asn1.SetOf {
-                                it.forEach { +Asn1.OctetString(it) }
-                            }
-                        }
-                    }
-                }
-            }
+        add(attestationApplicationId)
         add(attestationIdBrand)
         add(attestationIdDevice)
         add(attestationIdProduct)
@@ -160,14 +149,13 @@ class AuthorizationList(
     companion object : Asn1Decodable<Asn1Sequence, AuthorizationList> {
         override fun doDecode(src: Asn1Sequence): AuthorizationList {
             val purpose: Set<KeyPurpose>? = KeyPurpose.decodeSet(src)
-
             val algorithm: Algorithm? = Algorithm.decode(src)
             val keySize: KeySize? = KeySize.decode(src)
             val digest: Set<Digest>? = Digest.decodeSet(src)
             val padding: Set<Padding>? = Padding.decodeSet(src)
             val ecCurve: ECCurve? = ECCurve.decode(src)
             val rsaPublicExponent: RsaPublicExponent? = RsaPublicExponent.decode(src)
-            val mgfDigest: MgfDigest? = MgfDigest.decode(src)
+            val mgfDigest: Set<MgfDigest>? = MgfDigest.decodeSet(src)
             val rollbackResistance = RollbackResistance.decodeNull(src)
             val earlyBootOnly = EarlyBootOnly.decodeNull(src)
             val activeDateTime: ActiveDateTime? = ActiveDateTime.decode(src)
@@ -190,30 +178,13 @@ class AuthorizationList(
                 src[RootOfTrust.explicitTag]?.let { catchingUnwrapped { RootOfTrust.decodeFromTlv(it.asSequence()) }.getOrNull() }
             val osVersion: OsVersion? = OsVersion.decode(src)
             val osPatchLevel: OsPatchLevel? = OsPatchLevel.decode(src)
-            val appInfos = (src.children.firstOrNull {
-                if (it !is Asn1ExplicitlyTagged) false else
-                    it.tag == Asn1.ExplicitTag(AttestationApplicationInfo.explicitTag)
-            } as Asn1ExplicitlyTagged?)?.nextChildOrNull()?.let {
-                if (it is Asn1EncapsulatingOctetString) it.nextChildOrNull()
-                    ?.let { it as? Asn1Sequence } else null
-            }
-            val attestationApplicationInfo: Set<AttestationApplicationInfo>? =
-                appInfos?.nextChildOrNull()?.let {
-                    if (it is Asn1Set) it.children.mapNotNull {
-                        if (it is Asn1Sequence)
-                            AttestationApplicationInfo.decodeFromTlvOrNull(it)
-                        else null
-                    }
-                    else null
-                }?.toSet()
-
-
-            val attestationApplicationDigest: Set<ByteArray>? =
-                appInfos?.nextChildOrNull()?.let {
-                    if (it is Asn1Set)
-                        it.children.mapNotNull { if (it is Asn1OctetString) it.content else null }
-                            .toSet()
-                    else null
+            val attestationApplicationId: AttestationApplicationId? =
+                src[AttestationApplicationId.explicitTag]?.let {
+                    catchingUnwrapped {
+                        AttestationApplicationId.decodeFromTlv(
+                            it.asSequence()
+                        )
+                    }.getOrNull()
                 }
 
             val attestationIdBrand: AttestationId.Brand? = AttestationId.Brand.decode(src)
@@ -261,8 +232,7 @@ class AuthorizationList(
                 rootOfTrust,
                 osVersion,
                 osPatchLevel,
-                attestationApplicationInfo,
-                attestationApplicationDigest,
+                attestationApplicationId,
                 attestationIdBrand,
                 attestationIdDevice,
                 attestationIdProduct,
@@ -288,28 +258,25 @@ class AuthorizationList(
 
         private inline fun <reified T : Tagged, reified D : Asn1Encodable<Asn1Element>> T.decodeSet(
             src: Asn1Sequence
-        ): Set<D>? =
-            src[explicitTag]?.let {
-                @Suppress("UNCHECKED_CAST")
-                (it as Asn1Set).children.mapNotNull {
-                    (this as Asn1Decodable<Asn1Element, D>).decodeFromTlvOrNull(
-                        it.asPrimitive()
-                    )
-                }
-            }?.toSet()?.let { if (it.isEmpty()) null else it }
+        ): Set<D>? = src[explicitTag]?.let {
+            @Suppress("UNCHECKED_CAST")
+            (it as Asn1Set).children.mapNotNull {
+                (this as Asn1Decodable<Asn1Element, D>).decodeFromTlvOrNull(
+                    it.asPrimitive()
+                )
+            }
+        }?.toSet()?.let { if (it.isEmpty()) null else it }
 
         private inline fun <reified T : Tagged, reified D : Asn1Encodable<Asn1Element>> T.decodeSequence(
             src: Asn1Sequence
-        ): List<D>? =
-            src[explicitTag]?.let {
-                @Suppress("UNCHECKED_CAST")
-                (it as Asn1Sequence).children.mapNotNull {
-                    (this as Asn1Decodable<Asn1Element, D>).decodeFromTlvOrNull(
-                        it.asPrimitive()
-                    )
-                }
-            }?.toList()?.let { if (it.isEmpty()) null else it }
-
+        ): List<D>? = src[explicitTag]?.let {
+            @Suppress("UNCHECKED_CAST")
+            (it as Asn1Sequence).children.mapNotNull {
+                (this as Asn1Decodable<Asn1Element, D>).decodeFromTlvOrNull(
+                    it.asPrimitive()
+                )
+            }
+        }?.toList()?.let { if (it.isEmpty()) null else it }
 
         private operator fun Asn1Sequence.get(tag: ULong): Asn1Element? {
             val asn1Tag = Asn1.ExplicitTag(tag)
@@ -333,7 +300,6 @@ class AuthorizationList(
         private val List<Asn1Element>.singleOrNull: Asn1Element? get() = if (size == 1) first() else null
 
     }
-
 
     private fun Asn1TreeBuilder.add(element: Set<Tagged.WithTag<*>>?) {
         element?.let { +it.encode() }
@@ -385,8 +351,7 @@ class AuthorizationList(
                 "rootOfTrust=$rootOfTrust, " +
                 "osVersion=$osVersion, " +
                 "osPatchLevel=$osPatchLevel, " +
-                "attestationApplicationInfo=$attestationApplicationInfo, " +
-                "attestationApplicationDigest=${attestationApplicationDigest?.map { it.toHexString() }}, " +
+                "attestationApplicationId=$attestationApplicationId, " +
                 "attestationIdBrand=$attestationIdBrand, " +
                 "attestationIdDevice=$attestationIdDevice, " +
                 "attestationIdProduct=$attestationIdProduct, " +
@@ -435,8 +400,7 @@ class AuthorizationList(
         if (rootOfTrust != other.rootOfTrust) return false
         if (osVersion != other.osVersion) return false
         if (osPatchLevel != other.osPatchLevel) return false
-        if (attestationApplicationInfo != other.attestationApplicationInfo) return false
-        if (attestationApplicationDigest != other.attestationApplicationDigest) return false
+        if (attestationApplicationId != other.attestationApplicationId) return false
         if (attestationIdBrand != other.attestationIdBrand) return false
         if (attestationIdDevice != other.attestationIdDevice) return false
         if (attestationIdProduct != other.attestationIdProduct) return false
@@ -483,8 +447,7 @@ class AuthorizationList(
         result = 31 * result + (rootOfTrust?.hashCode() ?: 0)
         result = 31 * result + (osVersion?.hashCode() ?: 0)
         result = 31 * result + (osPatchLevel?.hashCode() ?: 0)
-        result = 31 * result + (attestationApplicationInfo?.hashCode() ?: 0)
-        result = 31 * result + (attestationApplicationDigest?.hashCode() ?: 0)
+        result = 31 * result + (attestationApplicationId?.hashCode() ?: 0)
         result = 31 * result + (attestationIdBrand?.hashCode() ?: 0)
         result = 31 * result + (attestationIdDevice?.hashCode() ?: 0)
         result = 31 * result + (attestationIdProduct?.hashCode() ?: 0)
@@ -534,6 +497,7 @@ class AuthorizationList(
 
     enum class Algorithm(override val intValue: Asn1Integer) : IntEncodable {
         RSA(Asn1Integer(1)),
+
         //@HazardousMaterials("according to aidl specification: removed, do not reuse.") DSA(Asn1Integer(2)), // TODO: comment in for BasicParsingTests to fail
         EC(Asn1Integer(3)),
         AES(Asn1Integer(32)),
@@ -624,6 +588,7 @@ class AuthorizationList(
         override val tagged get() = Tag
     }
 
+    // TODO set of integers
     //MGF digest is undocumented. tough luck my friend!
     class MgfDigest(override val intValue: Asn1Integer) : IntEncodable {
         companion object Tag : Tagged(203uL), Asn1Decodable<Asn1Primitive, MgfDigest> {
@@ -880,21 +845,101 @@ class AuthorizationList(
         }
     }
 
+    /**
+     * TODO: encodeSorted beschreiben und erklären warum listen und nicht sets
+     * eventuell auch für andrere SETs wie digets padding...
+     */
+    class AttestationApplicationId internal constructor(
+        val packageInfos: List<AttestationPackageInfo>,
+        val signatureDigests: List<ByteArray>,
+        private val encodeSorted: Boolean
+    ) : Asn1Encodable<Asn1Sequence>, Tagged.WithTag<Asn1Sequence> {
+        constructor(packageInfos: Set<AttestationPackageInfo>, signatureDigests: Set<ByteArray>)
+                : this(packageInfos.toList(), signatureDigests.toList(), encodeSorted = true)
 
-    data class AttestationApplicationInfo(
-        val packageName: String,
-        val version: UInt,
-    ) : Asn1Encodable<Asn1Sequence>,
-        Tagged.WithTag<Asn1Sequence> {
-        companion object Tag : Tagged(709uL),
-            Asn1Decodable<Asn1Sequence, AttestationApplicationInfo> {
-            override fun doDecode(src: Asn1Sequence) = AttestationApplicationInfo(
-                src.nextChild().asOctetString().content.decodeToString(),
-                src.nextChild().asPrimitive().decodeToUInt()
+        companion object Tag : Tagged(709uL), Asn1Decodable<Asn1Sequence, AttestationApplicationId> {
+            override fun doDecode(src: Asn1Sequence) = AttestationApplicationId(
+                src.nextChild().asSet().children.map { AttestationPackageInfo.decodeFromTlv(it.asSequence()) },
+                src.nextChild().asSet().children.map { it.asOctetString().content },
+                encodeSorted = false
+                // TODO: check for duplicates and warnings, eigentlich für alle sets
             )
         }
 
         override val tagged get() = Tag
+
+        override fun encodeToTlv() = Asn1.Sequence {
+            +Asn1.OctetStringEncapsulating {
+                +Asn1.Sequence {
+                    // TODO: Asn1NonSet
+                    if(encodeSorted)
+                    {
+                        +Asn1.SetOf { packageInfos.forEach { +it } }
+                        +Asn1.SetOf { signatureDigests.forEach { +Asn1.OctetString(it) } }
+                    }
+                    else
+                    {
+                        +Asn1Set.fromPresorted(packageInfos.map { it.encodeToTlv() })
+                        +Asn1Set.fromPresorted(signatureDigests.map { it.encodeToAsn1OctetStringPrimitive() })
+                    }
+                }
+            }
+        }
+
+        @OptIn(ExperimentalStdlibApi::class)
+        override fun toString(): String {
+            return "AttestationApplicationId(packageInfos=${packageInfos}, signatureDigests=${signatureDigests?.map { it.toHexString() }})"
+        }
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other == null || this::class != other::class) return false
+
+            other as AttestationApplicationId
+
+            if (encodeSorted != other.encodeSorted) return false
+            if (packageInfos != other.packageInfos) return false
+            if (signatureDigests != other.signatureDigests) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = encodeSorted.hashCode()
+            result = 31 * result + packageInfos.hashCode()
+            result = 31 * result + signatureDigests.hashCode()
+            return result
+        }
+
+
+        enum class VerifiedBootState(val intValue: UInt) : Asn1Encodable<Asn1Primitive> {
+            Verified(0u),
+            SelfSigned(1u),
+            Unverified(2u),
+            Failed(3u);
+            // From: https://source.android.com/docs/security/features/keystore/attestation#schema
+
+            override fun encodeToTlv() =
+                Asn1Primitive(BERTags.ENUMERATED, intValue.encodeToAsn1ContentBytes())
+
+            companion object : Asn1Decodable<Asn1Primitive, VerifiedBootState> {
+                fun valueOf(int: UInt) = entries.first { it.intValue == int }
+                override fun doDecode(src: Asn1Primitive) = src.decodeToEnum<VerifiedBootState>()
+            }
+        }
+    }
+
+    data class AttestationPackageInfo(
+        val packageName: String,
+        val version: UInt
+    ) : Asn1Encodable<Asn1Sequence> {
+        companion object :
+            Asn1Decodable<Asn1Sequence, AttestationPackageInfo> {
+            override fun doDecode(src: Asn1Sequence) = AttestationPackageInfo(
+                src.nextChild().asOctetString().content.decodeToString(),
+                src.nextChild().asPrimitive().decodeToUInt()
+            )
+        }
 
         override fun encodeToTlv() = Asn1.Sequence {
             +Asn1.OctetString(packageName.encodeToByteArray())
@@ -902,12 +947,12 @@ class AuthorizationList(
         }
 
         override fun toString(): String {
-            return "AttestationApplicationInfo(packageName='$packageName', version=$version)"
+            return "AttestationPackageInfo(packageName='$packageName', version=$version)"
         }
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
-            if (other !is AttestationApplicationInfo) return false
+            if (other !is AttestationPackageInfo) return false
 
             if (packageName != other.packageName) return false
             if (version != other.version) return false
@@ -1122,7 +1167,7 @@ class AuthorizationList(
         override fun hashCode(): Int {
             return sha256Digest.contentHashCode()
         }
-        
+
         companion object Tag : Tagged(724uL), Asn1Decodable<Asn1Primitive, ModuleHash> {
             override fun doDecode(src: Asn1Primitive) = ModuleHash(src.asOctetString().content)
         }
