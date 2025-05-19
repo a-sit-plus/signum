@@ -352,6 +352,9 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         tbsCertificate.extensions?.firstOrNull { it.oid == oid }
 
     fun checkValidity(date: Instant = Clock.System.now()) {
+        println("DATE:${date}")
+        println("NOTBEFORE:${tbsCertificate.validFrom.instant}")
+        println("NOTAFTER:${tbsCertificate.validUntil.instant}")
         if (date > tbsCertificate.validUntil.instant) {
             throw CertificateValidityException(
                 "certificate expired on " + tbsCertificate.validUntil.instant.toLocalDateTime(
