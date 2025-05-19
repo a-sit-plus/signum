@@ -1,7 +1,6 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.CertificateChainValidatorException
-import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.CryptoOperationFailed
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
@@ -14,16 +13,16 @@ import kotlinx.datetime.Instant
 
 val supportedCriticalExtensionOids = setOf(
     KnownOIDs.keyUsage,
-    KnownOIDs.certificatePolicies,
+    KnownOIDs.certificatePolicies_2_5_29_32,
     KnownOIDs.policyMappings,
     KnownOIDs.inhibitAnyPolicy,
-    KnownOIDs.cRLDistributionPoints,
-    KnownOIDs.issuingDistributionPoint,
+    KnownOIDs.cRLDistributionPoints_2_5_29_31,
+    KnownOIDs.issuingDistributionPoint_2_5_29_28,
     KnownOIDs.deltaCRLIndicator,
-    KnownOIDs.policyConstraints,
-    KnownOIDs.basicConstraints,
-    KnownOIDs.subjectAltName,
-    KnownOIDs.nameConstraints
+    KnownOIDs.policyConstraints_2_5_29_36,
+    KnownOIDs.basicConstraints_2_5_29_19,
+    KnownOIDs.subjectAltName_2_5_29_17,
+    KnownOIDs.nameConstraints_2_5_29_30
 )
 
 sealed interface Validator {
@@ -81,33 +80,33 @@ suspend fun CertificateChain.validate(
     validators.add(NameConstraintsValidator(this.size))
     if (context.basicConstraintCheck) validators.add(BasicConstraintsValidator(this.size))
 
-    onEach { currCert ->
-        currCert.checkValidity(context.date)
-        verifyCriticalExtensions(currCert)
-        validator(currCert)
-        validators.forEach { it.check(currCert) }
-    }
+    val reversed = this.reversed()
+    reversed.forEach { it.checkValidity(context.date) }
+    reversed.forEachIndexed { i, issuer ->
+        verifyCriticalExtensions(issuer)
+        validator(issuer)
+        validators.forEach { it.check(issuer) }
 
-    for (i in 0 until lastIndex) {
-        val issuer = this[i]
-        val cert = this[i + 1]
-
-        verifySignature(cert, issuer)
-        subjectAndIssuerPrincipalMatch(cert, issuer)
-        wasCertificateIssuedWithinIssuerValidityPeriod(
-            cert.tbsCertificate.validFrom.instant,
-            issuer
-        )
+        if (issuer != reversed.last()) {
+            val childCert = reversed[i + 1]
+            verifySignature(childCert, issuer, childCert == reversed.last())
+            subjectAndIssuerPrincipalMatch(childCert, issuer)
+            wasCertificateIssuedWithinIssuerValidityPeriod(
+                childCert.tbsCertificate.validFrom.instant,
+                issuer
+            )
+        }
     }
 }
 
 private fun verifySignature(
     cert: X509Certificate,
-    issuer: X509Certificate
+    issuer: X509Certificate,
+    isLeaf: Boolean
 ) {
     val verifier = cert.signatureAlgorithm.verifierFor(issuer.publicKey).getOrThrow()
     if (!verifier.verify(cert.tbsCertificate.encodeToDer(), cert.signature).isSuccess) {
-        throw CryptoOperationFailed("Signature verification failed.")
+        throw CryptoOperationFailed("Signature verification failed in ${if (isLeaf) "leaf" else "CA"} certificate.")
     }
 }
 
@@ -129,7 +128,7 @@ private fun wasCertificateIssuedWithinIssuerValidityPeriod(
     val beginValidity = issuerCert.tbsCertificate.validFrom.instant
     val endValidity = issuerCert.tbsCertificate.validUntil.instant
     if (beginValidity > dateOfIssuance || dateOfIssuance > endValidity) {
-        throw CertificateValidityException("Certificate issued outside issuer validity period.")
+        throw CertificateChainValidatorException("Certificate issued outside issuer validity period.")
     }
 }
 
