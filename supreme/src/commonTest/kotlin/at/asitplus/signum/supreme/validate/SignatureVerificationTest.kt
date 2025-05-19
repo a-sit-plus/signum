@@ -3,6 +3,7 @@ package at.asitplus.signum.supreme.validate
 import at.asitplus.signum.CryptoOperationFailed
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
@@ -80,7 +81,7 @@ open class SignatureVerificationTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, root)
 
-        chain.validate()
+        shouldNotThrow<Throwable> { chain.validate() }
     }
 
     "Invalid CA Signature Test2" {
@@ -131,7 +132,7 @@ open class SignatureVerificationTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, root)
 
-        shouldThrow<CryptoOperationFailed> { chain.validate()  } .apply {
+        shouldThrow<CryptoOperationFailed> { chain.validate() }.apply {
             message shouldBe "Signature verification failed in CA certificate."
         }
     }
