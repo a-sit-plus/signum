@@ -371,6 +371,6 @@ open class ValidityPeriodsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, goodCACert, trustAnchorRoot)
 
-        shouldNotThrow<Exception> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate() }
     }
 })
