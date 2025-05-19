@@ -1,10 +1,8 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.BasicConstraintsException
-import at.asitplus.signum.KeyUsageException
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.indispensable.pki.X509KeyUsage
 import at.asitplus.signum.indispensable.pki.pkiExtensions.decodeBasicConstraints
 
 class BasicConstraintsValidator(
@@ -16,15 +14,20 @@ class BasicConstraintsValidator(
     override fun check(currCert: X509Certificate) {
         if (currentCertIndex >= pathLength - 1) return
 
-        val basicConstraints =
-            currCert.findExtension(KnownOIDs.basicConstraints_2_5_29_19)?.decodeBasicConstraints()
-        if (basicConstraints != null && !basicConstraints.ca) {
+        println("INDEX$currentCertIndex")
+
+        val basicConstraints = currCert.findExtension(KnownOIDs.basicConstraints_2_5_29_19)?.also {
+            if (!it.critical) {
+                throw BasicConstraintsException("basicConstraints extension must be critical (index $currentCertIndex).")
+            }
+        }?.decodeBasicConstraints()
+            ?: throw BasicConstraintsException("Missing basicConstraints extension at cert index $currentCertIndex.")
+
+
+        if (!basicConstraints.ca) {
             throw BasicConstraintsException("Missing CA flag at cert index $currentCertIndex.")
         }
 
-        if (!currCert.tbsCertificate.keyUsage.contains(X509KeyUsage.KEY_CERT_SIGN)) {
-            throw KeyUsageException("Digital signature key usage extension not present at cert index $currentCertIndex!")
-        }
 
         if (remainingPathLength != null && !currCert.isSelfIssued()) {
             if (remainingPathLength == 0) {
@@ -33,7 +36,7 @@ class BasicConstraintsValidator(
             remainingPathLength = remainingPathLength?.minus(1)
         }
 
-        basicConstraints?.pathLenConstraint?.let { constraint ->
+        basicConstraints.pathLenConstraint.let { constraint ->
             if (remainingPathLength == null || constraint < remainingPathLength!!) {
                 remainingPathLength = constraint
             }

@@ -2,10 +2,12 @@ package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.CertificateChainValidatorException
 import at.asitplus.signum.CryptoOperationFailed
+import at.asitplus.signum.KeyUsageException
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.X509KeyUsage
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
 import kotlinx.datetime.Clock
@@ -104,6 +106,7 @@ private fun verifySignature(
     issuer: X509Certificate,
     isLeaf: Boolean
 ) {
+    verifyIntermediateKeyUsage(issuer)
     val verifier = cert.signatureAlgorithm.verifierFor(issuer.publicKey).getOrThrow()
     if (!verifier.verify(cert.tbsCertificate.encodeToDer(), cert.signature).isSuccess) {
         throw CryptoOperationFailed("Signature verification failed in ${if (isLeaf) "leaf" else "CA"} certificate.")
@@ -139,5 +142,11 @@ private fun verifyCriticalExtensions(cert: X509Certificate) {
         ?.let {
             throw CertificateChainValidatorException("Unsupported critical extension: ${it.oid}")
         }
+}
+
+private fun verifyIntermediateKeyUsage(currCert: X509Certificate) {
+    if (!currCert.tbsCertificate.keyUsage.contains(X509KeyUsage.KEY_CERT_SIGN)) {
+        throw KeyUsageException("Digital signature key usage extension not present at the intermediate cert!")
+    }
 }
 

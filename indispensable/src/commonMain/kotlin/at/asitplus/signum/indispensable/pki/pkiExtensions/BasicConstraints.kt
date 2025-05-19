@@ -25,11 +25,10 @@ class BasicConstraints(
 
     companion object : Asn1Decodable<Asn1Sequence, BasicConstraints> {
         override fun doDecode(src: Asn1Sequence): BasicConstraints {
-            val ca = src.children[0].asPrimitive().decodeToBoolean()
+            var ca = false
             var pathLenConstraint: Int = Int.MAX_VALUE
-            if (src.children.size > 1) {
-                pathLenConstraint = src.children[1].asPrimitive().decodeToInt()
-            }
+            if (src.children.isNotEmpty()) ca = src.children[0].asPrimitive().decodeToBoolean()
+            if (src.children.size > 1) pathLenConstraint = src.children[1].asPrimitive().decodeToInt()
             return BasicConstraints(ca, pathLenConstraint)
         }
     }
