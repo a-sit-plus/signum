@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
+import at.asitplus.signum.CertificateExtensionException
 import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
@@ -98,15 +99,21 @@ constructor(
         Asn1.ExplicitlyTagged(Tags.VERSION.tagValue) { +Asn1.Int(value) }
 
     val keyUsage: Set<X509KeyUsage>
-        get() = extensions
-            ?.find { it.oid == ObjectIdentifier("2.5.29.15") }
-            ?.value
-            ?.asEncapsulatingOctetString()
-            ?.children
-            ?.getOrNull(0)
-            ?.let { Asn1BitString.decodeFromTlv(it as Asn1Primitive) }
-            ?.let(X509KeyUsage::doDecode)
-            ?: emptySet()
+        get() {
+            val ext = extensions?.find { it.oid == KnownOIDs.keyUsage } ?: return emptySet()
+
+            if (!ext.critical) {
+                throw CertificateExtensionException("KeyUsage extension must be marked as critical.")
+            }
+
+            return ext.value
+                .asEncapsulatingOctetString()
+                .children
+                .getOrNull(0)
+                ?.let { Asn1BitString.decodeFromTlv(it as Asn1Primitive) }
+                ?.let(X509KeyUsage::doDecode)
+                ?: emptySet()
+        }
 
 
     @Throws(Asn1Exception::class)
@@ -317,31 +324,6 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     @Suppress("DEPRECATION_ERROR")
     val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
 
-//    //    TODO refactor
-//    fun pathLenConstraint(): Int? =
-//        tbsCertificate.extensions
-//            ?.firstOrNull { it.oid == ObjectIdentifier(KnownOIDs.basicConstraints.toString()) }
-//            ?.value
-//            ?.asEncapsulatingOctetString()
-//            ?.children?.firstOrNull()
-//            ?.asSequence()
-//            ?.children?.getOrNull(1)
-//            ?.asPrimitive()
-//            ?.decodeToInt()
-//
-//    //    TODO refactor
-//    fun isCA(): Boolean =
-//        tbsCertificate.extensions
-//            ?.firstOrNull { it.oid == ObjectIdentifier(KnownOIDs.basicConstraints.toString()) }
-//            ?.value
-//            ?.asEncapsulatingOctetString()
-//            ?.children?.firstOrNull()
-//            ?.asSequence()
-//            ?.children?.getOrNull(0)
-//            ?.asPrimitive()
-//            ?.decodeToBoolean()
-//            ?: false
-
     fun hasReplayingExtensions(): Boolean =
         tbsCertificate.extensions?.size != tbsCertificate.extensions?.distinctBy { it.oid }?.size
 
@@ -352,9 +334,6 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         tbsCertificate.extensions?.firstOrNull { it.oid == oid }
 
     fun checkValidity(date: Instant = Clock.System.now()) {
-        println("DATE:${date}")
-        println("NOTBEFORE:${tbsCertificate.validFrom.instant}")
-        println("NOTAFTER:${tbsCertificate.validUntil.instant}")
         if (date > tbsCertificate.validUntil.instant) {
             throw CertificateValidityException(
                 "certificate expired on " + tbsCertificate.validUntil.instant.toLocalDateTime(
