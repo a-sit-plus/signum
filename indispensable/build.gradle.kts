@@ -74,7 +74,12 @@ kotlin {
             }
         }
 
-        jvmTest.dependencies { implementation(libs.warden) }
+        jvmTest.dependencies {
+            implementation(libs.warden)
+            implementation(ktor("client-cio"))
+            implementation(ktor("client-content-negotiation"))
+            implementation(ktor("serialization-kotlinx-json"))
+        }
     }
 }
 

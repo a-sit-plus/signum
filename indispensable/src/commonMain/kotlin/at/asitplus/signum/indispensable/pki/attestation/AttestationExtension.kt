@@ -32,8 +32,8 @@ class AttestationKeyDescription(
 ) : Asn1Encodable<Asn1Sequence>, Identifiable {
 
     /**
-        alias for [keyMintVersion] for backwards compatibility for attestationVersion<=4
-    */
+    alias for [keyMintVersion] for backwards compatibility for attestationVersion<=4
+     */
     val keymasterVersion: Int get() = keyMintVersion
 
     /**
@@ -143,8 +143,8 @@ val X509Certificate.androidAttestationExtension: AttestationKeyDescription?
     get() = tbsCertificate.extensions?.firstOrNull { it.oid == AttestationKeyDescription.oid }
         ?.let {
             catchingUnwrapped {
-                AttestationKeyDescription.decodeFromTlv(
-                    it.value.asEncapsulatingOctetString().children.first().asSequence()
-                )
+                val children = it.value.asEncapsulatingOctetString().children
+                require(children.size == 1)
+                AttestationKeyDescription.decodeFromTlv(children.first().asSequence())
             }.getOrNull()
         }
