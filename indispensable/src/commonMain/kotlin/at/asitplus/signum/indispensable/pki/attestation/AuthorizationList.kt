@@ -130,7 +130,16 @@ class AuthorizationList(
         add(rootOfTrust)
         add(osVersion)
         add(osPatchLevel)
-        add(attestationApplicationId)
+
+        // attestationApplicationId is encoded as OctetString
+        attestationApplicationId?.let {
+            +Asn1.ExplicitlyTagged(attestationApplicationId.tagged.explicitTag) {
+                +Asn1.OctetStringEncapsulating {
+                    +attestationApplicationId.encodeToTlv()
+                }
+            }
+        }
+
         add(attestationIdBrand)
         add(attestationIdDevice)
         add(attestationIdProduct)
@@ -175,18 +184,21 @@ class AuthorizationList(
             val origin: Origin? = Origin.decode(src)
             val rollbackResistent: RollbackResistent? = RollbackResistent.decodeNull(src)
             val rootOfTrust: RootOfTrust? =
-                src[RootOfTrust.explicitTag]?.let { catchingUnwrapped { RootOfTrust.decodeFromTlv(it.asSequence()) }.getOrNull() }
+                src[RootOfTrust.explicitTag]?.let {
+                    catchingUnwrapped {
+                        RootOfTrust.decodeFromTlv(it.asSequence())
+                    }.getOrNull()
+                }
             val osVersion: OsVersion? = OsVersion.decode(src)
             val osPatchLevel: OsPatchLevel? = OsPatchLevel.decode(src)
             val attestationApplicationId: AttestationApplicationId? =
                 src[AttestationApplicationId.explicitTag]?.let {
                     catchingUnwrapped {
-                        AttestationApplicationId.decodeFromTlv(
-                            it.asSequence()
-                        )
+                        val children = it.asEncapsulatingOctetString().children
+                        require(children.size == 1)
+                        AttestationApplicationId.decodeFromTlv(children.first().asSequence())
                     }.getOrNull()
                 }
-
             val attestationIdBrand: AttestationId.Brand? = AttestationId.Brand.decode(src)
             val attestationIdDevice: AttestationId.Device? = AttestationId.Device.decode(src)
             val attestationIdProduct: AttestationId.Product? = AttestationId.Product.decode(src)
@@ -854,35 +866,26 @@ class AuthorizationList(
         val signatureDigests: List<ByteArray>,
         private val encodeSorted: Boolean
     ) : Asn1Encodable<Asn1Sequence>, Tagged.WithTag<Asn1Sequence> {
-        constructor(packageInfos: Set<AttestationPackageInfo>, signatureDigests: Set<ByteArray>)
-                : this(packageInfos.toList(), signatureDigests.toList(), encodeSorted = true)
-
         companion object Tag : Tagged(709uL), Asn1Decodable<Asn1Sequence, AttestationApplicationId> {
             override fun doDecode(src: Asn1Sequence) = AttestationApplicationId(
                 src.nextChild().asSet().children.map { AttestationPackageInfo.decodeFromTlv(it.asSequence()) },
                 src.nextChild().asSet().children.map { it.asOctetString().content },
                 encodeSorted = false
-                // TODO: check for duplicates and warnings, eigentlich für alle sets
             )
         }
+
+        constructor(packageInfos: Set<AttestationPackageInfo>, signatureDigests: Set<ByteArray>)
+                : this(packageInfos.toList(), signatureDigests.toList(), encodeSorted = true)
 
         override val tagged get() = Tag
 
         override fun encodeToTlv() = Asn1.Sequence {
-            +Asn1.OctetStringEncapsulating {
-                +Asn1.Sequence {
-                    // TODO: Asn1NonSet
-                    if(encodeSorted)
-                    {
-                        +Asn1.SetOf { packageInfos.forEach { +it } }
-                        +Asn1.SetOf { signatureDigests.forEach { +Asn1.OctetString(it) } }
-                    }
-                    else
-                    {
-                        +Asn1Set.fromPresorted(packageInfos.map { it.encodeToTlv() })
-                        +Asn1Set.fromPresorted(signatureDigests.map { it.encodeToAsn1OctetStringPrimitive() })
-                    }
-                }
+            if (encodeSorted) {
+                +Asn1.SetOf { packageInfos.forEach { +it } }
+                +Asn1.SetOf { signatureDigests.forEach { +Asn1.OctetString(it) } }
+            } else {
+                +Asn1Set.fromPresorted(packageInfos.map { it.encodeToTlv() })
+                +Asn1Set.fromPresorted(signatureDigests.map { it.encodeToAsn1OctetStringPrimitive() })
             }
         }
 
