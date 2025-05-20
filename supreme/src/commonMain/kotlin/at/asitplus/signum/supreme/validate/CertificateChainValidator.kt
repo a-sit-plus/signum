@@ -148,5 +148,9 @@ private fun verifyIntermediateKeyUsage(currCert: X509Certificate) {
     if (!currCert.tbsCertificate.keyUsage.contains(X509KeyUsage.KEY_CERT_SIGN)) {
         throw KeyUsageException("Digital signature key usage extension not present at the intermediate cert!")
     }
+
+    if (!currCert.tbsCertificate.keyUsage.contains(X509KeyUsage.CRL_SIGN)) {
+        throw KeyUsageException("CRL signature key usage extension not present at the intermediate cert!")
+    }
 }
 
