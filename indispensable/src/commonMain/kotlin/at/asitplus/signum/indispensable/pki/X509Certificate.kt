@@ -99,21 +99,16 @@ constructor(
         Asn1.ExplicitlyTagged(Tags.VERSION.tagValue) { +Asn1.Int(value) }
 
     val keyUsage: Set<X509KeyUsage>
-        get() {
-            val ext = extensions?.find { it.oid == KnownOIDs.keyUsage } ?: return emptySet()
-
-            if (!ext.critical) {
-                throw CertificateExtensionException("KeyUsage extension must be marked as critical.")
-            }
-
-            return ext.value
-                .asEncapsulatingOctetString()
-                .children
-                .getOrNull(0)
-                ?.let { Asn1BitString.decodeFromTlv(it as Asn1Primitive) }
-                ?.let(X509KeyUsage::doDecode)
-                ?: emptySet()
-        }
+        get() = extensions
+            ?.find { it.oid == KnownOIDs.keyUsage }
+            ?.value
+            ?.asEncapsulatingOctetString()
+            ?.children
+            ?.getOrNull(0)
+            ?.let { it as? Asn1Primitive }
+            ?.let(Asn1BitString::decodeFromTlv)
+            ?.let(X509KeyUsage::doDecode)
+            ?: emptySet()
 
 
     @Throws(Asn1Exception::class)
