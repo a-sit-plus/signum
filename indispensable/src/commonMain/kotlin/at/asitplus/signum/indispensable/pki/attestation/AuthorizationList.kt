@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.pki.attestation
 
+import at.asitplus.KmmResult
+import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.*
@@ -51,169 +53,271 @@ import kotlin.time.Duration.Companion.seconds
  * https://android.googlesource.com/platform/frameworks/base/+blame/45ff13e/core/java/android/security/keymaster/KeymasterDefs.java
  */
 class AuthorizationList(
-    val purpose: Set<KeyPurpose>? = null,
-    val algorithm: Algorithm? = null,
-    val keySize: KeySize? = null,
-    val digest: Set<Digest>? = null,
-    val padding: Set<Padding>? = null,
-    val ecCurve: ECCurve? = null,
-    val rsaPublicExponent: RsaPublicExponent? = null,
-    val mgfDigest: Set<MgfDigest>? = null,
-    val rollbackResistance: RollbackResistance? = null,
-    val earlyBootOnly: EarlyBootOnly? = null,
-    val activeDateTime: ActiveDateTime? = null,
-    val originationExpireDateTime: OriginationExpireDateTime? = null,
-    val usageExpireDateTime: UsageExpireDateTime? = null,
-    val usageCountLimit: UsageCountLimit? = null,
-    val noAuthRequired: NoAuthRequired? = null,
-    val userAuthType: UserAuthType? = null,
-    val authTimeout: AuthTimeout? = null,
-    val allowWhileOnBody: AllowWhileOnBody? = null,
-    val trustedUserPresenceRequired: TrustedUserPresenceRequired? = null,
-    val trustedConfirmationRequired: TrustedConfirmationRequired? = null,
-    val unlockedDeviceRequired: UnlockedDeviceRequired? = null,
-    val allApplications: AllApplications? = null, // only up to version v4 // TODO add opt-in annotation?
-    val creationDateTime: CreationDateTime? = null,
-    val origin: Origin? = null,
-    val rollbackResistent: RollbackResistent? = null, // only up to version v2, "resistance" afterwards // TODO add opt-in annotation?
-    val rootOfTrust: RootOfTrust? = null,
-    val osVersion: OsVersion? = null,
-    val osPatchLevel: OsPatchLevel? = null,
-    val attestationApplicationId: AttestationApplicationId? = null,
-    val attestationIdBrand: AttestationId.Brand? = null,
-    val attestationIdDevice: AttestationId.Device? = null,
-    val attestationIdProduct: AttestationId.Product? = null,
-    val attestationIdSerial: AttestationId.Serial? = null,
-    val attestationIdImei: AttestationId.Imei? = null,
-    val attestationIdMeid: AttestationId.Meid? = null,
-    val attestationIdManufacturer: AttestationId.Manufacturer? = null,
-    val attestationIdModel: AttestationId.Model? = null,
-    val vendorPatchLevel: PatchLevel.Vendor? = null,
-    val bootPatchLevel: PatchLevel.Boot? = null,
-    val deviceUniqueAttestation: DeviceUniqueAttestation? = null,
-    val attestationIdSecondImei: AttestationId.SecondImei? = null,
-    val moduleHash: ModuleHash? = null,
+    // @formatter:off
+    val purpose                     : Set<KmmResult<KeyPurpose>>?             = null,
+    val algorithm                   : KmmResult<Algorithm>?                   = null,
+    val keySize                     : KmmResult<KeySize>?                     = null,
+    val digest                      : Set<KmmResult<Digest>>?                 = null,
+    val padding                     : Set<KmmResult<Padding>>?                = null,
+    val ecCurve                     : KmmResult<ECCurve>?                     = null,
+    val rsaPublicExponent           : KmmResult<RsaPublicExponent>?           = null,
+    val mgfDigest                   : Set<KmmResult<MgfDigest>>?              = null,
+    val rollbackResistance          : KmmResult<RollbackResistance>?          = null,
+    val earlyBootOnly               : KmmResult<EarlyBootOnly>?               = null,
+    val activeDateTime              : KmmResult<ActiveDateTime>?              = null,
+    val originationExpireDateTime   : KmmResult<OriginationExpireDateTime>?   = null,
+    val usageExpireDateTime         : KmmResult<UsageExpireDateTime>?         = null,
+    val usageCountLimit             : KmmResult<UsageCountLimit>?             = null,
+    val noAuthRequired              : KmmResult<NoAuthRequired>?              = null,
+    val userAuthType                : KmmResult<UserAuthType>?                = null,
+    val authTimeout                 : KmmResult<AuthTimeout>?                 = null,
+    val allowWhileOnBody            : KmmResult<AllowWhileOnBody>?            = null,
+    val trustedUserPresenceRequired : KmmResult<TrustedUserPresenceRequired>? = null,
+    val trustedConfirmationRequired : KmmResult<TrustedConfirmationRequired>? = null,
+    val unlockedDeviceRequired      : KmmResult<UnlockedDeviceRequired>?      = null,
+    val allApplications             : KmmResult<AllApplications>?             = null, // only up to version v4 // TODO add opt-in annotation?
+    val creationDateTime            : KmmResult<CreationDateTime>?            = null,
+    val origin                      : KmmResult<Origin>?                      = null,
+    val rollbackResistent           : KmmResult<RollbackResistent>?           = null, // only up to version v2, "resistance" afterwards // TODO add opt-in annotation?
+    val rootOfTrust                 : KmmResult<RootOfTrust>?                 = null,
+    val osVersion                   : KmmResult<OsVersion>?                   = null,
+    val osPatchLevel                : KmmResult<OsPatchLevel>?                = null,
+    val attestationApplicationId    : KmmResult<AttestationApplicationId>?    = null,
+    val attestationIdBrand          : KmmResult<AttestationId.Brand>?         = null,
+    val attestationIdDevice         : KmmResult<AttestationId.Device>?        = null,
+    val attestationIdProduct        : KmmResult<AttestationId.Product>?       = null,
+    val attestationIdSerial         : KmmResult<AttestationId.Serial>?        = null,
+    val attestationIdImei           : KmmResult<AttestationId.Imei>?          = null,
+    val attestationIdMeid           : KmmResult<AttestationId.Meid>?          = null,
+    val attestationIdManufacturer   : KmmResult<AttestationId.Manufacturer>?  = null,
+    val attestationIdModel          : KmmResult<AttestationId.Model>?         = null,
+    val vendorPatchLevel            : KmmResult<PatchLevel.Vendor>?           = null,
+    val bootPatchLevel              : KmmResult<PatchLevel.Boot>?             = null,
+    val deviceUniqueAttestation     : KmmResult<DeviceUniqueAttestation>?     = null,
+    val attestationIdSecondImei     : KmmResult<AttestationId.SecondImei>?    = null,
+    val moduleHash                  : KmmResult<ModuleHash>?                  = null,
+    // @formatter:on
 ) : Asn1Encodable<Asn1Sequence> {
+    constructor(
+        // @formatter:off
+        purpose                     : Set<KeyPurpose>?             = null,
+        algorithm                   : Algorithm?                   = null,
+        keySize                     : KeySize?                     = null,
+        digest                      : Set<Digest>?                 = null,
+        padding                     : Set<Padding>?                = null,
+        ecCurve                     : ECCurve?                     = null,
+        rsaPublicExponent           : RsaPublicExponent?           = null,
+        mgfDigest                   : Set<MgfDigest>?              = null,
+        rollbackResistance          : RollbackResistance?          = null,
+        earlyBootOnly               : EarlyBootOnly?               = null,
+        activeDateTime              : ActiveDateTime?              = null,
+        originationExpireDateTime   : OriginationExpireDateTime?   = null,
+        usageExpireDateTime         : UsageExpireDateTime?         = null,
+        usageCountLimit             : UsageCountLimit?             = null,
+        noAuthRequired              : NoAuthRequired?              = null,
+        userAuthType                : UserAuthType?                = null,
+        authTimeout                 : AuthTimeout?                 = null,
+        allowWhileOnBody            : AllowWhileOnBody?            = null,
+        trustedUserPresenceRequired : TrustedUserPresenceRequired? = null,
+        trustedConfirmationRequired : TrustedConfirmationRequired? = null,
+        unlockedDeviceRequired      : UnlockedDeviceRequired?      = null,
+        allApplications             : AllApplications?             = null,
+        creationDateTime            : CreationDateTime?            = null,
+        origin                      : Origin?                      = null,
+        rollbackResistent           : RollbackResistent?           = null,
+        rootOfTrust                 : RootOfTrust?                 = null,
+        osVersion                   : OsVersion?                   = null,
+        osPatchLevel                : OsPatchLevel?                = null,
+        attestationApplicationId    : AttestationApplicationId?    = null,
+        attestationIdBrand          : AttestationId.Brand?         = null,
+        attestationIdDevice         : AttestationId.Device?        = null,
+        attestationIdProduct        : AttestationId.Product?       = null,
+        attestationIdSerial         : AttestationId.Serial?        = null,
+        attestationIdImei           : AttestationId.Imei?          = null,
+        attestationIdMeid           : AttestationId.Meid?          = null,
+        attestationIdManufacturer   : AttestationId.Manufacturer?  = null,
+        attestationIdModel          : AttestationId.Model?         = null,
+        vendorPatchLevel            : PatchLevel.Vendor?           = null,
+        bootPatchLevel              : PatchLevel.Boot?             = null,
+        deviceUniqueAttestation     : DeviceUniqueAttestation?     = null,
+        attestationIdSecondImei     : AttestationId.SecondImei?    = null,
+        moduleHash                  : ModuleHash?                  = null,
+        // @formatter:on
+    ) : this(
+        // @formatter:off
+        purpose                     = purpose                    ?.map { KmmResult.success(it) }?.toSet(),
+        algorithm                   = algorithm                  ?.let { KmmResult.success(it) },
+        keySize                     = keySize                    ?.let { KmmResult.success(it) },
+        digest                      = digest                     ?.map { KmmResult.success(it) }?.toSet(),
+        padding                     = padding                    ?.map { KmmResult.success(it) }?.toSet(),
+        ecCurve                     = ecCurve                    ?.let { KmmResult.success(it) },
+        rsaPublicExponent           = rsaPublicExponent          ?.let { KmmResult.success(it) },
+        mgfDigest                   = mgfDigest                  ?.map { KmmResult.success(it) }?.toSet(),
+        rollbackResistance          = rollbackResistance         ?.let { KmmResult.success(it) },
+        earlyBootOnly               = earlyBootOnly              ?.let { KmmResult.success(it) },
+        activeDateTime              = activeDateTime             ?.let { KmmResult.success(it) },
+        originationExpireDateTime   = originationExpireDateTime  ?.let { KmmResult.success(it) },
+        usageExpireDateTime         = usageExpireDateTime        ?.let { KmmResult.success(it) },
+        usageCountLimit             = usageCountLimit            ?.let { KmmResult.success(it) },
+        noAuthRequired              = noAuthRequired             ?.let { KmmResult.success(it) },
+        userAuthType                = userAuthType               ?.let { KmmResult.success(it) },
+        authTimeout                 = authTimeout                ?.let { KmmResult.success(it) },
+        allowWhileOnBody            = allowWhileOnBody           ?.let { KmmResult.success(it) },
+        trustedUserPresenceRequired = trustedUserPresenceRequired?.let { KmmResult.success(it) },
+        trustedConfirmationRequired = trustedConfirmationRequired?.let { KmmResult.success(it) },
+        unlockedDeviceRequired      = unlockedDeviceRequired     ?.let { KmmResult.success(it) },
+        allApplications             = allApplications            ?.let { KmmResult.success(it) },
+        creationDateTime            = creationDateTime           ?.let { KmmResult.success(it) },
+        origin                      = origin                     ?.let { KmmResult.success(it) },
+        rollbackResistent           = rollbackResistent          ?.let { KmmResult.success(it) },
+        rootOfTrust                 = rootOfTrust                ?.let { KmmResult.success(it) },
+        osVersion                   = osVersion                  ?.let { KmmResult.success(it) },
+        osPatchLevel                = osPatchLevel               ?.let { KmmResult.success(it) },
+        attestationApplicationId    = attestationApplicationId   ?.let { KmmResult.success(it) },
+        attestationIdBrand          = attestationIdBrand         ?.let { KmmResult.success(it) },
+        attestationIdDevice         = attestationIdDevice        ?.let { KmmResult.success(it) },
+        attestationIdProduct        = attestationIdProduct       ?.let { KmmResult.success(it) },
+        attestationIdSerial         = attestationIdSerial        ?.let { KmmResult.success(it) },
+        attestationIdImei           = attestationIdImei          ?.let { KmmResult.success(it) },
+        attestationIdMeid           = attestationIdMeid          ?.let { KmmResult.success(it) },
+        attestationIdManufacturer   = attestationIdManufacturer  ?.let { KmmResult.success(it) },
+        attestationIdModel          = attestationIdModel         ?.let { KmmResult.success(it) },
+        vendorPatchLevel            = vendorPatchLevel           ?.let { KmmResult.success(it) },
+        bootPatchLevel              = bootPatchLevel             ?.let { KmmResult.success(it) },
+        deviceUniqueAttestation     = deviceUniqueAttestation    ?.let { KmmResult.success(it) },
+        attestationIdSecondImei     = attestationIdSecondImei    ?.let { KmmResult.success(it) },
+        moduleHash                  = moduleHash                 ?.let { KmmResult.success(it) },
+        // @formatter:on
+    )
 
     init {
         purpose?.let { require(it.isNotEmpty()) }
-        digest?.let { require(it.isNotEmpty()) }
+        digest ?.let { require(it.isNotEmpty()) }
         padding?.let { require(it.isNotEmpty()) }
+        // Manfred: wenn dann müsste mgfdigest auch nonempty sein (konsistent), aber diese checks sind nicht lenient
+
+
+        // TODO versioning, auch bei getter exception schmeissen wenn attribute nicht vorhanden
     }
 
     override fun encodeToTlv() = Asn1.Sequence {
-        add(purpose)
-        add(algorithm)
-        add(keySize)
-        add(digest)
-        add(padding)
-        add(ecCurve)
-        add(rsaPublicExponent)
-        add(mgfDigest)
-        add(rollbackResistance)
-        add(earlyBootOnly)
-        add(activeDateTime)
-        add(originationExpireDateTime)
-        add(usageExpireDateTime)
-        add(usageCountLimit)
-        add(noAuthRequired)
-        add(userAuthType)
-        add(authTimeout)
-        add(allowWhileOnBody)
-        add(trustedUserPresenceRequired)
-        add(trustedConfirmationRequired)
-        add(unlockedDeviceRequired)
-        add(allApplications)
-        add(creationDateTime)
-        add(origin)
-        add(rollbackResistent)
-        add(rootOfTrust)
-        add(osVersion)
-        add(osPatchLevel)
+        // @formatter:off
+        add(purpose?.mapNotNull{it.getOrNull()}?.toSet())
+        add(algorithm                  ?.getOrNull())
+        add(keySize                    ?.getOrNull())
+        add(digest?.mapNotNull{it.getOrNull()}?.toSet())
+        add(padding?.mapNotNull{it.getOrNull()}?.toSet())
+        add(ecCurve                    ?.getOrNull())
+        add(rsaPublicExponent          ?.getOrNull())
+        add(mgfDigest?.mapNotNull{it.getOrNull()}?.toSet())
+        add(rollbackResistance         ?.getOrNull())
+        add(earlyBootOnly              ?.getOrNull())
+        add(activeDateTime             ?.getOrNull())
+        add(originationExpireDateTime  ?.getOrNull())
+        add(usageExpireDateTime        ?.getOrNull())
+        add(usageCountLimit            ?.getOrNull())
+        add(noAuthRequired             ?.getOrNull())
+        add(userAuthType               ?.getOrNull())
+        add(authTimeout                ?.getOrNull())
+        add(allowWhileOnBody           ?.getOrNull())
+        add(trustedUserPresenceRequired?.getOrNull())
+        add(trustedConfirmationRequired?.getOrNull())
+        add(unlockedDeviceRequired     ?.getOrNull())
+        add(allApplications            ?.getOrNull())
+        add(creationDateTime           ?.getOrNull())
+        add(origin                     ?.getOrNull())
+        add(rollbackResistent          ?.getOrNull())
+        add(rootOfTrust                ?.getOrNull())
+        add(osVersion                  ?.getOrNull())
+        add(osPatchLevel               ?.getOrNull())
+        // @formatter:on
 
         // attestationApplicationId is encoded as OctetString
-        attestationApplicationId?.let {
-            +Asn1.ExplicitlyTagged(attestationApplicationId.tagged.explicitTag) {
+        val appId = attestationApplicationId?.getOrNull()
+        appId?.let {
+            +Asn1.ExplicitlyTagged(appId.tagged.explicitTag) {
                 +Asn1.OctetStringEncapsulating {
-                    +attestationApplicationId.encodeToTlv()
+                    +appId.encodeToTlv()
                 }
             }
         }
 
-        add(attestationIdBrand)
-        add(attestationIdDevice)
-        add(attestationIdProduct)
-        add(attestationIdSerial)
-        add(attestationIdImei)
-        add(attestationIdMeid)
-        add(attestationIdManufacturer)
-        add(attestationIdModel)
-        add(vendorPatchLevel)
-        add(bootPatchLevel)
-        add(deviceUniqueAttestation)
-        add(attestationIdSecondImei)
-        add(moduleHash)
+        // @formatter:off
+        add(attestationIdBrand       ?.getOrNull())
+        add(attestationIdDevice      ?.getOrNull())
+        add(attestationIdProduct     ?.getOrNull())
+        add(attestationIdSerial      ?.getOrNull())
+        add(attestationIdImei        ?.getOrNull())
+        add(attestationIdMeid        ?.getOrNull())
+        add(attestationIdManufacturer?.getOrNull())
+        add(attestationIdModel       ?.getOrNull())
+        add(vendorPatchLevel         ?.getOrNull())
+        add(bootPatchLevel           ?.getOrNull())
+        add(deviceUniqueAttestation  ?.getOrNull())
+        add(attestationIdSecondImei  ?.getOrNull())
+        add(moduleHash               ?.getOrNull())
+        // @formatter:on
     }
 
     companion object : Asn1Decodable<Asn1Sequence, AuthorizationList> {
         override fun doDecode(src: Asn1Sequence): AuthorizationList {
-            val purpose: Set<KeyPurpose>? = KeyPurpose.decodeSet(src)
-            val algorithm: Algorithm? = Algorithm.decode(src)
-            val keySize: KeySize? = KeySize.decode(src)
-            val digest: Set<Digest>? = Digest.decodeSet(src)
-            val padding: Set<Padding>? = Padding.decodeSet(src)
-            val ecCurve: ECCurve? = ECCurve.decode(src)
-            val rsaPublicExponent: RsaPublicExponent? = RsaPublicExponent.decode(src)
-            val mgfDigest: Set<MgfDigest>? = MgfDigest.decodeSet(src)
-            val rollbackResistance = RollbackResistance.decodeNull(src)
-            val earlyBootOnly = EarlyBootOnly.decodeNull(src)
-            val activeDateTime: ActiveDateTime? = ActiveDateTime.decode(src)
-            val originationExpireDateTime: OriginationExpireDateTime? =
-                OriginationExpireDateTime.decode(src)
-            val usageExpireDateTime: UsageExpireDateTime? = UsageExpireDateTime.decode(src)
-            val usageCountLimit: UsageCountLimit? = UsageCountLimit.decode(src)
-            val noAuthRequired = NoAuthRequired.decodeNull(src)
-            val userAuthType: UserAuthType? = UserAuthType.decode(src)
-            val authTimeout: AuthTimeout? = AuthTimeout.decode(src)
-            val allowWhileOnBody = AllowWhileOnBody.decodeNull(src)
-            val trustedUserPresenceRequired = TrustedUserPresenceRequired.decodeNull(src)
-            val trustedConfirmationRequired = TrustedConfirmationRequired.decodeNull(src)
-            val unlockedDeviceRequired = UnlockedDeviceRequired.decodeNull(src)
-            val allApplications = AllApplications.decodeNull(src)
-            val creationDateTime: CreationDateTime? = CreationDateTime.decode(src)
-            val origin: Origin? = Origin.decode(src)
-            val rollbackResistent: RollbackResistent? = RollbackResistent.decodeNull(src)
-            val rootOfTrust: RootOfTrust? =
-                src[RootOfTrust.explicitTag]?.let {
-                    catchingUnwrapped {
-                        RootOfTrust.decodeFromTlv(it.asSequence())
-                    }.getOrNull()
-                }
-            val osVersion: OsVersion? = OsVersion.decode(src)
-            val osPatchLevel: OsPatchLevel? = OsPatchLevel.decode(src)
-            val attestationApplicationId: AttestationApplicationId? =
+            // @formatter:off
+            val purpose                    : Set<KmmResult<KeyPurpose>>?             = KeyPurpose.decodeSet(src)
+            val algorithm                  : KmmResult<Algorithm>?                   = Algorithm.decode(src)
+            val keySize                    : KmmResult<KeySize>?                     = KeySize.decode(src)
+            val digest                     : Set<KmmResult<Digest>>?                 = Digest.decodeSet(src)
+            val padding                    : Set<KmmResult<Padding>>?                = Padding.decodeSet(src)
+            val ecCurve                    : KmmResult<ECCurve>?                     = ECCurve.decode(src)
+            val rsaPublicExponent          : KmmResult<RsaPublicExponent>?           = RsaPublicExponent.decode(src)
+            val mgfDigest                  : Set<KmmResult<MgfDigest>>?              = MgfDigest.decodeSet(src)
+            val rollbackResistance         : KmmResult<RollbackResistance>?          = RollbackResistance.decodeNull(src)
+            val earlyBootOnly              : KmmResult<EarlyBootOnly>?               = EarlyBootOnly.decodeNull(src)
+            val activeDateTime             : KmmResult<ActiveDateTime>?              = ActiveDateTime.decode(src)
+            val originationExpireDateTime  : KmmResult<OriginationExpireDateTime>?   = OriginationExpireDateTime.decode(src)
+            val usageExpireDateTime        : KmmResult<UsageExpireDateTime>?         = UsageExpireDateTime.decode(src)
+            val usageCountLimit            : KmmResult<UsageCountLimit>?             = UsageCountLimit.decode(src)
+            val noAuthRequired             : KmmResult<NoAuthRequired>?              = NoAuthRequired.decodeNull(src)
+            val userAuthType               : KmmResult<UserAuthType>?                = UserAuthType.decode(src)
+            val authTimeout                : KmmResult<AuthTimeout>?                 = AuthTimeout.decode(src)
+            val allowWhileOnBody           : KmmResult<AllowWhileOnBody>?            = AllowWhileOnBody.decodeNull(src)
+            val trustedUserPresenceRequired: KmmResult<TrustedUserPresenceRequired>? = TrustedUserPresenceRequired.decodeNull(src)
+            val trustedConfirmationRequired: KmmResult<TrustedConfirmationRequired>? = TrustedConfirmationRequired.decodeNull(src)
+            val unlockedDeviceRequired     : KmmResult<UnlockedDeviceRequired>?      = UnlockedDeviceRequired.decodeNull(src)
+            val allApplications            : KmmResult<AllApplications>?             = AllApplications.decodeNull(src)
+            val creationDateTime           : KmmResult<CreationDateTime>?            = CreationDateTime.decode(src)
+            val origin                     : KmmResult<Origin>?                      = Origin.decode(src)
+            val rollbackResistent          : KmmResult<RollbackResistent>?           = RollbackResistent.decodeNull(src)
+            // @formatter:on
+
+            val rootOfTrust: KmmResult<RootOfTrust>? =
+                src[RootOfTrust.explicitTag]?.let { RootOfTrust.decodeFromTlvSafe(it.asSequence()) }
+            val osVersion: KmmResult<OsVersion>? = OsVersion.decode(src)
+            val osPatchLevel: KmmResult<OsPatchLevel>? = OsPatchLevel.decode(src)
+
+            val attestationApplicationId: KmmResult<AttestationApplicationId>? =
                 src[AttestationApplicationId.explicitTag]?.let {
-                    catchingUnwrapped {
+                    catching {
                         val children = it.asEncapsulatingOctetString().children
-                        require(children.size == 1)
+                        require(children.size == 1) // TODO: check again, and also check others TLV entries so that at most 1 is given, should we give a warning? not lenient
                         AttestationApplicationId.decodeFromTlv(children.first().asSequence())
-                    }.getOrNull()
+                    }
                 }
-            val attestationIdBrand: AttestationId.Brand? = AttestationId.Brand.decode(src)
-            val attestationIdDevice: AttestationId.Device? = AttestationId.Device.decode(src)
-            val attestationIdProduct: AttestationId.Product? = AttestationId.Product.decode(src)
-            val attestationIdSerial: AttestationId.Serial? = AttestationId.Serial.decode(src)
-            val attestationIdImei: AttestationId.Imei? = AttestationId.Imei.decode(src)
-            val attestationIdMeid: AttestationId.Meid? = AttestationId.Meid.decode(src)
-            val attestationIdManufacturer: AttestationId.Manufacturer? =
-                AttestationId.Manufacturer.decode(src)
-            val attestationIdModel: AttestationId.Model? = AttestationId.Model.decode(src)
-            val vendorPatchLevel: PatchLevel.Vendor? = PatchLevel.Vendor.decode(src)
-            val bootPatchLevel: PatchLevel.Boot? = PatchLevel.Boot.decode(src)
-            val deviceUniqueAttestation = DeviceUniqueAttestation.decodeNull(src)
-            val attestationIdSecondImei: AttestationId.SecondImei? =
-                AttestationId.SecondImei.decode(src)
-            val moduleHash: ModuleHash? = ModuleHash.decode(src)
+
+            // @formatter:off
+            val attestationIdBrand       : KmmResult<AttestationId.Brand>?          = AttestationId.Brand.decode(src)
+            val attestationIdDevice      : KmmResult<AttestationId.Device>?         = AttestationId.Device.decode(src)
+            val attestationIdProduct     : KmmResult<AttestationId.Product>?        = AttestationId.Product.decode(src)
+            val attestationIdSerial      : KmmResult<AttestationId.Serial>?         = AttestationId.Serial.decode(src)
+            val attestationIdImei        : KmmResult<AttestationId.Imei>?           = AttestationId.Imei.decode(src)
+            val attestationIdMeid        : KmmResult<AttestationId.Meid>?           = AttestationId.Meid.decode(src)
+            val attestationIdManufacturer: KmmResult<AttestationId.Manufacturer>?   = AttestationId.Manufacturer.decode(src)
+            val attestationIdModel       : KmmResult<AttestationId.Model>?          = AttestationId.Model.decode(src)
+            val vendorPatchLevel         : KmmResult<PatchLevel.Vendor>?            = PatchLevel.Vendor.decode(src)
+            val bootPatchLevel           : KmmResult<PatchLevel.Boot>?              = PatchLevel.Boot.decode(src)
+            val deviceUniqueAttestation  : KmmResult<DeviceUniqueAttestation>?      = DeviceUniqueAttestation.decodeNull(src)
+            val attestationIdSecondImei  : KmmResult<AttestationId.SecondImei>?     = AttestationId.SecondImei.decode(src)
+            val moduleHash               : KmmResult<ModuleHash>?                   = ModuleHash.decode(src)
+            // @formatter:on
 
             return AuthorizationList(
                 purpose,
@@ -259,46 +363,48 @@ class AuthorizationList(
                 attestationIdSecondImei,
                 moduleHash
             )
-
         }
 
-        private inline fun <reified T : Tagged, reified D : Asn1Encodable<Asn1Element>> T.decode(src: Asn1Sequence): D? =
+
+        // TODO: check decode functions once more
+        private inline fun <reified T : Tagged, reified D : Asn1Encodable<Asn1Element>> T.decode(src: Asn1Sequence): KmmResult<D>? =
             src[explicitTag]?.let {
                 @Suppress("UNCHECKED_CAST")
-                (this as Asn1Decodable<Asn1Element, D>).decodeFromTlvOrNull(src = it)
+                (this as Asn1Decodable<Asn1Element, D>).decodeFromTlvSafe(src = it)
             }
 
         private inline fun <reified T : Tagged, reified D : Asn1Encodable<Asn1Element>> T.decodeSet(
             src: Asn1Sequence
-        ): Set<D>? = src[explicitTag]?.let {
+        ): Set<KmmResult<D>>? = src[explicitTag]?.let {
             @Suppress("UNCHECKED_CAST")
             (it as Asn1Set).children.mapNotNull {
-                (this as Asn1Decodable<Asn1Element, D>).decodeFromTlvOrNull(
+                (this as Asn1Decodable<Asn1Element, D>).decodeFromTlvSafe(
                     it.asPrimitive()
                 )
-            }
-        }?.toSet()?.let { if (it.isEmpty()) null else it }
+            }.toSet().let { if (it.isEmpty()) null else it } // TODO isEmpty -> null? << do we really want null instead of empty sets?
+        }
 
         private inline fun <reified T : Tagged, reified D : Asn1Encodable<Asn1Element>> T.decodeSequence(
             src: Asn1Sequence
-        ): List<D>? = src[explicitTag]?.let {
+        ): List<KmmResult<D>>? = src[explicitTag]?.let {
             @Suppress("UNCHECKED_CAST")
             (it as Asn1Sequence).children.mapNotNull {
-                (this as Asn1Decodable<Asn1Element, D>).decodeFromTlvOrNull(
+                (this as Asn1Decodable<Asn1Element, D>).decodeFromTlvSafe(
                     it.asPrimitive()
                 )
-            }
-        }?.toList()?.let { if (it.isEmpty()) null else it }
+            }.toList().let { if (it.isEmpty()) null else it }
+        }
 
         private operator fun Asn1Sequence.get(tag: ULong): Asn1Element? {
             val asn1Tag = Asn1.ExplicitTag(tag)
             return ((children.firstOrNull { (it as Asn1ExplicitlyTagged).tag == asn1Tag } as Asn1ExplicitlyTagged?)?.children)?.singleOrNull
         }
 
-        private inline fun <reified T : Tagged> T.decodeNull(src: Asn1Sequence): T? =
-            if (src.hasNull(explicitTag)) this
-            else null
+        private inline fun <reified T : Tagged> T.decodeNull_(src: Asn1Sequence): T? =
+            if (src.hasNull(explicitTag)) this else null
 
+        private inline fun <reified T : Tagged> T.decodeNull(src: Asn1Sequence): KmmResult<T>? =
+            if (src.hasNull(explicitTag)) KmmResult.success(this) else null
 
         private fun Asn1Sequence.hasNull(tag: ULong): Boolean {
             val asn1Tag = Asn1.ExplicitTag(tag)
@@ -310,7 +416,6 @@ class AuthorizationList(
         }
 
         private val List<Asn1Element>.singleOrNull: Asn1Element? get() = if (size == 1) first() else null
-
     }
 
     private fun Asn1TreeBuilder.add(element: Set<Tagged.WithTag<*>>?) {

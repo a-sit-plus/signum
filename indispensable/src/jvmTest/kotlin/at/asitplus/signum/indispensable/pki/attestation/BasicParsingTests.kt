@@ -294,130 +294,92 @@ class BasicParsingTests : FreeSpec({
 })
 
 fun AuthorizationList.compareWith(sAuthList: at.asitplus.signum.indispensable.pki.attestation.AuthorizationList) {
-    this.algorithm().getOrNull()?.let { it.ordinal shouldBe sAuthList.algorithm?.ordinal }
-        ?: sAuthList.algorithm.shouldBeNull()
-    this.keySize().getOrNull()?.let { it shouldBe sAuthList.keySize!!.intValue.toBigInteger().intValue(true) }
-        ?: sAuthList.keySize.shouldBeNull()
-    this.digest()?.let {
-        if (it.isNotEmpty()) {
-            it.forEach { value -> sAuthList.digest!!.find { it.ordinal == value.ordinal } }
-        } else sAuthList.digest.shouldBeNull()
-    } ?: sAuthList.digest.shouldBeNull()
-
-    this.activeDateTime().getOrNull()
-        ?.let { it.toEpochMilli() shouldBe sAuthList.activeDateTime!!.intValue.toBigInteger().longValue(true) }
-        ?: sAuthList.activeDateTime.shouldBeNull()
-
-    if (this.allowWhileOnBody()) sAuthList.allowWhileOnBody.shouldNotBeNull() else sAuthList.allowWhileOnBody.shouldBeNull()
-
-    val sAppId = sAuthList.attestationApplicationId
-    val gAppId = this.attestationApplicationId().getOrNull()
-
-    if (gAppId == null) {
-        sAppId.shouldBeNull()
-    } else {
-        sAppId.shouldNotBeNull()
-
-        gAppId.packageInfos().zip(sAppId.packageInfos).forEach { (gInfo, sInfo) ->
-            gInfo.packageName() shouldBe sInfo.packageName
-            gInfo.version().toUInt() shouldBe sInfo.version
-        }
-
-        gAppId.signatureDigests().zip(sAppId.signatureDigests).forEach { (gInfo, sInfo) ->
-            gInfo.toByteArray() shouldBe sInfo
-        }
-    }
-
-    this.attestationIdBrand().getOrNull()?.toByteArray()
-        ?.contentEquals(sAuthList.attestationIdBrand!!.stringValue.toByteArray())
-        ?: sAuthList.attestationIdBrand.shouldBeNull()
-
-    this.attestationIdImei().getOrNull()?.toByteArray()
-        ?.contentEquals(sAuthList.attestationIdImei!!.stringValue.toByteArray())
-        ?: sAuthList.attestationIdImei.shouldBeNull()
-
-    this.attestationIdSecondImei().getOrNull()?.toByteArray()
-        ?.contentEquals(sAuthList.attestationIdSecondImei!!.stringValue.toByteArray())
-        ?: sAuthList.attestationIdSecondImei.shouldBeNull()
-
-    this.attestationIdSerial().getOrNull()?.toByteArray()
-        ?.contentEquals(sAuthList.attestationIdSerial!!.stringValue.toByteArray())
-        ?: sAuthList.attestationIdSerial.shouldBeNull()
-
-    this.attestationIdMeid().getOrNull()?.toByteArray()
-        ?.contentEquals(sAuthList.attestationIdMeid!!.stringValue.toByteArray())
-        ?: sAuthList.attestationIdMeid.shouldBeNull()
-
-    this.attestationIdDevice().getOrNull()?.toByteArray()
-        ?.contentEquals(sAuthList.attestationIdDevice!!.stringValue.toByteArray())
-        ?: sAuthList.attestationIdDevice.shouldBeNull()
-
-    this.attestationIdManufacturer().getOrNull()?.toByteArray()
-        ?.contentEquals(sAuthList.attestationIdManufacturer!!.stringValue.toByteArray())
-        ?: sAuthList.attestationIdManufacturer.shouldBeNull()
-
-    this.attestationIdModel().getOrNull()?.toByteArray()
-        ?.contentEquals(sAuthList.attestationIdModel!!.stringValue.toByteArray())
-        ?: sAuthList.attestationIdModel.shouldBeNull()
-
-    this.attestationIdProduct().getOrNull()?.toByteArray()
-        ?.contentEquals(sAuthList.attestationIdProduct!!.stringValue.toByteArray())
-        ?: sAuthList.attestationIdProduct.shouldBeNull()
-
 
     // Purpose comparison
-    this.purpose()?.let {
-        if (it.isNotEmpty()) {
-            sAuthList.purpose.shouldNotBeNull()
-            it.forEach { value -> sAuthList.purpose!!.find { it.ordinal == value.ordinal } }
-        } else sAuthList.purpose.shouldBeNull()
-    } ?: sAuthList.purpose.shouldBeNull()
+    val gPurposes = if (this.purpose().isNullOrEmpty()) setOf() else this.purpose().map { it.ordinal }
+    val sPurposes =
+        if (sAuthList.purpose.isNullOrEmpty()) setOf() else sAuthList.purpose.map { it.getOrNull()?.ordinal }
+    gPurposes.toSet() shouldBe sPurposes.toSet()
+    gPurposes shouldBe sPurposes // TODO: should order be the same or not???
+
+    // Algorithm comparison
+    this.algorithm().getOrNull()
+        ?.let { it.ordinal shouldBe sAuthList.algorithm!!.getOrThrow().ordinal }
+        ?: sAuthList.algorithm.shouldBeNull()
+
+    // KeySize comparison
+    this.keySize().getOrNull()
+        ?.let { it shouldBe sAuthList.keySize!!.getOrThrow().intValue.toBigInteger().intValue(true) }
+        ?: sAuthList.keySize.shouldBeNull()
+
+    // Digest comparison
+    val gDigests = if (this.digest().isNullOrEmpty()) setOf() else this.digest().map { it.ordinal }
+    val sDigests = if (sAuthList.digest.isNullOrEmpty()) setOf() else sAuthList.digest.map { it.getOrNull()?.ordinal }
+    gDigests.toSet() shouldBe sDigests.toSet()
+    gDigests shouldBe sDigests // TODO: should order be the same or not???
 
     // Padding comparison
-    this.padding()?.let {
-        if (it.isNotEmpty()) {
-            sAuthList.padding.shouldNotBeNull()
-            it.forEach { value -> sAuthList.padding!!.find { it.ordinal == value.ordinal } }
-        } else sAuthList.padding.shouldBeNull()
-    } ?: sAuthList.padding.shouldBeNull()
+    val gPaddings = if (this.purpose().isNullOrEmpty()) setOf() else this.padding().map { it.ordinal }
+    val sPaddings = if (sAuthList.padding.isNullOrEmpty()) setOf() else sAuthList.padding.map { it.getOrNull()?.ordinal }
+    gPaddings.toSet() shouldBe sPaddings.toSet()
+    gPaddings shouldBe sPaddings // TODO: should order be the same or not???
 
     // EC Curve comparison
-    this.ecCurve().getOrNull()?.let { it.ordinal shouldBe sAuthList.ecCurve?.ordinal }
+    this.ecCurve().getOrNull()
+        ?.let { it.ordinal shouldBe sAuthList.ecCurve!!.getOrThrow().ordinal }
         ?: sAuthList.ecCurve.shouldBeNull()
 
     // RSA Public Exponent comparison
     this.rsaPublicExponent().getOrNull()
-        ?.let { it shouldBe sAuthList.rsaPublicExponent!!.intValue.toBigInteger().longValue(true) }
+        ?.let { it shouldBe sAuthList.rsaPublicExponent!!.getOrThrow().intValue.toBigInteger().longValue(true) }
         ?: sAuthList.rsaPublicExponent.shouldBeNull()
 
+    // MGF Digest comparison
+    // TODO: not implemented in https://github.com/google/android-key-attestation/blob/master/src/main/java/com/google/android/attestation/AuthorizationList.java
 
     // RollbackResistance comparison
     if (this.rollbackResistance()) sAuthList.rollbackResistance.shouldNotBeNull() else sAuthList.rollbackResistance.shouldBeNull()
 
+    // EarlyBootOnly comparison
+    // TODO: not implemented in https://github.com/google/android-key-attestation/blob/master/src/main/java/com/google/android/attestation/AuthorizationList.java
+
+    // activeDateTime
+    this.activeDateTime().getOrNull()
+        ?.let {
+            it.toEpochMilli() shouldBe sAuthList.activeDateTime!!.getOrThrow().intValue.toBigInteger().longValue(true)
+        }
+        ?: sAuthList.activeDateTime.shouldBeNull()
 
     // OriginationExpireDateTime comparison
     this.originationExpireDateTime().getOrNull()
         ?.let {
-            it.toEpochMilli() shouldBe sAuthList.originationExpireDateTime!!.intValue.toBigInteger().longValue(true)
+            it.toEpochMilli() shouldBe sAuthList.originationExpireDateTime!!.getOrThrow().intValue.toBigInteger().longValue(true)
         }
         ?: sAuthList.originationExpireDateTime.shouldBeNull()
 
     // UsageExpireDateTime comparison
     this.usageExpireDateTime().getOrNull()
-        ?.let { it.toEpochMilli() shouldBe sAuthList.usageExpireDateTime!!.intValue.toBigInteger().longValue(true) }
+        ?.let { it.toEpochMilli() shouldBe sAuthList.usageExpireDateTime!!.getOrThrow().intValue.toBigInteger().longValue(true) }
         ?: sAuthList.usageExpireDateTime.shouldBeNull()
 
+    // usageCountLimit comparison
+    // TODO: not implemented in https://github.com/google/android-key-attestation/blob/master/src/main/java/com/google/android/attestation/AuthorizationList.java
 
     // NoAuthRequired comparison
-    if (this.noAuthRequired()) sAuthList.noAuthRequired.shouldNotBeNull() else sAuthList.noAuthRequired.shouldBeNull()
+    if (this.noAuthRequired()) sAuthList.noAuthRequired.shouldNotBeNull()
+    else sAuthList.noAuthRequired.shouldBeNull()
 
     // UserAuthType comparison
-    this.userAuthType().forEach { it.ordinal shouldBe sAuthList.userAuthType!!.intValue.toBigInteger().intValue(true) }
+    this.userAuthType().forEach { it.ordinal shouldBe sAuthList.userAuthType!!.getOrThrow().intValue.toBigInteger().intValue(true) }
 
     // AuthTimeout comparison
     this.authTimeout().getOrNull()
-        ?.let { it.seconds shouldBe sAuthList.authTimeout!!.intValue.toBigInteger().longValue(true) }
+        ?.let { it.seconds shouldBe sAuthList.authTimeout!!.getOrThrow().intValue.toBigInteger().longValue(true) }
         ?: sAuthList.authTimeout.shouldBeNull()
+
+    // allowWhileOnBody comparison
+    if (this.allowWhileOnBody()) sAuthList.allowWhileOnBody.shouldNotBeNull()
+    else sAuthList.allowWhileOnBody.shouldBeNull()
 
     // TrustedUserPresenceRequired comparison
     if (this.trustedUserPresenceRequired()) sAuthList.trustedUserPresenceRequired.shouldNotBeNull()
@@ -433,13 +395,12 @@ fun AuthorizationList.compareWith(sAuthList: at.asitplus.signum.indispensable.pk
 
     // CreationDateTime comparison
     this.creationDateTime().getOrNull()
-        ?.let { it.toEpochMilli() shouldBe sAuthList.creationDateTime!!.intValue.toBigInteger().longValue(true) }
+        ?.let { it.toEpochMilli() shouldBe sAuthList.creationDateTime!!.getOrThrow().intValue.toBigInteger().longValue(true) }
         ?: sAuthList.creationDateTime.shouldBeNull()
 
     // Origin comparison
     this.origin().getOrNull()?.let { it.ordinal shouldBe sAuthList.origin?.ordinal }
         ?: sAuthList.origin.shouldBeNull()
-
 
     // RootOfTrust comparison
     this.rootOfTrust().getOrNull()?.let { root ->
@@ -452,47 +413,103 @@ fun AuthorizationList.compareWith(sAuthList: at.asitplus.signum.indispensable.pk
         }
     } ?: sAuthList.rootOfTrust.shouldBeNull()
 
-// OsVersion comparison
+    // OsVersion comparison
     this.osVersion().getOrNull()
-        ?.let { osVersion ->
-            sAuthList.osVersion.shouldNotBeNull()
-            osVersion.toInt() shouldBe sAuthList.osVersion.intValue.toBigInteger().intValue(true)
+        ?.let { gOsVersion ->
+            val sOsVersion = sAuthList.osVersion.shouldNotBeNull().getOrThrow()
+            gOsVersion.toInt() shouldBe sOsVersion.intValue.toBigInteger().intValue(true)
         }
         ?: sAuthList.osVersion.shouldBeNull()
 
-// OsPatchLevel comparison
+    // OsPatchLevel comparison
     this.osPatchLevel().getOrNull()
-        ?.let { date ->
-            sAuthList.osPatchLevel.shouldNotBeNull()
+        ?.let { gOsPatchLevel ->
+            val sOsPatchLevel = sAuthList.osPatchLevel.shouldNotBeNull().getOrThrow()
             // Ensure proper numeric type conversion for comparison
-            date.year.toInt() shouldBe sAuthList.osPatchLevel.year.toInt()
-            date.monthValue.toInt() shouldBe sAuthList.osPatchLevel.month.ordinal + 1
+            gOsPatchLevel.year.toInt() shouldBe sOsPatchLevel.year.toInt()
+            gOsPatchLevel.monthValue.toInt() shouldBe sOsPatchLevel.month.ordinal + 1
         }
         ?: sAuthList.osPatchLevel.shouldBeNull()
 
-// VendorPatchLevel comparison
+    // AttestationApplicationId comparison
+    this.attestationApplicationId().getOrNull()
+        ?.let { gAppId ->
+            val sAppId = sAuthList.attestationApplicationId.shouldNotBeNull().getOrThrow()
+            gAppId.packageInfos().size shouldBe sAppId.packageInfos.size
+            gAppId.packageInfos().zip(sAppId.packageInfos).forEach { (gInfo, sInfo) ->
+                gInfo.packageName() shouldBe sInfo.packageName
+                gInfo.version().toUInt() shouldBe sInfo.version
+            }
+            gAppId.signatureDigests().size shouldBe sAppId.signatureDigests.size
+            gAppId.signatureDigests().zip(sAppId.signatureDigests).forEach { (gInfo, sInfo) ->
+                gInfo.toByteArray() shouldBe sInfo
+            }
+        }
+        ?: sAuthList.attestationApplicationId.shouldBeNull()
+
+    this.attestationIdBrand().getOrNull()?.toByteArray()
+        ?.contentEquals(sAuthList.attestationIdBrand!!.getOrThrow().stringValue.toByteArray())
+        ?: sAuthList.attestationIdBrand.shouldBeNull()
+
+    this.attestationIdDevice().getOrNull()?.toByteArray()
+        ?.contentEquals(sAuthList.attestationIdDevice!!.getOrThrow().stringValue.toByteArray())
+        ?: sAuthList.attestationIdDevice.shouldBeNull()
+
+    this.attestationIdProduct().getOrNull()?.toByteArray()
+        ?.contentEquals(sAuthList.attestationIdProduct!!.getOrThrow().stringValue.toByteArray())
+        ?: sAuthList.attestationIdProduct.shouldBeNull()
+
+    this.attestationIdSerial().getOrNull()?.toByteArray()
+        ?.contentEquals(sAuthList.attestationIdSerial!!.getOrThrow().stringValue.toByteArray())
+        ?: sAuthList.attestationIdSerial.shouldBeNull()
+
+    this.attestationIdImei().getOrNull()?.toByteArray()
+        ?.contentEquals(sAuthList.attestationIdImei!!.getOrThrow().stringValue.toByteArray())
+        ?: sAuthList.attestationIdImei.shouldBeNull()
+
+    this.attestationIdMeid().getOrNull()?.toByteArray()
+        ?.contentEquals(sAuthList.attestationIdMeid!!.getOrThrow().stringValue.toByteArray())
+        ?: sAuthList.attestationIdMeid.shouldBeNull()
+
+    this.attestationIdManufacturer().getOrNull()?.toByteArray()
+        ?.contentEquals(sAuthList.attestationIdManufacturer!!.getOrThrow().stringValue.toByteArray())
+        ?: sAuthList.attestationIdManufacturer.shouldBeNull()
+
+    this.attestationIdModel().getOrNull()?.toByteArray()
+        ?.contentEquals(sAuthList.attestationIdModel!!.getOrThrow().stringValue.toByteArray())
+        ?: sAuthList.attestationIdModel.shouldBeNull()
+
+    // VendorPatchLevel comparison
     this.vendorPatchLevel().getOrNull()
-        ?.let { date ->
-            sAuthList.vendorPatchLevel.shouldNotBeNull()
+        ?.let { gVendorPatchLevel ->
+            val sVendorPatchLevel = sAuthList.vendorPatchLevel.shouldNotBeNull().getOrThrow()
+
             // Ensure proper numeric type conversion for comparison
-            date.year.toInt() shouldBe sAuthList.vendorPatchLevel.year.toInt()
-            date.monthValue.toInt() shouldBe sAuthList.vendorPatchLevel.month.ordinal + 1
-            date.dayOfMonth.toInt() shouldBe sAuthList.vendorPatchLevel.day.toInt()
+            gVendorPatchLevel.year.toInt() shouldBe sVendorPatchLevel.year.toInt()
+            gVendorPatchLevel.monthValue.toInt() shouldBe sVendorPatchLevel.month.ordinal + 1
+            gVendorPatchLevel.dayOfMonth.toInt() shouldBe sVendorPatchLevel.day.toInt()
         }
         ?: sAuthList.vendorPatchLevel.shouldBeNull()
 
-// BootPatchLevel comparison
+    // BootPatchLevel comparison
     this.bootPatchLevel().getOrNull()
-        ?.let { date ->
-            sAuthList.bootPatchLevel.shouldNotBeNull()
+        ?.let { gBootPatchLevel ->
+            val sBootPatchLevel = sAuthList.bootPatchLevel.shouldNotBeNull().getOrThrow()
+
             // Ensure proper numeric type conversion for comparison
-            date.year.toInt() shouldBe sAuthList.bootPatchLevel.year.toInt()
-            date.monthValue.toInt() shouldBe sAuthList.bootPatchLevel.month.ordinal + 1
-            date.dayOfMonth.toInt() shouldBe sAuthList.bootPatchLevel.day.toInt()
+            gBootPatchLevel.year.toInt() shouldBe sBootPatchLevel.year.toInt()
+            gBootPatchLevel.monthValue.toInt() shouldBe sBootPatchLevel.month.ordinal + 1
+            gBootPatchLevel.dayOfMonth.toInt() shouldBe sBootPatchLevel.day.toInt()
         }
         ?: sAuthList.bootPatchLevel.shouldBeNull()
 
+    // TODO: deviceUnique
 
+    this.attestationIdSecondImei().getOrNull()?.toByteArray()
+        ?.contentEquals(sAuthList.attestationIdSecondImei!!.getOrThrow().stringValue.toByteArray())
+        ?: sAuthList.attestationIdSecondImei.shouldBeNull()
+
+    // TODO: module hash
 }
 
 
