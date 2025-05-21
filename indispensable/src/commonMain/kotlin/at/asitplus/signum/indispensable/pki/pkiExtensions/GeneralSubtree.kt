@@ -45,7 +45,7 @@ data class GeneralSubtree(
 }
 
 data class GeneralSubtrees(
-    val trees: List<GeneralSubtree>
+    var trees: MutableList<GeneralSubtree>
 ) : Asn1Encodable<Asn1ExplicitlyTagged> {
     override fun encodeToTlv() = Asn1.ExplicitlyTagged(2uL) {
         trees.forEach { +it }
@@ -118,14 +118,9 @@ data class GeneralSubtrees(
         return GeneralSubtrees(mutableTrees)
     }
 
-    fun union(other: GeneralSubtrees?): GeneralSubtrees {
-        if (other == null) return this
-
-        val combinedTrees = trees.toMutableList()
-        combinedTrees.addAll(other.trees)
-
-        val minimized = GeneralSubtrees(combinedTrees).minimize()
-        return minimized
+    fun unionWith(other: GeneralSubtrees?) {
+        other?.trees?.let { trees.addAll(it) }
+        minimize()
     }
 
     private fun createWidestSubtree(name: GeneralNameOption): GeneralSubtree {
@@ -146,113 +141,107 @@ data class GeneralSubtrees(
         }
     }
 
-    fun intersect(other: GeneralSubtrees?): GeneralSubtrees? {
-        requireNotNull(other) { "Other GeneralSubtrees must not be null" }
+    fun intersectWith(other: GeneralSubtrees): GeneralSubtrees? {
+        if (other.trees.isEmpty()) return null
 
-        val newThis = mutableListOf<GeneralSubtree>()
-        var newExcluded: MutableList<GeneralSubtree>? = null
+        val primary = this.minimize().trees.toMutableList()
+        val secondary = other.minimize().trees
+        val additions = mutableListOf<GeneralSubtree>()
+        var exclusions: MutableList<GeneralSubtree>? = null
 
-        val mutableThis = trees.toMutableList()
+        var index = 0
+        while (index < primary.size) {
+            val currentName = primary[index].base.name
+            var shouldRemove = false
+            var hasOnlySameType = false
+            var replacement: GeneralSubtree? = null
 
-        // If this is empty, just return the other
-        if (mutableThis.isEmpty()) {
-            return other
-        }
-
-        // minimize for easier check
-        val thisMinimized = GeneralSubtrees(mutableThis).minimize().trees.toMutableList()
-        val otherMinimized = other.minimize().trees
-
-        var i = 0
-        while (i < thisMinimized.size) {
-            val thisEntry = thisMinimized[i].base.name
-            var sameType = false
-            var removed = false
-
-            // If the widest of this in other narrows thisEntry, remove thisEntry and add widest other to newtHIS
-            // Check if there is a name of the same type, but don't MATCH, NARROWS or WIDENS
-            for (j in otherMinimized.indices) {
-                val otherEntry = otherMinimized[j].base.name
-                when (thisEntry.constrains(otherEntry)) {
+            for (candidate in secondary) {
+                val candidateName = candidate.base.name
+                when (currentName.constrains(candidateName)) {
                     GeneralNameOption.ConstraintResult.NARROWS -> {
-                        thisMinimized.removeAt(i)
-                        newThis.add(otherMinimized[j])
-                        removed = true
-                        sameType = false
+                        shouldRemove = true
+                        replacement = candidate
+                        hasOnlySameType = false
                         break
                     }
 
                     GeneralNameOption.ConstraintResult.SAME_TYPE -> {
-                        sameType = true
+                        hasOnlySameType = true
                     }
 
                     GeneralNameOption.ConstraintResult.MATCH,
                     GeneralNameOption.ConstraintResult.WIDENS -> {
-                        sameType = false
+                        hasOnlySameType = false
                         break
                     }
 
-                    else -> continue
+                    else -> {} // Ignore DIFF_TYPE
                 }
             }
 
-            if (!removed && sameType) {
-                var intersection = false
-                // Check if there are any entries in this and other with the same type that either
-                // MATCH, NARROWS or WIDENS, and if not add widest subtree
-                for (thisAltEntry in thisMinimized) {
-                    if (thisAltEntry.base.name.type == thisEntry.type) {
-                        for (otherAltEntry in otherMinimized) {
-                            val constraintType =
-                                thisAltEntry.base.name.constrains(otherAltEntry.base.name)
-                            if (constraintType == GeneralNameOption.ConstraintResult.MATCH ||
-                                constraintType == GeneralNameOption.ConstraintResult.WIDENS ||
-                                constraintType == GeneralNameOption.ConstraintResult.NARROWS
-                            ) {
-                                intersection = true
-                                break
-                            }
-                        }
-                    }
-                }
-
-                if (!intersection) {
-                    if (newExcluded == null) newExcluded = mutableListOf()
-                    val widestSubtree = createWidestSubtree(thisEntry)
-                    if (newExcluded.none { it == widestSubtree }) {
-                        newExcluded.add(widestSubtree)
-                    }
-                }
-
-                thisMinimized.removeAt(i)
+            if (shouldRemove) {
+                primary.removeAt(index)
+                additions += replacement!!
                 continue
             }
 
-            if (!removed) i++
-        }
+            if (hasOnlySameType) {
+                var foundCompatible = false
 
-        // Add all entries in newThis to this
-        thisMinimized.addAll(newThis)
+                for (altPrimary in primary) {
+                    val altName = altPrimary.base.name
+                    if (altName.type != currentName.type) continue
 
-        // All all entries from other to this if the entry don't have any entry of the same type in this
-        for (otherEntryGS in otherMinimized) {
-            val otherEntry = otherEntryGS.base.name
-            var sameTypeFound = false
-            for (thisEntryGS in thisMinimized) {
-                when (thisEntryGS.base.name.constrains(otherEntry)) {
-                    GeneralNameOption.ConstraintResult.DIFF_TYPE -> continue
-                    else -> {
-                        sameTypeFound = true
-                        break
+                    for (altSecondary in secondary) {
+                        val secName = altSecondary.base.name
+                        when (altName.constrains(secName)) {
+                            GeneralNameOption.ConstraintResult.MATCH,
+                            GeneralNameOption.ConstraintResult.NARROWS,
+                            GeneralNameOption.ConstraintResult.WIDENS -> {
+                                foundCompatible = true
+                                break
+                            }
+
+                            else -> {}
+                        }
                     }
+                    if (foundCompatible) break
+                }
+
+                if (!foundCompatible) {
+                    if (exclusions == null) exclusions = mutableListOf()
+                    val widest = createWidestSubtree(currentName)
+                    if (exclusions.none { it.base == widest.base }) {
+                        exclusions += widest
+                    }
+                    primary.removeAt(index)
+                    continue
                 }
             }
-            if (!sameTypeFound) {
-                thisMinimized.add(otherEntryGS)
+
+            index++
+        }
+
+        primary += additions
+
+        for (entry in secondary) {
+            val otherName = entry.base.name
+            val typeExists = primary.any {
+                when (it.base.name.constrains(otherName)) {
+                    GeneralNameOption.ConstraintResult.DIFF_TYPE -> false
+                    else -> true
+                }
+            }
+            if (!typeExists) {
+                primary += entry
             }
         }
 
-        return newExcluded?.let { GeneralSubtrees(it) }
+        this.trees.clear()
+        this.trees.addAll(primary)
+
+        return exclusions?.takeIf { it.isNotEmpty() }?.let { GeneralSubtrees(it) }
     }
 }
 

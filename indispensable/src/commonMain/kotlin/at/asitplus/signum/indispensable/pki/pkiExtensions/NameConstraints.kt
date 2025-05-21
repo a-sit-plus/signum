@@ -1,10 +1,12 @@
 package at.asitplus.signum.indispensable.pki.pkiExtensions
 
 import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
 import at.asitplus.signum.indispensable.asn1.toBigInteger
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
@@ -18,7 +20,12 @@ data class NameConstraints(
     private var hasMax: Boolean = false
     private var minMaxValid: Boolean = false
 
-    fun merge(newConstraints: NameConstraints?) {
+    companion object {
+        val PERMITTED: ULong = 0u
+        val EXCLUDED: ULong = 1u
+    }
+
+    fun mergeWith(newConstraints: NameConstraints?) {
         if (newConstraints == null) {
             return
         }
@@ -30,7 +37,7 @@ data class NameConstraints(
             }
         } else {
             if (newExcluded != null) {
-                excluded!!.union(newExcluded)
+                excluded!!.unionWith(newExcluded)
             }
         }
 
@@ -41,10 +48,10 @@ data class NameConstraints(
             }
         } else {
             if (newPermitted != null) {
-                val toExclude = permitted!!.intersect(newPermitted)
+                val toExclude = permitted!!.intersectWith(newPermitted)
                 if (toExclude != null) {
                     if (excluded != null) {
-                        excluded!!.union(toExclude)
+                        excluded!!.unionWith(toExclude)
                     } else {
                         excluded = toExclude.copy()
                     }
@@ -73,13 +80,13 @@ data class NameConstraints(
             calcMinMax()
         }
 
-        if (hasMin) {
-            throw IOException("Non-zero minimum BaseDistance in name constraints not supported")
-        }
-
-        if (hasMax) {
-            throw IOException("Maximum BaseDistance in name constraints not supported")
-        }
+//        if (hasMin) {
+//            throw IOException("Non-zero minimum BaseDistance in name constraints not supported")
+//        }
+//
+//        if (hasMax) {
+//            throw IOException("Maximum BaseDistance in name constraints not supported")
+//        }
 
         val subject = cert.tbsCertificate.subjectName
 
@@ -95,10 +102,26 @@ data class NameConstraints(
         if (alternativeNameExtension != null) {
             alternativeNameExtension.dnsNames?.forEach { alternativeNames.add(GeneralName(DNSName(Asn1String.IA5(it)))) }
             alternativeNameExtension.rfc822Names?.forEach { alternativeNames.add(GeneralName(RFC822Name(Asn1String.IA5(it)))) }
-            alternativeNameExtension.uris?.forEach { alternativeNames.add(GeneralName(UriName(Asn1String.IA5(it)))) }
-            alternativeNameExtension.directoryNames.forEach { alternativeNames.add(GeneralName(X500Name(it))) }
+            alternativeNameExtension.uris?.forEach { alternativeNames.add(GeneralName(it)) }
+            alternativeNameExtension.directoryNames.forEach { alternativeNames.add(GeneralName(it)) }
             alternativeNameExtension.x400Addresses.forEach { alternativeNames.add(GeneralName(X400AddressName(it))) }
             alternativeNameExtension.ipAddresses.forEach { alternativeNames.add(GeneralName(IPAddressName(it))) }
+        }
+
+        if (alternativeNames.isEmpty()) {
+            val fallbackEmails = subject.relativeDistinguishedNames
+                .flatMap { it.attrsAndValues }
+                .filter { it.oid == KnownOIDs.emailAddress_1_2_840_113549_1_9_1 } // PKCS#9 emailAddress OID
+                .mapNotNull { attr ->
+                    val str = (attr.value as? Asn1Primitive)?.asAsn1String()?.value
+                    str?.let {
+                        runCatching {
+                            GeneralName(RFC822Name(Asn1String.IA5(it)))
+                        }.getOrNull()
+                    }
+                }
+
+            alternativeNames.addAll(fallbackEmails)
         }
 
 
@@ -176,13 +199,13 @@ fun X509CertificateExtension.decodeNameConstraints(): NameConstraints {
     val src = value.asEncapsulatingOctetString().children.firstOrNull() ?: return NameConstraints()
 
     if (src.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, src.tag)
-    val permitted = GeneralSubtrees.doDecode(src.asSequence().children[0].asExplicitlyTagged())
-    val excluded = if (src.asSequence().children.size > 1) {
-        GeneralSubtrees.doDecode(src.asSequence().children[1].asExplicitlyTagged())
-    } else {
-        null
+    val genTrees = src.asSequence().children
+    var permitted: GeneralSubtrees? = null
+    var excluded: GeneralSubtrees? = null
+    genTrees.forEach {
+        if (it.tag.tagValue == NameConstraints.PERMITTED) permitted = GeneralSubtrees.doDecode(it.asExplicitlyTagged())
+        if (it.tag.tagValue == NameConstraints.EXCLUDED) excluded = GeneralSubtrees.doDecode(it.asExplicitlyTagged())
     }
-
     return NameConstraints(permitted, excluded)
 }
 
