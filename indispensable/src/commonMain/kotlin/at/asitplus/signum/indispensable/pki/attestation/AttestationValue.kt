@@ -1,9 +1,10 @@
 package at.asitplus.signum.indispensable.pki.attestation
 
-import at.asitplus.KmmResult
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.contract
 
 /**
  * Either type containing:
@@ -32,14 +33,26 @@ sealed class AttestationValue<out A : Asn1Encodable<*>>(override val tagged: Aut
         override fun encodeToTlv(): Asn1Element = rawAsn1Value
     }
 
-    inline fun <S,F> fold(onSuccess: (A)->S,
-                        onFailure: (String, AuthorizationList.Tagged, Asn1Element)->F) = when(this){
+    inline fun fold(
+        onSuccess: (A) -> Unit,
+        onFailure: (String, AuthorizationList.Tagged, Asn1Element) -> Unit
+    ) = when (this) {
         is Success -> onSuccess(value)
         is Failure<*> -> onFailure(elementName, tagged, rawAsn1Value)
     }
 
-    @Deprecated("this needs to be replaced with a proper check!")
-    fun getOrNull() = if(this is Success) value else null
+    inline fun <reified R> onSuccess(onSuccess: (A) -> R) = if (this is Success) onSuccess(value) else {
+    }
+
+    inline fun <reified R> onFailure(onFailure: (String, AuthorizationList.Tagged, Asn1Element) -> R) =
+        if (this is Failure<*>) onFailure(elementName, tagged, rawAsn1Value) else {
+        }
+
+    fun isSuccess(): Boolean {
+        @OptIn(ExperimentalContracts::class)
+        contract { returns(true) implies (this@AttestationValue is Success<*>) }
+        return this is Success
+    }
 }
 
 internal inline fun <reified E : Asn1Element, reified T : Asn1Encodable<E>, reified A : AttestationValue<T>> E.parsing(
