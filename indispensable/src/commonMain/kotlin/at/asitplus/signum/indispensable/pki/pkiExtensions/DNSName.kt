@@ -38,7 +38,7 @@ class DNSName(
                 throw IOException("DNSName with empty components is not permitted")
             }
 
-            if (allowWildcard) {
+            if (allowWildcard && startIndex == 0) {
                 val firstChar = name[startIndex]
                 if (alphaDigits.indexOf(firstChar) < 0) {
                     if (

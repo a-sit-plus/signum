@@ -11,17 +11,10 @@ class IPAddressName(
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.IP
 ) : GeneralNameOption, Asn1Encodable<Asn1Primitive> {
 
-    val isIPv4: Boolean = when (address.size) {
-        4, 8 -> true
-        16, 32 -> false
-        else -> throw IOException("Invalid IPAddressName")
-    }
-
     override fun encodeToTlv() = address.encodeToAsn1OctetStringPrimitive()
 
     companion object : Asn1Decodable<Asn1Primitive, IPAddressName> {
         override fun doDecode(src: Asn1Primitive): IPAddressName {
-//            val address = src.asOctetString()
             return IPAddressName(src.content)
         }
 
@@ -54,10 +47,26 @@ class IPAddressName(
         val inputAddress = input.address
 
         return when {
-            isHostAddressMatch(thisAddress, inputAddress) -> GeneralNameOption.ConstraintResult.SAME_TYPE
-            isSubnetAddressMatch(thisAddress, inputAddress) -> compareSubnets(thisAddress, inputAddress)
-            isHostAndSubnetMatch(thisAddress, inputAddress) -> compareHostAndSubnet(thisAddress, inputAddress)
-            isSubnetAndHostMatch(thisAddress, inputAddress) -> compareHostAndSubnet(inputAddress, thisAddress)
+            isHostAddressMatch(
+                thisAddress,
+                inputAddress
+            ) -> GeneralNameOption.ConstraintResult.SAME_TYPE
+
+            isSubnetAddressMatch(thisAddress, inputAddress) -> compareSubnets(
+                thisAddress,
+                inputAddress
+            )
+
+            isHostAndSubnetMatch(thisAddress, inputAddress) -> compareHostAndSubnet(
+                thisAddress,
+                inputAddress
+            )
+
+            isSubnetAndHostMatch(thisAddress, inputAddress) -> compareHostAndSubnet(
+                inputAddress,
+                thisAddress
+            )
+
             else -> GeneralNameOption.ConstraintResult.SAME_TYPE
         }
     }
@@ -78,7 +87,10 @@ class IPAddressName(
         return (thisAddress.size == 8 && inputAddress.size == 4) || (thisAddress.size == 32 && inputAddress.size == 16)
     }
 
-    private fun compareSubnets(thisAddress: ByteArray, inputAddress: ByteArray): GeneralNameOption.ConstraintResult {
+    private fun compareSubnets(
+        thisAddress: ByteArray,
+        inputAddress: ByteArray
+    ): GeneralNameOption.ConstraintResult {
         val maskOffset = thisAddress.size / 2
         var inputSubsetOfThis = true
         var thisSubsetOfInput = true
@@ -86,16 +98,20 @@ class IPAddressName(
         var inputEmpty = false
 
         for (i in 0 until maskOffset) {
-            if ((thisAddress[i].toInt() and thisAddress[i + maskOffset].toInt()) != thisAddress[i].toInt()) thisEmpty = true
-            if ((inputAddress[i].toInt() and inputAddress[i + maskOffset].toInt()) != inputAddress[i].toInt()) inputEmpty = true
+            if ((thisAddress[i].toInt() and thisAddress[i + maskOffset].toInt()) != thisAddress[i].toInt()) thisEmpty =
+                true
+            if ((inputAddress[i].toInt() and inputAddress[i + maskOffset].toInt()) != inputAddress[i].toInt()) inputEmpty =
+                true
 
             if (!((thisAddress[i + maskOffset].toInt() and inputAddress[i + maskOffset].toInt()) == thisAddress[i + maskOffset].toInt() &&
-                        (thisAddress[i].toInt() and thisAddress[i + maskOffset].toInt()) == (inputAddress[i].toInt() and thisAddress[i + maskOffset].toInt()))) {
+                        (thisAddress[i].toInt() and thisAddress[i + maskOffset].toInt()) == (inputAddress[i].toInt() and thisAddress[i + maskOffset].toInt()))
+            ) {
                 inputSubsetOfThis = false
             }
 
             if (!((inputAddress[i + maskOffset].toInt() and thisAddress[i + maskOffset].toInt()) == inputAddress[i + maskOffset].toInt() &&
-                        (inputAddress[i].toInt() and inputAddress[i + maskOffset].toInt()) == (thisAddress[i].toInt() and inputAddress[i + maskOffset].toInt()))) {
+                        (inputAddress[i].toInt() and inputAddress[i + maskOffset].toInt()) == (thisAddress[i].toInt() and inputAddress[i + maskOffset].toInt()))
+            ) {
                 thisSubsetOfInput = false
             }
         }
@@ -110,7 +126,10 @@ class IPAddressName(
         }
     }
 
-    private fun compareHostAndSubnet(thisAddress: ByteArray, inputAddress: ByteArray): GeneralNameOption.ConstraintResult {
+    private fun compareHostAndSubnet(
+        thisAddress: ByteArray,
+        inputAddress: ByteArray
+    ): GeneralNameOption.ConstraintResult {
         val maskOffset = inputAddress.size / 2
         val match = (0 until maskOffset).all { i ->
             (thisAddress[i].toInt() and inputAddress[i + maskOffset].toInt()) == inputAddress[i].toInt()
@@ -189,7 +208,8 @@ private fun parseIPv6Address(address: String): ByteArray {
     if (parts.size > 2) throw IOException("Invalid IPv6 address: too many '::'")
 
     val headSegments = if (parts[0].isNotEmpty()) parts[0].split(":") else emptyList()
-    val tailSegments = if (parts.size == 2 && parts[1].isNotEmpty()) parts[1].split(":") else emptyList()
+    val tailSegments =
+        if (parts.size == 2 && parts[1].isNotEmpty()) parts[1].split(":") else emptyList()
 
     val totalSegments = headSegments.size + tailSegments.size
     if (totalSegments > 8) throw IOException("Invalid IPv6 address: too many segments")

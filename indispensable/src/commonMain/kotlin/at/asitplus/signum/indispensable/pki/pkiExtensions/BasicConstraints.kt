@@ -28,7 +28,8 @@ class BasicConstraints(
             var ca = false
             var pathLenConstraint: Int = Int.MAX_VALUE
             if (src.children.isNotEmpty()) ca = src.children[0].asPrimitive().decodeToBoolean()
-            if (src.children.size > 1) pathLenConstraint = src.children[1].asPrimitive().decodeToInt()
+            if (src.children.size > 1) pathLenConstraint =
+                src.children[1].asPrimitive().decodeToInt()
             return BasicConstraints(ca, pathLenConstraint)
         }
     }
@@ -36,9 +37,18 @@ class BasicConstraints(
 
 fun X509CertificateExtension.decodeBasicConstraints(): BasicConstraints {
     if (oid != KnownOIDs.basicConstraints_2_5_29_19) throw Asn1StructuralException(message = "This extension is not BasicConstraints extension.")
-    if (value.tag != Asn1Element.Tag.OCTET_STRING) throw Asn1TagMismatchException(Asn1Element.Tag.OCTET_STRING, value.tag)
-    val elem = value.asEncapsulatingOctetString().children.firstOrNull() ?: throw Asn1StructuralException(message = "Not valid BasicConstraints extension.")
-    if (elem.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, elem.tag)
+    if (value.tag != Asn1Element.Tag.OCTET_STRING) throw Asn1TagMismatchException(
+        Asn1Element.Tag.OCTET_STRING,
+        value.tag
+    )
+    val elem =
+        value.asEncapsulatingOctetString().children.firstOrNull() ?: throw Asn1StructuralException(
+            message = "Not valid BasicConstraints extension."
+        )
+    if (elem.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(
+        Asn1Element.Tag.SEQUENCE,
+        elem.tag
+    )
 
     return BasicConstraints.doDecode(elem.asSequence())
 }
