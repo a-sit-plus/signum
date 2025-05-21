@@ -1,6 +1,5 @@
 package at.asitplus.signum.supreme.validate
 
-import at.asitplus.signum.CertificateExtensionException
 import at.asitplus.signum.KeyUsageException
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
@@ -9,6 +8,9 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 
+/*
+* PKITS 4.7 Key Usage
+* */
 open class KeyUsageTest : FreeSpec({
 
     val trustAnchorRootCertificate = "-----BEGIN CERTIFICATE-----\n" +
@@ -34,7 +36,6 @@ open class KeyUsageTest : FreeSpec({
     val trustAnchorRoot = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
 
     "Invalid keyUsage Critical keyCertSign False Test1" {
-
         val keyUsageCriticalKeyCertSignFalseCACert = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDmzCCAoOgAwIBAgIBHTANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
                 "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEVMBMGA1UEAxMMVHJ1c3Qg\n" +
@@ -92,7 +93,6 @@ open class KeyUsageTest : FreeSpec({
     }
 
     "Invalid keyUsage Not Critical keyCertSign False Test2" {
-
         val keyUsageNotCriticalKeyCertSignFalseCACert = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDnDCCAoSgAwIBAgIBHjANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
                 "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEVMBMGA1UEAxMMVHJ1c3Qg\n" +
@@ -203,7 +203,6 @@ open class KeyUsageTest : FreeSpec({
     }
 
     "Invalid keyUsage Critical cRLSign False Test4" {
-
         val keyUsageCriticalCRLSignFalseCACert = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDlzCCAn+gAwIBAgIBIDANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
                 "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEVMBMGA1UEAxMMVHJ1c3Qg\n" +
@@ -260,7 +259,6 @@ open class KeyUsageTest : FreeSpec({
     }
 
     "Invalid keyUsage Not Critical cRLSign False Test5" {
-
         val keyUsageNotCriticalCRLSignFalseCACert = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDmDCCAoCgAwIBAgIBITANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
                 "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEVMBMGA1UEAxMMVHJ1c3Qg\n" +

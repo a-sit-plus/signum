@@ -8,6 +8,9 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 
+/*
+* PKITS 4.1 Signature Verification
+* */
 open class SignatureVerificationTest : FreeSpec({
     val trustAnchorRootCertificate = "-----BEGIN CERTIFICATE-----\n" +
             "MIIDRzCCAi+gAwIBAgIBATANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
@@ -33,7 +36,6 @@ open class SignatureVerificationTest : FreeSpec({
 
 
     "Valid Signatures Test1" {
-
         val goodCACert = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDfDCCAmSgAwIBAgIBAjANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
                 "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEVMBMGA1UEAxMMVHJ1c3Qg\n" +

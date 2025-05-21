@@ -93,6 +93,16 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
     }
 
+    class EmailAddress(override val value: Asn1Element) : AttributeTypeAndValue() {
+        override val oid = OID
+
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
+
+        companion object {
+            val OID = KnownOIDs.emailAddress_1_2_840_113549_1_9_1
+        }
+    }
+
     class Other(override val oid: ObjectIdentifier, override val value: Asn1Element) : AttributeTypeAndValue() {
         constructor(oid: ObjectIdentifier, str: Asn1String) : this(
             oid,
@@ -134,6 +144,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
                 return@decodeRethrowing when (oid) {
                     CommonName.OID -> str.fold(onSuccess = { CommonName(it) }, onFailure = { CommonName(asn1String) })
                     Country.OID -> str.fold(onSuccess = { Country(it) }, onFailure = { Country(asn1String) })
+                    EmailAddress.OID -> str.fold(onSuccess = { EmailAddress(it) }, onFailure = { EmailAddress(asn1String) })
                     Organization.OID -> str.fold(
                         onSuccess = { Organization(it) },
                         onFailure = { Organization(asn1String) })

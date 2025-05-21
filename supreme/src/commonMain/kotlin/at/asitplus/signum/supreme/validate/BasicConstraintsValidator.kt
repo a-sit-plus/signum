@@ -14,8 +14,6 @@ class BasicConstraintsValidator(
     override fun check(currCert: X509Certificate) {
         if (currentCertIndex >= pathLength - 1) return
 
-        println("INDEX$currentCertIndex")
-
         val basicConstraints = currCert.findExtension(KnownOIDs.basicConstraints_2_5_29_19)?.also {
             if (!it.critical) {
                 throw BasicConstraintsException("basicConstraints extension must be critical (index $currentCertIndex).")

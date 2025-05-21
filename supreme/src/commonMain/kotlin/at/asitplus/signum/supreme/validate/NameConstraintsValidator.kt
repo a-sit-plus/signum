@@ -10,16 +10,17 @@ import kotlinx.io.IOException
 
 class NameConstraintsValidator(
     private val pathLength: Int,
-    private val currentCertIndex: Int = 0,
+    private var currentCertIndex: Int = 0,
     private var previousNameConstraints: NameConstraints? = null
 ) : Validator {
 
     override fun check(currCert: X509Certificate) {
+        currentCertIndex++
         if (previousNameConstraints != null && (currentCertIndex == pathLength || !currCert.isSelfIssued())) {
 
             try {
                 if (!previousNameConstraints!!.verify(currCert)) {
-                    throw NameConstraintsException("")
+                    throw NameConstraintsException("NameConstraints violation at cert index $currentCertIndex")
                 }
             } catch (e: IOException) {
                 throw CertificateChainValidatorException(
@@ -27,7 +28,6 @@ class NameConstraintsValidator(
                 )
             }
         }
-
         previousNameConstraints = mergeNameConstraints(currCert, previousNameConstraints)
     }
 
@@ -36,6 +36,7 @@ class NameConstraintsValidator(
         previousNameConstraints: NameConstraints?
     ): NameConstraints? {
 
+        println()
         val newNameConstraints =
             currCert.findExtension(KnownOIDs.nameConstraints_2_5_29_30)?.decodeNameConstraints()
 
@@ -43,7 +44,7 @@ class NameConstraintsValidator(
             newNameConstraints?.copy()
         } else {
             try {
-                previousNameConstraints.merge(newNameConstraints)
+                previousNameConstraints.mergeWith(newNameConstraints)
             } catch (ioe: IOException) {
                 throw NameConstraintsException(ioe.message ?: "NameConstraints merge failed.")
             }

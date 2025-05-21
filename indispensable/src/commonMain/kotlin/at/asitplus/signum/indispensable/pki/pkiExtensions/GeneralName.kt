@@ -52,8 +52,13 @@ data class GeneralName(
                 GeneralNameOption.NameType.IP -> GeneralName(IPAddressName.doDecode(src.asPrimitive()))
                 GeneralNameOption.NameType.X400 -> GeneralName(X400AddressName.doDecode(src))
                 GeneralNameOption.NameType.URI -> GeneralName(UriName.doDecode(src.asPrimitive()))
-                GeneralNameOption.NameType.DIRECTORY-> GeneralName(X500Name.doDecode(src.asExplicitlyTagged().children.first().asSequence()))
-                else -> throw IOException("Unrecognized GeneralName tag")
+                GeneralNameOption.NameType.DIRECTORY -> GeneralName(
+                    X500Name.doDecode(
+                        src.asExplicitlyTagged().children.first().asSequence()
+                    )
+                )
+
+                else -> throw IOException("Unsupported GeneralName tag")
             }
         }
     }
