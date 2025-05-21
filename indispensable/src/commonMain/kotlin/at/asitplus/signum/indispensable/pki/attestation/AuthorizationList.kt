@@ -788,7 +788,7 @@ class AuthorizationList(
             Long.decodeFromAsn1ContentBytes(intValue.encodeToAsn1ContentBytes()).seconds
 
         init {
-            require(intValue.magnitude.size <= 4)
+            require(intValue.magnitude.size <= 4) // TODO: where is this specified?
         }
 
         companion object Tag : Tagged(505uL), Asn1Decodable<Asn1Primitive, AuthTimeout> {
