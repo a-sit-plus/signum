@@ -8,6 +8,9 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 
+/*
+* PKITS 4.6 Verifying Basic Constraints
+* */
 open class BasicConstraintsTest : FreeSpec({
 
     val trustAnchorRootCertificate = "-----BEGIN CERTIFICATE-----\n" +
@@ -157,7 +160,6 @@ open class BasicConstraintsTest : FreeSpec({
     }
 
     "Invalid cA False Test2" {
-
         val basicConstraintsCriticalFalseCACert = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDlzCCAn+gAwIBAgIBFzANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
                 "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEVMBMGA1UEAxMMVHJ1c3Qg\n" +
@@ -214,7 +216,6 @@ open class BasicConstraintsTest : FreeSpec({
     }
 
     "Invalid cA False Test3" {
-
         val basicConstraintsNotCriticalcAFalseCACert = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDmDCCAoCgAwIBAgIBGDANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
                 "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEVMBMGA1UEAxMMVHJ1c3Qg\n" +
@@ -271,7 +272,6 @@ open class BasicConstraintsTest : FreeSpec({
     }
 
     "Invalid pathLenConstraint Test5" {
-
         val pathLenConstraint0subCACert = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDljCCAn6gAwIBAgIBATANBgkqhkiG9w0BAQsFADBOMQswCQYDVQQGEwJVUzEf\n" +
                 "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEeMBwGA1UEAxMVcGF0aExl\n" +
@@ -326,7 +326,6 @@ open class BasicConstraintsTest : FreeSpec({
         shouldThrow<BasicConstraintsException> { chain.validate() }.apply {
             message shouldBe "pathLenConstraint violated at cert index 2."
         }
-
     }
 
     "Valid pathLenConstraint Test7" {
@@ -392,7 +391,6 @@ open class BasicConstraintsTest : FreeSpec({
     }
 
     "Invalid pathLenConstraint Test9" {
-
         val pathLenConstraint6subCA0Cert = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDmjCCAoKgAwIBAgIBATANBgkqhkiG9w0BAQsFADBOMQswCQYDVQQGEwJVUzEf\n" +
                 "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEeMBwGA1UEAxMVcGF0aExl\n" +
@@ -474,7 +472,6 @@ open class BasicConstraintsTest : FreeSpec({
     }
 
     "Invalid pathLenConstraint Test11" {
-
         val pathLenConstraintsubCA1Cert = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDmjCCAoKgAwIBAgIBAjANBgkqhkiG9w0BAQsFADBOMQswCQYDVQQGEwJVUzEf\n" +
                 "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEeMBwGA1UEAxMVcGF0aExl\n" +
@@ -580,7 +577,6 @@ open class BasicConstraintsTest : FreeSpec({
     }
 
     "Valid pathLenConstraint Test13" {
-
         val pathLenConstraint6subCA4Cert = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDmjCCAoKgAwIBAgIBAzANBgkqhkiG9w0BAQsFADBOMQswCQYDVQQGEwJVUzEf\n" +
                 "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEeMBwGA1UEAxMVcGF0aExl\n" +
@@ -684,7 +680,6 @@ open class BasicConstraintsTest : FreeSpec({
     }
 
     "Valid Self-Issued pathLenConstraint Test15" {
-
         val leafPem = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDpjCCAo6gAwIBAgIBBTANBgkqhkiG9w0BAQsFADBOMQswCQYDVQQGEwJVUzEf\n" +
                 "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEeMBwGA1UEAxMVcGF0aExl\n" +
@@ -775,7 +770,6 @@ open class BasicConstraintsTest : FreeSpec({
     }
 
     "Valid Self-Issued pathLenConstraint Test17" {
-
         val pathLenConstraint1CACert = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDjTCCAnWgAwIBAgIBHDANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
                 "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEVMBMGA1UEAxMMVHJ1c3Qg\n" +

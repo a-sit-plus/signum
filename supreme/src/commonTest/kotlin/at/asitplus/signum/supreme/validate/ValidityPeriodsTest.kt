@@ -1,6 +1,5 @@
 package at.asitplus.signum.supreme.validate
 
-import at.asitplus.signum.CertificateChainValidatorException
 import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
@@ -12,6 +11,9 @@ import io.kotest.matchers.shouldBe
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
+/*
+* PKITS 4.2 Validity Periods
+* */
 open class ValidityPeriodsTest : FreeSpec({
 
     val trustAnchorRootCertificate = "-----BEGIN CERTIFICATE-----\n" +
@@ -118,7 +120,6 @@ open class ValidityPeriodsTest : FreeSpec({
     }
 
     "2 Invalid EE notBefore Date Test2" {
-
         val leafPem = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDjTCCAnWgAwIBAgIBAzANBgkqhkiG9w0BAQsFADBAMQswCQYDVQQGEwJVUzEf\n" +
                 "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEQMA4GA1UEAxMHR29vZCBD\n" +
