@@ -16,6 +16,8 @@ import kotlin.contracts.contract
  * @see Asn1Element
  *
  */
+//TODO move construction of AttestationValues here using a helper function, so the ghastly casts that are currently all over the place inside AuthorizationList go here.
+//TODO no.2: add some intermediate type hierarchy foo to Tagged and encodable s.t. the tagged null decoding foo and all the construction that should go here don't need passing of Tagged at all!
 sealed class AttestationValue<out A : Asn1Encodable<*>>(override val tagged: AuthorizationList.Tagged) :
     AuthorizationList.Tagged.WithTag<Asn1Element> {
     class Success<out T : Asn1Encodable<*>> internal constructor(val value: T, tagged: AuthorizationList.Tagged) :
