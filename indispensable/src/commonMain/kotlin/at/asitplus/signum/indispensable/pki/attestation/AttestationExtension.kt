@@ -41,6 +41,22 @@ class AttestationKeyDescription(
      */
     val keymasterSecurityLevel: SecurityLevel get() = keyMintSecurityLevel
 
+    init {
+        versionCheck()
+    }
+
+    fun versionCheck() {
+        if(attestationVersion < 100)
+        {
+            // keyMintVersion was previously named keyMintVersion
+            // keyMintSecurityLevel was previously named keyMintSecurityLevel
+            // TODO: only provide getter in right versions?
+        }
+        if (attestationVersion < 3) {
+            // AttestationKeyDescription.SecurityLevel.STRONGBOX not allowed TODO
+        }
+    }
+
     override fun encodeToTlv() = Asn1.Sequence {
         +Asn1.Int(attestationVersion)
         +attestationSecurityLevel
