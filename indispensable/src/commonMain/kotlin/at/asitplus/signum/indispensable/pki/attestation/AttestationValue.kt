@@ -32,6 +32,12 @@ sealed class AttestationValue<out A : Asn1Encodable<*>>(override val tagged: Aut
         override fun encodeToTlv(): Asn1Element = rawAsn1Value
     }
 
+    inline fun <S,F> fold(onSuccess: (A)->S,
+                        onFailure: (String, AuthorizationList.Tagged, Asn1Element)->F) = when(this){
+        is Success -> onSuccess(value)
+        is Failure<*> -> onFailure(elementName, tagged, rawAsn1Value)
+    }
+
     @Deprecated("this needs to be replaced with a proper check!")
     fun getOrNull() = if(this is Success) value else null
 }
