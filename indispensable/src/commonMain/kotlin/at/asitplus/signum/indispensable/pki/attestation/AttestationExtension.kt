@@ -53,7 +53,8 @@ class AttestationKeyDescription(
             // TODO: only provide getter in right versions?
         }
         if (attestationVersion < 3) {
-            // AttestationKeyDescription.SecurityLevel.STRONGBOX not allowed TODO
+            require(attestationSecurityLevel != SecurityLevel.STRONGBOX)
+            require(keyMintSecurityLevel != SecurityLevel.STRONGBOX)
         }
     }
 
