@@ -1,9 +1,21 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
+import at.asitplus.signum.indispensable.asn1.Asn1Exception
+import at.asitplus.signum.indispensable.asn1.Asn1ExplicitlyTagged
+import at.asitplus.signum.indispensable.asn1.Asn1Primitive
+import at.asitplus.signum.indispensable.asn1.Asn1Sequence
+import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
+import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
+import at.asitplus.signum.indispensable.asn1.runRethrowing
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
+import at.asitplus.signum.indispensable.pki.pkiExtensions.GeneralNameOption
+import at.asitplus.signum.indispensable.pki.pkiExtensions.UriName
+import at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name
 
 
 /**
@@ -25,22 +37,34 @@ private constructor(private val extensions: List<Asn1Element>) {
 
     val dnsNames: List<String>? = parseStringSANs(SubjectAltNameImplicitTags.dNSName)
     val rfc822Names: List<String>? = parseStringSANs(SubjectAltNameImplicitTags.rfc822Name)
-    val uris: List<String>? = parseStringSANs(SubjectAltNameImplicitTags.uniformResourceIdentifier)
-
-    val ipAddresses: List<ByteArray> = extensions.filter { it.tag == SubjectAltNameImplicitTags.iPAddress }.apply {
-        forEach {
-            if (it !is Asn1Primitive)
-                throw Asn1StructuralException("Invalid iPAddress Alternative Name found: ${it.toDerHexString()}")
-            else if (it.content.size != 4 && it.content.size != 16) throw Asn1StructuralException("Invalid iPAddress Alternative Name found: ${it.toDerHexString()}")
-        }
-    }.map { (it as Asn1Primitive).content }
-
-    val directoryNames: List<List<RelativeDistinguishedName>> =
-        extensions.filter { it.tag == SubjectAltNameImplicitTags.directoryName }.apply {
-            forEach {
-                if (it !is Asn1Sequence) throw Asn1StructuralException("Invalid directoryName Alternative Name found: ${it.toDerHexString()}")
+    val uris: List<UriName>? =
+        extensions.filter { GeneralNameOption.NameType.fromTagValue(it.tag.tagValue) == GeneralNameOption.NameType.URI }
+            .map { ext ->
+                UriName.doDecode(ext.asPrimitive())
             }
-        }.map { (it as Asn1Sequence).children.map { RelativeDistinguishedName.decodeFromTlv(it as Asn1Set) } }
+
+    val ipAddresses: List<ByteArray> =
+        extensions.filter { it.tag == SubjectAltNameImplicitTags.iPAddress }.apply {
+            forEach {
+                if (it !is Asn1Primitive)
+                    throw Asn1StructuralException("Invalid iPAddress Alternative Name found: ${it.toDerHexString()}")
+                else if (it.content.size != 4 && it.content.size != 16) throw Asn1StructuralException(
+                    "Invalid iPAddress Alternative Name found: ${it.toDerHexString()}"
+                )
+            }
+        }.map { (it as Asn1Primitive).content }
+
+    val directoryNames: List<X500Name> =
+        extensions.filter { GeneralNameOption.NameType.fromTagValue(it.tag.tagValue) == GeneralNameOption.NameType.DIRECTORY }
+            .map { ext ->
+                ext as? Asn1ExplicitlyTagged
+                    ?: throw Asn1StructuralException("Invalid directoryName Alternative Name found: ${ext.toDerHexString()}")
+
+                val sequence = ext.children.singleOrNull() as? Asn1Sequence
+                    ?: throw Asn1StructuralException("Invalid directoryName Alternative Name found: ${ext.toDerHexString()}")
+
+                X500Name.decodeFromTlv(sequence)
+            }
 
     val otherNames: List<Asn1Sequence> =
         extensions.filter { it.tag == SubjectAltNameImplicitTags.otherName }.apply {
@@ -50,7 +74,9 @@ private constructor(private val extensions: List<Asn1Element>) {
         }.map {
             (it as Asn1Sequence).also {
                 if (it.children.size != 2) throw Asn1StructuralException("Invalid otherName Alternative Name found (!=2 children): ${it.toDerHexString()}")
-                if (it.children.last().tag != SubjectAltNameImplicitTags.otherName) throw Asn1StructuralException("Invalid otherName Alternative Name found (implicit tag != 0): ${it.toDerHexString()}")
+                if (it.children.last().tag != SubjectAltNameImplicitTags.otherName) throw Asn1StructuralException(
+                    "Invalid otherName Alternative Name found (implicit tag != 0): ${it.toDerHexString()}"
+                )
                 ObjectIdentifier.decodeFromAsn1ContentBytes((it.children.first() as Asn1Primitive).content) //this throws if something is off
             }
         }
@@ -102,7 +128,8 @@ private constructor(private val extensions: List<Asn1Element>) {
         bld.append("\nediPartyNames=").append(ediPartyNames.joinToString { it.prettyPrint() })
         bld.append("\nuris=").append(uris?.joinToString())
         @OptIn(ExperimentalStdlibApi::class)
-        bld.append("\nipAddresses=").append(ipAddresses.joinToString { it.toHexString(HexFormat.UpperCase) })
+        bld.append("\nipAddresses=")
+            .append(ipAddresses.joinToString { it.toHexString(HexFormat.UpperCase) })
         bld.append("\nregisteredIDs=").append(registeredIDs.joinToString())
         return "AlternativeNames(" + bld.toString().prependIndent("  ") + "\n)"
     }

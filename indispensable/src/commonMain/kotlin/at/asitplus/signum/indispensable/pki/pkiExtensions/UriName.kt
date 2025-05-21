@@ -26,39 +26,52 @@ class UriName(
             if (name.isEmpty()) throw IOException("URI name cannot be empty")
 
             val schemeEnd = name.indexOf(':')
-            if (schemeEnd <= 0) throw IOException("URI name must include scheme: $name")
 
-            val afterScheme = name.substring(schemeEnd + 1)
-            val host: String? = extractHost(afterScheme)
-            var hostIP: IPAddressName? = null
-            var hostDNS: DNSName? = null
-
-            if (host != null) {
-                if (host.startsWith("[") && host.endsWith("]")) {
-                    val ipv6Host = host.substring(1, host.length - 1)
-                    hostIP = try {
-                        IPAddressName.fromString(ipv6Host)
-                    } catch (e: IOException) {
-                        throw IOException("Invalid URI name: host portion is not a valid IPv6 address: $name")
-                    }
-                } else {
-                    hostDNS = try {
-                        DNSName(Asn1String.IA5(host), allowWildcard)
-                    } catch (_: IOException) {
-                        null
-                    }
-
-                    hostIP = if (hostDNS == null) {
-                        try {
-                            IPAddressName.fromString(host)
-                        } catch (_: IOException) {
-                            throw IOException("Invalid URI name: host is not a valid DNS, IPv4, or IPv6 address: $name")
-                        }
-                    } else null
+            if (schemeEnd <= 0) {
+                // Treat as URI name constraint (no scheme, just host constraint)
+                val host = name
+                val hostDNS = try {
+                    val normalizedHost = if (host.startsWith(".")) host.substring(1) else host
+                    DNSName(Asn1String.IA5(normalizedHost), allowWildcard)
+                } catch (e: IOException) {
+                    throw IOException("Invalid URI name constraint: $name", e)
                 }
-            }
 
-            return UriName(Asn1String.IA5(name), hostDNS, hostIP)
+                return UriName(Asn1String.IA5(name), hostDNS, null)
+            } else {
+
+                val afterScheme = name.substring(schemeEnd + 1)
+                val host: String? = extractHost(afterScheme)
+                var hostIP: IPAddressName? = null
+                var hostDNS: DNSName? = null
+
+                if (host != null) {
+                    if (host.startsWith("[") && host.endsWith("]")) {
+                        val ipv6Host = host.substring(1, host.length - 1)
+                        hostIP = try {
+                            IPAddressName.fromString(ipv6Host)
+                        } catch (e: IOException) {
+                            throw IOException("Invalid URI name: host portion is not a valid IPv6 address: $name")
+                        }
+                    } else {
+                        hostDNS = try {
+                            DNSName(Asn1String.IA5(host), allowWildcard)
+                        } catch (_: IOException) {
+                            null
+                        }
+
+                        hostIP = if (hostDNS == null) {
+                            try {
+                                IPAddressName.fromString(host)
+                            } catch (_: IOException) {
+                                throw IOException("Invalid URI name: host is not a valid DNS, IPv4, or IPv6 address: $name")
+                            }
+                        } else null
+                    }
+                }
+
+                return UriName(Asn1String.IA5(name), hostDNS, hostIP)
+            }
         }
 
         private fun extractHost(uriRemainder: String): String? {
@@ -70,11 +83,10 @@ class UriName(
             }
 
             val authority = withoutScheme.substring(0, endIndex)
-            val atIndex = authority.lastIndexOf('@')
-            return if (atIndex >= 0) authority.substring(atIndex + 1) else authority
+            val hostPort = authority.substringAfterLast('@', authority)
+            return hostPort.substringBefore(':') //port
         }
     }
-
 
     override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
         if (input !is UriName) {
@@ -88,10 +100,10 @@ class UriName(
             return GeneralNameOption.ConstraintResult.MATCH
         }
 
+        val inputHostObject = input.hostDNS
         val thisDNS = this.hostDNS
-        val inputHostObject = input.hostDNS ?: input.hostIP
 
-        if (thisDNS == null || inputHostObject !is DNSName) {
+        if (thisDNS == null || inputHostObject == null) {
             return GeneralNameOption.ConstraintResult.SAME_TYPE
         }
 
@@ -99,6 +111,7 @@ class UriName(
         val otherDomain = inputHost.startsWith('.')
 
         var constraintResult = thisDNS.constrains(inputHostObject)
+
         if (!thisDomain && !otherDomain &&
             (constraintResult == GeneralNameOption.ConstraintResult.WIDENS ||
                     constraintResult == GeneralNameOption.ConstraintResult.NARROWS)
