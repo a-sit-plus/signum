@@ -3,11 +3,9 @@ package at.asitplus.signum.indispensable.pki.attestation
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.misc.BitLength
-import at.asitplus.signum.indispensable.pki.attestation.AuthorizationList.MgfDigest
 import kotlinx.datetime.Instant
 import kotlinx.datetime.Month
 import kotlinx.datetime.number
@@ -69,7 +67,7 @@ class AuthorizationList(
     val usageExpireDateTime         : KmmResult<UsageExpireDateTime>?         = null,
     val usageCountLimit             : KmmResult<UsageCountLimit>?             = null,
     val noAuthRequired              : KmmResult<NoAuthRequired>?              = null,
-    val userAuthType                : KmmResult<UserAuthType>?                = null,
+    val userAuthType                : KmmResult<UserAuthType>?                = null, // TODO: implemented as list of enums as in reference implementation
     val authTimeout                 : KmmResult<AuthTimeout>?                 = null,
     val allowWhileOnBody            : KmmResult<AllowWhileOnBody>?            = null,
     val trustedUserPresenceRequired : KmmResult<TrustedUserPresenceRequired>? = null,
@@ -78,7 +76,7 @@ class AuthorizationList(
     val allApplications             : KmmResult<AllApplications>?             = null, // only up to version v4 // TODO add opt-in annotation?
     val creationDateTime            : KmmResult<CreationDateTime>?            = null,
     val origin                      : KmmResult<Origin>?                      = null,
-    val rollbackResistent           : KmmResult<RollbackResistent>?           = null, // only up to version v2, "resistance" afterwards // TODO add opt-in annotation?
+    val rollbackResistant           : KmmResult<RollbackResistent>?           = null, // only up to version v2, "resistance" afterwards // TODO add opt-in annotation?
     val rootOfTrust                 : KmmResult<RootOfTrust>?                 = null,
     val osVersion                   : KmmResult<OsVersion>?                   = null,
     val osPatchLevel                : KmmResult<OsPatchLevel>?                = null,
@@ -97,6 +95,7 @@ class AuthorizationList(
     val attestationIdSecondImei     : KmmResult<AttestationId.SecondImei>?    = null,
     val moduleHash                  : KmmResult<ModuleHash>?                  = null,
     // @formatter:on
+    val attestationVersion: Int? = null,
 ) : Asn1Encodable<Asn1Sequence> {
     constructor(
         // @formatter:off
@@ -143,6 +142,7 @@ class AuthorizationList(
         attestationIdSecondImei     : AttestationId.SecondImei?    = null,
         moduleHash                  : ModuleHash?                  = null,
         // @formatter:on
+        attestationVersion : Int? = null,
     ) : this(
         // @formatter:off
         purpose                     = purpose                    ?.map { KmmResult.success(it) }?.toSet(),
@@ -169,7 +169,7 @@ class AuthorizationList(
         allApplications             = allApplications            ?.let { KmmResult.success(it) },
         creationDateTime            = creationDateTime           ?.let { KmmResult.success(it) },
         origin                      = origin                     ?.let { KmmResult.success(it) },
-        rollbackResistent           = rollbackResistent          ?.let { KmmResult.success(it) },
+        rollbackResistant           = rollbackResistent          ?.let { KmmResult.success(it) },
         rootOfTrust                 = rootOfTrust                ?.let { KmmResult.success(it) },
         osVersion                   = osVersion                  ?.let { KmmResult.success(it) },
         osPatchLevel                = osPatchLevel               ?.let { KmmResult.success(it) },
@@ -188,21 +188,77 @@ class AuthorizationList(
         attestationIdSecondImei     = attestationIdSecondImei    ?.let { KmmResult.success(it) },
         moduleHash                  = moduleHash                 ?.let { KmmResult.success(it) },
         // @formatter:on
+        attestationVersion,
     )
 
     init {
         purpose?.let { require(it.isNotEmpty()) }
-        digest ?.let { require(it.isNotEmpty()) }
+        digest?.let { require(it.isNotEmpty()) }
         padding?.let { require(it.isNotEmpty()) }
-        // Manfred: wenn dann müsste mgfdigest auch nonempty sein (konsistent), aber diese checks sind nicht lenient
+        mgfDigest?.let { require(it.isNotEmpty()) }
 
+        versionCheck()
+    }
 
-        // TODO versioning, auch bei getter exception schmeissen wenn attribute nicht vorhanden
+    fun versionCheck() {
+        if(attestationVersion != null)
+        {
+            if(attestationVersion < 400)
+            {
+                require(moduleHash == null)
+            }
+            if(attestationVersion < 300)
+            {
+                require(attestationIdSecondImei == null)
+            }
+            // no changes from 100 to 200
+            if(attestationVersion < 100)
+            {
+                require(mgfDigest == null) // isNullOrEmpty ? TODO
+                require(usageCountLimit == null)
+            }
+            if(attestationVersion > 4)
+            {
+                require(allApplications == null)
+            }
+            if(attestationVersion < 4)
+            {
+                require(earlyBootOnly == null)
+                require(deviceUniqueAttestation == null)
+            }
+            if(attestationVersion < 3)
+            {
+                require(rollbackResistance == null)
+                require(trustedUserPresenceRequired == null)
+                require(trustedConfirmationRequired == null)
+                require(unlockedDeviceRequired == null)
+                require(vendorPatchLevel == null)
+                require(bootPatchLevel == null)
+                //if(rootOfTrust != null) require(rootOfTrust.getOrNull().verifiedBootHash == 0) // TODO decoding must be changed!!
+            }
+            if(attestationVersion > 2)
+            {
+                require(rollbackResistant == null)
+            }
+            if(attestationVersion < 2)
+            {
+                require(attestationApplicationId == null)
+                require(attestationIdBrand == null)
+                require(attestationIdDevice == null)
+                require(attestationIdProduct == null)
+                require(attestationIdSerial == null)
+                require(attestationIdImei == null)
+                require(attestationIdMeid == null)
+                require(attestationIdManufacturer == null)
+                require(attestationIdModel == null)
+            }
+        }
+        // TODO: only provide getter in right versions?
     }
 
     override fun encodeToTlv() = Asn1.Sequence {
         // @formatter:off
-        add(purpose?.mapNotNull{it.getOrNull()}?.toSet())
+        add(purpose?.mapNotNull{it.getOrNull()}?.toSet()) // TODO error handling instead of getOrNull?
         add(algorithm                  ?.getOrNull())
         add(keySize                    ?.getOrNull())
         add(digest?.mapNotNull{it.getOrNull()}?.toSet())
@@ -226,7 +282,7 @@ class AuthorizationList(
         add(allApplications            ?.getOrNull())
         add(creationDateTime           ?.getOrNull())
         add(origin                     ?.getOrNull())
-        add(rollbackResistent          ?.getOrNull())
+        add(rollbackResistant          ?.getOrNull())
         add(rootOfTrust                ?.getOrNull())
         add(osVersion                  ?.getOrNull())
         add(osPatchLevel               ?.getOrNull())
@@ -361,7 +417,8 @@ class AuthorizationList(
                 bootPatchLevel,
                 deviceUniqueAttestation,
                 attestationIdSecondImei,
-                moduleHash
+                moduleHash,
+                // TODO: attestationVersion!
             )
         }
 
@@ -381,7 +438,8 @@ class AuthorizationList(
                 (this as Asn1Decodable<Asn1Element, D>).decodeFromTlvSafe(
                     it.asPrimitive()
                 )
-            }.toSet().let { if (it.isEmpty()) null else it } // TODO isEmpty -> null? << do we really want null instead of empty sets?
+            }.toSet()
+                .let { if (it.isEmpty()) null else it } // TODO isEmpty -> null? << do we really want null instead of empty sets? rather use empty set
         }
 
         private inline fun <reified T : Tagged, reified D : Asn1Encodable<Asn1Element>> T.decodeSequence(
@@ -464,7 +522,7 @@ class AuthorizationList(
                 "allApplications=${allApplications != null}, " +
                 "creationDateTime=$creationDateTime, " +
                 "origin=$origin, " +
-                "rollbackResistent=$rollbackResistent, " +
+                "rollbackResistent=$rollbackResistant, " +
                 "rootOfTrust=$rootOfTrust, " +
                 "osVersion=$osVersion, " +
                 "osPatchLevel=$osPatchLevel, " +
@@ -513,7 +571,7 @@ class AuthorizationList(
         if (allApplications != other.allApplications) return false
         if (creationDateTime != other.creationDateTime) return false
         if (origin != other.origin) return false
-        if (rollbackResistent != other.rollbackResistent) return false
+        if (rollbackResistant != other.rollbackResistant) return false
         if (rootOfTrust != other.rootOfTrust) return false
         if (osVersion != other.osVersion) return false
         if (osPatchLevel != other.osPatchLevel) return false
@@ -560,7 +618,7 @@ class AuthorizationList(
         result = 31 * result + (allApplications?.hashCode() ?: 0)
         result = 31 * result + (creationDateTime?.hashCode() ?: 0)
         result = 31 * result + (origin?.hashCode() ?: 0)
-        result = 31 * result + (rollbackResistent?.hashCode() ?: 0)
+        result = 31 * result + (rollbackResistant?.hashCode() ?: 0)
         result = 31 * result + (rootOfTrust?.hashCode() ?: 0)
         result = 31 * result + (osVersion?.hashCode() ?: 0)
         result = 31 * result + (osPatchLevel?.hashCode() ?: 0)
