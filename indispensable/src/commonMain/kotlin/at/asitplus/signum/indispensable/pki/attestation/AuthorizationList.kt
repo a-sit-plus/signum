@@ -201,40 +201,38 @@ class AuthorizationList(
     }
 
     override fun encodeToTlv() = Asn1.Sequence {
-        // @formatter:off
-        add(purpose?.toSet())
-        add(algorithm                  ?.getOrNull())
-        add(keySize                    ?.getOrNull())
-        add(digest?.toSet())
-        add(padding?.toSet())
-        add(ecCurve                    ?.getOrNull())
-        add(rsaPublicExponent          ?.getOrNull())
-        add(mgfDigest?.toSet())
-        add(rollbackResistance         ?.getOrNull())
-        add(earlyBootOnly              ?.getOrNull())
-        add(activeDateTime             ?.getOrNull())
-        add(originationExpireDateTime  ?.getOrNull())
-        add(usageExpireDateTime        ?.getOrNull())
-        add(usageCountLimit            ?.getOrNull())
-        add(noAuthRequired             ?.getOrNull())
-        add(userAuthType               ?.getOrNull())
-        add(authTimeout                ?.getOrNull())
-        add(allowWhileOnBody           ?.getOrNull())
-        add(trustedUserPresenceRequired?.getOrNull())
-        add(trustedConfirmationRequired?.getOrNull())
-        add(unlockedDeviceRequired     ?.getOrNull())
-        add(allApplications            ?.getOrNull())
-        add(creationDateTime           ?.getOrNull())
-        add(origin                     ?.getOrNull())
-        add(rollbackResistent          ?.getOrNull())
-        add(rootOfTrust                ?.getOrNull())
-        add(osVersion                  ?.getOrNull())
-        add(osPatchLevel               ?.getOrNull())
-        // @formatter:on
+
+        add(purpose)
+        add(algorithm)
+        add(keySize)
+        add(digest)
+        add(padding)
+        add(ecCurve)
+        add(rsaPublicExponent)
+        add(mgfDigest)
+        add(rollbackResistance)
+        add(earlyBootOnly)
+        add(activeDateTime)
+        add(originationExpireDateTime)
+        add(usageExpireDateTime)
+        add(usageCountLimit)
+        add(noAuthRequired)
+        add(userAuthType)
+        add(authTimeout)
+        add(allowWhileOnBody)
+        add(trustedUserPresenceRequired)
+        add(trustedConfirmationRequired)
+        add(unlockedDeviceRequired)
+        add(allApplications)
+        add(creationDateTime)
+        add(origin)
+        add(rollbackResistent)
+        add(rootOfTrust)
+        add(osVersion)
+        add(osPatchLevel)
 
         // attestationApplicationId is encoded as OctetString
-        val appId = attestationApplicationId?.getOrNull()
-        appId?.let {
+        attestationApplicationId?.let {appId->
             +Asn1.ExplicitlyTagged(appId.tagged.explicitTag) {
                 +Asn1.OctetStringEncapsulating {
                     +appId.encodeToTlv()
@@ -242,21 +240,19 @@ class AuthorizationList(
             }
         }
 
-        // @formatter:off
-        add(attestationIdBrand       ?.getOrNull())
-        add(attestationIdDevice      ?.getOrNull())
-        add(attestationIdProduct     ?.getOrNull())
-        add(attestationIdSerial      ?.getOrNull())
-        add(attestationIdImei        ?.getOrNull())
-        add(attestationIdMeid        ?.getOrNull())
-        add(attestationIdManufacturer?.getOrNull())
-        add(attestationIdModel       ?.getOrNull())
-        add(vendorPatchLevel         ?.getOrNull())
-        add(bootPatchLevel           ?.getOrNull())
-        add(deviceUniqueAttestation  ?.getOrNull())
-        add(attestationIdSecondImei  ?.getOrNull())
-        add(moduleHash               ?.getOrNull())
-        // @formatter:on
+        add(attestationIdBrand)
+        add(attestationIdDevice)
+        add(attestationIdProduct)
+        add(attestationIdSerial)
+        add(attestationIdImei)
+        add(attestationIdMeid)
+        add(attestationIdManufacturer)
+        add(attestationIdModel)
+        add(vendorPatchLevel)
+        add(bootPatchLevel)
+        add(deviceUniqueAttestation)
+        add(attestationIdSecondImei)
+        add(moduleHash)
     }
 
     companion object : Asn1Decodable<Asn1Sequence, AuthorizationList> {
@@ -290,22 +286,35 @@ class AuthorizationList(
             // @formatter:on
 
             val rootOfTrust: AttestationValue<RootOfTrust>? =
-                src[RootOfTrust.explicitTag]?.let {rot->
+                src[RootOfTrust.explicitTag]?.let { rot ->
                     RootOfTrust.decodeFromTlvSafe(rot.asSequence()).fold(
-                    onSuccess = { AttestationValue.Success(it, RootOfTrust) },
-                    onFailure = { AttestationValue.Failure(RootOfTrust::class.simpleName!!, RootOfTrust, rot)  as AttestationValue<RootOfTrust>}) }
+                        onSuccess = { AttestationValue.Success(it, RootOfTrust) },
+                        onFailure = {
+                            AttestationValue.Failure(
+                                RootOfTrust::class.simpleName!!,
+                                RootOfTrust,
+                                rot
+                            ) as AttestationValue<RootOfTrust>
+                        })
+                }
             val osVersion: AttestationValue<OsVersion>? = OsVersion.decode(src)
             val osPatchLevel: AttestationValue<OsPatchLevel>? = OsPatchLevel.decode(src)
 
             val attestationApplicationId: AttestationValue<AttestationApplicationId>? =
-                src[AttestationApplicationId.explicitTag]?.let { appId->
+                src[AttestationApplicationId.explicitTag]?.let { appId ->
                     catching {
                         val children = appId.asEncapsulatingOctetString().children
                         require(children.size == 1) // TODO: check again, and also check others TLV entries so that at most 1 is given, should we give a warning? not lenient
                         AttestationApplicationId.decodeFromTlv(children.first().asSequence())
                     }.fold(
                         onSuccess = { AttestationValue.Success(it, AttestationApplicationId) },
-                        onFailure = { AttestationValue.Failure(AttestationApplicationId::class.simpleName!!, AttestationApplicationId, appId)  as AttestationValue<AttestationApplicationId>})
+                        onFailure = {
+                            AttestationValue.Failure(
+                                AttestationApplicationId::class.simpleName!!,
+                                AttestationApplicationId,
+                                appId
+                            ) as AttestationValue<AttestationApplicationId>
+                        })
                 }
 
             // @formatter:off
@@ -373,11 +382,17 @@ class AuthorizationList(
 
         // TODO: check decode functions once more
         private inline fun <reified T : Tagged, reified D : Asn1Encodable<Asn1Element>> T.decode(src: Asn1Sequence): AttestationValue<D>? =
-            src[explicitTag]?.let { element->
+            src[explicitTag]?.let { element ->
                 @Suppress("UNCHECKED_CAST")
                 (this as Asn1Decodable<Asn1Element, D>).decodeFromTlvSafe(src = element).fold(
                     onSuccess = { AttestationValue.Success(it, this) },
-                    onFailure = { AttestationValue.Failure(D::class.simpleName!!, this, element)  as AttestationValue<D>})
+                    onFailure = {
+                        AttestationValue.Failure(
+                            D::class.simpleName!!,
+                            this,
+                            element
+                        ) as AttestationValue<D>
+                    })
             }
 
         private inline fun <reified T : Tagged, reified D : Asn1Encodable<Asn1Element>> T.decodeSet(
@@ -411,27 +426,20 @@ class AuthorizationList(
             return ((children.firstOrNull { (it as Asn1ExplicitlyTagged).tag == asn1Tag } as Asn1ExplicitlyTagged?)?.children)?.singleOrNull
         }
 
-        private inline fun <reified T : Tagged> T.decodeNull_(src: Asn1Sequence): T? =
-            if (src.hasNull(explicitTag)) this else null
-
-        private inline fun <reified A: Asn1Encodable<Asn1Primitive>> A.decodeNull(src: Asn1Sequence): AttestationValue<A>? =
-             (if (src.hasNull((this as Tagged).explicitTag)) AttestationValue.Success(
-                    this as Asn1Encodable<*>,
-                    this
-                ) else AttestationValue.Failure(
-                    this::class.simpleName!!,
-                    this,
-                    src
-                )) as AttestationValue<A>?
-
-        private fun Asn1Sequence.hasNull(tag: ULong): Boolean {
-            //TODO: the success failure check must go here and the above function must return nullable AttestationValue
+        private inline fun <reified A : Asn1Encodable<Asn1Primitive>> A.decodeNull(src: Asn1Sequence): AttestationValue<A>? {
+            val tag = (this as Tagged).explicitTag
             val asn1Tag = Asn1.ExplicitTag(tag)
-            return ((children.firstOrNull { (it as Asn1ExplicitlyTagged).tag == asn1Tag } as Asn1ExplicitlyTagged?)?.children)?.let {
-                if (it.size != 1) false
-                else catchingUnwrapped { it.first().asPrimitive().readNull() }
-                    .fold(onSuccess = { true }, onFailure = { false })
-            } ?: false
+            return ((src.children.firstOrNull { (it as Asn1ExplicitlyTagged).tag == asn1Tag } as Asn1ExplicitlyTagged?)?.children)?.let {
+                if (it.isEmpty()) null
+                (if (it.size != 1) AttestationValue.Failure(this::class.simpleName!!, this, src)
+                else {
+                    val first = it.first()
+                    catchingUnwrapped { first.asPrimitive().readNull() }
+                        .fold(
+                            onSuccess = { AttestationValue.Success(this, this) },
+                            onFailure = { AttestationValue.Failure(this::class.simpleName!!, this, first) })
+                }) as AttestationValue<A>?
+            } ?: null
         }
 
         private val List<Asn1Element>.singleOrNull: Asn1Element? get() = if (size == 1) first() else null
