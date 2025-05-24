@@ -3,8 +3,12 @@
 ## 3.0
 
 ### NEXT
-* `kotlincrypto:secure-random:0.3.2` -> `kotlincrypto.random:crypto-rand:0.5.0`
-    * This fixes key generation in WASM/JS
+* Lower Android `minSDK` to 21 (5.0 Lollipop) for all modules Except _Supreme_
+* Update AGP to 8.6.1
+* Dependency Updates:
+    * `kotlincrypto:secure-random:0.3.2` -> `kotlincrypto.random:crypto-rand:0.5.0`
+        * This fixes key generation in WASM/JS
+    * KmmResult 1.9.2 (fow Android SDK 21 compat)
 * Add `SpecializedSymmetricEncryptionAlgorithm`
     * This allows `randomKey()` etc to operate on COSE/JWE algorithms
 * Clean up some function signatures:
