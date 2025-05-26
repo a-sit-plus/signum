@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.validate
 
+import at.asitplus.signum.CertificatePolicyException
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.toBigInteger
@@ -33,7 +34,7 @@ class PolicyValidator(
     private var supportedExtensions: Set<ObjectIdentifier>? = null
 
     init {
-        certIndex = 1
+        certIndex = 0
         explicitPolicy = if (expPolicyRequired) 0 else certPathLen + 1
         policyMapping = if (polMappingInhibited) 0 else certPathLen + 1
         inhibitAnyPolicy = if (anyPolicyInhibited) 0 else certPathLen + 1
@@ -52,24 +53,25 @@ class PolicyValidator(
     }
 
     override fun check(currCert: X509Certificate) {
-        rootNode = processPolicies(
-            certIndex,
-            initPolicies,
-            explicitPolicy,
-            policyMapping,
-            inhibitAnyPolicy,
-            rejectPolicyQualifiers,
-            rootNode,
-            currCert,
-            certIndex == certPathLen
-        )
+        if (certIndex > 0) {
+            rootNode = processPolicies(
+                certIndex,
+                initPolicies,
+                explicitPolicy,
+                policyMapping,
+                inhibitAnyPolicy,
+                rejectPolicyQualifiers,
+                rootNode,
+                currCert,
+                certIndex == certPathLen
+            )
 
-        if (certIndex != certPathLen) {
-            explicitPolicy = updateExplicitPolicy(explicitPolicy, currCert, false)
-            policyMapping = updatePolicyMapping(policyMapping, currCert)
-            inhibitAnyPolicy = updateInhibitAnyPolicy(inhibitAnyPolicy, currCert)
+            if (certIndex != certPathLen) {
+                explicitPolicy = updateExplicitPolicy(explicitPolicy, currCert, false)
+                policyMapping = updatePolicyMapping(policyMapping, currCert)
+                inhibitAnyPolicy = updateInhibitAnyPolicy(inhibitAnyPolicy, currCert)
+            }
         }
-
         certIndex++
     }
 
@@ -87,7 +89,7 @@ class PolicyValidator(
         }
 
         val constraints =
-            currentCert.findExtension(KnownOIDs.policyConstraints)?.decodePolicyConstraints()
+            currentCert.findExtension(KnownOIDs.policyConstraints_2_5_29_36)?.decodePolicyConstraints()
                 ?: return result
 
         val required = constraints.requireExplicitPolicy.toBigInteger().intValue()
@@ -253,11 +255,12 @@ class PolicyValidator(
 
         if (isFinalCert) {
             // RFC 5280: 6.1.5 (a)-(b)
-            val remainingExplicit = updateExplicitPolicy(explicitPolicy, currentCert, true)
-            // RFC 5280: 6.1.3 (f)
-            if (remainingExplicit == 0 && root == null) {
-                throw Exception("Non-null policy tree required but policy tree is null")
-            }
+            this.explicitPolicy = updateExplicitPolicy(explicitPolicy, currentCert, true)
+        }
+
+        // RFC 5280: 6.1.3 (f)
+        if (this.explicitPolicy == 0 && root == null) {
+            throw CertificatePolicyException("Non-null policy tree required but policy tree is null")
         }
 
         return root
@@ -316,6 +319,8 @@ class PolicyValidator(
         val parentNodes = root.getPolicyNodesExpected(certIndex - 1, currentPolicy, matchAnyPolicy)
         if (parentNodes.isEmpty()) return false
 
+        var foundMatch = false
+
         for (parentNode in parentNodes) {
             if (currentPolicy == KnownOIDs.anyPolicy) {
                 parentNode.expectedPolicySet.forEach { expectedPolicy ->
@@ -329,6 +334,7 @@ class PolicyValidator(
                             expectedPolicySet = setOf(expectedPolicy),
                             generatedByPolicyMapping = false
                         )
+                        foundMatch = true
                     }
                 }
             } else {
@@ -340,11 +346,13 @@ class PolicyValidator(
                     expectedPolicySet = setOf(currentPolicy),
                     generatedByPolicyMapping = false
                 )
+                foundMatch = true
             }
         }
 
-        return true
+        return foundMatch
     }
+
 
     /*
     * RFC 5280: 6.1.4 (a)-(b)
