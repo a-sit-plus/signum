@@ -122,6 +122,10 @@ private fun subjectAndIssuerPrincipalMatch(
     if (issuerInChildPrincipal != subjectInIssuerPrincipal) {
         throw CertificateChainValidatorException("Subject of issuer cert and issuer of child certificate mismatch.")
     }
+
+    if (cert.tbsCertificate.issuerUniqueID != issuer.tbsCertificate.subjectUniqueID) {
+        throw CertificateChainValidatorException("UID of issuer cert and UID of issuer in child certificate mismatch.")
+    }
 }
 
 private fun wasCertificateIssuedWithinIssuerValidityPeriod(
