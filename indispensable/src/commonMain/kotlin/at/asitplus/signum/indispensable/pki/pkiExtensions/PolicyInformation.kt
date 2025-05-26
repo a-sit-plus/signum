@@ -47,6 +47,7 @@ class PolicyInformation(
     }
 }
 
+// TODO further decoding of value (User notice, CPS Pointer etc.)
 class PolicyQualifierInfo(
     override val oid: ObjectIdentifier,
     val value: Asn1Element
