@@ -74,7 +74,7 @@ suspend fun CertificateChain.validate(
             expPolicyRequired = context.explicitPolicyRequired,
             polMappingInhibited = context.policyMappingInhibited,
             anyPolicyInhibited = context.anyPolicyInhibited,
-            certPathLen = this.size,
+            certPathLen = this.size - 1,
             rejectPolicyQualifiers = context.policyQualifiersRejected,
             rootNode = rootNode
         )
