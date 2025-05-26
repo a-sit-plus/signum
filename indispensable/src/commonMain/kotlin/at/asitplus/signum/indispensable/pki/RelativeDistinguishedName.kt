@@ -121,7 +121,16 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
 
         other as AttributeTypeAndValue
 
-        if (value != other.value) return false
+        val thisStr = (this.value as? Asn1Primitive)?.asAsn1String()?.value
+        val otherStr = (other.value as? Asn1Primitive)?.asAsn1String()?.value
+        val thisNormalized = thisStr?.replace("\\s+".toRegex(), "")?.lowercase()
+        val otherNormalized = otherStr?.replace("\\s+".toRegex(), "")?.lowercase()
+        if (thisStr != null && otherStr != null) {
+            if (thisNormalized != otherNormalized) return false
+        } else {
+            if (value != other.value) return false
+        }
+
         if (oid != other.oid) return false
 
         return true
