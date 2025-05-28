@@ -54,10 +54,14 @@ class CertificateValidationContext(
     val initialPolicies: Set<ObjectIdentifier> = emptySet()
 )
 
+class CertificateValidationResult (
+    val rootPolicyNode: PolicyNode? = null
+)
+
 suspend fun CertificateChain.validate(
     context: CertificateValidationContext = CertificateValidationContext(),
     validator: suspend (x509Certificate: X509Certificate) -> CertValiditySource = { CertValiditySource.ALWAYS_ACCEPT }
-) {
+) : CertificateValidationResult {
 
     val validators = mutableListOf<Validator>()
 
@@ -99,6 +103,7 @@ suspend fun CertificateChain.validate(
             )
         }
     }
+    return CertificateValidationResult((validators.find { it is PolicyValidator } as? PolicyValidator)?.rootNode)
 }
 
 private fun verifySignature(

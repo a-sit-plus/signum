@@ -137,5 +137,15 @@ class PolicyNode(
                 add(this@PolicyNode)
             }
         }
+
+    fun getAllSubtreeQualifiers(): Set<PolicyQualifierInfo> {
+        val result = mutableSetOf<PolicyQualifierInfo>()
+        fun traverse(node: PolicyNode) {
+            result += node.qualifierSet
+            node.children.forEach { traverse(it) }
+        }
+        traverse(this)
+        return result
+    }
 }
 
