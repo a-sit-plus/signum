@@ -8,7 +8,6 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree.Companion.test
 import java.io.FileInputStream
 import java.util.regex.Pattern
 
-
 plugins {
     id("com.android.library")
     kotlin("multiplatform")
@@ -75,6 +74,9 @@ swiftklib {
 android {
     namespace = "at.asitplus.signum.supreme"
     defaultConfig {
+        //override Android minSDK for Supreme
+        logger.lifecycle("  \u001b[7m\u001b[1m"+ "Overriding Android defaultConfig minSDK to 30 for project Supreme" +"\u001b[0m")
+        minSdk = 30
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -105,7 +107,8 @@ android {
     }
 
     testOptions {
-        targetSdk = androidMinSdk
+        //take Android minSDK from defaultConfig, as it was overridden there
+        targetSdk = android.defaultConfig.minSdk
         managedDevices {
             localDevices {
                 create("pixel2api33") {

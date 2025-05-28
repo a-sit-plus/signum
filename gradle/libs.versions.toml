@@ -10,6 +10,7 @@ jose = "9.31"
 kotlinpoet = "1.16.0"
 runner = "1.5.2"
 secureRandom = "0.3.2"
+kmmresult= "1.9.2"
 
 [libraries]
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }

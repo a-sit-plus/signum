@@ -2,6 +2,12 @@
 
 ## 3.0
 
+### 3.16.2
+* Lower Android `minSDK` to 21 (5.0 Lollipop) for all modules Except _Supreme_
+* Update AGP to 8.6.1
+* Dependency Updates:
+    * KmmResult 1.9.2 (fow Android SDK 21 compat)
+
 ### 3.16.1 (Supreme 0.8.1) Hotfix
 * Generalized, proper COSE to MAC mapping, preventing unexpected behaviour for `HS265_24`
 
