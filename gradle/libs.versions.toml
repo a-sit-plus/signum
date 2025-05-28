@@ -9,6 +9,7 @@ bignum = "0.3.10"
 jose = "9.31"
 kotlinpoet = "1.16.0"
 runner = "1.5.2"
+kmmresult= "1.9.2"
 kotlincryptoRandom = "0.5.0"
 
 [libraries]
