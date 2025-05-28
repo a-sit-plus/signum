@@ -22,7 +22,7 @@ class PolicyValidator(
     anyPolicyInhibited: Boolean,
     private val certPathLen: Int,
     private val rejectPolicyQualifiers: Boolean,
-    private var rootNode: PolicyNode?
+    var rootNode: PolicyNode?
 ) : Validator {
     private val initPolicies: Set<ObjectIdentifier> =
         initialPolicies.ifEmpty { setOf(KnownOIDs.anyPolicy) }.toSet()
