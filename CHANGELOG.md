@@ -3,8 +3,9 @@
 ## 3.0
 
 ### NEXT
-* `kotlincrypto:secure-random:0.3.2` -> `kotlincrypto.random:crypto-rand:0.5.0`
-    * This fixes key generation in WASM/JS
+* Dependency Updates:
+    * `kotlincrypto:secure-random:0.3.2` -> `kotlincrypto.random:crypto-rand:0.5.0`
+        * This fixes key generation in WASM/JS
 * Add `SpecializedSymmetricEncryptionAlgorithm`
     * This allows `randomKey()` etc to operate on COSE/JWE algorithms
 * Clean up some function signatures:
