@@ -652,30 +652,6 @@ open class InhibitPolicyMappingTest : FreeSpec ({
     }
 
     "Invalid Self-Issued inhibitPolicyMapping Test8" {
-        val inhibitPolicyMapping1P1subsubCACert = "-----BEGIN CERTIFICATE-----\n" +
-                "MIID0jCCArqgAwIBAgIBAjANBgkqhkiG9w0BAQsFADBXMQswCQYDVQQGEwJVUzEf\n" +
-                "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEnMCUGA1UEAxMeaW5oaWJp\n" +
-                "dFBvbGljeU1hcHBpbmcxIFAxIHN1YkNBMB4XDTEwMDEwMTA4MzAwMFoXDTMwMTIz\n" +
-                "MTA4MzAwMFowWjELMAkGA1UEBhMCVVMxHzAdBgNVBAoTFlRlc3QgQ2VydGlmaWNh\n" +
-                "dGVzIDIwMTExKjAoBgNVBAMTIWluaGliaXRQb2xpY3lNYXBwaW5nMSBQMSBzdWJz\n" +
-                "dWJDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAJJrQ5z0bfU+HR+h\n" +
-                "7+Rok9J7y4aPRd50OEgl+SGnwBLodQ1xgyZUhJgSbIeaLCw5uYUWJedxh1TQM4Fg\n" +
-                "RZD5VIMFpFjIu4xg0mRXm+YomjBkF2eGCtpgjRjbO9rbjVxj01oQmtE+595P4OFb\n" +
-                "zXKXkb9ilbFvz2zVKJ+1aTENKJd9jB9STsNz5NTKVRUSr6WF+gn8HJofrpsQdZVO\n" +
-                "qQOk6GAB4FK1/0TyNmywGXWkEbM1WJeejSnHuNX1gBRjlCorwOKP5M/T5mT1KZUP\n" +
-                "x4Fhk826XPKMxGvC4xKNfpjlmgHGH7LpsSbLv+4UE0aGVPcKbkwx9b7W5Ot5x2c9\n" +
-                "urn9WnsCAwEAAaOBpTCBojAfBgNVHSMEGDAWgBTzzQc/gzDTxwJi2ubKbAGlsbaA\n" +
-                "yzAdBgNVHQ4EFgQUPkV0oovS8VaMRgFmeHAkxiLBA54wDgYDVR0PAQH/BAQDAgEG\n" +
-                "MA8GA1UdEwEB/wQFMAMBAf8wFwYDVR0gBBAwDjAMBgpghkgBZQMCATACMCYGA1Ud\n" +
-                "IQEB/wQcMBowGAYKYIZIAWUDAgEwAgYKYIZIAWUDAgEwAzANBgkqhkiG9w0BAQsF\n" +
-                "AAOCAQEAdfivFridTE3XIZBYeomP2Heqj4tX3TiDbCSCOiIs/608QnZS7a0e1/yl\n" +
-                "yPWexV2WMAOv9HvdaQ3HtejZpBPvc0Gmu1M45vCdjQC/4/MWbtKVl3buBecRcWZi\n" +
-                "z9sfajKhlZzXISyOp9GjWfH6OYtPypj1xMvqIj4NSEu+RWyavJzcVIZtVWiUBGQc\n" +
-                "zR3jxgTs6CzWMbXFe/dHrDzdBbtLk6Z647Co19Cg07I4OP21gQB7nombxlv/EHbb\n" +
-                "BajVkd+APg6NNDCV+JgSU3XXQpTGiSx0J6P+39FrRPfTJcdUIIfSUoxuTDVy4Uzj\n" +
-                "+66fxMiAaaII4phA6fBlCj2mWvBr/g==\n" +
-                "-----END CERTIFICATE-----"
-
         val leafPem = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDtjCCAp6gAwIBAgIBATANBgkqhkiG9w0BAQsFADBaMQswCQYDVQQGEwJVUzEf\n" +
                 "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEqMCgGA1UEAxMhaW5oaWJp\n" +

@@ -28,22 +28,6 @@ class PolicyNode(
         children += child
     }
 
-    constructor(
-        parent: PolicyNode?,
-        validPolicy: String?,
-        qualifierSet: Set<PolicyQualifierInfo>?,
-        criticalityIndicator: Boolean,
-        expectedPolicySet: Set<String>?,
-        generatedByPolicyMapping: Boolean
-    ) : this(
-        parent = parent,
-        validPolicy = ObjectIdentifier(validPolicy ?: ""),
-        qualifierSet = qualifierSet ?: emptySet(),
-        criticalityIndicator = criticalityIndicator,
-        expectedPolicySet = expectedPolicySet?.map { ObjectIdentifier(it) }?.toSet() ?: emptySet(),
-        generatedByPolicyMapping = generatedByPolicyMapping
-    )
-
     constructor(parent: PolicyNode?, node: PolicyNode) : this(
         parent = parent,
         validPolicy = node.validPolicy,
