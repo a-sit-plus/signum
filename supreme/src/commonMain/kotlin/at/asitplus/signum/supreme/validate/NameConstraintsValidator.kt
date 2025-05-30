@@ -36,7 +36,6 @@ class NameConstraintsValidator(
         previousNameConstraints: NameConstraints?
     ): NameConstraints? {
 
-        println()
         val newNameConstraints =
             currCert.findExtension(KnownOIDs.nameConstraints_2_5_29_30)?.decodeNameConstraints()
 
@@ -51,5 +50,4 @@ class NameConstraintsValidator(
             previousNameConstraints
         }
     }
-
 }

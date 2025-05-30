@@ -104,7 +104,6 @@ open class BasicConstraintsTest : FreeSpec({
 
 
     "Invalid Missing basicConstraints Test1" {
-
         val missingBasicConstraintsCACert = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDfzCCAmegAwIBAgIBFjANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
                 "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEVMBMGA1UEAxMMVHJ1c3Qg\n" +

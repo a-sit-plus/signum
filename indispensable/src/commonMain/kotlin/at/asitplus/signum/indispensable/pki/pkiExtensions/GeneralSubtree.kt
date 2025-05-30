@@ -79,29 +79,24 @@ data class GeneralSubtrees(
                 val subsequent = mutableTrees[j].base.name
                 when (current.constrains(subsequent)) {
                     GeneralNameOption.ConstraintResult.DIFF_TYPE -> {
-                        // Not comparable; continue checking
                         j++
                     }
 
                     GeneralNameOption.ConstraintResult.MATCH -> {
-                        // Duplicate found; mark current for removal
                         removeCurrent = true
                         break
                     }
 
                     GeneralNameOption.ConstraintResult.NARROWS -> {
-                        // Subsequent is narrower; remove it
                         mutableTrees.removeAt(j)
                     }
 
                     GeneralNameOption.ConstraintResult.WIDENS -> {
-                        // Current is narrower; mark it for removal
                         removeCurrent = true
                         break
                     }
 
                     GeneralNameOption.ConstraintResult.SAME_TYPE -> {
-                        // Same type but not narrowing/widening; continue
                         j++
                     }
                 }
@@ -109,7 +104,6 @@ data class GeneralSubtrees(
 
             if (removeCurrent) {
                 mutableTrees.removeAt(i)
-                // Do not increment i; new element is now at index i
             } else {
                 i++
             }

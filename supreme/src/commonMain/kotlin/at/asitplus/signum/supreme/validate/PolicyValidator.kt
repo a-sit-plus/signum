@@ -40,18 +40,6 @@ class PolicyValidator(
         inhibitAnyPolicy = if (anyPolicyInhibited) 0 else certPathLen + 1
     }
 
-    fun getSupportedExtensions(): MutableSet<ObjectIdentifier>? {
-        if (supportedExtensions == null) {
-            supportedExtensions = setOf(
-                KnownOIDs.certificatePolicies,
-                KnownOIDs.policyMappings,
-                KnownOIDs.policyConstraints,
-                KnownOIDs.inhibitAnyPolicy
-            )
-        }
-        return supportedExtensions?.toMutableSet()
-    }
-
     override fun check(currCert: X509Certificate) {
         if (certIndex > 0) {
             rootNode = processPolicies(
