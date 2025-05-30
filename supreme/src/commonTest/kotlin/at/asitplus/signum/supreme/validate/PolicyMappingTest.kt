@@ -9,6 +9,9 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 
+/*
+* PKITS 4.10 Policy Mappings
+* */
 open class PolicyMappingTest : FreeSpec ({
 
     val NISTTestPolicyOne = "2.16.840.1.101.3.2.1.48.1"
