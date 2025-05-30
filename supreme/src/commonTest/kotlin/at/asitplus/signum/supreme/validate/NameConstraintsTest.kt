@@ -12,6 +12,7 @@ import io.kotest.matchers.shouldBe
 * PKITS 4.13 Name Constraints
 * */
 open class NameConstraintsTest : FreeSpec({
+
     val trustAnchorRootCertificate = "-----BEGIN CERTIFICATE-----\n" +
             "MIIDRzCCAi+gAwIBAgIBATANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
             "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEVMBMGA1UEAxMMVHJ1c3Qg\n" +
@@ -428,7 +429,6 @@ open class NameConstraintsTest : FreeSpec({
     }
 
     "Invalid DN nameConstraints Test2" {
-        // subjectName of the EE cert fall outside of the subtree
         val leafPem = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDuTCCAqGgAwIBAgIBAjANBgkqhkiG9w0BAQsFADBPMQswCQYDVQQGEwJVUzEf\n" +
                 "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEfMB0GA1UEAxMWbmFtZUNv\n" +
@@ -462,7 +462,6 @@ open class NameConstraintsTest : FreeSpec({
     }
 
     "Invalid DN nameConstraints Test3" {
-        // subjectAltName of the EE cert fall outside of the subtree
         val leafPem = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIEVTCCAz2gAwIBAgIBAzANBgkqhkiG9w0BAQsFADBPMQswCQYDVQQGEwJVUzEf\n" +
                 "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEfMB0GA1UEAxMWbmFtZUNv\n" +
@@ -625,7 +624,6 @@ open class NameConstraintsTest : FreeSpec({
     }
 
     "Invalid DN nameConstraints Test7" {
-        // The end entity certificate includes a subject name that falls within excluded subtree
         val leafPem = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDuTCCAqGgAwIBAgIBAjANBgkqhkiG9w0BAQsFADBPMQswCQYDVQQGEwJVUzEf\n" +
                 "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEfMB0GA1UEAxMWbmFtZUNv\n" +
