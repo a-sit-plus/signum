@@ -34,7 +34,7 @@ class PolicyConstraints (
             if (src.hasMoreChildren()) {
                 src.children.forEach {
                     if (it.tag.tagValue == REQUIRE) requireExplicitPolicy =  Asn1Integer.decodeFromAsn1ContentBytes(it.asPrimitive().content)
-                        if (it.tag.tagValue == INHIBIT) inhibitPolicyMapping =  Asn1Integer.decodeFromAsn1ContentBytes(it.asPrimitive().content)
+                    if (it.tag.tagValue == INHIBIT) inhibitPolicyMapping =  Asn1Integer.decodeFromAsn1ContentBytes(it.asPrimitive().content)
                 }
             }
             return PolicyConstraints(requireExplicitPolicy, inhibitPolicyMapping)
