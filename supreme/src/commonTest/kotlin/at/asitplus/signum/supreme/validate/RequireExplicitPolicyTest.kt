@@ -8,6 +8,9 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 
+/*
+* PKITS 4.9 Require Explicit Policy
+* */
 open class RequireExplicitPolicyTest : FreeSpec ({
 
     val trustAnchorRootCertificate = "-----BEGIN CERTIFICATE-----\n" +
