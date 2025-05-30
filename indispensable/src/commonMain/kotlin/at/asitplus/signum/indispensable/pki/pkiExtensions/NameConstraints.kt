@@ -7,7 +7,6 @@ import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
-import at.asitplus.signum.indispensable.asn1.toBigInteger
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 import kotlinx.io.IOException
@@ -16,10 +15,6 @@ data class NameConstraints(
     var permitted: GeneralSubtrees? = null,
     var excluded: GeneralSubtrees? = null
 ) {
-    private var hasMin: Boolean = false
-    private var hasMax: Boolean = false
-    private var minMaxValid: Boolean = false
-
     companion object {
         val PERMITTED: ULong = 0u
         val EXCLUDED: ULong = 1u
@@ -60,34 +55,7 @@ data class NameConstraints(
         }
     }
 
-    private fun calcMinMax() {
-        hasMin = false
-        hasMax = false
-        excluded?.trees?.forEach { subtree ->
-            if (subtree.minimum.toBigInteger().intValue() != 0) hasMin = true
-            if (subtree.maximum?.toBigInteger()?.intValue() != -1) hasMax = true
-        }
-        permitted?.trees?.forEach { subtree ->
-            if (subtree.minimum.toBigInteger().intValue() != 0) hasMin = true
-            if (subtree.maximum?.toBigInteger()?.intValue() != -1) hasMax = true
-        }
-        minMaxValid = true
-    }
-
     fun verify(cert: X509Certificate): Boolean {
-
-        if (!minMaxValid) {
-            calcMinMax()
-        }
-
-//        if (hasMin) {
-//            throw IOException("Non-zero minimum BaseDistance in name constraints not supported")
-//        }
-//
-//        if (hasMax) {
-//            throw IOException("Maximum BaseDistance in name constraints not supported")
-//        }
-
         val subject = cert.tbsCertificate.subjectName
 
         if (subject.relativeDistinguishedNames.isNotEmpty()) {
@@ -96,7 +64,6 @@ data class NameConstraints(
             }
         }
 
-        // Extract Subject Alternative Names (SAN)
         val alternativeNames = mutableListOf<GeneralName>()
         val alternativeNameExtension = cert.tbsCertificate.subjectAlternativeNames
         if (alternativeNameExtension != null) {
@@ -111,7 +78,7 @@ data class NameConstraints(
         if (alternativeNames.isEmpty()) {
             val fallbackEmails = subject.relativeDistinguishedNames
                 .flatMap { it.attrsAndValues }
-                .filter { it.oid == KnownOIDs.emailAddress_1_2_840_113549_1_9_1 } // PKCS#9 emailAddress OID
+                .filter { it.oid == KnownOIDs.emailAddress_1_2_840_113549_1_9_1 }
                 .mapNotNull { attr ->
                     val str = (attr.value as? Asn1Primitive)?.asAsn1String()?.value
                     str?.let {
@@ -125,7 +92,6 @@ data class NameConstraints(
         }
 
 
-        // If no IP/DNS in SAN, fallback to last CN in subject DN
         val cn = subject.findMostSpecificCommonName()?.value?.asPrimitive()
         if (cn != null) {
             try {
@@ -141,7 +107,6 @@ data class NameConstraints(
             }
         }
 
-        // Verify each altName against constraints
         for (alt in alternativeNames) {
             if (!verify(alt.name)) {
                 return false

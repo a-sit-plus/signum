@@ -28,7 +28,6 @@ class UriName(
             val schemeEnd = name.indexOf(':')
 
             if (schemeEnd <= 0) {
-                // Treat as URI name constraint (no scheme, just host constraint)
                 val host = name
                 val hostDNS = try {
                     val normalizedHost = if (host.startsWith(".")) host.substring(1) else host
