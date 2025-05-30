@@ -1,16 +1,17 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.CertificatePolicyException
-import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 
+/*
+* PKITS 4.8 Certificate Policies
+* */
 open class CertificatePoliciesTest : FreeSpec({
 
     val NISTTestPolicyOne = "2.16.840.1.101.3.2.1.48.1"
