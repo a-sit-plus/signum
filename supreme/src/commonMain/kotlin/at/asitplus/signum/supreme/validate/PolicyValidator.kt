@@ -117,7 +117,7 @@ class PolicyValidator(
         }
 
         val constraints =
-            currentCert.findExtension(KnownOIDs.policyConstraints)?.decodePolicyConstraints()
+            currentCert.findExtension(KnownOIDs.policyConstraints_2_5_29_36)?.decodePolicyConstraints()
                 ?: return result
 
         val inhibitMapping = constraints.inhibitPolicyMapping.toBigInteger().intValue()
