@@ -34,6 +34,7 @@ open class NameChainingTest : FreeSpec({
             "eczztXD9NUkGUGw3LzpLDJazz3JhlZ/9pXzF\n" +
             "-----END CERTIFICATE-----\n"
     val trustAnchorRoot = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
+    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchorRoot))
 
     val goodCACert = "-----BEGIN CERTIFICATE-----\n" +
             "MIIDfDCCAmSgAwIBAgIBAjANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
@@ -107,7 +108,7 @@ open class NameChainingTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<CertificateChainValidatorException> { chain.validate() }.apply {
+        shouldThrow<CertificateChainValidatorException> { chain.validate(defaultContext) }.apply {
             message shouldBe "Subject of issuer cert and issuer of child certificate mismatch."
         }
     }
@@ -165,7 +166,7 @@ open class NameChainingTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<CertificateChainValidatorException> { chain.validate() }.apply {
+        shouldThrow<CertificateChainValidatorException> { chain.validate(defaultContext) }.apply {
             message shouldBe "Subject of issuer cert and issuer of child certificate mismatch."
         }
     }
@@ -198,7 +199,7 @@ open class NameChainingTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Valid Name Chaining Whitespace Test4" {
@@ -229,7 +230,7 @@ open class NameChainingTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Valid Name Chaining Capitalization Test5" {
@@ -260,7 +261,7 @@ open class NameChainingTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Valid Name Chaining UIDs Test6" {
@@ -290,7 +291,7 @@ open class NameChainingTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Valid RFC3280 Mandatory Attribute Types Test7" {
@@ -347,7 +348,7 @@ open class NameChainingTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Valid RFC3280 Optional Attribute Types Test8" {
@@ -404,7 +405,7 @@ open class NameChainingTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Valid UTF8String Encoded Names Test9" {
@@ -457,7 +458,7 @@ open class NameChainingTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Valid Rollover from PrintableString to UTF8String Test10" {
@@ -512,7 +513,7 @@ open class NameChainingTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Valid UTF8String Case Insensitive Match Test11" {
@@ -567,6 +568,6 @@ open class NameChainingTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 })

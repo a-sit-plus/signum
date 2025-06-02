@@ -32,8 +32,8 @@ open class SignatureVerificationTest : FreeSpec({
             "/lnNFCIpq+/+3cnhufDjvxMy5lg+cwgMCiGzCxn4n4dBMw41C+4KhNF7ZtKuKSZ1\n" +
             "eczztXD9NUkGUGw3LzpLDJazz3JhlZ/9pXzF\n" +
             "-----END CERTIFICATE-----\n"
-    val root = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
-
+    val trustAnchorRoot = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
+    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchorRoot))
 
     "Valid Signatures Test1" {
         val goodCACert = "-----BEGIN CERTIFICATE-----\n" +
@@ -81,9 +81,9 @@ open class SignatureVerificationTest : FreeSpec({
                 "-----END CERTIFICATE-----"
         val ca = X509Certificate.decodeFromPem(goodCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, root)
+        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Invalid CA Signature Test2" {
@@ -132,9 +132,9 @@ open class SignatureVerificationTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(badSignedCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, root)
+        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<CryptoOperationFailed> { chain.validate() }.apply {
+        shouldThrow<CryptoOperationFailed> { chain.validate(defaultContext) }.apply {
             message shouldBe "Signature verification failed in CA certificate."
         }
     }
