@@ -39,6 +39,7 @@ open class PolicyMappingTest : FreeSpec ({
             "eczztXD9NUkGUGw3LzpLDJazz3JhlZ/9pXzF\n" +
             "-----END CERTIFICATE-----\n"
     val trustAnchorRoot = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
+    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchorRoot))
 
     val mapping1to2CACert = "-----BEGIN CERTIFICATE-----\n" +
             "MIIDvDCCAqSgAwIBAgIBMDANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
@@ -289,15 +290,15 @@ open class PolicyMappingTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        var context = CertificateValidationContext(initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
+        var context = CertificateValidationContext(trustAnchors = setOf(trustAnchorRoot), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
         shouldNotThrow<Throwable> { chain.validate(context) }
 
-        context = CertificateValidationContext(initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo)))
+        context = CertificateValidationContext(trustAnchors = setOf(trustAnchorRoot), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo)))
         shouldThrow<CertificatePolicyException> { chain.validate(context) }.apply {
             message shouldBe "Non-null policy tree required but policy tree is null"
         }
 
-        context = CertificateValidationContext(policyMappingInhibited = true)
+        context = CertificateValidationContext(trustAnchors = setOf(trustAnchorRoot), policyMappingInhibited = true)
         shouldThrow<CertificatePolicyException> { chain.validate(context) }.apply {
             message shouldBe "Non-null policy tree required but policy tree is null"
         }
@@ -331,11 +332,11 @@ open class PolicyMappingTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<CertificatePolicyException> { chain.validate() }.apply {
+        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
             message shouldBe "Non-null policy tree required but policy tree is null"
         }
 
-        val context = CertificateValidationContext(policyMappingInhibited = true)
+        val context = CertificateValidationContext(trustAnchors = setOf(trustAnchorRoot), policyMappingInhibited = true)
         shouldThrow<CertificatePolicyException> { chain.validate(context) }.apply {
             message shouldBe "Non-null policy tree required but policy tree is null"
         }
@@ -371,10 +372,10 @@ open class PolicyMappingTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSubCa, subCa, ca, trustAnchorRoot)
 
-        var context = CertificateValidationContext(initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo)))
+        var context = CertificateValidationContext(trustAnchors = setOf(trustAnchorRoot), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo)))
         shouldNotThrow<Throwable> { chain.validate(context) }
 
-        context = CertificateValidationContext(initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
+        context = CertificateValidationContext(trustAnchors = setOf(trustAnchorRoot), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
         shouldThrow<CertificatePolicyException> { chain.validate(context) }.apply {
             message shouldBe "Non-null policy tree required but policy tree is null"
         }
@@ -410,7 +411,7 @@ open class PolicyMappingTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSubCa, subCa, ca, trustAnchorRoot)
 
-        shouldThrow<CertificatePolicyException> { chain.validate() }.apply {
+        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
             message shouldBe "Non-null policy tree required but policy tree is null"
         }
     }
@@ -444,10 +445,10 @@ open class PolicyMappingTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca, trustAnchorRoot)
 
-        var context = CertificateValidationContext(initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
+        var context = CertificateValidationContext(trustAnchors = setOf(trustAnchorRoot), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
         shouldNotThrow<Throwable> { chain.validate(context) }
 
-        context = CertificateValidationContext(initialPolicies = setOf(ObjectIdentifier(NISTTestPolicySix)))
+        context = CertificateValidationContext(trustAnchors = setOf(trustAnchorRoot), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicySix)))
         shouldThrow<CertificatePolicyException> { chain.validate(context) }.apply {
             message shouldBe "Non-null policy tree required but policy tree is null"
         }
@@ -482,10 +483,10 @@ open class PolicyMappingTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca, trustAnchorRoot)
 
-        var context = CertificateValidationContext(initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
+        var context = CertificateValidationContext(trustAnchors = setOf(trustAnchorRoot), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
         shouldNotThrow<Throwable> { chain.validate(context) }
 
-        context = CertificateValidationContext(initialPolicies = setOf(ObjectIdentifier(NISTTestPolicySix)))
+        context = CertificateValidationContext(trustAnchors = setOf(trustAnchorRoot), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicySix)))
         shouldThrow<CertificatePolicyException> { chain.validate(context) }.apply {
             message shouldBe "Non-null policy tree required but policy tree is null"
         }
@@ -543,7 +544,7 @@ open class PolicyMappingTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<IllegalArgumentException> { chain.validate() }.apply {
+        shouldThrow<IllegalArgumentException> { chain.validate(defaultContext) }.apply {
             message shouldBe "issuerDomainPolicy must not be ANY_POLICY"
         }
     }
@@ -600,7 +601,7 @@ open class PolicyMappingTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<IllegalArgumentException> { chain.validate() }.apply {
+        shouldThrow<IllegalArgumentException> { chain.validate(defaultContext) }.apply {
             message shouldBe "subjectDomainPolicy must not be ANY_POLICY"
         }
     }
@@ -657,7 +658,7 @@ open class PolicyMappingTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Invalid Policy Mapping Test10" {
@@ -689,7 +690,7 @@ open class PolicyMappingTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca, trustAnchorRoot)
 
-        shouldThrow<CertificatePolicyException> { chain.validate() }.apply {
+        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
             message shouldBe "Non-null policy tree required but policy tree is null"
         }
     }
@@ -723,7 +724,7 @@ open class PolicyMappingTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Valid Policy Mapping Test12" {
@@ -762,7 +763,7 @@ open class PolicyMappingTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        val context = CertificateValidationContext(initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
+        val context = CertificateValidationContext(trustAnchors = setOf(trustAnchorRoot), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
         shouldNotThrow<Throwable> {
             val validationResult = chain.validate(context)
             validationResult.rootPolicyNode?.getAllSubtreeQualifiers()?.size shouldBe 1
@@ -798,7 +799,7 @@ open class PolicyMappingTest : FreeSpec ({
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
         shouldNotThrow<Throwable> {
-            val validationResult = chain.validate()
+            val validationResult = chain.validate(defaultContext)
             validationResult.rootPolicyNode?.getAllSubtreeQualifiers()?.size shouldBe 1
         }
     }
@@ -832,7 +833,7 @@ open class PolicyMappingTest : FreeSpec ({
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
         shouldNotThrow<Throwable> {
-            val validationResult = chain.validate()
+            val validationResult = chain.validate(defaultContext)
             validationResult.rootPolicyNode?.getAllSubtreeQualifiers()?.size shouldBe 1
         }
     }

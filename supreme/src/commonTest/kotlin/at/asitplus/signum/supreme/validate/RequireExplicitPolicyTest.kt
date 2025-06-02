@@ -34,6 +34,7 @@ open class RequireExplicitPolicyTest : FreeSpec ({
             "eczztXD9NUkGUGw3LzpLDJazz3JhlZ/9pXzF\n" +
             "-----END CERTIFICATE-----\n"
     val trustAnchorRoot = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
+    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchorRoot))
 
     val requireExplicitPolicy2CACert = "-----BEGIN CERTIFICATE-----\n" +
             "MIIDoTCCAomgAwIBAgIBLzANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
@@ -227,7 +228,7 @@ open class RequireExplicitPolicyTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSubSubCa, subSubCa, subCa, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Valid RequireExplicitPolicy Test2" {
@@ -353,7 +354,7 @@ open class RequireExplicitPolicyTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSubSubCa, subSubCa, subCa, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Invalid RequireExplicitPolicy Test3" {
@@ -479,7 +480,7 @@ open class RequireExplicitPolicyTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSubSubCa, subSubCa, subCa, ca, trustAnchorRoot)
 
-        shouldThrow<CertificatePolicyException> { chain.validate() }.apply {
+        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
             message shouldBe "Non-null policy tree required but policy tree is null"
         }
     }
@@ -607,7 +608,7 @@ open class RequireExplicitPolicyTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSubSubCa, subSubCa, subCa, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Invalid RequireExplicitPolicy Test5" {
@@ -734,7 +735,7 @@ open class RequireExplicitPolicyTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSubSubCa, subSubCa, subCa, ca, trustAnchorRoot)
 
-        shouldThrow<CertificatePolicyException> { chain.validate() }.apply {
+        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
             message shouldBe "Non-null policy tree required but policy tree is null"
         }
     }
@@ -768,7 +769,7 @@ open class RequireExplicitPolicyTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, selfIssuedCa, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Invalid Self-Issued requireExplicitPolicy Test7" {
@@ -801,7 +802,7 @@ open class RequireExplicitPolicyTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, selfIssuedCa, ca, trustAnchorRoot)
 
-        shouldThrow<CertificatePolicyException> { chain.validate() }.apply {
+        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
             message shouldBe "Non-null policy tree required but policy tree is null"
         }
     }
@@ -860,7 +861,7 @@ open class RequireExplicitPolicyTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, selfIssuedSubCa, subCa, selfIssuedCa, ca, trustAnchorRoot)
 
-        shouldThrow<CertificatePolicyException> { chain.validate() }.apply {
+        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
             message shouldBe "Non-null policy tree required but policy tree is null"
         }
     }

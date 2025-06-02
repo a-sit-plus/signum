@@ -37,6 +37,7 @@ open class ValidityPeriodsTest : FreeSpec({
             "eczztXD9NUkGUGw3LzpLDJazz3JhlZ/9pXzF\n" +
             "-----END CERTIFICATE-----\n"
     val trustAnchorRoot = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
+    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchorRoot))
 
     val goodCACertPem = "-----BEGIN CERTIFICATE-----\n" +
             "MIIDfDCCAmSgAwIBAgIBAjANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
@@ -112,7 +113,7 @@ open class ValidityPeriodsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<CertificateValidityException> { chain.validate() }.apply {
+        shouldThrow<CertificateValidityException> { chain.validate(defaultContext) }.apply {
             message shouldBe "certificate not valid till " + ca.tbsCertificate.validFrom.instant.toLocalDateTime(
                 TimeZone.currentSystemDefault()
             )
@@ -145,7 +146,7 @@ open class ValidityPeriodsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, goodCACert, trustAnchorRoot)
 
-        shouldThrow<CertificateValidityException> { chain.validate() }.apply {
+        shouldThrow<CertificateValidityException> { chain.validate(defaultContext) }.apply {
             message shouldBe "certificate not valid till " + leaf.tbsCertificate.validFrom.instant.toLocalDateTime(
                 TimeZone.currentSystemDefault()
             )
@@ -180,7 +181,7 @@ open class ValidityPeriodsTest : FreeSpec({
 
         // Validation fails due to the wasCertificateIssuedWithinIssuerValidityPeriod check,
         // even though all certificates pass their individual validity checks as required by the test suite.
-        runCatching { chain.validate() }
+        runCatching { chain.validate(defaultContext) }
             .onFailure {
                 if (it is CertificateValidityException) fail("Unexpected CertificateValidityException: ${it.message}")
             }
@@ -215,7 +216,7 @@ open class ValidityPeriodsTest : FreeSpec({
 
         // Validation fails due to the wasCertificateIssuedWithinIssuerValidityPeriod check,
         // even though all certificates pass their individual validity checks as required by the test suite.
-        runCatching { chain.validate() }
+        runCatching { chain.validate(defaultContext) }
             .onFailure {
                 if (it is CertificateValidityException) fail("Unexpected CertificateValidityException: ${it.message}")
             }
@@ -271,7 +272,7 @@ open class ValidityPeriodsTest : FreeSpec({
         val ca = X509Certificate.decodeFromPem(badNotAfterDateCACert).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<CertificateValidityException> { chain.validate() }.apply {
+        shouldThrow<CertificateValidityException> { chain.validate(defaultContext) }.apply {
             message shouldBe "certificate expired on " + ca.tbsCertificate.validUntil.instant.toLocalDateTime(
                 TimeZone.currentSystemDefault()
             )
@@ -304,7 +305,7 @@ open class ValidityPeriodsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, goodCACert, trustAnchorRoot)
 
-        shouldThrow<CertificateValidityException> { chain.validate() }.apply {
+        shouldThrow<CertificateValidityException> { chain.validate(defaultContext) }.apply {
             message shouldBe "certificate expired on " + leaf.tbsCertificate.validUntil.instant.toLocalDateTime(
                 TimeZone.currentSystemDefault()
             )
@@ -338,7 +339,7 @@ open class ValidityPeriodsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, goodCACert, trustAnchorRoot)
 
-        shouldThrow<CertificateValidityException> { chain.validate() }.apply {
+        shouldThrow<CertificateValidityException> { chain.validate(defaultContext) }.apply {
             message shouldBe "certificate expired on " + leaf.tbsCertificate.validUntil.instant.toLocalDateTime(
                 TimeZone.currentSystemDefault()
             )
@@ -372,6 +373,6 @@ open class ValidityPeriodsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, goodCACert, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 })
