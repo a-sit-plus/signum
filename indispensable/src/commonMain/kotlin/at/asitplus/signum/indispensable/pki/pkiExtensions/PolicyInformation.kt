@@ -69,7 +69,6 @@ class PolicyQualifierInfo(
 
 fun X509CertificateExtension.decodeCertificatePolicies(): List<PolicyInformation> {
     if (oid != KnownOIDs.certificatePolicies_2_5_29_32) throw Asn1StructuralException(message = "This extension is not CertificatePolicies extension.")
-    if (value.tag != Asn1Element.Tag.OCTET_STRING) throw Asn1TagMismatchException(Asn1Element.Tag.OCTET_STRING, value.tag)
 
     val policyInformation = mutableListOf<PolicyInformation>()
     val sequence = value.asEncapsulatingOctetString().children.firstOrNull()?.asSequence()?.children
