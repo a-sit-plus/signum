@@ -34,7 +34,6 @@ class CertificatePolicyMap (
 
 fun X509CertificateExtension.decodePolicyMappings(): List<CertificatePolicyMap> {
     if (oid != KnownOIDs.policyMappings) throw Asn1StructuralException(message = "This extension is not PolicyMappings extension.")
-    if (value.tag != Asn1Element.Tag.OCTET_STRING) throw Asn1TagMismatchException(Asn1Element.Tag.OCTET_STRING, value.tag)
 
     val policyMappings = mutableListOf<CertificatePolicyMap>()
     val sequence = value.asEncapsulatingOctetString().children.firstOrNull()?.asSequence()?.children

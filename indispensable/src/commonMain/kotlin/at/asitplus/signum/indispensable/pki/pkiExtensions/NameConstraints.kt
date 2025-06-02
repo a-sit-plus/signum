@@ -159,7 +159,6 @@ data class NameConstraints(
 
 fun X509CertificateExtension.decodeNameConstraints(): NameConstraints {
     if (oid != KnownOIDs.nameConstraints_2_5_29_30) throw Asn1StructuralException(message = "This extension is not NameConstraints extension.")
-    if (value.tag != Asn1Element.Tag.OCTET_STRING) throw Asn1TagMismatchException(Asn1Element.Tag.OCTET_STRING, value.tag)
 
     val src = value.asEncapsulatingOctetString().children.firstOrNull() ?: return NameConstraints()
 
