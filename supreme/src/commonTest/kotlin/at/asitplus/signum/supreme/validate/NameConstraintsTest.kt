@@ -34,6 +34,7 @@ open class NameConstraintsTest : FreeSpec({
             "eczztXD9NUkGUGw3LzpLDJazz3JhlZ/9pXzF\n" +
             "-----END CERTIFICATE-----\n"
     val trustAnchorRoot = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
+    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchorRoot))
 
     val nameConstraintsDN1CACert = "-----BEGIN CERTIFICATE-----\n" +
             "MIID7TCCAtWgAwIBAgIBPjANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
@@ -425,7 +426,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Invalid DN nameConstraints Test2" {
@@ -456,7 +457,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<NameConstraintsException> { chain.validate() }.apply {
+        shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
             message shouldBe "NameConstraints violation at cert index 3"
         }
     }
@@ -493,7 +494,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<NameConstraintsException> { chain.validate() }.apply {
+        shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
             message shouldBe "NameConstraints violation at cert index 3"
         }
     }
@@ -528,7 +529,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Valid DN nameConstraints Test5" {
@@ -589,7 +590,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Valid DN nameConstraints Test6" {
@@ -620,7 +621,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Invalid DN nameConstraints Test7" {
@@ -651,7 +652,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<NameConstraintsException> { chain.validate() }.apply {
+        shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
             message shouldBe "NameConstraints violation at cert index 3"
         }
     }
@@ -684,7 +685,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<NameConstraintsException> { chain.validate() }.apply {
+        shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
             message shouldBe "NameConstraints violation at cert index 3"
         }
     }
@@ -717,7 +718,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<NameConstraintsException> { chain.validate() }.apply {
+        shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
             message shouldBe "NameConstraints violation at cert index 3"
         }
     }
@@ -751,7 +752,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<NameConstraintsException> { chain.validate() }.apply {
+        shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
             message shouldBe "NameConstraints violation at cert index 3"
         }
     }
@@ -785,7 +786,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Invalid DN nameConstraints Test12" {
@@ -844,7 +845,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca, trustAnchorRoot)
 
-        shouldThrow<NameConstraintsException> { chain.validate() }.apply {
+        shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
             message shouldBe "NameConstraints violation at cert index 4"
         }
     }
@@ -879,7 +880,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca, trustAnchorRoot)
 
-        shouldThrow<NameConstraintsException> { chain.validate() }.apply {
+        shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
             message shouldBe "NameConstraints violation at cert index 4"
         }
     }
@@ -913,7 +914,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Invalid DN nameConstraints Test15" {
@@ -946,7 +947,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca, trustAnchorRoot)
 
-        shouldThrow<NameConstraintsException> { chain.validate() }.apply {
+        shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
             message shouldBe "NameConstraints violation at cert index 4"
         }
     }
@@ -981,7 +982,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca, trustAnchorRoot)
 
-        shouldThrow<NameConstraintsException> { chain.validate() }.apply {
+        shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
             message shouldBe "NameConstraints violation at cert index 4"
         }
     }
@@ -1016,7 +1017,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca, trustAnchorRoot)
 
-        shouldThrow<NameConstraintsException> { chain.validate() }.apply {
+        shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
             message shouldBe "NameConstraints violation at cert index 4"
         }
     }
@@ -1050,7 +1051,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Valid Self-Issued DN nameConstraints Test19" {
@@ -1106,7 +1107,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, selfIssuedCa, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Invalid Self-Issued DN nameConstraints Test20" {
@@ -1136,7 +1137,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<NameConstraintsException> { chain.validate() }.apply {
+        shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
             message shouldBe "NameConstraints violation at cert index 3"
         }
     }
@@ -1170,7 +1171,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Invalid RFC822 nameConstraints Test22" {
@@ -1202,7 +1203,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<NameConstraintsException> { chain.validate() }.apply {
+        shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
             message shouldBe "NameConstraints violation at cert index 3"
         }
     }
@@ -1236,7 +1237,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Invalid RFC822 nameConstraints Test24" {
@@ -1268,7 +1269,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<NameConstraintsException> { chain.validate() }.apply {
+        shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
             message shouldBe "NameConstraints violation at cert index 3"
         }
     }
@@ -1302,7 +1303,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Invalid RFC822 nameConstraints Test26" {
@@ -1334,7 +1335,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<NameConstraintsException> { chain.validate() }.apply {
+        shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
             message shouldBe "NameConstraints violation at cert index 3"
         }
     }
@@ -1370,7 +1371,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Invalid DN and RFC822 nameConstraints Test28" {
@@ -1404,7 +1405,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca, trustAnchorRoot)
 
-        shouldThrow<NameConstraintsException> { chain.validate() }.apply {
+        shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
             message shouldBe "NameConstraints violation at cert index 4"
         }
     }
@@ -1440,7 +1441,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca, trustAnchorRoot)
 
-        shouldThrow<NameConstraintsException> { chain.validate() }.apply {
+        shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
             message shouldBe "NameConstraints violation at cert index 4"
         }
     }
@@ -1474,7 +1475,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Invalid DNS nameConstraints Test31" {
@@ -1506,7 +1507,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<NameConstraintsException> { chain.validate() }.apply {
+        shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
             message shouldBe "NameConstraints violation at cert index 3"
         }
     }
@@ -1540,7 +1541,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Invalid DNS nameConstraints Test33" {
@@ -1572,7 +1573,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<NameConstraintsException> { chain.validate() }.apply {
+        shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
             message shouldBe "NameConstraints violation at cert index 3"
         }
     }
@@ -1606,7 +1607,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Invalid URI nameConstraints Test35" {
@@ -1638,7 +1639,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<NameConstraintsException> { chain.validate() }.apply {
+        shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
             message shouldBe "NameConstraints violation at cert index 3"
         }
     }
@@ -1672,7 +1673,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldNotThrow<Throwable> { chain.validate() }
+        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
 
     "Invalid URI nameConstraints Test37" {
@@ -1704,7 +1705,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<NameConstraintsException> { chain.validate() }.apply {
+        shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
             message shouldBe "NameConstraints violation at cert index 3"
         }
     }
@@ -1738,7 +1739,7 @@ open class NameConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
 
-        shouldThrow<NameConstraintsException> { chain.validate() }.apply {
+        shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
             message shouldBe "NameConstraints violation at cert index 3"
         }
     }
