@@ -37,18 +37,8 @@ class BasicConstraints(
 
 fun X509CertificateExtension.decodeBasicConstraints(): BasicConstraints {
     if (oid != KnownOIDs.basicConstraints_2_5_29_19) throw Asn1StructuralException(message = "This extension is not BasicConstraints extension.")
-    if (value.tag != Asn1Element.Tag.OCTET_STRING) throw Asn1TagMismatchException(
-        Asn1Element.Tag.OCTET_STRING,
-        value.tag
-    )
-    val elem =
-        value.asEncapsulatingOctetString().children.firstOrNull() ?: throw Asn1StructuralException(
-            message = "Not valid BasicConstraints extension."
-        )
-    if (elem.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(
-        Asn1Element.Tag.SEQUENCE,
-        elem.tag
-    )
+    val elem = value.asEncapsulatingOctetString().children.firstOrNull() ?: throw Asn1StructuralException(message = "Not valid BasicConstraints extension.")
+    if (elem.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, elem.tag)
 
     return BasicConstraints.doDecode(elem.asSequence())
 }
