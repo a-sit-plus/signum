@@ -5,6 +5,7 @@ import at.asitplus.signum.CertificateExtensionException
 import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
+import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
@@ -183,17 +184,9 @@ constructor(
             }
             val serialNumber = (src.nextChild() as Asn1Primitive).decode(Asn1Element.Tag.INT) { it }
             val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
-//            val issuerNames = (src.nextChild() as Asn1Sequence).children.map {
-//                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
-//            }
             val issuerNames = X500Name.doDecode(src.nextChild() as Asn1Sequence)
-
             val timestamps = decodeTimestamps(src.nextChild() as Asn1Sequence)
-//            val subject = (src.nextChild() as Asn1Sequence).children.map {
-//                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
-//            }
             val subject = X500Name.doDecode(src.nextChild() as Asn1Sequence)
-
 
             val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(src.nextChild() as Asn1Sequence)
 
