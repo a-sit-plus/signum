@@ -3,11 +3,14 @@ package at.asitplus.signum.supreme.validate
 import at.asitplus.signum.CertificateChainValidatorException
 import at.asitplus.signum.CryptoOperationFailed
 import at.asitplus.signum.KeyUsageException
+import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.X509KeyUsage
+import at.asitplus.signum.indispensable.pki.root
+import at.asitplus.signum.supreme.hash.digest
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
 import kotlinx.datetime.Clock
@@ -51,7 +54,8 @@ class CertificateValidationContext(
     val policyMappingInhibited: Boolean = false,
     val anyPolicyInhibited: Boolean = false,
     val policyQualifiersRejected: Boolean = false,
-    val initialPolicies: Set<ObjectIdentifier> = emptySet()
+    val initialPolicies: Set<ObjectIdentifier> = emptySet(),
+    val trustAnchors: Set<X509Certificate> = emptySet()
 )
 
 class CertificateValidationResult (
@@ -85,6 +89,8 @@ suspend fun CertificateChain.validate(
     )
     validators.add(NameConstraintsValidator(this.size))
     if (context.basicConstraintCheck) validators.add(BasicConstraintsValidator(this.size))
+
+    if (!context.trustAnchors.containsByThumbprint(this.root)) throw CertificateChainValidatorException("Untrusted root certificate.")
 
     val reversed = this.reversed()
     reversed.forEach { it.checkValidity(context.date) }
@@ -161,5 +167,14 @@ private fun verifyIntermediateKeyUsage(currCert: X509Certificate) {
     if (!currCert.tbsCertificate.keyUsage.contains(X509KeyUsage.CRL_SIGN)) {
         throw KeyUsageException("CRL signature key usage extension not present at the intermediate cert!")
     }
+}
+
+internal fun X509Certificate.calcThumbprint(): ByteArray {
+    return Digest.SHA256.digest(this.encodeToDer())
+}
+
+internal fun Set<X509Certificate>.containsByThumbprint(cert: X509Certificate): Boolean {
+    val targetThumbprint = cert.calcThumbprint()
+    return this.any { it.calcThumbprint().contentEquals(targetThumbprint) }
 }
 
