@@ -310,7 +310,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     }
 
     val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
-
+//TODO REMOVE
     fun hasReplayingExtensions(): Boolean =
         tbsCertificate.extensions?.size != tbsCertificate.extensions?.distinctBy { it.oid }?.size
 
