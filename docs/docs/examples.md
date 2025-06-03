@@ -58,7 +58,7 @@ val jwsObject = JwsSigned.deserialize(jws)
 val jwsAlgorithm = jwsObject.header.algorithm
 //JWS is very permissive, so we need to check that the alg makes sense
 require(jwsAlgorithm is JwsAlgorithm.Signature) { "Algorithm not supported: $jwsAlgorithm" }
-val key = jwsObject.header.publicKey ?: pubKeyFromTrustedSource
+val publicKey = jwsObject.header.publicKey ?: pubKeyFromTrustedSource
 
 //TODO: check whether key is trusted by whatever means apply in your case
 
