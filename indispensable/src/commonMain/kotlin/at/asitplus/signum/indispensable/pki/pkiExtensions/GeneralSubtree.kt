@@ -28,11 +28,11 @@ data class GeneralSubtree(
         override fun doDecode(src: Asn1Sequence): GeneralSubtree {
             val base = GeneralName.doDecode(src.nextChild())
             var minimum = Asn1Integer(0)
-            if (src.children.size > 1) {
+            if (src.hasMoreChildren()) {
                 minimum = Asn1Integer.doDecode(src.nextChild().asPrimitive())
             }
 
-            return if (src.children.size < 3) GeneralSubtree(
+            return if (!src.hasMoreChildren()) GeneralSubtree(
                 base = base,
                 minimum = minimum
             ) else GeneralSubtree(

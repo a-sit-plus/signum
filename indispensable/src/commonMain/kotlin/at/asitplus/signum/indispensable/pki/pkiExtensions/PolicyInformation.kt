@@ -60,9 +60,8 @@ class PolicyQualifierInfo(
 
     companion object : Asn1Decodable<Asn1Sequence, PolicyQualifierInfo> {
         override fun doDecode(src: Asn1Sequence) : PolicyQualifierInfo {
-            val id = (src.children[0].asPrimitive()).readOid()
-            val value = src.children.last()
-            return  PolicyQualifierInfo(id, value)
+            val id = (src.nextChild().asPrimitive()).readOid()
+            return  PolicyQualifierInfo(id, src.nextChild())
         }
     }
 }
