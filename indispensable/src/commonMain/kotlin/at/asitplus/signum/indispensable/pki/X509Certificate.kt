@@ -319,7 +319,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         level = DeprecationLevel.ERROR)
     @Suppress("DEPRECATION_ERROR")
     val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
-
+//TODO REMOVE
     fun hasReplayingExtensions(): Boolean =
         tbsCertificate.extensions?.size != tbsCertificate.extensions?.distinctBy { it.oid }?.size
 
