@@ -55,6 +55,7 @@ class CertificateValidationContext(
     val anyPolicyInhibited: Boolean = false,
     val policyQualifiersRejected: Boolean = false,
     val initialPolicies: Set<ObjectIdentifier> = emptySet(),
+//    also pub key
     val trustAnchors: Set<X509Certificate> = emptySet()
 )
 
