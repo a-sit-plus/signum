@@ -3,7 +3,7 @@ package at.asitplus.signum.indispensable.pki.pkiExtensions
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
-import kotlinx.io.IOException
+import at.asitplus.signum.indispensable.asn1.Asn1Exception
 
 interface GeneralNameOption {
 
@@ -40,7 +40,7 @@ data class GeneralName(
             GeneralNameOption.NameType.X400 -> (name as X400AddressName).encodeToTlv()
             GeneralNameOption.NameType.URI -> (name as UriName).encodeToTlv()
             GeneralNameOption.NameType.DIRECTORY -> (name as X500Name).encodeToTlv()
-            else -> throw IOException("Unrecognized GeneralName tag")
+            else -> throw Asn1Exception("Unrecognized GeneralName tag")
         }
     }
 
@@ -57,8 +57,7 @@ data class GeneralName(
                         src.asExplicitlyTagged().children.first().asSequence()
                     )
                 )
-
-                else -> throw IOException("Unsupported GeneralName tag")
+                else -> throw Asn1Exception("Unsupported GeneralName tag")
             }
         }
     }
