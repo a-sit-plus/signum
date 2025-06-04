@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
+import at.asitplus.signum.indispensable.asn1.runRethrowing
 import kotlinx.io.IOException
 
 class UriName(
@@ -19,7 +20,9 @@ class UriName(
 
     companion object : Asn1Decodable<Asn1Primitive, UriName> {
         override fun doDecode(src: Asn1Primitive): UriName {
-            return fromString(src.asAsn1String().value)
+            return runRethrowing {
+                fromString(src.asAsn1String().value)
+            }
         }
 
         private fun fromString(name: String, allowWildcard: Boolean = false): UriName {
