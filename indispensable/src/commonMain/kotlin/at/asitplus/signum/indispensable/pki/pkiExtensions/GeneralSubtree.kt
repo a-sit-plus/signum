@@ -18,6 +18,7 @@ data class GeneralSubtree(
     val minimum: Asn1Integer,
     val maximum: Asn1Integer? = null
 ) : Asn1Encodable<Asn1Sequence> {
+
     override fun encodeToTlv() = Asn1.Sequence {
         +base
         +minimum
@@ -47,6 +48,7 @@ data class GeneralSubtree(
 data class GeneralSubtrees(
     var trees: MutableList<GeneralSubtree>
 ) : Asn1Encodable<Asn1ExplicitlyTagged> {
+
     override fun encodeToTlv() = Asn1.ExplicitlyTagged(2uL) {
         trees.forEach { +it }
     }
