@@ -7,7 +7,7 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.decodeBasicConstraints
 
 class BasicConstraintsValidator(
     private val pathLength: Int,
-    private var remainingPathLength: Int? = null,
+    private var remainingPathLength: UInt? = null,
     private var currentCertIndex: Int = 0
 ) : Validator {
 
@@ -28,14 +28,14 @@ class BasicConstraintsValidator(
 
 
         if (remainingPathLength != null && !currCert.isSelfIssued()) {
-            if (remainingPathLength == 0) {
+            if (remainingPathLength?.toInt() == 0) {
                 throw BasicConstraintsException("pathLenConstraint violated at cert index $currentCertIndex.")
             }
-            remainingPathLength = remainingPathLength?.minus(1)
+            remainingPathLength = remainingPathLength?.minus(1u)
         }
 
         basicConstraints.pathLenConstraint.let { constraint ->
-            if (remainingPathLength == null || constraint < remainingPathLength!!) {
+            if (remainingPathLength == null || constraint!! < remainingPathLength!!) {
                 remainingPathLength = constraint
             }
         }
