@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
+import at.asitplus.signum.indispensable.asn1.runRethrowing
 import kotlinx.io.IOException
 
 class DNSName(
@@ -76,10 +77,12 @@ class DNSName(
 
     companion object : Asn1Decodable<Asn1Primitive, DNSName> {
         override fun doDecode(src: Asn1Primitive): DNSName {
-            return DNSName(
-                type = GeneralNameOption.NameType.DNS,
-                value = Asn1String.IA5(src.asAsn1String().value)
-            )
+            return runRethrowing {
+                DNSName(
+                    type = GeneralNameOption.NameType.DNS,
+                    value = Asn1String.IA5(src.asAsn1String().value)
+                )
+            }
         }
     }
 
