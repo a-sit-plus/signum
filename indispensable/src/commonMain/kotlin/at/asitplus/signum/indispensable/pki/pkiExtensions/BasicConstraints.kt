@@ -9,14 +9,12 @@ import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToBoolean
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToUInt
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 
 class BasicConstraints(
     val ca: Boolean = false,
-//    TODO uint nullable
     val pathLenConstraint: UInt?
 ) : Asn1Encodable<Asn1Sequence> {
 
