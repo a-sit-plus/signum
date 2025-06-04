@@ -9,6 +9,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToBoolean
+import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToUInt
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
@@ -28,12 +29,10 @@ class BasicConstraints(
             var ca = false
             var pathLenConstraint: UInt? = null
 
-            if (src.hasMoreChildren()) {
-                ca = src.nextChild().asPrimitive().decodeToBoolean()
-            }
+            if (src.children.isNotEmpty()) ca = src.children[0].asPrimitive().decodeToBoolean()
 
-            if (src.hasMoreChildren()) {
-                pathLenConstraint = src.nextChild().asPrimitive().decodeToUInt()
+            if (src.children.size > 1) {
+                pathLenConstraint = src.children[1].asPrimitive().decodeToUInt()
             } else if (ca) {
                 pathLenConstraint = UInt.MAX_VALUE
             }
