@@ -278,5 +278,5 @@ fun SpecializedSignatureAlgorithm.platformVerifierFor
 fun Verifier.verify(what: JwsSigned<*>) =
     verify(what.plainSignatureInput, what.signature)
 
-fun Verifier.verify(what: CoseSigned<*>) =
+fun Verifier.verify(what: CoseSigned<*>): KmmResult<Verifier.Success> =
     TODO()
