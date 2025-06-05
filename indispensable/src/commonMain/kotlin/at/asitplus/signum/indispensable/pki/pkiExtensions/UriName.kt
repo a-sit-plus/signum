@@ -90,6 +90,10 @@ class UriName(
         }
     }
 
+    override fun toString(): String {
+        return host.value
+    }
+
     override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
         if (input !is UriName) {
             return GeneralNameOption.ConstraintResult.DIFF_TYPE

@@ -10,7 +10,7 @@ import kotlinx.io.IOException
 
 class DNSName(
     val value: Asn1String.IA5,
-    allowWildcard: Boolean = false,
+    allowWildcard: Boolean = true,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.DNS,
 ) : GeneralNameOption, Asn1Encodable<Asn1Primitive> {
 
@@ -84,6 +84,10 @@ class DNSName(
                 )
             }
         }
+    }
+
+    override fun toString(): String {
+        return value.value
     }
 
     override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
