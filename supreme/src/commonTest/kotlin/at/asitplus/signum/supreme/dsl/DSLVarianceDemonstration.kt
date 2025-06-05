@@ -18,7 +18,7 @@ private class Settings: DSL.Data() {
     /* we define a holder that can hold any flavor */
     /* "internal" because the generic accessor shouldn't be visible to users */
     /* this is null by default; a default could be explicitly specified, making this non-nullable */
-    internal val _flavor = subclassOf<SmoothieFlavor>()
+    protected val _flavor = subclassOf<SmoothieFlavor>()
     /* and then we define user-visible accessors for the different flavors */
     val banana = _flavor.option(::BananaFlavor)
     val strawberry = _flavor.option(::StrawberryFlavor)

@@ -323,6 +323,7 @@ internal class JKSFileAccessor(opt: JKSProviderConfiguration.KeyStoreFile) : JKS
  */
 class JKSProviderConfiguration(): PlatformSigningProviderConfigurationBase() {
     sealed class KeyStoreConfiguration(): DSL.Data()
+    internal val _keystore = subclassOf<KeyStoreConfiguration>(default = EphemeralKeyStore())
 
     /** Constructs an ephemeral keystore. This is the default. */
     val ephemeral = _keystore.option(::EphemeralKeyStore)

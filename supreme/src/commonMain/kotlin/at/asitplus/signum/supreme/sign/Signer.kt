@@ -23,7 +23,7 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 open class SigningKeyConfiguration() : DSL.Data() {
     sealed class AlgorithmSpecific : DSL.Data()
 
-    internal val _algSpecific = subclassOf<AlgorithmSpecific>(default = ECConfiguration())
+    protected val _algSpecific = subclassOf<AlgorithmSpecific>(default = ECConfiguration())
 
     /** Generates an elliptic-curve key. */
     open val ec = _algSpecific.option(::ECConfiguration)

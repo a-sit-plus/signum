@@ -119,8 +119,9 @@ open class ECSignerConfiguration(): DSL.Data() {
      *
      * @see SigningKeyConfiguration.ECConfiguration.digests
      */
-    var digest: Digest? = null; set(v) { digestSpecified = true; field = v }
-    internal var digestSpecified = false
+    var digest: Digest? = null; set(v) { _digestSpecified = true; field = v }
+    protected var _digestSpecified = false; private set
+    internal val digestSpecified get() = _digestSpecified
 }
 open class RSASignerConfiguration(): DSL.Data() {
     /**
@@ -133,7 +134,8 @@ open class RSASignerConfiguration(): DSL.Data() {
      * @see SigningKeyConfiguration.RSAConfiguration.digests
      */
     lateinit var digest: Digest
-    internal val digestSpecified get() = this::digest.isInitialized
+    protected val _digestSpecified get() = this::digest.isInitialized
+    internal val digestSpecified get() = _digestSpecified
 
     /**
      * Explicitly specify the padding to use.
@@ -145,7 +147,8 @@ open class RSASignerConfiguration(): DSL.Data() {
      * @see SigningKeyConfiguration.RSAConfiguration.paddings
      */
     lateinit var padding: RSAPadding
-    internal val paddingSpecified get() = this::padding.isInitialized
+    protected val _paddingSpecified get() = this::padding.isInitialized
+    internal val paddingSpecified get() = _paddingSpecified
 
 
 }

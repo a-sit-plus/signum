@@ -110,9 +110,9 @@ object DSL {
 
         /**
          * Specifies a generalized holder of type T.
-         * Use as `internal val _subHolder = subclassOf<GeneralTypeOfSub>()`.
+         * Use as `protected val _subHolder = subclassOf<GeneralTypeOfSub>()`.
          *
-         * The generalized holder itself cannot be invoked, and should be marked `internal`.
+         * The generalized holder itself cannot be invoked, and should be marked `protected`.
          * Defaults to `null`.
          *
          * Specialized invokable accessors can be spun off via `.option(::SpecializedClass)`.
@@ -122,9 +122,9 @@ object DSL {
             Generalized<T?>(null)
         /**
          * Specifies a generalized holder of type T.
-         * Use as `internal val _subHolder = subclassOf<GeneralTypeOfSub>(SpecializedClass())`.
+         * Use as `protected val _subHolder = subclassOf<GeneralTypeOfSub>(SpecializedClass())`.
          *
-         * The generalized holder itself cannot be invoked, and should be marked `internal`.
+         * The generalized holder itself cannot be invoked, and should be marked `protected`.
          * Defaults to the specified `default`.
          *
          * Specialized invokable accessors can be spun off via `.option(::SpecializedClass)`.
