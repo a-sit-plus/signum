@@ -3,6 +3,8 @@ package at.asitplus.signum.indispensable.pki.pkiExtensions
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
+import at.asitplus.signum.indispensable.asn1.Asn1Sequence
+import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 
 class X400AddressName(
     val value: Asn1Element,
@@ -13,8 +15,14 @@ class X400AddressName(
 
     companion object : Asn1Decodable<Asn1Element, X400AddressName> {
         override fun doDecode(src: Asn1Element): X400AddressName {
+            if (src !is Asn1Sequence) throw Asn1StructuralException("Invalid x400Address Alternative Name found: ${src.toDerHexString()}")
+            //TODO: strict structural parsing
             return X400AddressName(src)
         }
+    }
+
+    override fun toString(): String {
+        return value.prettyPrint()
     }
 
     override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
