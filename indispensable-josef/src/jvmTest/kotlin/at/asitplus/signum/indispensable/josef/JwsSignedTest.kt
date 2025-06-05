@@ -3,7 +3,10 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.toJcaPublicKey
+import at.asitplus.signum.supreme.josef.verify
 import at.asitplus.signum.supreme.sign.Signer
+import at.asitplus.signum.supreme.sign.Verifier
+import at.asitplus.signum.supreme.sign.makeVerifier
 import at.asitplus.signum.supreme.signature
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.crypto.ECDSAVerifier
@@ -49,6 +52,9 @@ class JwsSignedTest : FreeSpec({
         val plainSignatureInput = JwsSigned.prepareJwsSignatureInput(header, payload)
 
         val signature = signer.sign(plainSignatureInput).signature //TODO: handle error
-        println(JwsSigned(header, payload, signature, plainSignatureInput).serialize())// this we can verify on jwt.io
+        val theSignedObject = JwsSigned(header, payload, signature, plainSignatureInput)
+        println(theSignedObject.serialize())// this we can verify on jwt.io
+
+        signer.makeVerifier().getOrThrow().verify(theSignedObject).shouldSucceedWith(Verifier.Success)
     }
 })
