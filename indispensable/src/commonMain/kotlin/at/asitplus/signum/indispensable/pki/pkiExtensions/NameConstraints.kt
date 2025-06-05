@@ -66,14 +66,7 @@ data class NameConstraints(
 
         val alternativeNames = mutableListOf<GeneralName>()
         val alternativeNameExtension = cert.tbsCertificate.subjectAlternativeNames
-        if (alternativeNameExtension != null) {
-            alternativeNameExtension.dnsNames?.forEach { alternativeNames.add(GeneralName(DNSName(Asn1String.IA5(it)))) }
-            alternativeNameExtension.rfc822Names?.forEach { alternativeNames.add(GeneralName(RFC822Name(Asn1String.IA5(it)))) }
-            alternativeNameExtension.uris?.forEach { alternativeNames.add(GeneralName(it)) }
-            alternativeNameExtension.directoryNames.forEach { alternativeNames.add(GeneralName(it)) }
-            alternativeNameExtension.x400Addresses.forEach { alternativeNames.add(GeneralName(X400AddressName(it))) }
-            alternativeNameExtension.ipAddresses.forEach { alternativeNames.add(GeneralName(IPAddressName(it))) }
-        }
+        alternativeNameExtension?.generalNames?.forEach { alternativeNames.add(it) }
 
         if (alternativeNames.isEmpty()) {
             val fallbackEmails = subject.relativeDistinguishedNames

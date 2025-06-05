@@ -19,6 +19,10 @@ class RFC822Name(
         }
     }
 
+    override fun toString(): String {
+        return value.value
+    }
+
     override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
         if (input !is RFC822Name) {
             return GeneralNameOption.ConstraintResult.DIFF_TYPE
