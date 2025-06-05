@@ -8,7 +8,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Exception
 interface GeneralNameOption {
 
     enum class NameType(val value: ULong) {
-        ANY(0u), RFC822(1u), DNS(2u), X400(3u), DIRECTORY(4u), EDI(5u), URI(6u), IP(7u), OID(8u);
+        OTHER(0u), RFC822(1u), DNS(2u), X400(3u), DIRECTORY(4u), EDI(5u), URI(6u), IP(7u), OID(8u);
 
         companion object {
             fun fromTagValue(tagValue: ULong): NameType? =
@@ -40,18 +40,23 @@ data class GeneralName(
             GeneralNameOption.NameType.X400 -> (name as X400AddressName).encodeToTlv()
             GeneralNameOption.NameType.URI -> (name as UriName).encodeToTlv()
             GeneralNameOption.NameType.DIRECTORY -> (name as X500Name).encodeToTlv()
-            else -> throw Asn1Exception("Unrecognized GeneralName tag")
+            GeneralNameOption.NameType.OTHER -> (name as OtherName).encodeToTlv()
+            GeneralNameOption.NameType.EDI -> (name as EDIPartyName).encodeToTlv()
+            GeneralNameOption.NameType.OID -> (name as RegisteredIDName).encodeToTlv()
         }
     }
 
     companion object : Asn1Decodable<Asn1Element, GeneralName> {
         override fun doDecode(src: Asn1Element): GeneralName {
             return when (GeneralNameOption.NameType.fromTagValue(src.tag.tagValue)) {
+                GeneralNameOption.NameType.OTHER -> GeneralName(OtherName.doDecode(src))
                 GeneralNameOption.NameType.RFC822 -> GeneralName(RFC822Name.doDecode(src.asPrimitive()))
                 GeneralNameOption.NameType.DNS -> GeneralName(DNSName.doDecode(src.asPrimitive()))
+                GeneralNameOption.NameType.OID -> GeneralName(RegisteredIDName.doDecode(src.asPrimitive()))
                 GeneralNameOption.NameType.IP -> GeneralName(IPAddressName.doDecode(src.asPrimitive()))
                 GeneralNameOption.NameType.X400 -> GeneralName(X400AddressName.doDecode(src))
                 GeneralNameOption.NameType.URI -> GeneralName(UriName.doDecode(src.asPrimitive()))
+                GeneralNameOption.NameType.EDI -> GeneralName(EDIPartyName.doDecode(src))
                 GeneralNameOption.NameType.DIRECTORY -> GeneralName(
                     X500Name.doDecode(
                         src.asExplicitlyTagged().children.first().asSequence()
@@ -60,6 +65,12 @@ data class GeneralName(
                 else -> throw Asn1Exception("Unsupported GeneralName tag")
             }
         }
+    }
+
+    override fun toString(): String {
+        val bld = StringBuilder("\nType=").append(name.type)
+        bld.append("\nValue=").append(name.toString())
+        return "GeneralName(" + bld.toString().prependIndent("  ") + "\n)"
     }
 }
 
