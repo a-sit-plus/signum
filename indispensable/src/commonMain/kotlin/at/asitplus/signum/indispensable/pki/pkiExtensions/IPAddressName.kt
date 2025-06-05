@@ -34,6 +34,11 @@ class IPAddressName(
 
     }
 
+    @OptIn(ExperimentalStdlibApi::class)
+    override fun toString(): String {
+        return address.toHexString(HexFormat.UpperCase)
+    }
+
     override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
         if (input !is IPAddressName) {
             return GeneralNameOption.ConstraintResult.DIFF_TYPE
