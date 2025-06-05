@@ -10,7 +10,10 @@ import at.asitplus.signum.indispensable.SpecializedSignatureAlgorithm
 import at.asitplus.signum.ecmath.straussShamir
 import at.asitplus.signum.supreme.dsl.DSL
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.cosef.CoseSigned
+import at.asitplus.signum.indispensable.josef.JwsSigned
 import at.asitplus.signum.supreme.dsl.DSLConfigureFn
+import at.asitplus.signum.supreme.sign.verify
 
 class InvalidSignature(message: String, cause: Throwable? = null): Throwable(message, cause)
 
@@ -271,3 +274,9 @@ fun SpecializedSignatureAlgorithm.verifierFor
 fun SpecializedSignatureAlgorithm.platformVerifierFor
             (publicKey: CryptoPublicKey, configure: ConfigurePlatformVerifier = null) =
     this.algorithm.platformVerifierFor(publicKey, configure)
+
+fun Verifier.verify(what: JwsSigned<*>) =
+    verify(what.plainSignatureInput, what.signature)
+
+fun Verifier.verify(what: CoseSigned<*>) =
+    TODO()

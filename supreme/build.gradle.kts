@@ -56,6 +56,9 @@ kotlin {
         implementation(coroutines())
         implementation(napier())
         implementation(libs.securerandom) //fix composite build
+
+        compileOnly(project(":indispensable-cosef"))
+        compileOnly(project(":indispensable-josef"))
     }
 
     sourceSets.androidMain.dependencies {
