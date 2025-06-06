@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.validate
 
+import at.asitplus.signum.CertificateChainValidatorException
 import at.asitplus.signum.CryptoOperationFailed
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
@@ -32,8 +33,9 @@ open class SignatureVerificationTest : FreeSpec({
             "/lnNFCIpq+/+3cnhufDjvxMy5lg+cwgMCiGzCxn4n4dBMw41C+4KhNF7ZtKuKSZ1\n" +
             "eczztXD9NUkGUGw3LzpLDJazz3JhlZ/9pXzF\n" +
             "-----END CERTIFICATE-----\n"
-    val trustAnchorRoot = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
-    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchorRoot))
+    val trustAnchorRootCert = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
+    val trustAnchor = TrustAnchor(trustAnchorRootCert)
+    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchor))
 
     "Valid Signatures Test1" {
         val goodCACert = "-----BEGIN CERTIFICATE-----\n" +
@@ -134,8 +136,8 @@ open class SignatureVerificationTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
 
-        shouldThrow<CryptoOperationFailed> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Signature verification failed in CA certificate."
+        shouldThrow<CertificateChainValidatorException> { chain.validate(defaultContext) }.apply {
+            message shouldBe "Untrusted root certificate."
         }
     }
 })
