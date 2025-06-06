@@ -33,8 +33,9 @@ open class InhibitAnyPolicyTest : FreeSpec({
             "/lnNFCIpq+/+3cnhufDjvxMy5lg+cwgMCiGzCxn4n4dBMw41C+4KhNF7ZtKuKSZ1\n" +
             "eczztXD9NUkGUGw3LzpLDJazz3JhlZ/9pXzF\n" +
             "-----END CERTIFICATE-----\n"
-    val trustAnchorRoot = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
-    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchorRoot))
+    val trustAnchorRootCert = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
+    val trustAnchor = TrustAnchor(trustAnchorRootCert)
+    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchor))
 
     val inhibitAnyPolicy0CACert = "-----BEGIN CERTIFICATE-----\n" +
             "MIIDqDCCApCgAwIBAgIBOzANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
@@ -246,7 +247,7 @@ open class InhibitAnyPolicyTest : FreeSpec({
 
         shouldNotThrow<Throwable> { chain.validate(defaultContext) }
 
-        val context = CertificateValidationContext(trustAnchors = setOf(trustAnchorRoot), anyPolicyInhibited = true)
+        val context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), anyPolicyInhibited = true)
         shouldThrow<CertificatePolicyException> { chain.validate(context) }.apply {
             message shouldBe "Non-null policy tree required but policy tree is null"
         }
