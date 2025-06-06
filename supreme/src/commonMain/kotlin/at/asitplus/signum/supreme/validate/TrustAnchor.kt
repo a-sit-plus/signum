@@ -1,0 +1,47 @@
+package at.asitplus.signum.supreme.validate
+
+import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name
+import at.asitplus.signum.supreme.sign.verifierFor
+import at.asitplus.signum.supreme.sign.verify
+
+// TODO support nameConstraints
+class TrustAnchor private constructor(
+    val publicKey: CryptoPublicKey,
+    val principle: X500Name?,
+    private val name: String?,
+    val cert: X509Certificate?
+) {
+    constructor(cert: X509Certificate) : this(
+        cert.publicKey,
+        cert.tbsCertificate.subjectName,
+        cert.tbsCertificate.subjectName.toRfc2253String(),
+        cert
+    )
+
+    constructor(publicKey: CryptoPublicKey, principle: X500Name) : this(
+        publicKey,
+        principle,
+        principle.toRfc2253String(),
+        null
+    )
+
+    constructor(publicKey: CryptoPublicKey, name: String) : this(
+        publicKey,
+        null,
+        name,
+        null
+    )
+
+    fun isIssuerOf(cert: X509Certificate): Boolean {
+        val verifier = cert.signatureAlgorithm.verifierFor(publicKey).getOrThrow()
+        val signatureValid = verifier.verify(
+            cert.tbsCertificate.encodeToDer(),
+            cert.signature
+        ).isSuccess
+
+        val issuerName = cert.tbsCertificate.issuerName.toRfc2253String()
+        return signatureValid && issuerName == name
+    }
+}

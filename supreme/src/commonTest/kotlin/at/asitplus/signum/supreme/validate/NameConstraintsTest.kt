@@ -33,8 +33,9 @@ open class NameConstraintsTest : FreeSpec({
             "/lnNFCIpq+/+3cnhufDjvxMy5lg+cwgMCiGzCxn4n4dBMw41C+4KhNF7ZtKuKSZ1\n" +
             "eczztXD9NUkGUGw3LzpLDJazz3JhlZ/9pXzF\n" +
             "-----END CERTIFICATE-----\n"
-    val trustAnchorRoot = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
-    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchorRoot))
+    val trustAnchorRootCert = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
+    val trustAnchor = TrustAnchor(trustAnchorRootCert)
+    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchor))
 
     val nameConstraintsDN1CACert = "-----BEGIN CERTIFICATE-----\n" +
             "MIID7TCCAtWgAwIBAgIBPjANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
@@ -458,7 +459,7 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "NameConstraints violation at cert index 3"
+            message shouldBe "NameConstraints violation at cert index 2"
         }
     }
 
@@ -495,7 +496,7 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "NameConstraints violation at cert index 3"
+            message shouldBe "NameConstraints violation at cert index 2"
         }
     }
 
@@ -653,7 +654,7 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "NameConstraints violation at cert index 3"
+            message shouldBe "NameConstraints violation at cert index 2"
         }
     }
 
@@ -686,7 +687,7 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "NameConstraints violation at cert index 3"
+            message shouldBe "NameConstraints violation at cert index 2"
         }
     }
 
@@ -719,7 +720,7 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "NameConstraints violation at cert index 3"
+            message shouldBe "NameConstraints violation at cert index 2"
         }
     }
 
@@ -753,7 +754,7 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "NameConstraints violation at cert index 3"
+            message shouldBe "NameConstraints violation at cert index 2"
         }
     }
 
@@ -846,7 +847,7 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
         shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "NameConstraints violation at cert index 4"
+            message shouldBe "NameConstraints violation at cert index 3"
         }
     }
 
@@ -881,7 +882,7 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
         shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "NameConstraints violation at cert index 4"
+            message shouldBe "NameConstraints violation at cert index 3"
         }
     }
 
@@ -948,7 +949,7 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
         shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "NameConstraints violation at cert index 4"
+            message shouldBe "NameConstraints violation at cert index 3"
         }
     }
 
@@ -983,7 +984,7 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
         shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "NameConstraints violation at cert index 4"
+            message shouldBe "NameConstraints violation at cert index 3"
         }
     }
 
@@ -1018,7 +1019,7 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
         shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "NameConstraints violation at cert index 4"
+            message shouldBe "NameConstraints violation at cert index 3"
         }
     }
 
@@ -1138,7 +1139,7 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "NameConstraints violation at cert index 3"
+            message shouldBe "NameConstraints violation at cert index 2"
         }
     }
 
@@ -1204,7 +1205,7 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "NameConstraints violation at cert index 3"
+            message shouldBe "NameConstraints violation at cert index 2"
         }
     }
 
@@ -1270,7 +1271,7 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "NameConstraints violation at cert index 3"
+            message shouldBe "NameConstraints violation at cert index 2"
         }
     }
 
@@ -1336,7 +1337,7 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "NameConstraints violation at cert index 3"
+            message shouldBe "NameConstraints violation at cert index 2"
         }
     }
 
@@ -1406,7 +1407,7 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
         shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "NameConstraints violation at cert index 4"
+            message shouldBe "NameConstraints violation at cert index 3"
         }
     }
 
@@ -1442,7 +1443,7 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
         shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "NameConstraints violation at cert index 4"
+            message shouldBe "NameConstraints violation at cert index 3"
         }
     }
 
@@ -1508,7 +1509,7 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "NameConstraints violation at cert index 3"
+            message shouldBe "NameConstraints violation at cert index 2"
         }
     }
 
@@ -1574,7 +1575,7 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "NameConstraints violation at cert index 3"
+            message shouldBe "NameConstraints violation at cert index 2"
         }
     }
 
@@ -1640,7 +1641,7 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "NameConstraints violation at cert index 3"
+            message shouldBe "NameConstraints violation at cert index 2"
         }
     }
 
@@ -1706,7 +1707,7 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "NameConstraints violation at cert index 3"
+            message shouldBe "NameConstraints violation at cert index 2"
         }
     }
 
@@ -1740,7 +1741,7 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<NameConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "NameConstraints violation at cert index 3"
+            message shouldBe "NameConstraints violation at cert index 2"
         }
     }
 })
