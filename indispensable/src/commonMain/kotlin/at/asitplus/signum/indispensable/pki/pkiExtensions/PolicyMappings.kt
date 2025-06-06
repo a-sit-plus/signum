@@ -25,8 +25,8 @@ class CertificatePolicyMap (
 
     companion object : Asn1Decodable<Asn1Sequence, CertificatePolicyMap> {
         override fun doDecode(src: Asn1Sequence): CertificatePolicyMap {
-            val issuerDomain = src.nextChild().asPrimitive().readOid()
-            val subjectDomain = src.nextChild().asPrimitive().readOid()
+            val issuerDomain = src.children[0].asPrimitive().readOid()
+            val subjectDomain = src.children[1].asPrimitive().readOid()
             return CertificatePolicyMap(issuerDomain, subjectDomain)
         }
     }
