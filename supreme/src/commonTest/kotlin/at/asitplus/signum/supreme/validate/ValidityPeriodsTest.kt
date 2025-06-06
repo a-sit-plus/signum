@@ -36,8 +36,9 @@ open class ValidityPeriodsTest : FreeSpec({
             "/lnNFCIpq+/+3cnhufDjvxMy5lg+cwgMCiGzCxn4n4dBMw41C+4KhNF7ZtKuKSZ1\n" +
             "eczztXD9NUkGUGw3LzpLDJazz3JhlZ/9pXzF\n" +
             "-----END CERTIFICATE-----\n"
-    val trustAnchorRoot = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
-    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchorRoot))
+    val trustAnchorRootCert = X509Certificate.decodeFromPem(trustAnchorRootCertificate).getOrThrow()
+    val trustAnchor = TrustAnchor(trustAnchorRootCert)
+    val defaultContext = CertificateValidationContext(trustAnchors = setOf(trustAnchor))
 
     val goodCACertPem = "-----BEGIN CERTIFICATE-----\n" +
             "MIIDfDCCAmSgAwIBAgIBAjANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
@@ -371,7 +372,7 @@ open class ValidityPeriodsTest : FreeSpec({
                 "-----END CERTIFICATE-----"
 
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, goodCACert, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, goodCACert)
 
         shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
