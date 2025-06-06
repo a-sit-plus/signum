@@ -106,7 +106,7 @@ open class NameChainingTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(goodCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<CertificateChainValidatorException> { chain.validate(defaultContext) }.apply {
             message shouldBe "Subject of issuer cert and issuer of child certificate mismatch."
@@ -164,7 +164,7 @@ open class NameChainingTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(nameOrderingCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<CertificateChainValidatorException> { chain.validate(defaultContext) }.apply {
             message shouldBe "Subject of issuer cert and issuer of child certificate mismatch."
@@ -197,7 +197,7 @@ open class NameChainingTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(goodCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
@@ -228,7 +228,7 @@ open class NameChainingTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(goodCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
@@ -259,7 +259,7 @@ open class NameChainingTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(goodCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
@@ -289,7 +289,7 @@ open class NameChainingTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(UIDCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
@@ -346,7 +346,7 @@ open class NameChainingTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(RFC3280MandatoryAttributeTypesCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
@@ -403,7 +403,7 @@ open class NameChainingTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(RFC3280OptionalAttributeTypesCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
@@ -456,7 +456,7 @@ open class NameChainingTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(UTF8StringEncodedNamesCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
@@ -511,7 +511,7 @@ open class NameChainingTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(rolloverFromPrintableStringToUTF8StringCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
@@ -566,7 +566,7 @@ open class NameChainingTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(UTF8StringCaseInsensitiveMatchCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }

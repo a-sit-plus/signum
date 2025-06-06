@@ -81,7 +81,7 @@ open class SignatureVerificationTest : FreeSpec({
                 "-----END CERTIFICATE-----"
         val ca = X509Certificate.decodeFromPem(goodCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
@@ -132,7 +132,7 @@ open class SignatureVerificationTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(badSignedCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<CryptoOperationFailed> { chain.validate(defaultContext) }.apply {
             message shouldBe "Signature verification failed in CA certificate."

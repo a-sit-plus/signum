@@ -34,31 +34,29 @@ class PolicyValidator(
     private var supportedExtensions: Set<ObjectIdentifier>? = null
 
     init {
-        certIndex = 0
+        certIndex = 1
         explicitPolicy = if (expPolicyRequired) 0 else certPathLen + 1
         policyMapping = if (polMappingInhibited) 0 else certPathLen + 1
         inhibitAnyPolicy = if (anyPolicyInhibited) 0 else certPathLen + 1
     }
 
     override fun check(currCert: X509Certificate) {
-        if (certIndex > 0) {
-            rootNode = processPolicies(
-                certIndex,
-                initPolicies,
-                explicitPolicy,
-                policyMapping,
-                inhibitAnyPolicy,
-                rejectPolicyQualifiers,
-                rootNode,
-                currCert,
-                certIndex == certPathLen
-            )
+        rootNode = processPolicies(
+            certIndex,
+            initPolicies,
+            explicitPolicy,
+            policyMapping,
+            inhibitAnyPolicy,
+            rejectPolicyQualifiers,
+            rootNode,
+            currCert,
+            certIndex == certPathLen
+        )
 
-            if (certIndex != certPathLen) {
-                explicitPolicy = updateExplicitPolicy(explicitPolicy, currCert, false)
-                policyMapping = updatePolicyMapping(policyMapping, currCert)
-                inhibitAnyPolicy = updateInhibitAnyPolicy(inhibitAnyPolicy, currCert)
-            }
+        if (certIndex != certPathLen) {
+            explicitPolicy = updateExplicitPolicy(explicitPolicy, currCert, false)
+            policyMapping = updatePolicyMapping(policyMapping, currCert)
+            inhibitAnyPolicy = updateInhibitAnyPolicy(inhibitAnyPolicy, currCert)
         }
         certIndex++
     }
