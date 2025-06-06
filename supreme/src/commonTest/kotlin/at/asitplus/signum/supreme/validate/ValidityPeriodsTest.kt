@@ -111,7 +111,7 @@ open class ValidityPeriodsTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(badNotBeforeDateCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<CertificateValidityException> { chain.validate(defaultContext) }.apply {
             message shouldBe "certificate not valid till " + ca.tbsCertificate.validFrom.instant.toLocalDateTime(
@@ -144,7 +144,7 @@ open class ValidityPeriodsTest : FreeSpec({
                 "qg==\n" +
                 "-----END CERTIFICATE-----"
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, goodCACert, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, goodCACert)
 
         shouldThrow<CertificateValidityException> { chain.validate(defaultContext) }.apply {
             message shouldBe "certificate not valid till " + leaf.tbsCertificate.validFrom.instant.toLocalDateTime(
@@ -177,7 +177,7 @@ open class ValidityPeriodsTest : FreeSpec({
                 "hiss7AFKddQ=\n" +
                 "-----END CERTIFICATE-----"
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, goodCACert, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, goodCACert)
 
         // Validation fails due to the wasCertificateIssuedWithinIssuerValidityPeriod check,
         // even though all certificates pass their individual validity checks as required by the test suite.
@@ -212,7 +212,7 @@ open class ValidityPeriodsTest : FreeSpec({
                 "-----END CERTIFICATE-----"
 
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, goodCACert, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, goodCACert)
 
         // Validation fails due to the wasCertificateIssuedWithinIssuerValidityPeriod check,
         // even though all certificates pass their individual validity checks as required by the test suite.
@@ -270,7 +270,7 @@ open class ValidityPeriodsTest : FreeSpec({
 
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val ca = X509Certificate.decodeFromPem(badNotAfterDateCACert).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<CertificateValidityException> { chain.validate(defaultContext) }.apply {
             message shouldBe "certificate expired on " + ca.tbsCertificate.validUntil.instant.toLocalDateTime(
@@ -303,7 +303,7 @@ open class ValidityPeriodsTest : FreeSpec({
                 "-----END CERTIFICATE-----"
 
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, goodCACert, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, goodCACert)
 
         shouldThrow<CertificateValidityException> { chain.validate(defaultContext) }.apply {
             message shouldBe "certificate expired on " + leaf.tbsCertificate.validUntil.instant.toLocalDateTime(
@@ -337,7 +337,7 @@ open class ValidityPeriodsTest : FreeSpec({
                 "-----END CERTIFICATE-----"
 
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, goodCACert, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, goodCACert)
 
         shouldThrow<CertificateValidityException> { chain.validate(defaultContext) }.apply {
             message shouldBe "certificate expired on " + leaf.tbsCertificate.validUntil.instant.toLocalDateTime(

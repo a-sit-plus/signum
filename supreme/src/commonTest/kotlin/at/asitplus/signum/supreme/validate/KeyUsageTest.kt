@@ -11,7 +11,7 @@ import io.kotest.matchers.shouldBe
 /*
 * PKITS 4.7 Key Usage
 * */
-open class KeyUsageTest : FreeSpec({
+open class  KeyUsageTest : FreeSpec({
 
     val trustAnchorRootCertificate = "-----BEGIN CERTIFICATE-----\n" +
             "MIIDRzCCAi+gAwIBAgIBATANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
@@ -86,7 +86,7 @@ open class KeyUsageTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(keyUsageCriticalKeyCertSignFalseCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<KeyUsageException> { chain.validate(defaultContext) }.apply {
             message shouldBe "Digital signature key usage extension not present at the intermediate cert!"
@@ -143,7 +143,7 @@ open class KeyUsageTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(keyUsageNotCriticalKeyCertSignFalseCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<KeyUsageException> { chain.validate(defaultContext) }.apply {
             message shouldBe "Digital signature key usage extension not present at the intermediate cert!"
@@ -198,7 +198,7 @@ open class KeyUsageTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(keyUsageNotCriticalCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
@@ -252,7 +252,7 @@ open class KeyUsageTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(keyUsageCriticalCRLSignFalseCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<KeyUsageException> { chain.validate(defaultContext) }.apply {
             message shouldBe "CRL signature key usage extension not present at the intermediate cert!"
@@ -309,7 +309,7 @@ open class KeyUsageTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(keyUsageNotCriticalCRLSignFalseCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<KeyUsageException> { chain.validate(defaultContext) }.apply {
             message shouldBe "CRL signature key usage extension not present at the intermediate cert!"

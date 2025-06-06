@@ -9,7 +9,6 @@ import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.X509KeyUsage
-import at.asitplus.signum.indispensable.pki.root
 import at.asitplus.signum.supreme.hash.digest
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
@@ -55,7 +54,6 @@ class CertificateValidationContext(
     val anyPolicyInhibited: Boolean = false,
     val policyQualifiersRejected: Boolean = false,
     val initialPolicies: Set<ObjectIdentifier> = emptySet(),
-//    also pub key
     val trustAnchors: Set<X509Certificate> = emptySet()
 )
 
@@ -83,7 +81,7 @@ suspend fun CertificateChain.validate(
             expPolicyRequired = context.explicitPolicyRequired,
             polMappingInhibited = context.policyMappingInhibited,
             anyPolicyInhibited = context.anyPolicyInhibited,
-            certPathLen = this.size - 1,
+            certPathLen = this.size,
             rejectPolicyQualifiers = context.policyQualifiersRejected,
             rootNode = rootNode
         )
@@ -91,7 +89,7 @@ suspend fun CertificateChain.validate(
     validators.add(NameConstraintsValidator(this.size))
     if (context.basicConstraintCheck) validators.add(BasicConstraintsValidator(this.size))
 
-    if (!context.trustAnchors.containsByThumbprint(this.root)) throw CertificateChainValidatorException("Untrusted root certificate.")
+//    if (!context.trustAnchors.containsByThumbprint(this.root)) throw CertificateChainValidatorException("Untrusted root certificate.")
 
     val reversed = this.reversed()
     reversed.forEach { it.checkValidity(context.date) }
