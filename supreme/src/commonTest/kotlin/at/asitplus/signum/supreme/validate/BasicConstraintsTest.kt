@@ -152,10 +152,10 @@ open class BasicConstraintsTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(missingBasicConstraintsCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<BasicConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Missing basicConstraints extension at cert index 1."
+            message shouldBe "Missing basicConstraints extension at cert index 0."
         }
     }
 
@@ -208,10 +208,10 @@ open class BasicConstraintsTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(basicConstraintsCriticalFalseCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<BasicConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Missing CA flag at cert index 1."
+            message shouldBe "Missing CA flag at cert index 0."
         }
     }
 
@@ -264,10 +264,10 @@ open class BasicConstraintsTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(basicConstraintsNotCriticalcAFalseCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldThrow<BasicConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "basicConstraints extension must be critical (index 1)."
+            message shouldBe "basicConstraints extension must be critical (index 0)."
         }
     }
 
@@ -321,10 +321,10 @@ open class BasicConstraintsTest : FreeSpec({
         val ca = X509Certificate.decodeFromPem(pathLenConstraint0CACert).getOrThrow()
         val subCa = X509Certificate.decodeFromPem(pathLenConstraint0subCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, subCa, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, subCa, ca)
 
         shouldThrow<BasicConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "pathLenConstraint violated at cert index 2."
+            message shouldBe "pathLenConstraint violated at cert index 1."
         }
     }
 
@@ -354,7 +354,7 @@ open class BasicConstraintsTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(pathLenConstraint0CACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
@@ -385,7 +385,7 @@ open class BasicConstraintsTest : FreeSpec({
 
         val ca = X509Certificate.decodeFromPem(pathLenConstraint0CACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, ca)
 
         shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
@@ -464,10 +464,10 @@ open class BasicConstraintsTest : FreeSpec({
         val subCa = X509Certificate.decodeFromPem(pathLenConstraint6subCA0Cert).getOrThrow()
         val subSubCa = X509Certificate.decodeFromPem(pathLenConstraint6subsubCA00Cert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, subSubCa, subCa, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, subSubCa, subCa, ca)
 
         shouldThrow<BasicConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "pathLenConstraint violated at cert index 3."
+            message shouldBe "pathLenConstraint violated at cert index 2."
         }
     }
 
@@ -569,10 +569,10 @@ open class BasicConstraintsTest : FreeSpec({
         val subSubCa = X509Certificate.decodeFromPem(pathLenConstraintsubsubCA11Cert).getOrThrow()
         val subSubSubCa = X509Certificate.decodeFromPem(pathLenConstraintsubsubsubCA11XCert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, subSubSubCa, subSubCa, subCa, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, subSubSubCa, subSubCa, subCa, ca)
 
         shouldThrow<BasicConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "pathLenConstraint violated at cert index 4."
+            message shouldBe "pathLenConstraint violated at cert index 3."
         }
     }
 
@@ -674,7 +674,7 @@ open class BasicConstraintsTest : FreeSpec({
         val subSubCa = X509Certificate.decodeFromPem(pathLenConstraint6subsubCA41Cert).getOrThrow()
         val subSubSubCa = X509Certificate.decodeFromPem(pathLenConstraint6subsubsubCA41XCert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, subSubSubCa, subSubCa, subCa, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, subSubSubCa, subSubCa, subCa, ca)
 
         shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
@@ -706,7 +706,7 @@ open class BasicConstraintsTest : FreeSpec({
         val ca = X509Certificate.decodeFromPem(pathLenConstraint0CACert).getOrThrow()
         val selfIssuedCa = X509Certificate.decodeFromPem(pathLenConstraint0SelfIssuedCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, selfIssuedCa, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, selfIssuedCa, ca)
 
         shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
@@ -762,10 +762,10 @@ open class BasicConstraintsTest : FreeSpec({
         val selfIssuedCa = X509Certificate.decodeFromPem(pathLenConstraint0SelfIssuedCACert).getOrThrow()
         val subCa = X509Certificate.decodeFromPem(pathLenConstraint0subCA2Cert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, subCa, selfIssuedCa, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, subCa, selfIssuedCa, ca)
 
         shouldThrow<BasicConstraintsException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "pathLenConstraint violated at cert index 3."
+            message shouldBe "pathLenConstraint violated at cert index 2."
         }
     }
 
@@ -890,7 +890,7 @@ open class BasicConstraintsTest : FreeSpec({
         val subCa = X509Certificate.decodeFromPem(pathLenConstraint1subCACert).getOrThrow()
         val subSelfIssuedCa = X509Certificate.decodeFromPem(pathLenConstraint1SelfIssuedsubCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
-        val chain: CertificateChain = listOf(leaf, subSelfIssuedCa, subCa, selfIssuedCa, ca, trustAnchorRoot)
+        val chain: CertificateChain = listOf(leaf, subSelfIssuedCa, subCa, selfIssuedCa, ca)
 
         shouldNotThrow<Throwable> { chain.validate(defaultContext) }
     }
