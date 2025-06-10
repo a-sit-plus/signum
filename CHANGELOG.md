@@ -3,7 +3,7 @@
 ## 3.0
 
 ### NEXT
-* **RSA encryption** for in-memory keys (no hardware-backed key management yet)
+* **RSA encryption** using in-memory keys (no hardware-backed key management yet)
 * Dependency Updates:
     * `kotlincrypto:secure-random:0.3.2` -> `kotlincrypto.random:crypto-rand:0.5.0`
         * This fixes key generation in WASM/JS
