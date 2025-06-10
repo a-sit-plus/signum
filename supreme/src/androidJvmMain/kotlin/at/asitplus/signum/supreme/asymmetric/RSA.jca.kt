@@ -11,7 +11,7 @@ import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.supreme.dsl.DSL
 import javax.crypto.Cipher
 
-actual class PlatformDecryptorConfiguration internal actual constructor() : DSL.Data() //TODO provider config like biometrics
+actual class PlatformDecryptorConfiguration internal actual constructor() : DSL.Data() //TODO provider config like biometrics, once we support HW-backed storage
 
 
 /** data is guaranteed to be in RAW_BYTES format. failure should throw. */

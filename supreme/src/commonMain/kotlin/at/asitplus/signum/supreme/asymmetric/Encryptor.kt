@@ -42,8 +42,6 @@ internal constructor(
 
 /**
  * Obtains an Encryptor.
- *
- * @see PlatformDecryptorConfiguration
  */
 fun AsymmetricEncryptionAlgorithm.encryptorFor(
     publicKey: CryptoPublicKey,
@@ -60,8 +58,6 @@ private fun AsymmetricEncryptionAlgorithm.encryptorForImpl(
     }
 /**
  * Obtains an Encryptor.
- *
- * @see PlatformDecryptorConfiguration
  */
 fun AsymmetricEncryptionAlgorithm.RSA.encryptorFor(
     publicKey: CryptoPublicKey.RSA,

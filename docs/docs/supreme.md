@@ -631,12 +631,12 @@ Hence, it is possible to create ephemeral RSA keys and use those, or import RSA 
 ### Encryption and Decryption API
 
 The API is based on the same paradigm as the signer/verifier tandem. To encrypt data under an RSA public key, three steps are necessary:
-* Instantiate an `AsymmetricEncryptionAlgorithm.RSA(rsaPadding)`.
+* Instantiate an `AsymmetricEncryptionAlgorithm.RSA(rsaPadding)` or use any of the pre-configured instances (see [Supported Algorithms and Paddings](#supporred-algorithms-and-paddings)).
 * Invoke `encryptorFor(rsaPublicKey)` on it to create an `Encryptor`.
 * Call `encrypt(data)` and receive encrypted bytes
 
 Decryption works analogously:
-* Instantiate an `AsymmetricEncryptionAlgorithm.RSA(rsaPadding)`.
+* Instantiate an `AsymmetricEncryptionAlgorithm.RSA(rsaPadding)` or use any of the pre-configured instances (see [Supported Algorithms and Paddings](#supporred-algorithms-and-paddings)).
 * Invoke `decryptorFor(rsaPrivateKey)` on it to create a `Decryptor`.
 * Call `decrypt(data)` and recover the plain bytes
 
@@ -646,7 +646,7 @@ Both require a `HazardousMaterials` opt-in, as the latter may only to recover ci
 and the former should only ever be used as a low-level primitive (usually for experiments but never in production)
 
 ### Supported Algorithms and Paddings
-As of now, RSA encryption is supported and the following paddings can be used:
+As of now, RSA encryption is supported, and the following paddings can be used:
 
 * `RSAPadding.NONE`
 * `RSAPadding.PKCS1`
@@ -654,6 +654,15 @@ As of now, RSA encryption is supported and the following paddings can be used:
 * `RSAPadding.OAEP.SHA256`
 * `RSAPadding.OAEP.SHA384`
 * `RSAPadding.OAEP.SHA512`
+
+For convenience, pre-configured `AsymmetricEncryptionAlgorithm` instances exist for each supported algorithm:
+
+* `AsymmetricEncryptionAlgorithm.RSA.NoPadding`
+* `AsymmetricEncryptionAlgorithm.RSA.Pkcs1Padding`
+* `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA1`
+* `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256`
+* `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA384`
+* `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA512`
 
 ## Attestation
 

@@ -51,7 +51,7 @@ internal constructor(
 }
 
 /**
- * Obtains an Encryptor.
+ * Obtains a Decryptor.
  *
  * @see PlatformDecryptorConfiguration
  */
@@ -71,7 +71,7 @@ private fun AsymmetricEncryptionAlgorithm.decryptorForImpl(
         )
     }
 /**
- * Obtains an Encryptor.
+ * Obtains a Decryptor.
  *
  * @see PlatformDecryptorConfiguration
  */

@@ -42,6 +42,25 @@ sealed interface AsymmetricEncryptionAlgorithm {
     data class RSA(
         /** The padding to apply to the data. */
         val padding: RSAPadding
-    ) : AsymmetricEncryptionAlgorithm
+    ) : AsymmetricEncryptionAlgorithm {
+        companion object {
+
+            @HazardousMaterials("This is almost always insecure and can leak your private key!")
+            val NoPadding = RSA(RSAPadding.NONE)
+
+            @HazardousMaterials("This padding scheme is vulnerable to Bleichenbacher's attack. Use only with legacy application where you absolutely must")
+            val Pkcs1Padding = RSA(RSAPadding.PKCS1)
+
+            val OAEP = OAEPWith()
+        }
+
+        /** Pre-configured RSA algorithm instance with OAEP-SHAXXX  */
+        class OAEPWith {
+            val SHA1 = RSA(RSAPadding.OAEP.SHA1)
+            val SHA256 = RSA(RSAPadding.OAEP.SHA256)
+            val SHA384 = RSA(RSAPadding.OAEP.SHA384)
+            val SHA512 = RSA(RSAPadding.OAEP.SHA512)
+        }
+    }
 
 }

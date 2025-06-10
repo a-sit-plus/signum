@@ -502,7 +502,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             attestation = attestation,
             rawUnlockTimeout = config.hardware.v.protection.v?.timeout,
             allowSigning = config._algSpecific.v.allowsSigning,
-            allowEncryption = config._algSpecific.v.allowEncryption,
+            allowEncryption = config._algSpecific.v.allowsEncryption,
             allowKeyAgreement = config._algSpecific.v.allowsKeyAgreement,
             algSpecific = when (val alg = config._algSpecific.v) {
                 is SigningKeyConfiguration.ECConfiguration -> IosKeyAlgSpecificMetadata.ECDSA(alg.digests)
