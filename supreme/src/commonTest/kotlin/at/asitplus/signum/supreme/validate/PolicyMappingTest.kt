@@ -1,9 +1,12 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.CertificatePolicyException
+import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.pkiExtensions.Qualifier
+import at.asitplus.signum.indispensable.pki.pkiExtensions.decodeCertificatePolicies
 import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
@@ -16,6 +19,7 @@ open class PolicyMappingTest : FreeSpec ({
 
     val NISTTestPolicyOne = "2.16.840.1.101.3.2.1.48.1"
     val NISTTestPolicyTwo = "2.16.840.1.101.3.2.1.48.2"
+    val NISTTestPolicyThree = "2.16.840.1.101.3.2.1.48.3"
     val NISTTestPolicySix = "2.16.840.1.101.3.2.1.48.6"
 
     val trustAnchorRootCertificate = "-----BEGIN CERTIFICATE-----\n" +
@@ -764,10 +768,34 @@ open class PolicyMappingTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
 
-        val context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
+        var context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
         shouldNotThrow<Throwable> {
             val validationResult = chain.validate(context)
-            validationResult.rootPolicyNode?.getAllSubtreeQualifiers()?.size shouldBe 1
+            val qualifiers = validationResult.rootPolicyNode?.getAllSubtreeQualifiers()
+            qualifiers?.size shouldBe 1
+
+            val displayedQualifier = qualifiers?.first()?.qualifier as Qualifier.UserNotice
+            val expectedQualifier = leaf.findExtension(KnownOIDs.certificatePolicies_2_5_29_32)
+                ?.decodeCertificatePolicies()
+                ?.first { it.oid.toString() == NISTTestPolicyThree } // Verify whether the given qualifier is correctly associated with the specified policy
+                ?.policyQualifiers?.first()
+                ?.qualifier as Qualifier.UserNotice
+            displayedQualifier.explicitText?.value shouldBe expectedQualifier.explicitText?.value
+        }
+
+        context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo)))
+        shouldNotThrow<Throwable> {
+            val validationResult = chain.validate(context)
+            val qualifiers = validationResult.rootPolicyNode?.getAllSubtreeQualifiers()
+            qualifiers?.size shouldBe 1
+
+            val displayedQualifier = qualifiers?.first()?.qualifier as Qualifier.UserNotice
+            val expectedQualifier = leaf.findExtension(KnownOIDs.certificatePolicies_2_5_29_32)
+                ?.decodeCertificatePolicies()
+                ?.first { it.oid == KnownOIDs.anyPolicy } // Verify whether the given qualifier is correctly associated with the specified policy
+                ?.policyQualifiers?.first()
+                ?.qualifier as Qualifier.UserNotice
+            displayedQualifier.explicitText?.value shouldBe expectedQualifier.explicitText?.value
         }
     }
 
@@ -801,7 +829,16 @@ open class PolicyMappingTest : FreeSpec ({
 
         shouldNotThrow<Throwable> {
             val validationResult = chain.validate(defaultContext)
-            validationResult.rootPolicyNode?.getAllSubtreeQualifiers()?.size shouldBe 1
+            val qualifiers = validationResult.rootPolicyNode?.getAllSubtreeQualifiers()
+            qualifiers?.size shouldBe 1
+
+            val displayedQualifier = qualifiers?.first()?.qualifier as Qualifier.UserNotice
+            val expectedQualifier = ca.findExtension(KnownOIDs.certificatePolicies_2_5_29_32)
+                ?.decodeCertificatePolicies()
+                ?.first { it.oid.toString() == NISTTestPolicyOne } // Verify whether the given qualifier is correctly associated with the specified policy
+                ?.policyQualifiers?.first()
+                ?.qualifier as Qualifier.UserNotice
+            displayedQualifier.explicitText?.value shouldBe expectedQualifier.explicitText?.value
         }
     }
 
@@ -835,7 +872,16 @@ open class PolicyMappingTest : FreeSpec ({
 
         shouldNotThrow<Throwable> {
             val validationResult = chain.validate(defaultContext)
-            validationResult.rootPolicyNode?.getAllSubtreeQualifiers()?.size shouldBe 1
+            val qualifiers = validationResult.rootPolicyNode?.getAllSubtreeQualifiers()
+            qualifiers?.size shouldBe 1
+
+            val displayedQualifier = qualifiers?.first()?.qualifier as Qualifier.UserNotice
+            val expectedQualifier = ca.findExtension(KnownOIDs.certificatePolicies_2_5_29_32)
+                ?.decodeCertificatePolicies()
+                ?.first { it.oid == KnownOIDs.anyPolicy } // Verify whether the given qualifier is correctly associated with the specified policy
+                ?.policyQualifiers?.first()
+                ?.qualifier as Qualifier.UserNotice
+            displayedQualifier.explicitText?.value shouldBe expectedQualifier.explicitText?.value
         }
     }
 })
