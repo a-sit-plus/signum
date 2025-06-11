@@ -2,16 +2,14 @@ package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.CertificateChainValidatorException
 import at.asitplus.signum.NameConstraintsException
-import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.indispensable.pki.pkiExtensions.NameConstraints
-import at.asitplus.signum.indispensable.pki.pkiExtensions.decodeNameConstraints
+import at.asitplus.signum.indispensable.pki.pkiExtensions.NameConstraintsExtension
 import kotlinx.io.IOException
 
 class NameConstraintsValidator(
     private val pathLength: Int,
     private var currentCertIndex: Int = 0,
-    private var previousNameConstraints: NameConstraints? = null
+    private var previousNameConstraints: NameConstraintsExtension? = null
 ) : Validator {
 
     override fun check(currCert: X509Certificate) {
@@ -33,11 +31,11 @@ class NameConstraintsValidator(
 
     private fun mergeNameConstraints(
         currCert: X509Certificate,
-        previousNameConstraints: NameConstraints?
-    ): NameConstraints? {
+        previousNameConstraints: NameConstraintsExtension?
+    ): NameConstraintsExtension? {
 
         val newNameConstraints =
-            currCert.findExtension(KnownOIDs.nameConstraints_2_5_29_30)?.decodeNameConstraints()
+            currCert.findExtension<NameConstraintsExtension>()
 
         return if (previousNameConstraints == null) {
             newNameConstraints?.copy()

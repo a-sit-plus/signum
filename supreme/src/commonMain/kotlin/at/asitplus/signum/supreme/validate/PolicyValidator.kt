@@ -5,12 +5,11 @@ import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.toBigInteger
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.indispensable.pki.X509CertificateExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificatePoliciesExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.InhibitAnyPolicyExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyConstraintsExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyMappingsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyQualifierInfo
-import at.asitplus.signum.indispensable.pki.pkiExtensions.decodeCertificatePolicies
-import at.asitplus.signum.indispensable.pki.pkiExtensions.decodeInhibitAnyPolicy
-import at.asitplus.signum.indispensable.pki.pkiExtensions.decodePolicyConstraints
-import at.asitplus.signum.indispensable.pki.pkiExtensions.decodePolicyMappings
 
 /*
 * PolicyValidator checks policy information on X509Certificate path
@@ -75,7 +74,7 @@ class PolicyValidator(
         }
 
         val constraints =
-            currentCert.findExtension(KnownOIDs.policyConstraints_2_5_29_36)?.decodePolicyConstraints()
+            currentCert.findExtension<PolicyConstraintsExtension>()
                 ?: return result
 
         val required = constraints.requireExplicitPolicy.toBigInteger().intValue()
@@ -103,7 +102,7 @@ class PolicyValidator(
         }
 
         val constraints =
-            currentCert.findExtension(KnownOIDs.policyConstraints_2_5_29_36)?.decodePolicyConstraints()
+            currentCert.findExtension<PolicyConstraintsExtension>()
                 ?: return result
 
         val inhibitMapping = constraints.inhibitPolicyMapping.toBigInteger().intValue()
@@ -127,7 +126,7 @@ class PolicyValidator(
         }
 
         val extensionValue =
-            currentCert.findExtension(KnownOIDs.inhibitAnyPolicy)?.decodeInhibitAnyPolicy()
+            currentCert.findExtension<InhibitAnyPolicyExtension>()?.skipCerts
 
         return if (extensionValue != null && extensionValue != -1 && extensionValue < result) {
             extensionValue
@@ -152,12 +151,12 @@ class PolicyValidator(
         var root = originalRoot?.copyTree()
 
         val policyExtension =
-            currentCert.findExtension(KnownOIDs.certificatePolicies_2_5_29_32)
+            currentCert.findExtension<CertificatePoliciesExtension>()
 
         // RFC 5280: 6.1.3 (d)
         if (policyExtension != null && root != null) {
             isCritical = policyExtension.critical
-            val policies = policyExtension.decodeCertificatePolicies()
+            val policies = policyExtension.certificatePolicies
 
             var containsAnyPolicy = false
 
@@ -353,12 +352,11 @@ class PolicyValidator(
         anyPolicyQualifiers: Set<PolicyQualifierInfo>
     ): PolicyNode? {
         val policyMappingsExtension =
-            certificate.findExtension(KnownOIDs.policyMappings) ?: return root
+            certificate.findExtension<PolicyMappingsExtension>() ?: return root
 
-        val mappings = policyMappingsExtension.decodePolicyMappings()
         var nodesRemoved = false
 
-        for (mapping in mappings) {
+        for (mapping in policyMappingsExtension.policyMappings) {
             val issuerDomain = mapping.issuerDomain
             val subjectDomain = mapping.subjectDomain
             require(issuerDomain != KnownOIDs.anyPolicy) {
@@ -416,9 +414,9 @@ class PolicyValidator(
         root: PolicyNode,
         certDepth: Int,
         initialPolicies: Set<ObjectIdentifier>,
-        currentExtension: X509CertificateExtension
+        currentExtension: CertificatePoliciesExtension
     ): PolicyNode? {
-        val currentPolicies = currentExtension.decodeCertificatePolicies()
+        val currentPolicies = currentExtension.certificatePolicies
         var removedAny = false
 
         for (policy in currentPolicies.map { it.oid }) {
