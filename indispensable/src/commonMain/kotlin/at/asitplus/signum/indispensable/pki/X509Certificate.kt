@@ -341,8 +341,9 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
 
     fun isSelfIssued(): Boolean = tbsCertificate.subjectName == tbsCertificate.issuerName
 
-    fun findExtension(oid: ObjectIdentifier): X509CertificateExtension? =
-        tbsCertificate.extensions?.firstOrNull { it.oid == oid }
+    inline fun <reified T : X509CertificateExtension> findExtension(): T? {
+        return this.tbsCertificate.extensions?.firstOrNull { it is T } as? T
+    }
 
     fun checkValidity(date: Instant = Clock.System.now()) {
         if (date > tbsCertificate.validUntil.instant) {

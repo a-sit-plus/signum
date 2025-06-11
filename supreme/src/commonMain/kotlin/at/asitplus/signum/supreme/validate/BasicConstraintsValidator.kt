@@ -1,9 +1,8 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.BasicConstraintsException
-import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.indispensable.pki.pkiExtensions.decodeBasicConstraints
+import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtension
 
 class BasicConstraintsValidator(
     private val pathLength: Int,
@@ -14,18 +13,16 @@ class BasicConstraintsValidator(
     override fun check(currCert: X509Certificate) {
         if (currentCertIndex >= pathLength - 1) return
 
-        val basicConstraints = currCert.findExtension(KnownOIDs.basicConstraints_2_5_29_19)?.also {
-            if (!it.critical) {
-                throw BasicConstraintsException("basicConstraints extension must be critical (index $currentCertIndex).")
-            }
-        }?.decodeBasicConstraints()
+        val basicConstraints = currCert.findExtension<BasicConstraintsExtension>()
             ?: throw BasicConstraintsException("Missing basicConstraints extension at cert index $currentCertIndex.")
 
+        require(basicConstraints.critical) {
+            throw BasicConstraintsException("basicConstraints extension must be critical (index $currentCertIndex).")
+        }
 
         if (!basicConstraints.ca) {
             throw BasicConstraintsException("Missing CA flag at cert index $currentCertIndex.")
         }
-
 
         if (remainingPathLength != null && !currCert.isSelfIssued()) {
             if (remainingPathLength?.toInt() == 0) {
