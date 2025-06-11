@@ -1,26 +1,63 @@
 package at.asitplus.signum.indispensable.pki.pkiExtensions
 
+import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
+import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 import kotlinx.io.IOException
 
-data class NameConstraints(
+/**
+ * Name Constraints Extension
+ * This extension specifies permitted and excluded subtrees that require restrictions on names
+ * included in certificates issued by a given CA. Applied to the subject DNs and subject ANs.
+ * */
+data class NameConstraintsExtension(
+    override val oid: ObjectIdentifier,
+    override val critical: Boolean,
+    override val value: Asn1EncapsulatingOctetString,
     var permitted: GeneralSubtrees? = null,
     var excluded: GeneralSubtrees? = null
-) {
-    companion object {
+) : X509CertificateExtension(oid, critical, value) {
+
+    constructor(
+        base: X509CertificateExtension,
+        permitted: GeneralSubtrees? = null,
+        excluded: GeneralSubtrees? = null
+    ) : this(base.oid, base.critical, base.value.asEncapsulatingOctetString(), permitted, excluded)
+
+    companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
         val PERMITTED: ULong = 0u
         val EXCLUDED: ULong = 1u
+
+        override fun doDecode(src: Asn1Sequence): NameConstraintsExtension {
+            val base = decodeBase(src)
+
+            if (base.oid != KnownOIDs.nameConstraints_2_5_29_30) throw Asn1StructuralException(message = "This extension is not NameConstraints extension.")
+
+            val inner = base.value.asEncapsulatingOctetString().children.firstOrNull() ?: return NameConstraintsExtension(base)
+
+            if (inner.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, inner.tag)
+            val genTrees = inner.asSequence().children
+            var permitted: GeneralSubtrees? = null
+            var excluded: GeneralSubtrees? = null
+            genTrees.forEach {
+                if (it.tag.tagValue == PERMITTED) permitted = GeneralSubtrees.doDecode(it.asExplicitlyTagged())
+                if (it.tag.tagValue == EXCLUDED) excluded = GeneralSubtrees.doDecode(it.asExplicitlyTagged())
+            }
+            return NameConstraintsExtension(base, permitted, excluded)
+        }
     }
 
-    fun mergeWith(newConstraints: NameConstraints?) {
+    fun mergeWith(newConstraints: NameConstraintsExtension?) {
         if (newConstraints == null) {
             return
         }
@@ -55,6 +92,10 @@ data class NameConstraints(
         }
     }
 
+    /**
+     * Verify that a certificate follows these NameConstraints
+     *  - subject name and AlternativeName is consistent with both permitted and excluded subtree
+     * */
     fun verify(cert: X509Certificate): Boolean {
         val subject = cert.tbsCertificate.subjectName
 
@@ -69,6 +110,9 @@ data class NameConstraints(
         alternativeNameExtension?.generalNames?.forEach { alternativeNames.add(it) }
 
         if (alternativeNames.isEmpty()) {
+            // RFC 5280 4.2.1.10
+            // If constraints are specified for the RFC822Name, but the cert lacks a SAN,
+            // the constraint must be enforced on the emailAddress attribute within the subject DN
             val fallbackEmails = subject.relativeDistinguishedNames
                 .flatMap { it.attrsAndValues }
                 .filter { it.oid == KnownOIDs.emailAddress_1_2_840_113549_1_9_1 }
@@ -85,6 +129,8 @@ data class NameConstraints(
         }
 
 
+        // If subjectAlternativeNames does not contain an IPAddressName or DNSName,
+        // check whether the last CN in the subjectName can be used
         val cn = subject.findMostSpecificCommonName()?.value?.asPrimitive()
         if (cn != null) {
             try {
@@ -109,7 +155,9 @@ data class NameConstraints(
         return true
     }
 
-
+    /**
+     * verify that a name is consistent with both permitted and excluded subtree
+     * */
     fun verify(name: GeneralNameOption?): Boolean {
         if (name == null) {
             throw IOException("name is null")
@@ -148,21 +196,5 @@ data class NameConstraints(
         }
         return true
     }
-}
-
-fun X509CertificateExtension.decodeNameConstraints(): NameConstraints {
-    if (oid != KnownOIDs.nameConstraints_2_5_29_30) throw Asn1StructuralException(message = "This extension is not NameConstraints extension.")
-
-    val src = value.asEncapsulatingOctetString().children.firstOrNull() ?: return NameConstraints()
-
-    if (src.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, src.tag)
-    val genTrees = src.asSequence().children
-    var permitted: GeneralSubtrees? = null
-    var excluded: GeneralSubtrees? = null
-    genTrees.forEach {
-        if (it.tag.tagValue == NameConstraints.PERMITTED) permitted = GeneralSubtrees.doDecode(it.asExplicitlyTagged())
-        if (it.tag.tagValue == NameConstraints.EXCLUDED) excluded = GeneralSubtrees.doDecode(it.asExplicitlyTagged())
-    }
-    return NameConstraints(permitted, excluded)
 }
 

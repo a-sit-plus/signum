@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.pki.pkiExtensions
 
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
@@ -18,6 +19,37 @@ import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToAsn1Integer
 import at.asitplus.signum.indispensable.asn1.readOid
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
+
+data class CertificatePoliciesExtension (
+    override val oid: ObjectIdentifier,
+    override val critical: Boolean,
+    override val value: Asn1EncapsulatingOctetString,
+    val certificatePolicies: List<PolicyInformation>
+) : X509CertificateExtension(oid, critical, value) {
+
+    constructor(
+        base: X509CertificateExtension,
+        certificatePolicies: List<PolicyInformation>
+    ) : this(base.oid, base.critical, base.value.asEncapsulatingOctetString(), certificatePolicies)
+
+    companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
+        override fun doDecode(src: Asn1Sequence): CertificatePoliciesExtension {
+            val base = decodeBase(src)
+
+            if (base.oid != KnownOIDs.certificatePolicies_2_5_29_32) throw Asn1StructuralException(message = "This extension is not CertificatePolicies extension.")
+
+            val policies = mutableListOf<PolicyInformation>()
+            val inner = base.value.asEncapsulatingOctetString().children.firstOrNull()?.asSequence()?.children
+                ?: return CertificatePoliciesExtension(base, emptyList())
+            for (child in inner) {
+                if (child.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, child.tag)
+                policies += PolicyInformation.doDecode(child.asSequence())
+            }
+            return CertificatePoliciesExtension(base, policies)
+        }
+    }
+}
+
 
 class PolicyInformation(
     override val oid: ObjectIdentifier,
@@ -172,17 +204,4 @@ class DisplayText private constructor(val string: Asn1String) : Asn1Encodable<As
             return DisplayText(str)
         }
     }
-}
-
-fun X509CertificateExtension.decodeCertificatePolicies(): List<PolicyInformation> {
-    if (oid != KnownOIDs.certificatePolicies_2_5_29_32) throw Asn1StructuralException(message = "This extension is not CertificatePolicies extension.")
-
-    val policyInformation = mutableListOf<PolicyInformation>()
-    val sequence = value.asEncapsulatingOctetString().children.firstOrNull()?.asSequence()?.children
-        ?: return emptyList()
-    for (child in sequence) {
-        if (child.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, child.tag)
-        policyInformation += PolicyInformation.doDecode(child.asSequence())
-    }
-    return policyInformation
 }

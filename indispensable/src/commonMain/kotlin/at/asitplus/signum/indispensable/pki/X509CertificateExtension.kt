@@ -3,21 +3,21 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Bool
-import kotlinx.serialization.Serializable
+import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificatePoliciesExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.InhibitAnyPolicyExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.NameConstraintsExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyConstraintsExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyMappingsExtension
 
 /**
  * X.509 Certificate Extension
  */
-@ConsistentCopyVisibility
-data class X509CertificateExtension @Throws(Asn1Exception::class) private constructor(
+open class X509CertificateExtension @Throws(Asn1Exception::class) private constructor(
     override val oid: ObjectIdentifier,
-    val value: Asn1Element,
-    val critical: Boolean = false
+    open val value: Asn1Element,
+    open val critical: Boolean = false
 ) : Asn1Encodable<Asn1Sequence>, Identifiable {
-
-    init {
-        if (value.tag != Asn1Element.Tag.OCTET_STRING) throw Asn1TagMismatchException(Asn1Element.Tag.OCTET_STRING, value.tag)
-    }
 
     constructor(
         oid: ObjectIdentifier,
@@ -42,11 +42,27 @@ data class X509CertificateExtension @Throws(Asn1Exception::class) private constr
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): X509CertificateExtension = runRethrowing {
 
+            val oid = (src.children[0] as Asn1Primitive).readOid()
+
+            return when (oid) {
+                KnownOIDs.basicConstraints_2_5_29_19 -> BasicConstraintsExtension.doDecode(src)
+                KnownOIDs.nameConstraints_2_5_29_30 -> NameConstraintsExtension.doDecode(src)
+                KnownOIDs.policyConstraints_2_5_29_36 -> PolicyConstraintsExtension.doDecode(src)
+                KnownOIDs.certificatePolicies_2_5_29_32 -> CertificatePoliciesExtension.doDecode(src)
+                KnownOIDs.policyMappings -> PolicyMappingsExtension.doDecode(src)
+                KnownOIDs.inhibitAnyPolicy -> InhibitAnyPolicyExtension.doDecode(src)
+                else -> decodeBase(src)
+            }
+        }
+
+        @Throws(Asn1Exception::class)
+        fun decodeBase(src: Asn1Sequence): X509CertificateExtension {
             val id = (src.children[0] as Asn1Primitive).readOid()
             val critical =
                 if (src.children[1].tag == Asn1Element.Tag.BOOL) (src.children[1] as Asn1Primitive).content[0] == 0xff.toByte() else false
 
             val value = src.children.last()
+            if (value.tag != Asn1Element.Tag.OCTET_STRING) throw Asn1TagMismatchException(Asn1Element.Tag.OCTET_STRING, value.tag)
             return X509CertificateExtension(id, value, critical)
         }
 

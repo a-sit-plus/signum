@@ -1,11 +1,10 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.indispensable.asn1.Asn1Exception
-import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificatePoliciesExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.GeneralNameOption
 import at.asitplus.signum.indispensable.pki.pkiExtensions.Qualifier
-import at.asitplus.signum.indispensable.pki.pkiExtensions.decodeCertificatePolicies
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
@@ -42,7 +41,8 @@ open class PkiExtensionsDecodingTest : FreeSpec({
                 "-----END CERTIFICATE-----"
 
         val cert = X509Certificate.decodeFromPem(certUserNoticeQualifierPem).getOrThrow()
-        val policyInfo = cert.findExtension(KnownOIDs.certificatePolicies_2_5_29_32)?.decodeCertificatePolicies()?.get(0)
+        val policyInfo = cert.findExtension<CertificatePoliciesExtension>()
+            ?.certificatePolicies?.get(0)
 
         policyInfo?.policyQualifiers?.shouldHaveSize(1)
 
@@ -78,7 +78,8 @@ open class PkiExtensionsDecodingTest : FreeSpec({
                 "-----END CERTIFICATE-----"
 
         val cert = X509Certificate.decodeFromPem(certCPSQualifierPem).getOrThrow()
-        val policyInfo = cert.findExtension(KnownOIDs.certificatePolicies_2_5_29_32)?.decodeCertificatePolicies()?.get(0)
+        val policyInfo = cert.findExtension<CertificatePoliciesExtension>()
+            ?.certificatePolicies?.get(0)
 
         policyInfo?.policyQualifiers?.shouldHaveSize(1)
 
