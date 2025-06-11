@@ -5,13 +5,11 @@ import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificatePoliciesExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.Qualifier
-import at.asitplus.signum.indispensable.pki.pkiExtensions.decodeCertificatePolicies
-import at.asitplus.signum.indispensable.pki.pkiExtensions.decodePolicyConstraints
 import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 
 /*
@@ -1102,8 +1100,8 @@ open class CertificatePoliciesTest : FreeSpec({
             qualifiers?.size shouldBe 1
 
             val displayedQualifier = qualifiers?.first()?.qualifier as Qualifier.UserNotice
-            val expectedQualifier = leaf.findExtension(KnownOIDs.certificatePolicies_2_5_29_32)
-                ?.decodeCertificatePolicies()
+            val expectedQualifier = leaf.findExtension<CertificatePoliciesExtension>()
+                ?.certificatePolicies
                 ?.first { it.oid.toString() == NISTTestPolicyOne } // Verify whether the given qualifier is correctly associated with the specified policy
                 ?.policyQualifiers?.first()
                 ?.qualifier as Qualifier.UserNotice
@@ -1147,8 +1145,8 @@ open class CertificatePoliciesTest : FreeSpec({
             qualifiers?.size shouldBe 1
 
             val displayedQualifier = qualifiers?.first()?.qualifier as Qualifier.UserNotice
-            val expectedQualifier = leaf.findExtension(KnownOIDs.certificatePolicies_2_5_29_32)
-                ?.decodeCertificatePolicies()
+            val expectedQualifier = leaf.findExtension<CertificatePoliciesExtension>()
+                ?.certificatePolicies
                 ?.first { it.oid == KnownOIDs.anyPolicy } // Verify whether the given qualifier is correctly associated with the specified policy
                 ?.policyQualifiers?.first()
                 ?.qualifier as Qualifier.UserNotice
@@ -1200,8 +1198,8 @@ open class CertificatePoliciesTest : FreeSpec({
             qualifiers?.size shouldBe 1
 
             val displayedQualifier = qualifiers?.first()?.qualifier as Qualifier.UserNotice
-            val expectedQualifier = leaf.findExtension(KnownOIDs.certificatePolicies_2_5_29_32)
-                ?.decodeCertificatePolicies()
+            val expectedQualifier = leaf.findExtension<CertificatePoliciesExtension>()
+                ?.certificatePolicies
                 ?.first { it.oid.toString() == NISTTestPolicyOne } // Verify whether the given qualifier is correctly associated with the specified policy
                 ?.policyQualifiers?.first()
                 ?.qualifier as Qualifier.UserNotice
@@ -1218,8 +1216,8 @@ open class CertificatePoliciesTest : FreeSpec({
             qualifiers?.size shouldBe 1
 
             val displayedQualifier = qualifiers?.first()?.qualifier as Qualifier.UserNotice
-            val expectedQualifier = leaf.findExtension(KnownOIDs.certificatePolicies_2_5_29_32)
-                ?.decodeCertificatePolicies()
+            val expectedQualifier = leaf.findExtension<CertificatePoliciesExtension>()
+                ?.certificatePolicies
                 ?.first { it.oid == KnownOIDs.anyPolicy } // Verify whether the given qualifier is correctly associated with the specified policy
                 ?.policyQualifiers?.first()
                 ?.qualifier as Qualifier.UserNotice
@@ -1267,8 +1265,8 @@ open class CertificatePoliciesTest : FreeSpec({
             qualifiers?.size shouldBe 1
 
             val displayedQualifier = qualifiers?.first()?.qualifier as Qualifier.UserNotice
-            val expectedQualifier = leaf.findExtension(KnownOIDs.certificatePolicies_2_5_29_32)
-                ?.decodeCertificatePolicies()
+            val expectedQualifier = leaf.findExtension<CertificatePoliciesExtension>()
+                ?.certificatePolicies
                 ?.first { it.oid.toString() == NISTTestPolicyOne } // Verify whether the given qualifier is correctly associated with the specified policy
                 ?.policyQualifiers?.first()
                 ?.qualifier as Qualifier.UserNotice
@@ -1316,8 +1314,8 @@ open class CertificatePoliciesTest : FreeSpec({
             qualifiers?.size shouldBe 1
 
             val displayedQualifier = qualifiers?.first()?.qualifier as Qualifier.CPSUri
-            val expectedQualifier = leaf.findExtension(KnownOIDs.certificatePolicies_2_5_29_32)
-                ?.decodeCertificatePolicies()
+            val expectedQualifier = leaf.findExtension<CertificatePoliciesExtension>()
+                ?.certificatePolicies
                 ?.first { it.oid.toString() == NISTTestPolicyOne } // Verify whether the given qualifier is correctly associated with the specified policy
                 ?.policyQualifiers?.first()
                 ?.qualifier as Qualifier.CPSUri
