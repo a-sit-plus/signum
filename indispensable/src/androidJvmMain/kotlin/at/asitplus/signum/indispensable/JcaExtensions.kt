@@ -31,6 +31,7 @@ import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
 import java.security.spec.*
+import javax.crypto.Cipher
 import javax.crypto.spec.OAEPParameterSpec
 import javax.crypto.spec.PSource
 
@@ -310,6 +311,7 @@ val AsymmetricEncryptionAlgorithm.jcaName: String
             at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA512 -> "RSA/ECB/OAEPWithSHA-512AndMGF1Padding"
             @OptIn(HazardousMaterials::class)
             at.asitplus.signum.indispensable.asymmetric.RSAPadding.PKCS1 -> "RSA/ECB/PKCS1Padding"
+
             @OptIn(HazardousMaterials::class)
             at.asitplus.signum.indispensable.asymmetric.RSAPadding.NONE -> "RSA/ECB/NoPadding"
         }
@@ -354,3 +356,19 @@ val AsymmetricEncryptionAlgorithm.jcaParameterSpec: AlgorithmParameterSpec?
                 at.asitplus.signum.indispensable.asymmetric.RSAPadding.PKCS1 -> null
             }
         }
+
+/** Get a pre-configured JCA Cipher instance for this algorithm to use for **encryption** */
+fun AsymmetricEncryptionAlgorithm.getJCAEncryptorInstance(publicKey: CryptoPublicKey.RSA, provider: String? = null) =
+    catching {
+        (if (provider != null) Cipher.getInstance(jcaName, provider) else Cipher.getInstance(jcaName)).apply {
+            init(Cipher.ENCRYPT_MODE, publicKey.toJcaPublicKey().getOrThrow(), jcaParameterSpec)
+        }
+    }
+
+/** Get a pre-configured JCA Cipher instance for this algorithm to use for **decryption** */
+fun AsymmetricEncryptionAlgorithm.getJCADecryptorInstance(privateKey: CryptoPrivateKey.RSA, provider: String? = null) =
+    catching {
+        (if (provider != null) Cipher.getInstance(jcaName, provider) else Cipher.getInstance(jcaName)).apply {
+            init(Cipher.DECRYPT_MODE, privateKey.toJcaPrivateKey().getOrThrow(), jcaParameterSpec)
+        }
+    }

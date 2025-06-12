@@ -25,6 +25,8 @@ sealed interface Decryptor {
 
 expect class PlatformDecryptorConfiguration internal constructor() : DSL.Data
 typealias ConfigurePlatformDecryptor = DSLConfigureFn<PlatformDecryptorConfiguration>
+expect class PlatformEncryptorConfiguration internal constructor() : DSL.Data
+typealias ConfigurePlatformEncryptor = DSLConfigureFn<PlatformEncryptorConfiguration>
 
 
 /** data is guaranteed to be in RAW_BYTES format. failure should throw. */

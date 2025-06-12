@@ -13,6 +13,7 @@ import platform.Security.SecKeyCreateEncryptedData
 import platform.Security.SecKeyCreateDecryptedData
 
 actual class PlatformDecryptorConfiguration internal actual constructor() : DSL.Data() //TODO provider config like biometrics
+actual class PlatformEncryptorConfiguration internal actual constructor() : DSL.Data() //TODO provider config like biometrics
 
 
 /** data is guaranteed to be in RAW_BYTES format. failure should throw. */
@@ -21,6 +22,7 @@ internal actual fun encryptRSAImpl(
     algorithm: AsymmetricEncryptionAlgorithm.RSA,
     publicKey: CryptoPublicKey.RSA,
     data: ByteArray,
+    config: PlatformEncryptorConfiguration
 ): ByteArray =
     corecall {
         val k = publicKey.toSecKey().getOrThrow()

@@ -640,6 +640,15 @@ Decryption works analogously:
 * Invoke `decryptorFor(rsaPrivateKey)` on it to create a `Decryptor`.
 * Call `decrypt(data)` and recover the plain bytes
 
+!!! tip inline end
+    The JVM and Android targets allow for optionally specifying a JCA provider name:
+    ```kotlin
+    alg.decryptorFor(key) {
+      provider= "BC"
+    }
+    ```
+    This works the same for encryptors.
+
 As with the rest of the API, `KmmResult` is used throughout and the encryption/decryption functions are suspending.
 Textbook RSA (without padding; represented as `RsaPadding.NONE`) is supported, as is the vulnerable PKCS1 padding scheme.
 Both require a `HazardousMaterials` opt-in, as the latter may only to recover ciphertexts created by legacy systems

@@ -145,21 +145,21 @@ On the other hand, cryptography-kotlin currently offers neither hardware-backed 
 
 The following table provides a detailed comparison between Signum and cryptography-kotlin.
 
-|                             | Signum                            | cryptography-kotlin                |
-|-----------------------------|-----------------------------------|------------------------------------|
-| Digital Signatures          | ✔ (ECDSA, RSA)                    | ✔ (ECDSA, RSA)                     |
-| Symmetric Encryption        | ✔ (AES + ChaChaPoly)              | ✔ (AES)                            |
-| Asymmetric (RSA) Encryption | ✔ RAW, PKCS1, OAEP (SHA-1, SHA-2) | ✔ RAW, PKCS1, OAEP (SHA-1, SHA-2)  |
-| Digest                      | ✔ (SHA-1, SHA-2)                  | ✔ (MD5, SHA-1, SHA-2)              |
-| MAC                         | ✔ (HMAC)                          | ✔ (HMAC)                           |
-| Key Agreement               | ✔ (ECDH)                          | ✔ (ECDH)                           |
-| KDF/PRF/KSF                 | ✗                                 | ✔ (PBKDF2, HKDF)                   |
-| Hardware-Backed Crypto      | ✔                                 | ✗                                  |
-| Attestation                 | ✔                                 | ✗                                  |
-| Fully-Featured ASN.1 Engine | ✔                                 | ✗                                  |
-| COSE                        | ✔                                 | ✗                                  |
-| JOSE                        | ✔                                 | ✗                                  |
-| Provider Targets            | JVM, Android, iOS                 | All KMP-supported targets          |
+|                             | Signum               | cryptography-kotlin       |
+|-----------------------------|----------------------|---------------------------|
+| Digital Signatures          | ✔ (ECDSA, RSA)       | ✔ (ECDSA, RSA)            |
+| Symmetric Encryption        | ✔ (AES + ChaChaPoly) | ✔ (AES)                   |
+| Asymmetric (RSA) Encryption | ✔ RAW, PKCS1, OAEP   | ✔ RAW, PKCS1, OAEP        |
+| Digest                      | ✔ (SHA-1, SHA-2)     | ✔ (MD5, SHA-1, SHA-2)     |
+| MAC                         | ✔ (HMAC)             | ✔ (HMAC)                  |
+| Key Agreement               | ✔ (ECDH)             | ✔ (ECDH)                  |
+| KDF/PRF/KSF                 | ✗                    | ✔ (PBKDF2, HKDF)          |
+| Hardware-Backed Crypto      | ✔                    | ✗                         |
+| Attestation                 | ✔                    | ✗                         |
+| Fully-Featured ASN.1 Engine | ✔                    | ✗                         |
+| COSE                        | ✔                    | ✗                         |
+| JOSE                        | ✔                    | ✗                         |
+| Provider Targets            | JVM, Android, iOS    | All KMP-supported targets |
 
 
 ## _Supreme_ Demo Reel
