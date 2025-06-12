@@ -16,6 +16,9 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 16.2.0
       - name: Publish to Sonatype
         run: ./gradlew clean internals:publishToSonatype indispensable-asn1:publishToSonatype indispensable:publishToSonatype indispensable-cosef:publishToSonatype indispensable-josef:publishToSonatype closeSonatypeStagingRepository
         env:

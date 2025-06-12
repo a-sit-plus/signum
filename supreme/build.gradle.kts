@@ -3,8 +3,13 @@ import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.TypeSpec
+import org.gradle.internal.os.OperatingSystem
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree.Companion.test
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinNativeLink
+import org.jetbrains.kotlin.konan.target.Family
+import java.io.ByteArrayOutputStream
 import java.io.FileInputStream
 import java.util.regex.Pattern
 
@@ -44,9 +49,7 @@ kotlin {
         iosSimulatorArm64()
     ).forEach {
         it.compilations {
-            val main by getting {
-                cinterops.create("AESwift")
-            }
+            val main by getting { cinterops.create("AESwift") }
         }
     }
 
@@ -68,6 +71,7 @@ swiftklib {
         path = file("src/iosMain/swift")
         //Can't hide this in the iOS sources to consumers and using a discrete module is overkill -> so add "internal" to the package
         packageName("at.asitplus.signum.supreme.symmetric.internal.ios")
+        minIos = 15
     }
 }
 
@@ -75,7 +79,7 @@ android {
     namespace = "at.asitplus.signum.supreme"
     defaultConfig {
         //override Android minSDK for Supreme
-        logger.lifecycle("  \u001b[7m\u001b[1m"+ "Overriding Android defaultConfig minSDK to 30 for project Supreme" +"\u001b[0m")
+        logger.lifecycle("  \u001b[7m\u001b[1m" + "Overriding Android defaultConfig minSDK to 30 for project Supreme" + "\u001b[0m")
         minSdk = 30
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -252,6 +256,48 @@ exportXCFramework(
     project(":indispensable-asn1"),
     libs.bignum
 )
+
+
+/*help the linker (yes, this is absolutely bonkers!)*/
+if (OperatingSystem.current() == OperatingSystem.MAC_OS) {
+    val devDir = System.getenv("DEVELOPER_DIR")?.ifEmpty { null }.let {
+        if (it == null) {
+            val output = ByteArrayOutputStream()
+            project.exec {
+                commandLine("xcode-select", "-p")
+                standardOutput = output
+            }
+            output.toString().trim()
+        } else it
+    }
+
+    logger.lifecycle("  DEV DIR points to $devDir")
+
+    val swiftLib = "$devDir/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/"
+
+    kotlin.targets.withType<KotlinNativeTarget>()
+        .configureEach {
+            val sub = when (konanTarget.family) {
+                Family.IOS     ->
+                    if (konanTarget.name.contains("SIMULATOR", true)) "iphonesimulator" else "iphoneos"
+                Family.OSX     -> "macosx"
+                Family.TVOS    ->
+                    if (konanTarget.name.contains("SIMULATOR", true)) "appletvsimulator" else "appletvos"
+                Family.WATCHOS ->
+                    if (konanTarget.name.contains("SIMULATOR", true)) "watchsimulator" else "watchos"
+                else -> throw StopExecutionException("Konan target ${konanTarget.name} is not recognized")
+            }
+
+            logger.lifecycle("  KONAN target is ${konanTarget.name} which resolves to $sub")
+            binaries.all {
+                linkerOpts(
+                    "-L${swiftLib}$sub",
+                    "-L/usr/lib/swift"
+                )
+            }
+        }
+}
+
 
 project.gradle.taskGraph.whenReady {
     tasks.getByName("testDebugUnitTest") {

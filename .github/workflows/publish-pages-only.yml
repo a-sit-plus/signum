@@ -19,6 +19,9 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 16.2.0
       - uses: actions/setup-python@v5
         with:
           python-version: 3.x
