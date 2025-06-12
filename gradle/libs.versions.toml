@@ -2,6 +2,7 @@
 kotlin = "2.2.0"
 ksp = "2.0.2"
 agp = "8.10.0"
+kotest= "6.0.0.M6"
 core = "1.5.0"
 kotlinxIoCore = "0.7.0"
 multibase = "1.2.2"
@@ -12,9 +13,7 @@ jose = "9.31"
 kotlinpoet = "2.2.0"
 runner = "1.5.2"
 kotlincryptoRandom = "0.5.0"
-kotest= "6.0.0.M6"
 warden = "1.7.2"
-kotest-plugin = "6.0.0.M3"
 
 [libraries]
 warden = { group = "at.asitplus", name = "warden-roboto", version.ref = "warden"}
