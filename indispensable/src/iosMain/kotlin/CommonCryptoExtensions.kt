@@ -5,10 +5,26 @@ package at.asitplus.signum.indispensable
 import at.asitplus.signum.internals.*
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.memScoped
 import platform.Foundation.NSData
 import platform.Security.*
+
+
+val AsymmetricEncryptionAlgorithm.secKeyAlgorithm: SecKeyAlgorithm get() = when (this) {
+    is AsymmetricEncryptionAlgorithm.RSA -> when(padding){
+        at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA1 -> kSecKeyAlgorithmRSAEncryptionOAEPSHA1
+        at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA256 -> kSecKeyAlgorithmRSAEncryptionOAEPSHA256
+        at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA384 -> kSecKeyAlgorithmRSAEncryptionOAEPSHA384
+        at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA512 -> kSecKeyAlgorithmRSAEncryptionOAEPSHA512
+        @OptIn(HazardousMaterials::class)
+        at.asitplus.signum.indispensable.asymmetric.RSAPadding.PKCS1 -> kSecKeyAlgorithmRSAEncryptionPKCS1
+        @OptIn(HazardousMaterials::class)
+        at.asitplus.signum.indispensable.asymmetric.RSAPadding.NONE -> kSecKeyAlgorithmRSAEncryptionRaw
+    }!!
+}
 
 val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm
     get() = when (this) {
