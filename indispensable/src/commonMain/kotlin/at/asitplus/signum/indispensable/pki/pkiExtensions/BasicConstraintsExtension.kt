@@ -13,7 +13,8 @@ import at.asitplus.signum.indispensable.asn1.encoding.decodeToUInt
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 
 /**
-* Basic Constraints Extension
+ * Basic Constraints Extension
+ * RFC 5280: 4.2.1.9.
 */
 class BasicConstraintsExtension(
     override val oid: ObjectIdentifier,
@@ -33,24 +34,22 @@ class BasicConstraintsExtension(
         override fun doDecode(src: Asn1Sequence): BasicConstraintsExtension {
             val base = decodeBase(src)
 
-            if (base.oid != KnownOIDs.basicConstraints_2_5_29_19) {
-                throw Asn1StructuralException(message = "This extension is not BasicConstraints extension.")
-            }
+            if (base.oid != KnownOIDs.basicConstraints_2_5_29_19) throw Asn1StructuralException(message = "This extension is not BasicConstraints extension.")
 
-            val inner = base.value.asEncapsulatingOctetString().children.firstOrNull()
-                ?: throw Asn1StructuralException(message = "Not valid BasicConstraints extension.")
+            val inner = base.value.asEncapsulatingOctetString()
+                .nextChildOrNull()
+                ?.takeIf { it.tag == Asn1Element.Tag.SEQUENCE }
+                ?.asSequence()
+                ?: throw Asn1StructuralException("Invalid or missing SEQUENCE in BasicConstraints extension.")
 
-            if (inner.tag != Asn1Element.Tag.SEQUENCE) {
-                throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, inner.tag)
-            }
 
-            val seqInner = inner.asSequence()
-            val ca = seqInner.children.getOrNull(0)?.asPrimitive()?.decodeToBoolean() ?: false
-            val pathLenConstraint = when {
-                seqInner.children.size > 1 -> seqInner.children[1].asPrimitive().decodeToUInt()
-                ca -> UInt.MAX_VALUE
-                else -> null
-            }
+            val ca = inner.nextChildOrNull()?.asPrimitive()?.decodeToBoolean() ?: false
+            val pathLenConstraint = inner.nextChildOrNull()
+                ?.asPrimitive()
+                ?.decodeToUInt()
+                ?: if (ca) UInt.MAX_VALUE else null
+
+            if (inner.hasMoreChildren()) throw Asn1StructuralException("Invalid BasicConstraintsExtension found (>2 children): ${inner.toDerHexString()}")
 
             return BasicConstraintsExtension(base, ca, pathLenConstraint)
         }

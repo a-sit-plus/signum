@@ -49,16 +49,16 @@ data class GeneralName(
     companion object : Asn1Decodable<Asn1Element, GeneralName> {
         override fun doDecode(src: Asn1Element): GeneralName {
             return when (GeneralNameOption.NameType.fromTagValue(src.tag.tagValue)) {
-                GeneralNameOption.NameType.OTHER -> GeneralName(OtherName.doDecode(src))
-                GeneralNameOption.NameType.RFC822 -> GeneralName(RFC822Name.doDecode(src.asPrimitive()))
-                GeneralNameOption.NameType.DNS -> GeneralName(DNSName.doDecode(src.asPrimitive()))
-                GeneralNameOption.NameType.OID -> GeneralName(RegisteredIDName.doDecode(src.asPrimitive()))
-                GeneralNameOption.NameType.IP -> GeneralName(IPAddressName.doDecode(src.asPrimitive()))
-                GeneralNameOption.NameType.X400 -> GeneralName(X400AddressName.doDecode(src))
-                GeneralNameOption.NameType.URI -> GeneralName(UriName.doDecode(src.asPrimitive()))
-                GeneralNameOption.NameType.EDI -> GeneralName(EDIPartyName.doDecode(src))
+                GeneralNameOption.NameType.OTHER -> GeneralName(OtherName.decodeFromTlv(src))
+                GeneralNameOption.NameType.RFC822 -> GeneralName(RFC822Name.decodeFromTlv(src.asPrimitive()))
+                GeneralNameOption.NameType.DNS -> GeneralName(DNSName.decodeFromTlv(src.asPrimitive()))
+                GeneralNameOption.NameType.OID -> GeneralName(RegisteredIDName.decodeFromTlv(src.asPrimitive()))
+                GeneralNameOption.NameType.IP -> GeneralName(IPAddressName.decodeFromTlv(src.asPrimitive()))
+                GeneralNameOption.NameType.X400 -> GeneralName(X400AddressName.decodeFromTlv(src))
+                GeneralNameOption.NameType.URI -> GeneralName(UriName.decodeFromTlv(src.asPrimitive()))
+                GeneralNameOption.NameType.EDI -> GeneralName(EDIPartyName.decodeFromTlv(src))
                 GeneralNameOption.NameType.DIRECTORY -> GeneralName(
-                    X500Name.doDecode(
+                    X500Name.decodeFromTlv(
                         src.asExplicitlyTagged().children.first().asSequence()
                     )
                 )

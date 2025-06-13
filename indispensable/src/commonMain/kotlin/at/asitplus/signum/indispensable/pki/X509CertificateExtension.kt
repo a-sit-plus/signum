@@ -45,24 +45,25 @@ open class X509CertificateExtension @Throws(Asn1Exception::class) private constr
             val oid = (src.children[0] as Asn1Primitive).readOid()
 
             return when (oid) {
-                KnownOIDs.basicConstraints_2_5_29_19 -> BasicConstraintsExtension.doDecode(src)
-                KnownOIDs.nameConstraints_2_5_29_30 -> NameConstraintsExtension.doDecode(src)
-                KnownOIDs.policyConstraints_2_5_29_36 -> PolicyConstraintsExtension.doDecode(src)
-                KnownOIDs.certificatePolicies_2_5_29_32 -> CertificatePoliciesExtension.doDecode(src)
-                KnownOIDs.policyMappings -> PolicyMappingsExtension.doDecode(src)
-                KnownOIDs.inhibitAnyPolicy -> InhibitAnyPolicyExtension.doDecode(src)
+                KnownOIDs.basicConstraints_2_5_29_19 -> BasicConstraintsExtension.decodeFromTlv(src)
+                KnownOIDs.nameConstraints_2_5_29_30 -> NameConstraintsExtension.decodeFromTlv(src)
+                KnownOIDs.policyConstraints_2_5_29_36 -> PolicyConstraintsExtension.decodeFromTlv(src)
+                KnownOIDs.certificatePolicies_2_5_29_32 -> CertificatePoliciesExtension.decodeFromTlv(src)
+                KnownOIDs.policyMappings -> PolicyMappingsExtension.decodeFromTlv(src)
+                KnownOIDs.inhibitAnyPolicy -> InhibitAnyPolicyExtension.decodeFromTlv(src)
                 else -> decodeBase(src)
             }
         }
 
         @Throws(Asn1Exception::class)
         fun decodeBase(src: Asn1Sequence): X509CertificateExtension {
-            val id = (src.children[0] as Asn1Primitive).readOid()
+            val id = src.nextChild().asPrimitive().readOid()
             val critical =
-                if (src.children[1].tag == Asn1Element.Tag.BOOL) (src.children[1] as Asn1Primitive).content[0] == 0xff.toByte() else false
+                if (src.children[1].tag == Asn1Element.Tag.BOOL) src.nextChild().asPrimitive().content[0] == 0xff.toByte() else false
 
-            val value = src.children.last()
+            val value = src.nextChild()
             if (value.tag != Asn1Element.Tag.OCTET_STRING) throw Asn1TagMismatchException(Asn1Element.Tag.OCTET_STRING, value.tag)
+            if (src.hasMoreChildren()) throw Asn1StructuralException("Invalid X509CertificateExtension found (>3 children): ${src.toDerHexString()}")
             return X509CertificateExtension(id, value, critical)
         }
 

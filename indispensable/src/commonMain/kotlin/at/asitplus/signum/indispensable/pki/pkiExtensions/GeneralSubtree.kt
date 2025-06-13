@@ -27,10 +27,10 @@ data class GeneralSubtree(
 
     companion object : Asn1Decodable<Asn1Sequence, GeneralSubtree> {
         override fun doDecode(src: Asn1Sequence): GeneralSubtree {
-            val base = GeneralName.doDecode(src.nextChild())
+            val base = GeneralName.decodeFromTlv(src.nextChild())
             var minimum = Asn1Integer(0)
             if (src.hasMoreChildren()) {
-                minimum = Asn1Integer.doDecode(src.nextChild().asPrimitive())
+                minimum = Asn1Integer.decodeFromTlv(src.nextChild().asPrimitive())
             }
 
             return if (!src.hasMoreChildren()) GeneralSubtree(
@@ -39,7 +39,7 @@ data class GeneralSubtree(
             ) else GeneralSubtree(
                 base,
                 minimum,
-                Asn1Integer.doDecode(src.nextChild().asPrimitive())
+                Asn1Integer.decodeFromTlv(src.nextChild().asPrimitive())
             )
         }
     }
@@ -61,7 +61,7 @@ data class GeneralSubtrees(
                     if (it.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(
                         Asn1Element.Tag.SEQUENCE, it.tag
                     )
-                    trees += GeneralSubtree.doDecode(it.asSequence())
+                    trees += GeneralSubtree.decodeFromTlv(it.asSequence())
                 }
             }
             return GeneralSubtrees(trees)

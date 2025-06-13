@@ -6,12 +6,16 @@ import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
-import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.toBigInteger
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 
+/**
+ * Inhibit Any-Policy Extension
+ * This extension specifies the number of certs allowed in a chain before anyPolicy is no longer permitted
+ * RFC 5280: 4.2.1.14.
+ * */
 class InhibitAnyPolicyExtension(
     override val oid: ObjectIdentifier,
     override val critical: Boolean,
@@ -29,16 +33,16 @@ class InhibitAnyPolicyExtension(
             val base = decodeBase(src)
 
             if (base.oid != KnownOIDs.inhibitAnyPolicy) throw Asn1StructuralException(message = "This extension is not InhibitAnyPolicy extension.")
-            val inner = base.value.asEncapsulatingOctetString().children.firstOrNull()
-                ?: throw Asn1StructuralException(message = "Not valid InhibitAnyPolicy extension.")
-            if (inner.tag != Asn1Element.Tag.INT) throw Asn1TagMismatchException(
-                Asn1Element.Tag.INT,
-                inner.tag
-            )
+
+            val primitive = base.value.asEncapsulatingOctetString()
+                .nextChildOrNull()
+                ?.takeIf { it.tag == Asn1Element.Tag.INT }
+                ?.asPrimitive()
+                ?: throw Asn1StructuralException("Invalid or missing PRIMITIVE in InhibitAnyPolicy extension.")
 
             return InhibitAnyPolicyExtension(
                 base,
-                Asn1Integer.doDecode(inner.asPrimitive()).toBigInteger().intValue()
+                Asn1Integer.decodeFromTlv(primitive).toBigInteger().intValue()
             )
         }
     }

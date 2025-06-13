@@ -202,9 +202,9 @@ constructor(
             }
             val serialNumber = (src.nextChild() as Asn1Primitive).decode(Asn1Element.Tag.INT) { it }
             val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val issuerNames = X500Name.doDecode(src.nextChild() as Asn1Sequence)
+            val issuerNames = X500Name.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val timestamps = decodeTimestamps(src.nextChild() as Asn1Sequence)
-            val subject = X500Name.doDecode(src.nextChild() as Asn1Sequence)
+            val subject = X500Name.decodeFromTlv(src.nextChild() as Asn1Sequence)
 
             val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(src.nextChild() as Asn1Sequence)
 
