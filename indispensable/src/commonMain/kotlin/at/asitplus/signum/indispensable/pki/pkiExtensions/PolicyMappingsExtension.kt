@@ -13,6 +13,11 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.readOid
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 
+/**
+ * Policy Mappings Extension
+ * This extension specifies policies that are treated as equivalent between the issuing CA and the subject CA
+ * RFC 5280: 4.2.1.5.
+ * */
 data class PolicyMappingsExtension (
     override val oid: ObjectIdentifier,
     override val critical: Boolean,
@@ -31,13 +36,20 @@ data class PolicyMappingsExtension (
 
             if (base.oid != KnownOIDs.policyMappings) throw Asn1StructuralException(message = "This extension is not PolicyMappings extension.")
 
-            val policyMappings = mutableListOf<CertificatePolicyMap>()
-            val inner = base.value.asEncapsulatingOctetString().children.firstOrNull()?.asSequence()?.children
+            val inner = base.value.asEncapsulatingOctetString()
+                .nextChildOrNull()
+                ?.takeIf { it.tag == Asn1Element.Tag.SEQUENCE }
+                ?.asSequence()
                 ?: return PolicyMappingsExtension(base, emptyList())
-            for (child in inner) {
-                if (child.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, child.tag)
-                policyMappings += CertificatePolicyMap.doDecode(child.asSequence())
+            
+            val policyMappings = buildList {
+                while (inner.hasMoreChildren()) {
+                    val child = inner.nextChild()
+                    if (child.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, child.tag)
+                    add(CertificatePolicyMap.decodeFromTlv(child.asSequence()))
+                }
             }
+
             return PolicyMappingsExtension(base, policyMappings)
         }
     }
@@ -55,8 +67,8 @@ class CertificatePolicyMap (
 
     companion object : Asn1Decodable<Asn1Sequence, CertificatePolicyMap> {
         override fun doDecode(src: Asn1Sequence): CertificatePolicyMap {
-            val issuerDomain = src.children[0].asPrimitive().readOid()
-            val subjectDomain = src.children[1].asPrimitive().readOid()
+            val issuerDomain = src.nextChild().asPrimitive().readOid()
+            val subjectDomain = src.nextChild().asPrimitive().readOid()
             return CertificatePolicyMap(issuerDomain, subjectDomain)
         }
     }

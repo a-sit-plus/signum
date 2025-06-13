@@ -19,6 +19,7 @@ import kotlinx.io.IOException
  * Name Constraints Extension
  * This extension specifies permitted and excluded subtrees that require restrictions on names
  * included in certificates issued by a given CA. Applied to the subject DNs and subject ANs.
+ * RFC 5280: 4.2.1.10.
  * */
 data class NameConstraintsExtension(
     override val oid: ObjectIdentifier,
@@ -35,23 +36,30 @@ data class NameConstraintsExtension(
     ) : this(base.oid, base.critical, base.value.asEncapsulatingOctetString(), permitted, excluded)
 
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
-        val PERMITTED: ULong = 0u
-        val EXCLUDED: ULong = 1u
+        private val PERMITTED: ULong = 0u
+        private val EXCLUDED: ULong = 1u
 
         override fun doDecode(src: Asn1Sequence): NameConstraintsExtension {
             val base = decodeBase(src)
 
             if (base.oid != KnownOIDs.nameConstraints_2_5_29_30) throw Asn1StructuralException(message = "This extension is not NameConstraints extension.")
 
-            val inner = base.value.asEncapsulatingOctetString().children.firstOrNull() ?: return NameConstraintsExtension(base)
+            val inner = base.value.asEncapsulatingOctetString()
+                .nextChildOrNull()
+                ?.takeIf { it.tag == Asn1Element.Tag.SEQUENCE }
+                ?.asSequence()
+                ?: return NameConstraintsExtension(base)
 
-            if (inner.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, inner.tag)
-            val genTrees = inner.asSequence().children
+            if (inner.children.size > 2) throw Asn1StructuralException("Invalid NameConstraints extension found (>2 children): ${inner.toDerHexString()}")
+
             var permitted: GeneralSubtrees? = null
             var excluded: GeneralSubtrees? = null
-            genTrees.forEach {
-                if (it.tag.tagValue == PERMITTED) permitted = GeneralSubtrees.doDecode(it.asExplicitlyTagged())
-                if (it.tag.tagValue == EXCLUDED) excluded = GeneralSubtrees.doDecode(it.asExplicitlyTagged())
+            while (inner.hasMoreChildren()) {
+                val child = inner.nextChild()
+                when (child.tag.tagValue) {
+                    PERMITTED -> permitted = GeneralSubtrees.decodeFromTlv(child.asExplicitlyTagged())
+                    EXCLUDED -> excluded = GeneralSubtrees.decodeFromTlv(child.asExplicitlyTagged())
+                }
             }
             return NameConstraintsExtension(base, permitted, excluded)
         }
@@ -134,11 +142,11 @@ data class NameConstraintsExtension(
         val cn = subject.findMostSpecificCommonName()?.value?.asPrimitive()
         if (cn != null) {
             try {
-                val isIp = kotlin.runCatching { IPAddressName.doDecode(cn) }.isSuccess
+                val isIp = kotlin.runCatching { IPAddressName.decodeFromTlv(cn) }.isSuccess
                 val neededType = if (isIp) GeneralNameOption.NameType.IP else GeneralNameOption.NameType.DNS
 
                 if (alternativeNames.none { it.name.type == neededType }) {
-                    val generalName = if (isIp) IPAddressName.doDecode(cn) else DNSName.doDecode(cn)
+                    val generalName = if (isIp) IPAddressName.decodeFromTlv(cn) else DNSName.decodeFromTlv(cn)
                     alternativeNames.add(GeneralName(generalName))
                 }
             } catch (_: IOException) {
