@@ -57,12 +57,13 @@ open class X509CertificateExtension @Throws(Asn1Exception::class) private constr
 
         @Throws(Asn1Exception::class)
         fun decodeBase(src: Asn1Sequence): X509CertificateExtension {
-            val id = (src.children[0] as Asn1Primitive).readOid()
+            val id = src.nextChild().asPrimitive().readOid()
             val critical =
-                if (src.children[1].tag == Asn1Element.Tag.BOOL) (src.children[1] as Asn1Primitive).content[0] == 0xff.toByte() else false
+                if (src.children[1].tag == Asn1Element.Tag.BOOL) src.nextChild().asPrimitive().content[0] == 0xff.toByte() else false
 
-            val value = src.children.last()
+            val value = src.nextChild()
             if (value.tag != Asn1Element.Tag.OCTET_STRING) throw Asn1TagMismatchException(Asn1Element.Tag.OCTET_STRING, value.tag)
+            if (src.hasMoreChildren()) throw Asn1StructuralException("Invalid X509CertificateExtension found (>3 children): ${src.toDerHexString()}")
             return X509CertificateExtension(id, value, critical)
         }
 

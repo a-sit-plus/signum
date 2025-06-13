@@ -20,6 +20,11 @@ import at.asitplus.signum.indispensable.asn1.encoding.decodeToAsn1Integer
 import at.asitplus.signum.indispensable.asn1.readOid
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 
+/**
+ * Certificate Policies Extension
+ * This extension specifies the rules for issuing the certificate and how it can be used.
+ * RFC 5280: 4.2.1.4.
+ * */
 data class CertificatePoliciesExtension (
     override val oid: ObjectIdentifier,
     override val critical: Boolean,
@@ -38,12 +43,18 @@ data class CertificatePoliciesExtension (
 
             if (base.oid != KnownOIDs.certificatePolicies_2_5_29_32) throw Asn1StructuralException(message = "This extension is not CertificatePolicies extension.")
 
-            val policies = mutableListOf<PolicyInformation>()
-            val inner = base.value.asEncapsulatingOctetString().children.firstOrNull()?.asSequence()?.children
+            val inner = base.value.asEncapsulatingOctetString()
+                .nextChildOrNull()
+                ?.takeIf { it.tag == Asn1Element.Tag.SEQUENCE }
+                ?.asSequence()
                 ?: return CertificatePoliciesExtension(base, emptyList())
-            for (child in inner) {
-                if (child.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, child.tag)
-                policies += PolicyInformation.doDecode(child.asSequence())
+
+            val policies = buildList {
+                while (inner.hasMoreChildren()) {
+                    val child = inner.nextChild()
+                    if (child.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, child.tag)
+                    add(PolicyInformation.doDecode(child.asSequence()))
+                }
             }
             return CertificatePoliciesExtension(base, policies)
         }
