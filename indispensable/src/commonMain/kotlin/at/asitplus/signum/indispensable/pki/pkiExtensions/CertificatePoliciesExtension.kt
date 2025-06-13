@@ -20,6 +20,11 @@ import at.asitplus.signum.indispensable.asn1.encoding.decodeToAsn1Integer
 import at.asitplus.signum.indispensable.asn1.readOid
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 
+/**
+ * Certificate Policies Extension
+ * This extension specifies the rules for issuing the certificate and how it can be used.
+ * RFC 5280: 4.2.1.4.
+ * */
 data class CertificatePoliciesExtension (
     override val oid: ObjectIdentifier,
     override val critical: Boolean,
@@ -38,12 +43,18 @@ data class CertificatePoliciesExtension (
 
             if (base.oid != KnownOIDs.certificatePolicies_2_5_29_32) throw Asn1StructuralException(message = "This extension is not CertificatePolicies extension.")
 
-            val policies = mutableListOf<PolicyInformation>()
-            val inner = base.value.asEncapsulatingOctetString().children.firstOrNull()?.asSequence()?.children
+            val inner = base.value.asEncapsulatingOctetString()
+                .nextChildOrNull()
+                ?.takeIf { it.tag == Asn1Element.Tag.SEQUENCE }
+                ?.asSequence()
                 ?: return CertificatePoliciesExtension(base, emptyList())
-            for (child in inner) {
-                if (child.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, child.tag)
-                policies += PolicyInformation.doDecode(child.asSequence())
+
+            val policies = buildList {
+                while (inner.hasMoreChildren()) {
+                    val child = inner.nextChild()
+                    if (child.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, child.tag)
+                    add(PolicyInformation.decodeFromTlv(child.asSequence()))
+                }
             }
             return CertificatePoliciesExtension(base, policies)
         }
@@ -77,7 +88,7 @@ class PolicyInformation(
                 val qualifiersSequence = src.children[1].asSequence()
                 for (child in qualifiersSequence.children) {
                     if (child.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, child.tag)
-                    policyQualifiers += PolicyQualifierInfo.doDecode(child.asSequence())
+                    policyQualifiers += PolicyQualifierInfo.decodeFromTlv(child.asSequence())
                 }
             }
             return PolicyInformation(id, policyQualifiers)
@@ -106,7 +117,7 @@ class PolicyQualifierInfo(
                     Qualifier.CPSUri(value.asPrimitive().asAsn1String() as Asn1String.IA5)
                 }
                 KnownOIDs.unotice -> {
-                    Qualifier.UserNotice.doDecode(value.asSequence())
+                    Qualifier.UserNotice.decodeFromTlv(value.asSequence())
                 }
                 else -> throw Asn1StructuralException("Unsupported PolicyQualifierInfo OID: $id")
             }
@@ -135,15 +146,15 @@ sealed interface Qualifier : Asn1Encodable<Asn1Element>{
                 val (ref, text) = when (src.children.size) {
                     0 -> null to null
                     1 -> {
-                        val c = src.children[0]
+                        val c = src.nextChild()
                         when {
-                            c is Asn1Sequence -> NoticeReference.doDecode(c) to null
-                            c is Asn1Primitive -> null to DisplayText.doDecode(c)
+                            c is Asn1Sequence -> NoticeReference.decodeFromTlv(c) to null
+                            c is Asn1Primitive -> null to DisplayText.decodeFromTlv(c)
                             else -> throw Asn1StructuralException("Invalid UserNotice structure.")
                         }
                     }
-                    2 -> NoticeReference.doDecode(src.children[0].asSequence()) to
-                            DisplayText.doDecode(src.children[1].asPrimitive())
+                    2 -> NoticeReference.decodeFromTlv(src.nextChild().asSequence()) to
+                            DisplayText.decodeFromTlv(src.nextChild().asPrimitive())
                     else -> throw Asn1StructuralException("Invalid number of elements in UserNotice.")
                 }
                 return UserNotice(ref, text)
@@ -171,7 +182,7 @@ class NoticeReference(
             if (src.children.size != 2) {
                 throw Asn1StructuralException("NoticeReference must have exactly 2 elements.")
             }
-            val organization = DisplayText.doDecode(src.children[0].asPrimitive())
+            val organization = DisplayText.decodeFromTlv(src.children[0].asPrimitive())
             val numbersSeq = src.children[1].asSequence()
 
             val noticeNumbers = numbersSeq.children.map {
@@ -200,7 +211,7 @@ class DisplayText private constructor(val string: Asn1String) : Asn1Encodable<As
             if (!allowedTags.contains(src.tag.tagValue)) {
                 throw Asn1StructuralException("Wrong DisplayText tag.")
             }
-            val str = Asn1String.doDecode(src)
+            val str = Asn1String.decodeFromTlv(src)
             return DisplayText(str)
         }
     }
