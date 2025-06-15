@@ -115,7 +115,11 @@ fun generateKnownOIDs() {
         }
     }
 
-    val file =
+    val oidMap =
+        FileSpec.builder("at.asitplus.signum.indispensable.asn1", "OidMap")
+    val oidMapBuilder= TypeSpec.objectBuilder("OidMap")
+
+    val knownOIDs =
         FileSpec.builder("at.asitplus.signum.indispensable.asn1", "KnownOIDs")
             .addType(
                 TypeSpec.objectBuilder("KnownOIDs").apply {
@@ -123,9 +127,8 @@ fun generateKnownOIDs() {
                         packageName = "at.asitplus.signum.indispensable.asn1",
                         "ObjectIdentifier"
                     )
-                    val mapBuilder =
-                        PropertySpec.builder("oidMap", ClassName("kotlin.collections", "Map").parameterizedBy(oidType,
-                            ClassName("kotlin","String")), KModifier.PUBLIC)
+
+
                     val codeBlock = StringBuilder("mapOf(\n")
 
                     collected.toList()
@@ -149,7 +152,7 @@ fun generateKnownOIDs() {
                                         val hrName = oidTriple.originalDescription.replace("\"","\\\"")
                                         val humanReadable =
                                             oidTriple.comment?.replace("\"","\\\"")?.let { "$hrName ($it)" }?:hrName
-                                        codeBlock.append("`$name` to \"${humanReadable}\",\n")
+                                        codeBlock.append("KnownOIDs.`$name` to \"${humanReadable}\",\n")
                                         if (name.matches(Regex("^[0.-9].*")))
                                             this.addAnnotation(
                                                 AnnotationSpec.builder(ClassName("kotlin.js", "JsName"))
@@ -158,15 +161,30 @@ fun generateKnownOIDs() {
                                     }.build()
                             )
                         }
+                    val mapBuilder =
+                        PropertySpec.builder("oidMap", ClassName("kotlin.collections", "Map").parameterizedBy(oidType,
+                            ClassName("kotlin","String")), KModifier.PRIVATE)
                     mapBuilder.initializer(codeBlock.append(")").toString())
-                    addProperty(mapBuilder.build()).build()
+                    oidMapBuilder.addProperty(mapBuilder.build())
+
+                    val getter= PropertySpec.builder("description", ClassName("kotlin","String").copy(nullable = true), KModifier.PUBLIC)
+                        .receiver(ClassName("at.asitplus.signum.indispensable.asn1","ObjectIdentifier"))
+                        .addKdoc("Returns this OID's descprtion as provided in Peter Guttmann's `dumpasn1.cfg`")
+                        .getter(
+                            FunSpec.getterBuilder().addCode(" return oidMap[this]").build()).build()
+                    oidMapBuilder.addProperty(getter)
                 }.build()
             ).build()
 
-    file.writeTo(
+    val oidMapFile= oidMap.addType(oidMapBuilder.build()).build()
+
+    oidMapFile.writeTo(project.layout.projectDirectory.dir("generated").dir("commonMain")
+        .dir("kotlin").asFile)
+    knownOIDs.writeTo(
         project.layout.projectDirectory.dir("generated").dir("commonMain")
             .dir("kotlin").asFile
     )
+
 
 }
 
