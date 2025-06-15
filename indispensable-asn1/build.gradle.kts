@@ -1,5 +1,6 @@
 import at.asitplus.gradle.*
 import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import java.io.FileInputStream
 import java.util.regex.Pattern
@@ -23,8 +24,9 @@ val artifactVersion: String by extra
 version = artifactVersion
 
 
-private val Pair<*, String?>.comment: String? get() = this.second
-private val Pair<String, *>.oid: String? get() = this.first
+private val Triple<*, String?, String>.comment: String? get() = this.second
+private val Triple<String, *,String>.oid: String? get() = this.first
+private val Triple<String, *,String>.originalDescription: String get() = this.third
 
 //generate Known OIDs when importing the project.
 //This is dirt-cheap, so it does not matter that this call is hardcoded here
@@ -57,12 +59,13 @@ tasks.register<DefaultTask>("regenerateKnownOIDs") {
  */
 fun generateKnownOIDs() {
     logger.lifecycle("  Regenerating KnownOIDs.kt")
-    val collected = mutableMapOf<String, Pair<String, String?>>()
+    val collected = mutableMapOf<String, Triple<String, String?, String>>()
 
 
     var oid: String? = null
     var comment: String? = null
     var description: String? = null
+    var originalDescription: String?=null
 
     FileInputStream(
         project.layout.projectDirectory.dir("src").dir("commonMain")
@@ -83,10 +86,10 @@ fun generateKnownOIDs() {
                         collected[description]?.also { _ ->
                             collected["${description}_${
                                 oid!!.replace(" ", "_")
-                            }"] = Pair(oid!!, comment)
+                            }"] = Triple(oid!!, comment, originalDescription!!)
                         } ?: run {
                             //if it is still new, we can just add it
-                            collected[description!!] = Pair(oid!!, comment)
+                            collected[description!!] = Triple(oid!!, comment, originalDescription!!)
                         }
                     }
                 }
@@ -94,7 +97,8 @@ fun generateKnownOIDs() {
                 description = null
                 comment = null
             } else if (line.startsWith("Description = ")) {
-                description = line.substring("Description = ".length).trim()
+                originalDescription = line.substring("Description = ".length).trim()
+                description = originalDescription!!
                     .replace("?", "")
                     .replace("(", "")
                     .replace(")", "")
@@ -115,6 +119,15 @@ fun generateKnownOIDs() {
         FileSpec.builder("at.asitplus.signum.indispensable.asn1", "KnownOIDs")
             .addType(
                 TypeSpec.objectBuilder("KnownOIDs").apply {
+                    val oidType = ClassName(
+                        packageName = "at.asitplus.signum.indispensable.asn1",
+                        "ObjectIdentifier"
+                    )
+                    val mapBuilder =
+                        PropertySpec.builder("oidMap", ClassName("kotlin.collections", "Map").parameterizedBy(oidType,
+                            ClassName("kotlin","String")), KModifier.PUBLIC)
+                    val codeBlock = StringBuilder("mapOf(\n")
+
                     collected.toList()
                         .distinctBy { (_, oidTriple) -> oidTriple.oid }
                         .sortedBy { (name, _) -> name }
@@ -122,10 +135,7 @@ fun generateKnownOIDs() {
                             addProperty(
                                 PropertySpec.builder(
                                     name,
-                                    ClassName(
-                                        packageName = "at.asitplus.signum.indispensable.asn1",
-                                        "ObjectIdentifier"
-                                    )
+                                    oidType
                                 )
                                     .initializer("\nObjectIdentifier(\n\"${oidTriple.oid!!}\"\n)")
                                     .addKdoc(
@@ -136,19 +146,20 @@ fun generateKnownOIDs() {
                                             )
                                         }`: ${oidTriple.comment}"
                                     ).apply {
+                                        val hrName = oidTriple.originalDescription.replace("\"","\\\"")
+                                        val humanReadable =
+                                            oidTriple.comment?.replace("\"","\\\"")?.let { "$hrName ($it)" }?:hrName
+                                        codeBlock.append("`$name` to \"${humanReadable}\",\n")
                                         if (name.matches(Regex("^[0.-9].*")))
                                             this.addAnnotation(
                                                 AnnotationSpec.builder(ClassName("kotlin.js", "JsName"))
                                                     .addMember("\"_$name\"").build()
                                             )
-                                    }
-
-
-                                    .build()
-
+                                    }.build()
                             )
                         }
-
+                    mapBuilder.initializer(codeBlock.append(")").toString())
+                    addProperty(mapBuilder.build()).build()
                 }.build()
             ).build()
 
