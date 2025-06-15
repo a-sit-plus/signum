@@ -167,12 +167,12 @@ fun generateKnownOIDs() {
                     mapBuilder.initializer(codeBlock.append(")").toString())
                     oidMapBuilder.addProperty(mapBuilder.build())
 
-                    val getter= PropertySpec.builder("description", ClassName("kotlin","String").copy(nullable = true), KModifier.PUBLIC)
+                    val getter= FunSpec.builder("lookupDescription")
+                        .returns( ClassName("kotlin","String").copy(nullable = true))
                         .receiver(ClassName("at.asitplus.signum.indispensable.asn1","ObjectIdentifier"))
-                        .addKdoc("Returns this OID's descprtion as provided in Peter Guttmann's `dumpasn1.cfg`")
-                        .getter(
-                            FunSpec.getterBuilder().addCode(" return oidMap[this]").build()).build()
-                    oidMapBuilder.addProperty(getter)
+                        .addKdoc("Looks up this OID's descrption as provided in Peter Guttmann's `dumpasn1.cfg`.\n\nReturns `null` if this OID has no description. Note that OIDs with unknown purpose may return `?`.")
+                        .addCode(" return oidMap[this]").build()
+                    oidMapBuilder.addFunction(getter)
                 }.build()
             ).build()
 
