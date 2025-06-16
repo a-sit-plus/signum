@@ -1,12 +1,9 @@
 import at.asitplus.gradle.*
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
-import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
 plugins {
     id("com.android.library")
     kotlin("multiplatform")
-    kotlin("plugin.serialization")
     id("signing")
     id("at.asitplus.gradle.conventions")
 }
@@ -14,13 +11,9 @@ plugins {
 val artifactVersion: String by extra
 version = artifactVersion
 
-
-private val Pair<*, String?>.comment: String? get() = this.second
-private val Pair<String, *>.oid: String? get() = this.first
-
 kotlin {
-    androidTarget { publishLibraryVariants("release") }
     jvm()
+    androidTarget { publishLibraryVariants("release") }
     macosArm64()
     macosX64()
     tvosArm64()
@@ -29,17 +22,7 @@ kotlin {
     iosX64()
     iosArm64()
     iosSimulatorArm64()
-    watchosSimulatorArm64()
-    watchosX64()
-    watchosArm32()
-    watchosArm64()
-    tvosSimulatorArm64()
-    tvosX64()
-    tvosArm64()
-    androidNativeX64()
-    androidNativeX86()
-    androidNativeArm32()
-    androidNativeArm64()
+
     listOf(
         js(IR).apply { browser { testTask { enabled = false } } },
         @OptIn(ExperimentalWasmDsl::class)
@@ -57,53 +40,28 @@ kotlin {
             languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
         }
 
-        commonMain.dependencies {
-            api(project(":indispensable-asn1"))
-            api(project(":indispensable-oids"))
-            api(libs.multibase)
-            api(libs.bignum)
-            implementation(project(":internals"))
-            api(libs.securerandom)
-        }
+        commonMain {
+            kotlin.srcDir(
+                project.layout.projectDirectory.dir("generated")
+                    .dir("commonMain").dir("kotlin")
+            )
 
+            dependencies {
+                api(libs.kotlinx.io.core)
+                api(project(":indispensable-asn1"))
+            }
+        }
 
         commonTest {
             dependencies {
                 implementation(kotest("property"))
             }
         }
-
-        androidJvmMain {
-            dependencies {
-                api(bouncycastle("bcpkix"))
-                api(coroutines("jvm"))
-            }
-        }
     }
 }
-
-// we don't have native android tests independent of our regular test suite.
-// this task expect those and fails, since no tests are present, so we disable it.
-project.gradle.taskGraph.whenReady {
-    tasks.getByName("testDebugUnitTest") {
-        enabled = false
-    }
-}
-
-exportXCFramework(
-    "Indispensable",
-    transitiveExports = false,
-    static = false,
-    serialization("json"),
-    datetime(),
-    kmmresult(),
-    project(":indispensable-asn1"),
-    project(":indispensable-oids"),
-    libs.bignum
-)
 
 android {
-    namespace = "at.asitplus.signum.indispensable"
+    namespace = "at.asitplus.signum.indispensable.oids"
     packaging {
         listOf(
             "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
@@ -123,6 +81,13 @@ android {
 
 }
 
+// we don't have native android tests independent of our regular test suite.
+// this task expect those and fails, since no tests are present, so we disable it.
+project.gradle.taskGraph.whenReady {
+    tasks.getByName("testDebugUnitTest") {
+        enabled = false
+    }
+}
 
 val javadocJar = setupDokka(
     baseUrl = "https://github.com/a-sit-plus/signum/tree/main/",
@@ -134,8 +99,8 @@ publishing {
         withType<MavenPublication> {
             if (this.name != "relocation") artifact(javadocJar)
             pom {
-                name.set("Indispensable")
-                description.set("Kotlin Multiplatform Crypto Core Library, Datatypes and ASN.1 Parser+Encoder")
+                name.set("Indispensable No OIDs")
+                description.set("Kotlin Multiplatform ASN.1 No Object Identifiers")
                 url.set("https://github.com/a-sit-plus/signum")
                 licenses {
                     license {
