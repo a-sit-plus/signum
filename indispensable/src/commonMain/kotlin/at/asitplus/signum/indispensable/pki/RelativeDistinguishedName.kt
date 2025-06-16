@@ -2,10 +2,9 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 
 /**
  * X.500 Name (used in X.509 Certificates)
@@ -47,7 +46,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
-            val OID = KnownOIDs.commonName
+            val OID = ObjectIdentifier("2.5.4.3")
         }
     }
 
@@ -57,7 +56,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
-            val OID = KnownOIDs.countryName
+            val OID = ObjectIdentifier("2.5.4.6")
         }
     }
 
@@ -67,7 +66,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
-            val OID = KnownOIDs.organizationName
+            val OID = ObjectIdentifier("2.5.4.10")
         }
     }
 
@@ -77,7 +76,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
-            val OID = KnownOIDs.organizationalUnitName
+            val OID = ObjectIdentifier("2.5.4.11")
         }
     }
 

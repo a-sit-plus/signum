@@ -138,7 +138,7 @@ fun generateKnownOIDs() {
                                     name,
                                     oidType
                                 )
-                                    .initializer("\nObjectIdentifier(\n\"${oidTriple.oid!!}\"\n)")
+                                    .initializer("ObjectIdentifier(\"${oidTriple.oid!!.replace(' ','.')}\")")
                                     .addKdoc(
                                         "`${
                                             oidTriple.oid!!.replace(

@@ -1,16 +1,15 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.asn1.Identifiable
-import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 
 enum class Digest(val outputLength: BitLength, override val oid: ObjectIdentifier) : Identifiable {
-    SHA1(160.bit, KnownOIDs.sha1),
-    SHA256(256.bit, KnownOIDs.sha_256),
-    SHA384(384.bit, KnownOIDs.sha_384),
-    SHA512(512.bit, KnownOIDs.sha_512);
+    SHA1(160.bit, ObjectIdentifier("1.3.14.3.2.26")),
+    SHA256(256.bit, ObjectIdentifier("2.16.840.1.101.3.4.2.1")),
+    SHA384(384.bit, ObjectIdentifier("2.16.840.1.101.3.4.2.2")),
+    SHA512(512.bit, ObjectIdentifier("2.16.840.1.101.3.4.2.3"));
 
     val inputBlockSize: BitLength get() = when (this) {
         SHA1 -> 512.bit
