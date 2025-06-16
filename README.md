@@ -34,6 +34,10 @@ action!
   * **Configurable biometric authentication on Android and iOS without callbacks or activity passing** (✨Magic!✨)
   * **Multiplatform AES**
   * **Multiplatform HMAC**
+* **Multiplatform KDF** (using platform-native hashing)
+  * PBKDF2
+  * HKDF
+  * SCrypt
 * Public Keys (RSA and EC)
 * Private Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)
@@ -139,21 +143,21 @@ On the other hand, cryptography-kotlin currently offers neither hardware-backed 
 
 The following table provides a detailed comparison between Signum and cryptography-kotlin.
 
-|                             | Signum               | cryptography-kotlin       |
-|-----------------------------|----------------------|---------------------------|
-| Digital Signatures          | ✔ (ECDSA, RSA)       | ✔ (ECDSA, RSA)            |
-| Symmetric Encryption        | ✔ (AES + ChaChaPoly) | ✔ (AES)                   |
-| Public-Key Encryption       | ✗                    | ✔ (RSA)                   |
-| Digest                      | ✔ (SHA-1, SHA-2)     | ✔ (MD5, SHA-1, SHA-2)     |
-| MAC                         | ✔ (HMAC)             | ✔ (HMAC)                  |
-| Key Agreement               | ✔ (ECDH)             | ✔ (ECDH)                  |
-| KDF/PRF/KSF                 | ✗                    | ✔ (PBKDF2, HKDF)          |
-| Hardware-Backed Crypto      | ✔                    | ✗                         |
-| Attestation                 | ✔                    | ✗                         |
-| Fully-Featured ASN.1 Engine | ✔                    | ✗                         |
-| COSE                        | ✔                    | ✗                         |
-| JOSE                        | ✔                    | ✗                         |
-| Provider Targets            | JVM, Android, iOS    | All KMP-supported targets |
+|                             | Signum                   | cryptography-kotlin       |
+|-----------------------------|--------------------------|---------------------------|
+| Digital Signatures          | ✔ (ECDSA, RSA)           | ✔ (ECDSA, RSA)            |
+| Symmetric Encryption        | ✔ (AES + ChaChaPoly)     | ✔ (AES)                   |
+| Public-Key Encryption       | ✗                        | ✔ (RSA)                   |
+| Digest                      | ✔ (SHA-1, SHA-2)         | ✔ (MD5, SHA-1, SHA-2)     |
+| MAC                         | ✔ (HMAC)                 | ✔ (HMAC)                  |
+| Key Agreement               | ✔ (ECDH)                 | ✔ (ECDH)                  |
+| KDF/PRF/KSF                 | ✔ (PBKDF2, HKDF, scrypt) | ✔ (PBKDF2, HKDF)          |
+| Hardware-Backed Crypto      | ✔                        | ✗                         |
+| Attestation                 | ✔                        | ✗                         |
+| Fully-Featured ASN.1 Engine | ✔                        | ✗                         |
+| COSE                        | ✔                        | ✗                         |
+| JOSE                        | ✔                        | ✗                         |
+| Provider Targets            | JVM, Android, iOS        | All KMP-supported targets |
 
 
 ## _Supreme_ Demo Reel
