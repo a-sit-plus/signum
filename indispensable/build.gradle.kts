@@ -1,13 +1,6 @@
 import at.asitplus.gradle.*
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
-
-buildscript {
-    dependencies {
-        classpath(libs.kotlinpoet)
-    }
-}
-
 plugins {
     id("com.android.library")
     kotlin("multiplatform")
@@ -54,6 +47,7 @@ kotlin {
 
         commonMain.dependencies {
             api(project(":indispensable-asn1"))
+            api(project(":indispensable-oids"))
             api(libs.multibase)
             api(libs.bignum)
             implementation(project(":internals"))
@@ -92,6 +86,7 @@ exportXCFramework(
     datetime(),
     kmmresult(),
     project(":indispensable-asn1"),
+    project(":indispensable-oids"),
     libs.bignum
 )
 

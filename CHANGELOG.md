@@ -3,6 +3,9 @@
 ## 3.0
 
 ### NEXT
+* Strippable `KnownOIDs`
+    * Move `KnownOIDs` into a discrete module `indispensable-oids`
+    * Create a drop-in stub module `indispensable-noids` mirroring its signatures, s.t. `KnwonOIDs` can be excluded and replaced by this stub instead
 * Dependency Updates:
     * `kotlincrypto:secure-random:0.3.2` -> `kotlincrypto.random:crypto-rand:0.5.0`
         * This fixes key generation in WASM/JS
