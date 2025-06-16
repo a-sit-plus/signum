@@ -4,13 +4,12 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.BitString
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1BitString
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
-import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
-import kotlinx.serialization.Serializable
 
 /**
  * The meat of a PKCS#10 Certification Request:
@@ -44,7 +43,7 @@ data class TbsCertificationRequest(
         extensions?.let { extn ->
             attrs.add(
                 Pkcs10CertificationRequestAttribute(
-                    KnownOIDs.extensionRequest,
+                    ObjectIdentifier("1.2.840.113549.1.9.14"),
                     Asn1.Sequence { extn.forEach { +it } })
             )
         }
