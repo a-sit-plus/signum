@@ -149,7 +149,7 @@ The following table provides a detailed comparison between Signum and cryptograp
 |-----------------------------|----------------------|---------------------------|
 | Digital Signatures          | ✔ (ECDSA, RSA)       | ✔ (ECDSA, RSA)            |
 | Symmetric Encryption        | ✔ (AES + ChaChaPoly) | ✔ (AES)                   |
-| Asymmetric (RSA) Encryption | ✔ RAW, PKCS1, OAEP   | ✔ RAW, PKCS1, OAEP        |
+| Asymmetric Encryption | ✔ (RSA)   | ✔ (RSA)        |
 | Digest                      | ✔ (SHA-1, SHA-2)     | ✔ (MD5, SHA-1, SHA-2)     |
 | MAC                         | ✔ (HMAC)             | ✔ (HMAC)                  |
 | Key Agreement               | ✔ (ECDH)             | ✔ (ECDH)                  |
