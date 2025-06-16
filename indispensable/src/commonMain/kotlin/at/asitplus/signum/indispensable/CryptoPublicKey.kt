@@ -3,8 +3,8 @@ package at.asitplus.signum.indispensable
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.io.*
-import at.asitplus.signum.indispensable.CryptoPublicKey.RSA.Size.entries
 import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.BitString
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
@@ -14,7 +14,6 @@ import at.asitplus.signum.internals.checkedAsFn
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 
 private const val PEM_BOUNDARY = "PUBLIC KEY"
 
@@ -200,7 +199,7 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
             companion object : Identifiable {
                 fun of(numBits: UInt) = entries.find { it.number == numBits }
 
-                override val oid = KnownOIDs.rsaEncryption
+                override val oid = ObjectIdentifier("1.2.840.113549.1.1.1")
             }
         }
 
@@ -245,7 +244,7 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
             inline operator fun invoke(n: BigInteger, e: Int) =
                 RSA(n, e.also { require(it > 0) }.toUInt())
 
-            override val oid = KnownOIDs.rsaEncryption
+            override val oid = ObjectIdentifier("1.2.840.113549.1.1.1")
         }
     }
 
@@ -382,7 +381,7 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
                 }
             }
 
-            override val oid = KnownOIDs.ecPublicKey
+            override val oid = ObjectIdentifier("1.2.840.10045.2.1")
         }
     }
 }

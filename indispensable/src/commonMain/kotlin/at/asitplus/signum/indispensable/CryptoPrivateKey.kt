@@ -5,6 +5,7 @@ import at.asitplus.catching
 import at.asitplus.signum.ecmath.times
 import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.asPublicKey
 import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.internals.checkedAs
@@ -243,7 +244,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
             override fun doDecode(src: Asn1Sequence): RSA =
                 checkedAs(CryptoPrivateKey.doDecode(src))
 
-            val oid: ObjectIdentifier = KnownOIDs.rsaEncryption
+            val oid: ObjectIdentifier = ObjectIdentifier("1.2.840.113549.1.1.1")
         }
 
         object FromPKCS1 : Asn1Decodable<Asn1Sequence, RSA> {
@@ -430,7 +431,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
             EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8 to checkedAsFn(FromPKCS8::decodeFromDer),
             EB_STRINGS.EC_PRIVATE_KEY_SEC1 to checkedAsFn(FromSEC1::decodeFromDer)
         ) {
-            val oid: ObjectIdentifier = KnownOIDs.ecPublicKey
+            val oid: ObjectIdentifier = ObjectIdentifier("1.2.840.10045.2.1")
 
             @Throws(Asn1Exception::class)
             override fun doDecode(src: Asn1Sequence): EC =

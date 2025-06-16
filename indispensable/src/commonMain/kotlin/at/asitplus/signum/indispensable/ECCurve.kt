@@ -1,8 +1,6 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.indispensable.ECCurve.entries
 import at.asitplus.signum.indispensable.asn1.Identifiable
-import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.misc.BitLength
 import com.ionspin.kotlin.bignum.integer.BigInteger
@@ -10,7 +8,6 @@ import com.ionspin.kotlin.bignum.integer.toBigInteger
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -34,13 +31,13 @@ enum class ECCurve(
     override val oid: ObjectIdentifier,
 ) : Identifiable {
     /** NIST curve [secp256r1](https://neuromancer.sk/std/nist/P-256) */
-    SECP_256_R_1("P-256", KnownOIDs.prime256v1),
+    SECP_256_R_1("P-256", ObjectIdentifier("1.2.840.10045.3.1.7")),
 
     /** NIST curve [secp384r1](https://neuromancer.sk/std/nist/P-384) */
-    SECP_384_R_1("P-384", KnownOIDs.secp384r1),
+    SECP_384_R_1("P-384", ObjectIdentifier("1.3.132.0.34")),
 
     /** NIST curve [secp521r1](https://neuromancer.sk/std/nist/P-521) */
-    SECP_521_R_1("P-521", KnownOIDs.secp521r1);
+    SECP_521_R_1("P-521", ObjectIdentifier("1.3.132.0.35"));
 
     val IDENTITY: ECPoint by lazy {
         ECPoint.General.unsafeFromXYZ(this, coordinateCreator.ZERO, coordinateCreator.ONE, coordinateCreator.ZERO)

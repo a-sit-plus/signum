@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
@@ -110,12 +111,12 @@ private constructor(private val extensions: List<Asn1Element>) {
     companion object {
         @Throws(Asn1Exception::class)
         fun List<X509CertificateExtension>.findSubjectAltNames() = runRethrowing {
-            find(KnownOIDs.subjectAltName_2_5_29_17)?.let { AlternativeNames(it) }
+            find(ObjectIdentifier("2.5.29.17"))?.let { AlternativeNames(it) }
         }
 
         @Throws(Asn1Exception::class)
         fun List<X509CertificateExtension>.findIssuerAltNames() = runRethrowing {
-            find(KnownOIDs.issuerAltName_2_5_29_18)?.let { AlternativeNames(it) }
+            find(ObjectIdentifier("2.5.29.18"))?.let { AlternativeNames(it) }
         }
 
         /**not for public use, since it forces [Asn1EncapsulatingOctetString]*/
