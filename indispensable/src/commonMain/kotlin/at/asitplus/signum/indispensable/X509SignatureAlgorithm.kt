@@ -21,28 +21,28 @@ enum class X509SignatureAlgorithm(
 ) : Asn1Encodable<Asn1Sequence>, Identifiable, SpecializedSignatureAlgorithm {
 
     // ECDSA with SHA-size
-    ES256(KnownOIDs.ecdsaWithSHA256, true),
-    ES384(KnownOIDs.ecdsaWithSHA384, true),
-    ES512(KnownOIDs.ecdsaWithSHA512, true),
+    ES256(ObjectIdentifier("1.2.840.10045.4.3.2"), true),
+    ES384(ObjectIdentifier("1.2.840.10045.4.3.3"), true),
+    ES512(ObjectIdentifier("1.2.840.10045.4.3.4"), true),
 
     // RSASSA-PSS with SHA-size
-    PS256(KnownOIDs.rsaPSS),
-    PS384(KnownOIDs.rsaPSS),
-    PS512(KnownOIDs.rsaPSS),
+    PS256(ObjectIdentifier("1.2.840.113549.1.1.10")),
+    PS384(ObjectIdentifier("1.2.840.113549.1.1.10")),
+    PS512(ObjectIdentifier("1.2.840.113549.1.1.10")),
 
     // RSASSA-PKCS1-v1_5 with SHA-size
-    RS256(KnownOIDs.sha256WithRSAEncryption),
-    RS384(KnownOIDs.sha384WithRSAEncryption),
-    RS512(KnownOIDs.sha512WithRSAEncryption),
+    RS256(ObjectIdentifier("1.2.840.113549.1.1.11")),
+    RS384(ObjectIdentifier("1.2.840.113549.1.1.12")),
+    RS512(ObjectIdentifier("1.2.840.113549.1.1.13")),
 
     // RSASSA-PKCS1-v1_5 using SHA-1
-    RS1(KnownOIDs.sha1WithRSAEncryption);
+    RS1(ObjectIdentifier("1.2.840.113549.1.1.5"));
 
     private fun encodePSSParams(bits: Int): Asn1Sequence =
         when (bits) {
-            256 -> KnownOIDs.sha_256
-            384 -> KnownOIDs.sha_384
-            512 -> KnownOIDs.sha_512
+            256 -> Digest.SHA256.oid
+            384 -> Digest.SHA384.oid
+            512 -> Digest.SHA512.oid
             else -> TODO()
         }.let { shaOid ->
             Asn1.Sequence {
@@ -56,7 +56,7 @@ enum class X509SignatureAlgorithm(
                     }
                     +ExplicitlyTagged(1u) {
                         +Asn1.Sequence {
-                            +KnownOIDs.pkcs1_MGF
+                            +ObjectIdentifier("1.2.840.113549.1.1.8")
                             +Asn1.Sequence {
                                 +shaOid
                                 +Null()
@@ -135,7 +135,7 @@ enum class X509SignatureAlgorithm(
 
             val second = (seq.nextChild() as Asn1ExplicitlyTagged).verifyTag(1u).single() as Asn1Sequence
             val mgf = (second.nextChild() as Asn1Primitive).readOid()
-            if (mgf != KnownOIDs.pkcs1_MGF) throw IllegalArgumentException("Illegal OID: $mgf")
+            if (mgf != ObjectIdentifier("1.2.840.113549.1.1.8")) throw IllegalArgumentException("Illegal OID: $mgf")
             val inner = second.nextChild() as Asn1Sequence
             val innerHash = (inner.nextChild() as Asn1Primitive).readOid()
             if (innerHash != sigAlg) throw IllegalArgumentException("HashFunction mismatch! Expected: $sigAlg, is: $innerHash")
@@ -149,9 +149,9 @@ enum class X509SignatureAlgorithm(
 
             return sigAlg.let {
                 when (it) {
-                    KnownOIDs.sha_256 -> PS256.also { if (saltLen != 256 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
-                    KnownOIDs.sha_384 -> PS384.also { if (saltLen != 384 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
-                    KnownOIDs.sha_512 -> PS512.also { if (saltLen != 512 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
+                    Digest.SHA256.oid -> PS256.also { if (saltLen != 256 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
+                    Digest.SHA384.oid -> PS384.also { if (saltLen != 384 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
+                    Digest.SHA512.oid -> PS512.also { if (saltLen != 512 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
 
                     else -> throw IllegalArgumentException("Unsupported OID: $it")
                 }
