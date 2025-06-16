@@ -302,6 +302,12 @@ val HMAC.jcaName: String
         HMAC.SHA512 -> "HmacSHA512"
     }
 
+/**
+ * An encryption algorithm's JCA name. This is publicly exposed because it could come in handy under _very specific_ circumstances.
+ * **Double and triple check before feeding this into `Cipher.getInstance`!**.
+ * Then think again, pull in Signum Supreme and call `encryptorFor`/`decryptorFor` on whatever pre-configured instance of
+ * [AsymmetricEncryptionAlgorithm] you will be actually using.
+ */
 val AsymmetricEncryptionAlgorithm.jcaName: String
     get() = when (this) {
         is AsymmetricEncryptionAlgorithm.RSA -> when (padding) {
@@ -317,6 +323,12 @@ val AsymmetricEncryptionAlgorithm.jcaName: String
         }
     }
 
+/**
+ * An encryption algorithm's JCA parameters. This is publicly exposed because it could come in handy under _very specific_ circumstances.
+ * **Double and triple check before feeding this into `Cipher.init`!**.
+ * Then think again, pull in Signum Supreme and call `encryptorFor`/`decryptorFor` on whatever pre-configured instance of
+ * [AsymmetricEncryptionAlgorithm] you will be actually using.
+ */
 val AsymmetricEncryptionAlgorithm.jcaParameterSpec: AlgorithmParameterSpec?
     get() =
         when (this) {

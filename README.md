@@ -386,12 +386,12 @@ Hence, it is possible to create ephemeral RSA keys and use those, or import RSA 
 ### Encryption and Decryption API
 
 The API is based on the same paradigm as the signer/verifier tandem. To encrypt data under an RSA public key, three steps are necessary:
-* Instantiate an `AsymmetricEncryptionAlgorithm.RSA(rsaPadding)` (or use any of the preconfigured ones such as `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256`)-
+* Reference any of the preconfigured asymmetric encryption algorithms such as `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256`).
 * Invoke `encryptorFor(rsaPublicKey)` on it to create an `Encryptor`.
 * Call `encrypt(data)` and receive encrypted bytes-
 
 Decryption works analogously:
-* Instantiate an `AsymmetricEncryptionAlgorithm.RSA(rsaPadding)` (or use any of the preconfigured ones such as `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256`).
+* Reference any of the preconfigured asymmetric encryption algorithms such as `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256`).
 * Invoke `decryptorFor(rsaPrivateKey)` on it to create a `Decryptor`.
 * Call `decrypt(data)` and recover the plain bytes-
 

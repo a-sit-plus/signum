@@ -73,7 +73,7 @@ open class PlatformSigningKeyConfigurationBase<SignerConfigurationT: PlatformSig
         /** Whether this key can be used for signing data */
         var signing = true
         /** Whether this key can be used for encrypting data*/
-        var encryption = false
+        var decrypting = false
     }
 
     open class RSAConfiguration internal constructor(): SigningKeyConfiguration.RSAConfiguration() {
@@ -104,10 +104,10 @@ internal inline val SigningKeyConfiguration.AlgorithmSpecific.allowsSigning get(
         else -> true
     }
 
-internal inline val SigningKeyConfiguration.AlgorithmSpecific.allowsEncryption get() =
+internal inline val SigningKeyConfiguration.AlgorithmSpecific.allowsDecrypting get() =
     when (this) {
         is PlatformSigningKeyConfigurationBase.ECConfiguration -> false
-        is PlatformSigningKeyConfigurationBase.RSAConfiguration -> this.purposes.v.encryption
+        is PlatformSigningKeyConfigurationBase.RSAConfiguration -> this.purposes.v.decrypting
         else -> true
     }
 
