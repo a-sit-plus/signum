@@ -9,6 +9,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
+import kotlinx.serialization.Serializable
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
@@ -73,6 +74,7 @@ fun X509SignatureAlgorithmDescription.requireSupported() {
 }
 
 // future: open
+@Serializable(with = X509SignatureAlgorithmSerializer::class)
 sealed class X509SignatureAlgorithm(
     oid: ObjectIdentifier
 ) : X509SignatureAlgorithmDescription(oid), SpecializedSignatureAlgorithm, Enumerable {
@@ -277,3 +279,19 @@ fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
 /** Finds a X.509 signature algorithm matching this algorithm. Curve restrictions are not preserved. */
 fun SpecializedSignatureAlgorithm.toX509SignatureAlgorithm() =
     this.algorithm.toX509SignatureAlgorithm()
+
+
+object X509SignatureAlgorithmSerializer : KSerializer<X509SignatureAlgorithm> {
+
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("X509SignatureAlgorithmSerializer", PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: X509SignatureAlgorithm) {
+        value.let { encoder.encodeString(it.name) }
+    }
+
+    override fun deserialize(decoder: Decoder): X509SignatureAlgorithm {
+        val decoded = decoder.decodeString()
+        return X509SignatureAlgorithm.entries.first { it.name == decoded }
+    }
+}
