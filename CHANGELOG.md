@@ -8,6 +8,9 @@
     * HKDF
     * scrypt
 * **RSA encryption** using in-memory keys (no hardware-backed key management yet)
+* Strippable `KnownOIDs`
+    * Move `KnownOIDs` into a discrete module `indispensable-oids`
+    * Create a drop-in stub module `indispensable-noids` mirroring its signatures, s.t. `KnwonOIDs` can be excluded and replaced by this stub instead
 * Add `SpecializedSymmetricEncryptionAlgorithm`
     * This allows `randomKey()` etc to operate on COSE/JWE algorithms
 * Deprecate `serialize()` and `deserialize()` methods in COSE+ JOSE data classes
@@ -494,6 +497,7 @@ the Tag class just cannot be directly accessed from Swift and ObjC any more.
     * Expose `TbsCertificate.issuerAltNames` and `TbsCertificte.subjectAltnames`, which contain (somewhat) parsed
       `AlternativeNames` structures for easy access to `dnsName`. `iPAddress`, etc.
 
+ 
 ## 2.0
 
 ### 2.6.0

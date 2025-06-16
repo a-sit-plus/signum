@@ -1,13 +1,6 @@
 import at.asitplus.gradle.*
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
-
-buildscript {
-    dependencies {
-        classpath(libs.kotlinpoet)
-    }
-}
-
 plugins {
     id("com.android.library")
     kotlin("multiplatform")
