@@ -87,7 +87,7 @@ data class TbsCertificationRequest(
         override fun doDecode(src: Asn1Sequence) = runRethrowing {
             val version = (src.nextChild() as Asn1Primitive).decodeToInt()
             val subject = (src.nextChild() as Asn1Sequence).children.map {
-                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
+                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set, requireFullConsumption = false)
             }
             val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val attributes = if (src.hasMoreChildren()) {
