@@ -112,8 +112,7 @@ enum class X509SignatureAlgorithm(
             when (val oid = (src.nextChild() as Asn1Primitive).readOid()) {
                 ES512.oid, ES384.oid, ES256.oid -> fromOid(oid)
 
-                RS1.oid -> RS1
-                RS256.oid, RS384.oid, RS512.oid -> fromOid(oid).also {
+                RS1.oid, RS256.oid, RS384.oid, RS512.oid -> fromOid(oid).also {
                     val tag = src.nextChild().tag
                     if (tag != Asn1Element.Tag.NULL)
                         throw Asn1TagMismatchException(Asn1Element.Tag.NULL, tag, "RSA Params not allowed.")

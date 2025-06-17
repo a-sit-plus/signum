@@ -159,14 +159,14 @@ constructor(
                 }
             }
             val serialNumber = (src.nextChild() as Asn1Primitive).decode(Asn1Element.Tag.INT) { it }
-            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence, requireFullConsumption = false)
+            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val issuerNames = (src.nextChild() as Asn1Sequence).children.map {
-                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set, requireFullConsumption = false)
+                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
             }
 
             val timestamps = decodeTimestamps(src.nextChild() as Asn1Sequence)
             val subject = (src.nextChild() as Asn1Sequence).children.map {
-                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set, requireFullConsumption = false)
+                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
             }
 
             val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(src.nextChild() as Asn1Sequence)
@@ -185,7 +185,7 @@ constructor(
             val extensions = if (src.hasMoreChildren()) {
                 ((src.nextChild() as Asn1ExplicitlyTagged).verifyTag(EXTENSIONS.tagValue)
                     .single() as Asn1Sequence).children.map {
-                    X509CertificateExtension.decodeFromTlv(it as Asn1Sequence, requireFullConsumption = false)
+                    X509CertificateExtension.decodeFromTlv(it as Asn1Sequence)
                 }
             } else null
 
@@ -292,7 +292,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): X509Certificate = runRethrowing {
             val tbs = TbsCertificate.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence, requireFullConsumption = false)
+            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val signature = CryptoSignature.fromX509Encoded(sigAlg, src.nextChild() as Asn1Primitive)
             if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous structure in Certificate Structure")
             return X509Certificate(tbs, sigAlg, signature)
