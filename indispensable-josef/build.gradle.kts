@@ -23,6 +23,17 @@ kotlin {
     iosX64()
     iosArm64()
     iosSimulatorArm64()
+    watchosSimulatorArm64()
+    watchosX64()
+    watchosArm32()
+    watchosArm64()
+    tvosSimulatorArm64()
+    tvosX64()
+    tvosArm64()
+    androidNativeX64()
+    androidNativeX86()
+    androidNativeArm32()
+    androidNativeArm64()
 
     listOf(
         js(IR).apply { browser { testTask { enabled = false } } },
@@ -44,7 +55,6 @@ kotlin {
             dependencies {
                 api(project(":indispensable"))
                 implementation(project(":internals"))
-                implementation(libs.okio)
                 api(libs.multibase)
                 implementation(libs.bignum) //Intellij bug work-around
             }

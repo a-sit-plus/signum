@@ -1,16 +1,15 @@
 [versions]
 core = "1.5.0"
 kotlinxIoCore = "0.5.4"
-multibase = "1.2.1"
+multibase = "1.2.2"
 kotestExtensionsAndroid = "0.1.3"
 kotestRunnerAndroid = "1.1.1"
-okio = "3.9.0"
 bignum = "0.3.10"
 jose = "9.31"
 kotlinpoet = "1.16.0"
 runner = "1.5.2"
 secureRandom = "0.3.2"
-kmmresult= "1.9.2"
+kmmresult = "1.9.3"
 
 [libraries]
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }
@@ -18,7 +17,6 @@ core = { module = "androidx.test:core", version.ref = "core" }
 kotest-extensions-android = { module = "br.com.colman:kotest-extensions-android", version.ref = "kotestExtensionsAndroid" }
 kotest-runner-android = { module = "br.com.colman:kotest-runner-android", version.ref = "kotestRunnerAndroid" }
 kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinxIoCore" }
-okio = { group = "com.squareup.okio", name = "okio", version.ref = "okio" }
 jose = { group = "com.nimbusds", name = "nimbus-jose-jwt", version.ref = "jose" }
 kotlinpoet = { group = "com.squareup", name = "kotlinpoet", version.ref = "kotlinpoet" }
 rules = { module = "androidx.test:rules", version.ref = "core" }

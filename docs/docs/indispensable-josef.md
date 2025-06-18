@@ -18,8 +18,7 @@ The preconfigured serializer ensuring compliant serialization of all JOSE-relate
 
 ## Using it in your Projects
 
-This library was built for [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html). Currently, it targets
-the JVM, Android and iOS.
+This library was built for [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html). Currently, it supports all KMP targets except `watchosDeviceArm64`.
 
 Simply declare the desired dependency to get going:
 
