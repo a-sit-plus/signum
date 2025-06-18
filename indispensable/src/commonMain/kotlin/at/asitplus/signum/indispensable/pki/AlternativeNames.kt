@@ -33,7 +33,7 @@ private constructor(private val extensions: List<Asn1Element>) {
     val generalNames: List<GeneralName> = parseGeneralName()
 
     private fun parseGeneralName(): List<GeneralName> =
-        extensions.map { GeneralName.doDecode(it) }
+        extensions.map { GeneralName.decodeFromTlv(it) }
 
     override fun toString(): String {
         val bld =
