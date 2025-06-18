@@ -1,8 +1,22 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.Asn1Decodable
+import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
+import at.asitplus.signum.indispensable.asn1.Asn1Encodable
+import at.asitplus.signum.indispensable.asn1.Asn1Exception
+import at.asitplus.signum.indispensable.asn1.Asn1Primitive
+import at.asitplus.signum.indispensable.asn1.Asn1PrimitiveOctetString
+import at.asitplus.signum.indispensable.asn1.Asn1Sequence
+import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
+import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
+import at.asitplus.signum.indispensable.asn1.Identifiable
+import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Bool
+import at.asitplus.signum.indispensable.asn1.readOid
+import at.asitplus.signum.indispensable.asn1.runRethrowing
 import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificatePoliciesExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.InhibitAnyPolicyExtension
@@ -39,21 +53,28 @@ open class X509CertificateExtension @Throws(Asn1Exception::class) private constr
 
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
 
+        private val extensionDecoders: MutableMap<ObjectIdentifier, (Asn1Sequence, Asn1Element.Tag?) -> X509CertificateExtension> = mutableMapOf(
+            KnownOIDs.basicConstraints_2_5_29_19 to BasicConstraintsExtension::decodeFromTlv,
+            KnownOIDs.nameConstraints_2_5_29_30 to NameConstraintsExtension::decodeFromTlv,
+            KnownOIDs.policyConstraints_2_5_29_36 to PolicyConstraintsExtension::decodeFromTlv,
+            KnownOIDs.certificatePolicies_2_5_29_32 to CertificatePoliciesExtension::decodeFromTlv,
+            KnownOIDs.policyMappings to PolicyMappingsExtension::decodeFromTlv,
+            KnownOIDs.inhibitAnyPolicy to InhibitAnyPolicyExtension::decodeFromTlv
+        )
+
+        fun registerExtensionDecoder(
+            oid: ObjectIdentifier,
+            decoder: (Asn1Sequence, Any?) -> X509CertificateExtension
+        ) {
+            extensionDecoders[oid] = decoder
+        }
+
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): X509CertificateExtension = src.decodeRethrowing {
 
             val id = next().asPrimitive().readOid()
             val oid = (src.children[0] as Asn1Primitive).readOid()
-
-            return when (oid) {
-                KnownOIDs.basicConstraints_2_5_29_19 -> BasicConstraintsExtension.decodeFromTlv(src)
-                KnownOIDs.nameConstraints_2_5_29_30 -> NameConstraintsExtension.decodeFromTlv(src)
-                KnownOIDs.policyConstraints_2_5_29_36 -> PolicyConstraintsExtension.decodeFromTlv(src)
-                KnownOIDs.certificatePolicies_2_5_29_32 -> CertificatePoliciesExtension.decodeFromTlv(src)
-                KnownOIDs.policyMappings -> PolicyMappingsExtension.decodeFromTlv(src)
-                KnownOIDs.inhibitAnyPolicy -> InhibitAnyPolicyExtension.decodeFromTlv(src)
-                else -> decodeBase(src)
-            }
+            return extensionDecoders[oid]?.invoke(src, null) ?: decodeBase(src)
         }
 
         @Throws(Asn1Exception::class)
@@ -67,8 +88,8 @@ open class X509CertificateExtension @Throws(Asn1Exception::class) private constr
             if (src.hasMoreChildren()) throw Asn1StructuralException("Invalid X509CertificateExtension found (>3 children): ${src.toDerHexString()}")
             return X509CertificateExtension(id, value, critical)
         }
-
     }
+
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

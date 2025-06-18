@@ -3,6 +3,18 @@
 ## 3.0
 
 ### NEXT
+* Introduce full X.509 certificate validation support
+  * Added core `CertificateChainValidator` coordinating the full validation pipeline
+  * Modular validator design with pluggable components: 
+    * `PolicyValidator` – enforces certificate policies and policy constraints
+    * `BasicConstraintsValidator` – validates basicConstraints 
+    * `NameConstraintsValidator` – enforces permitted/excluded name constraints across the chain
+  * Supports full RFC 5280-style validation rules across name types (DNS, URI, etc.)
+* `X509CertificateExtension` is now a base class
+  * Enables polymorphic decoding/encoding of extension types
+* Refactored `AlternativeNames` for SAN/IAN extraction
+  * Removed detailed parsing of individual SAN types; now delegates decoding to `GeneralName`
+
 
 ### 3.17.0 (Supreme 0.9.0)
 * **KDF Support**
