@@ -14,6 +14,19 @@
     * `SymmetricEncryptionAlgorithm.toJweKwAlgorithm` now returns `KmmResult`
     * `SymmetricEncryptionAlgorithm.toJweEncryptionAlgorithm` removed
 
+### 3.16.3 / 0.8.3 indispensable-only Hotfix
+* More targets:
+    * watchosSimulatorArm64
+    * watchosX64
+    * watchosArm32
+    * watchosArm64
+    * androidNativeX64
+    * androidNativeX86
+    * androidNativeArm32
+    * androidNativeArm64
+* Drop OKIO dependency from `indispensable-josef` which was only ever used for to compute a SHA-256 thumbprint and replace it by a pure kotlin SHA-256 implementation
+
+
 ### 3.16.2 / 0.8.3 Supreme-Only Hotfix
 * Set minimum iOS version to 15
 * Fix Swift compat linker errors

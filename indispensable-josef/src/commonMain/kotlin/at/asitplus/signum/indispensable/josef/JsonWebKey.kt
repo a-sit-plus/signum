@@ -15,6 +15,7 @@ import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.CertificateChainBase64UrlSerializer
 import at.asitplus.signum.indispensable.josef.io.JwsCertificateSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.josef.io.sha256
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.symmetric.*
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -22,7 +23,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.json.Json
-import okio.ByteString.Companion.toByteString
 
 /**
  * JSON Web Key as per [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517#section-4).
@@ -196,7 +196,7 @@ data class JsonWebKey(
     val jwkThumbprint: String by lazy {
         val jsonEncoded = Json.encodeToString(this.toMinimalJsonWebKey().getOrNull() ?: this)
         val thumbprint = jsonEncoded
-            .encodeToByteArray().toByteString().sha256().toByteArray().encodeToString(Base64UrlStrict)
+            .encodeToByteArray().sha256().encodeToString(Base64UrlStrict)
         "urn:ietf:params:oauth:jwk-thumbprint:sha256:${thumbprint}"
     }
 
