@@ -3,6 +3,13 @@
 ## 3.0
 
 ### NEXT
+* Strippable `KnownOIDs`
+    * Move `KnownOIDs` into a discrete module `indispensable-oids`
+    * Create a drop-in stub module `indispensable-noids` mirroring its signatures, s.t. `KnwonOIDs` can be excluded and replaced by this stub instead
+* OID descriptions:
+  * OIDs can now be described using `oid.describe("expressive descrptions")`. It is enough to call this once per OID (not per object)
+  * OID descriptions are exposed through the `ObjectIdentifier.description` property
+  * All OIDs present in `KnwonOIDs` come with a description
 * Dependency Updates:
     * `kotlincrypto:secure-random:0.3.2` -> `kotlincrypto.random:crypto-rand:0.5.0`
         * This fixes key generation in WASM/JS
