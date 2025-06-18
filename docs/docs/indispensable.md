@@ -26,7 +26,7 @@ types and functionality related to crypto and PKI applications:
 * Exposes Multibase Encoder/Decoder as an API dependency
   including [Matthew Nelson's smashing Base16, Base32, and Base64 encoders](https://github.com/05nelsonm/encoding)
 
-In effect, you can work with X509 Certificates, public keys, CSRs and arbitrary ASN.1 structures on the JVM, Android, and iOS.
+In effect, you can work with X509 Certificates, public keys, CSRs and arbitrary ASN.1 structures on all KMP targets except `watchosDeviceArm64`!
 
 !!! tip
     **Do check out the full API docs [here](dokka/indispensable/index.html)**!
