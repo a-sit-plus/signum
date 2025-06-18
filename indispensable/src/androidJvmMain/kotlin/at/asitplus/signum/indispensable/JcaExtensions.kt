@@ -5,9 +5,10 @@ import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.asn1.toJavaBigInteger
+import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.internals.isAndroid
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
+import at.asitplus.signum.internals.isAndroid
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -29,10 +30,11 @@ import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
-import java.security.spec.MGF1ParameterSpec
-import java.security.spec.PKCS8EncodedKeySpec
-import java.security.spec.PSSParameterSpec
-import java.security.spec.RSAPublicKeySpec
+import java.security.spec.*
+import javax.crypto.Cipher
+import javax.crypto.spec.OAEPParameterSpec
+import javax.crypto.spec.PSource
+
 
 private val certificateFactoryMutex = Mutex()
 private val certFactory = CertificateFactory.getInstance("X.509")
@@ -140,7 +142,7 @@ fun CryptoPublicKey.EC.toJcaPublicKey(): KmmResult<ECPublicKey> = catching {
 private val rsaFactory = KeyFactory.getInstance("RSA")
 
 @Deprecated("renamed", ReplaceWith("toJcaPublicKey()"), DeprecationLevel.ERROR)
-fun CryptoPublicKey.RSA.getJcaPublicKey(): KmmResult<RSAPublicKey> =toJcaPublicKey()
+fun CryptoPublicKey.RSA.getJcaPublicKey(): KmmResult<RSAPublicKey> = toJcaPublicKey()
 fun CryptoPublicKey.RSA.toJcaPublicKey(): KmmResult<RSAPublicKey> = catching {
     rsaFactory.generatePublic(
         RSAPublicKeySpec(n.toJavaBigInteger(), e.toJavaBigInteger())
@@ -148,7 +150,9 @@ fun CryptoPublicKey.RSA.toJcaPublicKey(): KmmResult<RSAPublicKey> = catching {
 }
 
 @Deprecated("replaced by extension", ReplaceWith("publicKey.toCryptoPublicKey()"), DeprecationLevel.ERROR)
-fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey.EC> = publicKey.toCryptoPublicKey()
+fun CryptoPublicKey.EC.Companion.fromJcaPublicKey(publicKey: ECPublicKey): KmmResult<CryptoPublicKey.EC> =
+    publicKey.toCryptoPublicKey()
+
 fun ECPublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey.EC> = catching {
     val curve = ECCurve.byJcaName(
         SECNamedCurves.getName(
@@ -163,14 +167,19 @@ fun ECPublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey.EC> = catching {
         w.affineY.toByteArray()
     )
 }
+
 @Deprecated("replaced by extension", ReplaceWith("publicKey.toCryptoPublicKey()"), DeprecationLevel.ERROR)
-fun CryptoPublicKey.RSA.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey.RSA> = publicKey.toCryptoPublicKey()
+fun CryptoPublicKey.RSA.Companion.fromJcaPublicKey(publicKey: RSAPublicKey): KmmResult<CryptoPublicKey.RSA> =
+    publicKey.toCryptoPublicKey()
+
 fun RSAPublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey.RSA> =
     catching { CryptoPublicKey.RSA(modulus.toAsn1Integer(), publicExponent.toAsn1Integer()) }
 
 
 @Deprecated("replaced by extension", ReplaceWith("publicKey.toCryptoPublicKey()"), DeprecationLevel.ERROR)
-fun CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> = publicKey.toCryptoPublicKey()
+fun CryptoPublicKey.Companion.fromJcaPublicKey(publicKey: PublicKey): KmmResult<CryptoPublicKey> =
+    publicKey.toCryptoPublicKey()
+
 fun PublicKey.toCryptoPublicKey(): KmmResult<CryptoPublicKey> =
     when (this) {
         is RSAPublicKey -> toCryptoPublicKey()
@@ -285,9 +294,93 @@ val SymmetricEncryptionAlgorithm<*, *, *>.jcaKeySpec: String
         else -> TODO("$this keyspec is unsupported UNSUPPORTED")
     }
 
-val HMAC.jcaName: String get() = when(this) {
-    HMAC.SHA1 ->   "HmacSHA1"
-    HMAC.SHA256 -> "HmacSHA256"
-    HMAC.SHA384 -> "HmacSHA384"
-    HMAC.SHA512 -> "HmacSHA512"
-}
+val HMAC.jcaName: String
+    get() = when (this) {
+        HMAC.SHA1 -> "HmacSHA1"
+        HMAC.SHA256 -> "HmacSHA256"
+        HMAC.SHA384 -> "HmacSHA384"
+        HMAC.SHA512 -> "HmacSHA512"
+    }
+
+/**
+ * An encryption algorithm's JCA name. This is publicly exposed because it could come in handy under _very specific_ circumstances.
+ * **Double and triple check before feeding this into `Cipher.getInstance`!**.
+ * Then think again, pull in Signum Supreme and call `encryptorFor`/`decryptorFor` on whatever pre-configured instance of
+ * [AsymmetricEncryptionAlgorithm] you will be actually using.
+ */
+val AsymmetricEncryptionAlgorithm.jcaName: String
+    get() = when (this) {
+        is AsymmetricEncryptionAlgorithm.RSA -> when (padding) {
+            at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA1 -> "RSA/ECB/OAEPWithSHA-1AndMGF1Padding"
+            at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA256 -> "RSA/ECB/OAEPWithSHA-256AndMGF1Padding"
+            at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA384 -> "RSA/ECB/OAEPWithSHA-384AndMGF1Padding"
+            at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA512 -> "RSA/ECB/OAEPWithSHA-512AndMGF1Padding"
+            @OptIn(HazardousMaterials::class)
+            at.asitplus.signum.indispensable.asymmetric.RSAPadding.PKCS1 -> "RSA/ECB/PKCS1Padding"
+
+            @OptIn(HazardousMaterials::class)
+            at.asitplus.signum.indispensable.asymmetric.RSAPadding.NONE -> "RSA/ECB/NoPadding"
+        }
+    }
+
+/**
+ * An encryption algorithm's JCA parameters. This is publicly exposed because it could come in handy under _very specific_ circumstances.
+ * **Double and triple check before feeding this into `Cipher.init`!**.
+ * Then think again, pull in Signum Supreme and call `encryptorFor`/`decryptorFor` on whatever pre-configured instance of
+ * [AsymmetricEncryptionAlgorithm] you will be actually using.
+ */
+val AsymmetricEncryptionAlgorithm.jcaParameterSpec: AlgorithmParameterSpec?
+    get() =
+        when (this) {
+            is AsymmetricEncryptionAlgorithm.RSA -> when (padding) {
+                @OptIn(HazardousMaterials::class)
+                at.asitplus.signum.indispensable.asymmetric.RSAPadding.NONE -> null
+
+                at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA1 -> OAEPParameterSpec(
+                    "SHA-1",
+                    "MGF1",
+                    MGF1ParameterSpec.SHA1,
+                    PSource.PSpecified.DEFAULT
+                )
+
+                at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA256 -> OAEPParameterSpec(
+                    "SHA-256",
+                    "MGF1",
+                    MGF1ParameterSpec.SHA256,
+                    PSource.PSpecified.DEFAULT
+                )
+
+                at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA384 -> OAEPParameterSpec(
+                    "SHA-384",
+                    "MGF1",
+                    MGF1ParameterSpec.SHA384,
+                    PSource.PSpecified.DEFAULT
+                )
+
+                at.asitplus.signum.indispensable.asymmetric.RSAPadding.OAEP.SHA512 -> OAEPParameterSpec(
+                    "SHA-512",
+                    "MGF1",
+                    MGF1ParameterSpec.SHA512,
+                    PSource.PSpecified.DEFAULT
+                )
+
+                @OptIn(HazardousMaterials::class)
+                at.asitplus.signum.indispensable.asymmetric.RSAPadding.PKCS1 -> null
+            }
+        }
+
+/** Get a pre-configured JCA Cipher instance for this algorithm to use for **encryption** */
+fun AsymmetricEncryptionAlgorithm.getJCAEncryptorInstance(publicKey: CryptoPublicKey.RSA, provider: String? = null) =
+    catching {
+        (if (provider != null) Cipher.getInstance(jcaName, provider) else Cipher.getInstance(jcaName)).apply {
+            init(Cipher.ENCRYPT_MODE, publicKey.toJcaPublicKey().getOrThrow(), jcaParameterSpec)
+        }
+    }
+
+/** Get a pre-configured JCA Cipher instance for this algorithm to use for **decryption** */
+fun AsymmetricEncryptionAlgorithm.getJCADecryptorInstance(privateKey: CryptoPrivateKey.RSA, provider: String? = null) =
+    catching {
+        (if (provider != null) Cipher.getInstance(jcaName, provider) else Cipher.getInstance(jcaName)).apply {
+            init(Cipher.DECRYPT_MODE, privateKey.toJcaPrivateKey().getOrThrow(), jcaParameterSpec)
+        }
+    }

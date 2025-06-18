@@ -110,14 +110,14 @@ and comprehensive ASN.1, JOSE, and COSE support.
     X.509 to COSE and JOSE datatypes. We required comprehensive ASN.1 introspection and builder capabilities across platforms.
     Most notably, Apple has been notoriously lacking anything even remotely usable
     and [SwiftASN1](https://github.com/apple/swift-asn1) was out of the question for a couple of reasons.
-    Most notably, it did not exist when we started work on Signum. Hence, there was **neither ASN.1 parser, nor encoder on Apple platforms**
+    Most notably, it did not exist when we started work on Signum. Hence, there was **neither ASN.1 parser nor encoder on Apple platforms**
     that was actually usable. In effect: there was no KMP ASN.1 codec in sight, much less a type-safe, user-friendly one.
     As it stands now, our ASN.1 engine can handle almost anything you throw at it, in some areas even exceeding Bouncy Castle!
     cryptography-kotlin only added basic ASN.1 capabilities over a year after Signum's development started.
     <br>
     We are also unaware of any other library offering comprehensive JOSE and COSE data structures based on kotlinx-serialization.
     Hence, we implemented those ourselves, with first-class interop to our generic cryptographic data structures.
-    We also support platform-native interop meaning that you can easily convert a Json Web Key to a JCA key or even a `SecKeyRef` on iOS.
+    We also support platform-native interop meaning that you can easily convert a JSON Web Key to a JCA key or even a `SecKeyRef` on iOS.
     
     Having actual implementations of cryptographic operations available was only second on our list of priorities. From the
     get-go, it was clear that we wanted the tightest possible platform integration on Android and iOS, including hardware-backed

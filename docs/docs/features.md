@@ -123,7 +123,7 @@ The following table provides overview about what is supported by Signum and cryp
 |-----------------------------|----------------------|---------------------------|
 | Digital Signatures          | ✔ (ECDSA, RSA)       | ✔ (ECDSA, RSA)            |
 | Symmetric Encryption        | ✔ (AES + ChaChaPoly) | ✔ (AES)                   |
-| Public-Key Encryption       | ✗                    | ✔ (RSA)                   |
+| Asymmetric (RSA) Encryption | ✔ RAW, PKCS1, OAEP   | ✔ RAW, PKCS1, OAEP        |
 | Digest                      | ✔ (SHA-1, SHA-2)     | ✔ (MD5, SHA-1, SHA-2)     |
 | MAC                         | ✔ (HMAC)             | ✔ (HMAC)                  |
 | Key Agreement               | ✔ (ECDH)             | ✔ (ECDH)                  |

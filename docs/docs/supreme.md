@@ -11,6 +11,7 @@ types and functionality related to crypto and PKI applications:
   action
 * **Multiplatform AES and ChaCha20-Poly1503**
 * **Multiplatform HMAC**
+* **Multiplatform RSA Encryption**
 * Biometric Authentication on Android and iOS without Callbacks or Activity Passing** (✨Magic!✨)
 * Support Attestation on Android and iOS
 * Multiplatform, hardware-backed ECDH key agreement
@@ -21,7 +22,7 @@ types and functionality related to crypto and PKI applications:
 ## Using it in your Projects
 
 This library was built for [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html). Currently, it targets
-the JVM, Android and iOS.
+the JVM, Android, and iOS.
 
 Simply declare the desired dependency to get going:
 
@@ -172,7 +173,7 @@ On Android, key usage purposes are enforced by hardware, on iOS this enforcement
 
 
 #### iOS and Android
-Both iOS and Android support attestation, hardware-backed key storage and authentication to use a key.
+Both iOS and Android support attestation, hardware-backed key storage, and authentication to use a key.
 Since all of this is, at least in part, hardware-dependent, the `PlatformSigningProvider` supports an additional
 `hardware` configuration block for key generation.
 The following snippet is a comprehensive example showcasing this feature set:
@@ -410,7 +411,7 @@ These are:
     **NEVER** re-use an IV! Let the Supreme KMP crypto provider auto-generate them!
 
 In addition to runtime checks for matching algorithms and parameters, 
-algorithms, keys and sealed boxes need matching characteristics to be used with each other.
+algorithms, keys, and sealed boxes need matching characteristics to be used with each other.
 This approach does come with one caveat: It forces you to know what you are dealing with.
 Luckily, there is a very effective remedy: [contracts](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.contracts/).
 
@@ -620,6 +621,57 @@ The first variant will allow for arbitrary combinations of characteristics for c
 The second option, however, will only allow passing a nonce/IV if the algorithm associated with a symmetric key
 has the corresponding characteristic.
 The same holds for the auth tag and additional authenticated data.
+
+
+## Asymmetric Encryption
+Asymmetric encryption using RSA is supported, although the Supreme KMP crypto currently does not yet support hardware-backed
+management of key material.
+Hence, it is possible to create ephemeral RSA keys and use those, or import RSA keys.
+
+### Encryption and Decryption API
+
+The API is based on the same paradigm as the signer/verifier tandem. To encrypt data under an RSA public key, three steps are necessary:
+* Reference any of the pre-configured asymmetric encryption algorithm such as `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256` (see [Supported Algorithms and Paddings](#supported-algorithms-and-paddings)).
+* Invoke `encryptorFor(rsaPublicKey)` on it to create an `Encryptor`.
+* Call `encrypt(data)` and receive encrypted bytes
+
+Decryption works analogously:
+* Reference any of the pre-configured asymmetric encryption algorithm such as `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256` (see [Supported Algorithms and Paddings](#supported-algorithms-and-paddings)).
+* Invoke `decryptorFor(rsaPrivateKey)` on it to create a `Decryptor`.
+* Call `decrypt(data)` and recover the plain bytes
+
+!!! tip inline end
+    The JVM and Android targets allow for optionally specifying a JCA provider name:
+    ```kotlin
+    alg.decryptorFor(key) {
+      provider= "BC"
+    }
+    ```
+    This works the same for encryptors.
+
+As with the rest of the API, `KmmResult` is used throughout and the encryption/decryption functions are suspending.
+Textbook RSA (without padding; represented as `RsaPadding.NONE`) is supported, as is the vulnerable PKCS1 padding scheme.
+Both require a `HazardousMaterials` opt-in, as the latter may only to recover ciphertexts created by legacy systems
+and the former should only ever be used as a low-level primitive (usually for experiments but never in production)
+
+### Supported Algorithms and Paddings
+As of now, RSA encryption is supported, and the following paddings can be used:
+
+* `RSAPadding.NONE`
+* `RSAPadding.PKCS1`
+* `RSAPadding.OAEP.SHA1`
+* `RSAPadding.OAEP.SHA256`
+* `RSAPadding.OAEP.SHA384`
+* `RSAPadding.OAEP.SHA512`
+
+For convenience, pre-configured `AsymmetricEncryptionAlgorithm` instances exist for each supported algorithm:
+
+* `AsymmetricEncryptionAlgorithm.RSA.NoPadding`
+* `AsymmetricEncryptionAlgorithm.RSA.Pkcs1Padding`
+* `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA1`
+* `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256`
+* `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA384`
+* `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA512`
 
 ## Attestation
 

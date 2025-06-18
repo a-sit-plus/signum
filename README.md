@@ -34,6 +34,7 @@ action!
   * **Configurable biometric authentication on Android and iOS without callbacks or activity passing** (✨Magic!✨)
   * **Multiplatform AES**
   * **Multiplatform HMAC**
+  * **Multiplatform RSA Encryption**
 * Public Keys (RSA and EC)
 * Private Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)
@@ -123,7 +124,7 @@ We also support platform-native interop meaning that you can easily convert a Js
 Having actual implementations of cryptographic operations available was only second on our list of priorities. From the
 get-go, it was clear that we wanted the tightest possible platform integration on Android and iOS, including hardware-backed
 storage of key material and in-hardware execution of cryptographic operations whenever possible.
-We also needed platform-native attestation capabilities (and so will you sooner or later, if you are doing anything
+We also needed platform-native attestation capabilities (and so will you sooner or later if you are doing anything
 mission-critical on mobile targets!).
 While this approach does limit the number of available cryptographic operations, it also means that all cryptographic operations
 involving secrets (e.g. private keys) provide the same security guarantees as platform-native implementations do &mdash;
@@ -131,7 +132,7 @@ involving secrets (e.g. private keys) provide the same security guarantees as pl
 never even leave the hardware crypto modules**!<br>
 This tight integration and our focus on mobile comes at the cost of the **Supreme KMP crypto provider only supporting JVM,
 Android, and iOS**.
-cryptography-kotlin, on the other hand allows you to perform a wider range of cryptographic functions an all KMP targets,
+cryptography-kotlin, on the other hand, allows you to perform a wider range of cryptographic functions an all KMP targets,
 Most prominently, it already supports RSA encryption, key stretching, and key derivation, which Signum currently lacks.
 On the other hand, cryptography-kotlin currently offers neither hardware-backed crypto, nor attestation capabilities.
 
@@ -143,7 +144,7 @@ The following table provides a detailed comparison between Signum and cryptograp
 |-----------------------------|----------------------|---------------------------|
 | Digital Signatures          | ✔ (ECDSA, RSA)       | ✔ (ECDSA, RSA)            |
 | Symmetric Encryption        | ✔ (AES + ChaChaPoly) | ✔ (AES)                   |
-| Public-Key Encryption       | ✗                    | ✔ (RSA)                   |
+| Asymmetric Encryption | ✔ (RSA)   | ✔ (RSA)        |
 | Digest                      | ✔ (SHA-1, SHA-2)     | ✔ (MD5, SHA-1, SHA-2)     |
 | MAC                         | ✔ (HMAC)             | ✔ (HMAC)                  |
 | Key Agreement               | ✔ (ECDH)             | ✔ (ECDH)                  |
@@ -371,6 +372,38 @@ reconstructed.decrypt(
   aad
 ).getOrThrow(/*handle error*/) shouldBe payload //greatest success!
 ```
+
+## Asymmetric Encryption
+Asymmetric encryption using RSA is supported, although the Supreme KMP crypto currently does not yet support hardware-backed
+management of key material.
+Hence, it is possible to create ephemeral RSA keys and use those, or import RSA keys.
+
+### Encryption and Decryption API
+
+The API is based on the same paradigm as the signer/verifier tandem. To encrypt data under an RSA public key, three steps are necessary:
+* Reference any of the preconfigured asymmetric encryption algorithms such as `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256`).
+* Invoke `encryptorFor(rsaPublicKey)` on it to create an `Encryptor`.
+* Call `encrypt(data)` and receive encrypted bytes-
+
+Decryption works analogously:
+* Reference any of the preconfigured asymmetric encryption algorithms such as `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256`).
+* Invoke `decryptorFor(rsaPrivateKey)` on it to create a `Decryptor`.
+* Call `decrypt(data)` and recover the plain bytes-
+
+As with the rest of the API, `KmmResult` is used throughout and the encryption/decryption functions are suspending.
+Textbook RSA (without padding; represented as `RsaPadding.NONE`) is supported, as is the vulnerable PKCS1 padding scheme.
+Both require a `HazardousMaterials` opt-in, as the latter may only to recover ciphertexts created by legacy systems
+and the former should only ever be used as a low-level primitive (usually for experiments but never in production)
+
+### Supported Algorithms and Paddings
+As of now, RSA encryption is supported and the following paddings can be used:
+
+* `RSAPadding.NONE`
+* `RSAPadding.PKCS1`
+* `RSAPadding.OAEP.SHA1`
+* `RSAPadding.OAEP.SHA256`
+* `RSAPadding.OAEP.SHA384`
+* `RSAPadding.OAEP.SHA512`
 
 
 ## ASN.1 Demo Reel
