@@ -6,6 +6,7 @@
 * Strippable `KnownOIDs`
     * Move `KnownOIDs` into a discrete module `indispensable-oids`
     * Create a drop-in stub module `indispensable-noids` mirroring its signatures, s.t. `KnwonOIDs` can be excluded and replaced by this stub instead
+    * **Hence, `indispensable-asn1` does not contain or reference any OID definitions anymore.**
 * OID descriptions:
   * OIDs can now be described using `oid.describe("expressive descrptions")`. It is enough to call this once per OID (not per object)
   * OID descriptions are exposed through the `ObjectIdentifier.description` property
