@@ -66,6 +66,7 @@ kotlin {
                 api(kmmresult())
                 api(serialization("json"))
                 api(datetime())
+                implementation(project(":internals"))
             }
         }
 
@@ -76,6 +77,10 @@ kotlin {
             }
         }
     }
+    compilerOptions {
+        freeCompilerArgs.add("-Xemit-jvm-type-annotations")
+    }
+
 }
 
 android {
