@@ -2,6 +2,9 @@
 
 ## 3.0
 
+### NEXT
+* Add missing `Asn1.Real` shorthand
+
 ### 3.16.2 / 0.8.3 Supreme-Only Hotfix
 * Set minimum iOS version to 15
 * Fix Swift compat linker errors
