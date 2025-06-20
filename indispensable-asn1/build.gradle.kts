@@ -40,6 +40,10 @@ kotlin {
             gradle.startParameter.taskNames.firstOrNull { it.contains("publish") } ?:implementation(project(":internals-test"))
         }
     }
+    compilerOptions {
+        freeCompilerArgs.add("-Xemit-jvm-type-annotations")
+    }
+
 }
 
 exportXCFramework(
