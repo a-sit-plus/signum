@@ -5,17 +5,10 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
-import at.asitplus.signum.indispensable.asn1.Asn1PrimitiveOctetString
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import kotlinx.io.Buffer
 import kotlinx.io.Sink
 import kotlinx.io.readByteArray
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 import kotlin.experimental.ExperimentalObjCName
 import kotlin.native.ObjCName
 
@@ -190,7 +183,7 @@ sealed class Asn1Element(
 
     @Throws(Asn1StructuralException::class)
     private inline fun <reified T> thisAs(): T =
-       (this as? T)
+        (this as? T)
             ?: throw Asn1StructuralException("${this::class.simpleName} cannot be reinterpreted as ${T::class.simpleName}.")
 
 
@@ -319,11 +312,62 @@ sealed class Asn1Element(
             val TIME_GENERALIZED = Tag(tagValue = BERTags.GENERALIZED_TIME.toULong(), constructed = false)
             val TIME_UTC = Tag(tagValue = BERTags.UTC_TIME.toULong(), constructed = false)
 
+            val entries: Iterable<Tag> by lazy {
+                listOf(
+                    SET,
+                    SEQUENCE,
+                    NULL,
+                    BOOL,
+                    INT,
+                    REAL,
+                    OID,
+                    ENUM,
+                    OCTET_STRING,
+                    BIT_STRING,
+                    STRING_UTF8,
+                    STRING_UNIVERSAL,
+                    STRING_IA5,
+                    STRING_BMP,
+                    STRING_T61,
+                    STRING_PRINTABLE,
+                    STRING_NUMERIC,
+                    STRING_VISIBLE,
+                    TIME_GENERALIZED,
+                    TIME_UTC
+                )
+            }
+
         }
 
         val tagClass by lazy {
             checkNotNull(TagClass.fromByte(encodedTag.first()).getOrNull()) {
                 "An Illegal Tag class has been found. This should be impossible!"
+            }
+        }
+
+        val name by lazy {
+            when (this) {
+                SET -> "SET"
+                SEQUENCE -> "SEQUENCE"
+                NULL -> "NULL"
+                BOOL -> "BOOLEAN"
+                INT -> "INTEGER"
+                REAL -> "REAL"
+                OID -> "OBJECT IDENTIFIER"
+                ENUM -> "ENUMERATED"
+                OCTET_STRING -> "OCTET STRING"
+                BIT_STRING -> "BIT STRING"
+                STRING_UTF8 -> "UTF8 STRING"
+                STRING_UNIVERSAL -> "UNIVERSAL STRING"
+                STRING_IA5 -> "IA5 STRING"
+                STRING_BMP -> "BMP STRING"
+                STRING_T61 -> "T61 STRING"
+                STRING_PRINTABLE -> "PRINTABLE STRING"
+                STRING_NUMERIC -> "NUMERIC STRING"
+                STRING_VISIBLE -> "VISIBLE STRING"
+                TIME_GENERALIZED -> "GENERALIZED TIME"
+                TIME_UTC -> "UTC TIME"
+                else -> null
             }
         }
 
@@ -333,7 +377,7 @@ sealed class Asn1Element(
 
         override fun toString(): String =
             "${tagClass.let { if (it == TagClass.UNIVERSAL) "" else it.name + " " }}${tagValue}${if (isConstructed) " CONSTRUCTED" else ""}" +
-                    (" (=${encodedTag.toHexString(HexFormat.UpperCase)})")
+                    (" (=${encodedTag.toHexString(HexFormat.UpperCase)})"+(name?.let { " ($it)" } ?: ""))
 
         /**
          * As per ITU-T X.680 8824-1 8.6
@@ -804,7 +848,30 @@ open class Asn1Primitive(
 
     override fun prettyPrintHeader(indent: Int) = (" " * indent) + "Primitive" + super.prettyPrintHeader(indent)
 
-    override fun contentToString() = content.toHexString(HexFormat.UpperCase)
+    override fun contentToString() = catchingUnwrapped { when(tag){
+        Tag.NULL -> ""
+        Tag.BOOL -> decodeToBoolean().toString()
+        Tag.INT -> decodeToInt().toString()
+        Tag.REAL -> decodeToFloat().toString()
+        Tag.OID -> ObjectIdentifier.decodeFromAsn1ContentBytes(content).toString()
+        Tag.ENUM -> decodeToEnumOrdinal().toString()
+        Tag.OCTET_STRING -> content.toHexString(HexFormat.UpperCase)
+        Tag.BIT_STRING -> content.toHexString(HexFormat.UpperCase)
+        Tag.STRING_UTF8 -> decodeToString().toString()
+        Tag.STRING_UNIVERSAL -> decodeToString().toString()
+        Tag.STRING_IA5 -> decodeToString().toString()
+        Tag.STRING_BMP -> decodeToString().toString()
+        Tag.STRING_T61 -> decodeToString().toString()
+        Tag.STRING_PRINTABLE -> decodeToString().toString()
+        Tag.STRING_NUMERIC -> decodeToString().toString()
+        Tag.STRING_VISIBLE -> decodeToString().toString()
+        Tag.TIME_GENERALIZED -> decodeToString().toString()
+        Tag.TIME_UTC -> decodeToString().toString()
+        else ->  content.toHexString(HexFormat.UpperCase)
+    }}.getOrElse{ content.toHexString(HexFormat.UpperCase)}
+        
+        
+
     override fun prettyPrintContents(indent: Int) = contentToString()
 
 
@@ -844,6 +911,7 @@ interface Asn1OctetString {
         /** Constructs a new ASN.1 OCTET STRING primitive containing these bytes */
         operator fun invoke(bytes: ByteArray) =
             Asn1PrimitiveOctetString(bytes)
+
         /** Constructs a new ASN.1 OCTET STRING primitive encapsulating these children */
         operator fun invoke(children: List<Asn1Element>) =
             Asn1EncapsulatingOctetString(children)

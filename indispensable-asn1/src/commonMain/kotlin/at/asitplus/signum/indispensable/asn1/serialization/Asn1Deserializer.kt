@@ -1,70 +1,139 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
 import at.asitplus.signum.indispensable.asn1.Asn1Element
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToBoolean
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToDouble
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToFloat
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToLong
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToString
-import at.asitplus.signum.indispensable.asn1.encoding.readAsn1Element
+import at.asitplus.signum.indispensable.asn1.encoding.*
 import kotlinx.io.Buffer
 import kotlinx.io.Source
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.builtins.ByteArraySerializer
+import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.AbstractDecoder
 import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
-class Asn1Deserializer(private var tlv : Asn1Element, override val serializersModule: SerializersModule = EmptySerializersModule(),) : AbstractDecoder(){
-   constructor(source: Source, serializersModule: SerializersModule = EmptySerializersModule()) : this(source.readAsn1Element().first, serializersModule)
-    private var elementIndex = 0
+@ExperimentalSerializationApi
+class Asn1Deserializer(
+    private val elements: List<Asn1Element>,
+    override val serializersModule: SerializersModule = EmptySerializersModule(),
+    private val indent: String = ""
+) : AbstractDecoder() {
 
-    override fun decodeValue(): Any {
-        return super.decodeValue()
+    //TODO nestign through annotations
+    //TODO nullable
+    //TODO implicit tagging
+    //TODO clean index incrementation
+    //TODO asn1encodable and decodable
+    //TODO asn1element
+
+    constructor(
+        source: Source,
+        serializersModule: SerializersModule = EmptySerializersModule()
+    ) : this(source.readFullyToAsn1Elements().first, serializersModule)
+
+
+    private var index = 0
+    private lateinit var currentDescriptor: SerialDescriptor
+    private var isNested = false
+
+    init {
+        //  println("### ELEMENTS: ${elements.joinToString { it.toString() }}")
     }
 
-    override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
-        val kind = deserializer.descriptor.kind
-        if(kind is PrimitiveKind) {
-            return  when(kind) {
-                PrimitiveKind.BOOLEAN -> tlv.asPrimitive().decodeToBoolean()
-                PrimitiveKind.BYTE ->  tlv.asPrimitive().decodeToInt().toByte()
-                PrimitiveKind.CHAR -> tlv.asPrimitive().decodeToString().let { if (it.length == 1) it[0] else throw IllegalArgumentException("String is not a char") }
-                PrimitiveKind.DOUBLE -> tlv.asPrimitive().decodeToDouble()
-                PrimitiveKind.FLOAT -> tlv.asPrimitive().decodeToFloat()
-                PrimitiveKind.INT -> tlv.asPrimitive().decodeToInt()
-                PrimitiveKind.LONG -> tlv.asPrimitive().decodeToLong()
-                PrimitiveKind.SHORT -> tlv.asPrimitive().decodeToInt().toShort()
-                PrimitiveKind.STRING -> tlv.asPrimitive().decodeToString()
-            } as T
-        }
-        else TODO()
-    }
-
+    // ----------------------------------------------------------------------
+    // CompositeDecoder
+    // ----------------------------------------------------------------------
     override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
-        return super.beginStructure(descriptor)
+        isNested = true
+        println("$indent$this beginStructure(${descriptor.serialName})")
+        return Asn1Deserializer(
+            elements[index].asStructure().children,
+            serializersModule,
+            indent + "  "
+        )                    // this decoder is its own composite
     }
 
     override fun decodeElementIndex(descriptor: SerialDescriptor): Int {
-        if (elementIndex == descriptor.elementsCount) return CompositeDecoder.DECODE_DONE
-        return elementIndex++
+        println("$indent$this decodeElementIndex(idx=$index), descriptor=${descriptor.serialName} ")
+        if (index >= elements.size) return CompositeDecoder.DECODE_DONE
+        currentDescriptor = descriptor.getElementDescriptor(index)
+        return if (index < elements.size) index else CompositeDecoder.DECODE_DONE
     }
 
-    override fun decodeBoolean(): Boolean {
-        return super.decodeBoolean()
+    override fun endStructure(descriptor: SerialDescriptor) {
+        println("$indent$this endStructure(${descriptor.serialName})")
+        isNested = false
+    }
+
+    // ----------------------------------------------------------------------
+    // Primitive decoders
+    // ----------------------------------------------------------------------
+    override fun decodeValue(): Any {
+        println("$indent$this decodeValue(descriptor=");println("\t$currentDescriptor, idx=$index)")
+        val currentElement = elements[index]
+        index++
+        return when (currentDescriptor.kind) {
+            PolymorphicKind.OPEN -> TODO()
+            PolymorphicKind.SEALED -> TODO()
+            PrimitiveKind.BOOLEAN -> currentElement.asPrimitive().decodeToBoolean()
+            PrimitiveKind.BYTE -> currentElement.asPrimitive().decodeToInt().toByte()
+            PrimitiveKind.CHAR -> currentElement.asPrimitive().decodeToString()
+                ?.also { if (it.length != 1) throw SerializationException("Sting is not a char") }[0]
+
+            PrimitiveKind.DOUBLE -> currentElement.asPrimitive().decodeToDouble()
+            PrimitiveKind.FLOAT -> currentElement.asPrimitive().decodeToFloat()
+            PrimitiveKind.INT -> currentElement.asPrimitive().decodeToInt()
+            PrimitiveKind.LONG -> currentElement.asPrimitive().decodeToLong()
+            PrimitiveKind.SHORT -> currentElement.asPrimitive().decodeToInt().toShort()
+            PrimitiveKind.STRING -> currentElement.asPrimitive().decodeToString()
+            SerialKind.CONTEXTUAL -> TODO()
+            SerialKind.ENUM -> currentElement.asPrimitive().decodeToEnumOrdinal().toInt()
+            StructureKind.CLASS, StructureKind.OBJECT, StructureKind.LIST -> TODO()
+            StructureKind.MAP -> TODO()
+            StructureKind.OBJECT -> TODO()
+        } as Any
+    }
+
+    // ----------------------------------------------------------------------
+    // Nested / child objects
+    // ----------------------------------------------------------------------
+    override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
+        println("$indent$this decodeSerializableValue")
+
+        if (deserializer.descriptor.kind is PrimitiveKind) {
+            currentDescriptor = deserializer.descriptor
+            return decodeValue() as T
+        }
+
+
+        val currentElement = elements[index]
+        index++
+        if(deserializer.descriptor== ByteArraySerializer().descriptor) {
+            println("$indent$this decoding ByteArray as octet string")
+            return currentElement.asOctetString().content as T
+        }
+        println("$indent↳ spawn child decoder for ${deserializer.descriptor} (parent idx=${index})")
+
+
+        return deserializer.deserialize(
+            Asn1Deserializer(listOf(currentElement), serializersModule, indent + "  ").also {
+                if(deserializer.descriptor.kind==SerialKind.ENUM) {
+                   it.currentDescriptor = deserializer.descriptor
+                }
+
+            }
+        )
     }
 }
 
 @ExperimentalSerializationApi
-fun <T> decodeFromList(source: ByteArray, deserializer: DeserializationStrategy<T>): T {
+fun <T> decodeFromDer(source: ByteArray, deserializer: DeserializationStrategy<T>): T {
     val decoder = Asn1Deserializer(Buffer().also { it.write(source) })
     return decoder.decodeSerializableValue(deserializer)
 }
 
 @ExperimentalSerializationApi
-inline fun <reified T> decodeFromDer(source: ByteArray): T = decodeFromList(source, serializer())
+inline fun <reified T> decodeFromDer(source: ByteArray): T = decodeFromDer(source, serializer())

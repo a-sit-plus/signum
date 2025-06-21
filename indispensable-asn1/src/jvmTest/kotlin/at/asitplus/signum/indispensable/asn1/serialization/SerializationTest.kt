@@ -21,29 +21,32 @@ class SerializationTest : FreeSpec({
         println("---------------------------")
 
 
-        println(
-            encodeToDer(
-                TypesUmbrella(
-                    str = "foo",
-                    i = 2,
-                    nullable = null,
-                    list = listOf("Foo", "Bar", "Baz"),
-                    map = mapOf(3 to false),
-                    inner = Simple("simpleton"),
-                    innersList = listOf(SimpleOctet("one"), SimpleOctet("three")),
-                    byteString = Random.nextBytes(1336),
-                    byteArray = Random.nextBytes(1337),
-                    innerImpl = SimpleLong(-333L),
-                    enum = Baz.BAR
-                )
-            ).toHexString()
+        val derEncoded = encodeToDer(
+            TypesUmbrella(
+                str = "foo",
+                i = 2,
+                nullable = 3.0,
+                list = listOf("Foo", "Bar", "Baz"),
+                map = mapOf(3 to false),
+                inner = Simple("simpleton"),
+                innersList = listOf(SimpleOctet("one"), SimpleOctet("three")),
+                byteString = Random.nextBytes(1336),
+                byteArray = Random.nextBytes(1337),
+                innerImpl = SimpleLong(-333L),
+                enum = Baz.BAR
+            )
         )
+        println(            derEncoded.toHexString()        )
 
         val string = "Foo"
         println(encodeToDer(string).toHexString())
 
 
         val str = decodeFromDer<String>(encodeToDer(string))
+
+        println("DECODED: $str\n")
+
+        val complex = decodeFromDer<TypesUmbrella>(derEncoded)
 
         println(encodeToDer(SimpleLong(666L)).toHexString())
         println(encodeToDer(3.141516).toHexString())
@@ -56,18 +59,18 @@ class SerializationTest : FreeSpec({
 
 
 @Serializable
-@Asn1ImplicitlyTagged(7353uL)
+//@Asn1ImplicitlyTagged(7353uL)
 data class SimpleLong(val a: Long)
 
 @Serializable
-@Asn1ExplicitlyTagged(1337998uL)
+//@Asn1ExplicitlyTagged(1337998uL)
 data class Simple(val a: String)
 
 @Serializable
-@Asn1OctetString
+//@Asn1OctetString
 data class SimpleOctet(val a: String)
 
-@Asn1ExplicitlyTagged(99uL)
+//@Asn1ExplicitlyTagged(99uL)
 @Serializable
 enum class Baz {
     FOO,
@@ -77,11 +80,11 @@ enum class Baz {
 @Serializable
 data class TypesUmbrella(
 
-    @Asn1OctetString
+    //@Asn1OctetString
     val inner: Simple,
-    @Asn1ImplicitlyTagged(333uL)
+   // @Asn1ImplicitlyTagged(333uL)
     val str: String,
-    @Asn1OctetString
+  //  @Asn1OctetString
     val i: Int,
     @Asn1EncodeNull
     val nullable: Double?,
@@ -92,7 +95,7 @@ data class TypesUmbrella(
     val byteString: ByteArray,
     val byteArray: ByteArray,
     val innerImpl: SimpleLong,
-    @Asn1ImplicitlyTagged(33uL)
+  //  @Asn1ImplicitlyTagged(33uL)
     val enum: Baz
 ) {
     override fun equals(other: Any?): Boolean {
