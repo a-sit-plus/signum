@@ -34,7 +34,7 @@ class Asn1Serializer(
 
         val buffer = descriptorAndIndex?.let {
             if (it.isStructurallyAnnotated) {
-                beginAsn1NestedStructure(it.first, it.second).buffer
+                buffer.beginAsn1NestedStructure(it.first, it.second).buffer
             } else buffer
         } ?: buffer
 
@@ -74,7 +74,7 @@ class Asn1Serializer(
             if (!descriptor.doEncodeNull(index)) return
 
             val buffer = if ((descriptor to index).isStructurallyAnnotated) {
-                beginAsn1NestedStructure(descriptor, index).buffer
+                buffer.beginAsn1NestedStructure(descriptor, index).buffer
             } else buffer
             descriptorAndIndex = null
 
@@ -94,7 +94,7 @@ class Asn1Serializer(
         //this block here needs to be swapped with the other somehow
         val buffer = descriptorAndIndex?.let {
             if (it.isStructurallyAnnotated) {
-                beginAsn1NestedStructure(it.first, it.second).buffer
+                buffer.beginAsn1NestedStructure(it.first, it.second).buffer
             } else buffer
         } ?: buffer
 
@@ -103,7 +103,7 @@ class Asn1Serializer(
         //TODO inner and outer tags are swapped in this function
         //todo check toplevel annotations for nesting (octet string, explicit tag)
         //todo disallow tags on enum constants
-        if (enumDescriptor.isStructurallyAnnotated) beginAsn1NestedStructure(
+        if (enumDescriptor.isStructurallyAnnotated) buffer.beginAsn1NestedStructure(
             enumDescriptor,
             null
         ).buffer += implicitTag.tagImplicitly{ Asn1.Enumerated(index) }
@@ -121,7 +121,7 @@ class Asn1Serializer(
 
         val buffer = descriptorAndIndex?.let {
             if (it.isStructurallyAnnotated) {
-                beginAsn1NestedStructure(it.first, it.second).buffer
+                buffer.beginAsn1NestedStructure(it.first, it.second).buffer
             } else buffer
         } ?: buffer
         descriptorAndIndex = null
@@ -152,7 +152,7 @@ class Asn1Serializer(
         }
     }
 
-    private fun beginAsn1NestedStructure(descriptor: SerialDescriptor, index: Int?): Asn1Serializer {
+    private fun MutableList<()-> Asn1Element>.beginAsn1NestedStructure(descriptor: SerialDescriptor, index: Int?): Asn1Serializer {
         val explicitTag = index?.let { descriptor.explicitTag(it) } ?: descriptor.explicitTag
         val implicitTag = index?.let { descriptor.implicitTag(it) } ?: descriptor.implicitTag
         if (explicitTag != null) {
@@ -172,7 +172,7 @@ class Asn1Serializer(
                         ).let { implicitTag?.let { implicitTag -> it.withImplicitTag(implicitTag) } ?: it }
             }
 
-            buffer += { addChildren() }
+            this += { addChildren() }
         }
     }
 
