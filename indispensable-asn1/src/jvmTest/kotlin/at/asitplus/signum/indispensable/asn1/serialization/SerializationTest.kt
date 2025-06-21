@@ -67,7 +67,7 @@ data class Simple(val a: String)
 @Asn1OctetString
 data class SimpleOctet(val a: String)
 
-//@Asn1ExplicitlyTagged(99uL)
+@Asn1ExplicitlyTagged(99uL)
 @Serializable
 enum class Baz {
     FOO,
