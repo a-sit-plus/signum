@@ -4,6 +4,8 @@
 
 ### NEXT
 * Add missing `Asn1.Real` shorthand
+* Add `Asn1Null` constant
+* Add human-readable ASN.1 element to string
 
 ### 3.16.2 / 0.8.3 Supreme-Only Hotfix
 * Set minimum iOS version to 15
