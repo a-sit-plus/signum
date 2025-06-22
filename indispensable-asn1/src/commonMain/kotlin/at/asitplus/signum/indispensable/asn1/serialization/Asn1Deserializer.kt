@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
 import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.Asn1Null
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import kotlinx.io.Buffer
 import kotlinx.io.Source
@@ -23,7 +24,7 @@ class Asn1Deserializer(
 ) : AbstractDecoder() {
 
     //TODO nestign through annotations
-    //TODO nullable
+    //TODO unsigned (inline) decoding
     //TODO implicit tagging
     //TODO clean index incrementation
     //TODO asn1encodable and decodable
@@ -37,6 +38,7 @@ class Asn1Deserializer(
 
     private var index = 0
     private lateinit var currentDescriptor: SerialDescriptor
+    private lateinit var currentAnnotations: List<Annotation>
     private var isNested = false
 
     init {
@@ -60,6 +62,8 @@ class Asn1Deserializer(
         println("$indent$this decodeElementIndex(idx=$index), descriptor=${descriptor.serialName} ")
         if (index >= elements.size) return CompositeDecoder.DECODE_DONE
         currentDescriptor = descriptor.getElementDescriptor(index)
+        currentAnnotations = descriptor.getElementAnnotations(index)
+
         return if (index < elements.size) index else CompositeDecoder.DECODE_DONE
     }
 
@@ -81,8 +85,7 @@ class Asn1Deserializer(
             PrimitiveKind.BOOLEAN -> currentElement.asPrimitive().decodeToBoolean()
             PrimitiveKind.BYTE -> currentElement.asPrimitive().decodeToInt().toByte()
             PrimitiveKind.CHAR -> currentElement.asPrimitive().decodeToString()
-                ?.also { if (it.length != 1) throw SerializationException("Sting is not a char") }[0]
-
+                .also { if (it.length != 1) throw SerializationException("Sting is not a char") }[0]
             PrimitiveKind.DOUBLE -> currentElement.asPrimitive().decodeToDouble()
             PrimitiveKind.FLOAT -> currentElement.asPrimitive().decodeToFloat()
             PrimitiveKind.INT -> currentElement.asPrimitive().decodeToInt()
@@ -95,6 +98,23 @@ class Asn1Deserializer(
             StructureKind.MAP -> TODO()
             StructureKind.OBJECT -> TODO()
         } as Any
+    }
+
+
+    override fun <T : Any?> decodeSerializableValue(
+        deserializer: DeserializationStrategy<T>,
+        previousValue: T?
+    ): T {
+        println("$indent$this decodeSerializableValue(deserializer=${deserializer.descriptor.serialName}, previousValue=$previousValue)")
+
+        val currentElement = elements[index]
+        if (currentElement == Asn1Null) {
+            //TODO: Classlevel annotations and global config
+            if (!currentDescriptor.doEncodeNull) throw SerializationException("Null value found, but target value should not have been present!")
+            index++
+            return null as T
+        }
+        return decodeSerializableValue(deserializer)
     }
 
     // ----------------------------------------------------------------------
@@ -111,7 +131,7 @@ class Asn1Deserializer(
 
         val currentElement = elements[index]
         index++
-        if(deserializer.descriptor== ByteArraySerializer().descriptor) {
+        if (deserializer.descriptor == ByteArraySerializer().descriptor) {
             println("$indent$this decoding ByteArray as octet string")
             return currentElement.asOctetString().content as T
         }
@@ -120,8 +140,8 @@ class Asn1Deserializer(
 
         return deserializer.deserialize(
             Asn1Deserializer(listOf(currentElement), serializersModule, indent + "  ").also {
-                if(deserializer.descriptor.kind==SerialKind.ENUM) {
-                   it.currentDescriptor = deserializer.descriptor
+                if (deserializer.descriptor.kind == SerialKind.ENUM) {
+                    it.currentDescriptor = deserializer.descriptor
                 }
 
             }

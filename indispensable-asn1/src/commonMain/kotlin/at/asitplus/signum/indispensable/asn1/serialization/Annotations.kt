@@ -51,6 +51,8 @@ internal fun SerialDescriptor.isAsn1OctetString(index: Int): Boolean =
 
 internal fun SerialDescriptor.doEncodeNull(index: Int): Boolean =
     getElementAnnotations(index).find { it is Asn1EncodeNull } != null
+internal val SerialDescriptor.doEncodeNull: Boolean get()=
+    annotations.find { it is Asn1EncodeNull } != null
 
 internal val SerialDescriptor.explicitTag: ULong? get() = (annotations.find { it is Asn1ExplicitlyTagged } as Asn1ExplicitlyTagged?)?.tag
 internal fun SerialDescriptor.explicitTag(index: Int): ULong? =
