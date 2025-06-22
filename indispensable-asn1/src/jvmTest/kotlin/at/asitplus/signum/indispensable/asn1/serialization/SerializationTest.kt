@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
+import at.asitplus.signum.indispensable.asn1.Asn1OctetString
 import io.kotest.core.spec.style.FreeSpec
 import kotlinx.serialization.Serializable
 import kotlin.random.Random
@@ -33,7 +34,8 @@ class SerializationTest : FreeSpec({
                 byteString = Random.nextBytes(1336),
                 byteArray = Random.nextBytes(1337),
                 innerImpl = SimpleLong(-333L),
-                enum = Baz.BAR
+                enum = Baz.BAR,
+                octet = Asn1OctetString("Hello World".encodeToByteArray())
             )
         )
         println(            derEncoded.toHexString()        )
@@ -96,7 +98,8 @@ data class TypesUmbrella(
     val byteArray: ByteArray,
     val innerImpl: SimpleLong,
   //  @Asn1ImplicitlyTagged(33uL)
-    val enum: Baz
+    val enum: Baz,
+    val octet: Asn1OctetString
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
