@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
 import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.Asn1ElementHexStringSerializer
 import at.asitplus.signum.indispensable.asn1.Asn1Null
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import kotlinx.io.Buffer
@@ -9,6 +10,7 @@ import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ByteArraySerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.AbstractDecoder
 import kotlinx.serialization.encoding.CompositeDecoder
@@ -109,8 +111,8 @@ class Asn1Deserializer(
 
         val currentElement = elements[index]
         if (currentElement == Asn1Null) {
-            //TODO: Classlevel annotations and global config
-            if (!currentDescriptor.doEncodeNull) throw SerializationException("Null value found, but target value should not have been present!")
+            //TODO: global config
+            if (!currentDescriptor.doEncodeNull && currentAnnotations.find { it is Asn1EncodeNull }==null) throw SerializationException("Null value found, but target value should not have been present!")
             index++
             return null as T
         }
@@ -122,6 +124,14 @@ class Asn1Deserializer(
     // ----------------------------------------------------------------------
     override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
         println("$indent$this decodeSerializableValue")
+
+        when(deserializer) {
+            UByte.serializer() -> return elements[index].asPrimitive().decodeToUInt().toUByte().also { index++ } as T
+            UShort.serializer() -> return elements[index].asPrimitive().decodeToUInt().toUShort().also { index++ } as T
+            UInt.serializer() -> return elements[index].asPrimitive().decodeToUInt().also { index++ } as T
+            ULong.serializer() -> return elements[index].asPrimitive().decodeToULong().also { index++ } as T
+            Asn1ElementHexStringSerializer -> return elements[index].also { index++ } as T
+        }
 
         if (deserializer.descriptor.kind is PrimitiveKind) {
             currentDescriptor = deserializer.descriptor

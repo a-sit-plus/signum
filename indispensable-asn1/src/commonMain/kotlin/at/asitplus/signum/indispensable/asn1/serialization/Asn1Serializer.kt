@@ -20,6 +20,7 @@ import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
+//TODO value classes proper!
 @ExperimentalSerializationApi
 class Asn1Serializer(
     override val serializersModule: SerializersModule = EmptySerializersModule(),
@@ -100,21 +101,20 @@ class Asn1Serializer(
 
         descriptorAndIndex = null
 
-        //TODO inner and outer tags are swapped in this function
-        //todo check toplevel annotations for nesting (octet string, explicit tag)
         //todo disallow tags on enum constants
         if (enumDescriptor.isStructurallyAnnotated) buffer.beginAsn1NestedStructure(
             enumDescriptor,
             null
-        ).buffer += implicitTag.tagImplicitly{ Asn1.Enumerated(index) }
-        else buffer += implicitTag.tagImplicitly { enumDescriptor.implicitTag.tagImplicitly { Asn1.Enumerated(index) }()}
+        ).buffer += implicitTag.tagImplicitly { Asn1.Enumerated(index) }
+        else buffer += implicitTag.tagImplicitly { enumDescriptor.implicitTag.tagImplicitly { Asn1.Enumerated(index) }() }
     }
 
     override fun <T> encodeSerializableValue(serializer: SerializationStrategy<T>, value: T) {
         if (serializer.descriptor == ByteArraySerializer().descriptor) {
             if (serializer.descriptor.isAsn1BitSet) encodeValue(BitSet.from(value as ByteArray))
             else encodeValue(value as ByteArray)
-        } else super.encodeSerializableValue(serializer, value)
+        } else if (value is Asn1Encodable<*> || value is Asn1Element) encodeValue(value)
+        else super.encodeSerializableValue(serializer, value)
     }
 
     override fun beginStructure(descriptor: SerialDescriptor): Asn1Serializer {
@@ -152,7 +152,10 @@ class Asn1Serializer(
         }
     }
 
-    private fun MutableList<()-> Asn1Element>.beginAsn1NestedStructure(descriptor: SerialDescriptor, index: Int?): Asn1Serializer {
+    private fun MutableList<() -> Asn1Element>.beginAsn1NestedStructure(
+        descriptor: SerialDescriptor,
+        index: Int?
+    ): Asn1Serializer {
         val explicitTag = index?.let { descriptor.explicitTag(it) } ?: descriptor.explicitTag
         val implicitTag = index?.let { descriptor.implicitTag(it) } ?: descriptor.implicitTag
         if (explicitTag != null) {
