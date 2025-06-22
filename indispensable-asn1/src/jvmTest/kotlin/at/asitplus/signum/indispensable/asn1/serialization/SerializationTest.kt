@@ -24,8 +24,8 @@ class SerializationTest : FreeSpec({
         val derEncoded = encodeToDer(
             TypesUmbrella(
                 str = "foo",
-                i = 2,
-                nullable = 3.0,
+                i = 2u,
+                nullable = null,
                 list = listOf("Foo", "Bar", "Baz"),
                 map = mapOf(3 to false),
                 inner = Simple("simpleton"),
@@ -85,7 +85,7 @@ data class TypesUmbrella(
    // @Asn1ImplicitlyTagged(333uL)
     val str: String,
   //  @Asn1OctetString
-    val i: Int,
+    val i: UInt,
     @Asn1EncodeNull
     val nullable: Double?,
     val list: List<String>,
@@ -119,7 +119,7 @@ data class TypesUmbrella(
 
     override fun hashCode(): Int {
         var result = str.hashCode()
-        result = 31 * result + i
+        result = 31 * result + i.toInt()
         result = 31 * result + (nullable?.hashCode() ?: 0)
         result = 31 * result + list.hashCode()
         result = 31 * result + map.hashCode()

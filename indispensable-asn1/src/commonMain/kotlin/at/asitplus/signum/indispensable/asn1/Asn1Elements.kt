@@ -479,6 +479,10 @@ inline fun <reified T : Asn1Element> T.assertTag(tag: Asn1Element.Tag): T {
 @Throws(Asn1TagMismatchException::class)
 inline fun <reified T : Asn1Element> T.assertTag(tagNumber: ULong): T = assertTag(tag withNumber tagNumber)
 
+/**
+ * ASN.1 NULL object as constant
+ */
+val Asn1Null = Asn1Primitive(Asn1Element.Tag.NULL, byteArrayOf())
 
 /**
  * ASN.1 structure. Contains no data itself, but holds zero or more [children]

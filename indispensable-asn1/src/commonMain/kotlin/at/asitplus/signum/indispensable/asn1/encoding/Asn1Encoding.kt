@@ -273,7 +273,7 @@ object Asn1 {
     /**
      * Create a NULL [Asn1Primitive]
      */
-    fun Null() = Asn1Primitive(Asn1Element.Tag.NULL, byteArrayOf())
+    fun Null() = Asn1Null
 
 
     /** Creates a UTC TIME [Asn1Primitive] from [value] */
