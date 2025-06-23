@@ -4,6 +4,8 @@ import at.asitplus.signum.indispensable.asn1.Asn1OctetString
 import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
+import io.kotest.matchers.should
+import io.kotest.matchers.shouldBe
 import kotlinx.serialization.Serializable
 import kotlin.random.Random
 
@@ -11,7 +13,13 @@ import kotlin.random.Random
 @OptIn(ExperimentalStdlibApi::class)
 class SerializationTest : FreeSpec({
 
-    "Implicit tagging" {
+    "DBG" {
+        val nothingOnClassNestedOnProperty = encodeToDer(NothingOnClassNestedOnProperty(NothingOnClass("foo")))
+        decodeFromDer<NothingOnClassNestedOnProperty>(nothingOnClassNestedOnProperty)
+
+    }
+
+    "Implicit tagging" - {
         val imlNothing = encodeToDer(NothingOnClass("foo"))
         val imlClass = encodeToDer(ImplicitOnClass("foo"))
         val imlProp = encodeToDer(ImplicitOnProperty("foo"))
@@ -44,6 +52,29 @@ class SerializationTest : FreeSpec({
         decodeFromDer<ImplicitOnClass>(imlClass)
         decodeFromDer<ImplicitOnProperty>(imlProp)
         decodeFromDer<ImplicitOnBoth>(imlBoth)
+
+        "Nested" {
+            val nothingOnClassNested = encodeToDer(NothingOnClassNested(NothingOnClass("foo")))
+            val nothingOnClassNestedOnClass = encodeToDer(NothingOnClassNestedOnClass(ImplicitOnClass("foo")))
+            val nothingOnClassNestedOnProperty = encodeToDer(NothingOnClassNestedOnProperty(NothingOnClass("foo")))
+            val nothingOnClassNestedOnPropertyOverride = encodeToDer(NothingOnClassNestedOnPropertyOverride(ImplicitOnClass("foo")))
+
+            nothingOnClassNested.toHexString() shouldBe                     "300730050c03666f6f"
+            nothingOnClassNestedOnClass.toHexString() shouldBe              "3009bf8a39050c03666f6f"
+            nothingOnClassNestedOnProperty.toHexString() shouldBe           "3009bf8a39050c03666f6f"
+            nothingOnClassNestedOnPropertyOverride.toHexString() shouldBe   "3009bf851a050c03666f6f"
+
+            println(nothingOnClassNestedOnPropertyOverride.toHexString())
+
+            decodeFromDer<NothingOnClassNested>(nothingOnClassNested)
+            decodeFromDer<NothingOnClassNestedOnClass>(nothingOnClassNestedOnClass)
+            decodeFromDer<NothingOnClassNestedOnProperty>(nothingOnClassNestedOnProperty)
+            decodeFromDer<NothingOnClassNestedOnPropertyOverride>(nothingOnClassNestedOnPropertyOverride)
+        }
+
+    }
+
+    "SET semantics" {
 
     }
 
@@ -207,6 +238,18 @@ data class NullableByteString(
     }
 }
 
+
+@Serializable
+@Asn1Set
+class SetSemanticsClass (val a: String, val b: List<String>)
+
+@Serializable
+@Asn1Set
+class SetSemanticsProp (val a: String, @Asn1Set val b: List<String>)
+
+@Serializable
+class SequenceSemantics (val a: String,  val b: List<String>)
+
 @Serializable
 class NothingOnClass(val a: String)
 
@@ -239,3 +282,14 @@ class ImplicitOnBothWrongClass(@Asn1ImplicitlyTagged(1338uL) val a: String)
 @Serializable
 @Asn1ImplicitlyTagged(1337uL)
 class ImplicitOnBothWrongProperty(@Asn1ImplicitlyTagged(8331uL) val a: String)
+
+
+@Serializable
+class NothingOnClassNested(val a: NothingOnClass)
+@Serializable
+class NothingOnClassNestedOnClass(val a: ImplicitOnClass)
+
+@Serializable
+class NothingOnClassNestedOnProperty(@Asn1ImplicitlyTagged(1337uL) val a: NothingOnClass)
+@Serializable
+class NothingOnClassNestedOnPropertyOverride(@Asn1ImplicitlyTagged(666uL) val a: ImplicitOnClass)
