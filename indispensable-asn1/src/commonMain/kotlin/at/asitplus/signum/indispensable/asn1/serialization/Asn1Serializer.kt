@@ -20,6 +20,8 @@ import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.serializer
 
+//TODO: proper encapsulation of with octet strings and explicit tags as class-level annotations
+
 //TODO value classes proper!
 @ExperimentalSerializationApi
 class Asn1Serializer(
@@ -124,6 +126,7 @@ class Asn1Serializer(
                 buffer.beginAsn1NestedStructure(it.first, it.second).buffer
             } else buffer
         } ?: buffer
+        val implicitTag = descriptorAndIndex?.first?.implicitTag(descriptorAndIndex!!.second)
         descriptorAndIndex = null
 
 
@@ -141,7 +144,7 @@ class Asn1Serializer(
                     else Asn1Sequence(it.buffer.map { it() })
                     ).let {
                     if (descriptor.implicitTag != null) it.withImplicitTag(descriptor.implicitTag!!) else it
-                }
+                }.let { implicitTag?.let { implicitTag -> it.withImplicitTag(implicitTag) } ?: it }
 
             buffer += {
                 if (descriptor.explicitTag != null) Asn1ExplicitlyTagged(
