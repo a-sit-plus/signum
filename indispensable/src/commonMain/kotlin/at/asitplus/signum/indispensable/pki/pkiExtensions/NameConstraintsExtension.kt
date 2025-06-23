@@ -7,7 +7,6 @@ import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
-import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
@@ -21,10 +20,10 @@ import kotlinx.io.IOException
  * included in certificates issued by a given CA. Applied to the subject DNs and subject ANs.
  * RFC 5280: 4.2.1.10.
  * */
-data class NameConstraintsExtension(
-    override val oid: ObjectIdentifier,
-    override val critical: Boolean,
-    override val value: Asn1EncapsulatingOctetString,
+class NameConstraintsExtension(
+    oid: ObjectIdentifier,
+    critical: Boolean,
+    value: Asn1EncapsulatingOctetString,
     var permitted: GeneralSubtrees? = null,
     var excluded: GeneralSubtrees? = null
 ) : X509CertificateExtension(oid, critical, value) {
@@ -203,6 +202,16 @@ data class NameConstraintsExtension(
             return !sameType
         }
         return true
+    }
+
+    fun copy(): NameConstraintsExtension {
+        return NameConstraintsExtension(
+            oid = this.oid,
+            critical = this.critical,
+            value = this.value.asEncapsulatingOctetString(),
+            permitted = this.permitted,
+            excluded = this.excluded
+        )
     }
 }
 

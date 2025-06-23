@@ -29,9 +29,13 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyMappingsExtensio
  */
 open class X509CertificateExtension @Throws(Asn1Exception::class) private constructor(
     override val oid: ObjectIdentifier,
-    open val value: Asn1Element,
-    open val critical: Boolean = false
+    val value: Asn1Element,
+    val critical: Boolean = false
 ) : Asn1Encodable<Asn1Sequence>, Identifiable {
+
+    init {
+        if (value.tag != Asn1Element.Tag.OCTET_STRING) throw Asn1TagMismatchException(Asn1Element.Tag.OCTET_STRING, value.tag)
+    }
 
     constructor(
         oid: ObjectIdentifier,
