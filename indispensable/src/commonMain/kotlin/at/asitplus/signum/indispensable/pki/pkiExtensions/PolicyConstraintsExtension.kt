@@ -17,10 +17,10 @@ import at.asitplus.signum.indispensable.pki.X509CertificateExtension
  * the chain has an acceptable policy identifier
  * RFC 5280: 4.2.1.11.
  * */
-data class PolicyConstraintsExtension (
-    override val oid: ObjectIdentifier,
-    override val critical: Boolean,
-    override val value: Asn1EncapsulatingOctetString,
+class PolicyConstraintsExtension (
+    oid: ObjectIdentifier,
+    critical: Boolean,
+    value: Asn1EncapsulatingOctetString,
     val requireExplicitPolicy: Asn1Integer,
     val inhibitPolicyMapping: Asn1Integer
 ) : X509CertificateExtension(oid, critical, value) {

@@ -17,7 +17,6 @@ import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.asn1.Asn1Time
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
-import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.PemDecodable
 import at.asitplus.signum.indispensable.asn1.PemEncodable
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
@@ -126,7 +125,7 @@ constructor(
             ?.getOrNull(0)
             ?.let { it as? Asn1Primitive }
             ?.let(Asn1BitString::decodeFromTlv)
-            ?.let(X509KeyUsage::doDecode)
+            ?.let(X509KeyUsage::parseExtension)
             ?: emptySet()
 
 
