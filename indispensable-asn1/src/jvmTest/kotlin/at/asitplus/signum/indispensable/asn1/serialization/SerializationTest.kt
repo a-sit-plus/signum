@@ -73,6 +73,7 @@ data class Simple(val a: String)
 data class SimpleOctet(val a: String)
 
 //@Asn1ExplicitlyTagged(99uL)
+@Asn1ImplicitlyTagged(99uL)
 @Serializable
 enum class Baz {
     FOO,
@@ -94,10 +95,11 @@ data class TypesUmbrella(
     val map: Map<Int, Boolean>,
 
     val innersList: List<SimpleOctet>,
+
     val byteString: ByteArray,
     val byteArray: ByteArray,
     val innerImpl: SimpleLong,
-  //  @Asn1ImplicitlyTagged(33uL)
+    @Asn1ImplicitlyTagged(33uL)
     val enum: Baz,
     val octet: Asn1OctetString
 ) {
