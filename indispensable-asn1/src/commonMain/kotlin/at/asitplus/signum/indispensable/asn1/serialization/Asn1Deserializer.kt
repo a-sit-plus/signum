@@ -28,7 +28,6 @@ class Asn1Deserializer(
     //TODO implicit tagging
     //TODO clean index incrementation
     //TODO asn1encodable and decodable
-    //TODO asn1element
 
     constructor(
         source: Source,
@@ -37,8 +36,8 @@ class Asn1Deserializer(
 
 
     private var index = 0
-    private lateinit var currentDescriptor: SerialDescriptor
-    private lateinit var currentAnnotations: List<Annotation>
+    private lateinit var propertyDescriptor: SerialDescriptor
+    private var propertyAnnptations: List<Annotation> = emptyList()
 
     init {
         //  println("### ELEMENTS: ${elements.joinToString { it.toString() }}")
@@ -49,14 +48,15 @@ class Asn1Deserializer(
     // ----------------------------------------------------------------------
     override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
         println("$indent$this beginStructure(${descriptor.serialName})")
-       val tagToCheck=descriptor.implicitTag?.let {
-           val implcitTag = elements[index].withImplicitTag(it).tag
-           if(elements[index].tag.tagValue!=it) throw Asn1TagMismatchException(elements[index].tag, implcitTag)
-           implcitTag
-       }?:if(descriptor.isAsn1OctetString) Asn1Element.Tag.OCTET_STRING else if(descriptor.isAsn1Set) Asn1Element.Tag.SET else Asn1Element.Tag.SEQUENCE
+        val tagToCheck = (propertyAnnptations.implicitTag?:descriptor.implicitTag)?.let {
+            val implcitTag = elements[index].withImplicitTag(it).tag
+            if (elements[index].tag.tagValue != it) throw Asn1TagMismatchException(elements[index].tag, implcitTag)
+            implcitTag
+        }
+            ?: if (descriptor.isAsn1OctetString) Asn1Element.Tag.OCTET_STRING else if (descriptor.isAsn1Set) Asn1Element.Tag.SET else Asn1Element.Tag.SEQUENCE
 
 
-        if(elements[index].tag!=tagToCheck) throw Asn1TagMismatchException(elements[index].tag, tagToCheck)
+        if (elements[index].tag != tagToCheck) throw Asn1TagMismatchException(elements[index].tag, tagToCheck)
 
 
         return Asn1Deserializer(
@@ -69,8 +69,8 @@ class Asn1Deserializer(
     override fun decodeElementIndex(descriptor: SerialDescriptor): Int {
         println("$indent$this decodeElementIndex(idx=$index), descriptor=${descriptor.serialName} ")
         if (index >= elements.size) return CompositeDecoder.DECODE_DONE
-        currentDescriptor = descriptor.getElementDescriptor(index)
-        currentAnnotations = descriptor.getElementAnnotations(index)
+        propertyDescriptor = descriptor.getElementDescriptor(index)
+        propertyAnnptations = descriptor.getElementAnnotations(index)
 
         return if (index < elements.size) index else CompositeDecoder.DECODE_DONE
     }
@@ -83,14 +83,15 @@ class Asn1Deserializer(
     // Primitive decoders
     // ----------------------------------------------------------------------
     override fun decodeValue(): Any {
-        println("$indent$this decodeValue(descriptor=");println("\t$currentDescriptor, idx=$index)")
+        println("$indent$this decodeValue(descriptor=");println("\t$propertyDescriptor, idx=$index)")
         val currentElement = elements[index]
         index++
+        //todo: move this to decodeSerializableValue
         //TODO inefficient. make the annotation store a tag template! to then construct only the real tag
-        val implicitTag = (currentAnnotations.implicitTag
-            ?: currentDescriptor.implicitTag)?.let { currentElement.withImplicitTag(it).tag }
+        val implicitTag = (propertyAnnptations.implicitTag
+            ?: propertyDescriptor.implicitTag)?.let { currentElement.withImplicitTag(it).tag }
 
-        return when (currentDescriptor.kind) {
+        return when (propertyDescriptor.kind) {
             PolymorphicKind.OPEN -> TODO()
             PolymorphicKind.SEALED -> TODO()
             PrimitiveKind.BOOLEAN -> currentElement.asPrimitive().decodeToBoolean(implicitTag ?: Asn1Element.Tag.BOOL)
@@ -126,7 +127,7 @@ class Asn1Deserializer(
         val currentElement = elements[index]
         if (currentElement == Asn1Null) {
             //TODO: global config
-            if (!currentDescriptor.doEncodeNull && !currentAnnotations.doEncodeNull) throw SerializationException("Null value found, but target value should not have been present!")
+            if (!propertyDescriptor.doEncodeNull && !propertyAnnptations.doEncodeNull) throw SerializationException("Null value found, but target value should not have been present!")
             index++
             return null as T
         }
@@ -141,13 +142,16 @@ class Asn1Deserializer(
         val currentElement = elements[index]
         //TODO also check outer implict tags
 
-        val implicitTag =
-            if (deserializer == UByte.serializer() || deserializer == UShort.serializer() || deserializer == UInt.serializer() || deserializer == ULong.serializer() || deserializer == Asn1ElementHexStringSerializer)
-                (currentAnnotations.implicitTag ?: currentDescriptor.implicitTag)?.let {
-                    currentElement.withImplicitTag(
-                        it
-                    ).tag
-                } else null
+        val implicitTag = (propertyAnnptations.implicitTag ?: deserializer.descriptor.implicitTag)?.let {
+            currentElement.withImplicitTag(
+                it
+            ).tag
+        }
+        if (implicitTag != null) if (currentElement.tag != implicitTag) throw Asn1TagMismatchException(
+            implicitTag,
+            currentElement.tag
+        )
+
         when (deserializer) {
 
             UByte.serializer() -> return currentElement.asPrimitive().decodeToUInt(implicitTag ?: Asn1Element.Tag.INT)
@@ -170,15 +174,15 @@ class Asn1Deserializer(
         }
 
         if (deserializer.descriptor.kind is PrimitiveKind) {
-            currentDescriptor = deserializer.descriptor
-            currentAnnotations = deserializer.descriptor.annotations
+            propertyDescriptor = deserializer.descriptor
+            propertyAnnptations = deserializer.descriptor.annotations
             return decodeValue() as T
         }
 
         index++
         if (deserializer.descriptor == ByteArraySerializer().descriptor) {
             println("$indent$this decoding ByteArray as octet string")
-            val implicitTag = (currentAnnotations.implicitTag ?: currentDescriptor.implicitTag)?.let {
+            val implicitTag = (propertyAnnptations.implicitTag ?: propertyDescriptor.implicitTag)?.let {
                 currentElement.withImplicitTag(it).tag
             }
             return if (implicitTag != null) {
@@ -188,12 +192,13 @@ class Asn1Deserializer(
         }
         println("$indent↳ spawn child decoder for ${deserializer.descriptor} (parent idx=${index})")
 
-
+//TODO check toplevel enum
         return deserializer.deserialize(
             Asn1Deserializer(listOf(currentElement), serializersModule, indent + "  ").also {
+
+                it.propertyAnnptations = propertyAnnptations
                 if (deserializer.descriptor.kind == SerialKind.ENUM) {
-                    it.currentDescriptor = deserializer.descriptor
-                    it.currentAnnotations = currentAnnotations
+                    it.propertyDescriptor = deserializer.descriptor
                 }
 
             }
