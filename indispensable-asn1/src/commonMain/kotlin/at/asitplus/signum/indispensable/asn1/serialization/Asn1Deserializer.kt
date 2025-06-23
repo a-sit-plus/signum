@@ -49,6 +49,16 @@ class Asn1Deserializer(
     // ----------------------------------------------------------------------
     override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
         println("$indent$this beginStructure(${descriptor.serialName})")
+       val tagToCheck=descriptor.implicitTag?.let {
+           val implcitTag = elements[index].withImplicitTag(it).tag
+           if(elements[index].tag.tagValue!=it) throw Asn1TagMismatchException(elements[index].tag, implcitTag)
+           implcitTag
+       }?:if(descriptor.isAsn1OctetString) Asn1Element.Tag.OCTET_STRING else if(descriptor.isAsn1Set) Asn1Element.Tag.SET else Asn1Element.Tag.SEQUENCE
+
+
+        if(elements[index].tag!=tagToCheck) throw Asn1TagMismatchException(elements[index].tag, tagToCheck)
+
+
         return Asn1Deserializer(
             elements[index].asStructure().children,
             serializersModule,
@@ -77,7 +87,8 @@ class Asn1Deserializer(
         val currentElement = elements[index]
         index++
         //TODO inefficient. make the annotation store a tag template! to then construct only the real tag
-        val implicitTag = (currentAnnotations.implicitTag?:currentDescriptor.implicitTag)?.let { currentElement.withImplicitTag(it).tag }
+        val implicitTag = (currentAnnotations.implicitTag
+            ?: currentDescriptor.implicitTag)?.let { currentElement.withImplicitTag(it).tag }
 
         return when (currentDescriptor.kind) {
             PolymorphicKind.OPEN -> TODO()
@@ -130,8 +141,13 @@ class Asn1Deserializer(
         val currentElement = elements[index]
         //TODO also check outer implict tags
 
-        val implicitTag =  if(deserializer == UByte.serializer() || deserializer == UShort.serializer() || deserializer == UInt.serializer() || deserializer == ULong.serializer() || deserializer == Asn1ElementHexStringSerializer)
-        (currentAnnotations.implicitTag?:currentDescriptor.implicitTag)?.let { currentElement.withImplicitTag(it).tag } else null
+        val implicitTag =
+            if (deserializer == UByte.serializer() || deserializer == UShort.serializer() || deserializer == UInt.serializer() || deserializer == ULong.serializer() || deserializer == Asn1ElementHexStringSerializer)
+                (currentAnnotations.implicitTag ?: currentDescriptor.implicitTag)?.let {
+                    currentElement.withImplicitTag(
+                        it
+                    ).tag
+                } else null
         when (deserializer) {
 
             UByte.serializer() -> return currentElement.asPrimitive().decodeToUInt(implicitTag ?: Asn1Element.Tag.INT)
@@ -162,7 +178,9 @@ class Asn1Deserializer(
         index++
         if (deserializer.descriptor == ByteArraySerializer().descriptor) {
             println("$indent$this decoding ByteArray as octet string")
-            val implicitTag=  (currentAnnotations.implicitTag?:currentDescriptor.implicitTag)?.let { currentElement.withImplicitTag(it).tag }
+            val implicitTag = (currentAnnotations.implicitTag ?: currentDescriptor.implicitTag)?.let {
+                currentElement.withImplicitTag(it).tag
+            }
             return if (implicitTag != null) {
                 if (currentElement.tag != implicitTag) throw Asn1TagMismatchException(implicitTag, currentElement.tag)
                 currentElement.asPrimitive().content as T //TODO: this could inadvertently be valid structured ASN.1, so we need to add `.derEncodedContentBytes` or something similar to any ASN.1 element
@@ -193,8 +211,10 @@ fun <T> decodeFromDer(source: ByteArray, deserializer: DeserializationStrategy<T
 inline fun <reified T> decodeFromDer(source: ByteArray): T = decodeFromDer(source, serializer())
 
 fun Asn1Primitive.decodeString(implicitTagOverride: Asn1Element.Tag?): String =
-    if (implicitTagOverride == null) decodeToString()
-    else {
+    if (implicitTagOverride == null) {
+        if (tag != Asn1Element.Tag.STRING_UTF8) throw Asn1TagMismatchException(Asn1Element.Tag.STRING_UTF8, tag)
+        decodeToString()
+    } else {
         if (tag != implicitTagOverride) throw Asn1TagMismatchException(implicitTagOverride, tag)
         String.decodeFromAsn1ContentBytes(content)
     }
