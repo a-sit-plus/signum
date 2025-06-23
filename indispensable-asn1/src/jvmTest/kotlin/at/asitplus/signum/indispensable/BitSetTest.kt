@@ -161,7 +161,7 @@ class BitSetTest : FreeSpec({
 
                 input.forEachIndexed { i, b ->
                     withClue("jvm[$i]") { jvm[i] shouldBe b }
-                    withClue("kmm[$i]") { kmm.get(i.toLong()) shouldBe b }
+                    withClue("kmm[$i]") { kmm[i.toLong()] shouldBe b }
                 }
 
                 withClue("first bit set") { kmm.nextSetBit(0).toInt() shouldBe jvm.nextSetBit(0) }
@@ -235,7 +235,7 @@ class BitSetTest : FreeSpec({
 
                     input.forEachIndexed { i, b ->
                         withClue("jvm[$i]") { jvm[i] shouldBe b }
-                        withClue("kmm[$i]") { kmm.get(i.toLong()) shouldBe b }
+                        withClue("kmm[$i]") { kmm[i.toLong()] shouldBe b }
                     }
 
                     val truncated = input.dropLastWhile { !it }
