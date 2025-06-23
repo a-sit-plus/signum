@@ -116,7 +116,7 @@ class BitSet private constructor(private val buffer: MutableList<Byte>) : Iterab
      * This is the real deal, as it has [Long] indices
      */
     inline fun forEachIndexed(block: (i: Long, it: Boolean) -> Unit) {
-        for (i in 0..<length()) block(i, this.get(i))
+        for (i in 0..<length()) block(i, this[i])
     }
 
     /**
@@ -205,7 +205,7 @@ class BitSet private constructor(private val buffer: MutableList<Byte>) : Iterab
         if (other::class != BitSet::class) return false
         other as BitSet
         forEachIndexed { i, it ->
-            if (other.get(i) != it) return false
+            if (other[i] != it) return false
         }
         return true
     }

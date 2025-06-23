@@ -67,10 +67,8 @@ constructor(
 ) : Asn1Encodable<Asn1Sequence> {
 
     init {
-        if (extensions?.distinctBy { it.oid }?.size != extensions?.size) throw Asn1StructuralException(
-            "Multiple extensions with the same OID found"
-        )
-
+        if (extensions?.distinctBy { it.oid }?.size != extensions?.size)
+            throw Asn1StructuralException("Multiple extensions with the same OID found")
     }
 
     /**
@@ -332,7 +330,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     fun isSelfIssued(): Boolean = tbsCertificate.subjectName == tbsCertificate.issuerName
 
     inline fun <reified T : X509CertificateExtension> findExtension(): T? {
-        return this.tbsCertificate.extensions?.firstOrNull { it is T } as? T
+        return this.tbsCertificate.extensions?.firstNotNullOfOrNull { it as? T }
     }
 
     fun checkValidity(date: Instant = Clock.System.now()) {
@@ -393,19 +391,7 @@ private
 /** De-/serializes Base64 strings to/from [ByteArray] */
 object Asn1BitStringSerializer : TransformingSerializerTemplate<Asn1BitString?, String>(
     parent = String.serializer(),
-    encodeAs = {
-        if (it == null) "" else byteArrayOf(
-            it.numPaddingBits,
-            *it.rawBytes
-        ).encodeToString(Base64Strict)
-    },
-    decodeAs = {
-        if (it == "") null
-        else Asn1BitString.decodeFromTlv(
-            Asn1Primitive(
-                Asn1Element.Tag.BIT_STRING,
-                it.decodeToByteArray(Base64Strict)
-            )
-        )
+    encodeAs = { if (it == null) "" else byteArrayOf(it.numPaddingBits, *it.rawBytes).encodeToString(Base64Strict) },
+    decodeAs = { if (it == "") null else Asn1BitString.decodeFromTlv(Asn1Primitive(Asn1Element.Tag.BIT_STRING, it.decodeToByteArray(Base64Strict)))
     }
 )
