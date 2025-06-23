@@ -25,10 +25,10 @@ import at.asitplus.signum.indispensable.pki.X509CertificateExtension
  * This extension specifies the rules for issuing the certificate and how it can be used.
  * RFC 5280: 4.2.1.4.
  * */
-data class CertificatePoliciesExtension (
-    override val oid: ObjectIdentifier,
-    override val critical: Boolean,
-    override val value: Asn1EncapsulatingOctetString,
+class CertificatePoliciesExtension(
+    oid: ObjectIdentifier,
+    critical: Boolean,
+    value: Asn1EncapsulatingOctetString,
     val certificatePolicies: List<PolicyInformation>
 ) : X509CertificateExtension(oid, critical, value) {
 

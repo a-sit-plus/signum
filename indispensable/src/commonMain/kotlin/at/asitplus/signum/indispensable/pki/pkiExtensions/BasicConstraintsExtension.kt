@@ -5,7 +5,6 @@ import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
-import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToBoolean
@@ -17,9 +16,9 @@ import at.asitplus.signum.indispensable.pki.X509CertificateExtension
  * RFC 5280: 4.2.1.9.
 */
 class BasicConstraintsExtension(
-    override val oid: ObjectIdentifier,
-    override val critical: Boolean,
-    override val value: Asn1EncapsulatingOctetString,
+    oid: ObjectIdentifier,
+    critical: Boolean,
+    value: Asn1EncapsulatingOctetString,
     val ca: Boolean,
     val pathLenConstraint: UInt?
 ) : X509CertificateExtension(oid, critical, value) {

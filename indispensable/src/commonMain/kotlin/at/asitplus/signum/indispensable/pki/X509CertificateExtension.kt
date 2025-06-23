@@ -29,9 +29,13 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyMappingsExtensio
  */
 open class X509CertificateExtension @Throws(Asn1Exception::class) private constructor(
     override val oid: ObjectIdentifier,
-    open val value: Asn1Element,
-    open val critical: Boolean = false
+    val value: Asn1Element,
+    val critical: Boolean = false
 ) : Asn1Encodable<Asn1Sequence>, Identifiable {
+
+    init {
+        if (value.tag != Asn1Element.Tag.OCTET_STRING) throw Asn1TagMismatchException(Asn1Element.Tag.OCTET_STRING, value.tag)
+    }
 
     constructor(
         oid: ObjectIdentifier,
@@ -82,7 +86,7 @@ open class X509CertificateExtension @Throws(Asn1Exception::class) private constr
                 if (src.children[1].tag == Asn1Element.Tag.BOOL) src.nextChild().asPrimitive().content[0] == 0xff.toByte() else false
 
             val value = src.nextChild()
-            if (value.tag != Asn1Element.Tag.OCTET_STRING) throw Asn1TagMismatchException(Asn1Element.Tag.OCTET_STRING, value.tag)
+
             if (src.hasMoreChildren()) throw Asn1StructuralException("Invalid X509CertificateExtension found (>3 children): ${src.toDerHexString()}")
             return X509CertificateExtension(id, value, critical)
         }

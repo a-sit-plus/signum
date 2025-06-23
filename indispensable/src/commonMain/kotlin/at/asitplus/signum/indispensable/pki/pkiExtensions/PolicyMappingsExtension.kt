@@ -18,10 +18,10 @@ import at.asitplus.signum.indispensable.pki.X509CertificateExtension
  * This extension specifies policies that are treated as equivalent between the issuing CA and the subject CA
  * RFC 5280: 4.2.1.5.
  * */
-data class PolicyMappingsExtension (
-    override val oid: ObjectIdentifier,
-    override val critical: Boolean,
-    override val value: Asn1EncapsulatingOctetString,
+class PolicyMappingsExtension (
+    oid: ObjectIdentifier,
+    critical: Boolean,
+    value: Asn1EncapsulatingOctetString,
     val policyMappings: List<CertificatePolicyMap>
 ) : X509CertificateExtension(oid, critical, value) {
 

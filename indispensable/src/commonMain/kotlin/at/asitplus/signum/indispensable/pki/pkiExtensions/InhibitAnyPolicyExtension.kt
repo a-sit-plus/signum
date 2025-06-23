@@ -17,9 +17,9 @@ import at.asitplus.signum.indispensable.pki.X509CertificateExtension
  * RFC 5280: 4.2.1.14.
  * */
 class InhibitAnyPolicyExtension(
-    override val oid: ObjectIdentifier,
-    override val critical: Boolean,
-    override val value: Asn1EncapsulatingOctetString,
+    oid: ObjectIdentifier,
+    critical: Boolean,
+    value: Asn1EncapsulatingOctetString,
     val skipCerts: Int
 ) : X509CertificateExtension(oid, critical, value) {
 
