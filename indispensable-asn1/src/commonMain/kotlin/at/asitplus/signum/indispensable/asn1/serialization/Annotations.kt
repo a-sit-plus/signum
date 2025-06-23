@@ -39,31 +39,38 @@ annotation class Asn1EncodeNull
 
 
 internal val SerialDescriptor.isAsn1Set: Boolean get() = annotations.find { it is Asn1Set } != null
+internal val List<Annotation>.isAsn1Set: Boolean get() = find { it is Asn1Set } != null
 internal fun SerialDescriptor.isAsn1Set(index: Int) = getElementAnnotations(index).find { it is Asn1Set } != null
 
 internal val SerialDescriptor.isAsn1BitSet: Boolean get() = annotations.find { it is Asn1BitString } != null
+internal val List<Annotation>.isAsn1BitSet: Boolean get() = find { it is Asn1BitString } != null
 internal fun SerialDescriptor.isAsn1BitSet(index: Int): Boolean =
     getElementAnnotations(index).find { it is Asn1BitString } != null
 
 internal val SerialDescriptor.isAsn1OctetString: Boolean get() = annotations.find { it is Asn1OctetString } != null
+internal val List<Annotation>.isAsn1OctetString: Boolean get() = find { it is Asn1OctetString } != null
 internal fun SerialDescriptor.isAsn1OctetString(index: Int): Boolean =
     getElementAnnotations(index).find { it is Asn1OctetString } != null
 
+internal val SerialDescriptor.doEncodeNull: Boolean get() = annotations.find { it is Asn1EncodeNull } != null
+internal val List<Annotation>.doEncodeNull: Boolean get() = find { it is Asn1EncodeNull } != null
 internal fun SerialDescriptor.doEncodeNull(index: Int): Boolean =
     getElementAnnotations(index).find { it is Asn1EncodeNull } != null
-internal val SerialDescriptor.doEncodeNull: Boolean get()=
-    annotations.find { it is Asn1EncodeNull } != null
 
 internal val SerialDescriptor.explicitTag: ULong? get() = (annotations.find { it is Asn1ExplicitlyTagged } as Asn1ExplicitlyTagged?)?.tag
+internal val List<Annotation>.explicitTag: ULong? get() = (find { it is Asn1ExplicitlyTagged } as Asn1ExplicitlyTagged?)?.tag
 internal fun SerialDescriptor.explicitTag(index: Int): ULong? =
     (getElementAnnotations(index).find { it is Asn1ExplicitlyTagged } as Asn1ExplicitlyTagged?)?.tag
 
 internal val SerialDescriptor.implicitTag: ULong? get() = (annotations.find { it is Asn1ImplicitlyTagged } as Asn1ImplicitlyTagged?)?.tag
+internal val List<Annotation>.implicitTag: ULong? get() = (find { it is Asn1ImplicitlyTagged } as Asn1ImplicitlyTagged?)?.tag
 internal fun SerialDescriptor.implicitTag(index: Int): ULong? =
     (getElementAnnotations(index).find { it is Asn1ImplicitlyTagged } as Asn1ImplicitlyTagged?)?.tag
 
 
-internal val SerialDescriptor.isStructurallyAnnotated: Boolean
-    get() = isAsn1OctetString || explicitTag != null
+internal val SerialDescriptor.isStructurallyAnnotated: Boolean get() = isAsn1OctetString || explicitTag != null
+internal val List<Annotation>.isStructurallyAnnotated: Boolean get() = isAsn1OctetString || explicitTag != null
 internal val Pair<SerialDescriptor, Int>.isStructurallyAnnotated: Boolean
-    get() = first.isAsn1OctetString(second) || first.explicitTag(second) != null
+    get() = first.isAsn1OctetString(second) || first.explicitTag(
+        second
+    ) != null
