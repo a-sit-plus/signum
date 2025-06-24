@@ -7,7 +7,8 @@ import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.indispensable.pki.X509KeyUsage
+import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsageExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsage
 import at.asitplus.signum.indispensable.pki.root
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
@@ -158,11 +159,11 @@ private fun verifyCriticalExtensions(cert: X509Certificate) {
 }
 
 private fun verifyIntermediateKeyUsage(currCert: X509Certificate) {
-    if (!currCert.tbsCertificate.keyUsage.contains(X509KeyUsage.KEY_CERT_SIGN)) {
+    if (currCert.findExtension<KeyUsageExtension>()?.keyUsage?.contains(KeyUsage.KEY_CERT_SIGN) != true) {
         throw KeyUsageException("Digital signature key usage extension not present at the intermediate cert!")
     }
 
-    if (!currCert.tbsCertificate.keyUsage.contains(X509KeyUsage.CRL_SIGN)) {
+    if (currCert.findExtension<KeyUsageExtension>()?.keyUsage?.contains(KeyUsage.CRL_SIGN) != true) {
         throw KeyUsageException("CRL signature key usage extension not present at the intermediate cert!")
     }
 }
