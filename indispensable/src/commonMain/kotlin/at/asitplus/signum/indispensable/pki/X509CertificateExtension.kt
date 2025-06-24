@@ -1,15 +1,34 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.Asn1Decodable
+import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
+import at.asitplus.signum.indispensable.asn1.Asn1Encodable
+import at.asitplus.signum.indispensable.asn1.Asn1Exception
+import at.asitplus.signum.indispensable.asn1.Asn1Primitive
+import at.asitplus.signum.indispensable.asn1.Asn1PrimitiveOctetString
+import at.asitplus.signum.indispensable.asn1.Asn1Sequence
+import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
+import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
+import at.asitplus.signum.indispensable.asn1.Identifiable
+import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Bool
-import kotlinx.serialization.Serializable
+import at.asitplus.signum.indispensable.asn1.readOid
+import at.asitplus.signum.indispensable.asn1.runRethrowing
+import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificatePoliciesExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.InhibitAnyPolicyExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsageExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.NameConstraintsExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyConstraintsExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyMappingsExtension
 
 /**
  * X.509 Certificate Extension
  */
-@ConsistentCopyVisibility
-data class X509CertificateExtension @Throws(Asn1Exception::class) private constructor(
+open class X509CertificateExtension @Throws(Asn1Exception::class) private constructor(
     override val oid: ObjectIdentifier,
     val value: Asn1Element,
     val critical: Boolean = false
@@ -39,18 +58,42 @@ data class X509CertificateExtension @Throws(Asn1Exception::class) private constr
 
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
 
-        @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): X509CertificateExtension = runRethrowing {
+        private val extensionDecoders: MutableMap<ObjectIdentifier, (Asn1Sequence, Asn1Element.Tag?) -> X509CertificateExtension> = mutableMapOf(
+            KnownOIDs.basicConstraints_2_5_29_19 to BasicConstraintsExtension::decodeFromTlv,
+            KnownOIDs.nameConstraints_2_5_29_30 to NameConstraintsExtension::decodeFromTlv,
+            KnownOIDs.policyConstraints_2_5_29_36 to PolicyConstraintsExtension::decodeFromTlv,
+            KnownOIDs.certificatePolicies_2_5_29_32 to CertificatePoliciesExtension::decodeFromTlv,
+            KnownOIDs.policyMappings to PolicyMappingsExtension::decodeFromTlv,
+            KnownOIDs.inhibitAnyPolicy to InhibitAnyPolicyExtension::decodeFromTlv,
+            KnownOIDs.keyUsage to KeyUsageExtension::decodeFromTlv
+        )
 
-            val id = (src.children[0] as Asn1Primitive).readOid()
-            val critical =
-                if (src.children[1].tag == Asn1Element.Tag.BOOL) (src.children[1] as Asn1Primitive).content[0] == 0xff.toByte() else false
-
-            val value = src.children.last()
-            return X509CertificateExtension(id, value, critical)
+        fun registerExtensionDecoder(
+            oid: ObjectIdentifier,
+            decoder: (Asn1Sequence, Any?) -> X509CertificateExtension
+        ) {
+            extensionDecoders[oid] = decoder
         }
 
+        @Throws(Asn1Exception::class)
+        override fun doDecode(src: Asn1Sequence): X509CertificateExtension = runRethrowing {
+            val oid = (src.children[0] as Asn1Primitive).readOid()
+            return extensionDecoders[oid]?.invoke(src, null) ?: decodeBase(src)
+        }
+
+        @Throws(Asn1Exception::class)
+        fun decodeBase(src: Asn1Sequence): X509CertificateExtension {
+            val id = src.nextChild().asPrimitive().readOid()
+            val critical =
+                if (src.children[1].tag == Asn1Element.Tag.BOOL) src.nextChild().asPrimitive().content[0] == 0xff.toByte() else false
+
+            val value = src.nextChild()
+
+            if (src.hasMoreChildren()) throw Asn1StructuralException("Invalid X509CertificateExtension found (>3 children): ${src.toDerHexString()}")
+            return X509CertificateExtension(id, value, critical)
+        }
     }
+
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

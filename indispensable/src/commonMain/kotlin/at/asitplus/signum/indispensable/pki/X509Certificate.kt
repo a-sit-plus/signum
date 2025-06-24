@@ -1,11 +1,31 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.catchingUnwrapped
+import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
-import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.signum.indispensable.asn1.Asn1BitString
+import at.asitplus.signum.indispensable.asn1.Asn1Decodable
+import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.Asn1Encodable
+import at.asitplus.signum.indispensable.asn1.Asn1Exception
+import at.asitplus.signum.indispensable.asn1.Asn1ExplicitlyTagged
+import at.asitplus.signum.indispensable.asn1.Asn1Primitive
+import at.asitplus.signum.indispensable.asn1.Asn1Sequence
+import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
+import at.asitplus.signum.indispensable.asn1.Asn1Time
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.PemDecodable
+import at.asitplus.signum.indispensable.asn1.PemEncodable
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1TreeBuilder
+import at.asitplus.signum.indispensable.asn1.encoding.asAsn1BitString
+import at.asitplus.signum.indispensable.asn1.encoding.decode
+import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
+import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1BitStringPrimitive
+import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.signum.indispensable.asn1.runRethrowing
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
@@ -13,9 +33,14 @@ import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubje
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.EXTENSIONS
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.ISSUER_UID
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.SUBJECT_UID
+import at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Transient
 import kotlinx.serialization.builtins.serializer
 
@@ -29,10 +54,10 @@ constructor(
     val version: Int? = 2,
     val serialNumber: ByteArray,
     val signatureAlgorithm: X509SignatureAlgorithm,
-    val issuerName: List<RelativeDistinguishedName>,
+    val issuerName: X500Name,
     val validFrom: Asn1Time,
     val validUntil: Asn1Time,
-    val subjectName: List<RelativeDistinguishedName>,
+    val subjectName: X500Name,
     val publicKey: CryptoPublicKey,
     val issuerUniqueID: Asn1BitString? = null,
     val subjectUniqueID: Asn1BitString? = null,
@@ -71,14 +96,14 @@ constructor(
             version?.let { +Version(it) }
             +Asn1Primitive(Asn1Element.Tag.INT, serialNumber)
             +signatureAlgorithm
-            +Asn1.Sequence { issuerName.forEach { +it } }
+            +issuerName
 
             +Asn1.Sequence {
                 +validFrom
                 +validUntil
             }
 
-            +Asn1.Sequence { subjectName.forEach { +it } }
+            +subjectName
 
             //subject public key
             +publicKey
@@ -162,26 +187,31 @@ constructor(
             }
             val serialNumber = (src.nextChild() as Asn1Primitive).decode(Asn1Element.Tag.INT) { it }
             val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val issuerNames = (src.nextChild() as Asn1Sequence).children.map {
-                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
-            }
-
+            val issuerNames = X500Name.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val timestamps = decodeTimestamps(src.nextChild() as Asn1Sequence)
-            val subject = (src.nextChild() as Asn1Sequence).children.map {
-                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
-            }
+            val subject = X500Name.decodeFromTlv(src.nextChild() as Asn1Sequence)
 
             val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(src.nextChild() as Asn1Sequence)
 
             val issuerUniqueID = src.peek()?.let { next ->
                 if (next.tag == ISSUER_UID) {
-                    (src.nextChild() as Asn1Primitive).let { Asn1BitString.decodeFromTlv(it, ISSUER_UID) }
+                    (src.nextChild() as Asn1Primitive).let {
+                        Asn1BitString.decodeFromTlv(
+                            it,
+                            ISSUER_UID
+                        )
+                    }
                 } else null
             }
 
             val subjectUniqueID = src.peek()?.let { next ->
                 if (next.tag == SUBJECT_UID) {
-                    (src.nextChild() as Asn1Primitive).let { Asn1BitString.decodeFromTlv(it, SUBJECT_UID) }
+                    (src.nextChild() as Asn1Primitive).let {
+                        Asn1BitString.decodeFromTlv(
+                            it,
+                            SUBJECT_UID
+                        )
+                    }
                 } else null
             }
             val extensions = if (src.hasMoreChildren()) {
@@ -287,7 +317,38 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
 
     val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
 
-    companion object : PemDecodable<Asn1Sequence, X509Certificate>(EB_STRINGS.DEFAULT, EB_STRINGS.LEGACY) {
+    val criticalExtensionOids: MutableSet<ObjectIdentifier>
+        get() = this.tbsCertificate.extensions
+            ?.filter { it.critical }
+            ?.mapTo(mutableSetOf()) { it.oid }
+            ?: mutableSetOf()
+
+    fun isSelfIssued(): Boolean = tbsCertificate.subjectName == tbsCertificate.issuerName
+
+    inline fun <reified T : X509CertificateExtension> findExtension(): T? {
+        return this.tbsCertificate.extensions?.firstNotNullOfOrNull { it as? T }
+    }
+
+    fun checkValidity(date: Instant = Clock.System.now()) {
+        if (date > tbsCertificate.validUntil.instant) {
+            throw CertificateValidityException(
+                "certificate expired on " + tbsCertificate.validUntil.instant.toLocalDateTime(
+                    TimeZone.currentSystemDefault()
+                )
+            )
+        }
+
+        if (date < tbsCertificate.validFrom.instant) {
+            throw CertificateValidityException(
+                "certificate not valid till " + tbsCertificate.validFrom.instant.toLocalDateTime(
+                    TimeZone.currentSystemDefault()
+                )
+            )
+        }
+    }
+
+    companion object :
+        PemDecodable<Asn1Sequence, X509Certificate>(EB_STRINGS.DEFAULT, EB_STRINGS.LEGACY) {
 
         private object EB_STRINGS {
             const val DEFAULT = "CERTIFICATE"
@@ -298,7 +359,8 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         override fun doDecode(src: Asn1Sequence): X509Certificate = runRethrowing {
             val tbs = TbsCertificate.decodeFromTlv(src.nextChild() as Asn1Sequence)
             val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val signature = CryptoSignature.fromX509Encoded(sigAlg, src.nextChild() as Asn1Primitive)
+            val signature =
+                CryptoSignature.fromX509Encoded(sigAlg, src.nextChild() as Asn1Primitive)
             if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous structure in Certificate Structure")
             return X509Certificate(tbs, sigAlg, signature)
         }
@@ -326,8 +388,6 @@ private
 object Asn1BitStringSerializer : TransformingSerializerTemplate<Asn1BitString?, String>(
     parent = String.serializer(),
     encodeAs = { if (it == null) "" else byteArrayOf(it.numPaddingBits, *it.rawBytes).encodeToString(Base64Strict) },
-    decodeAs = {
-        if (it == "") null
-        else Asn1BitString.decodeFromTlv(Asn1Primitive(Asn1Element.Tag.BIT_STRING, it.decodeToByteArray(Base64Strict)))
+    decodeAs = { if (it == "") null else Asn1BitString.decodeFromTlv(Asn1Primitive(Asn1Element.Tag.BIT_STRING, it.decodeToByteArray(Base64Strict)))
     }
 )
