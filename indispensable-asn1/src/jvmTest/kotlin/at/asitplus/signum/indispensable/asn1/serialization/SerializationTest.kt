@@ -13,11 +13,6 @@ import kotlin.random.Random
 @OptIn(ExperimentalStdlibApi::class)
 class SerializationTest : FreeSpec({
 
-    "DBG" {
-        val nothingOnClassNestedOnProperty = encodeToDer(NothingOnClassNestedOnProperty(NothingOnClass("foo")))
-        decodeFromDer<NothingOnClassNestedOnProperty>(nothingOnClassNestedOnProperty)
-
-    }
 
     "Implicit tagging" - {
         val imlNothing = encodeToDer(NothingOnClass("foo"))
@@ -67,9 +62,46 @@ class SerializationTest : FreeSpec({
             println(nothingOnClassNestedOnPropertyOverride.toHexString())
 
             decodeFromDer<NothingOnClassNested>(nothingOnClassNested)
+            //those two serialize to the same
             decodeFromDer<NothingOnClassNestedOnClass>(nothingOnClassNestedOnClass)
+            decodeFromDer<NothingOnClassNestedOnClass>(nothingOnClassNestedOnProperty)
             decodeFromDer<NothingOnClassNestedOnProperty>(nothingOnClassNestedOnProperty)
+            decodeFromDer<NothingOnClassNestedOnProperty>(nothingOnClassNestedOnClass)
+
             decodeFromDer<NothingOnClassNestedOnPropertyOverride>(nothingOnClassNestedOnPropertyOverride)
+
+
+            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNested>(nothingOnClassNestedOnClass) }
+            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNested>(nothingOnClassNestedOnProperty) }
+            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNested>(nothingOnClassNestedOnPropertyOverride) }
+
+            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNestedOnClass>(nothingOnClassNested) }
+            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNestedOnClass>(nothingOnClassNestedOnPropertyOverride) }
+
+            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNestedOnProperty>(nothingOnClassNested) }
+            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNestedOnProperty>(nothingOnClassNestedOnPropertyOverride) }
+
+            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNestedOnPropertyOverride>(nothingOnClassNested) }
+            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNestedOnPropertyOverride>(nothingOnClassNestedOnProperty) }
+            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNestedOnPropertyOverride>(nothingOnClassNestedOnClass) }
+
+
+            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNestedOnClassWrong>(nothingOnClassNested) }
+            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNestedOnClassWrong>(nothingOnClassNestedOnClass) }
+            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNestedOnClassWrong>(nothingOnClassNestedOnProperty) }
+            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNestedOnClassWrong>(nothingOnClassNestedOnPropertyOverride) }
+
+            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNestedOnPropertyWrong>(nothingOnClassNested) }
+            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNestedOnPropertyWrong>(nothingOnClassNestedOnClass) }
+            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNestedOnPropertyWrong>(nothingOnClassNestedOnProperty) }
+            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNestedOnPropertyWrong>(nothingOnClassNestedOnPropertyOverride) }
+
+            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNestedOnPropertyOverrideWrong>(nothingOnClassNested) }
+            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNestedOnPropertyOverrideWrong>(nothingOnClassNestedOnClass) }
+            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNestedOnPropertyOverrideWrong>(nothingOnClassNestedOnProperty) }
+            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNestedOnPropertyOverrideWrong>(nothingOnClassNestedOnPropertyOverride) }
+
+
         }
 
     }
@@ -286,10 +318,20 @@ class ImplicitOnBothWrongProperty(@Asn1ImplicitlyTagged(8331uL) val a: String)
 
 @Serializable
 class NothingOnClassNested(val a: NothingOnClass)
+
 @Serializable
 class NothingOnClassNestedOnClass(val a: ImplicitOnClass)
+@Serializable
+class NothingOnClassNestedOnClassWrong(val a: ImplicitOnClassWrong)
 
 @Serializable
 class NothingOnClassNestedOnProperty(@Asn1ImplicitlyTagged(1337uL) val a: NothingOnClass)
 @Serializable
+class NothingOnClassNestedOnPropertyWrong(@Asn1ImplicitlyTagged(333uL) val a: NothingOnClass)
+
+
+@Serializable
 class NothingOnClassNestedOnPropertyOverride(@Asn1ImplicitlyTagged(666uL) val a: ImplicitOnClass)
+
+@Serializable
+class NothingOnClassNestedOnPropertyOverrideWrong(@Asn1ImplicitlyTagged(999uL) val a: ImplicitOnClass)
