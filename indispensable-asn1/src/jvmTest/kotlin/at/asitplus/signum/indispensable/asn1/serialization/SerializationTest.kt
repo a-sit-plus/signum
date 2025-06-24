@@ -180,7 +180,7 @@ enum class Baz {
     FOO,
     BAR //no custom serializer supported
 }
-
+@at.asitplus.signum.indispensable.asn1.serialization.Asn1OctetString
 @Serializable
 data class TypesUmbrella(
 
@@ -195,6 +195,7 @@ data class TypesUmbrella(
     val list: List<String>,
     val map: Map<Int, Boolean>,
 
+    @at.asitplus.signum.indispensable.asn1.serialization.Asn1OctetString
     val innersList: List<SimpleOctet>,
 
     val byteString: ByteArray,
@@ -335,3 +336,5 @@ class NothingOnClassNestedOnPropertyOverride(@Asn1ImplicitlyTagged(666uL) val a:
 
 @Serializable
 class NothingOnClassNestedOnPropertyOverrideWrong(@Asn1ImplicitlyTagged(999uL) val a: ImplicitOnClass)
+
+//TODO order of annotations makes a difference on the same level!
