@@ -174,6 +174,7 @@ kotlin {
     watchosX64()
     watchosArm32()
     watchosArm64()
+    watchosDeviceArm64()
     tvosSimulatorArm64()
     tvosX64()
     tvosArm64()
@@ -216,7 +217,7 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(kotest("property"))
-                implementation(project(":indispensable"))
+            //TMP commented out just for release    implementation(project(":indispensable"))
             }
         }
     }

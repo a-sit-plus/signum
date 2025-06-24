@@ -22,7 +22,7 @@ This in short, you can work with arbitrary ASN.1 structures anywhere!
 
 ## Using it in your Projects
 
-This library was built for [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html). Currently, it supports all KMP targets except `watchosDeviceArm64`.
+This library was built for [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html). Currently, it supports all KMP targets.
 
 Simply declare the desired dependency to get going:
 
