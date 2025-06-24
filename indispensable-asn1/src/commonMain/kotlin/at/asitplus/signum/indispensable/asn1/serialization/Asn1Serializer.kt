@@ -140,7 +140,6 @@ class Asn1Serializer(
         return Asn1Serializer(serializersModule).also {
             fun addChildren(): Asn1Element = (
                     if (descriptor.isAsn1Set) Asn1Set(it.buffer.map { it() })
-                    else if (descriptor.isAsn1OctetString) Asn1OctetString(it.buffer.map { it() })
                     else Asn1Sequence(it.buffer.map { it() })
                     ).let {
                     if (descriptor.implicitTag != null) it.withImplicitTag(descriptor.implicitTag!!) else it
@@ -150,7 +149,9 @@ class Asn1Serializer(
                 if (descriptor.explicitTag != null) Asn1ExplicitlyTagged(
                     descriptor.explicitTag!!,
                     listOf(addChildren())
-                ) else addChildren()
+                )
+                else if (descriptor.isAsn1OctetString) Asn1OctetString(listOf(addChildren()))
+                else addChildren()
             }
         }
     }
