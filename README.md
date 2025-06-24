@@ -47,7 +47,7 @@ action!
 * Exposes Multibase Encoder/Decoder as an API dependency including [Matthew Nelson's smashing Base16, Base32, and Base64 encoders](https://github.com/05nelsonm/encoding)
 * **ASN.1 Parser and Encoder including a DSL to generate ASN.1 structures**
   * Parse, create, explore certificates, public keys, CSRs, and **arbitrary ASN.1* structures* on all supported platforms
-  * Powerful, expressive, type-safe ASN.1 DSL on all KMP targets except `watchosDeviceArm64`!
+  * Powerful, expressive, type-safe ASN.1 DSL on all KMP targets
 
 This last bit means that you can share ASN.1-related logic across platforms.
 The very first bit means that you can create and verify signatures on the JVM, Android and on iOS, using platform-native
