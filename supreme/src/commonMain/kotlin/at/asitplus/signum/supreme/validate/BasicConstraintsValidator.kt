@@ -1,6 +1,8 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.BasicConstraintsException
+import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtension
 
@@ -8,9 +10,10 @@ class BasicConstraintsValidator(
     private val pathLength: Int,
     private var remainingPathLength: UInt? = null,
     private var currentCertIndex: Int = 0
-) : Validator {
+) : CertificateValidator {
 
-    override fun check(currCert: X509Certificate) {
+    override fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
+        remainingCriticalExtensions.remove(KnownOIDs.basicConstraints_2_5_29_19)
         if (currentCertIndex >= pathLength - 1) return
 
         val basicConstraints = currCert.findExtension<BasicConstraintsExtension>()

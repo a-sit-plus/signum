@@ -2,35 +2,25 @@ package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.CertificateChainValidatorException
 import at.asitplus.signum.CryptoOperationFailed
-import at.asitplus.signum.KeyUsageException
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsageExtension
-import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsage
 import at.asitplus.signum.indispensable.pki.root
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
-val supportedCriticalExtensionOids = setOf(
-    KnownOIDs.keyUsage,
-    KnownOIDs.certificatePolicies_2_5_29_32,
-    KnownOIDs.policyMappings,
-    KnownOIDs.inhibitAnyPolicy,
+val uncheckedCriticalExtensionOids = setOf(
     KnownOIDs.cRLDistributionPoints_2_5_29_31,
     KnownOIDs.issuingDistributionPoint_2_5_29_28,
     KnownOIDs.deltaCRLIndicator,
-    KnownOIDs.policyConstraints_2_5_29_36,
-    KnownOIDs.basicConstraints_2_5_29_19,
-    KnownOIDs.subjectAltName_2_5_29_17,
-    KnownOIDs.nameConstraints_2_5_29_30
 )
 
-sealed interface Validator {
-    fun check(currCert: X509Certificate)
+interface CertificateValidator {
+    // Every validator removes checked critical extensions
+    fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>)
 }
 
 sealed interface CertValiditySource {
@@ -66,7 +56,7 @@ suspend fun CertificateChain.validate(
     validator: suspend (x509Certificate: X509Certificate) -> CertValiditySource = { CertValiditySource.ALWAYS_ACCEPT }
 ) : CertificateValidationResult {
 
-    val validators = mutableListOf<Validator>()
+    val validators = mutableListOf<CertificateValidator>()
 
     val rootNode = PolicyNode(
         parent = null,
@@ -87,16 +77,18 @@ suspend fun CertificateChain.validate(
         )
     )
     validators.add(NameConstraintsValidator(this.size))
+    validators.add(KeyUsageValidator(this.size))
     if (context.basicConstraintCheck) validators.add(BasicConstraintsValidator(this.size))
 
     if (!context.trustAnchors.hasIssuerFor(this.root)) throw CertificateChainValidatorException("Untrusted root certificate.")
 
     val reversed = this.reversed()
-    reversed.forEach { it.checkValidity(context.date) }
     reversed.forEachIndexed { i, issuer ->
-        verifyCriticalExtensions(issuer)
+        val remainingCriticalExtensions = issuer.criticalExtensionOids
+        issuer.checkValidity(context.date)
         validator(issuer)
-        validators.forEach { it.check(issuer) }
+        validators.forEach { it.check(issuer, remainingCriticalExtensions) }
+        verifyCriticalExtensions(remainingCriticalExtensions)
 
         if (issuer != reversed.last()) {
             val childCert = reversed[i + 1]
@@ -114,9 +106,8 @@ suspend fun CertificateChain.validate(
 private fun verifySignature(
     cert: X509Certificate,
     issuer: X509Certificate,
-    isLeaf: Boolean
+    isLeaf: Boolean,
 ) {
-    verifyIntermediateKeyUsage(issuer)
     val verifier = cert.signatureAlgorithm.verifierFor(issuer.publicKey).getOrThrow()
     if (!verifier.verify(cert.tbsCertificate.encodeToDer(), cert.signature).isSuccess) {
         throw CryptoOperationFailed("Signature verification failed in ${if (isLeaf) "leaf" else "CA"} certificate.")
@@ -149,23 +140,15 @@ private fun wasCertificateIssuedWithinIssuerValidityPeriod(
     }
 }
 
-private fun verifyCriticalExtensions(cert: X509Certificate) {
-    cert.tbsCertificate.extensions
-        ?.filter { it.critical }
-        ?.firstOrNull { it.oid !in supportedCriticalExtensionOids }
-        ?.let {
-            throw CertificateChainValidatorException("Unsupported critical extension: ${it.oid}")
-        }
-}
-
-private fun verifyIntermediateKeyUsage(currCert: X509Certificate) {
-    if (currCert.findExtension<KeyUsageExtension>()?.keyUsage?.contains(KeyUsage.KEY_CERT_SIGN) != true) {
-        throw KeyUsageException("Digital signature key usage extension not present at the intermediate cert!")
-    }
-
-    if (currCert.findExtension<KeyUsageExtension>()?.keyUsage?.contains(KeyUsage.CRL_SIGN) != true) {
-        throw KeyUsageException("CRL signature key usage extension not present at the intermediate cert!")
-    }
+/**
+ * Checks if there are any unhandled critical extensions remaining,
+ * which would indicate that the current validators do not support them.
+ */
+private fun verifyCriticalExtensions(remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
+    // TODO remove after adding CRL check
+    remainingCriticalExtensions.removeAll(uncheckedCriticalExtensionOids)
+    if (remainingCriticalExtensions.isNotEmpty())
+        throw CertificateChainValidatorException("Unsupported critical extensions: $remainingCriticalExtensions")
 }
 
 private fun Set<TrustAnchor>.hasIssuerFor(cert: X509Certificate): Boolean =
