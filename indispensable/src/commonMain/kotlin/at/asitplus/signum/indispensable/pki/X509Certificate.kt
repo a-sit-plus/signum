@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.indispensable.CryptoPublicKey
@@ -16,6 +15,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.asn1.Asn1Time
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.PemDecodable
 import at.asitplus.signum.indispensable.asn1.PemEncodable
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
@@ -322,6 +322,12 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     @Suppress("DEPRECATION_ERROR")
     val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
 
+
+    val criticalExtensionOids: MutableSet<ObjectIdentifier>
+        get() = this.tbsCertificate.extensions
+            ?.filter { it.critical }
+            ?.mapTo(mutableSetOf()) { it.oid }
+            ?: mutableSetOf()
 
     fun isSelfIssued(): Boolean = tbsCertificate.subjectName == tbsCertificate.issuerName
 
