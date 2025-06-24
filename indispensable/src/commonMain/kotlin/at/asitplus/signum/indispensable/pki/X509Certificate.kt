@@ -16,7 +16,6 @@ import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.asn1.Asn1Time
-import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.PemDecodable
 import at.asitplus.signum.indispensable.asn1.PemEncodable
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
@@ -112,20 +111,7 @@ constructor(
     val issuerAlternativeNames: AlternativeNames? = extensions?.findIssuerAltNames()
 
 
-    private fun Asn1TreeBuilder.Version(value: Int) =
-        Asn1.ExplicitlyTagged(Tags.VERSION.tagValue) { +Asn1.Int(value) }
-
-    val keyUsage: Set<X509KeyUsage>
-        get() = extensions
-            ?.find { it.oid == KnownOIDs.keyUsage }
-            ?.value
-            ?.asEncapsulatingOctetString()
-            ?.children
-            ?.getOrNull(0)
-            ?.let { it as? Asn1Primitive }
-            ?.let(Asn1BitString::decodeFromTlv)
-            ?.let(X509KeyUsage::parseExtension)
-            ?: emptySet()
+    private fun Asn1TreeBuilder.Version(value: Int) = Asn1.ExplicitlyTagged(Tags.VERSION.tagValue) { +Asn1.Int(value) }
 
 
     @Throws(Asn1Exception::class)
