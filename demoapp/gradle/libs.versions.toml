@@ -3,7 +3,7 @@
 biometric = "1.2.0-alpha05"
 kotlin = "2.1.0"
 compose = "1.7.3"
-agp = "8.2.2"
+agp = "8.6.1"
 androidx-appcompat = "1.7.0"
 androidx-activityCompose = "1.9.1"
 compose-uitooling = "1.7.7"
