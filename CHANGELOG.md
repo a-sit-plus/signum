@@ -15,6 +15,11 @@
     * `SymmetricEncryptionAlgorithm.toJweEncryptionAlgorithm` removed
 
 ### 3.16.3 / 0.8.3 indispensable-only Hotfix
+* Fix erroneous Base64URL encoding in JOSE data classes
+    * `toString()` of `X509Certificate` and `TbsCertificate` have also been adapted to use Base64 Strict
+* Add missing serializers in addition to Base64Url encoding:
+    * `X509CertificateBase64Serializer`
+    * `CertificateChainBase64Serializer`
 * More targets:
     * watchosSimulatorArm64
     * watchosX64

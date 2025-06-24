@@ -7,7 +7,6 @@ import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.io.Base64Strict
-import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
@@ -135,8 +134,11 @@ constructor(
         return result
     }
 
+    /**
+     * Debug String representation. Uses Base64 encoded DER representation
+     */
     override fun toString(): String {
-        return "TbsCertificate(${encodeToDerOrNull()?.let { it.encodeToString(Base64UrlStrict) }})"
+        return "TbsCertificate(${encodeToDerOrNull()?.let { it.encodeToString(Base64Strict) }})"
     }
 
     companion object : Asn1Decodable<Asn1Sequence, TbsCertificate> {
@@ -276,8 +278,11 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         return result
     }
 
+    /**
+     * Debug String representation. Uses Base64 encoded DER representation
+     */
     override fun toString(): String {
-        return "X509Certificate(${encodeToDerOrNull()?.let { it.encodeToString(Base64UrlStrict) }})"
+        return "X509Certificate(${encodeToDerOrNull()?.let { it.encodeToString(Base64Strict) }})"
     }
 
     val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
