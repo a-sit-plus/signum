@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.validate
 
+import at.asitplus.signum.CertificateChainValidatorException
 import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
@@ -147,10 +148,10 @@ open class ValidityPeriodsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, goodCACert)
 
-        shouldThrow<CertificateValidityException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "certificate not valid till " + leaf.tbsCertificate.validFrom.instant.toLocalDateTime(
-                TimeZone.currentSystemDefault()
-            )
+        // Validation fails due to the wasCertificateIssuedWithinIssuerValidityPeriod check,
+        // because it is called before individual time validity check on leaf
+        shouldThrow<CertificateChainValidatorException> { chain.validate(defaultContext) }.apply {
+            message shouldBe "Certificate issued outside issuer validity period."
         }
     }
 
@@ -340,10 +341,10 @@ open class ValidityPeriodsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, goodCACert)
 
-        shouldThrow<CertificateValidityException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "certificate expired on " + leaf.tbsCertificate.validUntil.instant.toLocalDateTime(
-                TimeZone.currentSystemDefault()
-            )
+        // Validation fails due to the wasCertificateIssuedWithinIssuerValidityPeriod check,
+        // because it is called before individual time validity check on leaf
+        shouldThrow<CertificateChainValidatorException> { chain.validate(defaultContext) }.apply {
+            message shouldBe "Certificate issued outside issuer validity period."
         }
     }
 
