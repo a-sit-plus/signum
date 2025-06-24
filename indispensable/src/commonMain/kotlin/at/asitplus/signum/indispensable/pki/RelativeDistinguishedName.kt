@@ -22,7 +22,12 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
 
     companion object : Asn1Decodable<Asn1Set, RelativeDistinguishedName> {
         override fun doDecode(src: Asn1Set): RelativeDistinguishedName = runRethrowing {
-            RelativeDistinguishedName(src.children.map { AttributeTypeAndValue.decodeFromTlv(it as Asn1Sequence) })
+            buildList {
+                while (src.hasMoreChildren()) {
+                    val child = src.nextChild().asSequence()
+                    add(AttributeTypeAndValue.decodeFromTlv(child))
+                }
+            }.let(::RelativeDistinguishedName)
         }
     }
 

@@ -42,11 +42,11 @@ data class X509CertificateExtension @Throws(Asn1Exception::class) private constr
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): X509CertificateExtension = runRethrowing {
 
-            val id = (src.children[0] as Asn1Primitive).readOid()
+            val id = (src.nextChild() as Asn1Primitive).readOid()
             val critical =
-                if (src.children[1].tag == Asn1Element.Tag.BOOL) (src.children[1] as Asn1Primitive).content[0] == 0xff.toByte() else false
+                if (src.children[1].tag == Asn1Element.Tag.BOOL) (src.nextChild() as Asn1Primitive).content[0] == 0xff.toByte() else false
 
-            val value = src.children.last()
+            val value = src.nextChild()
             return X509CertificateExtension(id, value, critical)
         }
 
