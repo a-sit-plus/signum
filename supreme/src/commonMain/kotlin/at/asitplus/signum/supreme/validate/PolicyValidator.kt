@@ -22,7 +22,7 @@ class PolicyValidator(
     private val certPathLen: Int,
     private val rejectPolicyQualifiers: Boolean,
     var rootNode: PolicyNode?
-) : Validator {
+) : CertificateValidator {
     private val initPolicies: Set<ObjectIdentifier> =
         initialPolicies.ifEmpty { setOf(KnownOIDs.anyPolicy) }.toSet()
     private var explicitPolicy: Int = 0
@@ -39,7 +39,7 @@ class PolicyValidator(
         inhibitAnyPolicy = if (anyPolicyInhibited) 0 else certPathLen + 1
     }
 
-    override fun check(currCert: X509Certificate) {
+    override fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
         rootNode = processPolicies(
             certIndex,
             initPolicies,
@@ -58,6 +58,11 @@ class PolicyValidator(
             inhibitAnyPolicy = updateInhibitAnyPolicy(inhibitAnyPolicy, currCert)
         }
         certIndex++
+
+        remainingCriticalExtensions.remove(KnownOIDs.certificatePolicies_2_5_29_32)
+        remainingCriticalExtensions.remove(KnownOIDs.policyMappings)
+        remainingCriticalExtensions.remove(KnownOIDs.policyConstraints_2_5_29_36)
+        remainingCriticalExtensions.remove(KnownOIDs.inhibitAnyPolicy)
     }
 
     /*
