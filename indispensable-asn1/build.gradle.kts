@@ -174,7 +174,7 @@ kotlin {
     watchosX64()
     watchosArm32()
     watchosArm64()
-    watchosDeviceArm64()
+    //watchosDeviceArm64() //TODO for release: enable this target
     tvosSimulatorArm64()
     tvosX64()
     tvosArm64()
@@ -217,7 +217,7 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(kotest("property"))
-            //TMP commented out just for release    implementation(project(":indispensable"))
+               implementation(project(":indispensable")) //TODO for releases comment out this dependency
             }
         }
     }
