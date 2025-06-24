@@ -20,6 +20,7 @@ import at.asitplus.signum.indispensable.asn1.runRethrowing
 import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificatePoliciesExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.InhibitAnyPolicyExtension
+import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsageExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.NameConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyMappingsExtension
@@ -63,7 +64,8 @@ open class X509CertificateExtension @Throws(Asn1Exception::class) private constr
             KnownOIDs.policyConstraints_2_5_29_36 to PolicyConstraintsExtension::decodeFromTlv,
             KnownOIDs.certificatePolicies_2_5_29_32 to CertificatePoliciesExtension::decodeFromTlv,
             KnownOIDs.policyMappings to PolicyMappingsExtension::decodeFromTlv,
-            KnownOIDs.inhibitAnyPolicy to InhibitAnyPolicyExtension::decodeFromTlv
+            KnownOIDs.inhibitAnyPolicy to InhibitAnyPolicyExtension::decodeFromTlv,
+            KnownOIDs.keyUsage to KeyUsageExtension::decodeFromTlv
         )
 
         fun registerExtensionDecoder(
