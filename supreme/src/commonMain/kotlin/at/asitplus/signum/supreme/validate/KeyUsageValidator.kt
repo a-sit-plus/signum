@@ -12,15 +12,19 @@ class KeyUsageValidator (
     private var currentCertIndex: Int = 0,
 ) : CertificateValidator {
 
-    override fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
+    private var supportedExtensions: Set<ObjectIdentifier> = setOf(
+        KnownOIDs.keyUsage,
+        KnownOIDs.extKeyUsage,
+        KnownOIDs.subjectAltName_2_5_29_17,
+    )
+
+    override suspend fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
         if (currentCertIndex < pathLength - 1)
             verifyIntermediateKeyUsage(currCert)
 
         currentCertIndex++
 
-        remainingCriticalExtensions.remove(KnownOIDs.keyUsage)
-        remainingCriticalExtensions.remove(KnownOIDs.extKeyUsage)
-        remainingCriticalExtensions.remove(KnownOIDs.subjectAltName_2_5_29_17)
+        remainingCriticalExtensions.removeAll(supportedExtensions)
     }
 
     private fun verifyIntermediateKeyUsage(currCert: X509Certificate) {
