@@ -12,7 +12,7 @@ class BasicConstraintsValidator(
     private var currentCertIndex: Int = 0
 ) : CertificateValidator {
 
-    override fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
+    override suspend fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
         remainingCriticalExtensions.remove(KnownOIDs.basicConstraints_2_5_29_19)
         if (currentCertIndex >= pathLength - 1) return
 
