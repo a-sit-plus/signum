@@ -12,15 +12,9 @@ import at.asitplus.signum.supreme.sign.verify
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
-val uncheckedCriticalExtensionOids = setOf(
-    KnownOIDs.cRLDistributionPoints_2_5_29_31,
-    KnownOIDs.issuingDistributionPoint_2_5_29_28,
-    KnownOIDs.deltaCRLIndicator,
-)
-
 interface CertificateValidator {
     // Every validator removes checked critical extensions
-    fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>)
+    suspend fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>)
 }
 
 sealed interface CertValiditySource {
@@ -84,7 +78,7 @@ suspend fun CertificateChain.validate(
 
     val reversed = this.reversed()
     reversed.forEachIndexed { i, issuer ->
-        val remainingCriticalExtensions = issuer.criticalExtensionOids
+        val remainingCriticalExtensions = issuer.criticalExtensionOids.toMutableSet()
         issuer.checkValidity(context.date)
         validator(issuer)
         validators.forEach { it.check(issuer, remainingCriticalExtensions) }
@@ -145,8 +139,6 @@ private fun wasCertificateIssuedWithinIssuerValidityPeriod(
  * which would indicate that the current validators do not support them.
  */
 private fun verifyCriticalExtensions(remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
-    // TODO remove after adding CRL check
-    remainingCriticalExtensions.removeAll(uncheckedCriticalExtensionOids)
     if (remainingCriticalExtensions.isNotEmpty())
         throw CertificateChainValidatorException("Unsupported critical extensions: $remainingCriticalExtensions")
 }

@@ -30,7 +30,12 @@ class PolicyValidator(
     private var inhibitAnyPolicy: Int = 0
     private var certIndex: Int = 0
 
-    private var supportedExtensions: Set<ObjectIdentifier>? = null
+    private var supportedExtensions: Set<ObjectIdentifier> = setOf(
+        KnownOIDs.certificatePolicies_2_5_29_32,
+        KnownOIDs.policyMappings,
+        KnownOIDs.policyConstraints_2_5_29_36,
+        KnownOIDs.inhibitAnyPolicy
+    )
 
     init {
         certIndex = 1
@@ -39,7 +44,7 @@ class PolicyValidator(
         inhibitAnyPolicy = if (anyPolicyInhibited) 0 else certPathLen + 1
     }
 
-    override fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
+    override suspend fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
         rootNode = processPolicies(
             certIndex,
             initPolicies,
@@ -59,10 +64,7 @@ class PolicyValidator(
         }
         certIndex++
 
-        remainingCriticalExtensions.remove(KnownOIDs.certificatePolicies_2_5_29_32)
-        remainingCriticalExtensions.remove(KnownOIDs.policyMappings)
-        remainingCriticalExtensions.remove(KnownOIDs.policyConstraints_2_5_29_36)
-        remainingCriticalExtensions.remove(KnownOIDs.inhibitAnyPolicy)
+        remainingCriticalExtensions.removeAll(supportedExtensions)
     }
 
     /*
