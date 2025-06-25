@@ -322,12 +322,12 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     @Suppress("DEPRECATION_ERROR")
     val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
 
-
-    val criticalExtensionOids: MutableSet<ObjectIdentifier>
-        get() = this.tbsCertificate.extensions
+    val criticalExtensionOids: Set<ObjectIdentifier>
+        get() = tbsCertificate.extensions
             ?.filter { it.critical }
-            ?.mapTo(mutableSetOf()) { it.oid }
-            ?: mutableSetOf()
+            ?.map { it.oid }
+            ?.toSet()
+            ?: emptySet()
 
     fun isSelfIssued(): Boolean = tbsCertificate.subjectName == tbsCertificate.issuerName
 
