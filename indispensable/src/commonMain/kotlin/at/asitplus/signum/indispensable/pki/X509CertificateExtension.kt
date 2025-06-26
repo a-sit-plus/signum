@@ -3,12 +3,14 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Bool
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
 import kotlinx.serialization.Serializable
 
 /**
  * X.509 Certificate Extension
  */
 @ConsistentCopyVisibility
+@Serializable(with = X509CertificateExtension.Companion::class)
 data class X509CertificateExtension @Throws(Asn1Exception::class) private constructor(
     override val oid: ObjectIdentifier,
     val value: Asn1Element,
@@ -37,7 +39,7 @@ data class X509CertificateExtension @Throws(Asn1Exception::class) private constr
         +value
     }
 
-    companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
+    companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension>, Asn1Serializer<Asn1Sequence, X509CertificateExtension> {
 
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): X509CertificateExtension = runRethrowing {

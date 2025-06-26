@@ -4,12 +4,14 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
  * X.500 Name (used in X.509 Certificates)
  */
+@Serializable(with = RelativeDistinguishedName.Companion::class)
 data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndValue>) : Asn1Encodable<Asn1Set> {
 
     constructor(singleItem: AttributeTypeAndValue) : this(listOf(singleItem))
@@ -20,7 +22,7 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
         }
     }
 
-    companion object : Asn1Decodable<Asn1Set, RelativeDistinguishedName> {
+    companion object : Asn1Decodable<Asn1Set, RelativeDistinguishedName>, Asn1Serializer<Asn1Set, RelativeDistinguishedName> {
         override fun doDecode(src: Asn1Set): RelativeDistinguishedName = runRethrowing {
             buildList {
                 while (src.hasMoreChildren()) {
@@ -36,11 +38,13 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
 }
 
 //TODO: value should be Asn1Primitive???
+@Serializable(with = AttributeTypeAndValue.Companion::class)
 sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
     abstract val value: Asn1Element
 
     override fun toString() = value.toString()
 
+    @Serializable(with = AttributeTypeAndValue.Companion::class)
     class CommonName(override val value: Asn1Element) : AttributeTypeAndValue() {
         override val oid = OID
 
@@ -51,6 +55,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
     }
 
+    @Serializable(with = AttributeTypeAndValue.Companion::class)
     class Country(override val value: Asn1Element) : AttributeTypeAndValue() {
         override val oid = OID
 
@@ -61,6 +66,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
     }
 
+    @Serializable(with = AttributeTypeAndValue.Companion::class)
     class Organization(override val value: Asn1Element) : AttributeTypeAndValue() {
         override val oid = OID
 
@@ -71,6 +77,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
     }
 
+    @Serializable(with = AttributeTypeAndValue.Companion::class)
     class OrganizationalUnit(override val value: Asn1Element) : AttributeTypeAndValue() {
         override val oid = OID
 
@@ -81,6 +88,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
     }
 
+    @Serializable(with = AttributeTypeAndValue.Companion::class)
     class Other(override val oid: ObjectIdentifier, override val value: Asn1Element) : AttributeTypeAndValue() {
         constructor(oid: ObjectIdentifier, str: Asn1String) : this(
             oid,
@@ -111,7 +119,8 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         return result
     }
 
-    companion object : Asn1Decodable<Asn1Sequence, AttributeTypeAndValue> {
+    companion object : Asn1Decodable<Asn1Sequence, AttributeTypeAndValue>,
+        Asn1Serializer<Asn1Sequence, AttributeTypeAndValue> {
 
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): AttributeTypeAndValue = runRethrowing {

@@ -6,6 +6,7 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
@@ -16,6 +17,7 @@ import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.SUBJEC
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlinx.serialization.builtins.serializer
 
@@ -23,6 +25,7 @@ import kotlinx.serialization.builtins.serializer
  * Very simple implementation of the meat of an X.509 Certificate:
  * The structure that gets signed
  */
+@Serializable(with = TbsCertificate.Companion::class)
 data class TbsCertificate
 @Throws(Asn1Exception::class)
 constructor(
@@ -141,7 +144,7 @@ constructor(
         return "TbsCertificate(${encodeToDerOrNull()?.let { it.encodeToString(Base64Strict) }})"
     }
 
-    companion object : Asn1Decodable<Asn1Sequence, TbsCertificate> {
+    companion object : Asn1Decodable<Asn1Sequence, TbsCertificate>, Asn1Serializer<Asn1Sequence, TbsCertificate> {
 
         object Tags {
             val ISSUER_UID = Asn1.ImplicitTag(1uL)
@@ -243,6 +246,7 @@ fun CryptoSignature.Companion.fromX509Encoded(alg: X509SignatureAlgorithm, it: A
 /**
  * Very simple implementation of an X.509 Certificate
  */
+@Serializable(with = X509Certificate.Companion::class)
 data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     val tbsCertificate: TbsCertificate,
     val signatureAlgorithm: X509SignatureAlgorithm,
@@ -287,7 +291,8 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
 
     val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
 
-    companion object : PemDecodable<Asn1Sequence, X509Certificate>(EB_STRINGS.DEFAULT, EB_STRINGS.LEGACY) {
+    companion object : PemDecodable<Asn1Sequence, X509Certificate>(EB_STRINGS.DEFAULT, EB_STRINGS.LEGACY),
+    Asn1Serializer<Asn1Sequence, X509Certificate>{
 
         private object EB_STRINGS {
             const val DEFAULT = "CERTIFICATE"

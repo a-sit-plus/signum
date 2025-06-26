@@ -2,6 +2,17 @@
 
 ## 3.0
 
+* ASN.1 goes kotlinx.serialization
+    * Asn1Integer's serializer has changed
+        * The old serializer is still available as `Asn1IntegerStringSerializer`
+    * Asn1Real's serializer has changed
+        * The old serializer is still available as `Asn1RealStringSerializer`
+    * CryptoSignature's serializer has changed
+        * The old serializer is still available as `CryptoSignatureStringSerializer`
+    * X509SignatureAlgorithm's serializer has changed
+        * The old serializer is still available as `X509SignatureAlgorithmStringSerializer`
+
+
 ### NEXT
 * Kotlin 2.2.0
 * AGP 8.10.0

@@ -6,12 +6,14 @@ import at.asitplus.signum.ecmath.times
 import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.asPublicKey
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.internals.checkedAs
 import at.asitplus.signum.internals.checkedAsFn
 import at.asitplus.signum.internals.ensureSize
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
+import kotlinx.serialization.Serializable
 
 private object EB_STRINGS {
     const val GENERIC_PRIVATE_KEY_PKCS8 = "PRIVATE KEY"
@@ -24,8 +26,10 @@ private object EB_STRINGS {
  * PKCS#8 Representation of a private key structure as per [RFC 5208](https://datatracker.ietf.org/doc/html/rfc5208)
  * Equality checks are performed wrt. cryptographic properties.
  */
+@Serializable(with = CryptoPrivateKey.Companion::class)
 sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
 
+    @Serializable(with = CryptoPrivateKey.Companion::class)
     sealed interface WithPublicKey<T : CryptoPublicKey> : CryptoPrivateKey {
         /** [CryptoPublicKey] matching this private key. */
         val publicKey: T
@@ -103,6 +107,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
      * PKCS#1 RSA Private key representation as per [RFC 8017](https://datatracker.ietf.org/doc/html/rfc8017/#appendix-A.1.2) augmented with optional [attributes].
      * Attributes are never PKCS#1 encoded, but are relevant when PKCS#8-encoding a private key.
      */
+    @Serializable(with = RSA.Companion::class)
     class RSA
     /** @throws IllegalArgumentException in case invalid parameters are provided*/
     @Throws(IllegalArgumentException::class)
@@ -207,6 +212,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
          * }
          * ```
          */
+        @Serializable(with = PrimeInfo.Companion::class)
         data class PrimeInfo(
             val prime: BigInteger,
             val exponent: BigInteger,
@@ -222,7 +228,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
                 }
             }
 
-            companion object : Asn1Decodable<Asn1Sequence, PrimeInfo> {
+            companion object : Asn1Decodable<Asn1Sequence, PrimeInfo>, Asn1Serializer<Asn1Sequence, PrimeInfo> {
 
                 @Throws(Asn1Exception::class)
                 override fun doDecode(src: Asn1Sequence): PrimeInfo = runRethrowing {
@@ -239,7 +245,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
         companion object : PemDecodable<Asn1Sequence, RSA>(
             EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8 to checkedAsFn(FromPKCS8::decodeFromDer),
             EB_STRINGS.RSA_PRIVATE_KEY_PKCS1 to checkedAsFn(FromPKCS1::decodeFromDer)
-        ) {
+        ), Asn1Serializer<Asn1Sequence,RSA> {
             override fun doDecode(src: Asn1Sequence): RSA =
                 checkedAs(CryptoPrivateKey.doDecode(src))
 
@@ -293,6 +299,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
      * SEC1 Elliptic Curve Private Key Structure as per [RFC 5915](https://datatracker.ietf.org/doc/html/rfc5915) augmented with optional [attributes].
      * Attributes are never SEC1 encoded, but are relevant when PKCS#8-encoding a private key.
      */
+    @Serializable(with= EC.Companion::class)
     sealed class EC(
         val privateKey: BigInteger,
         /** PKCS#8 attributes */
@@ -342,6 +349,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
             }
         }
 
+        @Serializable(with= EC.Companion::class)
         class WithPublicKey
         /** @throws IllegalArgumentException in case invalid parameters are provided*/
         @Throws(IllegalArgumentException::class)
@@ -374,6 +382,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
             override val publicValue get() = this.publicKey
         }
 
+        @Serializable(with= EC.Companion::class)
         class WithoutPublicKey constructor(
             privateKey: BigInteger,
             val publicKeyBytes: Asn1BitString?,
@@ -429,7 +438,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
         companion object : PemDecodable<Asn1Sequence, EC>(
             EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8 to checkedAsFn(FromPKCS8::decodeFromDer),
             EB_STRINGS.EC_PRIVATE_KEY_SEC1 to checkedAsFn(FromSEC1::decodeFromDer)
-        ) {
+        ),Asn1Serializer<Asn1Sequence, EC>  {
             val oid: ObjectIdentifier = KnownOIDs.ecPublicKey
 
             @Throws(Asn1Exception::class)
@@ -506,7 +515,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
             EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8 to checkedAsFn(FromPKCS8::decodeFromDer),
             EB_STRINGS.RSA_PRIVATE_KEY_PKCS1 to checkedAsFn(RSA.FromPKCS1::decodeFromDer),
             EB_STRINGS.EC_PRIVATE_KEY_SEC1 to checkedAsFn(EC.FromSEC1::decodeFromDer)
-        ), Asn1Decodable<Asn1Sequence, CryptoPrivateKey> by FromPKCS8 {
+        ), Asn1Decodable<Asn1Sequence, CryptoPrivateKey> by FromPKCS8, Asn1Serializer<Asn1Sequence, CryptoPrivateKey> {
         /**
          * Tries to decode a private key as exported from iOS.
          * EC keys are exported [as padded raw bytes](https://developer.apple.com/documentation/security/seckeycopyexternalrepresentation(_:_:)?language=objc).
@@ -556,6 +565,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
 }
 
 /** Representation of an encrypted private key structure as per [RFC 5208](https://datatracker.ietf.org/doc/html/rfc5208) */
+@Serializable(with = EncryptedPrivateKey.Companion::class)
 class EncryptedPrivateKey(val encryptionAlgorithm: ObjectIdentifier, val encryptedData: ByteArray) :
     PemEncodable<Asn1Sequence> {
 
@@ -569,7 +579,7 @@ class EncryptedPrivateKey(val encryptionAlgorithm: ObjectIdentifier, val encrypt
         }
     }
 
-    companion object : PemDecodable<Asn1Sequence, EncryptedPrivateKey>(EB_STRINGS.ENCRYPTED_PRIVATE_KEY) {
+    companion object : PemDecodable<Asn1Sequence, EncryptedPrivateKey>(EB_STRINGS.ENCRYPTED_PRIVATE_KEY), Asn1Serializer<Asn1Sequence, EncryptedPrivateKey> {
 
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): EncryptedPrivateKey = runRethrowing {

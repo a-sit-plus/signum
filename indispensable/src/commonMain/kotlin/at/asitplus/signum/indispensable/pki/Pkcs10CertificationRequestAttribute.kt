@@ -2,8 +2,10 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
 import kotlinx.serialization.Serializable
 
+@Serializable(with = Pkcs10CertificationRequestAttribute.Companion::class)
 data class Pkcs10CertificationRequestAttribute(
     override val oid: ObjectIdentifier,
     val value: List<Asn1Element>
@@ -34,7 +36,7 @@ data class Pkcs10CertificationRequestAttribute(
         return result
     }
 
-    companion object : Asn1Decodable<Asn1Sequence, Pkcs10CertificationRequestAttribute> {
+    companion object : Asn1Decodable<Asn1Sequence, Pkcs10CertificationRequestAttribute>, Asn1Serializer<Asn1Sequence, Pkcs10CertificationRequestAttribute> {
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): Pkcs10CertificationRequestAttribute = runRethrowing {
             val id = (src.nextChild() as Asn1Primitive).readOid()

@@ -32,7 +32,7 @@ internal object Asn1ElementSerializer : KSerializer<Asn1Element> {
  * companion objects of classes implementing [Asn1Encodable] and set it as the [Asn1Encodable]'s
  * serializer to get full kotlinx-serialization support!
  */
-interface Asn1Serializer<A : Asn1Element, T : Asn1Encodable<A>>: Asn1Decodable<A,T>, KSerializer< T> {
+interface Asn1Serializer<A : Asn1Element, T : Asn1Encodable<A>> : Asn1Decodable<A, T>, KSerializer<T> {
 
     override val descriptor: SerialDescriptor
         get() = SerialDescriptor(

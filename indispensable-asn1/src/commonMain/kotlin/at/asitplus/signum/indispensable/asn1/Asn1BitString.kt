@@ -1,8 +1,12 @@
 package at.asitplus.signum.indispensable.asn1
 
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
+import kotlinx.serialization.Serializable
+
 /**
  * ASN.1 BIT STRING
  */
+@Serializable(with = Asn1BitString.Companion::class)
 class Asn1BitString private constructor(
     /**
      * Number of bits needed to pad the bit string to a byte boundary
@@ -17,7 +21,7 @@ class Asn1BitString private constructor(
      */
     val rawBytes: ByteArray,
 
-) : Asn1Encodable<Asn1Primitive> {
+    ) : Asn1Encodable<Asn1Primitive> {
 
 
     /**
@@ -68,7 +72,7 @@ class Asn1BitString private constructor(
         return bitset
     }
 
-    companion object : Asn1Decodable<Asn1Primitive, Asn1BitString> {
+    companion object : Asn1Decodable<Asn1Primitive, Asn1BitString>, Asn1Serializer<Asn1Primitive, Asn1BitString> {
         private fun fromBitSet(bitSet: BitSet): Pair<Byte, ByteArray> {
             val rawBytes = bitSet.bytes.map {
                 var res = 0
