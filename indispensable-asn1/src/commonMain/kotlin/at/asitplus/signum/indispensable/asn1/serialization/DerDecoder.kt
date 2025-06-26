@@ -24,7 +24,7 @@ private data class AnnotatedElement(
 )
 
 @ExperimentalSerializationApi
-class Asn1Deserializer private constructor(
+class DerDecoder private constructor(
     private val annotatedElements: List<AnnotatedElement>,
     private val indent: String = "",
     override val serializersModule: SerializersModule = EmptySerializersModule()
@@ -61,7 +61,7 @@ class Asn1Deserializer private constructor(
             is StructureKind.LIST,
             is StructureKind.MAP -> {
                 if (element is Asn1Structure) {
-                    Asn1Deserializer(
+                    DerDecoder(
                         element.children,
                         indent = "$indent  ",
                         serializersModule = serializersModule
@@ -88,7 +88,6 @@ class Asn1Deserializer private constructor(
 
         return if (index < annotatedElements.size) index else CompositeDecoder.DECODE_DONE
     }
-
 
 
     override fun decodeValue(): Any {
@@ -192,7 +191,7 @@ class Asn1Deserializer private constructor(
                 .decodeToULong(expectedTag ?: Asn1Element.Tag.INT)
                 .also { index++ } as T
 
-            Asn1ElementgSerializer -> return processedElement
+            Asn1ElementSerializer -> return processedElement
                 .also {
                     expectedTag?.let { ex ->
                         if (it.tag != ex) throw Asn1TagMismatchException(ex, it.tag)
@@ -209,7 +208,7 @@ class Asn1Deserializer private constructor(
         }
 
 
-        val childDecoder = Asn1Deserializer(
+        val childDecoder = DerDecoder(
             elements = mutableListOf(processedElement),
             serializersModule = serializersModule,
             indent = "$indent  "
@@ -292,7 +291,9 @@ class Asn1Deserializer private constructor(
 }
 
 private fun getDefaultTagForDescriptor(descriptor: SerialDescriptor): Asn1Element.Tag? {
-    return when (descriptor.kind) {
+
+    return if (descriptor.isSetDescriptor) Asn1Element.Tag.SET
+    else when (descriptor.kind) {
         is StructureKind.CLASS, is StructureKind.OBJECT -> Asn1Element.Tag.SEQUENCE
         is StructureKind.LIST -> Asn1Element.Tag.SEQUENCE
         is StructureKind.MAP -> Asn1Element.Tag.SEQUENCE
@@ -302,7 +303,7 @@ private fun getDefaultTagForDescriptor(descriptor: SerialDescriptor): Asn1Elemen
 
 @ExperimentalSerializationApi
 fun <T> decodeFromDer(source: ByteArray, deserializer: DeserializationStrategy<T>): T {
-    val decoder = Asn1Deserializer(Buffer().also { it.write(source) })
+    val decoder = DerDecoder(Buffer().also { it.write(source) })
     return decoder.decodeSerializableValue(deserializer)
 }
 

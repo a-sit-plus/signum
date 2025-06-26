@@ -9,7 +9,6 @@ class F(vararg val layers: Layer, iss: Boolean = false)
 @Target(AnnotationTarget.CLASS, AnnotationTarget.PROPERTY)
 annotation class Asn1nnotation(
     vararg val layers: Layer,
-    val asSet: Boolean = false,
     val asBitString: Boolean = false,
     val encodeNull: Boolean = false
 )
@@ -31,11 +30,6 @@ val Iterable<Annotation>.asn1Layers: List<Layer>
     get() = filterIsInstance<Asn1nnotation>().firstOrNull()?.layers?.asList() ?: emptyList()
 
 //TODO: config to always keep nulls
-
-
-internal val SerialDescriptor.isAsn1Set: Boolean get() = annotations.isAsn1Set
-internal val List<Annotation>.isAsn1Set: Boolean get() = filterIsInstance<Asn1nnotation>().any { it.asSet }
-internal fun SerialDescriptor.isAsn1Set(index: Int) = getElementAnnotations(index).isAsn1Set
 
 internal val SerialDescriptor.isAsn1BitString: Boolean get() = annotations.isAsn1BitString
 internal val List<Annotation>.isAsn1BitString: Boolean get() = filterIsInstance<Asn1nnotation>().any { it.asBitString }

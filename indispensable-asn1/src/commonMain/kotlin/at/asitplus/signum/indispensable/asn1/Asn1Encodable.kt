@@ -87,7 +87,7 @@ interface Asn1Decodable<A : Asn1Element, out T : Asn1Encodable<A>> {
      * @throws Asn1Exception
      */
     @Throws(Asn1Exception::class)
-    fun decodeFromTlv(src: A, assertTag: Asn1Element.Tag? = null, requireFullConsumption: Boolean = true): T {
+    fun decodeFromTlv(src: A, assertTag: Tag? = null, requireFullConsumption: Boolean = true): T {
         verifyTag(src, assertTag)
         return doDecode(src).also {
             if (requireFullConsumption && src is Asn1Structure) {
@@ -110,7 +110,7 @@ interface Asn1Decodable<A : Asn1Element, out T : Asn1Encodable<A>> {
      * @throws Asn1TagMismatchException
      */
     @Throws(Asn1TagMismatchException::class)
-    fun verifyTag(src: A, assertTag: Asn1Element.Tag?) {
+    fun verifyTag(src: A, assertTag: Tag?) {
         val expected = assertTag ?: return
         if (src.tag != expected)
             throw Asn1TagMismatchException(expected, src.tag)
@@ -119,13 +119,13 @@ interface Asn1Decodable<A : Asn1Element, out T : Asn1Encodable<A>> {
     /**
      * Exception-free version of [decodeFromTlv]
      */
-    fun decodeFromTlvOrNull(src: A, assertTag: Asn1Element.Tag? = null) =
+    fun decodeFromTlvOrNull(src: A, assertTag: Tag? = null) =
         catchingUnwrapped { decodeFromTlv(src, assertTag) }.getOrNull()
 
     /**
      * Safe version of [decodeFromTlv], wrapping the result into a [KmmResult]
      */
-    fun decodeFromTlvSafe(src: A, assertTag: Asn1Element.Tag? = null) =
+    fun decodeFromTlvSafe(src: A, assertTag: Tag? = null) =
         catching { decodeFromTlv(src, assertTag) }
 
     /**
@@ -133,18 +133,18 @@ interface Asn1Decodable<A : Asn1Element, out T : Asn1Encodable<A>> {
      * @throws Asn1Exception if invalid data is provided
      */
     @Throws(Asn1Exception::class)
-    fun decodeFromDer(src: ByteArray, assertTag: Asn1Element.Tag? = null): T =
+    fun decodeFromDer(src: ByteArray, assertTag: Tag? = null): T =
         decodeFromTlv(Asn1Element.parse(src) as A, assertTag)
 
     /**
      * Exception-free version of [decodeFromDer]
      */
-    fun decodeFromDerOrNull(src: ByteArray, assertTag: Asn1Element.Tag? = null) =
+    fun decodeFromDerOrNull(src: ByteArray, assertTag: Tag? = null) =
         catchingUnwrapped { decodeFromDer(src, assertTag) }.getOrNull()
 
     /**
      * Safe version of [decodeFromDer], wrapping the result into a [KmmResult]
      */
-    fun decodeFromDerSafe(src: ByteArray, assertTag: Asn1Element.Tag? = null) =
+    fun decodeFromDerSafe(src: ByteArray, assertTag: Tag? = null) =
         catching { decodeFromDer(src, assertTag) }
 }

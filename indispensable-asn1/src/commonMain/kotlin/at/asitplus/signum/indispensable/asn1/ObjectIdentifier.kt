@@ -3,7 +3,9 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.asn1.VarUInt.Companion.decodeAsn1VarBigUInt
 import at.asitplus.signum.indispensable.asn1.encoding.decode
 import at.asitplus.signum.indispensable.asn1.encoding.toAsn1VarInt
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
@@ -18,6 +20,7 @@ import kotlin.uuid.Uuid
  * @param nodes OID Tree nodes passed in order (e.g. 1u, 2u, 96u, …)
  * @throws Asn1Exception if less than two nodes are supplied, the first node is >2 or the second node is >39
  */
+@Serializable(with = ObjectIdentifier.Companion::class)
 class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
     bytes: ByteArray?,
     nodes: List<VarUInt>?
@@ -142,7 +145,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
      */
     override fun encodeToTlv() = Asn1Primitive(Asn1Element.Tag.OID, bytes)
 
-    companion object : Asn1Decodable<Asn1Primitive, ObjectIdentifier> {
+    companion object : Asn1Decodable<Asn1Primitive, ObjectIdentifier>, Asn1Serializer<Asn1Primitive, ObjectIdentifier> {
 
         /**
          * Parses an OBJECT IDENTIFIER contained in [src] to an [ObjectIdentifier]
