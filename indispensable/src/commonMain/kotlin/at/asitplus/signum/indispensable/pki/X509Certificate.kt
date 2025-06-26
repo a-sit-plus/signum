@@ -245,8 +245,16 @@ fun CryptoSignature.Companion.fromX509Encoded(alg: X509SignatureAlgorithm, it: A
 data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     val tbsCertificate: TbsCertificate,
     val signatureAlgorithm: X509SignatureAlgorithm,
-    val signature: CryptoSignature,
+    val rawSignature: Asn1Primitive,
 ) : PemEncodable<Asn1Sequence> {
+
+    val decodedSignature = lazy { CryptoSignature.fromX509Encoded(signatureAlgorithm, rawSignature) }
+
+    constructor(
+        tbsCertificate: TbsCertificate,
+        signatureAlgorithm: X509SignatureAlgorithm,
+        signature: CryptoSignature
+    ) : this(tbsCertificate, signatureAlgorithm, signature.x509Encoded)
 
     override val canonicalPEMBoundary: String = EB_STRINGS.DEFAULT
 
@@ -254,7 +262,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     override fun encodeToTlv() = Asn1.Sequence {
         +tbsCertificate
         +signatureAlgorithm
-        +signature.x509Encoded
+        +rawSignature
     }
 
     override fun equals(other: Any?): Boolean {
@@ -265,7 +273,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
 
         if (tbsCertificate != other.tbsCertificate) return false
         if (signatureAlgorithm != other.signatureAlgorithm) return false
-        if (signature != other.signature) return false
+        if (decodedSignature != other.decodedSignature) return false
 
         return true
     }
@@ -273,7 +281,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     override fun hashCode(): Int {
         var result = tbsCertificate.hashCode()
         result = 31 * result + signatureAlgorithm.hashCode()
-        result = 31 * result + signature.hashCode()
+        result = 31 * result + decodedSignature.hashCode()
         return result
     }
 
