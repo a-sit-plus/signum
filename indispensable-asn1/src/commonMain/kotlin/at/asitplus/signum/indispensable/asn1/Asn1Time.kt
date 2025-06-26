@@ -3,14 +3,23 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1GeneralizedTimePrimitive
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1UtcTimePrimitive
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInstant
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
+import at.asitplus.signum.internals.ImplementationError
 import kotlin.time.Instant
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
 /**
  * ASN.1 TIME (required since GENERALIZED TIME and UTC TIME exist)
  *
  * @param instant the timestamp to encode
- * @param formatOverride to force either  GENERALIZED TIME or UTC TIME
+ * @param formatOverride to force either GENERALIZED TIME or UTC TIME
  */
+@Serializable(with = Asn1Time.Companion::class)
 class Asn1Time(instant: Instant, formatOverride: Format? = null) : Asn1Encodable<Asn1Primitive> {
 
     val instant = Instant.fromEpochSeconds(instant.epochSeconds)
@@ -21,12 +30,13 @@ class Asn1Time(instant: Instant, formatOverride: Format? = null) : Asn1Encodable
     val format: Format =
         formatOverride ?: if (this.instant > THRESHOLD_GENERALIZED_TIME) Format.GENERALIZED else Format.UTC
 
-    companion object : Asn1Decodable<Asn1Primitive, Asn1Time> {
+    companion object : Asn1Decodable<Asn1Primitive, Asn1Time> , Asn1Serializer<Asn1Primitive, Asn1Time>{
         private val THRESHOLD_GENERALIZED_TIME = Instant.parse("2050-01-01T00:00:00Z")
 
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Primitive) =
             Asn1Time(src.decodeToInstant(), if (src.tag == Asn1Element.Tag.TIME_UTC) Format.UTC else Format.GENERALIZED)
+
     }
 
     override fun encodeToTlv(): Asn1Primitive =

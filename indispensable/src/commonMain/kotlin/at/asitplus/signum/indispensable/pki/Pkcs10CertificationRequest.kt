@@ -12,6 +12,9 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1BitString
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
 import at.asitplus.signum.indispensable.requireSupported
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
+import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
+import kotlinx.serialization.Serializable
 
 /**
  * The meat of a PKCS#10 Certification Request:
@@ -21,6 +24,7 @@ import at.asitplus.signum.indispensable.requireSupported
  * @param publicKey nomen est omen
  * @param attributes nomen est omen
  */
+@Serializable(with = TbsCertificationRequest.Companion::class)
 data class TbsCertificationRequest(
     val version: Int = 0,
     val subjectName: List<RelativeDistinguishedName>,
@@ -60,7 +64,7 @@ data class TbsCertificationRequest(
         +ExplicitlyTagged(0u) { attributes.map { +it } }
     }
 
-    companion object : Asn1Decodable<Asn1Sequence, TbsCertificationRequest> {
+    companion object : Asn1Decodable<Asn1Sequence, TbsCertificationRequest>, Asn1Serializer<Asn1Sequence, TbsCertificationRequest> {
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence) = src.decodeRethrowing {
             val version = (next() as Asn1Primitive).decodeToInt()
@@ -86,6 +90,7 @@ data class TbsCertificationRequest(
 /**
  * Very simple implementation of a PKCS#10 Certification Request
  */
+@Serializable(with = Pkcs10CertificationRequest.Companion::class)
 data class Pkcs10CertificationRequest(
     val tbsCsr: TbsCertificationRequest,
     val signatureAlgorithm: X509SignatureAlgorithmDescription,
@@ -119,7 +124,7 @@ data class Pkcs10CertificationRequest(
     companion object : PemDecodable<Asn1Sequence, Pkcs10CertificationRequest>(
         EB_STRINGS.DEFAULT,
         EB_STRINGS.LEGACY
-    ) {
+    ), Asn1Serializer<Asn1Sequence, Pkcs10CertificationRequest> {
         private object EB_STRINGS {
             const val DEFAULT = "CERTIFICATE REQUEST"
             const val LEGACY = "NEW CERTIFICATE REQUEST"

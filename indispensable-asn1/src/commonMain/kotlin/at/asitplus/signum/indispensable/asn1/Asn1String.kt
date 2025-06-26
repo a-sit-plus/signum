@@ -1,30 +1,8 @@
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.signum.indispensable.asn1.BERTags.BMP_STRING
-import at.asitplus.signum.indispensable.asn1.BERTags.GENERAL_STRING
-import at.asitplus.signum.indispensable.asn1.BERTags.GRAPHIC_STRING
-import at.asitplus.signum.indispensable.asn1.BERTags.IA5_STRING
-import at.asitplus.signum.indispensable.asn1.BERTags.NUMERIC_STRING
-import at.asitplus.signum.indispensable.asn1.BERTags.PRINTABLE_STRING
-import at.asitplus.signum.indispensable.asn1.BERTags.T61_STRING
-import at.asitplus.signum.indispensable.asn1.BERTags.UNIVERSAL_STRING
-import at.asitplus.signum.indispensable.asn1.BERTags.UNRESTRICTED_STRING
-import at.asitplus.signum.indispensable.asn1.BERTags.UTF8_STRING
-import at.asitplus.signum.indispensable.asn1.BERTags.VIDEOTEX_STRING
-import at.asitplus.signum.indispensable.asn1.BERTags.VISIBLE_STRING
-import at.asitplus.signum.indispensable.asn1.encoding.decodeFromAsn1ContentBytes
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToBmpString
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToGeneralString
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToGraphicString
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToIa5String
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToNumericString
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToPrintableString
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToTeletextString
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToUniversalString
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToUnrestrictedString
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToUtf8String
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToVideotexString
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToVisibleString
+import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 
 /**
@@ -37,6 +15,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.decodeToVisibleString
  * The [isValid] property indicates whether the bytes contained in an ASN.1 String object type are valid
  * according to the validation rules of that type.
  */
+@Serializable(with = Asn1String.Companion::class)
 sealed class Asn1String(
     val rawValue: ByteArray,
     val performValidation: Boolean
@@ -62,6 +41,7 @@ sealed class Asn1String(
     /**
      * UTF8 STRING (verbatim String)
      */
+    @Serializable(with = Asn1String.Companion::class)
     class UTF8 private constructor(
         rawValue: ByteArray,
         performValidation: Boolean
@@ -88,6 +68,7 @@ sealed class Asn1String(
      * UNIVERSAL STRING (no checks)
      * Validation is not implemented. This string format is deprecated for HTTPS certificates and its use in generally discouraged in favor of UTF-8 strings (see [Asn1String.UTF8]).
      */
+    @Serializable(with = Asn1String.Companion::class)
     class Universal private constructor(
         rawValue: ByteArray,
         performValidation: Boolean
@@ -108,6 +89,7 @@ sealed class Asn1String(
     /**
      * VISIBLE STRING (checked)
      */
+    @Serializable(with = Asn1String.Companion::class)
     class Visible private constructor(
         rawValue: ByteArray,
         performValidation: Boolean
@@ -133,6 +115,7 @@ sealed class Asn1String(
     /**
      * IA5 STRING (checked)
      */
+    @Serializable(with = Asn1String.Companion::class)
     class IA5 private constructor(
         rawValue: ByteArray,
         performValidation: Boolean
@@ -159,6 +142,7 @@ sealed class Asn1String(
      * TELETEX STRING (checked).
      *  This string format is deprecated for HTTPS certificates and its use in generally discouraged in favor of UTF-8 strings (see [Asn1String.UTF8]).
      */
+    @Serializable(with = Asn1String.Companion::class)
     class Teletex private constructor(
         rawValue: ByteArray,
         performValidation: Boolean
@@ -185,6 +169,7 @@ sealed class Asn1String(
      * BMP STRING (unchecked).
      * Validation is not implemented. This string format is deprecated for HTTPS certificates and its use in generally discouraged in favor of UTF-8 strings (see [Asn1String.UTF8]).
      */
+    @Serializable(with = Asn1String.Companion::class)
     class BMP private constructor(
         rawValue: ByteArray,
         performValidation: Boolean
@@ -205,6 +190,7 @@ sealed class Asn1String(
     /**
      * GENERAL STRING (checked)
      */
+    @Serializable(with = Asn1String.Companion::class)
     class General private constructor(
         rawValue: ByteArray,
         performValidation: Boolean
@@ -230,6 +216,7 @@ sealed class Asn1String(
     /**
      * GRAPHIC STRING (checked)
      */
+    @Serializable(with = Asn1String.Companion::class)
     class Graphic private constructor(
         rawValue: ByteArray,
         performValidation: Boolean
@@ -255,6 +242,7 @@ sealed class Asn1String(
     /**
      * CHARACTER/UNRESTRICTED STRING (no checks)
      */
+    @Serializable(with = Asn1String.Companion::class)
     class Unrestricted private constructor(
         rawValue: ByteArray,
         performValidation: Boolean
@@ -276,6 +264,7 @@ sealed class Asn1String(
      * VIDEOTEX STRING (no checks)
      * Validation is not implemented. This type is no longer used in practice.
      */
+    @Serializable(with = Asn1String.Companion::class)
     class Videotex private constructor(
         rawValue: ByteArray,
         performValidation: Boolean
@@ -296,6 +285,7 @@ sealed class Asn1String(
     /**
      * PRINTABLE STRING (checked)
      */
+    @Serializable(with = Asn1String.Companion::class)
     class Printable private constructor(
         rawValue: ByteArray,
         performValidation: Boolean
@@ -321,6 +311,7 @@ sealed class Asn1String(
     /**
      * NUMERIC STRING (checked)
      */
+    @Serializable(with = Asn1String.Companion::class)
     class Numeric private constructor(
         rawValue: ByteArray,
         performValidation: Boolean
@@ -362,7 +353,7 @@ sealed class Asn1String(
         return result
     }
 
-    companion object : Asn1Decodable<Asn1Primitive, Asn1String> {
+    companion object : Asn1Decodable<Asn1Primitive, Asn1String>, Asn1Serializer<Asn1Primitive, Asn1String>{
 
         /**
          * Decodes an [Asn1Primitive] into a specific [Asn1String] subtype based on its tag.

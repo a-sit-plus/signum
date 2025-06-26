@@ -4,10 +4,12 @@ import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.readNull
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
+import kotlinx.serialization.Serializable
 
 sealed interface MessageAuthenticationCode : DataIntegrityAlgorithm, Enumerable {
     /** output size of MAC */
@@ -44,6 +46,7 @@ interface SpecializedMessageAuthenticationCode : SpecializedDataIntegrityAlgorit
 /**
  * RFC 2104 HMAC
  */
+@Serializable(with = HMAC.Companion::class)
 enum class HMAC(val digest: Digest, override val oid: ObjectIdentifier) : MessageAuthenticationCode, Identifiable,
     Asn1Encodable<Asn1Sequence> {
     SHA1(Digest.SHA1, KnownOIDs.hmacWithSHA1),
@@ -60,7 +63,7 @@ enum class HMAC(val digest: Digest, override val oid: ObjectIdentifier) : Messag
     }
 
 
-    companion object : Asn1Decodable<Asn1Sequence, HMAC>, Enumeration<HMAC> {
+    companion object : Asn1Decodable<Asn1Sequence, HMAC>, Enumeration<HMAC>, Asn1Serializer<Asn1Sequence, HMAC> {
 
         fun byOID(oid: ObjectIdentifier): HMAC? = entries.find { it.oid == oid }
 

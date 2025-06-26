@@ -1,27 +1,75 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
-import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.asn1.Asn1Decodable
+import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.Asn1OctetString
+import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
+import java.security.KeyPairGenerator
 import kotlin.random.Random
 
 
 @OptIn(ExperimentalStdlibApi::class)
 class SerializationTest : FreeSpec({
 
+    "String" {
+        val str = Asn1String.UTF8("foo")
+        val serialized = encodeToDer(str).also { println(it.toHexString()) }
+
+        decodeFromDer<Asn1String>(serialized) shouldBe str
+        decodeFromDer<Asn1String.UTF8>(serialized) shouldBe str
+        val strd: Asn1String = decodeFromDer<Asn1String.BMP>(serialized)
+
+
+    }
+
+
+    "EC-256 Key Generation and Signing" {
+        // Generate EC-256 keypair using JCA
+        val keyPairGenerator = KeyPairGenerator.getInstance("EC")
+        val ecGenParameterSpec = java.security.spec.ECGenParameterSpec("secp256r1") // P-256 curve
+        keyPairGenerator.initialize(ecGenParameterSpec)
+        val keyPair = keyPairGenerator.generateKeyPair()
+
+        val privateKey = keyPair.private
+        val publicKey = keyPair.public
+
+        val signumPrivateKey = privateKey.toCryptoPrivateKey().getOrThrow()
+        val signumPublicKey = publicKey.toCryptoPublicKey().getOrThrow()
+
+        signumPrivateKey.encodeToDer() shouldBe encodeToDer<CryptoPrivateKey>(signumPrivateKey)
+        decodeFromDer<CryptoPrivateKey>(signumPrivateKey.encodeToDer()) shouldBe signumPrivateKey
+
+        signumPublicKey.encodeToDer() shouldBe encodeToDer(signumPublicKey)
+        decodeFromDer<CryptoPublicKey>(signumPublicKey.encodeToDer()) shouldBe signumPublicKey
+
+        // Generate some random data to sign
+        val dataToSign = Random.nextBytes(32) // 32 bytes of random data
+        println("Data to sign (hex): ${dataToSign.toHexString()}")
+
+        // Create signature instance
+        val signature = java.security.Signature.getInstance("SHA256withECDSA")
+
+        // Sign the data
+        signature.initSign(privateKey)
+        signature.update(dataToSign)
+        val signatureBytes = signature.sign()
+
+        val signumSig = CryptoSignature.decodeFromDer(signatureBytes).shouldBeInstanceOf<CryptoSignature.EC>()
+        decodeFromDer<CryptoSignature>(signatureBytes) shouldBe signumSig
+
+    }
 
     "Annotation Order" {
         val outerOctet = encodeToDer(OuterOctetInnerTag())
-         val nothing= encodeToDer(NothingOnClass("foo"))
+        val nothing = encodeToDer(NothingOnClass("foo"))
         val outerTag = encodeToDer(OuterTagInnerOctet())
 
-          println(nothing.toHexString())
+        println(nothing.toHexString())
         println(outerOctet.toHexString())
         println(outerTag.toHexString())
 
@@ -30,10 +78,10 @@ class SerializationTest : FreeSpec({
 
 
     "Implicit tagging" - {
-        val imlNothing = encodeToDer(NothingOnClass("foo")).also { println("imlNothing "+it.toHexString()) }
-        val imlClass = encodeToDer(ImplicitOnClass("foo")).also { println("imlClass "+it.toHexString()) }
-        val imlProp = encodeToDer(ImplicitOnProperty("foo")).also { println("imlProp "+it.toHexString()) }
-        val imlBoth = encodeToDer(ImplicitOnBoth("foo")).also { println("imlBoth "+it.toHexString()) }
+        val imlNothing = encodeToDer(NothingOnClass("foo")).also { println("imlNothing " + it.toHexString()) }
+        val imlClass = encodeToDer(ImplicitOnClass("foo")).also { println("imlClass " + it.toHexString()) }
+        val imlProp = encodeToDer(ImplicitOnProperty("foo")).also { println("imlProp " + it.toHexString()) }
+        val imlBoth = encodeToDer(ImplicitOnBoth("foo")).also { println("imlBoth " + it.toHexString()) }
 
         decodeFromDer<NothingOnClass>(imlNothing) shouldBe NothingOnClass("foo")
         decodeFromDer<ImplicitOnClass>(imlClass) shouldBe ImplicitOnClass("foo")
@@ -230,7 +278,7 @@ class SerializationTest : FreeSpec({
         println(encodeToDer(string).toHexString())
 
 
-      //  val str = decodeFromDer<String>(encodeToDer(string))
+        //  val str = decodeFromDer<String>(encodeToDer(string))
 
 
         // val complex = decodeFromDer<TypesUmbrella>(derEncoded)
@@ -271,7 +319,8 @@ enum class Baz {
     Layer(Type.OCTET_STRING),
     Layer(Type.EXPLICIT_TAG, 66uL),
     Layer(Type.OCTET_STRING),
-    Layer(Type.IMPLICIT_TAG, 33uL))
+    Layer(Type.IMPLICIT_TAG, 33uL)
+)
 @Serializable
 data class TypesUmbrella(
 
@@ -378,12 +427,10 @@ data class NullableByteString(
 
 
 @Serializable
-@Asn1nnotation(asSet = true)
 data class SetSemanticsClass(val a: String, val b: List<String>)
 
 @Serializable
-@Asn1nnotation(asSet = true)
-data class SetSemanticsProp(val a: String, @Asn1nnotation(asSet = true) val b: List<String>)
+data class SetSemanticsProp(val a: String, val b: List<String>)
 
 @Serializable
 data class SequenceSemantics(val a: String, val b: List<String>)
