@@ -300,6 +300,8 @@ fun <T> encodeToAsn1Bytes(serializer: SerializationStrategy<T>, value: T): ByteA
 
 @ExperimentalSerializationApi
 inline fun <reified T> encodeToDer(value: T) = encodeToAsn1Bytes(serializer(), value)
+@ExperimentalSerializationApi
+//todo custom functions for cryptoprivatekey and possibly others with star projections in indispensable module
 
 private val setDescriptor: SerialDescriptor = SetSerializer(String.serializer()).descriptor
 internal val SerialDescriptor.isSetDescriptor: Boolean get() = setDescriptor::class.isInstance(this)
