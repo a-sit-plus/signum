@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -8,6 +9,7 @@ import kotlinx.serialization.Serializable
 /**
  * ASN.! String class used as wrapper do discriminate between different ASN.1 string types
  */
+@Serializable(with = Asn1String.Companion::class)
 sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
     abstract val tag: ULong
     abstract val value: String
@@ -15,6 +17,7 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
     /**
      * UTF8 STRING (verbatim String)
      */
+    @Serializable(with = Asn1String.Companion::class)
     class UTF8(override val value: String) : Asn1String() {
         override val tag = BERTags.UTF8_STRING.toULong()
     }
@@ -22,6 +25,7 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
     /**
      * UNIVERSAL STRING (unchecked)
      */
+    @Serializable(with = Asn1String.Companion::class)
     class Universal(override val value: String) : Asn1String() {
         override val tag = BERTags.UNIVERSAL_STRING.toULong()
     }
@@ -29,6 +33,7 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
     /**
      * VISIBLE STRING (no checks)
      */
+    @Serializable(with = Asn1String.Companion::class)
     class Visible(override val value: String) : Asn1String() {
         override val tag = BERTags.VISIBLE_STRING.toULong()
     }
@@ -36,6 +41,7 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
     /**
      * IA5 STRING (no checks)
      */
+    @Serializable(with = Asn1String.Companion::class)
     class IA5(override val value: String) : Asn1String() {
         override val tag = BERTags.IA5_STRING.toULong()
     }
@@ -43,6 +49,7 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
     /**
      * TELETEX STRING (no checks)
      */
+    @Serializable(with = Asn1String.Companion::class)
     class Teletex(override val value: String) : Asn1String() {
         override val tag = BERTags.T61_STRING.toULong()
     }
@@ -50,6 +57,7 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
     /**
      * BMP STRING (no checks)
      */
+    @Serializable(with = Asn1String.Companion::class)
     class BMP(override val value: String) : Asn1String() {
         override val tag = BERTags.BMP_STRING.toULong()
     }
@@ -58,6 +66,7 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
      * PRINTABLE STRING (checked)
      * @throws Asn1Exception if illegal characters are provided
      */
+    @Serializable(with = Asn1String.Companion::class)
     class Printable @Throws(Asn1Exception::class) constructor(override val value: String) : Asn1String() {
         init {
             Regex("[a-zA-Z0-9 '()+,-./:=?]*").matchEntire(value)
@@ -71,6 +80,7 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
      * NUMERIC STRING (checked)
      * @throws Asn1Exception if illegal characters are provided
      */
+    @Serializable(with = Asn1String.Companion::class)
     class Numeric @Throws(Asn1Exception::class) constructor(override val value: String) : Asn1String() {
         init {
             Regex("[0-9 ]*").matchEntire(value)
@@ -99,7 +109,7 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
         return result
     }
 
-    companion object : Asn1Decodable<Asn1Primitive, Asn1String> {
+    companion object : Asn1Decodable<Asn1Primitive, Asn1String>, Asn1Serializer<Asn1Primitive, Asn1String>{
 
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Primitive): Asn1String = src.asAsn1String()

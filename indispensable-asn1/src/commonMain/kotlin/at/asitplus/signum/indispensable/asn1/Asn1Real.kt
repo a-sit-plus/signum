@@ -3,6 +3,7 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -20,7 +21,7 @@ private const val IEEE754_BIAS = 1023
  * ASN.1 REAL number. Mind possible loss of precision compared to Kotlin's built-in types.
  * This type is irrelevant for PKI applications, but required for generic ASN.1 serialization
  */
-@Serializable(with = Asn1RealSerializer::class)
+@Serializable(with = Asn1Real.Companion::class)
 sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
 
     /**
@@ -38,14 +39,14 @@ sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
         Zero -> 0.0
     }
 
-    @Serializable(with = Asn1RealSerializer::class)
+    @Serializable(with = Asn1RealStringSerializer::class)
     object Zero : Asn1Real
-    @Serializable(with = Asn1RealSerializer::class)
+    @Serializable(with = Asn1RealStringSerializer::class)
     object PositiveInfinity : Asn1Real
-    @Serializable(with = Asn1RealSerializer::class)
+    @Serializable(with = Asn1RealStringSerializer::class)
     object NegativeInfinity : Asn1Real
 
-    @Serializable(with = Asn1RealSerializer::class)
+    @Serializable(with = Asn1RealStringSerializer::class)
     @ConsistentCopyVisibility
     data class Finite internal constructor(val normalizedMantissa: Asn1Integer, val normalizedExponent: Long) :
         Asn1Real
@@ -82,7 +83,7 @@ sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
         }
     }
 
-    companion object : Asn1Decodable<Asn1Primitive, Asn1Real> {
+    companion object : Asn1Decodable<Asn1Primitive, Asn1Real>, Asn1Serializer<Asn1Primitive, Asn1Real> {
         /**
          * Converts a Double into an ASN.1 REAL.
          * **Beware of the fact that ASN.1 REAL zero knows no sign!**
@@ -188,7 +189,8 @@ sealed interface Asn1Real : Asn1Encodable<Asn1Primitive> {
     }
 }
 
-object Asn1RealSerializer : KSerializer<Asn1Real> {
+/**Serializes an ASN.1 REAL into a hunam-readable string*/
+object Asn1RealStringSerializer : KSerializer<Asn1Real> {
     override val descriptor: SerialDescriptor
         get() = PrimitiveSerialDescriptor("Asn1Real", PrimitiveKind.STRING)
 

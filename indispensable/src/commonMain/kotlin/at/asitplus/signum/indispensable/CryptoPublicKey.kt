@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.BitString
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix.Companion.hasPrefix
 import at.asitplus.signum.internals.checkedAsFn
@@ -21,6 +22,7 @@ private const val PEM_BOUNDARY = "PUBLIC KEY"
 /**
  * Representation of a public key structure
  */
+@Serializable(with = CryptoPublicKey.Companion::class)
 sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
 
     /**
@@ -65,7 +67,7 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
     companion object : PemDecodable<Asn1Sequence, CryptoPublicKey>(
         PEM_BOUNDARY to DEFAULT_PEM_DECODER,
         "RSA PUBLIC KEY" to checkedAsFn(RSA::fromPKCS1encoded),
-        ) {
+        ),Asn1Serializer<Asn1Sequence, CryptoPublicKey> {
         /**
          * Parses a DID representation of a public key and
          * reconstructs the corresponding [CryptoPublicKey] from it
@@ -163,6 +165,7 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
     }
 
     /** RSA Public key */
+    @Serializable(with= CryptoPublicKey.Companion::class)
     data class RSA
     @Throws(IllegalArgumentException::class)
     constructor(
@@ -256,6 +259,7 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
      */
     @SerialName("EC")
     @ConsistentCopyVisibility
+    @Serializable(with= CryptoPublicKey.Companion::class)
     data class EC private constructor(
         val publicPoint: ECPoint.Normalized,
         val preferCompressedRepresentation: Boolean = true

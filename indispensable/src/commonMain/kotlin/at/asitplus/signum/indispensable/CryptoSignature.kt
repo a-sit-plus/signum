@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1Serializer
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.signum.indispensable.misc.BitLength
@@ -26,7 +27,7 @@ import kotlinx.serialization.encoding.Encoder
  * Allows simple ASN1 - Raw transformation of signature values
  */
 
-@Serializable(with = CryptoSignature.CryptoSignatureSerializer::class)
+@Serializable(with = CryptoSignature.Companion::class)
 sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
 
 
@@ -61,7 +62,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
     val humanReadableString: String get() = "${this::class.simpleName ?: "CryptoSignature"}(signature=${encodeToTlv().prettyPrint()})"
 
 
-    object CryptoSignatureSerializer : KSerializer<CryptoSignature> {
+    object CryptoSignatureStringSerializer : KSerializer<CryptoSignature> {
         override val descriptor: SerialDescriptor
             get() = PrimitiveSerialDescriptor("CryptoSignature", PrimitiveKind.STRING)
 
@@ -74,7 +75,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
         }
     }
 
-
+    @Serializable(with = EC.Companion::class)
     sealed class EC
     @Throws(IllegalArgumentException::class) private constructor(
         /** r - ECDSA signature component */
@@ -145,7 +146,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
                 private val curvesByScalarLength by lazy { ECCurve.entries.sortedBy { it.scalarLength } }
             }
         }
-
+        @Serializable(with = EC.Companion::class)
         class DefiniteLength @Throws(IllegalArgumentException::class) internal constructor(
             /**
              * scalar byte length of the underlying curve;
@@ -177,7 +178,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
             }
         }
 
-        companion object : Asn1Decodable<Asn1Element, EC.IndefiniteLength> {
+        companion object : Asn1Decodable<Asn1Element, EC.IndefiniteLength>, Asn1Serializer<Asn1Element,EC.IndefiniteLength> {
 
             fun fromRS(r: BigInteger, s: BigInteger) =
                 EC.IndefiniteLength(r, s)
@@ -220,7 +221,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
         }
 
     }
-
+    @Serializable(with = RSA.Companion::class)
     class RSA private constructor (rawBytes: ByteArray?, x509Element: Asn1Primitive?) : CryptoSignature, RawByteEncodable {
         constructor(rawBytes: ByteArray) : this(rawBytes, null)
         constructor(x509Element: Asn1Primitive) : this(null, x509Element)
@@ -250,7 +251,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
             return signature == other.signature
         }
 
-        companion object : Asn1Decodable<Asn1Element, RSA> {
+        companion object : Asn1Decodable<Asn1Element, RSA> , Asn1Serializer<Asn1Element,RSA> {
             @Throws(Asn1Exception::class)
             override fun doDecode(src: Asn1Element): RSA {
                 src as Asn1Primitive
@@ -259,7 +260,7 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
         }
     }
 
-    companion object : Asn1Decodable<Asn1Element, CryptoSignature> {
+    companion object : Asn1Decodable<Asn1Element, CryptoSignature>, Asn1Serializer<Asn1Element, CryptoSignature> {
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Element): CryptoSignature = runRethrowing {
             when (src.tag) {
