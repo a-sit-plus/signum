@@ -11,27 +11,27 @@ import kotlinx.io.Sink
 import kotlinx.io.readByteArray
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlin.experimental.ExperimentalObjCName
 import kotlin.native.ObjCName
 
-internal object Asn1ElementHexStringSerializer: KSerializer<Asn1Element> {
+internal object Asn1ElementgSerializer : KSerializer<Asn1Element> {
+    private val delegate = ByteArraySerializer()
     override val descriptor: SerialDescriptor
-        get() = PrimitiveSerialDescriptor("Asn1ElementHexpoded", PrimitiveKind.STRING)
+        get() = SerialDescriptor("Asn1ElementDerEncodedSerializer", delegate.descriptor)
 
     override fun serialize(
         encoder: Encoder,
         value: Asn1Element
     ) {
-        encoder.encodeString(value.toDerHexString())
+        encoder.encodeSerializableValue(delegate, value.derEncoded)
     }
 
     override fun deserialize(decoder: Decoder): Asn1Element {
-        return Asn1Element.parseFromDerHexString(decoder.decodeString())
+        return delegate.deserialize(decoder).let { Asn1Element.parse(it) }
     }
 
 }
@@ -40,7 +40,7 @@ internal object Asn1ElementHexStringSerializer: KSerializer<Asn1Element> {
  * Base ASN.1 data class. Can either be a primitive (holding a value), or a structure (holding other ASN.1 elements)
  */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
-@Serializable(with = Asn1ElementHexStringSerializer::class)
+@Serializable(with = Asn1ElementgSerializer::class)
 sealed class Asn1Element(
     val tag: Tag
 ) {
@@ -521,7 +521,7 @@ object Asn1Null : Asn1Primitive(Asn1Element.Tag.NULL, byteArrayOf())
  * ASN.1 structure. Contains no data itself, but holds zero or more [children]
  */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
-@Serializable(with = Asn1ElementHexStringSerializer::class)
+@Serializable(with = Asn1ElementgSerializer::class)
 sealed class Asn1Structure(
     /**
      * The tag identifying this structure
@@ -637,7 +637,7 @@ sealed class Asn1Structure(
  * Explicit ASN.1 Tag. Can contain any number of [children]
  */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
-@Serializable(with = Asn1ElementHexStringSerializer::class)
+@Serializable(with = Asn1ElementgSerializer::class)
 class Asn1ExplicitlyTagged
 /**
  * @param tag the ASN.1 Tag to be used will be properly encoded to have [BERTags.CONSTRUCTED] and
@@ -705,7 +705,7 @@ class Asn1Sequence internal constructor(children: List<Asn1Element>) :
  * ASN1 structure (i.e. containing child nodes) with custom tag
  */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
-@Serializable(with = Asn1ElementHexStringSerializer::class)
+@Serializable(with = Asn1ElementgSerializer::class)
 class Asn1CustomStructure private constructor(
     tag: Tag, children: List<Asn1Element>, sortChildren: Boolean, shouldBeSorted: Boolean
 ) :
@@ -783,7 +783,7 @@ class Asn1CustomStructure private constructor(
  * @param children the elements to put into this sequence
  */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
-@Serializable(with = Asn1ElementHexStringSerializer::class)
+@Serializable(with = Asn1ElementgSerializer::class)
 class Asn1EncapsulatingOctetString(children: List<Asn1Element>) :
     Asn1Structure(Tag.OCTET_STRING, children, sortChildren = false, shouldBeSorted = false),
     Asn1OctetString {
@@ -808,7 +808,7 @@ class Asn1EncapsulatingOctetString(children: List<Asn1Element>) :
  * Cast to [Asn1OctetString] instead.
  */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
-@Serializable(with = Asn1ElementHexStringSerializer::class)
+@Serializable(with = Asn1ElementgSerializer::class)
 class Asn1PrimitiveOctetString(content: ByteArray) : Asn1Primitive(Tag.OCTET_STRING, content),
     Asn1OctetString {
 
@@ -827,7 +827,7 @@ class Asn1PrimitiveOctetString(content: ByteArray) : Asn1Primitive(Tag.OCTET_STR
  * ASN.1 SET 0x31 ([BERTags.SET] OR [BERTags.CONSTRUCTED])
  */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
-@Serializable(with = Asn1ElementHexStringSerializer::class)
+@Serializable(with = Asn1ElementgSerializer::class)
 open class Asn1Set private constructor(children: List<Asn1Element>, dontSort: Boolean) :
     Asn1Structure(Tag.SET, children, !dontSort, shouldBeSorted = true) {
 
@@ -858,7 +858,7 @@ open class Asn1Set private constructor(children: List<Asn1Element>, dontSort: Bo
  * @throws Asn1Exception if children are using different tags
  */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
-@Serializable(with = Asn1ElementHexStringSerializer::class)
+@Serializable(with = Asn1ElementgSerializer::class)
 class Asn1SetOf @Throws(Asn1Exception::class) internal constructor(children: List<Asn1Element>) :
     Asn1Set(children.also { it ->
         if (it.any { elem -> elem.tag != it.first().tag }) throw Asn1Exception("SET OF must only contain elements of the same tag")
@@ -868,7 +868,7 @@ class Asn1SetOf @Throws(Asn1Exception::class) internal constructor(children: Lis
  * ASN.1 primitive. Holds no children, but [content] under [tag]
  */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
-@Serializable(with = Asn1ElementHexStringSerializer::class)
+@Serializable(with = Asn1ElementgSerializer::class)
 open class Asn1Primitive(
     tag: Tag,
     /**
@@ -948,7 +948,7 @@ open class Asn1Primitive(
  * (Your arbitrary bytes might inadvertently be valid ASN.1!)
  */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
-@Serializable(with = Asn1ElementHexStringSerializer::class)
+@Serializable(with = Asn1ElementgSerializer::class)
 sealed interface Asn1OctetString {
 
     /**

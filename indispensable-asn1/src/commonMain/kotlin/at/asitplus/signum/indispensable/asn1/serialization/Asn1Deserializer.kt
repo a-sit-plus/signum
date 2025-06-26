@@ -192,7 +192,7 @@ class Asn1Deserializer private constructor(
                 .decodeToULong(expectedTag ?: Asn1Element.Tag.INT)
                 .also { index++ } as T
 
-            Asn1ElementHexStringSerializer -> return processedElement
+            Asn1ElementgSerializer -> return processedElement
                 .also {
                     expectedTag?.let { ex ->
                         if (it.tag != ex) throw Asn1TagMismatchException(ex, it.tag)
