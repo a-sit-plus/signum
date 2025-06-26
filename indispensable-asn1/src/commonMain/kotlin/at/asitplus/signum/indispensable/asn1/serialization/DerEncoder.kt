@@ -10,6 +10,8 @@ import kotlinx.io.readByteArray
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.builtins.ByteArraySerializer
+import kotlinx.serialization.builtins.SetSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.AbstractEncoder
 import kotlinx.serialization.modules.EmptySerializersModule
@@ -26,18 +28,18 @@ import kotlinx.serialization.serializer
 private sealed class Asn1ElementHolder {
     data class Element(val element: Asn1Element) : Asn1ElementHolder()
     class StructurePlaceholder(
-        val childSerializer: Asn1Serializer,
+        val childSerializer: DerEncoder,
         val descriptor: SerialDescriptor
     ) : Asn1ElementHolder()
 
     sealed class NestedStructurePlaceholder(
-        val childSerializer: Asn1Serializer,
+        val childSerializer: DerEncoder,
         val annotations: List<Layer>,
     ) : Asn1ElementHolder() {
-        class OctetString(childSerializer: Asn1Serializer, annotations: List<Layer>) :
+        class OctetString(childSerializer: DerEncoder, annotations: List<Layer>) :
             NestedStructurePlaceholder(childSerializer, annotations)
 
-        class ExplicitTag(val tag: ULong, childSerializer: Asn1Serializer, annotations: List<Layer>) :
+        class ExplicitTag(val tag: ULong, childSerializer: DerEncoder, annotations: List<Layer>) :
             NestedStructurePlaceholder(childSerializer, annotations)
     }
 
@@ -66,7 +68,7 @@ private class ImplicitTaggingBuffer(
 
 
 @ExperimentalSerializationApi
-class Asn1Serializer(
+class DerEncoder(
     override val serializersModule: SerializersModule = EmptySerializersModule(),
 ) : AbstractEncoder() {
 
@@ -150,7 +152,7 @@ class Asn1Serializer(
         else super.encodeSerializableValue(serializer, value)
     }
 
-    override fun beginStructure(descriptor: SerialDescriptor): Asn1Serializer {
+    override fun beginStructure(descriptor: SerialDescriptor): DerEncoder {
         // Get property-level annotations BEFORE clearing descriptorAndIndex
         val propertyAnnotations = descriptorAndIndex?.let { (descriptor, index) ->
             descriptor.getElementAnnotations(index).asn1Layers
@@ -164,7 +166,7 @@ class Asn1Serializer(
         val allAnnotations = propertyAnnotations + descriptor.annotations.asn1Layers
         val targetBuffer = processAnnotationsAndGetTarget(allAnnotations)
 
-        val childSerializer = Asn1Serializer(serializersModule)
+        val childSerializer = DerEncoder(serializersModule)
         val placeholder = Asn1ElementHolder.StructurePlaceholder(childSerializer, descriptor)
         targetBuffer += placeholder
         return childSerializer
@@ -217,7 +219,7 @@ class Asn1Serializer(
             }
 
             Type.OCTET_STRING -> {
-                val childSerializer = Asn1Serializer(serializersModule)
+                val childSerializer = DerEncoder(serializersModule)
                 val placeholder =
                     Asn1ElementHolder.NestedStructurePlaceholder.OctetString(
                         childSerializer,
@@ -228,7 +230,7 @@ class Asn1Serializer(
             }
 
             Type.EXPLICIT_TAG -> {
-                val childSerializer = Asn1Serializer(serializersModule)
+                val childSerializer = DerEncoder(serializersModule)
                 val placeholder =
                     Asn1ElementHolder.NestedStructurePlaceholder.ExplicitTag(
                         current.tag,
@@ -256,13 +258,14 @@ private fun finalizeElements(holders: List<Asn1ElementHolder>): List<Asn1Element
     }
 }
 
-private fun finalizeElement(holder: Asn1ElementHolder): Asn1Element {
+    private fun finalizeElement(holder: Asn1ElementHolder): Asn1Element {
+
     return when (holder) {
         is Asn1ElementHolder.Element -> holder.element
 
         is Asn1ElementHolder.StructurePlaceholder -> {
             val childElements = finalizeElements(holder.childSerializer.buffer)
-            if (holder.descriptor.isAsn1Set) {
+            if (holder.descriptor.isSetDescriptor) {
                 Asn1Set(childElements)
             } else {
                 Asn1Sequence(childElements)
@@ -290,10 +293,13 @@ private fun finalizeElement(holder: Asn1ElementHolder): Asn1Element {
 
 @ExperimentalSerializationApi
 fun <T> encodeToAsn1Bytes(serializer: SerializationStrategy<T>, value: T): ByteArray {
-    val encoder = Asn1Serializer()
+    val encoder = DerEncoder()
     encoder.encodeSerializableValue(serializer, value)
     return Buffer().also { encoder.writeTo(it) }.readByteArray()
 }
 
 @ExperimentalSerializationApi
 inline fun <reified T> encodeToDer(value: T) = encodeToAsn1Bytes(serializer(), value)
+
+private val setDescriptor: SerialDescriptor = SetSerializer(String.serializer()).descriptor
+internal val SerialDescriptor.isSetDescriptor: Boolean get() = setDescriptor::class.isInstance(this)
