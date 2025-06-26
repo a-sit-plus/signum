@@ -41,7 +41,7 @@ class SerializationTest : FreeSpec({
         val signumPrivateKey = privateKey.toCryptoPrivateKey().getOrThrow()
         val signumPublicKey = publicKey.toCryptoPublicKey().getOrThrow()
 
-        signumPrivateKey.encodeToDer() shouldBe encodeToDer<CryptoPrivateKey>(signumPrivateKey)
+        signumPrivateKey.encodeToDer() shouldBe encodeToDer(signumPrivateKey)
         decodeFromDer<CryptoPrivateKey>(signumPrivateKey.encodeToDer()) shouldBe signumPrivateKey
 
         signumPublicKey.encodeToDer() shouldBe encodeToDer(signumPublicKey)
