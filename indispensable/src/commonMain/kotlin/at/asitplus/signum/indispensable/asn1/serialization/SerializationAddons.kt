@@ -6,3 +6,5 @@ import kotlinx.serialization.ExperimentalSerializationApi
 
 @ExperimentalSerializationApi
 fun DER.encodeToDer(value:  CryptoPrivateKey.WithPublicKey<*>) = encodeToDer(CryptoPrivateKey.Companion, value)
+
+//TODO more shadowing

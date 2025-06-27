@@ -18,6 +18,11 @@ import java.security.KeyPairGenerator
 import kotlin.random.Random
 
 
+//TODO much more tests
+//SET
+//nesting proper
+//test with json serializer as well
+
 @OptIn(ExperimentalStdlibApi::class)
 class SerializationTest : FreeSpec({
 
