@@ -1,4 +1,4 @@
-package at.asitplus.signum.supreme.validate
+package at.asitplus.signum.indispensable.pki.validate
 
 import at.asitplus.signum.CertificatePolicyException
 import at.asitplus.signum.indispensable.asn1.KnownOIDs

@@ -24,6 +24,9 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsageExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.NameConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyMappingsExtension
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
 
 /**
  * X.509 Certificate Extension
@@ -67,12 +70,16 @@ open class X509CertificateExtension @Throws(Asn1Exception::class) private constr
             KnownOIDs.inhibitAnyPolicy to InhibitAnyPolicyExtension::decodeFromTlv,
             KnownOIDs.keyUsage to KeyUsageExtension::decodeFromTlv
         )
+        private val mutex = Mutex()
 
-        fun registerExtensionDecoder(
+
+        suspend fun registerExtensionDecoder(
             oid: ObjectIdentifier,
             decoder: (Asn1Sequence, Any?) -> X509CertificateExtension
         ) {
-            extensionDecoders[oid] = decoder
+            mutex.withLock {
+                extensionDecoders[oid] = decoder
+            }
         }
 
         @Throws(Asn1Exception::class)
