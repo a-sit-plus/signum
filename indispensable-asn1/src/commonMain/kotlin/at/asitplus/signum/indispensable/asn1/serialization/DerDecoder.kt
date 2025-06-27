@@ -2,7 +2,6 @@ package at.asitplus.signum.indispensable.asn1.serialization
 
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
-import kotlinx.io.Buffer
 import kotlinx.io.Source
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -13,7 +12,6 @@ import kotlinx.serialization.encoding.AbstractDecoder
 import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.serializer
 
 /**
  * Represents the current element being processed with its annotation context
@@ -157,10 +155,10 @@ class DerDecoder private constructor(
         // Tag-check for explicitly / implicitly tagged primitives
         val tagToValidate = expectedTag ?: run {
 
-            if(deserializer is Asn1Serializer<*,T>){
-                val encodable = when(processedElement) {
-                    is Asn1Primitive ->  (deserializer as Asn1Decodable<Asn1Primitive,T>).decodeFromTlv(processedElement)
-                    is Asn1Structure ->  (deserializer as Asn1Decodable<Asn1Structure,T>).decodeFromTlv(processedElement)
+            if (deserializer is Asn1Serializer<*, T>) {
+                val encodable = when (processedElement) {
+                    is Asn1Primitive -> (deserializer as Asn1Decodable<Asn1Primitive, T>).decodeFromTlv(processedElement)
+                    is Asn1Structure -> (deserializer as Asn1Decodable<Asn1Structure, T>).decodeFromTlv(processedElement)
                 }
                 index++
                 return encodable
@@ -294,8 +292,6 @@ class DerDecoder private constructor(
             }
         }
 
-
-
         return currentElement to currentTag
     }
 }
@@ -311,19 +307,22 @@ private fun getDefaultTagForDescriptor(descriptor: SerialDescriptor): Asn1Elemen
     }
 }
 
-@ExperimentalSerializationApi
-fun <T> decodeFromDer(source: ByteArray, deserializer: DeserializationStrategy<T>): T {
-    val decoder = DerDecoder(Buffer().also { it.write(source) })
-    return decoder.decodeSerializableValue(deserializer)
-}
 
-@ExperimentalSerializationApi
-inline fun <reified T> decodeFromDer(source: ByteArray): T = decodeFromDer(source, serializer())
-
-fun Asn1Primitive.decodeString(implicitTagOverride: Asn1Element.Tag?): String =
+private fun Asn1Primitive.decodeString(implicitTagOverride: Asn1Element.Tag?): String =
     if (implicitTagOverride == null) {
-        if (tag != Asn1Element.Tag.STRING_UTF8) throw Asn1TagMismatchException(Asn1Element.Tag.STRING_UTF8, tag)
-        decodeToString()
+        when (tag) {
+            Asn1Element.Tag.STRING_UTF8,
+            Asn1Element.Tag.STRING_BMP,
+            Asn1Element.Tag.STRING_NUMERIC,
+            Asn1Element.Tag.STRING_T61,
+            Asn1Element.Tag.STRING_VISIBLE,
+            Asn1Element.Tag.STRING_UNIVERSAL,
+            Asn1Element.Tag.STRING_PRINTABLE,
+            Asn1Element.Tag.STRING_IA5,
+                -> decodeToString()
+
+            else -> throw Asn1TagMismatchException(Asn1Element.Tag.STRING_UTF8, tag)
+        }
     } else {
         if (tag != implicitTagOverride) throw Asn1TagMismatchException(implicitTagOverride, tag)
         String.decodeFromAsn1ContentBytes(content)
