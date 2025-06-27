@@ -1,12 +1,9 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
 import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.Asn1Set
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
-import kotlinx.io.Buffer
 import kotlinx.io.Sink
-import kotlinx.io.readByteArray
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.builtins.ByteArraySerializer
@@ -16,7 +13,6 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.AbstractEncoder
 import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.serializer
 
 
 //TODO value classes proper!
@@ -157,7 +153,7 @@ class DerEncoder(
         val propertyAnnotations = descriptorAndIndex?.let { (descriptor, index) ->
             descriptor.getElementAnnotations(index).asn1Layers
         } ?: emptyList<Layer>()
-        
+
         // Clear any pending element annotations since we're starting a new structure
         descriptorAndIndex = null
 
@@ -248,60 +244,50 @@ class DerEncoder(
 
 
     internal fun writeTo(destination: Sink) {
-        val finalizedElements = finalizeElements(buffer)
+        val finalizedElements = encodeToTLV()
         finalizedElements.forEach { it.encodeTo(destination) }
     }
 
-private fun finalizeElements(holders: List<Asn1ElementHolder>): List<Asn1Element> {
-    return holders.map { holder ->
-        finalizeElement(holder)
+    internal fun encodeToTLV() = finalizeElements(buffer)
+
+    private fun finalizeElements(holders: List<Asn1ElementHolder>): List<Asn1Element> {
+        return holders.map { holder ->
+            finalizeElement(holder)
+        }
     }
-}
 
     private fun finalizeElement(holder: Asn1ElementHolder): Asn1Element {
 
-    return when (holder) {
-        is Asn1ElementHolder.Element -> holder.element
+        return when (holder) {
+            is Asn1ElementHolder.Element -> holder.element
 
-        is Asn1ElementHolder.StructurePlaceholder -> {
-            val childElements = finalizeElements(holder.childSerializer.buffer)
-            if (holder.descriptor.isSetDescriptor) {
-                Asn1Set(childElements)
-            } else {
-                Asn1Sequence(childElements)
-            }
-        }
-
-        is Asn1ElementHolder.NestedStructurePlaceholder -> {
-            val childElements = finalizeElements(holder.childSerializer.buffer)
-            when (holder) {
-                is Asn1ElementHolder.NestedStructurePlaceholder.OctetString -> Asn1OctetString(childElements)
-                is Asn1ElementHolder.NestedStructurePlaceholder.ExplicitTag -> {
-                    Asn1ExplicitlyTagged(holder.tag, childElements)
+            is Asn1ElementHolder.StructurePlaceholder -> {
+                val childElements = finalizeElements(holder.childSerializer.buffer)
+                if (holder.descriptor.isSetDescriptor) {
+                    Asn1Set(childElements)
+                } else {
+                    Asn1Sequence(childElements)
                 }
             }
-        }
 
-        is Asn1ElementHolder.ImplicitlyTagged -> {
-            // Apply implicit tag to the finalized element
-            val finalizedElement = finalizeElement(holder.element)
-            finalizedElement.withImplicitTag(holder.tag)
+            is Asn1ElementHolder.NestedStructurePlaceholder -> {
+                val childElements = finalizeElements(holder.childSerializer.buffer)
+                when (holder) {
+                    is Asn1ElementHolder.NestedStructurePlaceholder.OctetString -> Asn1OctetString(childElements)
+                    is Asn1ElementHolder.NestedStructurePlaceholder.ExplicitTag -> {
+                        Asn1ExplicitlyTagged(holder.tag, childElements)
+                    }
+                }
+            }
+
+            is Asn1ElementHolder.ImplicitlyTagged -> {
+                // Apply implicit tag to the finalized element
+                val finalizedElement = finalizeElement(holder.element)
+                finalizedElement.withImplicitTag(holder.tag)
+            }
         }
     }
 }
-}
-
-@ExperimentalSerializationApi
-fun <T> encodeToAsn1Bytes(serializer: SerializationStrategy<T>, value: T): ByteArray {
-    val encoder = DerEncoder()
-    encoder.encodeSerializableValue(serializer, value)
-    return Buffer().also { encoder.writeTo(it) }.readByteArray()
-}
-
-@ExperimentalSerializationApi
-inline fun <reified T> encodeToDer(value: T) = encodeToAsn1Bytes(serializer(), value)
-@ExperimentalSerializationApi
-//todo custom functions for cryptoprivatekey and possibly others with star projections in indispensable module
 
 private val setDescriptor: SerialDescriptor = SetSerializer(String.serializer()).descriptor
 internal val SerialDescriptor.isSetDescriptor: Boolean get() = setDescriptor::class.isInstance(this)

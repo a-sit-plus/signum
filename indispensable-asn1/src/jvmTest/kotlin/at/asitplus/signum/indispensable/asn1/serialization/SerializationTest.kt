@@ -1,9 +1,14 @@
-package at.asitplus.signum.indispensable.asn1.serialization
+package at.asitplus.signum.indispensable.asn1.serialization.api
 
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.Asn1OctetString
 import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
+import at.asitplus.signum.indispensable.asn1.serialization.Asn1nnotation
+import at.asitplus.signum.indispensable.asn1.serialization.Layer
+import at.asitplus.signum.indispensable.asn1.serialization.Type
+import at.asitplus.signum.indispensable.asn1.serialization.decodeFromDer
+import at.asitplus.signum.indispensable.asn1.serialization.encodeToDer
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
@@ -18,11 +23,11 @@ class SerializationTest : FreeSpec({
 
     "String" {
         val str = Asn1String.UTF8("foo")
-        val serialized = encodeToDer(str).also { println(it.toHexString()) }
+        val serialized = DER.encodeToDer(str).also { println(it.toHexString()) }
 
-        decodeFromDer<Asn1String>(serialized) shouldBe str
-        decodeFromDer<Asn1String.UTF8>(serialized) shouldBe str
-        val strd: Asn1String = decodeFromDer<Asn1String.BMP>(serialized)
+        DER.decodeFromDer<Asn1String>(serialized) shouldBe str
+        DER.decodeFromDer<Asn1String.UTF8>(serialized) shouldBe str
+        val strd: Asn1String = DER.decodeFromDer<Asn1String.BMP>(serialized)
 
 
     }
@@ -41,11 +46,11 @@ class SerializationTest : FreeSpec({
         val signumPrivateKey = privateKey.toCryptoPrivateKey().getOrThrow()
         val signumPublicKey = publicKey.toCryptoPublicKey().getOrThrow()
 
-        signumPrivateKey.encodeToDer() shouldBe encodeToDer(signumPrivateKey)
-        decodeFromDer<CryptoPrivateKey>(signumPrivateKey.encodeToDer()) shouldBe signumPrivateKey
+        signumPrivateKey.encodeToDer() shouldBe DER.encodeToDer(signumPrivateKey)
+        DER.decodeFromDer<CryptoPrivateKey>(signumPrivateKey.encodeToDer()) shouldBe signumPrivateKey
 
-        signumPublicKey.encodeToDer() shouldBe encodeToDer(signumPublicKey)
-        decodeFromDer<CryptoPublicKey>(signumPublicKey.encodeToDer()) shouldBe signumPublicKey
+        signumPublicKey.encodeToDer() shouldBe DER.encodeToDer(signumPublicKey)
+        DER.decodeFromDer<CryptoPublicKey>(signumPublicKey.encodeToDer()) shouldBe signumPublicKey
 
         // Generate some random data to sign
         val dataToSign = Random.nextBytes(32) // 32 bytes of random data
@@ -60,64 +65,64 @@ class SerializationTest : FreeSpec({
         val signatureBytes = signature.sign()
 
         val signumSig = CryptoSignature.decodeFromDer(signatureBytes).shouldBeInstanceOf<CryptoSignature.EC>()
-        decodeFromDer<CryptoSignature>(signatureBytes) shouldBe signumSig
+        DER.decodeFromDer<CryptoSignature>(signatureBytes) shouldBe signumSig
 
     }
 
     "Annotation Order" {
-        val outerOctet = encodeToDer(OuterOctetInnerTag())
-        val nothing = encodeToDer(NothingOnClass("foo"))
-        val outerTag = encodeToDer(OuterTagInnerOctet())
+        val outerOctet = DER.encodeToDer(OuterOctetInnerTag())
+        val nothing = DER.encodeToDer(NothingOnClass("foo"))
+        val outerTag = DER.encodeToDer(OuterTagInnerOctet())
 
         println(nothing.toHexString())
         println(outerOctet.toHexString())
         println(outerTag.toHexString())
 
-        decodeFromDer<OuterOctetInnerTag>(outerOctet)
+        DER.decodeFromDer<OuterOctetInnerTag>(outerOctet)
     }
 
 
     "Implicit tagging" - {
-        val imlNothing = encodeToDer(NothingOnClass("foo")).also { println("imlNothing " + it.toHexString()) }
-        val imlClass = encodeToDer(ImplicitOnClass("foo")).also { println("imlClass " + it.toHexString()) }
-        val imlProp = encodeToDer(ImplicitOnProperty("foo")).also { println("imlProp " + it.toHexString()) }
-        val imlBoth = encodeToDer(ImplicitOnBoth("foo")).also { println("imlBoth " + it.toHexString()) }
+        val imlNothing = DER.encodeToDer(NothingOnClass("foo")).also { println("imlNothing " + it.toHexString()) }
+        val imlClass = DER.encodeToDer(ImplicitOnClass("foo")).also { println("imlClass " + it.toHexString()) }
+        val imlProp = DER.encodeToDer(ImplicitOnProperty("foo")).also { println("imlProp " + it.toHexString()) }
+        val imlBoth = DER.encodeToDer(ImplicitOnBoth("foo")).also { println("imlBoth " + it.toHexString()) }
 
-        decodeFromDer<NothingOnClass>(imlNothing) shouldBe NothingOnClass("foo")
-        decodeFromDer<ImplicitOnClass>(imlClass) shouldBe ImplicitOnClass("foo")
-        decodeFromDer<ImplicitOnProperty>(imlProp) shouldBe ImplicitOnProperty("foo")
-        decodeFromDer<ImplicitOnBoth>(imlBoth) shouldBe ImplicitOnBoth("foo")
+        DER.decodeFromDer<NothingOnClass>(imlNothing) shouldBe NothingOnClass("foo")
+        DER.decodeFromDer<ImplicitOnClass>(imlClass) shouldBe ImplicitOnClass("foo")
+        DER.decodeFromDer<ImplicitOnProperty>(imlProp) shouldBe ImplicitOnProperty("foo")
+        DER.decodeFromDer<ImplicitOnBoth>(imlBoth) shouldBe ImplicitOnBoth("foo")
 
-        shouldThrow<Asn1TagMismatchException> { decodeFromDer<ImplicitOnProperty>(imlClass) }
-        shouldThrow<Asn1TagMismatchException> { decodeFromDer<ImplicitOnProperty>(imlBoth) }
-        shouldThrow<Asn1TagMismatchException> { decodeFromDer<ImplicitOnProperty>(imlNothing) }
+        shouldThrow<Asn1TagMismatchException> { DER.decodeFromDer<ImplicitOnProperty>(imlClass) }
+        shouldThrow<Asn1TagMismatchException> { DER.decodeFromDer<ImplicitOnProperty>(imlBoth) }
+        shouldThrow<Asn1TagMismatchException> { DER.decodeFromDer<ImplicitOnProperty>(imlNothing) }
 
-        shouldThrow<Asn1TagMismatchException> { decodeFromDer<ImplicitOnClass>(imlNothing) }
-        shouldThrow<Asn1TagMismatchException> { decodeFromDer<ImplicitOnClass>(imlBoth) }
-        shouldThrow<Asn1TagMismatchException> { decodeFromDer<ImplicitOnClass>(imlProp) }
+        shouldThrow<Asn1TagMismatchException> { DER.decodeFromDer<ImplicitOnClass>(imlNothing) }
+        shouldThrow<Asn1TagMismatchException> { DER.decodeFromDer<ImplicitOnClass>(imlBoth) }
+        shouldThrow<Asn1TagMismatchException> { DER.decodeFromDer<ImplicitOnClass>(imlProp) }
 
-        shouldThrow<Asn1TagMismatchException> { decodeFromDer<ImplicitOnBoth>(imlProp) }
-        shouldThrow<Asn1TagMismatchException> { decodeFromDer<ImplicitOnBoth>(imlClass) }
-        shouldThrow<Asn1TagMismatchException> { decodeFromDer<ImplicitOnBoth>(imlNothing) }
+        shouldThrow<Asn1TagMismatchException> { DER.decodeFromDer<ImplicitOnBoth>(imlProp) }
+        shouldThrow<Asn1TagMismatchException> { DER.decodeFromDer<ImplicitOnBoth>(imlClass) }
+        shouldThrow<Asn1TagMismatchException> { DER.decodeFromDer<ImplicitOnBoth>(imlNothing) }
 
-        shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClass>(imlClass) }
-        shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClass>(imlProp) }
-        shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClass>(imlBoth) }
+        shouldThrow<Asn1TagMismatchException> { DER.decodeFromDer<NothingOnClass>(imlClass) }
+        shouldThrow<Asn1TagMismatchException> { DER.decodeFromDer<NothingOnClass>(imlProp) }
+        shouldThrow<Asn1TagMismatchException> { DER.decodeFromDer<NothingOnClass>(imlBoth) }
 
 
-        shouldThrow<Asn1TagMismatchException> { decodeFromDer<ImplicitOnClassWrong>(imlClass) }
-        shouldThrow<Asn1TagMismatchException> { decodeFromDer<ImplicitOnPropertyWrong>(imlProp) }
-        shouldThrow<Asn1TagMismatchException> { decodeFromDer<ImplicitOnBothWrong>(imlBoth) }
-        shouldThrow<Asn1TagMismatchException> { decodeFromDer<ImplicitOnBothWrongClass>(imlBoth) }
-        shouldThrow<Asn1TagMismatchException> { decodeFromDer<ImplicitOnBothWrongProperty>(imlBoth) }
+        shouldThrow<Asn1TagMismatchException> { DER.decodeFromDer<ImplicitOnClassWrong>(imlClass) }
+        shouldThrow<Asn1TagMismatchException> { DER.decodeFromDer<ImplicitOnPropertyWrong>(imlProp) }
+        shouldThrow<Asn1TagMismatchException> { DER.decodeFromDer<ImplicitOnBothWrong>(imlBoth) }
+        shouldThrow<Asn1TagMismatchException> { DER.decodeFromDer<ImplicitOnBothWrongClass>(imlBoth) }
+        shouldThrow<Asn1TagMismatchException> { DER.decodeFromDer<ImplicitOnBothWrongProperty>(imlBoth) }
 
 
         "Nested" {
-            val nothingOnClassNested = encodeToDer(NothingOnClassNested(NothingOnClass("foo")))
-            val nothingOnClassNestedOnClass = encodeToDer(NothingOnClassNestedOnClass(ImplicitOnClass("foo")))
-            val nothingOnClassNestedOnProperty = encodeToDer(NothingOnClassNestedOnProperty(NothingOnClass("foo")))
+            val nothingOnClassNested = DER.encodeToDer(NothingOnClassNested(NothingOnClass("foo")))
+            val nothingOnClassNestedOnClass = DER.encodeToDer(NothingOnClassNestedOnClass(ImplicitOnClass("foo")))
+            val nothingOnClassNestedOnProperty = DER.encodeToDer(NothingOnClassNestedOnProperty(NothingOnClass("foo")))
             val nothingOnClassNestedOnPropertyOverride =
-                encodeToDer(NothingOnClassNestedOnPropertyOverride(ImplicitOnClass("foo")))
+                DER.encodeToDer(NothingOnClassNestedOnPropertyOverride(ImplicitOnClass("foo")))
 
             nothingOnClassNested.toHexString() shouldBe "300730050c03666f6f"
             nothingOnClassNestedOnClass.toHexString() shouldBe "3009bf8a39050c03666f6f"
@@ -126,110 +131,122 @@ class SerializationTest : FreeSpec({
 
             println(nothingOnClassNestedOnPropertyOverride.toHexString())
 
-            decodeFromDer<NothingOnClassNested>(nothingOnClassNested)
+            DER.decodeFromDer<NothingOnClassNested>(nothingOnClassNested)
             //those two serialize to the same
-            decodeFromDer<NothingOnClassNestedOnClass>(nothingOnClassNestedOnClass)
-            decodeFromDer<NothingOnClassNestedOnClass>(nothingOnClassNestedOnProperty)
-            decodeFromDer<NothingOnClassNestedOnProperty>(nothingOnClassNestedOnProperty)
-            decodeFromDer<NothingOnClassNestedOnProperty>(nothingOnClassNestedOnClass)
+            DER.decodeFromDer<NothingOnClassNestedOnClass>(nothingOnClassNestedOnClass)
+            DER.decodeFromDer<NothingOnClassNestedOnClass>(nothingOnClassNestedOnProperty)
+            DER.decodeFromDer<NothingOnClassNestedOnProperty>(nothingOnClassNestedOnProperty)
+            DER.decodeFromDer<NothingOnClassNestedOnProperty>(nothingOnClassNestedOnClass)
 
-            decodeFromDer<NothingOnClassNestedOnPropertyOverride>(nothingOnClassNestedOnPropertyOverride)
+            DER.decodeFromDer<NothingOnClassNestedOnPropertyOverride>(nothingOnClassNestedOnPropertyOverride)
 
 
-            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNested>(nothingOnClassNestedOnClass) }
-            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNested>(nothingOnClassNestedOnProperty) }
+            shouldThrow<Asn1TagMismatchException> { DER.decodeFromDer<NothingOnClassNested>(nothingOnClassNestedOnClass) }
             shouldThrow<Asn1TagMismatchException> {
-                decodeFromDer<NothingOnClassNested>(
+                DER.decodeFromDer<NothingOnClassNested>(
+                    nothingOnClassNestedOnProperty
+                )
+            }
+            shouldThrow<Asn1TagMismatchException> {
+                DER.decodeFromDer<NothingOnClassNested>(
                     nothingOnClassNestedOnPropertyOverride
                 )
             }
 
-            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNestedOnClass>(nothingOnClassNested) }
+            shouldThrow<Asn1TagMismatchException> { DER.decodeFromDer<NothingOnClassNestedOnClass>(nothingOnClassNested) }
             shouldThrow<Asn1TagMismatchException> {
-                decodeFromDer<NothingOnClassNestedOnClass>(
-                    nothingOnClassNestedOnPropertyOverride
-                )
-            }
-
-            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNestedOnProperty>(nothingOnClassNested) }
-            shouldThrow<Asn1TagMismatchException> {
-                decodeFromDer<NothingOnClassNestedOnProperty>(
+                DER.decodeFromDer<NothingOnClassNestedOnClass>(
                     nothingOnClassNestedOnPropertyOverride
                 )
             }
 
             shouldThrow<Asn1TagMismatchException> {
-                decodeFromDer<NothingOnClassNestedOnPropertyOverride>(
+                DER.decodeFromDer<NothingOnClassNestedOnProperty>(
                     nothingOnClassNested
                 )
             }
             shouldThrow<Asn1TagMismatchException> {
-                decodeFromDer<NothingOnClassNestedOnPropertyOverride>(
-                    nothingOnClassNestedOnProperty
-                )
-            }
-            shouldThrow<Asn1TagMismatchException> {
-                decodeFromDer<NothingOnClassNestedOnPropertyOverride>(
-                    nothingOnClassNestedOnClass
-                )
-            }
-
-
-            shouldThrow<Asn1TagMismatchException> { decodeFromDer<NothingOnClassNestedOnClassWrong>(nothingOnClassNested) }
-            shouldThrow<Asn1TagMismatchException> {
-                decodeFromDer<NothingOnClassNestedOnClassWrong>(
-                    nothingOnClassNestedOnClass
-                )
-            }
-            shouldThrow<Asn1TagMismatchException> {
-                decodeFromDer<NothingOnClassNestedOnClassWrong>(
-                    nothingOnClassNestedOnProperty
-                )
-            }
-            shouldThrow<Asn1TagMismatchException> {
-                decodeFromDer<NothingOnClassNestedOnClassWrong>(
+                DER.decodeFromDer<NothingOnClassNestedOnProperty>(
                     nothingOnClassNestedOnPropertyOverride
                 )
             }
 
             shouldThrow<Asn1TagMismatchException> {
-                decodeFromDer<NothingOnClassNestedOnPropertyWrong>(
+                DER.decodeFromDer<NothingOnClassNestedOnPropertyOverride>(
                     nothingOnClassNested
                 )
             }
             shouldThrow<Asn1TagMismatchException> {
-                decodeFromDer<NothingOnClassNestedOnPropertyWrong>(
-                    nothingOnClassNestedOnClass
-                )
-            }
-            shouldThrow<Asn1TagMismatchException> {
-                decodeFromDer<NothingOnClassNestedOnPropertyWrong>(
+                DER.decodeFromDer<NothingOnClassNestedOnPropertyOverride>(
                     nothingOnClassNestedOnProperty
                 )
             }
             shouldThrow<Asn1TagMismatchException> {
-                decodeFromDer<NothingOnClassNestedOnPropertyWrong>(
+                DER.decodeFromDer<NothingOnClassNestedOnPropertyOverride>(
+                    nothingOnClassNestedOnClass
+                )
+            }
+
+
+            shouldThrow<Asn1TagMismatchException> {
+                DER.decodeFromDer<NothingOnClassNestedOnClassWrong>(
+                    nothingOnClassNested
+                )
+            }
+            shouldThrow<Asn1TagMismatchException> {
+                DER.decodeFromDer<NothingOnClassNestedOnClassWrong>(
+                    nothingOnClassNestedOnClass
+                )
+            }
+            shouldThrow<Asn1TagMismatchException> {
+                DER.decodeFromDer<NothingOnClassNestedOnClassWrong>(
+                    nothingOnClassNestedOnProperty
+                )
+            }
+            shouldThrow<Asn1TagMismatchException> {
+                DER.decodeFromDer<NothingOnClassNestedOnClassWrong>(
                     nothingOnClassNestedOnPropertyOverride
                 )
             }
 
             shouldThrow<Asn1TagMismatchException> {
-                decodeFromDer<NothingOnClassNestedOnPropertyOverrideWrong>(
+                DER.decodeFromDer<NothingOnClassNestedOnPropertyWrong>(
                     nothingOnClassNested
                 )
             }
             shouldThrow<Asn1TagMismatchException> {
-                decodeFromDer<NothingOnClassNestedOnPropertyOverrideWrong>(
+                DER.decodeFromDer<NothingOnClassNestedOnPropertyWrong>(
                     nothingOnClassNestedOnClass
                 )
             }
             shouldThrow<Asn1TagMismatchException> {
-                decodeFromDer<NothingOnClassNestedOnPropertyOverrideWrong>(
+                DER.decodeFromDer<NothingOnClassNestedOnPropertyWrong>(
                     nothingOnClassNestedOnProperty
                 )
             }
             shouldThrow<Asn1TagMismatchException> {
-                decodeFromDer<NothingOnClassNestedOnPropertyOverrideWrong>(
+                DER.decodeFromDer<NothingOnClassNestedOnPropertyWrong>(
+                    nothingOnClassNestedOnPropertyOverride
+                )
+            }
+
+            shouldThrow<Asn1TagMismatchException> {
+                DER.decodeFromDer<NothingOnClassNestedOnPropertyOverrideWrong>(
+                    nothingOnClassNested
+                )
+            }
+            shouldThrow<Asn1TagMismatchException> {
+                DER.decodeFromDer<NothingOnClassNestedOnPropertyOverrideWrong>(
+                    nothingOnClassNestedOnClass
+                )
+            }
+            shouldThrow<Asn1TagMismatchException> {
+                DER.decodeFromDer<NothingOnClassNestedOnPropertyOverrideWrong>(
+                    nothingOnClassNestedOnProperty
+                )
+            }
+            shouldThrow<Asn1TagMismatchException> {
+                DER.decodeFromDer<NothingOnClassNestedOnPropertyOverrideWrong>(
                     nothingOnClassNestedOnPropertyOverride
                 )
             }
@@ -256,7 +273,7 @@ class SerializationTest : FreeSpec({
         println("---------------------------")
 
 
-        val derEncoded = encodeToDer(
+        val derEncoded = DER.encodeToDer(
             TypesUmbrella(
                 str = "foo",
                 i = 2u,
@@ -275,18 +292,18 @@ class SerializationTest : FreeSpec({
         println(derEncoded.toHexString())
 
         val string = "Foo"
-        println(encodeToDer(string).toHexString())
+        println(DER.encodeToDer(string).toHexString())
 
 
-        //  val str = decodeFromDer<String>(encodeToDer(string))
+        //  val str = DER.decodeFromDer<String>(DER.encodeToDer(string))
 
 
-        // val complex = decodeFromDer<TypesUmbrella>(derEncoded)
+        // val complex = DER.decodeFromDer<TypesUmbrella>(derEncoded)
 
-        println(encodeToDer(SimpleLong(666L)).toHexString())
-        println(encodeToDer(3.141516).toHexString())
-        println(encodeToDer(Simple("a")).toHexString())
-        println(encodeToDer(NumberTypesUmbrella(1, 2, 3.0f, 4.0, true, 'd')).toHexString())
+        println(DER.encodeToDer(SimpleLong(666L)).toHexString())
+        println(DER.encodeToDer(3.141516).toHexString())
+        println(DER.encodeToDer(Simple("a")).toHexString())
+        println(DER.encodeToDer(NumberTypesUmbrella(1, 2, 3.0f, 4.0, true, 'd')).toHexString())
 
     }
 
