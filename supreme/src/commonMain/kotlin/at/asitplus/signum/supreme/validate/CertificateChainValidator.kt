@@ -7,15 +7,16 @@ import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.root
+import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
+import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
+import at.asitplus.signum.indispensable.pki.validate.KeyUsageValidator
+import at.asitplus.signum.indispensable.pki.validate.NameConstraintsValidator
+import at.asitplus.signum.indispensable.pki.validate.PolicyNode
+import at.asitplus.signum.indispensable.pki.validate.PolicyValidator
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-
-interface CertificateValidator {
-    // Every validator removes checked critical extensions
-    suspend fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>)
-}
 
 sealed interface CertValiditySource {
     data object ALWAYS_ACCEPT : CertValiditySource
