@@ -6,7 +6,10 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
 
-// TODO support nameConstraints
+/**
+ * Represents a trusted certificate authority (TrustAnchor), which can be specified either
+ * as an X509Certificate, or as a distinguished name (in RFC 2253 format) along with a public key.
+ * */
 class TrustAnchor private constructor(
     val publicKey: CryptoPublicKey,
     val principle: X500Name?,

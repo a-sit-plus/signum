@@ -61,7 +61,7 @@ open class X509CertificateExtension @Throws(Asn1Exception::class) private constr
 
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
 
-        private val extensionDecoders: MutableMap<ObjectIdentifier, (Asn1Sequence, Asn1Element.Tag?) -> X509CertificateExtension> = mutableMapOf(
+        private val extensionDecoders: MutableMap<ObjectIdentifier, (Asn1Sequence, Asn1Element.Tag?, Boolean) -> X509CertificateExtension> = mutableMapOf(
             KnownOIDs.basicConstraints_2_5_29_19 to BasicConstraintsExtension::decodeFromTlv,
             KnownOIDs.nameConstraints_2_5_29_30 to NameConstraintsExtension::decodeFromTlv,
             KnownOIDs.policyConstraints_2_5_29_36 to PolicyConstraintsExtension::decodeFromTlv,
@@ -75,7 +75,7 @@ open class X509CertificateExtension @Throws(Asn1Exception::class) private constr
 
         suspend fun registerExtensionDecoder(
             oid: ObjectIdentifier,
-            decoder: (Asn1Sequence, Any?) -> X509CertificateExtension
+            decoder: (Asn1Sequence, Any?, Boolean) -> X509CertificateExtension
         ) {
             mutex.withLock {
                 extensionDecoders[oid] = decoder
@@ -87,7 +87,7 @@ open class X509CertificateExtension @Throws(Asn1Exception::class) private constr
 
             val id = next().asPrimitive().readOid()
             val oid = (src.children[0] as Asn1Primitive).readOid()
-            return extensionDecoders[oid]?.invoke(src, null) ?: decodeBase(src)
+            return extensionDecoders[oid]?.invoke(src, null, true) ?: decodeBase(src)
         }
 
         @Throws(Asn1Exception::class)
