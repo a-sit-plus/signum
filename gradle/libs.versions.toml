@@ -3,6 +3,8 @@ kotlin = "2.2.0"
 ksp = "2.0.2"
 agp = "8.10.0"
 core = "1.5.0"
+kotlinxIoCore = "0.5.4"
+kotlinxCoroutinesCore = "1.10.2"
 kotlinxIoCore = "0.7.0"
 multibase = "1.2.2"
 kotestExtensionsAndroid = "local-asp"
@@ -20,6 +22,7 @@ core = { module = "androidx.test:core", version.ref = "core" }
 kotest-extensions-android = { module = "br.com.colman:kotest-extensions-android", version.ref = "kotestExtensionsAndroid" }
 kotest-runner-android = { module = "br.com.colman:kotest-runner-android", version.ref = "kotestRunnerAndroid" }
 kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinxIoCore" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutinesCore" }
 jose = { group = "com.nimbusds", name = "nimbus-jose-jwt", version.ref = "jose" }
 kotlinpoet = { group = "com.squareup", name = "kotlinpoet", version.ref = "kotlinpoet" }
 rules = { module = "androidx.test:rules", version.ref = "core" }

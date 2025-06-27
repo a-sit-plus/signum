@@ -80,12 +80,12 @@ class PolicyInformation(
 
     companion object : Asn1Decodable<Asn1Sequence, PolicyInformation> {
         override fun doDecode(src: Asn1Sequence) : PolicyInformation {
-            val id = (src.children[0].asPrimitive()).readOid()
+            val id = (src.nextChild().asPrimitive()).readOid()
             val policyQualifiers = mutableSetOf<PolicyQualifierInfo>()
 
             if (src.children.size > 1) {
                 if (src.children[1].tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, src.children[1].tag)
-                val qualifiersSequence = src.children[1].asSequence()
+                val qualifiersSequence = src.nextChild().asSequence()
                 for (child in qualifiersSequence.children) {
                     if (child.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, child.tag)
                     policyQualifiers += PolicyQualifierInfo.decodeFromTlv(child.asSequence())
@@ -109,8 +109,8 @@ class PolicyQualifierInfo(
     companion object : Asn1Decodable<Asn1Sequence, PolicyQualifierInfo> {
 
         override fun doDecode(src: Asn1Sequence): PolicyQualifierInfo {
-            val id = src.children[0].asPrimitive().readOid()
-            val value = src.children[1]
+            val id = src.nextChild().asPrimitive().readOid()
+            val value = src.nextChild()
 
             val qualifier: Qualifier = when (id) {
                 KnownOIDs.cps -> {

@@ -22,9 +22,12 @@ data class X500Name(
 
     companion object : Asn1Decodable<Asn1Sequence, X500Name> {
         override fun doDecode(src: Asn1Sequence): X500Name = runRethrowing {
-            X500Name(src.children.map {
-                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
-            })
+            buildList {
+                while (src.hasMoreChildren()) {
+                    val child = src.nextChild().asSet()
+                    add(RelativeDistinguishedName.decodeFromTlv(child))
+                }
+            }.let(::X500Name)
         }
     }
 

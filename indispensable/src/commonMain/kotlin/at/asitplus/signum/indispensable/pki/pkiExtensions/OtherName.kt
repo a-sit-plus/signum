@@ -15,7 +15,6 @@ class OtherName (
 
     companion object : Asn1Decodable<Asn1Element, OtherName> {
         override fun doDecode(src: Asn1Element): OtherName {
-            // Should be Asn1Sequence but is decoded as Tagged
             if (src !is Asn1ExplicitlyTagged) throw Asn1StructuralException("Invalid otherName Alternative Name found: ${src.toDerHexString()}")
 
             src.also {
@@ -23,8 +22,9 @@ class OtherName (
                 if (it.children.last().tag.tagValue != GeneralNameOption.NameType.OTHER.value) throw Asn1StructuralException(
                     "Invalid otherName Alternative Name found (implicit tag != 0): ${it.toDerHexString()}"
                 )
-//                ObjectIdentifier.decodeFromAsn1ContentBytes((it.children.first() as Asn1Primitive).content)
             }
+            while (src.hasMoreChildren())
+                src.nextChild()
             return OtherName(src)
         }
     }
@@ -34,7 +34,7 @@ class OtherName (
     }
 
     override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
-        if (input !is X400AddressName) {
+        if (input !is OtherName) {
             return GeneralNameOption.ConstraintResult.DIFF_TYPE
         } else {
             throw UnsupportedOperationException("Narrows, widens and match are not yet implemented for OtherName.")

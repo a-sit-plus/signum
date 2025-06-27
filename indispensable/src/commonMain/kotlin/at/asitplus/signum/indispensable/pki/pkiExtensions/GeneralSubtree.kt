@@ -10,6 +10,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import kotlinx.io.IOException
 
 
@@ -55,15 +56,12 @@ data class GeneralSubtrees(
 
     companion object : Asn1Decodable<Asn1ExplicitlyTagged, GeneralSubtrees> {
         override fun doDecode(src: Asn1ExplicitlyTagged): GeneralSubtrees {
-            val trees = emptyList<GeneralSubtree>().toMutableList()
-            if (src.children.isNotEmpty()) {
-                src.children.forEach {
-                    if (it.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(
-                        Asn1Element.Tag.SEQUENCE, it.tag
-                    )
-                    trees += GeneralSubtree.decodeFromTlv(it.asSequence())
+            val trees = buildList {
+                while (src.hasMoreChildren()) {
+                    val child = src.nextChild().asSequence()
+                    add(GeneralSubtree.decodeFromTlv(child))
                 }
-            }
+            }.toMutableList()
             return GeneralSubtrees(trees)
         }
     }

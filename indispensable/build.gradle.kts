@@ -63,6 +63,7 @@ kotlin {
             api(libs.multibase)
             api(libs.bignum)
             implementation(project(":internals"))
+            api(libs.kotlinx.coroutines.core)
             api(libs.securerandom)
         }
 
