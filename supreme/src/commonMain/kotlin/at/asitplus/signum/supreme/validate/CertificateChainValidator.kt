@@ -6,6 +6,7 @@ import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.leaf
 import at.asitplus.signum.indispensable.pki.root
 import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
 import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
@@ -43,7 +44,8 @@ class CertificateValidationContext(
 )
 
 class CertificateValidationResult (
-    val rootPolicyNode: PolicyNode? = null
+    val rootPolicyNode: PolicyNode? = null,
+    val subject: X509Certificate
 )
 
 suspend fun CertificateChain.validate(
@@ -95,7 +97,7 @@ suspend fun CertificateChain.validate(
             )
         }
     }
-    return CertificateValidationResult((validators.find { it is PolicyValidator } as? PolicyValidator)?.rootNode)
+    return CertificateValidationResult((validators.find { it is PolicyValidator } as? PolicyValidator)?.rootNode, this.leaf)
 }
 
 private fun verifySignature(
