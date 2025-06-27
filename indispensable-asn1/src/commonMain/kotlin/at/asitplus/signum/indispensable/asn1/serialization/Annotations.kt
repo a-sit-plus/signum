@@ -30,6 +30,7 @@ val Iterable<Annotation>.asn1Layers: List<Layer>
     get() = filterIsInstance<Asn1nnotation>().firstOrNull()?.layers?.asList() ?: emptyList()
 
 //TODO: config to always keep nulls
+//these must be extensions that statically resolve to allow for shadowing
 
 internal val SerialDescriptor.isAsn1BitString: Boolean get() = annotations.isAsn1BitString
 internal val List<Annotation>.isAsn1BitString: Boolean get() = filterIsInstance<Asn1nnotation>().any { it.asBitString }
