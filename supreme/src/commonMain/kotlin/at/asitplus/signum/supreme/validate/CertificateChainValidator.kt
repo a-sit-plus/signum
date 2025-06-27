@@ -19,21 +19,9 @@ import at.asitplus.signum.supreme.sign.verify
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
-sealed interface CertValiditySource {
-    data object ALWAYS_ACCEPT : CertValiditySource
-}
-
-class CertificateRevocationList : CertValiditySource {
-    // TODO
-}
-
-class OSCPStaplingResponse : CertValiditySource {
-    // TODO
-}
-
 class CertificateValidationContext(
 //   Basic constraints should be ignored in SEAL certificate verification
-    val basicConstraintCheck: Boolean = true,
+    val basicConstraintsCheck: Boolean = true,
     val date: Instant = Clock.System.now(),
     val explicitPolicyRequired: Boolean = false,
     val policyMappingInhibited: Boolean = false,
@@ -50,7 +38,6 @@ class CertificateValidationResult (
 
 suspend fun CertificateChain.validate(
     context: CertificateValidationContext = CertificateValidationContext(),
-    validator: suspend (x509Certificate: X509Certificate) -> CertValiditySource = { CertValiditySource.ALWAYS_ACCEPT }
 ) : CertificateValidationResult {
 
     val validators = mutableListOf<CertificateValidator>()
@@ -75,7 +62,7 @@ suspend fun CertificateChain.validate(
     )
     validators.add(NameConstraintsValidator(this.size))
     validators.add(KeyUsageValidator(this.size))
-    if (context.basicConstraintCheck) validators.add(BasicConstraintsValidator(this.size))
+    if (context.basicConstraintsCheck) validators.add(BasicConstraintsValidator(this.size))
 
     if (!context.trustAnchors.hasIssuerFor(this.root)) throw CertificateChainValidatorException("Untrusted root certificate.")
 
@@ -83,7 +70,6 @@ suspend fun CertificateChain.validate(
     reversed.forEachIndexed { i, issuer ->
         val remainingCriticalExtensions = issuer.criticalExtensionOids.toMutableSet()
         issuer.checkValidity(context.date)
-        validator(issuer)
         validators.forEach { it.check(issuer, remainingCriticalExtensions) }
         verifyCriticalExtensions(remainingCriticalExtensions)
 
