@@ -7,6 +7,11 @@ on:
         required: false
         default: ''
         type: string
+      kotest-version:
+        description: 'Override Kotest version?'
+        required: false
+        default: ''
+        type: string
 permissions:
   contents: read
   pages: write
@@ -16,6 +21,7 @@ jobs:
     runs-on: macos-latest
     env:
       KOTLIN_VERSION_ENV: ${{ inputs.kotlin-version }}
+      KOTEST_VERSION_ENV: ${{ inputs.kotest-version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3

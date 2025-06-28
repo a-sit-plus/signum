@@ -1,9 +1,9 @@
 import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
 
-
 plugins {
     id("at.asitplus.gradle.conventions") version "20250628"
-    id("io.kotest.multiplatform") version libs.versions.kotest
+    id("io.kotest.multiplatform") version (System.getenv("KOTEST_VERSION_ENV")?.let { it.ifBlank { null } }
+        ?: libs.versions.kotest.get())
     kotlin("multiplatform") version (System.getenv("KOTLIN_VERSION_ENV")?.let { it.ifBlank { null } }
         ?: libs.versions.kotlin.get()) apply false
     kotlin("plugin.serialization") version (System.getenv("KOTLIN_VERSION_ENV")?.let { it.ifBlank { null } }

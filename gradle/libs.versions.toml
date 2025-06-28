@@ -11,7 +11,7 @@ jose = "9.31"
 kotlinpoet = "1.16.0"
 runner = "1.5.2"
 kotlincryptoRandom = "0.5.0"
-kotest= "6.0.0-SNAPSHOT"
+kotest= "6.0.0.1910-SNAPSHOT"
 
 [libraries]
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }
