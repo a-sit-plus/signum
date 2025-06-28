@@ -4,7 +4,6 @@ import at.asitplus.signum.indispensable.asn1.encoding.decodeToAsn1Integer
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import io.kotest.core.names.TestName
-import io.kotest.core.names.TestNameBuilder
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
@@ -81,17 +80,17 @@ class Asn1IntegerTest : FreeSpec({
             checkAll(iterations = 100, Arb.byteArray(Arb.int(100, 200), Arb.byte())) {
                 val bigint = JavaBigInteger(1, it)
                 val varuint = VarUInt(it)
-                registerContainer(TestNameBuilder.builder("Left Bitshift").build(), false, null) {
+                registerContainer(TestName("Left Bitshift"), false, null) {
                     checkAll(iterations = 50, Arb.nonNegativeInt(max = 128)) { i ->
                         varuint.shl(i).words shouldBe bigint.shiftLeft(i).toByteArray().stripLeadingZeros()
                     }
                 }
-                registerContainer(TestNameBuilder.builder("Right Bitshift").build(), false, null) {
+                registerContainer(TestName("Right Bitshift"), false, null) {
                     checkAll(iterations = 50, Arb.nonNegativeInt()) { i ->
                         varuint.shr(i).words shouldBe bigint.shiftRight(i).toByteArray().stripLeadingZeros()
                     }
                 }
-                registerContainer(TestNameBuilder.builder("Binary Operators").build(), false, null) {
+                registerContainer(TestName("Binary Operators"), false, null) {
                     checkAll(iterations = 10, Arb.byteArray(Arb.int(100, 200), Arb.byte())) { it2 ->
                         val bigint2 = JavaBigInteger(1, it2)
                         val varuint2 = VarUInt(it2)

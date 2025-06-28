@@ -5,19 +5,7 @@ package at.asitplus.signum.supreme
 import at.asitplus.KmmResult
 import io.kotest.matchers.Matcher
 import io.kotest.matchers.MatcherResult
-import io.kotest.property.Arb
-import io.kotest.property.RandomSource
-import io.kotest.property.arbitrary.Codepoint
-import io.kotest.property.arbitrary.az
-import io.kotest.property.arbitrary.string
-import kotlin.random.Random
 
-
-fun Random.azString(length: Int): String {
-    return Arb.string(minSize = length, maxSize = length, Codepoint.az()).sample(
-        RandomSource(this,nextLong())
-    ).value
-}
 internal object succeed: Matcher<KmmResult<*>> {
     override fun test(value: KmmResult<*>) =
         MatcherResult(value.isSuccess,

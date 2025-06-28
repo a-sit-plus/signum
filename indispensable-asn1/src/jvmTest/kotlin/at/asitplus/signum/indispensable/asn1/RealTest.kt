@@ -42,8 +42,8 @@ class RealTest : FreeSpec({
     }
 
     "Special values" - {
-         {
-            val number = "1.1897314953572317650857593266280070162123456789009876543456789098765432123456789876543212345678987654323456789876532345678765432345678876543234567"
+        "1.1897314953572317650857593266280070162123456789009876543456789098765432123456789876543212345678987654323456789876532345678765432345678876543234567" {
+            val number = this.testCase.name.testName
             val bigDecimal = BigDecimal.parseString(number)
             bigDecimal.precision shouldBeGreaterThan 64L
             val wrongScaledMantissa = bigDecimal.significand.toAsn1Integer()

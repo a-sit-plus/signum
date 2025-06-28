@@ -1,19 +1,23 @@
-package at.asitplus.signum.ecmath
-
+import at.asitplus.signum.ecmath.RFC9380
+import at.asitplus.signum.ecmath.hashToScalar
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.nativeDigest
-import at.asitplus.signum.supreme.azString
 import com.ionspin.kotlin.bignum.integer.BigInteger
-import io.kotest.core.names.TestNameBuilder
+import io.kotest.core.names.TestName
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
+import io.kotest.matchers.comparables.beGreaterThanOrEqualTo
+import io.kotest.matchers.ints.beGreaterThan
+import io.kotest.matchers.ints.beGreaterThanOrEqualTo
 import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.byte
 import io.kotest.property.arbitrary.byteArray
 import io.kotest.property.arbitrary.int
+import io.kotest.property.azstring
 import io.kotest.property.checkAll
 import kotlin.math.min
 import kotlin.random.Random
@@ -33,31 +37,24 @@ open class RFC9380Test : FreeSpec({
         }
     }
     "RFC 9380 Appendix J. Test Vectors" - {
-        data class SuiteTestInfo(
-            val suiteName: String, val suiteRef: (ByteArray) -> RFC9380.HashToEllipticCurve,
-            val curve: ECCurve, val dst: String, val tests: String
-        ) {
+        data class SuiteTestInfo(val suiteName: String, val suiteRef: (ByteArray)->RFC9380.HashToEllipticCurve,
+                                 val curve: ECCurve, val dst: String, val tests: String) {
             val dstB get() = dst.encodeToByteArray()
         }
-
-        val testcasePattern = Regex(
-            "msg\\s+=([\\x00-\\xff]+?)" +
-                    "P\\.x\\s+=\\s+([0-9a-f\\s]+?)" +
-                    "P\\.y\\s+=\\s+([0-9a-f\\s]+?)" +
-                    "u\\[0]\\s+=\\s+([0-9a-f\\s]+?)" +
-                    "(?:u\\[1]\\s+=\\s+([0-9a-f\\s]+?))?" +
-                    "Q0?\\.x\\s+=\\s+([0-9a-f\\s]+?)" +
-                    "Q0?\\.y\\s+=(?:\\s+([0-9a-f\\s]+?)" +
-                    "Q1?\\.x\\s+=\\s+([0-9a-f\\s]+?)" +
-                    "Q1?\\.y\\s+=)?\\s+([0-9a-f\\s]+)"
-        )
+        val testcasePattern = Regex("msg\\s+=([\\x00-\\xff]+?)" +
+                "P\\.x\\s+=\\s+([0-9a-f\\s]+?)" +
+                "P\\.y\\s+=\\s+([0-9a-f\\s]+?)" +
+                "u\\[0]\\s+=\\s+([0-9a-f\\s]+?)" +
+                "(?:u\\[1]\\s+=\\s+([0-9a-f\\s]+?))?" +
+                "Q0?\\.x\\s+=\\s+([0-9a-f\\s]+?)" +
+                "Q0?\\.y\\s+=(?:\\s+([0-9a-f\\s]+?)" +
+                "Q1?\\.x\\s+=\\s+([0-9a-f\\s]+?)" +
+                "Q1?\\.y\\s+=)?\\s+([0-9a-f\\s]+)")
         val whitespacePattern = Regex("\\s")
-        withData(
-            nameFn = SuiteTestInfo::suiteName, sequenceOf(
-                SuiteTestInfo(
-                    suiteName = "P256_XMD:SHA-256_SSWU_RO_", suiteRef = RFC9380::`P256_XMD∶SHA-256_SSWU_RO_`,
-                    curve = ECCurve.SECP_256_R_1, dst = "QUUX-V01-CS02-with-P256_XMD:SHA-256_SSWU_RO_",
-                    """
+        withData(nameFn=SuiteTestInfo::suiteName, sequenceOf(
+            SuiteTestInfo(suiteName = "P256_XMD:SHA-256_SSWU_RO_", suiteRef = RFC9380::`P256_XMD∶SHA-256_SSWU_RO_`,
+                curve = ECCurve.SECP_256_R_1, dst = "QUUX-V01-CS02-with-P256_XMD:SHA-256_SSWU_RO_",
+                """
 msg     =
 P.x     = 2c15230b26dbc6fc9a37051158c95b79656e17a1a920b11394ca91
           c44247d3e4
@@ -157,12 +154,10 @@ Q0.y    = bb4a1edeff506cf16def96afff41b16fc74f6dbd55c2210e5b8f01
 Q1.x    = a281e34e628f3a4d2a53fa87ff973537d68ad4fbc28d3be5e8d9f6
           a2571c5a4b
 Q1.y    = f6ed88a7aab56a488100e6f1174fa9810b47db13e86be999644922
-          961206e184"""
-                ),
-                SuiteTestInfo(
-                    suiteName = "P256_XMD:SHA-256_SSWU_NU_", suiteRef = RFC9380::`P256_XMD∶SHA-256_SSWU_NU_`,
-                    curve = ECCurve.SECP_256_R_1, dst = "QUUX-V01-CS02-with-P256_XMD:SHA-256_SSWU_NU_",
-                    """
+          961206e184"""),
+            SuiteTestInfo(suiteName = "P256_XMD:SHA-256_SSWU_NU_", suiteRef = RFC9380::`P256_XMD∶SHA-256_SSWU_NU_`,
+                curve = ECCurve.SECP_256_R_1, dst = "QUUX-V01-CS02-with-P256_XMD:SHA-256_SSWU_NU_",
+                """
 msg     =
 P.x     = f871caad25ea3b59c16cf87c1894902f7e7b2c822c3d3f73596c5a
           ce8ddd14d1
@@ -232,12 +227,10 @@ u[0]    = 0e1527840b9df2dfbef966678ff167140f2b27c4dccd884c25014d
 Q.x     = 5c4bad52f81f39c8e8de1260e9a06d72b8b00a0829a8ea004a610b
           0691bea5d9
 Q.y     = c801e7c0782af1f74f24fc385a8555da0582032a3ce038de637ccd
-          cb16f7ef7b"""
-                ),
-                SuiteTestInfo(
-                    suiteName = "P384_XMD:SHA-384_SSWU_RO_", suiteRef = RFC9380::`P384_XMD∶SHA-384_SSWU_RO_`,
-                    curve = ECCurve.SECP_384_R_1, dst = "QUUX-V01-CS02-with-P384_XMD:SHA-384_SSWU_RO_",
-                    """
+          cb16f7ef7b"""),
+            SuiteTestInfo(suiteName = "P384_XMD:SHA-384_SSWU_RO_", suiteRef = RFC9380::`P384_XMD∶SHA-384_SSWU_RO_`,
+                curve = ECCurve.SECP_384_R_1, dst = "QUUX-V01-CS02-with-P384_XMD:SHA-384_SSWU_RO_",
+                """
 msg     =
 P.x     = eb9fe1b4f4e14e7140803c1d99d0a93cd823d2b024040f9c067a8e
           ca1f5a2eeac9ad604973527a356f3fa3aeff0e4d83
@@ -337,12 +330,10 @@ Q0.y    = 8ee51dbda46413bf621838cc935d18d617881c6f33f3838a79c767
 Q1.x    = 4ff01ceeba60484fa1bc0d825fe1e5e383d8f79f1e5bb78e5fb26b
           7a7ef758153e31e78b9d60ce75c5e32e43869d4e12
 Q1.y    = 0f84b978fac8ceda7304b47e229d6037d32062e597dc7a9b95bcd9
-          af441f3c56c619a901d21635f9ec6ab4710b9fcd0e"""
-                ),
-                SuiteTestInfo(
-                    suiteName = "P384_XMD:SHA-384_SSWU_NU_", suiteRef = RFC9380::`P384_XMD∶SHA-384_SSWU_NU_`,
-                    curve = ECCurve.SECP_384_R_1, dst = "QUUX-V01-CS02-with-P384_XMD:SHA-384_SSWU_NU_",
-                    """
+          af441f3c56c619a901d21635f9ec6ab4710b9fcd0e"""),
+            SuiteTestInfo(suiteName = "P384_XMD:SHA-384_SSWU_NU_", suiteRef = RFC9380::`P384_XMD∶SHA-384_SSWU_NU_`,
+                curve = ECCurve.SECP_384_R_1, dst = "QUUX-V01-CS02-with-P384_XMD:SHA-384_SSWU_NU_",
+                """
 msg     =
 P.x     = de5a893c83061b2d7ce6a0d8b049f0326f2ada4b966dc7e7292725
           6b033ef61058029a3bfb13c1c7ececd6641881ae20
@@ -412,12 +403,10 @@ u[0]    = 7b01ce9b8c5a60d9fbc202d6dde92822e46915d8c17e03fcb92ece
 Q.x     = af129727a4207a8cb9e9dce656d88f79fce25edbcea350499d65e9
           bf1204537bdde73c7cefb752a6ed5ebcd44e183302
 Q.y     = ce68a3d5e161b2e6a968e4ddaa9e51504ad1516ec170c7eef3ca6b
-          5327943eca95d90b23b009ba45f58b72906f2a99e2"""
-                ),
-                SuiteTestInfo(
-                    suiteName = "P521_XMD:SHA-512_SSWU_RO_", suiteRef = RFC9380::`P521_XMD∶SHA-512_SSWU_RO_`,
-                    curve = ECCurve.SECP_521_R_1, dst = "QUUX-V01-CS02-with-P521_XMD:SHA-512_SSWU_RO_",
-                    """
+          5327943eca95d90b23b009ba45f58b72906f2a99e2"""),
+            SuiteTestInfo(suiteName = "P521_XMD:SHA-512_SSWU_RO_", suiteRef = RFC9380::`P521_XMD∶SHA-512_SSWU_RO_`,
+                curve = ECCurve.SECP_521_R_1, dst = "QUUX-V01-CS02-with-P521_XMD:SHA-512_SSWU_RO_",
+                """
 msg     =
 P.x     = 00fd767cebb2452030358d0e9cf907f525f50920c8f607889a6a35
           680727f64f4d66b161fafeb2654bea0d35086bec0a10b30b14adef
@@ -557,12 +546,10 @@ Q1.x    = 0125c0b69bcf55eab49280b14f707883405028e05c927cd7625d4e
           1260dc3bb6512ab5db285fbd
 Q1.y    = 008bddfb803b3f4c761458eb5f8a0aee3e1f7f68e9d7424405fa69
           172919899317fb6ac1d6903a432d967d14e0f80af63e7035aaae0c
-          123e56862ce969456f99f102"""
-                ),
-                SuiteTestInfo(
-                    suiteName = "P521_XMD:SHA-512_SSWU_NU_", suiteRef = RFC9380::`P521_XMD∶SHA-512_SSWU_NU_`,
-                    curve = ECCurve.SECP_521_R_1, dst = "QUUX-V01-CS02-with-P521_XMD:SHA-512_SSWU_NU_",
-                    """
+          123e56862ce969456f99f102"""),
+            SuiteTestInfo(suiteName = "P521_XMD:SHA-512_SSWU_NU_", suiteRef = RFC9380::`P521_XMD∶SHA-512_SSWU_NU_`,
+                curve = ECCurve.SECP_521_R_1, dst = "QUUX-V01-CS02-with-P521_XMD:SHA-512_SSWU_NU_",
+                """
 msg     =
 P.x     = 01ec604b4e1e3e4c7449b7a41e366e876655538acf51fd40d08b97
           be066f7d020634e906b1b6942f9174b417027c953d75fb6ec64b8c
@@ -657,57 +644,35 @@ Q.x     = 01801de044c517a80443d2bd4f503a9e6866750d2f94a22970f62d
           7668f15ec178a17e3d27349b
 Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
           3358330f3bb84443fcb54fcd53a1d097fccbe310489b74ee143fc2
-          938959a83a1f7dd4a6fd395b"""
-                )
-            )
-        )
+          938959a83a1f7dd4a6fd395b""")
+        ))
         { suiteInfo ->
             val suite = suiteInfo.suiteRef(suiteInfo.dstB)
-
-            class TestInfo private constructor(
-                val msg: String, val Px: String, val Py: String,
-                val u0: String, val u1: String?, val Q0x: String, val Q0y: String, val Q1x: String?, val Q1y: String?
-            ) {
-                constructor(match: MatchResult) :
-                        this(
-                            msg = match.groupValues[1].replace(whitespacePattern, ""),
+            class TestInfo private constructor(val msg: String, val Px: String, val Py: String,
+                val u0: String, val u1: String?, val Q0x: String, val Q0y: String, val Q1x: String?, val Q1y: String?) {
+                constructor(match: MatchResult):
+                        this(msg = match.groupValues[1].replace(whitespacePattern, ""),
                             Px = match.groupValues[2].replace(whitespacePattern, ""),
                             Py = match.groupValues[3].replace(whitespacePattern, ""),
                             u0 = match.groupValues[4].replace(whitespacePattern, ""),
                             u1 = match.groupValues[5].replace(whitespacePattern, "").ifEmpty { null },
                             Q0x = match.groupValues[6].replace(whitespacePattern, ""),
-                            Q0y = match.groupValues[if (match.groupValues[7].isEmpty()) 9 else 7].replace(
-                                whitespacePattern,
-                                ""
-                            ),
+                            Q0y = match.groupValues[if(match.groupValues[7].isEmpty()) 9 else 7].replace(whitespacePattern, ""),
                             Q1x = match.groupValues[8].replace(whitespacePattern, "").ifEmpty { null },
-                            Q1y = if (match.groupValues[7].isEmpty()) null else match.groupValues[9].replace(
-                                whitespacePattern,
-                                ""
-                            ).ifEmpty { null })
+                            Q1y = if (match.groupValues[7].isEmpty()) null else match.groupValues[9].replace(whitespacePattern, "").ifEmpty { null })
             }
-            withData(
-                nameFn = {
-                    "Input: \"${
-                        it.msg.substring(
-                            0,
-                            min(it.msg.length, 10)
-                        )
-                    }${if (it.msg.length > 10) "…" else ""}\""
-                },
-                testcasePattern.findAll(suiteInfo.tests).map(::TestInfo)
-            )
+            withData(nameFn={ "Input: \"${it.msg.substring(0,min(it.msg.length,10))}${if (it.msg.length>10) "…" else ""}\"" },
+                testcasePattern.findAll(suiteInfo.tests).map(::TestInfo))
             { test ->
-                registerTest(TestNameBuilder.builder("hash_to_curve").build(), false, null) {
+                registerTest(TestName("hash_to_curve"), false, null) {
                     val result = suite(test.msg.encodeToByteArray()).normalize()
                     result.curve shouldBe suiteInfo.curve
                     result.x.toString(16).padStart(test.Px.length, '0') shouldBe test.Px
                     result.y.toString(16).padStart(test.Py.length, '0') shouldBe test.Py
                 }
-                registerTest(TestNameBuilder.builder("hash_to_field").build(), false, null) {
+                registerTest(TestName("hash_to_field"), false, null) {
                     val htfA = RFC9380.hash_to_field(
-                        RFC9380.expand_message_xmd(suiteInfo.curve.nativeDigest), suiteInfo.curve, suiteInfo.dstB
-                    )
+                        RFC9380.expand_message_xmd(suiteInfo.curve.nativeDigest), suiteInfo.curve, suiteInfo.dstB)
                     if (test.u1 != null) {
                         val u = htfA(test.msg.encodeToByteArray(), 2)
                         u[0].toString(16).padStart(test.u0.length, '0') shouldBe test.u0
@@ -717,7 +682,7 @@ Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
                         u.toString(16).padStart(test.u0.length, '0') shouldBe test.u0
                     }
                 }
-                registerTest(TestNameBuilder.builder("map_to_curve").build(), false, null) {
+                registerTest(TestName("map_to_curve"), false, null) {
                     val mtc = RFC9380.map_to_curve_simple_swu(suiteInfo.curve)
                     val u0 = BigInteger.parseString(test.u0, 16).toModularBigInteger(suiteInfo.curve.modulus)
                     val Q0 = mtc(u0).normalize()
@@ -736,23 +701,13 @@ Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
     }
     "HashToScalar" - {
         withData(ECCurve.entries) { curve ->
-            val hash_to_scalar = curve.hashToScalar(Random.azString(32).encodeToByteArray())
+            val hash_to_scalar = curve.hashToScalar(Random.azstring(32).encodeToByteArray())
             checkAll(iterations = 5000, Arb.byteArray(Arb.int(25, 125), Arb.byte())) { input ->
                 val base = hash_to_scalar(input)
                 base.modulus shouldBe curve.order
-                val splitPos = Random.nextInt(1, input.size - 2)
-                hash_to_scalar(
-                    sequenceOf(
-                        input.copyOfRange(0, splitPos),
-                        input.copyOfRange(splitPos, input.size)
-                    )
-                ) shouldBe base
-                hash_to_scalar(
-                    listOf(
-                        input.copyOfRange(0, splitPos),
-                        input.copyOfRange(splitPos, input.size)
-                    )
-                ) shouldBe base
+                val splitPos = Random.nextInt(1, input.size-2)
+                hash_to_scalar(sequenceOf(input.copyOfRange(0, splitPos), input.copyOfRange(splitPos, input.size))) shouldBe base
+                hash_to_scalar(listOf(input.copyOfRange(0, splitPos), input.copyOfRange(splitPos, input.size))) shouldBe base
             }
         }
     }
