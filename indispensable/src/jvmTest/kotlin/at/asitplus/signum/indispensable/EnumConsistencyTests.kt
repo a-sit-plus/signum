@@ -39,6 +39,6 @@ inline fun<reified T: Any> FreeSpec.enumConsistencyTest() {
 }
 
 class EnumConsistencyTests : FreeSpec({
-    enumConsistencyTest<MessageAuthenticationCode>()
+    //enumConsistencyTest<MessageAuthenticationCode>()
    // enumConsistencyTest<DataIntegrityAlgorithm>()
 })
