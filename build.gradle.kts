@@ -12,10 +12,30 @@ plugins {
 }
 group = "at.asitplus.signum"
 
+//Kotest workaround
 rootProject.also {
-    File(it.path+"/indispensable/src/iosTest/kotlin/Test.ktjsTest/").deleteRecursively()
-    File(it.path+"/indispensable/src/commonTest/kotlin/Asn1AddonsTest.ktjsTest/").deleteRecursively()
+    listOf(
+        it.file("./indispensable/src/iosTest/kotlin/Test.ktjsTest/"),
+        it.file("./supreme/src/iosTest/kotlin/Test.ktjsTest/"),
+        it.file("./indispensable/src/commonTest/kotlin/Asn1AddonsTest.ktjsTest/"),
+        it.file("./indispensable-asn1/src/commonTest/kotlin/at/asitplus/signum/indispensable/asn1/Asn1BitStringTest.ktjsTest/"),
+    ).forEach {
+        logger.lifecycle(">>> DELETING $it")
+        it.deleteRecursively()
+    }
 }
+//next kotest workaround
+subprojects {
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        // Apply opt-in only for test sources
+        if (name.contains("test", ignoreCase = true)) {
+            compilerOptions {
+                optIn.add("kotlin.ExperimentalStdlibApi")
+            }
+        }
+    }
+}
+
 //work around nexus publish bug
 val artifactVersion: String by extra
 version = artifactVersion
