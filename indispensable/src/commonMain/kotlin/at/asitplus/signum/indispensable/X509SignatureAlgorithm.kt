@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.catching
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
@@ -15,28 +16,22 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 @Serializable(with = X509SignatureAlgorithmSerializer::class)
-enum class X509SignatureAlgorithm(
+sealed class X509SignatureAlgorithm(
     override val oid: ObjectIdentifier,
-    val isEc: Boolean = false
+    open val name: String
 ) : Asn1Encodable<Asn1Sequence>, Identifiable, SpecializedSignatureAlgorithm {
 
     // ECDSA with SHA-size
-    ES256(KnownOIDs.ecdsaWithSHA256, true),
-    ES384(KnownOIDs.ecdsaWithSHA384, true),
-    ES512(KnownOIDs.ecdsaWithSHA512, true),
+    data class EC(override val oid: ObjectIdentifier, override val name: String) : X509SignatureAlgorithm(oid, name)
 
-    // RSASSA-PSS with SHA-size
-    PS256(KnownOIDs.rsaPSS),
-    PS384(KnownOIDs.rsaPSS),
-    PS512(KnownOIDs.rsaPSS),
+    // RSA
+    data class RSA(override val oid: ObjectIdentifier, override val name: String, val pssBits: Int? = null) : X509SignatureAlgorithm(oid, name)
 
-    // RSASSA-PKCS1-v1_5 with SHA-size
-    RS256(KnownOIDs.sha256WithRSAEncryption),
-    RS384(KnownOIDs.sha384WithRSAEncryption),
-    RS512(KnownOIDs.sha512WithRSAEncryption),
-
-    // RSASSA-PKCS1-v1_5 using SHA-1
-    RS1(KnownOIDs.sha1WithRSAEncryption);
+    data class Other(
+        override val oid: ObjectIdentifier,
+        val value: Asn1Sequence,
+        override val name: String = "Unknown($oid)"
+    ) : X509SignatureAlgorithm(oid, name)
 
     private fun encodePSSParams(bits: Int): Asn1Sequence =
         when (bits) {
@@ -71,18 +66,14 @@ enum class X509SignatureAlgorithm(
         }
 
     override fun encodeToTlv() = when (this) {
-        ES256, ES384, ES512 -> Asn1.Sequence { +oid }
+        is EC -> Asn1.Sequence { +oid }
 
-        PS256 -> encodePSSParams(256)
-
-        PS384 -> encodePSSParams(384)
-
-        PS512 -> encodePSSParams(512)
-
-        RS256, RS384, RS512, RS1 -> Asn1.Sequence {
+        is RSA -> pssBits?.let { encodePSSParams(it) } ?: Asn1.Sequence {
             +oid
             +Null()
         }
+
+        is Other -> value
     }
 
     val digest: Digest
@@ -91,23 +82,40 @@ enum class X509SignatureAlgorithm(
             ES256, PS256, RS256 -> Digest.SHA256
             ES384, PS384, RS384 -> Digest.SHA384
             ES512, PS512, RS512 -> Digest.SHA512
+            else -> throw IllegalArgumentException("Unsupported hash algorithm.")
         }
 
     override val algorithm: SignatureAlgorithm
         get() = when (this) {
-            ES256, ES384, ES512 -> SignatureAlgorithm.ECDSA(this.digest, null)
-            PS256, PS384, PS512 -> SignatureAlgorithm.RSA(this.digest, RSAPadding.PSS)
-            RS1, RS256, RS384, RS512 -> SignatureAlgorithm.RSA(this.digest, RSAPadding.PKCS1)
+            is EC -> SignatureAlgorithm.ECDSA(digest, null)
+            is RSA -> SignatureAlgorithm.RSA(digest, if (pssBits != null) RSAPadding.PSS else RSAPadding.PKCS1)
+            else -> throw IllegalArgumentException("Unsupported signature algorithm.")
         }
 
     companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithm> {
+        val ES256 = EC(KnownOIDs.ecdsaWithSHA256, "ES256")
+        val ES384 = EC(KnownOIDs.ecdsaWithSHA384, "ES384")
+        val ES512 = EC(KnownOIDs.ecdsaWithSHA512, "ES512")
 
-        @Throws(Asn1OidException::class)
-        private fun fromOid(oid: ObjectIdentifier) = catching { entries.first { it.oid == oid } }.getOrElse {
-            throw Asn1OidException("Unsupported OID: $oid", oid)
-        }
+        val PS256 = RSA(KnownOIDs.rsaPSS, "PS256", 256)
+        val PS384 = RSA(KnownOIDs.rsaPSS, "PS384", 384)
+        val PS512 = RSA(KnownOIDs.rsaPSS, "PS512", 512)
 
-        @Throws(Asn1Exception::class)
+        val RS1   = RSA(KnownOIDs.sha1WithRSAEncryption, "RS1")
+        val RS256 = RSA(KnownOIDs.sha256WithRSAEncryption, "RS256")
+        val RS384 = RSA(KnownOIDs.sha384WithRSAEncryption, "RS384")
+        val RS512 = RSA(KnownOIDs.sha512WithRSAEncryption, "RS512")
+
+        val entries: List<X509SignatureAlgorithm> = listOf(
+            ES256, ES384, ES512,
+            PS256, PS384, PS512,
+            RS1, RS256, RS384, RS512
+        )
+
+        private fun fromOid(oid: ObjectIdentifier): X509SignatureAlgorithm? =
+            entries.firstOrNull { it.oid == oid }
+
+
         override fun doDecode(src: Asn1Sequence): X509SignatureAlgorithm = src.decodeRethrowing {
             when (val oid = next().asPrimitive().readOid()) {
                 ES512.oid, ES384.oid, ES256.oid -> fromOid(oid)
@@ -122,6 +130,7 @@ enum class X509SignatureAlgorithm(
                 else -> throw Asn1Exception("Unsupported algorithm oid: $oid")
             }
         }
+
 
         @Throws(Asn1Exception::class)
         private fun parsePssParams(src: Asn1Structure.Iterator): X509SignatureAlgorithm = runRethrowing{

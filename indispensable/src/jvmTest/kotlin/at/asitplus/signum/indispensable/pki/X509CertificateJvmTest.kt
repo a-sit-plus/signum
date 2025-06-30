@@ -83,7 +83,7 @@ class X509CertificateJvmTest : FreeSpec({
             /* subject = */ issuer,
             /* publicKeyInfo = */ SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         )
-        val signatureAlgorithm = X509SignatureAlgorithm.ES256
+        val signatureAlgorithm = X509SignatureAlgorithm.EC.ES256
         val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val certificateHolder = builder.build(contentSigner)
 
@@ -129,7 +129,7 @@ class X509CertificateJvmTest : FreeSpec({
         val notAfterDate = Date.from(Instant.now().plusSeconds(30.days.inWholeSeconds))
         val serialNumber: BigInteger = BigInteger.valueOf(Random.nextLong().absoluteValue)
         val commonName = "DefaultCryptoService"
-        val signatureAlgorithm = X509SignatureAlgorithm.ES256
+        val signatureAlgorithm = X509SignatureAlgorithm.EC.ES256
 
 
         // create certificate with our structure
@@ -177,7 +177,7 @@ class X509CertificateJvmTest : FreeSpec({
             /* subject = */ issuer,
             /* publicKeyInfo = */ SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         )
-        val signatureAlgorithm = X509SignatureAlgorithm.ES256
+        val signatureAlgorithm = X509SignatureAlgorithm.EC.ES256
         val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val certificateHolder = builder.build(contentSigner)
 
@@ -222,8 +222,8 @@ class X509CertificateJvmTest : FreeSpec({
         val serialNumber: BigInteger = BigInteger.valueOf(Random.nextLong().absoluteValue)
         val commonName = "DefaultCryptoService"
 
-        val signatureAlgorithm256 = X509SignatureAlgorithm.ES256
-        val signatureAlgorithm512 = X509SignatureAlgorithm.ES512
+        val signatureAlgorithm256 = X509SignatureAlgorithm.EC.ES256
+        val signatureAlgorithm512 = X509SignatureAlgorithm.EC.ES512
 
         // create certificate with our structure
         val tbsCertificate1 = TbsCertificate(

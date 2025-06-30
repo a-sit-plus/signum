@@ -32,7 +32,8 @@ import kotlin.random.nextInt
 import java.security.cert.X509Certificate as JcaCertificate
 
 @OptIn(UnsafeIoApi::class)
-class X509CertParserTest : FreeSpec({
+class
+X509CertParserTest : FreeSpec({
 
     "Manual" {
         //ok-uniqueid-incomplete-byte.der

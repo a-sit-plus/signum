@@ -33,15 +33,43 @@ constructor(
     val validFrom: Asn1Time,
     val validUntil: Asn1Time,
     val subjectName: List<RelativeDistinguishedName>,
-    val publicKey: CryptoPublicKey,
+    val rawPublicKey: Asn1Sequence,
     val issuerUniqueID: Asn1BitString? = null,
     val subjectUniqueID: Asn1BitString? = null,
     val extensions: List<X509CertificateExtension>? = null,
 ) : Asn1Encodable<Asn1Sequence> {
 
+    val publicKey by lazy { CryptoPublicKey.decodeFromTlv(rawPublicKey) }
+
     init {
         if (extensions?.distinctBy { it.oid }?.size != extensions?.size) throw Asn1StructuralException("Multiple extensions with the same OID found")
     }
+
+    constructor(
+        version: Int? = 2,
+        serialNumber: ByteArray,
+        signatureAlgorithm: X509SignatureAlgorithm,
+        issuerName: List<RelativeDistinguishedName>,
+        validFrom: Asn1Time,
+        validUntil: Asn1Time,
+        subjectName: List<RelativeDistinguishedName>,
+        publicKey: CryptoPublicKey,
+        issuerUniqueID: Asn1BitString? = null,
+        subjectUniqueID: Asn1BitString? = null,
+        extensions: List<X509CertificateExtension>? = null
+    ) : this(
+        version,
+        serialNumber,
+        signatureAlgorithm,
+        issuerName,
+        validFrom,
+        validUntil,
+        subjectName,
+        publicKey.encodeToTlv(),
+        issuerUniqueID,
+        subjectUniqueID,
+        extensions
+    )
 
     /**
      * Contains `SubjectAlternativeName`s parsed from extensions. This property is initialized right away.
@@ -81,7 +109,7 @@ constructor(
             +Asn1.Sequence { subjectName.forEach { +it } }
 
             //subject public key
-            +publicKey
+            +rawPublicKey
 
             issuerUniqueID?.let { +(it withImplicitTag ISSUER_UID) }
             subjectUniqueID?.let { +(it withImplicitTag SUBJECT_UID) }
@@ -171,7 +199,8 @@ constructor(
                 RelativeDistinguishedName.decodeFromTlv(it.asSet())
             }
 
-            val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(next().asSequence())
+            val raw = next().asSequence()
+//            val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(raw)
 
             val issuerUniqueID = peek()?.let { next ->
                 if (next.tag == ISSUER_UID) {
@@ -201,7 +230,7 @@ constructor(
                 validFrom = timestamps.first,
                 validUntil = timestamps.second,
                 subjectName = subject,
-                publicKey = cryptoPublicKey,
+                rawPublicKey = raw,
                 issuerUniqueID = issuerUniqueID,
                 subjectUniqueID = subjectUniqueID,
                 extensions = extensions,
@@ -234,9 +263,11 @@ val CryptoSignature.x509Encoded
  * - EC is DER-encoded then wrapped in a bit string
  */
 fun CryptoSignature.Companion.fromX509Encoded(alg: X509SignatureAlgorithm, it: Asn1Primitive) =
-    when (alg.isEc) {
-        true -> CryptoSignature.EC.decodeFromDer(it.asAsn1BitString().rawBytes)
-        false -> CryptoSignature.RSA.decodeFromTlv(it)
+    when (alg) {
+        // element/primitive
+        is X509SignatureAlgorithm.EC -> CryptoSignature.EC.decodeFromDer(it.asAsn1BitString().rawBytes)
+        is X509SignatureAlgorithm.RSA -> CryptoSignature.RSA.decodeFromTlv(it)
+        else -> throw IllegalArgumentException("Unsupported signature algorithm.")
     }
 
 /**
@@ -245,10 +276,10 @@ fun CryptoSignature.Companion.fromX509Encoded(alg: X509SignatureAlgorithm, it: A
 data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     val tbsCertificate: TbsCertificate,
     val signatureAlgorithm: X509SignatureAlgorithm,
-    val rawSignature: Asn1Primitive,
+    val rawSignature: Asn1Element,
 ) : PemEncodable<Asn1Sequence> {
 
-    val decodedSignature = lazy { CryptoSignature.fromX509Encoded(signatureAlgorithm, rawSignature) }
+    val decodedSignature by lazy { CryptoSignature.fromX509Encoded(signatureAlgorithm, rawSignature.asPrimitive()) }
 
     constructor(
         tbsCertificate: TbsCertificate,
