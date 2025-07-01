@@ -1,5 +1,17 @@
 name: Publish Dry Run
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      kotlin-version:
+        description: 'Override Kotlin version?'
+        required: false
+        default: ''
+        type: string
+      kotest-version:
+        description: 'Override Kotest version?'
+        required: false
+        default: ''
+        type: string
 permissions:
   contents: read
   pages: write
@@ -7,6 +19,9 @@ permissions:
 jobs:
   build:
     runs-on: macos-latest
+    env:
+      KOTLIN_VERSION_ENV: ${{ inputs.kotlin-version }}
+      KOTEST_VERSION_ENV: ${{ inputs.kotest-version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -34,6 +49,8 @@ jobs:
           ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.PUBLISH_SONATYPE_PASSWORD }}
   deploy-docs:
     runs-on: macos-latest
+    env:
+      KOTLIN_VERSION_ENV: ${{ inputs.kotlin-version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3

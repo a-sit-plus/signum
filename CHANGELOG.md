@@ -13,6 +13,14 @@
     * `SymmetricKey.toJsonWebKey` now returns `KmmResult`
     * `SymmetricEncryptionAlgorithm.toJweKwAlgorithm` now returns `KmmResult`
     * `SymmetricEncryptionAlgorithm.toJweEncryptionAlgorithm` removed
+* Update to latest conventions plugin:
+    * Bouncy Castle 1.81!!
+    * Serialization 1.8.1
+    * Coroutines 1.10.2
+    * Ktor 3.1.2
+    * Datetime 0.6.2
+    * Kotest 6.0.0-SNAPSHOT
+
 
 ### 3.16.3 / 0.8.3 indispensable-only Hotfix
 * Fix erroneous Base64URL encoding in JOSE data classes

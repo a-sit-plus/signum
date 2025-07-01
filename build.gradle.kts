@@ -1,7 +1,13 @@
 import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
 
 plugins {
-    id("at.asitplus.gradle.conventions") version "2.1.20+20250324"
+    val kotlinVer = System.getenv("KOTLIN_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotlin.get()
+    val kotestVer = System.getenv("KOTEST_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotest.get()
+
+    id("at.asitplus.gradle.conventions") version "20250628"
+    id("io.kotest.multiplatform") version kotestVer
+    kotlin("multiplatform") version kotlinVer apply false
+    kotlin("plugin.serialization") version kotlinVer apply false
     id("com.android.library") version "8.6.1" apply (false)
 }
 group = "at.asitplus.signum"
@@ -26,6 +32,10 @@ allprojects {
 
     repositories {
         mavenLocal()
+        maven {
+            url = uri("https://raw.githubusercontent.com/a-sit-plus/gradle-conventions-plugin/mvn/repo")
+            name = "aspConventions"
+        }
     }
 }
 
