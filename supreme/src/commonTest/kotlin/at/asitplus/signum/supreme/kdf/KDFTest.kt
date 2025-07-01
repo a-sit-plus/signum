@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.kdf
 
 import at.asitplus.signum.indispensable.Digest
+import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1ContentBytes
 import at.asitplus.signum.indispensable.kdf.HKDF
 import at.asitplus.signum.indispensable.kdf.PBKDF2
 import at.asitplus.signum.indispensable.misc.bytes
@@ -10,6 +11,7 @@ import com.ionspin.kotlin.bignum.integer.Quadruple
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 
 class KDFTest : FreeSpec({
     "HKDF" - {
@@ -217,6 +219,63 @@ class KDFTest : FreeSpec({
                                     "   6a 27 2b de bb a1 d0 78 47 8f 62 b3 97 f3 3c 8d"
                         )
             }
+        }
+    }
+
+    "Invoke Overrides" - {
+        withData(List<Int>(10000) { it+1 }) {
+            PBKDF2.HMAC_SHA1.WithIterations(it) shouldBe PBKDF2.HMAC_SHA1(it).apply { pbkdf2 shouldBe PBKDF2.HMAC_SHA1 }
+            PBKDF2.HMAC_SHA256.WithIterations(it) shouldBe PBKDF2.HMAC_SHA256(it).apply { pbkdf2 shouldBe PBKDF2.HMAC_SHA256 }
+            PBKDF2.HMAC_SHA384.WithIterations(it) shouldBe PBKDF2.HMAC_SHA384(it).apply { pbkdf2 shouldBe PBKDF2.HMAC_SHA384 }
+            PBKDF2.HMAC_SHA512.WithIterations(it) shouldBe PBKDF2.HMAC_SHA512(it).apply { pbkdf2 shouldBe PBKDF2.HMAC_SHA512 }
+
+            PBKDF2.HMAC_SHA1.WithIterations(it) shouldNotBe PBKDF2.HMAC_SHA1(it*2)
+            PBKDF2.HMAC_SHA256.WithIterations(it) shouldNotBe PBKDF2.HMAC_SHA256(it*2)
+            PBKDF2.HMAC_SHA384.WithIterations(it) shouldNotBe PBKDF2.HMAC_SHA384(it*2)
+            PBKDF2.HMAC_SHA512.WithIterations(it) shouldNotBe PBKDF2.HMAC_SHA512(it*2)
+
+            PBKDF2.HMAC_SHA1.WithIterations(it) shouldNotBe PBKDF2.HMAC_SHA256(it)
+            PBKDF2.HMAC_SHA1.WithIterations(it) shouldNotBe PBKDF2.HMAC_SHA384(it)
+            PBKDF2.HMAC_SHA1.WithIterations(it) shouldNotBe PBKDF2.HMAC_SHA512(it)
+
+            PBKDF2.HMAC_SHA256.WithIterations(it) shouldNotBe PBKDF2.HMAC_SHA1(it)
+            PBKDF2.HMAC_SHA256.WithIterations(it) shouldNotBe PBKDF2.HMAC_SHA384(it)
+            PBKDF2.HMAC_SHA256.WithIterations(it) shouldNotBe PBKDF2.HMAC_SHA512(it)
+
+            PBKDF2.HMAC_SHA384.WithIterations(it) shouldNotBe PBKDF2.HMAC_SHA1(it)
+            PBKDF2.HMAC_SHA384.WithIterations(it) shouldNotBe PBKDF2.HMAC_SHA256(it)
+            PBKDF2.HMAC_SHA384.WithIterations(it) shouldNotBe PBKDF2.HMAC_SHA512(it)
+
+            PBKDF2.HMAC_SHA512.WithIterations(it) shouldNotBe PBKDF2.HMAC_SHA1(it)
+            PBKDF2.HMAC_SHA512.WithIterations(it) shouldNotBe PBKDF2.HMAC_SHA256(it)
+            PBKDF2.HMAC_SHA512.WithIterations(it) shouldNotBe PBKDF2.HMAC_SHA384(it)
+
+
+            HKDF.SHA1.WithInfo(it.encodeToAsn1ContentBytes()) shouldBe HKDF.SHA1(it.encodeToAsn1ContentBytes()).apply { hkdf shouldBe HKDF.SHA1}
+            HKDF.SHA256.WithInfo(it.encodeToAsn1ContentBytes()) shouldBe HKDF.SHA256(it.encodeToAsn1ContentBytes()).apply { hkdf shouldBe HKDF.SHA256}
+            HKDF.SHA384.WithInfo(it.encodeToAsn1ContentBytes()) shouldBe HKDF.SHA384(it.encodeToAsn1ContentBytes()).apply { hkdf shouldBe HKDF.SHA384}
+            HKDF.SHA512.WithInfo(it.encodeToAsn1ContentBytes()) shouldBe HKDF.SHA512(it.encodeToAsn1ContentBytes()).apply { hkdf shouldBe HKDF.SHA512}
+
+            HKDF.SHA1.WithInfo(it.encodeToAsn1ContentBytes()) shouldNotBe HKDF.SHA1((-it).encodeToAsn1ContentBytes())
+            HKDF.SHA256.WithInfo(it.encodeToAsn1ContentBytes()) shouldNotBe HKDF.SHA256((-it).encodeToAsn1ContentBytes())
+            HKDF.SHA384.WithInfo(it.encodeToAsn1ContentBytes()) shouldNotBe HKDF.SHA384((-it).encodeToAsn1ContentBytes())
+            HKDF.SHA512.WithInfo(it.encodeToAsn1ContentBytes()) shouldNotBe HKDF.SHA512((-it).encodeToAsn1ContentBytes())
+
+            HKDF.SHA1.WithInfo(it.encodeToAsn1ContentBytes()) shouldNotBe HKDF.SHA256(it.encodeToAsn1ContentBytes())
+            HKDF.SHA1.WithInfo(it.encodeToAsn1ContentBytes()) shouldNotBe HKDF.SHA384(it.encodeToAsn1ContentBytes())
+            HKDF.SHA1.WithInfo(it.encodeToAsn1ContentBytes()) shouldNotBe HKDF.SHA512(it.encodeToAsn1ContentBytes())
+
+            HKDF.SHA256.WithInfo(it.encodeToAsn1ContentBytes()) shouldNotBe HKDF.SHA1(it.encodeToAsn1ContentBytes())
+            HKDF.SHA256.WithInfo(it.encodeToAsn1ContentBytes()) shouldNotBe HKDF.SHA384(it.encodeToAsn1ContentBytes())
+            HKDF.SHA256.WithInfo(it.encodeToAsn1ContentBytes()) shouldNotBe HKDF.SHA512(it.encodeToAsn1ContentBytes())
+
+            HKDF.SHA384.WithInfo(it.encodeToAsn1ContentBytes()) shouldNotBe HKDF.SHA1(it.encodeToAsn1ContentBytes())
+            HKDF.SHA384.WithInfo(it.encodeToAsn1ContentBytes()) shouldNotBe HKDF.SHA256(it.encodeToAsn1ContentBytes())
+            HKDF.SHA384.WithInfo(it.encodeToAsn1ContentBytes()) shouldNotBe HKDF.SHA512(it.encodeToAsn1ContentBytes())
+
+            HKDF.SHA512.WithInfo(it.encodeToAsn1ContentBytes()) shouldNotBe HKDF.SHA1(it.encodeToAsn1ContentBytes())
+            HKDF.SHA512.WithInfo(it.encodeToAsn1ContentBytes()) shouldNotBe HKDF.SHA256(it.encodeToAsn1ContentBytes())
+            HKDF.SHA512.WithInfo(it.encodeToAsn1ContentBytes()) shouldNotBe HKDF.SHA384(it.encodeToAsn1ContentBytes())
         }
     }
 })

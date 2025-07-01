@@ -19,6 +19,11 @@ enum class HKDF(val digest: Digest) {
     SHA384(Digest.SHA384),
     SHA512(Digest.SHA512);
 
+    /**
+     * Creates a fully instantiated HKDF object with info
+     */
+    operator fun invoke(info: ByteArray) = WithInfo(info)
+
     companion object {
         operator fun invoke(digest: Digest) = when (digest) {
             Digest.SHA1 -> SHA1
@@ -32,8 +37,28 @@ enum class HKDF(val digest: Digest) {
 
     val outputLength: Int get() = digest.outputLength.bytes.toInt()
 
+    /**
+     * The actual [HKDF] instance configured with [info] set.
+     */
     inner class WithInfo(val info: ByteArray) : KDF {
         val hkdf = this@HKDF
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is WithInfo) return false
+
+            if (!info.contentEquals(other.info)) return false
+            if (hkdf != other.hkdf) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = info.contentHashCode()
+            result = 31 * result + hkdf.hashCode()
+            return result
+        }
+
+
     }
 }
 
@@ -48,6 +73,8 @@ enum class PBKDF2(val prf: HMAC) {
     HMAC_SHA384(HMAC.SHA384),
     HMAC_SHA512(HMAC.SHA512);
 
+    operator fun invoke(iterations: Int) = WithIterations(iterations)
+
     companion object {
         operator fun invoke(prf: HMAC) = when (prf) {
             HMAC.SHA1 -> HMAC_SHA1
@@ -61,16 +88,31 @@ enum class PBKDF2(val prf: HMAC) {
     }
 
     /**
-     * The actual [KDF] instance configured with [iterations].
+     * The actual [PBKDF2] instance configured with [iterations] set.
      */
     inner class WithIterations(val iterations: Int) : KDF {
         val pbkdf2 = this@PBKDF2
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is WithIterations) return false
+
+            if (iterations != other.iterations) return false
+            if (pbkdf2 != other.pbkdf2) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = iterations
+            result = 31 * result + pbkdf2.hashCode()
+            return result
+        }
     }
 }
 
 
 /**
- * `scrypt` as defined by [Colin Percival for the _Tarsnap_ online backup service](https://www.tarsnap.com/scrypt.html). Directly implements the [KDF] interface.
+ * `scrypt` in accordance with [RFC 7914](https://www.rfc-editor.org/rfc/rfc7914). Directly implements the [KDF] interface.
  *
  * Parameters:
  * - CPU/memory [cost] parameter; must be a positive power of two greater than 1; controls how many independent transformations of the input must be held in memory

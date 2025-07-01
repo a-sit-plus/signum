@@ -683,13 +683,17 @@ The Supreme KMP crypto provider implements the following key derivation function
 
 * _HKDF_ as per [RFC 5869](https://tools.ietf.org/html/rfc5869)
 * _PBKDF2_ in accordance with [RFC 8018](https://datatracker.ietf.org/doc/html/rfc8018)
-* _scrpyt_ as defined by [Colin Percival for the _Tarsnap_ online backup service](https://www.tarsnap.com/scrypt.html)
+* _scrpyt_ in accordance with [RFC 7914](https://www.rfc-editor.org/rfc/rfc7914)
 
 Usage is the same across implementations:
 
 1. Instantiate a KDF implementation using algorithm-specific parameters as per the respective RFCs. These are:
-    * HKDF comes predefined for the SHA-1 and SHA-2 family of hash functions as `HKDF.SHA1`..`HKDF.SHA512`. Those enums require the instantiation of the nested `WithInfo(info)` class to obtain a fully instantiated object implementing the `KDF` interface.
-    * PBKDF2 comes predefined for HMAC based on the SHA-1 and SHA-2 family of hash functions as `PBKDF2.HMAC_SHA1`..`PBKDF2.HMAC_SHA512`. Those enums require the instantiation of the nested `WithIterations(iter)` class to obtain a fully instantiated object implementing the `KDF` interface.
+    * HKDF comes predefined for the SHA-1 and SHA-2 family of hash functions as `HKDF.SHA1`..`HKDF.SHA512`. `info` bytes are required to obtain a fully instantiated `WithInfo` object in one of two ways:
+        1. `HKDF.SHAXXX(info)` 
+        2. `HKDF.SHAXXX.WithInfo(info)` 
+    * PBKDF2 comes predefined for HMAC based on the SHA-1 and SHA-2 family of hash functions as `PBKDF2.HMAC_SHA1`..`PBKDF2.HMAC_SHA512`. The number of `iterations` is required to obtain a fully instantiated `WithIterations` object in one of two ways:
+        1. `PBKDF2.SHAXXX(iterations)`
+        2. `PBKDF2.SHAXXX.WithIterations(iterations)`
     * scrypt can simply be configured by calling the `SCrypt` constructor with parameter values as desired: `SCrypt(cost, parallelization, blockSize)`. This class directly implements the `KDF` interface.
 2. Invoke `deriveKey(salt, inputKeyMaterial, derivedKeyLength)` to obtain a derived key of length `derivedKeyLength` based on `inputKeyMaterial` and the provided `salt`.
 
