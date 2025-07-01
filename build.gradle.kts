@@ -2,12 +2,15 @@ import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
 
 plugins {
     id("at.asitplus.gradle.conventions") version "20250628"
-    id("io.kotest.multiplatform") version (System.getenv("KOTEST_VERSION_ENV")?.let { it.ifBlank { null } }
-        ?: libs.versions.kotest.get())
-    kotlin("multiplatform") version (System.getenv("KOTLIN_VERSION_ENV")?.let { it.ifBlank { null } }
-        ?: libs.versions.kotlin.get()) apply false
-    kotlin("plugin.serialization") version (System.getenv("KOTLIN_VERSION_ENV")?.let { it.ifBlank { null } }
-        ?: libs.versions.kotlin.get()) apply false
+    id("io.kotest.multiplatform") version
+            (System.getenv("KOTEST_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotest.get())
+
+    kotlin("multiplatform") version
+            (System.getenv("KOTLIN_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotest.get()) apply false
+
+    kotlin("plugin.serialization") version
+            (System.getenv("KOTLIN_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotest.get()) apply false
+
     id("com.android.library") version "8.6.1" apply (false)
 }
 group = "at.asitplus.signum"
