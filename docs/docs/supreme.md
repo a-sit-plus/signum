@@ -682,7 +682,7 @@ For convenience, pre-configured `AsymmetricEncryptionAlgorithm` instances exist 
 The Supreme KMP crypto provider implements the following key derivation functions:
 
 * _HKDF_ as per [RFC 5869](https://tools.ietf.org/html/rfc5869)
-* _PNKDF2_ in accordance with [RFC 8018](https://datatracker.ietf.org/doc/html/rfc8018)
+* _PBKDF2_ in accordance with [RFC 8018](https://datatracker.ietf.org/doc/html/rfc8018)
 * _scrpyt_ as defined by [Colin Percival for the _Tarsnap_ online backup service](https://www.tarsnap.com/scrypt.html)
 
 Usage is the same across implementations:
