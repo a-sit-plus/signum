@@ -6,10 +6,10 @@ plugins {
             (System.getenv("KOTEST_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotest.get())
 
     kotlin("multiplatform") version
-            (System.getenv("KOTLIN_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotest.get()) apply false
+            (System.getenv("KOTLIN_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotlin.get()) apply false
 
     kotlin("plugin.serialization") version
-            (System.getenv("KOTLIN_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotest.get()) apply false
+            (System.getenv("KOTLIN_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotlin.get()) apply false
 
     id("com.android.library") version "8.6.1" apply (false)
 }
