@@ -32,8 +32,7 @@ import kotlin.random.nextInt
 import java.security.cert.X509Certificate as JcaCertificate
 
 @OptIn(UnsafeIoApi::class)
-class
-X509CertParserTest : FreeSpec({
+class X509CertParserTest : FreeSpec({
 
     "Manual" {
         //ok-uniqueid-incomplete-byte.der
@@ -141,10 +140,7 @@ X509CertParserTest : FreeSpec({
         val (ok, faulty) = readGoogleCerts()
 
         "OK certs should parse" - {
-            val good =
-                ok.filterNot { it.first == "ok-inherited-keyparams.ca.der" || it.first == "ok-inherited-keyparams.leaf.der" } //filter out certs with DSA pubKeys
-
-            withData(nameFn = { it.first }, good) {
+            withData(nameFn = { it.first }, ok) {
                 val src = Asn1Element.parse(it.second) as Asn1Sequence
                 val decoded = X509Certificate.decodeFromTlv(src)
                 decoded shouldBe X509Certificate.decodeFromByteArray(it.second)

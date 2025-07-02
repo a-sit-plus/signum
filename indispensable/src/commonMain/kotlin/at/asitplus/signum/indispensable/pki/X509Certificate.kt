@@ -39,7 +39,7 @@ constructor(
     val extensions: List<X509CertificateExtension>? = null,
 ) : Asn1Encodable<Asn1Sequence> {
 
-    val publicKey by lazy { CryptoPublicKey.decodeFromTlv(rawPublicKey) }
+    val decodedPublicKey by lazy { CryptoPublicKey.decodeFromTlv(rawPublicKey) }
 
     init {
         if (extensions?.distinctBy { it.oid }?.size != extensions?.size) throw Asn1StructuralException("Multiple extensions with the same OID found")
@@ -139,7 +139,7 @@ constructor(
         if (validFrom != other.validFrom) return false
         if (validUntil != other.validUntil) return false
         if (subjectName != other.subjectName) return false
-        if (publicKey != other.publicKey) return false
+        if (rawPublicKey != other.rawPublicKey) return false
         if (issuerUniqueID != other.issuerUniqueID) return false
         if (subjectUniqueID != other.subjectUniqueID) return false
         if (extensions != other.extensions) return false
@@ -155,7 +155,7 @@ constructor(
         result = 31 * result + validFrom.hashCode()
         result = 31 * result + validUntil.hashCode()
         result = 31 * result + subjectName.hashCode()
-        result = 31 * result + publicKey.hashCode()
+        result = 31 * result + rawPublicKey.hashCode()
         result = 31 * result + (issuerUniqueID?.hashCode() ?: 0)
         result = 31 * result + (subjectUniqueID?.hashCode() ?: 0)
         result = 31 * result + (extensions?.hashCode() ?: 0)
@@ -304,7 +304,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
 
         if (tbsCertificate != other.tbsCertificate) return false
         if (signatureAlgorithm != other.signatureAlgorithm) return false
-        if (decodedSignature != other.decodedSignature) return false
+        if (rawSignature != other.rawSignature) return false
 
         return true
     }
@@ -323,7 +323,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         return "X509Certificate(${encodeToDerOrNull()?.let { it.encodeToString(Base64Strict) }})"
     }
 
-    val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
+    val publicKey: CryptoPublicKey get() = tbsCertificate.decodedPublicKey
 
     companion object : PemDecodable<Asn1Sequence, X509Certificate>(EB_STRINGS.DEFAULT, EB_STRINGS.LEGACY) {
 

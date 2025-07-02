@@ -130,9 +130,9 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
 
             val (jcaAlg,jcaSpec,certAlg) = when (val algSpec = config._algSpecific.v) {
                 is SigningKeyConfiguration.RSAConfiguration ->
-                    Triple("RSA", RSAKeyGenParameterSpec(algSpec.bits, algSpec.publicExponent.toJavaBigInteger()), X509SignatureAlgorithm.RSA.RS256)
+                    Triple("RSA", RSAKeyGenParameterSpec(algSpec.bits, algSpec.publicExponent.toJavaBigInteger()), X509SignatureAlgorithm.RS256)
                 is SigningKeyConfiguration.ECConfiguration ->
-                    Triple("EC", ECGenParameterSpec(algSpec.curve.jcaName), X509SignatureAlgorithm.EC.ES256)
+                    Triple("EC", ECGenParameterSpec(algSpec.curve.jcaName), X509SignatureAlgorithm.ES256)
             }
             val keyPair = getKPGInstance(jcaAlg, config.provider).run {
                 initialize(jcaSpec)

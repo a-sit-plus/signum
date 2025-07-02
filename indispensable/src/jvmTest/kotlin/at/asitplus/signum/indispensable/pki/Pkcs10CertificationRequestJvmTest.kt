@@ -54,7 +54,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
 
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
-        val signatureAlgorithm = X509SignatureAlgorithm.EC.ES256
+        val signatureAlgorithm = X509SignatureAlgorithm.ES256
 
 
         val tbsCsr = TbsCertificationRequest(
@@ -100,7 +100,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
 
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
-        val signatureAlgorithm = X509SignatureAlgorithm.EC.ES256
+        val signatureAlgorithm = X509SignatureAlgorithm.ES256
         val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         val keyUsage = KeyUsage(KeyUsage.digitalSignature)
@@ -160,7 +160,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
 
         // create CSR with bouncycastle
         val commonName = "localhost"
-        val signatureAlgorithm = X509SignatureAlgorithm.EC.ES256
+        val signatureAlgorithm = X509SignatureAlgorithm.ES256
         val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         val keyUsage = KeyUsage(KeyUsage.digitalSignature)
@@ -219,7 +219,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
 
         // create CSR with bouncycastle
         val commonName = "localhost"
-        val signatureAlgorithm = X509SignatureAlgorithm.EC.ES256
+        val signatureAlgorithm = X509SignatureAlgorithm.ES256
         val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
 
@@ -263,7 +263,7 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
 
         // create CSR with bouncycastle
         val commonName = "DefaultCryptoService"
-        val signatureAlgorithm = X509SignatureAlgorithm.EC.ES256
+        val signatureAlgorithm = X509SignatureAlgorithm.ES256
         val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
         val bcCsr = PKCS10CertificationRequestBuilder(X500Name("CN=$commonName"), spki).build(contentSigner)
@@ -354,8 +354,8 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         /*
             Pkcs10CertificationRequest
         */
-        val signatureAlgorithm1 = X509SignatureAlgorithm.EC.ES256
-        val signatureAlgorithm2 = X509SignatureAlgorithm.EC.ES512
+        val signatureAlgorithm1 = X509SignatureAlgorithm.ES256
+        val signatureAlgorithm2 = X509SignatureAlgorithm.ES512
 
         val signed = signatureAlgorithm1.getJCASignatureInstance().getOrThrow().apply {
             initSign(keyPair.private)
