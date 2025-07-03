@@ -41,7 +41,7 @@ private suspend fun HKDF.WithInfo.derive(salt: ByteArray, ikm: ByteArray, derive
     hkdf.extract(salt, ikm).getOrThrow().let { hkdf.expand(it, info, derivedKeyLength).getOrThrow() }
 
 /**
- * HKDF `expand` function
+ * HKDF `expand` step
  * @param pseudoRandomKey the input key material, which should already be pseudo-random.
  * @param info context
  * @param derivedKeyLength derived key length
@@ -63,8 +63,8 @@ suspend fun HKDF.expand(pseudoRandomKey: ByteArray, info: ByteArray, derivedKeyL
 }
 
 /**
- * HDKF `extract` function generating a pseudo-random key from `salt` and `ikm`
- * @param salt optional salt
+ * HDKF `extract` step generating a pseudo-random key from `salt` and `ikm`
+ * @param salt optional salt. If not provided, defaults to `ByteArray(outputLength)`, i.e. ["a string of HashLen zeros"](https://datatracker.ietf.org/doc/html/rfc5869#section-2.2)
  * @param inputKeyMaterial input key material
  */
 suspend fun HKDF.extract(salt: ByteArray?, inputKeyMaterial: ByteArray): KmmResult<ByteArray> =
@@ -80,7 +80,7 @@ private suspend fun PBKDF2.WithIterations.derive(password: ByteArray, salt: Byte
     var populated = 0
     var i = 0u
     while (populated < dkLen) {
-        // the loop body is the RFC's "F"
+        // the loop body is RFC8018#Section-5.2's "F"
         require(i < UInt.MAX_VALUE) { "derived key too long" }
         ++i
         var U = pbkdf2.prf.mac(password, sequenceOf(salt, pbkdf2.int(i))).getOrThrow()

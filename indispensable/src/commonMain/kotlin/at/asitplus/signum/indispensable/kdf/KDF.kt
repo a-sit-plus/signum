@@ -40,7 +40,7 @@ enum class HKDF(val digest: Digest) {
     /**
      * The actual [HKDF] instance configured with [info] set.
      */
-    inner class WithInfo(val info: ByteArray) : KDF {
+    inner class WithInfo internal constructor(val info: ByteArray) : KDF {
         val hkdf = this@HKDF
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -90,7 +90,7 @@ enum class PBKDF2(val prf: HMAC) {
     /**
      * The actual [PBKDF2] instance configured with [iterations] set.
      */
-    inner class WithIterations(val iterations: Int) : KDF {
+    inner class WithIterations internal constructor(val iterations: Int) : KDF {
         val pbkdf2 = this@PBKDF2
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
