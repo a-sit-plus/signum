@@ -76,7 +76,7 @@ which is implemented by `CryptoPrivateKey.EC`
 which is implemented by `CryptoPublicKey.EC`
 * `MAC` defines the interface for message authentication codes
     * `HMAC` defines HMAC for all supported `Digest` algorithms. The [Supreme](supreme.md) KMP crypto provider implements the actual HMAC functionality.
-* `KDF` defined the interface for key derivation functions
+* `KDF` defines the interface for key derivation functions
     * `HKDF` defines the configuration of an HKDF key derivation function. The [Supreme](supreme.md) KMP crypto provider implements the actual derivation functionality.
     * `PBKDF2` defines the configuration of an PBKDF2 key derivation function. The [Supreme](supreme.md) KMP crypto provider implements the actual derivation functionality.
     * `SCrypt` defines the configuration of an scrypt key derivation function. The [Supreme](supreme.md) KMP crypto provider implements the actual derivation functionality.
