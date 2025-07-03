@@ -103,6 +103,7 @@ data class CoseKey(
             ?: failure(IllegalArgumentException("No public key parameters!"))
 
 
+    @Deprecated("To be removed in next release")
     fun serialize() = coseCompliantSerializer.encodeToByteArray(this)
 
     /**
@@ -110,6 +111,7 @@ data class CoseKey(
      */
     companion object {
 
+        @Deprecated("To be removed in next release")
         fun deserialize(it: ByteArray) =
             catching { coseCompliantSerializer.decodeFromByteArray<CoseKey>(it) }
 

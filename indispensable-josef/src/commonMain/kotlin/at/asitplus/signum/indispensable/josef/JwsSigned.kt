@@ -6,6 +6,7 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.contentHashCodeIfArray
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
+import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.DeserializationStrategy
@@ -26,9 +27,9 @@ data class JwsSigned<out P : Any>(
     val plainSignatureInput: ByteArray,
 ) {
 
-    fun serialize(): String {
-        return "${plainSignatureInput.decodeToString()}.${signature.rawByteArray.encodeToString(Base64UrlStrict)}"
-    }
+    /** Encodes to JWS compact serialization (Base64-URL with dots). */
+    fun serialize(): String =
+        "${plainSignatureInput.decodeToString()}.${signature.rawByteArray.encodeToString(Base64UrlStrict)}"
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -68,9 +69,7 @@ data class JwsSigned<out P : Any>(
                 throw IllegalArgumentException("not three parts in input: $this")
             val inputParts = stringList.map { it.decodeToByteArray(Base64UrlStrict) }
             val header = with(inputParts[0]) {
-                JwsHeader.deserialize(decodeToString())
-                    .mapFailure { it.apply { printStackTrace() } }
-                    .getOrThrow()
+                joseCompliantSerializer.decodeFromString<JwsHeader>(decodeToString())
             }
             val payload = inputParts[1]
             val signature = with(inputParts[2]) {
@@ -109,7 +108,7 @@ data class JwsSigned<out P : Any>(
          */
         @Suppress("unused")
         fun prepareJwsSignatureInput(header: JwsHeader, payload: ByteArray): ByteArray =
-            (header.serialize().encodeToByteArray().encodeToString(Base64UrlStrict) +
+            (joseCompliantSerializer.encodeToString(header).encodeToByteArray().encodeToString(Base64UrlStrict) +
                     ".${payload.encodeToString(Base64UrlStrict)}").encodeToByteArray()
 
         /**

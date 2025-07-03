@@ -200,6 +200,8 @@ data class JsonWebKey(
         "urn:ietf:params:oauth:jwk-thumbprint:sha256:${thumbprint}"
     }
 
+
+    @Deprecated("To be removed in next release")
     fun serialize() = joseCompliantSerializer.encodeToString(this)
 
     val didEncoded: String? by lazy { toCryptoPublicKey().getOrNull()?.didEncoded }
@@ -333,6 +335,8 @@ data class JsonWebKey(
      * Contains convenience functions
      */
     companion object {
+
+        @Deprecated("To be removed in next release")
         fun deserialize(it: String): KmmResult<JsonWebKey> =
             catching { joseCompliantSerializer.decodeFromString<JsonWebKey>(it) }
 

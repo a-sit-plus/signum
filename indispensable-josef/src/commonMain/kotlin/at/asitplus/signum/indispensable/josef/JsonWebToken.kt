@@ -99,6 +99,8 @@ data class JsonWebToken(
     val status: JsonObject? = null,
 ) {
 
+
+    @Deprecated("To be removed in next release")
     fun serialize() = joseCompliantSerializer.encodeToString(this)
 
     override fun equals(other: Any?): Boolean {
@@ -146,6 +148,8 @@ data class JsonWebToken(
     }
 
     companion object {
+        
+        @Deprecated("To be removed in next release")
         fun deserialize(it: String) = catching {
             joseCompliantSerializer.decodeFromString<JsonWebToken>(it)
         }

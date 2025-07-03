@@ -21,6 +21,8 @@ data class CoseSignatureInput(
     @ByteString
     val payload: ByteArray?,
 ) {
+    
+    @Deprecated("To be removed in next release")
     fun serialize() = coseCompliantSerializer.encodeToByteArray(this)
 
     override fun equals(other: Any?): Boolean {

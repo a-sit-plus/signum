@@ -20,7 +20,7 @@
     * Ktor 3.1.2
     * Datetime 0.6.2
     * Kotest 6.0.0-SNAPSHOT
-
+* Deprecate `serialize()` and `deserialize()` methods in data classes
 
 ### 3.16.3 / 0.8.3 indispensable-only Hotfix
 * Fix erroneous Base64URL encoding in JOSE data classes

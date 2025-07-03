@@ -15,11 +15,15 @@ data class JsonWebKeySet(
     val keys: Collection<JsonWebKey>,
 ) {
 
+    
+    @Deprecated("To be removed in next release")
     fun serialize() = catching {
         joseCompliantSerializer.encodeToString(this)
     }
 
     companion object {
+
+        @Deprecated("To be removed in next release")
         fun deserialize(it: String) = catching {
             joseCompliantSerializer.decodeFromString<JsonWebKeySet>(it)
         }
