@@ -1,12 +1,23 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.catching
-import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.Asn1Decodable
+import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.Asn1Encodable
+import at.asitplus.signum.indispensable.asn1.Asn1Exception
+import at.asitplus.signum.indispensable.asn1.Asn1ExplicitlyTagged
+import at.asitplus.signum.indispensable.asn1.Asn1Primitive
+import at.asitplus.signum.indispensable.asn1.Asn1Sequence
+import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
+import at.asitplus.signum.indispensable.asn1.Identifiable
+import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
+import at.asitplus.signum.indispensable.asn1.readOid
+import at.asitplus.signum.indispensable.asn1.runRethrowing
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -14,11 +25,14 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 
 @Serializable(with = X509SignatureAlgorithmSerializer::class)
-sealed class X509SignatureAlgorithm(
+open class X509SignatureAlgorithm private constructor(
     override val oid: ObjectIdentifier,
-    open val name: String
+    open val name: String,
+    val value: Asn1Sequence? = null
 ) : Asn1Encodable<Asn1Sequence>, Identifiable, SpecializedSignatureAlgorithm {
 
     // ECDSA with SHA-size
@@ -27,11 +41,6 @@ sealed class X509SignatureAlgorithm(
     // RSA
     data class RSA(override val oid: ObjectIdentifier, override val name: String, val pssBits: Int? = null) : X509SignatureAlgorithm(oid, name)
 
-    data class Other(
-        override val oid: ObjectIdentifier,
-        val value: Asn1Sequence,
-        override val name: String = "Unknown($oid)"
-    ) : X509SignatureAlgorithm(oid, name)
 
     private fun encodePSSParams(bits: Int): Asn1Sequence =
         when (bits) {
@@ -73,7 +82,7 @@ sealed class X509SignatureAlgorithm(
             +Null()
         }
 
-        is Other -> value
+        else -> value!!
     }
 
     val digest: Digest
@@ -92,6 +101,26 @@ sealed class X509SignatureAlgorithm(
             else -> throw IllegalArgumentException("Unsupported signature algorithm.")
         }
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as X509SignatureAlgorithm
+
+        if (oid != other.oid) return false
+        if (name != other.name) return false
+        if (value != other.value) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = oid.hashCode()
+        result = 31 * result + name.hashCode()
+        result = 31 * result + (value?.hashCode() ?: 0)
+        return result
+    }
+
     companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithm> {
         val ES256 = EC(KnownOIDs.ecdsaWithSHA256, "ES256")
         val ES384 = EC(KnownOIDs.ecdsaWithSHA384, "ES384")
@@ -106,61 +135,64 @@ sealed class X509SignatureAlgorithm(
         val RS384 = RSA(KnownOIDs.sha384WithRSAEncryption, "RS384")
         val RS512 = RSA(KnownOIDs.sha512WithRSAEncryption, "RS512")
 
-        val entries: List<X509SignatureAlgorithm> = listOf(
-            ES256, ES384, ES512,
-            PS256, PS384, PS512,
-            RS1, RS256, RS384, RS512
+        private val _registeredAlgorithms = MutableStateFlow(
+            setOf(
+                ES256, ES384, ES512,
+                PS256, PS384, PS512,
+                RS1, RS256, RS384, RS512
+            )
         )
+        val registeredAlgorithms: Set<X509SignatureAlgorithm>
+            get() = _registeredAlgorithms.value
+
+        fun register(algorithm: X509SignatureAlgorithm) {
+            _registeredAlgorithms.update { it + algorithm}
+        }
 
         private fun fromOid(oid: ObjectIdentifier): X509SignatureAlgorithm? =
-            entries.firstOrNull { it.oid == oid }
+            registeredAlgorithms.firstOrNull { it.oid == oid }
 
-
-        override fun doDecode(src: Asn1Sequence): X509SignatureAlgorithm = src.decodeRethrowing {
-            when (val oid = next().asPrimitive().readOid()) {
-                ES512.oid, ES384.oid, ES256.oid -> fromOid(oid)
-
-                RS1.oid, RS256.oid, RS384.oid, RS512.oid -> fromOid(oid).also {
-                    val tag = next().tag
-                    if (tag != Asn1Element.Tag.NULL)
-                        throw Asn1TagMismatchException(Asn1Element.Tag.NULL, tag, "RSA Params not allowed.")
+        @Throws(Asn1Exception::class)
+        override fun doDecode(src: Asn1Sequence): X509SignatureAlgorithm = runRethrowing {
+            when (val oid = (src.nextChild() as Asn1Primitive).readOid()) {
+                KnownOIDs.rsaPSS -> parsePssParams(src)
+                else -> {
+                    val alg = fromOid(oid)
+                    if (alg is RSA) {
+                        val tag = src.nextChild().tag
+                        if (tag != Asn1Element.Tag.NULL)
+                            throw Asn1TagMismatchException(Asn1Element.Tag.NULL, tag, "RSA Params not allowed.")
+                    }
+                    alg ?: X509SignatureAlgorithm(oid, "Unknown($oid)", src).also { src.consumeRemainingChildren() }
                 }
-
-                PS256.oid, PS384.oid, PS512.oid -> parsePssParams(this)
-                else -> throw Asn1Exception("Unsupported algorithm oid: $oid")
             }
         }
 
-
         @Throws(Asn1Exception::class)
-        private fun parsePssParams(src: Asn1Structure.Iterator): X509SignatureAlgorithm = runRethrowing{
-            val (algSequence, mgfSequence, saltLen) = src.next().asSequence().decodeRethrowing {
-                Triple(
-                    next().asExplicitlyTagged().verifyTag(0u).single().asSequence(),
-                    next().asExplicitlyTagged().verifyTag(1u).single().asSequence(),
-                    next().asExplicitlyTagged().verifyTag(2u).single().asPrimitive().decodeToInt()
-                )
-            }
+        private fun parsePssParams(src: Asn1Sequence): X509SignatureAlgorithm = runRethrowing {
+            val seq = src.nextChild() as Asn1Sequence
+            val first = (seq.nextChild() as Asn1ExplicitlyTagged).verifyTag(0u).single() as Asn1Sequence
 
-            val (sigAlg, tagged) = algSequence.decodeRethrowing { next().asPrimitive().readOid() to next().tag }
+            val sigAlg = (first.nextChild() as Asn1Primitive).readOid()
+            val tag = first.nextChild().tag
+            if (tag != Asn1Element.Tag.NULL)
+                throw Asn1TagMismatchException(Asn1Element.Tag.NULL, tag, "PSS Params not supported yet")
 
-            if (tagged != Asn1Element.Tag.NULL)
-                throw Asn1TagMismatchException(Asn1Element.Tag.NULL, tagged, "PSS Params not supported yet")
-
-            val (mgfOid, mgfParams) = mgfSequence.decodeRethrowing {
-                next().asPrimitive().readOid() to next().asSequence()
-            }
-
-            if (mgfOid != KnownOIDs.pkcs1_MGF) throw IllegalArgumentException("Illegal OID: $mgfOid")
-
-            val (innerHash, innerTagged) = mgfParams.decodeRethrowing { next().asPrimitive().readOid() to next().tag }
-
+            val second = (seq.nextChild() as Asn1ExplicitlyTagged).verifyTag(1u).single() as Asn1Sequence
+            val mgf = (second.nextChild() as Asn1Primitive).readOid()
+            if (mgf != KnownOIDs.pkcs1_MGF) throw IllegalArgumentException("Illegal OID: $mgf")
+            val inner = second.nextChild() as Asn1Sequence
+            val innerHash = (inner.nextChild() as Asn1Primitive).readOid()
             if (innerHash != sigAlg) throw IllegalArgumentException("HashFunction mismatch! Expected: $sigAlg, is: $innerHash")
-            if (innerTagged != Asn1Element.Tag.NULL) throw IllegalArgumentException(
+
+            if (inner.nextChild().tag != Asn1Element.Tag.NULL) throw IllegalArgumentException(
                 "PSS Params not supported yet"
             )
 
-            sigAlg.let {
+            val last = (seq.nextChild() as Asn1ExplicitlyTagged).verifyTag(2u).single() as Asn1Primitive
+            val saltLen = last.decodeToInt()
+
+            return sigAlg.let {
                 when (it) {
                     KnownOIDs.sha_256 -> PS256.also { if (saltLen != 256 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
                     KnownOIDs.sha_384 -> PS384.also { if (saltLen != 384 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
@@ -217,6 +249,6 @@ object X509SignatureAlgorithmSerializer : KSerializer<X509SignatureAlgorithm> {
 
     override fun deserialize(decoder: Decoder): X509SignatureAlgorithm {
         val decoded = decoder.decodeString()
-        return X509SignatureAlgorithm.entries.first { it.name == decoded }
+        return X509SignatureAlgorithm.registeredAlgorithms.first { it.name == decoded }
     }
 }
