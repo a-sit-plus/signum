@@ -163,7 +163,7 @@ open class X509SignatureAlgorithm private constructor(
                         if (tag != Asn1Element.Tag.NULL)
                             throw Asn1TagMismatchException(Asn1Element.Tag.NULL, tag, "RSA Params not allowed.")
                     }
-                    alg ?: X509SignatureAlgorithm(oid, "Unknown($oid)", src).also { src.consumeRemainingChildren() }
+                    alg ?: X509SignatureAlgorithm(oid, "Unknown($oid)", src).also { src.discardRemainingChildren() }
                 }
             }
         }

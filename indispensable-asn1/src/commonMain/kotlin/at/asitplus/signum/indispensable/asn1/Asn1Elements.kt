@@ -726,9 +726,9 @@ sealed class Asn1Structure(
     }
 
     /**
-     * Consumes all remaining children
+     * Discards all remaining children
      * */
-    fun consumeRemainingChildren() { index = children.size }
+    fun discardRemainingChildren() { index = children.size }
 
 
     override val contentLength: Int by lazy { children.fold(0) { acc, child -> acc + child.overallLength } }
