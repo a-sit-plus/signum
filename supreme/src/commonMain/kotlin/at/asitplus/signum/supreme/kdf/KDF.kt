@@ -31,7 +31,7 @@ suspend fun KDF.deriveKey(salt: ByteArray, ikm: ByteArray, derivedKeyLength: Bit
             with(Mixer()) {
                 repeat(parallelization) { i -> scryptROMix(ByteArrayView(B, i * 128 * blockSize, 128 * blockSize)) }
             }
-            PBKDF2.HMAC_SHA256.WithIterations( 1).derive(ikm, B, derivedKeyLength.bytes.toInt())
+            PBKDF2.HMAC_SHA256.WithIterations(1).derive(ikm, B, derivedKeyLength.bytes.toInt())
         }
         is HKDF.WithInfo -> derive(salt, ikm, derivedKeyLength)
     }
