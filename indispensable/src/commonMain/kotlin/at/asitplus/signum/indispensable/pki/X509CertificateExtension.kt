@@ -24,8 +24,8 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsageExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.NameConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyMappingsExtension
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 
 
 /**
@@ -61,25 +61,25 @@ open class X509CertificateExtension @Throws(Asn1Exception::class) private constr
 
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
 
-        private val extensionDecoders: MutableMap<ObjectIdentifier, (Asn1Sequence, Asn1Element.Tag?, Boolean) -> X509CertificateExtension> = mutableMapOf(
-            KnownOIDs.basicConstraints_2_5_29_19 to BasicConstraintsExtension::decodeFromTlv,
-            KnownOIDs.nameConstraints_2_5_29_30 to NameConstraintsExtension::decodeFromTlv,
-            KnownOIDs.policyConstraints_2_5_29_36 to PolicyConstraintsExtension::decodeFromTlv,
-            KnownOIDs.certificatePolicies_2_5_29_32 to CertificatePoliciesExtension::decodeFromTlv,
-            KnownOIDs.policyMappings to PolicyMappingsExtension::decodeFromTlv,
-            KnownOIDs.inhibitAnyPolicy to InhibitAnyPolicyExtension::decodeFromTlv,
-            KnownOIDs.keyUsage to KeyUsageExtension::decodeFromTlv
+        private val _registeredExtensionDecoders = MutableStateFlow(
+            mapOf<ObjectIdentifier, (Asn1Sequence, Asn1Element.Tag?, Boolean) -> X509CertificateExtension>(
+                KnownOIDs.basicConstraints_2_5_29_19 to { seq, tag, critical -> BasicConstraintsExtension.decodeFromTlv(seq, tag, critical) },
+                KnownOIDs.nameConstraints_2_5_29_30 to { seq, tag, critical -> NameConstraintsExtension.decodeFromTlv(seq, tag, critical) },
+                KnownOIDs.policyConstraints_2_5_29_36 to { seq, tag, critical -> PolicyConstraintsExtension.decodeFromTlv(seq, tag, critical) },
+                KnownOIDs.certificatePolicies_2_5_29_32 to { seq, tag, critical -> CertificatePoliciesExtension.decodeFromTlv(seq, tag, critical) },
+                KnownOIDs.policyMappings to { seq, tag, critical -> PolicyMappingsExtension.decodeFromTlv(seq, tag, critical) },
+                KnownOIDs.inhibitAnyPolicy to { seq, tag, critical -> InhibitAnyPolicyExtension.decodeFromTlv(seq, tag, critical) },
+                KnownOIDs.keyUsage to { seq, tag, critical -> KeyUsageExtension.decodeFromTlv(seq, tag, critical) }
+            )
         )
-        private val mutex = Mutex()
+        val registeredExtensionDecoders: Map<ObjectIdentifier, (Asn1Sequence, Asn1Element.Tag?, Boolean) -> X509CertificateExtension>
+            get() = _registeredExtensionDecoders.value
 
-
-        suspend fun registerExtensionDecoder(
+        fun register(
             oid: ObjectIdentifier,
-            decoder: (Asn1Sequence, Any?, Boolean) -> X509CertificateExtension
+            decoder: (Asn1Sequence, Asn1Element.Tag?, Boolean) -> X509CertificateExtension
         ) {
-            mutex.withLock {
-                extensionDecoders[oid] = decoder
-            }
+            _registeredExtensionDecoders.update { it + (oid to decoder) }
         }
 
         @Throws(Asn1Exception::class)
@@ -87,7 +87,7 @@ open class X509CertificateExtension @Throws(Asn1Exception::class) private constr
 
             val id = next().asPrimitive().readOid()
             val oid = (src.children[0] as Asn1Primitive).readOid()
-            return extensionDecoders[oid]?.invoke(src, null, true) ?: decodeBase(src)
+            return registeredExtensionDecoders[oid]?.invoke(src, null, true) ?: decodeBase(src)
         }
 
         @Throws(Asn1Exception::class)
