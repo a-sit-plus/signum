@@ -1,7 +1,6 @@
 package at.asitplus.signum.supreme.kdf
 
 import at.asitplus.signum.indispensable.Digest
-import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1ContentBytes
 import at.asitplus.signum.indispensable.kdf.HKDF
 import at.asitplus.signum.indispensable.kdf.PBKDF2
 import at.asitplus.signum.indispensable.misc.bytes
@@ -11,7 +10,6 @@ import com.ionspin.kotlin.bignum.integer.Quadruple
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 
 class KDFTest : FreeSpec({
     "HKDF" - {
@@ -135,7 +133,7 @@ class KDFTest : FreeSpec({
                 val hkdf = HKDF(t.Hash)
                 val prk = hkdf.extract(t.salt, t.IKM).getOrThrow()
                 prk shouldBe t.PRK
-                val okm = hkdf.expand(prk, t.info, t.L.bytes).getOrThrow()
+                val okm = hkdf.expandStep(prk, t.info, t.L.bytes).getOrThrow()
                 okm shouldBe t.OKM
             }
         }
