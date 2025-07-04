@@ -8,8 +8,9 @@ import io.kotest.matchers.shouldNotBe
 
 class KdfTest: FreeSpec( {
 
-    "Invoke Overrides" - {
-        withData(List<Int>(10000) { it+1 }) {
+    "Invoke Overrides"  {
+        //withData is not working in all targets
+        (List(10000) { it+1 }).forEach {
             PBKDF2.HMAC_SHA1.WithIterations(it) shouldBe PBKDF2.HMAC_SHA1(it).apply { pbkdf2 shouldBe PBKDF2.HMAC_SHA1 }
             PBKDF2.HMAC_SHA256.WithIterations(it) shouldBe PBKDF2.HMAC_SHA256(it).apply { pbkdf2 shouldBe PBKDF2.HMAC_SHA256 }
             PBKDF2.HMAC_SHA384.WithIterations(it) shouldBe PBKDF2.HMAC_SHA384(it).apply { pbkdf2 shouldBe PBKDF2.HMAC_SHA384 }
