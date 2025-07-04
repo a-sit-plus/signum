@@ -31,7 +31,7 @@ suspend fun KDF.deriveKey(salt: ByteArray, ikm: ByteArray, derivedKeyLength: Bit
         is PBKDF2.WithIterations -> derive(ikm, salt, derivedKeyLength.bytes.toInt())
         is SCrypt -> {
             val B = PBKDF2.HMAC_SHA256(1).derive(ikm, salt, parallelization * 128 * blockSize)
-            with(SCryptMixer(this)) {
+            with(Mixer()) {
                 repeat(parallelization) { i -> scryptROMix(ByteArrayView(B, i * 128 * blockSize, 128 * blockSize)) }
             }
             PBKDF2.HMAC_SHA256(1).derive(ikm, B, derivedKeyLength.bytes.toInt())
@@ -110,9 +110,11 @@ fun SCrypt.integerify(B: ByteArrayView): Int =
             (B[B.size - 57].toUByte().toULong() shl 56)).and(/*"n - 1"*/(cost - 1).toULong()).toInt()
 
 
+internal fun SCrypt.Mixer() = SCryptMixer(this)
 @OptIn(ExperimentalUnsignedTypes::class)
 @Suppress("NOTHING_TO_INLINE")
-private class SCryptMixer(private val sCrypt: SCrypt) {
+//internal for testing
+internal class SCryptMixer(private val sCrypt: SCrypt) {
 
     private inline fun R(a: UInt, b: Int) =
         ((a shl b) or (a shr (32 - b)))
