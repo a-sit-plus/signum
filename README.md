@@ -37,7 +37,7 @@ action!
     * **Multiplatform KDF** (using platform-native hashing)
         * PBKDF2
         * HKDF
-        * SCrypt
+        * scrypt
 * Public Keys (RSA and EC)
 * Private Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)
@@ -143,21 +143,21 @@ On the other hand, cryptography-kotlin currently offers neither hardware-backed 
 
 The following table provides a detailed comparison between Signum and cryptography-kotlin.
 
-|                             | Signum               | cryptography-kotlin       |
-|-----------------------------|----------------------|---------------------------|
-| Digital Signatures          | ✔ (ECDSA, RSA)       | ✔ (ECDSA, RSA)            |
-| Symmetric Encryption        | ✔ (AES + ChaChaPoly) | ✔ (AES)                   |
-| Asymmetric Encryption       | ✔ (RSA)              | ✔ (RSA)                   |
-| Digest                      | ✔ (SHA-1, SHA-2)     | ✔ (MD5, SHA-1, SHA-2)     |
-| MAC                         | ✔ (HMAC)             | ✔ (HMAC)                  |
-| Key Agreement               | ✔ (ECDH)             | ✔ (ECDH)                  |
+|                             | Signum                   | cryptography-kotlin       |
+|-----------------------------|--------------------------|---------------------------|
+| Digital Signatures          | ✔ (ECDSA, RSA)           | ✔ (ECDSA, RSA)            |
+| Symmetric Encryption        | ✔ (AES + ChaChaPoly)     | ✔ (AES)                   |
+| Asymmetric Encryption       | ✔ (RSA)                  | ✔ (RSA)                   |
+| Digest                      | ✔ (SHA-1, SHA-2)         | ✔ (MD5, SHA-1, SHA-2)     |
+| MAC                         | ✔ (HMAC)                 | ✔ (HMAC)                  |
+| Key Agreement               | ✔ (ECDH)                 | ✔ (ECDH)                  |
 | KDF/PRF/KSF                 | ✔ (PBKDF2, HKDF, scrypt) | ✔ (PBKDF2, HKDF)          |
-| Hardware-Backed Crypto      | ✔                    | ✗                         |
-| Attestation                 | ✔                    | ✗                         |
-| Fully-Featured ASN.1 Engine | ✔                    | ✗                         |
-| COSE                        | ✔                    | ✗                         |
-| JOSE                        | ✔                    | ✗                         |
-| Provider Targets            | JVM, Android, iOS    | All KMP-supported targets |
+| Hardware-Backed Crypto      | ✔                        | ✗                         |
+| Attestation                 | ✔                        | ✗                         |
+| Fully-Featured ASN.1 Engine | ✔                        | ✗                         |
+| COSE                        | ✔                        | ✗                         |
+| JOSE                        | ✔                        | ✗                         |
+| Provider Targets            | JVM, Android, iOS        | All KMP-supported targets |
 
 
 ## _Supreme_ Demo Reel
@@ -375,38 +375,6 @@ reconstructed.decrypt(
   aad
 ).getOrThrow(/*handle error*/) shouldBe payload //greatest success!
 ```
-
-## Asymmetric Encryption
-Asymmetric encryption using RSA is supported, although the Supreme KMP crypto currently does not yet support hardware-backed
-management of key material.
-Hence, it is possible to create ephemeral RSA keys and use those, or import RSA keys.
-
-### Encryption and Decryption API
-
-The API is based on the same paradigm as the signer/verifier tandem. To encrypt data under an RSA public key, three steps are necessary:
-* Reference any of the preconfigured asymmetric encryption algorithms such as `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256`).
-* Invoke `encryptorFor(rsaPublicKey)` on it to create an `Encryptor`.
-* Call `encrypt(data)` and receive encrypted bytes-
-
-Decryption works analogously:
-* Reference any of the preconfigured asymmetric encryption algorithms such as `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256`).
-* Invoke `decryptorFor(rsaPrivateKey)` on it to create a `Decryptor`.
-* Call `decrypt(data)` and recover the plain bytes-
-
-As with the rest of the API, `KmmResult` is used throughout and the encryption/decryption functions are suspending.
-Textbook RSA (without padding; represented as `RsaPadding.NONE`) is supported, as is the vulnerable PKCS1 padding scheme.
-Both require a `HazardousMaterials` opt-in, as the latter may only to recover ciphertexts created by legacy systems
-and the former should only ever be used as a low-level primitive (usually for experiments but never in production)
-
-### Supported Algorithms and Paddings
-As of now, RSA encryption is supported and the following paddings can be used:
-
-* `RSAPadding.NONE`
-* `RSAPadding.PKCS1`
-* `RSAPadding.OAEP.SHA1`
-* `RSAPadding.OAEP.SHA256`
-* `RSAPadding.OAEP.SHA384`
-* `RSAPadding.OAEP.SHA512`
 
 
 ## ASN.1 Demo Reel
