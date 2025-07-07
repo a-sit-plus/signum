@@ -41,7 +41,7 @@ enum class HKDF(val digest: Digest) {
      * The actual [HKDF] instance configured with [info] set.
      */
     inner class WithInfo internal constructor(val info: ByteArray) : KDF {
-        val hkdf = this@HKDF
+        val hkdf get() = this@HKDF
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is WithInfo) return false
