@@ -65,7 +65,7 @@ enum class HKDF(val digest: Digest) {
 /**
  *  [RFC 8018](https://datatracker.ietf.org/doc/html/rfc8018)-compliant PBKDF2 template using an [HMAC] as its [prf] (pseudo-random function).
  *
- *  Create an instance of [WithIterations] to obtain an actual [KDF] for key derivation.
+ *  To obtain an actual [KDF] for key derivation, invoke as `(iterations = ...)`
  */
 enum class PBKDF2(val prf: HMAC) {
     HMAC_SHA1(HMAC.SHA1),
