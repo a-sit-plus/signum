@@ -4,10 +4,17 @@ package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
+import at.asitplus.signum.indispensable.asn1.Asn1PrimitiveOctetString
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import kotlinx.io.Buffer
 import kotlinx.io.Sink
 import kotlinx.io.readByteArray
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlin.experimental.ExperimentalObjCName
 import kotlin.native.ObjCName
 
@@ -724,11 +731,6 @@ sealed class Asn1Structure(
             throw Asn1StructuralException("Trailing data found in ASN.1 structure")
         return result
     }
-
-    /**
-     * Discards all remaining children
-     * */
-    fun discardRemainingChildren() { index = children.size }
 
 
     override val contentLength: Int by lazy { children.fold(0) { acc, child -> acc + child.overallLength } }

@@ -32,7 +32,7 @@ import kotlinx.coroutines.flow.update
 open class X509SignatureAlgorithm private constructor(
     override val oid: ObjectIdentifier,
     open val name: String,
-    val value: Asn1Sequence? = null
+    val parameters: List<Asn1Element> = emptyList()
 ) : Asn1Encodable<Asn1Sequence>, Identifiable, SpecializedSignatureAlgorithm {
 
     // ECDSA with SHA-size
@@ -82,7 +82,10 @@ open class X509SignatureAlgorithm private constructor(
             +Null()
         }
 
-        else -> value!!
+        else -> Asn1.Sequence {
+            +oid
+            parameters.forEach { +it }
+        }
     }
 
     val digest: Digest
@@ -109,7 +112,7 @@ open class X509SignatureAlgorithm private constructor(
 
         if (oid != other.oid) return false
         if (name != other.name) return false
-        if (value != other.value) return false
+        if (parameters != other.parameters) return false
 
         return true
     }
@@ -117,9 +120,10 @@ open class X509SignatureAlgorithm private constructor(
     override fun hashCode(): Int {
         var result = oid.hashCode()
         result = 31 * result + name.hashCode()
-        result = 31 * result + (value?.hashCode() ?: 0)
+        result = 31 * result + parameters.hashCode()
         return result
     }
+
 
     companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithm> {
         val ES256 = EC(KnownOIDs.ecdsaWithSHA256, "ES256")
@@ -163,7 +167,11 @@ open class X509SignatureAlgorithm private constructor(
                         if (tag != Asn1Element.Tag.NULL)
                             throw Asn1TagMismatchException(Asn1Element.Tag.NULL, tag, "RSA Params not allowed.")
                     }
-                    alg ?: X509SignatureAlgorithm(oid, "Unknown($oid)", src).also { src.discardRemainingChildren() }
+                    alg ?: X509SignatureAlgorithm(
+                        oid,
+                        "Unknown($oid)",
+                        generateSequence { src.takeIf { it.hasMoreChildren() }?.nextChild() }.toList()
+                    )
                 }
             }
         }
