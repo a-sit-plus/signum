@@ -22,9 +22,10 @@ More details about the supported algorithms is provided in the next section.
 | Biometric Auth              |           ✗           |    ✔    |        ✔        |
 | Hardware-Backed Key Storage | through dedicated HSM |    ✔    | P-256 keys only |
 | Key Agreement               |           ✔           |   ✔†    |        ✔        |
-| Asymmetric Encryption       |           ✗           |    ✗    |        ✗        |
-| Symmetric Encryption        |           ✗           |    ✗    |        ✗        |
-| MAC                         |           ✗           |    ✗    |        ✗        |
+| Asymmetric Encryption       |           ✔           |    ✔    |        ✔        |
+| Symmetric Encryption        |           ✔           |    ✔    |        ✔        |
+| MAC                         |           ✔           |    ✔    |        ✔        |
+| KDF/KSF                     |           ✔           |    ✔    |        ✔        |
 
 Hardware-backed key agreement, asymmetric and symmetric encryption are WIP and will be supported in an upcoming release.
 This is more than a mere lip service, since we (A-SIT Plus GmbH) need this functionality urgently ourselves and are already working on it.
@@ -119,18 +120,18 @@ The following table provides overview about what is supported by Signum and cryp
 !!! tip inline end
     For a rationale behind Signum's design, see the corresponding section in the [project overview](index.md#rationale).
 
-|                             | Signum               | cryptography-kotlin       |
-|-----------------------------|----------------------|---------------------------|
-| Digital Signatures          | ✔ (ECDSA, RSA)       | ✔ (ECDSA, RSA)            |
-| Symmetric Encryption        | ✔ (AES + ChaChaPoly) | ✔ (AES)                   |
-| Asymmetric (RSA) Encryption | ✔ RAW, PKCS1, OAEP   | ✔ RAW, PKCS1, OAEP        |
-| Digest                      | ✔ (SHA-1, SHA-2)     | ✔ (MD5, SHA-1, SHA-2)     |
-| MAC                         | ✔ (HMAC)             | ✔ (HMAC)                  |
-| Key Agreement               | ✔ (ECDH)             | ✔ (ECDH)                  |
-| KDF/PRF/KSF                 | ✗                    | ✔ (PBKDF2, HKDF)          |
-| Hardware-Backed Crypto      | ✔                    | ✗                         |
-| Attestation                 | ✔                    | ✗                         |
-| Fully-Featured ASN.1 Engine | ✔                    | ✗                         |
-| COSE                        | ✔                    | ✗                         |
-| JOSE                        | ✔                    | ✗                         |
-| Provider Targets            | JVM, Android, iOS    | All KMP-supported targets |
+|                             | Signum                   | cryptography-kotlin       |
+|-----------------------------|--------------------------|---------------------------|
+| Digital Signatures          | ✔ (ECDSA, RSA)           | ✔ (ECDSA, RSA)            |
+| Symmetric Encryption        | ✔ (AES + ChaChaPoly)     | ✔ (AES)                   |
+| Asymmetric (RSA) Encryption | ✔ RAW, PKCS1, OAEP       | ✔ RAW, PKCS1, OAEP        |
+| Digest                      | ✔ (SHA-1, SHA-2)         | ✔ (MD5, SHA-1, SHA-2)     |
+| MAC                         | ✔ (HMAC)                 | ✔ (HMAC)                  |
+| Key Agreement               | ✔ (ECDH)                 | ✔ (ECDH)                  |
+| KDF/PRF/KSF                 | ✔ (PBKDF2, HKDF, scrypt) | ✔ (PBKDF2, HKDF)          |
+| Hardware-Backed Crypto      | ✔                        | ✗                         |
+| Attestation                 | ✔                        | ✗                         |
+| Fully-Featured ASN.1 Engine | ✔                        | ✗                         |
+| COSE                        | ✔                        | ✗                         |
+| JOSE                        | ✔                        | ✗                         |
+| Provider Targets            | JVM, Android, iOS        | All KMP-supported targets |

@@ -8,15 +8,14 @@
     * HKDF
     * scrypt
 * **RSA encryption** using in-memory keys (no hardware-backed key management yet)
-* Dependency Updates:
-    * `kotlincrypto:secure-random:0.3.2` -> `kotlincrypto.random:crypto-rand:0.5.0`
-        * This fixes key generation in WASM/JS
 * Add `SpecializedSymmetricEncryptionAlgorithm`
     * This allows `randomKey()` etc to operate on COSE/JWE algorithms
 * Clean up some function signatures:
     * `SymmetricKey.toJsonWebKey` now returns `KmmResult`
     * `SymmetricEncryptionAlgorithm.toJweKwAlgorithm` now returns `KmmResult`
-    * `SymmetricEncryptionAlgorithm.toJweEncryptionAlgorithm` removed
+    * `SymmetricEncryptionAlgorithm.toJweEncryptionAlgorithm` removed* Dependency Updates:
+* `kotlincrypto:secure-random:0.3.2` -> `kotlincrypto.random:crypto-rand:0.5.0`
+    * This fixes key generation in WASM/JS
 * Update to latest conventions plugin:
     * Bouncy Castle 1.81!!
     * Serialization 1.8.1
