@@ -691,7 +691,7 @@ Usage is the same across implementations:
     * HKDF comes predefined for the SHA-1 and SHA-2 family of hash functions as `HKDF.SHA1`..`HKDF.SHA512`. Pass `info` bytes to obtain a fully instantiated `WithInfo` object:  
     `HKDF.SHAXXX(info = ...)` 
     * PBKDF2 comes predefined for HMAC based on the SHA-1 and SHA-2 family of hash functions as `PBKDF2.HMAC_SHA1`..`PBKDF2.HMAC_SHA512`. Pass the number of `iterations` is required to obtain a `WithIterations` object:  
-    `PBKDF2.SHAXXX(iterations = aNumberInTheTenThousands)`
+    `PBKDF2.SHAXXX(iterations = ...)`
     * An scrypt instance can be configured as desired:  
     `SCrypt(cost, parallelization, blockSize)`.
 2. Invoke `deriveKey(salt, inputKeyMaterial, derivedKeyLength)` to obtain a derived key of length `derivedKeyLength` based on `inputKeyMaterial` and the provided `salt`.
