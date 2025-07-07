@@ -689,7 +689,7 @@ Usage is the same across implementations:
 
 1. Instantiate a `KDF` implementation using algorithm-specific parameters as per the respective RFCs. These are:
     * HKDF comes predefined for the SHA-1 and SHA-2 family of hash functions as `HKDF.SHA1`..`HKDF.SHA512`. Pass `info` bytes to obtain a fully instantiated `WithInfo` object:  
-    `HKDF.SHAXXX(info = "CONSTANT".encodeToByteArray())` 
+    `HKDF.SHAXXX(info = ...)` 
     * PBKDF2 comes predefined for HMAC based on the SHA-1 and SHA-2 family of hash functions as `PBKDF2.HMAC_SHA1`..`PBKDF2.HMAC_SHA512`. Pass the number of `iterations` is required to obtain a `WithIterations` object:  
     `PBKDF2.SHAXXX(iterations = aNumberInTheTenThousands)`
     * An scrypt instance can be configured as desired:  
