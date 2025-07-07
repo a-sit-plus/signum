@@ -7,11 +7,15 @@
 This [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html) library provides platform-independent data
 types and functionality related to crypto and PKI applications:
 
-* **Multiplatform ECDSA and RSA Signer and Verifier** &rarr; Check out the included [CMP demo App](https://github.com/a-sit-plus/signum/tree/main/demoapp) to see it in
+* Multiplatform ECDSA and RSA Signer and Verifier &rarr; Check out the included [CMP demo App](https://github.com/a-sit-plus/signum/tree/main/demoapp) to see it in
   action
-* **Multiplatform AES and ChaCha20-Poly1503**
-* **Multiplatform HMAC**
-* **Multiplatform RSA Encryption**
+* Multiplatform AES and ChaCha20-Poly1503
+* Multiplatform HMAC
+* Multiplatform RSA Encryption
+* Multiplatform KDF/KSF
+    * PBKDF2
+    * HKDF
+    * scrypt
 * Biometric Authentication on Android and iOS without Callbacks or Activity Passing** (✨Magic!✨)
 * Support Attestation on Android and iOS
 * Multiplatform, hardware-backed ECDH key agreement
@@ -173,7 +177,7 @@ On Android, key usage purposes are enforced by hardware, on iOS this enforcement
 
 
 #### iOS and Android
-Both iOS and Android support attestation, hardware-backed key storage, and authentication to use a key.
+Both iOS and Android support attestation, hardware-backed key storage and authentication to use a key.
 Since all of this is, at least in part, hardware-dependent, the `PlatformSigningProvider` supports an additional
 `hardware` configuration block for key generation.
 The following snippet is a comprehensive example showcasing this feature set:
@@ -672,6 +676,28 @@ For convenience, pre-configured `AsymmetricEncryptionAlgorithm` instances exist 
 * `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256`
 * `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA384`
 * `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA512`
+
+## Key Derivation / Key Stretching
+
+The Supreme KMP crypto provider implements the following key derivation functions:
+
+* _HKDF_ as per [RFC 5869](https://tools.ietf.org/html/rfc5869)
+* _PBKDF2_ in accordance with [RFC 8018](https://datatracker.ietf.org/doc/html/rfc8018)
+* _scrpyt_ in accordance with [RFC 7914](https://www.rfc-editor.org/rfc/rfc7914)
+
+Usage is the same across implementations:
+
+1. Instantiate a `KDF` implementation using algorithm-specific parameters as per the respective RFCs. These are:
+    * HKDF comes predefined for the SHA-1 and SHA-2 family of hash functions as `HKDF.SHA1`..`HKDF.SHA512`. Pass `info` bytes to obtain a fully instantiated `WithInfo` object:  
+    `HKDF.SHAXXX(info = ...)` 
+    * PBKDF2 comes predefined for HMAC based on the SHA-1 and SHA-2 family of hash functions as `PBKDF2.HMAC_SHA1`..`PBKDF2.HMAC_SHA512`. Pass the number of `iterations` is required to obtain a `WithIterations` object:  
+    `PBKDF2.SHAXXX(iterations = ...)`
+    * An scrypt instance can be configured as desired:  
+    `SCrypt(cost, parallelization, blockSize)`.
+2. Invoke `deriveKey(salt, inputKeyMaterial, derivedKeyLength)` to obtain a derived key of length `derivedKeyLength` based on `inputKeyMaterial` and the provided `salt`.
+
+In line with other APIs, `deriveKey` returns a `KmmResult` indicating either success or failure.
+HKDF additionally exposes `extract(salt /*nullable*/, inputKeyMaterial)` and `expand(pseudoRandomKey, info, derivedKeyLength)` functions.
 
 ## Attestation
 

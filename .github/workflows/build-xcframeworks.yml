@@ -73,9 +73,3 @@ jobs:
           name: SignumSupreme-release.xcframework
           path: |
             supreme/build/XCFrameworks/release/
-      - name: Upload release XCFramework Supreme
-        uses: actions/upload-artifact@v3
-        with:
-          name: SignumSupreme-release.xcframework
-          path: |
-            supreme/build/XCFrameworks/release/

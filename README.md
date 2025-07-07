@@ -14,7 +14,6 @@
 [![Kotlin](https://img.shields.io/badge/kotlin-multiplatform-orange.svg?logo=kotlin)](http://kotlinlang.org)
 [![Kotlin](https://img.shields.io/badge/kotlin-2.1.20-blue.svg?logo=kotlin)](http://kotlinlang.org)
 [![Java](https://img.shields.io/badge/java-17+-blue.svg?logo=OPENJDK)](https://www.oracle.com/java/technologies/downloads/#java17)
-[![iOS](https://img.shields.io/badge/iOS-15-white?logo=apple)](https://support.apple.com/en-gb/108051)
 
 |  [![Android](https://img.shields.io/badge/Android_(indispensable)-SDK--30-37AA55?logo=android)](https://developer.android.com/tools/releases/platforms#11)  |  [![Maven Central (indispensable)](https://img.shields.io/maven-central/v/at.asitplus.signum/indispensable?label=maven-central%20%28indispensable%29)](https://mvnrepository.com/artifact/at.asitplus.signum/)  |  [![Maven SNAPSHOT (indispensable)](https://img.shields.io/nexus/snapshots/https/s01.oss.sonatype.org/at.asitplus.signum/indispensable?label=SNAPSHOT%20%28indispensable%29)](https://s01.oss.sonatype.org/content/repositories/snapshots/at/asitplus/signum/indispensable/)  |
 |:-----------------------------------------------------------------------------------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
@@ -27,14 +26,18 @@
 
 * **Multiplatform, platform-native crypto** &rarr; Check out the included [CMP demo App](https://a-sit-plus.github.io/signum/app) to see it in
 action!
-  * **ECDSA and RSA Signer and Verifier**
-  * **Multiplatform ECDH key agreement**
-  * **Hardware-Backed crypto on Android and iOS**
-  * **Platform-native attestation on iOS and Android**
-  * **Configurable biometric authentication on Android and iOS without callbacks or activity passing** (✨Magic!✨)
-  * **Multiplatform AES**
-  * **Multiplatform HMAC**
-  * **Multiplatform RSA Encryption**
+    * **ECDSA and RSA Signer and Verifier**
+    * **Multiplatform ECDH key agreement**
+    * **Hardware-Backed crypto on Android and iOS**
+    * **Platform-native attestation on iOS and Android**
+    * **Configurable biometric authentication on Android and iOS without callbacks or activity passing** (✨Magic!✨)
+    * **Multiplatform AES**
+    * **Multiplatform HMAC**
+    * **Multiplatform RSA Encryption**
+    * **Multiplatform KDF** (using platform-native hashing)
+        * PBKDF2
+        * HKDF
+        * scrypt
 * Public Keys (RSA and EC)
 * Private Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)
@@ -47,8 +50,8 @@ action!
 * 100% pure Kotlin BitSet
 * Exposes Multibase Encoder/Decoder as an API dependency including [Matthew Nelson's smashing Base16, Base32, and Base64 encoders](https://github.com/05nelsonm/encoding)
 * **ASN.1 Parser and Encoder including a DSL to generate ASN.1 structures**
-  * Parse, create, explore certificates, public keys, CSRs, and **arbitrary ASN.1* structures* on all supported platforms
-  * Powerful, expressive, type-safe ASN.1 DSL on all KMP targets
+    * Parse, create, explore certificates, public keys, CSRs, and **arbitrary ASN.1* structures* on all supported platforms
+    * Powerful, expressive, type-safe ASN.1 DSL on all KMP targets
 
 This last bit means that you can share ASN.1-related logic across platforms.
 The very first bit means that you can create and verify signatures on the JVM, Android and on iOS, using platform-native
@@ -140,21 +143,21 @@ On the other hand, cryptography-kotlin currently offers neither hardware-backed 
 
 The following table provides a detailed comparison between Signum and cryptography-kotlin.
 
-|                             | Signum               | cryptography-kotlin       |
-|-----------------------------|----------------------|---------------------------|
-| Digital Signatures          | ✔ (ECDSA, RSA)       | ✔ (ECDSA, RSA)            |
-| Symmetric Encryption        | ✔ (AES + ChaChaPoly) | ✔ (AES)                   |
-| Asymmetric Encryption | ✔ (RSA)   | ✔ (RSA)        |
-| Digest                      | ✔ (SHA-1, SHA-2)     | ✔ (MD5, SHA-1, SHA-2)     |
-| MAC                         | ✔ (HMAC)             | ✔ (HMAC)                  |
-| Key Agreement               | ✔ (ECDH)             | ✔ (ECDH)                  |
-| KDF/PRF/KSF                 | ✗                    | ✔ (PBKDF2, HKDF)          |
-| Hardware-Backed Crypto      | ✔                    | ✗                         |
-| Attestation                 | ✔                    | ✗                         |
-| Fully-Featured ASN.1 Engine | ✔                    | ✗                         |
-| COSE                        | ✔                    | ✗                         |
-| JOSE                        | ✔                    | ✗                         |
-| Provider Targets            | JVM, Android, iOS    | All KMP-supported targets |
+|                             | Signum                   | cryptography-kotlin       |
+|-----------------------------|--------------------------|---------------------------|
+| Digital Signatures          | ✔ (ECDSA, RSA)           | ✔ (ECDSA, RSA)            |
+| Symmetric Encryption        | ✔ (AES + ChaChaPoly)     | ✔ (AES)                   |
+| Asymmetric Encryption       | ✔ (RSA)                  | ✔ (RSA)                   |
+| Digest                      | ✔ (SHA-1, SHA-2)         | ✔ (MD5, SHA-1, SHA-2)     |
+| MAC                         | ✔ (HMAC)                 | ✔ (HMAC)                  |
+| Key Agreement               | ✔ (ECDH)                 | ✔ (ECDH)                  |
+| KDF/PRF/KSF                 | ✔ (PBKDF2, HKDF, scrypt) | ✔ (PBKDF2, HKDF)          |
+| Hardware-Backed Crypto      | ✔                        | ✗                         |
+| Attestation                 | ✔                        | ✗                         |
+| Fully-Featured ASN.1 Engine | ✔                        | ✗                         |
+| COSE                        | ✔                        | ✗                         |
+| JOSE                        | ✔                        | ✗                         |
+| Provider Targets            | JVM, Android, iOS        | All KMP-supported targets |
 
 
 ## _Supreme_ Demo Reel
@@ -372,38 +375,6 @@ reconstructed.decrypt(
   aad
 ).getOrThrow(/*handle error*/) shouldBe payload //greatest success!
 ```
-
-## Asymmetric Encryption
-Asymmetric encryption using RSA is supported, although the Supreme KMP crypto currently does not yet support hardware-backed
-management of key material.
-Hence, it is possible to create ephemeral RSA keys and use those, or import RSA keys.
-
-### Encryption and Decryption API
-
-The API is based on the same paradigm as the signer/verifier tandem. To encrypt data under an RSA public key, three steps are necessary:
-* Reference any of the preconfigured asymmetric encryption algorithms such as `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256`).
-* Invoke `encryptorFor(rsaPublicKey)` on it to create an `Encryptor`.
-* Call `encrypt(data)` and receive encrypted bytes-
-
-Decryption works analogously:
-* Reference any of the preconfigured asymmetric encryption algorithms such as `AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256`).
-* Invoke `decryptorFor(rsaPrivateKey)` on it to create a `Decryptor`.
-* Call `decrypt(data)` and recover the plain bytes-
-
-As with the rest of the API, `KmmResult` is used throughout and the encryption/decryption functions are suspending.
-Textbook RSA (without padding; represented as `RsaPadding.NONE`) is supported, as is the vulnerable PKCS1 padding scheme.
-Both require a `HazardousMaterials` opt-in, as the latter may only to recover ciphertexts created by legacy systems
-and the former should only ever be used as a low-level primitive (usually for experiments but never in production)
-
-### Supported Algorithms and Paddings
-As of now, RSA encryption is supported and the following paddings can be used:
-
-* `RSAPadding.NONE`
-* `RSAPadding.PKCS1`
-* `RSAPadding.OAEP.SHA1`
-* `RSAPadding.OAEP.SHA256`
-* `RSAPadding.OAEP.SHA384`
-* `RSAPadding.OAEP.SHA512`
 
 
 ## ASN.1 Demo Reel

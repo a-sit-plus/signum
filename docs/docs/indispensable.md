@@ -16,6 +16,7 @@ types and functionality related to crypto and PKI applications:
     * Point Compression
 * Public Keys (RSA and EC)
 * Private Keys (RSA and EC)
+* KDF definitions for HKDF, PBKDF2, and scrypt
 * Algorithm Identifiers (Signatures, Hashing)
 * X509 Certificate Class (create, encode, decode)
   * Extensions
@@ -75,6 +76,10 @@ which is implemented by `CryptoPrivateKey.EC`
 which is implemented by `CryptoPublicKey.EC`
 * `MAC` defines the interface for message authentication codes
     * `HMAC` defines HMAC for all supported `Digest` algorithms. The [Supreme](supreme.md) KMP crypto provider implements the actual HMAC functionality.
+* `KDF` defines the interface for key derivation functions
+    * `HKDF` defines the configuration of an HKDF key derivation function. The [Supreme](supreme.md) KMP crypto provider implements the actual derivation functionality.
+    * `PBKDF2` defines the configuration of an PBKDF2 key derivation function. The [Supreme](supreme.md) KMP crypto provider implements the actual derivation functionality.
+    * `SCrypt` defines the configuration of an scrypt key derivation function. The [Supreme](supreme.md) KMP crypto provider implements the actual derivation functionality.
 * `SymmetricEncryptionAlgorithm` represents symmetric encryption algorithms. _Indispensable_ currently ships with definitions for AES-CBC, a flexible AES-CBC-HMAC, and AES-GCM, while the [Supreme](supreme.md) KMP crypto provider implements the actual AES functionality. 
     * `BlockCipher` denotes a BlockCipher 
     * `WithIV` denotes a Cipher requiring an initialization vector
