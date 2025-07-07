@@ -41,7 +41,7 @@ suspend fun KDF.deriveKey(salt: ByteArray, ikm: ByteArray, derivedKeyLength: Bit
 }
 
 private suspend fun HKDF.WithInfo.derive(salt: ByteArray, ikm: ByteArray, derivedKeyLength: BitLength): ByteArray =
-    hkdf.extract(salt, ikm).getOrThrow().let { hkdf.expandStep(it, info, derivedKeyLength).getOrThrow() }
+    hkdf.extractStep(salt, ikm).getOrThrow().let { hkdf.expandStep(it, info, derivedKeyLength).getOrThrow() }
 
 /**
  * HKDF `expand` step. **NOT A FULL KDF!**
@@ -70,7 +70,7 @@ suspend fun HKDF.expandStep(pseudoRandomKey: ByteArray, info: ByteArray, derived
  * @param salt optional salt. If not provided, defaults to `ByteArray(outputLength)`, i.e. ["a string of HashLen zeros"](https://datatracker.ietf.org/doc/html/rfc5869#section-2.2)
  * @param inputKeyMaterial input key material
  */
-suspend fun HKDF.extract(salt: ByteArray?, inputKeyMaterial: ByteArray): KmmResult<ByteArray> =
+suspend fun HKDF.extractStep(salt: ByteArray?, inputKeyMaterial: ByteArray): KmmResult<ByteArray> =
     hmac.mac(salt ?: ByteArray(outputLength), inputKeyMaterial)
 
 
