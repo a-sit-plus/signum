@@ -19,6 +19,7 @@ import kotlin.math.pow
 import kotlin.random.Random
 import at.asitplus.signum.indispensable.kdf.SCrypt as scrypt
 
+private val rnd = java.util.Random()
 
 @OptIn(ExperimentalStdlibApi::class)
 class ScryptTest : FreeSpec({
@@ -124,7 +125,7 @@ class ScryptTest : FreeSpec({
 
 
             with(scryptInstance.Mixer()) {
-                val input = Random.nextBytes(128 * r)
+                val input = ByteArray(128 * r) {0}.apply { rnd.nextBytes(this) }
                 val output = input.copyOf().also {
                     scryptROMix(ByteArrayView(it, 0, it.size))
                 }
