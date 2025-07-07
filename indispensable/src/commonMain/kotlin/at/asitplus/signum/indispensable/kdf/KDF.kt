@@ -11,7 +11,7 @@ sealed interface KDF
 /**
  * [RFC 5869](https://tools.ietf.org/html/rfc5869) HKDF using an [HMAC] based on the passed [digest].
  *
- * Create an instance of [WithInfo] to obtain an actual [KDF] for key derivation.
+ * To obtain an actual [KDF] for key derivation, invoke as `(info = ...)`
  * */
 enum class HKDF(val digest: Digest) {
     SHA1(Digest.SHA1),
