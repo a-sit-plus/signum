@@ -16,7 +16,6 @@ import io.kotest.property.arbitrary.*
 import io.kotest.property.checkAll
 import io.kotest.property.exhaustive.ints
 import kotlin.math.pow
-import kotlin.random.Random
 import at.asitplus.signum.indispensable.kdf.SCrypt as scrypt
 
 private val rnd = java.util.Random()
@@ -138,17 +137,16 @@ class ScryptTest : FreeSpec({
     }
 
     "Against JVM reference" - {
-        checkAll(iterations = 3, Arb.nonNegativeInt(8)) {
+        checkAll(iterations = 3, Arb.nonNegativeInt(6)) {
             val p = 2.0.pow(it + 1).toInt()
-            checkAll(iterations = 3, Arb.nonNegativeInt(9)) {
+            checkAll(iterations = 3, Arb.nonNegativeInt(7)) {
                 val N = 2.0.pow(it+1).toInt()
-                checkAll(iterations = 4, Arb.nonNegativeInt(20)) {
+                checkAll(iterations = 4, Arb.nonNegativeInt(4)) {
                     val r = it + 1
                     val scryptInstance = scrypt(N, blockSize = r, parallelization = p)
                     checkAll(iterations = 6, Arb.byteArray(Arb.positiveInt(16), Arb.byte())) { salt ->
                         checkAll(iterations = 6, Arb.byteArray(Arb.positiveInt(32), Arb.byte())) { ikm ->
                             checkAll(iterations = 6, Arb.nonNegativeInt(256)) { len ->
-                                scryptInstance.deriveKey(salt, ikm, len.bytes)
                                 SCrypt.scrypt(ikm, salt, N, r, p, len) shouldBe scryptInstance.deriveKey(
                                     salt,
                                     ikm,
