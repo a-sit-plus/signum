@@ -3,13 +3,14 @@
 ## 3.0
 
 ### NEXT
+* **KDF Support**
+    * PBKDF2
+    * HKDF
+    * scrypt
 * **RSA encryption** using in-memory keys (no hardware-backed key management yet)
 * Dependency Updates:
     * `kotlincrypto:secure-random:0.3.2` -> `kotlincrypto.random:crypto-rand:0.5.0`
         * This fixes key generation in WASM/JS
-* PBKDF2 Support
-* HKDF Support
-* SCrypt Support
 * Add `SpecializedSymmetricEncryptionAlgorithm`
     * This allows `randomKey()` etc to operate on COSE/JWE algorithms
 * Clean up some function signatures:
@@ -138,7 +139,7 @@
 
 * Certificate Improvements:
     * Parse X.509 certificates in V1 too
-    * Change UniqueIDs from BitSet to `Asn1BitString`, enabling correct encoding of borked bit strings 
+    * Change UniqueIDs from BitSet to `Asn1BitString`, enabling correct encoding of borked bit strings
 * Change variance of generic on `Asn1Encodable` and `Asn1Decodable`
 * **Key Agreement Support**
     * ECDH
@@ -152,8 +153,8 @@
 * Move `PemEncodable`/`PemDecodable` from _indispensable_ to _indispensable-asn1_ module.
 * More comprehensive PEM encoding/decoding support:
     * `CryptoPublicKey`
-      * Note that PKCS1 encoding of RSA keys is not supported as it is discouraged (decoding is supported)
-      * ANSI encoding and decoding is also unsupported, because decoding requires context and encoding this way is incomplete
+        * Note that PKCS1 encoding of RSA keys is not supported as it is discouraged (decoding is supported)
+        * ANSI encoding and decoding is also unsupported, because decoding requires context and encoding this way is incomplete
     * `X509Certificate`
     * CSR (`Pkcs10CertificationRequest`)
 * Change `CoseHeader.certificateChain` (CBOR element 33 `x5chain`) from a single byte array to a list of byte arrays, acc. to specification
@@ -188,15 +189,15 @@
     * Additional conversion methods for Java BigInteger and iospin BigInteger
 * Refactor `CryptoPublicKey.Rsa` to use `Asn1Integer`
     * Fixes JWS/COSE encoding for non-standard exponents (with MSBit 1)
- * Add type parameter to `CoseSigned` for its payload (tagging with tag 24 when necessary)
-   * Changes primary constructor visibility to `internal` to check for `ByteStringWrapper` as payload type, which shall be rejected
-   * Fix serialization with Json
- * Do not use DID key identifiers as keyId for `CoseKey`
- * Fix BitSet iterator
- * Add cose header `typ`
+* Add type parameter to `CoseSigned` for its payload (tagging with tag 24 when necessary)
+    * Changes primary constructor visibility to `internal` to check for `ByteStringWrapper` as payload type, which shall be rejected
+    * Fix serialization with Json
+* Do not use DID key identifiers as keyId for `CoseKey`
+* Fix BitSet iterator
+* Add cose header `typ`
 * Allow `assertTag` override also for `Asn1Integer` (was missing before)
 * Sanitized `Asn1OctetString` inheritors' equality behavior
-  * Two `Asn1OctetString`s are always equal if their contents are equal
+    * Two `Asn1OctetString`s are always equal if their contents are equal
 * Make `Asn1Integer` an `Asn1Encodable<String>`
 * **PEM Encoding**
     * Introduce `PemEncodable` interface, derived from `Asn1Encodable`
@@ -207,10 +208,10 @@
     * Introduce `SignatureAlgorithm.signerFor(privateKey)` in `supreme` to create signers backed by (previously parsed, or manually constructed) private keys
     * Export of private keys from ephemeral signers (and only ephemeral signers) in combination with a new `@SecretExposure` annotation in `supreme`
 * Add helpers for smoother iOS interop:
-    * `ECCurve.iosEncodedPublicKeyLength` 
-    * `ECCurve.iosEncodedPrivateKeyLength` 
-    * `ECCurve.Companion.fromIosEncodedPublicKeyLength` 
-    * `ECCurve.Companion.fromIosEncodedPrivateKeyLength` 
+    * `ECCurve.iosEncodedPublicKeyLength`
+    * `ECCurve.iosEncodedPrivateKeyLength`
+    * `ECCurve.Companion.fromIosEncodedPublicKeyLength`
+    * `ECCurve.Companion.fromIosEncodedPrivateKeyLength`
 * Renames (old names are kept with a deprecation warning):
     * `getJcaPublicKey()` -> `toJcaPublicKey()`
 * Support RSA8192
@@ -491,7 +492,6 @@ the Tag class just cannot be directly accessed from Swift and ObjC any more.
     * Expose `TbsCertificate.issuerAltNames` and `TbsCertificte.subjectAltnames`, which contain (somewhat) parsed
       `AlternativeNames` structures for easy access to `dnsName`. `iPAddress`, etc.
 
- 
 ## 2.0
 
 ### 2.6.0
@@ -537,7 +537,7 @@ the Tag class just cannot be directly accessed from Swift and ObjC any more.
 
 ### 2.2.0
 * Dependency Updates
-  * KmmResult 1.5.4
+    * KmmResult 1.5.4
 * Refactor `MultiBaseHelper` to only handle conversion
 * Change `JwsHeader.publicKey` from JsonWebKey to CryptoPublicKey
 * Remove `SignatureValueLength` parameters from JWS & COSE Algorithm Enum class
