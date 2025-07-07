@@ -34,7 +34,7 @@ types and platform-native functionality related to crypto and PKI applications:
 * **Multiplatform KDF** (using platform-native hashing)
     * PBKDF2
     * HKDF
-    * SCrypt
+    * scrypt
 * Public Keys (RSA and EC)
 * Private Keys (RSA and EC)
 * Algorithm Identifiers (Signatures, Hashing)
