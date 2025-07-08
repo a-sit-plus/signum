@@ -16,12 +16,15 @@
     * `SymmetricEncryptionAlgorithm.toJweEncryptionAlgorithm` removed* Dependency Updates:
 * `kotlincrypto:secure-random:0.3.2` -> `kotlincrypto.random:crypto-rand:0.5.0`
     * This fixes key generation in WASM/JS
+* Update to kotlinx.datetime 0.7.1.
+    * This moves Instant and Clock to stdlib
+    * (but introduces typealiases for easier migration)
 * Update to latest conventions plugin:
     * Bouncy Castle 1.81!!
     * Serialization 1.8.1
     * Coroutines 1.10.2
     * Ktor 3.1.2
-    * Datetime 0.6.2
+    * Datetime 0.7.1
     * Kotest 6.0.0-SNAPSHOT
 * Deprecate `serialize()` and `deserialize()` methods in data classes
 
