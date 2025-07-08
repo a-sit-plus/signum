@@ -46,8 +46,11 @@ data class CoseSignedBytes internal constructor(
             require(payload == null)
             detachedPayload
         } else payload,
-    ).serialize()
+    ).run {
+        coseCompliantSerializer.encodeToByteArray(this)
+    }
 
+    @Deprecated("To be removed in next release")
     fun serialize(): ByteArray = coseCompliantSerializer.encodeToByteArray(this)
 
     override fun equals(other: Any?): Boolean {
@@ -80,6 +83,8 @@ data class CoseSignedBytes internal constructor(
     }
 
     companion object {
+
+        @Deprecated("To be removed in next release")
         fun deserialize(it: ByteArray): KmmResult<CoseSignedBytes> = catching {
             coseCompliantSerializer.decodeFromByteArray(it)
         }

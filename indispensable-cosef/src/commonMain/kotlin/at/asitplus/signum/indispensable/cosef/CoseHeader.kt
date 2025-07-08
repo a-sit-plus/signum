@@ -120,6 +120,8 @@ data class CoseHeader(
     val type: String? = null,
 ) {
 
+
+    @Deprecated("To be removed in next release")
     fun serialize() = coseCompliantSerializer.encodeToByteArray(this)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -169,6 +171,8 @@ data class CoseHeader(
     }
 
     companion object {
+
+        @Deprecated("To be removed in next release")
         fun deserialize(it: ByteArray) = catching {
             coseCompliantSerializer.decodeFromByteArray<CoseHeader>(it)
         }

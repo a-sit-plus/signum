@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
+import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 
@@ -23,13 +24,12 @@ data class JweEncrypted(
     val authTag: ByteArray
 ) {
 
-    fun serialize(): String {
-        return headerAsParsed.encodeToString(Base64UrlStrict) +
-                ".${encryptedKey?.encodeToString(Base64UrlStrict) ?: ""}" +
-                ".${iv.encodeToString(Base64UrlStrict)}" +
-                ".${ciphertext.encodeToString(Base64UrlStrict)}" +
-                ".${authTag.encodeToString(Base64UrlStrict)}"
-    }
+    /** Encodes to JWS compact serialization (Base64-URL with dots). */
+    fun serialize(): String = headerAsParsed.encodeToString(Base64UrlStrict) +
+            ".${encryptedKey?.encodeToString(Base64UrlStrict) ?: ""}" +
+            ".${iv.encodeToString(Base64UrlStrict)}" +
+            ".${ciphertext.encodeToString(Base64UrlStrict)}" +
+            ".${authTag.encodeToString(Base64UrlStrict)}"
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -77,7 +77,7 @@ data class JweEncrypted(
             val iv = stringList[2].decodeToByteArray(Base64UrlStrict)
             val ciphertext = stringList[3].decodeToByteArray(Base64UrlStrict)
             val authTag = stringList[4].decodeToByteArray(Base64UrlStrict)
-            val header = JweHeader.deserialize(headerAsParsed.decodeToString()).getOrThrow()
+            val header = joseCompliantSerializer.decodeFromString<JweHeader>(headerAsParsed.decodeToString())
             JweEncrypted(header, headerAsParsed, encryptedKey, iv, ciphertext, authTag)
         }
     }

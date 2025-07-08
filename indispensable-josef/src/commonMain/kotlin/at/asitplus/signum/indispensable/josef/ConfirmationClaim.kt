@@ -69,9 +69,13 @@ data class ConfirmationClaim(
     val jsonWebKeyThumbprint: String? = null,
 ) {
 
+    
+    @Deprecated("To be removed in next release")
     fun serialize() = joseCompliantSerializer.encodeToString(this)
 
     companion object {
+        
+        @Deprecated("To be removed in next release")
         fun deserialize(it: String) = catching {
             joseCompliantSerializer.decodeFromString<ConfirmationClaim>(it)
         }

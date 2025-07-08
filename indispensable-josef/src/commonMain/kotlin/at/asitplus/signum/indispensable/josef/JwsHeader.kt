@@ -224,6 +224,7 @@ data class JwsHeader(
     val keyAttestation: String? = null,
 ) {
 
+    @Deprecated("To be removed in next release")
     fun serialize() = joseCompliantSerializer.encodeToString(this)
 
     override fun equals(other: Any?): Boolean {
@@ -294,6 +295,8 @@ data class JwsHeader(
     }
 
     companion object {
+        // TODO usages!
+        @Deprecated("To be removed in next release")
         fun deserialize(it: String) = catching {
             joseCompliantSerializer.decodeFromString<JwsHeader>(it)
         }

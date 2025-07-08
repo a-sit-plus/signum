@@ -213,6 +213,8 @@ data class JweHeader(
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
     val certificateSha256Thumbprint: ByteArray? = null,
 ) {
+
+    @Deprecated("To be removed in next release")
     fun serialize() = joseCompliantSerializer.encodeToString(this)
 
     override fun equals(other: Any?): Boolean {
@@ -285,6 +287,8 @@ data class JweHeader(
     }
 
     companion object {
+
+        @Deprecated("To be removed in next release")
         fun deserialize(it: String) = catching {
             joseCompliantSerializer.decodeFromString<JweHeader>(it)
         }

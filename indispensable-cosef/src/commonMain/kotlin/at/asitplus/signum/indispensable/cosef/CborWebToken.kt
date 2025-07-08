@@ -100,6 +100,8 @@ data class CborWebToken(
     val nonce: ByteArray? = null,
 ) {
 
+
+    @Deprecated("To be removed in next release")
     fun serialize() = coseCompliantSerializer.encodeToByteArray(this)
 
     override fun toString(): String {
@@ -151,6 +153,8 @@ data class CborWebToken(
     }
 
     companion object {
+
+        @Deprecated("To be removed in next release")
         fun deserialize(it: ByteArray) = catching {
             coseCompliantSerializer.decodeFromByteArray<CborWebToken>(it)
         }

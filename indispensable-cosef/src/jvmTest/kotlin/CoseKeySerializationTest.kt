@@ -14,7 +14,6 @@ import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
-import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.decodeFromHexString
@@ -66,14 +65,14 @@ class CoseKeySerializationTest : FreeSpec({
             val coseUncompressed = KeyPairGenerator.getInstance("EC").apply {
                 initialize(256)
             }.genKeyPair().public.toCryptoPublicKey().getOrThrow().toCoseKey().getOrThrow()
-            val uncompressed = coseUncompressed.serialize()
+            val uncompressed = coseCompliantSerializer.encodeToByteArray(coseUncompressed)
 
             uncompressed.size shouldBeGreaterThan compressed.size
 
-            val coseKey = CoseKey.deserialize(compressed).getOrThrow()
+            val coseKey = coseCompliantSerializer.decodeFromByteArray<CoseKey>(compressed)
             coseKey.toCryptoPublicKey().getOrThrow()
                 .shouldBeInstanceOf<CryptoPublicKey.EC>().preferCompressedRepresentation shouldBe true
-            CoseKey.deserialize(uncompressed).getOrThrow().toCryptoPublicKey()
+            coseCompliantSerializer.decodeFromByteArray<CoseKey>(uncompressed).toCryptoPublicKey()
                 .getOrThrow()
                 .shouldBeInstanceOf<CryptoPublicKey.EC>().preferCompressedRepresentation shouldBe false
 
@@ -122,8 +121,8 @@ class CoseKeySerializationTest : FreeSpec({
                     {
                         val coseKey: CoseKey =
                             pubKey.toCryptoPublicKey().getOrThrow().toCoseKey().getOrThrow()
-                        val cose = coseKey.serialize()
-                        val decoded = CoseKey.deserialize(cose).getOrThrow()
+                        val cose = coseCompliantSerializer.encodeToByteArray(coseKey)
+                        val decoded = coseCompliantSerializer.decodeFromByteArray<CoseKey>(cose)
                         decoded.toCryptoPublicKey().getOrThrow()
                             .shouldBeInstanceOf<CryptoPublicKey.EC>().preferCompressedRepresentation shouldBe false
                         decoded.toCryptoPublicKey().getOrThrow()
@@ -145,8 +144,8 @@ class CoseKeySerializationTest : FreeSpec({
                                 .getOrThrow()
 
                         coseKey.keyParams.shouldBeInstanceOf<CoseKeyParams.EcYBoolParams>()
-                        val cose = coseKey.serialize()
-                        val decoded = CoseKey.deserialize(cose).getOrThrow()
+                        val cose = coseCompliantSerializer.encodeToByteArray(coseKey)
+                        val decoded = coseCompliantSerializer.decodeFromByteArray<CoseKey>(cose)
                         decoded shouldBe coseKey
                         decoded.toCryptoPublicKey().getOrThrow()
                             .shouldBeInstanceOf<CryptoPublicKey.EC>().preferCompressedRepresentation shouldBe true
@@ -181,9 +180,9 @@ class CoseKeySerializationTest : FreeSpec({
                         pubKey.toCryptoPublicKey().getOrThrow()
                             .toCoseKey(CoseAlgorithm.Signature.RS256)
                             .getOrThrow()
-                    val cose = coseKey.serialize()
+                    val cose = coseCompliantSerializer.encodeToByteArray(coseKey)
 
-                    val decoded = CoseKey.deserialize(cose).getOrThrow()
+                    val decoded = coseCompliantSerializer.decodeFromByteArray<CoseKey>(cose)
                     decoded shouldBe coseKey
                 }
             }
