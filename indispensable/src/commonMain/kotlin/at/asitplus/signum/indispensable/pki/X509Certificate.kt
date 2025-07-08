@@ -263,6 +263,7 @@ val CryptoSignature.x509Encoded
  * - EC is DER-encoded then wrapped in a bit string
  */
 fun CryptoSignature.Companion.fromX509Encoded(alg: X509SignatureAlgorithm, it: Asn1Primitive) =
+    // TODO update when core signature data classes become extensible
     when (alg) {
         // element/primitive
         is X509SignatureAlgorithm.EC -> CryptoSignature.EC.decodeFromDer(it.asAsn1BitString().rawBytes)

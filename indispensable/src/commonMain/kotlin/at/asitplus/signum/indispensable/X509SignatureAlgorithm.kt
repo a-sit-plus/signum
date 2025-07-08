@@ -97,6 +97,7 @@ open class X509SignatureAlgorithm private constructor(
             else -> throw IllegalArgumentException("Unsupported hash algorithm.")
         }
 
+    // TODO update when core signature data classes become extensible
     override val algorithm: SignatureAlgorithm
         get() = when (this) {
             is EC -> SignatureAlgorithm.ECDSA(digest, null)
