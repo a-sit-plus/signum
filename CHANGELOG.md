@@ -18,6 +18,7 @@
     * `SymmetricEncryptionAlgorithm.toJweEncryptionAlgorithm` removed* Dependency Updates:
 * `kotlincrypto:secure-random:0.3.2` -> `kotlincrypto.random:crypto-rand:0.5.0`
     * This fixes key generation in WASM/JS
+* Deprecate `serialize()` and `deserialize()` methods in data classes
 * Dependency Updates:
     * kotlinx.io 0.7.0
 * Update to kotlinx.datetime 0.7.1.
