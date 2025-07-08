@@ -10,6 +10,7 @@
 * **RSA encryption** using in-memory keys (no hardware-backed key management yet)
 * Add `SpecializedSymmetricEncryptionAlgorithm`
     * This allows `randomKey()` etc to operate on COSE/JWE algorithms
+* Deprecate `serialize()` and `deserialize()` methods in COSE+ JOSE data classes
 * Clean up some function signatures:
     * `SymmetricKey.toJsonWebKey` now returns `KmmResult`
     * `SymmetricEncryptionAlgorithm.toJweKwAlgorithm` now returns `KmmResult`
@@ -25,8 +26,7 @@
     * Coroutines 1.10.2
     * Ktor 3.1.2
     * Datetime 0.7.1
-    * Kotest 6.0.0-SNAPSHOT
-* Deprecate `serialize()` and `deserialize()` methods in data classes
+    * Kotest 6.0.0.M1
 
 ### 3.16.3 / 0.8.3 indispensable-only Hotfix
 * Fix erroneous Base64URL encoding in JOSE data classes
