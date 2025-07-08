@@ -30,10 +30,10 @@ kotlin {
     tvosSimulatorArm64()
     tvosX64()
     tvosArm64()
-    androidNativeX64()
-    androidNativeX86()
-    androidNativeArm32()
-    androidNativeArm64()
+    //androidNativeX64()
+    // androidNativeX86()
+    // androidNativeArm32()
+    // androidNativeArm64()
 
     listOf(
         js(IR).apply { browser { testTask { enabled = false } } },

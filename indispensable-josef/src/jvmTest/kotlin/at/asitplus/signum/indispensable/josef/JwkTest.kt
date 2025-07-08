@@ -1,18 +1,13 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.signum.indispensable.CryptoPublicKey
-import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.X509SignatureAlgorithm
+import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.Asn1Time
 import at.asitplus.signum.indispensable.io.Base64Strict
-import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.indispensable.toCryptoPublicKey
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import io.kotest.core.spec.style.FreeSpec
@@ -20,7 +15,11 @@ import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.kotest.property.azstring
+import io.kotest.property.Arb
+import io.kotest.property.RandomSource
+import io.kotest.property.arbitrary.Codepoint
+import io.kotest.property.arbitrary.az
+import io.kotest.property.arbitrary.string
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import java.security.KeyPairGenerator
 import java.security.interfaces.ECPublicKey
@@ -70,8 +69,8 @@ class JwkTest : FreeSpec({
             certificateSha256Thumbprint = Random.nextBytes(32),
         )
 
-        val serialized = joseCompliantSerializer.encodeToString(jwk)
-        val parsed = joseCompliantSerializer.decodeFromString<JsonWebKey>(serialized)
+        val serialized = jwk.serialize()
+        val parsed = JsonWebKey.deserialize(serialized).getOrThrow()
 
         parsed shouldBe jwk
     }
@@ -89,7 +88,7 @@ class JwkTest : FreeSpec({
             }
         """.trimIndent()
 
-        val parsed = joseCompliantSerializer.decodeFromString<JsonWebKey>(input)
+        val parsed = JsonWebKey.deserialize(input).getOrThrow()
 
         parsed.algorithm shouldBe JweAlgorithm.ECDH_ES
         parsed.curve.shouldBeNull()
@@ -114,8 +113,8 @@ class JwkTest : FreeSpec({
                 certificateSha256Thumbprint = Random.nextBytes(32),
             )
 
-            val serialized = joseCompliantSerializer.encodeToString(jwk)
-            val parsed = joseCompliantSerializer.decodeFromString<JsonWebKey>(serialized)
+            val serialized = jwk.serialize()
+            val parsed = JsonWebKey.deserialize(serialized).getOrThrow()
 
             parsed shouldBe jwk
         }
@@ -134,7 +133,7 @@ class JwkTest : FreeSpec({
             certificateSha256Thumbprint = Random.nextBytes(32),
         )
 
-        val parsed = joseCompliantSerializer.decodeFromString<JsonWebKey>(joseCompliantSerializer.encodeToString(jwk))
+        val parsed = JsonWebKey.deserialize(jwk.serialize()).getOrThrow()
 
         parsed shouldBe jwk
     }
@@ -144,7 +143,9 @@ class JwkTest : FreeSpec({
         key.keyId shouldBe null
         val cpk = key.toCryptoPublicKey().getOrThrow()
         cpk.toJsonWebKey().keyId shouldBe null
-        val kid = Random.azstring(16)
+        val kid = Arb.string(minSize = 16, maxSize = 16, Codepoint.az()).sample(
+            RandomSource.default()
+        ).value
         cpk.toJsonWebKey(keyId = kid).keyId shouldBe kid
     }
 })
