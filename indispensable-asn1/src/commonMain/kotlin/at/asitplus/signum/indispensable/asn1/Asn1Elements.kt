@@ -464,7 +464,7 @@ sealed class Asn1Structure(
      */
     val shouldBeSorted: Boolean
 ) :
-    Asn1Element(tag) {
+    Asn1Element(tag), Iterable<Asn1Element> {
 
     val children: List<Asn1Element> = if (!sortChildren) children else children.sortedBy { it.tag }
 
@@ -474,32 +474,46 @@ sealed class Asn1Structure(
      */
     val isActuallySorted: Boolean by if (sortChildren) lazyOf(true) else lazy { children.sortedBy { it.tag } == children }
 
-    private var index = 0
+    inner class Iterator: kotlin.collections.Iterator<Asn1Element> {
+        private var index = 0
 
-    /**
-     * Returns the next child held by this structure. Useful for iterating over its children when parsing complex structures.
-     * @throws [Asn1StructuralException] if no more children are available
-     */
-    @Throws(Asn1StructuralException::class)
-    fun nextChild() =
-        catching { children[index++] }.getOrElse { throw Asn1StructuralException("No more content left") }
+        /**
+         * Returns the next child held by this structure. Useful for iterating over its children when parsing complex structures.
+         * @throws [Asn1StructuralException] if no more children are available
+         */
+        @Throws(Asn1StructuralException::class)
+        fun nextChild() =
+            catching { children[index++] }.getOrElse { throw Asn1StructuralException("No more content left") }
 
-    /**
-     * Exception-free version of [nextChild]
-     */
-    fun nextChildOrNull() = catchingUnwrapped { nextChild() }.getOrNull()
+        /**
+         * Exception-free version of [nextChild]
+         */
+        fun nextChildOrNull() = catchingUnwrapped { nextChild() }.getOrNull()
 
-    /**
-     * Returns `true` if more children can be retrieved by [nextChild]. `false` otherwise
-     */
-    fun hasMoreChildren() = children.size > index
+        /**
+         * Returns `true` if more children can be retrieved by [nextChild]. `false` otherwise
+         */
+        fun hasMoreChildren() = children.size > index
 
-    /**
-     * Returns the current child or `null`, if there are no children left
-     * (useful when iterating over this structure's children).
-     */
-    fun peek() = if (!hasMoreChildren()) null else children[index]
+        /**
+         * Returns the current child or `null`, if there are no children left
+         * (useful when iterating over this structure's children).
+         */
+        fun peek() = if (!hasMoreChildren()) null else children[index]
 
+        override fun next() = nextChild()
+        override fun hasNext() = hasMoreChildren()
+    }
+
+    override operator fun iterator() = Iterator()
+
+    fun <T> decodeAs(mustFullyConsume: Boolean = true, decoder: Iterator.() -> T) {
+        val it = iterator()
+        val result = it.decoder()
+        if (mustFullyConsume && it.hasNext())
+            throw Asn1StructuralException("Trailing data found in ASN.1 structure")
+        return result
+    }
 
     override val length: Int by lazy { children.fold(0) { acc, child -> acc + child.overallLength } }
 

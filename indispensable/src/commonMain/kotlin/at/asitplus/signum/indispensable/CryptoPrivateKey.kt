@@ -225,11 +225,10 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
             companion object : Asn1Decodable<Asn1Sequence, PrimeInfo> {
 
                 @Throws(Asn1Exception::class)
-                override fun doDecode(src: Asn1Sequence): PrimeInfo = runRethrowing {
-                    val prime = src.nextChild().asPrimitive().decodeToBigInteger()
-                    val exponent = src.nextChild().asPrimitive().decodeToBigInteger()
-                    val coefficient = src.nextChild().asPrimitive().decodeToBigInteger()
-                    require(!src.hasMoreChildren()) { "Superfluous Data in OtherPrimeInfos" }
+                override fun doDecode(src: Asn1Sequence): PrimeInfo = src.decodeRethrowing {
+                    val prime = nextChild().asPrimitive().decodeToBigInteger()
+                    val exponent = nextChild().asPrimitive().decodeToBigInteger()
+                    val coefficient = nextChild().asPrimitive().decodeToBigInteger()
                     PrimeInfo(prime, exponent, coefficient)
                 }
 

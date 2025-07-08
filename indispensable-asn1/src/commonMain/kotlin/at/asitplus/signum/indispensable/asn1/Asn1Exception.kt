@@ -19,4 +19,10 @@ class Asn1OidException(message: String, val oid: ObjectIdentifier) : Asn1Excepti
  * Runs [block] inside [catching] and encapsulates any thrown exception in an [Asn1Exception] unless it already is one
  */
 @Throws(Asn1Exception::class)
-inline fun <reified R> runRethrowing(block: () -> R) = catchingUnwrappedAs(::Asn1Exception, block).getOrThrow()
+internal inline fun <reified R> runRethrowing(block: () -> R) = catchingUnwrappedAs(::Asn1Exception, block).getOrThrow()
+
+internal inline fun <reified R> Asn1Sequence.decodeRethrowing
+            (requireFullConsumption: Boolean = true, decoder: Asn1Structure.Iterator.() -> R) =
+    runRethrowing {
+        this@decodeRethrowing.decodeAs(requireFullConsumption, decoder)
+    }
