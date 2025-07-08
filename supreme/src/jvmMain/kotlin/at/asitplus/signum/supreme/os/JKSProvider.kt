@@ -30,7 +30,6 @@ import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
 import at.asitplus.signum.supreme.sign.getKPGInstance
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
-import kotlinx.datetime.Clock
 import java.nio.channels.Channels
 import java.nio.channels.FileChannel
 import java.nio.channels.FileLock
@@ -44,6 +43,7 @@ import java.security.spec.ECGenParameterSpec
 import java.security.spec.RSAKeyGenParameterSpec
 import org.kotlincrypto.random.CryptoRand
 import kotlin.io.path.extension
+import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 

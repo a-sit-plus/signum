@@ -13,9 +13,9 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
 import io.kotest.property.checkAll
-import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
+import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.ExperimentalUuidApi
