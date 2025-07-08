@@ -66,8 +66,10 @@ data class TbsCertList @Throws(Asn1Exception::class) constructor(
 
         extensions?.let {
             if (it.isNotEmpty()) {
-                +Asn1.Sequence {
-                    it.forEach { ext -> +ext }
+                +Asn1.ExplicitlyTagged(EXTENSIONS.tagValue) {
+                    +Asn1.Sequence {
+                        it.forEach { ext -> +ext }
+                    }
                 }
             }
         }
@@ -125,7 +127,7 @@ data class TbsCertList @Throws(Asn1Exception::class) constructor(
             val thisUpdateTime = Asn1Time.decodeFromTlv(src.nextChild().asPrimitive())
             val nextUpdateTime = Asn1Time.decodeFromTlv(src.nextChild().asPrimitive())
 
-            val certs = if (src.hasMoreChildren()) {
+            val certs = if (src.hasMoreChildren() && src.peek() is Asn1Sequence) {
                 src.nextChild().asSequence().children.map {
                     CRLEntry.decodeFromTlv(it.asSequence())
                 }
@@ -163,10 +165,8 @@ data class CRLEntry @Throws(Asn1Exception::class) constructor(
 
         crlEntryExtensions?.let {
             if (it.isNotEmpty()) {
-                +Asn1.ExplicitlyTagged(EXTENSIONS.tagValue) {
-                    +Asn1.Sequence {
-                        it.forEach { ext -> +ext }
-                    }
+                +Asn1.Sequence {
+                    it.forEach { ext -> +ext }
                 }
             }
         }
@@ -273,7 +273,7 @@ class CertificateList @Throws(Asn1Exception::class) constructor(
         /**
          * Tries to decode [src] into an [CertificateList], by parsing the bytes directly as ASN.1 structure,
          * or by decoding from Base64, or by decoding to a String, stripping PEM headers
-         * (`-----BEGIN CRL-----`) and then decoding from Base64.
+         * (`-----BEGIN X509 CRL-----`) and then decoding from Base64.
          */
         fun decodeFromByteArray(src: ByteArray): CertificateList? = catchingUnwrapped {
             CertificateList.decodeFromTlv(Asn1Element.parse(src) as Asn1Sequence)
