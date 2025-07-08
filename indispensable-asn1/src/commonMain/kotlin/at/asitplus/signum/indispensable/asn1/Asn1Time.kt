@@ -3,13 +3,7 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1GeneralizedTimePrimitive
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1UtcTimePrimitive
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInstant
-import kotlinx.datetime.Instant
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
+import kotlin.time.Instant
 
 /**
  * ASN.1 TIME (required since GENERALIZED TIME and UTC TIME exist)
