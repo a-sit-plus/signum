@@ -102,17 +102,15 @@ The `pki` package contains data classes relevant in the PKI context:
     * `Pcs10CertificateRequestAttributes` contains a CSR attribute extension
 
 #### Notes on Object Identifiers
-In addition to PKI-related data structures, two (rather bloated) objects `KnownOIDs` and `OidMap` are available.
-These contain all ASN.1 object identifiers and their descriptions from Peter Guttmann's
+In addition to PKI-related data structures, a (rather bloated) `KnownOIDs` object is available.
+It contains all ASN.1 object identifiers from Peter Guttmann's
 [dumpasn1.cfg](https://www.cs.auckland.ac.nz/~pgut001/dumpasn1.cfg).
 Hence, handy constants such as `KnwonOIDs.ecdsaWithSHA256` are available, but also rather obscure ones such as
 `KnownOIDs.asAdjacencyAttest`.
 
-!!! info inline end
-    OID descriptions need to live outside `ObjectIdentifier` to survive serialization/deserialization.
-
-`OidMap` contains human-readable descriptions of all `KnownOIDs` constants, which are exposed through the `ObjectIdentifier.description` property.
-It is also possible to add descriptions to this map (or override existing ones) by calling `.describe("some description")` on an OID object.
+`KnownOIDs` also contains human-readable descriptions of all `KnownOIDs` constants, which tie into exposed through the `ObjectIdentifier.describe()` mechanism:
+One call to `ObjectIdentifer.Companion.describeKnownOIDs()` attaches descrptions to all OIDs contained in `KnwonOIDs` (subsequent calls are a NOOP).
+This is useful for debugging, but never called by default.
 
 On the one hand, it is convenient to have virtually the whole world's OIDs available as constants including descriptions.
 On the other hand, this will add a couple of megabytes to klibs and any XCode frameworks. Hence, the OID constants and descriptions live in
