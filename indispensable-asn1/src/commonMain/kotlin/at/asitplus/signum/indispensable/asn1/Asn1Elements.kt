@@ -5,6 +5,7 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier.Companion.description
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import kotlinx.io.Buffer
 import kotlinx.io.Sink
@@ -858,7 +859,9 @@ open class Asn1Primitive(
             Tag.BOOL -> decodeToBoolean().toString()
             Tag.INT -> decodeToInt().toString()
             Tag.REAL -> decodeToFloat().toString()
-            Tag.OID -> ObjectIdentifier.decodeFromAsn1ContentBytes(content).toString()
+            Tag.OID -> ObjectIdentifier.decodeFromAsn1ContentBytes(content).let { oid->
+                oid.description?.let { "$it ($oid)" }?:oid.toString()
+            }
             Tag.ENUM -> decodeToEnumOrdinal().toString()
             Tag.OCTET_STRING -> content.toHexString(HexFormat.UpperCase)
             Tag.BIT_STRING -> content.toHexString(HexFormat.UpperCase)
