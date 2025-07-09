@@ -10,6 +10,8 @@ theme:
     - navigation.tabs
     - navigation.tabs.sticky
     - navigation.sections
+    - search.suggest
+    - search.highlight
   icon:
     repo: fontawesome/brands/github
 
@@ -51,6 +53,7 @@ copyright: Copyright &copy; 2024-2025 A-SIT Plus GmbH
 
 plugins:
   - social
+  - search
 
 extra:
   social:
