@@ -155,37 +155,39 @@ constructor(
             val version = peek().let {
                 if (it is Asn1ExplicitlyTagged) {
                     it.verifyTag(Tags.VERSION).single().asPrimitive().decodeToInt()
-                        .also { nextChild() } // actually read it, so next child is serial number
+                        .also { next() } // actually read it, so next child is serial number
                 } else {
                     null
                 }
             }
-            val serialNumber = nextChild().asPrimitive().decode(Asn1Element.Tag.INT) { it }
-            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(nextChild().asSequence())
-            val issuerNames = nextChild().asSequence().children.map {
+            val serialNumber = next().asPrimitive().decode(Asn1Element.Tag.INT) { it }
+            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(next().asSequence())
+            val issuerNames = next().asSequence().children.map {
                 RelativeDistinguishedName.decodeFromTlv(it.asSet())
             }
 
-            val timestamps = decodeTimestamps(nextChild().asSequence())
-            val subject = (nextChild().asSequence()).children.map {
+            val timestamps = decodeTimestamps(next().asSequence())
+            val subject = (next().asSequence()).children.map {
                 RelativeDistinguishedName.decodeFromTlv(it.asSet())
             }
 
-            val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(nextChild().asSequence())
+            val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(next().asSequence())
 
             val issuerUniqueID = peek()?.let { next ->
                 if (next.tag == ISSUER_UID) {
-                    nextChild().asPrimitive().let { Asn1BitString.decodeFromTlv(it, ISSUER_UID) }
+                    next()
+                        .asPrimitive().let { Asn1BitString.decodeFromTlv(it, ISSUER_UID) }
                 } else null
             }
 
             val subjectUniqueID = peek()?.let { next ->
                 if (next.tag == SUBJECT_UID) {
-                    nextChild().asPrimitive().let { Asn1BitString.decodeFromTlv(it, SUBJECT_UID) }
+                    next()
+                        .asPrimitive().let { Asn1BitString.decodeFromTlv(it, SUBJECT_UID) }
                 } else null
             }
-            val extensions = if (hasMoreChildren()) {
-                nextChild().asExplicitlyTagged().verifyTag(EXTENSIONS.tagValue)
+            val extensions = if (hasNext()) {
+                next().asExplicitlyTagged().verifyTag(EXTENSIONS.tagValue)
                     .single().asSequence().children.map {
                     X509CertificateExtension.decodeFromTlv(it.asSequence())
                 }
@@ -208,8 +210,8 @@ constructor(
 
         private fun decodeTimestamps(input: Asn1Sequence): Pair<Asn1Time, Asn1Time> =
             input.decodeRethrowing {
-                val firstInstant = Asn1Time.decodeFromTlv(nextChild() as Asn1Primitive)
-                val secondInstant = Asn1Time.decodeFromTlv(nextChild() as Asn1Primitive)
+                val firstInstant = Asn1Time.decodeFromTlv(next() as Asn1Primitive)
+                val secondInstant = Asn1Time.decodeFromTlv(next() as Asn1Primitive)
                 Pair(firstInstant, secondInstant)
             }
     }
@@ -293,9 +295,9 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
 
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): X509Certificate = src.decodeRethrowing {
-            val tbs = TbsCertificate.decodeFromTlv(nextChild().asSequence())
-            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(nextChild().asSequence())
-            val signature = CryptoSignature.fromX509Encoded(sigAlg, nextChild().asPrimitive())
+            val tbs = TbsCertificate.decodeFromTlv(next().asSequence())
+            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(next().asSequence())
+            val signature = CryptoSignature.fromX509Encoded(sigAlg, next().asPrimitive())
             X509Certificate(tbs, sigAlg, signature)
         }
 

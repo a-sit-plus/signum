@@ -3,7 +3,6 @@ package at.asitplus.signum.indispensable
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.io.*
-import at.asitplus.signum.indispensable.CryptoPublicKey.RSA.Size.entries
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.BitString
@@ -14,7 +13,6 @@ import at.asitplus.signum.internals.checkedAsFn
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 
 private const val PEM_BOUNDARY = "PUBLIC KEY"
 
@@ -110,17 +108,17 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): CryptoPublicKey = src.decodeRethrowing {
             if (src.children.size != 2) throw Asn1StructuralException("Invalid SPKI Structure!")
-            val keyInfo = nextChild() as Asn1Sequence
+            val keyInfo = next() as Asn1Sequence
             val keyInfoIterator = keyInfo.iterator()
             if (keyInfo.children.size != 2) throw Asn1StructuralException("Superfluous data in  SPKI!")
 
-            when (val oid = (keyInfoIterator.nextChild() as Asn1Primitive).readOid()) {
+            when (val oid = (keyInfoIterator.next() as Asn1Primitive).readOid()) {
                 EC.oid -> {
-                    val curveOid = (keyInfoIterator.nextChild() as Asn1Primitive).readOid()
+                    val curveOid = (keyInfoIterator.next() as Asn1Primitive).readOid()
                     val curve = ECCurve.entries.find { it.oid == curveOid }
                         ?: throw Asn1Exception("Curve not supported: $curveOid")
 
-                    val bitString = (nextChild() as Asn1Primitive).asAsn1BitString()
+                    val bitString = (next() as Asn1Primitive).asAsn1BitString()
                     if (!bitString.rawBytes.hasPrefix(ANSIECPrefix.UNCOMPRESSED)) throw Asn1Exception("EC key not prefixed with 0x04")
                     val xAndY = bitString.rawBytes.drop(1)
                     val coordLen = curve.coordinateLength.bytes.toInt()
@@ -130,12 +128,12 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
                 }
 
                 RSA.oid -> {
-                    (keyInfoIterator.nextChild() as Asn1Primitive).readNull()
-                    val bitString = (nextChild() as Asn1Primitive).asAsn1BitString()
+                    (keyInfoIterator.next() as Asn1Primitive).readNull()
+                    val bitString = (next() as Asn1Primitive).asAsn1BitString()
                     val rsaSequenceIterator = Asn1Element.parse(bitString.rawBytes).asSequence().iterator()
-                    val n = (rsaSequenceIterator.nextChild() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive
-                    val e = (rsaSequenceIterator.nextChild() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive
-                    if (rsaSequenceIterator.hasMoreChildren()) throw Asn1StructuralException("Superfluous data in SPKI!")
+                    val n = (rsaSequenceIterator.next() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive
+                    val e = (rsaSequenceIterator.next() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive
+                    if (rsaSequenceIterator.hasNext()) throw Asn1StructuralException("Superfluous data in SPKI!")
                     RSA(n, e)
                 }
 
@@ -237,8 +235,8 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
             fun fromPKCS1encoded(input: ByteArray): RSA = runRethrowing {
                 val conv = Asn1Element.parse(input).asSequence()
                 conv.decodeRethrowing {
-                    val n = nextChild().asPrimitive().decodeToAsn1Integer() as Asn1Integer.Positive
-                    val e = nextChild().asPrimitive().decodeToAsn1Integer() as Asn1Integer.Positive
+                    val n = next().asPrimitive().decodeToAsn1Integer() as Asn1Integer.Positive
+                    val e = next().asPrimitive().decodeToAsn1Integer() as Asn1Integer.Positive
                     RSA(n, e)
                 }
             }

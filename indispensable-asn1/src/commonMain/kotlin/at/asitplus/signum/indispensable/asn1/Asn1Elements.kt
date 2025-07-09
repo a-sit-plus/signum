@@ -5,17 +5,10 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
-import at.asitplus.signum.indispensable.asn1.Asn1PrimitiveOctetString
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import kotlinx.io.Buffer
 import kotlinx.io.Sink
 import kotlinx.io.readByteArray
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 import kotlin.experimental.ExperimentalObjCName
 import kotlin.native.ObjCName
 
@@ -485,7 +478,7 @@ sealed class Asn1Structure(
         level = DeprecationLevel.ERROR
     )
     @Throws(Asn1StructuralException::class)
-    fun nextChild() = iterator.nextChild()
+    fun nextChild() = iterator.next()
 
     /**
      * Exception-free version of [nextChild]
@@ -495,7 +488,7 @@ sealed class Asn1Structure(
         replaceWith = ReplaceWith("iterator().nextChildOrNull()"),
         level = DeprecationLevel.ERROR
     )
-    fun nextChildOrNull() = iterator.nextChildOrNull()
+    fun nextChildOrNull() = iterator.nextOrNull()
 
     /**
      * Returns `true` if more children can be retrieved by [nextChild]. `false` otherwise
@@ -505,7 +498,7 @@ sealed class Asn1Structure(
         replaceWith = ReplaceWith("iterator().hasMoreChildren()"),
         level = DeprecationLevel.ERROR
     )
-    fun hasMoreChildren() = iterator.hasMoreChildren()
+    fun hasMoreChildren() = iterator.hasNext()
 
     /**
      * Returns the current child or `null`, if there are no children left
@@ -528,35 +521,30 @@ sealed class Asn1Structure(
          * Returns the next child held by this structure. Useful for iterating over its children when parsing complex structures.
          * @throws [Asn1StructuralException] if no more children are available
          */
-        @Throws(Asn1StructuralException::class)
-        fun nextChild() =
-            catching { children[index++] }.getOrElse { throw Asn1StructuralException("No more content left") }
+        override fun next() =
+            runRethrowing { children[index++] }
 
         /**
-         * Exception-free version of [nextChild]
+         * Exception-free version of [next]
          */
-        fun nextChildOrNull() = catchingUnwrapped { nextChild() }.getOrNull()
+        fun nextOrNull() = catchingUnwrapped { next() }.getOrNull()
 
         /**
-         * Returns `true` if more children can be retrieved by [nextChild]. `false` otherwise
+         * Returns `true` if more children can be retrieved by [next]. `false` otherwise
          */
-        fun hasMoreChildren() = children.size > index
+        override fun hasNext() = children.size > index
 
         /**
          * Returns the current child or `null`, if there are no children left
          * (useful when iterating over this structure's children).
          */
-        fun peek() = if (!hasMoreChildren()) null else children[index]
+        fun peek() = if (!hasNext()) null else children[index]
 
         /**
          * Returns iterator with reversed view
-         * If [reverseIndex] is true, adjusts the starting index to point to the current element. Otherwise, copies the current index.
          * */
-        fun reversed(reverseIndex: Boolean = false): Iterator =
-            Iterator(children.reversed(), if (reverseIndex) children.lastIndex - index else index)
-
-        override fun next() = nextChild()
-        override fun hasNext() = hasMoreChildren()
+        fun reversed(): Iterator =
+            Iterator(children.reversed(), children.lastIndex - index)
     }
 
     override operator fun iterator() = Iterator(children)

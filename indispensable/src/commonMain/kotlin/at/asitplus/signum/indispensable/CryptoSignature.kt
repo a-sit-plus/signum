@@ -204,9 +204,9 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
 
             override fun doDecode(src: Asn1Element): EC.IndefiniteLength {
                 return src.asSequence().decodeRethrowing {
-                    val r = (nextChild() as Asn1Primitive).decodeToBigInteger()
-                    val s = (nextChild() as Asn1Primitive).decodeToBigInteger()
-                    if (hasMoreChildren()) throw Asn1Exception("Illegal Signature Format")
+                    val r = (next() as Asn1Primitive).decodeToBigInteger()
+                    val s = (next() as Asn1Primitive).decodeToBigInteger()
+                    if (hasNext()) throw Asn1Exception("Illegal Signature Format")
                     fromRS(r, s)
                 }
             }

@@ -71,8 +71,8 @@ enum class HMAC(val digest: Digest, override val oid: ObjectIdentifier) : Messag
         }
 
         override fun doDecode(src: Asn1Sequence): HMAC = src.decodeRethrowing {
-            val oid = nextChild().asPrimitive().readOid()
-            nextChild().asPrimitive().readNull()
+            val oid = next().asPrimitive().readOid()
+            next().asPrimitive().readNull()
             byOID(oid) ?: throw Asn1OidException("Unknown OID", oid)
         }
     }
