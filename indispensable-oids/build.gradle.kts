@@ -1,4 +1,6 @@
-import at.asitplus.gradle.*
+import at.asitplus.gradle.exportXCFramework
+import at.asitplus.gradle.kotest
+import at.asitplus.gradle.setupDokka
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
@@ -24,8 +26,8 @@ version = artifactVersion
 
 
 private val Triple<*, String?, String>.comment: String? get() = this.second
-private val Triple<String, *,String>.oid: String? get() = this.first
-private val Triple<String, *,String>.originalDescription: String get() = this.third
+private val Triple<String, *, String>.oid: String? get() = this.first
+private val Triple<String, *, String>.originalDescription: String get() = this.third
 
 //generate Known OIDs when importing the project.
 //This is dirt-cheap, so it does not matter that this call is hardcoded here
@@ -64,7 +66,7 @@ fun generateKnownOIDs() {
     var oid: String? = null
     var comment: String? = null
     var description: String? = null
-    var originalDescription: String?=null
+    var originalDescription: String? = null
 
     FileInputStream(
         project.layout.projectDirectory.dir("src").file("dumpasn1.cfg").asFile
@@ -115,7 +117,7 @@ fun generateKnownOIDs() {
 
     val oidMap =
         FileSpec.builder("at.asitplus.signum.indispensable.asn1", "OidMap")
-    val oidMapBuilder= TypeSpec.objectBuilder("OidMap")
+    val oidMapBuilder = TypeSpec.objectBuilder("OidMap").apply { modifiers += KModifier.INTERNAL }
 
     val knownOIDs =
         FileSpec.builder("at.asitplus.signum.indispensable.asn1", "KnownOIDs")
@@ -138,7 +140,7 @@ fun generateKnownOIDs() {
                                     name,
                                     oidType
                                 )
-                                    .initializer("ObjectIdentifier(\"${oidTriple.oid!!.replace(' ','.')}\")")
+                                    .initializer("ObjectIdentifier(\"${oidTriple.oid!!.replace(' ', '.')}\")")
                                     .addKdoc(
                                         "`${
                                             oidTriple.oid!!.replace(
@@ -147,9 +149,9 @@ fun generateKnownOIDs() {
                                             )
                                         }`: ${oidTriple.comment}"
                                     ).apply {
-                                        val hrName = oidTriple.originalDescription.replace("\"","\\\"")
+                                        val hrName = oidTriple.originalDescription.replace("\"", "\\\"")
                                         val humanReadable =
-                                            oidTriple.comment?.replace("\"","\\\"")?.let { "$hrName ($it)" }?:hrName
+                                            oidTriple.comment?.replace("\"", "\\\"")?.let { "$hrName ($it)" } ?: hrName
                                         codeBlock.append("KnownOIDs.`$name` to \"${humanReadable}\",\n")
                                         if (name.matches(Regex("^[0.-9].*")))
                                             this.addAnnotation(
@@ -160,25 +162,35 @@ fun generateKnownOIDs() {
                             )
                         }
                     val mapBuilder =
-                        PropertySpec.builder("oidMap", ClassName("kotlin.collections", "Map").parameterizedBy(oidType,
-                            ClassName("kotlin","String")), KModifier.PRIVATE)
-                    mapBuilder.initializer(codeBlock.append(")").toString())
-                    oidMapBuilder.addProperty(mapBuilder.build())
+                        PropertySpec.builder(
+                            "oidMap", ClassName("kotlin.collections", "Map").parameterizedBy(
+                                oidType,
+                                ClassName("kotlin", "String")
+                            )
+                        )
+                    mapBuilder.initializer(
+                        codeBlock.append(")")
+                            .append(".also { it.forEach{(oid,desc) -> oid.describe(desc)}}")
+                            .toString()
+                    )
+                    oidMapBuilder.addInitializerBlock(mapBuilder.build().initializer!!)
 
-                    val getter= FunSpec.builder("lookupDescription")
+                    val getter = FunSpec.builder("initDescriptions")
                         .apply { modifiers += KModifier.INTERNAL }
-                        .returns( ClassName("kotlin","String").copy(nullable = true))
-                        .receiver(ClassName("at.asitplus.signum.indispensable.asn1","ObjectIdentifier"))
-                        .addKdoc("Looks up this OID's descrption as provided in Peter Guttmann's `dumpasn1.cfg`.\n\nReturns `null` if this OID has no description. Note that OIDs with unknown purpose may return `?`.")
-                        .addCode(" return oidMap[this]").build()
+                        .addKdoc("NOOP to make sure that the descriptions are loaded")
+                        .addCode("").build()
                     oidMapBuilder.addFunction(getter)
                 }.build()
             ).build()
 
-    val oidMapFile= oidMap.addType(oidMapBuilder.build()).build()
+    oidMap.addImport(packageName = "at.asitplus.signum.indispensable.asn1", "ObjectIdentifier.Companion.describe")
+    val oidMapFile = oidMap.addType(oidMapBuilder.build()).build()
 
-    oidMapFile.writeTo(project.layout.projectDirectory.dir("generated").dir("commonMain")
-        .dir("kotlin").asFile)
+
+    oidMapFile.writeTo(
+        project.layout.projectDirectory.dir("generated").dir("commonMain")
+            .dir("kotlin").asFile
+    )
     knownOIDs.writeTo(
         project.layout.projectDirectory.dir("generated").dir("commonMain")
             .dir("kotlin").asFile
@@ -262,6 +274,7 @@ android {
             "win32-x86/attach_hotspot_windows.dll",
             "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
             "META-INF/licenses/*",
+        //noinspection WrongGradleMethod
         ).forEach { resources.excludes.add(it) }
     }
 
@@ -279,7 +292,7 @@ exportXCFramework(
     transitiveExports = false,
     static = false,
 
-)
+    )
 
 val javadocJar = setupDokka(
     baseUrl = "https://github.com/a-sit-plus/signum/tree/main/",
