@@ -311,6 +311,12 @@ This lazy-evaluation behaviour boils down to performance: Only very rarely, will
 but you will almost certainly want to encode a OID you created to ASN.1.
 On the other hand, parsing an OID from ASN.1-encoded bytes and re-encoding it are both close to a NOOP (object creation aside).
 
+!!! info inline end
+    OID descriptions need to live outside `ObjectIdentifier` to survive serialization/deserialization.
+
+It is possible to statically add descriptions to OIDs (or override existing ones) by calling `.describe("some description")` on an OID object.
+A description is not stored inside a particular OID object, but as part of a private map inside `ObjectIdentifier`'s companion.
+
 ### ASN.1 Integer
 The ASN.1 engine provides its own bigint-like class, `Asn1Integer`. It is capable of encoding arbitrary length signed integers
 to write and read them from ASN.1 structures.
