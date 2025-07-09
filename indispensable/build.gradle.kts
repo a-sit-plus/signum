@@ -192,3 +192,46 @@ signing {
     useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
     sign(publishing.publications)
 }
+
+
+// build.gradle.kts (root)
+
+// ------------------------------------------------------------
+// Task: scanKnownOids   →   ./gradlew scanKnownOids
+// ------------------------------------------------------------
+tasks.register("scanKnownOids") {
+
+    group = "verification"
+    description =
+        "Prints every source line that imports KnownOIDs or calls KnownOIDs.* " +
+                "in *any* Kotlin source set."
+
+    // 2) matches KnownOIDs.foo / KnownOIDs::class etc.
+    val usageRegex  = Regex(  """(?:`KnownOIDs`|KnownOIDs)\.\s*(?:`[A-Za-z_][A-Za-z0-9_]*`|[A-Za-z_][A-Za-z0-9_]*)""")
+
+    doLast {
+        val hits = mutableListOf<String>()
+
+        fileTree(projectDir.absolutePath+"/src") {
+            include("**/*.kt", "**/*.kts", "**/*.java")
+            // exclude build & generated folders if you want:
+            exclude("build/**", "**/generated/**")
+            exclude("**/*Test/**")
+        }.forEach { file ->
+            usageRegex.findAll(file.readText()).forEach { match->
+match.
+            }
+
+        }
+
+        if (hits.isEmpty()) {
+            println("✅  No KnownOIDs imports or usages found.")
+        } else {
+            println("🔍  KnownOIDs references:")
+            hits.forEach { println(it) }
+            println("\nTotal: ${hits.size} hit(s)")
+            // If you prefer to fail the build when anything is found, uncomment:
+            // throw GradleException("Found ${hits.size} KnownOIDs reference(s)")
+        }
+    }
+}
