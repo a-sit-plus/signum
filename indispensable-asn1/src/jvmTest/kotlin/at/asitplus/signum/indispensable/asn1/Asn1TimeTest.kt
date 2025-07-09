@@ -6,8 +6,8 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.instant
 import io.kotest.property.checkAll
-import kotlinx.datetime.toKotlinInstant
 import java.time.Instant
+import kotlin.time.toKotlinInstant
 
 class Asn1TimeTest : FreeSpec({
 

@@ -12,7 +12,6 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.coroutines.launch
-import kotlinx.datetime.toKotlinInstant
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.ExtendedKeyUsage
 import org.bouncycastle.asn1.x509.KeyPurposeId
@@ -31,6 +30,7 @@ import java.util.*
 import kotlin.math.absoluteValue
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.days
+import kotlin.time.toKotlinInstant
 
 class X509CertificateJvmTest : FreeSpec({
 

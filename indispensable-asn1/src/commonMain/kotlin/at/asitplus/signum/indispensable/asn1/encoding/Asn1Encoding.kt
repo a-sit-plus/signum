@@ -8,7 +8,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Sequence
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Set
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.SetOf
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * Class Providing a DSL for creating arbitrary ASN.1 structures. You will almost certainly never use it directly, but rather use it as follows:

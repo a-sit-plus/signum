@@ -1,0 +1,28 @@
+name: Test iOS implementation
+on: [push]
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 16.2.0
+      - name: Build klibs
+        run: ./gradlew iosArm64MainKlibrary iosSimulatorArm64MainKlibrary
+      - name: Run tests
+        run: ./gradlew iosSimulatorArm64Test
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: success() || failure()
+        with:
+          name: iOS Tests
+          path: indispensable/build/test-results/**/TEST*.xml,indispensable-asn1/build/test-results/**/TEST*.xml,indispensable-cosef/build/test-results/**/TEST*.xml,indispensable-josef/build/test-results/**/TEST*.xml,supreme/build/test-results/**/TEST*.xml
+          reporter: java-junit

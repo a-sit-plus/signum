@@ -1,10 +1,11 @@
 import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
 plugins {
     val kotlinVer = System.getenv("KOTLIN_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotlin.get()
     val kotestVer = System.getenv("KOTEST_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotest.get()
 
-    id("at.asitplus.gradle.conventions") version "20250628"
+    id("at.asitplus.gradle.conventions") version "20250708"
     id("io.kotest.multiplatform") version kotestVer
     kotlin("multiplatform") version kotlinVer apply false
     kotlin("plugin.serialization") version kotlinVer apply false
@@ -35,6 +36,20 @@ allprojects {
         maven {
             url = uri("https://raw.githubusercontent.com/a-sit-plus/gradle-conventions-plugin/mvn/repo")
             name = "aspConventions"
+        }
+    }
+}
+
+//work around IDEA bug that causes IDEA to believe we're at Kotlin 2.0
+subprojects {
+    afterEvaluate {
+        val kotlinVer =
+            (System.getenv("KOTLIN_VERSION_ENV")?.ifBlank { null } ?: rootProject.libs.versions.kotlin.get()).split(".")
+        extensions.getByType<KotlinMultiplatformExtension>().apply {
+            compilerOptions {
+                apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.fromVersion(kotlinVer[0] + "." + kotlinVer[1]))
+                languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.fromVersion(kotlinVer[0] + "." + kotlinVer[1]))
+            }
         }
     }
 }

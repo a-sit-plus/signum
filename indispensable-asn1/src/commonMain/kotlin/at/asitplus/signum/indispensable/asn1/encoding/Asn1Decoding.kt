@@ -11,13 +11,13 @@ import at.asitplus.signum.indispensable.asn1.BERTags.T61_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.UNIVERSAL_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.UTF8_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.VISIBLE_STRING
-import kotlinx.datetime.Instant
 import kotlinx.io.Source
 import kotlinx.io.UnsafeIoApi
 import kotlinx.io.readByteArray
 import kotlinx.io.readUByte
 import kotlin.enums.enumEntries
 import kotlin.experimental.and
+import kotlin.time.Instant
 
 
 /**

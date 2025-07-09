@@ -22,10 +22,10 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.property.azstring
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.datetime.Clock
 import java.security.KeyPairGenerator
 import java.security.interfaces.ECPublicKey
 import kotlin.random.Random
+import kotlin.time.Clock
 
 class JwkTest : FreeSpec({
     "EC" - {

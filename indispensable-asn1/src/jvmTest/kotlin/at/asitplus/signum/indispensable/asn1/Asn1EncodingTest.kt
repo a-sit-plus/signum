@@ -19,7 +19,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.boolean
 import io.kotest.property.checkAll
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 class Asn1EncodingTest : FreeSpec({
 
