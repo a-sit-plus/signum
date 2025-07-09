@@ -90,12 +90,6 @@
     font-feature-settings: "kern", "liga";
 }
 
-@media screen and (max-width: 76.2344em) {
-    .md-nav--primary .md-nav__title {
-        height: 3.9rem;
-    }
-}
-
 .md-typeset .winline{
   max-width: 500px; /* <-- adjust to fit */
   margin-inline: auto;
