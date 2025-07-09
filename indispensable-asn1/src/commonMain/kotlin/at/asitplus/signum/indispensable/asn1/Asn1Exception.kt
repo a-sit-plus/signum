@@ -21,6 +21,12 @@ class Asn1OidException(message: String, val oid: ObjectIdentifier) : Asn1Excepti
 @Throws(Asn1Exception::class)
 inline fun <reified R> runRethrowing(block: () -> R) = catchingUnwrappedAs(::Asn1Exception, block).getOrThrow()
 
+/**
+ * Decodes this ASN.1 structure using the provided [decoder] lambda, rethrowing any caught exception
+ * as an [Asn1Exception].
+ * This is a wrapper around [Asn1Structure.decodeAs] that ensures exceptions thrown during decoding are
+ * consistently rethrown as [Asn1Exception], using the [runRethrowing] utility.
+ */
 inline fun <reified R> Asn1Structure.decodeRethrowing(
     requireFullConsumption: Boolean = true,
     noinline decoder: Asn1Structure.Iterator.() -> R

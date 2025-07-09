@@ -468,13 +468,32 @@ sealed class Asn1Structure(
     val isActuallySorted: Boolean by if (sortChildren) lazyOf(true) else lazy { children.sortedBy { it.tag } == children }
 
     private val iterator by lazy { iterator() }
+
     /**
      * Returns the next child held by this structure. Useful for iterating over its children when parsing complex structures.
      * @throws [Asn1StructuralException] if no more children are available
+     *### Migration Examples:
+     *
+     * Using `decodeRethrowing`:
+     * ```kotlin
+     * val result = structure.decodeRethrowing {
+     *     val child = next()
+     *     // ...
+     *     DecodedStructure(...)
+     * }
+     * ```
+     *
+     * Manual iteration:
+     * ```kotlin
+     * val iterator = structure.iterator()
+     * while (iterator.hasNext()) {
+     *     val child = iterator.next()
+     *     // Process child
+     * }
+     * ```
      */
     @Deprecated(
-        message = "Use Iterator instead",
-        replaceWith = ReplaceWith("iterator().nextChild()"),
+        message = "Use Iterator inside decodeAs/decodeRethrowing",
         level = DeprecationLevel.ERROR
     )
     @Throws(Asn1StructuralException::class)
@@ -482,20 +501,56 @@ sealed class Asn1Structure(
 
     /**
      * Exception-free version of [nextChild]
+     *### Migration Examples:
+     *
+     * Using `decodeRethrowing`:
+     * ```kotlin
+     * val result = structure.decodeRethrowing {
+     *     val child = nextOrNull()
+     *     // ...
+     *     DecodedStructure(...)
+     * }
+     * ```
+     *
+     * Manual iteration:
+     * ```kotlin
+     * val iterator = structure.iterator()
+     * while (iterator.hasNext()) {
+     *     val child = iterator.nextOrNull()
+     *     // Process child
+     * }
+     * ```
      */
     @Deprecated(
-        message = "Use Iterator instead",
-        replaceWith = ReplaceWith("iterator().nextChildOrNull()"),
+        message = "Use Iterator inside decodeAs/decodeRethrowing",
         level = DeprecationLevel.ERROR
     )
     fun nextChildOrNull() = iterator.nextOrNull()
 
     /**
      * Returns `true` if more children can be retrieved by [nextChild]. `false` otherwise
+     * ### Migration Examples:
+     *
+     * Using `decodeRethrowing`:
+     * ```kotlin
+     * structure.decodeRethrowing {
+     *     if (hasNext()) {
+     *         // ...
+     *     }
+     *     DecodedStructure(...)
+     * }
+     * ```
+     *
+     * Manual iteration:
+     * ```kotlin
+     * val iterator = structure.iterator()
+     * if (iterator.hasNext()) {
+     *     // ...
+     * }
+     * ```
      */
     @Deprecated(
-        message = "Use Iterator instead",
-        replaceWith = ReplaceWith("iterator().hasMoreChildren()"),
+        message = "Use Iterator inside decodeAs/decodeRethrowing",
         level = DeprecationLevel.ERROR
     )
     fun hasMoreChildren() = iterator.hasNext()
@@ -503,15 +558,39 @@ sealed class Asn1Structure(
     /**
      * Returns the current child or `null`, if there are no children left
      * (useful when iterating over this structure's children).
+     * ### Migration Examples:
+     *
+     * Using `decodeRethrowing`:
+     * ```kotlin
+     * structure.decodeRethrowing {
+     *     val decodedChild = peek()?.let {
+     *         // Inspect or conditionally consume the child
+     *         val child = next()
+     *         // ...
+     *     }
+     *     DecodedStructure(...)
+     * }
+     * ```
+     *
+     * Manual iteration:
+     * ```kotlin
+     * val iterator = structure.iterator()
+     * val child = iterator.peek()
+     * if (child != null) {
+     *     // Inspect child without consuming it
+     * }
+     * ```
      */
     @Deprecated(
-        message = "Use Iterator instead",
-        replaceWith = ReplaceWith("iterator().peek()"),
+        message = "Use Iterator inside decodeAs/decodeRethrowing",
         level = DeprecationLevel.ERROR
     )
     fun peek() = iterator.peek()
 
-
+    /**
+     * An iterator over a list of [Asn1Element] children within an ASN.1 structure
+     * Designed for traversing ASN.1 components in decoding/parsing scenarios
+     * */
     inner class Iterator(
         private val children: List<Asn1Element>,
         private var index: Int = 0
@@ -519,10 +598,10 @@ sealed class Asn1Structure(
 
         /**
          * Returns the next child held by this structure. Useful for iterating over its children when parsing complex structures.
-         * @throws [Asn1StructuralException] if no more children are available
+         * @throws [NoSuchElementException] if no more children are available
          */
         override fun next() =
-            runRethrowing { children[index++] }
+            catching { children[index++] }.getOrElse { throw NoSuchElementException("No more content left") }
 
         /**
          * Exception-free version of [next]
@@ -549,6 +628,12 @@ sealed class Asn1Structure(
 
     override operator fun iterator() = Iterator(children)
 
+    /**
+     * Decodes the content of this ASN.1 structure using the provided [decoder] lambda.
+     * This function gives a convenient way to decode ASN.1 structures by exposing an
+     * iterator over the structure's children to the [decoder] lambda. Optionally, it enforces that
+     * all children must be consumed
+     */
     fun <T> decodeAs(requireFullConsumption: Boolean = true, decoder: Iterator.() -> T): T {
         val it = iterator()
         val result = it.decoder()
