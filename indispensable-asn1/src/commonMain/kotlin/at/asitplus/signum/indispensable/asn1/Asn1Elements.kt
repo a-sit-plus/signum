@@ -474,8 +474,7 @@ sealed class Asn1Structure(
      */
     val isActuallySorted: Boolean by if (sortChildren) lazyOf(true) else lazy { children.sortedBy { it.tag } == children }
 
-    private var index = 0
-
+    private val iterator by lazy { iterator() }
     /**
      * Returns the next child held by this structure. Useful for iterating over its children when parsing complex structures.
      * @throws [Asn1StructuralException] if no more children are available
@@ -486,8 +485,7 @@ sealed class Asn1Structure(
         level = DeprecationLevel.ERROR
     )
     @Throws(Asn1StructuralException::class)
-    fun nextChild() =
-        catching { children[index++] }.getOrElse { throw Asn1StructuralException("No more content left") }
+    fun nextChild() = iterator.nextChild()
 
     /**
      * Exception-free version of [nextChild]
@@ -497,7 +495,7 @@ sealed class Asn1Structure(
         replaceWith = ReplaceWith("iterator().nextChildOrNull()"),
         level = DeprecationLevel.ERROR
     )
-    fun nextChildOrNull() = catchingUnwrapped { nextChild() }.getOrNull()
+    fun nextChildOrNull() = iterator.nextChildOrNull()
 
     /**
      * Returns `true` if more children can be retrieved by [nextChild]. `false` otherwise
@@ -507,7 +505,7 @@ sealed class Asn1Structure(
         replaceWith = ReplaceWith("iterator().hasMoreChildren()"),
         level = DeprecationLevel.ERROR
     )
-    fun hasMoreChildren() = children.size > index
+    fun hasMoreChildren() = iterator.hasMoreChildren()
 
     /**
      * Returns the current child or `null`, if there are no children left
@@ -518,10 +516,13 @@ sealed class Asn1Structure(
         replaceWith = ReplaceWith("iterator().peek()"),
         level = DeprecationLevel.ERROR
     )
-    fun peek() = if (!hasMoreChildren()) null else children[index]
+    fun peek() = iterator.peek()
 
 
-    inner class Iterator: kotlin.collections.Iterator<Asn1Element> {
+    inner class Iterator(
+        private val children: List<Asn1Element>,
+        private var index: Int = 0
+    ): kotlin.collections.Iterator<Asn1Element> {
 
         /**
          * Returns the next child held by this structure. Useful for iterating over its children when parsing complex structures.
@@ -547,13 +548,20 @@ sealed class Asn1Structure(
          */
         fun peek() = if (!hasMoreChildren()) null else children[index]
 
+        /**
+         * Returns iterator with reversed view
+         * If [reverseIndex] is true, adjusts the starting index to point to the current element. Otherwise, copies the current index.
+         * */
+        fun reversed(reverseIndex: Boolean = false): Iterator =
+            Iterator(children.reversed(), if (reverseIndex) children.lastIndex - index else index)
+
         override fun next() = nextChild()
         override fun hasNext() = hasMoreChildren()
     }
 
-    override operator fun iterator() = Iterator()
+    override operator fun iterator() = Iterator(children)
 
-    fun <T> decodeAs(requireFullConsumption: Boolean = true, decoder: Iterator.() -> T): T? {
+    fun <T> decodeAs(requireFullConsumption: Boolean = true, decoder: Iterator.() -> T): T {
         val it = iterator()
         val result = it.decoder()
         if (requireFullConsumption && it.hasNext())

@@ -225,11 +225,10 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
             companion object : Asn1Decodable<Asn1Sequence, PrimeInfo> {
 
                 @Throws(Asn1Exception::class)
-                override fun doDecode(src: Asn1Sequence): PrimeInfo = runRethrowing {
-                    val prime = src.nextChild().asPrimitive().decodeToBigInteger()
-                    val exponent = src.nextChild().asPrimitive().decodeToBigInteger()
-                    val coefficient = src.nextChild().asPrimitive().decodeToBigInteger()
-                    require(!src.hasMoreChildren()) { "Superfluous Data in OtherPrimeInfos" }
+                override fun doDecode(src: Asn1Sequence): PrimeInfo = src.decodeRethrowing {
+                    val prime = nextChild().asPrimitive().decodeToBigInteger()
+                    val exponent = nextChild().asPrimitive().decodeToBigInteger()
+                    val coefficient = nextChild().asPrimitive().decodeToBigInteger()
                     PrimeInfo(prime, exponent, coefficient)
                 }
 
@@ -252,21 +251,21 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
 
             /** PKCS1 decoding of an ASN.1 private key, optionally supporting attributes for later PKCS#8 encoding */
             @Throws(Asn1Exception::class)
-            fun doDecode(src: Asn1Sequence, attributes: List<Asn1Element>? = null): RSA = runRethrowing {
-                val version = src.nextChild().asPrimitive().decodeToInt()
+            fun doDecode(src: Asn1Sequence, attributes: List<Asn1Element>? = null): RSA = src.decodeRethrowing {
+                val version = nextChild().asPrimitive().decodeToInt()
                 require(version == 0 || version == 1) { "RSA Private key VERSION must be 0 or 1" }
-                val modulus = src.nextChild().asPrimitive().decodeToAsn1Integer()
-                val publicExponent = src.nextChild().asPrimitive().decodeToAsn1Integer()
-                val privateExponent = src.nextChild().asPrimitive().decodeToBigInteger()
-                val prime1 = src.nextChild().asPrimitive().decodeToBigInteger()
-                val prime2 = src.nextChild().asPrimitive().decodeToBigInteger()
-                val exponent1 = src.nextChild().asPrimitive().decodeToBigInteger()
-                val exponent2 = src.nextChild().asPrimitive().decodeToBigInteger()
-                val coefficient = src.nextChild().asPrimitive().decodeToBigInteger()
+                val modulus = nextChild().asPrimitive().decodeToAsn1Integer()
+                val publicExponent = nextChild().asPrimitive().decodeToAsn1Integer()
+                val privateExponent = nextChild().asPrimitive().decodeToBigInteger()
+                val prime1 = nextChild().asPrimitive().decodeToBigInteger()
+                val prime2 = nextChild().asPrimitive().decodeToBigInteger()
+                val exponent1 = nextChild().asPrimitive().decodeToBigInteger()
+                val exponent2 = nextChild().asPrimitive().decodeToBigInteger()
+                val coefficient = nextChild().asPrimitive().decodeToBigInteger()
 
-                val otherPrimeInfos: List<PrimeInfo>? = if (src.hasMoreChildren()) {
+                val otherPrimeInfos: List<PrimeInfo>? = if (hasMoreChildren()) {
                     require(version == 1) { "OtherPrimeInfos is present. RSA private key version must be 1" }
-                    src.nextChild().asSequence().children.map { PrimeInfo.decodeFromTlv(it.asSequence()) }
+                    nextChild().asSequence().children.map { PrimeInfo.decodeFromTlv(it.asSequence()) }
                 } else {
                     require(version == 0) { "OtherPrimeInfos is not present. RSA private key version must be 0" }
                     null
@@ -463,26 +462,27 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
             fun doDecode(
                 src: Asn1Sequence,
                 attributes: List<Asn1Element>? = null
-            ): EC = runRethrowing {
-                val version = src.nextChild().asPrimitive().decodeToInt()
+            ): EC = src.decodeRethrowing {
+                val version = nextChild().asPrimitive().decodeToInt()
                 require(version == 1) { "EC public key version must be 1" }
-                val privateKeyOctets = src.nextChild().asOctetString().content
+                val privateKeyOctets = nextChild().asOctetString().content
 
                 var curve: ECCurve? = null
                 var publicKey: Asn1BitString? = null
-                while (src.hasMoreChildren()) {
-                    val elm= src.nextChild().asExplicitlyTagged()
+                while (hasMoreChildren()) {
+                    val elm= nextChild().asExplicitlyTagged()
+                    val elmIterator = elm.iterator()
                     when (elm.tag.tagValue) {
                         0uL -> {
                             require(curve == null) { "Duplicate EC curve field in EC PrivateKey" }
                             require(publicKey == null) { "Field order violation in EC PrivateKey" }
                             require(elm.children.size == 1) { "Invalid EC curve field in EC PrivateKey" }
-                            curve = ObjectIdentifier.decodeFromTlv(elm.nextChild().asPrimitive()).let(ECCurve::withOid)
+                            curve = ObjectIdentifier.decodeFromTlv(elmIterator.nextChild().asPrimitive()).let(ECCurve::withOid)
                         }
                         1uL -> {
                             require(publicKey == null) { "Duplicate public key field in EC PrivateKey" }
                             require(elm.children.size == 1) { "Invalid public key field in EC PrivateKey" }
-                            publicKey = elm.nextChild().asPrimitive().asAsn1BitString()
+                            publicKey = elmIterator.nextChild().asPrimitive().asAsn1BitString()
                         }
                         else -> throw Asn1Exception("Unknown optional field with tag ${elm.tag.tagValue} in EC PrivateKey")
                     }
@@ -493,9 +493,11 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
                     publicKey,
                     attributes,
                     privateKeyOctets.size)
-                return@runRethrowing when(curve) {
-                    null -> privateKey
-                    else -> privateKey.withCurve(curve)
+                runRethrowing {
+                    when (curve) {
+                        null -> privateKey
+                        else -> privateKey.withCurve(curve)
+                    }
                 }
             }
         }
@@ -521,21 +523,21 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
 
     object FromPKCS8 : Asn1Decodable<Asn1Sequence, CryptoPrivateKey> {
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): CryptoPrivateKey = runRethrowing {
-            require(src.nextChild().asPrimitive().decodeToInt() == 0) { "PKCS#8 Private Key VERSION must be 0" }
-            val algorithmID = src.nextChild().asSequence()
-            val algIdentifier = ObjectIdentifier.decodeFromTlv(algorithmID.nextChild().asPrimitive())
-            val algParams = algorithmID.nextChild().asPrimitive()
-            require(!algorithmID.hasMoreChildren()) { "Superfluous Algorithm ID data encountered" }
-            val privateKeyStructure = src.nextChild().asEncapsulatingOctetString().let {
+        override fun doDecode(src: Asn1Sequence): CryptoPrivateKey = src.decodeRethrowing {
+            require(nextChild().asPrimitive().decodeToInt() == 0) { "PKCS#8 Private Key VERSION must be 0" }
+            val algorithmIDIterator = nextChild().asSequence().iterator()
+            val algIdentifier = ObjectIdentifier.decodeFromTlv(algorithmIDIterator.nextChild().asPrimitive())
+            val algParams = algorithmIDIterator.nextChild().asPrimitive()
+            require(!algorithmIDIterator.hasMoreChildren()) { "Superfluous Algorithm ID data encountered" }
+            val privateKeyStructure = nextChild().asEncapsulatingOctetString().iterator().let {
                 val seq = it.nextChild().asSequence()
                 require(!it.hasMoreChildren()) { "Superfluous private key data encountered" }
                 seq
             }
             val attributes: List<Asn1Element>? =
-                if (src.hasMoreChildren()) src.nextChild().asStructure().assertTag(0uL).children
+                if (hasMoreChildren()) nextChild().asStructure().assertTag(0uL).children
                 else null
-            return when (algIdentifier) {
+            when (algIdentifier) {
                 RSA.oid -> {
                     algParams.readNull()
                     RSA.FromPKCS1.doDecode(privateKeyStructure, attributes)
@@ -572,13 +574,11 @@ class EncryptedPrivateKey(val encryptionAlgorithm: ObjectIdentifier, val encrypt
     companion object : PemDecodable<Asn1Sequence, EncryptedPrivateKey>(EB_STRINGS.ENCRYPTED_PRIVATE_KEY) {
 
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): EncryptedPrivateKey = runRethrowing {
+        override fun doDecode(src: Asn1Sequence): EncryptedPrivateKey = src.decodeRethrowing {
             EncryptedPrivateKey(
-                ObjectIdentifier.decodeFromTlv(src.nextChild().asPrimitive()),
-                src.nextChild().asPrimitive().asOctetString().content
-            ).also {
-                require(!src.hasMoreChildren()) { "Superfluous data in EncryptedPrivateKey encountered" }
-            }
+                ObjectIdentifier.decodeFromTlv(nextChild().asPrimitive()),
+                nextChild().asPrimitive().asOctetString().content
+            )
         }
     }
 }

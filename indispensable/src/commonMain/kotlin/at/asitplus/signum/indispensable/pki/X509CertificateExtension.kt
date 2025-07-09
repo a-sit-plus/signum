@@ -40,14 +40,14 @@ data class X509CertificateExtension @Throws(Asn1Exception::class) private constr
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
 
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): X509CertificateExtension = runRethrowing {
+        override fun doDecode(src: Asn1Sequence): X509CertificateExtension = src.decodeRethrowing {
 
-            val id = (src.nextChild() as Asn1Primitive).readOid()
+            val id = nextChild().asPrimitive().readOid()
             val critical =
-                if (src.children[1].tag == Asn1Element.Tag.BOOL) (src.nextChild() as Asn1Primitive).content[0] == 0xff.toByte() else false
+                if (src.children[1].tag == Asn1Element.Tag.BOOL) nextChild().asPrimitive().content[0] == 0xff.toByte() else false
 
-            val value = src.nextChild()
-            return X509CertificateExtension(id, value, critical)
+            val value = nextChild()
+            X509CertificateExtension(id, value, critical)
         }
 
     }
