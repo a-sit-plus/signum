@@ -17,6 +17,14 @@
     * This allows `randomKey()` etc to operate on COSE/JWE algorithms
 * Move constants of `KnownOIDs` into a discrete module `indispensable-oids` as extensions on the `KnownOIDs` object
     * **→ update your imports!**
+* ASN.1 polishing:
+    * Every ASN.1 element now features a `content` ByteArray (even the abstract `Asn1Element`).
+        * For primitives and octet strings this changes nothing
+        * For `Asn1CustomStructure` this now always returns the DER-encoded children in a ByteArray
+    * Add missing `Asn1.Real` shorthand to the ASN.1 builder
+    * Add `Asn1Null` constant
+    * Add human-readable ASN.1 element toString
+    * Make Asn1OctetString interface sealed
 * OID descriptions:
     * `KnownOIDs` now implements `MutableMap<ObjectIdentifier, String>` to store and look up descriptions of Object Identifiers 
     * OIDs can hence be described using `KnownOIDs[theExpressionistsOid] = "Edvard Munch"`

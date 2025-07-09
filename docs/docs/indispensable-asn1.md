@@ -332,7 +332,7 @@ can result in a loss of precision.
 When decoding to `Float`, this is even more likely to happen.
 To avoid this, simply keep the `Asn1Real` as-is.
 
-### ASN.1 Builder DSL
+## ASN.1 Builder DSL
 So far, custom high-level types and manually constructing low-level types was discussed.
 When actually constructing ASN.1 structures, a far more streamlined and intuitive approach exists.
 Signum's Indispensable ASN.1 engine comes with a powerful, expressive ASN.1 builder DSL, including shorthand functions
@@ -421,3 +421,7 @@ ASN.1 primitive as-is.
     The builder also takes any `Asn1Encodable`, so you can also add an `X509Certificate`, or a `CryptoPublicKey` using
     the same concise syntax.  
     **Do checkout the [API docs](dokka/indispensable-asn1/at.asitplus.signum.indispensable.asn1.encoding/-asn1/index.html) for a full list of builder functions!**
+
+## Debugging and Pretty-Printing
+Signum's ASN.1 engine provides pretty-printing capabilities. These are aimed at humans, debugging ASN.1 structures and ties in with OID descriptions.
+For tags that are well-known, pretty-printing will automatically decode contents on a best-effort basis and display them

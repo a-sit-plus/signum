@@ -84,6 +84,8 @@ class X509CertificateJvmTest : FreeSpec({
         val test = CryptoSignature.decodeFromDer(signed)
         val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, test)
 
+        println(x509Certificate.encodeToTlv().prettyPrint())
+
         val kotlinEncoded = x509Certificate.encodeToDer()
         val jvmEncoded = certificateHolder.encoded
         println(
