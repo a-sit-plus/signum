@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.readNull
@@ -44,10 +43,10 @@ interface SpecializedMessageAuthenticationCode : SpecializedDataIntegrityAlgorit
  */
 enum class HMAC(val digest: Digest, override val oid: ObjectIdentifier) : MessageAuthenticationCode, Identifiable,
     Asn1Encodable<Asn1Sequence> {
-    SHA1(Digest.SHA1, ObjectIdentifier("1.2.840.113549.2.7")),
-    SHA256(Digest.SHA256, ObjectIdentifier("1.2.840.113549.2.9")),
-    SHA384(Digest.SHA384, ObjectIdentifier("1.2.840.113549.2.10")),
-    SHA512(Digest.SHA512, ObjectIdentifier("1.2.840.113549.2.11")),
+    SHA1(Digest.SHA1, KnownOIDs.hmacWithSHA1),
+    SHA256(Digest.SHA256, KnownOIDs.hmacWithSHA256),
+    SHA384(Digest.SHA384, KnownOIDs.hmacWithSHA384),
+    SHA512(Digest.SHA512, KnownOIDs.hmacWithSHA512),
     ;
 
     override fun toString() = "HMAC-$digest"

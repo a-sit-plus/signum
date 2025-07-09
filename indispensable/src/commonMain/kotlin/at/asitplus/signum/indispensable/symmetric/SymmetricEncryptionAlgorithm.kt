@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.symmetric
 
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.Identifiable
+import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.encoding.encodeTo8Bytes
 import at.asitplus.signum.indispensable.HMAC
@@ -212,9 +213,9 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
             override val nonceSize = 96.bit
             override val authTagSize = blockSize
             override val oid: ObjectIdentifier = when (keySize.bits) {
-                128u -> ObjectIdentifier("2.16.840.1.101.3.4.1.6")
-                192u -> ObjectIdentifier("2.16.840.1.101.3.4.1.26")
-                256u -> ObjectIdentifier("2.16.840.1.101.3.4.1.46")
+                128u -> KnownOIDs.aes128_GCM
+                192u -> KnownOIDs.aes192_GCM
+                256u -> KnownOIDs.aes256_GCM
                 else -> throw ImplementationError("AES GCM OID")
             }
         }
@@ -230,9 +231,9 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
              */
             class RFC3394 internal constructor(keySize: BitLength) : WRAP(keySize) {
                 override val oid: ObjectIdentifier = when (keySize.bits) {
-                    128u -> ObjectIdentifier("2.16.840.1.101.3.4.1.5")
-                    192u -> ObjectIdentifier("2.16.840.1.101.3.4.1.25")
-                    256u -> ObjectIdentifier("2.16.840.1.101.3.4.1.45")
+                    128u -> KnownOIDs.aes128_wrap
+                    192u -> KnownOIDs.aes192_wrap
+                    256u -> KnownOIDs.aes256_wrap
                     else -> throw ImplementationError("AES WRAP RFC3394 OID")
                 }
             }
@@ -246,9 +247,9 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
             SymmetricEncryptionAlgorithm.Unauthenticated<NonceTrait.Without> {
             override val authCapability = AuthCapability.Unauthenticated
             override val oid: ObjectIdentifier = when (keySize.bits) {
-                128u -> ObjectIdentifier("2.16.840.1.101.3.4.1.1")
-                192u -> ObjectIdentifier("2.16.840.1.101.3.4.1.21")
-                256u -> ObjectIdentifier("2.16.840.1.101.3.4.1.41")
+                128u -> KnownOIDs.aes128_ECB
+                192u -> KnownOIDs.aes192_ECB
+                256u -> KnownOIDs.aes256_ECB
                 else -> throw ImplementationError("AES ECB OID")
             }
         }
@@ -257,9 +258,9 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
             AES<NonceTrait.Required, K, A>(ModeOfOperation.CBC, keySize) {
             /*override*/ val nonceSize = 128u.bit
             override val oid: ObjectIdentifier = when (keySize.bits) {
-                128u -> ObjectIdentifier("2.16.840.1.101.3.4.1.2")
-                192u -> ObjectIdentifier("2.16.840.1.101.3.4.1.22")
-                256u -> ObjectIdentifier("2.16.840.1.101.3.4.1.42")
+                128u -> KnownOIDs.aes128_CBC
+                192u -> KnownOIDs.aes192_CBC
+                256u -> KnownOIDs.aes256_CBC
                 else -> throw ImplementationError("AES CBC OID")
             }
 
@@ -341,7 +342,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
         override val name: String = "ChaCha20-Poly1305"
         override fun toString() = name
         override val keySize = 256u.bit
-        override val oid = ObjectIdentifier("1.2.840.113549.1.9.16.3.18")
+        override val oid = KnownOIDs.chaCha20Poly1305
     }
 }
 
