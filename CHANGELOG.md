@@ -14,7 +14,7 @@
 * OID descriptions:
     * OIDs can now be described using `oid.describe("expressive descrptions")`. It is enough to call this once per OID (not per object)
     * OID descriptions are exposed through the `ObjectIdentifier.description` property
-    * All OIDs present in `KnwonOIDs` come with a description
+    * All OIDs present in `KnownOIDs` come with a description
 * Deprecate `serialize()` and `deserialize()` methods in COSE+ JOSE data classes
 * Clean up some function signatures:
     * `SymmetricKey.toJsonWebKey` now returns `KmmResult`
