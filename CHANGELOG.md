@@ -5,6 +5,15 @@
 ### NEXT
 * Kotlin 2.2.0
 * AGP 8.10.0
+* Deprecate child accessors in `Asn1Structure` with deprecation level ERROR:
+    * `nextChild()`
+    * `nextChildOrNull()`
+    * `hasMoreChildren()`
+    * `peek()`
+* Add structured iterator-based decoding of `Asn1Structure`:
+    * Add inner `Iterator` for child accesses and `reversed()` method for getting a new iterator with reversed children
+    * Add `decodeAs()` for decoding ASN.1 structures via iterator-based lambda, moved trailing data check from `decodeFromTlv()` to `decodeAs()`
+    * Refactor `doDecode()` implementations in `Asn1Structure` subclasses to use the new `decodeAs()` iterator-based API instead of deprecated child access methods.
 * **KDF Support**
     * PBKDF2
     * HKDF
