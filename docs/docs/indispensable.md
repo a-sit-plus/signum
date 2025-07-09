@@ -116,17 +116,7 @@ It is also possible to add descriptions to this map (or override existing ones) 
 
 On the one hand, it is convenient to have virtually the whole world's OIDs available as constants including descriptions.
 On the other hand, this will add a couple of megabytes to klibs and any XCode frameworks. Hence, the OID constants and descriptions live in
-a discrete module `indispensable-oids`. If desired, it is possible to exclude this dependency of `indispensable` and replace it with stub module called `indispensable-noids`.
-This will strip all constants and descriptions, shaving off a couple of megabytes:
-
-```kotlin
-kotlin.sourceSets.commonMain.dependencies {
-    implementation(libs.indispensable) {
-        exclude(group = "at.asitplus.signum", module = "indispensable-oids")
-    }
-    implementation("at.asitplus.signum:indispensable-noids:${libs.versions.indispensable}")
-}
-```
+a discrete module `indispensable-oids`. If desired, custom XC frameworks can be exported that don't include this module to save a few megabytes.
 
 ##  Conversion from/to Platform Types
 

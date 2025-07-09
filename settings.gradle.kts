@@ -24,7 +24,6 @@ dependencyResolutionManagement {
 include(":internals")
 include(":indispensable-asn1")
 include(":indispensable-oids")
-include(":indispensable-noids")
 include(":indispensable")
 include(":indispensable-josef")
 include(":indispensable-cosef")
