@@ -101,21 +101,6 @@ The `pki` package contains data classes relevant in the PKI context:
 * `Pkcs10CertificateRequest` contains a CSR abstraction
     * `Pcs10CertificateRequestAttributes` contains a CSR attribute extension
 
-#### Notes on Object Identifiers
-In addition to PKI-related data structures, a (rather bloated) `KnownOIDs` object is available.
-It contains all ASN.1 object identifiers from Peter Guttmann's
-[dumpasn1.cfg](https://www.cs.auckland.ac.nz/~pgut001/dumpasn1.cfg).
-Hence, handy constants such as `KnwonOIDs.ecdsaWithSHA256` are available, but also rather obscure ones such as
-`KnownOIDs.asAdjacencyAttest`.
-
-`KnownOIDs` also contains human-readable descriptions of all `KnownOIDs` constants, which tie into exposed through the `ObjectIdentifier.describe()` mechanism:
-One call to `ObjectIdentifer.Companion.describeKnownOIDs()` attaches descrptions to all OIDs contained in `KnwonOIDs` (subsequent calls are a NOOP).
-This is useful for debugging, but never called by default.
-
-On the one hand, it is convenient to have virtually the whole world's OIDs available as constants including descriptions.
-On the other hand, this will add a couple of megabytes to klibs and any XCode frameworks. Hence, the OID constants and descriptions live in
-a discrete module `indispensable-oids`. If desired, custom XC frameworks can be exported that don't include this module to save a few megabytes.
-
 ##  Conversion from/to Platform Types
 
 Obviously, a world outside this library's data structures exists.
@@ -222,3 +207,20 @@ This module provides the following low-level addons for [Kotlin MP BigNum](https
 * `BigInteger.decodeFromAsn1ContentBytes()`
 * `encodeToAsn1Primitive()` produces an ASN.1 primitive  `BigInteger`
 * `encodeToAsn1ContentBytes()` producing the content bytes of an `Asn1Primitive` for `BigInteger`
+
+
+### Notes on Object Identifiers
+In addition to PKI-related data structures, a (rather bloated) `KnownOIDs` object is available.
+It contains all ASN.1 object identifiers from Peter Guttmann's
+[dumpasn1.cfg](https://www.cs.auckland.ac.nz/~pgut001/dumpasn1.cfg).
+Hence, handy constants such as `KnwonOIDs.ecdsaWithSHA256` are available, but also rather obscure ones such as
+`KnownOIDs.asAdjacencyAttest`.
+
+`KnownOIDs` also contains human-readable descriptions of all `KnownOIDs` constants, which tie into exposed through the `ObjectIdentifier.describe()` mechanism:
+One call to `ObjectIdentifer.Companion.describeKnownOIDs()` attaches descrptions to all OIDs contained in `KnwonOIDs` (subsequent calls are a NOOP).
+This is useful for debugging, but never called by default.
+
+On the one hand, it is convenient to have virtually the whole world's OIDs available as constants including descriptions.
+On the other hand, this will add a couple of megabytes to klibs and any XCode frameworks. Hence, the OID constants and descriptions
+(as well as `ObjectIdentifier.Companion.describeKnownOIDs()`) live in a discrete module `indispensable-oids`.
+If desired, custom XC frameworks can be exported that don't include this module to save a few megabytes.
