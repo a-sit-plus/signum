@@ -210,15 +210,15 @@ This module provides the following low-level addons for [Kotlin MP BigNum](https
 
 
 ### Notes on Object Identifiers
-In addition to PKI-related data structures, a (rather bloated) `KnownOIDs` object is available.
-It contains all ASN.1 object identifiers from Peter Guttmann's
+In addition to PKI-related data structures, a `indispensable-asn1`'s `KnownOIDs` object is amended by thousands of extension properties. 
+These comprise all ASN.1 object identifiers from Peter Guttmann's
 [dumpasn1.cfg](https://www.cs.auckland.ac.nz/~pgut001/dumpasn1.cfg).
 Hence, handy constants such as `KnwonOIDs.ecdsaWithSHA256` are available, but also rather obscure ones such as
 `KnownOIDs.asAdjacencyAttest`.
 
-`KnownOIDs` also contains human-readable descriptions of all `KnownOIDs` constants, which tie into exposed through the `ObjectIdentifier.setDescription()` mechanism:
-One call to `ObjectIdentifer.Companion.describeKnownOIDs()` attaches descriptions to all OIDs contained in `KnownOIDs` (subsequent calls are a NOOP).
-This is useful for debugging, but never called by default.
+`KnownOIDs` also contains human-readable descriptions of all `KnownOIDs` extension properties, which tie into the `ObjectIdentifier.setDescription()` mechanism:
+One call to `ObjectIdentifer.Companion.describeKnownOIDs()` attaches descriptions to all `KnownOIDs` extension properties (subsequent calls are a NOOP).
+This is useful for debugging but never called by default.
 
 On the one hand, it is convenient to have virtually the whole world's OIDs available as constants, including descriptions.
 On the other hand, this will add a couple of megabytes to klibs and any XCode frameworks. Hence, the OID constants and descriptions

@@ -315,7 +315,7 @@ On the other hand, parsing an OID from ASN.1-encoded bytes and re-encoding it ar
     OID descriptions need to live outside `ObjectIdentifier` to survive serialization/deserialization.
 
 It is possible to statically add descriptions to OIDs (or override existing ones) by calling `.setDescription("some description")` on an OID object.
-A description is not stored inside a particular OID object, but as part of a private map inside `ObjectIdentifier`'s companion.
+A description is not stored inside a particular OID object, but as part of a private map inside the `KnownOIDs` object.
 
 ### ASN.1 Integer
 The ASN.1 engine provides its own bigint-like class, `Asn1Integer`. It is capable of encoding arbitrary length signed integers
