@@ -11,6 +11,7 @@
 * Add `SpecializedSymmetricEncryptionAlgorithm`
     * This allows `randomKey()` etc to operate on COSE/JWE algorithms
 * Move constants of `KnownOIDs` into a discrete module `indispensable-oids` as extensions on the `KnownOIDs` object
+    * **→ update your imports!**
 * OID descriptions:
     * OIDs can now be described using `oid.setDescription("expressive descrptions")`. It is enough to call this once per OID (not per object)
     * OID descriptions are exposed through the `ObjectIdentifier.description` property
