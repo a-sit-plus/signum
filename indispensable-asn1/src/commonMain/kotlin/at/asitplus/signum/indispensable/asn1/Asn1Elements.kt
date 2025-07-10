@@ -5,7 +5,7 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
-import at.asitplus.signum.indispensable.asn1.ObjectIdentifier.Companion.description
+import at.asitplus.signum.indispensable.asn1.KnownOIDs.description
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import kotlinx.io.Buffer
 import kotlinx.io.Sink
