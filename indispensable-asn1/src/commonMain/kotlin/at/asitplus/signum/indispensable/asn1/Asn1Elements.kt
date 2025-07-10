@@ -877,7 +877,7 @@ open class Asn1Primitive(
             Tag.TIME_UTC -> decodeToInstant().toString()
             else -> content.toHexString(HexFormat.UpperCase)
         }
-    }.getOrElse { "Non-complaint content: 0x" + content.toHexString(HexFormat.UpperCase) }
+    }.getOrElse { "Non-compliant content: 0x" + content.toHexString(HexFormat.UpperCase) }
 
 
     override fun prettyPrintContents(indent: Int) = " "+contentToString()
