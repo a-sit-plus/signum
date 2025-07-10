@@ -490,7 +490,7 @@ inline fun <reified T : Asn1Element> T.assertTag(tagNumber: ULong): T = assertTa
 /**
  * ASN.1 NULL object as constant
  */
-val Asn1Null = Asn1Primitive(Asn1Element.Tag.NULL, byteArrayOf())
+object Asn1Null : Asn1Primitive(Asn1Element.Tag.NULL, byteArrayOf())
 
 /**
  * ASN.1 structure. Contains no data itself, but holds zero or more [children]
@@ -859,9 +859,10 @@ open class Asn1Primitive(
             Tag.BOOL -> decodeToBoolean().toString()
             Tag.INT -> decodeToInt().toString()
             Tag.REAL -> decodeToFloat().toString()
-            Tag.OID -> ObjectIdentifier.decodeFromAsn1ContentBytes(content).let { oid->
-                oid.description?.let { "$it ($oid)" }?:oid.toString()
+            Tag.OID -> ObjectIdentifier.decodeFromAsn1ContentBytes(content).let { oid ->
+                oid.description?.let { "$it ($oid)" } ?: oid.toString()
             }
+
             Tag.ENUM -> decodeToEnumOrdinal().toString()
             Tag.OCTET_STRING -> content.toHexString(HexFormat.UpperCase)
             Tag.BIT_STRING -> content.toHexString(HexFormat.UpperCase)
@@ -880,7 +881,7 @@ open class Asn1Primitive(
     }.getOrElse { "Non-compliant content: 0x" + content.toHexString(HexFormat.UpperCase) }
 
 
-    override fun prettyPrintContents(indent: Int) = " "+contentToString()
+    override fun prettyPrintContents(indent: Int) = " " + contentToString()
 
 
     override fun hashCode() = 31 * super.hashCode() + content.contentHashCode()
