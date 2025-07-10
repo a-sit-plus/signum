@@ -216,11 +216,11 @@ It contains all ASN.1 object identifiers from Peter Guttmann's
 Hence, handy constants such as `KnwonOIDs.ecdsaWithSHA256` are available, but also rather obscure ones such as
 `KnownOIDs.asAdjacencyAttest`.
 
-`KnownOIDs` also contains human-readable descriptions of all `KnownOIDs` constants, which tie into exposed through the `ObjectIdentifier.describe()` mechanism:
+`KnownOIDs` also contains human-readable descriptions of all `KnownOIDs` constants, which tie into exposed through the `ObjectIdentifier.setDescription()` mechanism:
 One call to `ObjectIdentifer.Companion.describeKnownOIDs()` attaches descriptions to all OIDs contained in `KnownOIDs` (subsequent calls are a NOOP).
 This is useful for debugging, but never called by default.
 
-On the one hand, it is convenient to have virtually the whole world's OIDs available as constants including descriptions.
+On the one hand, it is convenient to have virtually the whole world's OIDs available as constants, including descriptions.
 On the other hand, this will add a couple of megabytes to klibs and any XCode frameworks. Hence, the OID constants and descriptions
 (as well as `ObjectIdentifier.Companion.describeKnownOIDs()`) live in a discrete module `indispensable-oids`.
 If desired, custom XC frameworks can be exported that don't include this module to save a few megabytes.
