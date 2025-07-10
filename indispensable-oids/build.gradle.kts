@@ -175,7 +175,7 @@ fun generateKnownOIDs() {
                         )
                     mapBuilder.initializer(
                         codeBlock.append(")")
-                            .append(".also { it.forEach { (oid, desc) -> KnownOIDs.describe(oid, desc) } }")
+                            .append(".also { KnownOIDs.putAll(it) }\n")
                             .toString()
                     )
                     oidMapBuilder.addInitializerBlock(mapBuilder.build().initializer!!)
