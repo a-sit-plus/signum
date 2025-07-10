@@ -158,11 +158,11 @@ fun generateKnownOIDs() {
                                         val humanReadable =
                                             oidTriple.comment?.replace("\"", "\\\"")?.let { "$hrName ($it)" } ?: hrName
                                         codeBlock.append("KnownOIDs.`$name` to \"${humanReadable}\",\n")
-                                        if (name.matches(Regex("^[0.-9].*")))
+                                        /*if (name.matches(Regex("^[0.-9].*")))
                                             this.addAnnotation(
                                                 AnnotationSpec.builder(ClassName("kotlin.js", "JsName"))
                                                     .addMember("\"_$name\"").build()
-                                            )
+                                            )*/
                                     }.build())
                             )
                         }
