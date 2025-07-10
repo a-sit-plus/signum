@@ -15,9 +15,9 @@
 * Move constants of `KnownOIDs` into a discrete module `indispensable-oids` as extensions on the `KnownOIDs` object
     * **→ update your imports!**
 * OID descriptions:
-    * OIDs can now be described using `oid.setDescription("expressive descrptions")`. It is enough to call this once per OID (not per object)
+    * OIDs can now be described using `KnownOIDs.describe(myExpressiveOid, "an expressionist descrptions")`. It is enough to call this once per OID (not per object)
     * OID descriptions are exposed through the `ObjectIdentifier.description` property
-    * All OIDs present in `KnownOIDs` come with a description
+    * All OIDs present in `KnownOIDs` come with a description. To enable them for debugging, call 
 * Deprecate `serialize()` and `deserialize()` methods in COSE+ JOSE data classes
 * Clean up some function signatures:
     * `SymmetricKey.toJsonWebKey` now returns `KmmResult`
