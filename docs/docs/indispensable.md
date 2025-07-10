@@ -217,7 +217,7 @@ Hence, handy constants such as `KnwonOIDs.ecdsaWithSHA256` are available, but al
 `KnownOIDs.asAdjacencyAttest`.
 
 `KnownOIDs` also contains human-readable descriptions of all `KnownOIDs` constants, which tie into exposed through the `ObjectIdentifier.describe()` mechanism:
-One call to `ObjectIdentifer.Companion.describeKnownOIDs()` attaches descrptions to all OIDs contained in `KnwonOIDs` (subsequent calls are a NOOP).
+One call to `ObjectIdentifer.Companion.describeKnownOIDs()` attaches descriptions to all OIDs contained in `KnownOIDs` (subsequent calls are a NOOP).
 This is useful for debugging, but never called by default.
 
 On the one hand, it is convenient to have virtually the whole world's OIDs available as constants including descriptions.
