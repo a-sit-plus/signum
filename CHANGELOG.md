@@ -10,9 +10,9 @@
 * **RSA encryption** using in-memory keys (no hardware-backed key management yet)
 * Add `SpecializedSymmetricEncryptionAlgorithm`
     * This allows `randomKey()` etc to operate on COSE/JWE algorithms
-* Move `KnownOIDs` into a discrete module `indispensable-oids`
+* Move constants of `KnownOIDs` into a discrete module `indispensable-oids` as extensions on the `KnownOIDs` object
 * OID descriptions:
-    * OIDs can now be described using `oid.describe("expressive descrptions")`. It is enough to call this once per OID (not per object)
+    * OIDs can now be described using `oid.setDescription("expressive descrptions")`. It is enough to call this once per OID (not per object)
     * OID descriptions are exposed through the `ObjectIdentifier.description` property
     * All OIDs present in `KnownOIDs` come with a description
 * Deprecate `serialize()` and `deserialize()` methods in COSE+ JOSE data classes
