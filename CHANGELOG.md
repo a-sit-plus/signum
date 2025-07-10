@@ -22,7 +22,7 @@
         * For primitives and octet strings this changes nothing
         * For `Asn1CustomStructure` this now always returns the DER-encoded children in a ByteArray
     * Add missing `Asn1.Real` shorthand to the ASN.1 builder
-    * Add `Asn1Null` constant
+    * Add `Asn1Null` object
     * Add human-readable ASN.1 element toString
     * Make Asn1OctetString interface sealed
 * OID descriptions:
