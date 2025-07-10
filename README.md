@@ -583,7 +583,7 @@ A tandem of helper functions is available for primitives (numbers, booleans, str
 
 Variations of these exist for `Instant` and `ByteArray`.
 
-Check out [Asn1Encoding.kt](indispensable/src/commonMain/kotlin/at/asitplus/signum/indispensable/asn1/encoding/Asn1Encoding.kt) for a full
+Check out [Asn1Encoding.kt](indispensable-asn1/src/commonMain/kotlin/at/asitplus/signum/indispensable/asn1/encoding/Asn1Encoding.kt) for a full
 list of helper functions.
 
 #### Decoding Values
@@ -610,7 +610,7 @@ following signature:
 inline fun <reified T> Asn1Primitive.decode(assertTag: Asn1Element.Tag, decode: (content: ByteArray) -> T) 
 ```
 
-Check out [Asn1Decoding.kt](indispensable/src/commonMain/kotlin/at/asitplus/signum/indispensable/asn1/encoding/Asn1Decoding.kt) for a full
+Check out [Asn1Decoding.kt](indispensable-asn1/src/commonMain/kotlin/at/asitplus/signum/indispensable/asn1/encoding/Asn1Decoding.kt) for a full
 list of helper functions.
 
 #### ASN1 DSL for Creating ASN.1 Structures
