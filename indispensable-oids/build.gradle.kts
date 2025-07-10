@@ -121,26 +121,31 @@ fun generateKnownOIDs() {
 
     val knownOIDs =
         FileSpec.builder("at.asitplus.signum.indispensable.asn1", "KnownOIDs")
-            .addType(
-                TypeSpec.objectBuilder("KnownOIDs").apply {
+            .apply {
                     val oidType = ClassName(
                         packageName = "at.asitplus.signum.indispensable.asn1",
                         "ObjectIdentifier"
                     )
 
+                val knownOIDtype = ClassName(
+                    packageName = "at.asitplus.signum.indispensable.asn1",
+                    "KnownOIDs"
+                )
 
-                    val codeBlock = StringBuilder("mapOf(\n")
+                addImport(packageName = "at.asitplus.signum.indispensable.asn1", "KnownOIDs")
+
+                val codeBlock = StringBuilder("mapOf(\n")
 
                     collected.toList()
                         .distinctBy { (_, oidTriple) -> oidTriple.oid }
                         .sortedBy { (name, _) -> name }
-                        .forEach { (name, oidTriple) ->
-                            addProperty(
-                                PropertySpec.builder(
+                        .forEach { (name, oidTriple) -> (
+                               addProperty( PropertySpec.builder(
                                     name,
                                     oidType
                                 )
-                                    .initializer("ObjectIdentifier(\"${oidTriple.oid!!.replace(' ', '.')}\")")
+                                    .receiver(knownOIDtype)
+                                    .getter( FunSpec.getterBuilder().addCode("return ObjectIdentifier(\"${oidTriple.oid!!.replace(' ', '.')}\")").build())
                                     .addKdoc(
                                         "`${
                                             oidTriple.oid!!.replace(
@@ -158,7 +163,7 @@ fun generateKnownOIDs() {
                                                 AnnotationSpec.builder(ClassName("kotlin.js", "JsName"))
                                                     .addMember("\"_$name\"").build()
                                             )
-                                    }.build()
+                                    }.build())
                             )
                         }
                     val mapBuilder =
@@ -170,20 +175,20 @@ fun generateKnownOIDs() {
                         )
                     mapBuilder.initializer(
                         codeBlock.append(")")
-                            .append(".also { it.forEach{(oid,desc) -> oid.describe(desc)}}")
+                            .append(".also { it.forEach{(oid,desc) -> oid.setDescription(desc)}}")
                             .toString()
                     )
                     oidMapBuilder.addInitializerBlock(mapBuilder.build().initializer!!)
 
                     val getter = FunSpec.builder("initDescriptions")
                         .apply { modifiers += KModifier.INTERNAL }
-                        .addKdoc("NOOP to make sure that the descriptions are loaded")
+                        .addKdoc("Adds descriptions to all known OIDs, if called once. Subsequent calls to this function are a NOOP.")
                         .addCode("").build()
                     oidMapBuilder.addFunction(getter)
                 }.build()
-            ).build()
 
-    oidMap.addImport(packageName = "at.asitplus.signum.indispensable.asn1", "ObjectIdentifier.Companion.describe")
+
+    oidMap.addImport(packageName = "at.asitplus.signum.indispensable.asn1", "KnownOIDs.setDescription")
     val oidMapFile = oidMap.addType(oidMapBuilder.build()).build()
 
 

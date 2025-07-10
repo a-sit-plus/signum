@@ -314,7 +314,7 @@ On the other hand, parsing an OID from ASN.1-encoded bytes and re-encoding it ar
 !!! info inline end
     OID descriptions need to live outside `ObjectIdentifier` to survive serialization/deserialization.
 
-It is possible to statically add descriptions to OIDs (or override existing ones) by calling `.describe("some description")` on an OID object.
+It is possible to statically add descriptions to OIDs (or override existing ones) by calling `.setDescription("some description")` on an OID object.
 A description is not stored inside a particular OID object, but as part of a private map inside `ObjectIdentifier`'s companion.
 
 ### ASN.1 Integer
