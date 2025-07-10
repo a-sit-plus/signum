@@ -6,6 +6,6 @@ package at.asitplus.signum.indispensable.asn1
  * The first call to this function triggers the initialization process of all [KnownOIDs] descriptions.
  * Future calls to this function are a NOOP.
  */
-fun ObjectIdentifier.Companion.describeKnownOIDs() {
+fun KnownOIDs.describeAll() {
     OidMap.initDescriptions()
 }
