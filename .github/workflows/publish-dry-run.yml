@@ -21,7 +21,7 @@ jobs:
     runs-on: macos-latest
     env:
       KOTLIN_VERSION_ENV: ${{ inputs.kotlin-version }}
-      KOTEST_VERSION_ENV: ${{ inputs.kotest-version }}
+      KOTEST_VERSION_OVERRIDE: ${{ inputs.kotest-version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3

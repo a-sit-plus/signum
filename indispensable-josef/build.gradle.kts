@@ -2,10 +2,6 @@ import at.asitplus.gradle.*
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
-    val kotlinVer = System.getenv("KOTLIN_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotlin.get()
-    val kspVer= "$kotlinVer-${libs.versions.ksp.get()}"
-    id("com.google.devtools.ksp") version kspVer
-    id("io.kotest")
     id("com.android.library")
     kotlin("multiplatform")
     kotlin("plugin.serialization")

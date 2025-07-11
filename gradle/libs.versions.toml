@@ -26,3 +26,6 @@ rules = { module = "androidx.test:rules", version.ref = "core" }
 runner = { module = "androidx.test:runner", version.ref = "runner" }
 multibase = { module = "at.asitplus:multibase", version.ref = "multibase" }
 securerandom = { module = "org.kotlincrypto.random:crypto-rand", version.ref = "kotlincryptoRandom" }
+
+## new Kotest M5
+kotest-framework-symbol-processor = { module = "io.kotest:kotest-framework-symbol-processor-jvm", version.ref = "kotest" }

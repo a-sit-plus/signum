@@ -5,7 +5,7 @@ plugins {
     val kotestVer = System.getenv("KOTEST_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotest.get()
     val kspVer= "$kotlinVer-${libs.versions.ksp.get()}"
 
-    id("at.asitplus.gradle.conventions") version "20250709-pre"
+    id("at.asitplus.gradle.conventions") version "20250711+1"
     id("io.kotest") version kotestVer
     kotlin("multiplatform") version kotlinVer apply false
     kotlin("plugin.serialization") version kotlinVer apply false
@@ -40,7 +40,6 @@ allprojects {
         }
     }
 }
-
 
 tasks.register<Copy>("copyChangelog") {
     into(rootDir.resolve("docs/docs"))

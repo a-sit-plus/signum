@@ -17,7 +17,7 @@ jobs:
     runs-on: macos-latest
     env:
       KOTLIN_VERSION_ENV: ${{ inputs.kotlin-version }}
-      KOTEST_VERSION_ENV: ${{ inputs.kotest-version }}
+      KOTEST_VERSION_OVERRIDE: ${{ inputs.kotest-version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -33,6 +33,6 @@ jobs:
         uses: dorny/test-reporter@v1
         if: success() || failure()
         with:
-          name: JVM All Tests
+          name: All Tests
           path: indispensable-asn1/build/test-results/**/TEST*.xml,indispensable/build/test-results/**/TEST*.xml,indispensable-josef/build/test-results/**/TEST*.xml,indispensable-cosef/build/test-results/**/TEST*.xml,supreme/build/test-results/**/TEST*.xml
           reporter: java-junit

@@ -3,6 +3,7 @@
 ## 3.0
 
 ### NEXT
+* Kotlin 2.2.0
 * **KDF Support**
     * PBKDF2
     * HKDF
@@ -26,7 +27,7 @@
     * Coroutines 1.10.2
     * Ktor 3.1.2
     * Datetime 0.7.1
-    * Kotest 6.0.0.M1
+    * Kotest 6.0.0.M5
 
 ### 3.16.3 / 0.8.3 indispensable-only Hotfix
 * Fix erroneous Base64URL encoding in JOSE data classes
