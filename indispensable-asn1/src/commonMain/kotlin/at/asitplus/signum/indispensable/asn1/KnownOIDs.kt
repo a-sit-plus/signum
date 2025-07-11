@@ -5,6 +5,7 @@ package at.asitplus.signum.indispensable.asn1
  * If `indispensable-oids` is part of your classpath, call `KnownOIDs.describeAll()` to add descriptions for all
  * known OID constants shipped with the module.
  */
+//TODO report kotlin compiler bug
 object KnownOIDs : MutableMap<ObjectIdentifier,String>{
 
     private val oidDescriptions = mutableMapOf<ObjectIdentifier, String>()
