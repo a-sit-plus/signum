@@ -311,13 +311,8 @@ This lazy-evaluation behaviour boils down to performance: Only very rarely will 
 but you will almost certainly want to encode an OID you created to ASN.1.
 On the other hand, parsing an OID from ASN.1-encoded bytes and re-encoding it are both close to a NOOP (object creation aside).
 
-!!! info inline end
-    OID descriptions need to live outside `ObjectIdentifier` to survive serialization/deserialization.
-
-It is possible to statically add descriptions to OIDs (or override existing ones) by associating an OID with its description.
-For example, calling `KnownOIDs[theExpressionistsOid] = "Edvard Munch"` will cause `KnownOIDs[theExpressionistsOid]` to yield `"Edvard Munch"`.
-A description is not stored inside a particular OID object, but statically as part of a private map inside the `KnownOIDs` object.
-
+For debug purposes, it is possible to add descriptions to OIDs (or override existing ones) by associating an OID with its description.
+For example, using `KnownOIDs[theExpressionistsOid] = "Edvard Munch"` will cause `KnownOIDs[theExpressionistsOid]` to yield `"Edvard Munch"`.
 ### ASN.1 Integer
 The ASN.1 engine provides its own bigint-like class, `Asn1Integer`. It is capable of encoding arbitrary length signed integers
 to write and read them from ASN.1 structures.
