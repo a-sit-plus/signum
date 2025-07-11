@@ -1,5 +1,6 @@
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.signum.test.JUnitXmlReporter
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import io.kotest.core.Platform
@@ -13,6 +14,7 @@ import io.kotest.property.arbitrary.*
 import io.kotest.property.checkAll
 
 class Asn1AddonsTest: FreeSpec({
+    extensions(JUnitXmlReporter())
     "BigInteger Encoding: Negative" {
         val result =
             BigInteger(-20).encodeToAsn1Primitive()

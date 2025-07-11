@@ -1,14 +1,18 @@
 import at.asitplus.gradle.*
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemTemporaryDirectory
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 
 buildscript {
     dependencies {
         classpath(libs.kotlinpoet)
+        classpath(libs.kotlinx.io.core)
     }
 }
 
 plugins {
+    id("io.kotest")
     id("com.android.library")
     kotlin("multiplatform")
     kotlin("plugin.serialization")
@@ -41,8 +45,8 @@ kotlin {
     tvosSimulatorArm64()
     tvosX64()
     tvosArm64()
-   // androidNativeX64()
-   // androidNativeX86()
+    // androidNativeX64()
+    // androidNativeX86()
     // androidNativeArm32()
     // androidNativeArm64()
     listOf(
@@ -74,10 +78,11 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(kotest("property"))
+                implementation(project(":kmpotest"))
             }
         }
 
-         androidJvmMain {
+        androidJvmMain {
             dependencies {
                 api(bouncycastle("bcpkix"))
                 api(coroutines("jvm"))
@@ -93,6 +98,23 @@ project.gradle.taskGraph.whenReady {
         enabled = false
     }
 }
+
+val postTestTask = tasks.register("postTestTask") {
+    group = "verification"
+    description = "Post-test analysis and cleanup"
+
+    logger.warn("Copying tests from ${Path(SystemTemporaryDirectory, "kotest-report")}")
+    doLast {
+        val source = File(Path(SystemTemporaryDirectory, "kotest-report").toString())
+        source.copyRecursively(project.buildDir, overwrite = true)
+        source.deleteRecursively()
+    }
+}
+
+tasks.withType<Test> {
+    finalizedBy(postTestTask)
+}
+
 
 exportXCFramework(
     "Indispensable",

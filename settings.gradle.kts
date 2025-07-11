@@ -27,4 +27,5 @@ include(":indispensable")
 include(":indispensable-josef")
 include(":indispensable-cosef")
 include(":supreme")
+include(":kmpotest")
 rootProject.name = "Signum"

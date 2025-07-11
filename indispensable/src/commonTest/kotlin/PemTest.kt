@@ -3,6 +3,7 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.pki.Pkcs10CertificationRequest
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.test.JUnitXmlReporter
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -11,6 +12,7 @@ import kotlin.random.Random
 @OptIn(ExperimentalStdlibApi::class)
 class PemTest : FreeSpec({
 
+    extensions(JUnitXmlReporter())
     "Cert"  {
         val pemEC= """
             -----BEGIN CERTIFICATE-----
