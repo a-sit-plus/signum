@@ -13,6 +13,20 @@ plugins {
 val artifactVersion: String by extra
 version = artifactVersion
 
+fun getTempDir() {
+    val tempDir = System.getProperty("java.io.tmpdir")
+    val dir = project.layout.projectDirectory.dir("generated")
+        .dir("commonMain").dir("kotlin")
+    val targetDir= dir.asFile
+    targetDir.mkdirs()
+    val tempFile = dir.file("temp.kt").asFile
+    tempFile.writer().use {
+        logger.warn("writing tmpdir tp ${tempFile.absolutePath}")
+        it.write("const val KOTEST_REPORT_TEMPDIR = \"$tempDir\"")
+    }
+}
+getTempDir()
+
 
 kotlin {
     jvm()
@@ -56,7 +70,10 @@ kotlin {
         }
 
         commonMain {
-
+            kotlin.srcDir(
+                project.layout.projectDirectory.dir("generated")
+                    .dir("commonMain").dir("kotlin")
+            )
             dependencies {
                 implementation(libs.xmlutil)
                 implementation(libs.kotlinx.io.core)

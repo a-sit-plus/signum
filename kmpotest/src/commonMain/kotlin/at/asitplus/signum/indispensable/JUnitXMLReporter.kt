@@ -1,5 +1,6 @@
 package at.asitplus.signum.test
 
+import KOTEST_REPORT_TEMPDIR
 import io.kotest.core.listeners.AfterProjectListener
 import io.kotest.core.listeners.AfterSpecListener
 import io.kotest.core.listeners.AfterTestListener
@@ -37,7 +38,7 @@ expect val target: String
 /* ---------- platform hook ---------- */
 private fun writeXmlFile(xml: String, filename: String) {
 
-    val tempPath = Path(SystemTemporaryDirectory, "kotest-report", "test-results", target, uniqueTestRun)
+    val tempPath = Path(KOTEST_REPORT_TEMPDIR, "kotest-report", "test-results", target, uniqueTestRun)
 
     val path = Path(tempPath, filename)
 

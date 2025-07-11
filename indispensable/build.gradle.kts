@@ -80,6 +80,10 @@ kotlin {
                 implementation(kotest("property"))
                 implementation(project(":kmpotest"))
             }
+            kotlin.srcDir(
+                project.layout.projectDirectory.dir("generated")
+                    .dir("commonTest").dir("kotlin")
+            )
         }
 
         androidJvmMain {
@@ -99,15 +103,16 @@ project.gradle.taskGraph.whenReady {
     }
 }
 
+val tempDir = System.getProperty("java.io.tmpdir")
+File( "${tempDir}/kotest-report").delete()
 val postTestTask = tasks.register("postTestTask") {
     group = "verification"
     description = "Post-test analysis and cleanup"
 
-    logger.warn("Copying tests from ${Path(SystemTemporaryDirectory, "kotest-report")}")
     doLast {
-        val source = File(Path(SystemTemporaryDirectory, "kotest-report").toString())
+    logger.warn("Copying tests from ${tempDir}/kotest-report")
+        val source = File( "${tempDir}/kotest-report")
         source.copyRecursively(project.buildDir, overwrite = true)
-        source.deleteRecursively()
     }
 }
 
