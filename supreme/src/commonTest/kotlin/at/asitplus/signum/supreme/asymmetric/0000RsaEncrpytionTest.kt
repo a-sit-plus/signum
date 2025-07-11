@@ -19,7 +19,7 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
 
 @OptIn(HazardousMaterials::class, SecretExposure::class, ExperimentalStdlibApi::class)
-class `0000RsaEncrpytionTest` : FreeSpec({
+class RsaEncryptionTest : FreeSpec({
 
     "From OpenSSL" - {
         withData(nameFn = { it.toString() }, testData) {

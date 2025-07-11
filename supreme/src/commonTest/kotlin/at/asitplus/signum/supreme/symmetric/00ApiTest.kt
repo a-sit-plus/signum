@@ -11,7 +11,7 @@ import kotlinx.coroutines.runBlocking
 import kotlin.random.Random
 
 @OptIn(HazardousMaterials::class)
-class `00ApiTest` : FreeSpec({
+class ApiTest : FreeSpec({
 
     "Utterly Untyped v2" - {
         withData(

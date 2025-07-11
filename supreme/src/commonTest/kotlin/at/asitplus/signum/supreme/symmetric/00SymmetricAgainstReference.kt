@@ -17,8 +17,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 @OptIn(HazardousMaterials::class)
-@ExperimentalStdlibApi
-class `00SymmetricAgainstReference` : FreeSpec({
+class SymmetricAgainstReference : FreeSpec({
     "AES GCM+CBC and ChaCha20-Poly1305" - {
         val reference: JsonArray = Json.decodeFromString(pregenerated)
 

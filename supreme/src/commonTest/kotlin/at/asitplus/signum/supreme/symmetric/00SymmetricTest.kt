@@ -25,8 +25,7 @@ import kotlin.random.nextUInt
 import kotlin.time.Clock
 
 @OptIn(HazardousMaterials::class)
-@ExperimentalStdlibApi
-class `00SymmetricTest` : FreeSpec({
+class SymmetricTest : FreeSpec({
 
 
     "README" {
