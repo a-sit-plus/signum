@@ -210,18 +210,9 @@ This module provides the following low-level addons for [Kotlin MP BigNum](https
 
 
 ### Notes on Object Identifiers
-In addition to PKI-related data structures, `indispensable-asn1`'s `KnownOIDs` object is amended by thousands of extension properties. 
-These comprise all ASN.1 object identifiers from Peter Guttmann's
+Signum also ships with a `indispensable-oids` module, included by default, which adds extension properties to `KnownOIDs` for all ASN.1 object identifiers from Peter Guttmann's
 [dumpasn1.cfg](https://www.cs.auckland.ac.nz/~pgut001/dumpasn1.cfg).
-Hence, handy constants such as `KnwonOIDs.ecdsaWithSHA256` are available, but also rather obscure ones such as
-`KnownOIDs.asAdjacencyAttest`.
+Hence, handy constants such as `KnownOIDs.ecdsaWithSHA256` are available, but also rather obscure ones such as
+`KnownOIDs.asAdjacencyAttest`. To also describe these properties, call the `KnownOIDs.describeAll()` extension once.
 
-`KnownOIDs` can also be amended with human-readable descriptions of all of `KnownOIDs` extension properties:
-One call to `KnownOIDs.describeAll()` attaches descriptions to all `KnownOIDs` extension properties (subsequent calls to `describeAll()` are a NOOP).
-This is useful for debugging but not called by default.
-
-On the one hand, it is convenient to have virtually the whole world's OIDs available as constants, including descriptions.
-On the other hand, this will add a couple of megabytes to klibs and any XCode frameworks. Hence, the OID constants and descriptions
-(as well as `KnownOIDs.describeAll()`) live in a discrete module `indispensable-oids`.
-If desired, custom XC frameworks can be exported that don't include this module to save a few megabytes.
-Since `KnownOIDs` implements `MutableMap<ObjectIdentifier, String`, descriptions can be modified and removed as desired.
+While it is convenient to have virtually the whole world's OIDs available as constants, including descriptions,, this will add a couple of megabytes to klibs and any XCode frameworks. Thus, it may make sense to exclude `indispensable-oids` from your framework export.
