@@ -3,7 +3,7 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.KmmResult
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.toX509SignatureAlgorithm
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.test.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 

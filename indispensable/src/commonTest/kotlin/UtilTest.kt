@@ -4,13 +4,13 @@ import at.asitplus.signum.internals.ensureSize
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.max
 import at.asitplus.signum.indispensable.misc.min
-import at.asitplus.signum.test.JUnitXmlReporter
+
 import com.ionspin.kotlin.bignum.integer.BigInteger
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.test.FreeSpec
 import io.kotest.matchers.shouldBe
 
 class UtilTest : FreeSpec({
-    extensions(JUnitXmlReporter())
+   
     "ByteArray.ensureSize" {
         val base = byteArrayOf(0x01, 0x02, 0x03, 0x04, 0x05)
 

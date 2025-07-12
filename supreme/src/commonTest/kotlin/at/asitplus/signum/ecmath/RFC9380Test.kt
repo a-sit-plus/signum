@@ -5,7 +5,7 @@ import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.supreme.azString
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import io.kotest.core.names.TestNameBuilder
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.test.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe

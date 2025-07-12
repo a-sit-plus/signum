@@ -4,6 +4,7 @@
 
 ### NEXT
 * Kotlin 2.2.0
+* AGP 8.10.0
 * **KDF Support**
     * PBKDF2
     * HKDF
@@ -11,13 +12,14 @@
 * **RSA encryption** using in-memory keys (no hardware-backed key management yet)
 * Add `SpecializedSymmetricEncryptionAlgorithm`
     * This allows `randomKey()` etc to operate on COSE/JWE algorithms
-* Deprecate `serialize()` and `deserialize()` methods in COSE+ JOSE data classes
 * Clean up some function signatures:
     * `SymmetricKey.toJsonWebKey` now returns `KmmResult`
     * `SymmetricEncryptionAlgorithm.toJweKwAlgorithm` now returns `KmmResult`
     * `SymmetricEncryptionAlgorithm.toJweEncryptionAlgorithm` removed* Dependency Updates:
 * `kotlincrypto:secure-random:0.3.2` -> `kotlincrypto.random:crypto-rand:0.5.0`
     * This fixes key generation in WASM/JS
+* Dependency Updates:
+    * kotlinx.io 0.7.0
 * Update to kotlinx.datetime 0.7.1.
     * This moves Instant and Clock to stdlib
     * (but introduces typealiases for easier migration)

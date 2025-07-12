@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable
 
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.test.FreeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -10,7 +10,7 @@ import kotlin.reflect.KProperty1
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.memberProperties
 
-inline fun <reified T : Any> FreeSpec.enumConsistencyTest() {
+inline fun <reified T : Any> io.kotest.core.spec.style.FreeSpec.enumConsistencyTest() {
     T::class.simpleName!! {
         val listed = T::class.companionObject!!.let { companion ->
             @Suppress("UNCHECKED_CAST")

@@ -1,6 +1,4 @@
 import at.asitplus.gradle.*
-import kotlinx.io.files.Path
-import kotlinx.io.files.SystemTemporaryDirectory
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 
@@ -78,7 +76,6 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(kotest("property"))
-                implementation(project(":kmpotest"))
             }
             kotlin.srcDir(
                 project.layout.projectDirectory.dir("generated")
@@ -101,23 +98,6 @@ project.gradle.taskGraph.whenReady {
     tasks.getByName("testDebugUnitTest") {
         enabled = false
     }
-}
-
-val tempDir = System.getProperty("java.io.tmpdir")
-File( "${tempDir}/kotest-report").delete()
-val postTestTask = tasks.register("postTestTask") {
-    group = "verification"
-    description = "Post-test analysis and cleanup"
-
-    doLast {
-    logger.warn("Copying tests from ${tempDir}/kotest-report")
-        val source = File( "${tempDir}/kotest-report")
-        source.copyRecursively(project.buildDir, overwrite = true)
-    }
-}
-
-tasks.withType<Test> {
-    finalizedBy(postTestTask)
 }
 
 

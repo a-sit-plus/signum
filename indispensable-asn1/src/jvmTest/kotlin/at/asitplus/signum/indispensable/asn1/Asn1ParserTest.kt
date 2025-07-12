@@ -3,7 +3,7 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.asn1.encoding.readFullyToAsn1Elements
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.test.FreeSpec
 import io.kotest.matchers.shouldBe
 import kotlin.random.Random
 

@@ -1,7 +1,7 @@
 package at.asitplus.signum.supreme.dsl
 
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.test.FreeSpec
 import io.kotest.matchers.shouldBe
 
 private enum class Preparation { SHAKEN, STIRRED; }

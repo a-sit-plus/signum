@@ -5,11 +5,11 @@ plugins {
     val kotestVer = System.getenv("KOTEST_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotest.get()
     val kspVer= "$kotlinVer-${libs.versions.ksp.get()}"
 
-    id("at.asitplus.gradle.conventions") version "20250711+1"
+    id("at.asitplus.gradle.conventions") version "20250712"
     id("io.kotest") version kotestVer
     kotlin("multiplatform") version kotlinVer apply false
     kotlin("plugin.serialization") version kotlinVer apply false
-    id("com.android.library") version "8.6.1" apply (false)
+    id("com.android.library") version libs.versions.agp.get() apply (false)
     id("com.google.devtools.ksp") version kspVer
 }
 group = "at.asitplus.signum"
