@@ -7,7 +7,7 @@ plugins {
     val kotestVer = System.getenv("KOTEST_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotest.get()
     val kspVer = System.getenv("KSP_VERSION_ENV")?.ifBlank { null } ?: "$kotlinVer-${libs.versions.ksp.get()}"
 
-    id("at.asitplus.gradle.conventions") version "20250713+1"
+    id("at.asitplus.gradle.conventions") version "20250713+2"
     id("io.kotest") version kotestVer
     kotlin("multiplatform") version kotlinVer apply false
     kotlin("plugin.serialization") version kotlinVer apply false
