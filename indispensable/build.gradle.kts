@@ -1,5 +1,7 @@
 import at.asitplus.gradle.*
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
 
 buildscript {
@@ -43,10 +45,10 @@ kotlin {
     tvosSimulatorArm64()
     tvosX64()
     tvosArm64()
-    // androidNativeX64()
-    // androidNativeX86()
-    // androidNativeArm32()
-    // androidNativeArm64()
+    androidNativeX64()
+    androidNativeX86()
+    androidNativeArm32()
+    androidNativeArm64()
     listOf(
         js(IR).apply { browser { testTask { enabled = false } } },
         @OptIn(ExperimentalWasmDsl::class)
@@ -194,6 +196,9 @@ publishing {
         }
     }
 }
+
+
+
 
 signing {
     val signingKeyId: String? by project

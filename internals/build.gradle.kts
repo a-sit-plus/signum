@@ -10,7 +10,7 @@ buildscript {
 
 plugins {
     val kotlinVer = System.getenv("KOTLIN_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotlin.get()
-    val kspVer= "$kotlinVer-${libs.versions.ksp.get()}"
+    val kspVer = "$kotlinVer-${libs.versions.ksp.get()}"
     id("com.google.devtools.ksp") version kspVer
     id("io.kotest")
     id("com.android.library")
@@ -35,6 +35,7 @@ kotlin {
     iosX64()
     iosArm64()
     iosSimulatorArm64()
+    // watchosDeviceArm64()
     watchosSimulatorArm64()
     watchosX64()
     watchosArm32()
@@ -42,10 +43,10 @@ kotlin {
     tvosSimulatorArm64()
     tvosX64()
     tvosArm64()
-   // androidNativeX64()
-   // androidNativeX86()
-   // androidNativeArm32()
-    // androidNativeArm64()
+    androidNativeX64()
+    androidNativeX86()
+    androidNativeArm32()
+    androidNativeArm64()
     listOf(
         js(IR).apply { browser { testTask { enabled = false } } },
         @OptIn(ExperimentalWasmDsl::class)
