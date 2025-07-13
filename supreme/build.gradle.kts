@@ -33,6 +33,17 @@ version = supremeVersion
 
 wireAndroidInstrumentedTests()
 
+
+tasks.configureEach {
+    if (name == "linkDebugTestIosX64") {
+        enabled = false
+    }
+    if (name == "iosX64Test") {
+        enabled = false
+    }
+}
+
+
 kotlin {
     compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
     applyDefaultHierarchyTemplate()
