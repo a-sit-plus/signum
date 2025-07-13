@@ -12,6 +12,11 @@ on:
         required: false
         default: ''
         type: string
+      ksp-version:
+        description: 'Override KSP version? (full version string)?'
+        required: false
+        default: ''
+        type: string
 permissions:
   contents: read
   pages: write
@@ -21,7 +26,8 @@ jobs:
     runs-on: macos-latest
     env:
       KOTLIN_VERSION_ENV: ${{ inputs.kotlin-version }}
-      KOTEST_VERSION_OVERRIDE: ${{ inputs.kotest-version }}
+      KOTEST_VERSION_ENV: ${{ inputs.kotest-version }}
+      KSP_VERSION_ENV: ${{ inputs.ksp-version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
