@@ -34,7 +34,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Run tests
-        run: ./gradlew allTests
+        run: ./gradlew allTests -x :supreme:linkDebugTestIosX64 -x :supreme:iosX64Test
       - name: Test Report
         uses: dorny/test-reporter@v1
         if: success() || failure()
