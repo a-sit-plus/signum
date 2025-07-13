@@ -1,4 +1,4 @@
-name: Test Everythin
+name: Test Everything
 on:
   workflow_dispatch:
     inputs:
