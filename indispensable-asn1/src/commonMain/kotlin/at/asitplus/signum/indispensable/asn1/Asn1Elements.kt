@@ -619,7 +619,7 @@ sealed class Asn1Structure(
         /**
          * Returns `true` if more children can be retrieved by [next]. `false` otherwise
          */
-        override fun hasNext() = children.size > index
+        override fun hasNext() = if (isForward) children.size > index else index >= 0
 
         /**
          * Returns the current child or `null`, if there are no children left
