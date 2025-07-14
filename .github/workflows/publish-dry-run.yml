@@ -33,6 +33,11 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: recursive
+      - name: Enable watchOS Device target
+        shell: bash
+        run: |
+          find . -name "build.gradle.kts" -print0 \
+            | xargs -0 sed -i.bak -E 's/^\s*\/\/watchosDeviceArm64\(\).*$/    watchosDeviceArm64()/'
       - uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
@@ -77,3 +82,29 @@ jobs:
         run: |
           export DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib
           ./gradlew mkDocsSite
+
+      - name: List published Maven-local artifacts
+        if: success() || failure()        # always run so the table appears even if publish failed
+        shell: bash
+        run: |
+          ART_DIR="${HOME}/.m2/repository/at/asitplus/signum"
+          
+          # Header
+          {
+            echo "### Maven-local artifacts for \`at.asitplus.signum\`"
+            echo ""
+            echo "| Module | Version | File |"
+            echo "|--------|---------|------|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          
+          # Abort early if nothing was written
+          [[ -d "$ART_DIR" ]] || { echo "| _No artifacts found_ |  |  |" >> "$GITHUB_STEP_SUMMARY"; exit 0; }
+          
+          # Collect artifacts (jar / klib / aar / pom) and append table rows
+          find "$ART_DIR" -type f \( -name "*.jar" -o -name "*.klib" -o -name "*.aar" -o -name "*.pom" \) \
+            | sort \
+            | while read -r file; do
+                rel="${file#${ART_DIR}/}"        # => module/version/filename
+                IFS='/' read -r module version filename <<< "$rel"
+                echo "| \`$module\` | \`$version\` | \`$filename\` |" >> "$GITHUB_STEP_SUMMARY"
+              done
