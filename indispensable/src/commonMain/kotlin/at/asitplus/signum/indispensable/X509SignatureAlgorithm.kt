@@ -29,7 +29,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 
 @Serializable(with = X509SignatureAlgorithmSerializer::class)
-open class X509SignatureAlgorithm private constructor(
+open class X509SignatureAlgorithm(
     override val oid: ObjectIdentifier,
     open val name: String,
     val parameters: List<Asn1Element> = emptyList()
@@ -140,19 +140,11 @@ open class X509SignatureAlgorithm private constructor(
         val RS384 = RSA(KnownOIDs.sha384WithRSAEncryption, "RS384")
         val RS512 = RSA(KnownOIDs.sha512WithRSAEncryption, "RS512")
 
-        private val _registeredAlgorithms = MutableStateFlow(
-            setOf(
-                ES256, ES384, ES512,
-                PS256, PS384, PS512,
-                RS1, RS256, RS384, RS512
-            )
+        val registeredAlgorithms = setOf(
+            ES256, ES384, ES512,
+            PS256, PS384, PS512,
+            RS1, RS256, RS384, RS512
         )
-        val registeredAlgorithms: Set<X509SignatureAlgorithm>
-            get() = _registeredAlgorithms.value
-
-        fun register(algorithm: X509SignatureAlgorithm) {
-            _registeredAlgorithms.update { it + algorithm}
-        }
 
         private fun fromOid(oid: ObjectIdentifier): X509SignatureAlgorithm? =
             registeredAlgorithms.firstOrNull { it.oid == oid }
