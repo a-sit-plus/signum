@@ -64,7 +64,6 @@ kotlin {
             api(libs.bignum)
             implementation(project(":internals"))
             api(libs.securerandom)
-            api(libs.kotlinx.coroutines.core)
         }
 
 
