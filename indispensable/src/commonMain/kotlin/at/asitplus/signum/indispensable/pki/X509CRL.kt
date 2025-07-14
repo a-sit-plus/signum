@@ -218,7 +218,7 @@ data class CRLEntry @Throws(Asn1Exception::class) constructor(
 /**
  * X509 CRL (Certificate List)
  * */
-class CertificateList @Throws(Asn1Exception::class) constructor(
+data class CertificateList @Throws(Asn1Exception::class) constructor(
     val tbsCertList: TbsCertList,
     val signatureAlgorithm: X509SignatureAlgorithm,
     val signature: CryptoSignature
