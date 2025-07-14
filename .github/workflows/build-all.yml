@@ -59,3 +59,9 @@ jobs:
           name: indispensable-cosef
           path: |
             indispensable-cosef/build/libs/*jar
+      - name: Upload jar indispensable-oids
+        uses: actions/upload-artifact@v3
+        with:
+          name: indispensable-oids
+          path: |
+            indispensable-oids/build/libs/*jar

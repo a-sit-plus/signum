@@ -3,16 +3,7 @@ import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
-
-buildscript {
-    dependencies {
-        classpath(libs.kotlinpoet)
-        classpath(libs.kotlinx.io.core)
-    }
-}
-
 plugins {
-    id("io.kotest")
     id("com.android.library")
     kotlin("multiplatform")
     kotlin("plugin.serialization")
@@ -68,6 +59,7 @@ kotlin {
 
         commonMain.dependencies {
             api(project(":indispensable-asn1"))
+            api(project(":indispensable-oids"))
             api(libs.multibase)
             api(libs.bignum)
             implementation(project(":internals"))
@@ -79,10 +71,6 @@ kotlin {
             dependencies {
                 implementation(kotest("property"))
             }
-            kotlin.srcDir(
-                project.layout.projectDirectory.dir("generated")
-                    .dir("commonTest").dir("kotlin")
-            )
         }
 
         androidJvmMain {
@@ -102,7 +90,6 @@ project.gradle.taskGraph.whenReady {
     }
 }
 
-
 exportXCFramework(
     "Indispensable",
     transitiveExports = false,
@@ -111,6 +98,7 @@ exportXCFramework(
     datetime(),
     kmmresult(),
     project(":indispensable-asn1"),
+    project(":indispensable-oids"),
     libs.bignum
 )
 
@@ -197,9 +185,6 @@ publishing {
     }
 }
 
-
-
-
 signing {
     val signingKeyId: String? by project
     val signingKey: String? by project
@@ -207,3 +192,4 @@ signing {
     useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
     sign(publishing.publications)
 }
+

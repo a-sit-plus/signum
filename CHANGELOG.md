@@ -12,6 +12,14 @@
 * **RSA encryption** using in-memory keys (no hardware-backed key management yet)
 * Add `SpecializedSymmetricEncryptionAlgorithm`
     * This allows `randomKey()` etc to operate on COSE/JWE algorithms
+* Move constants of `KnownOIDs` into a discrete module `indispensable-oids` as extensions on the `KnownOIDs` object
+    * **→ update your imports!**
+* OID descriptions:
+    * `KnownOIDs` now implements `MutableMap<ObjectIdentifier, String>` to store and look up descriptions of Object Identifiers 
+    * OIDs can hence be described using `KnownOIDs[theExpressionistsOid] = "Edvard Munch"`
+    * OID descriptions are exposed in accordance with the map interface: `KnownOIDs[theExpressionistsOid]` will yield `"Edvard Munch"` if this description was added prior.
+    * All OIDs present in `KnownOIDs` shipped with the `indispensable-oids` module come with a description. To actually add them to all known descriptions, call `KnownOIDs.describeAll()` once.
+* Deprecate `serialize()` and `deserialize()` methods in COSE+ JOSE data classes
 * Clean up some function signatures:
     * `SymmetricKey.toJsonWebKey` now returns `KmmResult`
     * `SymmetricEncryptionAlgorithm.toJweKwAlgorithm` now returns `KmmResult`
@@ -499,6 +507,7 @@ the Tag class just cannot be directly accessed from Swift and ObjC any more.
     * Expose `TbsCertificate.issuerAltNames` and `TbsCertificte.subjectAltnames`, which contain (somewhat) parsed
       `AlternativeNames` structures for easy access to `dnsName`. `iPAddress`, etc.
 
+ 
 ## 2.0
 
 ### 2.6.0

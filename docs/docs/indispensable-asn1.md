@@ -307,10 +307,12 @@ is not immediately initialized.
 Finally, it is possible to directly construct an OID from a `Uuid`, which directly constructs an OID in Subtree `2.35`, which
 takes the same path as evaluating a String, but with some shortcuts.
 
-This lazy-evaluation behaviour boils down to performance: Only very rarely, will you want to create an OID with components exceeding `UInt.MAX_VALUE`,
-but you will almost certainly want to encode a OID you created to ASN.1.
+This lazy-evaluation behaviour boils down to performance: Only very rarely will you want to create an OID with components exceeding `UInt.MAX_VALUE`,
+but you will almost certainly want to encode an OID you created to ASN.1.
 On the other hand, parsing an OID from ASN.1-encoded bytes and re-encoding it are both close to a NOOP (object creation aside).
 
+For debug purposes, it is possible to add descriptions to OIDs (or override existing ones) by associating an OID with its description.
+For example, using `KnownOIDs[theExpressionistsOid] = "Edvard Munch"` will cause `KnownOIDs[theExpressionistsOid]` to yield `"Edvard Munch"`.
 ### ASN.1 Integer
 The ASN.1 engine provides its own bigint-like class, `Asn1Integer`. It is capable of encoding arbitrary length signed integers
 to write and read them from ASN.1 structures.

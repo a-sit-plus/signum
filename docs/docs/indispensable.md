@@ -91,7 +91,7 @@ which is implemented by `CryptoPublicKey.EC`
     * `Authenticated` denotes a ciphertext produced by a `SymmetricEncryptionAlgorithm.Authenticated`, it also contains an `authTag` and, `aad`
     * `Authenticated.WithDedicatedMac` restricts `Ciphertext.Authenticated` to ciphertexts produced by a `SymmetricEncryptionAlgorithm.Authenticated.WithDedicatedMac`
 
-#### PKI-Related data Structures
+#### PKI-Related Data Structures
 The `pki` package contains data classes relevant in the PKI context:
 
 * `X509Certificate` does what you think it does
@@ -101,7 +101,7 @@ The `pki` package contains data classes relevant in the PKI context:
 * `Pkcs10CertificateRequest` contains a CSR abstraction
     * `Pcs10CertificateRequestAttributes` contains a CSR attribute extension
 
-##  Conversion from/to platform types
+##  Conversion from/to Platform Types
 
 Obviously, a world outside this library's data structures exists.
 The following functions provide interop functionality with platform types.
@@ -207,3 +207,12 @@ This module provides the following low-level addons for [Kotlin MP BigNum](https
 * `BigInteger.decodeFromAsn1ContentBytes()`
 * `encodeToAsn1Primitive()` produces an ASN.1 primitive  `BigInteger`
 * `encodeToAsn1ContentBytes()` producing the content bytes of an `Asn1Primitive` for `BigInteger`
+
+
+### Notes on Object Identifiers
+Signum also ships with a `indispensable-oids` module, included by default, which adds extension properties to `KnownOIDs` for all ASN.1 object identifiers from Peter Guttmann's
+[dumpasn1.cfg](https://www.cs.auckland.ac.nz/~pgut001/dumpasn1.cfg).
+Hence, handy constants such as `KnownOIDs.ecdsaWithSHA256` are available, but also rather obscure ones such as
+`KnownOIDs.asAdjacencyAttest`. To also describe these properties, call the `KnownOIDs.describeAll()` extension once.
+
+While it is convenient to have virtually the whole world's OIDs available as constants, including descriptions,, this will add a couple of megabytes to klibs and any XCode frameworks. Thus, it may make sense to exclude `indispensable-oids` from your framework export.

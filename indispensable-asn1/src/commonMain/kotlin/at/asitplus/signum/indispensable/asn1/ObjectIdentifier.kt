@@ -163,7 +163,9 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
          * @throws Asn1Exception all sorts of errors on invalid input
          */
         @Throws(Asn1Exception::class)
-        fun decodeFromAsn1ContentBytes(bytes: ByteArray): ObjectIdentifier = ObjectIdentifier(bytes = bytes, nodes = null)
+        fun decodeFromAsn1ContentBytes(bytes: ByteArray): ObjectIdentifier =
+            ObjectIdentifier(bytes = bytes, nodes = null)
+
         @Deprecated("misleading mane", ReplaceWith("decodeFromAsn1ContentBytes(rawValue)"))
         fun parse(rawValue: ByteArray): ObjectIdentifier = decodeFromAsn1ContentBytes(rawValue)
 
