@@ -23,9 +23,10 @@
 * Update to kotlinx.datetime 0.7.1.
     * This moves Instant and Clock to stdlib
     * (but introduces typealiases for easier migration)
+    * Also forces serialization 1.9.0
 * Update to latest conventions plugin:
     * Bouncy Castle 1.81!!
-    * Serialization 1.8.1
+    * Serialization 1.9.0
     * Coroutines 1.10.2
     * Ktor 3.1.2
     * Datetime 0.7.1
