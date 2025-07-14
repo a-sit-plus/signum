@@ -6,6 +6,7 @@ import kotlinx.io.Source
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.AbstractDecoder
@@ -206,6 +207,17 @@ class DerDecoder private constructor(
                     }
                 }
                 .also { index++ } as T
+
+            ByteArraySerializer() -> {
+                if (deserializer.descriptor.isAsn1BitString) {
+                    // Decode BitSet from ASN.1 BitString and convert to ByteArray
+                    val bitSet = processedElement.asPrimitive().asAsn1BitString().toBitSet()
+                    return bitSet.toByteArray().also { index++ } as T
+                } else {
+                    // Regular ByteArray decoding (OCTET STRING)
+                    return processedElement.asPrimitive().content.also { index++ } as T
+                }
+            }
         }
 
         // (3) Primitive kinds → defer to decodeValue()
