@@ -34,6 +34,9 @@ version = supremeVersion
 wireAndroidInstrumentedTests()
 
 
+//we only ever test on the simulator, so these two should never be enabled in the first place
+//however, kotest ksp wiring messes this up and forces us to build for something we never intend, and this breaks linking.
+//hence, we disable those
 tasks.configureEach {
     if (name == "linkDebugTestIosX64") {
         enabled = false

@@ -49,7 +49,7 @@ subprojects {
         val buildableTargets = getBuildableTargets()
         if (targets.size > buildableTargets.size) {
             logger.warn(
-                ">>>> The following targets are not buuildable on the current host: ${
+                ">>>> The following targets are not buildable on the current host: ${
                     targets.map { it.name }.toMutableSet().apply { removeAll(buildableTargets.map { it.name }) }
                         .joinToString(", ")
                 } <<<<"
