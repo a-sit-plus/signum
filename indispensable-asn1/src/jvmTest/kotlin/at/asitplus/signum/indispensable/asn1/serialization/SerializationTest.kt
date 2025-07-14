@@ -1,14 +1,10 @@
 package at.asitplus.signum.indispensable.asn1.serialization.api
 
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.asn1.Asn1OctetString
-import at.asitplus.signum.indispensable.asn1.Asn1String
-import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
-import at.asitplus.signum.indispensable.asn1.serialization.Asn1nnotation
-import at.asitplus.signum.indispensable.asn1.serialization.Layer
-import at.asitplus.signum.indispensable.asn1.serialization.Type
-import at.asitplus.signum.indispensable.asn1.serialization.decodeFromDer
-import at.asitplus.signum.indispensable.asn1.serialization.encodeToDer
+import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
+import at.asitplus.signum.indispensable.asn1.serialization.*
+import at.asitplus.signum.indispensable.pki.*
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
@@ -18,9 +14,7 @@ import java.security.KeyPairGenerator
 import kotlin.random.Random
 
 
-//TODO much more tests
-//SET
-//nesting proper
+//TODO more tests
 //test with json serializer as well
 
 @OptIn(ExperimentalStdlibApi::class)
@@ -30,60 +24,109 @@ class SerializationTest : FreeSpec({
         val str = Asn1String.UTF8("foo")
         val serialized = DER.encodeToDer(str).also { println(it.toHexString()) }
 
+        //showcases the string bugginess
         DER.decodeFromDer<Asn1String>(serialized) shouldBe str
         DER.decodeFromDer<Asn1String.UTF8>(serialized) shouldBe str
-        val strd: Asn1String = DER.decodeFromDer<Asn1String.BMP>(serialized)
-
-
     }
 
+    "ASN.1 specific extensions to overpower star projection limitations" - {
 
-    "EC-256 Key Generation and Signing" {
-        // Generate EC-256 keypair using JCA
-        val keyPairGenerator = KeyPairGenerator.getInstance("EC")
-        val ecGenParameterSpec = java.security.spec.ECGenParameterSpec("secp256r1") // P-256 curve
-        keyPairGenerator.initialize(ecGenParameterSpec)
-        val keyPair = keyPairGenerator.generateKeyPair()
+        "EC-256 Key Generation and Signing" {
+            // Generate EC-256 keypair using JCA
+            val keyPairGenerator = KeyPairGenerator.getInstance("EC")
+            val ecGenParameterSpec = java.security.spec.ECGenParameterSpec("secp256r1") // P-256 curve
+            keyPairGenerator.initialize(ecGenParameterSpec)
+            val keyPair = keyPairGenerator.generateKeyPair()
 
-        val privateKey = keyPair.private
-        val publicKey = keyPair.public
+            val privateKey = keyPair.private
+            val publicKey = keyPair.public
 
-        val signumPrivateKey = privateKey.toCryptoPrivateKey().getOrThrow()
-        val signumPublicKey = publicKey.toCryptoPublicKey().getOrThrow()
+            val signumPrivateKey = privateKey.toCryptoPrivateKey().getOrThrow()
+            val signumPublicKey = publicKey.toCryptoPublicKey().getOrThrow()
 
-        signumPrivateKey.encodeToDer() shouldBe DER.encodeToDer(signumPrivateKey)
-        DER.decodeFromDer<CryptoPrivateKey>(signumPrivateKey.encodeToDer()) shouldBe signumPrivateKey
+            signumPrivateKey.encodeToDer() shouldBe DER.encodeToDer(signumPrivateKey)
+            DER.decodeFromDer<CryptoPrivateKey>(signumPrivateKey.encodeToDer()) shouldBe signumPrivateKey
+            DER.decodeFromDer<CryptoPrivateKey.WithPublicKey<*>>(signumPrivateKey.encodeToDer()) shouldBe signumPrivateKey
 
-        signumPublicKey.encodeToDer() shouldBe DER.encodeToDer(signumPublicKey)
-        DER.decodeFromDer<CryptoPublicKey>(signumPublicKey.encodeToDer()) shouldBe signumPublicKey
+            DER.decodeFromTlv<CryptoPrivateKey>(signumPrivateKey.encodeToTlv()) shouldBe signumPrivateKey
+            DER.decodeFromTlv<CryptoPrivateKey.WithPublicKey<*>>(signumPrivateKey.encodeToTlv()) shouldBe signumPrivateKey
 
-        // Generate some random data to sign
-        val dataToSign = Random.nextBytes(32) // 32 bytes of random data
-        println("Data to sign (hex): ${dataToSign.toHexString()}")
+            signumPublicKey.encodeToDer() shouldBe DER.encodeToDer(signumPublicKey)
+            DER.decodeFromDer<CryptoPublicKey>(signumPublicKey.encodeToDer()) shouldBe signumPublicKey
+            DER.decodeFromTlv<CryptoPublicKey>(signumPublicKey.encodeToTlv()) shouldBe signumPublicKey
 
-        // Create signature instance
-        val signature = java.security.Signature.getInstance("SHA256withECDSA")
 
-        // Sign the data
-        signature.initSign(privateKey)
-        signature.update(dataToSign)
-        val signatureBytes = signature.sign()
+            // Generate some random data to sign
+            val dataToSign = Random.nextBytes(32) // 32 bytes of random data
+            println("Data to sign (hex): ${dataToSign.toHexString()}")
 
-        val signumSig = CryptoSignature.decodeFromDer(signatureBytes).shouldBeInstanceOf<CryptoSignature.EC>()
-        DER.decodeFromDer<CryptoSignature>(signatureBytes) shouldBe signumSig
+            // Create signature instance
+            val signature = java.security.Signature.getInstance("SHA256withECDSA")
 
-    }
+            // Sign the data
+            signature.initSign(privateKey)
+            signature.update(dataToSign)
+            val signatureBytes = signature.sign()
 
-    "Annotation Order" {
-        val outerOctet = DER.encodeToDer(OuterOctetInnerTag())
-        val nothing = DER.encodeToDer(NothingOnClass("foo"))
-        val outerTag = DER.encodeToDer(OuterTagInnerOctet())
+            val signumSig = CryptoSignature.decodeFromDer(signatureBytes).shouldBeInstanceOf<CryptoSignature.EC>()
+            DER.decodeFromDer<CryptoSignature>(signatureBytes) shouldBe signumSig
+        }
 
-        println(nothing.toHexString())
-        println(outerOctet.toHexString())
-        println(outerTag.toHexString())
+        "CSR" {
+            val keyPairGenerator = KeyPairGenerator.getInstance("EC")
+            val ecGenParameterSpec = java.security.spec.ECGenParameterSpec("secp256r1") // P-256 curve
+            keyPairGenerator.initialize(ecGenParameterSpec)
+            val keyPair = keyPairGenerator.generateKeyPair()
 
-        DER.decodeFromDer<OuterOctetInnerTag>(outerOctet)
+            val privateKey = keyPair.private
+            val publicKey = keyPair.public
+
+            val signumPublicKey = publicKey.toCryptoPublicKey().getOrThrow()
+
+            val tbsCSR = TbsCertificationRequest(
+                subjectName = listOf(
+                    RelativeDistinguishedName(AttributeTypeAndValue.CommonName("AT".encodeToAsn1Primitive()))
+                ),
+                publicKey = signumPublicKey,
+                extensions = listOf(
+                    X509CertificateExtension(
+                        KnownOIDs.basicConstraints,
+                        critical = true,
+                        value = Asn1EncapsulatingOctetString(listOf(Asn1Null))
+                    )
+                ),
+                attributes = listOf(
+                    Pkcs10CertificationRequestAttribute(
+                        KnownOIDs.extensions,
+                        3.encodeToAsn1Primitive()
+                    )
+                )
+            )
+            val encoded = DER.encodeToDer(tbsCSR)
+            encoded shouldBe tbsCSR.encodeToDer()
+            DER.decodeFromDer<TbsCertificationRequest>(encoded) shouldBe tbsCSR
+
+            // Create signature instance
+            val signature = java.security.Signature.getInstance("SHA256withECDSA")
+
+            // Sign the data
+            signature.initSign(privateKey)
+            signature.update(encoded)
+            val signatureBytes = signature.sign()
+
+            val signumSig = CryptoSignature.decodeFromDer(signatureBytes).shouldBeInstanceOf<CryptoSignature.EC>()
+
+            val csr = Pkcs10CertificationRequest(
+                tbsCSR, X509SignatureAlgorithm.ES256,
+                signumSig
+            )
+
+            val csrEncoded = DER.encodeToDer(csr)
+            csrEncoded shouldBe csr.encodeToDer()
+            DER.decodeFromDer<Pkcs10CertificationRequest>(csrEncoded) shouldBe csr
+
+
+        }
     }
 
 
@@ -262,7 +305,15 @@ class SerializationTest : FreeSpec({
     }
 
     "SET semantics" {
+        val set = setOf("Foo", "Bar", "Baz")
+        DER.decodeFromDer<Set<String>>(DER.encodeToDer(set).also { println("SET ${it.toHexString()}") }) shouldBe set
+    }
 
+    "Bits and Bytes" {
+        val empty = byteArrayOf()
+        DER.decodeFromDer<ByteArray>(DER.encodeToDer(empty).also { println(it.toHexString()) }) shouldBe empty
+        val threeBytes = byteArrayOf(1, 2, 3)
+        DER.decodeFromDer<ByteArray>(DER.encodeToDer(threeBytes).also { println(it.toHexString()) }) shouldBe threeBytes
     }
 
     "Writing" {

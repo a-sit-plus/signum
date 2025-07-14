@@ -242,14 +242,6 @@ object Asn1 {
     /** Creates a REAL [Asn1Primitive] from [value] */
     fun Real(value: Double) = value.encodeToAsn1Primitive()
 
-
-    /** Creates a REAL [Asn1Primitive] from [value] */
-    fun Real(value: Float) = value.encodeToAsn1Primitive()
-
-    /** Creates a REAL [Asn1Primitive] from [value] */
-    fun Real(value: Double) = value.encodeToAsn1Primitive()
-
-
     /** Creates an OCTET STRING [Asn1Element] from [bytes] */
     fun OctetString(bytes: ByteArray) = bytes.encodeToAsn1OctetStringPrimitive()
 

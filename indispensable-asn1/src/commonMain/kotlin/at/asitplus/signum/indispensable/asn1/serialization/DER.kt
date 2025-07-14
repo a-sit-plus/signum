@@ -28,9 +28,13 @@ inline fun <reified T> DER.encodeToTlv(value: T) = encodeToTlv(serializer(), val
 
 
 @ExperimentalSerializationApi
+@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+@kotlin.internal.LowPriorityInOverloadResolution
 inline fun <reified T> DER.decodeFromDer(source: ByteArray): T = decodeFromDer(source, serializer())
 
 @ExperimentalSerializationApi
+@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+@kotlin.internal.LowPriorityInOverloadResolution
 inline fun <reified T> DER.decodeFromTlv(source: Asn1Element): T = decodeFromTlv(source, serializer())
 
 @ExperimentalSerializationApi
