@@ -1,40 +1,75 @@
 name: Publish Indispensable
 on: workflow_dispatch
+
 permissions:
   contents: read
-  pages: write
+  pages:    write
   id-token: write
+
+env: &gradle-env
+  ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.PUBLISH_SIGNING_KEYID }}
+  ORG_GRADLE_PROJECT_signingKey:  ${{ secrets.PUBLISH_SIGNING_KEY }}
+  ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.PUBLISH_SIGNING_PASSWORD }}
+  ORG_GRADLE_PROJECT_sonatypeUsername: ${{ secrets.PUBLISH_SONATYPE_USER }}
+  ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.PUBLISH_SONATYPE_PASSWORD }}
+
 jobs:
-  build:
-    runs-on: macos-latest
+
+  publish:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           submodules: recursive
       - uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: temurin
+          java-version: "17"
+
       - uses: maxim-lobanov/setup-xcode@v1
+        if: runner.os == 'macOS'
         with:
           xcode-version: 16.2.0
-      - name: Publish to Sonatype
-        run: ./gradlew clean internals:publishToSonatype indispensable-asn1:publishToSonatype indispensable-oids:publishToSonatype indispensable:publishToSonatype indispensable-cosef:publishToSonatype indispensable-josef:publishToSonatype closeSonatypeStagingRepository
-        env:
-          ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.PUBLISH_SIGNING_KEYID }}
-          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.PUBLISH_SIGNING_KEY }}
-          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.PUBLISH_SIGNING_PASSWORD }}
-          ORG_GRADLE_PROJECT_sonatypeUsername: ${{ secrets.PUBLISH_SONATYPE_USER }}
-          ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.PUBLISH_SONATYPE_PASSWORD }}
+
+      - name: Publish modules (upload only)
+        run: |
+          ./gradlew clean \
+            internals:publishToSonatype \
+            indispensable-asn1:publishToSonatype \
+            indispensable-oids:publishToSonatype \
+            indispensable:publishToSonatype \
+            indispensable-cosef:publishToSonatype \
+            indispensable-josef:publishToSonatype
+        env: *gradle-env
+
+  close-staging:
+    needs: publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Close Sonatype staging repository
+        run: ./gradlew closeSonatypeStagingRepository
+        env: *gradle-env
+
   deploy-docs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    needs: close-staging
     runs-on: macos-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           submodules: recursive
       - uses: actions/setup-java@v3

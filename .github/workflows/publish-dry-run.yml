@@ -3,72 +3,67 @@ on:
   workflow_dispatch:
     inputs:
       kotlin-version:
-        description: 'Override Kotlin version?'
+        description: Override Kotlin version?
         required: false
         default: ''
         type: string
       kotest-version:
-        description: 'Override Kotest version?'
+        description: Override Kotest version?
         required: false
         default: ''
         type: string
       ksp-version:
-        description: 'Override KSP version? (full version string)?'
+        description: Override KSP version (full string)?
         required: false
         default: ''
         type: string
 permissions:
   contents: read
-  pages: write
+  pages:    write
   id-token: write
 jobs:
   build:
-    runs-on: macos-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
     env:
       KOTLIN_VERSION_ENV: ${{ inputs.kotlin-version }}
       KOTEST_VERSION_ENV: ${{ inputs.kotest-version }}
-      KSP_VERSION_ENV: ${{ inputs.ksp-version }}
+      KSP_VERSION_ENV:    ${{ inputs.ksp-version }}
+      ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.PUBLISH_SIGNING_KEYID }}
+      ORG_GRADLE_PROJECT_signingKey:  ${{ secrets.PUBLISH_SIGNING_KEY }}
+      ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.PUBLISH_SIGNING_PASSWORD }}
+      ORG_GRADLE_PROJECT_sonatypeUsername: ${{ secrets.PUBLISH_SONATYPE_USER }}
+      ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.PUBLISH_SONATYPE_PASSWORD }}
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           submodules: recursive
+
       - uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
       - uses: maxim-lobanov/setup-xcode@v1
+        if: runner.os == 'macOS'
         with:
           xcode-version: 16.2.0
+
       - name: Set up Homebrew
-        id: set-up-homebrew
+        if: runner.os == 'macOS'
         uses: Homebrew/actions/setup-homebrew@master
       - name: Install deps
+        if: runner.os == 'macOS'
         run: brew install cairo freetype libffi libjpeg libpng zlib
-      - name: Publish to Maven Local
+
+      - name: Publish to Maven Local (all publications)
         run: ./gradlew clean publishAllPublicationsToMavenLocal
-        env:
-          ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.PUBLISH_SIGNING_KEYID }}
-          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.PUBLISH_SIGNING_KEY }}
-          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.PUBLISH_SIGNING_PASSWORD }}
-          ORG_GRADLE_PROJECT_sonatypeUsername: ${{ secrets.PUBLISH_SONATYPE_USER }}
-          ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.PUBLISH_SONATYPE_PASSWORD }}
-  deploy-docs:
-    runs-on: macos-latest
-    env:
-      KOTLIN_VERSION_ENV: ${{ inputs.kotlin-version }}
-      KOTEST_VERSION_ENV: ${{ inputs.kotest-version }}
-      KSP_VERSION_ENV: ${{ inputs.ksp-version }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          submodules: recursive
-      - uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+
       - uses: actions/setup-python@v5
+        if: runner.os == 'macOS'
         with:
           python-version: 3.x
       - run: pip install mkdocs-material==9.5.40
@@ -77,3 +72,57 @@ jobs:
         run: |
           export DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib
           ./gradlew mkDocsSite
+
+      - name: Capture file tree of Maven-local artifacts
+        shell: bash
+        run: |
+          SIGNUM_ROOT="$HOME/.m2/repository/at/asitplus/signum"
+          if [ -d "$SIGNUM_ROOT" ]; then
+            cd "$SIGNUM_ROOT"
+            # Store the relative file list
+            find . -type f | sort > signum-tree.txt
+          else
+            echo "No Signum artifacts found" > signum-tree.txt
+          fi
+
+      - name: Upload tree list for this runner
+        uses: actions/upload-artifact@v4
+        with:
+          name: signum-tree-${{ matrix.os }}
+          path: signum-tree.txt
+
+  list-artifacts:
+    needs: build               # waits for every matrix leg
+    runs-on: ubuntu-latest
+    if: always()                 # still runs even if one leg failed
+
+    steps:
+      - name: Download all tree files
+        uses: actions/download-artifact@v4
+        with:
+          name: signum-tree-*
+          path: trees
+
+      - name: Merge & deduplicate paths and produce coordinates
+        shell: bash
+        run: |
+          cat trees/* > all_paths.txt
+
+          # Build unique GAV coordinates from the paths
+          awk -F/ 'NF>=3 {print "at.asitplus.signum:" $2 ":" $3}' all_paths.txt \
+            | sort -u > all_artifacts.txt
+
+          # Add nice summary to the run page
+          {
+            echo '### at.asitplus.signum artifacts (dry-run)'
+            echo
+            cat all_artifacts.txt
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload combined lists
+        uses: actions/upload-artifact@v4
+        with:
+          name: signum-tree-merged
+          path: |
+            all_paths.txt
+            all_artifacts.txt
