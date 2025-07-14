@@ -58,6 +58,33 @@ jobs:
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.PUBLISH_SIGNING_PASSWORD }}
           ORG_GRADLE_PROJECT_sonatypeUsername: ${{ secrets.PUBLISH_SONATYPE_USER }}
           ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.PUBLISH_SONATYPE_PASSWORD }}
+
+      - name: List published Maven-local artifacts
+        if: success() || failure()        # always run so the table appears even if publish failed
+        shell: bash
+        run: |
+          ART_DIR="./repo/at/asitplus/signum"
+          ls -la $ART_DIR
+          # Header
+          {
+            echo "### Maven-local artifacts for \`at.asitplus.signum\`"
+            echo ""
+            echo "| Module | Version | File |"
+            echo "|--------|---------|------|"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Abort early if nothing was written
+          [[ -d "$ART_DIR" ]] || { echo "| _No artifacts found_ |  |  |" >> "$GITHUB_STEP_SUMMARY"; exit 0; }
+
+          # Collect artifacts (jar / klib / aar / pom) and append table rows
+          find "$ART_DIR" -type f \( -name "*.jar" -o -name "*.klib" -o -name "*.aar" -o -name "*.pom" \) \
+            | sort \
+            | while read -r file; do
+                rel="${file#${ART_DIR}/}"        # => module/version/filename
+                IFS='/' read -r module version filename <<< "$rel"
+                echo "| \`$module\` | \`$version\` | \`$filename\` |" >> "$GITHUB_STEP_SUMMARY"
+              done
+
   deploy-docs:
     runs-on: macos-latest
     env:
@@ -82,29 +109,3 @@ jobs:
         run: |
           export DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib
           ./gradlew mkDocsSite
-
-      - name: List published Maven-local artifacts
-        if: success() || failure()        # always run so the table appears even if publish failed
-        shell: bash
-        run: |
-          ART_DIR="./repo/at/asitplus/signum"
-          ls -la $ART_DIR
-          # Header
-          {
-            echo "### Maven-local artifacts for \`at.asitplus.signum\`"
-            echo ""
-            echo "| Module | Version | File |"
-            echo "|--------|---------|------|"
-          } >> "$GITHUB_STEP_SUMMARY"
-          
-          # Abort early if nothing was written
-          [[ -d "$ART_DIR" ]] || { echo "| _No artifacts found_ |  |  |" >> "$GITHUB_STEP_SUMMARY"; exit 0; }
-          
-          # Collect artifacts (jar / klib / aar / pom) and append table rows
-          find "$ART_DIR" -type f \( -name "*.jar" -o -name "*.klib" -o -name "*.aar" -o -name "*.pom" \) \
-            | sort \
-            | while read -r file; do
-                rel="${file#${ART_DIR}/}"        # => module/version/filename
-                IFS='/' read -r module version filename <<< "$rel"
-                echo "| \`$module\` | \`$version\` | \`$filename\` |" >> "$GITHUB_STEP_SUMMARY"
-              done
