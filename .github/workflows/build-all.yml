@@ -1,8 +1,29 @@
 name: build
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      kotlin-version:
+        description: 'Override Kotlin version?'
+        required: false
+        default: ''
+        type: string
+      kotest-version:
+        description: 'Override Kotest version?'
+        required: false
+        default: ''
+        type: string
+      ksp-version:
+        description: 'Override KSP version? (full version string)?'
+        required: false
+        default: ''
+        type: string
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
+    env:
+      KOTLIN_VERSION_ENV: ${{ inputs.kotlin-version }}
+      KOTEST_VERSION_ENV: ${{ inputs.kotest-version }}
+      KSP_VERSION_ENV: ${{ inputs.ksp-version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3

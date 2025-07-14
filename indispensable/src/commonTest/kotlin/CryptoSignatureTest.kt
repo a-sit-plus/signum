@@ -1,14 +1,15 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.asn1.encoding.toTwosComplementByteArray
+import at.asitplus.test.FreeSpec
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.toBigInteger
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
 class CryptoSignatureTest : FreeSpec({
+
 
     val values = (1..Byte.MAX_VALUE).toMutableSet()
 

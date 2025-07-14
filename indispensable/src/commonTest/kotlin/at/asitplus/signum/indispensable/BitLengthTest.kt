@@ -3,11 +3,13 @@ package at.asitplus.signum.indispensable
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.misc.bytes
-import io.kotest.core.spec.style.FreeSpec
+
+import at.asitplus.test.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
 class BitLengthTest : FreeSpec({
+   
     "Small toy values" {
         BitLength(0u).run {
             this shouldBe 0.bit

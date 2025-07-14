@@ -12,7 +12,7 @@ import at.asitplus.signum.supreme.symmetric.*
 import at.asitplus.signum.supreme.symmetric.discouraged.andPredefinedNonce
 import at.asitplus.signum.supreme.symmetric.discouraged.encrypt
 import io.kotest.assertions.withClue
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.test.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
@@ -25,8 +25,7 @@ import kotlin.random.nextUInt
 import kotlin.time.Clock
 
 @OptIn(HazardousMaterials::class)
-@ExperimentalStdlibApi
-class `00SymmetricTest` : FreeSpec({
+class SymmetricTest : FreeSpec({
 
 
     "README" {

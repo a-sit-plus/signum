@@ -1,13 +1,14 @@
 package at.asitplus.signum.indispensable.kdf
 
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1ContentBytes
-import io.kotest.core.spec.style.FreeSpec
+
+import at.asitplus.test.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
 class KdfTest: FreeSpec( {
-
+   
     "Invoke Overrides"  {
         //withData is not working in all targets
         (List(10000) { it+1 }).forEach {

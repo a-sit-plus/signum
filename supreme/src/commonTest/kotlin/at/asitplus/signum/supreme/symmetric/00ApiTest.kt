@@ -3,7 +3,7 @@ package at.asitplus.signum.supreme.symmetric
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.succeed
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.test.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -11,7 +11,7 @@ import kotlinx.coroutines.runBlocking
 import kotlin.random.Random
 
 @OptIn(HazardousMaterials::class)
-class `00ApiTest` : FreeSpec({
+class ApiTest : FreeSpec({
 
     "Utterly Untyped v2" - {
         withData(

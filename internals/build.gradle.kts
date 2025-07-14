@@ -9,6 +9,7 @@ buildscript {
 }
 
 plugins {
+    id("io.kotest")
     id("com.android.library")
     kotlin("multiplatform")
     kotlin("plugin.serialization")
@@ -31,6 +32,7 @@ kotlin {
     iosX64()
     iosArm64()
     iosSimulatorArm64()
+    // watchosDeviceArm64()
     watchosSimulatorArm64()
     watchosX64()
     watchosArm32()
@@ -42,7 +44,6 @@ kotlin {
     androidNativeX86()
     androidNativeArm32()
     androidNativeArm64()
-
     listOf(
         js(IR).apply { browser { testTask { enabled = false } } },
         @OptIn(ExperimentalWasmDsl::class)

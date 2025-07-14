@@ -17,7 +17,6 @@ plugins {
     id("com.android.library")
     kotlin("multiplatform")
     kotlin("plugin.serialization")
-    id("org.jetbrains.dokka")
     id("signing")
     id("at.asitplus.gradle.conventions")
     id("io.github.ttypic.swiftklib") version "0.6.4"
@@ -33,6 +32,20 @@ val supremeVersion: String by extra
 version = supremeVersion
 
 wireAndroidInstrumentedTests()
+
+
+//we only ever test on the simulator, so these two should never be enabled in the first place
+//however, kotest ksp wiring messes this up and forces us to build for something we never intend, and this breaks linking.
+//hence, we disable those
+tasks.configureEach {
+    if (name == "linkDebugTestIosX64") {
+        enabled = false
+    }
+    if (name == "iosX64Test") {
+        enabled = false
+    }
+}
+
 
 kotlin {
     compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")

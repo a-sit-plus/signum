@@ -1,7 +1,6 @@
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.test.FreeSpec
 import io.kotest.matchers.shouldNotBe
 
-@ExperimentalStdlibApi
 class ProviderTest : FreeSpec({
 
     "This dummy test" {

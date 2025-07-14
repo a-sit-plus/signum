@@ -15,12 +15,16 @@ import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.test.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.kotest.property.azstring
+import io.kotest.property.Arb
+import io.kotest.property.RandomSource
+import io.kotest.property.arbitrary.Codepoint
+import io.kotest.property.arbitrary.az
+import io.kotest.property.arbitrary.string
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import java.security.KeyPairGenerator
 import java.security.interfaces.ECPublicKey
@@ -144,7 +148,9 @@ class JwkTest : FreeSpec({
         key.keyId shouldBe null
         val cpk = key.toCryptoPublicKey().getOrThrow()
         cpk.toJsonWebKey().keyId shouldBe null
-        val kid = Random.azstring(16)
+        val kid = Arb.string(minSize = 16, maxSize = 16, Codepoint.az()).sample(
+            RandomSource.default()
+        ).value
         cpk.toJsonWebKey(keyId = kid).keyId shouldBe kid
     }
 })

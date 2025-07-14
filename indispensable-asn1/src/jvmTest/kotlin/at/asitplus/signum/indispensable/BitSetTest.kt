@@ -4,7 +4,7 @@ import at.asitplus.signum.indispensable.asn1.memDump
 import at.asitplus.signum.indispensable.asn1.toBitSet
 import at.asitplus.signum.indispensable.asn1.toBitString
 import io.kotest.assertions.withClue
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.test.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb

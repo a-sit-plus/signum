@@ -1,15 +1,18 @@
+import at.asitplus.gradle.at.asitplus.gradle.getBuildableTargets
 import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
 plugins {
     val kotlinVer = System.getenv("KOTLIN_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotlin.get()
     val kotestVer = System.getenv("KOTEST_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotest.get()
+    val kspVer = System.getenv("KSP_VERSION_ENV")?.ifBlank { null } ?: "$kotlinVer-${libs.versions.ksp.get()}"
 
-    id("at.asitplus.gradle.conventions") version "20250708"
-    id("io.kotest.multiplatform") version kotestVer
+    id("at.asitplus.gradle.conventions") version "20250714"
+    id("io.kotest") version kotestVer
     kotlin("multiplatform") version kotlinVer apply false
     kotlin("plugin.serialization") version kotlinVer apply false
-    id("com.android.library") version "8.6.1" apply (false)
+    id("com.android.library") version libs.versions.agp.get() apply (false)
+    id("com.google.devtools.ksp") version kspVer
 }
 group = "at.asitplus.signum"
 
@@ -40,20 +43,22 @@ allprojects {
     }
 }
 
-//work around IDEA bug that causes IDEA to believe we're at Kotlin 2.0
 subprojects {
     afterEvaluate {
-        val kotlinVer =
-            (System.getenv("KOTLIN_VERSION_ENV")?.ifBlank { null } ?: rootProject.libs.versions.kotlin.get()).split(".")
-        extensions.getByType<KotlinMultiplatformExtension>().apply {
-            compilerOptions {
-                apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.fromVersion(kotlinVer[0] + "." + kotlinVer[1]))
-                languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.fromVersion(kotlinVer[0] + "." + kotlinVer[1]))
-            }
+        val targets = project.extensions.getByType<KotlinMultiplatformExtension>().targets
+        val buildableTargets = getBuildableTargets()
+        if (targets.size > buildableTargets.size) {
+            logger.warn(
+                ">>>> The following targets are not buildable on the current host: ${
+                    targets.map { it.name }.toMutableSet().apply { removeAll(buildableTargets.map { it.name }) }
+                        .joinToString(", ")
+                } <<<<"
+            )
+            logger.warn("     disabling checkKotlinGradlePluginConfigurationErrors for project $name")
+            tasks.findByName("checkKotlinGradlePluginConfigurationErrors")?.enabled = false
         }
     }
 }
-
 
 tasks.register<Copy>("copyChangelog") {
     into(rootDir.resolve("docs/docs"))

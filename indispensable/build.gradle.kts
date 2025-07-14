@@ -1,14 +1,18 @@
 import at.asitplus.gradle.*
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
 
 buildscript {
     dependencies {
         classpath(libs.kotlinpoet)
+        classpath(libs.kotlinx.io.core)
     }
 }
 
 plugins {
+    id("io.kotest")
     id("com.android.library")
     kotlin("multiplatform")
     kotlin("plugin.serialization")
@@ -75,9 +79,13 @@ kotlin {
             dependencies {
                 implementation(kotest("property"))
             }
+            kotlin.srcDir(
+                project.layout.projectDirectory.dir("generated")
+                    .dir("commonTest").dir("kotlin")
+            )
         }
 
-         androidJvmMain {
+        androidJvmMain {
             dependencies {
                 api(bouncycastle("bcpkix"))
                 api(coroutines("jvm"))
@@ -93,6 +101,7 @@ project.gradle.taskGraph.whenReady {
         enabled = false
     }
 }
+
 
 exportXCFramework(
     "Indispensable",
@@ -187,6 +196,9 @@ publishing {
         }
     }
 }
+
+
+
 
 signing {
     val signingKeyId: String? by project

@@ -3,11 +3,13 @@ import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricKey
 import at.asitplus.signum.indispensable.symmetric.preferredMacKeyLength
 import at.asitplus.signum.indispensable.symmetric.randomKey
-import io.kotest.core.spec.style.FreeSpec
+
+import at.asitplus.test.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 
 class SymmetricEncryptionTest: FreeSpec({
+   
     withData(nameFn={ "Key generation: $it" }, SymmetricEncryptionAlgorithm.entries) { alg ->
         val key = alg.randomKey()
 
