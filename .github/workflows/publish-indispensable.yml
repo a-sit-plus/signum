@@ -30,13 +30,6 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Enable watchOS Device target
-        shell: bash
-        run: |
-          # replace “//watchosDeviceArm64() …” with “    watchosDeviceArm64()”
-          find . -name "build.gradle.kts" -print0 \
-            | xargs -0 sed -i.bak -E 's/^\s*\/\/watchosDeviceArm64\(\).*$/    watchosDeviceArm64()/'
-
       - uses: maxim-lobanov/setup-xcode@v1
         if: runner.os == 'macOS'
         with:
