@@ -19,5 +19,5 @@ jobs:
         if: success() || failure()
         with:
           name: All Tests
-          path: indispensable-asn1/build/test-results/**/TEST*.xml,indispensable/build/test-results/**/TEST*.xml,indispensable-josef/build/test-results/**/TEST*.xml,indispensable-cosef/build/test-results/**/TEST*.xml,supreme/build/test-results/**/TEST*.xml
+          path: indispensable-asn1/build/test-results/**/TEST*.xml,indispensable-oids/build/test-results/**/TEST*.xml,indispensable/build/test-results/**/TEST*.xml,indispensable-josef/build/test-results/**/TEST*.xml,indispensable-cosef/build/test-results/**/TEST*.xml,supreme/build/test-results/**/TEST*.xml
           reporter: java-junit
