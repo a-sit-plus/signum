@@ -50,8 +50,8 @@ jobs:
         uses: Homebrew/actions/setup-homebrew@master
       - name: Install deps
         run: brew install cairo freetype libffi libjpeg libpng zlib
-      - name: Publish to Maven Local
-        run: ./gradlew clean publishAllPublicationsToMavenLocal
+      - name: Publish to project-local repo
+        run: ./gradlew clean publishAllPublicationsToLocalRepository
         env:
           ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.PUBLISH_SIGNING_KEYID }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.PUBLISH_SIGNING_KEY }}
@@ -87,8 +87,8 @@ jobs:
         if: success() || failure()        # always run so the table appears even if publish failed
         shell: bash
         run: |
-          ART_DIR="${HOME}/.m2/repository/at/asitplus/signum"
-          
+          ART_DIR="./repo/at/asitplus/signum"
+          ls -la $ART_DIR
           # Header
           {
             echo "### Maven-local artifacts for \`at.asitplus.signum\`"
