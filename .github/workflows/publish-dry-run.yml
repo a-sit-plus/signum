@@ -52,6 +52,14 @@ jobs:
         with:
           xcode-version: 16.2.0
 
+      - name: Enable watchOS Device target
+        shell: bash
+        run: |
+          # replace “//watchosDeviceArm64() …” with “    watchosDeviceArm64()”
+          find . -name "build.gradle.kts" -print0 \
+            | xargs -0 sed -i.bak -E 's/^\s*\/\/watchosDeviceArm64\(\).*$/    watchosDeviceArm64()/'
+
+
       - name: Set up Homebrew
         if: runner.os == 'macOS'
         uses: Homebrew/actions/setup-homebrew@master
