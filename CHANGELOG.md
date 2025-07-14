@@ -10,9 +10,6 @@
     * HKDF
     * scrypt
 * **RSA encryption** using in-memory keys (no hardware-backed key management yet)
-* Strippable `KnownOIDs`
-    * Move `KnownOIDs` into a discrete module `indispensable-oids`
-    * Create a drop-in stub module `indispensable-noids` mirroring its signatures, s.t. `KnwonOIDs` can be excluded and replaced by this stub instead
 * Add `SpecializedSymmetricEncryptionAlgorithm`
     * This allows `randomKey()` etc to operate on COSE/JWE algorithms
 * Move constants of `KnownOIDs` into a discrete module `indispensable-oids` as extensions on the `KnownOIDs` object
@@ -25,6 +22,8 @@
     * Add `Asn1Null` object
     * Add human-readable ASN.1 element toString
     * Make Asn1OctetString interface sealed
+* Strippable `KnownOIDs`
+    * Move `KnownOIDs` into a discrete module `indispensable-oids`
 * OID descriptions:
     * `KnownOIDs` now implements `MutableMap<ObjectIdentifier, String>` to store and look up descriptions of Object Identifiers 
     * OIDs can hence be described using `KnownOIDs[theExpressionistsOid] = "Edvard Munch"`
