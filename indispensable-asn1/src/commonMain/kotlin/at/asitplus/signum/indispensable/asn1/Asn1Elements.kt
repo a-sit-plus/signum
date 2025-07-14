@@ -2,7 +2,6 @@
 
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
 import at.asitplus.signum.indispensable.asn1.encoding.*
@@ -467,7 +466,7 @@ sealed class Asn1Structure(
      */
     val isActuallySorted: Boolean by if (sortChildren) lazyOf(true) else lazy { children.sortedBy { it.tag } == children }
 
-    private val iterator by lazy { iterator() }
+    private val backwardsCompatibilityIterator by lazy { iterator() }
 
     /**
      * Returns the next child held by this structure. Useful for iterating over its children when parsing complex structures.
@@ -493,11 +492,11 @@ sealed class Asn1Structure(
      * ```
      */
     @Deprecated(
-        message = "Use Iterator inside decodeAs/decodeRethrowing",
+        message = "Use an explicit iterator()",
         level = DeprecationLevel.ERROR
     )
     @Throws(Asn1StructuralException::class)
-    fun nextChild() = iterator.next()
+    fun nextChild() = backwardsCompatibilityIterator.next()
 
     /**
      * Exception-free version of [nextChild]
@@ -522,10 +521,10 @@ sealed class Asn1Structure(
      * ```
      */
     @Deprecated(
-        message = "Use Iterator inside decodeAs/decodeRethrowing",
+        message = "Use an explicit iterator()",
         level = DeprecationLevel.ERROR
     )
-    fun nextChildOrNull() = iterator.nextOrNull()
+    fun nextChildOrNull() = backwardsCompatibilityIterator.nextOrNull()
 
     /**
      * Returns `true` if more children can be retrieved by [nextChild]. `false` otherwise
@@ -550,10 +549,10 @@ sealed class Asn1Structure(
      * ```
      */
     @Deprecated(
-        message = "Use Iterator inside decodeAs/decodeRethrowing",
+        message = "Use an explicit iterator()",
         level = DeprecationLevel.ERROR
     )
-    fun hasMoreChildren() = iterator.hasNext()
+    fun hasMoreChildren() = backwardsCompatibilityIterator.hasNext()
 
     /**
      * Returns the current child or `null`, if there are no children left
@@ -582,26 +581,35 @@ sealed class Asn1Structure(
      * ```
      */
     @Deprecated(
-        message = "Use Iterator inside decodeAs/decodeRethrowing",
+        message = "Use an explicit iterator()",
         level = DeprecationLevel.ERROR
     )
-    fun peek() = iterator.peek()
+    fun peek() = backwardsCompatibilityIterator.peek()
 
     /**
      * An iterator over a list of [Asn1Element] children within an ASN.1 structure
      * Designed for traversing ASN.1 components in decoding/parsing scenarios
      * */
     inner class Iterator(
-        private val children: List<Asn1Element>,
-        private var index: Int = 0
+        private var direction: Int = 1,
+        index: Int = 0
     ): kotlin.collections.Iterator<Asn1Element> {
+
+        var index: Int = index
+            private set
+
+        val isForward = direction == 1
 
         /**
          * Returns the next child held by this structure. Useful for iterating over its children when parsing complex structures.
          * @throws [NoSuchElementException] if no more children are available
          */
         override fun next() =
-            catching { children[index++] }.getOrElse { throw NoSuchElementException("No more content left") }
+            catchingUnwrapped {
+                val currentElement = children[index]
+                index += direction
+                currentElement
+            }.getOrElse { throw NoSuchElementException("No more content left") }
 
         /**
          * Exception-free version of [next]
@@ -620,13 +628,13 @@ sealed class Asn1Structure(
         fun peek() = if (!hasNext()) null else children[index]
 
         /**
-         * Returns iterator with reversed view
+         * Returns iterator with reversed direction
          * */
         fun reversed(): Iterator =
-            Iterator(children.reversed(), children.lastIndex - index)
+            Iterator(-direction, index)
     }
 
-    override operator fun iterator() = Iterator(children)
+    override operator fun iterator() = Iterator()
 
     /**
      * Decodes the content of this ASN.1 structure using the provided [decoder] lambda.
