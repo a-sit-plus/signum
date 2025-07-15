@@ -19,7 +19,6 @@ import kotlinx.serialization.modules.SerializersModule
 @ExperimentalSerializationApi
 class DerDecoder internal constructor(
     private val elements: List<Asn1Element>,
-    private val indent: String = "",
     override val serializersModule: SerializersModule = EmptySerializersModule()
 ) : AbstractDecoder() {
 
@@ -27,7 +26,7 @@ class DerDecoder internal constructor(
     internal constructor(
         source: Source,
         serializersModule: SerializersModule = EmptySerializersModule()
-    ) : this(source.readFullyToAsn1Elements().first, "", serializersModule)
+    ) : this(source.readFullyToAsn1Elements().first, serializersModule)
 
     private var index = 0
     private lateinit var propertyDescriptor: SerialDescriptor
@@ -59,7 +58,6 @@ class DerDecoder internal constructor(
                 if (element is Asn1Structure) {
                     DerDecoder(
                         element.children,
-                        indent = "$indent  ",
                         serializersModule = serializersModule
                     )
                 } else {
@@ -240,7 +238,6 @@ class DerDecoder internal constructor(
 
         val childDecoder = DerDecoder(
             elements = mutableListOf(processedElement),
-            indent = "$indent  ",
             serializersModule = serializersModule,
         )
 
