@@ -52,6 +52,11 @@ class SerializationTest : FreeSpec({
             DER.decodeFromDer<BitSetValueAnnotated>(
                 DER.encodeToDer(valueClassEmptyAnnotated).also { it.toHexString() shouldBe "040bbf8a3b07bf8a3903030100" }).bytes shouldBe valueClassEmptyAnnotated.bytes
 
+            val valueClassEmptyAnnotatedOverride= BitSetValueAnnotatedOverride(empty)
+
+            DER.decodeFromDer<BitSetValueAnnotatedOverride>(
+                DER.encodeToDer(valueClassEmptyAnnotatedOverride).also { it.toHexString() shouldBe "0409bf8a3b059f8a390100" }).bytes shouldBe valueClassEmptyAnnotatedOverride.bytes
+
         }
 
         "octet string" {

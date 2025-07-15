@@ -151,14 +151,14 @@ class DerDecoder internal constructor(
     override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
 
         val currentAnnotatedElement = elements[index]
-        val isBitString = propertyAnnotations.isAsn1BitString||pendingInlineAsn1BitString
-        pendingInlineAsn1BitString=false
+        val isBitString = propertyAnnotations.isAsn1BitString || pendingInlineAsn1BitString
+        pendingInlineAsn1BitString = false
         val propertyAnnotations = propertyAnnotations.asn1Layers
         val classLevelAnnotations = deserializer.descriptor.annotations.asn1Layers
 
         // Combine property and class-level annotations for processing
         val allAnnotations = (if (pendingInlineAnnotations.isNotEmpty())
-            pendingInlineAnnotations.removeLast() else emptyList()) +propertyAnnotations + classLevelAnnotations
+            pendingInlineAnnotations.removeLast() else emptyList()) + propertyAnnotations + classLevelAnnotations
 
         if (deserializer.descriptor.isInline) {
             // Let the framework do its inline-class magic
@@ -187,7 +187,7 @@ class DerDecoder internal constructor(
             // for the type being deserialized (when no annotations are present)
             if (allAnnotations.isEmpty()) {
                 if (isBitString) Asn1Element.Tag.BIT_STRING
-               else  getDefaultTagForDescriptor(deserializer.descriptor)
+                else getDefaultTagForDescriptor(deserializer.descriptor)
             } else {
                 null
             }
@@ -230,7 +230,9 @@ class DerDecoder internal constructor(
             ByteArraySerializer() -> {
                 if (isBitString) {
                     // Decode BitSet from ASN.1 BitString and convert to ByteArray
-                    val bitSet = processedElement.asPrimitive().asAsn1BitString().toBitSet()
+                    val bitSet =
+                        processedElement.asPrimitive().asAsn1BitString(tagToValidate ?: Asn1Element.Tag.BIT_STRING)
+                            .toBitSet()
                     return bitSet.toByteArray().also { index++ } as T
                 } else {
                     // Regular ByteArray decoding (OCTET STRING)
