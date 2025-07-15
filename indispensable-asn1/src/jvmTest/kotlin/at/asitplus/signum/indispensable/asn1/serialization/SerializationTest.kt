@@ -47,6 +47,11 @@ class SerializationTest : FreeSpec({
                 DER.encodeToDer(valueClass).also { it.toHexString() shouldBe "0304068040c0" }).bytes shouldBe valueClass.bytes
 
 
+            val valueClassEmptyAnnotated= BitSetValueAnnotated(empty)
+
+            DER.decodeFromDer<BitSetValueAnnotated>(
+                DER.encodeToDer(valueClassEmptyAnnotated).also { it.toHexString() shouldBe "040bbf8a3b07bf8a3903030100" }).bytes shouldBe valueClassEmptyAnnotated.bytes
+
         }
 
         "octet string" {
@@ -638,6 +643,33 @@ class OuterOctetInnerTag
 @Serializable
 @Asn1nnotation(asBitString = true)
 value class BitSetValue(val bytes: ByteArray)
+
+
+
+
+@JvmInline
+@Serializable
+@Asn1nnotation(
+    Layer(Type.OCTET_STRING),
+    Layer(Type.EXPLICIT_TAG, 1339uL),
+    Layer(Type.IMPLICIT_TAG, 1337uL),
+    Layer(Type.IMPLICIT_TAG, 1336uL),
+    asBitString = true,)
+value class BitSetValueAnnotatedOverride(val bytes: ByteArray)
+
+
+
+@JvmInline
+@Serializable
+@Asn1nnotation(
+    Layer(Type.OCTET_STRING),
+    Layer(Type.EXPLICIT_TAG, 1339uL),
+    Layer(Type.IMPLICIT_TAG, 1337uL),
+
+    Layer(Type.EXPLICIT_TAG, 1390uL),
+    asBitString = true,)
+value class BitSetValueAnnotated(val bytes: ByteArray)
+
 
 @Serializable
 data class BitSetNormal(
