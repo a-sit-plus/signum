@@ -7,7 +7,7 @@ plugins {
     val kotestVer = System.getenv("KOTEST_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotest.get()
     val kspVer = System.getenv("KSP_VERSION_ENV")?.ifBlank { null } ?: "$kotlinVer-${libs.versions.ksp.get()}"
 
-    id("at.asitplus.gradle.conventions") version "20250714"
+    id("at.asitplus.gradle.conventions") version "20250715-SNAPSHOT"
     id("io.kotest") version kotestVer
     kotlin("multiplatform") version kotlinVer apply false
     kotlin("plugin.serialization") version kotlinVer apply false
@@ -39,23 +39,6 @@ allprojects {
         maven {
             url = uri("https://raw.githubusercontent.com/a-sit-plus/gradle-conventions-plugin/mvn/repo")
             name = "aspConventions"
-        }
-    }
-}
-
-subprojects {
-    afterEvaluate {
-        val targets = project.extensions.getByType<KotlinMultiplatformExtension>().targets
-        val buildableTargets = getBuildableTargets()
-        if (targets.size > buildableTargets.size) {
-            logger.warn(
-                ">>>> The following targets are not buildable on the current host: ${
-                    targets.map { it.name }.toMutableSet().apply { removeAll(buildableTargets.map { it.name }) }
-                        .joinToString(", ")
-                } <<<<"
-            )
-            logger.warn("     disabling checkKotlinGradlePluginConfigurationErrors for project $name")
-            tasks.findByName("checkKotlinGradlePluginConfigurationErrors")?.enabled = false
         }
     }
 }

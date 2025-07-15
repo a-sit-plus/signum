@@ -12,7 +12,7 @@ jose = "9.31"
 kotlinpoet = "2.2.0"
 runner = "1.5.2"
 kotlincryptoRandom = "0.5.0"
-kotest= "6.0.0.M5"
+kotest= "6.0.0-LOCAL"
 
 [libraries]
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }
@@ -26,6 +26,3 @@ rules = { module = "androidx.test:rules", version.ref = "core" }
 runner = { module = "androidx.test:runner", version.ref = "runner" }
 multibase = { module = "at.asitplus:multibase", version.ref = "multibase" }
 securerandom = { module = "org.kotlincrypto.random:crypto-rand", version.ref = "kotlincryptoRandom" }
-
-## new Kotest M5
-kotest-framework-symbol-processor = { module = "io.kotest:kotest-framework-symbol-processor-jvm", version.ref = "kotest" }
