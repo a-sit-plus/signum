@@ -21,6 +21,7 @@ import kotlin.random.nextInt
 @OptIn(UnsafeIoApi::class)
 class OCSPParserTest : FreeSpec({
     val (ok, faulty) = readOCSPRequests()
+    val responses = readOCSPResponses()
 
     "OK OCSP requests should parse" - {
         withData(nameFn = { it.first }, ok) {
@@ -50,14 +51,29 @@ class OCSPParserTest : FreeSpec({
             }.getOrElse { println("W: ${crt.first} parsed too leniently") }
         }
     }
+
+    "Test response" - {
+        withData(nameFn = { it.first }, responses) {
+            val src = Asn1Element.parse(it.second).asSequence()
+            val decoded = OCSPResponse.decodeFromTlv(src)
+            println(decoded.response?.tbsResponseData?.responses?.get(0)?.revokedInfo)
+        }
+    }
 })
 
 
 private fun readOCSPRequests(): Pair<List<Pair<String, ByteArray>>, List<Pair<String, ByteArray>>> {
     val requests = File("./src/jvmTest/resources/ocsp").listFiles()
-        ?.filter { it.extension == "der" }
+        ?.filter { it.extension == "der" && it.name.contains("req") }
         .shouldNotBeNull()
     val ok = requests.filterNot { it.name.equals("req-duplicate-ext.der") }
     val faulty = requests.filter { it.name.equals("req-duplicate-ext.der") }
     return ok.map { it.name to it.readBytes() } to faulty.map { it.name to it.readBytes() }
+}
+
+private fun readOCSPResponses(): List<Pair<String, ByteArray>> {
+    val requests = File("./src/jvmTest/resources/ocsp").listFiles()
+        ?.filter { it.extension == "der" && it.name.contains("resp-") }
+        .shouldNotBeNull()
+    return requests.map { it.name to it.readBytes() }
 }
