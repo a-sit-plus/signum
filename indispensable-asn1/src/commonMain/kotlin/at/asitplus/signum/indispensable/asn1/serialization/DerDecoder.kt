@@ -157,7 +157,8 @@ class DerDecoder internal constructor(
         val classLevelAnnotations = deserializer.descriptor.annotations.asn1Layers
 
         // Combine property and class-level annotations for processing
-        val allAnnotations = propertyAnnotations + classLevelAnnotations
+        val allAnnotations = (if (pendingInlineAnnotations.isNotEmpty())
+            pendingInlineAnnotations.removeLast() else emptyList()) +propertyAnnotations + classLevelAnnotations
 
         if (deserializer.descriptor.isInline) {
             // Let the framework do its inline-class magic
