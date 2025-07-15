@@ -426,8 +426,9 @@ ASN.1 primitive as-is.
 Signum's ASN.1 engine provides pretty-printing capabilities: 
 `Asn1Encodable` and `Asn1Element` feature a `prettyPrint()` function.
 The output of this function is very verbose and aimed at humans debugging ASN.1 structures.
-It also ties in with OID descriptions.
-In case `KnownOIDs.describeAll()` (as part of [indispensable's ASN.1 addons](indispensable.md#notes-on-object-identifiers)) has been called at least once before pretty printing. In this case, OID descriptions will be printed, if available.  
+It also ties in with OID descriptions;
+any OIDs described using `KnownOIDs` will be annotated.
+You likely want to call `KnownOIDs.describeAll()` (a part of [indispensable's ASN.1 addons](indispensable.md#notes-on-object-identifiers)) before pretty printing.
 For tags that are well-known, pretty-printing will automatically decode contents on a best-effort basis and display them.
 A pretty-printed certificate will look as follows:
 
