@@ -72,10 +72,7 @@ internal class DerEncoder(
 
     // ADD at the top level of DerEncoder (right next to the other fields)
     private val pendingInlineAnnotations: ArrayDeque<Asn1nnotation> = ArrayDeque()
-    private var pendingInlineAsn1BitString = false
 
-    // ---------------------------------------------------------------------------
-// ADD inside the class body
     @OptIn(ExperimentalSerializationApi::class)
     override fun encodeInline(descriptor: SerialDescriptor): Encoder {
         val annotation = descriptor.annotations.find { it is Asn1nnotation } as? Asn1nnotation
@@ -92,20 +89,20 @@ internal class DerEncoder(
 
         // Property-level layers (coming from encodeElement)
         val propertyLayers = descriptorAndIndex
-            ?.let { (d, i) -> d.getElementAnnotations(i).asn1Layers }
-            ?: emptyList()
+            ?.let { (d, i) ->
+                descriptorAndIndex = null
+                d.getElementAnnotations(i).asn1Layers
+            } ?: emptyList()
 
         // Combine property layers with inline layers
         val annotations = propertyLayers + (inlineAnnotation?.layers?.toList() ?: emptyList())
-
-        descriptorAndIndex = null // Clear immediately after reading
 
         val targetBuffer = processAnnotationsAndGetTarget(annotations)
 
         val element = when (value) {
             is Asn1Element -> value
             is Asn1Encodable<*> -> value.encodeToTlv()
-            is ByteArray -> if (inlineAnnotation?.asBitString==true) Asn1BitString(value).encodeToTlv()
+            is ByteArray -> if (inlineAnnotation?.asBitString == true) Asn1BitString(value).encodeToTlv()
             else Asn1PrimitiveOctetString(value)
 
             is Boolean -> value.encodeToAsn1Primitive()
@@ -142,15 +139,13 @@ internal class DerEncoder(
         val inlineAnnotation = if (pendingInlineAnnotations.isNotEmpty())
             pendingInlineAnnotations.removeLast() else null
 
-        val currentDescriptorAndIndex = descriptorAndIndex
-        descriptorAndIndex = null
-
-        currentDescriptorAndIndex?.let { (descriptor, index) ->
+        descriptorAndIndex?.let { (descriptor, index) ->
+            descriptorAndIndex = null
             if (!descriptor.doEncodeNull(index)) return
 
             val propertyLayers = descriptor.getElementAnnotations(index).asn1Layers
             val allLayers = propertyLayers + (inlineAnnotation?.layers?.toList() ?: emptyList())
-        
+
             val targetBuffer = processAnnotationsAndGetTarget(allLayers)
             targetBuffer += Asn1ElementHolder.Element(Asn1.Null())
         }
@@ -185,11 +180,9 @@ internal class DerEncoder(
     override fun beginStructure(descriptor: SerialDescriptor): DerEncoder {
         // Get property-level annotations BEFORE clearing descriptorAndIndex
         val propertyAnnotations = descriptorAndIndex?.let { (descriptor, index) ->
+            descriptorAndIndex = null
             descriptor.getElementAnnotations(index).asn1Layers
-        } ?: emptyList<Layer>()
-
-        // Clear any pending element annotations since we're starting a new structure
-        descriptorAndIndex = null
+        } ?: emptyList()
 
         // Combine property-level annotations with class-level annotations
         // Property annotations should be applied first (outermost), then class annotations
@@ -237,49 +230,35 @@ internal class DerEncoder(
 
         return when (current.type) {
 
-            Type.IMPLICIT_TAG -> {
+            Type.IMPLICIT_TAG ->
                 // (Re-)wrap current buffer; newest tag overrides previous ones
-                val wrappedBuffer =
-                    if (targetBuffer is ImplicitTaggingBuffer)
-                        ImplicitTaggingBuffer(targetBuffer, current.tag) // overwrite
-                    else
-                        ImplicitTaggingBuffer(targetBuffer, current.tag)
-
-                processAnnotationsRecursively(remaining, wrappedBuffer)
-            }
+                processAnnotationsRecursively(remaining, ImplicitTaggingBuffer(targetBuffer, current.tag))
 
             Type.OCTET_STRING -> {
                 val childSerializer = DerEncoder(serializersModule)
-                val placeholder =
-                    Asn1ElementHolder.NestedStructurePlaceholder.OctetString(
-                        childSerializer
-                    )
-                targetBuffer += placeholder
+                targetBuffer += Asn1ElementHolder.NestedStructurePlaceholder.OctetString(
+                    childSerializer
+                )
                 processAnnotationsRecursively(remaining, childSerializer.buffer)
             }
 
             Type.EXPLICIT_TAG -> {
                 val childSerializer = DerEncoder(serializersModule)
-                val placeholder =
-                    Asn1ElementHolder.NestedStructurePlaceholder.ExplicitTag(
-                        current.tag,
-                        childSerializer
-                    )
-                targetBuffer += placeholder
+                targetBuffer += Asn1ElementHolder.NestedStructurePlaceholder.ExplicitTag(
+                    current.tag,
+                    childSerializer
+                )
                 processAnnotationsRecursively(remaining, childSerializer.buffer)
             }
-
-            // All other annotations are ignored at this level
-            else -> processAnnotationsRecursively(remaining, targetBuffer)
         }
     }
 
 
     internal fun writeTo(destination: Sink) {
-        val finalizedElements = encodeToTLV()
-        finalizedElements.forEach { it.encodeTo(destination) }
+        encodeToTLV().forEach { it.encodeTo(destination) }
     }
 
+    //exists to keep the below function
     internal fun encodeToTLV() = finalizeElements(buffer)
 
     private fun finalizeElements(holders: List<Asn1ElementHolder>): List<Asn1Element> {
@@ -295,28 +274,27 @@ internal class DerEncoder(
 
             is Asn1ElementHolder.StructurePlaceholder -> {
                 val childElements = finalizeElements(holder.childSerializer.buffer)
-                if (holder.descriptor.isSetDescriptor) {
-                    Asn1Set(childElements)
-                } else {
-                    Asn1Sequence(childElements)
-                }
+                if (holder.descriptor.isSetDescriptor) Asn1Set(childElements)
+                else Asn1Sequence(childElements)
+
             }
 
             is Asn1ElementHolder.NestedStructurePlaceholder -> {
                 val childElements = finalizeElements(holder.childSerializer.buffer)
                 when (holder) {
-                    is Asn1ElementHolder.NestedStructurePlaceholder.OctetString -> Asn1OctetString(childElements)
-                    is Asn1ElementHolder.NestedStructurePlaceholder.ExplicitTag -> {
+                    is Asn1ElementHolder.NestedStructurePlaceholder.OctetString ->
+                        Asn1OctetString(childElements)
+
+                    is Asn1ElementHolder.NestedStructurePlaceholder.ExplicitTag ->
                         Asn1ExplicitlyTagged(holder.tag, childElements)
-                    }
+
                 }
             }
 
-            is Asn1ElementHolder.ImplicitlyTagged -> {
-                // Apply implicit tag to the finalized element
-                val finalizedElement = finalizeElement(holder.element)
-                finalizedElement.withImplicitTag(holder.tag)
-            }
+            // Apply implicit tag to the finalized element
+            is Asn1ElementHolder.ImplicitlyTagged ->
+                finalizeElement(holder.element).withImplicitTag(holder.tag)
+
         }
     }
 }
