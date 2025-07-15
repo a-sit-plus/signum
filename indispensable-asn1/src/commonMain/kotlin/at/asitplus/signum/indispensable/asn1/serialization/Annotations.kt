@@ -53,6 +53,8 @@ enum class Type {
     IMPLICIT_TAG;
 }
 
+internal val SerialDescriptor.asn1nnotation get() =annotations.find { it is Asn1nnotation } as? Asn1nnotation
+
 internal val Iterable<Annotation>.asn1Layers: List<Layer>
     get() = filterIsInstance<Asn1nnotation>().firstOrNull()?.layers?.asList() ?: emptyList()
 
