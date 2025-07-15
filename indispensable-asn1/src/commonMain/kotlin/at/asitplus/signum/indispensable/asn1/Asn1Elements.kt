@@ -352,7 +352,7 @@ sealed class Asn1Element(
             }
         }
 
-        val name by lazy {
+        val name get() =
             when (this) {
                 SET -> "SET"
                 SEQUENCE -> "SEQUENCE"
