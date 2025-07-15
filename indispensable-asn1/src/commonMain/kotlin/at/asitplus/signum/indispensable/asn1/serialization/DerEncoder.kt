@@ -11,6 +11,7 @@ import kotlinx.serialization.builtins.SetSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.AbstractEncoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
 
@@ -72,17 +73,30 @@ class DerEncoder(
     private var descriptorAndIndex: Pair<SerialDescriptor, Int>? = null
 
     override fun encodeValue(value: Any) {
-        val annotations = descriptorAndIndex?.let { (descriptor, index) ->
-            descriptor.getElementAnnotations(index).asn1Layers
-        } ?: emptyList<Layer>()
+        // 1. take (and remove) the innermost set of value-class annotations (if any)
+        val inlineLayers = if (pendingInlineAnnotations.isNotEmpty())
+            pendingInlineAnnotations.removeLast() else emptyList()
 
-        descriptorAndIndex = null // Clear immediately after reading
+        // 2. property-level layers (coming from encodeElement)
+        val propertyLayers = descriptorAndIndex
+            ?.let { (d, i) -> d.getElementAnnotations(i).asn1Layers }
+            ?: emptyList()
+
+        // 3. resulting annotation list – property first, then value-class
+        val annotations = propertyLayers + inlineLayers
+
+        descriptorAndIndex = null // clear immediately after reading
+
+        val bitString=  pendingInlineAsn1BitString
+        pendingInlineAsn1BitString=false
+
         val targetBuffer = processAnnotationsAndGetTarget(annotations)
+
 
         val element = when (value) {
             is Asn1Element -> value
             is Asn1Encodable<*> -> value.encodeToTlv()
-            is ByteArray -> Asn1PrimitiveOctetString(value)
+            is ByteArray -> if(bitString) Asn1BitString(BitSet.from(value)) .encodeToTlv()else  Asn1PrimitiveOctetString(value)
 
             is Boolean -> value.encodeToAsn1Primitive()
 
@@ -139,6 +153,28 @@ class DerEncoder(
         )
         targetBuffer += Asn1ElementHolder.Element(Asn1.Enumerated(index))
     }
+
+    // ADD at the top level of DerEncoder (right next to the other fields)
+    private val pendingInlineAnnotations: ArrayDeque<List<Layer>> = ArrayDeque()
+    private var pendingInlineAsn1BitString = false
+
+    // ---------------------------------------------------------------------------
+// ADD inside the class body
+    @OptIn(ExperimentalSerializationApi::class)
+    override fun encodeInline(descriptor: SerialDescriptor): Encoder {
+        /*
+         * For Kotlin value-classes the compiler–generated serializer calls
+         * `encodeInline` first and then encodes the single underlying property.
+         * We simply push the value-class specific annotation set on a stack and
+         * re-use the very same encoder instance so that the next encode*() call
+         * can pop and apply them.
+         */
+        pendingInlineAnnotations.addLast(descriptor.annotations.asn1Layers)
+         pendingInlineAsn1BitString = descriptor.isAsn1BitString
+
+        return this
+    }
+
 
     override fun <T> encodeSerializableValue(serializer: SerializationStrategy<T>, value: T) {
         if (serializer.descriptor == ByteArraySerializer().descriptor) {
