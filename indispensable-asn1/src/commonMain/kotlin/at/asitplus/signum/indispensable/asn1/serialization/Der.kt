@@ -16,6 +16,7 @@ class Der {
     }
 }
 
+//all fo the below must be extensions that statically resolve to allow for shadowing
 
 @ExperimentalSerializationApi
 inline fun <reified T> Der.encodeToDer(value: T) = encodeToDer(serializer(), value)
