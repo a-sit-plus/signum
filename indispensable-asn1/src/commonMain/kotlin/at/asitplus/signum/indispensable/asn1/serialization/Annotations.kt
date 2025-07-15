@@ -18,11 +18,9 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 annotation class Asn1nnotation(
     vararg val layers: Layer,
     val asBitString: Boolean = false,
-    val encodeNull: Boolean = false
+    val encodeNull: Boolean = false,
 )
 
-@SerialInfo
-@Target(allowedTargets = [])
 /**
  * Encapsulation layer allowing for:
  *   * EXPLICIT tagging requiring **a single tag value**
@@ -31,28 +29,33 @@ annotation class Asn1nnotation(
  *
  * through [Asn1nnotation].
  */
+@SerialInfo
+@Target(allowedTargets = [])
 annotation class Layer(
     val type: Type,
     vararg val singleTag: ULong
 )
 
+/**
+ * checked access to tag, only use this one
+ */
 val Layer.tag: ULong
     get() = when (this.type) {
         Type.OCTET_STRING -> throw ImplementationError("Cannot specify tag for OCTET STRING")
         Type.EXPLICIT_TAG, Type.IMPLICIT_TAG -> if (singleTag.size != 1) throw SerializationException("Exactly one single tag value must be specified, got: ${singleTag.size}") else singleTag.first()
     }
 
+/**
+ * Layer type crutch, since annotations are limited
+ */
 enum class Type {
     OCTET_STRING,
     EXPLICIT_TAG,
     IMPLICIT_TAG;
 }
 
-val Iterable<Annotation>.asn1Layers: List<Layer>
+internal val Iterable<Annotation>.asn1Layers: List<Layer>
     get() = filterIsInstance<Asn1nnotation>().firstOrNull()?.layers?.asList() ?: emptyList()
-
-//TODO: config to always keep nulls
-//these must be extensions that statically resolve to allow for shadowing
 
 internal val SerialDescriptor.isAsn1BitString: Boolean get() = annotations.isAsn1BitString
 internal val List<Annotation>.isAsn1BitString: Boolean get() = filterIsInstance<Asn1nnotation>().any { it.asBitString }

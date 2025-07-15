@@ -34,7 +34,7 @@ class Asn1BitString private constructor(
      * The transformation to [rawBytes] and the calculation of [numPaddingBits] happens
      * immediately in the constructor. Hence, modifications to the source BitSet have no effect on the resulting [Asn1BitString].
      *
-     * **BEWARE:** a bitset (as [BitSet] implements it) is, by definition only as long as the highest bit set!
+     * **BEWARE:** a bitset (as [BitSet] implements it) is, by definition, only as long as the highest bit set!
      * Hence, trailing zeroes are **ALWAYS** stripped. If you require tailing zeroes, the easiest quick-and-dirty hack to accomplish this in general is as follows:
      *
      *  - set the last bit you require as tailing zero to one
@@ -45,6 +45,9 @@ class Asn1BitString private constructor(
      */
     constructor(source: BitSet) : this(fromBitSet(source))
 
+    /**
+     * Constructs an ASN.1 BIT STRING with [source] used for [rawBytes] and zero padding bits
+     */
     constructor(source: ByteArray) : this(Pair(0x00.toByte(), source))
 
     /**

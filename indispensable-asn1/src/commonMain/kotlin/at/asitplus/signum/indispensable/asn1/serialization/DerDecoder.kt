@@ -24,7 +24,7 @@ class DerDecoder internal constructor(
 ) : AbstractDecoder() {
 
 
-    constructor(
+    internal constructor(
         source: Source,
         serializersModule: SerializersModule = EmptySerializersModule()
     ) : this(source.readFullyToAsn1Elements().first, "", serializersModule)
@@ -228,15 +228,13 @@ class DerDecoder internal constructor(
                 .also { index++ } as T
 
             ByteArraySerializer() -> {
-                if (isBitString) {
-                    // Decode BitSet from ASN.1 BitString and convert to ByteArray
-                    val bitSet =
-                        processedElement.asPrimitive().asAsn1BitString(tagToValidate ?: Asn1Element.Tag.BIT_STRING)
-                            .toBitSet()
-                    return bitSet.toByteArray().also { index++ } as T
+                // Decode BitSet from ASN.1 BitString and convert to ByteArray
+                return if (isBitString) {
+                    processedElement.asPrimitive()
+                        .asAsn1BitString(tagToValidate ?: Asn1Element.Tag.BIT_STRING).rawBytes.also { index++ } as T
                 } else {
                     // Regular ByteArray decoding (OCTET STRING)
-                    return processedElement.asPrimitive().content.also { index++ } as T
+                    processedElement.asPrimitive().content.also { index++ } as T
                 }
             }
         }

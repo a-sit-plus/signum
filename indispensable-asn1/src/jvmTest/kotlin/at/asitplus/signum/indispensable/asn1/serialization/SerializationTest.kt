@@ -33,7 +33,7 @@ class SerializationTest : FreeSpec({
             val normal = BitSetNormal(byteArrayOf(1, 2, 3))
 
             DER.decodeFromDer<BitSetNormal>(
-                DER.encodeToDer(normal).also { it.toHexString() shouldBe "30060304068040c0" }) shouldBe normal
+                DER.encodeToDer(normal).also { it.toHexString() shouldBe "3006030400010203" }) shouldBe normal
 
 
 
@@ -57,7 +57,7 @@ class SerializationTest : FreeSpec({
 
             DER.decodeFromDer<BitSetValue>(
                 DER.encodeToDer(valueClass)
-                    .also { it.toHexString() shouldBe "0304068040c0" }).bytes shouldBe valueClass.bytes
+                    .also { it.toHexString() shouldBe "030400010203" }).bytes shouldBe valueClass.bytes
 
 
             val valueClassEmptyAnnotated = BitSetValueAnnotated(empty)

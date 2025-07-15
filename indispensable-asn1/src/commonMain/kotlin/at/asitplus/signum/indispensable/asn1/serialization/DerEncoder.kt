@@ -16,8 +16,6 @@ import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
 
 
-//TODO value classes proper!
-
 /**
  * Holder for ASN.1 elements during serialization process.
  * Can hold either a concrete element or a placeholder that needs to be resolved later.
@@ -29,18 +27,18 @@ private sealed class Asn1ElementHolder {
         val descriptor: SerialDescriptor
     ) : Asn1ElementHolder()
 
+    //really nesting
     sealed class NestedStructurePlaceholder(
         val childSerializer: DerEncoder,
-        val annotations: List<Layer>,
     ) : Asn1ElementHolder() {
-        class OctetString(childSerializer: DerEncoder, annotations: List<Layer>) :
-            NestedStructurePlaceholder(childSerializer, annotations)
+        class OctetString(childSerializer: DerEncoder) :
+            NestedStructurePlaceholder(childSerializer)
 
-        class ExplicitTag(val tag: ULong, childSerializer: DerEncoder, annotations: List<Layer>) :
-            NestedStructurePlaceholder(childSerializer, annotations)
+        class ExplicitTag(val tag: ULong, childSerializer: DerEncoder) :
+            NestedStructurePlaceholder(childSerializer)
     }
 
-    // New holder for elements that need implicit tagging during finalization
+    //overriding tags, not nesting
     class ImplicitlyTagged(val element: Asn1ElementHolder, val tag: ULong) : Asn1ElementHolder()
 }
 
@@ -65,7 +63,7 @@ private class ImplicitTaggingBuffer(
 
 
 @ExperimentalSerializationApi
-class DerEncoder(
+internal class DerEncoder(
     override val serializersModule: SerializersModule = EmptySerializersModule(),
 ) : AbstractEncoder() {
 
@@ -87,8 +85,8 @@ class DerEncoder(
 
         descriptorAndIndex = null // clear immediately after reading
 
-        val bitString=  pendingInlineAsn1BitString
-        pendingInlineAsn1BitString=false
+        val bitString = pendingInlineAsn1BitString
+        pendingInlineAsn1BitString = false
 
         val targetBuffer = processAnnotationsAndGetTarget(annotations)
 
@@ -96,7 +94,8 @@ class DerEncoder(
         val element = when (value) {
             is Asn1Element -> value
             is Asn1Encodable<*> -> value.encodeToTlv()
-            is ByteArray -> if(bitString) Asn1BitString(BitSet.from(value)) .encodeToTlv()else  Asn1PrimitiveOctetString(value)
+            is ByteArray -> if (bitString) Asn1BitString(value).encodeToTlv()
+            else Asn1PrimitiveOctetString(value)
 
             is Boolean -> value.encodeToAsn1Primitive()
 
@@ -170,7 +169,7 @@ class DerEncoder(
          * can pop and apply them.
          */
         pendingInlineAnnotations.addLast(descriptor.annotations.asn1Layers)
-         pendingInlineAsn1BitString = descriptor.isAsn1BitString
+        pendingInlineAsn1BitString = descriptor.isAsn1BitString
 
         return this
     }
@@ -181,7 +180,7 @@ class DerEncoder(
             val bitset = descriptorAndIndex?.let { (descriptor, index) ->
                 descriptor.isAsn1BitString(index)
             } ?: serializer.descriptor.isAsn1BitString
-            if (bitset) encodeValue(Asn1BitString(BitSet.from(value as ByteArray)))
+            if (bitset) encodeValue(Asn1BitString(value as ByteArray))
             else encodeValue(value as ByteArray)
         } else if (value is Asn1Encodable<*> || value is Asn1Element) encodeValue(value)
         else super.encodeSerializableValue(serializer, value)
@@ -257,8 +256,7 @@ class DerEncoder(
                 val childSerializer = DerEncoder(serializersModule)
                 val placeholder =
                     Asn1ElementHolder.NestedStructurePlaceholder.OctetString(
-                        childSerializer,
-                        listOf(current)
+                        childSerializer
                     )
                 targetBuffer += placeholder
                 processAnnotationsRecursively(remaining, childSerializer.buffer)
@@ -269,8 +267,7 @@ class DerEncoder(
                 val placeholder =
                     Asn1ElementHolder.NestedStructurePlaceholder.ExplicitTag(
                         current.tag,
-                        childSerializer,
-                        listOf(current)
+                        childSerializer
                     )
                 targetBuffer += placeholder
                 processAnnotationsRecursively(remaining, childSerializer.buffer)
