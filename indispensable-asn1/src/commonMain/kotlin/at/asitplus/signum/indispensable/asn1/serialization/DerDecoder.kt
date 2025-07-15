@@ -78,14 +78,14 @@ class DerDecoder internal constructor(
 
 
     override fun decodeValue(): Any {
-        val inlineLayers = if (pendingInlineAnnotations.isNotEmpty())
-            pendingInlineAnnotations.removeLast() else emptyList()
+        val inlineAnnotation = if (pendingInlineAnnotations.isNotEmpty())
+            pendingInlineAnnotations.removeLast() else null
 
         val currentAnnotatedElement = elements[index]
         index++
 
         // Process annotations to get the actual element and expected tag
-        val annotations = propertyAnnotations.asn1Layers + inlineLayers
+        val annotations = propertyAnnotations.asn1Layers + (inlineAnnotation?.layers?.toList() ?: emptyList())
         val (processedElement, expectedTag) = processAnnotationsForDecoding(
             currentAnnotatedElement,
             annotations
@@ -115,19 +115,14 @@ class DerDecoder internal constructor(
     }
 
 
-    private val pendingInlineAnnotations: ArrayDeque<List<Layer>> = ArrayDeque()
-    private var pendingInlineAsn1BitString = false
+    private val pendingInlineAnnotations: ArrayDeque<Asn1nnotation> = ArrayDeque()
 
-    // ---------------------------------------------------------------------------
-// ADD inside the class body
     @OptIn(ExperimentalSerializationApi::class)
     override fun decodeInline(descriptor: SerialDescriptor): Decoder {
-        /*
-         * Mirrors the encoder logic: push the annotations that belong to the
-         * value-class so that the next decode*() call can honour them.
-         */
-        pendingInlineAsn1BitString = descriptor.isAsn1BitString
-        pendingInlineAnnotations.addLast(descriptor.annotations.asn1Layers)
+        val annotation = descriptor.annotations.find { it is Asn1nnotation } as? Asn1nnotation
+        if (annotation != null) {
+            pendingInlineAnnotations.addLast(annotation)
+        }
         return this
     }
 
@@ -151,14 +146,14 @@ class DerDecoder internal constructor(
     override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
 
         val currentAnnotatedElement = elements[index]
-        val isBitString = propertyAnnotations.isAsn1BitString || pendingInlineAsn1BitString
-        pendingInlineAsn1BitString = false
+        val inlineAnnotation = if (pendingInlineAnnotations.isNotEmpty())
+            pendingInlineAnnotations.removeLast() else null
+        val isBitString = (inlineAnnotation?.asBitString ?: false) || propertyAnnotations.isAsn1BitString
         val propertyAnnotations = propertyAnnotations.asn1Layers
         val classLevelAnnotations = deserializer.descriptor.annotations.asn1Layers
 
         // Combine property and class-level annotations for processing
-        val allAnnotations = (if (pendingInlineAnnotations.isNotEmpty())
-            pendingInlineAnnotations.removeLast() else emptyList()) + propertyAnnotations + classLevelAnnotations
+        val allAnnotations = (inlineAnnotation?.layers?.toList() ?: emptyList()) + propertyAnnotations + classLevelAnnotations
 
         if (deserializer.descriptor.isInline) {
             // Let the framework do its inline-class magic
