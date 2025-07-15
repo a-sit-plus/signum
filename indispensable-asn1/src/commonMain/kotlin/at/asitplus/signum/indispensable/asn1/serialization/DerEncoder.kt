@@ -162,6 +162,8 @@ internal class DerEncoder(
 
 
     override fun <T> encodeSerializableValue(serializer: SerializationStrategy<T>, value: T) {
+        val value = value ?: if (serializer.descriptor.doEncodeNull) Asn1Null
+        else return
         if (serializer.descriptor == ByteArraySerializer().descriptor) {
             val bitset = descriptorAndIndex?.let { (descriptor, index) ->
                 descriptor.isAsn1BitString(index)
@@ -169,7 +171,7 @@ internal class DerEncoder(
             if (bitset) encodeValue(Asn1BitString(value as ByteArray))
             else encodeValue(value as ByteArray)
         } else if (value is Asn1Encodable<*> || value is Asn1Element) encodeValue(value)
-        else super.encodeSerializableValue(serializer, value)
+        else super.encodeSerializableValue(serializer, value as T)
     }
 
     override fun beginStructure(descriptor: SerialDescriptor): DerEncoder {
@@ -247,7 +249,6 @@ internal class DerEncoder(
             }
         }
     }
-
 
     internal fun writeTo(destination: Sink) {
         encodeToTLV().forEach { it.encodeTo(destination) }
