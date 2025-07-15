@@ -44,7 +44,6 @@ val Layer.tag: ULong
         Type.OCTET_STRING -> throw ImplementationError("Cannot specify tag for OCTET STRING")
         Type.EXPLICIT_TAG, Type.IMPLICIT_TAG -> if (singleTag.size != 1) throw SerializationException("Exactly one single tag value must be specified, got: ${singleTag.size}") else singleTag.first()
     }
-
 /**
  * Layer type crutch, since annotations are limited
  */
