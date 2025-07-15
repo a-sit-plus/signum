@@ -75,10 +75,7 @@ internal class DerEncoder(
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun encodeInline(descriptor: SerialDescriptor): Encoder {
-        val annotation = descriptor.annotations.find { it is Asn1nnotation } as? Asn1nnotation
-        if (annotation != null) {
-            pendingInlineAnnotations.addLast(annotation)
-        }
+        descriptor.asn1nnotation?.let { pendingInlineAnnotations.addLast(it) }
         return this
     }
 
@@ -159,8 +156,7 @@ internal class DerEncoder(
     override fun encodeEnum(enumDescriptor: SerialDescriptor, index: Int) {
         val targetBuffer = processAnnotationsAndGetTarget(
             (descriptorAndIndex?.let { (descriptor, index) -> descriptor.getElementAnnotations(index).asn1Layers }
-                ?: emptyList()) +
-                    enumDescriptor.annotations.asn1Layers
+                ?: emptyList()) + enumDescriptor.annotations.asn1Layers
         )
         targetBuffer += Asn1ElementHolder.Element(Asn1.Enumerated(index))
     }
@@ -259,13 +255,10 @@ internal class DerEncoder(
     }
 
     //exists to keep the below function
-    internal fun encodeToTLV() = finalizeElements(buffer)
+    internal fun encodeToTLV() = buffer.finalizeElements()
 
-    private fun finalizeElements(holders: List<Asn1ElementHolder>): List<Asn1Element> {
-        return holders.map { holder ->
-            finalizeElement(holder)
-        }
-    }
+    private fun List<Asn1ElementHolder>.finalizeElements(): List<Asn1Element> = map(::finalizeElement)
+
 
     private fun finalizeElement(holder: Asn1ElementHolder): Asn1Element {
 
@@ -273,14 +266,14 @@ internal class DerEncoder(
             is Asn1ElementHolder.Element -> holder.element
 
             is Asn1ElementHolder.StructurePlaceholder -> {
-                val childElements = finalizeElements(holder.childSerializer.buffer)
+                val childElements = holder.childSerializer.buffer.finalizeElements()
                 if (holder.descriptor.isSetDescriptor) Asn1Set(childElements)
                 else Asn1Sequence(childElements)
 
             }
 
             is Asn1ElementHolder.NestedStructurePlaceholder -> {
-                val childElements = finalizeElements(holder.childSerializer.buffer)
+                val childElements = holder.childSerializer.buffer.finalizeElements()
                 when (holder) {
                     is Asn1ElementHolder.NestedStructurePlaceholder.OctetString ->
                         Asn1OctetString(childElements)
