@@ -11,6 +11,7 @@ import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.AbstractDecoder
 import kotlinx.serialization.encoding.CompositeDecoder
+import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
 
@@ -77,12 +78,14 @@ class DerDecoder internal constructor(
 
 
     override fun decodeValue(): Any {
+        val inlineLayers = if (pendingInlineAnnotations.isNotEmpty())
+            pendingInlineAnnotations.removeLast() else emptyList()
 
         val currentAnnotatedElement = elements[index]
         index++
 
         // Process annotations to get the actual element and expected tag
-        val annotations = propertyAnnotations.asn1Layers
+        val annotations = propertyAnnotations.asn1Layers + inlineLayers
         val (processedElement, expectedTag) = processAnnotationsForDecoding(
             currentAnnotatedElement,
             annotations
@@ -111,6 +114,24 @@ class DerDecoder internal constructor(
         } as Any
     }
 
+
+    private val pendingInlineAnnotations: ArrayDeque<List<Layer>> = ArrayDeque()
+    private var pendingInlineAsn1BitString = false
+
+    // ---------------------------------------------------------------------------
+// ADD inside the class body
+    @OptIn(ExperimentalSerializationApi::class)
+    override fun decodeInline(descriptor: SerialDescriptor): Decoder {
+        /*
+         * Mirrors the encoder logic: push the annotations that belong to the
+         * value-class so that the next decode*() call can honour them.
+         */
+        pendingInlineAsn1BitString = descriptor.isAsn1BitString
+        pendingInlineAnnotations.addLast(descriptor.annotations.asn1Layers)
+        return this
+    }
+
+
     override fun <T : Any?> decodeSerializableValue(
         deserializer: DeserializationStrategy<T>,
         previousValue: T?
@@ -130,12 +151,20 @@ class DerDecoder internal constructor(
     override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
 
         val currentAnnotatedElement = elements[index]
-        val isBitString = propertyAnnotations?.isAsn1BitString?: false
+        val isBitString = propertyAnnotations.isAsn1BitString||pendingInlineAsn1BitString
+        pendingInlineAsn1BitString=false
         val propertyAnnotations = propertyAnnotations.asn1Layers
         val classLevelAnnotations = deserializer.descriptor.annotations.asn1Layers
 
         // Combine property and class-level annotations for processing
         val allAnnotations = propertyAnnotations + classLevelAnnotations
+
+        if (deserializer.descriptor.isInline) {
+            // Let the framework do its inline-class magic
+            return deserializer.deserialize(this)
+        }
+
+        /* your old custom handling for non-inline cases */
         val (processedElement, expectedTag) = processAnnotationsForDecoding(
             currentAnnotatedElement,
             allAnnotations

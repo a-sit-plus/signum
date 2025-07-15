@@ -37,13 +37,16 @@ class SerializationTest : FreeSpec({
 
 
             val valueClassEmpty= BitSetValue(empty)
-            val valueClass= BitSetValue(byteArrayOf(1,2,3,4))
+            val valueClass= BitSetValue(byteArrayOf(1,2,3))
 
             DER.decodeFromDer<BitSetValue>(
-                DER.encodeToDer(valueClassEmpty).also { it.toHexString() shouldBe "030100" }) shouldBe valueClassEmpty
+                DER.encodeToDer(valueClassEmpty).also { it.toHexString() shouldBe "030100" }).bytes shouldBe valueClassEmpty.bytes
 
-            DER.decodeFromDer<ByteArray>(
-                DER.encodeToDer(valueClassEmpty).also { it.toHexString() shouldBe "0400" }) shouldBe empty
+
+            DER.decodeFromDer<BitSetValue>(
+                DER.encodeToDer(valueClass).also { it.toHexString() shouldBe "0304068040c0" }).bytes shouldBe valueClass.bytes
+
+
         }
 
         "octet string" {
