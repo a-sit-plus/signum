@@ -36,8 +36,9 @@ jobs:
       - name: Enable watchOS Device target
         shell: bash
         run: |
-          find . -name "build.gradle.kts" -print0 \
-            | xargs -0 sed -i.bak -E 's/^\s*\/\/watchosDeviceArm64\(\).*$/    watchosDeviceArm64()/'
+          find . -name "build.gradle.kts" -print0 |
+            xargs -0 sed -E -i.bak \
+              's/^([[:space:]]*)\/\/[[:space:]]*watchosDeviceArm64\(\).*$/\1watchosDeviceArm64()/'
       - uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
