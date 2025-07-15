@@ -20,6 +20,16 @@ import kotlin.random.Random
 @OptIn(ExperimentalStdlibApi::class)
 class SerializationTest : FreeSpec({
 
+    "Nulls and Noughts" {
+
+        DER.encodeToDer<Nullable?>(null) shouldBe Asn1Null.derEncoded
+
+        val nullable: String? = null
+        DER.encodeToDer(nullable) shouldBe byteArrayOf()
+
+        DER.encodeToDer<NullableAnnotated?>(null).toHexString() shouldBe "Asn1Null.derEncoded"
+
+    }
 
     "Bits and Bytes" - {
         "Bit string" {
@@ -36,15 +46,16 @@ class SerializationTest : FreeSpec({
                 DER.encodeToDer(normal).also { it.toHexString() shouldBe "3006030400010203" }) shouldBe normal
 
 
-
             val normalEmptyAnnotated = BitSetNormalAnnotated(empty)
             DER.decodeFromDer<BitSetNormalAnnotated>(
-                DER.encodeToDer(normalEmptyAnnotated).also { it.toHexString() shouldBe "300b0409bf8a3b050403030100" }) shouldBe normalEmptyAnnotated
+                DER.encodeToDer(normalEmptyAnnotated)
+                    .also { it.toHexString() shouldBe "300b0409bf8a3b050403030100" }) shouldBe normalEmptyAnnotated
 
 
             val normalEmptyAnnotatedOverride = BitSetNormalAnnotatedOverride(empty)
             DER.decodeFromDer<BitSetNormalAnnotatedOverride>(
-                DER.encodeToDer(normalEmptyAnnotatedOverride).also { it.toHexString() shouldBe "300d040bbf8a3b0704059f8a390100" }) shouldBe normalEmptyAnnotatedOverride
+                DER.encodeToDer(normalEmptyAnnotatedOverride)
+                    .also { it.toHexString() shouldBe "300d040bbf8a3b0704059f8a390100" }) shouldBe normalEmptyAnnotatedOverride
 
 
             val valueClassEmpty = BitSetValue(empty)
@@ -75,7 +86,7 @@ class SerializationTest : FreeSpec({
 
             val valueClassEmptyAnnotatedAlsoInner = BitSetValueAnnotatedOverrideAlsoInner(empty)
 
-  DER.decodeFromDer<BitSetValueAnnotatedOverrideAlsoInner>(
+            DER.decodeFromDer<BitSetValueAnnotatedOverrideAlsoInner>(
                 DER.encodeToDer(valueClassEmptyAnnotatedAlsoInner)
                     .also { it.toHexString() shouldBe "0409bf8a3b059f8a390100" }).bytes shouldBe valueClassEmptyAnnotatedAlsoInner.bytes
 
@@ -565,16 +576,6 @@ data class NullableByteString(
     }
 }
 
-
-@Serializable
-data class SetSemanticsClass(val a: String, val b: List<String>)
-
-@Serializable
-data class SetSemanticsProp(val a: String, val b: List<String>)
-
-@Serializable
-data class SequenceSemantics(val a: String, val b: List<String>)
-
 @Serializable
 data class NothingOnClass(val a: String)
 
@@ -740,7 +741,8 @@ data class BitSetNormalAnnotated(
         Layer(Type.OCTET_STRING),
         Layer(Type.EXPLICIT_TAG, 1339uL),
         Layer(Type.OCTET_STRING),
-        asBitString = true) val bytes: ByteArray
+        asBitString = true
+    ) val bytes: ByteArray
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -764,7 +766,8 @@ data class BitSetNormalAnnotatedOverride(
         Layer(Type.EXPLICIT_TAG, 1339uL),
         Layer(Type.OCTET_STRING),
         Layer(Type.IMPLICIT_TAG, 1337uL),
-        asBitString = true) val bytes: ByteArray
+        asBitString = true
+    ) val bytes: ByteArray
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -781,3 +784,14 @@ data class BitSetNormalAnnotatedOverride(
 }
 
 
+@Serializable
+@Asn1nnotation(encodeNull = true)
+object Nullable
+
+@Serializable
+@Asn1nnotation(
+    Layer(Type.OCTET_STRING),
+    Layer(Type.EXPLICIT_TAG, 1339uL),
+    encodeNull = true
+)
+object NullableAnnotated
