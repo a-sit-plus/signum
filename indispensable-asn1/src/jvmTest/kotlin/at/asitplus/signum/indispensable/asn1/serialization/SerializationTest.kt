@@ -20,6 +20,44 @@ import kotlin.random.Random
 @OptIn(ExperimentalStdlibApi::class)
 class SerializationTest : FreeSpec({
 
+
+    "Bits and Bytes" - {
+        "Bit string" {
+            val empty = byteArrayOf()
+
+            val normalEmpty = BitSetNormal(empty)
+
+            DER.decodeFromDer<BitSetNormal>(
+                DER.encodeToDer(normalEmpty).also { it.toHexString() shouldBe "3003030100" }) shouldBe normalEmpty
+
+            val normal = BitSetNormal(byteArrayOf(1,2,3))
+
+            DER.decodeFromDer<BitSetNormal>(
+                DER.encodeToDer(normal).also { it.toHexString() shouldBe "30060304068040c0" }) shouldBe normal
+
+
+            val valueClassEmpty= BitSetValue(empty)
+            val valueClass= BitSetValue(byteArrayOf(1,2,3,4))
+
+            DER.decodeFromDer<BitSetValue>(
+                DER.encodeToDer(valueClassEmpty).also { it.toHexString() shouldBe "030100" }) shouldBe valueClassEmpty
+
+            DER.decodeFromDer<ByteArray>(
+                DER.encodeToDer(valueClassEmpty).also { it.toHexString() shouldBe "0400" }) shouldBe empty
+        }
+
+        "octet string" {
+            val empty = byteArrayOf()
+            DER.decodeFromDer<ByteArray>(
+                DER.encodeToDer(empty).also { it.toHexString() shouldBe "0400" }) shouldBe empty
+            val threeBytes = byteArrayOf(1, 2, 3)
+            DER.decodeFromDer<ByteArray>(
+                DER.encodeToDer(threeBytes).also { it.toHexString() shouldBe "0403010203" }) shouldBe threeBytes
+        }
+
+    }
+
+
     "String" {
         val str = Asn1String.UTF8("foo")
         val serialized = DER.encodeToDer(str).also { println(it.toHexString()) }
@@ -306,14 +344,8 @@ class SerializationTest : FreeSpec({
 
     "SET semantics" {
         val set = setOf("Foo", "Bar", "Baz")
-        DER.decodeFromDer<Set<String>>(DER.encodeToDer(set).also { println("SET ${it.toHexString()}") }) shouldBe set
-    }
-
-    "Bits and Bytes" {
-        val empty = byteArrayOf()
-        DER.decodeFromDer<ByteArray>(DER.encodeToDer(empty).also { println(it.toHexString()) }) shouldBe empty
-        val threeBytes = byteArrayOf(1, 2, 3)
-        DER.decodeFromDer<ByteArray>(DER.encodeToDer(threeBytes).also { println(it.toHexString()) }) shouldBe threeBytes
+        DER.decodeFromDer<Set<String>>(
+            DER.encodeToDer(set).also { it.toHexString() shouldBe "310f0c03466f6f0c034261720c0342617a" }) shouldBe set
     }
 
     "Writing" {
@@ -597,3 +629,29 @@ class OuterTagInnerOctet
     Layer(Type.IMPLICIT_TAG, 1336uL),
 )
 class OuterOctetInnerTag
+
+
+@JvmInline
+@Serializable
+@Asn1nnotation(asBitString = true)
+value class BitSetValue(val bytes: ByteArray)
+
+@Serializable
+data class BitSetNormal(
+    @Asn1nnotation(asBitString = true) val bytes: ByteArray
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is BitSetNormal) return false
+
+        if (!bytes.contentEquals(other.bytes)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return bytes.contentHashCode()
+    }
+}
+
+

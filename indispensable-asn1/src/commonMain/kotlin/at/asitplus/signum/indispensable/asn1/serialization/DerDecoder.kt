@@ -14,31 +14,19 @@ import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
 
-/**
- * Represents the current element being processed with its annotation context
- */
-private data class AnnotatedElement(
-    val element: Asn1Element,
-    val remainingAnnotations: List<Layer> = emptyList()
-)
 
 @ExperimentalSerializationApi
-class DerDecoder private constructor(
-    private val annotatedElements: List<AnnotatedElement>,
+class DerDecoder internal constructor(
+    private val elements: List<Asn1Element>,
     private val indent: String = "",
     override val serializersModule: SerializersModule = EmptySerializersModule()
 ) : AbstractDecoder() {
 
-    constructor(
-        elements: List<Asn1Element>,
-        serializersModule: SerializersModule = EmptySerializersModule(),
-        indent: String = ""
-    ) : this(elements.map { AnnotatedElement(it) }, indent, serializersModule)
 
     constructor(
         source: Source,
         serializersModule: SerializersModule = EmptySerializersModule()
-    ) : this(source.readFullyToAsn1Elements().first, serializersModule)
+    ) : this(source.readFullyToAsn1Elements().first, "", serializersModule)
 
     private var index = 0
     private lateinit var propertyDescriptor: SerialDescriptor
@@ -48,8 +36,7 @@ class DerDecoder private constructor(
     override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
 
         // 1. Pick the element that belongs to *this* level
-        val currentAnnotated = annotatedElements[index]
-        val element = currentAnnotated.element
+        val element = elements[index]
 
         // 2. hand over decoding of the children to a *new* decoder
         index++
@@ -80,24 +67,24 @@ class DerDecoder private constructor(
     }
 
     override fun decodeElementIndex(descriptor: SerialDescriptor): Int {
-        if (index >= annotatedElements.size) return CompositeDecoder.DECODE_DONE
+        if (index >= elements.size) return CompositeDecoder.DECODE_DONE
 
         propertyDescriptor = descriptor.getElementDescriptor(index)
         propertyAnnotations = descriptor.getElementAnnotations(index)
 
-        return if (index < annotatedElements.size) index else CompositeDecoder.DECODE_DONE
+        return if (index < elements.size) index else CompositeDecoder.DECODE_DONE
     }
 
 
     override fun decodeValue(): Any {
 
-        val currentAnnotatedElement = annotatedElements[index]
+        val currentAnnotatedElement = elements[index]
         index++
 
         // Process annotations to get the actual element and expected tag
         val annotations = propertyAnnotations.asn1Layers
         val (processedElement, expectedTag) = processAnnotationsForDecoding(
-            currentAnnotatedElement.element,
+            currentAnnotatedElement,
             annotations
         )
 
@@ -129,8 +116,8 @@ class DerDecoder private constructor(
         previousValue: T?
     ): T {
 
-        val currentAnnotatedElement = annotatedElements[index]
-        if (currentAnnotatedElement.element == Asn1Null) {
+        val currentAnnotatedElement = elements[index]
+        if (currentAnnotatedElement == Asn1Null) {
             if (!propertyDescriptor.doEncodeNull && !propertyAnnotations.doEncodeNull) {
                 throw SerializationException("Null value found, but target value should not have been present!")
             }
@@ -142,14 +129,15 @@ class DerDecoder private constructor(
 
     override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
 
-        val currentAnnotatedElement = annotatedElements[index]
+        val currentAnnotatedElement = elements[index]
+        val isBitString = propertyAnnotations?.isAsn1BitString?: false
         val propertyAnnotations = propertyAnnotations.asn1Layers
         val classLevelAnnotations = deserializer.descriptor.annotations.asn1Layers
 
         // Combine property and class-level annotations for processing
         val allAnnotations = propertyAnnotations + classLevelAnnotations
         val (processedElement, expectedTag) = processAnnotationsForDecoding(
-            currentAnnotatedElement.element,
+            currentAnnotatedElement,
             allAnnotations
         )
 
@@ -168,7 +156,8 @@ class DerDecoder private constructor(
             // If no explicit tag is specified, we should still validate against the default tag
             // for the type being deserialized (when no annotations are present)
             if (allAnnotations.isEmpty()) {
-                getDefaultTagForDescriptor(deserializer.descriptor)
+                if (isBitString) Asn1Element.Tag.BIT_STRING
+               else  getDefaultTagForDescriptor(deserializer.descriptor)
             } else {
                 null
             }
@@ -209,7 +198,7 @@ class DerDecoder private constructor(
                 .also { index++ } as T
 
             ByteArraySerializer() -> {
-                if (deserializer.descriptor.isAsn1BitString) {
+                if (isBitString) {
                     // Decode BitSet from ASN.1 BitString and convert to ByteArray
                     val bitSet = processedElement.asPrimitive().asAsn1BitString().toBitSet()
                     return bitSet.toByteArray().also { index++ } as T
@@ -230,8 +219,8 @@ class DerDecoder private constructor(
 
         val childDecoder = DerDecoder(
             elements = mutableListOf(processedElement),
+            indent = "$indent  ",
             serializersModule = serializersModule,
-            indent = "$indent  "
         )
 
         val value = deserializer.deserialize(childDecoder)
@@ -311,6 +300,7 @@ class DerDecoder private constructor(
 private fun getDefaultTagForDescriptor(descriptor: SerialDescriptor): Asn1Element.Tag? {
 
     return if (descriptor.isSetDescriptor) Asn1Element.Tag.SET
+    else if (descriptor == ByteArraySerializer().descriptor) if (descriptor.isAsn1BitString) Asn1Element.Tag.BIT_STRING else Asn1Element.Tag.OCTET_STRING
     else when (descriptor.kind) {
         is StructureKind.CLASS, is StructureKind.OBJECT -> Asn1Element.Tag.SEQUENCE
         is StructureKind.LIST -> Asn1Element.Tag.SEQUENCE
