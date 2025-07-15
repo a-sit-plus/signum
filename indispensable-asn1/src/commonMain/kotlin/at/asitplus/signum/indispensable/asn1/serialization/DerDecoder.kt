@@ -160,7 +160,6 @@ class DerDecoder internal constructor(
             return deserializer.deserialize(this)
         }
 
-        /* your old custom handling for non-inline cases */
         val (processedElement, expectedTag) = processAnnotationsForDecoding(
             currentAnnotatedElement,
             allAnnotations
@@ -255,7 +254,7 @@ class DerDecoder internal constructor(
 
     /**
      * Process annotations to determine expected tag for primitives
-     * Returns the processed element and the expected tag (if any)
+     * Return the processed element and the expected tag (if any)
      */
     private fun processAnnotationsForDecoding(
         element: Asn1Element,
@@ -302,14 +301,10 @@ class DerDecoder internal constructor(
                     }
                     if (annotations.size > i + 1) {
                         val nextTag = annotations[i + 1]
-                        when (nextTag.type) {
-                            Type.OCTET_STRING -> currentTag = Asn1Element.Tag(nextTag.tag, false)
-                            Type.EXPLICIT_TAG -> currentTag =
-                                Asn1Element.Tag(nextTag.tag, true, tagClass = TagClass.CONTEXT_SPECIFIC)
-
-                            Type.IMPLICIT_TAG -> currentTag =
-                                Asn1Element.Tag(nextTag.tag, currentTag.isConstructed, tagClass = currentTag.tagClass)
-
+                        currentTag = when (nextTag.type) {
+                            Type.OCTET_STRING -> Asn1Element.Tag(nextTag.tag, false)
+                            Type.EXPLICIT_TAG -> Asn1Element.Tag(nextTag.tag, true, tagClass = TagClass.CONTEXT_SPECIFIC)
+                            Type.IMPLICIT_TAG -> Asn1Element.Tag(nextTag.tag, currentTag.isConstructed, tagClass = currentTag.tagClass)
                         }
                     } else {
                         currentElement = currentElement.withImplicitTag(currentTag)
