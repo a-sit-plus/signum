@@ -1,5 +1,5 @@
 package at.asitplus.signum.indispensable.asn1.serialization.api
 
-fun DER(config: () -> Unit = {}) = at.asitplus.signum.indispensable.asn1.serialization.DER()
+fun DER(config: () -> Unit = {}) = at.asitplus.signum.indispensable.asn1.serialization.Der()
 
 val DER = DER {  }
