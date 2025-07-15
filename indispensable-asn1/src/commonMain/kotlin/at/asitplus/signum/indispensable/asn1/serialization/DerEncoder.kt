@@ -70,19 +70,18 @@ internal class DerEncoder(
     private val buffer = mutableListOf<Asn1ElementHolder>()
     private var descriptorAndIndex: Pair<SerialDescriptor, Int>? = null
 
-    // ADD at the top level of DerEncoder (right next to the other fields)
-    private val pendingInlineAnnotations: ArrayDeque<Asn1nnotation> = ArrayDeque()
+    private var pendingInlineAnnotation: Asn1nnotation? = null
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun encodeInline(descriptor: SerialDescriptor): Encoder {
-        descriptor.asn1nnotation?.let { pendingInlineAnnotations.addLast(it) }
+        descriptor.asn1nnotation?.let { pendingInlineAnnotation = it }
         return this
     }
 
     override fun encodeValue(value: Any) {
-        // Pop inline annotation if available
-        val inlineAnnotation = if (pendingInlineAnnotations.isNotEmpty())
-            pendingInlineAnnotations.removeLast() else null
+        val inlineAnnotation = pendingInlineAnnotation
+        pendingInlineAnnotation = null
+
 
         // Property-level layers (coming from encodeElement)
         val propertyLayers = descriptorAndIndex
@@ -133,8 +132,8 @@ internal class DerEncoder(
     }
 
     override fun encodeNull() {
-        val inlineAnnotation = if (pendingInlineAnnotations.isNotEmpty())
-            pendingInlineAnnotations.removeLast() else null
+        val inlineAnnotation = pendingInlineAnnotation
+        pendingInlineAnnotation = null
 
         descriptorAndIndex?.let { (descriptor, index) ->
             descriptorAndIndex = null

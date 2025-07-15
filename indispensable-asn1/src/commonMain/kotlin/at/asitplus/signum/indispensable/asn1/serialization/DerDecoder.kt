@@ -19,6 +19,7 @@ import kotlinx.serialization.modules.SerializersModule
 @ExperimentalSerializationApi
 class DerDecoder internal constructor(
     private val elements: List<Asn1Element>,
+    private val indent: String = "",
     override val serializersModule: SerializersModule = EmptySerializersModule()
 ) : AbstractDecoder() {
 
@@ -26,16 +27,29 @@ class DerDecoder internal constructor(
     internal constructor(
         source: Source,
         serializersModule: SerializersModule = EmptySerializersModule()
-    ) : this(source.readFullyToAsn1Elements().first, serializersModule)
+    ) : this(source.readFullyToAsn1Elements().first, "", serializersModule)
 
     private var index = 0
     private lateinit var propertyDescriptor: SerialDescriptor
     private var propertyAnnotations: List<Annotation> = emptyList()
 
+    private var pendingInlineAnnotation: Asn1nnotation? = null
+
+    @OptIn(ExperimentalSerializationApi::class)
+    override fun decodeInline(descriptor: SerialDescriptor): Decoder {
+        val annotation = descriptor.annotations.find { it is Asn1nnotation } as? Asn1nnotation
+        pendingInlineAnnotation = annotation
+        return this
+    }
+
 
     override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
 
-        val element = elements[index++]
+        // 1. Pick the element that belongs to *this* level
+        val element = elements[index]
+
+        // 2. hand over decoding of the children to a *new* decoder
+        index++
 
         return when (descriptor.kind) {
             is StructureKind.CLASS,
@@ -45,11 +59,13 @@ class DerDecoder internal constructor(
                 if (element is Asn1Structure) {
                     DerDecoder(
                         element.children,
+                        indent = "$indent  ",
                         serializersModule = serializersModule
                     )
                 } else {
                     throw SerializationException(
-                        "Expected an ASN.1 structure for ${descriptor.serialName}, but got ${element::class.simpleName}"
+                        "Expected an ASN.1 structure for ${descriptor.serialName}, " +
+                                "but got ${element::class.simpleName}"
                     )
                 }
             }
@@ -71,10 +87,11 @@ class DerDecoder internal constructor(
 
 
     override fun decodeValue(): Any {
-        val inlineAnnotation = if (pendingInlineAnnotations.isNotEmpty())
-            pendingInlineAnnotations.removeLast() else null
+        val inlineAnnotation = pendingInlineAnnotation
+        pendingInlineAnnotation = null
 
-        val currentAnnotatedElement = elements[index++]
+        val currentAnnotatedElement = elements[index]
+        index++
 
         // Process annotations to get the actual element and expected tag
         val annotations = propertyAnnotations.asn1Layers + (inlineAnnotation?.layers?.toList() ?: emptyList())
@@ -106,17 +123,6 @@ class DerDecoder internal constructor(
         } as Any
     }
 
-
-    private val pendingInlineAnnotations: ArrayDeque<Asn1nnotation> = ArrayDeque()
-
-    @OptIn(ExperimentalSerializationApi::class)
-    override fun decodeInline(descriptor: SerialDescriptor): Decoder {
-        val annotation = descriptor.asn1nnotation
-        if (annotation != null) pendingInlineAnnotations.addLast(annotation)
-        return this
-    }
-
-
     override fun <T : Any?> decodeSerializableValue(
         deserializer: DeserializationStrategy<T>,
         previousValue: T?
@@ -136,21 +142,21 @@ class DerDecoder internal constructor(
     override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
 
         val currentAnnotatedElement = elements[index]
-        val inlineAnnotation = if (pendingInlineAnnotations.isNotEmpty())
-            pendingInlineAnnotations.removeLast() else null
+        val inlineAnnotation = pendingInlineAnnotation
+        pendingInlineAnnotation = null
         val isBitString = (inlineAnnotation?.asBitString ?: false) || propertyAnnotations.isAsn1BitString
         val propertyAnnotations = propertyAnnotations.asn1Layers
         val classLevelAnnotations = deserializer.descriptor.annotations.asn1Layers
 
         // Combine property and class-level annotations for processing
-        val allAnnotations =
-            (inlineAnnotation?.layers?.toList() ?: emptyList()) + propertyAnnotations + classLevelAnnotations
+        val allAnnotations = (inlineAnnotation?.layers?.toList() ?: emptyList()) + propertyAnnotations + classLevelAnnotations
 
         if (deserializer.descriptor.isInline) {
             // Let the framework do its inline-class magic
             return deserializer.deserialize(this)
         }
 
+        /* your old custom handling for non-inline cases */
         val (processedElement, expectedTag) = processAnnotationsForDecoding(
             currentAnnotatedElement,
             allAnnotations
@@ -234,6 +240,7 @@ class DerDecoder internal constructor(
 
         val childDecoder = DerDecoder(
             elements = mutableListOf(processedElement),
+            indent = "$indent  ",
             serializersModule = serializersModule,
         )
 
@@ -244,7 +251,7 @@ class DerDecoder internal constructor(
 
     /**
      * Process annotations to determine expected tag for primitives
-     * Return the processed element and the expected tag (if any)
+     * Returns the processed element and the expected tag (if any)
      */
     private fun processAnnotationsForDecoding(
         element: Asn1Element,
@@ -291,19 +298,14 @@ class DerDecoder internal constructor(
                     }
                     if (annotations.size > i + 1) {
                         val nextTag = annotations[i + 1]
-                        currentTag = when (nextTag.type) {
-                            Type.OCTET_STRING -> Asn1Element.Tag(nextTag.tag, false)
-                            Type.EXPLICIT_TAG -> Asn1Element.Tag(
-                                nextTag.tag,
-                                true,
-                                tagClass = TagClass.CONTEXT_SPECIFIC
-                            )
+                        when (nextTag.type) {
+                            Type.OCTET_STRING -> currentTag = Asn1Element.Tag(nextTag.tag, false)
+                            Type.EXPLICIT_TAG -> currentTag =
+                                Asn1Element.Tag(nextTag.tag, true, tagClass = TagClass.CONTEXT_SPECIFIC)
 
-                            Type.IMPLICIT_TAG -> Asn1Element.Tag(
-                                nextTag.tag,
-                                currentTag.isConstructed,
-                                tagClass = currentTag.tagClass
-                            )
+                            Type.IMPLICIT_TAG -> currentTag =
+                                Asn1Element.Tag(nextTag.tag, currentTag.isConstructed, tagClass = currentTag.tagClass)
+
                         }
                     } else {
                         currentElement = currentElement.withImplicitTag(currentTag)
