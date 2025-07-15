@@ -128,10 +128,8 @@ internal class DerEncoder(
     }
 
     override fun encodeNull() {
-        val currentDescriptorAndIndex = descriptorAndIndex
-        descriptorAndIndex = null // Clear immediately after reading
-
-        currentDescriptorAndIndex?.let { (descriptor, index) ->
+        descriptorAndIndex?.let { (descriptor, index) ->
+            descriptorAndIndex = null
             if (!descriptor.doEncodeNull(index)) return
 
             val targetBuffer = processAnnotationsAndGetTarget(descriptor.getElementAnnotations(index).asn1Layers)
