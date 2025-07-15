@@ -142,7 +142,10 @@ class DerEncoder(
 
     override fun <T> encodeSerializableValue(serializer: SerializationStrategy<T>, value: T) {
         if (serializer.descriptor == ByteArraySerializer().descriptor) {
-            if (serializer.descriptor.isAsn1BitString) encodeValue(BitSet.from(value as ByteArray))
+            val bitset = descriptorAndIndex?.let { (descriptor, index) ->
+                descriptor.isAsn1BitString(index)
+            } ?: serializer.descriptor.isAsn1BitString
+            if (bitset) encodeValue(Asn1BitString(BitSet.from(value as ByteArray)))
             else encodeValue(value as ByteArray)
         } else if (value is Asn1Encodable<*> || value is Asn1Element) encodeValue(value)
         else super.encodeSerializableValue(serializer, value)
