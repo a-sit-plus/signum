@@ -30,14 +30,13 @@ class DerDecoder internal constructor(
 
     private var index = 0
     private lateinit var propertyDescriptor: SerialDescriptor
-    private var propertyAnnotations: List<Annotation> = emptyList()
-
-    private var pendingInlineAnnotation: Asn1nnotation? = null
+    private var propertyAsn1nnotation: Asn1nnotation? = null
+    private var inlineAsn1nnotation: Asn1nnotation? = null
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun decodeInline(descriptor: SerialDescriptor): Decoder {
         val annotation = descriptor.annotations.find { it is Asn1nnotation } as? Asn1nnotation
-        pendingInlineAnnotation = annotation
+        inlineAsn1nnotation = annotation
         return this
     }
 
@@ -78,21 +77,23 @@ class DerDecoder internal constructor(
         if (index >= elements.size) return CompositeDecoder.DECODE_DONE
 
         propertyDescriptor = descriptor.getElementDescriptor(index)
-        propertyAnnotations = descriptor.getElementAnnotations(index)
+        propertyAsn1nnotation = descriptor.asn1nnotation(index)
 
         return if (index < elements.size) index else CompositeDecoder.DECODE_DONE
     }
 
 
     override fun decodeValue(): Any {
-        val inlineAnnotation = pendingInlineAnnotation
-        pendingInlineAnnotation = null
+        val inlineAnnotation = inlineAsn1nnotation
+        inlineAsn1nnotation = null
 
         val currentAnnotatedElement = elements[index]
         index++
 
         // Process annotations to get the actual element and expected tag
-        val annotations = propertyAnnotations.asn1Layers + (inlineAnnotation?.layers?.toList() ?: emptyList())
+        val annotations =
+            (propertyAsn1nnotation?.layers?.toList() ?: emptyList<Layer>()) + (inlineAnnotation?.layers?.toList()
+                ?: emptyList())
         val (processedElement, expectedTag) = processAnnotationsForDecoding(
             currentAnnotatedElement,
             annotations
@@ -128,7 +129,7 @@ class DerDecoder internal constructor(
 
         val currentAnnotatedElement = elements[index]
         if (currentAnnotatedElement == Asn1Null) {
-            if (!propertyDescriptor.doEncodeNull && !propertyAnnotations.doEncodeNull) {
+            if (propertyDescriptor.asn1nnotation?.encodeNull != true && !(propertyAsn1nnotation?.encodeNull ?: false)) {
                 throw SerializationException("Null value found, but target value should not have been present!")
             }
             index++
@@ -140,10 +141,9 @@ class DerDecoder internal constructor(
     override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
         if (elements.isEmpty() && deserializer.descriptor.isNullable) return null as T
         val currentAnnotatedElement = elements[index]
-        val inlineAnnotation = pendingInlineAnnotation
-        pendingInlineAnnotation = null
-        val isBitString = (inlineAnnotation?.asBitString ?: false) || propertyAnnotations.isAsn1BitString
-        val propertyAnnotations = propertyAnnotations.asn1Layers
+        val inlineAnnotation = inlineAsn1nnotation.also { inlineAsn1nnotation = null }
+        val isBitString = (inlineAnnotation?.asBitString ?: false) || (propertyAsn1nnotation?.asBitString ?: false)
+        val propertyAnnotations = propertyAsn1nnotation?.layers?.toList() ?: emptyList()
         val classLevelAnnotations = deserializer.descriptor.annotations.asn1Layers
 
         // Combine property and class-level annotations for processing
@@ -190,7 +190,16 @@ class DerDecoder internal constructor(
         }
 
         //TODO nullable from properties also if present
-        if (deserializer.descriptor.isNullable && deserializer.descriptor.doEncodeNull && processedElement.length == 0) {
+        // @formatter:off
+        if (
+           (
+             (deserializer.descriptor.isNullable && deserializer.descriptor.asn1nnotation?.encodeNull == true)
+             ||
+             if(::propertyDescriptor.isInitialized) propertyDescriptor.isNullable || propertyAsn1nnotation?.encodeNull == true else false
+           )
+           &&
+           processedElement.length == 0
+         ) {// @formatter:on
             index++
             return null as T
         }
@@ -237,7 +246,8 @@ class DerDecoder internal constructor(
         // (3) Primitive kinds → defer to decodeValue()
         if (deserializer.descriptor.kind is PrimitiveKind) {
             propertyDescriptor = deserializer.descriptor
-            this.propertyAnnotations = deserializer.descriptor.annotations.asn1Layers
+            this.propertyAsn1nnotation =
+                deserializer.descriptor.annotations.find { it is Asn1nnotation } as? Asn1nnotation
             return decodeValue() as T
         }
 
