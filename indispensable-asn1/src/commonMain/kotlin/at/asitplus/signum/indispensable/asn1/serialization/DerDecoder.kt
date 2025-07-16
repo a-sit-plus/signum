@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.*
 import kotlinx.io.Source
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.builtins.serializer
@@ -68,6 +69,13 @@ class DerDecoder internal constructor(
                 }
             }
 
+            is PolymorphicKind -> {
+                DerDecoder(
+                    element.asStructure().children,
+                    serializersModule = serializersModule
+                )
+            }
+
             // Primitive wrappers (CHOICE, ENUM, etc.) keep using the same instance
             else -> this
 
@@ -76,14 +84,24 @@ class DerDecoder internal constructor(
 
     override fun decodeElementIndex(descriptor: SerialDescriptor): Int {
 
-        if (index >= descriptor.elementsCount) return CompositeDecoder.DECODE_DONE
+        //list-like descriptors always have elementCount =1 because they can never know how long the list actually is
+        val max = if (descriptor.elementsCount > elements.size) descriptor.elementsCount else elements.size
+        if (index >= max) return CompositeDecoder.DECODE_DONE
 
-        if(descriptor.asn1nnotation(index)?.encodeNull!=true ) {
+
+        val asn1nnotation = try {
+            descriptor.asn1nnotation(index)
+        } catch (t: IndexOutOfBoundsException) {
+            throw SerializationException(t.toString())
+        }
+        if (asn1nnotation?.encodeNull != true && descriptor.getElementDescriptor(index).isNullable) {
             propertyDescriptor = descriptor.getElementDescriptor(index)
             propertyAsn1nnotation = descriptor.asn1nnotation(index)
             couldBeNull = true
             return index
         }
+        //now that the nullable foo ist over with, do the proper checks again
+        if (index >= elements.size) return CompositeDecoder.DECODE_DONE
         couldBeNull = false
 
 
@@ -98,8 +116,8 @@ class DerDecoder internal constructor(
         val inlineAnnotation = inlineAsn1nnotation
         inlineAsn1nnotation = null
 
-        val currentAnnotatedElement = elements[index]
-        index++
+        val currentAnnotatedElement = elements[index++]
+
 
         // Process annotations to get the actual element and expected tag
         val annotations =
@@ -113,14 +131,18 @@ class DerDecoder internal constructor(
         return when (propertyDescriptor.kind) {
             PolymorphicKind.OPEN -> TODO("Polymorphic decoding not yet implemented")
             PolymorphicKind.SEALED -> TODO("Sealed class decoding not yet implemented")
-            PrimitiveKind.BOOLEAN -> processedElement.asPrimitive().decodeToBoolean(expectedTag ?: Asn1Element.Tag.BOOL)
+            PrimitiveKind.BOOLEAN -> processedElement.asPrimitive()
+                .decodeToBoolean(expectedTag ?: Asn1Element.Tag.BOOL)
+
             PrimitiveKind.BYTE -> processedElement.asPrimitive().decodeToInt(expectedTag ?: Asn1Element.Tag.INT)
                 .toByte()
 
             PrimitiveKind.CHAR -> processedElement.asPrimitive().decodeString(expectedTag)
                 .also { if (it.length != 1) throw SerializationException("String is not a char") }[0]
 
-            PrimitiveKind.DOUBLE -> processedElement.asPrimitive().decodeToDouble(expectedTag ?: Asn1Element.Tag.REAL)
+            PrimitiveKind.DOUBLE -> processedElement.asPrimitive()
+                .decodeToDouble(expectedTag ?: Asn1Element.Tag.REAL)
+
             PrimitiveKind.FLOAT -> processedElement.asPrimitive().decodeToFloat(expectedTag ?: Asn1Element.Tag.REAL)
             PrimitiveKind.INT -> processedElement.asPrimitive().decodeToInt(expectedTag ?: Asn1Element.Tag.INT)
             PrimitiveKind.LONG -> processedElement.asPrimitive().decodeToLong(expectedTag ?: Asn1Element.Tag.INT)
@@ -128,40 +150,45 @@ class DerDecoder internal constructor(
                 .toShort()
 
             PrimitiveKind.STRING -> processedElement.asPrimitive().decodeString(expectedTag)
-            SerialKind.ENUM -> processedElement.asPrimitive().decodeToEnumOrdinal(expectedTag ?: Asn1Element.Tag.INT)
+            SerialKind.ENUM -> processedElement.asPrimitive()
+                .decodeToEnumOrdinal(expectedTag ?: Asn1Element.Tag.INT)
+
             else -> TODO("Unsupported kind: ${propertyDescriptor.kind}")
         } as Any
+
     }
 
+    @OptIn(InternalSerializationApi::class)
     override fun <T : Any?> decodeSerializableValue(
         deserializer: DeserializationStrategy<T>,
         previousValue: T?
     ): T {
 
-        if(couldBeNull){
-            couldBeNull=false
-            if(index==elements.size){
+        if (couldBeNull) {
+            couldBeNull = false
+            if (index == elements.size) {
                 index++
 
                 return null as T
             }
+            /*
+                        val class1nnotaton = deserializer.descriptor.asn1nnotation
+                        val classOuter = class1nnotaton?.layers?.firstOrNull()?.tag
+                        val classBitString = if (class1nnotaton?.asBitString == true) Asn1Element.Tag.BIT_STRING.tagValue else null
+                        val classDefault = getDefaultTagForDescriptor(deserializer.descriptor)?.tagValue
+                        val propertyOuter = propertyAsn1nnotation?.layers?.firstOrNull()?.tag
+                        val propertyBitString =
+                            if (propertyAsn1nnotation?.asBitString == true) Asn1Element.Tag.BIT_STRING.tagValue else null
+                        val propertyDefault = getDefaultTagForDescriptor(propertyDescriptor)?.tagValue
+                        if (propertyDefault != classDefault) throw ImplementationError("Something something Asn1nnotation")
+                        val expected = propertyOuter ?: classOuter ?: propertyBitString ?: classBitString ?: propertyDefault
+                        expected?.let {
+                            if (elements[index].tag.tagValue != it)
+                                throw SerializationException("Mismatching ASN.1 data")
 
-            val class1nnotaton =  deserializer.descriptor.asn1nnotation
-            val classOuter = class1nnotaton?.layers?.firstOrNull()?.tag
-            val classBitString = if (class1nnotaton?.asBitString == true) Asn1Element.Tag.BIT_STRING.tagValue else null
-            val classDefault = getDefaultTagForDescriptor(deserializer.descriptor)?.tagValue
-            //TODO this check here does not work out
-            val propertyOuter = propertyAsn1nnotation?.layers?.firstOrNull()?.tag
-            val propertyBitString = if (propertyAsn1nnotation?.asBitString == true) Asn1Element.Tag.BIT_STRING.tagValue else null
-            val propertyDefault = getDefaultTagForDescriptor(propertyDescriptor)?.tagValue
-            if(propertyDefault!=classDefault) throw SerializationException("DAMND YOU")
-            if(elements[index].tag.tagValue != propertyOuter?:classOuter?: propertyBitString ?:classBitString?: propertyDefault/**/)
-                throw SerializationException("Invalid ASN.1 data")
-
+                        }
+            */
         }
-
-        //TODO check if vould be null
-        //TODO here get annotations, match tag (if next child present) and decide if we want to decode
         val currentAnnotatedElement = elements[index]
         if (currentAnnotatedElement == Asn1Null) {
             if (propertyDescriptor.asn1nnotation?.encodeNull != true && !(propertyAsn1nnotation?.encodeNull ?: false)) {
@@ -170,9 +197,18 @@ class DerDecoder internal constructor(
             index++
             return null as T
         }
-        return decodeSerializableValue(deserializer)
+        //todo catch tag mismatch if nullable
+        val nullable = propertyDescriptor.isNullable
+        return try {
+            decodeSerializableValue(deserializer)
+
+        } catch (t: Asn1TagMismatchException) {
+            if (nullable) null as T
+            else throw SerializationException(t)
+        }
     }
 
+    @OptIn(InternalSerializationApi::class)
     override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
         if (elements.isEmpty() && deserializer.descriptor.isNullable) return null as T
         val currentAnnotatedElement = elements[index]
@@ -261,7 +297,7 @@ class DerDecoder internal constructor(
             Asn1ElementSerializer -> return processedElement
                 .also {
                     expectedTag?.let { ex ->
-                        if (it.tag != ex) throw SerializationException( Asn1TagMismatchException(ex, it.tag))
+                        if (it.tag != ex) throw SerializationException(Asn1TagMismatchException(ex, it.tag))
                     }
                 }
                 .also { index++ } as T
@@ -291,7 +327,6 @@ class DerDecoder internal constructor(
             elements = mutableListOf(processedElement),
             serializersModule = serializersModule,
         )
-
         val value = deserializer.deserialize(childDecoder)
         index++
         return value
@@ -316,7 +351,12 @@ class DerDecoder internal constructor(
             when (annotation.type) {
                 Type.OCTET_STRING -> {
                     if (currentTag != Asn1Element.Tag.OCTET_STRING) {
-                        throw SerializationException(Asn1TagMismatchException(Asn1Element.Tag.OCTET_STRING, currentElement.tag))
+                        throw SerializationException(
+                            Asn1TagMismatchException(
+                                Asn1Element.Tag.OCTET_STRING,
+                                currentElement.tag
+                            )
+                        )
                     }
                     val octetString = currentElement.asEncapsulatingOctetString()
                     currentElement = octetString.nextChild()
@@ -333,7 +373,7 @@ class DerDecoder internal constructor(
                     }
                     val octetString = currentElement.asStructure()
                     currentElement = octetString.nextChild()
-                    if (octetString.hasMoreChildren()) throw SerializationException( Asn1StructuralException("Explicit tag should only contain one child"))
+                    if (octetString.hasMoreChildren()) throw SerializationException(Asn1StructuralException("Explicit tag should only contain one child"))
                     currentTag = currentElement.tag
 
                 }
@@ -395,6 +435,6 @@ private fun Asn1Primitive.decodeString(implicitTagOverride: Asn1Element.Tag?): S
             else -> throw SerializationException(Asn1TagMismatchException(Asn1Element.Tag.STRING_UTF8, tag))
         }
     } else {
-        if (tag != implicitTagOverride) throw SerializationException( Asn1TagMismatchException(implicitTagOverride, tag))
+        if (tag != implicitTagOverride) throw SerializationException(Asn1TagMismatchException(implicitTagOverride, tag))
         String.decodeFromAsn1ContentBytes(content)
     }
