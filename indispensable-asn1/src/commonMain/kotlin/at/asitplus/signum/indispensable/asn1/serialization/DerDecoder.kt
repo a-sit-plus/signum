@@ -138,7 +138,7 @@ class DerDecoder internal constructor(
     }
 
     override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
-        if( elements.isEmpty() && deserializer.descriptor.isNullable) return null as T
+        if (elements.isEmpty() && deserializer.descriptor.isNullable) return null as T
         val currentAnnotatedElement = elements[index]
         val inlineAnnotation = pendingInlineAnnotation
         pendingInlineAnnotation = null
@@ -147,7 +147,8 @@ class DerDecoder internal constructor(
         val classLevelAnnotations = deserializer.descriptor.annotations.asn1Layers
 
         // Combine property and class-level annotations for processing
-        val allAnnotations = (inlineAnnotation?.layers?.toList() ?: emptyList()) + propertyAnnotations + classLevelAnnotations
+        val allAnnotations =
+            (inlineAnnotation?.layers?.toList() ?: emptyList()) + propertyAnnotations + classLevelAnnotations
 
         if (deserializer.descriptor.isInline) {
             // Let the framework do its inline-class magic
@@ -188,6 +189,11 @@ class DerDecoder internal constructor(
             }
         }
 
+        //TODO nullable from properties also if present
+        if (deserializer.descriptor.isNullable && deserializer.descriptor.doEncodeNull && processedElement.length == 0) {
+            index++
+            return null as T
+        }
         // (2) Fast paths for primitive *unsigned* surrogates & helpers
         when (deserializer) {
             UByte.serializer() -> return processedElement.asPrimitive()
