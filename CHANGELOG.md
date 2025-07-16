@@ -15,9 +15,7 @@
 * Move constants of `KnownOIDs` into a discrete module `indispensable-oids` as extensions on the `KnownOIDs` object
     * **→ update your imports!**
 * ASN.1 polishing:
-    * Every ASN.1 element now features a `content` ByteArray (even the abstract `Asn1Element`).
-        * For primitives and octet strings this changes nothing
-        * For `Asn1CustomStructure` this now always returns the DER-encoded children in a ByteArray
+    * rename `Asn1Element.length` property to `Asn1Element.contentLength` (and add a delegate with the old name and deprecation annotation to the new property)
     * Add missing `Asn1.Real` shorthand to the ASN.1 builder
     * Add `Asn1Null` object
     * Add human-readable ASN.1 element toString

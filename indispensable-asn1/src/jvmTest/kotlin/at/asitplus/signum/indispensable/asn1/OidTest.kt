@@ -13,7 +13,6 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
 import io.kotest.property.checkAll
-import kotlinx.serialization.Serializable
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import kotlin.time.Clock
 import kotlin.time.Duration
@@ -438,7 +437,7 @@ class OldOIDObjectIdentifier @Throws(Asn1Exception::class) constructor(@Transien
          */
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Primitive): OldOIDObjectIdentifier {
-            if (src.length < 1) throw Asn1StructuralException("Empty OIDs are not supported")
+            if (src.contentLength < 1) throw Asn1StructuralException("Empty OIDs are not supported")
 
             return parse(src.content)
 
@@ -616,7 +615,7 @@ class BigIntObjectIdentifier @Throws(Asn1Exception::class) private constructor(
          */
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Primitive): BigIntObjectIdentifier {
-            if (src.length < 1) throw Asn1StructuralException("Empty OIDs are not supported")
+            if (src.contentLength < 1) throw Asn1StructuralException("Empty OIDs are not supported")
 
             return parse(src.content)
 

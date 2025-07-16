@@ -51,23 +51,27 @@ sealed class Asn1Element(
     }
 
     /**
-     * Length (already properly encoded into a byte array for writing as ASN.1) of the contained data.
+     * Length (already properly encoded into a byte array for writing as ASN.1) **of the contained data**, not the whole
+     * ASN.1 element.
      * For a primitive, this is just the size of the held bytes.
      * For a structure, it is the sum of the number of bytes needed to encode all held child nodes.
      */
-    val encodedLength by lazy { length.encodeLength() }
+    val encodedLength by lazy { contentLength.encodeLength() }
 
     /**
      * Length (as a plain `Int` to work with it in code) of the contained data.
      * For a primitive, this is just the size of the held bytes.
      * For a structure, it is the sum of the number of bytes needed to encode all held child nodes.
      */
-    abstract val length: Int
+    abstract val contentLength: Int
+
+    @Deprecated("unclear name", ReplaceWith("contentLength"))
+    val length get() = contentLength
 
     /**
      * Total number of bytes required to represent the ths element, when encoding to ASN.1.
      */
-    val overallLength by lazy { length + tag.encodedTagLength + encodedLength.size }
+    val overallLength by lazy { contentLength + tag.encodedTagLength + encodedLength.size }
 
 
     private val derEncodedLazy = lazy { Buffer().also { encodeTo(it) }.readByteArray() }
@@ -97,7 +101,7 @@ sealed class Asn1Element(
     fun prettyPrint() = prettyPrint(0)
 
     protected open fun prettyPrintHeader(indent: Int) =
-        "(tag=${tag}" + ", length=${length}" + ", overallLength=${overallLength})"
+        "(tag=${tag}" + ", length=${contentLength}" + ", overallLength=${overallLength})"
 
     protected open fun prettyPrintTrailer(indent: Int) = ""
     protected abstract fun prettyPrintContents(indent: Int): String
@@ -549,7 +553,7 @@ sealed class Asn1Structure(
     fun peek() = if (!hasMoreChildren()) null else children[index]
 
 
-    override val length: Int by lazy { children.fold(0) { acc, child -> acc + child.overallLength } }
+    override val contentLength: Int by lazy { children.fold(0) { acc, child -> acc + child.overallLength } }
 
     override fun doEncode(sink: Sink) {
         children.let { childElems ->
@@ -711,7 +715,7 @@ class Asn1CustomStructure private constructor(
         (" " * indent) + tag.tagClass +
                 " ${tag.tagValue}" +
                 (if (!tag.isConstructed) " PRIMITIVE" else "") +
-                " (=${tag.encodedTag.toHexString(HexFormat.UpperCase)}), length=${length}" +
+                " (=${tag.encodedTag.toHexString(HexFormat.UpperCase)}), length=${contentLength}" +
                 ", overallLength=${overallLength}" +
                 " ${content.toHexString(HexFormat.UpperCase)}"
 
@@ -832,7 +836,7 @@ open class Asn1Primitive(
         if (tag.isConstructed) throw IllegalArgumentException("A primitive cannot have a CONSTRUCTED tag")
     }
 
-    override val length: Int get() = content.size
+    override val contentLength: Int get() = content.size
     override fun doEncode(sink: Sink) {
         sink.write(tag.encodedTag)
         sink.write(encodedLength)
