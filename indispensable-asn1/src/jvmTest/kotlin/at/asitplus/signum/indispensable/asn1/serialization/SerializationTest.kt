@@ -26,8 +26,8 @@ class SerializationTest : FreeSpec({
 
         val nullable: String? = null
         DER.encodeToDer(nullable) shouldBe byteArrayOf()
-
-        DER.encodeToDer<NullableAnnotated?>(null).toHexString() shouldBe "Asn1Null.derEncoded"
+       val annotated=  DER.encodeToDer<NullableAnnotated?>(null).apply { toHexString(HexFormat.UpperCase) shouldBe "0406BF8A39020500" }
+        DER.decodeFromDer<NullableAnnotated?>(annotated) shouldBe null
 
     }
 
@@ -791,7 +791,7 @@ object Nullable
 @Serializable
 @Asn1nnotation(
     Layer(Type.OCTET_STRING),
-    Layer(Type.EXPLICIT_TAG, 1339uL),
+    Layer(Type.EXPLICIT_TAG, 1337uL),
     encodeNull = true
 )
 object NullableAnnotated
