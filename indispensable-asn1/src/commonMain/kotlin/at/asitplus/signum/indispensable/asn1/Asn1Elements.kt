@@ -30,13 +30,6 @@ sealed class Asn1Element(
 
     }
 
-    /**
-     * The DER-encoded content bytes of this ASN.1 element.
-     * **Accessing this property on ASN.1 structures triggers encoding of the contained child nodes**, which may cause
-     * performance hits. Use with caution!
-     */
-    abstract val content: ByteArray
-
     companion object {
         /**
          * Convenience method to directly parse a HEX-string representation of DER-encoded data.
@@ -352,8 +345,8 @@ sealed class Asn1Element(
             }
         }
 
-        val name get() =
-            when (this) {
+        val name
+            get() = when (this) {
                 SET -> "SET"
                 SEQUENCE -> "SEQUENCE"
                 NULL -> "NULL"
@@ -376,7 +369,7 @@ sealed class Asn1Element(
                 TIME_UTC -> "UTC TIME"
                 else -> null
             }
-        }
+
 
         val isConstructed get() = encodedTag.first().toUByte().isConstructed()
 
@@ -602,7 +595,7 @@ sealed class Asn1Structure(
      * **Accessing this property on ASN.1 structures triggers encoding of the contained child nodes**, which may cause
      * performance hits. Use with caution!
      */
-    override val content: ByteArray by lazy { children.fold(byteArrayOf()) { acc, asn1Element -> acc + asn1Element.derEncoded } }
+    val content: ByteArray by lazy { children.fold(byteArrayOf()) { acc, asn1Element -> acc + asn1Element.derEncoded } }
 }
 
 /**
@@ -833,7 +826,7 @@ open class Asn1Primitive(
     /**
      * Raw data contained in this ASN.1 primitive in its encoded form. Requires decoding to interpret it
      */
-    override val content: ByteArray
+    val content: ByteArray
 ) : Asn1Element(tag) {
     init {
         if (tag.isConstructed) throw IllegalArgumentException("A primitive cannot have a CONSTRUCTED tag")
