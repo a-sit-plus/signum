@@ -40,6 +40,7 @@
     * Ktor 3.1.2
     * Datetime 0.7.1
     * Kotest 6.0.0.M5
+ * In `JwsHeader` add property `vcTypeMetadata` with key `vctm`, see [SD-JWT VC](https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-10.html#name-sd-jwt-vc-type-metadata)
 
 ### 3.16.3 / 0.8.3 indispensable-only Hotfix
 * Fix erroneous Base64URL encoding in JOSE data classes
