@@ -162,8 +162,32 @@ internal class DerEncoder(
 
 
     override fun <T> encodeSerializableValue(serializer: SerializationStrategy<T>, value: T) {
-        val value = value ?: if (serializer.descriptor.doEncodeNull) Asn1Null
-        else return
+        if (value == null) {
+            if (serializer.descriptor.doEncodeNull) {
+                // Handle null values with layers similar to encodeNull()
+                val inlineAnnotation = pendingInlineAnnotation
+                pendingInlineAnnotation = null
+
+                // Get property-level annotations
+                val propertyLayers = descriptorAndIndex?.let { (descriptor, index) ->
+                    descriptor.getElementAnnotations(index).asn1Layers
+                } ?: emptyList()
+
+                // Get class-level annotations
+                val classLayers = serializer.descriptor.annotations.asn1Layers
+
+                // Combine property-level annotations with inline and class-level annotations
+                val allLayers = propertyLayers + (inlineAnnotation?.layers?.toList() ?: emptyList()) + classLayers
+
+                // Process annotations and get target buffer
+                val targetBuffer = processAnnotationsAndGetTarget(allLayers)
+
+                // Add Asn1.Null() to the target buffer
+                targetBuffer += Asn1ElementHolder.Element(Asn1.Null())
+            }
+            return
+        }
+
         if (serializer.descriptor == ByteArraySerializer().descriptor) {
             val bitset = descriptorAndIndex?.let { (descriptor, index) ->
                 descriptor.isAsn1BitString(index)
