@@ -22,6 +22,12 @@ class SerializationTest : FreeSpec({
 
     "Nulls and Noughts" {
 
+
+        val internalNullableAnnotatedOmit = InternalNullableAnnotatedOmit(null)
+        val omitEncoded = DER.encodeToDer(internalNullableAnnotatedOmit).apply { toHexString() shouldBe "3000" }
+        DER.decodeFromDer<InternalNullableAnnotatedOmit>(omitEncoded) shouldBe internalNullableAnnotatedOmit
+
+
         val internalNullableAnnotated = InternalNullableAnnotated(null)
         val internalNullableEncoded =
             DER.encodeToDer(internalNullableAnnotated).apply { toHexString() shouldBe "300dbf8a39090407bf8a39039f5a00" }
@@ -43,10 +49,6 @@ class SerializationTest : FreeSpec({
         DER.encodeToDer<NullableAnnotatedImplicitOmit?>(null) shouldBe byteArrayOf()
         DER.decodeFromDer<NullableAnnotatedImplicitOmit?>(byteArrayOf()) shouldBe null
 
-
-        val internalNullableAnnotatedOmit = InternalNullableAnnotatedOmit(null)
-        val omitEncoded = DER.encodeToDer(internalNullableAnnotatedOmit).apply { toHexString() shouldBe "3000" }
-        DER.decodeFromDer<InternalNullableAnnotatedOmit>(omitEncoded) shouldBe internalNullableAnnotatedOmit
 
 
         val annotated = DER.encodeToDer<NullableAnnotated?>(null)

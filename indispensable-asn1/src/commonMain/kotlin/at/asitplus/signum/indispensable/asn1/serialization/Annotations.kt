@@ -54,6 +54,7 @@ enum class Type {
 }
 
 internal val SerialDescriptor.asn1nnotation get() =annotations.find { it is Asn1nnotation } as? Asn1nnotation
+internal fun SerialDescriptor.asn1nnotation(index:Int) = getElementAnnotations(index).find { it is Asn1nnotation } as? Asn1nnotation
 
 internal val Iterable<Annotation>.asn1Layers: List<Layer>
     get() = filterIsInstance<Asn1nnotation>().firstOrNull()?.layers?.asList() ?: emptyList()
@@ -61,7 +62,3 @@ internal val Iterable<Annotation>.asn1Layers: List<Layer>
 internal val SerialDescriptor.isAsn1BitString: Boolean get() = annotations.isAsn1BitString
 internal val List<Annotation>.isAsn1BitString: Boolean get() = filterIsInstance<Asn1nnotation>().any { it.asBitString }
 internal fun SerialDescriptor.isAsn1BitString(index: Int): Boolean = getElementAnnotations(index).isAsn1BitString
-
-internal val SerialDescriptor.doEncodeNull: Boolean get() = annotations.doEncodeNull
-internal val List<Annotation>.doEncodeNull: Boolean get() = filterIsInstance<Asn1nnotation>().any { it.encodeNull }
-internal fun SerialDescriptor.doEncodeNull(index: Int): Boolean = getElementAnnotations(index).doEncodeNull
