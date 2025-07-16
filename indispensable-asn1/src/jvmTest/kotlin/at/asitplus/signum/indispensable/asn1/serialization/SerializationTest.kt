@@ -22,6 +22,16 @@ class SerializationTest : FreeSpec({
 
     "Nulls and Noughts" {
 
+        val internalNullableAnnotated = InternalNullableAnnotated(null)
+        val internalNullableEncoded =
+            DER.encodeToDer(internalNullableAnnotated).apply { toHexString() shouldBe "300dbf8a39090407bf8a39039f5a00" }
+        DER.decodeFromDer<InternalNullableAnnotated>(internalNullableEncoded) shouldBe internalNullableAnnotated
+
+
+        val annotatedImplicit = DER.encodeToDer<NullableAnnotatedImplicit?>(null)
+            .apply { toHexString(HexFormat.UpperCase) shouldBe "BF8A39090407BF8A39039F5A00" }
+        DER.decodeFromDer<NullableAnnotatedImplicit?>(annotatedImplicit) shouldBe null
+
         DER.encodeToDer<Nullable?>(null) shouldBe Asn1Null.derEncoded
 
         val nullable: String? = null
@@ -29,24 +39,19 @@ class SerializationTest : FreeSpec({
         DER.decodeFromDer<String?>(byteArrayOf()) shouldBe null
 
 
-        val annotatedImplicit = DER.encodeToDer<NullableAnnotatedImplicit?>(null)
-            .apply { toHexString(HexFormat.UpperCase) shouldBe "BF8A39090407BF8A39039F5A00" }
 
-        val annotatedImplicitOmit = DER.encodeToDer<NullableAnnotatedImplicitOmit?>(null) shouldBe byteArrayOf()
+        DER.encodeToDer<NullableAnnotatedImplicitOmit?>(null) shouldBe byteArrayOf()
         DER.decodeFromDer<NullableAnnotatedImplicitOmit?>(byteArrayOf()) shouldBe null
-
-        val internalNullableAnnotated = InternalNullableAnnotated(null)
-        DER.encodeToDer(internalNullableAnnotated).apply { toHexString()  shouldBe "300dbf8a39090407bf8a39039f5a00" }
 
 
         val internalNullableAnnotatedOmit = InternalNullableAnnotatedOmit(null)
-        DER.encodeToDer(internalNullableAnnotatedOmit).apply { toHexString()  shouldBe "3000" }
+        val omitEncoded = DER.encodeToDer(internalNullableAnnotatedOmit).apply { toHexString() shouldBe "3000" }
+        DER.decodeFromDer<InternalNullableAnnotatedOmit>(omitEncoded) shouldBe internalNullableAnnotatedOmit
 
 
         val annotated = DER.encodeToDer<NullableAnnotated?>(null)
             .apply { toHexString(HexFormat.UpperCase) shouldBe "0406BF8A39020500" }
         DER.decodeFromDer<NullableAnnotated?>(annotated) shouldBe null
-
 
 
     }
@@ -838,7 +843,7 @@ object NullableAnnotatedImplicit
 object NullableAnnotatedImplicitOmit
 
 @Serializable
-class InternalNullableAnnotated(
+data class InternalNullableAnnotated(
     @Asn1nnotation(
         Layer(Type.EXPLICIT_TAG, 1337uL),
         Layer(Type.OCTET_STRING),
@@ -851,7 +856,7 @@ class InternalNullableAnnotated(
 
 
 @Serializable
-class InternalNullableAnnotatedOmit(
+data class InternalNullableAnnotatedOmit(
     @Asn1nnotation(
         Layer(Type.EXPLICIT_TAG, 1337uL),
         Layer(Type.OCTET_STRING),
