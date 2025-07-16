@@ -32,6 +32,7 @@ class DerDecoder internal constructor(
     private lateinit var propertyDescriptor: SerialDescriptor
     private var propertyAsn1nnotation: Asn1nnotation? = null
     private var inlineAsn1nnotation: Asn1nnotation? = null
+    private var couldBeNull = false
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun decodeInline(descriptor: SerialDescriptor): Decoder {
@@ -74,7 +75,17 @@ class DerDecoder internal constructor(
     }
 
     override fun decodeElementIndex(descriptor: SerialDescriptor): Int {
-        if (index >= elements.size) return CompositeDecoder.DECODE_DONE
+
+        if (index >= descriptor.elementsCount) return CompositeDecoder.DECODE_DONE
+
+        if(descriptor.asn1nnotation(index)?.encodeNull!=true ) {
+            propertyDescriptor = descriptor.getElementDescriptor(index)
+            propertyAsn1nnotation = descriptor.asn1nnotation(index)
+            couldBeNull = true
+            return index
+        }
+        couldBeNull = false
+
 
         propertyDescriptor = descriptor.getElementDescriptor(index)
         propertyAsn1nnotation = descriptor.asn1nnotation(index)
@@ -127,6 +138,19 @@ class DerDecoder internal constructor(
         previousValue: T?
     ): T {
 
+        if(couldBeNull){
+            if(index==elements.size){
+                index++
+                return null as T
+            }
+            //TODO this check here does not work out
+            if(elements[index].tag.tagValue != propertyAsn1nnotation?.layers?.firstOrNull()?.tag?: (if(propertyAsn1nnotation?.asBitString==true) Asn1Element.Tag.BIT_STRING else null)  ?:getDefaultTagForDescriptor(propertyDescriptor)?.tagValue)
+                throw SerializationException("Invalid ASN.1 data")
+
+        }
+
+        //TODO check if vould be null
+        //TODO here get annotations, match tag (if next child present) and decide if we want to decode
         val currentAnnotatedElement = elements[index]
         if (currentAnnotatedElement == Asn1Null) {
             if (propertyDescriptor.asn1nnotation?.encodeNull != true && !(propertyAsn1nnotation?.encodeNull ?: false)) {
