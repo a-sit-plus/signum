@@ -139,12 +139,23 @@ class DerDecoder internal constructor(
     ): T {
 
         if(couldBeNull){
+            couldBeNull=false
             if(index==elements.size){
                 index++
+
                 return null as T
             }
+
+            val class1nnotaton =  deserializer.descriptor.asn1nnotation
+            val classOuter = class1nnotaton?.layers?.firstOrNull()?.tag
+            val classBitString = if (class1nnotaton?.asBitString == true) Asn1Element.Tag.BIT_STRING.tagValue else null
+            val classDefault = getDefaultTagForDescriptor(deserializer.descriptor)?.tagValue
             //TODO this check here does not work out
-            if(elements[index].tag.tagValue != propertyAsn1nnotation?.layers?.firstOrNull()?.tag?: (if(propertyAsn1nnotation?.asBitString==true) Asn1Element.Tag.BIT_STRING else null)  ?:getDefaultTagForDescriptor(propertyDescriptor)?.tagValue)
+            val propertyOuter = propertyAsn1nnotation?.layers?.firstOrNull()?.tag
+            val propertyBitString = if (propertyAsn1nnotation?.asBitString == true) Asn1Element.Tag.BIT_STRING.tagValue else null
+            val propertyDefault = getDefaultTagForDescriptor(propertyDescriptor)?.tagValue
+            if(propertyDefault!=classDefault) throw SerializationException("DAMND YOU")
+            if(elements[index].tag.tagValue != propertyOuter?:classOuter?: propertyBitString ?:classBitString?: propertyDefault/**/)
                 throw SerializationException("Invalid ASN.1 data")
 
         }
@@ -209,7 +220,7 @@ class DerDecoder internal constructor(
 
         tagToValidate?.let { expected ->
             if (processedElement.tag != expected) {
-                throw Asn1TagMismatchException(expected, processedElement.tag)
+                throw SerializationException(Asn1TagMismatchException(expected, processedElement.tag))
             }
         }
 
@@ -250,7 +261,7 @@ class DerDecoder internal constructor(
             Asn1ElementSerializer -> return processedElement
                 .also {
                     expectedTag?.let { ex ->
-                        if (it.tag != ex) throw Asn1TagMismatchException(ex, it.tag)
+                        if (it.tag != ex) throw SerializationException( Asn1TagMismatchException(ex, it.tag))
                     }
                 }
                 .also { index++ } as T
@@ -305,11 +316,11 @@ class DerDecoder internal constructor(
             when (annotation.type) {
                 Type.OCTET_STRING -> {
                     if (currentTag != Asn1Element.Tag.OCTET_STRING) {
-                        throw Asn1TagMismatchException(Asn1Element.Tag.OCTET_STRING, currentElement.tag)
+                        throw SerializationException(Asn1TagMismatchException(Asn1Element.Tag.OCTET_STRING, currentElement.tag))
                     }
                     val octetString = currentElement.asEncapsulatingOctetString()
                     currentElement = octetString.nextChild()
-                    if (octetString.hasMoreChildren()) throw Asn1StructuralException("Octet string should only contain one child")
+                    if (octetString.hasMoreChildren()) throw SerializationException(Asn1StructuralException("Octet string should only contain one child"))
                     currentTag = currentElement.tag
 
                 }
@@ -322,7 +333,7 @@ class DerDecoder internal constructor(
                     }
                     val octetString = currentElement.asStructure()
                     currentElement = octetString.nextChild()
-                    if (octetString.hasMoreChildren()) throw Asn1StructuralException("Explicit tag should only contain one child")
+                    if (octetString.hasMoreChildren()) throw SerializationException( Asn1StructuralException("Explicit tag should only contain one child"))
                     currentTag = currentElement.tag
 
                 }
@@ -331,7 +342,7 @@ class DerDecoder internal constructor(
 
                     val expectedTag = Asn1Element.Tag(annotation.tag, currentTag.isConstructed, currentTag.tagClass)
                     if (currentTag != expectedTag) {
-                        throw Asn1TagMismatchException(expectedTag, currentElement.tag)
+                        throw SerializationException(Asn1TagMismatchException(expectedTag, currentElement.tag))
                     }
                     if (annotations.size > i + 1) {
                         val nextTag = annotations[i + 1]
@@ -381,9 +392,9 @@ private fun Asn1Primitive.decodeString(implicitTagOverride: Asn1Element.Tag?): S
             Asn1Element.Tag.STRING_IA5,
                 -> decodeToString()
 
-            else -> throw Asn1TagMismatchException(Asn1Element.Tag.STRING_UTF8, tag)
+            else -> throw SerializationException(Asn1TagMismatchException(Asn1Element.Tag.STRING_UTF8, tag))
         }
     } else {
-        if (tag != implicitTagOverride) throw Asn1TagMismatchException(implicitTagOverride, tag)
+        if (tag != implicitTagOverride) throw SerializationException( Asn1TagMismatchException(implicitTagOverride, tag))
         String.decodeFromAsn1ContentBytes(content)
     }
