@@ -26,8 +26,27 @@ class SerializationTest : FreeSpec({
 
         val nullable: String? = null
         DER.encodeToDer(nullable) shouldBe byteArrayOf()
-       val annotated=  DER.encodeToDer<NullableAnnotated?>(null).apply { toHexString(HexFormat.UpperCase) shouldBe "0406BF8A39020500" }
+
+
+
+        val annotatedImplicit = DER.encodeToDer<NullableAnnotatedImplicit?>(null)
+            .apply { toHexString(HexFormat.UpperCase) shouldBe "BF8A39090407BF8A39039F5A00" }
+
+        val annotatedImplicitOmit = DER.encodeToDer<NullableAnnotatedImplicitOmit?>(null) shouldBe byteArrayOf()
+
+        val internalNullableAnnotated = InternalNullableAnnotated(null)
+        DER.encodeToDer(internalNullableAnnotated).apply { toHexString()  shouldBe "300dbf8a39090407bf8a39039f5a00" }
+
+
+        val internalNullableAnnotatedOmit = InternalNullableAnnotatedOmit(null)
+        DER.encodeToDer(internalNullableAnnotatedOmit).apply { toHexString()  shouldBe "3000" }
+
+
+        val annotated = DER.encodeToDer<NullableAnnotated?>(null)
+            .apply { toHexString(HexFormat.UpperCase) shouldBe "0406BF8A39020500" }
         DER.decodeFromDer<NullableAnnotated?>(annotated) shouldBe null
+
+
 
     }
 
@@ -795,3 +814,48 @@ object Nullable
     encodeNull = true
 )
 object NullableAnnotated
+
+
+@Serializable
+@Asn1nnotation(
+    Layer(Type.EXPLICIT_TAG, 1337uL),
+    Layer(Type.OCTET_STRING),
+    Layer(Type.EXPLICIT_TAG, 1337uL),
+    Layer(Type.IMPLICIT_TAG, 90uL),
+    encodeNull = true
+)
+object NullableAnnotatedImplicit
+
+
+@Serializable
+@Asn1nnotation(
+    Layer(Type.EXPLICIT_TAG, 1337uL),
+    Layer(Type.OCTET_STRING),
+    Layer(Type.EXPLICIT_TAG, 1337uL),
+    Layer(Type.IMPLICIT_TAG, 90uL),
+)
+object NullableAnnotatedImplicitOmit
+
+@Serializable
+class InternalNullableAnnotated(
+    @Asn1nnotation(
+        Layer(Type.EXPLICIT_TAG, 1337uL),
+        Layer(Type.OCTET_STRING),
+        Layer(Type.EXPLICIT_TAG, 1337uL),
+        Layer(Type.IMPLICIT_TAG, 90uL),
+        encodeNull = true
+    )
+    val nullable: String?
+)
+
+
+@Serializable
+class InternalNullableAnnotatedOmit(
+    @Asn1nnotation(
+        Layer(Type.EXPLICIT_TAG, 1337uL),
+        Layer(Type.OCTET_STRING),
+        Layer(Type.EXPLICIT_TAG, 1337uL),
+        Layer(Type.IMPLICIT_TAG, 90uL),
+    )
+    val nullable: String?
+)
