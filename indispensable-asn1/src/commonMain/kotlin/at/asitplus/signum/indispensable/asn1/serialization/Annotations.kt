@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.asn1.serialization
 
+import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.internals.ImplementationError
 import kotlinx.serialization.SerialInfo
 import kotlinx.serialization.SerializationException
@@ -41,7 +42,7 @@ annotation class Layer(
  */
 val Layer.tag: ULong
     get() = when (this.type) {
-        Type.OCTET_STRING -> throw ImplementationError("Cannot specify tag for OCTET STRING")
+        Type.OCTET_STRING -> Asn1Element.Tag.OCTET_STRING.tagValue
         Type.EXPLICIT_TAG, Type.IMPLICIT_TAG -> if (singleTag.size != 1) throw SerializationException("Exactly one single tag value must be specified, got: ${singleTag.size}") else singleTag.first()
     }
 /**
