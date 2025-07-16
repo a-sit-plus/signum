@@ -26,13 +26,14 @@ class SerializationTest : FreeSpec({
 
         val nullable: String? = null
         DER.encodeToDer(nullable) shouldBe byteArrayOf()
-
+        DER.decodeFromDer<String?>(byteArrayOf()) shouldBe null
 
 
         val annotatedImplicit = DER.encodeToDer<NullableAnnotatedImplicit?>(null)
             .apply { toHexString(HexFormat.UpperCase) shouldBe "BF8A39090407BF8A39039F5A00" }
 
         val annotatedImplicitOmit = DER.encodeToDer<NullableAnnotatedImplicitOmit?>(null) shouldBe byteArrayOf()
+        DER.decodeFromDer<NullableAnnotatedImplicitOmit?>(byteArrayOf()) shouldBe null
 
         val internalNullableAnnotated = InternalNullableAnnotated(null)
         DER.encodeToDer(internalNullableAnnotated).apply { toHexString()  shouldBe "300dbf8a39090407bf8a39039f5a00" }

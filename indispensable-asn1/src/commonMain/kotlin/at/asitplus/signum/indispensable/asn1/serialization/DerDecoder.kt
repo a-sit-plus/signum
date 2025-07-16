@@ -138,7 +138,7 @@ class DerDecoder internal constructor(
     }
 
     override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
-
+        if( elements.isEmpty() && deserializer.descriptor.isNullable) return null as T
         val currentAnnotatedElement = elements[index]
         val inlineAnnotation = pendingInlineAnnotation
         pendingInlineAnnotation = null
