@@ -29,6 +29,7 @@ kotlin {
     watchosX64()
     watchosArm32()
     watchosArm64()
+    //we cannot currently test this, so it is only enabled for publishing
     gradle.startParameter.taskNames.firstOrNull { it.contains("publish") }?.let {
         watchosDeviceArm64()
     }
@@ -74,7 +75,7 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(kotest("property"))
-                implementation(project(":indispensable")) //TODO for releases comment out this dependency
+                implementation(project(":indispensable"))
             }
         }
     }
