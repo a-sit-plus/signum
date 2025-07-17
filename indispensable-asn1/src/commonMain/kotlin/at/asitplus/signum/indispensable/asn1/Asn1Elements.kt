@@ -524,7 +524,7 @@ sealed class Asn1Structure(
         message = "Use an explicit iterator()",
         level = DeprecationLevel.ERROR
     )
-    fun nextChildOrNull() = backwardsCompatibilityIterator.nextOrNull()
+    fun nextChildOrNull() = backwardsCompatibilityIterator.peek()?.also { backwardsCompatibilityIterator.next() }
 
     /**
      * Returns `true` if more children can be retrieved by [nextChild]. `false` otherwise
@@ -586,19 +586,34 @@ sealed class Asn1Structure(
     )
     fun peek() = backwardsCompatibilityIterator.peek()
 
+    override operator fun iterator() = Iterator(isForward = true)
+    fun reverseIterator() = Iterator(isForward = false)
+
     /**
      * An iterator over a list of [Asn1Element] children within an ASN.1 structure
      * Designed for traversing ASN.1 components in decoding/parsing scenarios
      * */
-    inner class Iterator(
-        private var direction: Int = 1,
-        index: Int = 0
+    inner class Iterator internal constructor(
+        /** Whether this is a forward iterator */
+        val isForward: Boolean
     ): kotlin.collections.Iterator<Asn1Element> {
 
-        var index: Int = index
+        /** Whether this is a reverse iterator */
+        val isReverse get() = !isForward
+
+        /** The index of the last element returned by [next] */
+        var currentIndex: Int =
+            if (isForward) -1 else children.size
             private set
 
-        val isForward = direction == 1
+        /** The last element returned by [next]. Throws [NoSuchElementException] if [next] was not yet called. */
+        val currentElement get() =
+            try { children[currentIndex] }
+            catch (x: IndexOutOfBoundsException) { throw NoSuchElementException(x.message) }
+
+        private val step get() = if (isForward) 1 else -1
+
+        private val nextIndex get() = currentIndex + step
 
         /**
          * Returns the next child held by this structure. Useful for iterating over its children when parsing complex structures.
@@ -606,8 +621,7 @@ sealed class Asn1Structure(
          */
         override fun next() =
             catchingUnwrapped {
-                val currentElement = children[index]
-                index += direction
+                currentIndex = nextIndex
                 currentElement
             }.getOrElse { throw NoSuchElementException("No more content left") }
 
@@ -619,22 +633,21 @@ sealed class Asn1Structure(
         /**
          * Returns `true` if more children can be retrieved by [next]. `false` otherwise
          */
-        override fun hasNext() = if (isForward) children.size > index else index >= 0
+        override fun hasNext() = if (isForward) (nextIndex < children.size) else (nextIndex >= 0)
 
         /**
-         * Returns the current child or `null`, if there are no children left
-         * (useful when iterating over this structure's children).
+         * Returns the next child that would be returned by a call to [next] without advancing to iterator.
+         * If there are no more children, returns `null`.
          */
-        fun peek() = if (!hasNext()) null else children[index]
+        fun peek() = if (hasNext()) children[nextIndex] else null
 
         /**
-         * Returns iterator with reversed direction
-         * */
+         * Returns an iterator with reversed direction.
+         * Current iteration position is preserved.
+         */
         fun reversed(): Iterator =
-            Iterator(-direction, index)
+            Iterator(isForward = !isForward).also { it.currentIndex = this.currentIndex }
     }
-
-    override operator fun iterator() = Iterator()
 
     /**
      * Decodes the content of this ASN.1 structure using the provided [decoder] lambda.

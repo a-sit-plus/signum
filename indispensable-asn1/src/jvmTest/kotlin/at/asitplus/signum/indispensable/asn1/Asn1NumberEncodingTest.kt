@@ -69,7 +69,7 @@ class Asn1NumberEncodingTest:FreeSpec( {
             "successes" - {
                 checkAll(iterations = 150000, Arb.long()) {
                     val seq = Asn1.Sequence { +Asn1.Int(it) }
-                    val decoded = (seq.nextChild() as Asn1Primitive).decodeToLong()
+                    val decoded = (seq.iterator().next() as Asn1Primitive).decodeToLong()
                     decoded shouldBe it
 
                     Asn1.Int(it).derEncoded shouldBe ASN1Integer(it).encoded
@@ -98,7 +98,7 @@ class Asn1NumberEncodingTest:FreeSpec( {
             "successes" - {
                 checkAll(iterations = 75000, Arb.int()) {
                     val seq = Asn1.Sequence { +Asn1.Int(it) }
-                    val decoded = (seq.nextChild() as Asn1Primitive).decodeToInt()
+                    val decoded = (seq.iterator().next() as Asn1Primitive).decodeToInt()
                     decoded shouldBe it
 
                     Asn1.Int(it).derEncoded shouldBe ASN1Integer(it.toLong()).encoded
@@ -125,7 +125,7 @@ class Asn1NumberEncodingTest:FreeSpec( {
             "successes" - {
                 checkAll(iterations = 75000, Arb.uInt()) {
                     val seq = Asn1.Sequence { +Asn1.Int(it) }
-                    val decoded = (seq.nextChild() as Asn1Primitive).decodeToUInt()
+                    val decoded = (seq.iterator().next() as Asn1Primitive).decodeToUInt()
                     decoded shouldBe it
 
                     Asn1.Int(it).derEncoded shouldBe ASN1Integer(it.toBigInteger().toJavaBigInteger()).encoded
@@ -175,7 +175,7 @@ class Asn1NumberEncodingTest:FreeSpec( {
             "successes" - {
                 checkAll(iterations = 75000, Arb.uLong()) {
                     val seq = Asn1.Sequence { +Asn1.Int(it) }
-                    val decoded = (seq.nextChild() as Asn1Primitive).decodeToULong()
+                    val decoded = (seq.iterator().next() as Asn1Primitive).decodeToULong()
                     decoded shouldBe it
 
                     Asn1.Int(it).derEncoded shouldBe ASN1Integer(it.toBigInteger().toJavaBigInteger()).encoded

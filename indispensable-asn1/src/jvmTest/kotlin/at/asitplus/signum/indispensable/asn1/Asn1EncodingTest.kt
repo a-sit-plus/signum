@@ -26,7 +26,7 @@ class Asn1EncodingTest : FreeSpec({
     "Boolean" - {
         checkAll(Arb.boolean()) {
             val seq = Asn1.Sequence { +Asn1.Bool(it) }
-            val decoded = (seq.nextChild() as Asn1Primitive).decodeToBoolean()
+            val decoded = (seq.iterator().next() as Asn1Primitive).decodeToBoolean()
             decoded shouldBe it
         }
     }
