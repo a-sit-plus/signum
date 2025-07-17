@@ -66,6 +66,13 @@ interface Asn1Encodable<out A : Asn1Element> {
      * If a CONSTRUCTED Tag is applied to an ASN.1 Primitive, the CONSTRUCTED bit is overridden and set to zero
      */
     infix fun withImplicitTag(template: Tag.Template) = encodeToTlv().withImplicitTag(template)
+
+    /**
+     * shorthand for [Asn1Element.prettyPrint], hence, a call to this function encodes this encodable to an [Asn1Element],
+     * holds it in memory, pretty prints it, and discards it.
+     * This characteristic may be relevant in memory-constrained environments.
+     */
+    fun prettyPrintAsn1(): String = encodeToTlv().prettyPrint()
 }
 
 /**

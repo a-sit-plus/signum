@@ -313,6 +313,7 @@ On the other hand, parsing an OID from ASN.1-encoded bytes and re-encoding it ar
 
 For debug purposes, it is possible to add descriptions to OIDs (or override existing ones) by associating an OID with its description.
 For example, using `KnownOIDs[theExpressionistsOid] = "Edvard Munch"` will cause `KnownOIDs[theExpressionistsOid]` to yield `"Edvard Munch"`.
+
 ### ASN.1 Integer
 The ASN.1 engine provides its own bigint-like class, `Asn1Integer`. It is capable of encoding arbitrary length signed integers
 to write and read them from ASN.1 structures.
@@ -331,7 +332,7 @@ can result in a loss of precision.
 When decoding to `Float`, this is even more likely to happen.
 To avoid this, simply keep the `Asn1Real` as-is.
 
-### ASN.1 Builder DSL
+## ASN.1 Builder DSL
 So far, custom high-level types and manually constructing low-level types was discussed.
 When actually constructing ASN.1 structures, a far more streamlined and intuitive approach exists.
 Signum's Indispensable ASN.1 engine comes with a powerful, expressive ASN.1 builder DSL, including shorthand functions
@@ -420,3 +421,72 @@ ASN.1 primitive as-is.
     The builder also takes any `Asn1Encodable`, so you can also add an `X509Certificate`, or a `CryptoPublicKey` using
     the same concise syntax.  
     **Do checkout the [API docs](dokka/indispensable-asn1/at.asitplus.signum.indispensable.asn1.encoding/-asn1/index.html) for a full list of builder functions!**
+
+## Debugging and Pretty-Printing
+Signum's ASN.1 engine provides pretty-printing capabilities: 
+`Asn1Encodable` and `Asn1Element` feature a `prettyPrint()` function.
+The output of this function is very verbose and aimed at humans debugging ASN.1 structures.
+It also ties in with OID descriptions;
+any OIDs described using `KnownOIDs` will be annotated.
+You likely want to call `KnownOIDs.describeAll()` (a part of [indispensable's ASN.1 addons](indispensable.md#notes-on-object-identifiers)) before pretty printing.
+For tags that are well-known, pretty-printing will automatically decode contents on a best-effort basis and display them.
+A pretty-printed certificate will look as follows:
+
+```protobuf
+Sequence(tag=16 CONSTRUCTED (=30) (SEQUENCE), length=305, overallLength=309)
+{
+  Sequence(tag=16 CONSTRUCTED (=30) (SEQUENCE), length=216, overallLength=219)
+  {
+    Tagged(tag=CONTEXT_SPECIFIC 0 CONSTRUCTED (=A0), length=3, overallLength=5)
+    {
+      Primitive(tag=2 (=02) (INTEGER), length=1, overallLength=3) 2
+    }
+    Primitive(tag=2 (=02) (INTEGER), length=8, overallLength=10) Non-complaint content: 0x3546897BCA2ACCCB
+    Sequence(tag=16 CONSTRUCTED (=30) (SEQUENCE), length=10, overallLength=12)
+    {
+      Primitive(tag=6 (=06) (OBJECT IDENTIFIER), length=8, overallLength=10) ecdsaWithSHA256 (ANSI X9.62 ECDSA algorithm with SHA256) (1.2.840.10045.4.3.2)
+    }
+    Sequence(tag=16 CONSTRUCTED (=30) (SEQUENCE), length=31, overallLength=33)
+    {
+      Set(tag=17 CONSTRUCTED (=31) (SET), length=29, overallLength=31)
+      {
+        Sequence(tag=16 CONSTRUCTED (=30) (SEQUENCE), length=27, overallLength=29)
+        {
+          Primitive(tag=6 (=06) (OBJECT IDENTIFIER), length=3, overallLength=5) commonName (X.520 DN component) (2.5.4.3)
+          Primitive(tag=12 (=0C) (UTF8 STRING), length=20, overallLength=22) DefaultCryptoService
+        }
+      }
+    }
+    Sequence(tag=16 CONSTRUCTED (=30) (SEQUENCE), length=30, overallLength=32)
+    {
+      Primitive(tag=23 (=17) (UTC TIME), length=13, overallLength=15) 2025-07-09T16:36:43Z
+      Primitive(tag=23 (=17) (UTC TIME), length=13, overallLength=15) 2025-08-08T16:36:43Z
+    }
+    Sequence(tag=16 CONSTRUCTED (=30) (SEQUENCE), length=31, overallLength=33)
+    {
+      Set(tag=17 CONSTRUCTED (=31) (SET), length=29, overallLength=31)
+      {
+        Sequence(tag=16 CONSTRUCTED (=30) (SEQUENCE), length=27, overallLength=29)
+        {
+          Primitive(tag=6 (=06) (OBJECT IDENTIFIER), length=3, overallLength=5) commonName (X.520 DN component) (2.5.4.3)
+          Primitive(tag=12 (=0C) (UTF8 STRING), length=20, overallLength=22) DefaultCryptoService
+        }
+      }
+    }
+    Sequence(tag=16 CONSTRUCTED (=30) (SEQUENCE), length=89, overallLength=91)
+    {
+      Sequence(tag=16 CONSTRUCTED (=30) (SEQUENCE), length=19, overallLength=21)
+      {
+        Primitive(tag=6 (=06) (OBJECT IDENTIFIER), length=7, overallLength=9) ecPublicKey (ANSI X9.62 public key type) (1.2.840.10045.2.1)
+        Primitive(tag=6 (=06) (OBJECT IDENTIFIER), length=8, overallLength=10) prime256v1 (ANSI X9.62 named elliptic curve) (1.2.840.10045.3.1.7)
+      }
+      Primitive(tag=3 (=03) (BIT STRING), length=66, overallLength=68) 00041F2F8DE2979325CBB6E6244D2197BD911CE9EC14B64ADB308C4564CC6004D8DDAA7368B1D6E5D5C01D9D43D5777F2A63EA63565469CA050A9F5F0D1EFF0A59C6
+    }
+  }
+  Sequence(tag=16 CONSTRUCTED (=30) (SEQUENCE), length=10, overallLength=12)
+  {
+    Primitive(tag=6 (=06) (OBJECT IDENTIFIER), length=8, overallLength=10) ecdsaWithSHA256 (ANSI X9.62 ECDSA algorithm with SHA256) (1.2.840.10045.4.3.2)
+  }
+  Primitive(tag=3 (=03) (BIT STRING), length=72, overallLength=74) 00304502202ACD359890E9532398B1761133124750B8DB5719B032160F0E31233383F9A2E8022100BAEC2C1FA464003A2E8FD2ED15E02E178CA58EB7B14CEA7560C30BAB08CDC3CB
+}
+```
