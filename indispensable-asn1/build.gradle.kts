@@ -29,7 +29,9 @@ kotlin {
     watchosX64()
     watchosArm32()
     watchosArm64()
-    //watchosDeviceArm64() //THIS WILL BE COMMENTED-IN AUTOMATICALLY BY THE RELEASE WORKFLOW. DO NOT CHANGE THIS LINE
+    gradle.startParameter.taskNames.firstOrNull { it.contains("publish") }?.let {
+        watchosDeviceArm64()
+    }
     tvosSimulatorArm64()
     tvosX64()
     tvosArm64()
@@ -72,7 +74,7 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(kotest("property"))
-               implementation(project(":indispensable")) //TODO for releases comment out this dependency
+                implementation(project(":indispensable")) //TODO for releases comment out this dependency
             }
         }
     }
