@@ -39,7 +39,7 @@ inline fun <reified T : Any> io.kotest.core.spec.style.FreeSpec.enumConsistencyT
 }
 
 class EnumConsistencyTests : FreeSpec({
-    //TODO the tests for these
-    // enumConsistencyTest<MessageAuthenticationCode>()
+     enumConsistencyTest<MessageAuthenticationCode>()
+    //TODO this test does not work any more since we started nesting stuff
     // enumConsistencyTest<DataIntegrityAlgorithm>()
 })
