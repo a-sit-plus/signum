@@ -15,7 +15,7 @@ class ConversionTest : FreeSpec({
     "JWS -> SigAlg -> JWS is stable" - {
         "All" - {
             withData(JwsAlgorithm.entries) {
-                it.algorithm.toJwsAlgorithm() shouldSucceedWith it
+                it.algorithm!!.toJwsAlgorithm() shouldSucceedWith it
             }
         }
         "Specialized SignatureAlgorithm" - {

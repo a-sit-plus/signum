@@ -4,14 +4,11 @@ package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.HMAC
-import at.asitplus.signum.indispensable.MessageAuthenticationCode
-import at.asitplus.signum.indispensable.misc.BitLength
-import at.asitplus.signum.indispensable.misc.bit
-import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.symmetric.SpecializedSymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -218,7 +215,7 @@ fun SignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> = c
 }
 
 fun DataIntegrityAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.DataIntegrity> =
-     when (this) {
+    when (this) {
         is SignatureAlgorithm -> toCoseAlgorithm()
         is MessageAuthenticationCode -> toCoseAlgorithm()
     }
@@ -250,10 +247,15 @@ fun SymmetricEncryptionAlgorithm<*, *, *>.toCoseAlgorithm(): KmmResult<CoseAlgor
 
 /** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
 fun SpecializedSignatureAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.Signature> =
-    this.algorithm.toCoseAlgorithm()
+    this.algorithm?.toCoseAlgorithm()
+        ?: KmmResult.failure(UnsupportedCryptoException("Unsupported algorithm: ${this::class.simpleName}"))
+
 /** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
 fun SpecializedDataIntegrityAlgorithm.toCoseAlgorithm(): KmmResult<CoseAlgorithm.DataIntegrity> =
-    this.algorithm.toCoseAlgorithm()
+    this.algorithm?.toCoseAlgorithm()
+        ?: KmmResult.failure(UnsupportedCryptoException("Unsupported algorithm: ${this::class.simpleName}"))
+
 /** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
 fun SpecializedMessageAuthenticationCode.toCoseAlgorithm(): KmmResult<CoseAlgorithm.MAC> =
-    this.algorithm.toCoseAlgorithm()
+    this.algorithm?.toCoseAlgorithm()
+        ?: KmmResult.failure(UnsupportedCryptoException("Unsupported algorithm: ${this::class.simpleName}"))

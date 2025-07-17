@@ -153,7 +153,14 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 initSign(keyPair.private)
                 update(tbsCert.encodeToDer())
                 sign()
-            }.let { X509Certificate(tbsCert, certAlg, CryptoSignature.parseFromJca(it, certAlg)) }
+            }.let {
+                X509Certificate(
+                    tbsCert,
+                    certAlg,
+                    CryptoSignature.parseFromJca(it, certAlg)
+                        ?: throw UnsupportedCryptoException("Unsupported algorithm: ${this::class.simpleName}")
+                )
+            }
             ctx.ks.setKeyEntry(alias, keyPair.private, config.privateKeyPassword,
                             arrayOf(cert.toJcaCertificate().getOrThrow()))
             ctx.markAsDirty()

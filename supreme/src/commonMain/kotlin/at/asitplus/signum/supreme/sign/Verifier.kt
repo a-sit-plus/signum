@@ -265,9 +265,9 @@ private fun SignatureAlgorithm.RSA.verifierForImpl
 /** @see [SignatureAlgorithm.verifierFor] */
 fun SpecializedSignatureAlgorithm.verifierFor
             (publicKey: CryptoPublicKey, configure: ConfigurePlatformVerifier = null) =
-    this.algorithm.verifierFor(publicKey, configure)
+    this.algorithm?.verifierFor(publicKey, configure)?: KmmResult.failure(UnsupportedCryptoException("Unsupported algorithm: ${this::class.simpleName}"))
 
 /** @see [SignatureAlgorithm.platformVerifierFor] */
 fun SpecializedSignatureAlgorithm.platformVerifierFor
             (publicKey: CryptoPublicKey, configure: ConfigurePlatformVerifier = null) =
-    this.algorithm.platformVerifierFor(publicKey, configure)
+    this.algorithm?.platformVerifierFor(publicKey, configure) ?: KmmResult.failure(UnsupportedCryptoException("Unsupported algorithm: ${this::class.simpleName}"))

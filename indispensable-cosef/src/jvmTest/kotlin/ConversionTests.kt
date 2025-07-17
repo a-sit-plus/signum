@@ -20,7 +20,7 @@ class ConversionTests : FreeSpec({
 
         "All" - {
             withData(CoseAlgorithm.DataIntegrity.entries) {
-                it.algorithm.toCoseAlgorithm() shouldSucceedWith it
+                it.algorithm!!.toCoseAlgorithm() shouldSucceedWith it
             }
         }
         "Specialized Signature Algorithms" - {

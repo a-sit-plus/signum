@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.asn1.toJavaBigInteger
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
@@ -67,7 +68,8 @@ internal expect fun SignatureAlgorithm.RSA.getRSAPlatformSignatureInstance(provi
 
 /** Get a pre-configured JCA instance for this algorithm */
 fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = null) =
-    this.algorithm.getJCASignatureInstance(provider)
+    this.algorithm?.getJCASignatureInstance(provider)
+        ?: KmmResult.failure(UnsupportedCryptoException("Unsupported algorithm: ${this::class.simpleName}"))
 
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
 fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) = catching {
@@ -84,14 +86,12 @@ fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null
                 false -> throw UnsupportedOperationException("Pre-hashed RSA input is unsupported on JVM")
             }
         }
-
-        else -> TODO("$this is unsupported with pre-hashed data")
     }
 }
 
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
 fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) =
-    this.algorithm.getJCASignatureInstancePreHashed(provider)
+    this.algorithm?.getJCASignatureInstancePreHashed(provider)?: KmmResult.failure(UnsupportedCryptoException("Unsupported algorithm: ${this::class.simpleName}"))
 
 val Digest.jcaName
     get() = when (this) {
@@ -211,7 +211,7 @@ fun CryptoSignature.Companion.parseFromJca(
 fun CryptoSignature.Companion.parseFromJca(
     input: ByteArray,
     algorithm: SpecializedSignatureAlgorithm
-) = parseFromJca(input, algorithm.algorithm)
+) = algorithm.algorithm?.let { parseFromJca(input, it) }
 
 /**
  * Parses a signature produced by the JCA digestwithECDSA algorithm.

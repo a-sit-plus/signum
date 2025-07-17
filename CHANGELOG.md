@@ -8,6 +8,7 @@
     * HKDF
     * scrypt
 * Refactor `X509SignatureAlgorithm` from an enum to a open class to allow decoding of unsupported algorithms
+    * The `algorithm` property of `SpecializedDataIntegrityAlgorithm`,  `SpecializedSignatureAlgorithm`, and `SpecializedMessageAuthenticationCode` is not nullable
 * Refactor `X509Certificate` and `TbsCertificate` to store the raw signature as `Asn1Element` and the raw public key as `Asn1Sequence` enabling support for certificates with unsupported signature algorithms
     * Use the new nullable `decodedSignature` and `decodedPublicKey`, respectively.
     * The old `publicKey` and `signature` are being deprecated.

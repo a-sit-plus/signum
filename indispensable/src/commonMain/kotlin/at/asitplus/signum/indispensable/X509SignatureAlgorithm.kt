@@ -1,24 +1,13 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.asn1.Asn1Decodable
-import at.asitplus.signum.indispensable.asn1.Asn1Element
-import at.asitplus.signum.indispensable.asn1.Asn1Encodable
-import at.asitplus.signum.indispensable.asn1.Asn1Exception
-import at.asitplus.signum.indispensable.asn1.Asn1ExplicitlyTagged
-import at.asitplus.signum.indispensable.asn1.Asn1Primitive
-import at.asitplus.signum.indispensable.asn1.Asn1Sequence
-import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
-import at.asitplus.signum.indispensable.asn1.Identifiable
-import at.asitplus.signum.indispensable.asn1.KnownOIDs
-import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
-import at.asitplus.signum.indispensable.asn1.readOid
-import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.indispensable.asn1.runRethrowing
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -38,7 +27,8 @@ open class X509SignatureAlgorithm(
     data class EC(override val oid: ObjectIdentifier, override val name: String) : X509SignatureAlgorithm(oid, name)
 
     // RSA
-    data class RSA(override val oid: ObjectIdentifier, override val name: String, val pssBits: Int? = null) : X509SignatureAlgorithm(oid, name)
+    data class RSA(override val oid: ObjectIdentifier, override val name: String, val pssBits: Int? = null) :
+        X509SignatureAlgorithm(oid, name)
 
 
     private fun encodePSSParams(bits: Int): Asn1Sequence =
@@ -96,17 +86,13 @@ open class X509SignatureAlgorithm(
             else -> throw IllegalArgumentException("Unsupported hash algorithm.")
         }
 
-    /**
-     * **Accessing this property may throw.**
-     * @throws IllegalArgumentException in case a non-supported [X509SignatureAlgorithm] is to be converted
-     */
     // TODO update when core signature data classes become extensible
-    override val algorithm: SignatureAlgorithm
+    override val algorithm: SignatureAlgorithm?
         @Throws(IllegalArgumentException::class)
         get() = when (this) {
             is EC -> SignatureAlgorithm.ECDSA(digest, null)
             is RSA -> SignatureAlgorithm.RSA(digest, if (pssBits != null) RSAPadding.PSS else RSAPadding.PKCS1)
-            else -> throw IllegalArgumentException("Unsupported signature algorithm.")
+            else -> null
         }
 
     override fun equals(other: Any?): Boolean {
@@ -139,7 +125,7 @@ open class X509SignatureAlgorithm(
         val PS384 = RSA(KnownOIDs.rsaPSS, "PS384", 384)
         val PS512 = RSA(KnownOIDs.rsaPSS, "PS512", 512)
 
-        val RS1   = RSA(KnownOIDs.sha1WithRSAEncryption, "RS1")
+        val RS1 = RSA(KnownOIDs.sha1WithRSAEncryption, "RS1")
         val RS256 = RSA(KnownOIDs.sha256WithRSAEncryption, "RS256")
         val RS384 = RSA(KnownOIDs.sha384WithRSAEncryption, "RS384")
         val RS512 = RSA(KnownOIDs.sha512WithRSAEncryption, "RS512")
@@ -240,8 +226,9 @@ fun SignatureAlgorithm.toX509SignatureAlgorithm() = catching {
 }
 
 /** Finds a X.509 signature algorithm matching this algorithm. Curve restrictions are not preserved. */
-fun SpecializedSignatureAlgorithm.toX509SignatureAlgorithm() =
-    this.algorithm.toX509SignatureAlgorithm()
+fun SpecializedSignatureAlgorithm.toX509SignatureAlgorithm(): KmmResult<X509SignatureAlgorithm> =
+    this.algorithm?.toX509SignatureAlgorithm()
+        ?: KmmResult.failure(UnsupportedCryptoException("Unsupported algorithm: ${this::class.simpleName}"))
 
 object X509SignatureAlgorithmSerializer : KSerializer<X509SignatureAlgorithm> {
 
