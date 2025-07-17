@@ -593,13 +593,6 @@ sealed class Asn1Structure(
 
         return true
     }
-
-    /**
-     * The DER-encoded content bytes of this ASN.1 element.
-     * **Accessing this property on ASN.1 structures triggers encoding of the contained child nodes**, which may cause
-     * performance hits. Use with caution!
-     */
-    val content: ByteArray by lazy { children.fold(byteArrayOf()) { acc, asn1Element -> acc + asn1Element.derEncoded } }
 }
 
 /**
@@ -711,13 +704,23 @@ class Asn1CustomStructure private constructor(
 
     override fun toString() = "${tag.tagClass}" + super.toString()
 
+    /**
+     * Raw byte DER-encoded representation of this custom structure's children.
+     * This property is `null` **unless** the `CONSTRUCTED` flag of this structure's tag is overridden to `false`
+     */
+    val content: ByteArray? by lazy {
+        if (!tag.isConstructed)
+            children.fold(byteArrayOf()) { acc, asn1Element -> acc + asn1Element.derEncoded }
+        else null
+    }
+
     override fun prettyPrintHeader(indent: Int) =
         (" " * indent) + tag.tagClass +
                 " ${tag.tagValue}" +
                 (if (!tag.isConstructed) " PRIMITIVE" else "") +
                 " (=${tag.encodedTag.toHexString(HexFormat.UpperCase)}), length=${contentLength}" +
                 ", overallLength=${overallLength}" +
-                " ${content.toHexString(HexFormat.UpperCase)}"
+                content?.let { " ${it.toHexString(HexFormat.UpperCase)}" }
 
     companion object {
         /**
@@ -751,6 +754,10 @@ class Asn1CustomStructure private constructor(
 class Asn1EncapsulatingOctetString(children: List<Asn1Element>) :
     Asn1Structure(Tag.OCTET_STRING, children, sortChildren = false, shouldBeSorted = false),
     Asn1OctetString {
+
+    override val content: ByteArray by lazy {
+        children.fold(byteArrayOf()) { acc, asn1Element -> acc + asn1Element.derEncoded }
+    }
 
     override fun equals(other: Any?): Boolean {
         if (other is Asn1PrimitiveOctetString) return this.content contentEquals other.content
