@@ -25,7 +25,10 @@ kotlin {
     iosX64()
     iosArm64()
     iosSimulatorArm64()
-    // watchosDeviceArm64()
+    //we cannot currently test this, so it is only enabled for publishing
+    gradle.startParameter.taskNames.firstOrNull { it.contains("publish") }?.let {
+        watchosDeviceArm64()
+    }
     watchosSimulatorArm64()
     watchosX64()
     watchosArm32()

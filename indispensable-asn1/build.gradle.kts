@@ -29,7 +29,10 @@ kotlin {
     watchosX64()
     watchosArm32()
     watchosArm64()
-    //watchosDeviceArm64() //TODO for release: enable this target
+    //we cannot currently test this, so it is only enabled for publishing
+    gradle.startParameter.taskNames.firstOrNull { it.contains("publish") }?.let {
+        watchosDeviceArm64()
+    }
     tvosSimulatorArm64()
     tvosX64()
     tvosArm64()
@@ -72,7 +75,7 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(kotest("property"))
-               implementation(project(":indispensable")) //TODO for releases comment out this dependency
+                implementation(project(":indispensable"))
             }
         }
     }
