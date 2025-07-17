@@ -72,7 +72,7 @@ interface Asn1Encodable<out A : Asn1Element> {
      * holds it in memory, pretty prints it, and discards it.
      * This characteristic may be relevant in memory-constrained environments.
      */
-    fun prettyPrint(): String = encodeToTlv().prettyPrint()
+    fun prettyPrintAsn1(): String = encodeToTlv().prettyPrint()
 }
 
 /**
