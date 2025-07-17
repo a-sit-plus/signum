@@ -5,7 +5,7 @@ package at.asitplus.signum.indispensable.asn1
  * If `indispensable-oids` is part of your classpath, call `KnownOIDs.describeAll()` to add descriptions for all
  * known OID constants shipped with the module.
  */
-//we cannot delegate to a mutable map due to https://youtrack.jetbrains.com/issue/KT-79096
+// we cannot delegate to a mutable map due to https://youtrack.jetbrains.com/issue/KT-79096
 object KnownOIDs : MutableMap<ObjectIdentifier,String>{
 
     private val oidDescriptions = mutableMapOf<ObjectIdentifier, String>()
