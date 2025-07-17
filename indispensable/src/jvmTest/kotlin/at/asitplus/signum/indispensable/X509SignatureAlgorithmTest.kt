@@ -12,6 +12,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.datatest.withData
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.collections.shouldNotBeIn
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -32,7 +33,7 @@ class X509SignatureAlgorithmTest : FreeSpec({
             decoded.signatureAlgorithm shouldNotBeIn X509SignatureAlgorithm.entries
 
             //Certificate decoded successfully, but cryptographic operations on unsupported algorithms are not possible
-            shouldThrow<Throwable> { decoded.decodedSignature }
+             decoded.decodedSignature.shouldBeNull()
 
             withClue(decoded.encodeToPEM().getOrNull()) {
                 decoded.encodeToDer() shouldBe it.second

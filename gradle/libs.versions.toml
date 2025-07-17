@@ -11,7 +11,6 @@ bignum = "0.3.10"
 jose = "9.31"
 kotlinpoet = "2.2.0"
 runner = "1.5.2"
-kmmresult= "1.9.3"
 kotlincryptoRandom = "0.5.0"
 kotest= "6.0.0.M5"
 

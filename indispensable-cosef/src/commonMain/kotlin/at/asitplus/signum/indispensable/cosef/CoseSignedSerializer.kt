@@ -92,8 +92,9 @@ class CoseSignedSerializer<P : Any?>(
 }
 
 private fun CoseHeader.usesEC(): Boolean? =
-    if (algorithm is CoseAlgorithm.Signature)
-        algorithm?.algorithm?.let { it is SignatureAlgorithm.ECDSA }
-            ?: certificateChain?.firstOrNull()
-                ?.let { X509Certificate.decodeFromDerOrNull(it)?.publicKey is CryptoPublicKey.EC }
-    else false
+    when (algorithm) {
+        null -> certificateChain?.firstOrNull()
+            ?.let { X509Certificate.decodeFromDerOrNull(it)?.decodedPublicKey is CryptoPublicKey.EC }
+        is CoseAlgorithm.Signature -> algorithm.algorithm.let { it is SignatureAlgorithm.ECDSA }
+        else -> false
+    }

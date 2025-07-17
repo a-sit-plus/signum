@@ -7,9 +7,10 @@
     * PBKDF2
     * HKDF
     * scrypt
-* Refactor `X509SignatureAlgorithm` from an enum to a sealed class to allow decoding of unsupported algorithms
 * Refactor `X509SignatureAlgorithm` from an enum to a open class to allow decoding of unsupported algorithms
 * Refactor `X509Certificate` and `TbsCertificate` to store the raw signature as `Asn1Element` and the raw public key as `Asn1Sequence` enabling support for certificates with unsupported signature algorithms
+    * Use the new nullable `decodedSignature` and `decodedPublicKey`, respectively.
+    * The old `publicKey` and `signature` are being deprecated.
 * **RSA encryption** using in-memory keys (no hardware-backed key management yet)
 * Add structured iterator-based decoding of `Asn1Structure`. `Asn1Structure` now implements `Iterable<Asn1Element>`:
     * Deprecate child accessors in `Asn1Structure` with deprecation level ERROR:

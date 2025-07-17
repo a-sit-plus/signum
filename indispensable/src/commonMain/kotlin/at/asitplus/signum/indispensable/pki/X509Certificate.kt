@@ -39,7 +39,9 @@ constructor(
     val extensions: List<X509CertificateExtension>? = null,
 ) : Asn1Encodable<Asn1Sequence> {
 
-    val decodedPublicKey by lazy { CryptoPublicKey.decodeFromTlv(rawPublicKey) }
+    @Deprecated("imprecisely named", ReplaceWith("decodedPublicKey"), DeprecationLevel.ERROR)
+    val publicKey: CryptoPublicKey? get() = decodedPublicKey
+    val decodedPublicKey: CryptoPublicKey? by lazy { catchingUnwrapped { CryptoPublicKey.decodeFromTlv(rawPublicKey) }.getOrNull() }
 
     init {
         if (extensions?.distinctBy { it.oid }?.size != extensions?.size) throw Asn1StructuralException("Multiple extensions with the same OID found")
@@ -280,7 +282,17 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     val rawSignature: Asn1Element,
 ) : PemEncodable<Asn1Sequence> {
 
-    val decodedSignature by lazy { CryptoSignature.fromX509Encoded(signatureAlgorithm, rawSignature.asPrimitive()) }
+    @Deprecated("imprecisely named", ReplaceWith("decodedSignature"), DeprecationLevel.ERROR)
+    val signature: CryptoSignature? get() = decodedSignature
+
+    val decodedSignature: CryptoSignature? by lazy {
+        catchingUnwrapped {
+            CryptoSignature.fromX509Encoded(
+                signatureAlgorithm,
+                rawSignature.asPrimitive()
+            )
+        }.getOrNull()
+    }
 
     constructor(
         tbsCertificate: TbsCertificate,
@@ -324,7 +336,9 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         return "X509Certificate(${encodeToDerOrNull()?.let { it.encodeToString(Base64Strict) }})"
     }
 
-    val publicKey: CryptoPublicKey get() = tbsCertificate.decodedPublicKey
+    @Deprecated("imprecisely named", ReplaceWith("decodedPublicKey"), DeprecationLevel.ERROR)
+    val publicKey: CryptoPublicKey? get()= decodedPublicKey
+    val decodedPublicKey: CryptoPublicKey? get() = tbsCertificate.decodedPublicKey
 
     companion object : PemDecodable<Asn1Sequence, X509Certificate>(EB_STRINGS.DEFAULT, EB_STRINGS.LEGACY) {
 

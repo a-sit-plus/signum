@@ -167,7 +167,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
         config: JKSSignerConfiguration,
         privateKey: PrivateKey,
         certificate: X509Certificate
-    ): JKSSigner = when (val publicKey = certificate.publicKey) {
+    ): JKSSigner = when (val publicKey = certificate.decodedPublicKey) {
         is CryptoPublicKey.EC -> JKSSigner.EC(config, privateKey as ECPrivateKey, publicKey,
             SignatureAlgorithm.ECDSA(
                 digest = if (config.ec.v.digestSpecified) config.ec.v.digest else Digest.SHA256,
@@ -178,6 +178,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
                 digest = if (config.rsa.v.digestSpecified) config.rsa.v.digest else Digest.SHA256,
                 padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else RSAPadding.PSS),
             alias)
+        null -> throw UnsupportedCryptoException("Could not get signer for ${certificate.signatureAlgorithm::class.qualifiedName}")
     }
 
     override suspend fun getSignerForKey(
