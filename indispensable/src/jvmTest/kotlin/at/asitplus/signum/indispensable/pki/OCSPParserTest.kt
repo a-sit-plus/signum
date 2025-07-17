@@ -20,11 +20,11 @@ import kotlin.random.nextInt
 
 @OptIn(UnsafeIoApi::class)
 class OCSPParserTest : FreeSpec({
-    val (ok, faulty) = readOCSPRequests()
-    val responses = readOCSPResponses()
+    val (reqOk, reqFaulty) = readOCSPRequests()
+    val (respOk, respFaulty) = readOCSPResponses()
 
     "OK OCSP requests should parse" - {
-        withData(nameFn = { it.first }, ok) {
+        withData(nameFn = { it.first }, reqOk) {
             val src = Asn1Element.parse(it.second).asSequence()
             val decoded = OCSPRequest.decodeFromTlv(src)
             decoded shouldBe OCSPRequest.decodeFromByteArray(it.second)
@@ -43,7 +43,7 @@ class OCSPParserTest : FreeSpec({
     }
 
     "Faulty OCSP requests should glitch out" - {
-        withData(nameFn = { it.first }, faulty) { crt ->
+        withData(nameFn = { it.first }, reqFaulty) { crt ->
             runCatching {
                 shouldThrow<Throwable> {
                     OCSPRequest.decodeFromTlv(Asn1Element.parse(crt.second).asSequence())
@@ -52,11 +52,32 @@ class OCSPParserTest : FreeSpec({
         }
     }
 
-    "Test response" - {
-        withData(nameFn = { it.first }, responses) {
+    "OK OCSP responses should parse" - {
+        withData(nameFn = { it.first }, respOk) {
             val src = Asn1Element.parse(it.second).asSequence()
             val decoded = OCSPResponse.decodeFromTlv(src)
-            println(decoded.response?.tbsResponseData?.responses?.get(0)?.revokedInfo)
+            decoded shouldBe OCSPResponse.decodeFromByteArray(it.second)
+
+            withClue(decoded.encodeToPEM().getOrNull()) {
+                decoded.encodeToDer() shouldBe it.second
+            }
+
+            val garbage = Random.nextBytes(Random.nextInt(0..128))
+            val bytes = (it.second + garbage).wrapInUnsafeSource()
+            bytes.readAsn1Element().let { (parsed, _) ->
+                parsed.derEncoded shouldBe it.second
+                bytes.readByteArray() shouldBe garbage
+            }
+        }
+    }
+
+    "Faulty OCSP responses should glitch out" - {
+        withData(nameFn = { it.first }, respFaulty) { resp ->
+            runCatching {
+                shouldThrow<Throwable> {
+                    OCSPRequest.decodeFromTlv(Asn1Element.parse(resp.second).asSequence())
+                }
+            }.getOrElse { println("W: ${resp.first} parsed too leniently") }
         }
     }
 })
@@ -71,9 +92,8 @@ private fun readOCSPRequests(): Pair<List<Pair<String, ByteArray>>, List<Pair<St
     return ok.map { it.name to it.readBytes() } to faulty.map { it.name to it.readBytes() }
 }
 
-private fun readOCSPResponses(): List<Pair<String, ByteArray>> {
-    val requests = File("./src/jvmTest/resources/ocsp").listFiles()
-        ?.filter { it.extension == "der" && it.name.contains("resp-") }
-        .shouldNotBeNull()
-    return requests.map { it.name to it.readBytes() }
+private fun readOCSPResponses(): Pair<List<Pair<String, ByteArray>>, List<Pair<String, ByteArray>>> {
+    val ok = File("./src/jvmTest/resources/ocsp/responses").listFiles().shouldNotBeNull()
+    val faulty = File("./src/jvmTest/resources/ocsp/faulty_responses").listFiles().shouldNotBeNull()
+    return ok.map { it.name to it.readBytes() } to faulty.map { it.name to it.readBytes() }
 }
