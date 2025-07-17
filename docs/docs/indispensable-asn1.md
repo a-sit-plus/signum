@@ -100,9 +100,10 @@ Hence, a typical decoding pipeline looks as follows:
 #### High-Level
 
 !!! Tip
-    Structured, iterator-based decoding of `Asn1Structure` has been introduced.
+    Structured, iterator-based decoding of `Asn1Structure` has been introduced, by letting `Asn1Structure` implement `Iterable<Asn1Element>`.
     The functions `nextChild()`, `nextChildOrNull()`, `hasMoreChildren()`, and `peek()` are now deprecated in favor of the new iterator approach.
-    Child access is now performed using the inner Iterator, which provides the following methods: `next()`, `nextOrNull()`, `hasNext()`, `peek()`, and `reversed()`.
+    Child access is now performed using the inner iterator, which provides the following methods: `next()`, `nextOrNull()`, `hasNext()`, `peek()`, and `reversed()`.<br>
+    The iterator also exposed the `Asn1Structure` it belongs to through the `containingStructure` property.
 
 `Asn1Decodable` provides the following functions for decoding data:
 

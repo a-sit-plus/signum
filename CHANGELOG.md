@@ -10,8 +10,10 @@
     * `nextChildOrNull()`
     * `hasMoreChildren()`
     * `peek()`
-* Add structured iterator-based decoding of `Asn1Structure`:
-    * Add inner `Iterator` for child accesses and `reversed()` method for getting a new iterator with reversed direction
+* Add structured iterator-based decoding of `Asn1Structure`. `Asn1Structure` now implements `Iterable<Asn1Element>`:
+    * Add inner `Iterator` for child accesses
+        * Add `Iterator.reversed()` method for getting a new iterator from an existing one, but with reversed direction, **keeping the current index**
+        * Add `Asn1Structure.reverseIterator()` to get a reversed iterator right away, to iterate over all child elements in reverse.
     * Add `decodeAs()` for decoding ASN.1 structures via iterator-based lambda, moved trailing data check from `decodeFromTlv()` to `decodeAs()`
     * Refactor `doDecode()` implementations in `Asn1Structure` subclasses to use the new `decodeAs()` iterator-based API instead of deprecated child access methods.
 * **KDF Support**

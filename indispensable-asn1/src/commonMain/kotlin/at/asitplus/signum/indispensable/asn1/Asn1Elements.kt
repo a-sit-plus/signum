@@ -601,6 +601,9 @@ sealed class Asn1Structure(
         /** Whether this is a reverse iterator */
         val isReverse get() = !isForward
 
+        /** reference to the [Asn1Structure] this iterator belongs to*/
+        val containingStructure: Asn1Structure get() = this@Asn1Structure
+
         /** The index of the last element returned by [next] */
         var currentIndex: Int =
             if (isForward) -1 else children.size
@@ -653,7 +656,8 @@ sealed class Asn1Structure(
      * Decodes the content of this ASN.1 structure using the provided [decoder] lambda.
      * This function gives a convenient way to decode ASN.1 structures by exposing an
      * iterator over the structure's children to the [decoder] lambda. Optionally, it enforces that
-     * all children must be consumed
+     * all children must be consumed. Use [decodeRethrowing] to automatically and consistently wrap exceptions
+     * thrown during decoding in [Asn1Exception]s.
      */
     fun <T> decodeAs(requireFullConsumption: Boolean = true, decoder: Iterator.() -> T): T {
         val it = iterator()
