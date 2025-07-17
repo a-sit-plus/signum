@@ -1,5 +1,5 @@
 name: Test other Apple implementations
-on: [push]
+on: [push, pull_request]
 jobs:
   build:
     runs-on: macos-latest
