@@ -17,6 +17,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
 import at.asitplus.signum.indispensable.asn1.readOid
+import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.runRethrowing
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -25,8 +26,6 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.update
 
 @Serializable(with = X509SignatureAlgorithmSerializer::class)
 open class X509SignatureAlgorithm(
@@ -140,14 +139,14 @@ open class X509SignatureAlgorithm(
         val RS384 = RSA(KnownOIDs.sha384WithRSAEncryption, "RS384")
         val RS512 = RSA(KnownOIDs.sha512WithRSAEncryption, "RS512")
 
-        val registeredAlgorithms = setOf(
+        val entries = setOf(
             ES256, ES384, ES512,
             PS256, PS384, PS512,
             RS1, RS256, RS384, RS512
         )
 
         private fun fromOid(oid: ObjectIdentifier): X509SignatureAlgorithm? =
-            registeredAlgorithms.firstOrNull { it.oid == oid }
+            entries.firstOrNull { it.oid == oid }
 
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): X509SignatureAlgorithm = runRethrowing {
@@ -250,6 +249,6 @@ object X509SignatureAlgorithmSerializer : KSerializer<X509SignatureAlgorithm> {
 
     override fun deserialize(decoder: Decoder): X509SignatureAlgorithm {
         val decoded = decoder.decodeString()
-        return X509SignatureAlgorithm.registeredAlgorithms.first { it.name == decoded }
+        return X509SignatureAlgorithm.entries.first { it.name == decoded }
     }
 }
