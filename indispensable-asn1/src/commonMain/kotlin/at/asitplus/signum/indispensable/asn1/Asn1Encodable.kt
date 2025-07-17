@@ -69,7 +69,7 @@ interface Asn1Encodable<out A : Asn1Element> {
 
     /**
      * shorthand for [Asn1Element.prettyPrint], hence, a call to this function encodes this encodable to an [Asn1Element],
-     * holds int in memory, pretty prints it, and discards it.
+     * holds it in memory, pretty prints it, and discards it.
      * This characteristic may be relevant in memory-constrained environments.
      */
     fun prettyPrint(): String = encodeToTlv().prettyPrint()
