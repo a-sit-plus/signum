@@ -222,6 +222,18 @@ data class JwsHeader(
      */
     @SerialName("key_attestation")
     val keyAttestation: String? = null,
+
+    /**
+     * SD-JWT VC: Credentials MAY encode Type Metadata directly, providing it as "glue information"
+     * to the Consumer.For JSON-serialized JWS-based credentials, such Type Metadata documents MAY
+     * be included in the unprotected header of the JWS. In this case, the key `vctm` MUST be used
+     * in the unprotected header and its value MUST be an array of base64url-encoded Type Metadata
+     * documents as defined in this specification.
+     *
+     * Defined as a [String] here, so client applications can parse to appropriate types.
+     */
+    @SerialName("vctm")
+    val vcTypeMetadata: Set<String>? = null,
 ) {
 
     @Deprecated("To be removed in next release")
@@ -254,6 +266,7 @@ data class JwsHeader(
         } else if (other.certificateSha256Thumbprint != null) return false
         if (attestationJwt != other.attestationJwt) return false
         if (keyAttestation != other.keyAttestation) return false
+        if (vcTypeMetadata != other.vcTypeMetadata) return false
 
         return true
     }
@@ -274,6 +287,7 @@ data class JwsHeader(
         result = 31 * result + (certificateSha256Thumbprint?.contentHashCode() ?: 0)
         result = 31 * result + (attestationJwt?.hashCode() ?: 0)
         result = 31 * result + (keyAttestation?.hashCode() ?: 0)
+        result = 31 * result + (vcTypeMetadata?.hashCode() ?: 0)
         return result
     }
 

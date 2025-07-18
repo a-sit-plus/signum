@@ -33,6 +33,7 @@
     * `SymmetricKey.toJsonWebKey` now returns `KmmResult`
     * `SymmetricEncryptionAlgorithm.toJweKwAlgorithm` now returns `KmmResult`
     * `SymmetricEncryptionAlgorithm.toJweEncryptionAlgorithm` removed
+* In `JwsHeader` add property `vcTypeMetadata` with key `vctm`, see [SD-JWT VC](https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-10.html#name-sd-jwt-vc-type-metadata)
 * Dependency Updates:
     * Kotlin 2.2.0
     * AGP 8.10.0 
