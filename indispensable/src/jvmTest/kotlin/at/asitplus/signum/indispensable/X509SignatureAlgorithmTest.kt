@@ -10,6 +10,7 @@ import at.asitplus.test.FreeSpec
 import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.datatest.withData
+import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.collections.shouldNotBeIn
 import io.kotest.matchers.nulls.shouldBeNull
@@ -29,7 +30,7 @@ class X509SignatureAlgorithmTest : FreeSpec({
             val src = Asn1Element.parse(it.second) as Asn1Sequence
             val decoded = X509Certificate.decodeFromTlv(src)
 
-            decoded.signatureAlgorithm.name shouldContain "Unknown"
+            decoded.signatureAlgorithm.isKnown().shouldBeFalse()
             decoded.signatureAlgorithm shouldNotBeIn X509SignatureAlgorithm.entries
 
             //Certificate decoded successfully, but cryptographic operations on unsupported algorithms are not possible

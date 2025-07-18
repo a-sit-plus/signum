@@ -91,7 +91,7 @@ class JweEncryptedTest : FreeSpec({
     "JWE symmetric encryption" - {
         withData(JweAlgorithm.Symmetric.entries) { alg ->
             val plain = Random.nextBytes(32)
-            val key = alg.randomKey()!!.toJsonWebKey().getOrThrow()
+            val key = alg.randomKey().toJsonWebKey().getOrThrow()
             val ciphertext = key.encrypt(plain).getOrThrow()
             ciphertext.decrypt(key) shouldSucceedWith plain
         }

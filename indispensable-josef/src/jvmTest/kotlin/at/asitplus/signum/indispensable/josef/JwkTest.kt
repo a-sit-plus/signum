@@ -144,7 +144,7 @@ class JwkTest : FreeSpec({
     }
 
     "Regression test: JWK (no keyId) -> CryptoPublicKey -> JWK (no keyId)" {
-        val key = randomCertificate().decodedPublicKey!!.toJsonWebKey()
+        val key = randomCertificate().publicKey.toJsonWebKey()
         key.keyId shouldBe null
         val cpk = key.toCryptoPublicKey().getOrThrow()
         cpk.toJsonWebKey().keyId shouldBe null

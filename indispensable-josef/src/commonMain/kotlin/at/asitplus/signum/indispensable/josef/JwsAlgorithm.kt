@@ -219,12 +219,12 @@ fun MessageAuthenticationCode.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catchi
 
 /** Tries to find a matching JWS algorithm*/
 fun SpecializedDataIntegrityAlgorithm.toJwsAlgorithm() =
-    this.algorithm?.toJwsAlgorithm()?: KmmResult.failure(UnsupportedCryptoException("Unsupported algorithm: ${this::class.simpleName}"))
+    this.algorithm.toJwsAlgorithm()
 
 /** Tries to find a matching JWS algorithm.*/
 fun SpecializedMessageAuthenticationCode.toJwsAlgorithm() =
-    this.algorithm?.toJwsAlgorithm()?: KmmResult.failure(UnsupportedCryptoException("Unsupported algorithm: ${this::class.simpleName}"))
+    this.algorithm.toJwsAlgorithm()
 
 /** Tries to find a matching JWS algorithm.*/
 fun SpecializedSignatureAlgorithm.toJwsAlgorithm() =
-    this.algorithm?.toJwsAlgorithm()?: KmmResult.failure(UnsupportedCryptoException("Unsupported algorithm: ${this::class.simpleName}"))
+    this.algorithm.toJwsAlgorithm()

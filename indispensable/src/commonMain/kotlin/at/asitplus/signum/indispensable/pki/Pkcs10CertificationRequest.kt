@@ -6,8 +6,12 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
+import at.asitplus.signum.indispensable.asn1.encoding.Asn1.BitString
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
+import at.asitplus.signum.indispensable.asn1.encoding.asAsn1BitString
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
+import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
+import kotlinx.serialization.Serializable
 
 /**
  * The meat of a PKCS#10 Certification Request:
@@ -112,10 +116,10 @@ data class Pkcs10CertificationRequest(
 ) : PemEncodable<Asn1Sequence> {
 
     constructor(
-         tbsCsr: TbsCertificationRequest,
-         signatureAlgorithm: X509SignatureAlgorithm,
-         signature: CryptoSignature
-    ): this(tbsCsr,signatureAlgorithm,signature.x509Encoded)
+        tbsCsr: TbsCertificationRequest,
+        signatureAlgorithm: X509SignatureAlgorithm,
+        signature: CryptoSignature
+    ) : this(tbsCsr, signatureAlgorithm, signature.x509Encoded)
 
     override val canonicalPEMBoundary: String = EB_STRINGS.DEFAULT
 
@@ -125,6 +129,7 @@ data class Pkcs10CertificationRequest(
 
     val decodedSignature: CryptoSignature? by lazy {
         catchingUnwrapped {
+            require(signatureAlgorithm.isKnown()) { "Unknown signature algorithm:${signatureAlgorithm.oid}" }
             CryptoSignature.fromX509Encoded(
                 signatureAlgorithm,
                 rawSignature.asPrimitive()
@@ -167,6 +172,7 @@ data class Pkcs10CertificationRequest(
             const val DEFAULT = "CERTIFICATE REQUEST"
             const val LEGACY = "NEW CERTIFICATE REQUEST"
         }
+
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): Pkcs10CertificationRequest = src.decodeRethrowing {
             val tbsCsr = TbsCertificationRequest.decodeFromTlv(next().asSequence())

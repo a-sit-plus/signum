@@ -2,7 +2,6 @@ package at.asitplus.signum.supreme.mac
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.HMAC
 import at.asitplus.signum.indispensable.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.SpecializedMessageAuthenticationCode
@@ -21,7 +20,7 @@ private val HMAC.innerPad get() = ByteArray(blockLength) { 0x36 }
 private val HMAC.outerPad get() = ByteArray(blockLength) { 0x5C }
 
 fun SpecializedMessageAuthenticationCode.mac(key: ByteArray, msg: Sequence<ByteArray>): KmmResult<ByteArray> =
-    algorithm?.mac(key, msg)?: KmmResult.failure(UnsupportedCryptoException("Unsupported algorithm: ${this::class.simpleName}"))
+    algorithm.mac(key, msg)
 
 private fun ByteArray.truncateTo(size: BitLength): ByteArray {
     val a = if (size.bytes.toInt() < this.size) this.copyOf(size.bytes.toInt()) else this

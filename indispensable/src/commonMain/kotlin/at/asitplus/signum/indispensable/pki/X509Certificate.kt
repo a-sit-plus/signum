@@ -4,10 +4,12 @@ import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
+import at.asitplus.signum.indispensable.X509SignatureAlgorithmEntry
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
+import at.asitplus.signum.indispensable.isKnown
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.EXTENSIONS
@@ -181,8 +183,8 @@ constructor(
         }
 
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence) = src.decodeRethrowing {
-            val version = peek().let {
+        override fun doDecode(src: Asn1Sequence) = decodeRethrowing {
+            val version = src.peek().let {
                 if (it is Asn1ExplicitlyTagged) {
                     it.verifyTag(Tags.VERSION).single().asPrimitive().decodeToInt()
                         .also { next() } // actually read it, so next child is serial number
@@ -201,8 +203,8 @@ constructor(
                 RelativeDistinguishedName.decodeFromTlv(it.asSet())
             }
 
-            val raw = next().asSequence()
-//            val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(raw)
+            val rawKey = next().asSequence()
+
 
             val issuerUniqueID = peek()?.let { next ->
                 if (next.tag == ISSUER_UID) {
@@ -232,7 +234,7 @@ constructor(
                 validFrom = timestamps.first,
                 validUntil = timestamps.second,
                 subjectName = subject,
-                rawPublicKey = raw,
+                rawPublicKey = rawKey,
                 issuerUniqueID = issuerUniqueID,
                 subjectUniqueID = subjectUniqueID,
                 extensions = extensions,
@@ -267,7 +269,6 @@ val CryptoSignature.x509Encoded
 fun CryptoSignature.Companion.fromX509Encoded(alg: X509SignatureAlgorithm, it: Asn1Primitive) =
     // TODO update when core signature data classes become extensible
     when (alg) {
-        // element/primitive
         is X509SignatureAlgorithm.EC -> CryptoSignature.EC.decodeFromDer(it.asAsn1BitString().rawBytes)
         is X509SignatureAlgorithm.RSA -> CryptoSignature.RSA.decodeFromTlv(it)
         else -> throw IllegalArgumentException("Unsupported signature algorithm.")
@@ -287,6 +288,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
 
     val decodedSignature: CryptoSignature? by lazy {
         catchingUnwrapped {
+            require(signatureAlgorithm.isKnown()) { "Signature algorithm not supported: ${signatureAlgorithm.oid}" }
             CryptoSignature.fromX509Encoded(
                 signatureAlgorithm,
                 rawSignature.asPrimitive()

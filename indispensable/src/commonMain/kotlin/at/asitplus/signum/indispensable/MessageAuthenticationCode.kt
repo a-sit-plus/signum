@@ -36,7 +36,7 @@ sealed interface MessageAuthenticationCode : DataIntegrityAlgorithm {
 }
 
 interface SpecializedMessageAuthenticationCode : SpecializedDataIntegrityAlgorithm {
-    override val algorithm: MessageAuthenticationCode?
+    override val algorithm: MessageAuthenticationCode
 }
 
 /**

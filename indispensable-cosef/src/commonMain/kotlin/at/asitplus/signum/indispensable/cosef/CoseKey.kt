@@ -161,7 +161,7 @@ data class CoseKey(
         require(algorithm is CoseAlgorithm.SymmetricEncryption) { "Not a symmetric algorithm" }
         require(keyParams is CoseKeyParams.SymmKeyParams) { "No symmetric key bytes present" }
         val alg = algorithm.algorithm
-        require(alg?.isAuthenticated() == true && alg.isIntegrated())
+        require(alg.isAuthenticated() && alg.isIntegrated())
         alg.keyFrom(keyParams.k).getOrThrow()
     }
 }

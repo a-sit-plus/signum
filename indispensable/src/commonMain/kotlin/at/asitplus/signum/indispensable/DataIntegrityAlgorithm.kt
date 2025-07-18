@@ -13,5 +13,5 @@ sealed interface DataIntegrityAlgorithm {
 }
 
 interface SpecializedDataIntegrityAlgorithm {
-    val algorithm: DataIntegrityAlgorithm?
+    val algorithm: DataIntegrityAlgorithm
 }

@@ -33,7 +33,7 @@ class ConversionTest : FreeSpec({
     }
     "JWE (symmetric) -> EncryptionAlgorithm -> JWE is stable" - {
         withData(JweAlgorithm.Symmetric.entries) {
-            it.algorithm!!.toJweKwAlgorithm() shouldSucceedWith it
+            it.algorithm.toJweKwAlgorithm() shouldSucceedWith it
         }
     }
 })

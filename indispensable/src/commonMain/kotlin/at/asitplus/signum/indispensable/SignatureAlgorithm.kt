@@ -5,7 +5,7 @@ enum class RSAPadding {
     PSS;
 }
 
-sealed interface SignatureAlgorithm: DataIntegrityAlgorithm {
+sealed interface SignatureAlgorithm : DataIntegrityAlgorithm {
 
     data class ECDSA(
         /** The digest to apply to the data, or `null` to directly process the raw data. */
@@ -51,6 +51,6 @@ sealed interface SignatureAlgorithm: DataIntegrityAlgorithm {
     }
 }
 
-interface SpecializedSignatureAlgorithm: SpecializedDataIntegrityAlgorithm {
-    override val algorithm: SignatureAlgorithm?
+interface SpecializedSignatureAlgorithm : SpecializedDataIntegrityAlgorithm {
+    override val algorithm: SignatureAlgorithm
 }
