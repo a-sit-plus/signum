@@ -23,7 +23,7 @@ sealed class JweAlgorithm(override val identifier: String) : JsonWebAlgorithm {
     @Serializable(with = JweAlgorithmSerializer::class)
     object ECDH_ES : JweAlgorithm("ECDH-ES")
 
-    sealed class Symmetric(identifier: String, override val algorithm: SymmetricEncryptionAlgorithm<*,*,*>)
+    sealed class Symmetric(identifier: String, override val algorithm: SymmetricEncryptionAlgorithm<*,*,*>?)
         : JweAlgorithm(identifier), SpecializedSymmetricEncryptionAlgorithm {
 
         companion object {

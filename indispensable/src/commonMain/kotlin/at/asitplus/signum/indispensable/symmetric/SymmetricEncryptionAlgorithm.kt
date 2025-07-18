@@ -512,5 +512,5 @@ val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac, 
 val SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<*>, *, *>.authTagSize: BitLength get() = (this as SymmetricEncryptionAlgorithm.Authenticated).authTagSize
 
 interface SpecializedSymmetricEncryptionAlgorithm {
-    val algorithm: SymmetricEncryptionAlgorithm<*,*,*>
+    val algorithm: SymmetricEncryptionAlgorithm<*,*,*>?
 }

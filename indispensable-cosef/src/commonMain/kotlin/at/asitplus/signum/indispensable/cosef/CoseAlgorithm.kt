@@ -45,7 +45,7 @@ sealed interface CoseAlgorithm {
     }
 
     @Serializable(with = CoseAlgorithmSerializer::class)
-    sealed class SymmetricEncryption(override val coseValue: Int, override val algorithm: SymmetricEncryptionAlgorithm<*, *, *>) :
+    sealed class SymmetricEncryption(override val coseValue: Int, override val algorithm: SymmetricEncryptionAlgorithm<*, *, *>?) :
         CoseAlgorithm.Symmetric, SpecializedSymmetricEncryptionAlgorithm {
 
 

@@ -119,4 +119,4 @@ fun <A:AuthCapability<KeyType.WithDedicatedMacKey>, I : NonceTrait> SymmetricEnc
     } as KmmResult<SymmetricKey<A, I, KeyType.WithDedicatedMacKey>>
 
 suspend fun SpecializedSymmetricEncryptionAlgorithm.randomKey() =
-    algorithm.randomKey()
+    algorithm?.randomKey()
