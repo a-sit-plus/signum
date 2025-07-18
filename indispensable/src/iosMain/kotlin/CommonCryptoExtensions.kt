@@ -26,7 +26,7 @@ val AsymmetricEncryptionAlgorithm.secKeyAlgorithm: SecKeyAlgorithm get() = when 
     }!!
 }
 
-val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm
+val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm?
     get() = when (this) {
         is SignatureAlgorithm.ECDSA -> {
             when (digest) {
@@ -34,7 +34,7 @@ val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm
                 Digest.SHA256 -> kSecKeyAlgorithmECDSASignatureMessageX962SHA256
                 Digest.SHA384 -> kSecKeyAlgorithmECDSASignatureMessageX962SHA384
                 Digest.SHA512 -> kSecKeyAlgorithmECDSASignatureMessageX962SHA512
-                else -> throw IllegalArgumentException("Raw signing is not supported on iOS")
+                else -> null
             }
         }
 
@@ -59,9 +59,9 @@ val SignatureAlgorithm.secKeyAlgorithm: SecKeyAlgorithm
 
 val SpecializedSignatureAlgorithm.secKeyAlgorithm
     get() =
-        this.algorithm.secKeyAlgorithm
+        this.algorithm?.secKeyAlgorithm
 
-val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm
+val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm?
     get() = when (this) {
         is SignatureAlgorithm.ECDSA -> {
             when (digest) {
@@ -69,7 +69,7 @@ val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm
                 Digest.SHA256 -> kSecKeyAlgorithmECDSASignatureDigestX962SHA256
                 Digest.SHA384 -> kSecKeyAlgorithmECDSASignatureDigestX962SHA384
                 Digest.SHA512 -> kSecKeyAlgorithmECDSASignatureDigestX962SHA512
-                else -> throw IllegalArgumentException("Raw signing is not supported on iOS")
+                else -> null
             }
         }
 
@@ -90,11 +90,11 @@ val SignatureAlgorithm.secKeyAlgorithmPreHashed: SecKeyAlgorithm
                 }
             }
         }
-    }!!
+    }
 
 val SpecializedSignatureAlgorithm.secKeyAlgorithmPreHashed
     get() =
-        this.algorithm.secKeyAlgorithmPreHashed
+        this.algorithm?.secKeyAlgorithmPreHashed
 
 val CryptoSignature.iosEncoded
     get() = when (this) {

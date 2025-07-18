@@ -88,7 +88,6 @@ open class X509SignatureAlgorithm(
 
     // TODO update when core signature data classes become extensible
     override val algorithm: SignatureAlgorithm?
-        @Throws(IllegalArgumentException::class)
         get() = when (this) {
             is EC -> SignatureAlgorithm.ECDSA(digest, null)
             is RSA -> SignatureAlgorithm.RSA(digest, if (pssBits != null) RSAPadding.PSS else RSAPadding.PKCS1)

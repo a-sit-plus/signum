@@ -234,7 +234,7 @@ object AndroidKeyStoreProvider:
         ks.getCertificateChain(alias).let { chain ->
             catching { chain.map { X509Certificate.decodeFromDer(it.encoded) } }.let { r ->
                 if (r.isSuccess) r.getOrThrow().let {
-                    publicKey = it.leaf.publicKey
+                    publicKey = it.leaf.decodedPublicKey?:throw UnsupportedCryptoException("public key type unsupported: ${it.leaf.tbsCertificate.rawPublicKey.toDerHexString()}")
                     attestation = if (it.size > 1) AndroidKeystoreAttestation(it) else null
                 } else r.exceptionOrNull()!!.let {
                     if ((it is Asn1StructuralException) &&
