@@ -12,6 +12,8 @@
 * Refactor `X509Certificate` and `TbsCertificate` to store the raw signature as `Asn1Element` and the raw public key as `Asn1Sequence` enabling support for certificates with unsupported signature algorithms
     * Use the new nullable `decodedSignature` and `decodedPublicKey`, respectively.
     * The old `publicKey` and `signature` are being deprecated.
+* Refactor `Pkcs10CertificationRequest` to store the raw signature as `Asn1Element` enabling unsupported signature algorithms
+    * Use the new nullable `decodedSignature` and `decodedPublicKey`, respectively.
 * **RSA encryption** using in-memory keys (no hardware-backed key management yet)
 * Add structured iterator-based decoding of `Asn1Structure`. `Asn1Structure` now implements `Iterable<Asn1Element>`:
     * Deprecate child accessors in `Asn1Structure` with deprecation level ERROR:
