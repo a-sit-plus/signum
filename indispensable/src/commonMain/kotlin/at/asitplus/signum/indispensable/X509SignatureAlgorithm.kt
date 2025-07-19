@@ -118,34 +118,38 @@ enum class X509SignatureAlgorithm(
                         throw Asn1TagMismatchException(Asn1Element.Tag.NULL, tag, "RSA Params not allowed.")
                 }
 
-                PS256.oid, PS384.oid, PS512.oid -> parsePssParams(src)
+                PS256.oid, PS384.oid, PS512.oid -> parsePssParams(this)
                 else -> throw Asn1Exception("Unsupported algorithm oid: $oid")
             }
         }
 
         @Throws(Asn1Exception::class)
-        private fun parsePssParams(src: Asn1Sequence): X509SignatureAlgorithm = src.decodeRethrowing {
-            val seqIterator = next().asSequence().iterator()
-            val firstIterator = seqIterator.next().asExplicitlyTagged().verifyTag(0u).single().asSequence().iterator()
+        private fun parsePssParams(src: Asn1Structure.Iterator): X509SignatureAlgorithm = runRethrowing{
+            val (algSequence, mgfSequence, saltLen) = src.next().asSequence().decodeRethrowing {
+                Triple(
+                    next().asExplicitlyTagged().verifyTag(0u).single().asSequence(),
+                    next().asExplicitlyTagged().verifyTag(1u).single().asSequence(),
+                    next().asExplicitlyTagged().verifyTag(2u).single().asPrimitive().decodeToInt()
+                )
+            }
 
-            val sigAlg = firstIterator.next().asPrimitive().readOid()
-            val tag = firstIterator.next().tag
-            if (tag != Asn1Element.Tag.NULL)
-                throw Asn1TagMismatchException(Asn1Element.Tag.NULL, tag, "PSS Params not supported yet")
+            val (sigAlg, tagged) = algSequence.decodeRethrowing { next().asPrimitive().readOid() to next().tag }
 
-            val secondIterator = seqIterator.next().asExplicitlyTagged().verifyTag(1u).single().asSequence().iterator()
-            val mgf = secondIterator.next().asPrimitive().readOid()
-            if (mgf != KnownOIDs.pkcs1_MGF) throw IllegalArgumentException("Illegal OID: $mgf")
-            val innerIterator = secondIterator.next().asSequence().iterator()
-            val innerHash = innerIterator.next().asPrimitive().readOid()
+            if (tagged != Asn1Element.Tag.NULL)
+                throw Asn1TagMismatchException(Asn1Element.Tag.NULL, tagged, "PSS Params not supported yet")
+
+            val (mgfOid, mgfParams) = mgfSequence.decodeRethrowing {
+                next().asPrimitive().readOid() to next().asSequence()
+            }
+
+            if (mgfOid != KnownOIDs.pkcs1_MGF) throw IllegalArgumentException("Illegal OID: $mgfOid")
+
+            val (innerHash, innerTagged) = mgfParams.decodeRethrowing { next().asPrimitive().readOid() to next().tag }
+
             if (innerHash != sigAlg) throw IllegalArgumentException("HashFunction mismatch! Expected: $sigAlg, is: $innerHash")
-
-            if (innerIterator.next().tag != Asn1Element.Tag.NULL) throw IllegalArgumentException(
+            if (innerTagged != Asn1Element.Tag.NULL) throw IllegalArgumentException(
                 "PSS Params not supported yet"
             )
-
-            val last = seqIterator.next().asExplicitlyTagged().verifyTag(2u).single().asPrimitive()
-            val saltLen = last.decodeToInt()
 
             sigAlg.let {
                 when (it) {

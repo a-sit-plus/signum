@@ -92,9 +92,6 @@ data class TbsCertificationRequest(
                 (next() as Asn1ExplicitlyTagged).verifyTag(0u)
                     .map { Pkcs10CertificationRequestAttribute.decodeFromTlv(it as Asn1Sequence) }
             } else null
-
-            if (hasNext()) throw Asn1StructuralException("Superfluous Data in CSR Structure")
-
             TbsCertificationRequest(
                 version = version,
                 subjectName = subject,

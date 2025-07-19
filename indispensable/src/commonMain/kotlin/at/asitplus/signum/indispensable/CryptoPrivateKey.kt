@@ -37,11 +37,12 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
     /** Encodes this private key into a PKCS#8-encoded private key. This is the default. */
     val asPKCS8: PemEncodable<Asn1Sequence> get() = this
 
-    sealed class Impl (
+    sealed class Impl(
         /** optional attributes relevant when PKCS#8-encoding a private key */
-       override val attributes: List<Asn1Element>?
+        override val attributes: List<Asn1Element>?
     ) : CryptoPrivateKey {
         override val canonicalPEMBoundary get() = EB_STRINGS.GENERIC_PRIVATE_KEY_PKCS8
+
         /**
          * PKCS#8 encoding of a private key:
          * ```asn1
@@ -145,14 +146,14 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
 
             var product = BigInteger.ONE
             (sequenceOf(primeInfo1, primeInfo2) + (otherPrimeInfos?.asSequence() ?: sequenceOf()))
-            .forEachIndexed { i, info ->
-                val pminusone = info.prime - BigInteger.ONE
-                require(product.times(info.coefficient).mod(info.prime) == BigInteger.ONE)
-                    { "t_$i != (r_0 * ... * r_${i-1})^(-1) mod r_$i" }
-                product *= info.prime
-                require(info.exponent == privateKey.mod(pminusone)) { "d_$i != d mod (p_$i - 1)" }
-                require(e.multiply(info.exponent).mod(pminusone) == BigInteger.ONE)
-            }
+                .forEachIndexed { i, info ->
+                    val pminusone = info.prime - BigInteger.ONE
+                    require(product.times(info.coefficient).mod(info.prime) == BigInteger.ONE)
+                    { "t_$i != (r_0 * ... * r_${i - 1})^(-1) mod r_$i" }
+                    product *= info.prime
+                    require(info.exponent == privateKey.mod(pminusone)) { "d_$i != d mod (p_$i - 1)" }
+                    require(e.multiply(info.exponent).mod(pminusone) == BigInteger.ONE)
+                }
             require(product == n) { "p1 * p2 * … * pk != n" }
         }
 
@@ -332,6 +333,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
                             if (encodeCurve) +Asn1.ExplicitlyTagged(0uL) { +curve.oid }
                             if (encodePublicKey) +Asn1.ExplicitlyTagged(1uL) { +Asn1.BitString(publicKey.iosEncoded) }
                         }
+
                         is EC.WithoutPublicKey -> {
                             if (publicKeyBytes != null) +Asn1.ExplicitlyTagged(1uL) { +publicKeyBytes }
                         }
@@ -350,12 +352,17 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
             val encodeCurve: Boolean,
             val encodePublicKey: Boolean,
             attributes: List<Asn1Element>? = null
-        ) : EC(privateKey, attributes), CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>, KeyAgreementPrivateValue.ECDH {
+        ) : EC(privateKey, attributes), CryptoPrivateKey.WithPublicKey<CryptoPublicKey.EC>,
+            KeyAgreementPrivateValue.ECDH {
 
-            constructor(privateKey: BigInteger, curve: ECCurve,
-                        encodeCurve: Boolean, encodePublicKey: Boolean, attributes: List<Asn1Element>? = null) :
-                    this(privateKey, curve.generator.times(privateKey).asPublicKey(preferCompressed = true),
-                        encodeCurve, encodePublicKey, attributes)
+            constructor(
+                privateKey: BigInteger, curve: ECCurve,
+                encodeCurve: Boolean, encodePublicKey: Boolean, attributes: List<Asn1Element>? = null
+            ) :
+                    this(
+                        privateKey, curve.generator.times(privateKey).asPublicKey(preferCompressed = true),
+                        encodeCurve, encodePublicKey, attributes
+                    )
 
             init {
                 require(publicKey.publicPoint == privateKey.times(publicKey.curve.generator)) { "Public key must match the private key!" }
@@ -381,10 +388,14 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
         ) : EC(privateKey, attributes) {
 
             /** Creates a new [CryptoPrivateKey.EC.WithPublicKey] based on the passed curve. */
-            fun withCurve(curve: ECCurve, encodeCurve: Boolean = true, encodePublicKey: Boolean = (this.publicKeyBytes != null))
-            : WithPublicKey {
+            fun withCurve(
+                curve: ECCurve,
+                encodeCurve: Boolean = true,
+                encodePublicKey: Boolean = (this.publicKeyBytes != null)
+            )
+                    : WithPublicKey {
                 require(curve.scalarLength.bytes.toInt() == curveOrderLengthInBytes)
-                    { "Encoded private key was padded to $curveOrderLengthInBytes bytes, but curve $curve needs padding to ${curve.scalarLength.bytes.toInt()} bytes"}
+                { "Encoded private key was padded to $curveOrderLengthInBytes bytes, but curve $curve needs padding to ${curve.scalarLength.bytes.toInt()} bytes" }
                 return if (publicKeyBytes != null) {
                     CryptoPrivateKey.EC.WithPublicKey(
                         privateKey,
@@ -470,20 +481,22 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
                 var curve: ECCurve? = null
                 var publicKey: Asn1BitString? = null
                 while (hasNext()) {
-                    val elm= next().asExplicitlyTagged()
-                    val elmIterator = elm.iterator()
+                    val elm = next().asExplicitlyTagged()
                     when (elm.tag.tagValue) {
                         0uL -> {
                             require(curve == null) { "Duplicate EC curve field in EC PrivateKey" }
                             require(publicKey == null) { "Field order violation in EC PrivateKey" }
                             require(elm.children.size == 1) { "Invalid EC curve field in EC PrivateKey" }
-                            curve = ObjectIdentifier.decodeFromTlv(elmIterator.next().asPrimitive()).let(ECCurve::withOid)
+                            curve =
+                                ObjectIdentifier.decodeFromTlv(elm.children.first().asPrimitive()).let(ECCurve::withOid)
                         }
+
                         1uL -> {
                             require(publicKey == null) { "Duplicate public key field in EC PrivateKey" }
                             require(elm.children.size == 1) { "Invalid public key field in EC PrivateKey" }
-                            publicKey = elmIterator.next().asPrimitive().asAsn1BitString()
+                            publicKey = elm.children.first().asPrimitive().asAsn1BitString()
                         }
+
                         else -> throw Asn1Exception("Unknown optional field with tag ${elm.tag.tagValue} in EC PrivateKey")
                     }
                 }
@@ -492,7 +505,8 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
                     BigInteger.fromByteArray(privateKeyOctets, Sign.POSITIVE),
                     publicKey,
                     attributes,
-                    privateKeyOctets.size)
+                    privateKeyOctets.size
+                )
                 runRethrowing {
                     when (curve) {
                         null -> privateKey
@@ -525,15 +539,11 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): CryptoPrivateKey = src.decodeRethrowing {
             require(next().asPrimitive().decodeToInt() == 0) { "PKCS#8 Private Key VERSION must be 0" }
-            val algorithmIDIterator = next().asSequence().iterator()
-            val algIdentifier = ObjectIdentifier.decodeFromTlv(algorithmIDIterator.next().asPrimitive())
-            val algParams = algorithmIDIterator.next().asPrimitive()
-            require(!algorithmIDIterator.hasNext()) { "Superfluous Algorithm ID data encountered" }
-            val privateKeyStructure = next().asEncapsulatingOctetString().iterator().let {
-                val seq = it.next().asSequence()
-                require(!it.hasNext()) { "Superfluous private key data encountered" }
-                seq
+            val (algIdentifier, algParams) = next().asSequence().decodeRethrowing {
+                ObjectIdentifier.decodeFromTlv(next().asPrimitive()) to next().asPrimitive()
             }
+
+            val privateKeyStructure = next().asEncapsulatingOctetString().decodeRethrowing { next().asSequence() }
             val attributes: List<Asn1Element>? =
                 if (hasNext()) next().asStructure().assertTag(0uL).children
                 else null
@@ -542,6 +552,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
                     algParams.readNull()
                     RSA.FromPKCS1.doDecode(privateKeyStructure, attributes)
                 }
+
                 EC.oid -> {
                     val predefinedCurve = ECCurve.entries.first { it.oid == ObjectIdentifier.decodeFromTlv(algParams) }
                     EC.FromSEC1.doDecode(privateKeyStructure, attributes).let {
@@ -551,6 +562,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
                         }
                     }
                 }
+
                 else -> throw IllegalArgumentException("Unknown Algorithm: $algIdentifier")
             }
         }

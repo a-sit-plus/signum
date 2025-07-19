@@ -63,7 +63,7 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
     companion object : PemDecodable<Asn1Sequence, CryptoPublicKey>(
         PEM_BOUNDARY to DEFAULT_PEM_DECODER,
         "RSA PUBLIC KEY" to checkedAsFn(RSA::fromPKCS1encoded),
-        ) {
+    ) {
         /**
          * Parses a DID representation of a public key and
          * reconstructs the corresponding [CryptoPublicKey] from it
@@ -109,12 +109,11 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
         override fun doDecode(src: Asn1Sequence): CryptoPublicKey = src.decodeRethrowing {
             if (src.children.size != 2) throw Asn1StructuralException("Invalid SPKI Structure!")
             val keyInfo = next() as Asn1Sequence
-            val keyInfoIterator = keyInfo.iterator()
             if (keyInfo.children.size != 2) throw Asn1StructuralException("Superfluous data in  SPKI!")
 
-            when (val oid = (keyInfoIterator.next() as Asn1Primitive).readOid()) {
+            when (val oid = (keyInfo.children.first() as Asn1Primitive).readOid()) {
                 EC.oid -> {
-                    val curveOid = (keyInfoIterator.next() as Asn1Primitive).readOid()
+                    val curveOid = (keyInfo.children[1] as Asn1Primitive).readOid()
                     val curve = ECCurve.entries.find { it.oid == curveOid }
                         ?: throw Asn1Exception("Curve not supported: $curveOid")
 
@@ -128,13 +127,14 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
                 }
 
                 RSA.oid -> {
-                    (keyInfoIterator.next() as Asn1Primitive).readNull()
+                    (keyInfo.children[1] as Asn1Primitive).readNull()
                     val bitString = (next() as Asn1Primitive).asAsn1BitString()
-                    val rsaSequenceIterator = Asn1Element.parse(bitString.rawBytes).asSequence().iterator()
-                    val n = (rsaSequenceIterator.next() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive
-                    val e = (rsaSequenceIterator.next() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive
-                    if (rsaSequenceIterator.hasNext()) throw Asn1StructuralException("Superfluous data in SPKI!")
-                    RSA(n, e)
+                    Asn1Element.parse(bitString.rawBytes).asSequence().decodeRethrowing {
+                        RSA(
+                            (next() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive,
+                            (next() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive
+                        )
+                    }
                 }
 
                 else -> throw Asn1Exception("Unsupported Key Type: $oid")
@@ -176,12 +176,15 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
 
         val bits = n.bitLength().let { Size.of(it) ?: throw IllegalArgumentException("Unsupported key size $it bits") }
 
-        @Deprecated(message="Use a BigInteger-capable constructor instead", level = DeprecationLevel.ERROR)
-        constructor(n: ByteArray, e: Int): this(Asn1Integer.fromUnsignedByteArray(n), Asn1Integer(e) as Asn1Integer.Positive)
+        @Deprecated(message = "Use a BigInteger-capable constructor instead", level = DeprecationLevel.ERROR)
+        constructor(n: ByteArray, e: Int) : this(
+            Asn1Integer.fromUnsignedByteArray(n),
+            Asn1Integer(e) as Asn1Integer.Positive
+        )
 
-        constructor(n: Asn1Integer, e: Asn1Integer): this(n as Asn1Integer.Positive, e as Asn1Integer.Positive)
-        constructor(n: BigInteger, e: BigInteger): this(n.toAsn1Integer(), e.toAsn1Integer())
-        constructor(n: BigInteger, e: UInt): this(n.toAsn1Integer(), Asn1Integer(e))
+        constructor(n: Asn1Integer, e: Asn1Integer) : this(n as Asn1Integer.Positive, e as Asn1Integer.Positive)
+        constructor(n: BigInteger, e: BigInteger) : this(n.toAsn1Integer(), e.toAsn1Integer())
+        constructor(n: BigInteger, e: UInt) : this(n.toAsn1Integer(), Asn1Integer(e))
 
         override val oid = RSA.oid
 

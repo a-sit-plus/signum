@@ -117,7 +117,6 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
             if (oid.nodes.size >= 3 && oid.toString().startsWith("2.5.4.")) {
                 val asn1String = next().asPrimitive()
                 val str = catching { (asn1String).asAsn1String() }
-                if (hasNext()) throw Asn1StructuralException("Superfluous elements in RDN")
                 return@decodeRethrowing when (oid) {
                     CommonName.OID -> str.fold(onSuccess = { CommonName(it) }, onFailure = { CommonName(asn1String) })
                     Country.OID -> str.fold(onSuccess = { Country(it) }, onFailure = { Country(asn1String) })
