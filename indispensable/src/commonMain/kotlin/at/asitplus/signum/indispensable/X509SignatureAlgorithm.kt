@@ -3,6 +3,8 @@ package at.asitplus.signum.indispensable
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
+import at.asitplus.signum.indispensable.X509SignatureAlgorithm.Supported.EC
+import at.asitplus.signum.indispensable.X509SignatureAlgorithm.Supported.RSA
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
@@ -46,6 +48,38 @@ sealed class X509SignatureAlgorithm(
     }
 
     companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithm> {
+
+        @Deprecated("Use `Supported.ES256` instead.", ReplaceWith("Supported.ES256"), DeprecationLevel.ERROR)
+        val ES256 = Supported.ES256
+        @Deprecated("Use `Supported.ES384` instead.", ReplaceWith("Supported.ES384"), DeprecationLevel.ERROR)
+        val ES384 = Supported.ES384
+        @Deprecated("Use `Supported.ES512` instead.", ReplaceWith("Supported.ES512"), DeprecationLevel.ERROR)
+        val ES512 = Supported.ES512
+
+        @Deprecated("Use `Supported.PS256` instead.", ReplaceWith("Supported.PS256"), DeprecationLevel.ERROR)
+        val PS256 = Supported.PS256
+        @Deprecated("Use `Supported.PS384` instead.", ReplaceWith("Supported.PS384"), DeprecationLevel.ERROR)
+        val PS384 = Supported.PS384
+        @Deprecated("Use `Supported.PS512` instead.", ReplaceWith("Supported.PS512"), DeprecationLevel.ERROR)
+        val PS512 = Supported.PS512
+
+        @Deprecated("Use `Supported.RS1` instead.", ReplaceWith("Supported.RS1"), DeprecationLevel.ERROR)
+        val RS1 = Supported.RS1
+        @Deprecated("Use `Supported.RS256` instead.", ReplaceWith("Supported.RS256"), DeprecationLevel.ERROR)
+        val RS256 = Supported.RS256
+        @Deprecated("Use `Supported.RS384` instead.", ReplaceWith("Supported.RS384"), DeprecationLevel.ERROR)
+        val RS384 = Supported.RS384
+        @Deprecated("Use `Supported.RS512` instead.", ReplaceWith("Supported.RS512"), DeprecationLevel.ERROR)
+        val RS512 = Supported.RS512
+
+        @Deprecated("Use `Supported.entries` instead.", ReplaceWith("Supported.entries"), DeprecationLevel.ERROR)
+        val entries = setOf(
+            Supported.ES256, Supported.ES384, Supported.ES512,
+            Supported.PS256, Supported.PS384, Supported.PS512,
+            Supported.RS1, Supported.RS256, Supported.RS384, Supported.RS512
+        )
+
+
 
         private fun fromOid(oid: ObjectIdentifier): X509SignatureAlgorithm.Supported? =
             X509SignatureAlgorithm.Supported.entries.firstOrNull { it.oid == oid }
