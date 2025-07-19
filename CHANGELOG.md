@@ -8,12 +8,14 @@
     * HKDF
     * scrypt
 * X.509 Revamp
-    * Refactor `X509SignatureAlgorithm` from an enum to a open class to allow decoding of unsupported algorithms
-        * `X509Certificate` and `Pkcs10CertificationRequest` now use `X509SignatureAlgorithmEntry` to represent a non-validated signature algorithm
-    * Refactor `X509Certificate` and `TbsCertificate` to store the raw signature as `Asn1Element` and the raw public key as `Asn1Sequence` enabling support for certificates with unsupported signature algorithms
+    * Refactor `X509SignatureAlgorithm` from an enum to a sealed class with exactly two subtypes:
+        * `Supported` contains all previous algorithms that can be mapped to `SignatureAlgorithm`s
+        * `Unsupported` which serves as a container for X-509 signature algorithms not otherwise supported by Signum
+    * `X509Certificate` and `Pkcs10CertificationRequest` now use `X509SignatureAlgorithm` to represent a non-validated signature algorithm
+    * Refactor `X509Certificate` and `TbsCertificate` to store the raw signature as `Asn1Primitive` and the raw public key as `Asn1Sequence` enabling support for certificates with unsupported signature algorithms
         * Use the new nullable `decodedSignature` and `decodedPublicKey`, respectively.
         * The old `publicKey` and `signature` are being deprecated.
-    * Refactor `Pkcs10CertificationRequest` to store the raw signature as `Asn1Element` enabling unsupported signature algorithms
+    * Refactor `Pkcs10CertificationRequest` to store the raw signature as `Asn1Primitive` enabling unsupported signature algorithms
         * Use the new nullable `decodedSignature` and `decodedPublicKey`, respectively.
 * **RSA encryption** using in-memory keys (no hardware-backed key management yet)
 * Add structured iterator-based decoding of `Asn1Structure`. `Asn1Structure` now implements `Iterable<Asn1Element>`:
@@ -36,7 +38,7 @@
     * Add missing `Asn1.Real` shorthand to the ASN.1 builder
     * Add `Asn1Null` object
     * Add human-readable ASN.1 element `prettyPrint()` method
-    * Make Asn1OctetString interface sealed
+    * Make `Asn1OctetString` interface sealed
 * Strippable `KnownOIDs`
     * Move `KnownOIDs` into a discrete module `indispensable-oids`
 * OID descriptions:

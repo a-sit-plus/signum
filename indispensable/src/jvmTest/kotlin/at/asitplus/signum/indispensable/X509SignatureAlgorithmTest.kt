@@ -8,7 +8,6 @@ import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.kotest.assertions.withClue
 import at.asitplus.test.FreeSpec
 import io.kotest.assertions.throwables.shouldNotThrow
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.datatest.withData
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.collections.shouldBeIn
@@ -16,7 +15,6 @@ import io.kotest.matchers.collections.shouldNotBeIn
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.string.shouldContain
 import kotlinx.io.UnsafeIoApi
 import java.io.File
 
@@ -30,8 +28,8 @@ class X509SignatureAlgorithmTest : FreeSpec({
             val src = Asn1Element.parse(it.second) as Asn1Sequence
             val decoded = X509Certificate.decodeFromTlv(src)
 
-            decoded.signatureAlgorithm.isKnown().shouldBeFalse()
-            decoded.signatureAlgorithm shouldNotBeIn X509SignatureAlgorithm.entries
+            decoded.signatureAlgorithm.isSupported().shouldBeFalse()
+            decoded.signatureAlgorithm shouldNotBeIn X509SignatureAlgorithm.Supported.entries
 
             //Certificate decoded successfully, but cryptographic operations on unsupported algorithms are not possible
              decoded.decodedSignature.shouldBeNull()
@@ -46,7 +44,7 @@ class X509SignatureAlgorithmTest : FreeSpec({
         withData(nameFn = { it.first }, certsSupported) {
             val src = Asn1Element.parse(it.second) as Asn1Sequence
             val decoded = X509Certificate.decodeFromTlv(src)
-            decoded.signatureAlgorithm shouldBeIn X509SignatureAlgorithm.entries
+            decoded.signatureAlgorithm shouldBeIn X509SignatureAlgorithm.Supported.entries
             shouldNotThrow<Throwable> { decoded.decodedSignature }
         }
     }

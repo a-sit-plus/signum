@@ -92,7 +92,7 @@ class SignatureCodecTest : FreeSpec({
                 /* subject = */ issuer,
                 /* publicKeyInfo = */ SubjectPublicKeyInfo.getInstance(keys.public.encoded)
             )
-            val signatureAlgorithm = X509SignatureAlgorithm.RS256
+            val signatureAlgorithm = X509SignatureAlgorithm.Supported.RS256
             val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keys.private)
             val certificateHolder = builder.build(contentSigner)
             certificateHolder.signature

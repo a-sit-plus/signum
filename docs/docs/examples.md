@@ -303,7 +303,7 @@ val csr = signer.sign(tbsCSR).getOrElse { TODO("handle error") }
 ```
 7. The back-end verifies the signature of the CSR, and validates the challenge and attestation information
 ```kotlin
-X509SignatureAlgorithm.ES256.verifierFor(csr.tbsCsr.publicKey)
+X509SignatureAlgorithm.Known.ES256.verifierFor(csr.tbsCsr.publicKey)
   .getOrElse { TODO("Handle error") }
   .verify(
     csr.tbsCsr.encodeToDer(),

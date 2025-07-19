@@ -111,17 +111,17 @@ internal fun App() {
         var attestation by remember { mutableStateOf(false) }
         var biometricAuth by remember { mutableStateOf(" Disabled") }
         val algos = listOf(
-            X509SignatureAlgorithm.ES256,
-            X509SignatureAlgorithm.ES384,
-            X509SignatureAlgorithm.ES512,
-            X509SignatureAlgorithm.RS1,
-            X509SignatureAlgorithm.RS256,
-            X509SignatureAlgorithm.RS384,
-            X509SignatureAlgorithm.RS512
+            X509SignatureAlgorithm.Known.ES256,
+            X509SignatureAlgorithm.Known.ES384,
+            X509SignatureAlgorithm.Known.ES512,
+            X509SignatureAlgorithm.Known.RS1,
+            X509SignatureAlgorithm.Known.RS256,
+            X509SignatureAlgorithm.Known.RS384,
+            X509SignatureAlgorithm.Known.RS512
         )
         var keyAlgorithm by remember {
             mutableStateOf<SpecializedSignatureAlgorithm>(
-                X509SignatureAlgorithm.ES256
+                X509SignatureAlgorithm.Known.ES256
             )
         }
         var inputData by remember { mutableStateOf("Foo") }

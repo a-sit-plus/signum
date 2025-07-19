@@ -4,7 +4,7 @@ import at.asitplus.KmmResult
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.equalsCryptographically
-import at.asitplus.signum.indispensable.isKnown
+import at.asitplus.signum.indispensable.isSupported
 import at.asitplus.signum.indispensable.pki.Pkcs10CertificationRequest
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.TbsCertificationRequest
@@ -19,7 +19,7 @@ suspend fun Signer.sign(tbsCertificate: TbsCertificate): KmmResult<X509Certifica
     val toX509SignatureAlgorithm =
         this.signatureAlgorithm.toX509SignatureAlgorithm().getOrElse { return KmmResult.failure(it) }
     val algorithm = tbsCertificate.signatureAlgorithm
-    if(!algorithm.isKnown()) return KmmResult.failure(UnsupportedCryptoException("Signature algorithm not supported: ${algorithm.oid}"))
+    if(!algorithm.isSupported()) return KmmResult.failure(UnsupportedCryptoException("Signature algorithm not supported: ${algorithm.oid}"))
     if (toX509SignatureAlgorithm != algorithm)
         return KmmResult.failure(Asn1StructuralException("The signer's signature algorithm does not match the TbsCertificate's."))
     return sign(tbsCertificate.encodeToDer()).asKmmResult().map {

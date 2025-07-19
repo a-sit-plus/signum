@@ -515,7 +515,7 @@ val ecPublicKey: ECPublicKey = TODO("From platform-specific code")
 val cryptoPublicKey = CryptoPublicKey.EC.fromJcaPublicKey(ecPublicKey).getOrThrow()
 
 val commonName = "DefaultCryptoService"
-val signatureAlgorithm = X509SignatureAlgorithm.ES256
+val signatureAlgorithm = X509SignatureAlgorithm.Known.ES256
 
 
 val tbsCsr = TbsCertificationRequest(

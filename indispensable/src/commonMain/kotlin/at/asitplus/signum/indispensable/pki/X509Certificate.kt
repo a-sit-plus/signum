@@ -1,15 +1,15 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.catchingUnwrapped
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
-import at.asitplus.signum.indispensable.X509SignatureAlgorithmEntry
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
-import at.asitplus.signum.indispensable.isKnown
+import at.asitplus.signum.indispensable.isSupported
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.EXTENSIONS
@@ -255,6 +255,7 @@ constructor(
  * - RSA remains a bit string
  * - EC is DER-encoded then wrapped in a bit string
  */
+@Deprecated("Not extensible", ReplaceWith("x509SignatureAlgorithm.x509Encode(cryptoSignature)"), DeprecationLevel.ERROR)
 val CryptoSignature.x509Encoded
     get() = when (this) {
         is CryptoSignature.EC -> encodeToDer().encodeToAsn1BitStringPrimitive()
@@ -266,41 +267,45 @@ val CryptoSignature.x509Encoded
  * - RSA is encoded as a bit string
  * - EC is DER-encoded then wrapped in a bit string
  */
-fun CryptoSignature.Companion.fromX509Encoded(alg: X509SignatureAlgorithm, it: Asn1Primitive) =
-    // TODO update when core signature data classes become extensible
+@Deprecated("Not extensible", ReplaceWith("alg.x509Decode(it)"), DeprecationLevel.ERROR)
+fun CryptoSignature.Companion.fromX509Encoded(alg: X509SignatureAlgorithm.Supported, it: Asn1Primitive) =
     when (alg) {
-        is X509SignatureAlgorithm.EC -> CryptoSignature.EC.decodeFromDer(it.asAsn1BitString().rawBytes)
-        is X509SignatureAlgorithm.RSA -> CryptoSignature.RSA.decodeFromTlv(it)
+        is X509SignatureAlgorithm.Supported.EC -> CryptoSignature.EC.decodeFromDer(it.asAsn1BitString().rawBytes)
+        is X509SignatureAlgorithm.Supported.RSA -> CryptoSignature.RSA.decodeFromTlv(it)
         else -> throw IllegalArgumentException("Unsupported signature algorithm.")
     }
 
 /**
  * Very simple implementation of an X.509 Certificate
  */
-data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
+data class X509Certificate(
     val tbsCertificate: TbsCertificate,
     val signatureAlgorithm: X509SignatureAlgorithm,
-    val rawSignature: Asn1Element,
+    val rawSignature: Asn1Primitive,
 ) : PemEncodable<Asn1Sequence> {
 
+    /**
+     * Throws for unsupported signatures such as DSA
+     */
     @Deprecated("imprecisely named", ReplaceWith("decodedSignature"), DeprecationLevel.ERROR)
-    val signature: CryptoSignature? get() = decodedSignature
+    val signature: CryptoSignature get() = decodedSignature?:throw UnsupportedCryptoException("Signature type is not supported.")
 
+    /**
+     * Decodes supported %.509 signatures into a [CryptoSignature]. Returns `null` for unsupported signatures.
+     */
     val decodedSignature: CryptoSignature? by lazy {
         catchingUnwrapped {
-            require(signatureAlgorithm.isKnown()) { "Signature algorithm not supported: ${signatureAlgorithm.oid}" }
-            CryptoSignature.fromX509Encoded(
-                signatureAlgorithm,
-                rawSignature.asPrimitive()
-            )
+            require(signatureAlgorithm.isSupported()) { "Signature algorithm not supported: ${signatureAlgorithm.oid}" }
+            signatureAlgorithm.x509Decode(rawSignature).getOrThrow()
         }.getOrNull()
     }
 
+    @Throws(IllegalArgumentException::class)
     constructor(
         tbsCertificate: TbsCertificate,
-        signatureAlgorithm: X509SignatureAlgorithm,
+        signatureAlgorithm: X509SignatureAlgorithm.Supported,
         signature: CryptoSignature
-    ) : this(tbsCertificate, signatureAlgorithm, signature.x509Encoded)
+    ) : this(tbsCertificate, signatureAlgorithm, signatureAlgorithm.x509Encode(signature).getOrThrow())
 
     override val canonicalPEMBoundary: String = EB_STRINGS.DEFAULT
 
@@ -339,7 +344,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     }
 
     @Deprecated("imprecisely named", ReplaceWith("decodedPublicKey"), DeprecationLevel.ERROR)
-    val publicKey: CryptoPublicKey? get()= decodedPublicKey
+    val publicKey: CryptoPublicKey? get() = decodedPublicKey
     val decodedPublicKey: CryptoPublicKey? get() = tbsCertificate.decodedPublicKey
 
     companion object : PemDecodable<Asn1Sequence, X509Certificate>(EB_STRINGS.DEFAULT, EB_STRINGS.LEGACY) {

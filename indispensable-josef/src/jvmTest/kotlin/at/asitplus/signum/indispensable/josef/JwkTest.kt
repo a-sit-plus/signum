@@ -144,7 +144,7 @@ class JwkTest : FreeSpec({
     }
 
     "Regression test: JWK (no keyId) -> CryptoPublicKey -> JWK (no keyId)" {
-        val key = randomCertificate().publicKey.toJsonWebKey()
+        val key = randomCertificate().decodedPublicKey!!.toJsonWebKey()
         key.keyId shouldBe null
         val cpk = key.toCryptoPublicKey().getOrThrow()
         cpk.toJsonWebKey().keyId shouldBe null
@@ -161,12 +161,12 @@ private fun randomCertificate() = X509Certificate(
         issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.Printable("Test")))),
         publicKey = KeyPairGenerator.getInstance("EC").apply { initialize(256) }
             .genKeyPair().public.toCryptoPublicKey().getOrThrow(),
-        signatureAlgorithm = X509SignatureAlgorithm.ES256,
+        signatureAlgorithm = X509SignatureAlgorithm.Supported.ES256,
         subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.Printable("Test")))),
         validFrom = Asn1Time(Clock.System.now()),
         validUntil = Asn1Time(Clock.System.now()),
     ),
-    X509SignatureAlgorithm.ES256,
+    X509SignatureAlgorithm.Supported.ES256,
     CryptoSignature.EC.fromRS(
         BigInteger.fromByteArray(Random.nextBytes(16), Sign.POSITIVE),
         BigInteger.fromByteArray(Random.nextBytes(16), Sign.POSITIVE)
