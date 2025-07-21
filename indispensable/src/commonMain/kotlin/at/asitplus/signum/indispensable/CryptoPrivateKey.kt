@@ -149,7 +149,7 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
                 .forEachIndexed { i, info ->
                     val pminusone = info.prime - BigInteger.ONE
                     require(product.times(info.coefficient).mod(info.prime) == BigInteger.ONE)
-                    { "t_$i != (r_0 * ... * r_${i - 1})^(-1) mod r_$i" }
+                    { "t_$i != (r_0 * ... * r_${i-1})^(-1) mod r_$i" }
                     product *= info.prime
                     require(info.exponent == privateKey.mod(pminusone)) { "d_$i != d mod (p_$i - 1)" }
                     require(e.multiply(info.exponent).mod(pminusone) == BigInteger.ONE)
