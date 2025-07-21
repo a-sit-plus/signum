@@ -622,11 +622,10 @@ sealed class Asn1Structure(
          * Returns the next child held by this structure. Useful for iterating over its children when parsing complex structures.
          * @throws [NoSuchElementException] if no more children are available
          */
-        override fun next() =
-            catchingUnwrapped {
-                currentIndex = nextIndex
-                currentElement
-            }.getOrElse { throw NoSuchElementException("No more content left") }
+        override fun next() {
+            currentIndex = nextIndex
+            return currentElement
+        }
 
         /**
          * Exception-free version of [next]
