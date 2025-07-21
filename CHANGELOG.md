@@ -23,6 +23,14 @@
     * This allows `randomKey()` etc to operate on COSE/JWE algorithms
 * Move constants of `KnownOIDs` into a discrete module `indispensable-oids` as extensions on the `KnownOIDs` object
     * **→ update your imports!**
+* ASN.1 polishing:
+    * rename `Asn1Element.length` property to `Asn1Element.contentLength` (and add a delegate with the old name and deprecation annotation to the new property)
+    * Add missing `Asn1.Real` shorthand to the ASN.1 builder
+    * Add `Asn1Null` object
+    * Add human-readable ASN.1 element `prettyPrint()` method
+    * Make Asn1OctetString interface sealed
+* Strippable `KnownOIDs`
+    * Move `KnownOIDs` into a discrete module `indispensable-oids`
 * OID descriptions:
     * `KnownOIDs` now implements `MutableMap<ObjectIdentifier, String>` to store and look up descriptions of Object Identifiers 
     * OIDs can hence be described using `KnownOIDs[theExpressionistsOid] = "Edvard Munch"`

@@ -236,6 +236,12 @@ object Asn1 {
     /** Creates an INTEGER [Asn1Primitive] from [value] */
     fun Int(value: Asn1Integer) = value.encodeToAsn1Primitive()
 
+    /** Creates a REAL [Asn1Primitive] from [value] */
+    fun Real(value: Float) = value.encodeToAsn1Primitive()
+
+    /** Creates a REAL [Asn1Primitive] from [value] */
+    fun Real(value: Double) = value.encodeToAsn1Primitive()
+
 
     /** Creates an OCTET STRING [Asn1Element] from [bytes] */
     fun OctetString(bytes: ByteArray) = bytes.encodeToAsn1OctetStringPrimitive()
@@ -266,7 +272,7 @@ object Asn1 {
     /**
      * Create a NULL [Asn1Primitive]
      */
-    fun Null() = Asn1Primitive(Asn1Element.Tag.NULL, byteArrayOf())
+    fun Null() = Asn1Null
 
 
     /** Creates a UTC TIME [Asn1Primitive] from [value] */

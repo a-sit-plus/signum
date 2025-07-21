@@ -150,7 +150,7 @@ class ObjectIdentifier @Throws(Asn1Exception::class) private constructor(
          */
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Primitive): ObjectIdentifier {
-            if (src.length < 1) throw Asn1StructuralException("Empty OIDs are not supported")
+            if (src.contentLength < 1) throw Asn1StructuralException("Empty OIDs are not supported")
 
             return decodeFromAsn1ContentBytes(src.content)
 
