@@ -12,7 +12,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decode
 
 data class CertId @Throws(Asn1Exception::class) constructor(
-    val hashAlgorithms: AlgorithmIdentifier,
+    val hashAlgorithms: AlgorithmIdentifier, // hash algorithm
     val issuerNameHash: ByteArray,
     val issuerKeyHash: ByteArray,
     val serialNumber: ByteArray
