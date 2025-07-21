@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1ExplicitlyTagged
+import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.asn1.PemDecodable
@@ -12,11 +13,12 @@ import at.asitplus.signum.indispensable.asn1.PemEncodable
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
 import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.EXTENSIONS
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 
 
-data class Request(
+data class SingleRequest(
     val reqCert: CertId,
     val singleRequestExtensions: List<X509CertificateExtension>? = null
 ) : Asn1Encodable<Asn1Sequence> {
@@ -38,20 +40,21 @@ data class Request(
         }
     }
 
-    companion object : Asn1Decodable<Asn1Sequence, Request> {
+    companion object : Asn1Decodable<Asn1Sequence, SingleRequest> {
 
         object Tags {
             val EXTENSIONS = Asn1.ExplicitTag(0uL)
         }
 
-        override fun doDecode(src: Asn1Sequence): Request {
+        override fun doDecode(src: Asn1Sequence): SingleRequest {
             val certId = CertId.decodeFromTlv(src.nextChild().asSequence())
             val extensions = if (src.hasMoreChildren()) {
-                src.nextChild().asSequence().children.map {
+                (src.nextChild().asExplicitlyTagged().verifyTag(EXTENSIONS.tagValue)
+                    .single().asSequence()).children.map {
                     X509CertificateExtension.decodeFromTlv(it.asSequence())
                 }
             } else null
-            return Request(certId, extensions)
+            return SingleRequest(certId, extensions)
         }
     }
 }
@@ -59,7 +62,7 @@ data class Request(
 data class TbsRequest(
     val version: Int? = 2,
     val requestorName: List<RelativeDistinguishedName>? = null,
-    val requestList: List<Request>,
+    val requestList: List<SingleRequest>,
     val requestExtensions: List<X509CertificateExtension>? = null
 ) : Asn1Encodable<Asn1Sequence> {
 
@@ -101,7 +104,7 @@ data class TbsRequest(
         override fun doDecode(src: Asn1Sequence): TbsRequest {
             val version = src.peek().let {
                 if (it is Asn1ExplicitlyTagged) {
-                    (it.verifyTag(Tags.VERSION).single().asPrimitive()).decodeToInt()
+                    it.verifyTag(Tags.VERSION).single().asPrimitive().decodeToInt()
                         .also { src.nextChild() }
                 } else {
                     null
@@ -110,7 +113,7 @@ data class TbsRequest(
 
             val name = src.peek().let { it ->
                 if (it is Asn1ExplicitlyTagged) {
-                    (it.verifyTag(Tags.GENERAL_NAME).single().asSequence()).children.map {
+                    it.verifyTag(Tags.GENERAL_NAME).single().asSequence().children.map {
                         RelativeDistinguishedName.decodeFromTlv(it.asSet()).also { src.nextChild() }
                     }
                 } else {
@@ -119,7 +122,7 @@ data class TbsRequest(
             }
 
             val requests = src.nextChild().asSequence().children.map {
-                    Request.decodeFromTlv(it.asSequence())
+                    SingleRequest.decodeFromTlv(it.asSequence())
             }
 
             val extensions = if (src.hasMoreChildren()) {
@@ -135,13 +138,19 @@ data class TbsRequest(
 }
 
 data class OCSPRequest (
-    val tbsRequest: TbsRequest
+    val tbsRequest: TbsRequest,
+    val rawSignature: Asn1Primitive? = null
 ) : PemEncodable<Asn1Sequence> {
 
     override val canonicalPEMBoundary: String = EB_STRINGS.DEFAULT
 
     override fun encodeToTlv(): Asn1Sequence = Asn1.Sequence{
         +tbsRequest
+        rawSignature?.let {
+            +Asn1.ExplicitlyTagged(Tags.SIGNATURE.tagValue) {
+                +rawSignature
+            }
+        }
     }
 
     companion object : PemDecodable<Asn1Sequence, OCSPRequest>(EB_STRINGS.DEFAULT) {
@@ -150,8 +159,23 @@ data class OCSPRequest (
             const val DEFAULT = "OCSP REQUEST"
         }
 
-        override fun doDecode(src: Asn1Sequence): OCSPRequest = OCSPRequest(TbsRequest.decodeFromTlv(src.nextChild().asSequence()))
+        object Tags {
+            val SIGNATURE = Asn1.ExplicitTag(0uL)
+        }
 
+        override fun doDecode(src: Asn1Sequence): OCSPRequest  {
+            val tbsRequest = TbsRequest.decodeFromTlv(src.nextChild().asSequence())
+            val signature = if (src.hasMoreChildren()) {
+                src.nextChild().asExplicitlyTagged().verifyTag(Tags.SIGNATURE).single().asPrimitive()
+            } else null
+            return OCSPRequest(tbsRequest, signature)
+        }
+
+        /**
+         * Tries to decode [src] into an [OCSPRequest], by parsing the bytes directly as ASN.1 structure,
+         * or by decoding from Base64, or by decoding to a String, stripping PEM headers
+         * (`-----BEGIN OCSP REQUEST-----`) and then decoding from Base64.
+         */
         fun decodeFromByteArray(src: ByteArray): OCSPRequest? = catchingUnwrapped {
             OCSPRequest.decodeFromTlv(Asn1Element.parse(src) as Asn1Sequence)
         }.getOrNull() ?: catchingUnwrapped {

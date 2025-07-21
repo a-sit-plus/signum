@@ -3,6 +3,24 @@
 ## 3.0
 
 ### NEXT
+* Add support for CRL and OCSP data structures, including ASN.1 encoding and decoding logic:
+    * `OCSPRequest`
+        * `TbsRrequest`
+        * `Singleequest`
+        * `CertId`
+    * `OCSPResponse`
+        * `ResponseBytes`
+        * `BasicOCSPResponse`
+        * `ResponseData`
+        * `SingleResponse`
+        * `RevokedInfo`
+    * `CertificateList` representing CRL
+        * `TbsCertList`
+        * `CRLEntry`
+* Kotlin 2.2.0
+* AGP 8.10.0
+* Kotest 6.0.0.M6
+* Remove Kotest Workarounds
 * Introduce full X.509 certificate validation support
   * RFC Compliance:
     * Implements RFC 5280 path validation rules, including policy processing, name constraints, key usage, and basic constraints

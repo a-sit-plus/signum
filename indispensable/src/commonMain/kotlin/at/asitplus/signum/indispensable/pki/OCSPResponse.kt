@@ -267,7 +267,7 @@ data class ResponseData(
 
 data class BasicOCSPResponse(
     val tbsResponseData: ResponseData,
-    val signatureAlgorithm: X509SignatureAlgorithm,
+    val signatureAlgorithm: X509SignatureAlgorithm, //TODO update after rebase
     val signature: CryptoSignature,
     val certs: List<X509Certificate>? = null
 ) : Asn1Encodable<Asn1Sequence> {
@@ -393,6 +393,11 @@ data class OCSPResponse(
             return OCSPResponse(status, response)
         }
 
+        /**
+         * Tries to decode [src] into an [OCSPResponse], by parsing the bytes directly as ASN.1 structure,
+         * or by decoding from Base64, or by decoding to a String, stripping PEM headers
+         * (`-----BEGIN OCSP RESPONSE-----`) and then decoding from Base64.
+         */
         fun decodeFromByteArray(src: ByteArray): OCSPResponse? = catchingUnwrapped {
             OCSPResponse.decodeFromTlv(Asn1Element.parse(src) as Asn1Sequence)
         }.getOrNull() ?: catchingUnwrapped {
