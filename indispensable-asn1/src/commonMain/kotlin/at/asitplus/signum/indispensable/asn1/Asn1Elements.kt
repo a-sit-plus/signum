@@ -658,7 +658,7 @@ sealed class Asn1Structure(
      * all children must be consumed. Use [decodeRethrowing] to automatically and consistently wrap exceptions
      * thrown during decoding in [Asn1Exception]s.
      */
-    fun <T> decodeAs(requireFullConsumption: Boolean = true, decoder: Iterator.() -> T): T {
+    inline fun <reified T> decodeAs(requireFullConsumption: Boolean = true, decoder: Iterator.() -> T): T {
         val it = iterator()
         val result = it.decoder()
         if (requireFullConsumption && it.hasNext())
