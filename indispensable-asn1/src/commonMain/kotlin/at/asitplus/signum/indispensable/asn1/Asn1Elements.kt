@@ -631,7 +631,7 @@ sealed class Asn1Structure(
         /**
          * Exception-free version of [next]
          */
-        fun nextOrNull() = catchingUnwrapped { next() }.getOrNull()
+        fun nextOrNull() = if (hasNext()) next() else null
 
         /**
          * Returns `true` if more children can be retrieved by [next]. `false` otherwise
