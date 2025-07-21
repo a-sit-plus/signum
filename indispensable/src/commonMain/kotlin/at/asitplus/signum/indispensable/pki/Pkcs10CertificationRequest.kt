@@ -10,8 +10,6 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
 import at.asitplus.signum.indispensable.isSupported
-import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
-import kotlinx.serialization.Serializable
 
 /**
  * The meat of a PKCS#10 Certification Request:

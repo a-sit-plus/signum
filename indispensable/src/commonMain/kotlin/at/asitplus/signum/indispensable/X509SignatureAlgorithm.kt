@@ -3,8 +3,6 @@ package at.asitplus.signum.indispensable
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
-import at.asitplus.signum.indispensable.X509SignatureAlgorithm.Supported.EC
-import at.asitplus.signum.indispensable.X509SignatureAlgorithm.Supported.RSA
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
@@ -51,24 +49,31 @@ sealed class X509SignatureAlgorithm(
 
         @Deprecated("Use `Supported.ES256` instead.", ReplaceWith("Supported.ES256"), DeprecationLevel.ERROR)
         val ES256 = Supported.ES256
+
         @Deprecated("Use `Supported.ES384` instead.", ReplaceWith("Supported.ES384"), DeprecationLevel.ERROR)
         val ES384 = Supported.ES384
+
         @Deprecated("Use `Supported.ES512` instead.", ReplaceWith("Supported.ES512"), DeprecationLevel.ERROR)
         val ES512 = Supported.ES512
 
         @Deprecated("Use `Supported.PS256` instead.", ReplaceWith("Supported.PS256"), DeprecationLevel.ERROR)
         val PS256 = Supported.PS256
+
         @Deprecated("Use `Supported.PS384` instead.", ReplaceWith("Supported.PS384"), DeprecationLevel.ERROR)
         val PS384 = Supported.PS384
+
         @Deprecated("Use `Supported.PS512` instead.", ReplaceWith("Supported.PS512"), DeprecationLevel.ERROR)
         val PS512 = Supported.PS512
 
         @Deprecated("Use `Supported.RS1` instead.", ReplaceWith("Supported.RS1"), DeprecationLevel.ERROR)
         val RS1 = Supported.RS1
+
         @Deprecated("Use `Supported.RS256` instead.", ReplaceWith("Supported.RS256"), DeprecationLevel.ERROR)
         val RS256 = Supported.RS256
+
         @Deprecated("Use `Supported.RS384` instead.", ReplaceWith("Supported.RS384"), DeprecationLevel.ERROR)
         val RS384 = Supported.RS384
+
         @Deprecated("Use `Supported.RS512` instead.", ReplaceWith("Supported.RS512"), DeprecationLevel.ERROR)
         val RS512 = Supported.RS512
 
@@ -80,25 +85,25 @@ sealed class X509SignatureAlgorithm(
         )
 
 
-
         private fun fromOid(oid: ObjectIdentifier): X509SignatureAlgorithm.Supported? =
             X509SignatureAlgorithm.Supported.entries.firstOrNull { it.oid == oid }
 
-        override fun doDecode(src: Asn1Sequence): X509SignatureAlgorithm = runRethrowing {
-            val oid = (src.nextChild() as Asn1Primitive).readOid()
+
+        override fun doDecode(src: Asn1Sequence): X509SignatureAlgorithm = src.decodeRethrowing {
+            val oid = next().asPrimitive().readOid()
             catchingUnwrapped {
                 when (oid) {
-                    KnownOIDs.rsaPSS -> parsePssParams(src)
+                    KnownOIDs.rsaPSS -> parsePssParams(this)
                     else -> {
                         val alg = fromOid(oid)
                         if (alg is X509SignatureAlgorithm.Supported.RSA) {
-                            val tag = src.nextChild().tag
+                            val tag = next().tag
                             if (tag != Asn1Element.Tag.NULL)
                                 throw Asn1TagMismatchException(Asn1Element.Tag.NULL, tag, "RSA Params not allowed.")
                         }
                         alg ?: X509SignatureAlgorithm.Unsupported(
                             oid,
-                            generateSequence { src.takeIf { it.hasMoreChildren() }?.nextChild() }.toList()
+                            generateSequence { takeIf { hasNext() }?.next() }.toList()
                         )
                     }
                 }
@@ -107,55 +112,57 @@ sealed class X509SignatureAlgorithm(
             }
         }
 
-        @Throws(Asn1Exception::class)
-        private fun parsePssParams(src: Asn1Sequence): X509SignatureAlgorithm =
-            runRethrowing {
-                val seq = src.nextChild() as Asn1Sequence
-                val first = (seq.nextChild() as Asn1ExplicitlyTagged).verifyTag(0u).single() as Asn1Sequence
-
-                val sigAlg = (first.nextChild() as Asn1Primitive).readOid()
-                val tag = first.nextChild().tag
-                if (tag != Asn1Element.Tag.NULL)
-                    throw Asn1TagMismatchException(Asn1Element.Tag.NULL, tag, "PSS Params not supported yet")
-
-                val second = (seq.nextChild() as Asn1ExplicitlyTagged).verifyTag(1u).single() as Asn1Sequence
-                val mgf = (second.nextChild() as Asn1Primitive).readOid()
-                if (mgf != KnownOIDs.pkcs1_MGF) throw IllegalArgumentException("Illegal OID: $mgf")
-                val inner = second.nextChild() as Asn1Sequence
-                val innerHash = (inner.nextChild() as Asn1Primitive).readOid()
-                if (innerHash != sigAlg) throw IllegalArgumentException("HashFunction mismatch! Expected: $sigAlg, is: $innerHash")
-
-                if (inner.nextChild().tag != Asn1Element.Tag.NULL) throw IllegalArgumentException(
-                    "PSS Params not supported yet"
+        private fun parsePssParams(src: Asn1Structure.Iterator): X509SignatureAlgorithm = runRethrowing {
+            val (algSequence, mgfSequence, saltLen) = src.next().asSequence().decodeRethrowing {
+                Triple(
+                    next().asExplicitlyTagged().verifyTag(0u).single().asSequence(),
+                    next().asExplicitlyTagged().verifyTag(1u).single().asSequence(),
+                    next().asExplicitlyTagged().verifyTag(2u).single().asPrimitive().decodeToInt().bit
                 )
+            }
 
-                val last = (seq.nextChild() as Asn1ExplicitlyTagged).verifyTag(2u).single() as Asn1Primitive
-                val saltLen = last.decodeToInt().bit
+            val (sigAlg, tagged) = algSequence.decodeRethrowing { next().asPrimitive().readOid() to next().tag }
 
-                return sigAlg.let {
-                    when (it) {
-                        KnownOIDs.sha_256 -> X509SignatureAlgorithm.Supported.PS256.also {
-                            if (saltLen != it.saltLength) throw IllegalArgumentException(
-                                "Non-recommended salt length used: $saltLen"
-                            )
-                        }
+            if (tagged != Asn1Element.Tag.NULL)
+                throw Asn1TagMismatchException(Asn1Element.Tag.NULL, tagged, "PSS Params not supported yet")
 
-                        KnownOIDs.sha_384 -> X509SignatureAlgorithm.Supported.PS256.also {
-                            if (saltLen != it.saltLength) throw IllegalArgumentException(
-                                "Non-recommended salt length used: $saltLen"
-                            )
-                        }
+            val (mgfOid, mgfParams) = mgfSequence.decodeRethrowing {
+                next().asPrimitive().readOid() to next().asSequence()
+            }
 
-                        KnownOIDs.sha_512 -> X509SignatureAlgorithm.Supported.PS256.also {
-                            if (saltLen != it.saltLength) throw IllegalArgumentException(
-                                "Non-recommended salt length used: $saltLen"
-                            )
-                        }
+            if (mgfOid != KnownOIDs.pkcs1_MGF) throw IllegalArgumentException("Illegal OID: $mgfOid")
 
-                        else -> throw IllegalArgumentException("Unsupported OID: $it")
+            val (innerHash, innerTagged) = mgfParams.decodeRethrowing { next().asPrimitive().readOid() to next().tag }
+
+            if (innerHash != sigAlg) throw IllegalArgumentException("HashFunction mismatch! Expected: $sigAlg, is: $innerHash")
+            if (innerTagged != Asn1Element.Tag.NULL) throw IllegalArgumentException(
+                "PSS Params not supported yet"
+            )
+
+            sigAlg.let {
+                when (it) {
+                    KnownOIDs.sha_256 -> X509SignatureAlgorithm.Supported.PS256.also {
+                        if (saltLen != it.saltLength) throw IllegalArgumentException(
+                            "Non-recommended salt length used: $saltLen"
+                        )
                     }
+
+                    KnownOIDs.sha_384 -> X509SignatureAlgorithm.Supported.PS256.also {
+                        if (saltLen != it.saltLength) throw IllegalArgumentException(
+                            "Non-recommended salt length used: $saltLen"
+                        )
+                    }
+
+                    KnownOIDs.sha_512 -> X509SignatureAlgorithm.Supported.PS256.also {
+                        if (saltLen != it.saltLength) throw IllegalArgumentException(
+                            "Non-recommended salt length used: $saltLen"
+                        )
+                    }
+
+                    else -> throw IllegalArgumentException("Unsupported OID: $it")
                 }
             }
+        }
     }
 
     /**
@@ -202,11 +209,11 @@ sealed class X509SignatureAlgorithm(
                 oid,
                 saltLength?.let { encodePSSParams(digest, it) } ?: listOf(Asn1.Null())) {
             override fun x509Encode(signature: CryptoSignature): KmmResult<Asn1Primitive> = catching {
-                require(signature is CryptoSignature.RSA){"Only RSA signatures supported."}
+                require(signature is CryptoSignature.RSA) { "Only RSA signatures supported." }
                 signature.encodeToTlv()
             }
 
-            override fun x509Decode(fromCertificate: Asn1Primitive): KmmResult<CryptoSignature> =catching {
+            override fun x509Decode(fromCertificate: Asn1Primitive): KmmResult<CryptoSignature> = catching {
                 CryptoSignature.RSA.decodeFromTlv(fromCertificate)
             }
 

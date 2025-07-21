@@ -183,8 +183,8 @@ constructor(
         }
 
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence) = decodeRethrowing {
-            val version = src.peek().let {
+        override fun doDecode(src: Asn1Sequence) = src.decodeRethrowing {
+            val version = peek().let {
                 if (it is Asn1ExplicitlyTagged) {
                     it.verifyTag(Tags.VERSION).single().asPrimitive().decodeToInt()
                         .also { next() } // actually read it, so next child is serial number
@@ -358,7 +358,7 @@ data class X509Certificate(
         override fun doDecode(src: Asn1Sequence): X509Certificate = src.decodeRethrowing {
             val tbs = TbsCertificate.decodeFromTlv(next().asSequence())
             val sigAlg = X509SignatureAlgorithm.decodeFromTlv(next().asSequence())
-            val signature = CryptoSignature.fromX509Encoded(sigAlg, next().asPrimitive())
+            val signature = next().asPrimitive()
             X509Certificate(tbs, sigAlg, signature)
         }
 
