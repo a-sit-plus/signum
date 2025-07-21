@@ -29,7 +29,7 @@ class X509SignatureAlgorithmTest : FreeSpec({
             val decoded = X509Certificate.decodeFromTlv(src)
 
             decoded.signatureAlgorithm.isSupported().shouldBeFalse()
-            decoded.signatureAlgorithm shouldNotBeIn X509SignatureAlgorithm.Supported.entries
+            decoded.signatureAlgorithm shouldNotBeIn X509SignatureAlgorithm.entries
 
             //Certificate decoded successfully, but cryptographic operations on unsupported algorithms are not possible
              decoded.decodedSignature.shouldBeNull()
@@ -44,7 +44,7 @@ class X509SignatureAlgorithmTest : FreeSpec({
         withData(nameFn = { it.first }, certsSupported) {
             val src = Asn1Element.parse(it.second) as Asn1Sequence
             val decoded = X509Certificate.decodeFromTlv(src)
-            decoded.signatureAlgorithm shouldBeIn X509SignatureAlgorithm.Supported.entries
+            decoded.signatureAlgorithm shouldBeIn X509SignatureAlgorithm.entries
             shouldNotThrow<Throwable> { decoded.decodedSignature }
         }
     }

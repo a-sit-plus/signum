@@ -8,7 +8,7 @@
     * HKDF
     * scrypt
 * X.509 Revamp
-    * Introduce `X509SignatureAlgorithmDescription`, which is the OID+params pair that identifies a `X509SignatureAlgorithm`
+    * Introduce `X509SignatureAlgorithmDescription`, which is the OID + params pair that identifies a `X509SignatureAlgorithm`
       * Instances of `X509SignatureAlgorithm` represent algorithms that are known to Signum
       * Test `.isSupported()` or `.requireSupported()` (with contract smart-cast support)
     * `X509Certificate` and `Pkcs10CertificationRequest` now use `X509SignatureAlgorithmDescription` to represent a non-validated signature algorithm

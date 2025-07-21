@@ -67,7 +67,7 @@ constructor(
     }}
 
     @Deprecated("Imprecisely named and does not support unknown algorithms; use rawPublicKey or decodedPublicKey",
-        level = DeprecationLevel.ERROR)
+        level = DeprecationLevel.ERROR, replaceWith = ReplaceWith("decodedPublicKey"))
     val publicKey get() = decodedPublicKey.getOrThrow()
 
     /**
