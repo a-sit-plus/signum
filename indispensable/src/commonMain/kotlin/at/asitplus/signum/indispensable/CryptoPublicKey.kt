@@ -236,8 +236,7 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
              */
             @Throws(Asn1Exception::class)
             fun fromPKCS1encoded(input: ByteArray): RSA = runRethrowing {
-                val conv = Asn1Element.parse(input).asSequence()
-                conv.decodeRethrowing {
+                Asn1Element.parse(input).asSequence().decodeRethrowing {
                     val n = next().asPrimitive().decodeToAsn1Integer() as Asn1Integer.Positive
                     val e = next().asPrimitive().decodeToAsn1Integer() as Asn1Integer.Positive
                     RSA(n, e)
