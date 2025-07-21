@@ -29,7 +29,7 @@ inline fun <reified R> runRethrowing(block: () -> R) = catchingUnwrappedAs(::Asn
  */
 inline fun <reified R> Asn1Structure.decodeRethrowing(
     requireFullConsumption: Boolean = true,
-    noinline decoder: Asn1Structure.Iterator.() -> R
+    decoder: Asn1Structure.Iterator.() -> R
 ) =
     runRethrowing {
         this@decodeRethrowing.decodeAs(requireFullConsumption, decoder)
