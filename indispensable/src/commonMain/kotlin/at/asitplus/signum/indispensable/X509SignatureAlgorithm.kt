@@ -19,11 +19,12 @@ sealed class X509SignatureAlgorithmDescription(
     override val oid: ObjectIdentifier
 ) : Asn1Encodable<Asn1Sequence>, Identifiable {
 
-    abstract val parameters: List<Asn1Element>
+    /** Additional algorithm parameters. **Note: `null` means no parameters and `null != Asn1Null`!** */
+    abstract val parameters: Asn1Element?
 
     override fun encodeToTlv() = Asn1.Sequence {
         +oid
-        parameters.forEach { +it }
+        parameters?.let { +it }
     }
 
     override fun equals(other: Any?): Boolean {
@@ -34,7 +35,7 @@ sealed class X509SignatureAlgorithmDescription(
 
     override fun hashCode() = (31 * oid.hashCode() + parameters.hashCode())
 
-    internal class Unknown(oid: ObjectIdentifier, override val parameters: List<Asn1Element>) :
+    internal class Unknown(oid: ObjectIdentifier, override val parameters: Asn1Element?) :
         X509SignatureAlgorithmDescription(oid)
 
     companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithmDescription> {
@@ -44,7 +45,7 @@ sealed class X509SignatureAlgorithmDescription(
             sequenceOf<X509SignatureAlgorithmProvider>(X509SignatureAlgorithm.Provider)
                 .firstNotNullOfOrNull { it.loaderForOid(oid) }
                 ?.invoke(this@decodeRethrowing)
-                ?: Unknown(oid, generateSequence(this@decodeRethrowing::nextOrNull).toList())
+                ?: Unknown(oid, nextOrNull())
         }
     }
 }
@@ -96,7 +97,7 @@ sealed class X509SignatureAlgorithm(
     // ECDSA with SHA-size
     sealed class ECDSA(oid: ObjectIdentifier, override val algorithm: SignatureAlgorithm, override val digest: Digest) :
         X509SignatureAlgorithm(oid) {
-        override val parameters get() = emptyList<Asn1Element>()
+        override val parameters get() = null
     }
 
     @Deprecated("Use type check", replaceWith = ReplaceWith("this is X509SignatureAlgorithm.ECDSA"))
@@ -109,14 +110,14 @@ sealed class X509SignatureAlgorithm(
         override val parameters by lazy {
             val shaOid = digest.oid
             val shaLength = digest.outputLength
-            listOf(
-                ExplicitlyTagged(0u) {
+            Asn1.Sequence {
+                +ExplicitlyTagged(0u) {
                     +Asn1.Sequence {
                         +shaOid
                         +Null()
                     }
-                },
-                ExplicitlyTagged(1u) {
+                }
+                +ExplicitlyTagged(1u) {
                     +Asn1.Sequence {
                         +KnownOIDs.pkcs1_MGF
                         +Asn1.Sequence {
@@ -124,10 +125,11 @@ sealed class X509SignatureAlgorithm(
                             +Null()
                         }
                     }
-                },
-                ExplicitlyTagged(2u) {
+                }
+                +ExplicitlyTagged(2u) {
                     +Asn1.Int(shaLength.bytes)
-                })
+                }
+            }
         }
     }
 
@@ -135,7 +137,7 @@ sealed class X509SignatureAlgorithm(
     sealed class RSAPKCS1(oid: ObjectIdentifier, override val algorithm: SignatureAlgorithm.RSA) :
         X509SignatureAlgorithm(oid) {
         override val digest get() = algorithm.digest
-        override val parameters get() = listOf(Asn1Null)
+        override val parameters get() = Asn1Null
     }
 
     abstract val digest: Digest
