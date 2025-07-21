@@ -507,11 +507,9 @@ sealed interface CryptoPrivateKey : PemEncodable<Asn1Sequence>, Identifiable {
                     attributes,
                     privateKeyOctets.size
                 )
-                runRethrowing {
-                    when (curve) {
-                        null -> privateKey
-                        else -> privateKey.withCurve(curve)
-                    }
+                when (curve) {
+                    null -> privateKey
+                    else -> privateKey.withCurve(curve)
                 }
             }
         }
