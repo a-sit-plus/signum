@@ -23,21 +23,7 @@ import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 
 /**
  * TBSCertList
- * ```
- * TBSCertList ::= SEQUENCE {
- *     version              Version OPTIONAL,         -- if present, shall be v2
- *     signature            AlgorithmIdentifier,
- *     issuer               Name,
- *     thisUpdate           Time,
- *     nextUpdate           Time OPTIONAL,
- *     revokedCertificates  SEQUENCE OF SEQUENCE {
- *         userCertificate     CertificateSerialNumber,
- *         revocationDate      Time,
- *         crlEntryExtensions  Extensions OPTIONAL     -- if present, shall be v2
- *     } OPTIONAL,
- *     crlExtensions        [0] EXPLICIT Extensions OPTIONAL  -- if present, shall be v2
- * }
- * ```
+ * The structure that gets signed
  */
 data class TbsCertList @Throws(Asn1Exception::class) constructor(
     val version: Int? = 2,
@@ -153,14 +139,17 @@ data class TbsCertList @Throws(Asn1Exception::class) constructor(
     }
 }
 
+/**
+ * CRLEntry represents revoked certificate
+ * */
 data class CRLEntry @Throws(Asn1Exception::class) constructor(
-    val userCertificate: ByteArray, //serial number of the revoked certificate, current naming matches RFC5280
+    val certSerialNumber: ByteArray,
     val revocationTime: Asn1Time,
     val crlEntryExtensions: List<X509CertificateExtension>? = null
 ) : Asn1Encodable<Asn1Sequence> {
 
     override fun encodeToTlv(): Asn1Sequence = Asn1.Sequence{
-        +Asn1Primitive(Asn1Element.Tag.INT, userCertificate)
+        +Asn1Primitive(Asn1Element.Tag.INT, certSerialNumber)
         +revocationTime
 
         crlEntryExtensions?.let {
@@ -178,7 +167,7 @@ data class CRLEntry @Throws(Asn1Exception::class) constructor(
 
         other as CRLEntry
 
-        if (!userCertificate.contentEquals(other.userCertificate)) return false
+        if (!certSerialNumber.contentEquals(other.certSerialNumber)) return false
         if (revocationTime != other.revocationTime) return false
         if (crlEntryExtensions != other.crlEntryExtensions) return false
 
@@ -186,7 +175,7 @@ data class CRLEntry @Throws(Asn1Exception::class) constructor(
     }
 
     override fun hashCode(): Int {
-        var result = userCertificate.contentHashCode()
+        var result = certSerialNumber.contentHashCode()
         result = 31 * result + revocationTime.hashCode()
         result = 31 * result + (crlEntryExtensions?.hashCode() ?: 0)
         return result
@@ -198,7 +187,6 @@ data class CRLEntry @Throws(Asn1Exception::class) constructor(
             val serialNumber = (src.nextChild().asPrimitive()).decode(Asn1Element.Tag.INT) { it }
 
             val revocationTime = Asn1Time.decodeFromTlv(src.nextChild().asPrimitive())
-
 
             val extensions = if (src.hasMoreChildren()) {
                 src.nextChild().asSequence().children.map {
