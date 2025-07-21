@@ -36,7 +36,7 @@
 * ASN.1 polishing:
     * rename `Asn1Element.length` property to `Asn1Element.contentLength` (and add a delegate with the old name and deprecation annotation to the new property)
     * Add missing `Asn1.Real` shorthand to the ASN.1 builder
-    * Add `Asn1Null` object
+    * Add `Asn1Null` constant
     * Add human-readable ASN.1 element `prettyPrint()` method
     * Make `Asn1OctetString` interface sealed
 * Strippable `KnownOIDs`

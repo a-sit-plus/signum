@@ -7,19 +7,12 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
 // future: SPI
 private interface X509SignatureAlgorithmProvider {
-    fun loaderForOid(oid: ObjectIdentifier): ((Asn1Structure.Iterator)->X509SignatureAlgorithm)?
+    fun loaderForOid(oid: ObjectIdentifier): ((Asn1Structure.Iterator) -> X509SignatureAlgorithm)?
 }
 
 sealed class X509SignatureAlgorithmDescription(
@@ -41,8 +34,8 @@ sealed class X509SignatureAlgorithmDescription(
 
     override fun hashCode() = (31 * oid.hashCode() + parameters.hashCode())
 
-    internal class Unknown(oid: ObjectIdentifier, override val parameters: List<Asn1Element>)
-        : X509SignatureAlgorithmDescription(oid)
+    internal class Unknown(oid: ObjectIdentifier, override val parameters: List<Asn1Element>) :
+        X509SignatureAlgorithmDescription(oid)
 
     companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithmDescription> {
         override fun doDecode(src: Asn1Sequence) = src.decodeRethrowing {
@@ -50,8 +43,8 @@ sealed class X509SignatureAlgorithmDescription(
             // future: SPI
             sequenceOf<X509SignatureAlgorithmProvider>(X509SignatureAlgorithm.Provider)
                 .firstNotNullOfOrNull { it.loaderForOid(oid) }
-                    ?.invoke(this@decodeRethrowing)
-                    ?: Unknown(oid, generateSequence(this@decodeRethrowing::nextOrNull).toList())
+                ?.invoke(this@decodeRethrowing)
+                ?: Unknown(oid, generateSequence(this@decodeRethrowing::nextOrNull).toList())
         }
     }
 }
@@ -81,31 +74,38 @@ sealed class X509SignatureAlgorithm(
 
     /** The [X509SignatureAlgorithmProvider] for Signum's natively supported [X509SignatureAlgorithm]s */
     internal object Provider : X509SignatureAlgorithmProvider {
-        override fun loaderForOid(oid: ObjectIdentifier) = when(oid) {
+        override fun loaderForOid(oid: ObjectIdentifier) = when (oid) {
             KnownOIDs.rsaPSS -> X509SignatureAlgorithm::parsePssParams
             else -> when (val alg = entries.firstOrNull { it.oid == oid }) {
                 null -> null
                 is RSAPKCS1 -> ({
-                    if (it.next() !is Asn1Null) {
-                        throw Asn1TagMismatchException(Asn1Element.Tag.NULL, it.currentElement.tag,
-                            "RSA Params not allowed.")
+                    if (it.next() != Asn1Null) {
+                        throw Asn1TagMismatchException(
+                            Asn1Element.Tag.NULL, it.currentElement.tag,
+                            "RSA Params not allowed."
+                        )
                     }
                     alg
                 })
+
                 else -> ({ alg })
             }
         }
     }
 
     // ECDSA with SHA-size
-    sealed class ECDSA(oid: ObjectIdentifier) : X509SignatureAlgorithm(oid) {
+    sealed class ECDSA(oid: ObjectIdentifier, override val algorithm: SignatureAlgorithm, override val digest: Digest) :
+        X509SignatureAlgorithm(oid) {
         override val parameters get() = emptyList<Asn1Element>()
     }
+
     @Deprecated("Use type check", replaceWith = ReplaceWith("this is X509SignatureAlgorithm.ECDSA"))
     val isEc get() = this is ECDSA
 
     // RSASSA-PSS with SHA-size
-    sealed class RSAPSS(): X509SignatureAlgorithm(KnownOIDs.rsaPSS) {
+    sealed class RSAPSS(override val algorithm: SignatureAlgorithm.RSA) : X509SignatureAlgorithm(KnownOIDs.rsaPSS) {
+        override val digest get() = algorithm.digest
+
         override val parameters by lazy {
             val shaOid = digest.oid
             val shaLength = digest.outputLength
@@ -132,43 +132,32 @@ sealed class X509SignatureAlgorithm(
     }
 
     // RSASSA-PKCS1-v1_5 with SHA-size
-    sealed class RSAPKCS1(oid: ObjectIdentifier): X509SignatureAlgorithm(oid) {
+    sealed class RSAPKCS1(oid: ObjectIdentifier, override val algorithm: SignatureAlgorithm.RSA) :
+        X509SignatureAlgorithm(oid) {
+        override val digest get() = algorithm.digest
         override val parameters get() = listOf(Asn1Null)
     }
 
-    val digest: Digest
-        get() = when (this) {
-            RS1 -> Digest.SHA1
-            ES256, PS256, RS256 -> Digest.SHA256
-            ES384, PS384, RS384 -> Digest.SHA384
-            ES512, PS512, RS512 -> Digest.SHA512
-        }
+    abstract val digest: Digest
 
-    override val algorithm: SignatureAlgorithm
-        get() = when (this) {
-            ES256, ES384, ES512 -> SignatureAlgorithm.ECDSA(this.digest, null)
-            PS256, PS384, PS512 -> SignatureAlgorithm.RSA(this.digest, RSAPadding.PSS)
-            RS1, RS256, RS384, RS512 -> SignatureAlgorithm.RSA(this.digest, RSAPadding.PKCS1)
-        }
+    object ES256 : ECDSA(KnownOIDs.ecdsaWithSHA256, SignatureAlgorithm.ECDSAwithSHA256, Digest.SHA256)
+    object ES384 : ECDSA(KnownOIDs.ecdsaWithSHA384, SignatureAlgorithm.ECDSAwithSHA384, Digest.SHA384)
+    object ES512 : ECDSA(KnownOIDs.ecdsaWithSHA512, SignatureAlgorithm.ECDSAwithSHA512, Digest.SHA512)
 
-    object ES256 : ECDSA(KnownOIDs.ecdsaWithSHA256)
-    object ES384 : ECDSA(KnownOIDs.ecdsaWithSHA384)
-    object ES512 : ECDSA(KnownOIDs.ecdsaWithSHA512)
+    object PS256 : RSAPSS(SignatureAlgorithm.RSAwithSHA256andPSSPadding)
+    object PS384 : RSAPSS(SignatureAlgorithm.RSAwithSHA384andPSSPadding)
+    object PS512 : RSAPSS(SignatureAlgorithm.RSAwithSHA512andPSSPadding)
 
-    object PS256 : RSAPSS()
-    object PS384 : RSAPSS()
-    object PS512 : RSAPSS()
-
-    object RS1 : RSAPKCS1(KnownOIDs.sha1WithRSAEncryption)
-    object RS256 : RSAPKCS1(KnownOIDs.sha256WithRSAEncryption)
-    object RS384 : RSAPKCS1(KnownOIDs.sha384WithRSAEncryption)
-    object RS512 : RSAPKCS1(KnownOIDs.sha512WithRSAEncryption)
+    object RS1 : RSAPKCS1(KnownOIDs.sha1WithRSAEncryption, SignatureAlgorithm.RSA(Digest.SHA1, RSAPadding.PKCS1))
+    object RS256 : RSAPKCS1(KnownOIDs.sha256WithRSAEncryption, SignatureAlgorithm.RSAwithSHA256andPKCS1Padding)
+    object RS384 : RSAPKCS1(KnownOIDs.sha384WithRSAEncryption, SignatureAlgorithm.RSAwithSHA384andPKCS1Padding)
+    object RS512 : RSAPKCS1(KnownOIDs.sha512WithRSAEncryption, SignatureAlgorithm.RSAwithSHA512andPKCS1Padding)
 
     companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithm> {
 
         val entries = setOf(
-                 ES256, ES384, ES512,
-                 PS256, PS384, PS512,
+            ES256, ES384, ES512,
+            PS256, PS384, PS512,
             RS1, RS256, RS384, RS512
         )
 
@@ -185,7 +174,7 @@ sealed class X509SignatureAlgorithm(
             }
 
         @Throws(Asn1Exception::class)
-        private fun parsePssParams(src: Asn1Structure.Iterator): X509SignatureAlgorithm = runRethrowing{
+        private fun parsePssParams(src: Asn1Structure.Iterator): X509SignatureAlgorithm = runRethrowing {
             val (algSequence, mgfSequence, saltLen) = src.next().asSequence().decodeRethrowing {
                 Triple(
                     next().asExplicitlyTagged().verifyTag(0u).single().asSequence(),
