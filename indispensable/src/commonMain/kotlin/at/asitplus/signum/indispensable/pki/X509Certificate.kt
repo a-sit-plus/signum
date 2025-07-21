@@ -151,47 +151,47 @@ constructor(
         }
 
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence) = runRethrowing {
-            val version = src.peek().let {
+        override fun doDecode(src: Asn1Sequence) = src.decodeRethrowing {
+            val version = peek().let {
                 if (it is Asn1ExplicitlyTagged) {
-                    (it.verifyTag(Tags.VERSION).single() as Asn1Primitive).decodeToInt()
-                        .also { src.nextChild() } // actually read it, so next child is serial number
+                    it.verifyTag(Tags.VERSION).single().asPrimitive().decodeToInt()
+                        .also { next() } // actually read it, so next child is serial number
                 } else {
                     null
                 }
             }
-            val serialNumber = (src.nextChild() as Asn1Primitive).decode(Asn1Element.Tag.INT) { it }
-            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val issuerNames = (src.nextChild() as Asn1Sequence).children.map {
-                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
+            val serialNumber = next().asPrimitive().decode(Asn1Element.Tag.INT) { it }
+            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(next().asSequence())
+            val issuerNames = next().asSequence().children.map {
+                RelativeDistinguishedName.decodeFromTlv(it.asSet())
             }
 
-            val timestamps = decodeTimestamps(src.nextChild() as Asn1Sequence)
-            val subject = (src.nextChild() as Asn1Sequence).children.map {
-                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
+            val timestamps = decodeTimestamps(next().asSequence())
+            val subject = (next().asSequence()).children.map {
+                RelativeDistinguishedName.decodeFromTlv(it.asSet())
             }
 
-            val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(src.nextChild() as Asn1Sequence)
+            val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(next().asSequence())
 
-            val issuerUniqueID = src.peek()?.let { next ->
+            val issuerUniqueID = peek()?.let { next ->
                 if (next.tag == ISSUER_UID) {
-                    (src.nextChild() as Asn1Primitive).let { Asn1BitString.decodeFromTlv(it, ISSUER_UID) }
+                    next()
+                        .asPrimitive().let { Asn1BitString.decodeFromTlv(it, ISSUER_UID) }
                 } else null
             }
 
-            val subjectUniqueID = src.peek()?.let { next ->
+            val subjectUniqueID = peek()?.let { next ->
                 if (next.tag == SUBJECT_UID) {
-                    (src.nextChild() as Asn1Primitive).let { Asn1BitString.decodeFromTlv(it, SUBJECT_UID) }
+                    next()
+                        .asPrimitive().let { Asn1BitString.decodeFromTlv(it, SUBJECT_UID) }
                 } else null
             }
-            val extensions = if (src.hasMoreChildren()) {
-                ((src.nextChild() as Asn1ExplicitlyTagged).verifyTag(EXTENSIONS.tagValue)
-                    .single() as Asn1Sequence).children.map {
-                    X509CertificateExtension.decodeFromTlv(it as Asn1Sequence)
+            val extensions = if (hasNext()) {
+                next().asExplicitlyTagged().verifyTag(EXTENSIONS.tagValue)
+                    .single().asSequence().children.map {
+                    X509CertificateExtension.decodeFromTlv(it.asSequence())
                 }
             } else null
-
-            if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous Data in Certificate Structure")
 
             TbsCertificate(
                 version = version,
@@ -209,11 +209,10 @@ constructor(
         }
 
         private fun decodeTimestamps(input: Asn1Sequence): Pair<Asn1Time, Asn1Time> =
-            runRethrowing {
-                val firstInstant = Asn1Time.decodeFromTlv(input.nextChild() as Asn1Primitive)
-                val secondInstant = Asn1Time.decodeFromTlv(input.nextChild() as Asn1Primitive)
-                if (input.hasMoreChildren()) throw Asn1StructuralException("Superfluous content in Validity")
-                return Pair(firstInstant, secondInstant)
+            input.decodeRethrowing {
+                val firstInstant = Asn1Time.decodeFromTlv(next() as Asn1Primitive)
+                val secondInstant = Asn1Time.decodeFromTlv(next() as Asn1Primitive)
+                Pair(firstInstant, secondInstant)
             }
     }
 }
@@ -295,12 +294,11 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         }
 
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): X509Certificate = runRethrowing {
-            val tbs = TbsCertificate.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val signature = CryptoSignature.fromX509Encoded(sigAlg, src.nextChild() as Asn1Primitive)
-            if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous structure in Certificate Structure")
-            return X509Certificate(tbs, sigAlg, signature)
+        override fun doDecode(src: Asn1Sequence): X509Certificate = src.decodeRethrowing {
+            val tbs = TbsCertificate.decodeFromTlv(next().asSequence())
+            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(next().asSequence())
+            val signature = CryptoSignature.fromX509Encoded(sigAlg, next().asPrimitive())
+            X509Certificate(tbs, sigAlg, signature)
         }
 
         /**

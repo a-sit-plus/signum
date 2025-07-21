@@ -213,26 +213,24 @@ In this example, you examine the first child to get the number of times the oper
 then, you decode the first child of the OCTET STRING that follows to decide how to decode the second child.
 
 Usually, though (and especially when using implicit tags), you really want to verify those tags too.
-Hence, parsing and properly validating is a bit more elaborate:
+Hence, parsing and properly validating is a bit more elaborate. The use of `decodeRethrowing`,
+by default, ensures that all elements have been parsed, such that no trailing elements can be overlooked:
 
 ```kotlin linenums="1"
-Asn1Element.parse(customSequence.derEncoded).asStructure().let { root -> 
+Asn1Element.parse(customSequence.derEncoded).asStructure().decodeRethrowing {
 
   //↓↓↓ In reality, this would be a global constant; the same as in the previous snippet ↓↓↓
   val rootTag = Asn1Element.Tag(26uL, tagClass = TagClass.APPLICATION, constructed = true)
-  root.assertTag(rootTag) //throws on tag mismatch
+  containingStructure.assertTag(rootTag) //throws on tag mismatch
 
-  val numberOfOps = root.nextChild().asPrimitive().decodeToUInt()
-  root.nextChild().asEncapsulatingOctetString().let { timestamp ->
-    val isRelative = timestamp.nextChild().asPrimitive()
+  val numberOfOps = next().asPrimitive().decodeToUInt()
+  next().asEncapsulatingOctetString().decodeRethrowing {
+    val isRelative = next().asPrimitive()
       .decodeToBoolean(TAG_TIME_RELATIVE)
 
-    val time = if (isRelative) timestamp.nextChild().asPrimitive().decodeToUInt()
-    else timestamp.nextChild().asPrimitive().decodeToInstant()
+    val time = if (isRelative) next().asPrimitive().decodeToUInt()
+    else next().asPrimitive().decodeToInstant()
 
-    if (timestamp.hasMoreChildren() || root.hasMoreChildren())
-      throw Asn1StructuralException("Superfluous Content")
-      
     // Everything is parsed and validated
     TODO("Create domain object from $numberOfOps, $isRelative, and $time")
   }
@@ -251,8 +249,6 @@ another ASN.1 structure.
     * containing an ASN.1 boolean
 5. Line 12 ensures that the next child is an ASN.1 primitive, encoding an unsigned integer (in case an `UInt` is expected)
 6. Line 13 tackles the alternative and ensures that the next child contains a properly encoded ASN.1 time
-7. Lastly, lines 15-16 make sure no additional content is present, thus fully verifying the structure as a whole.
-
 
 ## Issuing Binding Certificates
 

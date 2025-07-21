@@ -9,8 +9,6 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1.BitString
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1BitString
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
-import at.asitplus.signum.indispensable.io.ByteArrayBase64Serializer
-import kotlinx.serialization.Serializable
 
 /**
  * The meat of a PKCS#10 Certification Request:
@@ -84,19 +82,16 @@ data class TbsCertificationRequest(
 
     companion object : Asn1Decodable<Asn1Sequence, TbsCertificationRequest> {
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence) = runRethrowing {
-            val version = (src.nextChild() as Asn1Primitive).decodeToInt()
-            val subject = (src.nextChild() as Asn1Sequence).children.map {
+        override fun doDecode(src: Asn1Sequence) = src.decodeRethrowing {
+            val version = (next() as Asn1Primitive).decodeToInt()
+            val subject = (next() as Asn1Sequence).children.map {
                 RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
             }
-            val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val attributes = if (src.hasMoreChildren()) {
-                (src.nextChild() as Asn1ExplicitlyTagged).verifyTag(0u)
+            val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(next() as Asn1Sequence)
+            val attributes = if (hasNext()) {
+                (next() as Asn1ExplicitlyTagged).verifyTag(0u)
                     .map { Pkcs10CertificationRequestAttribute.decodeFromTlv(it as Asn1Sequence) }
             } else null
-
-            if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous Data in CSR Structure")
-
             TbsCertificationRequest(
                 version = version,
                 subjectName = subject,
@@ -155,12 +150,12 @@ data class Pkcs10CertificationRequest(
             const val LEGACY = "NEW CERTIFICATE REQUEST"
         }
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): Pkcs10CertificationRequest = runRethrowing {
-            val tbsCsr = TbsCertificationRequest.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild() as Asn1Sequence)
-            val signature = (src.nextChild() as Asn1Primitive).asAsn1BitString()
-            if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous structure in CSR Structure")
-            return Pkcs10CertificationRequest(tbsCsr, sigAlg, CryptoSignature.decodeFromDer(signature.rawBytes))
+        override fun doDecode(src: Asn1Sequence): Pkcs10CertificationRequest = src.decodeRethrowing {
+            val tbsCsr = TbsCertificationRequest.decodeFromTlv(next() as Asn1Sequence)
+            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(next() as Asn1Sequence)
+            val signature = (next() as Asn1Primitive).asAsn1BitString()
+            if (hasNext()) throw Asn1StructuralException("Superfluous structure in CSR Structure")
+            Pkcs10CertificationRequest(tbsCsr, sigAlg, CryptoSignature.decodeFromDer(signature.rawBytes))
         }
     }
 }

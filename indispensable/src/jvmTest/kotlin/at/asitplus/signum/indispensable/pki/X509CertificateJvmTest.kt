@@ -12,21 +12,35 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.coroutines.launch
+import org.bouncycastle.asn1.ASN1Integer
+import org.bouncycastle.asn1.DERNull
+import org.bouncycastle.asn1.DERSequence
+import org.bouncycastle.asn1.DERTaggedObject
+import org.bouncycastle.asn1.nist.NISTObjectIdentifiers
+import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers
+import org.bouncycastle.asn1.pkcs.RSASSAPSSparams
 import org.bouncycastle.asn1.x500.X500Name
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x509.ExtendedKeyUsage
 import org.bouncycastle.asn1.x509.KeyPurposeId
 import org.bouncycastle.asn1.x509.KeyUsage
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.cert.X509v3CertificateBuilder
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
+import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.operator.ContentSigner
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import java.math.BigInteger
 import java.security.KeyPair
 import java.security.KeyPairGenerator
+import java.security.Security
 import java.security.cert.CertificateFactory
 import java.security.interfaces.ECPublicKey
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
+import javax.security.auth.x500.X500Principal
 import kotlin.math.absoluteValue
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.days
@@ -42,6 +56,13 @@ class X509CertificateJvmTest : FreeSpec({
         keyPair = KeyPairGenerator.getInstance("EC").also {
             it.initialize(256)
         }.genKeyPair()
+    }
+
+    "PSS" {
+        val pssCertFromJvm= generateRsaPssCertificate()
+        println(pssCertFromJvm.encoded.toHexString())
+        val decoded = X509Certificate.decodeFromDer(pssCertFromJvm!!.encoded)
+        decoded.encodeToDer() shouldBe pssCertFromJvm.encoded
     }
 
     "Certificates match" {
@@ -375,4 +396,72 @@ class X509CertificateJvmTest : FreeSpec({
 
     }
 
+
 })
+
+private
+fun generateRsaPssCertificate(): java.security.cert.X509Certificate {
+    // Add Bouncy Castle provider
+    if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
+        Security.addProvider(BouncyCastleProvider())
+    }
+
+    // Generate key pair
+    val keyPairGenerator = KeyPairGenerator.getInstance("RSA")
+    keyPairGenerator.initialize(3072)
+    val keyPair = keyPairGenerator.generateKeyPair()
+
+    // Certificate details
+    val subject = X500Principal("CN=Manual RSA-PSS Certificate,O=Test Org,C=US")
+    val serialNumber = BigInteger.valueOf(System.currentTimeMillis())
+    val notBefore = Date()
+    val notAfter = Date(System.currentTimeMillis() + 365L * 24 * 60 * 60 * 1000)
+
+    // Create certificate builder
+    val certBuilder: X509v3CertificateBuilder = JcaX509v3CertificateBuilder(
+        subject,
+        serialNumber,
+        notBefore,
+        notAfter,
+        subject,
+        keyPair.public
+    )
+
+    // Use the simpler JCA approach for signing
+    val contentSigner = JcaContentSignerBuilder("SHA256withRSAandMGF1")
+        .setProvider(BouncyCastleProvider.PROVIDER_NAME)
+        .build(keyPair.private)
+
+    // Build and convert certificate
+    val certHolder = certBuilder.build(contentSigner)
+    return JcaX509CertificateConverter()
+        .setProvider(BouncyCastleProvider.PROVIDER_NAME)
+        .getCertificate(certHolder)
+}
+
+
+private fun createCustomPssParams(): RSASSAPSSparams {
+    // Create individual algorithm identifiers
+    val hashAlgorithm = AlgorithmIdentifier(NISTObjectIdentifiers.id_sha256, DERNull.INSTANCE)
+
+    val mgfAlgorithm = AlgorithmIdentifier(
+        PKCSObjectIdentifiers.id_mgf1,
+        AlgorithmIdentifier(NISTObjectIdentifiers.id_sha256, DERNull.INSTANCE)
+    )
+
+    val saltLength = ASN1Integer(32L) // 32 bytes for SHA-256
+    val trailerField = ASN1Integer(1L)
+
+    // Create the PSS parameters sequence manually
+    val pssParamsSeq = DERSequence(
+        arrayOf(
+            DERTaggedObject(false, 0, hashAlgorithm),
+            DERTaggedObject(false, 1, mgfAlgorithm),
+            DERTaggedObject(false, 2, saltLength),
+            DERTaggedObject(false, 3, trailerField)
+        )
+    )
+
+    // Create RSASSAPSSparams from the sequence
+    return RSASSAPSSparams.getInstance(pssParamsSeq)
+}

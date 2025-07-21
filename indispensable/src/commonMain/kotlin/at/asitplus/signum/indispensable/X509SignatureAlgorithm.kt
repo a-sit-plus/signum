@@ -108,46 +108,50 @@ enum class X509SignatureAlgorithm(
         }
 
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): X509SignatureAlgorithm = runRethrowing {
-            when (val oid = (src.nextChild() as Asn1Primitive).readOid()) {
+        override fun doDecode(src: Asn1Sequence): X509SignatureAlgorithm = src.decodeRethrowing {
+            when (val oid = next().asPrimitive().readOid()) {
                 ES512.oid, ES384.oid, ES256.oid -> fromOid(oid)
 
                 RS1.oid, RS256.oid, RS384.oid, RS512.oid -> fromOid(oid).also {
-                    val tag = src.nextChild().tag
+                    val tag = next().tag
                     if (tag != Asn1Element.Tag.NULL)
                         throw Asn1TagMismatchException(Asn1Element.Tag.NULL, tag, "RSA Params not allowed.")
                 }
 
-                PS256.oid, PS384.oid, PS512.oid -> parsePssParams(src)
+                PS256.oid, PS384.oid, PS512.oid -> parsePssParams(this)
                 else -> throw Asn1Exception("Unsupported algorithm oid: $oid")
             }
         }
 
         @Throws(Asn1Exception::class)
-        private fun parsePssParams(src: Asn1Sequence): X509SignatureAlgorithm = runRethrowing {
-            val seq = src.nextChild() as Asn1Sequence
-            val first = (seq.nextChild() as Asn1ExplicitlyTagged).verifyTag(0u).single() as Asn1Sequence
+        private fun parsePssParams(src: Asn1Structure.Iterator): X509SignatureAlgorithm = runRethrowing{
+            val (algSequence, mgfSequence, saltLen) = src.next().asSequence().decodeRethrowing {
+                Triple(
+                    next().asExplicitlyTagged().verifyTag(0u).single().asSequence(),
+                    next().asExplicitlyTagged().verifyTag(1u).single().asSequence(),
+                    next().asExplicitlyTagged().verifyTag(2u).single().asPrimitive().decodeToInt()
+                )
+            }
 
-            val sigAlg = (first.nextChild() as Asn1Primitive).readOid()
-            val tag = first.nextChild().tag
-            if (tag != Asn1Element.Tag.NULL)
-                throw Asn1TagMismatchException(Asn1Element.Tag.NULL, tag, "PSS Params not supported yet")
+            val (sigAlg, tagged) = algSequence.decodeRethrowing { next().asPrimitive().readOid() to next().tag }
 
-            val second = (seq.nextChild() as Asn1ExplicitlyTagged).verifyTag(1u).single() as Asn1Sequence
-            val mgf = (second.nextChild() as Asn1Primitive).readOid()
-            if (mgf != KnownOIDs.pkcs1_MGF) throw IllegalArgumentException("Illegal OID: $mgf")
-            val inner = second.nextChild() as Asn1Sequence
-            val innerHash = (inner.nextChild() as Asn1Primitive).readOid()
+            if (tagged != Asn1Element.Tag.NULL)
+                throw Asn1TagMismatchException(Asn1Element.Tag.NULL, tagged, "PSS Params not supported yet")
+
+            val (mgfOid, mgfParams) = mgfSequence.decodeRethrowing {
+                next().asPrimitive().readOid() to next().asSequence()
+            }
+
+            if (mgfOid != KnownOIDs.pkcs1_MGF) throw IllegalArgumentException("Illegal OID: $mgfOid")
+
+            val (innerHash, innerTagged) = mgfParams.decodeRethrowing { next().asPrimitive().readOid() to next().tag }
+
             if (innerHash != sigAlg) throw IllegalArgumentException("HashFunction mismatch! Expected: $sigAlg, is: $innerHash")
-
-            if (inner.nextChild().tag != Asn1Element.Tag.NULL) throw IllegalArgumentException(
+            if (innerTagged != Asn1Element.Tag.NULL) throw IllegalArgumentException(
                 "PSS Params not supported yet"
             )
 
-            val last = (seq.nextChild() as Asn1ExplicitlyTagged).verifyTag(2u).single() as Asn1Primitive
-            val saltLen = last.decodeToInt()
-
-            return sigAlg.let {
+            sigAlg.let {
                 when (it) {
                     KnownOIDs.sha_256 -> PS256.also { if (saltLen != 256 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }
                     KnownOIDs.sha_384 -> PS384.also { if (saltLen != 384 / 8) throw IllegalArgumentException("Non-recommended salt length used: $saltLen") }

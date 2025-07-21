@@ -2,7 +2,6 @@
 
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
 import at.asitplus.signum.indispensable.asn1.encoding.*
@@ -516,7 +515,7 @@ sealed class Asn1Structure(
      */
     val shouldBeSorted: Boolean
 ) :
-    Asn1Element(tag) {
+    Asn1Element(tag), Iterable<Asn1Element> {
 
     val children: List<Asn1Element> = if (!sortChildren) children else children.sortedBy { it.tag }
 
@@ -526,31 +525,205 @@ sealed class Asn1Structure(
      */
     val isActuallySorted: Boolean by if (sortChildren) lazyOf(true) else lazy { children.sortedBy { it.tag } == children }
 
-    private var index = 0
+    private val backwardsCompatibilityIterator by lazy { iterator() }
 
     /**
      * Returns the next child held by this structure. Useful for iterating over its children when parsing complex structures.
      * @throws [Asn1StructuralException] if no more children are available
+     *### Migration Examples:
+     *
+     * Using `decodeRethrowing`:
+     * ```kotlin
+     * val result = structure.decodeRethrowing {
+     *     val child = next()
+     *     // ...
+     *     DecodedStructure(...)
+     * }
+     * ```
+     *
+     * Manual iteration:
+     * ```kotlin
+     * val iterator = structure.iterator()
+     * while (iterator.hasNext()) {
+     *     val child = iterator.next()
+     *     // Process child
+     * }
+     * ```
      */
+    @Deprecated(
+        message = "Use an explicit iterator()",
+        level = DeprecationLevel.ERROR
+    )
     @Throws(Asn1StructuralException::class)
-    fun nextChild() =
-        catching { children[index++] }.getOrElse { throw Asn1StructuralException("No more content left") }
+    fun nextChild() = backwardsCompatibilityIterator.next()
 
     /**
      * Exception-free version of [nextChild]
+     *### Migration Examples:
+     *
+     * Using `decodeRethrowing`:
+     * ```kotlin
+     * val result = structure.decodeRethrowing {
+     *     val child = nextOrNull()
+     *     // ...
+     *     DecodedStructure(...)
+     * }
+     * ```
+     *
+     * Manual iteration:
+     * ```kotlin
+     * val iterator = structure.iterator()
+     * while (iterator.hasNext()) {
+     *     val child = iterator.nextOrNull()
+     *     // Process child
+     * }
+     * ```
      */
-    fun nextChildOrNull() = catchingUnwrapped { nextChild() }.getOrNull()
+    @Deprecated(
+        message = "Use an explicit iterator()",
+        level = DeprecationLevel.ERROR
+    )
+    fun nextChildOrNull() = backwardsCompatibilityIterator.peek()?.also { backwardsCompatibilityIterator.next() }
 
     /**
      * Returns `true` if more children can be retrieved by [nextChild]. `false` otherwise
+     * ### Migration Examples:
+     *
+     * Using `decodeRethrowing`:
+     * ```kotlin
+     * structure.decodeRethrowing {
+     *     if (hasNext()) {
+     *         // ...
+     *     }
+     *     DecodedStructure(...)
+     * }
+     * ```
+     *
+     * Manual iteration:
+     * ```kotlin
+     * val iterator = structure.iterator()
+     * if (iterator.hasNext()) {
+     *     // ...
+     * }
+     * ```
      */
-    fun hasMoreChildren() = children.size > index
+    @Deprecated(
+        message = "Use an explicit iterator()",
+        level = DeprecationLevel.ERROR
+    )
+    fun hasMoreChildren() = backwardsCompatibilityIterator.hasNext()
 
     /**
      * Returns the current child or `null`, if there are no children left
      * (useful when iterating over this structure's children).
+     * ### Migration Examples:
+     *
+     * Using `decodeRethrowing`:
+     * ```kotlin
+     * structure.decodeRethrowing {
+     *     val decodedChild = peek()?.let {
+     *         // Inspect or conditionally consume the child
+     *         val child = next()
+     *         // ...
+     *     }
+     *     DecodedStructure(...)
+     * }
+     * ```
+     *
+     * Manual iteration:
+     * ```kotlin
+     * val iterator = structure.iterator()
+     * val child = iterator.peek()
+     * if (child != null) {
+     *     // Inspect child without consuming it
+     * }
+     * ```
      */
-    fun peek() = if (!hasMoreChildren()) null else children[index]
+    @Deprecated(
+        message = "Use an explicit iterator()",
+        level = DeprecationLevel.ERROR
+    )
+    fun peek() = backwardsCompatibilityIterator.peek()
+
+    override operator fun iterator() = Iterator(isForward = true)
+    fun reverseIterator() = Iterator(isForward = false)
+
+    /**
+     * An iterator over a list of [Asn1Element] children within an ASN.1 structure
+     * Designed for traversing ASN.1 components in decoding/parsing scenarios
+     * */
+    inner class Iterator internal constructor(
+        /** Whether this is a forward iterator */
+        val isForward: Boolean
+    ): kotlin.collections.Iterator<Asn1Element> {
+
+        /** Whether this is a reverse iterator */
+        val isReverse get() = !isForward
+
+        /** reference to the [Asn1Structure] this iterator belongs to*/
+        val containingStructure: Asn1Structure get() = this@Asn1Structure
+
+        /** The index of the last element returned by [next] */
+        var currentIndex: Int =
+            if (isForward) -1 else children.size
+            private set
+
+        /** The last element returned by [next]. Throws [NoSuchElementException] if [next] was not yet called. */
+        val currentElement get() =
+            try { children[currentIndex] }
+            catch (x: IndexOutOfBoundsException) { throw NoSuchElementException(x.message) }
+
+        private val step get() = if (isForward) 1 else -1
+
+        private val nextIndex get() = currentIndex + step
+
+        /**
+         * Returns the next child held by this structure. Useful for iterating over its children when parsing complex structures.
+         * @throws [NoSuchElementException] if no more children are available
+         */
+        override fun next(): Asn1Element {
+            currentIndex = nextIndex
+            return currentElement
+        }
+
+        /**
+         * Exception-free version of [next]
+         */
+        fun nextOrNull() = if (hasNext()) next() else null
+
+        /**
+         * Returns `true` if more children can be retrieved by [next]. `false` otherwise
+         */
+        override fun hasNext() = if (isForward) (nextIndex < children.size) else (nextIndex >= 0)
+
+        /**
+         * Returns the next child that would be returned by a call to [next] without advancing to iterator.
+         * If there are no more children, returns `null`.
+         */
+        fun peek() = if (hasNext()) children[nextIndex] else null
+
+        /**
+         * Returns an iterator with reversed direction.
+         * Current iteration position is preserved.
+         */
+        fun reversed(): Iterator =
+            Iterator(isForward = !isForward).also { it.currentIndex = this.currentIndex }
+    }
+
+    /**
+     * Decodes the content of this ASN.1 structure using the provided [decoder] lambda.
+     * This function gives a convenient way to decode ASN.1 structures by exposing an
+     * iterator over the structure's children to the [decoder] lambda. Optionally, it enforces that
+     * all children must be consumed. Use [decodeRethrowing] to automatically and consistently wrap exceptions
+     * thrown during decoding in [Asn1Exception]s.
+     */
+    inline fun <reified T> decodeAs(requireFullConsumption: Boolean = true, decoder: Iterator.() -> T): T {
+        val it = iterator()
+        val result = it.decoder()
+        if (requireFullConsumption && it.hasNext())
+            throw Asn1StructuralException("Trailing data found in ASN.1 structure")
+        return result
+    }
 
 
     override val contentLength: Int by lazy { children.fold(0) { acc, child -> acc + child.overallLength } }

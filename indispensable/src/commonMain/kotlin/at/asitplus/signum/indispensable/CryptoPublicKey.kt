@@ -3,7 +3,6 @@ package at.asitplus.signum.indispensable
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.io.*
-import at.asitplus.signum.indispensable.CryptoPublicKey.RSA.Size.entries
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.BitString
@@ -14,7 +13,6 @@ import at.asitplus.signum.internals.checkedAsFn
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 
 private const val PEM_BOUNDARY = "PUBLIC KEY"
 
@@ -65,7 +63,7 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
     companion object : PemDecodable<Asn1Sequence, CryptoPublicKey>(
         PEM_BOUNDARY to DEFAULT_PEM_DECODER,
         "RSA PUBLIC KEY" to checkedAsFn(RSA::fromPKCS1encoded),
-        ) {
+    ) {
         /**
          * Parses a DID representation of a public key and
          * reconstructs the corresponding [CryptoPublicKey] from it
@@ -108,34 +106,35 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
 
 
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): CryptoPublicKey = runRethrowing {
+        override fun doDecode(src: Asn1Sequence): CryptoPublicKey = src.decodeRethrowing {
             if (src.children.size != 2) throw Asn1StructuralException("Invalid SPKI Structure!")
-            val keyInfo = src.nextChild() as Asn1Sequence
+            val keyInfo = next() as Asn1Sequence
             if (keyInfo.children.size != 2) throw Asn1StructuralException("Superfluous data in  SPKI!")
 
-            when (val oid = (keyInfo.nextChild() as Asn1Primitive).readOid()) {
+            when (val oid = (keyInfo.children.first() as Asn1Primitive).readOid()) {
                 EC.oid -> {
-                    val curveOid = (keyInfo.nextChild() as Asn1Primitive).readOid()
+                    val curveOid = (keyInfo.children[1] as Asn1Primitive).readOid()
                     val curve = ECCurve.entries.find { it.oid == curveOid }
                         ?: throw Asn1Exception("Curve not supported: $curveOid")
 
-                    val bitString = (src.nextChild() as Asn1Primitive).asAsn1BitString()
+                    val bitString = (next() as Asn1Primitive).asAsn1BitString()
                     if (!bitString.rawBytes.hasPrefix(ANSIECPrefix.UNCOMPRESSED)) throw Asn1Exception("EC key not prefixed with 0x04")
                     val xAndY = bitString.rawBytes.drop(1)
                     val coordLen = curve.coordinateLength.bytes.toInt()
                     val x = xAndY.take(coordLen).toByteArray()
                     val y = xAndY.drop(coordLen).take(coordLen).toByteArray()
-                    return EC.fromUncompressed(curve, x, y)
+                    EC.fromUncompressed(curve, x, y)
                 }
 
                 RSA.oid -> {
-                    (keyInfo.nextChild() as Asn1Primitive).readNull()
-                    val bitString = (src.nextChild() as Asn1Primitive).asAsn1BitString()
-                    val rsaSequence = Asn1Element.parse(bitString.rawBytes) as Asn1Sequence
-                    val n = (rsaSequence.nextChild() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive
-                    val e = (rsaSequence.nextChild() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive
-                    if (rsaSequence.hasMoreChildren()) throw Asn1StructuralException("Superfluous data in SPKI!")
-                    return RSA(n, e)
+                    (keyInfo.children[1] as Asn1Primitive).readNull()
+                    val bitString = (next() as Asn1Primitive).asAsn1BitString()
+                    Asn1Element.parse(bitString.rawBytes).asSequence().decodeRethrowing {
+                        RSA(
+                            (next() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive,
+                            (next() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive
+                        )
+                    }
                 }
 
                 else -> throw Asn1Exception("Unsupported Key Type: $oid")
@@ -177,12 +176,15 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
 
         val bits = n.bitLength().let { Size.of(it) ?: throw IllegalArgumentException("Unsupported key size $it bits") }
 
-        @Deprecated(message="Use a BigInteger-capable constructor instead", level = DeprecationLevel.ERROR)
-        constructor(n: ByteArray, e: Int): this(Asn1Integer.fromUnsignedByteArray(n), Asn1Integer(e) as Asn1Integer.Positive)
+        @Deprecated(message = "Use a BigInteger-capable constructor instead", level = DeprecationLevel.ERROR)
+        constructor(n: ByteArray, e: Int) : this(
+            Asn1Integer.fromUnsignedByteArray(n),
+            Asn1Integer(e) as Asn1Integer.Positive
+        )
 
-        constructor(n: Asn1Integer, e: Asn1Integer): this(n as Asn1Integer.Positive, e as Asn1Integer.Positive)
-        constructor(n: BigInteger, e: BigInteger): this(n.toAsn1Integer(), e.toAsn1Integer())
-        constructor(n: BigInteger, e: UInt): this(n.toAsn1Integer(), Asn1Integer(e))
+        constructor(n: Asn1Integer, e: Asn1Integer) : this(n as Asn1Integer.Positive, e as Asn1Integer.Positive)
+        constructor(n: BigInteger, e: BigInteger) : this(n.toAsn1Integer(), e.toAsn1Integer())
+        constructor(n: BigInteger, e: UInt) : this(n.toAsn1Integer(), Asn1Integer(e))
 
         override val oid = RSA.oid
 
@@ -234,11 +236,11 @@ sealed class CryptoPublicKey : PemEncodable<Asn1Sequence>, Identifiable {
              */
             @Throws(Asn1Exception::class)
             fun fromPKCS1encoded(input: ByteArray): RSA = runRethrowing {
-                val conv = Asn1Element.parse(input) as Asn1Sequence
-                val n = (conv.nextChild() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive
-                val e = (conv.nextChild() as Asn1Primitive).decodeToAsn1Integer() as Asn1Integer.Positive
-                if (conv.hasMoreChildren()) throw Asn1StructuralException("Superfluous bytes")
-                return RSA(n, e)
+                Asn1Element.parse(input).asSequence().decodeRethrowing {
+                    val n = next().asPrimitive().decodeToAsn1Integer() as Asn1Integer.Positive
+                    val e = next().asPrimitive().decodeToAsn1Integer() as Asn1Integer.Positive
+                    RSA(n, e)
+                }
             }
 
             @Suppress("NOTHING_TO_INLINE")

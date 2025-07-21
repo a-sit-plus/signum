@@ -4,8 +4,6 @@ import at.asitplus.catching
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 
 /**
  * X.500 Name (used in X.509 Certificates)
@@ -21,10 +19,10 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
     }
 
     companion object : Asn1Decodable<Asn1Set, RelativeDistinguishedName> {
-        override fun doDecode(src: Asn1Set): RelativeDistinguishedName = runRethrowing {
+        override fun doDecode(src: Asn1Set): RelativeDistinguishedName = src.decodeRethrowing {
             buildList {
-                while (src.hasMoreChildren()) {
-                    val child = src.nextChild().asSequence()
+                while (hasNext()) {
+                    val child = next().asSequence()
                     add(AttributeTypeAndValue.decodeFromTlv(child))
                 }
             }.let(::RelativeDistinguishedName)
@@ -114,13 +112,12 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
     companion object : Asn1Decodable<Asn1Sequence, AttributeTypeAndValue> {
 
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): AttributeTypeAndValue = runRethrowing {
-            val oid = (src.nextChild() as Asn1Primitive).readOid()
+        override fun doDecode(src: Asn1Sequence): AttributeTypeAndValue = src.decodeRethrowing {
+            val oid = next().asPrimitive().readOid()
             if (oid.nodes.size >= 3 && oid.toString().startsWith("2.5.4.")) {
-                val asn1String = src.nextChild() as Asn1Primitive
+                val asn1String = next().asPrimitive()
                 val str = catching { (asn1String).asAsn1String() }
-                if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous elements in RDN")
-                return when (oid) {
+                return@decodeRethrowing when (oid) {
                     CommonName.OID -> str.fold(onSuccess = { CommonName(it) }, onFailure = { CommonName(asn1String) })
                     Country.OID -> str.fold(onSuccess = { Country(it) }, onFailure = { Country(asn1String) })
                     Organization.OID -> str.fold(
@@ -134,8 +131,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
                     else -> Other(oid, asn1String)
                 }
             }
-            return Other(oid, src.nextChild())
-                .also { if (src.hasMoreChildren()) throw Asn1StructuralException("Superfluous elements in RDN") }
+            Other(oid, next())
         }
 
     }

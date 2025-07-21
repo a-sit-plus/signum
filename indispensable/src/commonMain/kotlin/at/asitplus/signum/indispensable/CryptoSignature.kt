@@ -202,13 +202,13 @@ sealed interface CryptoSignature : Asn1Encodable<Asn1Element> {
                 return fromRawBytes(input)
             }
 
-            override fun doDecode(src: Asn1Element): EC.IndefiniteLength {
-                src as Asn1Sequence
-                val r = (src.nextChild() as Asn1Primitive).decodeToBigInteger()
-                val s = (src.nextChild() as Asn1Primitive).decodeToBigInteger()
-                if (src.hasMoreChildren()) throw Asn1Exception("Illegal Signature Format")
-                return fromRS(r, s)
+            override fun doDecode(src: Asn1Element) = src.asSequence().decodeRethrowing {
+                val r = (next() as Asn1Primitive).decodeToBigInteger()
+                val s = (next() as Asn1Primitive).decodeToBigInteger()
+                if (hasNext()) throw Asn1Exception("Illegal Signature Format")
+                fromRS(r, s)
             }
+
 
             @Deprecated(
                 "use fromRawBytes",

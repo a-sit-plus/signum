@@ -71,11 +71,10 @@ enum class HMAC(val digest: Digest, override val oid: ObjectIdentifier) : Messag
             Digest.SHA512 -> SHA512
         }
 
-        override fun doDecode(src: Asn1Sequence): HMAC {
-            val oid = src.nextChild().asPrimitive().readOid()
-            src.nextChild().asPrimitive().readNull()
-            require(!src.hasMoreChildren()) { "Superfluous ANS.1 data in HMAC" }
-            return byOID(oid) ?: throw Asn1OidException("Unknown OID", oid)
+        override fun doDecode(src: Asn1Sequence): HMAC = src.decodeRethrowing {
+            val oid = next().asPrimitive().readOid()
+            next().asPrimitive().readNull()
+            byOID(oid) ?: throw Asn1OidException("Unknown OID", oid)
         }
     }
 

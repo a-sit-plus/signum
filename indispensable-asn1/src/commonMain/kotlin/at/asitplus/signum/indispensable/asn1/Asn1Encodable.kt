@@ -87,15 +87,9 @@ interface Asn1Decodable<A : Asn1Element, out T : Asn1Encodable<A>> {
      * @throws Asn1Exception
      */
     @Throws(Asn1Exception::class)
-    fun decodeFromTlv(src: A, assertTag: Asn1Element.Tag? = null, requireFullConsumption: Boolean = true): T {
+    fun decodeFromTlv(src: A, assertTag: Asn1Element.Tag? = null): T {
         verifyTag(src, assertTag)
-        return doDecode(src).also {
-            if (requireFullConsumption && src is Asn1Structure) {
-                runRethrowing {
-                    require(!src.hasMoreChildren()) { "Trailing data found in ASN.1 structure" }
-                }
-            }
-        }
+        return doDecode(src)
     }
 
     /**

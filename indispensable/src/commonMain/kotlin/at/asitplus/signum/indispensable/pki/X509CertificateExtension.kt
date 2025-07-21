@@ -3,7 +3,6 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Bool
-import kotlinx.serialization.Serializable
 
 /**
  * X.509 Certificate Extension
@@ -40,14 +39,14 @@ data class X509CertificateExtension @Throws(Asn1Exception::class) private constr
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
 
         @Throws(Asn1Exception::class)
-        override fun doDecode(src: Asn1Sequence): X509CertificateExtension = runRethrowing {
+        override fun doDecode(src: Asn1Sequence): X509CertificateExtension = src.decodeRethrowing {
 
-            val id = (src.nextChild() as Asn1Primitive).readOid()
+            val id = next().asPrimitive().readOid()
             val critical =
-                if (src.children[1].tag == Asn1Element.Tag.BOOL) (src.nextChild() as Asn1Primitive).content[0] == 0xff.toByte() else false
+                if (src.children[1].tag == Asn1Element.Tag.BOOL) next().asPrimitive().content[0] == 0xff.toByte() else false
 
-            val value = src.nextChild()
-            return X509CertificateExtension(id, value, critical)
+            val value = next()
+            X509CertificateExtension(id, value, critical)
         }
 
     }
