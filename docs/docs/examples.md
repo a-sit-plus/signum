@@ -307,7 +307,7 @@ X509SignatureAlgorithm.ES256.verifierFor(csr.tbsCsr.publicKey)
   .getOrElse { TODO("Handle error") }
   .verify(
     csr.tbsCsr.encodeToDer(),
-    CryptoSignature.decodeFromDer(csr.signature)
+    csr.decodedSignature.getOrElse { TODO("unrecognized signature format?") }
   ).getOrElse { TODO("Abort here!") }
 
 val attestation =
@@ -342,6 +342,6 @@ val clientCertificate = signer.sign(tbsCrt).getOrElse { TODO("handle error") }
 To recap: This example shows how to
 * instantiate a signer for a hardware-backed, biometry-protected, attested key
 * instantiate a verifier
-* create, sign and verify CSRs with a custom attribute
+* create, sign, and verify CSRs with a custom attribute
 * extract a custom attribute from a CSR
 * create, and sign a certificate with a custom critical extension

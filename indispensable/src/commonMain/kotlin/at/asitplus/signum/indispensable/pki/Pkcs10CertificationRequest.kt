@@ -1,14 +1,17 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.catching
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
+import at.asitplus.signum.indispensable.X509SignatureAlgorithmDescription
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.BitString
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1BitString
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
+import at.asitplus.signum.indispensable.requireSupported
 
 /**
  * The meat of a PKCS#10 Certification Request:
@@ -57,29 +60,6 @@ data class TbsCertificationRequest(
         +ExplicitlyTagged(0u) { attributes.map { +it } }
     }
 
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-
-        other as TbsCertificationRequest
-
-        if (version != other.version) return false
-        if (subjectName != other.subjectName) return false
-        if (publicKey != other.publicKey) return false
-        if (attributes != other.attributes) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = version
-        result = 31 * result + subjectName.hashCode()
-        result = 31 * result + publicKey.hashCode()
-        result = 31 * result + (attributes.hashCode())
-        return result
-    }
-
     companion object : Asn1Decodable<Asn1Sequence, TbsCertificationRequest> {
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence) = src.decodeRethrowing {
@@ -108,9 +88,24 @@ data class TbsCertificationRequest(
  */
 data class Pkcs10CertificationRequest(
     val tbsCsr: TbsCertificationRequest,
-    val signatureAlgorithm: X509SignatureAlgorithm,
-    val signature: CryptoSignature
+    val signatureAlgorithm: X509SignatureAlgorithmDescription,
+    val rawSignature: Asn1Primitive
 ) : PemEncodable<Asn1Sequence> {
+
+    constructor(
+        tbsCsr: TbsCertificationRequest,
+        signatureAlgorithm: X509SignatureAlgorithmDescription,
+        signature: CryptoSignature
+    ) : this(tbsCsr, signatureAlgorithm, signature.x509Encoded)
+
+    val decodedSignature by lazy { catching {
+        signatureAlgorithm.requireSupported()
+        CryptoSignature.fromX509Encoded(signatureAlgorithm, rawSignature)
+    } }
+
+    @Deprecated("Imprecisely named and lacks support for unsupported algorithms; use rawSignature or decodedSignature",
+        level = DeprecationLevel.ERROR)
+    val signature get() = decodedSignature.getOrThrow()
 
     override val canonicalPEMBoundary: String = EB_STRINGS.DEFAULT
 
@@ -118,27 +113,7 @@ data class Pkcs10CertificationRequest(
     override fun encodeToTlv() = Asn1.Sequence {
         +tbsCsr
         +signatureAlgorithm
-        +BitString(signature.encodeToDer())
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-
-        other as Pkcs10CertificationRequest
-
-        if (tbsCsr != other.tbsCsr) return false
-        if (signatureAlgorithm != other.signatureAlgorithm) return false
-        if (signature != other.signature) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = tbsCsr.hashCode()
-        result = 31 * result + signatureAlgorithm.hashCode()
-        result = 31 * result + signature.hashCode()
-        return result
+        +rawSignature
     }
 
     companion object : PemDecodable<Asn1Sequence, Pkcs10CertificationRequest>(
@@ -152,10 +127,10 @@ data class Pkcs10CertificationRequest(
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): Pkcs10CertificationRequest = src.decodeRethrowing {
             val tbsCsr = TbsCertificationRequest.decodeFromTlv(next() as Asn1Sequence)
-            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(next() as Asn1Sequence)
-            val signature = (next() as Asn1Primitive).asAsn1BitString()
+            val sigAlg = X509SignatureAlgorithmDescription.decodeFromTlv(next() as Asn1Sequence)
+            val signature = next() as Asn1Primitive
             if (hasNext()) throw Asn1StructuralException("Superfluous structure in CSR Structure")
-            Pkcs10CertificationRequest(tbsCsr, sigAlg, CryptoSignature.decodeFromDer(signature.rawBytes))
+            Pkcs10CertificationRequest(tbsCsr, sigAlg, signature)
         }
     }
 }

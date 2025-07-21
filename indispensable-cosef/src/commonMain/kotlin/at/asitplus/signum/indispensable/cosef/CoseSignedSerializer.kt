@@ -3,9 +3,11 @@ package at.asitplus.signum.indispensable.cosef
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64Strict
+import at.asitplus.signum.indispensable.isSupported
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -91,9 +93,10 @@ class CoseSignedSerializer<P : Any?>(
 
 }
 
-private fun CoseHeader.usesEC(): Boolean? =
-    if (algorithm is CoseAlgorithm.Signature)
-        algorithm?.algorithm?.let { it is SignatureAlgorithm.ECDSA }
-            ?: certificateChain?.firstOrNull()
-                ?.let { X509Certificate.decodeFromDerOrNull(it)?.publicKey is CryptoPublicKey.EC }
-    else false
+private fun CoseHeader.usesEC(): Boolean? = when (algorithm) {
+    null -> certificateChain?.firstOrNull()
+        ?.let { X509Certificate.decodeFromDerOrNull(it) }
+        ?.let { it.signatureAlgorithm is X509SignatureAlgorithm.ECDSA }
+    is CoseAlgorithm.Signature -> (algorithm.algorithm is SignatureAlgorithm.ECDSA)
+    else -> false
+}

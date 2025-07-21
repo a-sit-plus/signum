@@ -198,7 +198,7 @@ class X509CertificateJvmTest : FreeSpec({
         x509Certificate.tbsCertificate.validUntil.instant shouldBe notAfterDate.toInstant()
             .truncatedTo(ChronoUnit.SECONDS)
             .toKotlinInstant()
-        val parsedPublicKey = x509Certificate.tbsCertificate.publicKey
+        val parsedPublicKey = x509Certificate.tbsCertificate.decodedPublicKey.getOrThrow()
         parsedPublicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()
         parsedPublicKey.xBytes shouldBe keyX
         parsedPublicKey.yBytes shouldBe keyY

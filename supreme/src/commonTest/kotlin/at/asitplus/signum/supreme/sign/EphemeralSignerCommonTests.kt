@@ -242,7 +242,7 @@ class EphemeralSignerCommonTests : FreeSpec({
 
 
                 val verifier = signer.makeVerifier().getOrThrow()
-                verifier.verify(signedCSR.tbsCsr.encodeToDer(), signedCSR.signature) should succeed
+                verifier.verify(signedCSR.tbsCsr.encodeToDer(), signedCSR.decodedSignature.getOrThrow()) should succeed
 
 
                 val tbsCrt = TbsCertificate(
@@ -265,7 +265,7 @@ class EphemeralSignerCommonTests : FreeSpec({
                 )
                 val cert = signer.sign(tbsCrt).getOrThrow()
 
-                verifier.verify(cert.tbsCertificate.encodeToDer(), cert.signature) should succeed
+                verifier.verify(cert.tbsCertificate.encodeToDer(), cert.decodedSignature.getOrThrow()) should succeed
 
             }
         }
@@ -294,7 +294,7 @@ class EphemeralSignerCommonTests : FreeSpec({
 
 
                 val verifier = signer.makeVerifier().getOrThrow()
-                verifier.verify(signedCSR.tbsCsr.encodeToDer(), signedCSR.signature) should succeed
+                verifier.verify(signedCSR.tbsCsr.encodeToDer(), signedCSR.decodedSignature.getOrThrow()) should succeed
 
 
                 val tbsCrt = TbsCertificate(
@@ -317,7 +317,7 @@ class EphemeralSignerCommonTests : FreeSpec({
                 )
                 val cert = signer.sign(tbsCrt).getOrThrow()
 
-                verifier.verify(cert.tbsCertificate.encodeToDer(), cert.signature) should succeed
+                verifier.verify(cert.tbsCertificate.encodeToDer(), cert.decodedSignature.getOrThrow()) should succeed
             }
         }
     }
