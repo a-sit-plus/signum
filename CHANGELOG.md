@@ -7,6 +7,16 @@
     * PBKDF2
     * HKDF
     * scrypt
+* X.509 Revamp
+    * Introduce `X509SignatureAlgorithmDescription`, which is the OID + params pair that identifies a `X509SignatureAlgorithm`
+      * Instances of `X509SignatureAlgorithm` represent algorithms that are known to Signum
+      * Test `.isSupported()` or `.requireSupported()` (with contract smart-cast support)
+    * `X509Certificate` and `Pkcs10CertificationRequest` now use `X509SignatureAlgorithmDescription` to represent a non-validated signature algorithm
+    * Refactor `X509Certificate` and `TbsCertificate` to store the raw signature as `Asn1Primitive` and the raw public key as `Asn1Sequence` enabling support for certificates with unsupported signature algorithms
+        * Use the new KmmResult-returning `decodedSignature` and `decodedPublicKey` members to replace `publicKey` and `signature`, respectively.
+        * The old `publicKey` and `signature` are being deprecated.
+    * Refactor `Pkcs10CertificationRequest` to store the raw signature as `Asn1Primitive` enabling unsupported signature algorithms
+        * Use the new KmmResult-returning `decodedSignature` and `decodedPublicKey`, respectively.
 * **RSA encryption** using in-memory keys (no hardware-backed key management yet)
 * Add structured iterator-based decoding of `Asn1Structure`. `Asn1Structure` now implements `Iterable<Asn1Element>`:
     * Deprecate child accessors in `Asn1Structure` with deprecation level ERROR:
@@ -26,9 +36,9 @@
 * ASN.1 polishing:
     * rename `Asn1Element.length` property to `Asn1Element.contentLength` (and add a delegate with the old name and deprecation annotation to the new property)
     * Add missing `Asn1.Real` shorthand to the ASN.1 builder
-    * Add `Asn1Null` object
+    * Add `Asn1Null` constant
     * Add human-readable ASN.1 element `prettyPrint()` method
-    * Make Asn1OctetString interface sealed
+    * Make `Asn1OctetString` interface sealed
 * Strippable `KnownOIDs`
     * Move `KnownOIDs` into a discrete module `indispensable-oids`
 * OID descriptions:

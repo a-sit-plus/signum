@@ -167,7 +167,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
         config: JKSSignerConfiguration,
         privateKey: PrivateKey,
         certificate: X509Certificate
-    ): JKSSigner = when (val publicKey = certificate.publicKey) {
+    ): JKSSigner = when (val publicKey = certificate.decodedPublicKey.getOrThrow()) {
         is CryptoPublicKey.EC -> JKSSigner.EC(config, privateKey as ECPrivateKey, publicKey,
             SignatureAlgorithm.ECDSA(
                 digest = if (config.ec.v.digestSpecified) config.ec.v.digest else Digest.SHA256,

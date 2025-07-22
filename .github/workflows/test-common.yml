@@ -1,5 +1,10 @@
 name: Test Common + Non-Apple
 on: [push, pull_request_target]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true   # newer run cancels any older one for the same ref
+
 jobs:
   build:
     runs-on: ubuntu-latest

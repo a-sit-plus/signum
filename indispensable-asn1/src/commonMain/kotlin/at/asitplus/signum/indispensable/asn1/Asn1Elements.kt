@@ -483,9 +483,12 @@ inline fun <reified T : Asn1Element> T.assertTag(tag: Asn1Element.Tag): T {
 inline fun <reified T : Asn1Element> T.assertTag(tagNumber: ULong): T = assertTag(tag withNumber tagNumber)
 
 /**
- * ASN.1 NULL object as constant
+ * ASN.1 NULL as constant
  */
-object Asn1Null : Asn1Primitive(Asn1Element.Tag.NULL, byteArrayOf())
+//this MUST NOT be an object, because checks like `someAsn1Element is Asn1Null` would be legal but can never succeed
+//checking the opposite way will make sense and will succeed, so an object would lead to cursed behaviour
+//if we keep it a regular ol' val, the Asn1Element's tried and true equals check will always perform as expected
+val Asn1Null = Asn1Primitive(Asn1Element.Tag.NULL, byteArrayOf())
 
 /**
  * ASN.1 structure. Contains no data itself, but holds zero or more [children]

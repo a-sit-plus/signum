@@ -1,18 +1,22 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
+import at.asitplus.signum.indispensable.X509SignatureAlgorithmDescription
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
+import at.asitplus.signum.indispensable.isSupported
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.EXTENSIONS
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.ISSUER_UID
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.SUBJECT_UID
+import at.asitplus.signum.indispensable.requireSupported
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -28,20 +32,43 @@ data class TbsCertificate
 constructor(
     val version: Int? = 2,
     val serialNumber: ByteArray,
-    val signatureAlgorithm: X509SignatureAlgorithm,
+    val signatureAlgorithm: X509SignatureAlgorithmDescription,
     val issuerName: List<RelativeDistinguishedName>,
     val validFrom: Asn1Time,
     val validUntil: Asn1Time,
     val subjectName: List<RelativeDistinguishedName>,
-    val publicKey: CryptoPublicKey,
+    val rawPublicKey: Asn1Sequence,
     val issuerUniqueID: Asn1BitString? = null,
     val subjectUniqueID: Asn1BitString? = null,
     val extensions: List<X509CertificateExtension>? = null,
 ) : Asn1Encodable<Asn1Sequence> {
 
+    constructor(
+        version: Int? = 2,
+        serialNumber: ByteArray,
+        signatureAlgorithm: X509SignatureAlgorithmDescription,
+        issuerName: List<RelativeDistinguishedName>,
+        validFrom: Asn1Time,
+        validUntil: Asn1Time,
+        subjectName: List<RelativeDistinguishedName>,
+        publicKey: CryptoPublicKey,
+        issuerUniqueID: Asn1BitString? = null,
+        subjectUniqueID: Asn1BitString? = null,
+        extensions: List<X509CertificateExtension>? = null,
+    ) : this(version, serialNumber, signatureAlgorithm, issuerName, validFrom, validUntil, subjectName,
+            publicKey.encodeToTlv(), issuerUniqueID, subjectUniqueID, extensions)
+
     init {
         if (extensions?.distinctBy { it.oid }?.size != extensions?.size) throw Asn1StructuralException("Multiple extensions with the same OID found")
     }
+
+    val decodedPublicKey by lazy { catching {
+        CryptoPublicKey.decodeFromTlv(rawPublicKey)
+    }}
+
+    @Deprecated("Imprecisely named and does not support unknown algorithms; use `rawPublicKey` or `decodedPublicKey`",
+        level = DeprecationLevel.ERROR)
+    val publicKey get() = decodedPublicKey.getOrThrow()
 
     /**
      * Contains `SubjectAlternativeName`s parsed from extensions. This property is initialized right away.
@@ -81,7 +108,7 @@ constructor(
             +Asn1.Sequence { subjectName.forEach { +it } }
 
             //subject public key
-            +publicKey
+            +rawPublicKey
 
             issuerUniqueID?.let { +(it withImplicitTag ISSUER_UID) }
             subjectUniqueID?.let { +(it withImplicitTag SUBJECT_UID) }
@@ -111,7 +138,7 @@ constructor(
         if (validFrom != other.validFrom) return false
         if (validUntil != other.validUntil) return false
         if (subjectName != other.subjectName) return false
-        if (publicKey != other.publicKey) return false
+        if (rawPublicKey != other.rawPublicKey) return false
         if (issuerUniqueID != other.issuerUniqueID) return false
         if (subjectUniqueID != other.subjectUniqueID) return false
         if (extensions != other.extensions) return false
@@ -127,7 +154,7 @@ constructor(
         result = 31 * result + validFrom.hashCode()
         result = 31 * result + validUntil.hashCode()
         result = 31 * result + subjectName.hashCode()
-        result = 31 * result + publicKey.hashCode()
+        result = 31 * result + rawPublicKey.hashCode()
         result = 31 * result + (issuerUniqueID?.hashCode() ?: 0)
         result = 31 * result + (subjectUniqueID?.hashCode() ?: 0)
         result = 31 * result + (extensions?.hashCode() ?: 0)
@@ -161,7 +188,7 @@ constructor(
                 }
             }
             val serialNumber = next().asPrimitive().decode(Asn1Element.Tag.INT) { it }
-            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(next().asSequence())
+            val sigAlg = X509SignatureAlgorithmDescription.decodeFromTlv(next().asSequence())
             val issuerNames = next().asSequence().children.map {
                 RelativeDistinguishedName.decodeFromTlv(it.asSet())
             }
@@ -171,7 +198,7 @@ constructor(
                 RelativeDistinguishedName.decodeFromTlv(it.asSet())
             }
 
-            val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(next().asSequence())
+            val publicKey = next().asSequence()
 
             val issuerUniqueID = peek()?.let { next ->
                 if (next.tag == ISSUER_UID) {
@@ -201,7 +228,7 @@ constructor(
                 validFrom = timestamps.first,
                 validUntil = timestamps.second,
                 subjectName = subject,
-                publicKey = cryptoPublicKey,
+                rawPublicKey = publicKey,
                 issuerUniqueID = issuerUniqueID,
                 subjectUniqueID = subjectUniqueID,
                 extensions = extensions,
@@ -234,7 +261,7 @@ val CryptoSignature.x509Encoded
  * - EC is DER-encoded then wrapped in a bit string
  */
 fun CryptoSignature.Companion.fromX509Encoded(alg: X509SignatureAlgorithm, it: Asn1Primitive) =
-    when (alg.isEc) {
+    when (alg is X509SignatureAlgorithm.ECDSA) {
         true -> CryptoSignature.EC.decodeFromDer(it.asAsn1BitString().rawBytes)
         false -> CryptoSignature.RSA.decodeFromTlv(it)
     }
@@ -244,9 +271,16 @@ fun CryptoSignature.Companion.fromX509Encoded(alg: X509SignatureAlgorithm, it: A
  */
 data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     val tbsCertificate: TbsCertificate,
-    val signatureAlgorithm: X509SignatureAlgorithm,
-    val signature: CryptoSignature,
+    val signatureAlgorithm: X509SignatureAlgorithmDescription,
+    val rawSignature: Asn1Primitive,
 ) : PemEncodable<Asn1Sequence> {
+
+    constructor(
+        tbsCertificate: TbsCertificate,
+        signatureAlgorithm: X509SignatureAlgorithmDescription,
+        signature: CryptoSignature
+    ) : this(tbsCertificate, signatureAlgorithm,
+        signature.x509Encoded)
 
     override val canonicalPEMBoundary: String = EB_STRINGS.DEFAULT
 
@@ -254,37 +288,32 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     override fun encodeToTlv() = Asn1.Sequence {
         +tbsCertificate
         +signatureAlgorithm
-        +signature.x509Encoded
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-
-        other as X509Certificate
-
-        if (tbsCertificate != other.tbsCertificate) return false
-        if (signatureAlgorithm != other.signatureAlgorithm) return false
-        if (signature != other.signature) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = tbsCertificate.hashCode()
-        result = 31 * result + signatureAlgorithm.hashCode()
-        result = 31 * result + signature.hashCode()
-        return result
+        +rawSignature
     }
 
     /**
      * Debug String representation. Uses Base64 encoded DER representation
      */
     override fun toString(): String {
-        return "X509Certificate(${encodeToDerOrNull()?.let { it.encodeToString(Base64Strict) }})"
+        return "X509Certificate(${encodeToDerOrNull()?.encodeToString(Base64Strict)})"
     }
 
+    @Deprecated("Confusingly named, and lacks support for unsupported signature algorithms; use `decodedPublicKey` or `rawPublicKey`",
+        level = DeprecationLevel.ERROR)
+    @Suppress("DEPRECATION_ERROR")
     val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
+
+    val rawPublicKey get() = tbsCertificate.rawPublicKey
+    val decodedPublicKey get() = tbsCertificate.decodedPublicKey
+
+    val decodedSignature by lazy { catching {
+        signatureAlgorithm.requireSupported()
+        CryptoSignature.Companion.fromX509Encoded(signatureAlgorithm, rawSignature)
+    }}
+
+    @Deprecated("Confusingly named, and lacks supported for unsupported signature algorithms; use `decodedSignature` or `rawSignature`",
+        level = DeprecationLevel.ERROR)
+    val signature: CryptoSignature get() = decodedSignature.getOrThrow()
 
     companion object : PemDecodable<Asn1Sequence, X509Certificate>(EB_STRINGS.DEFAULT, EB_STRINGS.LEGACY) {
 
@@ -296,8 +325,8 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): X509Certificate = src.decodeRethrowing {
             val tbs = TbsCertificate.decodeFromTlv(next().asSequence())
-            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(next().asSequence())
-            val signature = CryptoSignature.fromX509Encoded(sigAlg, next().asPrimitive())
+            val sigAlg = X509SignatureAlgorithmDescription.decodeFromTlv(next().asSequence())
+            val signature = next().asPrimitive()
             X509Certificate(tbs, sigAlg, signature)
         }
 

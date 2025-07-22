@@ -62,6 +62,7 @@ class X509CertificateJvmTest : FreeSpec({
         val pssCertFromJvm= generateRsaPssCertificate()
         println(pssCertFromJvm.encoded.toHexString())
         val decoded = X509Certificate.decodeFromDer(pssCertFromJvm!!.encoded)
+        println(decoded.encodeToDer().toHexString())
         decoded.encodeToDer() shouldBe pssCertFromJvm.encoded
     }
 
@@ -198,7 +199,7 @@ class X509CertificateJvmTest : FreeSpec({
         x509Certificate.tbsCertificate.validUntil.instant shouldBe notAfterDate.toInstant()
             .truncatedTo(ChronoUnit.SECONDS)
             .toKotlinInstant()
-        val parsedPublicKey = x509Certificate.tbsCertificate.publicKey
+        val parsedPublicKey = x509Certificate.tbsCertificate.decodedPublicKey.getOrThrow()
         parsedPublicKey.shouldBeInstanceOf<CryptoPublicKey.EC>()
         parsedPublicKey.xBytes shouldBe keyX
         parsedPublicKey.yBytes shouldBe keyY
