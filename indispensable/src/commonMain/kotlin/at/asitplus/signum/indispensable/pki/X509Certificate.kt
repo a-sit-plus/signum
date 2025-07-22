@@ -66,8 +66,8 @@ constructor(
         CryptoPublicKey.decodeFromTlv(rawPublicKey)
     }}
 
-    @Deprecated("Imprecisely named and does not support unknown algorithms; use rawPublicKey or decodedPublicKey",
-        level = DeprecationLevel.ERROR, replaceWith = ReplaceWith("decodedPublicKey"))
+    @Deprecated("Imprecisely named and does not support unknown algorithms; use `rawPublicKey` or `decodedPublicKey`",
+        level = DeprecationLevel.ERROR)
     val publicKey get() = decodedPublicKey.getOrThrow()
 
     /**
@@ -298,7 +298,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         return "X509Certificate(${encodeToDerOrNull()?.encodeToString(Base64Strict)})"
     }
 
-    @Deprecated("Confusingly named, and lacks support for unsupported signature algorithms; use decodedPublicKey or rawPublicKey",
+    @Deprecated("Confusingly named, and lacks support for unsupported signature algorithms; use `decodedPublicKey` or `rawPublicKey`",
         level = DeprecationLevel.ERROR)
     @Suppress("DEPRECATION_ERROR")
     val publicKey: CryptoPublicKey get() = tbsCertificate.publicKey
@@ -311,7 +311,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
         CryptoSignature.Companion.fromX509Encoded(signatureAlgorithm, rawSignature)
     }}
 
-    @Deprecated("Confusingly named, and lacks supported for unsupported signature algorithms; use decodedSignature or rawSignature",
+    @Deprecated("Confusingly named, and lacks supported for unsupported signature algorithms; use `decodedSignature` or `rawSignature`",
         level = DeprecationLevel.ERROR)
     val signature: CryptoSignature get() = decodedSignature.getOrThrow()
 
