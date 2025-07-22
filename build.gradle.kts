@@ -1,13 +1,14 @@
 import at.asitplus.gradle.at.asitplus.gradle.getBuildableTargets
 import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import java.time.Duration
 
 plugins {
     val kotlinVer = System.getenv("KOTLIN_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotlin.get()
     val kotestVer = System.getenv("KOTEST_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotest.get()
     val kspVer = System.getenv("KSP_VERSION_ENV")?.ifBlank { null } ?: "$kotlinVer-${libs.versions.ksp.get()}"
 
-    id("at.asitplus.gradle.conventions") version "20250722"
+    id("at.asitplus.gradle.conventions") version "20250723"
     id("io.kotest") version kotestVer
     kotlin("multiplatform") version kotlinVer apply false
     kotlin("plugin.serialization") version kotlinVer apply false
@@ -19,8 +20,16 @@ group = "at.asitplus.signum"
 //work around nexus publish bug
 val artifactVersion: String by extra
 version = artifactVersion
-//end work around nexus publish bug
 
+nexusPublishing {
+    transitionCheckOptions {
+        maxRetries.set(200)
+        delayBetween.set(Duration.ofSeconds(20))
+    }
+    connectTimeout.set(Duration.ofMinutes(15))
+    clientTimeout.set(Duration.ofMinutes(15))
+}
+//end work around nexus publish bug
 
 //access dokka plugin from conventions plugin's classpath in root project → no need to specify version
 apply(plugin = "org.jetbrains.dokka")
@@ -43,6 +52,7 @@ allprojects {
     }
 }
 
+
 subprojects {
     afterEvaluate {
         val targets = project.extensions.getByType<KotlinMultiplatformExtension>().targets
@@ -59,6 +69,7 @@ subprojects {
         }
     }
 }
+
 
 tasks.register<Copy>("copyChangelog") {
     into(rootDir.resolve("docs/docs"))
