@@ -77,7 +77,7 @@ sealed class X509SignatureAlgorithm(
     internal object Provider : X509SignatureAlgorithmProvider {
         override fun loaderForOid(oid: ObjectIdentifier) = when (oid) {
             KnownOIDs.rsaPSS -> X509SignatureAlgorithm::parsePssParams
-            else -> when (val alg = entries.firstOrNull { it.oid == oid }) {
+            else -> when (val alg = fromOid(oid)) {
                 null -> null
                 is RSAPKCS1 -> ({
                     if (it.next() != Asn1Null) {
@@ -157,16 +157,17 @@ sealed class X509SignatureAlgorithm(
 
     companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithm> {
 
-        val entries = setOf(
-            ES256, ES384, ES512,
-            PS256, PS384, PS512,
-            RS1, RS256, RS384, RS512
-        )
-
-        @Throws(Asn1OidException::class)
-        private fun fromOid(oid: ObjectIdentifier) = catching { entries.first { it.oid == oid } }.getOrElse {
-            throw Asn1OidException("Unsupported OID: $oid", oid)
+        //make it lazy to break init cycle that causes the weirdest nullpointer ever
+        val entries by lazy {
+            setOf(
+                ES256, ES384, ES512,
+                PS256, PS384, PS512,
+                RS1, RS256, RS384, RS512
+            )
         }
+
+        @Suppress("NOTHING_TO_INLINE")
+        private inline fun fromOid(oid: ObjectIdentifier) = entries.firstOrNull { it.oid == oid }
 
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): X509SignatureAlgorithm =

@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.KmmResult
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
@@ -32,7 +33,7 @@ class X509SignatureAlgorithmTest : FreeSpec({
             decoded.signatureAlgorithm shouldNotBeIn X509SignatureAlgorithm.entries
 
             //Certificate decoded successfully, but cryptographic operations on unsupported algorithms are not possible
-             decoded.decodedSignature.shouldBeNull()
+             decoded.decodedSignature.isSuccess shouldBe false
 
             withClue(decoded.encodeToPEM().getOrNull()) {
                 decoded.encodeToDer() shouldBe it.second
