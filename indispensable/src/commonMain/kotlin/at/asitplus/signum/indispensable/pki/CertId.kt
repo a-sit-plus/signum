@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Identifiable
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decode
 
@@ -48,11 +49,11 @@ data class CertId @Throws(Asn1Exception::class) constructor(
     }
 
     companion object : Asn1Decodable<Asn1Sequence, CertId> {
-        override fun doDecode(src: Asn1Sequence): CertId {
-            val hashAlg = AlgorithmIdentifier.decodeFromTlv(src.nextChild().asSequence())
-            val nameHash = src.nextChild().asPrimitive().decode(Asn1Element.Tag.OCTET_STRING) { it }
-            val keyHash = src.nextChild().asPrimitive().decode(Asn1Element.Tag.OCTET_STRING) { it }
-            val serialNumber = src.nextChild().asPrimitive().decode(Asn1Element.Tag.INT) { it }
+        override fun doDecode(src: Asn1Sequence): CertId = src.decodeRethrowing {
+            val hashAlg = AlgorithmIdentifier.decodeFromTlv(next().asSequence())
+            val nameHash = next().asPrimitive().decode(Asn1Element.Tag.OCTET_STRING) { it }
+            val keyHash = next().asPrimitive().decode(Asn1Element.Tag.OCTET_STRING) { it }
+            val serialNumber = next().asPrimitive().decode(Asn1Element.Tag.INT) { it }
             return CertId(hashAlg, nameHash, keyHash, serialNumber)
         }
     }
@@ -69,12 +70,12 @@ data class AlgorithmIdentifier(
     }
 
     companion object : Asn1Decodable<Asn1Sequence, AlgorithmIdentifier> {
-        override fun doDecode(src: Asn1Sequence): AlgorithmIdentifier =
+        override fun doDecode(src: Asn1Sequence): AlgorithmIdentifier = src.decodeRethrowing {
             AlgorithmIdentifier(
-                ObjectIdentifier.decodeFromTlv(src.nextChild().asPrimitive()),
-                src.nextChild()
+                ObjectIdentifier.decodeFromTlv(next().asPrimitive()),
+                next()
             )
-
+        }
     }
 
 }
