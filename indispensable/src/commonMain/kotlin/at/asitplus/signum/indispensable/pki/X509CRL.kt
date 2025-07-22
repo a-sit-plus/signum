@@ -12,6 +12,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1Time
 import at.asitplus.signum.indispensable.asn1.PemDecodable
 import at.asitplus.signum.indispensable.asn1.PemEncodable
+import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decode
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
@@ -95,32 +96,32 @@ data class TbsCertList @Throws(Asn1Exception::class) constructor(
             val EXTENSIONS = Asn1.ExplicitTag(0uL)
         }
 
-        override fun doDecode(src: Asn1Sequence): TbsCertList = runRethrowing {
-            val version = src.peek().let {
+        override fun doDecode(src: Asn1Sequence): TbsCertList = src.decodeRethrowing {
+            val version = peek().let {
                 if (it is Asn1Primitive) {
                     (it.asPrimitive()).decodeToInt()
-                        .also { src.nextChild() }
+                        .also { next() }
                 } else {
                     null
                 }
             }
 
-            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild().asSequence())
-            val issuerNames = (src.nextChild().asSequence()).children.map {
+            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(next().asSequence())
+            val issuerNames = (next().asSequence()).children.map {
                 RelativeDistinguishedName.decodeFromTlv(it.asSet())
             }
 
-            val thisUpdateTime = Asn1Time.decodeFromTlv(src.nextChild().asPrimitive())
-            val nextUpdateTime = Asn1Time.decodeFromTlv(src.nextChild().asPrimitive())
+            val thisUpdateTime = Asn1Time.decodeFromTlv(next().asPrimitive())
+            val nextUpdateTime = Asn1Time.decodeFromTlv(next().asPrimitive())
 
-            val certs = if (src.hasMoreChildren() && src.peek() is Asn1Sequence) {
-                src.nextChild().asSequence().children.map {
+            val certs = if (hasNext() && peek() is Asn1Sequence) {
+                next().asSequence().children.map {
                     CRLEntry.decodeFromTlv(it.asSequence())
                 }
             } else null
 
-            val extensions = if (src.hasMoreChildren()) {
-                ((src.nextChild().asExplicitlyTagged()).verifyTag(EXTENSIONS.tagValue)
+            val extensions = if (hasNext()) {
+                ((next().asExplicitlyTagged()).verifyTag(EXTENSIONS.tagValue)
                     .single().asSequence()).children.map {
                     X509CertificateExtension.decodeFromTlv(it.asSequence())
                 }
@@ -183,13 +184,13 @@ data class CRLEntry @Throws(Asn1Exception::class) constructor(
 
     companion object : Asn1Decodable<Asn1Sequence, CRLEntry> {
 
-        override fun doDecode(src: Asn1Sequence): CRLEntry = runRethrowing {
-            val serialNumber = (src.nextChild().asPrimitive()).decode(Asn1Element.Tag.INT) { it }
+        override fun doDecode(src: Asn1Sequence): CRLEntry = src.decodeRethrowing {
+            val serialNumber = (next().asPrimitive()).decode(Asn1Element.Tag.INT) { it }
 
-            val revocationTime = Asn1Time.decodeFromTlv(src.nextChild().asPrimitive())
+            val revocationTime = Asn1Time.decodeFromTlv(next().asPrimitive())
 
-            val extensions = if (src.hasMoreChildren()) {
-                src.nextChild().asSequence().children.map {
+            val extensions = if (hasNext()) {
+                next().asSequence().children.map {
                     X509CertificateExtension.decodeFromTlv(it.asSequence())
                 }
             } else null
@@ -246,10 +247,10 @@ data class CertificateList @Throws(Asn1Exception::class) constructor(
             const val DEFAULT = "X509 CRL"
         }
 
-        override fun doDecode(src: Asn1Sequence): CertificateList = runRethrowing {
-            val tbsCertList = TbsCertList.decodeFromTlv(src.nextChild().asSequence())
-            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(src.nextChild().asSequence())
-            val signature = CryptoSignature.fromX509Encoded(sigAlg, src.nextChild().asPrimitive())
+        override fun doDecode(src: Asn1Sequence): CertificateList = src.decodeRethrowing {
+            val tbsCertList = TbsCertList.decodeFromTlv(next().asSequence())
+            val sigAlg = X509SignatureAlgorithm.decodeFromTlv(next().asSequence())
+            val signature = CryptoSignature.fromX509Encoded(sigAlg, next().asPrimitive())
 
             CertificateList(
                 tbsCertList,
@@ -264,9 +265,9 @@ data class CertificateList @Throws(Asn1Exception::class) constructor(
          * (`-----BEGIN X509 CRL-----`) and then decoding from Base64.
          */
         fun decodeFromByteArray(src: ByteArray): CertificateList? = catchingUnwrapped {
-            CertificateList.decodeFromTlv(Asn1Element.parse(src) as Asn1Sequence)
+            CertificateList.decodeFromTlv(Asn1Element.parse(src).asSequence())
         }.getOrNull() ?: catchingUnwrapped {
-            CertificateList.decodeFromTlv(Asn1Element.parse(src.decodeToByteArray(Base64())) as Asn1Sequence)
+            CertificateList.decodeFromTlv(Asn1Element.parse(src.decodeToByteArray(Base64())).asSequence())
         }.getOrNull() ?: CertificateList.decodeFromPem(src.decodeToString()).getOrNull()
     }
 }
