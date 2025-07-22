@@ -1,4 +1,4 @@
-import com.android.build.api.dsl.Packaging
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.multiplatform)
@@ -11,13 +11,7 @@ plugins {
 kotlin {
     jvm()
     jvmToolchain(17)
-    androidTarget {
-        compilations.all {
-            kotlinOptions {
-                jvmTarget = "17"
-            }
-        }
-    }
+    androidTarget { compilerOptions { jvmTarget.set(JvmTarget.JVM_17) } }
 
     listOf(
         iosX64(),
@@ -37,7 +31,7 @@ kotlin {
             }
         }
         commonMain.dependencies {
-            implementation("at.asitplus.signum:supreme:+") {
+            implementation(libs.supreme) {
                 isChanging = true
             }
             implementation(compose.runtime)
@@ -95,9 +89,9 @@ android {
         compose = true
     }
 
-   packaging {
-       resources.excludes.add("META-INF/versions/9/OSGI-INF/MANIFEST.MF")
-   }
+    packaging {
+        resources.excludes.add("META-INF/versions/9/OSGI-INF/MANIFEST.MF")
+    }
 }
 
 

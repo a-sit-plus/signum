@@ -36,7 +36,9 @@ sealed class X509SignatureAlgorithmDescription(
     override fun hashCode() = (31 * oid.hashCode() + parameters.hashCode())
 
     internal class Unknown(oid: ObjectIdentifier, override val parameters: Asn1Element?) :
-        X509SignatureAlgorithmDescription(oid)
+        X509SignatureAlgorithmDescription(oid) {
+            override fun toString() = "Unknown($oid)"
+        }
 
     companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithmDescription> {
         override fun doDecode(src: Asn1Sequence) = src.decodeRethrowing {
@@ -99,6 +101,8 @@ sealed class X509SignatureAlgorithm(
         X509SignatureAlgorithm(oid) {
         override val parameters get() = null
         override val digest: Digest get() = algorithm.digest!!
+
+        override fun toString() = algorithm.toString()
     }
 
     @Deprecated("Use type check", replaceWith = ReplaceWith("this is X509SignatureAlgorithm.ECDSA"))
@@ -132,6 +136,8 @@ sealed class X509SignatureAlgorithm(
                 }
             }
         }
+
+        override fun toString() = algorithm.toString()
     }
 
     // RSASSA-PKCS1-v1_5 with SHA-size

@@ -1,9 +1,16 @@
 name: Test Android implementation
-on: [push, pull_request_target]
+on:
+  # still run checks on every PR *before* the merge
+  pull_request_target:
+    branches:
+      - main
+      - development
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true   # newer run cancels any older one for the same ref
+  # run the workflow once more **after** the PR has been merged
+  push:
+    branches:
+      - main
+      - development
 
 jobs:
   test:
