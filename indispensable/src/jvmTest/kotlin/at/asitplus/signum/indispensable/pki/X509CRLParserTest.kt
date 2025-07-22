@@ -19,9 +19,9 @@ import kotlin.random.nextInt
 
 @OptIn(UnsafeIoApi::class)
 class X509CRLParserTest : FreeSpec({
-        val crls = readPKITScrls().filterNot { it.first == "DSACACRL.crl" || it.first == "DSAParametersInheritedCACRL.crl" } //filter out CRLs with DSA pubKeys
+    val crls = readPKITScrls().filterNot { it.first == "DSACACRL.crl" || it.first == "DSAParametersInheritedCACRL.crl" } //filter out CRLs with DSA pubKeys
 
-    "PKITS CRLs" - {
+    "PKITS CRLs, should parse" - {
         withData(nameFn = { it.first }, crls) {
             val src = Asn1Element.parse(it.second) as Asn1Sequence
             val decoded = CertificateList.decodeFromTlv(src)

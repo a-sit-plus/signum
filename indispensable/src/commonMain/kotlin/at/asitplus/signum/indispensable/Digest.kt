@@ -24,3 +24,7 @@ val ECCurve.nativeDigest get() = when (this) {
     ECCurve.SECP_384_R_1 -> Digest.SHA384
     ECCurve.SECP_521_R_1 -> Digest.SHA512
 }
+
+interface SpecializedDigestAlgorithm {
+    val digest: Digest
+}
