@@ -6,14 +6,12 @@ import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Exception
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
-import at.asitplus.signum.indispensable.asn1.Identifiable
-import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decode
 
 data class CertId @Throws(Asn1Exception::class) constructor(
-    val hashAlgorithms: AlgorithmIdentifier,
+    val hashAlgorithms: AlgorithmIdentifier, // hash algorithm
     val issuerNameHash: ByteArray,
     val issuerKeyHash: ByteArray,
     val serialNumber: ByteArray
@@ -57,25 +55,4 @@ data class CertId @Throws(Asn1Exception::class) constructor(
             return CertId(hashAlg, nameHash, keyHash, serialNumber)
         }
     }
-}
-
-data class AlgorithmIdentifier(
-    override val oid: ObjectIdentifier,
-    val parameters: Asn1Element
-) : Identifiable, Asn1Encodable<Asn1Sequence> {
-
-    override fun encodeToTlv(): Asn1Sequence = Asn1.Sequence {
-        +oid
-        +parameters
-    }
-
-    companion object : Asn1Decodable<Asn1Sequence, AlgorithmIdentifier> {
-        override fun doDecode(src: Asn1Sequence): AlgorithmIdentifier = src.decodeRethrowing {
-            AlgorithmIdentifier(
-                ObjectIdentifier.decodeFromTlv(next().asPrimitive()),
-                next()
-            )
-        }
-    }
-
 }
