@@ -1,19 +1,18 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.signum.indispensable.DigestAlgorithmDescription
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Exception
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
-import at.asitplus.signum.indispensable.asn1.Identifiable
-import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decode
 
 data class CertId @Throws(Asn1Exception::class) constructor(
-    val hashAlgorithms: AlgorithmIdentifier, // hash algorithm
+    val hashAlgorithms: DigestAlgorithmDescription,
     val issuerNameHash: ByteArray,
     val issuerKeyHash: ByteArray,
     val serialNumber: ByteArray
@@ -50,32 +49,11 @@ data class CertId @Throws(Asn1Exception::class) constructor(
 
     companion object : Asn1Decodable<Asn1Sequence, CertId> {
         override fun doDecode(src: Asn1Sequence): CertId = src.decodeRethrowing {
-            val hashAlg = AlgorithmIdentifier.decodeFromTlv(next().asSequence())
+            val hashAlg = DigestAlgorithmDescription.decodeFromTlv(next().asSequence())
             val nameHash = next().asPrimitive().decode(Asn1Element.Tag.OCTET_STRING) { it }
             val keyHash = next().asPrimitive().decode(Asn1Element.Tag.OCTET_STRING) { it }
             val serialNumber = next().asPrimitive().decode(Asn1Element.Tag.INT) { it }
             return CertId(hashAlg, nameHash, keyHash, serialNumber)
         }
     }
-}
-
-data class AlgorithmIdentifier(
-    override val oid: ObjectIdentifier,
-    val parameters: Asn1Element
-) : Identifiable, Asn1Encodable<Asn1Sequence> {
-
-    override fun encodeToTlv(): Asn1Sequence = Asn1.Sequence {
-        +oid
-        +parameters
-    }
-
-    companion object : Asn1Decodable<Asn1Sequence, AlgorithmIdentifier> {
-        override fun doDecode(src: Asn1Sequence): AlgorithmIdentifier = src.decodeRethrowing {
-            AlgorithmIdentifier(
-                ObjectIdentifier.decodeFromTlv(next().asPrimitive()),
-                next()
-            )
-        }
-    }
-
 }
