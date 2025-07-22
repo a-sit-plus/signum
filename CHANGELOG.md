@@ -66,7 +66,7 @@
         * Bouncy Castle 1.81!!
         * Serialization 1.9.0
         * Coroutines 1.10.2
-        * Ktor 3.1.2
+        * Ktor 3.2.2
         * Kotest 6.0.0.M5
 
 ### 3.16.3 / 0.8.3 indispensable-only Hotfix

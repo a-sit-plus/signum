@@ -1,9 +1,9 @@
 [versions]
 
 biometric = "1.2.0-alpha05"
-kotlin = "2.1.0"
+kotlin = "2.2.0"
 compose = "1.7.3"
-agp = "8.6.1"
+agp = "8.10.0"
 androidx-appcompat = "1.7.0"
 androidx-activityCompose = "1.9.1"
 compose-uitooling = "1.7.7"
@@ -12,6 +12,7 @@ composeImageLoader = "1.7.1"
 napier = "2.7.1"
 buildConfig = "4.1.1"
 kotlinx-coroutines = "1.9.0"
+supreme = "0.9.0-SNAPSHOT"
 
 [libraries]
 
@@ -24,7 +25,7 @@ composeImageLoader = { module = "io.github.qdsfdhvh:image-loader", version.ref =
 napier = { module = "io.github.aakira:napier", version.ref = "napier" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
-kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
+supreme = {module= "at.asitplis.signum:supreme", version.ref="supreme"}
 
 [plugins]
 

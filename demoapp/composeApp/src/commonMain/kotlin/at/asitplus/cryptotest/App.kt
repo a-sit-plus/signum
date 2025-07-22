@@ -69,6 +69,7 @@ import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
 import io.ktor.util.encodeBase64
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newSingleThreadContext
@@ -94,6 +95,7 @@ val SIGNER_CONFIG: (SignerConfiguration.() -> Unit) = {
     }
 }
 
+@OptIn(DelicateCoroutinesApi::class)
 val context = newSingleThreadContext("crypto").also { Napier.base(DebugAntilog()) }
 
 private class getter<T>(private val fn: () -> T) {
