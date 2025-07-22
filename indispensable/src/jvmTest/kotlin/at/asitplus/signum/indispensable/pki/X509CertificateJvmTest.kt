@@ -62,7 +62,6 @@ class X509CertificateJvmTest : FreeSpec({
         val pssCertFromJvm= generateRsaPssCertificate()
         println(pssCertFromJvm.encoded.toHexString())
         val decoded = X509Certificate.decodeFromDer(pssCertFromJvm!!.encoded)
-        println(decoded.encodeToDer().toHexString())
         decoded.encodeToDer() shouldBe pssCertFromJvm.encoded
     }
 
