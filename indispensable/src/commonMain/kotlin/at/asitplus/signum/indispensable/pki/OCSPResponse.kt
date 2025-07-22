@@ -1,8 +1,10 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
+import at.asitplus.signum.indispensable.X509SignatureAlgorithmDescription
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
@@ -26,6 +28,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.parse
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.requireSupported
 
 
 data class RevokedInfo(
@@ -265,15 +268,15 @@ data class ResponseData(
 
 data class BasicOCSPResponse(
     val tbsResponseData: ResponseData,
-    val signatureAlgorithm: X509SignatureAlgorithm, //TODO update after rebase
-    val signature: CryptoSignature,
+    val signatureAlgorithm: X509SignatureAlgorithmDescription,
+    val rawSignature: Asn1Primitive,
     val certs: List<X509Certificate>? = null
 ) : Asn1Encodable<Asn1Sequence> {
 
     override fun encodeToTlv(): Asn1Sequence = Asn1.Sequence {
         +tbsResponseData
         +signatureAlgorithm
-        +signature.x509Encoded
+        +rawSignature
         certs?.let {
             if (it.isNotEmpty()) {
                 +Asn1.ExplicitlyTagged(Tags.CERTS.tagValue) {
@@ -285,6 +288,11 @@ data class BasicOCSPResponse(
         }
     }
 
+    val decodedSignature by lazy { catching {
+        signatureAlgorithm.requireSupported()
+        CryptoSignature.Companion.fromX509Encoded(signatureAlgorithm, rawSignature)
+    }}
+
     companion object : Asn1Decodable<Asn1Sequence, BasicOCSPResponse> {
 
         object Tags {
@@ -292,8 +300,8 @@ data class BasicOCSPResponse(
         }
         override fun doDecode(src: Asn1Sequence): BasicOCSPResponse = src.decodeRethrowing {
             val responseData = ResponseData.decodeFromTlv(next().asSequence())
-            val alg = X509SignatureAlgorithm.decodeFromTlv(next().asSequence())
-            val signature = CryptoSignature.fromX509Encoded(alg, next().asPrimitive())
+            val sigAlg = X509SignatureAlgorithmDescription.decodeFromTlv(next().asSequence())
+            val signature = next().asPrimitive()
             val certs = if (hasNext()) {
                 next().asExplicitlyTagged().verifyTag(Tags.CERTS.tagValue)
                     .single().asSequence().children.map {
@@ -303,7 +311,7 @@ data class BasicOCSPResponse(
 
             return BasicOCSPResponse(
                 responseData,
-                alg,
+                sigAlg,
                 signature,
                 certs
             )
