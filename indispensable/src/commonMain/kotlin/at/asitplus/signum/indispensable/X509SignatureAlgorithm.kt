@@ -95,9 +95,10 @@ sealed class X509SignatureAlgorithm(
     }
 
     // ECDSA with SHA-size
-    sealed class ECDSA(oid: ObjectIdentifier, override val algorithm: SignatureAlgorithm, override val digest: Digest) :
+    sealed class ECDSA(oid: ObjectIdentifier, override val algorithm: SignatureAlgorithm.ECDSA) :
         X509SignatureAlgorithm(oid) {
         override val parameters get() = null
+        override val digest: Digest get() = algorithm.digest!!
     }
 
     @Deprecated("Use type check", replaceWith = ReplaceWith("this is X509SignatureAlgorithm.ECDSA"))
@@ -142,9 +143,9 @@ sealed class X509SignatureAlgorithm(
 
     abstract val digest: Digest
 
-    object ES256 : ECDSA(KnownOIDs.ecdsaWithSHA256, SignatureAlgorithm.ECDSAwithSHA256, Digest.SHA256)
-    object ES384 : ECDSA(KnownOIDs.ecdsaWithSHA384, SignatureAlgorithm.ECDSAwithSHA384, Digest.SHA384)
-    object ES512 : ECDSA(KnownOIDs.ecdsaWithSHA512, SignatureAlgorithm.ECDSAwithSHA512, Digest.SHA512)
+    object ES256 : ECDSA(KnownOIDs.ecdsaWithSHA256, SignatureAlgorithm.ECDSAwithSHA256)
+    object ES384 : ECDSA(KnownOIDs.ecdsaWithSHA384, SignatureAlgorithm.ECDSAwithSHA384)
+    object ES512 : ECDSA(KnownOIDs.ecdsaWithSHA512, SignatureAlgorithm.ECDSAwithSHA512)
 
     object PS256 : RSAPSS(SignatureAlgorithm.RSAwithSHA256andPSSPadding)
     object PS384 : RSAPSS(SignatureAlgorithm.RSAwithSHA384andPSSPadding)
