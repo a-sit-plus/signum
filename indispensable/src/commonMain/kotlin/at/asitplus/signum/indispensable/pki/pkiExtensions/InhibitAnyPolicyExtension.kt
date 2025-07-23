@@ -6,8 +6,10 @@ import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
-import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.decodeRethrowing
+import at.asitplus.signum.indispensable.asn1.encoding.decodeToAsn1Integer
 import at.asitplus.signum.indispensable.asn1.toBigInteger
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 
@@ -29,21 +31,19 @@ class InhibitAnyPolicyExtension(
     ) : this(base.oid, base.critical, base.value.asEncapsulatingOctetString(), skipCerts)
 
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
-        override fun doDecode(src: Asn1Sequence): InhibitAnyPolicyExtension {
+        override fun doDecode(src: Asn1Sequence): InhibitAnyPolicyExtension = src.decodeRethrowing {
             val base = decodeBase(src)
 
-            if (base.oid != KnownOIDs.inhibitAnyPolicy) throw Asn1StructuralException(message = "This extension is not InhibitAnyPolicy extension.")
+            if (base.oid != KnownOIDs.inhibitAnyPolicy) throw Asn1StructuralException(message = "Expected InhibitAnyPolicy extension (OID: ${KnownOIDs.inhibitAnyPolicy}), but found OID: ${base.oid}")
 
-            val primitive = base.value.asEncapsulatingOctetString()
-                .nextChildOrNull()
-                ?.takeIf { it.tag == Asn1Element.Tag.INT }
-                ?.asPrimitive()
-                ?: throw Asn1StructuralException("Invalid or missing PRIMITIVE in InhibitAnyPolicy extension.")
+            val value = base.value.asEncapsulatingOctetString()
+                .single()
+                .asPrimitive()
+                .decodeToAsn1Integer()
+                .toBigInteger()
+                .intValue()
 
-            return InhibitAnyPolicyExtension(
-                base,
-                Asn1Integer.decodeFromTlv(primitive).toBigInteger().intValue()
-            )
+            return InhibitAnyPolicyExtension(base, value)
         }
     }
 }

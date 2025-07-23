@@ -9,7 +9,9 @@ import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
+import at.asitplus.signum.indispensable.asn1.policyMappings
 import at.asitplus.signum.indispensable.asn1.readOid
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 
@@ -31,22 +33,21 @@ class PolicyMappingsExtension (
     ) : this(base.oid, base.critical, base.value.asEncapsulatingOctetString(), policyMappings)
 
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
-        override fun doDecode(src: Asn1Sequence): PolicyMappingsExtension {
+        override fun doDecode(src: Asn1Sequence): PolicyMappingsExtension = src.decodeRethrowing {
             val base = decodeBase(src)
 
-            if (base.oid != KnownOIDs.policyMappings) throw Asn1StructuralException(message = "This extension is not PolicyMappings extension.")
+            if (base.oid != KnownOIDs.policyMappings) throw Asn1StructuralException(message = "Expected PolicyMappings extension (OID: ${KnownOIDs.policyMappings}), but found OID: ${base.oid}")
 
             val inner = base.value.asEncapsulatingOctetString()
-                .nextChildOrNull()
-                ?.takeIf { it.tag == Asn1Element.Tag.SEQUENCE }
+                .singleOrNull()
                 ?.asSequence()
                 ?: return PolicyMappingsExtension(base, emptyList())
             
-            val policyMappings = buildList {
-                while (inner.hasMoreChildren()) {
-                    val child = inner.nextChild()
-                    if (child.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, child.tag)
-                    add(CertificatePolicyMap.decodeFromTlv(child.asSequence()))
+            val policyMappings = inner.decodeRethrowing {
+                buildList {
+                    while (hasNext()) {
+                        add(CertificatePolicyMap.decodeFromTlv(next().asSequence()))
+                    }
                 }
             }
 
@@ -66,9 +67,9 @@ class CertificatePolicyMap (
     }
 
     companion object : Asn1Decodable<Asn1Sequence, CertificatePolicyMap> {
-        override fun doDecode(src: Asn1Sequence): CertificatePolicyMap {
-            val issuerDomain = src.nextChild().asPrimitive().readOid()
-            val subjectDomain = src.nextChild().asPrimitive().readOid()
+        override fun doDecode(src: Asn1Sequence): CertificatePolicyMap = src.decodeRethrowing {
+            val issuerDomain = next().asPrimitive().readOid()
+            val subjectDomain = next().asPrimitive().readOid()
             return CertificatePolicyMap(issuerDomain, subjectDomain)
         }
     }

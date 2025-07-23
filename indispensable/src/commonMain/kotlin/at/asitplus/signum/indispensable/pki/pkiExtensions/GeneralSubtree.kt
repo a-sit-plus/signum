@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
+import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
@@ -27,20 +28,20 @@ data class GeneralSubtree(
     }
 
     companion object : Asn1Decodable<Asn1Sequence, GeneralSubtree> {
-        override fun doDecode(src: Asn1Sequence): GeneralSubtree {
-            val base = GeneralName.decodeFromTlv(src.nextChild())
+        override fun doDecode(src: Asn1Sequence): GeneralSubtree = src.decodeRethrowing { 
+            val base = GeneralName.decodeFromTlv(next())
             var minimum = Asn1Integer(0)
-            if (src.hasMoreChildren()) {
-                minimum = Asn1Integer.decodeFromTlv(src.nextChild().asPrimitive())
+            if (hasNext()) {
+                minimum = Asn1Integer.decodeFromTlv(next().asPrimitive())
             }
 
-            return if (!src.hasMoreChildren()) GeneralSubtree(
+            return if (!hasNext()) GeneralSubtree(
                 base = base,
                 minimum = minimum
             ) else GeneralSubtree(
                 base,
                 minimum,
-                Asn1Integer.decodeFromTlv(src.nextChild().asPrimitive())
+                Asn1Integer.decodeFromTlv(next().asPrimitive())
             )
         }
     }
@@ -55,10 +56,10 @@ data class GeneralSubtrees(
     }
 
     companion object : Asn1Decodable<Asn1ExplicitlyTagged, GeneralSubtrees> {
-        override fun doDecode(src: Asn1ExplicitlyTagged): GeneralSubtrees {
+        override fun doDecode(src: Asn1ExplicitlyTagged): GeneralSubtrees = src.decodeRethrowing {
             val trees = buildList {
-                while (src.hasMoreChildren()) {
-                    val child = src.nextChild().asSequence()
+                while (hasNext()) {
+                    val child = next().asSequence()
                     add(GeneralSubtree.decodeFromTlv(child))
                 }
             }.toMutableList()
@@ -66,6 +67,9 @@ data class GeneralSubtrees(
         }
     }
 
+    /**
+     * Removes all redundant entries
+     * */
     private fun minimize(): GeneralSubtrees {
         val mutableTrees = trees.toMutableList()
 
@@ -117,6 +121,9 @@ data class GeneralSubtrees(
         minimize()
     }
 
+    /**
+     * Creates Subtree containing widest name of that type]
+     * */
     private fun createWidestSubtree(name: GeneralNameOption): GeneralSubtree {
         return try {
             val newName = when (name.type) {
@@ -135,6 +142,9 @@ data class GeneralSubtrees(
         }
     }
 
+    /**
+     * Merges permitted NameConstraints
+     * */
     fun intersectWith(other: GeneralSubtrees): GeneralSubtrees? {
         if (other.trees.isEmpty()) return null
 

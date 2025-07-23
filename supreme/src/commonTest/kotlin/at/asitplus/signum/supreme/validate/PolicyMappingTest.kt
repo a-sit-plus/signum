@@ -1,7 +1,7 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.CertificatePolicyException
-import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate

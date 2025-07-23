@@ -12,7 +12,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
 import at.asitplus.signum.indispensable.asn1.BERTags
 import at.asitplus.signum.indispensable.asn1.Identifiable
-import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
@@ -38,22 +38,21 @@ class CertificatePoliciesExtension(
     ) : this(base.oid, base.critical, base.value.asEncapsulatingOctetString(), certificatePolicies)
 
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
-        override fun doDecode(src: Asn1Sequence): CertificatePoliciesExtension {
+        override fun doDecode(src: Asn1Sequence): CertificatePoliciesExtension = src.decodeRethrowing {
             val base = decodeBase(src)
 
-            if (base.oid != KnownOIDs.certificatePolicies_2_5_29_32) throw Asn1StructuralException(message = "This extension is not CertificatePolicies extension.")
+            if (base.oid != KnownOIDs.certificatePolicies_2_5_29_32) throw Asn1StructuralException(message = "Expected CertificatePolicies extension (OID: ${KnownOIDs.certificatePolicies_2_5_29_32}), but found OID: ${base.oid}")
 
             val inner = base.value.asEncapsulatingOctetString()
-                .nextChildOrNull()
-                ?.takeIf { it.tag == Asn1Element.Tag.SEQUENCE }
+                .singleOrNull()
                 ?.asSequence()
                 ?: return CertificatePoliciesExtension(base, emptyList())
 
-            val policies = buildList {
-                while (inner.hasMoreChildren()) {
-                    val child = inner.nextChild()
-                    if (child.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, child.tag)
-                    add(PolicyInformation.decodeFromTlv(child.asSequence()))
+            val policies = inner.decodeRethrowing {
+                buildList {
+                    while (hasNext()) {
+                        add(PolicyInformation.decodeFromTlv(next().asSequence()))
+                    }
                 }
             }
             return CertificatePoliciesExtension(base, policies)
@@ -79,18 +78,18 @@ class PolicyInformation(
     }
 
     companion object : Asn1Decodable<Asn1Sequence, PolicyInformation> {
-        override fun doDecode(src: Asn1Sequence) : PolicyInformation {
-            val id = (src.nextChild().asPrimitive()).readOid()
-            val policyQualifiers = mutableSetOf<PolicyQualifierInfo>()
-
-            if (src.children.size > 1) {
-                if (src.children[1].tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, src.children[1].tag)
-                val qualifiersSequence = src.nextChild().asSequence()
-                for (child in qualifiersSequence.children) {
-                    if (child.tag != Asn1Element.Tag.SEQUENCE) throw Asn1TagMismatchException(Asn1Element.Tag.SEQUENCE, child.tag)
-                    policyQualifiers += PolicyQualifierInfo.decodeFromTlv(child.asSequence())
+        override fun doDecode(src: Asn1Sequence) : PolicyInformation = src.decodeRethrowing{
+            val id = (next().asPrimitive()).readOid()
+            val policyQualifiers = if (hasNext()) {
+                next().asSequence().decodeRethrowing {
+                    buildSet {
+                        while (hasNext()) {
+                            add(PolicyQualifierInfo.decodeFromTlv(next().asSequence()))
+                        }
+                    }
                 }
-            }
+            } else emptySet()
+            
             return PolicyInformation(id, policyQualifiers)
         }
     }
@@ -108,21 +107,21 @@ class PolicyQualifierInfo(
 
     companion object : Asn1Decodable<Asn1Sequence, PolicyQualifierInfo> {
 
-        override fun doDecode(src: Asn1Sequence): PolicyQualifierInfo {
-            val id = src.nextChild().asPrimitive().readOid()
-            val value = src.nextChild()
+        override fun doDecode(src: Asn1Sequence): PolicyQualifierInfo = src.decodeRethrowing {
+            val oid = next().asPrimitive().readOid()
+            val value = next()
 
-            val qualifier: Qualifier = when (id) {
+            val qualifier: Qualifier = when (oid) {
                 KnownOIDs.cps -> {
                     Qualifier.CPSUri(value.asPrimitive().asAsn1String() as Asn1String.IA5)
                 }
                 KnownOIDs.unotice -> {
                     Qualifier.UserNotice.decodeFromTlv(value.asSequence())
                 }
-                else -> throw Asn1StructuralException("Unsupported PolicyQualifierInfo OID: $id")
+                else -> throw Asn1StructuralException("Unsupported PolicyQualifierInfo OID: $oid")
             }
 
-            return PolicyQualifierInfo(id, qualifier)
+            return PolicyQualifierInfo(oid, qualifier)
         }
     }
 }
@@ -143,19 +142,20 @@ sealed interface Qualifier : Asn1Encodable<Asn1Element>{
         companion object : Asn1Decodable<Asn1Element, UserNotice> {
             override fun doDecode(src: Asn1Element): UserNotice {
                 src as Asn1Sequence
-                val (ref, text) = when (src.children.size) {
-                    0 -> null to null
-                    1 -> {
-                        val c = src.nextChild()
-                        when {
-                            c is Asn1Sequence -> NoticeReference.decodeFromTlv(c) to null
-                            c is Asn1Primitive -> null to DisplayText.decodeFromTlv(c)
-                            else -> throw Asn1StructuralException("Invalid UserNotice structure.")
+                val (ref, text) = src.decodeRethrowing {
+                    when (src.children.size) {
+                        0 -> null to null
+                        1 -> {
+                            when (val child = next()) {
+                                is Asn1Sequence -> NoticeReference.decodeFromTlv(child) to null
+                                is Asn1Primitive -> null to DisplayText.decodeFromTlv(child)
+                                else -> throw Asn1StructuralException("Invalid UserNotice structure.")
+                            }
                         }
+                        2 -> NoticeReference.decodeFromTlv(next().asSequence()) to
+                                DisplayText.decodeFromTlv(next().asPrimitive())
+                        else -> throw Asn1StructuralException("Invalid number of elements in UserNotice.")
                     }
-                    2 -> NoticeReference.decodeFromTlv(src.nextChild().asSequence()) to
-                            DisplayText.decodeFromTlv(src.nextChild().asPrimitive())
-                    else -> throw Asn1StructuralException("Invalid number of elements in UserNotice.")
                 }
                 return UserNotice(ref, text)
             }
@@ -178,12 +178,9 @@ class NoticeReference(
     }
 
     companion object : Asn1Decodable<Asn1Sequence, NoticeReference> {
-        override fun doDecode(src: Asn1Sequence): NoticeReference {
-            if (src.children.size != 2) {
-                throw Asn1StructuralException("NoticeReference must have exactly 2 elements.")
-            }
-            val organization = DisplayText.decodeFromTlv(src.children[0].asPrimitive())
-            val numbersSeq = src.children[1].asSequence()
+        override fun doDecode(src: Asn1Sequence): NoticeReference = src.decodeRethrowing {
+            val organization = DisplayText.decodeFromTlv(next().asPrimitive())
+            val numbersSeq = next().asSequence()
 
             val noticeNumbers = numbersSeq.children.map {
                 it.asPrimitive().decodeToAsn1Integer()

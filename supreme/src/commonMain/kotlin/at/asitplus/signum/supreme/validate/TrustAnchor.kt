@@ -1,6 +1,8 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name
 import at.asitplus.signum.supreme.sign.verifierFor
@@ -17,7 +19,7 @@ class TrustAnchor private constructor(
     val cert: X509Certificate?
 ) {
     constructor(cert: X509Certificate) : this(
-        cert.publicKey,
+        cert.decodedPublicKey.getOrThrow(),
         cert.tbsCertificate.subjectName,
         cert.tbsCertificate.subjectName.toRfc2253String(),
         cert
@@ -38,10 +40,10 @@ class TrustAnchor private constructor(
     )
 
     fun isIssuerOf(cert: X509Certificate): Boolean {
-        val verifier = cert.signatureAlgorithm.verifierFor(publicKey).getOrThrow()
+        val verifier = (cert.signatureAlgorithm as X509SignatureAlgorithm).verifierFor(publicKey).getOrThrow()
         val signatureValid = verifier.verify(
             cert.tbsCertificate.encodeToDer(),
-            cert.signature
+            cert.decodedSignature.getOrThrow()
         ).isSuccess
 
         val issuerName = cert.tbsCertificate.issuerName.toRfc2253String()

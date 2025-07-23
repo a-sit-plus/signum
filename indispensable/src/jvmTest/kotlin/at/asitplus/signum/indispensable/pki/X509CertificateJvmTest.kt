@@ -91,7 +91,15 @@ class X509CertificateJvmTest : FreeSpec({
         val tbsCertificate = TbsCertificate(
             version = 2,
             serialNumber = serialNumber.toByteArray(),
-            issuerName = at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
+            issuerName = at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name(
+                listOf(
+                    RelativeDistinguishedName(
+                        AttributeTypeAndValue.CommonName(
+                            Asn1String.UTF8(commonName)
+                        )
+                    )
+                )
+            ),
             validFrom = Asn1Time(notBeforeDate.toInstant().toKotlinInstant()),
             validUntil = Asn1Time(notAfterDate.toInstant().toKotlinInstant()),
             signatureAlgorithm = signatureAlgorithm,
