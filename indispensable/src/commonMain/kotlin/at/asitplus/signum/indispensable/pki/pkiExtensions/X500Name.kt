@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1Set
+import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
 import at.asitplus.signum.indispensable.asn1.runRethrowing
@@ -21,11 +22,10 @@ data class X500Name(
     }
 
     companion object : Asn1Decodable<Asn1Sequence, X500Name> {
-        override fun doDecode(src: Asn1Sequence): X500Name = runRethrowing {
+        override fun doDecode(src: Asn1Sequence): X500Name = src.decodeRethrowing {
             buildList {
-                while (src.hasMoreChildren()) {
-                    val child = src.nextChild().asSet()
-                    add(RelativeDistinguishedName.decodeFromTlv(child))
+                while (hasNext()) {
+                    add(RelativeDistinguishedName.decodeFromTlv(next().asSet()))
                 }
             }.let(::X500Name)
         }
