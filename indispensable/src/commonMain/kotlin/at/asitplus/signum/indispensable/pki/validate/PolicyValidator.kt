@@ -11,9 +11,9 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyConstraintsExten
 import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyMappingsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.PolicyQualifierInfo
 
-/*
+/**
 * PolicyValidator checks policy information on X509Certificate path
-* */
+*/
 class PolicyValidator(
     initialPolicies: Set<ObjectIdentifier>,
     expPolicyRequired: Boolean,
@@ -67,10 +67,10 @@ class PolicyValidator(
         remainingCriticalExtensions.removeAll(supportedExtensions)
     }
 
-    /*
+    /**
     * Adjusts value of explicitPolicy based on the requireExplicitPolicy value in the PolicyConstraints
     * extension in currentCert
-    * */
+    */
     private fun updateExplicitPolicy(
         currentValue: Int, currentCert: X509Certificate, isFinalCert: Boolean
     ): Int {
@@ -95,10 +95,10 @@ class PolicyValidator(
         return result
     }
 
-    /*
+    /**
     * Adjusts value of policyMapping based on the inhibitPolicyMapping value in PolicyConstraint
     * extension in currentCert
-    * */
+    */
     private fun updatePolicyMapping(
         currentValue: Int, currentCert: X509Certificate
     ): Int {
@@ -120,9 +120,9 @@ class PolicyValidator(
         return result
     }
 
-    /*
+    /**
     * Adjusts value of inhibitAnyPolicy based on the inhibitAnyPolicy extension in currentCert
-    * */
+    */
     private fun updateInhibitAnyPolicy(
         currentValue: Int, currentCert: X509Certificate
     ): Int {
@@ -258,11 +258,11 @@ class PolicyValidator(
         return root
     }
 
-    /*
+    /**
     * RFC 5280: 6.1.5 (g)(iii)
     * Called at the end of validation (only for final certificate in the chain).
     * Replaces anyPolicy leaf nodes with nodes from initial policies that are not already leafs
-    * */
+    */
     private fun rewriteLeafNodes(
         certIndex: Int, initialPolicies: Set<ObjectIdentifier>, root: PolicyNode
     ): PolicyNode? {
@@ -296,10 +296,10 @@ class PolicyValidator(
         return root
     }
 
-    /*
+    /**
     * Attempts to add child policy nodes at the current depth (certIndex)
     * for the given policy OID, based on matching parent nodes at depth certIndex - 1.
-    * */
+    */
     private fun processParentNodes(
         certIndex: Int,
         isCritical: Boolean,
@@ -346,10 +346,10 @@ class PolicyValidator(
     }
 
 
-    /*
+    /**
     * RFC 5280: 6.1.4 (a)-(b)
     * Handles policy mappings
-    * */
+    */
     private fun processPolicyMappings(
         certificate: X509Certificate,
         certDepth: Int,
@@ -413,10 +413,10 @@ class PolicyValidator(
         return root
     }
 
-    /*
+    /**
     * Part of the RFC 5280: 6.1.5 (g)(iii)
     * Removes nodes that don't intersect with the initial policies
-    * */
+    */
     private fun removeInvalidNodes(
         root: PolicyNode,
         certDepth: Int,
