@@ -8,6 +8,8 @@ import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.encoding.asAsn1BitString
+import at.asitplus.signum.indispensable.asn1.keyUsage
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 
 class KeyUsageExtension(
@@ -26,17 +28,14 @@ class KeyUsageExtension(
         override fun doDecode(src: Asn1Sequence): KeyUsageExtension {
             val base = decodeBase(src)
 
-            if (base.oid != KnownOIDs.keyUsage) throw Asn1StructuralException(message = "This extension is not KeyUsage extension.")
+            if (base.oid != KnownOIDs.keyUsage) throw Asn1StructuralException(message = "Expected KeyUsage extension (OID: ${KnownOIDs.keyUsage}), but found OID: ${base.oid}")
 
-            val inner = base.value.asEncapsulatingOctetString()
-                .nextChildOrNull()
-                ?.takeIf { it.tag == Asn1Element.Tag.BIT_STRING }
-                ?.asPrimitive()
-                ?: throw Asn1StructuralException("Invalid or missing BitString in KeyUsage extension.")
-
-            val keyUsage = KeyUsage.parseExtension(Asn1BitString.decodeFromTlv(inner))
-
-            if (base.value.asEncapsulatingOctetString().hasMoreChildren()) throw Asn1StructuralException("Invalid KeyUsageExtension found (>1 children): ${base.value.toDerHexString()}")
+            val keyUsage = KeyUsage.parseExtension(
+                base.value.asEncapsulatingOctetString()
+                .single()
+                .asPrimitive()
+                .asAsn1BitString()
+            )
 
             return KeyUsageExtension(base, keyUsage)
         }

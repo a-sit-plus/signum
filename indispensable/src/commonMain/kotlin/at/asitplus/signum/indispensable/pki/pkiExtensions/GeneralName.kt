@@ -59,7 +59,7 @@ data class GeneralName(
                 GeneralNameOption.NameType.EDI -> GeneralName(EDIPartyName.decodeFromTlv(src))
                 GeneralNameOption.NameType.DIRECTORY -> GeneralName(
                     X500Name.decodeFromTlv(
-                        src.asExplicitlyTagged().nextChild().asSequence()
+                        src.asExplicitlyTagged().single().asSequence()
                     )
                 )
                 else -> throw Asn1Exception("Unsupported GeneralName tag")

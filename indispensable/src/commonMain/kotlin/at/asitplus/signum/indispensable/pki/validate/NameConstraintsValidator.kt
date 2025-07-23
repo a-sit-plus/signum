@@ -2,7 +2,7 @@ package at.asitplus.signum.indispensable.pki.validate
 
 import at.asitplus.signum.CertificateChainValidatorException
 import at.asitplus.signum.NameConstraintsException
-import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.NameConstraintsExtension

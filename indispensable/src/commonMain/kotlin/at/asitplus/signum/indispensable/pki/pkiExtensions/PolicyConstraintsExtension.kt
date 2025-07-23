@@ -6,7 +6,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
-import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.encoding.decodeFromAsn1ContentBytes
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
@@ -36,27 +36,24 @@ class PolicyConstraintsExtension (
         private val REQUIRE: ULong = 0u
         private val INHIBIT: ULong = 1u
 
-        override fun doDecode(src: Asn1Sequence): PolicyConstraintsExtension {
+        override fun doDecode(src: Asn1Sequence): PolicyConstraintsExtension = src.decodeRethrowing {
             val base = decodeBase(src)
 
-            if (base.oid != KnownOIDs.policyConstraints_2_5_29_36) throw Asn1StructuralException(message = "This extension is not PolicyConstraints extension.")
+            if (base.oid != KnownOIDs.policyConstraints_2_5_29_36) throw Asn1StructuralException(message = "Expected PolicyConstraints extension (OID: ${KnownOIDs.policyConstraints_2_5_29_36}), but found OID: ${base.oid}")
 
-            val inner = base.value.asEncapsulatingOctetString()
-                .nextChildOrNull()
-                ?.takeIf { it.tag == Asn1Element.Tag.SEQUENCE }
-                ?.asSequence()
-                ?: throw Asn1StructuralException("Invalid or missing SEQUENCE in PolicyConstraints extension.")
+            val inner = base.value.asEncapsulatingOctetString().single().asSequence()
 
-            if (inner.children.size > 2) throw Asn1StructuralException("Invalid PolicyConstraints extension found (>2 children): ${inner.toDerHexString()}")
-
-            var requireExplicitPolicy: Asn1Integer = Asn1Integer.fromDecimalString("-1")
-            var inhibitPolicyMapping: Asn1Integer = Asn1Integer.fromDecimalString("-1")
-            while (inner.hasMoreChildren()) {
-                val child = inner.nextChild()
-                when (child.tag.tagValue) {
-                    REQUIRE -> requireExplicitPolicy = Asn1Integer.decodeFromAsn1ContentBytes(child.asPrimitive().content)
-                    INHIBIT -> inhibitPolicyMapping = Asn1Integer.decodeFromAsn1ContentBytes(child.asPrimitive().content)
+            val (requireExplicitPolicy, inhibitPolicyMapping) = inner.decodeRethrowing {
+                var requireExplicitPolicy: Asn1Integer = Asn1Integer.fromDecimalString("-1")
+                var inhibitPolicyMapping: Asn1Integer = Asn1Integer.fromDecimalString("-1")
+                while (hasNext()) {
+                    val child = next()
+                    when (child.tag.tagValue) {
+                        REQUIRE -> requireExplicitPolicy = Asn1Integer.decodeFromAsn1ContentBytes(child.asPrimitive().content)
+                        INHIBIT -> inhibitPolicyMapping = Asn1Integer.decodeFromAsn1ContentBytes(child.asPrimitive().content)
+                    }
                 }
+                requireExplicitPolicy to inhibitPolicyMapping
             }
             return PolicyConstraintsExtension(base, requireExplicitPolicy, inhibitPolicyMapping)
         }

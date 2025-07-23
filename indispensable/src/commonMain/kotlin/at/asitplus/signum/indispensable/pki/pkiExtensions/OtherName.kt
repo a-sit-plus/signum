@@ -23,8 +23,6 @@ class OtherName (
                     "Invalid otherName Alternative Name found (implicit tag != 0): ${it.toDerHexString()}"
                 )
             }
-            while (src.hasMoreChildren())
-                src.nextChild()
             return OtherName(src)
         }
     }

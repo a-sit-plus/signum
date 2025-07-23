@@ -7,7 +7,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
-import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
 import at.asitplus.signum.indispensable.pki.X509Certificate
@@ -38,27 +38,28 @@ class NameConstraintsExtension(
         private val PERMITTED: ULong = 0u
         private val EXCLUDED: ULong = 1u
 
-        override fun doDecode(src: Asn1Sequence): NameConstraintsExtension {
+        override fun doDecode(src: Asn1Sequence): NameConstraintsExtension = src.decodeRethrowing {
             val base = decodeBase(src)
 
-            if (base.oid != KnownOIDs.nameConstraints_2_5_29_30) throw Asn1StructuralException(message = "This extension is not NameConstraints extension.")
+            if (base.oid != KnownOIDs.nameConstraints_2_5_29_30) throw Asn1StructuralException(message = "Expected NameConstraints extension (OID: ${KnownOIDs.nameConstraints_2_5_29_30}), but found OID: ${base.oid}")
 
             val inner = base.value.asEncapsulatingOctetString()
-                .nextChildOrNull()
-                ?.takeIf { it.tag == Asn1Element.Tag.SEQUENCE }
+                .singleOrNull()
                 ?.asSequence()
                 ?: return NameConstraintsExtension(base)
 
-            if (inner.children.size > 2) throw Asn1StructuralException("Invalid NameConstraints extension found (>2 children): ${inner.toDerHexString()}")
-
-            var permitted: GeneralSubtrees? = null
-            var excluded: GeneralSubtrees? = null
-            while (inner.hasMoreChildren()) {
-                val child = inner.nextChild()
-                when (child.tag.tagValue) {
-                    PERMITTED -> permitted = GeneralSubtrees.decodeFromTlv(child.asExplicitlyTagged())
-                    EXCLUDED -> excluded = GeneralSubtrees.decodeFromTlv(child.asExplicitlyTagged())
+            val (permitted, excluded) = inner.decodeRethrowing {
+                if (inner.children.size > 2) throw Asn1StructuralException("Invalid NameConstraints extension found (>2 children): ${inner.toDerHexString()}")
+                var permitted: GeneralSubtrees? = null
+                var excluded: GeneralSubtrees? = null
+                while (hasNext()) {
+                    val child = next()
+                    when (child.tag.tagValue) {
+                        PERMITTED -> permitted = GeneralSubtrees.decodeFromTlv(child.asExplicitlyTagged())
+                        EXCLUDED -> excluded = GeneralSubtrees.decodeFromTlv(child.asExplicitlyTagged())
+                    }
                 }
+                permitted to excluded
             }
             return NameConstraintsExtension(base, permitted, excluded)
         }

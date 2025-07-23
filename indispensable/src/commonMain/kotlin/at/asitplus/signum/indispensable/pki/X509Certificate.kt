@@ -1,10 +1,12 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
+import at.asitplus.signum.indispensable.X509SignatureAlgorithmDescription
 import at.asitplus.signum.indispensable.asn1.Asn1BitString
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
@@ -18,6 +20,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Time
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.PemDecodable
 import at.asitplus.signum.indispensable.asn1.PemEncodable
+import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1TreeBuilder
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1BitString
@@ -28,23 +31,22 @@ import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.asn1.runRethrowing
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
-import at.asitplus.signum.indispensable.isSupported
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.EXTENSIONS
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.ISSUER_UID
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.SUBJECT_UID
-import at.asitplus.signum.indispensable.requireSupported
 import at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name
+import at.asitplus.signum.indispensable.requireSupported
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Transient
 import kotlinx.serialization.builtins.serializer
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 /**
  * Very simple implementation of the meat of an X.509 Certificate:
@@ -55,8 +57,8 @@ data class TbsCertificate
 constructor(
     val version: Int? = 2,
     val serialNumber: ByteArray,
-    val issuerName: X500Name,
     val signatureAlgorithm: X509SignatureAlgorithmDescription,
+    val issuerName: X500Name,
     val validFrom: Asn1Time,
     val validUntil: Asn1Time,
     val subjectName: X500Name,
@@ -70,10 +72,10 @@ constructor(
         version: Int? = 2,
         serialNumber: ByteArray,
         signatureAlgorithm: X509SignatureAlgorithmDescription,
-        issuerName: List<RelativeDistinguishedName>,
+        issuerName: X500Name,
         validFrom: Asn1Time,
         validUntil: Asn1Time,
-        subjectName: List<RelativeDistinguishedName>,
+        subjectName: X500Name,
         publicKey: CryptoPublicKey,
         issuerUniqueID: Asn1BitString? = null,
         subjectUniqueID: Asn1BitString? = null,
@@ -353,7 +355,6 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
             )
         }
     }
-
 
     val rawPublicKey get() = tbsCertificate.rawPublicKey
     val decodedPublicKey get() = tbsCertificate.decodedPublicKey

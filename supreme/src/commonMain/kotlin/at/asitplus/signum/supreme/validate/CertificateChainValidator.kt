@@ -2,7 +2,8 @@ package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.CertificateChainValidatorException
 import at.asitplus.signum.CryptoOperationFailed
-import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.X509SignatureAlgorithm
+import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
@@ -16,8 +17,8 @@ import at.asitplus.signum.indispensable.pki.validate.PolicyNode
 import at.asitplus.signum.indispensable.pki.validate.PolicyValidator
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
+import kotlin.time.Clock
 
 class CertificateValidationContext(
 //   Basic constraints should be ignored in SEAL certificate verification
@@ -64,7 +65,7 @@ suspend fun CertificateChain.validate(
     validators.add(KeyUsageValidator(this.size))
     if (context.basicConstraintsCheck) validators.add(BasicConstraintsValidator(this.size))
 
-    if (!context.trustAnchors.hasIssuerFor(this.root)) throw CertificateChainValidatorException("Untrusted root certificate.")
+    if (!context.trustAnchors.haveIssuerFor(this.root)) throw CertificateChainValidatorException("Untrusted root certificate.")
 
     val reversed = this.reversed()
     reversed.forEachIndexed { i, issuer ->
@@ -91,8 +92,8 @@ private fun verifySignature(
     issuer: X509Certificate,
     isLeaf: Boolean,
 ) {
-    val verifier = cert.signatureAlgorithm.verifierFor(issuer.publicKey).getOrThrow()
-    if (!verifier.verify(cert.tbsCertificate.encodeToDer(), cert.signature).isSuccess) {
+    val verifier = (cert.signatureAlgorithm as X509SignatureAlgorithm).verifierFor(issuer.decodedPublicKey.getOrThrow()).getOrThrow()
+    if (!verifier.verify(cert.tbsCertificate.encodeToDer(), cert.decodedSignature.getOrThrow()).isSuccess) {
         throw CryptoOperationFailed("Signature verification failed in ${if (isLeaf) "leaf" else "CA"} certificate.")
     }
 }
@@ -132,6 +133,6 @@ private fun verifyCriticalExtensions(remainingCriticalExtensions: MutableSet<Obj
         throw CertificateChainValidatorException("Unsupported critical extensions: $remainingCriticalExtensions")
 }
 
-private fun Set<TrustAnchor>.hasIssuerFor(cert: X509Certificate): Boolean =
+private fun Set<TrustAnchor>.haveIssuerFor(cert: X509Certificate): Boolean =
     any { it.isIssuerOf(cert) }
 
