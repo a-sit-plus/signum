@@ -6,6 +6,7 @@ import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name
 import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.supreme.os.SignerConfiguration
 import at.asitplus.signum.supreme.sign
@@ -248,12 +249,12 @@ class EphemeralSignerCommonTests : FreeSpec({
                 val tbsCrt = TbsCertificate(
                     serialNumber = Random.nextBytes(16),
                     signatureAlgorithm = signer.signatureAlgorithm.toX509SignatureAlgorithm().getOrThrow(),
-                    issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("Foo")))),
+                    issuerName = X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("Foo"))))),
                     validFrom = Asn1Time(
                         Clock.System.now()
                     ),
                     validUntil = Asn1Time(Clock.System.now() + 356.days),
-                    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
+                    subjectName = X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client"))))),
                     publicKey = signer.publicKey,
                     extensions = listOf(
                         X509CertificateExtension(
@@ -300,12 +301,12 @@ class EphemeralSignerCommonTests : FreeSpec({
                 val tbsCrt = TbsCertificate(
                     serialNumber = Random.nextBytes(16),
                     signatureAlgorithm = signer.signatureAlgorithm.toX509SignatureAlgorithm().getOrThrow(),
-                    issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("Foo")))),
+                    issuerName = X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("Foo"))))),
                     validFrom = Asn1Time(
                         Clock.System.now()
                     ),
                     validUntil = Asn1Time(Clock.System.now() + 356.days),
-                    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
+                    subjectName = X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client"))))),
                     publicKey = signer.publicKey,
                     extensions = listOf(
                         X509CertificateExtension(
