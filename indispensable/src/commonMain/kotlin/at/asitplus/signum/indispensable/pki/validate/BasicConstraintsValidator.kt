@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.pki.validate
 
 import at.asitplus.signum.BasicConstraintsException
-import at.asitplus.signum.indispensable.asn1.KnownOIDs
+import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtension
