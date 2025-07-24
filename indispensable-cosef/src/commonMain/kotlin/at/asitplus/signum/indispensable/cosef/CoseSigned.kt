@@ -36,7 +36,7 @@ data class CoseSigned<P : Any?> internal constructor(
     val unprotectedHeader: CoseHeader? = null,
     val payload: P?,
     val signature: CryptoSignature.RawByteEncodable,
-    val wireFormat: CoseSignedBytes,
+    val wireFormat: CoseBytes,
 ) {
 
     /**
@@ -106,11 +106,11 @@ data class CoseSigned<P : Any?> internal constructor(
             unprotectedHeader = unprotectedHeader,
             payload = payload,
             signature = signature,
-            wireFormat = CoseSignedBytes(
+            wireFormat = CoseBytes(
                 protectedHeader = coseCompliantSerializer.encodeToByteArray(protectedHeader),
                 unprotectedHeader = unprotectedHeader,
                 payload = payload.toRawPayload(payloadSerializer),
-                rawSignature = signature.rawByteArray
+                rawAuthBytes = signature.rawByteArray
             ),
         )
 

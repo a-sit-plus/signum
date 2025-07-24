@@ -1,13 +1,11 @@
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64Strict
-import at.asitplus.signum.indispensable.isSupported
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -35,7 +33,7 @@ class CoseSignedSerializer<P : Any?>(
 
     override fun serialize(encoder: Encoder, value: CoseSigned<P>) {
         if (encoder is CborEncoder) {
-            encoder.encodeSerializableValue(CoseSignedBytes.serializer(), value.wireFormat)
+            encoder.encodeSerializableValue(CoseBytes.serializer(), value.wireFormat)
         } else {
             val bytes = coseCompliantSerializer.encodeToByteArray(value.wireFormat)
             encoder.encodeString(bytes.encodeToString(Base64Strict))
@@ -44,12 +42,12 @@ class CoseSignedSerializer<P : Any?>(
 
     override fun deserialize(decoder: Decoder): CoseSigned<P> {
         val wire = if (decoder is JsonDecoder) decoder.decodeString().decodeToByteArray(Base64()).let { bytes ->
-            coseCompliantSerializer.decodeFromByteArray(CoseSignedBytes.serializer(), bytes)
+            coseCompliantSerializer.decodeFromByteArray(CoseBytes.serializer(), bytes)
         } else decoder.decodeSerializableValue(
-            CoseSignedBytes.serializer()
+            CoseBytes.serializer()
         )
         val protectedHeader = wire.protectedHeader.toHeader()
-        val signature = wire.rawSignature.toSignature(protectedHeader, wire.unprotectedHeader)
+        val signature = wire.rawAuthBytes.toSignature(protectedHeader, wire.unprotectedHeader)
         return CoseSigned<P>(
             protectedHeader = protectedHeader,
             unprotectedHeader = wire.unprotectedHeader,

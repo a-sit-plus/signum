@@ -22,14 +22,14 @@ import kotlinx.serialization.encodeToByteArray
 @Serializable
 @CborArray
 @ConsistentCopyVisibility
-data class CoseSignedBytes internal constructor(
+data class CoseBytes internal constructor(
     @ByteString
     val protectedHeader: ByteArray,
     val unprotectedHeader: CoseHeader?,
     @ByteString
     val payload: ByteArray?,
     @ByteString
-    val rawSignature: ByteArray,
+    val rawAuthBytes: ByteArray,
 ) {
     /**
      * @param detachedPayload only to be set when [payload] is null, i.e. it is transported externally,
@@ -38,8 +38,19 @@ data class CoseSignedBytes internal constructor(
     internal fun toCoseSignatureInput(
         externalAad: ByteArray = byteArrayOf(),
         detachedPayload: ByteArray? = null,
+    ): ByteArray = toCoseInput(externalAad, detachedPayload, "Signature1")
+
+    internal fun toCoseMacInput(
+        externalAad: ByteArray = byteArrayOf(),
+        detachedPayload: ByteArray? = null,
+    ): ByteArray = toCoseInput(externalAad, detachedPayload, "MAC0")
+
+    private fun toCoseInput(
+        externalAad: ByteArray = byteArrayOf(),
+        detachedPayload: ByteArray? = null,
+        context: String
     ): ByteArray = CoseInput(
-        contextString = "Signature1",
+        contextString = context,
         protectedHeader = protectedHeader.toZeroLengthByteString(),
         externalAad = externalAad,
         payload = if (detachedPayload != null) {
@@ -57,12 +68,12 @@ data class CoseSignedBytes internal constructor(
         if (this === other) return true
         if (other == null || this::class != other::class) return false
 
-        other as CoseSignedBytes
+        other as CoseBytes
 
         if (!protectedHeader.contentEquals(other.protectedHeader)) return false
         if (unprotectedHeader != other.unprotectedHeader) return false
         if (!payload.contentEquals(other.payload)) return false
-        if (!rawSignature.contentEquals(other.rawSignature)) return false
+        if (!rawAuthBytes.contentEquals(other.rawAuthBytes)) return false
 
         return true
     }
@@ -71,7 +82,7 @@ data class CoseSignedBytes internal constructor(
         var result = protectedHeader.contentHashCode()
         result = 31 * result + (unprotectedHeader?.hashCode() ?: 0)
         result = 31 * result + (payload?.contentHashCode() ?: 0)
-        result = 31 * result + rawSignature.contentHashCode()
+        result = 31 * result + rawAuthBytes.contentHashCode()
         return result
     }
 
@@ -79,13 +90,13 @@ data class CoseSignedBytes internal constructor(
         return "CoseSigned(protectedHeader=${protectedHeader.encodeToString(Base16Strict)}," +
                 " unprotectedHeader=$unprotectedHeader," +
                 " payload=${payload?.encodeToString(Base16Strict)}," +
-                " signature=${rawSignature.encodeToString(Base16Strict)})"
+                " signature=${rawAuthBytes.encodeToString(Base16Strict)})"
     }
 
     companion object {
 
         @Deprecated("To be removed in next release")
-        fun deserialize(it: ByteArray): KmmResult<CoseSignedBytes> = catching {
+        fun deserialize(it: ByteArray): KmmResult<CoseBytes> = catching {
             coseCompliantSerializer.decodeFromByteArray(it)
         }
     }
