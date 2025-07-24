@@ -48,9 +48,9 @@ data class CoseBytes internal constructor(
     private fun toCoseInput(
         externalAad: ByteArray = byteArrayOf(),
         detachedPayload: ByteArray? = null,
-        context: String
+        contextString: String
     ): ByteArray = CoseInput(
-        contextString = context,
+        contextString = contextString,
         protectedHeader = protectedHeader.toZeroLengthByteString(),
         externalAad = externalAad,
         payload = if (detachedPayload != null) {
