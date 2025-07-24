@@ -6,9 +6,14 @@ import at.asitplus.signum.indispensable.cosef.CoseSigned.Companion.create
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToByteArray
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToByteArray
 
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable(with = CoseMacSerializer::class)
+@ConsistentCopyVisibility
 data class CoseMac<P : Any?> internal constructor(
     val protectedHeader: CoseHeader,
     val unprotectedHeader: CoseHeader? = null,
