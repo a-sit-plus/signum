@@ -187,7 +187,7 @@ class CoseSerializationTest : FreeSpec({
         val payload = Random.nextBytes(32)
         val header = CoseHeader(algorithm = CoseAlgorithm.Signature.ES256)
         val inputManual = coseCompliantSerializer.encodeToByteArray(
-            CoseSignatureInput(
+            CoseInput(
                 contextString = "Signature1",
                 protectedHeader = coseCompliantSerializer.encodeToByteArray(header),
                 externalAad = byteArrayOf(),
@@ -211,7 +211,7 @@ class CoseSerializationTest : FreeSpec({
         val payload = DataClass(Random.nextBytes(32).encodeToString(Base16Strict))
         val header = CoseHeader(algorithm = CoseAlgorithm.Signature.ES256)
         val inputManual = coseCompliantSerializer.encodeToByteArray(
-            CoseSignatureInput(
+            CoseInput(
                 contextString = "Signature1",
                 protectedHeader = coseCompliantSerializer.encodeToByteArray(header),
                 externalAad = byteArrayOf(),

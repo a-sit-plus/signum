@@ -115,7 +115,7 @@ data class CoseSigned<P : Any?> internal constructor(
         )
 
         /**
-         * Use this method to prepare a [CoseSignatureInput] object to calculate the signature,
+         * Use this method to prepare a [CoseInput] object to calculate the signature,
          * and then call [create] to create a [CoseSigned] object.
          */
         @Throws(IllegalArgumentException::class)
@@ -124,7 +124,7 @@ data class CoseSigned<P : Any?> internal constructor(
             externalAad: ByteArray = byteArrayOf(),
             payload: P?,
             payloadSerializer: KSerializer<P>,
-        ): CoseSignatureInput = CoseSignatureInput(
+        ): CoseInput = CoseInput(
             contextString = "Signature1",
             protectedHeader = coseCompliantSerializer.encodeToByteArray<CoseHeader>(protectedHeader),
             externalAad = externalAad,

@@ -38,7 +38,7 @@ data class CoseSignedBytes internal constructor(
     internal fun toCoseSignatureInput(
         externalAad: ByteArray = byteArrayOf(),
         detachedPayload: ByteArray? = null,
-    ): ByteArray = CoseSignatureInput(
+    ): ByteArray = CoseInput(
         contextString = "Signature1",
         protectedHeader = protectedHeader.toZeroLengthByteString(),
         externalAad = externalAad,
