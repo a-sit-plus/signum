@@ -90,7 +90,7 @@ data class CoseBytes internal constructor(
         return "CoseSigned(protectedHeader=${protectedHeader.encodeToString(Base16Strict)}," +
                 " unprotectedHeader=$unprotectedHeader," +
                 " payload=${payload?.encodeToString(Base16Strict)}," +
-                " signature=${rawAuthBytes.encodeToString(Base16Strict)})"
+                " authBytes=${rawAuthBytes.encodeToString(Base16Strict)})"
     }
 
     companion object {

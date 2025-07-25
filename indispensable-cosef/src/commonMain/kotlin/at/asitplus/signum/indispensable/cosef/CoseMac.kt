@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
+import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.cosef.CoseSigned.Companion.create
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import io.matthewnelson.encoding.base16.Base16
@@ -41,7 +42,10 @@ data class CoseMac<P : Any?> internal constructor(
 
         if (protectedHeader != other.protectedHeader) return false
         if (unprotectedHeader != other.unprotectedHeader) return false
-        if (payload != other.payload) return false
+        if (payload != null) {
+            if (other.payload == null) return false
+            if (!payload.contentEqualsIfArray(other.payload)) return false
+        } else if (other.payload != null) return false
         if (!tag.contentEquals(other.tag)) return false
         if (wireFormat != other.wireFormat) return false
 
