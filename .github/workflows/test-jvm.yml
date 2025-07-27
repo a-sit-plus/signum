@@ -1,10 +1,7 @@
 name: Test JVM
 on:
   # still run checks on every PR *before* the merge
-  pull_request_target:
-    branches:
-      - main
-      - development
+  pull_request:
 
   # run the workflow once more **after** the PR has been merged
   push:
@@ -17,15 +14,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout (default)
-        if: github.event_name != 'pull_request_target'
+        if: github.event_name != 'pull_request'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: recursive
 
       # For pull_request_target, explicitly fetch the PR head
-      - name: Checkout PR head (for pull_request_target)
-        if: github.event_name == 'pull_request_target'
+      - name: Checkout PR head (for pull_request)
+        if: github.event_name == 'pull_request'
         uses: actions/checkout@v4
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
@@ -45,3 +42,4 @@ jobs:
           name: JVM All Tests
           path: indispensable-asn1/build/test-results/**/TEST*.xml,indispensable-oids/build/test-results/**/TEST*.xml,indispensable/build/test-results/**/TEST*.xml,indispensable-josef/build/test-results/**/TEST*.xml,indispensable-cosef/build/test-results/**/TEST*.xml,supreme/build/test-results/**/TEST*.xml
           reporter: java-junit
+          use-actions-summary: true
