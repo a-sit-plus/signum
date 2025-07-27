@@ -254,7 +254,6 @@ kotlin {
             )
 
             dependencies {
-                api(libs.kotlinx.io.core)
                 api(project(":indispensable-asn1"))
             }
         }
