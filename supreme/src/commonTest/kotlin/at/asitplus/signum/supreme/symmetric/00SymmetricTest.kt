@@ -1,5 +1,7 @@
 @file:OptIn(SecretExposure::class)
 
+package at.asitplus.signum.supreme.symmetric
+
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.asn1.encoding.encodeTo4Bytes

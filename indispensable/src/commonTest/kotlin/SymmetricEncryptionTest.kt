@@ -1,3 +1,5 @@
+package at.asitplus.signum
+
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricKey

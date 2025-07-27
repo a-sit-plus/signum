@@ -1,3 +1,4 @@
+package at.asitplus.signum
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 
 import io.kotest.core.spec.style.FreeSpec

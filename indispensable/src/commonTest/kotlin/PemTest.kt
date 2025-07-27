@@ -1,3 +1,5 @@
+package at.asitplus.signum
+
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.asn1.encodeToPEM

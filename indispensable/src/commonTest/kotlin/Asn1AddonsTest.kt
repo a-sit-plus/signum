@@ -1,3 +1,4 @@
+package at.asitplus.signum
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import com.ionspin.kotlin.bignum.integer.BigInteger

@@ -1,3 +1,4 @@
+package at.asitplus.signum
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldNotBe
 
