@@ -57,10 +57,9 @@ kotlin {
             languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
         }
 
-
         commonTest {
             dependencies {
-                implementation(kotest("property"))
+                implementation(libs.kotlinx.io.core)
             }
         }
 

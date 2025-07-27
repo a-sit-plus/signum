@@ -3,7 +3,7 @@ package at.asitplus.signum.supreme.agree
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe

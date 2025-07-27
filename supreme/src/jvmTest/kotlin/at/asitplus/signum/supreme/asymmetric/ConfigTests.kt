@@ -4,7 +4,7 @@ import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.supreme.sign.EphemeralKey
 import io.kotest.assertions.throwables.shouldThrow
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.NoSuchProviderException

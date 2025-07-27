@@ -4,7 +4,7 @@ import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.pki.Pkcs10CertificationRequest
 import at.asitplus.signum.indispensable.pki.X509Certificate
 
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlin.random.Random

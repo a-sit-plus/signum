@@ -6,7 +6,7 @@ import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe

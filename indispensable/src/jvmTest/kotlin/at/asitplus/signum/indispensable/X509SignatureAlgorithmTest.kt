@@ -7,7 +7,7 @@ import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.kotest.assertions.withClue
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.datatest.withData
 import io.kotest.matchers.booleans.shouldBeFalse

@@ -2,7 +2,7 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.josef.io.sha256
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 
 

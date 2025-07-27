@@ -7,7 +7,7 @@ import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.supreme.a
 import at.asitplus.signum.supreme.b
 import com.ionspin.kotlin.bignum.integer.Quadruple
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 

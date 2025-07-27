@@ -4,7 +4,7 @@ import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.misc.bytes
 
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 

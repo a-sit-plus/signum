@@ -4,7 +4,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.without
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import com.ionspin.kotlin.bignum.integer.BigInteger
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
