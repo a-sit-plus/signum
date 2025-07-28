@@ -6,7 +6,7 @@ import at.asitplus.signum.indispensable.misc.max
 import at.asitplus.signum.indispensable.misc.min
 
 import com.ionspin.kotlin.bignum.integer.BigInteger
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 
 class UtilTest : FreeSpec({

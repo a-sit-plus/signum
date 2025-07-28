@@ -2,7 +2,7 @@ package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import io.kotest.assertions.throwables.shouldThrow
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 
 @OptIn(ExperimentalStdlibApi::class)

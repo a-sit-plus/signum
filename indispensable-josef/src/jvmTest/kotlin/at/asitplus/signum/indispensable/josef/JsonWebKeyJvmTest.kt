@@ -6,7 +6,7 @@ import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldHaveMinLength

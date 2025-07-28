@@ -1,10 +1,7 @@
 name: Test Android implementation
 on:
   # still run checks on every PR *before* the merge
-  pull_request_target:
-    branches:
-      - main
-      - development
+  pull_request:
 
   # run the workflow once more **after** the PR has been merged
   push:
@@ -13,12 +10,24 @@ on:
       - development
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - name: Checkout (default)
+        if: github.event_name != 'pull_request'
+        uses: actions/checkout@v4
         with:
+          fetch-depth: 0
+          submodules: recursive
+
+      # For pull_request_target, explicitly fetch the PR head
+      - name: Checkout PR head (for pull_request)
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
           submodules: recursive
       - uses: actions/setup-java@v3
         with:
@@ -39,9 +48,10 @@ jobs:
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: ./gradlew connectedCheck
       - name: Test Report
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v2
         if: success() || failure()
         with:
           name: Supreme Android Connected Tests
           path: supreme/build/outputs/androidTest-results/connected/**/TEST*.xml
           reporter: java-junit
+          use-actions-summary: true

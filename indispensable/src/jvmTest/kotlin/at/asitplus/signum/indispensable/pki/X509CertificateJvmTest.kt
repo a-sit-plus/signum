@@ -4,7 +4,7 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.signum.indispensable.asn1.encoding.parse
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe

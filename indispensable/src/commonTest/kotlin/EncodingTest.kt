@@ -1,6 +1,7 @@
+package at.asitplus.signum
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 
 class EncodingTest: FreeSpec({

@@ -1,10 +1,7 @@
 name: Test other Apple implementations
 on:
   # still run checks on every PR *before* the merge
-  pull_request_target:
-    branches:
-      - main
-      - development
+  pull_request:
 
   # run the workflow once more **after** the PR has been merged
   push:
@@ -16,9 +13,21 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - name: Checkout (default)
+        if: github.event_name != 'pull_request'
+        uses: actions/checkout@v4
         with:
+          fetch-depth: 0
+          submodules: recursive
+
+      # For pull_request_target, explicitly fetch the PR head
+      - name: Checkout PR head (for pull_request)
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
           submodules: recursive
       - uses: actions/setup-java@v3
         with:
@@ -32,9 +41,10 @@ jobs:
       - name: Run tests
         run: ./gradlew tvosX64Test tvosSimulatorArm64Test watchosSimulatorArm64Test watchosX64Test iosX64Test macosArm64Test macosX64Test -x :supreme:linkDebugTestIosX64 -x :supreme:iosX64Test
       - name: Test Report
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v2
         if: success() || failure()
         with:
           name: iOS Tests
           path: indispensable/build/test-results/**/TEST*.xml,indispensable-oids/build/test-results/**/TEST*.xml,indispensable-asn1/build/test-results/**/TEST*.xml,indispensable-cosef/build/test-results/**/TEST*.xml,indispensable-josef/build/test-results/**/TEST*.xml,supreme/build/test-results/**/TEST*.xml
           reporter: java-junit
+          use-actions-summary: true

@@ -2,7 +2,7 @@ package at.asitplus.signum.indispensable.kdf
 
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1ContentBytes
 
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe

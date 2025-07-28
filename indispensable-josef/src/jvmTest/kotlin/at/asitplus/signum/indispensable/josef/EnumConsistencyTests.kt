@@ -2,7 +2,7 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.DataIntegrityAlgorithm
 import at.asitplus.signum.indispensable.MessageAuthenticationCode
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf

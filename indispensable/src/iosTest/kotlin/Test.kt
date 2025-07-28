@@ -1,4 +1,5 @@
-import at.asitplus.test.FreeSpec
+package at.asitplus.signum
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldNotBe
 
 class Test : FreeSpec({

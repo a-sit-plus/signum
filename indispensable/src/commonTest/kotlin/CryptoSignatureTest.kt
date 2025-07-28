@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.asn1.encoding.toTwosComplementByteArray
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.toBigInteger
 import io.kotest.assertions.throwables.shouldThrow

@@ -5,7 +5,7 @@ import at.asitplus.signum.supreme.azString
 import at.asitplus.signum.supreme.sign.*
 import at.asitplus.signum.supreme.signature
 import at.asitplus.signum.supreme.succeed
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe

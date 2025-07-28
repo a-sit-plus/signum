@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 

@@ -1,4 +1,5 @@
 import at.asitplus.gradle.*
+import at.asitplus.gradle.at.asitplus.gradle.getBuildableTargets
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
@@ -13,7 +14,6 @@ plugins {
 
 val artifactVersion: String by extra
 version = artifactVersion
-
 
 private val Pair<*, String?>.comment: String? get() = this.second
 private val Pair<String, *>.oid: String? get() = this.first

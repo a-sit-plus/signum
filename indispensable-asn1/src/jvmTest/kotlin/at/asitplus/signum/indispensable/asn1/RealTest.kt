@@ -4,7 +4,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.decodeToDouble
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import com.ionspin.kotlin.bignum.decimal.BigDecimal
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.longs.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
