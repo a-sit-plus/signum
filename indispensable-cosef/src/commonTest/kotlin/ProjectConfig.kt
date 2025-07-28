@@ -4,9 +4,5 @@ import at.asitplus.test.JUnitXmlReporter
 import io.kotest.core.config.AbstractProjectConfig
 import io.kotest.core.extensions.Extension
 
-/**
- * Multiplatform Kotest project configuration that records
- *  • every finished TestCase
- *  • every single invocation of those tests
- */
+/** Wires KMP JUnit XML reporting */
 class ProjectConfig : XmlReportingProjectConfig()
