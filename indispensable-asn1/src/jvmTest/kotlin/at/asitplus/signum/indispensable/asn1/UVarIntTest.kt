@@ -3,7 +3,7 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb

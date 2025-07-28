@@ -3,6 +3,8 @@
 ## 3.0
 
 ### NEXT
+* Kotest 6.0.0.M6
+* Remove Kotest Workarounds
 
 ### 3.17.0 (Supreme 0.9.0)
 * **KDF Support**

@@ -1,7 +1,7 @@
 package at.asitplus.signum.supreme.dsl
 
 import io.kotest.assertions.fail
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 
 /* All options classes need to inherit from DSL.Data; it is also annotated with a DSL marker */

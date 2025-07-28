@@ -7,7 +7,7 @@ import com.ionspin.kotlin.bignum.integer.Quadruple
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.integer.util.fromTwosComplementByteArray
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import org.bouncycastle.jce.ECNamedCurveTable

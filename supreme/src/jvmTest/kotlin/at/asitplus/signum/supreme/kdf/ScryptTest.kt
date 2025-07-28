@@ -8,7 +8,7 @@ import at.asitplus.signum.internals.view
 import at.asitplus.signum.supreme.b
 import com.lambdaworks.crypto.SCrypt
 import io.kotest.assertions.withClue
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.Exhaustive

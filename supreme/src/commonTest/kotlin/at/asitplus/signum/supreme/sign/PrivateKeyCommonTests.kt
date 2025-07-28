@@ -5,7 +5,7 @@ import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.supreme.isSuccess
 import at.asitplus.signum.supreme.signature
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import kotlin.random.Random
 

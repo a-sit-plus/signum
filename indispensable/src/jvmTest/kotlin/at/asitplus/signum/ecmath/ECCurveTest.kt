@@ -1,8 +1,8 @@
-package at.asitplus.signum.indispensable.ecmath
+package at.asitplus.signum.ecmath
 
 import at.asitplus.signum.indispensable.ECCurve
 import com.ionspin.kotlin.bignum.integer.toBigInteger
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 
 /**

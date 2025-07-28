@@ -9,7 +9,7 @@ import at.asitplus.signum.supreme.symmetric.decrypt
 import at.asitplus.signum.supreme.symmetric.discouraged.andPredefinedNonce
 import at.asitplus.signum.supreme.symmetric.discouraged.encrypt
 import at.asitplus.signum.supreme.symmetric.encrypt
-import at.asitplus.test.FreeSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
