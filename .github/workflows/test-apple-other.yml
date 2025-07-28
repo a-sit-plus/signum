@@ -11,7 +11,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - name: Checkout (default)
         if: github.event_name != 'pull_request'
@@ -41,7 +41,7 @@ jobs:
       - name: Run tests
         run: ./gradlew tvosX64Test tvosSimulatorArm64Test watchosSimulatorArm64Test watchosX64Test iosX64Test macosArm64Test macosX64Test -x :supreme:linkDebugTestIosX64 -x :supreme:iosX64Test
       - name: Test Report
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v2
         if: success() || failure()
         with:
           name: iOS Tests
