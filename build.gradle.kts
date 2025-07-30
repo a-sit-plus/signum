@@ -44,7 +44,6 @@ allprojects {
     group = rootProject.group
 }
 
-
 subprojects {
     afterEvaluate {
         val targets = project.extensions.getByType<KotlinMultiplatformExtension>().targets
