@@ -6,10 +6,9 @@ import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.misc.BitLength
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.Month
 import kotlinx.datetime.number
-import kotlin.collections.Set
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -142,7 +141,7 @@ class AuthorizationList(
         attestationIdSecondImei     : AttestationId.SecondImei?    = null,
         moduleHash                  : ModuleHash?                  = null,
         // @formatter:on
-        attestationVersion : Int? = null,
+        attestationVersion: Int? = null,
     ) : this(
         // @formatter:off
         purpose                     = purpose                    ?.map { KmmResult.success(it) }?.toSet(),
@@ -201,33 +200,26 @@ class AuthorizationList(
     }
 
     fun versionCheck() {
-        if(attestationVersion != null)
-        {
-            if(attestationVersion < 400)
-            {
+        if (attestationVersion != null) {
+            if (attestationVersion < 400) {
                 require(moduleHash == null)
             }
-            if(attestationVersion < 300)
-            {
+            if (attestationVersion < 300) {
                 require(attestationIdSecondImei == null)
             }
             // no changes from 100 to 200
-            if(attestationVersion < 100)
-            {
+            if (attestationVersion < 100) {
                 require(mgfDigest == null) // isNullOrEmpty ? TODO
                 require(usageCountLimit == null)
             }
-            if(attestationVersion > 4)
-            {
+            if (attestationVersion > 4) {
                 require(allApplications == null)
             }
-            if(attestationVersion < 4)
-            {
+            if (attestationVersion < 4) {
                 require(earlyBootOnly == null)
                 require(deviceUniqueAttestation == null)
             }
-            if(attestationVersion < 3)
-            {
+            if (attestationVersion < 3) {
                 require(rollbackResistance == null)
                 require(trustedUserPresenceRequired == null)
                 require(trustedConfirmationRequired == null)
@@ -236,12 +228,10 @@ class AuthorizationList(
                 require(bootPatchLevel == null)
                 //if(rootOfTrust != null) require(rootOfTrust.getOrNull().verifiedBootHash == 0) // TODO decoding must be changed!!
             }
-            if(attestationVersion > 2)
-            {
+            if (attestationVersion > 2) {
                 require(rollbackResistant == null)
             }
-            if(attestationVersion < 2)
-            {
+            if (attestationVersion < 2) {
                 require(attestationApplicationId == null)
                 require(attestationIdBrand == null)
                 require(attestationIdDevice == null)
@@ -911,12 +901,14 @@ class AuthorizationList(
         val verifiedBootHash: ByteArray
     ) : Asn1Encodable<Asn1Sequence>, Tagged.WithTag<Asn1Sequence> {
         companion object Tag : Tagged(704uL), Asn1Decodable<Asn1Sequence, RootOfTrust> {
-            override fun doDecode(src: Asn1Sequence) = RootOfTrust(
-                src.nextChild().asPrimitive().content,
-                src.nextChild().asPrimitive().decodeToBoolean(),
-                VerifiedBootState.decodeFromTlv(src.nextChild().asPrimitive()),
-                src.nextChild().asPrimitive().content
-            )
+            override fun doDecode(src: Asn1Sequence) = src.iterator().run {
+                RootOfTrust(
+                    next().asPrimitive().content,
+                    next().asPrimitive().decodeToBoolean(),
+                    VerifiedBootState.decodeFromTlv(next().asPrimitive()),
+                    next().asPrimitive().content
+                )
+            }
         }
 
         override val tagged get() = Tag
@@ -1030,11 +1022,13 @@ class AuthorizationList(
         private val encodeSorted: Boolean
     ) : Asn1Encodable<Asn1Sequence>, Tagged.WithTag<Asn1Sequence> {
         companion object Tag : Tagged(709uL), Asn1Decodable<Asn1Sequence, AttestationApplicationId> {
-            override fun doDecode(src: Asn1Sequence) = AttestationApplicationId(
-                src.nextChild().asSet().children.map { AttestationPackageInfo.decodeFromTlv(it.asSequence()) },
-                src.nextChild().asSet().children.map { it.asOctetString().content },
-                encodeSorted = false
-            )
+            override fun doDecode(src: Asn1Sequence) = src.iterator().run {
+                AttestationApplicationId(
+                    next().asSet().children.map { AttestationPackageInfo.decodeFromTlv(it.asSequence()) },
+                    next().asSet().children.map { it.asOctetString().content },
+                    encodeSorted = false
+                )
+            }
         }
 
         constructor(packageInfos: Set<AttestationPackageInfo>, signatureDigests: Set<ByteArray>)
@@ -1101,10 +1095,12 @@ class AuthorizationList(
     ) : Asn1Encodable<Asn1Sequence> {
         companion object :
             Asn1Decodable<Asn1Sequence, AttestationPackageInfo> {
-            override fun doDecode(src: Asn1Sequence) = AttestationPackageInfo(
-                src.nextChild().asOctetString().content.decodeToString(),
-                src.nextChild().asPrimitive().decodeToUInt()
-            )
+            override fun doDecode(src: Asn1Sequence) = src.iterator().run {
+                AttestationPackageInfo(
+                    next().asOctetString().content.decodeToString(),
+                    next().asPrimitive().decodeToUInt()
+                )
+            }
         }
 
         override fun encodeToTlv() = Asn1.Sequence {

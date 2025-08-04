@@ -53,16 +53,19 @@ class SecureKeyWrapper(
     }
 
     companion object : Asn1Decodable<Asn1Sequence, SecureKeyWrapper> {
-        override fun doDecode(src: Asn1Sequence) = SecureKeyWrapper(
-            src.nextChild().asPrimitive().decodeToInt(),
-            src.nextChild().asOctetString().content,
-            src.nextChild().asOctetString().content,
-            KeyDescription.decodeFromTlv(src.nextChild().asSequence()),
-            src.nextChild().asOctetString().content,
-            src.nextChild().asOctetString().content,
-        ) //more content is OK. This way we allow future versions which may add stuff to work
+        override fun doDecode(src: Asn1Sequence) = src.iterator().run {
+            SecureKeyWrapper(
+                next().asPrimitive().decodeToInt(),
+                next().asOctetString().content,
+                next().asOctetString().content,
+                KeyDescription.decodeFromTlv(next().asSequence()),
+                next().asOctetString().content,
+                next().asOctetString().content,
+            )
+        } //more content is OK. This way we allow future versions which may add stuff to work
     }
 }
+
 
 class KeyDescription(
     val keyFormat: KeyFormat,
@@ -88,9 +91,11 @@ class KeyDescription(
     }
 
     companion object : Asn1Decodable<Asn1Sequence, KeyDescription> {
-        override fun doDecode(src: Asn1Sequence) = KeyDescription(
-            KeyFormat.decodeFromTlv(src.nextChild().asPrimitive()),
-            AuthorizationList.decodeFromTlv(src.nextChild().asSequence())
-        ) //more content is OK. This way we allow future versions which may add stuff to work
+        override fun doDecode(src: Asn1Sequence) = src.iterator().run {
+            KeyDescription(
+                KeyFormat.decodeFromTlv(next().asPrimitive()),
+                AuthorizationList.decodeFromTlv(next().asSequence())
+            ) //more content is OK. This way we allow future versions which may add stuff to work
+        }
     }
 }

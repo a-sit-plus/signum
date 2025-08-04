@@ -107,16 +107,16 @@ class AttestationKeyDescription(
 
     companion object : Identifiable, Asn1Decodable<Asn1Sequence, AttestationKeyDescription> {
         override val oid = ObjectIdentifier("1.3.6.1.4.1.11129.2.1.17")
-        override fun doDecode(src: Asn1Sequence): AttestationKeyDescription {
-            val version = src.nextChild().asPrimitive().decodeToInt()
+        override fun doDecode(src: Asn1Sequence): AttestationKeyDescription = src.iterator().run {
+            val version = next().asPrimitive().decodeToInt()
             val attestationSecurityLevel =
-                SecurityLevel.decodeFromTlv(src.nextChild().asPrimitive())
-            val keyMintVersion = src.nextChild().asPrimitive().decodeToInt()
-            val keyMintSecurityLevel = SecurityLevel.decodeFromTlv(src.nextChild().asPrimitive())
-            val attestationChallenge = src.nextChild().asOctetString().content
-            val uniqueId = src.nextChild().asOctetString().content
-            val softwareEnforced = AuthorizationList.decodeFromTlv(src.nextChild().asSequence())
-            val hardwareEnforced = AuthorizationList.decodeFromTlv(src.nextChild().asSequence())
+                SecurityLevel.decodeFromTlv(next().asPrimitive())
+            val keyMintVersion = next().asPrimitive().decodeToInt()
+            val keyMintSecurityLevel = SecurityLevel.decodeFromTlv(next().asPrimitive())
+            val attestationChallenge = next().asOctetString().content
+            val uniqueId = next().asOctetString().content
+            val softwareEnforced = AuthorizationList.decodeFromTlv(next().asSequence())
+            val hardwareEnforced = AuthorizationList.decodeFromTlv(next().asSequence())
             //if there's more, we don't are not allowed to care
             return AttestationKeyDescription(
                 version,
