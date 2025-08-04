@@ -1,5 +1,4 @@
 package at.asitplus.signum.indispensable.pki.attestation
-
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoPublicKey.Companion.decodeFromDer
 import at.asitplus.signum.indispensable.toJcaPublicKey

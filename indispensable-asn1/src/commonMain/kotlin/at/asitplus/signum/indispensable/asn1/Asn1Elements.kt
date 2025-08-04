@@ -29,6 +29,11 @@ sealed class Asn1Element(
 
     }
 
+    /**
+     * performs a deep copy of this element, including all its children
+     */
+    abstract fun copy(): Asn1Element
+
     companion object {
         /**
          * Convenience method to directly parse a HEX-string representation of DER-encoded data.
@@ -819,6 +824,8 @@ internal constructor(tag: ULong, children: List<Asn1Element>) :
      */
     fun verifyTagOrNull(explicitTag: Tag) = catchingUnwrapped { verifyTag(explicitTag) }.getOrNull()
 
+    override fun copy(): Asn1ExplicitlyTagged = Asn1ExplicitlyTagged(tag.tagValue, children.map { it.copy() })
+
     override fun prettyPrintHeader(indent: Int) = (" " * indent) + "Tagged" + super.prettyPrintHeader(indent)
 }
 
@@ -828,6 +835,8 @@ internal constructor(tag: ULong, children: List<Asn1Element>) :
  */
 class Asn1Sequence internal constructor(children: List<Asn1Element>) :
     Asn1Structure(Tag.SEQUENCE, children, sortChildren = false, shouldBeSorted = false) {
+
+    override fun copy(): Asn1Sequence = Asn1Sequence(children.map { it.copy() })
 
     init {
         if (!tag.isConstructed) throw IllegalArgumentException("An ASN.1 Structure must have a CONSTRUCTED tag")
@@ -890,6 +899,9 @@ class Asn1CustomStructure private constructor(
         else null
     }
 
+    override fun copy(): Asn1CustomStructure =
+        Asn1CustomStructure(tag, children.map { it.copy() }, sortChildren = false, shouldBeSorted)
+
     override fun prettyPrintHeader(indent: Int) =
         (" " * indent) + tag.tagClass +
                 " ${tag.tagValue}" +
@@ -940,6 +952,8 @@ class Asn1EncapsulatingOctetString(children: List<Asn1Element>) :
         return super.equals(other)
     }
 
+    override fun copy(): Asn1EncapsulatingOctetString = Asn1EncapsulatingOctetString(children.map { it.copy() })
+
     override fun hashCode(): Int = content.contentHashCode()
 
     override fun prettyPrintHeader(indent: Int) =
@@ -962,6 +976,8 @@ class Asn1PrimitiveOctetString(content: ByteArray) : Asn1Primitive(Tag.OCTET_STR
         return super.equals(other)
     }
 
+    override fun copy(): Asn1PrimitiveOctetString = Asn1PrimitiveOctetString(content.copyOf())
+
     override fun hashCode(): Int = content.contentHashCode()
 
     override fun prettyPrintHeader(indent: Int) = (" " * indent) + "OCTET STRING " + super.prettyPrintHeader(0)
@@ -978,6 +994,8 @@ open class Asn1Set private constructor(children: List<Asn1Element>, dontSort: Bo
      * @param children the elements to put into this set. will be automatically sorted by tag
      */
     internal constructor(children: List<Asn1Element>) : this(children, false)
+
+    override fun copy(): Asn1Set = Asn1Set(children.map { it.copy() }, dontSort = true)
 
     init {
         if (!tag.isConstructed) throw IllegalArgumentException("An ASN.1 Structure must have a CONSTRUCTED tag")
@@ -1073,6 +1091,8 @@ open class Asn1Primitive(
 
         return true
     }
+
+    override fun copy(): Asn1Primitive = Asn1Primitive(tag.tagValue, content.copyOf())
 }
 
 
@@ -1094,6 +1114,11 @@ sealed interface Asn1OctetString {
      * It makes sense to have this for both kinds of octet strings, since many intermediate processing steps don't care about semantics.
      */
     val content: ByteArray
+
+    /**
+     * Creates a deep copy fo this octet string.
+     */
+    fun copy(): Asn1OctetString
 
     companion object {
         /** Constructs a new ASN.1 OCTET STRING primitive containing these bytes */
