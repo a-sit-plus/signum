@@ -4,29 +4,24 @@ import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.pki.attestation.AuthorizationList
 import at.asitplus.signum.indispensable.pki.attestation.KeyDescription
 import at.asitplus.signum.indispensable.pki.attestation.SecureKeyWrapper
-import at.asitplus.signum.indispensable.toJcaPublicKey
+import at.asitplus.signum.indispensable.symmetric.*
+import at.asitplus.signum.supreme.asymmetric.encryptorFor
 import at.asitplus.signum.supreme.sign.Signer
+import at.asitplus.signum.supreme.symmetric.encrypt
 import io.kotest.core.spec.style.FreeSpec
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.Security
-import java.security.spec.MGF1ParameterSpec
-import java.util.*
-import javax.crypto.Cipher
-import javax.crypto.spec.GCMParameterSpec
-import javax.crypto.spec.OAEPParameterSpec
-import javax.crypto.spec.PSource
-import javax.crypto.spec.SecretKeySpec
-import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
 
 
 @OptIn(SecretExposure::class)
-class `0000000SecureKeyWrapperTest` : FreeSpec({
+class SecureKeyWrapperTest : FreeSpec({
     Security.addProvider(BouncyCastleProvider())
 
     "mock tests" {
@@ -47,6 +42,8 @@ class `0000000SecureKeyWrapperTest` : FreeSpec({
             makeEcAuthList(256.bit)
         )
 
+        //TODO make this into an instrumented test that acutally imports a key, does some magic with teh private key
+        // and then use the key material to verify
         println(securedKey.encodeToTlv().prettyPrint())
     }
 })
@@ -73,51 +70,35 @@ private fun makeEcAuthList(size: BitLength): AuthorizationList {
     )
 }
 
+@OptIn(SecretExposure::class)
 @Throws(Exception::class)
-fun wrapKey(
+suspend fun wrapKey(
     publicKey: CryptoPublicKey, keyMaterial: CryptoPrivateKey,
     authorizationList: AuthorizationList
 ): SecureKeyWrapper {
+
     // Build description
-
-
     val descriptionItems = KeyDescription(KeyDescription.KeyFormat.PKCS8, authorizationList)
 
-    // Generate 12 byte initialization vector
-    val iv = ByteArray(12)
-    Random.nextBytes(iv)
     // Generate 256 bit AES key. This is the ephemeral key used to encrypt the secure key.
-    val aesKeyBytes = ByteArray(32)
-    Random.nextBytes(aesKeyBytes)
-    // Encrypt ephemeral keys
-    val spec =
-        OAEPParameterSpec(
-            "SHA-256", "MGF1", MGF1ParameterSpec.SHA1, PSource.PSpecified.DEFAULT
-        )
-    val pkCipher = Cipher.getInstance("RSA/ECB/OAEPPadding")
-    pkCipher.init(Cipher.ENCRYPT_MODE, publicKey.toJcaPublicKey().getOrThrow(), spec)
-    val encryptedEphemeralKeys = pkCipher.doFinal(aesKeyBytes)
+    val randomKey = SymmetricEncryptionAlgorithm.AES_256.GCM.randomKey()
+    val aesKeyBytes = randomKey.secretKey.getOrThrow()
+
+    val encryptor = AsymmetricEncryptionAlgorithm.RSA.OAEP.SHA256.encryptorFor(publicKey)
+    val encryptedEphemeralKeys = encryptor.encrypt(aesKeyBytes).getOrThrow()
+
     // Encrypt secure key
-    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-    val secretKeySpec = SecretKeySpec(aesKeyBytes, "AES")
-    val gcmParameterSpec = GCMParameterSpec(128, iv)
-    cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, gcmParameterSpec)
-    val aad: ByteArray = descriptionItems.encodeToDer()
-    cipher.updateAAD(aad)
-    var encryptedSecureKey = cipher.doFinal(keyMaterial.encodeToDer())
-    // Get GCM tag. Java puts the tag at the end of the ciphertext data :(
-    val len = encryptedSecureKey.size
-    val tagSize: Int = (128 / 8)
-    val tag: ByteArray = Arrays.copyOfRange(encryptedSecureKey, len - tagSize, len)
-    // Remove GCM tag from end of output
-    encryptedSecureKey = Arrays.copyOfRange(encryptedSecureKey, 0, len - tagSize)
+    val encryptedSecureKey =
+        randomKey.encrypt(data = keyMaterial.encodeToDer(), authenticatedData = descriptionItems.encodeToDer())
+            .getOrThrow()
+
     // Build ASN.1 DER encoded sequence WrappedKeyWrapper
     return SecureKeyWrapper(
         encryptedTransportKey = encryptedEphemeralKeys,
-        initializationVector = iv,
+        initializationVector = encryptedSecureKey.nonce,
         keyDescription = descriptionItems,
-        secureKey = encryptedSecureKey,
-        tag = tag
+        secureKey = encryptedSecureKey.encryptedData,
+        tag = encryptedSecureKey.authTag
     )
 
 }
