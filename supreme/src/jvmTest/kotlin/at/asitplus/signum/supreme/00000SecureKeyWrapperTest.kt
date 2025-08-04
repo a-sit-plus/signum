@@ -3,13 +3,13 @@ package at.asitplus.signum
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.pki.attestation.AuthorizationList
 import at.asitplus.signum.indispensable.pki.attestation.KeyDescription
 import at.asitplus.signum.indispensable.pki.attestation.SecureKeyWrapper
 import at.asitplus.signum.indispensable.toJcaPublicKey
-import at.asitplus.signum.supreme.SecretExposure
 import at.asitplus.signum.supreme.sign.Signer
 import io.kotest.core.spec.style.FreeSpec
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -68,7 +68,8 @@ private fun makeEcAuthList(size: BitLength): AuthorizationList {
         keySize = keySize,
         digest = digests,
         userAuthType = AuthorizationList.UserAuthType.FINGERPRINT,
-        authTimeout = AuthorizationList.AuthTimeout(5.seconds)
+        authTimeout = AuthorizationList.AuthTimeout(5.seconds),
+        attestationVersion = null
     )
 }
 
