@@ -48,7 +48,7 @@ class CoseSignedSerializer<P : Any?>(
         )
         val protectedHeader = wire.protectedHeader.toHeader()
         val signature = wire.rawAuthBytes.toSignature(protectedHeader, wire.unprotectedHeader)
-        return CoseSigned<P>(
+        return CoseSigned(
             protectedHeader = protectedHeader,
             unprotectedHeader = wire.unprotectedHeader,
             payload = wire.payload.toNullablePayload(parameterSerializer),
@@ -58,12 +58,15 @@ class CoseSignedSerializer<P : Any?>(
     }
 }
 
+/**
+ * Serializes [CoseMac] with a typed payload, by using its [CoseMac.wireFormat].
+ * Also handles deserialization of the bytes.
+ */
 class CoseMacSerializer<P : Any?>(
     private val parameterSerializer: KSerializer<P>,
 ) : KSerializer<CoseMac<P>> {
 
-    override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor("CoseMac", PrimitiveKind.BYTE)
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("CoseMac", PrimitiveKind.BYTE)
 
     override fun serialize(encoder: Encoder, value: CoseMac<P>) {
         if (encoder is CborEncoder) {
@@ -83,7 +86,7 @@ class CoseMacSerializer<P : Any?>(
         )
         val protectedHeader = wire.protectedHeader.toHeader()
         val tag = wire.rawAuthBytes
-        return CoseMac<P>(
+        return CoseMac(
             protectedHeader = protectedHeader,
             unprotectedHeader = wire.unprotectedHeader,
             payload = wire.payload.toNullablePayload(parameterSerializer),

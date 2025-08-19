@@ -12,10 +12,10 @@ import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
 
 /**
- * Representation of a signed `COSE_Sign1` object, i.e. consisting of protected header, unprotected header and payload.
- * It represents the bytes of the object as it has been transferred, i.e. useful for signature verification.
+ * Representation of a signed `COSE_Sign1/COSE_MAC0` object, i.e. consisting of protected header, unprotected header and payload.
+ * It represents the bytes of the object as it has been transferred, i.e. useful for signature/hmac verification.
  *
- * For the class using typed payloads, see [CoseSigned].
+ * For the class using typed payloads, see [CoseSigned] and [CoseMac].
  *
  * See [RFC 9052](https://www.rfc-editor.org/rfc/rfc9052.html).
  */
@@ -31,10 +31,7 @@ data class CoseBytes internal constructor(
     @ByteString
     val rawAuthBytes: ByteArray,
 ) {
-    /**
-     * @param detachedPayload only to be set when [payload] is null, i.e. it is transported externally,
-     * as it ignores the [payload] member
-     */
+
     internal fun toCoseSignatureInput(
         externalAad: ByteArray = byteArrayOf(),
         detachedPayload: ByteArray? = null,
@@ -45,6 +42,10 @@ data class CoseBytes internal constructor(
         detachedPayload: ByteArray? = null,
     ): ByteArray = toCoseInput(externalAad, detachedPayload, "MAC0")
 
+    /**
+     * @param detachedPayload only to be set when [payload] is null, i.e. it is transported externally,
+     * as it ignores the [payload] member
+     */
     private fun toCoseInput(
         externalAad: ByteArray = byteArrayOf(),
         detachedPayload: ByteArray? = null,

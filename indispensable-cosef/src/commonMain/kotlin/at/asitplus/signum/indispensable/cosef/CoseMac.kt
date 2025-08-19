@@ -12,6 +12,9 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToByteArray
 
+/**
+ * Representation of a COSE_MAC0 object with the tag value, i.e. consisting of protected header, unprotected header and payload.
+ */
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable(with = CoseMacSerializer::class)
 @ConsistentCopyVisibility

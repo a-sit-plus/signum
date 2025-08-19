@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.signum.indispensable.CryptoSignature
-import at.asitplus.signum.indispensable.HMAC
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
@@ -245,11 +244,11 @@ class CoseSerializationTest : FreeSpec({
 
     "Serialization is correct for data class CoseMac" {
         val payload = DataClass("This is the content.")
-        val cose = CoseSigned.create(
+        val cose = CoseMac.create(
             protectedHeader = CoseHeader(algorithm = CoseAlgorithm.MAC.HS256),
             unprotectedHeader = null,
             payload = payload,
-            signature = CryptoSignature.RSA("bar".encodeToByteArray()), //RSAorHMAC because EC expects tuple
+            tag = byteArrayOf(),
             payloadSerializer = DataClass.serializer(),
         )
         val serialized = cose.serialize(DataClass.serializer())
@@ -259,7 +258,7 @@ class CoseSerializationTest : FreeSpec({
         serializedString shouldContain "8443A10105" // array of 3 bytes that is a map with 4 (the header for HMAC256)
         cose.payload shouldBe payload
 
-        CoseSigned.deserialize(DataClass.serializer(), serialized).getOrThrow() shouldBe cose
+        CoseMac.deserialize(DataClass.serializer(), serialized).getOrThrow() shouldBe cose
     }
 
     "Deserialization is correct for data class CoseSigned" {
@@ -323,10 +322,10 @@ class CoseSerializationTest : FreeSpec({
         cose.payload shouldBe "This is the content.".encodeToByteArray()
     }
 
-    "CoseSignatureInput is correct for ByteArray" {
+    "CoseInput is correct for ByteArray" {
         val payload = Random.nextBytes(32)
-        val header = CoseHeader(algorithm = CoseAlgorithm.Signature.ES256)
-        val inputManual = coseCompliantSerializer.encodeToByteArray(
+        var header = CoseHeader(algorithm = CoseAlgorithm.Signature.ES256)
+        val inputManualSignature = coseCompliantSerializer.encodeToByteArray(
             CoseInput(
                 contextString = "Signature1",
                 protectedHeader = coseCompliantSerializer.encodeToByteArray(header),
@@ -335,7 +334,7 @@ class CoseSerializationTest : FreeSpec({
             )
         ).encodeToString(Base16())
 
-        val inputObject = CoseSigned.create(
+        val inputObjectSignature = CoseSigned.create(
             protectedHeader = header,
             payload = payload,
             signature = CryptoSignature.RSA("bar".encodeToByteArray()),
@@ -343,14 +342,35 @@ class CoseSerializationTest : FreeSpec({
         ).prepareCoseSignatureInput(byteArrayOf())
             .encodeToString(Base16())
 
-        inputManual.shouldContain("Signature1".encodeToByteArray().encodeToString(Base16()))
-        inputObject shouldBe inputManual
+        inputManualSignature.shouldContain("Signature1".encodeToByteArray().encodeToString(Base16()))
+        inputObjectSignature shouldBe inputManualSignature
+
+        header = CoseHeader(algorithm = CoseAlgorithm.MAC.HS256)
+        val inputManualMac = coseCompliantSerializer.encodeToByteArray(
+            CoseInput(
+                contextString = "MAC0",
+                protectedHeader = coseCompliantSerializer.encodeToByteArray(header),
+                externalAad = byteArrayOf(),
+                payload = payload
+            )
+        ).encodeToString(Base16())
+
+        val inputObjectMac = CoseMac.create(
+            protectedHeader = header,
+            payload = payload,
+            tag = byteArrayOf(),
+            payloadSerializer = ByteArraySerializer(),
+        ).prepareCoseMacInput(byteArrayOf())
+            .encodeToString(Base16())
+
+        inputManualMac.shouldContain("MAC0".encodeToByteArray().encodeToString(Base16()))
+        inputObjectMac shouldBe inputManualMac
     }
 
-    "CoseSignatureInput is correct for custom types" {
+    "CoseInput is correct for custom types" {
         val payload = DataClass(Random.nextBytes(32).encodeToString(Base16Strict))
-        val header = CoseHeader(algorithm = CoseAlgorithm.Signature.ES256)
-        val inputManual = coseCompliantSerializer.encodeToByteArray(
+        var header = CoseHeader(algorithm = CoseAlgorithm.Signature.ES256)
+        val inputManualSignature = coseCompliantSerializer.encodeToByteArray(
             CoseInput(
                 contextString = "Signature1",
                 protectedHeader = coseCompliantSerializer.encodeToByteArray(header),
@@ -359,7 +379,7 @@ class CoseSerializationTest : FreeSpec({
             )
         ).encodeToString(Base16())
 
-        val inputObject = CoseSigned.create(
+        val inputObjectSignature = CoseSigned.create(
             protectedHeader = header,
             payload = payload,
             signature = CryptoSignature.RSA("bar".encodeToByteArray()),
@@ -367,8 +387,29 @@ class CoseSerializationTest : FreeSpec({
         ).prepareCoseSignatureInput(byteArrayOf())
             .encodeToString(Base16())
 
-        inputManual.shouldContain("Signature1".encodeToByteArray().encodeToString(Base16()))
-        inputObject shouldBe inputManual
+        inputManualSignature.shouldContain("Signature1".encodeToByteArray().encodeToString(Base16()))
+        inputObjectSignature shouldBe inputManualSignature
+
+        header = CoseHeader(algorithm = CoseAlgorithm.MAC.HS256)
+        val inputManualMac = coseCompliantSerializer.encodeToByteArray(
+            CoseInput(
+                contextString = "MAC0",
+                protectedHeader = coseCompliantSerializer.encodeToByteArray(header),
+                externalAad = byteArrayOf(),
+                payload = coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload)).wrapInCborTag(24),
+            )
+        ).encodeToString(Base16())
+
+        val inputObjectMac = CoseMac.create(
+            protectedHeader = header,
+            payload = payload,
+            tag = byteArrayOf(),
+            payloadSerializer = DataClass.serializer(),
+        ).prepareCoseMacInput(byteArrayOf())
+            .encodeToString(Base16())
+
+        inputManualMac.shouldContain("MAC0".encodeToByteArray().encodeToString(Base16()))
+        inputObjectMac shouldBe inputManualMac
     }
 
 
