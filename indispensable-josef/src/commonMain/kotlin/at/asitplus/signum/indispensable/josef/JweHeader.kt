@@ -3,8 +3,10 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.CertificateChainBase64Serializer
+import at.asitplus.signum.indispensable.josef.io.InstantLongSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.signum.indispensable.pki.CertificateChain
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -76,6 +78,55 @@ data class JweHeader(
      */
     @SerialName("cty")
     val contentType: String? = null,
+
+    /**
+     * RFC 7519: The "nbf" (not before) claim identifies the time before which the JWT
+     * MUST NOT be accepted for processing.  The processing of the "nbf"
+     * claim requires that the current date/time MUST be after or equal to
+     * the not-before date/time listed in the "nbf" claim.  Implementers MAY
+     * provide for some small leeway, usually no more than a few minutes, to
+     * account for clock skew.  Its value MUST be a number containing a
+     * NumericDate value.  Use of this claim is OPTIONAL.
+     */
+    @SerialName("nbf")
+    @Serializable(with = InstantLongSerializer::class)
+    val notBefore: Instant? = null,
+
+    /**
+     * RFC 7519: The "iat" (issued at) claim identifies the time at which the JWT was
+     * issued.  This claim can be used to determine the age of the JWT.  Its
+     * value MUST be a number containing a NumericDate value.  Use of this
+     * claim is OPTIONAL.
+     */
+    @SerialName("iat")
+    @Serializable(with = InstantLongSerializer::class)
+    val issuedAt: Instant? = null,
+
+    /**
+     * RFC 7519: The "exp" (expiration time) claim identifies the expiration time on
+     * or after which the JWT MUST NOT be accepted for processing.  The
+     * processing of the "exp" claim requires that the current date/time
+     * MUST be before the expiration date/time listed in the "exp" claim.
+     * Implementers MAY provide for some small leeway, usually no more than
+     * a few minutes, to account for clock skew.  Its value MUST be a number
+     * containing a NumericDate value.  Use of this claim is OPTIONAL.
+     */
+    @SerialName("exp")
+    @Serializable(with = InstantLongSerializer::class)
+    val expiration: Instant? = null,
+
+    /**
+     * RFC 7519: The "jti" (JWT ID) claim provides a unique identifier for the JWT.
+     * The identifier value MUST be assigned in a manner that ensures that
+     * there is a negligible probability that the same value will be
+     * accidentally assigned to a different data object; if the application
+     * uses multiple issuers, collisions MUST be prevented among values
+     * produced by different issuers as well.  The "jti" claim can be used
+     * to prevent the JWT from being replayed.  The "jti" value is a case-
+     * sensitive string.  Use of this claim is OPTIONAL.
+     */
+    @SerialName("jti")
+    val jwtId: String? = null,
 
     /**
      * This parameter has the same meaning, syntax, and processing rules as
@@ -228,35 +279,22 @@ data class JweHeader(
         if (keyId != other.keyId) return false
         if (type != other.type) return false
         if (contentType != other.contentType) return false
+        if (notBefore != other.notBefore) return false
+        if (issuedAt != other.issuedAt) return false
+        if (expiration != other.expiration) return false
+        if (jwtId != other.jwtId) return false
         if (jsonWebKey != other.jsonWebKey) return false
         if (jsonWebKeyUrl != other.jsonWebKeyUrl) return false
         if (ephemeralKeyPair != other.ephemeralKeyPair) return false
-        if (agreementPartyUInfo != null) {
-            if (other.agreementPartyUInfo == null) return false
-            if (!agreementPartyUInfo.contentEquals(other.agreementPartyUInfo)) return false
-        } else if (other.agreementPartyUInfo != null) return false
-        if (agreementPartyVInfo != null) {
-            if (other.agreementPartyVInfo == null) return false
-            if (!agreementPartyVInfo.contentEquals(other.agreementPartyVInfo)) return false
-        } else if (other.agreementPartyVInfo != null) return false
-        if (initializationVector != null) {
-            if (other.initializationVector == null) return false
-            if (!initializationVector.contentEquals(other.initializationVector)) return false
-        } else if (other.initializationVector != null) return false
-        if (authenticationTag != null) {
-            if (other.authenticationTag == null) return false
-            if (!authenticationTag.contentEquals(other.authenticationTag)) return false
-        } else if (other.authenticationTag != null) return false
+        if (!agreementPartyUInfo.contentEquals(other.agreementPartyUInfo)) return false
+        if (!agreementPartyVInfo.contentEquals(other.agreementPartyVInfo)) return false
+        if (!initializationVector.contentEquals(other.initializationVector)) return false
+        if (!authenticationTag.contentEquals(other.authenticationTag)) return false
         if (certificateUrl != other.certificateUrl) return false
         if (certificateChain != other.certificateChain) return false
-        if (certificateSha1Thumbprint != null) {
-            if (other.certificateSha1Thumbprint == null) return false
-            if (!certificateSha1Thumbprint.contentEquals(other.certificateSha1Thumbprint)) return false
-        } else if (other.certificateSha1Thumbprint != null) return false
-        if (certificateSha256Thumbprint != null) {
-            if (other.certificateSha256Thumbprint == null) return false
-            if (!certificateSha256Thumbprint.contentEquals(other.certificateSha256Thumbprint)) return false
-        } else if (other.certificateSha256Thumbprint != null) return false
+        if (!certificateSha1Thumbprint.contentEquals(other.certificateSha1Thumbprint)) return false
+        if (!certificateSha256Thumbprint.contentEquals(other.certificateSha256Thumbprint)) return false
+        if (publicKey != other.publicKey) return false
 
         return true
     }
@@ -267,6 +305,10 @@ data class JweHeader(
         result = 31 * result + (keyId?.hashCode() ?: 0)
         result = 31 * result + (type?.hashCode() ?: 0)
         result = 31 * result + (contentType?.hashCode() ?: 0)
+        result = 31 * result + (notBefore?.hashCode() ?: 0)
+        result = 31 * result + (issuedAt?.hashCode() ?: 0)
+        result = 31 * result + (expiration?.hashCode() ?: 0)
+        result = 31 * result + (jwtId?.hashCode() ?: 0)
         result = 31 * result + (jsonWebKey?.hashCode() ?: 0)
         result = 31 * result + (jsonWebKeyUrl?.hashCode() ?: 0)
         result = 31 * result + (ephemeralKeyPair?.hashCode() ?: 0)
@@ -278,6 +320,7 @@ data class JweHeader(
         result = 31 * result + (certificateChain?.hashCode() ?: 0)
         result = 31 * result + (certificateSha1Thumbprint?.contentHashCode() ?: 0)
         result = 31 * result + (certificateSha256Thumbprint?.contentHashCode() ?: 0)
+        result = 31 * result + (publicKey?.hashCode() ?: 0)
         return result
     }
 
