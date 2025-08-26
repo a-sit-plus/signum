@@ -12,7 +12,7 @@ plugins {
     id("io.kotest") version kotestVer
     kotlin("multiplatform") version kotlinVer apply false
     kotlin("plugin.serialization") version kotlinVer apply false
-    id("com.android.library") version libs.versions.agp.get() apply (false)
+    id("com.android.library") version libs.versions.agp.get() apply false
     id("com.google.devtools.ksp") version kspVer
 }
 group = "at.asitplus.signum"

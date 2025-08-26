@@ -115,8 +115,8 @@ class AttestationKeyDescription(
             val keyMintSecurityLevel = SecurityLevel.decodeFromTlv(next().asPrimitive())
             val attestationChallenge = next().asOctetString().content
             val uniqueId = next().asOctetString().content
-            val softwareEnforced = AuthorizationList.decodeFromTlv(next().asSequence())
-            val hardwareEnforced = AuthorizationList.decodeFromTlv(next().asSequence())
+            val softwareEnforced = AuthorizationList.decodeFromTlv(next().asSequence()).copy(attestationVersion=version)
+            val hardwareEnforced = AuthorizationList.decodeFromTlv(next().asSequence()).copy(attestationVersion=version)
             //if there's more, we don't are not allowed to care
             return AttestationKeyDescription(
                 version,

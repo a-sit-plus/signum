@@ -50,7 +50,7 @@ import kotlin.time.Duration.Companion.seconds
  * Also note that some online sources do not match the specified ASN.1 values (in the following one PKCS7 has value 65 instead of 64)
  * https://android.googlesource.com/platform/frameworks/base/+blame/45ff13e/core/java/android/security/keymaster/KeymasterDefs.java
  */
-class AuthorizationList(
+data class AuthorizationList(
     // @formatter:off
     val purpose                     : Set<AttestationValue<KeyPurpose>>?             = null,
     val algorithm                   : AttestationValue<Algorithm>?                   = null,
@@ -423,10 +423,8 @@ class AuthorizationList(
                 deviceUniqueAttestation,
                 attestationIdSecondImei,
                 moduleHash,
-                // TODO: attestationVersion!
             )
         }
-
 
         // TODO: check decode functions once more
         private inline fun <reified T : Tagged, reified D : Asn1Encodable<Asn1Element>> T.decode(src: Asn1Sequence): AttestationValue<D>? =
