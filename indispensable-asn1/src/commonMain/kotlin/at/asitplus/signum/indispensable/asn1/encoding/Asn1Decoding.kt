@@ -4,6 +4,7 @@ import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.BERTags.BMP_STRING
+import at.asitplus.signum.indispensable.asn1.BERTags.GENERAL_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.IA5_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.NUMERIC_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.PRINTABLE_STRING
@@ -375,6 +376,22 @@ inline fun Asn1Primitive.decodeToNumericString(assertTag: Asn1Element.Tag = Asn1
 @Throws(Asn1Exception::class)
 inline fun Asn1Primitive.decodeToVisibleString(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_VISIBLE) =
     runRethrowing { decode(assertTag) { Asn1String.Visible(content) } }
+
+@Throws(Asn1Exception::class)
+inline fun Asn1Primitive.decodeToGeneralString(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_GENERAL) =
+    runRethrowing { decode(assertTag) { Asn1String.General(content) } }
+
+@Throws(Asn1Exception::class)
+inline fun Asn1Primitive.decodeToGraphicString(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_GRAPHIC) =
+    runRethrowing { decode(assertTag) { Asn1String.Graphic(content) } }
+
+@Throws(Asn1Exception::class)
+inline fun Asn1Primitive.decodeToUnrestrictedString(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_UNRESTRICTED) =
+    runRethrowing { decode(assertTag) { Asn1String.Unrestricted(content) } }
+
+@Throws(Asn1Exception::class)
+inline fun Asn1Primitive.decodeToVideotexString(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_VIDEOTEX) =
+    runRethrowing { decode(assertTag) { Asn1String.Videotex(content) } }
 
 
 /**
