@@ -332,49 +332,49 @@ inline fun Asn1Primitive.decodeToFloatOrNull(assertTag: Asn1Element.Tag = Asn1El
 // If the implicit tag is used, the caller needs to call one of the methods for decoding to specific Asn1String types
 fun Asn1Primitive.asAsn1String(): Asn1String = runRethrowing {
     when (tag.tagValue) {
-        UTF8_STRING.toULong() -> Asn1String.UTF8(String.decodeFromAsn1ContentBytes(content))
-        UNIVERSAL_STRING.toULong() -> Asn1String.Universal(String.decodeFromAsn1ContentBytes(content))
-        IA5_STRING.toULong() -> Asn1String.IA5(String.decodeFromAsn1ContentBytes(content))
-        BMP_STRING.toULong() -> Asn1String.BMP(String.decodeFromAsn1ContentBytes(content))
-        T61_STRING.toULong() -> Asn1String.Teletex(String.decodeFromAsn1ContentBytes(content))
-        PRINTABLE_STRING.toULong() -> Asn1String.Printable(String.decodeFromAsn1ContentBytes(content))
-        NUMERIC_STRING.toULong() -> Asn1String.Numeric(String.decodeFromAsn1ContentBytes(content))
-        VISIBLE_STRING.toULong() -> Asn1String.Visible(String.decodeFromAsn1ContentBytes(content))
+        UTF8_STRING.toULong() -> Asn1String.UTF8(content)
+        UNIVERSAL_STRING.toULong() -> Asn1String.Universal(content)
+        IA5_STRING.toULong() -> Asn1String.IA5(content)
+        BMP_STRING.toULong() -> Asn1String.BMP(content)
+        T61_STRING.toULong() -> Asn1String.Teletex(content)
+        PRINTABLE_STRING.toULong() -> Asn1String.Printable(content)
+        NUMERIC_STRING.toULong() -> Asn1String.Numeric(content)
+        VISIBLE_STRING.toULong() -> Asn1String.Visible(content)
         else -> TODO("Support other string tag $tag")
     }
 }
 
 @Throws(Asn1Exception::class)
 inline fun Asn1Primitive.decodeToUtf8String(assertTag: Asn1Element.Tag = Asn1Element.Tag.REAL) =
-    runRethrowing { decode(assertTag) { Asn1String.UTF8(String.decodeFromAsn1ContentBytes(content)) } }
+    runRethrowing { decode(assertTag) { Asn1String.UTF8(content) } }
 
 @Throws(Asn1Exception::class)
 inline fun Asn1Primitive.decodeToUniversalString(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_UNIVERSAL) =
-    runRethrowing { decode(assertTag) { Asn1String.Universal(String.decodeFromAsn1ContentBytes(content)) } }
+    runRethrowing { decode(assertTag) { Asn1String.Universal(content) } }
 
 @Throws(Asn1Exception::class)
 inline fun Asn1Primitive.decodeToIa5String(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_IA5) =
-    runRethrowing { decode(assertTag) { Asn1String.IA5(String.decodeFromAsn1ContentBytes(content)) } }
+    runRethrowing { decode(assertTag) { Asn1String.IA5(content) } }
 
 @Throws(Asn1Exception::class)
 inline fun Asn1Primitive.decodeToBmpString(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_BMP) =
-    runRethrowing { decode(assertTag) { Asn1String.BMP(String.decodeFromAsn1ContentBytes(content)) } }
+    runRethrowing { decode(assertTag) { Asn1String.BMP(content) } }
 
 @Throws(Asn1Exception::class)
 inline fun Asn1Primitive.decodeToTeletextString(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_T61) =
-    runRethrowing { decode(assertTag) { Asn1String.Teletex(String.decodeFromAsn1ContentBytes(content)) } }
+    runRethrowing { decode(assertTag) { Asn1String.Teletex(content) } }
 
 @Throws(Asn1Exception::class)
 inline fun Asn1Primitive.decodeToPrintableString(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_PRINTABLE) =
-    runRethrowing { decode(assertTag) { Asn1String.Printable(String.decodeFromAsn1ContentBytes(content)) } }
+    runRethrowing { decode(assertTag) { Asn1String.Printable(content) } }
 
 @Throws(Asn1Exception::class)
 inline fun Asn1Primitive.decodeToNumericString(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_NUMERIC) =
-    runRethrowing { decode(assertTag) { Asn1String.Numeric(String.decodeFromAsn1ContentBytes(content)) } }
+    runRethrowing { decode(assertTag) { Asn1String.Numeric(content) } }
 
 @Throws(Asn1Exception::class)
 inline fun Asn1Primitive.decodeToVisibleString(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_VISIBLE) =
-    runRethrowing { decode(assertTag) { Asn1String.Visible(String.decodeFromAsn1ContentBytes(content)) } }
+    runRethrowing { decode(assertTag) { Asn1String.Visible(content) } }
 
 
 /**

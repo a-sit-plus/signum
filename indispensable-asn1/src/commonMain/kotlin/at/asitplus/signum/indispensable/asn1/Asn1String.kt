@@ -1,15 +1,17 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.BERTags.BMP_STRING
+import at.asitplus.signum.indispensable.asn1.BERTags.GENERAL_STRING
+import at.asitplus.signum.indispensable.asn1.BERTags.GRAPHIC_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.IA5_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.NUMERIC_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.PRINTABLE_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.T61_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.UNIVERSAL_STRING
+import at.asitplus.signum.indispensable.asn1.BERTags.UNRESTRICTED_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.UTF8_STRING
+import at.asitplus.signum.indispensable.asn1.BERTags.VIDEOTEX_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.VISIBLE_STRING
-import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
-import at.asitplus.signum.indispensable.asn1.encoding.decode
 import at.asitplus.signum.indispensable.asn1.encoding.decodeFromAsn1ContentBytes
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToBmpString
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToIa5String
@@ -19,8 +21,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.decodeToTeletextString
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToUniversalString
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToUtf8String
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToVisibleString
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+
 
 //TODO auto-sanitize and/or reduce
 /**
@@ -28,74 +29,135 @@ import kotlinx.serialization.Serializable
  */
 sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
     abstract val tag: ULong
+    abstract val rawValue: ByteArray
     abstract val value: String
 
     /**
      * UTF8 STRING (verbatim String)
      */
-    class UTF8(override val value: String) : Asn1String() {
+    class UTF8(override val rawValue: ByteArray) : Asn1String() {
+        override val value = String.decodeFromAsn1ContentBytes(rawValue)
         override val tag = BERTags.UTF8_STRING.toULong()
+
+        init {
+            if (value.contains('\uFFFD')) throw Asn1Exception("Input contains invalid chars: '$value'")
+        }
     }
 
     /**
      * UNIVERSAL STRING (unchecked)
      */
-    class Universal(override val value: String) : Asn1String() {
+    class Universal(override val rawValue: ByteArray) : Asn1String() {
+        override val value = String.decodeFromAsn1ContentBytes(rawValue)
         override val tag = BERTags.UNIVERSAL_STRING.toULong()
     }
 
     /**
      * VISIBLE STRING (no checks)
      */
-    class Visible(override val value: String) : Asn1String() {
+    class Visible(override val rawValue: ByteArray) : Asn1String() {
+        override val value = String.decodeFromAsn1ContentBytes(rawValue)
+        init {
+            Regex("[\\x20-\\x7E]*").matchEntire(value)
+                ?: throw Asn1Exception("Input contains invalid chars: '$value'")
+        }
         override val tag = BERTags.VISIBLE_STRING.toULong()
     }
 
     /**
      * IA5 STRING (no checks)
      */
-    class IA5(override val value: String) : Asn1String() {
+    class IA5(override val rawValue: ByteArray) : Asn1String() {
+        override val value = String.decodeFromAsn1ContentBytes(rawValue)
+        init {
+            Regex("[\\x00-\\x7E]*").matchEntire(value)
+                ?: throw Asn1Exception("Input contains invalid chars: '$value'")
+        }
         override val tag = BERTags.IA5_STRING.toULong()
     }
 
     /**
      * TELETEX STRING (no checks)
      */
-    class Teletex(override val value: String) : Asn1String() {
+    class Teletex(override val rawValue: ByteArray) : Asn1String() {
+        override val value = String.decodeFromAsn1ContentBytes(rawValue)
         override val tag = BERTags.T61_STRING.toULong()
     }
 
     /**
      * BMP STRING (no checks)
      */
-    class BMP(override val value: String) : Asn1String() {
+    class BMP(override val rawValue: ByteArray) : Asn1String() {
+        override val value = String.decodeFromAsn1ContentBytes(rawValue)
         override val tag = BERTags.BMP_STRING.toULong()
+    }
+
+    /**
+     * GENERAL STRING (no checks)
+     */
+    class General(override val rawValue: ByteArray) : Asn1String() {
+        override val value = String.decodeFromAsn1ContentBytes(rawValue)
+        override val tag = BERTags.GENERAL_STRING.toULong()
+        init {
+            Regex("[\\x00-\\x7E]*").matchEntire(value)
+                ?: throw Asn1Exception("Input contains invalid chars: '$value'")
+        }
+    }
+
+    /**
+     * GRAPHIC STRING (no checks)
+     */
+    class Graphic(override val rawValue: ByteArray) : Asn1String() {
+        override val value = String.decodeFromAsn1ContentBytes(rawValue)
+        init {
+            Regex("[\\x20-\\x7E]*").matchEntire(value)
+                ?: throw Asn1Exception("Input contains invalid chars: '$value'")
+        }
+        override val tag = BERTags.GRAPHIC_STRING.toULong()
+    }
+
+    /**
+     * CHARACTER/UNRESTRICTED STRING (no checks)
+     */
+    class Unrestricted(override val rawValue: ByteArray) : Asn1String() {
+        override val value = String.decodeFromAsn1ContentBytes(rawValue)
+        override val tag = BERTags.UNRESTRICTED_STRING.toULong()
+    }
+
+    /**
+     * VIDEOTEX STRING (no checks)
+     */
+    class Videotex(override val rawValue: ByteArray) : Asn1String() {
+        override val value = String.decodeFromAsn1ContentBytes(rawValue)
+        override val tag = BERTags.VIDEOTEX_STRING.toULong()
     }
 
     /**
      * PRINTABLE STRING (checked)
      * @throws Asn1Exception if illegal characters are provided
      */
-    class Printable @Throws(Asn1Exception::class) constructor(override val value: String) : Asn1String() {
+    class Printable @Throws(Asn1Exception::class) constructor(override val rawValue: ByteArray) : Asn1String() {
+        override val value = String.decodeFromAsn1ContentBytes(rawValue)
+        override val tag = BERTags.PRINTABLE_STRING.toULong()
+
         init {
             Regex("[a-zA-Z0-9 '()+,-./:=?]*").matchEntire(value)
                 ?: throw Asn1Exception("Input contains invalid chars: '$value'")
         }
-
-        override val tag = BERTags.PRINTABLE_STRING.toULong()
     }
 
     /**
      * NUMERIC STRING (checked)
      * @throws Asn1Exception if illegal characters are provided
      */
-    class Numeric @Throws(Asn1Exception::class) constructor(override val value: String) : Asn1String() {
+    class Numeric @Throws(Asn1Exception::class) constructor(override val rawValue: ByteArray) : Asn1String() {
+        override val value = String.decodeFromAsn1ContentBytes(rawValue)
+        override val tag = BERTags.NUMERIC_STRING.toULong()
+
         init {
             Regex("[0-9 ]*").matchEntire(value)
                 ?: throw Asn1Exception("Input contains invalid chars: '$value'")
         }
-
-        override val tag = BERTags.NUMERIC_STRING.toULong()
     }
 
     override fun encodeToTlv() = Asn1Primitive(tag, value.encodeToByteArray())
@@ -130,6 +192,10 @@ sealed class Asn1String : Asn1Encodable<Asn1Primitive> {
                 PRINTABLE_STRING.toULong() -> src.decodeToPrintableString()
                 NUMERIC_STRING.toULong() -> src.decodeToNumericString()
                 VISIBLE_STRING.toULong() -> src.decodeToVisibleString()
+                GENERAL_STRING.toULong() -> src.decodeToVisibleString()
+                GRAPHIC_STRING.toULong() -> src.decodeToVisibleString()
+                UNRESTRICTED_STRING.toULong() -> src.decodeToVisibleString()
+                VIDEOTEX_STRING.toULong() -> src.decodeToVisibleString()
                 else -> throw Asn1Exception("Not an Asn1String!")
             }
         }
