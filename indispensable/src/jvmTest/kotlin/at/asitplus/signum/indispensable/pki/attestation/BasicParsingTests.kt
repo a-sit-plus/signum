@@ -3,12 +3,15 @@
 package at.asitplus.signum.indispensable.pki.attestation
 
 import at.asitplus.attestation.android.*
+import at.asitplus.attestation.android.exceptions.AttestationValueException
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
+import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.asn1.toBigInteger
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.attestation.AttestationData.Level
 import com.google.android.attestation.AuthorizationList
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.collections.shouldNotBeEmpty
@@ -265,6 +268,99 @@ class BasicParsingTests : FreeSpec({
                 pubKeyB64 = "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEqs5NcBOKN40tu/5+NLFvGRMRcYF6KRksYoUmiwlKhhzbGaALzE2PerEM5wzNKeC6ESruZJRoBPuHn5D+HfoMkA==",
                 packageName = "at.asitplus.attestation_client",
                 expectedDigest = Base64.decode("NLl2LE1skNSEMZQMV73nMUJYsmQg7+Fqx/cnTw0zCtU=")
+            ),
+            AttestationData(
+                "SB_RSA_NONE", // source: https://github.com/android/keyattestation/blob/main/testdata/akita/sdk34/
+                challengeB64 = "Y2hhbGxlbmdl",
+                attestationProofB64 = listOf(
+                    """
+                        MIIDiDCCAy6gAwIBAgIBATAKBggqhkjOPQQDAjA/MSkwJwYDVQQDEyA0NGMxNTc2
+                        NTVmMThjM2U0OTBlMjdhN2E1ODNiOTZkMjESMBAGA1UEChMJU3Ryb25nQm94MB4X
+                        DTcwMDEwMTAwMDAwMFoXDTQ4MDEwMTAwMDAwMFowHzEdMBsGA1UEAxMUQW5kcm9p
+                        ZCBLZXlzdG9yZSBLZXkwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCf
+                        he4/BGT5JtwINaC7LXJh0fsHHQb/ub/PprziFMoVW/mOkFzkZOJQAKWEXzRb3ASF
+                        VVNwYfPhOgT/Ww/TljjvlVJRltGlRhngTq15FXUfWeqNb7bRxqq+Qi/bl2bhbOpO
+                        nVPMRvJZkUEo1+iUChxFWkvx0xQ82rHBVM/bb3kqdAFUjCzV0aJ+Fbei+FZhmXOv
+                        1rEizgOUtAvaDbRs5faGV/dS8K41Ph43rriwf7R8g+GTO0tLhpNMoI6N81MFnirc
+                        XWSVUeR49x9OcGkukTyT8eZgb/fmhewOafHducxz7S394Bq0Z32CKY9MvvcGCYxQ
+                        3Y2WOexhdOd6w9OYE+XFAgMBAAGjggFuMIIBajAOBgNVHQ8BAf8EBAMCB4AwggFW
+                        BgorBgEEAdZ5AgERBIIBRjCCAUICAgEsCgECAgIBLAoBAgQJY2hhbGxlbmdlBAAw
+                        gYO/hT0IAgYBkjB17Je/hUVzBHEwbzFJMEcEQmNvbS5nb29nbGUud2lyZWxlc3Mu
+                        YW5kcm9pZC5zZWN1cml0eS5hdHRlc3RhdGlvbnZlcmlmaWVyLmNvbGxlY3RvcgIB
+                        ADEiBCAQOTjuRTflno7nkvZUUE+4NG/Gs0bQu8RBX8M5/PyOwTCBnqEFMQMCAQKi
+                        AwIBAaMEAgIIAL+BSAUCAwEAAb+DdwIFAL+FPgMCAQC/hUBMMEoEIAAAAAAAAAAA
+                        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEACgECBCCIJYhXZHWuzLOSmC/i+8X2
+                        LGnJ/IS6c+bFPMBSoRYVhr+FQQUCAwIi4L+FQgUCAwMWqL+FTgYCBAE02aW/hU8G
+                        AgQBNNmlMAoGCCqGSM49BAMCA0gAMEUCIQCw4Fw+8uBTtJzJ9Ink8uZ5y0iqXaZc
+                        w1djbDyziGebUwIgVj2YQuuPf6WIsuOHBKdgaRD86c+/7rFpTzoXrGRVIxY=
+                        """,
+                    """
+                        MIIB3TCCAYKgAwIBAgIQRMFXZV8Yw+SQ4np6WDuW0jAKBggqhkjOPQQDAjApMRMw
+                        EQYDVQQKEwpHb29nbGUgTExDMRIwEAYDVQQDEwlEcm9pZCBDQTMwHhcNMjQwOTEw
+                        MTM1NjQ2WhcNMjQxMDA5MTkwMDI4WjA/MSkwJwYDVQQDEyA0NGMxNTc2NTVmMThj
+                        M2U0OTBlMjdhN2E1ODNiOTZkMjESMBAGA1UEChMJU3Ryb25nQm94MFkwEwYHKoZI
+                        zj0CAQYIKoZIzj0DAQcDQgAE/qWdV9CR+sepin+s2yIAnqCmsxDncNSJ2RTOaVq5
+                        ErKcL2LaTui5iIRwGNUDExq2qqxZMr6s+3RdoJGb1NEn9aN2MHQwHQYDVR0OBBYE
+                        FLsYEAYD5TzleXyyFrWATtR7ddPpMB8GA1UdIwQYMBaAFKR4x7qc4afjWZX4lkTs
+                        H3H5u6afMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgIEMBEGCisGAQQB
+                        1nkCAR4EA6EBCDAKBggqhkjOPQQDAgNJADBGAiEAsBAH68f5noSezed8m/XtvM9b
+                        CbsTO68GRxaGlARPusACIQCrHyMwFrPUebmABFSGNKt6vcqrYrK9ojoATKuoEJYC
+                        Ig==
+                        """,
+                    """
+                        MIIB1jCCAVygAwIBAgITbo7Qb13I1RLtNOgRzOhcrktMQjAKBggqhkjOPQQDAzAp
+                        MRMwEQYDVQQKEwpHb29nbGUgTExDMRIwEAYDVQQDEwlEcm9pZCBDQTIwHhcNMjQw
+                        OTEyMTMwNTU5WhcNMjQxMTIxMTMwNTU4WjApMRMwEQYDVQQKEwpHb29nbGUgTExD
+                        MRIwEAYDVQQDEwlEcm9pZCBDQTMwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASe
+                        brQJ/XUS44h+yrc2NixQDZ/rI7SnJSk/6o++vPEhSHb9g1P1d507aUkinlHxSUqq
+                        RjdyG58oWLgJpWgfB2TUo2MwYTAOBgNVHQ8BAf8EBAMCAgQwDwYDVR0TAQH/BAUw
+                        AwEB/zAdBgNVHQ4EFgQUpHjHupzhp+NZlfiWROwfcfm7pp8wHwYDVR0jBBgwFoAU
+                        u/g2rYmubOLlnpTw1bLX0nrkfEEwCgYIKoZIzj0EAwMDaAAwZQIwCeuTkh9V37F0
+                        KEGMyco7Zonio/+GVi9lKJxYRqyir1K7bxsDP/9LAu3Zf/9yImLlAjEAssjEIw8F
+                        zPCWxtEag537mwNnq7JoJwIch5g5aq72bbwDT5fetdAwxY8Lp/5rXIOC
+                        """,
+                    """
+                        MIIDgDCCAWigAwIBAgIKA4gmZ2BliZaGDTANBgkqhkiG9w0BAQsFADAbMRkwFwYDVQQFExBmOTIwMDllODUzYjZiMDQ1MB4X
+                        DTIyMDEyNjIyNDc1MloXDTM3MDEyMjIyNDc1MlowKTETMBEGA1UEChMKR29vZ2xlIExMQzESMBAGA1UEAxMJRHJvaWQgQ0Ey
+                        MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEuppxbZvJgwNXXe6qQKidXqUt1ooT8M6Q+ysWIwpduM2EalST8v/Cy2JN10aqTfUS
+                        ThJha/oCtG+F9TUUviOch6RahrpjVyBdhopM9MFDlCfkiCkPCPGu2ODMj7O/bKnko2YwZDAdBgNVHQ4EFgQUu/g2rYmubOLl
+                        npTw1bLX0nrkfEEwHwYDVR0jBBgwFoAUNmHhAHyIBQlRi0RsR/8aTMnqTxIwEgYDVR0TAQH/BAgwBgEB/wIBAjAOBgNVHQ8B
+                        Af8EBAMCAQYwDQYJKoZIhvcNAQELBQADggIBAIFxUiFHYfObqrJM0eeXI+kZFT57wBplhq+TEjd+78nIWbKvKGUFlvt7IuXH
+                        zZ7YJdtSDs7lFtCsxXdrWEmLckxRDCRcth3Eb1leFespS35NAOd0Hekg8vy2G31OWAe567l6NdLjqytukcF4KAzHIRxoFivN
+                        +tlkEJmg7EQw9D2wPq4KpBtug4oJE53R9bLCT5wSVj63hlzEY3hC0NoSAtp0kdthow86UFVzLqxEjR2B1MPCMlyIfoGyBgky
+                        AWhd2gWN6pVeQ8RZoO5gfPmQuCsn8m9kv/dclFMWLaOawgS4kyAn9iRi2yYjEAI0VVi7u3XDgBVnowtYAn4gma5q4BdXgbWb
+                        UTaMVVVZsepXKUpDpKzEfss6Iw0zx2Gql75zRDsgyuDyNUDzutvDMw8mgJmFkWjlkqkVM2diDZydzmgi8br2sJTLdG4lUwve
+                        dIaLgjnIDEG1J8/5xcPVQJFgRf3m5XEZB4hjG3We/49p+JRVQSpE1+QzG0raYpdNsxBUO+41diQo7qC7S8w2J+TMeGdpKGjC
+                        IzKjUDAy2+gOmZdZacanFN/03SydbKVHV0b/NYRWMa4VaZbomKON38IH2ep8pdj++nmSIXeWpQE8LnMEdnUFjvDzp0f0ELSX
+                        VW2+5xbl+fcqWgmOupmU4+bxNJLtknLo49Bg5w9jNn7T7rkF
+                        """,
+                    """
+                        MIIFHDCCAwSgAwIBAgIJANUP8luj8tazMA0GCSqGSIb3DQEBCwUAMBsxGTAXBgNVBAUTEGY5MjAwOWU4NTNiNmIwNDUwHhcN
+                        MTkxMTIyMjAzNzU4WhcNMzQxMTE4MjAzNzU4WjAbMRkwFwYDVQQFExBmOTIwMDllODUzYjZiMDQ1MIICIjANBgkqhkiG9w0B
+                        AQEFAAOCAg8AMIICCgKCAgEAr7bHgiuxpwHsK7Qui8xUFmOr75gvMsd/dTEDDJdSSxtf6An7xyqpRR90PL2abxM1dEqlXnf2
+                        tqw1Ne4Xwl5jlRfdnJLmN0pTy/4lj4/7tv0Sk3iiKkypnEUtR6WfMgH0QZfKHM1+di+y9TFRtv6y//0rb+T+W8a9nsNL/ggj
+                        nar86461qO0rOs2cXjp3kOG1FEJ5MVmFmBGtnrKpa73XpXyTqRxB/M0n1n/W9nGqC4FSYa04T6N5RIZGBN2z2MT5IKGbFlbC
+                        8UrW0DxW7AYImQQcHtGl/m00QLVWutHQoVJYnFPlXTcHYvASLu+RhhsbDmxMgJJ0mcDpvsC4PjvB+TxywElgS70vE0XmLD+O
+                        JtvsBslHZvPBKCOdT0MS+tgSOIfga+z1Z1g7+DVagf7quvmag8jfPioyKvxnK/EgsTUVi2ghzq8wm27ud/mIM7AY2qEORR8G
+                        o3TVB4HzWQgpZrt3i5MIlCaY504LzSRiigHCzAPlHws+W0rB5N+er5/2pJKnfBSDiCiFAVtCLOZ7gLiMm0jhO2B6tUXHI/+M
+                        RPjy02i59lINMRRev56GKtcd9qO/0kUJWdZTdA2XoS82ixPvZtXQpUpuL12ab+9EaDK8Z4RHJYYfCT3Q5vNAXaiWQ+8PTWm2
+                        QgBR/bkwSWc+NpUFgNPN9PvQi8WEg5UmAGMCAwEAAaNjMGEwHQYDVR0OBBYEFDZh4QB8iAUJUYtEbEf/GkzJ6k8SMB8GA1Ud
+                        IwQYMBaAFDZh4QB8iAUJUYtEbEf/GkzJ6k8SMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgIEMA0GCSqGSIb3DQEB
+                        CwUAA4ICAQBOMaBc8oumXb2voc7XCWnuXKhBBK3e2KMGz39t7lA3XXRe2ZLLAkLM5y3J7tURkf5a1SutfdOyXAmeE6SRo83U
+                        h6WszodmMkxK5GM4JGrnt4pBisu5igXEydaW7qq2CdC6DOGjG+mEkN8/TA6p3cnoL/sPyz6evdjLlSeJ8rFBH6xWyIZCbrcp
+                        YEJzXaUOEaxxXxgYz5/cTiVKN2M1G2okQBUIYSY6bjEL4aUN5cfo7ogP3UvliEo3Eo0YgwuzR2v0KR6C1cZqZJSTnghIC/vA
+                        D32KdNQ+c3N+vl2OTsUVMC1GiWkngNx1OO1+kXW+YTnnTUOtOIswUP/Vqd5SYgAImMAfY8U9/iIgkQj6T2W6FsScy94IN9fF
+                        hE1UtzmLoBIuUFsVXJMTz+Jucth+IqoWFua9v1R93/k98p41pjtFX+H8DslVgfP097vju4KDlqN64xV1grw3ZLl4CiOe/A91
+                        oeLm2UHOq6wn3esB4r2EIQKb6jTVGu5sYCcdWpXr0AUVqcABPdgL+H7qJguBw09ojm6xNIrw2OocrDKsudk/okr/AwqEyPKw
+                        9WnMlQgLIKw1rODG2NvU9oR3GVGdMkUBZutL8VuFkERQGt6vQ2OCw0sV47VMkuYbacK/xyZFiRcrPJPb41zgbQj9XAEyLKCH
+                        ex0SdDrx+tWUDqG8At2JHA==
+                        """
+                ),
+                isoDate = "2024-09-26T22:31:27.639Z", // TODO ? creationDateTime 1727389887639 , decode via chatgpt
+                pubKeyB64 = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn4XuPwRk+SbcCDWguy1yYdH7Bx0G/7m/z6a84hTKFVv5jpBc5GTiUAClhF80W9wEhVVTcGHz4ToE/1sP05Y475VSUZbRpUYZ4E6teRV1H1nqjW+20caqvkIv25dm4WzqTp1TzEbyWZFBKNfolAocRVpL8dMUPNqxwVTP2295KnQBVIws1dGifhW3ovhWYZlzr9axIs4DlLQL2g20bOX2hlf3UvCuNT4eN664sH+0fIPhkztLS4aTTKCOjfNTBZ4q3F1klVHkePcfTnBpLpE8k/HmYG/35oXsDmnx3bnMc+0t/eAatGd9gimPTL73BgmMUN2NljnsYXTnesPTmBPlxQIDAQAB",
+                packageName = "com.google.wireless.android.security.attestationverifier.collector",
+                expectedDigest = Base64.decode("EDk47kU35Z6O55L2VFBPuDRvxrNG0LvEQV/DOfz8jsE="),
+                attestationLevel = AttestationData.Level.HARDWARE,
             )
         ) {
             it.attestationCertChain.forEach { cert ->
@@ -273,8 +369,13 @@ class BasicParsingTests : FreeSpec({
                 certParsed.encodeToDer() shouldBe bytes
             }
 
+
+            // decode and check first certificate
             val bytes = it.attestationCertChain.first().encoded
             val certParsed = X509Certificate.decodeFromDer(bytes)
+
+            println("PubKey from First Cert:"+certParsed.decodedPublicKey.getOrThrow().encodeToPEM())
+
             val attestation = certParsed.androidAttestationExtension.shouldNotBeNull()
             val appId = attestation.softwareEnforced.attestationApplicationId.shouldNotBeNull().shouldBeSuccess()
             val info = appId?.packageInfos
@@ -291,15 +392,22 @@ class BasicParsingTests : FreeSpec({
 
             //we get the result, so that there's a parsed attestation record in there
             //we don't care for strict attestation checks, only for parsing
+            //shouldThrow<AttestationValueException> {
             val result = attestationService(
                 it.attestationLevel,
                 it.packageName,
                 listOf(it.expectedDigest)
-            ).verifyAttestation(it.attestationCertChain, it.verificationDate, it.challenge)
+            )
 
-            //now we compare
-            result.softwareEnforced().compareWith(attestation.softwareEnforced)
-            result.teeEnforced().compareWith(attestation.hardwareEnforced)
+            if(it.name == "SB_RSA_NONE") {
+                shouldThrow<AttestationValueException> {
+                    result.verifyAttestation(it.attestationCertChain, it.verificationDate, it.challenge)
+                }.message shouldBe "Bootloader not locked"
+            }
+            else
+            {
+                result.verifyAttestation(it.attestationCertChain, it.verificationDate, it.challenge)
+            }
         }
     }
 })
