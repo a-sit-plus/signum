@@ -12,6 +12,7 @@ import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.decodeFromByteArray
@@ -210,7 +211,7 @@ class CoseSerializationTest : FreeSpec({
     "Deserialization fails when trying to parse byte array as data class CoseSigned" {
         val input = "8445A101390100A054546869732069732074686520636F6E74656E742E43626172"
 
-        shouldThrow<IllegalStateException> {
+        shouldThrow<SerializationException> {
             CoseSigned.deserialize(DataClass.serializer(), input.decodeToByteArray(Base16())).getOrThrow()
         }
     }
@@ -218,7 +219,7 @@ class CoseSerializationTest : FreeSpec({
     "Deserialization fails when trying to parse byte array as data class CoseMac" {
         val input = "8443A10105A054546869732069732074686520636F6E74656E742E40"
 
-        shouldThrow<IllegalStateException> {
+        shouldThrow<SerializationException> {
             CoseMac.deserialize(DataClass.serializer(), input.decodeToByteArray(Base16())).getOrThrow()
         }
     }

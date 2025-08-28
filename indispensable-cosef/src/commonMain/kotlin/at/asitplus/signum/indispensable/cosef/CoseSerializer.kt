@@ -6,6 +6,7 @@ import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapperSerializer
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.Base64Strict
+import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -21,34 +22,43 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonDecoder
 
+object CoseBytesWireFormatSerializer : KSerializer<CoseBytes> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("CoseBytesWireFormat", PrimitiveKind.BYTE)
+
+    override fun serialize(encoder: Encoder, value: CoseBytes) {
+        if (encoder is CborEncoder) {
+            encoder.encodeSerializableValue(CoseBytes.serializer(), value)
+        } else {
+            val bytes = coseCompliantSerializer.encodeToByteArray(value)
+            encoder.encodeString(bytes.encodeToString(Base64Strict))
+        }
+    }
+
+    override fun deserialize(decoder: Decoder): CoseBytes {
+        return if (decoder is JsonDecoder) {
+            val bytes = decoder.decodeString().decodeToByteArray(Base64())
+            coseCompliantSerializer.decodeFromByteArray(CoseBytes.serializer(), bytes)
+        } else {
+            decoder.decodeSerializableValue(CoseBytes.serializer())
+        }
+    }
+}
+
 /**
  * Serializes [CoseSigned] with a typed payload, by using its [CoseSigned.wireFormat].
  * Also handles deserialization of the bytes.
  */
 class CoseSignedSerializer<P : Any?>(
     private val parameterSerializer: KSerializer<P>,
-) : KSerializer<CoseSigned<P>> {
-
-    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("CoseSigned", PrimitiveKind.BYTE)
-
-    override fun serialize(encoder: Encoder, value: CoseSigned<P>) {
-        if (encoder is CborEncoder) {
-            encoder.encodeSerializableValue(CoseBytes.serializer(), value.wireFormat)
-        } else {
-            val bytes = coseCompliantSerializer.encodeToByteArray(value.wireFormat)
-            encoder.encodeString(bytes.encodeToString(Base64Strict))
-        }
-    }
-
-    override fun deserialize(decoder: Decoder): CoseSigned<P> {
-        val wire = if (decoder is JsonDecoder) decoder.decodeString().decodeToByteArray(Base64()).let { bytes ->
-            coseCompliantSerializer.decodeFromByteArray(CoseBytes.serializer(), bytes)
-        } else decoder.decodeSerializableValue(
-            CoseBytes.serializer()
-        )
+) : TransformingSerializerTemplate<CoseSigned<P>, CoseBytes>(
+    parent = CoseBytesWireFormatSerializer,
+    serialName = "CoseSigned",
+    encodeAs = { it.wireFormat },
+    decodeAs = { wire ->
         val protectedHeader = wire.protectedHeader.toHeader()
         val signature = wire.rawAuthBytes.toSignature(protectedHeader, wire.unprotectedHeader)
-        return CoseSigned(
+        CoseSigned(
             protectedHeader = protectedHeader,
             unprotectedHeader = wire.unprotectedHeader,
             payload = wire.payload.toNullablePayload(parameterSerializer),
@@ -56,7 +66,8 @@ class CoseSignedSerializer<P : Any?>(
             wireFormat = wire
         )
     }
-}
+)
+
 
 /**
  * Serializes [CoseMac] with a typed payload, by using its [CoseMac.wireFormat].
@@ -64,29 +75,14 @@ class CoseSignedSerializer<P : Any?>(
  */
 class CoseMacSerializer<P : Any?>(
     private val parameterSerializer: KSerializer<P>,
-) : KSerializer<CoseMac<P>> {
-
-    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("CoseMac", PrimitiveKind.BYTE)
-
-    override fun serialize(encoder: Encoder, value: CoseMac<P>) {
-        if (encoder is CborEncoder) {
-            encoder.encodeSerializableValue(CoseBytes.serializer(), value.wireFormat)
-        } else {
-            val bytes = coseCompliantSerializer.encodeToByteArray(value.wireFormat)
-            encoder.encodeString(bytes.encodeToString(Base64Strict))
-        }
-    }
-
-    override fun deserialize(decoder: Decoder): CoseMac<P> {
-        val wire = if (decoder is JsonDecoder) decoder.decodeString().decodeToByteArray(Base64())
-            .let { bytes ->
-                coseCompliantSerializer.decodeFromByteArray(CoseBytes.serializer(), bytes)
-            } else decoder.decodeSerializableValue(
-            CoseBytes.serializer()
-        )
+) : TransformingSerializerTemplate<CoseMac<P>, CoseBytes>(
+    parent = CoseBytesWireFormatSerializer,
+    serialName = "CoseMac",
+    encodeAs = { it.wireFormat },
+    decodeAs = { wire ->
         val protectedHeader = wire.protectedHeader.toHeader()
         val tag = wire.rawAuthBytes
-        return CoseMac(
+        CoseMac(
             protectedHeader = protectedHeader,
             unprotectedHeader = wire.unprotectedHeader,
             payload = wire.payload.toNullablePayload(parameterSerializer),
@@ -94,7 +90,7 @@ class CoseMacSerializer<P : Any?>(
             wireFormat = wire
         )
     }
-}
+)
 
 private fun <P : Any?> ByteArray?.toNullablePayload(serializer: KSerializer<P>): P? = when {
     this == null || this.isEmpty() -> null
