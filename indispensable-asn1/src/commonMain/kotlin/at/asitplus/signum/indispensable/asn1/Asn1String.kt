@@ -50,26 +50,11 @@ sealed class Asn1String(
     }
 
     /**
-     * UNIVERSAL STRING (checked)
+     * UNIVERSAL STRING (unchecked)
      */
     class Universal(rawValue: ByteArray) : Asn1String(rawValue) {
         override val tag = BERTags.UNIVERSAL_STRING.toULong()
         constructor(value: String) : this(value.encodeToByteArray())
-
-        init {
-            if (
-                rawValue.size % 4 != 0 ||
-                !(rawValue.indices step 4).all { i ->
-                    val codePoint =
-                        (rawValue[i].toInt() and 0xFF shl 24) or
-                                (rawValue[i + 1].toInt() and 0xFF shl 16) or
-                                (rawValue[i + 2].toInt() and 0xFF shl 8) or
-                                (rawValue[i + 3].toInt() and 0xFF)
-                    codePoint in 0x0000..0x10FFFF && codePoint !in 0xD800..0xDFFF
-                }
-            )
-                throw Asn1Exception("Input contains invalid chars: '$value'")
-        }
     }
 
     /**
