@@ -17,15 +17,19 @@ import kotlinx.serialization.cbor.CborEncoder
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonDecoder
 
 object CoseBytesWireFormatSerializer : KSerializer<CoseBytes> {
-    override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor("CoseBytesWireFormat", PrimitiveKind.BYTE)
-
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("CoseBytes") {
+        element("protectedHeader", ByteArraySerializer().descriptor)
+        element("unprotectedHeader", CoseHeaderSerializer.descriptor)
+        element("payload", ByteArraySerializer().descriptor, isOptional = true)
+        element("authTag", ByteArraySerializer().descriptor)
+    }
     override fun serialize(encoder: Encoder, value: CoseBytes) {
         if (encoder is CborEncoder) {
             encoder.encodeSerializableValue(CoseBytes.serializer(), value)
