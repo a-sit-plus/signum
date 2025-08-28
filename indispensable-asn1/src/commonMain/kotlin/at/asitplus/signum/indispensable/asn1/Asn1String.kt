@@ -42,6 +42,7 @@ sealed class Asn1String(
      */
     class UTF8(rawValue: ByteArray) : Asn1String(rawValue) {
         override val tag = BERTags.UTF8_STRING.toULong()
+        constructor(value: String) : this(value.encodeToByteArray())
 
         init {
             if (value.contains('\uFFFD')) throw Asn1Exception("Input contains invalid chars: '$value'")
@@ -53,6 +54,7 @@ sealed class Asn1String(
      */
     class Universal(rawValue: ByteArray) : Asn1String(rawValue) {
         override val tag = BERTags.UNIVERSAL_STRING.toULong()
+        constructor(value: String) : this(value.encodeToByteArray())
 
         init {
             if (
@@ -75,6 +77,7 @@ sealed class Asn1String(
      */
     class Visible(rawValue: ByteArray) : Asn1String(rawValue) {
         override val tag = BERTags.VISIBLE_STRING.toULong()
+        constructor(value: String) : this(value.encodeToByteArray())
 
         init {
             Regex("[\\x20-\\x7E]*").matchEntire(value)
@@ -87,6 +90,7 @@ sealed class Asn1String(
      */
     class IA5(rawValue: ByteArray) : Asn1String(rawValue) {
         override val tag = BERTags.IA5_STRING.toULong()
+        constructor(value: String) : this(value.encodeToByteArray())
 
         init {
             Regex("[\\x00-\\x7E]*").matchEntire(value)
@@ -99,6 +103,7 @@ sealed class Asn1String(
      */
     class Teletex(rawValue: ByteArray) : Asn1String(rawValue) {
         override val tag = BERTags.T61_STRING.toULong()
+        constructor(value: String) : this(value.encodeToByteArray())
 
         init {
             Regex("[\\u0000-\\u00FF]*").matchEntire(value)
@@ -111,6 +116,7 @@ sealed class Asn1String(
      */
     class BMP(rawValue: ByteArray) : Asn1String(rawValue) {
         override val tag = BERTags.BMP_STRING.toULong()
+        constructor(value: String) : this(value.encodeToByteArray())
 
         init {
             if (
@@ -131,6 +137,7 @@ sealed class Asn1String(
      */
     class General(rawValue: ByteArray) : Asn1String(rawValue) {
         override val tag = BERTags.GENERAL_STRING.toULong()
+        constructor(value: String) : this(value.encodeToByteArray())
 
         init {
             Regex("[\\x00-\\x7E]*").matchEntire(value)
@@ -143,6 +150,7 @@ sealed class Asn1String(
      */
     class Graphic(rawValue: ByteArray) : Asn1String(rawValue) {
         override val tag = BERTags.GRAPHIC_STRING.toULong()
+        constructor(value: String) : this(value.encodeToByteArray())
 
         init {
             Regex("[\\x20-\\x7E]*").matchEntire(value)
@@ -155,6 +163,7 @@ sealed class Asn1String(
      */
     class Unrestricted(rawValue: ByteArray) : Asn1String(rawValue) {
         override val tag = BERTags.UNRESTRICTED_STRING.toULong()
+        constructor(value: String) : this(value.encodeToByteArray())
     }
 
     /**
@@ -162,6 +171,7 @@ sealed class Asn1String(
      */
     class Videotex(rawValue: ByteArray) : Asn1String(rawValue) {
         override val tag = BERTags.VIDEOTEX_STRING.toULong()
+        constructor(value: String) : this(value.encodeToByteArray())
     }
 
     /**
@@ -170,6 +180,7 @@ sealed class Asn1String(
      */
     class Printable @Throws(Asn1Exception::class) constructor(rawValue: ByteArray) : Asn1String(rawValue) {
         override val tag = BERTags.PRINTABLE_STRING.toULong()
+        constructor(value: String) : this(value.encodeToByteArray())
 
         init {
             Regex("[a-zA-Z0-9 '()+,-./:=?]*").matchEntire(value)
@@ -183,6 +194,7 @@ sealed class Asn1String(
      */
     class Numeric @Throws(Asn1Exception::class) constructor(rawValue: ByteArray) : Asn1String(rawValue) {
         override val tag = BERTags.NUMERIC_STRING.toULong()
+        constructor(value: String) : this(value.encodeToByteArray())
 
         init {
             Regex("[0-9 ]*").matchEntire(value)
