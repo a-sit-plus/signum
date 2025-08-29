@@ -5,6 +5,8 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
 
 // following https://eprint.iacr.org/2015/1060.pdf
+// TODO: there are multiple versions of this document, which one was used? 2016 or 2015?
+//  replace by explicit url https://eprint.iacr.org/archive/2015/1060/20160308:084043 or https://eprint.iacr.org/archive/2015/1060/20151030:193441
 class ECMathNIST: ECMath {
 
     /** adds `point2` to `point1` and returns the result */
