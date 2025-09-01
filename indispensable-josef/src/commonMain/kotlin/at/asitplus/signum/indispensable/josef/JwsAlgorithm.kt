@@ -48,8 +48,8 @@ sealed class JwsAlgorithm(override val identifier: String) :
                 }
 
             companion object {
-                val entries: Collection<Signature.EC> by lazy {
-                    listOf(
+                val entries: Set<Signature.EC> by lazy {
+                    setOf(
                         ES256,
                         ES384,
                         ES512,
@@ -84,8 +84,8 @@ sealed class JwsAlgorithm(override val identifier: String) :
             @Serializable(with = JwsAlgorithmSerializer::class)
             data object NON_JWS_SHA1_WITH_RSA : RSA("RS1", SignatureAlgorithm.RSA(Digest.SHA1, RSAPadding.PKCS1))
             companion object {
-                val entries: Collection<Signature.RSA> by lazy {
-                    listOf(
+                val entries: Set<Signature.RSA> by lazy {
+                    setOf(
                         PS256,
                         PS384,
                         PS512,
@@ -107,7 +107,7 @@ sealed class JwsAlgorithm(override val identifier: String) :
             }
 
         companion object {
-            val entries: Collection<Signature> by lazy { EC.entries + RSA.entries }
+            val entries: Set<Signature> by lazy { EC.entries + RSA.entries }
             //convenience
             val ES256 = EC.ES256
             val ES384 = EC.ES384
@@ -140,8 +140,8 @@ sealed class JwsAlgorithm(override val identifier: String) :
         data object UNOFFICIAL_HS1 : MAC("H1", HMAC.SHA1)
 
         companion object {
-            val entries: Collection<MAC> by lazy {
-                listOf(
+            val entries: Set<MAC> by lazy {
+                setOf(
                     HS256,
                     HS384,
                     HS512,
@@ -154,7 +154,7 @@ sealed class JwsAlgorithm(override val identifier: String) :
     companion object {
         //Why can't these entries be accessed right away and directly assigning always result in a nullpointer?
         //why does it need lazy?
-        val entries: Collection<JwsAlgorithm> by lazy { Signature.entries + MAC.entries }
+        val entries: Set<JwsAlgorithm> by lazy { Signature.entries + MAC.entries }
     }
 }
 

@@ -15,7 +15,7 @@ interface JsonWebAlgorithm {
     val identifier: String
 
     companion object {
-        val entries: List<JsonWebAlgorithm> = JwsAlgorithm.entries + JweAlgorithm.entries
+        val entries: Set<JsonWebAlgorithm> by lazy { JwsAlgorithm.entries + JweAlgorithm.entries }
     }
 
     @Serializable(with = JwaSerializer::class)
