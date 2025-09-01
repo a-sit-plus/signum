@@ -13,7 +13,7 @@ sealed interface MessageAuthenticationCode : DataIntegrityAlgorithm {
 
     companion object {
         // lazy due to https://youtrack.jetbrains.com/issue/KT-79161
-        val entries: Iterable<MessageAuthenticationCode> by lazy {  HMAC.entries }
+        val entries: Set<MessageAuthenticationCode> by lazy {  HMAC.entries.toSet() }
     }
 
     @ConsistentCopyVisibility

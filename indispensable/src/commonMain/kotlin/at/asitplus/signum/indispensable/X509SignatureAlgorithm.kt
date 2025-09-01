@@ -163,7 +163,7 @@ sealed class X509SignatureAlgorithm(
     companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithm> {
 
         //make it lazy to break init cycle that causes the weirdest nullpointer ever
-        val entries by lazy {
+        val entries: Set<X509SignatureAlgorithm> by lazy {
             setOf(
                 ES256, ES384, ES512,
                 PS256, PS384, PS512,

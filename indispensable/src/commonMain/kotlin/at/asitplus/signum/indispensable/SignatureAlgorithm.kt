@@ -34,19 +34,21 @@ sealed interface SignatureAlgorithm: DataIntegrityAlgorithm {
         val RSAwithSHA384andPSSPadding = RSA(Digest.SHA384, RSAPadding.PSS)
         val RSAwithSHA512andPSSPadding = RSA(Digest.SHA512, RSAPadding.PSS)
 
-        val entries: Iterable<SignatureAlgorithm> = listOf(
-            ECDSAwithSHA256,
-            ECDSAwithSHA384,
-            ECDSAwithSHA512,
+        val entries: Set<SignatureAlgorithm> by lazy {
+            setOf(
+                ECDSAwithSHA256,
+                ECDSAwithSHA384,
+                ECDSAwithSHA512,
 
-            RSAwithSHA256andPSSPadding,
-            RSAwithSHA384andPSSPadding,
-            RSAwithSHA512andPSSPadding,
+                RSAwithSHA256andPSSPadding,
+                RSAwithSHA384andPSSPadding,
+                RSAwithSHA512andPSSPadding,
 
-            RSAwithSHA256andPKCS1Padding,
-            RSAwithSHA384andPKCS1Padding,
-            RSAwithSHA512andPKCS1Padding
-        )
+                RSAwithSHA256andPKCS1Padding,
+                RSAwithSHA384andPKCS1Padding,
+                RSAwithSHA512andPKCS1Padding
+            )
+        }
 
     }
 }

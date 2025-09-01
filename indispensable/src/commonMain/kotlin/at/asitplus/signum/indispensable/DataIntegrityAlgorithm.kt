@@ -7,7 +7,7 @@ package at.asitplus.signum.indispensable
  */
 sealed interface DataIntegrityAlgorithm {
     companion object {
-        val entries: Iterable<DataIntegrityAlgorithm> = MessageAuthenticationCode.entries + SignatureAlgorithm.entries
+        val entries: Set<DataIntegrityAlgorithm> by lazy { MessageAuthenticationCode.entries.toSet() + SignatureAlgorithm.entries }
     }
 
 }
