@@ -330,7 +330,7 @@ inline fun Asn1Primitive.decodeToFloatOrNull(assertTag: Asn1Element.Tag = Asn1El
  */
 @Throws(Asn1Exception::class)
 @Deprecated("Doesn't support all the string types and doesn't behave well with implicit tags", ReplaceWith("Asn1String.decodeFromTlv()"))
-// If the implicit tag is used, the caller needs to call one of the methods for decoding to specific Asn1String types
+// If the implicit tag is used, the caller needs to call one of the methods for decoding to specific Asn1String type
 fun Asn1Primitive.asAsn1String(): Asn1String = runRethrowing {
     when (tag.tagValue) {
         UTF8_STRING.toULong() -> Asn1String.UTF8(content)
@@ -346,7 +346,7 @@ fun Asn1Primitive.asAsn1String(): Asn1String = runRethrowing {
 }
 
 @Throws(Asn1Exception::class)
-inline fun Asn1Primitive.decodeToUtf8String(assertTag: Asn1Element.Tag = Asn1Element.Tag.REAL) =
+inline fun Asn1Primitive.decodeToUtf8String(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_UTF8) =
     runRethrowing { decode(assertTag) { Asn1String.UTF8(content) } }
 
 @Throws(Asn1Exception::class)
