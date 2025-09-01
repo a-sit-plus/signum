@@ -1,0 +1,7 @@
+Build.BOARD: marlin
+Build.BRAND: google
+Build.DEVICE: marlin
+Build.FINGERPRINT: google/marlin/marlin:10/QP1A.191005.007.A3/5972272:userdebug/dev-keys
+Build.HARDWARE: marlin
+Build.MODEL: Pixel XL
+Build.TIME: 1572305813000
