@@ -128,7 +128,11 @@ private fun <P : Any?> ByteArray.fromByteStringWrapper(serializer: KSerializer<P
     ).value
 
 fun ByteArray.toHeader(): CoseHeader =
-    coseCompliantSerializer.decodeFromByteArray(CoseHeader.serializer(), this)
+    if (isEmpty()) {
+        CoseHeader()
+    } else {
+        coseCompliantSerializer.decodeFromByteArray(CoseHeader.serializer(), this)
+    }
 
 private fun CoseHeader.usesEC(): Boolean? = when (algorithm) {
     null -> certificateChain?.firstOrNull()
