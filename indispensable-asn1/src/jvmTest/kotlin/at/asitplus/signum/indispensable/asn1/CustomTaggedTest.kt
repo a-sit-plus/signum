@@ -1,14 +1,14 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
 import de.infix.testBalloon.framework.testSuite
-import invoke
-import minus
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
-import io.kotest.property.checkAll
+import at.asitplus.testballoon.checkAll
 import org.bouncycastle.asn1.ASN1InputStream
 
 val CustomTaggedTest by testSuite {
