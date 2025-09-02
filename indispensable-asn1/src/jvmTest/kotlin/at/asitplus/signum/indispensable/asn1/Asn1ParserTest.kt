@@ -2,10 +2,10 @@ package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.asn1.encoding.readFullyToAsn1Elements
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
 import io.kotest.assertions.throwables.shouldThrow
 import de.infix.testBalloon.framework.testSuite
-import invoke
-import minus
 import io.kotest.matchers.shouldBe
 import kotlin.random.Random
 

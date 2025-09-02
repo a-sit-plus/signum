@@ -1,20 +1,20 @@
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.signum.indispensable.asn1.encoding.toAsn1VarInt
+import at.asitplus.testballoon.checkAll
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
-import de.infix.testBalloon.framework.testSuite
-import invoke
-import minus
-import withData
 import io.kotest.matchers.comparables.shouldBeLessThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
-import io.kotest.property.checkAll
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import kotlin.time.Clock
 import kotlin.time.Duration
@@ -30,7 +30,7 @@ val OidTest by testSuite {
             val oid = ObjectIdentifier("1.3.311.128.1.4.99991.9311.21.20")
             val oid1 = ObjectIdentifier("1.3.311.128.1.4.99991.9311.21.20")
             val oid2 = ObjectIdentifier("1.3.312.128.1.4.99991.9311.21.20")
-            val oid3= ObjectIdentifier("1.3.132.0.34")
+            val oid3 = ObjectIdentifier("1.3.132.0.34")
 
             oid3.bytes shouldBe ObjectIdentifier.decodeFromDer(oid3.encodeToDer()).bytes
             oid.bytes shouldBe ObjectIdentifier.decodeFromDer(oid.encodeToDer()).bytes
@@ -95,10 +95,10 @@ val OidTest by testSuite {
             }
             val stringRepesentations = mutableListOf<String>()
 
-            repeat(255-40) { stringRepesentations += "0.${it + 40}" }
-            repeat(255-40) { stringRepesentations += "1.${it + 40}" }
-            repeat(255-48) { stringRepesentations += "2.${it + 48}" }
-            repeat(255-3) { stringRepesentations += "${3 + it}.${it % 40}" }
+            repeat(255 - 40) { stringRepesentations += "0.${it + 40}" }
+            repeat(255 - 40) { stringRepesentations += "1.${it + 40}" }
+            repeat(255 - 48) { stringRepesentations += "2.${it + 48}" }
+            repeat(255 - 3) { stringRepesentations += "${3 + it}.${it % 40}" }
 
             withData(nameFn = { "String $it" }, stringRepesentations) {
                 shouldThrow<Asn1Exception> {
@@ -113,9 +113,10 @@ val OidTest by testSuite {
                 checkAll(iterations = 15, Arb.positiveInt(39)) { second ->
                     checkAll(iterations = 100, Arb.intArray(Arb.int(0..128), Arb.positiveInt(Int.MAX_VALUE))) { rest ->
                         listOf(0, 1, 2).forEach { first ->
-                            val withNegative = intArrayOf(negativeInt, *rest).apply { shuffle() }.map { BigInteger(it) }.toTypedArray()
+                            val withNegative =
+                                intArrayOf(negativeInt, *rest).apply { shuffle() }.map { BigInteger(it) }.toTypedArray()
                             shouldThrow<Asn1Exception> {
-                                ObjectIdentifier("$first.$second."+withNegative.joinToString("."))
+                                ObjectIdentifier("$first.$second." + withNegative.joinToString("."))
                             }
                         }
                     }
@@ -173,9 +174,9 @@ val OidTest by testSuite {
         "!Benchmarking fast case" - {
             val oldOptimized = mutableListOf<Duration>()
             val optimized = mutableListOf<Duration>()
-            val repetitions= 10
+            val repetitions = 10
 
-            "Old Optimized" - {
+            "Old Optimized" {
                 repeat(repetitions) {
                     val before = Clock.System.now()
                     checkAll(iterations = 15, Arb.uInt(max = 39u)) { second ->
@@ -190,13 +191,13 @@ val OidTest by testSuite {
                     oldOptimized += duration
                     println("Old Optimized: $duration")
                 }
+                val avgOldOpt = (oldOptimized.sorted().subList(1, oldOptimized.size - 1)
+                    .sumOf { it.inWholeMilliseconds } / oldOptimized.size - 2).milliseconds
+                println("AvgOldOpt: $avgOldOpt")
             }
 
-            val avgOldOpt = (oldOptimized.sorted().subList(1, oldOptimized.size - 1)
-                .sumOf { it.inWholeMilliseconds } / oldOptimized.size - 2).milliseconds
-            println("AvgOldOpt: $avgOldOpt")
 
-            "Optimized" - {
+            "Optimized" {
                 repeat(repetitions) {
                     val before = Clock.System.now()
                     checkAll(iterations = 15, Arb.uInt(max = 39u)) { second ->
@@ -211,44 +212,43 @@ val OidTest by testSuite {
                     optimized += duration
                     println("Optimized: $duration")
                 }
-            }
+
+                val avgOpt = (optimized.sorted().subList(1, optimized.size - 1)
+                    .sumOf { it.inWholeMilliseconds } / optimized.size - 2).milliseconds
+                println("AvgOpt: $avgOpt")
 
 
-            val avgOpt = (optimized.sorted().subList(1, optimized.size - 1)
-                .sumOf { it.inWholeMilliseconds } / optimized.size - 2).milliseconds
-            println("AvgOpt: $avgOpt")
-            val simple = mutableListOf<Duration>()
-            "Simple" - {
-                repeat(repetitions) {
-                    val before = Clock.System.now()
-                    checkAll(iterations = 15, Arb.uInt(max = 39u)) { second ->
-                        checkAll(iterations = 5000, Arb.uIntArray(Arb.int(0..256), Arb.uInt(UInt.MAX_VALUE))) {
-                            listOf(1u, 2u).forEach { first ->
-                                val oid = OldOIDObjectIdentifier(first, second, *it.toUIntArray())
-                                OldOIDObjectIdentifier.decodeFromTlv(oid.encodeToTlv())
+                "Simple" {
+                    val simple = mutableListOf<Duration>()
+                    repeat(repetitions) {
+                        val before = Clock.System.now()
+                        checkAll(iterations = 15, Arb.uInt(max = 39u)) { second ->
+                            checkAll(iterations = 5000, Arb.uIntArray(Arb.int(0..256), Arb.uInt(UInt.MAX_VALUE))) {
+                                listOf(1u, 2u).forEach { first ->
+                                    val oid = OldOIDObjectIdentifier(first, second, *it.toUIntArray())
+                                    OldOIDObjectIdentifier.decodeFromTlv(oid.encodeToTlv())
+                                }
                             }
                         }
+                        val duration = Clock.System.now() - before
+                        simple += duration
+                        println("Simple $duration")
                     }
-                    val duration = Clock.System.now() - before
-                    simple += duration
-                    println("Simple $duration")
+
+                    val avgSimple = (simple.sorted().subList(1, simple.size - 1)
+                        .sumOf { it.inWholeMilliseconds } / simple.size - 2).milliseconds
+                    println("AvgSimple: $avgSimple")
+                    avgOpt shouldBeLessThan avgSimple
                 }
             }
-
-            val avgSimple = (simple.sorted().subList(1, simple.size - 1)
-                .sumOf { it.inWholeMilliseconds } / simple.size - 2).milliseconds
-            println("AvgSimple: $avgSimple")
-
-            avgOpt shouldBeLessThan avgSimple
-
         }
 
 
         "Benchmarking UUID" - {
-            val inputs = List<Uuid>(1000000){Uuid.random()}
+            val inputs = List<Uuid>(1000000) { Uuid.random() }
 
             val optimized = mutableListOf<Duration>()
-            val repetitions= 10
+            val repetitions = 10
 
 
 
@@ -260,35 +260,26 @@ val OidTest by testSuite {
                     optimized += duration
                     println("Optimized: $duration")
                 }
-            }
+                val avgOpt = (optimized.sorted().subList(1, optimized.size - 1)
+                    .sumOf { it.inWholeMilliseconds } / optimized.size - 2).milliseconds
+                println("AvgOpt: $avgOpt")
 
 
-            val avgOpt = (optimized.sorted().subList(1, optimized.size - 1)
-                .sumOf { it.inWholeMilliseconds } / optimized.size - 2).milliseconds
-            println("AvgOpt: $avgOpt")
-
-            val oldOptimized = mutableListOf<Duration>()
-
-
-
-            "Old Bigint-Based" - {
-                repeat(repetitions) {
-                    val before = Clock.System.now()
-                    inputs.forEach { BigIntObjectIdentifier(it) }
-                    val duration = Clock.System.now() - before
-                    oldOptimized += duration
-                    println("Old Optimized: $duration")
+                "Old Bigint-Based" - {
+                    val oldOptimized = mutableListOf<Duration>()
+                    repeat(repetitions) {
+                        val before = Clock.System.now()
+                        inputs.forEach { BigIntObjectIdentifier(it) }
+                        val duration = Clock.System.now() - before
+                        oldOptimized += duration
+                        println("Old Optimized: $duration")
+                    }
+                    val avgOldOpt = (oldOptimized.sorted().subList(1, oldOptimized.size - 1)
+                        .sumOf { it.inWholeMilliseconds } / oldOptimized.size - 2).milliseconds
+                    println("AvgOldOpt: $avgOldOpt")
+                    avgOpt shouldBeLessThan avgOldOpt
                 }
             }
-
-
-            val avgOldOpt = (oldOptimized.sorted().subList(1, oldOptimized.size - 1)
-                .sumOf { it.inWholeMilliseconds } / oldOptimized.size - 2).milliseconds
-            println("AvgOldOpt: $avgOldOpt")
-
-
-            avgOpt shouldBeLessThan avgOldOpt
-
         }
 
         "Automated BigInt" - {
@@ -348,7 +339,7 @@ val OidTest by testSuite {
                 val oid = ObjectIdentifier(oidString)
                 oid.encodeToDer() shouldBe ASN1ObjectIdentifier(oidString).encoded
                 oid.nodes.size shouldBe 3
-                oid.nodes.first() shouldBe  "2"
+                oid.nodes.first() shouldBe "2"
                 oid.nodes[1] shouldBe "25"
                 oid.nodes.last() shouldBe bigint.toString()
 
@@ -497,14 +488,14 @@ class BigIntObjectIdentifier @Throws(Asn1Exception::class) private constructor(
             throw Asn1Exception("Empty OIDs are not supported")
 
         bytes?.apply {
-            if(first().toUByte()>127u) throw Asn1Exception("OID top-level arc can only be number 0, 1 or 2")
+            if (first().toUByte() > 127u) throw Asn1Exception("OID top-level arc can only be number 0, 1 or 2")
         }
         nodes?.apply {
             if (size < 2) throw Asn1StructuralException("at least two nodes required!")
             if (first() > 2u) throw Asn1Exception("OID top-level arc can only be number 0, 1 or 2")
-            if(first()<2u) {
+            if (first() < 2u) {
                 if (get(1) > 39u) throw Asn1Exception("Second segment must be <40")
-            }else {
+            } else {
                 if (get(1) > 47u) throw Asn1Exception("Second segment must be <48")
             }
             forEach { if (it.isNegative) throw Asn1Exception("Negative Number encountered: $it") }

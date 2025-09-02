@@ -3,17 +3,17 @@ package at.asitplus.signum.indispensable
 import at.asitplus.signum.indispensable.asn1.memDump
 import at.asitplus.signum.indispensable.asn1.toBitSet
 import at.asitplus.signum.indispensable.asn1.toBitString
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
 import io.kotest.assertions.withClue
 import de.infix.testBalloon.framework.testSuite
-import invoke
-import minus
-import withData
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.boolean
 import io.kotest.property.arbitrary.booleanArray
 import io.kotest.property.arbitrary.int
-import io.kotest.property.checkAll
+import at.asitplus.testballoon.checkAll
 import java.util.*
 import at.asitplus.signum.indispensable.asn1.BitSet as KmpBitSet
 
@@ -243,7 +243,7 @@ val BitSetTest by testSuite {
                     val truncated = input.dropLastWhile { !it }
                     val monotonicOrderedStr = truncated.chunked(8)
                         .map { byte ->
-                            (0..<8).map { kotlin.runCatching { byte[it] }.getOrElse { false } }
+                            (0..<8).map { runCatching { byte[it] }.getOrElse { false } }
                                 .joinToString(separator = "") { if (it) "1" else "0" }
                         }.joinToString(separator = "") { it }.dropLastWhile { it == '0' }
 

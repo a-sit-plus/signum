@@ -3,10 +3,11 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToEnum
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToEnumOrdinal
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
 import de.infix.testBalloon.framework.testSuite
-import invoke
-import minus
-import withData
+
 import io.kotest.matchers.shouldBe
 
 enum class TestEnum {
