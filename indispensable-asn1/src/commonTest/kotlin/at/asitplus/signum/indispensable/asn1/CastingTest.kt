@@ -1,11 +1,12 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
+import de.infix.testBalloon.framework.testSuite
+import invoke
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 
-class CastingTest : FreeSpec({
+val CastingTest by testSuite {
 
     "Primitive" {
         shouldThrow<Asn1StructuralException> { Asn1.Int(0).asSet() }
@@ -61,6 +62,4 @@ class CastingTest : FreeSpec({
         Asn1.ExplicitlyTagged(19u) { +Asn1.Null() }.let { it.asStructure() shouldBe it }
         Asn1.ExplicitlyTagged(19u) { +Asn1.Null() }.let { it.asExplicitlyTagged() shouldBe it }
     }
-
-
-})
+}

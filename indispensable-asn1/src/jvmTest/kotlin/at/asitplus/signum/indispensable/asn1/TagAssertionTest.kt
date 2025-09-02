@@ -2,12 +2,13 @@ package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.core.spec.style.FreeSpec
+import de.infix.testBalloon.framework.testSuite
+import minus
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.uLong
 import io.kotest.property.checkAll
 
-class TagAssertionTest : FreeSpec({
+val TagAssertionTest by testSuite {
     "Automated" - {
         checkAll(iterations = 100000, Arb.uLong(max = ULong.MAX_VALUE - 2uL)) {
             var seq = (Asn1.Sequence { } withImplicitTag it).asStructure()
@@ -17,4 +18,4 @@ class TagAssertionTest : FreeSpec({
             }
         }
     }
-})
+}

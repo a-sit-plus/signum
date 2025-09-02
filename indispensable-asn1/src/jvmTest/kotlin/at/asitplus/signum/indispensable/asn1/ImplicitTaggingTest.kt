@@ -4,8 +4,10 @@ import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.without
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import com.ionspin.kotlin.bignum.integer.BigInteger
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import de.infix.testBalloon.framework.testSuite
+import invoke
+import minus
+import withData
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
@@ -13,7 +15,7 @@ import io.kotest.property.Arb
 import io.kotest.property.arbitrary.uLong
 import io.kotest.property.checkAll
 
-class ImplicitTaggingTest : FreeSpec({
+val ImplicitTaggingTest by testSuite {
 
     "Plain" - {
         checkAll(Arb.uLong()) { tagNum ->
@@ -30,7 +32,7 @@ class ImplicitTaggingTest : FreeSpec({
             universalPrimitive.isConstructed.shouldBeFalse()
             universalPrimitive.tagClass shouldBe TagClass.UNIVERSAL
 
-            withData(nameFn = { "$tagNum $it" }, TagClass.entries) { tagClass ->
+            withData(nameFn = { "$tagNum $it" }, data = TagClass.entries) { tagClass ->
                 val classy = universalConstructed withClass tagClass
                 classy.tagClass shouldBe tagClass
                 (universalConstructed without CONSTRUCTED).isConstructed shouldBe false
@@ -78,7 +80,7 @@ class ImplicitTaggingTest : FreeSpec({
             }
 
 
-            withData(nameFn = { "$tagNum $it" }, TagClass.entries) { tagClass ->
+            withData(nameFn = { "$tagNum $it" }, data = TagClass.entries) { tagClass ->
 
                 val newTagValue = tagNum / 2uL;
                 val newTagObject = Asn1Element.Tag(newTagValue, constructed = true) //test CONSTRUCTED override
@@ -119,7 +121,7 @@ class ImplicitTaggingTest : FreeSpec({
 
             (set withImplicitTag tagNum).tag.tagClass shouldBe TagClass.CONTEXT_SPECIFIC
 
-            withData(nameFn = { "$tagNum $it" }, TagClass.entries) { tagClass ->
+            withData(nameFn = { "$tagNum $it" }, data = TagClass.entries) { tagClass ->
 
                 val newTagValue = tagNum / 2uL
 
@@ -163,4 +165,4 @@ class ImplicitTaggingTest : FreeSpec({
     }
 
 
-})
+}

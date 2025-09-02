@@ -4,8 +4,10 @@ package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import io.kotest.assertions.withClue
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import de.infix.testBalloon.framework.testSuite
+import invoke
+import minus
+import withData
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
@@ -18,7 +20,7 @@ import kotlinx.io.snapshot
 import org.bouncycastle.asn1.ASN1Integer
 import org.bouncycastle.asn1.DERTaggedObject
 
-class TagEncodingTest : FreeSpec({
+val TagEncodingTest by testSuite {
 
     "fails" {
         val it = 2204309167L
@@ -105,4 +107,4 @@ class TagEncodingTest : FreeSpec({
         }
     }
 
-})
+}

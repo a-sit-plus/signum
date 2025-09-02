@@ -3,7 +3,8 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
-import io.kotest.core.spec.style.FreeSpec
+import de.infix.testBalloon.framework.testSuite
+import invoke
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
@@ -11,10 +12,11 @@ import io.kotest.property.arbitrary.*
 import io.kotest.property.checkAll
 import kotlinx.io.Buffer
 import kotlinx.io.snapshot
+import minus
 import kotlin.math.ceil
 import kotlin.random.Random
 
-class UVarIntTest : FreeSpec({
+val UVarIntTest by testSuite {
 
     //TODO: buffer based tests with capped number of bytes test
     "UInts with trailing bytes" - {
@@ -104,7 +106,7 @@ class UVarIntTest : FreeSpec({
         }
     }
 
-})
+}
 
 //old code for regeressiontests
 
