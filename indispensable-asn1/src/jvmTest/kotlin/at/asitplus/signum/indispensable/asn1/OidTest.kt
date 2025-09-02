@@ -5,8 +5,10 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import de.infix.testBalloon.framework.testSuite
+import invoke
+import minus
+import withData
 import io.kotest.matchers.comparables.shouldBeLessThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -21,7 +23,7 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class, ExperimentalStdlibApi::class)
-class OidTest : FreeSpec({
+val OidTest by testSuite {
     "OID test" - {
 
         "manual" {
@@ -354,7 +356,7 @@ class OidTest : FreeSpec({
             }
         }
     }
-})
+}
 
 
 // old implementation for benchmarking

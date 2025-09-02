@@ -1,10 +1,11 @@
 package at.asitplus.signum.indispensable.asn1
 
-import io.kotest.core.spec.style.FreeSpec
+import de.infix.testBalloon.framework.testSuite
+import invoke
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
-class Asn1StringTest : FreeSpec({
+val Asn1StringTest by testSuite {
 
     val utf8 = Asn1String.UTF8("uÄasdiu3")
     val universal = Asn1String.Universal("adsa4")
@@ -35,4 +36,4 @@ class Asn1StringTest : FreeSpec({
             }
         }
     }
-})
+}

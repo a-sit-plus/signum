@@ -6,8 +6,10 @@ import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import com.ionspin.kotlin.bignum.integer.toBigInteger
 import com.ionspin.kotlin.bignum.integer.util.fromTwosComplementByteArray
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import de.infix.testBalloon.framework.testSuite
+import invoke
+import minus
+import withData
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
@@ -17,7 +19,7 @@ import kotlinx.io.snapshot
 import org.bouncycastle.asn1.ASN1Integer
 import kotlin.math.pow
 
-class Asn1NumberEncodingTest:FreeSpec( {
+val Asn1NumberEncodingTest by testSuite {
 
 
     "Asn1 Number encoding" - {
@@ -188,4 +190,4 @@ class Asn1NumberEncodingTest:FreeSpec( {
 
     }
 
-})
+}

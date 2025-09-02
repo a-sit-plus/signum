@@ -1,14 +1,15 @@
 package at.asitplus.signum.indispensable.asn1
 
-import io.kotest.core.spec.style.FreeSpec
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.comparables.shouldBeLessThan
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.uLong
 import io.kotest.property.checkAll
+import minus
 
-class TagSortingTest : FreeSpec({
+val TagSortingTest by testSuite {
 
     "Automated" - {
         val sortedClasses =
@@ -75,4 +76,4 @@ class TagSortingTest : FreeSpec({
             }
         }
     }
-})
+}

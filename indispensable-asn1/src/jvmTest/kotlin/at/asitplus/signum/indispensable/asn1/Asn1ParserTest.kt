@@ -3,7 +3,9 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.asn1.encoding.readFullyToAsn1Elements
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.core.spec.style.FreeSpec
+import de.infix.testBalloon.framework.testSuite
+import invoke
+import minus
 import io.kotest.matchers.shouldBe
 import kotlin.random.Random
 
@@ -11,7 +13,7 @@ import kotlin.random.Random
 //this copied over to not change delicate test behaviour, as the original function is not deprecated, with DeprecationLevel.ERROR
 private fun Asn1Element.Companion.parseInternal(input: ByteIterator)=parse(mutableListOf<Byte>().also { while (input.hasNext()) it.add(input.nextByte()) }.toByteArray())
 
-class Asn1ParserTest : FreeSpec({
+val Asn1ParserTest by testSuite {
 
     "Multiple Elements" - {
         val seq = Asn1.Sequence {
@@ -80,4 +82,4 @@ class Asn1ParserTest : FreeSpec({
             shouldThrow<Asn1Exception> { Asn1Element.parseInternal(withGarbage.iterator()) }
         }
     }
-})
+}

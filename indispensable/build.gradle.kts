@@ -1,8 +1,5 @@
 import at.asitplus.gradle.*
-import at.asitplus.gradle.at.asitplus.gradle.getBuildableTargets
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
-import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
 plugins {
     id("com.android.library")
@@ -10,6 +7,7 @@ plugins {
     kotlin("plugin.serialization")
     id("signing")
     id("at.asitplus.gradle.conventions")
+    id("de.infix.testBalloon")
 }
 
 val artifactVersion: String by extra

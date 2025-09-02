@@ -1,12 +1,13 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.parse
+import de.infix.testBalloon.framework.testSuite
+import invoke
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 
 @OptIn(ExperimentalStdlibApi::class)
-class SpecificRegressionTests: FreeSpec({
+val SpecificRegressionTests by testSuite {
     "Illegal length encoding leads to inconsistent re-encoding (as featured in: \"this private key sure looks like ASN.1\")" {
         shouldThrow<Asn1Exception> {
             // length < 128 encoded as long form
@@ -17,4 +18,4 @@ class SpecificRegressionTests: FreeSpec({
             Asn1Element.parseFromDerHexString("01820080" + "00".repeat(0x80))
         }
     }
-})
+}

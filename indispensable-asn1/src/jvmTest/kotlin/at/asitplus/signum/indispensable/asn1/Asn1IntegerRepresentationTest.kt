@@ -5,9 +5,11 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import com.ionspin.kotlin.bignum.integer.util.toTwosComplementByteArray
+import de.infix.testBalloon.framework.testSuite
+import invoke
+import minus
+import withData
 import io.kotest.assertions.withClue
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.byte
@@ -18,7 +20,7 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class)
-class Asn1IntegerRepresentationTest : FreeSpec({
+val Asn1IntegerRepresentationTest by testSuite {
 
     "Manual" - {
         withData("1027", "256", "1", "3", "8", "127", "128", "255", "512", "1024") {
@@ -101,4 +103,4 @@ class Asn1IntegerRepresentationTest : FreeSpec({
             }
         }
     }
-})
+}

@@ -8,6 +8,7 @@ plugins {
     kotlin("plugin.serialization")
     id("signing")
     id("at.asitplus.gradle.conventions")
+    id("de.infix.testBalloon")
 }
 
 val artifactVersion: String by extra
@@ -56,6 +57,7 @@ kotlin {
     sourceSets {
         all {
             languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
+            languageSettings.enableLanguageFeature("ContextParameters")
         }
 
         commonMain {
@@ -74,6 +76,8 @@ kotlin {
 
         commonTest {
             dependencies {
+                implementation("de.infix.testBalloon:testBalloon-framework-core:${libs.versions.testballoon.get()}")
+                implementation("de.infix.testBalloon:testBalloon-integration-kotest-assertions:${libs.versions.testballoon.get()}")
                 implementation(kotest("property"))
                 implementation(project(":indispensable"))
             }

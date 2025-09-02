@@ -4,8 +4,10 @@ import at.asitplus.signum.indispensable.asn1.memDump
 import at.asitplus.signum.indispensable.asn1.toBitSet
 import at.asitplus.signum.indispensable.asn1.toBitString
 import io.kotest.assertions.withClue
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import de.infix.testBalloon.framework.testSuite
+import invoke
+import minus
+import withData
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.boolean
@@ -15,11 +17,11 @@ import io.kotest.property.checkAll
 import java.util.*
 import at.asitplus.signum.indispensable.asn1.BitSet as KmpBitSet
 
-class BitSetTest : FreeSpec({
+val BitSetTest by testSuite {
 
     //outer container required for checkall
     "Custom BitSet Implementation" - {
-        "manual tests" {
+        "manual tests" - {
             KmpBitSet.fromBitString("011011100101110111").toBitString() shouldBe "011011100101110111"
 
             val kmm = KmpBitSet(0)
@@ -251,7 +253,7 @@ class BitSetTest : FreeSpec({
             }
         }
     }
-})
+}
 
 fun BitSet.toBitString(): String = toByteArray().toBitString()
 fun BitSet.memDump(): String = toByteArray().memDump()
