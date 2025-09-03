@@ -38,15 +38,15 @@ To put it plain and simple:
 
 ### Contributor Licence Agreement
 
-You must sign the [A-SIT Plus Contributor Licence Agreement](https://a-sit-plus.github.io/ASP_CLA.pdf) (CLA) before we can review your PR.
+You must sign the [A-SIT Plus Contributor Licence Agreement](https://plus.a-sit.at/assets/other/cla/ASP_CLA.pdf) (CLA) before we can review your PR.
 This is a one-time requirement and applies to all A-SIT Plus open-source projects, which indicate to require external contributors to sign the CLA (such as this project).
 If you want to know more about what a CLA is and why some legal entities require contributors to sign it, check out the [Wikipedia page about CLAs](https://en.wikipedia.org/wiki/Contributor_License_Agreement).
 
-Please download and fill out the [A-SIT Plus CLA](https://a-sit-plus.github.io/ASP_CLA.pdf).
+Please download and fill out the [A-SIT Plus CLA](https://plus.a-sit.at/assets/other/cla/ASP_CLA.pdf).
 Either print, sign, and scan it or (preferably) use an eIDAS-compliant qualified electronic signature.
 When done, send the signed CLA to opensource@a-sit.at.
 
-Information on the processing of your personal data can be found in the [A-SIT Plus Privacy Policy](https://a-sit-plus.github.io/ASP_Privacy.pdf).
+Information on the processing of your personal data can be found in the [A-SIT Plus Privacy Policy](https://plus.a-sit.at/assets/other/cla/ASP_Privacy.pdf).
 Be sure to carefully read it and only sign the CLA if you accept the terms of this privacy policy! (Don't worry it's a light read!)
 You will receive a confirmation message once we have received and processed your CLA.
 
