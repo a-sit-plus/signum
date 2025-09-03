@@ -27,21 +27,25 @@ import at.asitplus.signum.indispensable.asn1.encoding.decodeToVideotexString
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToVisibleString
 
 
-//TODO auto-sanitize and/or reduce
 /**
- * ASN.! String class used as wrapper do discriminate between different ASN.1 string types
+ * ASN.1 String class used as wrapper do discriminate between different ASN.1 string types
+ * By default, the string value is decoded using UTF-8. If a different charset or custom decoding
+ * is needed, the [rawValue] property can be used directly.
  */
 sealed class Asn1String(
-    open val rawValue: ByteArray
+    val rawValue: ByteArray
 ) : Asn1Encodable<Asn1Primitive> {
     abstract val tag: ULong
     val value: String by lazy { String.decodeFromAsn1ContentBytes(rawValue) }
 
     /**
      * UTF8 STRING (verbatim String)
+     * @throws Asn1Exception if illegal characters are provided
      */
     class UTF8(rawValue: ByteArray) : Asn1String(rawValue) {
         override val tag = BERTags.UTF8_STRING.toULong()
+
+        @Throws(Asn1Exception::class)
         constructor(value: String) : this(value.encodeToByteArray())
 
         init {
@@ -59,9 +63,12 @@ sealed class Asn1String(
 
     /**
      * VISIBLE STRING (checked)
+     * @throws Asn1Exception if illegal characters are provided
      */
     class Visible(rawValue: ByteArray) : Asn1String(rawValue) {
         override val tag = BERTags.VISIBLE_STRING.toULong()
+
+        @Throws(Asn1Exception::class)
         constructor(value: String) : this(value.encodeToByteArray())
 
         init {
@@ -72,9 +79,12 @@ sealed class Asn1String(
 
     /**
      * IA5 STRING (checked)
+     * @throws Asn1Exception if illegal characters are provided
      */
     class IA5(rawValue: ByteArray) : Asn1String(rawValue) {
         override val tag = BERTags.IA5_STRING.toULong()
+
+        @Throws(Asn1Exception::class)
         constructor(value: String) : this(value.encodeToByteArray())
 
         init {
@@ -85,9 +95,12 @@ sealed class Asn1String(
 
     /**
      * TELETEX STRING (checked)
+     * @throws Asn1Exception if illegal characters are provided
      */
     class Teletex(rawValue: ByteArray) : Asn1String(rawValue) {
         override val tag = BERTags.T61_STRING.toULong()
+
+        @Throws(Asn1Exception::class)
         constructor(value: String) : this(value.encodeToByteArray())
 
         init {
@@ -98,9 +111,12 @@ sealed class Asn1String(
 
     /**
      * BMP STRING (checked)
+     * @throws Asn1Exception if illegal characters are provided
      */
     class BMP(rawValue: ByteArray) : Asn1String(rawValue) {
         override val tag = BERTags.BMP_STRING.toULong()
+
+        @Throws(Asn1Exception::class)
         constructor(value: String) : this(value.encodeToByteArray())
 
         init {
@@ -119,9 +135,12 @@ sealed class Asn1String(
 
     /**
      * GENERAL STRING (checked)
+     * @throws Asn1Exception if illegal characters are provided
      */
     class General(rawValue: ByteArray) : Asn1String(rawValue) {
         override val tag = BERTags.GENERAL_STRING.toULong()
+
+        @Throws(Asn1Exception::class)
         constructor(value: String) : this(value.encodeToByteArray())
 
         init {
@@ -132,9 +151,12 @@ sealed class Asn1String(
 
     /**
      * GRAPHIC STRING (checked)
+     * @throws Asn1Exception if illegal characters are provided
      */
     class Graphic(rawValue: ByteArray) : Asn1String(rawValue) {
         override val tag = BERTags.GRAPHIC_STRING.toULong()
+
+        @Throws(Asn1Exception::class)
         constructor(value: String) : this(value.encodeToByteArray())
 
         init {
@@ -165,6 +187,8 @@ sealed class Asn1String(
      */
     class Printable @Throws(Asn1Exception::class) constructor(rawValue: ByteArray) : Asn1String(rawValue) {
         override val tag = BERTags.PRINTABLE_STRING.toULong()
+
+        @Throws(Asn1Exception::class)
         constructor(value: String) : this(value.encodeToByteArray())
 
         init {
@@ -179,6 +203,8 @@ sealed class Asn1String(
      */
     class Numeric @Throws(Asn1Exception::class) constructor(rawValue: ByteArray) : Asn1String(rawValue) {
         override val tag = BERTags.NUMERIC_STRING.toULong()
+
+        @Throws(Asn1Exception::class)
         constructor(value: String) : this(value.encodeToByteArray())
 
         init {
@@ -208,6 +234,16 @@ sealed class Asn1String(
 
     companion object : Asn1Decodable<Asn1Primitive, Asn1String> {
 
+        /**
+         * Decodes an [Asn1Primitive] into a specific [Asn1String] subtype based on its tag.
+         *
+         * For cases where an implicit tag is required, see the helper extension methods
+         * like [decodeToUtf8String], [decodeToPrintableString], etc., which allow specifying an optional tag override.
+         *
+         * @param src the ASN.1 primitive to decode
+         * @return the corresponding [Asn1String] subtype
+         * @throws Asn1Exception if decoding fails or the tag is unsupported
+         */
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Primitive): Asn1String = runRethrowing {
             when (src.tag.tagValue) {
