@@ -14,8 +14,6 @@ import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.cbor.CborEncoder
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.encodeToByteArray
@@ -60,7 +58,7 @@ class CoseSignedSerializer<P : Any?>(
     serialName = "CoseSigned",
     encodeAs = { it.wireFormat },
     decodeAs = { wire ->
-        val protectedHeader = wire.protectedHeader.toHeader()
+        val protectedHeader = wire.protectedHeader.toProtectedHeader()
         val signature = wire.rawAuthBytes.toSignature(protectedHeader, wire.unprotectedHeader)
         CoseSigned(
             protectedHeader = protectedHeader,
@@ -84,7 +82,7 @@ class CoseMacSerializer<P : Any?>(
     serialName = "CoseMac",
     encodeAs = { it.wireFormat },
     decodeAs = { wire ->
-        val protectedHeader = wire.protectedHeader.toHeader()
+        val protectedHeader = wire.protectedHeader.toProtectedHeader()
         val tag = wire.rawAuthBytes
         CoseMac(
             protectedHeader = protectedHeader,
@@ -127,7 +125,7 @@ private fun <P : Any?> ByteArray.fromByteStringWrapper(serializer: KSerializer<P
         this
     ).value
 
-fun ByteArray.toHeader(): CoseHeader =
+fun ByteArray.toProtectedHeader(): CoseHeader =
     if (isEmpty()) {
         CoseHeader()
     } else {
