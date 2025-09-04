@@ -2,17 +2,16 @@ package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.testballoon.invoke
-import at.asitplus.testballoon.minus
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
-import at.asitplus.testballoon.checkAll
+import io.kotest.property.checkAll
 import org.bouncycastle.asn1.ASN1InputStream
 
 val CustomTaggedTest by testSuite {
-    "Custom CONSTRUCTED" - {
+    "Custom CONSTRUCTED" {
         checkAll(Arb.int(min = 0, max = Int.MAX_VALUE/*BC limits*/)) {
             Asn1CustomStructure(
                 listOf(),
@@ -25,7 +24,7 @@ val CustomTaggedTest by testSuite {
         }
     }
 
-    "Custom as Primitive" - {
+    "Custom as Primitive" {
         checkAll(Arb.int(min = 0, max = Int.MAX_VALUE/*BC limits*/)) {
             Asn1CustomStructure.asPrimitive(
                 listOf(),
