@@ -94,7 +94,7 @@ data class CoseMac<P : Any?> internal constructor(
             payload = payload,
             tag = tag,
             wireFormat = CoseBytes(
-                protectedHeader = coseCompliantSerializer.encodeToByteArray(protectedHeader),
+                protectedHeader = protectedHeader,
                 unprotectedHeader = unprotectedHeader,
                 payload = payload.toRawPayload(payloadSerializer),
                 rawAuthBytes = tag
@@ -113,7 +113,7 @@ data class CoseMac<P : Any?> internal constructor(
             payloadSerializer: KSerializer<P>,
         ): CoseInput = CoseInput(
             contextString = "MAC0",
-            protectedHeader = coseCompliantSerializer.encodeToByteArray<CoseHeader>(protectedHeader),
+            protectedHeader = protectedHeader,
             externalAad = externalAad,
             payload = payload.toRawPayload(payloadSerializer),
         )

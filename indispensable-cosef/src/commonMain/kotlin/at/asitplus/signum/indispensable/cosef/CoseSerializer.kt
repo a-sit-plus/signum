@@ -23,7 +23,7 @@ import kotlinx.serialization.json.JsonDecoder
 
 object CoseBytesWireFormatSerializer : KSerializer<CoseBytes> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("CoseBytes") {
-        element("protectedHeader", ByteArraySerializer().descriptor)
+        element("protectedHeader", ProtectedCoseHeaderSerializer.descriptor)
         element("unprotectedHeader", CoseHeaderSerializer.descriptor)
         element("payload", ByteArraySerializer().descriptor, isOptional = true)
         element("authTag", ByteArraySerializer().descriptor)
@@ -58,7 +58,7 @@ class CoseSignedSerializer<P : Any?>(
     serialName = "CoseSigned",
     encodeAs = { it.wireFormat },
     decodeAs = { wire ->
-        val protectedHeader = wire.protectedHeader.toProtectedHeader()
+        val protectedHeader = wire.protectedHeader
         val signature = wire.rawAuthBytes.toSignature(protectedHeader, wire.unprotectedHeader)
         CoseSigned(
             protectedHeader = protectedHeader,
@@ -82,7 +82,7 @@ class CoseMacSerializer<P : Any?>(
     serialName = "CoseMac",
     encodeAs = { it.wireFormat },
     decodeAs = { wire ->
-        val protectedHeader = wire.protectedHeader.toProtectedHeader()
+        val protectedHeader = wire.protectedHeader
         val tag = wire.rawAuthBytes
         CoseMac(
             protectedHeader = protectedHeader,
@@ -124,13 +124,6 @@ private fun <P : Any?> ByteArray.fromByteStringWrapper(serializer: KSerializer<P
         ByteStringWrapperSerializer(serializer),
         this
     ).value
-
-fun ByteArray.toProtectedHeader(): CoseHeader =
-    if (isEmpty()) {
-        CoseHeader()
-    } else {
-        coseCompliantSerializer.decodeFromByteArray(CoseHeader.serializer(), this)
-    }
 
 private fun CoseHeader.usesEC(): Boolean? = when (algorithm) {
     null -> certificateChain?.firstOrNull()

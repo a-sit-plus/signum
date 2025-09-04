@@ -23,8 +23,8 @@ import kotlinx.serialization.encodeToByteArray
 @CborArray
 @ConsistentCopyVisibility
 data class CoseBytes internal constructor(
-    @ByteString
-    val protectedHeader: ByteArray,
+    @Serializable(with = ProtectedCoseHeaderSerializer::class)
+    val protectedHeader: CoseHeader,
     val unprotectedHeader: CoseHeader?,
     @ByteString
     val payload: ByteArray?,
@@ -52,7 +52,7 @@ data class CoseBytes internal constructor(
         contextString: String
     ): ByteArray = CoseInput(
         contextString = contextString,
-        protectedHeader = protectedHeader.toZeroLengthByteString(),
+        protectedHeader = protectedHeader,
         externalAad = externalAad,
         payload = if (detachedPayload != null) {
             require(payload == null)
@@ -71,7 +71,7 @@ data class CoseBytes internal constructor(
 
         other as CoseBytes
 
-        if (!protectedHeader.contentEquals(other.protectedHeader)) return false
+        if (protectedHeader != other.protectedHeader) return false
         if (unprotectedHeader != other.unprotectedHeader) return false
         if (!payload.contentEquals(other.payload)) return false
         if (!rawAuthBytes.contentEquals(other.rawAuthBytes)) return false
@@ -80,15 +80,11 @@ data class CoseBytes internal constructor(
     }
 
     override fun hashCode(): Int {
-        var result = protectedHeader.contentHashCode()
-        result = 31 * result + (unprotectedHeader?.hashCode() ?: 0)
-        result = 31 * result + (payload?.contentHashCode() ?: 0)
-        result = 31 * result + rawAuthBytes.contentHashCode()
-        return result
+        return this::class.hashCode()
     }
 
     override fun toString(): String {
-        return "CoseSigned(protectedHeader=${protectedHeader.encodeToString(Base16Strict)}," +
+        return "CoseSigned(protectedHeader=$protectedHeader," +
                 " unprotectedHeader=$unprotectedHeader," +
                 " payload=${payload?.encodeToString(Base16Strict)}," +
                 " authBytes=${rawAuthBytes.encodeToString(Base16Strict)})"
@@ -101,17 +97,4 @@ data class CoseBytes internal constructor(
             coseCompliantSerializer.decodeFromByteArray(it)
         }
     }
-}
-
-/**
- * The protected attributes from the body structure, encoded in a
- * bstr type.  If there are no protected attributes, a zero-length
- * byte string is used.
- *
- *  [RFC 9052 4.4](https://datatracker.ietf.org/doc/html/rfc9052#section-4.4)
- */
-private fun ByteArray.toZeroLengthByteString(): ByteArray = when {
-    // "A0"
-    this.size == 1 && this[0] == 160.toByte() -> byteArrayOf()
-    else -> this
 }

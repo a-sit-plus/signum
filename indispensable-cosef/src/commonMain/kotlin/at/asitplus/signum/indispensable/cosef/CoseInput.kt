@@ -14,8 +14,8 @@ import kotlinx.serialization.encodeToByteArray
 @CborArray
 data class CoseInput(
     val contextString: String,
-    @ByteString
-    val protectedHeader: ByteArray,
+    @Serializable(with = ProtectedCoseHeaderSerializer::class)
+    val protectedHeader: CoseHeader,
     @ByteString
     val externalAad: ByteArray,
     @ByteString
@@ -52,7 +52,7 @@ data class CoseInput(
 
     override fun toString(): String {
         return "CoseSignatureInput(contextString='$contextString'," +
-                " protectedHeader=${protectedHeader.encodeToString(Base16Strict)}," +
+                " protectedHeader=$protectedHeader," +
                 " externalAad=${externalAad.encodeToString(Base16Strict)}," +
                 " payload=${payload?.encodeToString(Base16Strict)})"
     }

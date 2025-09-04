@@ -329,7 +329,7 @@ class CoseSerializationTest : FreeSpec({
         val inputManualSignature = coseCompliantSerializer.encodeToByteArray(
             CoseInput(
                 contextString = "Signature1",
-                protectedHeader = coseCompliantSerializer.encodeToByteArray(header),
+                protectedHeader = header,
                 externalAad = byteArrayOf(),
                 payload = payload
             )
@@ -350,7 +350,7 @@ class CoseSerializationTest : FreeSpec({
         val inputManualMac = coseCompliantSerializer.encodeToByteArray(
             CoseInput(
                 contextString = "MAC0",
-                protectedHeader = coseCompliantSerializer.encodeToByteArray(header),
+                protectedHeader = header,
                 externalAad = byteArrayOf(),
                 payload = payload
             )
@@ -374,7 +374,7 @@ class CoseSerializationTest : FreeSpec({
         val inputManualSignature = coseCompliantSerializer.encodeToByteArray(
             CoseInput(
                 contextString = "Signature1",
-                protectedHeader = coseCompliantSerializer.encodeToByteArray(header),
+                protectedHeader = header,
                 externalAad = byteArrayOf(),
                 payload = coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload)).wrapInCborTag(24),
             )
@@ -395,7 +395,7 @@ class CoseSerializationTest : FreeSpec({
         val inputManualMac = coseCompliantSerializer.encodeToByteArray(
             CoseInput(
                 contextString = "MAC0",
-                protectedHeader = coseCompliantSerializer.encodeToByteArray(header),
+                protectedHeader = header,
                 externalAad = byteArrayOf(),
                 payload = coseCompliantSerializer.encodeToByteArray(ByteStringWrapper(payload)).wrapInCborTag(24),
             )

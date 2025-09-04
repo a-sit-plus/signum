@@ -107,7 +107,7 @@ data class CoseSigned<P : Any?> internal constructor(
             payload = payload,
             signature = signature,
             wireFormat = CoseBytes(
-                protectedHeader = coseCompliantSerializer.encodeToByteArray(protectedHeader),
+                protectedHeader = protectedHeader,
                 unprotectedHeader = unprotectedHeader,
                 payload = payload.toRawPayload(payloadSerializer),
                 rawAuthBytes = signature.rawByteArray
@@ -126,7 +126,7 @@ data class CoseSigned<P : Any?> internal constructor(
             payloadSerializer: KSerializer<P>,
         ): CoseInput = CoseInput(
             contextString = "Signature1",
-            protectedHeader = coseCompliantSerializer.encodeToByteArray<CoseHeader>(protectedHeader),
+            protectedHeader = protectedHeader,
             externalAad = externalAad,
             payload = payload.toRawPayload(payloadSerializer),
         )
