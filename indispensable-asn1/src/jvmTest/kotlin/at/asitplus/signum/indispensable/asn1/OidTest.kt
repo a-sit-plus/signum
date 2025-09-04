@@ -1,8 +1,6 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.toAsn1VarInt
-import at.asitplus.testballoon.checkAllTests
-import at.asitplus.testballoon.checkAllSuites
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
@@ -302,9 +300,9 @@ val OidTest by testSuite {
             }
         }
 
-        "Automated BigInt" - {
-            checkAllSuites(iterations = 15, Arb.positiveInt(39)) { second ->
-                checkAllTests(iterations = 500, Arb.bigInt(1, 358)) {
+        "Automated BigInt" {
+            checkAll(iterations = 15, Arb.positiveInt(39)) { second ->
+                checkAll(iterations = 500, Arb.bigInt(1, 358)) {
                     listOf(1, 2).forEach { first ->
                         val third = BigInteger.fromByteArray(it.toByteArray(), Sign.POSITIVE)
                         val oid = ObjectIdentifier("$first.$second.$third")
