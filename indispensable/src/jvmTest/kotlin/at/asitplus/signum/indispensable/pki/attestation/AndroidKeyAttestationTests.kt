@@ -3,9 +3,8 @@
 package at.asitplus.signum.indispensable.pki.attestation
 
 import at.asitplus.attestation.android.exceptions.AttestationValueException
-import io.kotest.assertions.fail
+import at.asitplus.signum.indispensable.toJcaCertificateBlocking
 import io.kotest.assertions.throwables.shouldThrow
-import at.asitplus.signum.indispensable.pki.X509Certificate as SigNumX509
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -24,8 +23,9 @@ import java.security.cert.X509Certificate
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
-import java.util.Date
+import java.util.*
 import kotlin.io.encoding.ExperimentalEncodingApi
+import at.asitplus.signum.indispensable.pki.X509Certificate as SigNumX509
 
 
 @OptIn(ExperimentalStdlibApi::class)
@@ -56,21 +56,18 @@ class AndroidKeyAttestationTests : FreeSpec({
 
     @Serializable
     data class SoftwareEnforced(
-        val creationDateTime: String? = null, // millis as string
-        val attestationApplicationId: AttestationApplicationId? = null
+        val creationDateTime: String, // millis as string
+        val attestationApplicationId: AttestationApplicationId
     )
 
     @Serializable
     data class AttestationJson(
         val attestationChallenge: String,
-        val attestationSecurityLevel: String? = null, // TODO : currently not used
-        val keyMintSecurityLevel: String? = null,
+        val attestationSecurityLevel: String,
+        val keyMintSecurityLevel: String,
         val softwareEnforced: SoftwareEnforced? = null,
         val hardwareEnforced: HardwareEnforced? = null
     )
-
-    fun isoFromMillis(millis: Long): String =
-        DateTimeFormatter.ISO_INSTANT.format(Instant.ofEpochMilli(millis).atOffset(ZoneOffset.UTC))
 
     fun readResourceDir(dir: String): Path {
         val url = checkNotNull(javaClass.classLoader.getResource(dir)) {
@@ -82,31 +79,19 @@ class AndroidKeyAttestationTests : FreeSpec({
     fun readString(p: Path): String = Files.readString(p, StandardCharsets.UTF_8)
 
     fun loadPemChain(pemText: String): List<X509Certificate> {
-        val cf = CertificateFactory.getInstance("X.509")
         val re = Regex(
             "-----BEGIN CERTIFICATE-----(.*?)-----END CERTIFICATE-----",
             setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.MULTILINE)
         )
         return re.findAll(pemText).map { m ->
-            val body = m.groupValues[1].replace("\\s+".toRegex(), "")
-            val der = Base64.decode(body)
-            cf.generateCertificate(ByteArrayInputStream(der)) as X509Certificate
+            SigNumX509.decodeFromPem(m.value).getOrThrow().toJcaCertificateBlocking().getOrThrow()
         }.toList()
     }
 
-    /*
-    fun AttestationData.Level.Companion.fromSecurityLevel(s: String?): AttestationData.Level =
-        when (s?.uppercase()) {
+    fun mapSecurityLevel(keymasterLevel: String, attestationLevel: String): AttestationData.Level =
+        if (keymasterLevel != attestationLevel) AttestationData.Level.NOUGAT
+        else when (keymasterLevel.uppercase()) {
             "SOFTWARE" -> AttestationData.Level.SOFTWARE
-            "TEE", "STRONG_BOX" -> AttestationData.Level.HARDWARE
-            else -> AttestationData.Level.HARDWARE
-        }
-     */
-
-    fun mapSecurityLevel(s: String?): AttestationData.Level =
-        when (s?.uppercase()) {
-            "SOFTWARE" -> AttestationData.Level.SOFTWARE
-            "TEE", "STRONG_BOX" -> AttestationData.Level.HARDWARE
             else -> AttestationData.Level.HARDWARE
         }
 
@@ -138,7 +123,7 @@ class AndroidKeyAttestationTests : FreeSpec({
 
     "Android Key Attestation corpus (${cases.size} cases)" - {
         withData(cases) { c ->
-            println("run test: "+c.name)
+            println("run test: " + c.name)
             // 1) cert chain
             val chain = loadPemChain(readString(c.pemPath))
             chain.shouldNotBeNull()
@@ -162,14 +147,16 @@ class AndroidKeyAttestationTests : FreeSpec({
             // 3) challenge + time
             val challenge = Base64.decode(c.model.attestationChallenge)
             val creationMillis = c.model.softwareEnforced?.creationDateTime?.toLongOrNull()
-            val iso = creationMillis?.let { isoFromMillis(it) } ?: Instant.EPOCH.toString()
+            val iso = creationMillis?.let {Instant.ofEpochMilli(it) }
             val verificationDate: Date = creationMillis?.let { Date(it) } ?: Date()
 
             // 4) level + expected outcome
 
             // TODO Manfred 02.09.2025: not sure how to set level correctly
-            val level = c.model.keyMintSecurityLevel // gives "CertificateInvalidException: No matching root certificate"
-            //val level = c.model.attestationSecurityLevel // gives "AttestationValueException: Keymaster security level not software"
+            val level =
+                c.model.keyMintSecurityLevel // gives "CertificateInvalidException: No matching root certificate"
+            val aLevel =
+                c.model.attestationSecurityLevel // gives "AttestationValueException: Keymaster security level not software"
 
             val verifiedBootState = c.model.hardwareEnforced?.rootOfTrust?.verifiedBootState?.uppercase()
             val deviceLocked = c.model.hardwareEnforced?.rootOfTrust?.deviceLocked
@@ -178,7 +165,7 @@ class AndroidKeyAttestationTests : FreeSpec({
 
             // 5) build checker (wie in BasicParsingTests.kt)
             val service = attestationService(
-                attestationLevel = mapSecurityLevel(level),
+                attestationLevel = mapSecurityLevel(level, aLevel),
                 androidPackageName = pkgName,
                 androidAppSignatureDigest = listOf(expectedDigest),
                 // optional: requireStrongBox = (c.model.attestationSecurityLevel?.uppercase() == "STRONG_BOX"),
