@@ -1,0 +1,39 @@
+{
+  "attestationVersion": "3",
+  "attestationSecurityLevel": "TRUSTED_ENVIRONMENT",
+  "keyMintVersion": "4",
+  "keyMintSecurityLevel": "TRUSTED_ENVIRONMENT",
+  "attestationChallenge": "Y2hhbGxlbmdl",
+  "uniqueId": "",
+  "softwareEnforced": {
+    "creationDateTime": "1538178028279",
+    "attestationApplicationId": {
+      "packages": [
+        {
+          "name": "com.google.wireless.android.security.attestationverifier.collector",
+          "version": "0"
+        }
+      ],
+      "signatures": ["EDk47kU35Z6O55L2VFBPuDRvxrNG0LvEQV/DOfz8jsE="]
+    }
+  },
+  "hardwareEnforced": {
+    "purposes": ["2"],
+    "keySize": "2048",
+    "algorithms": "1",
+    "paddings": ["3"],
+    "rsaPublicExponent": "65537",
+    "noAuthRequired": true,
+    "origin": "GENERATED",
+    "rootOfTrust": {
+      "verifiedBootKey": "",
+      "deviceLocked": false,
+      "verifiedBootState": "UNVERIFIED",
+      "verifiedBootHash": "bp0MW+os2pnz5cdvsnQM34eT0dNjQizQZdIr8KK7W60="
+    },
+    "osVersion": "90000",
+    "osPatchLevel": "201908",
+    "vendorPatchLevel": "201809",
+    "bootPatchLevel": "201908"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "attestationVersion": "300",
+  "attestationSecurityLevel": "TRUSTED_ENVIRONMENT",
+  "keyMintVersion": "300",
+  "keyMintSecurityLevel": "TRUSTED_ENVIRONMENT",
+  "attestationChallenge": "Y2hhbGxlbmdl",
+  "uniqueId": "",
+  "softwareEnforced": {
+    "creationDateTime": "1727389885676",
+    "attestationApplicationId": {
+      "packages": [{ "name": "AndroidSystem", "version": "1" }],
+      "signatures": []
+    }
+  },
+  "hardwareEnforced": {
+    "purposes": ["2"],
+    "keySize": "2048",
+    "algorithms": "1",
+    "rsaPublicExponent": "65537",
+    "noAuthRequired": true,
+    "origin": "GENERATED",
+    "rootOfTrust": {
+      "verifiedBootKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      "deviceLocked": false,
+      "verifiedBootState": "UNVERIFIED",
+      "verifiedBootHash": "iCWIV2R1rsyzkpgv4vvF9ixpyfyEunPmxTzAUqEWFYY="
+    },
+    "osVersion": "140000",
+    "osPatchLevel": "202408",
+    "attestationIdBrand": "google",
+    "attestationIdDevice": "akita",
+    "attestationIdProduct": "akita",
+    "attestationIdImei": "351163520096208",
+    "attestationIdManufacturer": "Google",
+    "attestationIdModel": "Pixel 8a",
+    "vendorPatchLevel": "20240805",
+    "bootPatchLevel": "20240805",
+    "attestationIdSecondImei": "351163520096216"
+  }
+}

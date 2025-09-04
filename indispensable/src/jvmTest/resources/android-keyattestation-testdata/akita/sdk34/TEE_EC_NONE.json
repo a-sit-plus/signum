@@ -1,0 +1,38 @@
+{
+  "attestationVersion": "300",
+  "attestationSecurityLevel": "TRUSTED_ENVIRONMENT",
+  "keyMintVersion": "300",
+  "keyMintSecurityLevel": "TRUSTED_ENVIRONMENT",
+  "attestationChallenge": "Y2hhbGxlbmdl",
+  "uniqueId": "",
+  "softwareEnforced": {
+    "creationDateTime": "1727389885586",
+    "attestationApplicationId": {
+      "packages": [
+        {
+          "name": "com.google.wireless.android.security.attestationverifier.collector",
+          "version": "0"
+        }
+      ],
+      "signatures": ["EDk47kU35Z6O55L2VFBPuDRvxrNG0LvEQV/DOfz8jsE="]
+    }
+  },
+  "hardwareEnforced": {
+    "purposes": ["2"],
+    "keySize": "256",
+    "algorithms": "3",
+    "ecCurve": "1",
+    "noAuthRequired": true,
+    "origin": "GENERATED",
+    "rootOfTrust": {
+      "verifiedBootKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      "deviceLocked": false,
+      "verifiedBootState": "UNVERIFIED",
+      "verifiedBootHash": "iCWIV2R1rsyzkpgv4vvF9ixpyfyEunPmxTzAUqEWFYY="
+    },
+    "osVersion": "140000",
+    "osPatchLevel": "202408",
+    "vendorPatchLevel": "20240805",
+    "bootPatchLevel": "20240805"
+  }
+}
