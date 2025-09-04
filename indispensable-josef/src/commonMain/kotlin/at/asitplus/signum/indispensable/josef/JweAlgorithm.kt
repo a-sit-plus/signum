@@ -27,7 +27,7 @@ sealed class JweAlgorithm(override val identifier: String) : JsonWebAlgorithm {
         : JweAlgorithm(identifier), SpecializedSymmetricEncryptionAlgorithm {
 
         companion object {
-            val entries by lazy {
+            val entries: Set<JweAlgorithm.Symmetric> by lazy {
                 setOf(A128KW, A192KW, A256KW, A128GCMKW, A192GCMKW, A256GCMKW)
             }
         }

@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.encodeTo8Bytes
 import at.asitplus.signum.indispensable.HMAC
 import at.asitplus.signum.indispensable.MessageAuthenticationCode
+import at.asitplus.signum.indispensable.asymmetric.RSAPadding
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.internals.ImplementationError
@@ -31,8 +32,8 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
 
     companion object {
 
-        val entries by lazy {
-            listOf(ChaCha20Poly1305) + AES_128.entries + AES_192.entries + AES_256.entries
+        val entries: Set<SymmetricEncryptionAlgorithm<*, *, *>> by lazy {
+            setOf(ChaCha20Poly1305) + AES_128.entries + AES_192.entries + AES_256.entries
         }
 
         //ChaCha20Poly1305 is already an object, so we don't need to redeclare here
@@ -47,8 +48,8 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
         class AESDefinition(val keySize: BitLength) {
 
             @OptIn(HazardousMaterials::class)
-            val entries by lazy {
-                listOf(GCM, ECB) + CBC.entries + WRAP.entries
+            val entries: Set<AES<*, *, *>> by lazy {
+                setOf(GCM, ECB) + CBC.entries + WRAP.entries
             }
 
             /**
@@ -73,13 +74,13 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
             val WRAP = WrapDefinition(keySize)
 
             class WrapDefinition(keySize: BitLength) {
-                val entries by lazy { listOf(RFC3394) }
+                val entries: Set<AES.WRAP> by lazy { setOf(RFC3394) }
                 val RFC3394 = AES.WRAP.RFC3394(keySize)
             }
 
             class CbcDefinition(keySize: BitLength) {
                 @OptIn(HazardousMaterials::class)
-                val entries by lazy { listOf(PLAIN) + HMAC.entries }
+                val entries: Set<AES.CBC<*, *>> by lazy { setOf(PLAIN) + HMAC.entries }
                 /**
                  * Plain, Unauthenticated AES in Cipher Block Chaining mode.
                  * You almost certainly don't want to use this as is, but rather some [HMAC]-authenticated variant
@@ -98,7 +99,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
                  */
                 class HmacDefinition(innerCipher: AES.CBC.Unauthenticated) {
                     @OptIn(HazardousMaterials::class)
-                    val entries by lazy { listOf(SHA_256, SHA_384, SHA_512, SHA_1) }
+                    val entries: Set<AES.CBC.HMAC> by lazy { setOf(SHA_256, SHA_384, SHA_512, SHA_1) }
                     /**
                      * AES-CBC-HMAC as per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1)
                      */
