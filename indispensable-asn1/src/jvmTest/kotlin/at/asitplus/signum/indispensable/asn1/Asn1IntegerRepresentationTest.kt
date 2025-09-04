@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.decodeAsn1VarBigInt
-import at.asitplus.testballoon.checkAll
+import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import com.ionspin.kotlin.bignum.integer.BigInteger
@@ -15,6 +15,7 @@ import io.kotest.property.Arb
 import io.kotest.property.arbitrary.byte
 import io.kotest.property.arbitrary.byteArray
 import io.kotest.property.arbitrary.positiveInt
+import io.kotest.property.checkAll
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -42,7 +43,7 @@ val Asn1IntegerRepresentationTest by testSuite {
     }
 
 
-    "Automated" - {
+    "Automated" {
         checkAll(Arb.byteArray(Arb.positiveInt(65), Arb.byte())) {
             val bigInt = BigInteger.fromByteArray(it, Sign.POSITIVE)
             val ref = bigInt.toString()
@@ -84,7 +85,7 @@ val Asn1IntegerRepresentationTest by testSuite {
             }
         }
 
-        "automated" - {
+        "automated" {
             checkAll(Arb.byteArray(Arb.positiveInt(349), Arb.byte())) {
                 val pos = BigInteger.fromByteArray(it, Sign.POSITIVE)
                 val neg = BigInteger.fromByteArray(it, Sign.NEGATIVE)

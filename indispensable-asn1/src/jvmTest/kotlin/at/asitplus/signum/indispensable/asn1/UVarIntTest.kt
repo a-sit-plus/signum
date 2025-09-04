@@ -10,7 +10,7 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
-import at.asitplus.testballoon.checkAll
+import io.kotest.property.checkAll
 import kotlinx.io.Buffer
 import kotlinx.io.snapshot
 import kotlin.math.ceil
@@ -66,7 +66,7 @@ val UVarIntTest by testSuite {
     }
 
     "BigInts" - {
-        "long-capped" - {
+        "long-capped" {
             checkAll(Arb.uLong()) { long ->
                 val uLongVarInt = long.toAsn1VarInt()
                 val bigInteger = BigInteger.fromULong(long)
@@ -89,7 +89,7 @@ val UVarIntTest by testSuite {
             }
         }
 
-        "larger" - {
+        "larger" {
             checkAll(Arb.byteArray(Arb.positiveInt(1024), Arb.byte())) {
                 val bigInt = BigInteger.fromByteArray(it, Sign.POSITIVE)
                 val bigIntVarint = bigInt.toAsn1VarInt()

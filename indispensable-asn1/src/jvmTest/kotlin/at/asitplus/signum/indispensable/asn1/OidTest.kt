@@ -1,12 +1,15 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.toAsn1VarInt
-import at.asitplus.testballoon.checkAll
+import at.asitplus.testballoon.checkAllTests
+import at.asitplus.testballoon.checkAllSuites
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
+import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.testScope
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
@@ -14,11 +17,20 @@ import io.kotest.matchers.comparables.shouldBeLessThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.property.Arb
-import io.kotest.property.arbitrary.*
+import io.kotest.property.arbitrary.bigInt
+import io.kotest.property.arbitrary.int
+import io.kotest.property.arbitrary.intArray
+import io.kotest.property.arbitrary.negativeInt
+import io.kotest.property.arbitrary.positiveInt
+import io.kotest.property.arbitrary.uInt
+import io.kotest.property.arbitrary.uIntArray
+import io.kotest.property.checkAll
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -108,7 +120,7 @@ val OidTest by testSuite {
 
         }
 
-        "Failing negative Bigints" - {
+        "Failing negative Bigints" {
             checkAll(iterations = 50, Arb.negativeInt()) { negativeInt ->
                 checkAll(iterations = 15, Arb.positiveInt(39)) { second ->
                     checkAll(iterations = 100, Arb.intArray(Arb.int(0..128), Arb.positiveInt(Int.MAX_VALUE))) { rest ->
@@ -123,7 +135,7 @@ val OidTest by testSuite {
                 }
             }
         }
-        "Automated UInt Capped" - {
+        "Automated UInt Capped" {
             checkAll(iterations = 15, Arb.positiveInt(39)) { second ->
                 checkAll(iterations = 5000, Arb.intArray(Arb.int(0..128), Arb.positiveInt(Int.MAX_VALUE))) {
                     listOf(0, 1, 2).forEach { first ->
@@ -171,12 +183,14 @@ val OidTest by testSuite {
             }
         }
 
-        "!Benchmarking fast case" - {
-            val oldOptimized = mutableListOf<Duration>()
-            val optimized = mutableListOf<Duration>()
+        testSuite(
+            "!Benchmarking fast case",
+            testConfig = TestConfig.testScope(isEnabled = true, timeout = 10.minutes)
+        ) {
             val repetitions = 10
 
             "Old Optimized" {
+                val oldOptimized = mutableListOf<Duration>()
                 repeat(repetitions) {
                     val before = Clock.System.now()
                     checkAll(iterations = 15, Arb.uInt(max = 39u)) { second ->
@@ -196,8 +210,14 @@ val OidTest by testSuite {
                 println("AvgOldOpt: $avgOldOpt")
             }
 
+            val fixture = testFixture {
+                object {
+                    var avgOpt = 0.seconds
+                }
+            }
 
             "Optimized" {
+                val optimized = mutableListOf<Duration>()
                 repeat(repetitions) {
                     val before = Clock.System.now()
                     checkAll(iterations = 15, Arb.uInt(max = 39u)) { second ->
@@ -216,30 +236,30 @@ val OidTest by testSuite {
                 val avgOpt = (optimized.sorted().subList(1, optimized.size - 1)
                     .sumOf { it.inWholeMilliseconds } / optimized.size - 2).milliseconds
                 println("AvgOpt: $avgOpt")
+                fixture().avgOpt = avgOpt
+            }
 
-
-                "Simple" {
-                    val simple = mutableListOf<Duration>()
-                    repeat(repetitions) {
-                        val before = Clock.System.now()
-                        checkAll(iterations = 15, Arb.uInt(max = 39u)) { second ->
-                            checkAll(iterations = 5000, Arb.uIntArray(Arb.int(0..256), Arb.uInt(UInt.MAX_VALUE))) {
-                                listOf(1u, 2u).forEach { first ->
-                                    val oid = OldOIDObjectIdentifier(first, second, *it.toUIntArray())
-                                    OldOIDObjectIdentifier.decodeFromTlv(oid.encodeToTlv())
-                                }
+            "Simple" {
+                val simple = mutableListOf<Duration>()
+                repeat(repetitions) {
+                    val before = Clock.System.now()
+                    checkAll(iterations = 15, Arb.uInt(max = 39u)) { second ->
+                        checkAll(iterations = 5000, Arb.uIntArray(Arb.int(0..256), Arb.uInt(UInt.MAX_VALUE))) {
+                            listOf(1u, 2u).forEach { first ->
+                                val oid = OldOIDObjectIdentifier(first, second, *it.toUIntArray())
+                                OldOIDObjectIdentifier.decodeFromTlv(oid.encodeToTlv())
                             }
                         }
-                        val duration = Clock.System.now() - before
-                        simple += duration
-                        println("Simple $duration")
                     }
-
-                    val avgSimple = (simple.sorted().subList(1, simple.size - 1)
-                        .sumOf { it.inWholeMilliseconds } / simple.size - 2).milliseconds
-                    println("AvgSimple: $avgSimple")
-                    avgOpt shouldBeLessThan avgSimple
+                    val duration = Clock.System.now() - before
+                    simple += duration
+                    println("Simple $duration")
                 }
+
+                val avgSimple = (simple.sorted().subList(1, simple.size - 1)
+                    .sumOf { it.inWholeMilliseconds } / simple.size - 2).milliseconds
+                println("AvgSimple: $avgSimple")
+                fixture().avgOpt shouldBeLessThan avgSimple
             }
         }
 
@@ -265,7 +285,7 @@ val OidTest by testSuite {
                 println("AvgOpt: $avgOpt")
 
 
-                "Old Bigint-Based" - {
+                "Old Bigint-Based" {
                     val oldOptimized = mutableListOf<Duration>()
                     repeat(repetitions) {
                         val before = Clock.System.now()
@@ -283,8 +303,8 @@ val OidTest by testSuite {
         }
 
         "Automated BigInt" - {
-            checkAll(iterations = 15, Arb.positiveInt(39)) { second ->
-                checkAll(iterations = 500, Arb.bigInt(1, 358)) {
+            checkAllSuites(iterations = 15, Arb.positiveInt(39)) { second ->
+                checkAllTests(iterations = 500, Arb.bigInt(1, 358)) {
                     listOf(1, 2).forEach { first ->
                         val third = BigInteger.fromByteArray(it.toByteArray(), Sign.POSITIVE)
                         val oid = ObjectIdentifier("$first.$second.$third")
