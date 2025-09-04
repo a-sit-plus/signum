@@ -3,6 +3,9 @@
 ## 3.0
 
 ### NEXT
+* Add COSE_Mac0 support with `CoseMac` class
+* Introduce `ProtectedCoseHeaderSerializer` for serialization/deserialization protected header
+    * Replace raw-byte protected header and its ByteArray extension serialization with `CoseHeader` using the new serializer
 * Kotest 6.0.0.M6
 * Remove Kotest Workarounds
 * Extend properties in `JweHeader`

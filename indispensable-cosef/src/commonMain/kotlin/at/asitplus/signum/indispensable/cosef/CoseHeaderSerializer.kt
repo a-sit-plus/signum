@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.catching
+import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ByteArraySerializer
@@ -197,6 +198,30 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
             }
         }
     }
+}
 
+@OptIn(ExperimentalSerializationApi::class)
+object ProtectedCoseHeaderSerializer : KSerializer<CoseHeader> {
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("ProtectedHeader")
 
+    override fun serialize(encoder: Encoder, value: CoseHeader) {
+        val headerBytes = coseCompliantSerializer.encodeToByteArray(CoseHeader.serializer(), value)
+        // Empty map (0xA0) → h'' (zero-length bstr)
+        val wrapped = if (headerBytes.size == 1 && headerBytes[0] == 0xA0.toByte()) {
+            byteArrayOf()
+        } else {
+            headerBytes
+        }
+
+        encoder.encodeSerializableValue(ByteArraySerializer(), wrapped)
+    }
+
+    override fun deserialize(decoder: Decoder): CoseHeader {
+        val raw = decoder.decodeSerializableValue(ByteArraySerializer())
+        return if (raw.isEmpty()) {
+            CoseHeader()
+        } else {
+            coseCompliantSerializer.decodeFromByteArray(CoseHeader.serializer(), raw)
+        }
+    }
 }

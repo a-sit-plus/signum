@@ -12,10 +12,10 @@ import kotlinx.serialization.encodeToByteArray
 
 @Serializable
 @CborArray
-data class CoseSignatureInput(
+data class CoseInput(
     val contextString: String,
-    @ByteString
-    val protectedHeader: ByteArray,
+    @Serializable(with = ProtectedCoseHeaderSerializer::class)
+    val protectedHeader: CoseHeader,
     @ByteString
     val externalAad: ByteArray,
     @ByteString
@@ -29,7 +29,7 @@ data class CoseSignatureInput(
         if (this === other) return true
         if (other == null || this::class != other::class) return false
 
-        other as CoseSignatureInput
+        other as CoseInput
 
         if (contextString != other.contextString) return false
         if (protectedHeader != other.protectedHeader) return false
@@ -52,7 +52,7 @@ data class CoseSignatureInput(
 
     override fun toString(): String {
         return "CoseSignatureInput(contextString='$contextString'," +
-                " protectedHeader=${protectedHeader.encodeToString(Base16Strict)}," +
+                " protectedHeader=$protectedHeader," +
                 " externalAad=${externalAad.encodeToString(Base16Strict)}," +
                 " payload=${payload?.encodeToString(Base16Strict)})"
     }
@@ -60,7 +60,7 @@ data class CoseSignatureInput(
 
     companion object {
         fun deserialize(it: ByteArray) = catching {
-            coseCompliantSerializer.decodeFromByteArray<CoseSignatureInput>(it)
+            coseCompliantSerializer.decodeFromByteArray<CoseInput>(it)
         }
     }
 }
