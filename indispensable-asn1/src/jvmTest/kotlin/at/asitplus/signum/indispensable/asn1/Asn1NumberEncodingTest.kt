@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.*
-import at.asitplus.testballoon.checkAll
+import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import com.ionspin.kotlin.bignum.integer.BigInteger
@@ -13,6 +13,7 @@ import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
+import io.kotest.property.checkAll
 import kotlinx.io.Buffer
 import kotlinx.io.snapshot
 import org.bouncycastle.asn1.ASN1Integer
@@ -53,21 +54,21 @@ val Asn1NumberEncodingTest by testSuite {
 
 
         "longs" - {
-            "failures: too small" - {
+            "failures: too small" {
                 checkAll(iterations = 5000, Arb.bigInt(128)) {
                     val v = BigInteger.fromLong(Long.MIN_VALUE).minus(1)
                         .minus(BigInteger.fromTwosComplementByteArray(it.toByteArray()))
                     shouldThrow<Asn1Exception> { Asn1.Int(v).decodeToLong() }
                 }
             }
-            "failures: too large" - {
+            "failures: too large" {
                 checkAll(iterations = 5000, Arb.bigInt(128)) {
                     val v = BigInteger.fromLong(Long.MAX_VALUE).plus(1)
                         .plus(BigInteger.fromTwosComplementByteArray(it.toByteArray()))
                     shouldThrow<Asn1Exception> { Asn1.Int(v).decodeToLong() }
                 }
             }
-            "successes" - {
+            "successes" {
                 checkAll(iterations = 150000, Arb.long()) {
                     val seq = Asn1.Sequence { +Asn1.Int(it) }
                     val decoded = (seq.iterator().next() as Asn1Primitive).decodeToLong()
@@ -86,17 +87,17 @@ val Asn1NumberEncodingTest by testSuite {
         }
 
         "ints" - {
-            "failures: too small" - {
+            "failures: too small" {
                 checkAll(iterations = 5000, Arb.long(Long.MIN_VALUE..<Int.MIN_VALUE.toLong())) {
                     shouldThrow<Asn1Exception> { Asn1.Int(it).decodeToInt() }
                 }
             }
-            "failures: too large" - {
+            "failures: too large" {
                 checkAll(iterations = 5000, Arb.long(Int.MAX_VALUE.toLong() + 1..<Long.MAX_VALUE)) {
                     shouldThrow<Asn1Exception> { Asn1.Int(it).decodeToInt() }
                 }
             }
-            "successes" - {
+            "successes" {
                 checkAll(iterations = 75000, Arb.int()) {
                     val seq = Asn1.Sequence { +Asn1.Int(it) }
                     val decoded = (seq.iterator().next() as Asn1Primitive).decodeToInt()
@@ -113,17 +114,17 @@ val Asn1NumberEncodingTest by testSuite {
         }
 
         "unsigned ints" - {
-            "failures: negative" - {
+            "failures: negative" {
                 checkAll(iterations = 5000, Arb.long(Long.MIN_VALUE..<0)) {
                     shouldThrow<Asn1Exception> { Asn1.Int(it).decodeToUInt() }
                 }
             }
-            "failures: too large" - {
+            "failures: too large" {
                 checkAll(iterations = 5000, Arb.long(UInt.MAX_VALUE.toLong() + 1..Long.MAX_VALUE)) {
                     shouldThrow<Asn1Exception> { Asn1.Int(it).decodeToUInt() }
                 }
             }
-            "successes" - {
+            "successes" {
                 checkAll(iterations = 75000, Arb.uInt()) {
                     val seq = Asn1.Sequence { +Asn1.Int(it) }
                     val decoded = (seq.iterator().next() as Asn1Primitive).decodeToUInt()
@@ -156,12 +157,12 @@ val Asn1NumberEncodingTest by testSuite {
                 }
             }
 
-            "failures: negative" - {
+            "failures: negative" {
                 checkAll(iterations = 5000, Arb.long(Long.MIN_VALUE..<0)) {
                     shouldThrow<Asn1Exception> { Asn1.Int(it).decodeToULong() }
                 }
             }
-            "failures: too large" - {
+            "failures: too large" {
                 checkAll(iterations = 5000, Arb.bigInt(128)) {
                     val byteArray = it.toByteArray()
                     val v = BigInteger.fromULong(ULong.MAX_VALUE).plus(1).plus(
@@ -173,7 +174,7 @@ val Asn1NumberEncodingTest by testSuite {
                     shouldThrow<Asn1Exception> { asn1Primitive.decodeToULong() }
                 }
             }
-            "successes" - {
+            "successes" {
                 checkAll(iterations = 75000, Arb.uLong()) {
                     val seq = Asn1.Sequence { +Asn1.Int(it) }
                     val decoded = (seq.iterator().next() as Asn1Primitive).decodeToULong()

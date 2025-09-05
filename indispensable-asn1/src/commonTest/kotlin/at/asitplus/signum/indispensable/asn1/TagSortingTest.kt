@@ -1,16 +1,17 @@
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.comparables.shouldBeLessThan
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.uLong
-import at.asitplus.testballoon.checkAll
+import io.kotest.property.checkAll
+
 val TagSortingTest by testSuite {
 
-    "Automated" - {
+    "Automated" {
         val sortedClasses =
             listOf(TagClass.UNIVERSAL, TagClass.APPLICATION, TagClass.CONTEXT_SPECIFIC, TagClass.PRIVATE)
         checkAll(iterations = 1000, Arb.uLong()) { a ->

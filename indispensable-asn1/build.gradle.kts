@@ -85,6 +85,10 @@ kotlin {
     }
 }
 
+tasks.withType<Test>().configureEach {
+    maxHeapSize = "4G"
+}
+
 android {
     namespace = "at.asitplus.signum.indispensable.asn1"
     packaging {

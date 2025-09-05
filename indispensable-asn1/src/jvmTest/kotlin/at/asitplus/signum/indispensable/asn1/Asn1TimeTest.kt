@@ -6,7 +6,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.instant
-import at.asitplus.testballoon.checkAll
+import io.kotest.property.checkAll
 import java.time.Instant
 import kotlin.time.toKotlinInstant
 
