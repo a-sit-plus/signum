@@ -345,50 +345,110 @@ fun Asn1Primitive.asAsn1String(): Asn1String = runRethrowing {
     }
 }
 
+/**
+ * decodes this [Asn1Primitive]'s content into a [Asn1String.UTF8]. [assertTag] defaults to [Asn1Element.Tag.STRING_UTF8], but can be
+ * overridden (for implicitly tagged strings, for example)
+ * @throws [Asn1Exception] on invalid input
+ */
 @Throws(Asn1Exception::class)
 inline fun Asn1Primitive.decodeToUtf8String(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_UTF8) =
     runRethrowing { decode(assertTag) { Asn1String.UTF8(content) } }
 
+/**
+ * decodes this [Asn1Primitive]'s content into a [Asn1String.Universal]. [assertTag] defaults to [Asn1Element.Tag.STRING_UNIVERSAL], but can be
+ * overridden (for implicitly tagged strings, for example)
+ * @throws [Asn1Exception] on invalid input
+ */
 @Throws(Asn1Exception::class)
 inline fun Asn1Primitive.decodeToUniversalString(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_UNIVERSAL) =
     runRethrowing { decode(assertTag) { Asn1String.Universal(content) } }
 
+/**
+ * decodes this [Asn1Primitive]'s content into a [Asn1String.IA5]. [assertTag] defaults to [Asn1Element.Tag.STRING_IA5], but can be
+ * overridden (for implicitly tagged strings, for example)
+ * @throws [Asn1Exception] on invalid input
+ */
 @Throws(Asn1Exception::class)
 inline fun Asn1Primitive.decodeToIa5String(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_IA5) =
     runRethrowing { decode(assertTag) { Asn1String.IA5(content) } }
 
+/**
+ * decodes this [Asn1Primitive]'s content into a [Asn1String.BMP]. [assertTag] defaults to [Asn1Element.Tag.STRING_BMP], but can be
+ * overridden (for implicitly tagged strings, for example)
+ * @throws [Asn1Exception] on invalid input
+ */
 @Throws(Asn1Exception::class)
 inline fun Asn1Primitive.decodeToBmpString(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_BMP) =
     runRethrowing { decode(assertTag) { Asn1String.BMP(content) } }
 
+/**
+ * decodes this [Asn1Primitive]'s content into a [Asn1String.Teletex]. [assertTag] defaults to [Asn1Element.Tag.STRING_T61], but can be
+ * overridden (for implicitly tagged strings, for example)
+ * @throws [Asn1Exception] on invalid input
+ */
 @Throws(Asn1Exception::class)
 inline fun Asn1Primitive.decodeToTeletextString(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_T61) =
     runRethrowing { decode(assertTag) { Asn1String.Teletex(content) } }
 
+/**
+ * decodes this [Asn1Primitive]'s content into a [Asn1String.Printable]. [assertTag] defaults to [Asn1Element.Tag.STRING_PRINTABLE], but can be
+ * overridden (for implicitly tagged strings, for example)
+ * @throws [Asn1Exception] on invalid input
+ */
 @Throws(Asn1Exception::class)
 inline fun Asn1Primitive.decodeToPrintableString(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_PRINTABLE) =
     runRethrowing { decode(assertTag) { Asn1String.Printable(content) } }
 
+/**
+ * decodes this [Asn1Primitive]'s content into a [Asn1String.Numeric]. [assertTag] defaults to [Asn1Element.Tag.STRING_NUMERIC], but can be
+ * overridden (for implicitly tagged strings, for example)
+ * @throws [Asn1Exception] on invalid input
+ */
 @Throws(Asn1Exception::class)
 inline fun Asn1Primitive.decodeToNumericString(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_NUMERIC) =
     runRethrowing { decode(assertTag) { Asn1String.Numeric(content) } }
 
+/**
+ * decodes this [Asn1Primitive]'s content into a [Asn1String.Visible]. [assertTag] defaults to [Asn1Element.Tag.STRING_VISIBLE], but can be
+ * overridden (for implicitly tagged strings, for example)
+ * @throws [Asn1Exception] on invalid input
+ */
 @Throws(Asn1Exception::class)
 inline fun Asn1Primitive.decodeToVisibleString(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_VISIBLE) =
     runRethrowing { decode(assertTag) { Asn1String.Visible(content) } }
 
+/**
+ * decodes this [Asn1Primitive]'s content into a [Asn1String.General]. [assertTag] defaults to [Asn1Element.Tag.STRING_GENERAL], but can be
+ * overridden (for implicitly tagged strings, for example)
+ * @throws [Asn1Exception] on invalid input
+ */
 @Throws(Asn1Exception::class)
 inline fun Asn1Primitive.decodeToGeneralString(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_GENERAL) =
     runRethrowing { decode(assertTag) { Asn1String.General(content) } }
 
+/**
+ * decodes this [Asn1Primitive]'s content into a [Asn1String.Graphic]. [assertTag] defaults to [Asn1Element.Tag.STRING_GRAPHIC], but can be
+ * overridden (for implicitly tagged strings, for example)
+ * @throws [Asn1Exception] on invalid input
+ */
 @Throws(Asn1Exception::class)
 inline fun Asn1Primitive.decodeToGraphicString(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_GRAPHIC) =
     runRethrowing { decode(assertTag) { Asn1String.Graphic(content) } }
 
+/**
+ * decodes this [Asn1Primitive]'s content into a [Asn1String.Unrestricted]. [assertTag] defaults to [Asn1Element.Tag.STRING_UNRESTRICTED], but can be
+ * overridden (for implicitly tagged strings, for example)
+ * @throws [Asn1Exception] on invalid input
+ */
 @Throws(Asn1Exception::class)
 inline fun Asn1Primitive.decodeToUnrestrictedString(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_UNRESTRICTED) =
     runRethrowing { decode(assertTag) { Asn1String.Unrestricted(content) } }
 
+/**
+ * decodes this [Asn1Primitive]'s content into a [Asn1String.Videotex]. [assertTag] defaults to [Asn1Element.Tag.STRING_VIDEOTEX], but can be
+ * overridden (for implicitly tagged strings, for example)
+ * @throws [Asn1Exception] on invalid input
+ */
 @Throws(Asn1Exception::class)
 inline fun Asn1Primitive.decodeToVideotexString(assertTag: Asn1Element.Tag = Asn1Element.Tag.STRING_VIDEOTEX) =
     runRethrowing { decode(assertTag) { Asn1String.Videotex(content) } }
