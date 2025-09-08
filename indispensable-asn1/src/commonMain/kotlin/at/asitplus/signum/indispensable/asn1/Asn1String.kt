@@ -182,7 +182,8 @@ sealed class Asn1String(
     }
 
     /**
-     * BMP STRING (checked)
+     * BMP STRING (unchecked)
+     * Validation is not implemented. This string format is not recommended
      */
     class BMP private constructor(
         rawValue: ByteArray,
@@ -190,21 +191,12 @@ sealed class Asn1String(
     ) : Asn1String(rawValue, performValidation) {
         override val tag = BERTags.BMP_STRING.toULong()
 
-        override val isValid: Boolean by lazy {
-            !(rawValue.size % 2 != 0 || !(rawValue.indices step 2).all { i ->
-                val unit =
-                    (rawValue[i].toInt() and 0xFF shl 8) or (rawValue[i + 1].toInt() and 0xFF)
-                unit in 0x0000..0xD7FF || unit in 0xE000..0xFFFF
-            })
-        }
-
         /**
-         * @throws Asn1Exception if illegal characters are provided
+         * Always `null`, since no validation logic is implemented
          */
-        @Throws(Asn1Exception::class)
-        constructor(value: String) : this(value.encodeToByteArray(), true) {
-            if (!isValid) throw Asn1Exception("Input contains invalid chars: '$value'")
-        }
+        override val isValid: Boolean? = null
+
+        constructor(value: String) : this(value.encodeToByteArray(), false)
 
         @PublishedApi
         internal constructor(rawValue: ByteArray) : this(rawValue, false)
@@ -274,6 +266,8 @@ sealed class Asn1String(
          */
         override val isValid: Boolean? = null
 
+        constructor(value: String) : this(value.encodeToByteArray(), false)
+
         @PublishedApi
         internal constructor(rawValue: ByteArray) : this(rawValue, false)
     }
@@ -292,6 +286,8 @@ sealed class Asn1String(
          * Always `null`, since no validation logic is implemented
          */
         override val isValid: Boolean? = null
+
+        constructor(value: String) : this(value.encodeToByteArray(), false)
 
         @PublishedApi
         internal constructor(rawValue: ByteArray) : this(rawValue, false)

@@ -1,0 +1,44 @@
+{
+  "string_tests": {
+    "numeric": {
+      "valid": ["123456", "0", "9876543210"],
+      "invalid": ["abcdef", "1a", "12-34"]
+    },
+    "printable": {
+      "valid": ["Hello World", "IN", "Telagana"],
+      "invalid": ["Helloé", "こんにちは", "dummywebsite.com$", "ASN1_Test"]
+    },
+    "visible": {
+      "valid": ["abcdef", "IN", "OrganizationDummy"],
+      "invalid": ["abcdéf", "テスト"]
+    },
+    "ia5": {
+      "valid": ["abc123", "{}[]@#"],
+      "invalid": ["é", "中文"]
+    },
+    "utf8": {
+      "valid": ["Hyderabad", "OrganizationDummy", "Telagana", "dummywebsite.com", "Test"],
+      "invalid": []
+    },
+    "teletex": {
+      "valid": ["abcdef", "Test"],
+      "invalid": []
+    },
+    "graphic": {
+      "valid": ["123456", "Graphic123"],
+      "invalid": ["é23456", "テスト"]
+    },
+    "bmp": {
+      "valid": ["User", "s", "TestUser"],
+      "invalid": []
+    },
+    "videotex": {
+      "valid": ["abcdef", "Test"],
+      "invalid": []
+    },
+    "universal": {
+      "valid": ["abcdef", "UniversalTest"],
+      "invalid": []
+    }
+  }
+}
