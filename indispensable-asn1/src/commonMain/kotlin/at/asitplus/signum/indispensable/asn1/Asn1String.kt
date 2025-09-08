@@ -32,22 +32,22 @@ import at.asitplus.signum.indispensable.asn1.encoding.decodeToVisibleString
  * By default, the string value is decoded using UTF-8. If a different charset or custom decoding
  * is needed, the [rawValue] property can be used directly.
  *
- * Constructor distinctions:
- *
- * 1. **Public constructors (String input)**
- *    - These constructors validate the input against the allowed character set for that
- *      specific ASN.1 string type (e.g., PrintableString, IA5String).
- *    - This ensures that strings created by library users are always valid.
- *
- * 2. **Internal/raw constructors (ByteArray input)**
- *    - These constructors don't performing validation.
- *    - Used internally for decoding ASN.1 strings to be able to accept illegal encodings.
+ * To enable parsing of non-compliant strings without exploding, every String is internally represented
+ * as raw [ByteArray] and not validated during decoding from ASN.1.
+ * The [isValid] property indicates whether the bytes contained in an ASN.1 String object type are valid
+ * according to the validation rule of that type
  */
 sealed class Asn1String(
     val rawValue: ByteArray,
-    val isValidated: Boolean
+    val performValidation: Boolean
 ) : Asn1Encodable<Asn1Primitive> {
     abstract val tag: ULong
+
+    /**
+     * Always the UTF-8 interpretation of [rawValue].
+     * The decoding is performed via [String.decodeFromAsn1ContentBytes], which internally uses
+     * the standard library's [ByteArray.decodeToString].
+     */
     val value: String by lazy { String.decodeFromAsn1ContentBytes(rawValue) }
 
     /**
@@ -61,18 +61,20 @@ sealed class Asn1String(
 
     /**
      * UTF8 STRING (verbatim String)
-     * @throws Asn1Exception if illegal characters are provided
      */
     class UTF8 private constructor(
         rawValue: ByteArray,
-        isValidated: Boolean
-    ) : Asn1String(rawValue, isValidated) {
+        performValidation: Boolean
+    ) : Asn1String(rawValue, performValidation) {
         override val tag = BERTags.UTF8_STRING.toULong()
 
         override val isValid: Boolean by lazy {
             !value.contains('\uFFFD')
         }
 
+        /**
+         * @throws Asn1Exception if illegal characters are provided
+         */
         @Throws(Asn1Exception::class)
         constructor(value: String) : this(value.encodeToByteArray(), true) {
             if (!isValid) throw Asn1Exception("Input contains invalid chars: '$value'")
@@ -83,14 +85,19 @@ sealed class Asn1String(
     }
 
     /**
-     * UNIVERSAL STRING (unchecked)
+     * UNIVERSAL STRING (no checks)
+     * Validation is not implemented. This string format is not recommended
+     * and is often replaced with UTF-8.
      */
     class Universal private constructor(
         rawValue: ByteArray,
-        isValidated: Boolean
-    ) : Asn1String(rawValue, isValidated) {
+        performValidation: Boolean
+    ) : Asn1String(rawValue, performValidation) {
         override val tag = BERTags.UNIVERSAL_STRING.toULong()
 
+        /**
+         * Always `null`, since no validation logic is implemented
+         */
         override val isValid: Boolean? = null
 
         constructor(value: String) : this(value.encodeToByteArray(), false)
@@ -101,18 +108,20 @@ sealed class Asn1String(
 
     /**
      * VISIBLE STRING (checked)
-     * @throws Asn1Exception if illegal characters are provided
      */
     class Visible private constructor(
         rawValue: ByteArray,
-        isValidated: Boolean
-    ) : Asn1String(rawValue, isValidated) {
+        performValidation: Boolean
+    ) : Asn1String(rawValue, performValidation) {
         override val tag = BERTags.VISIBLE_STRING.toULong()
 
         override val isValid: Boolean by lazy {
             Regex("[\\x20-\\x7E]*").matches(value)
         }
 
+        /**
+         * @throws Asn1Exception if illegal characters are provided
+         */
         @Throws(Asn1Exception::class)
         constructor(value: String) : this(value.encodeToByteArray(), true) {
             if (!isValid) throw Asn1Exception("Input contains invalid chars: '$value'")
@@ -124,18 +133,20 @@ sealed class Asn1String(
 
     /**
      * IA5 STRING (checked)
-     * @throws Asn1Exception if illegal characters are provided
      */
     class IA5 private constructor(
         rawValue: ByteArray,
-        isValidated: Boolean
-    ) : Asn1String(rawValue, isValidated) {
+        performValidation: Boolean
+    ) : Asn1String(rawValue, performValidation) {
         override val tag = BERTags.IA5_STRING.toULong()
 
         override val isValid: Boolean by lazy {
             Regex("[\\x00-\\x7E]*").matches(value)
         }
 
+        /**
+         * @throws Asn1Exception if illegal characters are provided
+         */
         @Throws(Asn1Exception::class)
         constructor(value: String) : this(value.encodeToByteArray(), true) {
             if (!isValid) throw Asn1Exception("Input contains invalid chars: '$value'")
@@ -147,18 +158,20 @@ sealed class Asn1String(
 
     /**
      * TELETEX STRING (checked)
-     * @throws Asn1Exception if illegal characters are provided
      */
     class Teletex private constructor(
         rawValue: ByteArray,
-        isValidated: Boolean
-    ) : Asn1String(rawValue, isValidated) {
+        performValidation: Boolean
+    ) : Asn1String(rawValue, performValidation) {
         override val tag = BERTags.T61_STRING.toULong()
 
         override val isValid: Boolean by lazy {
             Regex("[\\u0000-\\u00FF]*").matches(value)
         }
 
+        /**
+         * @throws Asn1Exception if illegal characters are provided
+         */
         @Throws(Asn1Exception::class)
         constructor(value: String) : this(value.encodeToByteArray(), true) {
             if (!isValid) throw Asn1Exception("Input contains invalid chars: '$value'")
@@ -170,12 +183,11 @@ sealed class Asn1String(
 
     /**
      * BMP STRING (checked)
-     * @throws Asn1Exception if illegal characters are provided
      */
     class BMP private constructor(
         rawValue: ByteArray,
-        isValidated: Boolean
-    ) : Asn1String(rawValue, isValidated) {
+        performValidation: Boolean
+    ) : Asn1String(rawValue, performValidation) {
         override val tag = BERTags.BMP_STRING.toULong()
 
         override val isValid: Boolean by lazy {
@@ -186,6 +198,9 @@ sealed class Asn1String(
             })
         }
 
+        /**
+         * @throws Asn1Exception if illegal characters are provided
+         */
         @Throws(Asn1Exception::class)
         constructor(value: String) : this(value.encodeToByteArray(), true) {
             if (!isValid) throw Asn1Exception("Input contains invalid chars: '$value'")
@@ -197,18 +212,20 @@ sealed class Asn1String(
 
     /**
      * GENERAL STRING (checked)
-     * @throws Asn1Exception if illegal characters are provided
      */
     class General private constructor(
         rawValue: ByteArray,
-        isValidated: Boolean
-    ) : Asn1String(rawValue, isValidated) {
+        performValidation: Boolean
+    ) : Asn1String(rawValue, performValidation) {
         override val tag = BERTags.GENERAL_STRING.toULong()
 
         override val isValid: Boolean by lazy {
             Regex("[\\x00-\\x7E]*").matches(value)
         }
 
+        /**
+         * @throws Asn1Exception if illegal characters are provided
+         */
         @Throws(Asn1Exception::class)
         constructor(value: String) : this(value.encodeToByteArray(), true) {
             if (!isValid) throw Asn1Exception("Input contains invalid chars: '$value'")
@@ -220,18 +237,20 @@ sealed class Asn1String(
 
     /**
      * GRAPHIC STRING (checked)
-     * @throws Asn1Exception if illegal characters are provided
      */
     class Graphic private constructor(
         rawValue: ByteArray,
-        isValidated: Boolean
-    ) : Asn1String(rawValue, isValidated) {
+        performValidation: Boolean
+    ) : Asn1String(rawValue, performValidation) {
         override val tag = BERTags.GRAPHIC_STRING.toULong()
 
         override val isValid: Boolean by lazy {
             Regex("[\\x20-\\x7E]*").matches(value)
         }
 
+        /**
+         * @throws Asn1Exception if illegal characters are provided
+         */
         @Throws(Asn1Exception::class)
         constructor(value: String) : this(value.encodeToByteArray(), true) {
             if (!isValid) throw Asn1Exception("Input contains invalid chars: '$value'")
@@ -246,10 +265,13 @@ sealed class Asn1String(
      */
     class Unrestricted private constructor(
         rawValue: ByteArray,
-        isValidated: Boolean
-    ) : Asn1String(rawValue, isValidated) {
+        performValidation: Boolean
+    ) : Asn1String(rawValue, performValidation) {
         override val tag = BERTags.UNRESTRICTED_STRING.toULong()
 
+        /**
+         * Always `null`, since no validation logic is implemented
+         */
         override val isValid: Boolean? = null
 
         @PublishedApi
@@ -258,13 +280,17 @@ sealed class Asn1String(
 
     /**
      * VIDEOTEX STRING (no checks)
+     * Validation is not implemented. This type is no longer used.
      */
     class Videotex private constructor(
         rawValue: ByteArray,
-        isValidated: Boolean
-    ) : Asn1String(rawValue, isValidated) {
+        performValidation: Boolean
+    ) : Asn1String(rawValue, performValidation) {
         override val tag = BERTags.VIDEOTEX_STRING.toULong()
 
+        /**
+         * Always `null`, since no validation logic is implemented
+         */
         override val isValid: Boolean? = null
 
         @PublishedApi
@@ -273,18 +299,20 @@ sealed class Asn1String(
 
     /**
      * PRINTABLE STRING (checked)
-     * @throws Asn1Exception if illegal characters are provided
      */
     class Printable private constructor(
         rawValue: ByteArray,
-        isValidated: Boolean
-    ) : Asn1String(rawValue, isValidated) {
+        performValidation: Boolean
+    ) : Asn1String(rawValue, performValidation) {
         override val tag = BERTags.PRINTABLE_STRING.toULong()
 
         override val isValid: Boolean by lazy {
             Regex("[a-zA-Z0-9 '()+,-./:=?]*").matches(value)
         }
 
+        /**
+         * @throws Asn1Exception if illegal characters are provided
+         */
         @Throws(Asn1Exception::class)
         constructor(value: String) : this(value.encodeToByteArray(), true) {
             if (!isValid) throw Asn1Exception("Input contains invalid chars: '$value'")
@@ -296,18 +324,20 @@ sealed class Asn1String(
 
     /**
      * NUMERIC STRING (checked)
-     * @throws Asn1Exception if illegal characters are provided
      */
     class Numeric private constructor(
         rawValue: ByteArray,
-        isValidated: Boolean
-    ) : Asn1String(rawValue, isValidated) {
+        performValidation: Boolean
+    ) : Asn1String(rawValue, performValidation) {
         override val tag = BERTags.NUMERIC_STRING.toULong()
 
         override val isValid: Boolean by lazy {
             Regex("[0-9 ]*").matches(value)
         }
 
+        /**
+         * @throws Asn1Exception if illegal characters are provided
+         */
         @Throws(Asn1Exception::class)
         constructor(value: String) : this(value.encodeToByteArray(), true) {
             if (!isValid) throw Asn1Exception("Input contains invalid chars: '$value'")
