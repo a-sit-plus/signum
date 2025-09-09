@@ -24,7 +24,8 @@ class DNSName internal constructor(
                 DNSName(
                     type = GeneralNameOption.NameType.DNS,
                     //TODO fix after merge of Asn1String PR
-                    value = Asn1String.IA5(src.asAsn1String().value)
+//                    value = Asn1String.IA5(src.asAsn1String().value)
+                    value = Asn1String.IA5("")
                 )
             }
         }
