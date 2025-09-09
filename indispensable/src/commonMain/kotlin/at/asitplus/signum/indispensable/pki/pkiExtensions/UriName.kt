@@ -21,6 +21,7 @@ class UriName(
     companion object : Asn1Decodable<Asn1Primitive, UriName> {
         override fun doDecode(src: Asn1Primitive): UriName {
             return runRethrowing {
+                //TODO fix after merge of Asn1String PR
                 fromString(src.asAsn1String().value)
             }
         }
