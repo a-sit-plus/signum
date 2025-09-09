@@ -16,7 +16,8 @@ class RFC822Name(
     companion object : Asn1Decodable<Asn1Primitive, RFC822Name> {
         override fun doDecode(src: Asn1Primitive): RFC822Name {
             //TODO fix after merge of Asn1String PR
-            return RFC822Name(Asn1String.IA5(src.asAsn1String().value))
+//            return RFC822Name(Asn1String.IA5(src.asAsn1String().value))
+            return RFC822Name(Asn1String.IA5(""))
         }
     }
 
