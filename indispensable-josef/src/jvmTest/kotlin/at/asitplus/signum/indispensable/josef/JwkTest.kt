@@ -12,6 +12,7 @@ import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -164,11 +165,11 @@ val JwkTest  by testSuite {
 private fun randomCertificate() = X509Certificate(
     TbsCertificate(
         serialNumber = Random.nextBytes(16),
-        issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.Printable("Test")))),
+        issuerName = X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.Printable("Test"))))),
         publicKey = KeyPairGenerator.getInstance("EC").apply { initialize(256) }
             .genKeyPair().public.toCryptoPublicKey().getOrThrow(),
         signatureAlgorithm = X509SignatureAlgorithm.ES256,
-        subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.Printable("Test")))),
+        subjectName = X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.Printable("Test"))))),
         validFrom = Asn1Time(Clock.System.now()),
         validUntil = Asn1Time(Clock.System.now()),
     ),
