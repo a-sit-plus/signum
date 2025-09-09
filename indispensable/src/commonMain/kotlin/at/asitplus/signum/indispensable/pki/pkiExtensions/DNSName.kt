@@ -8,70 +8,13 @@ import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
 import at.asitplus.signum.indispensable.asn1.runRethrowing
 import kotlinx.io.IOException
 
-class DNSName(
+class DNSName internal constructor(
     val value: Asn1String.IA5,
     allowWildcard: Boolean = true,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.DNS,
 ) : GeneralNameOption, Asn1Encodable<Asn1Primitive> {
 
     private val alphaDigits = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-    init {
-        val name = value.value
-
-        if (name.isEmpty()) {
-            throw IOException("DNSName must not be null or empty")
-        }
-
-        if (name.contains(' ')) {
-            throw IOException("DNSName with blank components is not permitted")
-        }
-
-        if (name.startsWith('.') || name.endsWith('.')) {
-            throw IOException("DNSName may not begin or end with a .")
-        }
-
-        var startIndex = 0
-        while (startIndex < name.length) {
-            val endIndex = name.indexOf('.', startIndex).let { if (it == -1) name.length else it }
-
-            if (endIndex - startIndex < 1) {
-                throw IOException("DNSName with empty components is not permitted")
-            }
-
-            if (allowWildcard && startIndex == 0) {
-                val firstChar = name[startIndex]
-                if (alphaDigits.indexOf(firstChar) < 0) {
-                    if (
-                        name.length < 3 ||
-                        name.indexOf('*') != 0 ||
-                        name.getOrNull(startIndex + 1) != '.' ||
-                        alphaDigits.indexOf(name.getOrNull(startIndex + 2) ?: ' ') < 0
-                    ) {
-                        throw IOException(
-                            "DNSName components must begin with a letter, digit, " +
-                                    "or the first component can have only a wildcard character *"
-                        )
-                    }
-                }
-            } else {
-                val firstChar = name[startIndex]
-                if (alphaDigits.indexOf(firstChar) < 0) {
-                    throw IOException("DNSName components must begin with a letter or digit")
-                }
-            }
-
-            for (i in (startIndex + 1) until endIndex) {
-                val c = name[i]
-                if (alphaDigits.indexOf(c) < 0 && c != '-') {
-                    throw IOException("DNSName components must consist of letters, digits, and hyphens")
-                }
-            }
-
-            startIndex = endIndex + 1
-        }
-    }
-
 
     override fun encodeToTlv() = value.encodeToTlv()
 
@@ -80,11 +23,71 @@ class DNSName(
             return runRethrowing {
                 DNSName(
                     type = GeneralNameOption.NameType.DNS,
+                    //TODO fix after merge of Asn1String PR
                     value = Asn1String.IA5(src.asAsn1String().value)
                 )
             }
         }
+
+        fun fromString(value: String, allowWildcard: Boolean = true): DNSName {
+            val alphaDigits = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+            if (value.isEmpty()) {
+                throw IOException("DNSName must not be null or empty")
+            }
+
+            if (value.contains(' ')) {
+                throw IOException("DNSName with blank components is not permitted")
+            }
+
+            if (value.startsWith('.') || value.endsWith('.')) {
+                throw IOException("DNSName may not begin or end with a .")
+            }
+
+            var startIndex = 0
+            while (startIndex < value.length) {
+                val endIndex = value.indexOf('.', startIndex).let { if (it == -1) value.length else it }
+
+                if (endIndex - startIndex < 1) {
+                    throw IOException("DNSName with empty components is not permitted")
+                }
+
+                if (allowWildcard && startIndex == 0) {
+                    val firstChar = value[startIndex]
+                    if (alphaDigits.indexOf(firstChar) < 0) {
+                        if (
+                            value.length < 3 ||
+                            value.indexOf('*') != 0 ||
+                            value.getOrNull(startIndex + 1) != '.' ||
+                            alphaDigits.indexOf(value.getOrNull(startIndex + 2) ?: ' ') < 0
+                        ) {
+                            throw IOException(
+                                "DNSName components must begin with a letter, digit, " +
+                                        "or the first component can have only a wildcard character *"
+                            )
+                        }
+                    }
+                } else {
+                    val firstChar = value[startIndex]
+                    if (alphaDigits.indexOf(firstChar) < 0) {
+                        throw IOException("DNSName components must begin with a letter or digit")
+                    }
+                }
+
+                for (i in (startIndex + 1) until endIndex) {
+                    val c = value[i]
+                    if (alphaDigits.indexOf(c) < 0 && c != '-') {
+                        throw IOException("DNSName components must consist of letters, digits, and hyphens")
+                    }
+                }
+
+                startIndex = endIndex + 1
+            }
+
+            return DNSName(Asn1String.IA5(value))
+        }
     }
+
 
     override fun toString(): String {
         return value.value
