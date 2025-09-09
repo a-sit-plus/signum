@@ -35,7 +35,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.decodeToVisibleString
  * To enable parsing of non-compliant strings without exploding, every String is internally represented
  * as raw [ByteArray] and not validated during decoding from ASN.1.
  * The [isValid] property indicates whether the bytes contained in an ASN.1 String object type are valid
- * according to the validation rule of that type
+ * according to the validation rules of that type.
  */
 sealed class Asn1String(
     val rawValue: ByteArray,
@@ -86,8 +86,7 @@ sealed class Asn1String(
 
     /**
      * UNIVERSAL STRING (no checks)
-     * Validation is not implemented. This string format is not recommended
-     * and is often replaced with UTF-8.
+     * Validation is not implemented. This string format is deprecated for HTTPS certificates and its use in generally discouraged in favor of UTF-8 strings (see [Asn1String.UTF8]).
      */
     class Universal private constructor(
         rawValue: ByteArray,
@@ -157,7 +156,8 @@ sealed class Asn1String(
     }
 
     /**
-     * TELETEX STRING (checked)
+     * TELETEX STRING (checked).
+     *  This string format is deprecated for HTTPS certificates and its use in generally discouraged in favor of UTF-8 strings (see [Asn1String.UTF8]).
      */
     class Teletex private constructor(
         rawValue: ByteArray,
@@ -182,8 +182,8 @@ sealed class Asn1String(
     }
 
     /**
-     * BMP STRING (unchecked)
-     * Validation is not implemented. This string format is not recommended
+     * BMP STRING (unchecked).
+     * Validation is not implemented. This string format is deprecated for HTTPS certificates and its use in generally discouraged in favor of UTF-8 strings (see [Asn1String.UTF8]).
      */
     class BMP private constructor(
         rawValue: ByteArray,
@@ -274,7 +274,7 @@ sealed class Asn1String(
 
     /**
      * VIDEOTEX STRING (no checks)
-     * Validation is not implemented. This type is no longer used.
+     * Validation is not implemented. This type is no longer used in practice.
      */
     class Videotex private constructor(
         rawValue: ByteArray,
