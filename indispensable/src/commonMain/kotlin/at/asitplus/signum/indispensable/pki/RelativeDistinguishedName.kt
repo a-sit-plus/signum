@@ -17,6 +17,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
 import at.asitplus.signum.indispensable.asn1.readOid
 import at.asitplus.signum.indispensable.asn1.runRethrowing
+import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue.CommonName.Companion
 
 /**
  * X.500 Name (used in X.509 Certificates)
@@ -47,14 +48,14 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
 }
 
 //TODO: value should be Asn1Primitive???
-sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
-    abstract val value: Asn1Element
+open class AttributeTypeAndValue(
+    override val oid: ObjectIdentifier,
+    val value: Asn1Element
+) : Asn1Encodable<Asn1Sequence>, Identifiable {
 
     override fun toString() = value.toString()
 
-    class CommonName(override val value: Asn1Element) : AttributeTypeAndValue() {
-        override val oid = OID
-
+    class CommonName(value: Asn1Element) : AttributeTypeAndValue(OID, value) {
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
@@ -62,9 +63,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
     }
 
-    class Country(override val value: Asn1Element) : AttributeTypeAndValue() {
-        override val oid = OID
-
+    class Country(value: Asn1Element) : AttributeTypeAndValue(OID, value) {
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
@@ -72,9 +71,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
     }
 
-    class Organization(override val value: Asn1Element) : AttributeTypeAndValue() {
-        override val oid = OID
-
+    class Organization(value: Asn1Element) : AttributeTypeAndValue(OID, value) {
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
@@ -82,9 +79,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
     }
 
-    class OrganizationalUnit(override val value: Asn1Element) : AttributeTypeAndValue() {
-        override val oid = OID
-
+    class OrganizationalUnit(value: Asn1Element) : AttributeTypeAndValue(OID, value) {
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
@@ -92,21 +87,12 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
     }
 
-    class EmailAddress(override val value: Asn1Element) : AttributeTypeAndValue() {
-        override val oid = OID
-
+    class EmailAddress(value: Asn1Element) : AttributeTypeAndValue(OID, value) {
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
             val OID = KnownOIDs.emailAddress_1_2_840_113549_1_9_1
         }
-    }
-
-    class Other(override val oid: ObjectIdentifier, override val value: Asn1Element) : AttributeTypeAndValue() {
-        constructor(oid: ObjectIdentifier, str: Asn1String) : this(
-            oid,
-            Asn1Primitive(str.tag, str.value.encodeToByteArray())
-        )
     }
 
     override fun encodeToTlv() = Asn1.Sequence {
@@ -161,10 +147,10 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
                         onSuccess = { OrganizationalUnit(it) },
                         onFailure = { OrganizationalUnit(asn1String) })
 
-                    else -> Other(oid, asn1String)
+                    else -> AttributeTypeAndValue(oid, asn1String)
                 }
             }
-            Other(oid, next())
+            AttributeTypeAndValue(oid, next())
         }
 
     }
