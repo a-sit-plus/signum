@@ -1,9 +1,22 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.catching
+import at.asitplus.signum.indispensable.asn1.Asn1Decodable
+import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.Asn1Encodable
+import at.asitplus.signum.indispensable.asn1.Asn1Exception
+import at.asitplus.signum.indispensable.asn1.Asn1Primitive
+import at.asitplus.signum.indispensable.asn1.Asn1Sequence
+import at.asitplus.signum.indispensable.asn1.Asn1Set
+import at.asitplus.signum.indispensable.asn1.Asn1String
+import at.asitplus.signum.indispensable.asn1.Identifiable
 import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
+import at.asitplus.signum.indispensable.asn1.readOid
+import at.asitplus.signum.indispensable.asn1.runRethrowing
 
 /**
  * X.500 Name (used in X.509 Certificates)
@@ -79,6 +92,16 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
     }
 
+    class EmailAddress(override val value: Asn1Element) : AttributeTypeAndValue() {
+        override val oid = OID
+
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
+
+        companion object {
+            val OID = KnownOIDs.emailAddress_1_2_840_113549_1_9_1
+        }
+    }
+
     class Other(override val oid: ObjectIdentifier, override val value: Asn1Element) : AttributeTypeAndValue() {
         constructor(oid: ObjectIdentifier, str: Asn1String) : this(
             oid,
@@ -97,7 +120,16 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
 
         other as AttributeTypeAndValue
 
-        if (value != other.value) return false
+        val thisStr = (this.value as? Asn1Primitive)?.asAsn1String()?.value
+        val otherStr = (other.value as? Asn1Primitive)?.asAsn1String()?.value
+        val thisNormalized = thisStr?.replace("\\s+".toRegex(), "")?.lowercase()
+        val otherNormalized = otherStr?.replace("\\s+".toRegex(), "")?.lowercase()
+        if (thisStr != null && otherStr != null) {
+            if (thisNormalized != otherNormalized) return false
+        } else {
+            if (value != other.value) return false
+        }
+
         if (oid != other.oid) return false
 
         return true
@@ -120,6 +152,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
                 return@decodeRethrowing when (oid) {
                     CommonName.OID -> str.fold(onSuccess = { CommonName(it) }, onFailure = { CommonName(asn1String) })
                     Country.OID -> str.fold(onSuccess = { Country(it) }, onFailure = { Country(asn1String) })
+                    EmailAddress.OID -> str.fold(onSuccess = { EmailAddress(it) }, onFailure = { EmailAddress(asn1String) })
                     Organization.OID -> str.fold(
                         onSuccess = { Organization(it) },
                         onFailure = { Organization(asn1String) })

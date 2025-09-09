@@ -48,15 +48,15 @@ constructor(
         version: Int? = 2,
         serialNumber: ByteArray,
         signatureAlgorithm: X509SignatureAlgorithmDescription,
-        issuerName: List<RelativeDistinguishedName>,
+        issuerName: X500Name,
         validFrom: Asn1Time,
         validUntil: Asn1Time,
-        subjectName: List<RelativeDistinguishedName>,
+        subjectName: X500Name,
         publicKey: CryptoPublicKey,
         issuerUniqueID: Asn1BitString? = null,
         subjectUniqueID: Asn1BitString? = null,
         extensions: List<X509CertificateExtension>? = null,
-    ) : this(version, serialNumber, signatureAlgorithm, validFrom, validUntil, subjectName,
+    ) : this(version, serialNumber, issuerName, signatureAlgorithm, validFrom, validUntil, subjectName,
             publicKey.encodeToTlv(), issuerUniqueID, subjectUniqueID, extensions)
 
     init {
