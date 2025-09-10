@@ -3,9 +3,13 @@
 ## 3.0
 
 ### NEXT
+* `Asn1String` revamp
+    * Deprecated `Asn1Primitive.asAsn1String()`, moved decoding logic into `Asn1String.doDecode()`
+    * Added specific decodeTo functions in `Asn1Primitive` for every string type that follow usual pattern for decoding primitive, when dealing with implicit tags caller should call function for decoding specific string type. If we do something like 'Asn1String.decodeFromTlv()` we expect explicit tag.
+    * Added `Asn1String.rawValue` property for storing raw ByteArray of the string, used in checks for several charsets and good for reencoding Asn1String, it will be encoded as it was before decoding
 * Add COSE_Mac0 support with `CoseMac` class
 * Introduce `ProtectedCoseHeaderSerializer` for serialization/deserialization protected header
-    * Replace raw-byte protected header and its ByteArray extension serialization with `CoseHeader` using the new serializer
+* Replace raw-byte protected header and its ByteArray extension serialization with `CoseHeader` using the new serializer
 * Kotest 6.0.0.M6
 * Remove Kotest Workarounds
 * Extend properties in `JweHeader`

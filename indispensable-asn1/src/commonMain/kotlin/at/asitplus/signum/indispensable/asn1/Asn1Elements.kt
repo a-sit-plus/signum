@@ -311,6 +311,10 @@ sealed class Asn1Element(
             val STRING_PRINTABLE = Tag(tagValue = BERTags.PRINTABLE_STRING.toULong(), constructed = false)
             val STRING_NUMERIC = Tag(tagValue = BERTags.NUMERIC_STRING.toULong(), constructed = false)
             val STRING_VISIBLE = Tag(tagValue = BERTags.VISIBLE_STRING.toULong(), constructed = false)
+            val STRING_GENERAL = Tag(tagValue = BERTags.GENERAL_STRING.toULong(), constructed = false)
+            val STRING_GRAPHIC = Tag(tagValue = BERTags.GRAPHIC_STRING.toULong(), constructed = false)
+            val STRING_UNRESTRICTED = Tag(tagValue = BERTags.UNRESTRICTED_STRING.toULong(), constructed = false)
+            val STRING_VIDEOTEX = Tag(tagValue = BERTags.VIDEOTEX_STRING.toULong(), constructed = false)
 
             val TIME_GENERALIZED = Tag(tagValue = BERTags.GENERALIZED_TIME.toULong(), constructed = false)
             val TIME_UTC = Tag(tagValue = BERTags.UTC_TIME.toULong(), constructed = false)
