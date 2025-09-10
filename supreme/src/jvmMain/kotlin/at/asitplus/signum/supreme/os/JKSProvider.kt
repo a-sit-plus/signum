@@ -128,7 +128,7 @@ class JKSProvider internal constructor (private val access: JKSAccessor)
             if (ctx.ks.containsAlias(alias))
                 throw NoSuchElementException("Key with alias $alias already exists")
 
-            val (jcaAlg,jcaSpec,certAlg) = when (val algSpec = config._algSpecific.v) {
+            val (jcaAlg,jcaSpec,certAlg) = when (val algSpec = config.ec.v) {
                 is SigningKeyConfiguration.RSAConfiguration ->
                     Triple("RSA", RSAKeyGenParameterSpec(algSpec.bits, algSpec.publicExponent.toJavaBigInteger()), X509SignatureAlgorithm.RS256)
                 is SigningKeyConfiguration.ECConfiguration ->
@@ -321,13 +321,13 @@ internal class JKSFileAccessor(opt: JKSProviderConfiguration.KeyStoreFile) : JKS
  *
  * @see JKSSignerConfiguration
  */
-class JKSProviderConfiguration internal constructor(): PlatformSigningProviderConfigurationBase() {
-    sealed class KeyStoreConfiguration constructor(): DSL.Data()
+class JKSProviderConfiguration(): PlatformSigningProviderConfigurationBase() {
+    sealed class KeyStoreConfiguration(): DSL.Data()
     internal val _keystore = subclassOf<KeyStoreConfiguration>(default = EphemeralKeyStore())
 
     /** Constructs an ephemeral keystore. This is the default. */
     val ephemeral = _keystore.option(::EphemeralKeyStore)
-    class EphemeralKeyStore internal constructor(): KeyStoreConfiguration() {
+    class EphemeralKeyStore(): KeyStoreConfiguration() {
         /** The KeyStore type to use. */
         var storeType: String = KeyStore.getDefaultType()
         /** The JCA provider to use. Leave `null` to not care. */
@@ -336,7 +336,7 @@ class JKSProviderConfiguration internal constructor(): PlatformSigningProviderCo
 
     /** Constructs a keystore that accesses the provided Java [KeyStore] object. Use `withBackingObject { store = ... }`. */
     val withBackingObject = _keystore.option(::KeyStoreObject)
-    class KeyStoreObject internal constructor(): KeyStoreConfiguration() {
+    class KeyStoreObject(): KeyStoreConfiguration() {
         /** The KeyStore object to use */
         lateinit var store: KeyStore
         /** The function to be called after the keystore has been modified. Can be `null`. */
@@ -349,7 +349,7 @@ class JKSProviderConfiguration internal constructor(): PlatformSigningProviderCo
 
     /** Accesses a keystore on disk. Automatically flushes back to disk. Use `file { path = ... }.`*/
     val file = _keystore.option(::KeyStoreFile)
-    class KeyStoreFile internal constructor(): KeyStoreConfiguration() {
+    class KeyStoreFile(): KeyStoreConfiguration() {
         companion object {
             /** file-based keystore types per
              * [spec](https://docs.oracle.com/en/java/javase/17/docs/specs/security/standard-names.html#keystore-types) */
@@ -384,7 +384,7 @@ class JKSProviderConfiguration internal constructor(): PlatformSigningProviderCo
 
     /** Accesses a keystore via a custom [JKSAccessor]. Use `keystoreCustomAccessor { accessor = ... }` */
     val customAccessor = _keystore.option(::KeyStoreAccessor)
-    class KeyStoreAccessor internal constructor(): KeyStoreConfiguration() {
+    class KeyStoreAccessor(): KeyStoreConfiguration() {
         /** A custom [JKSAccessor] to use. */
         lateinit var accessor: JKSAccessor
 
@@ -396,7 +396,7 @@ class JKSProviderConfiguration internal constructor(): PlatformSigningProviderCo
 }
 
 internal /*actual*/ fun makePlatformSigningProvider(config: JKSProviderConfiguration): JKSProvider =
-    when (val opt = config._keystore.v) {
+    when (val opt = config.ephemeral.v) {
         is JKSProviderConfiguration.EphemeralKeyStore ->
             JKSProvider.Ephemeral(opt.storeType, opt.provider).getOrThrow()
         is JKSProviderConfiguration.KeyStoreObject ->

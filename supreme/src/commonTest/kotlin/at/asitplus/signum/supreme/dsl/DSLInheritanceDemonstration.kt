@@ -5,10 +5,10 @@ import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 
 /* All options classes need to inherit from DSL.Data; it is also annotated with a DSL marker */
-private open class GenericOptions internal constructor(): DSL.Data() {
+private open class GenericOptions(): DSL.Data() {
     var genericSimpleValue: String = "default value"
 
-    open class GenericSubOptions internal constructor(): DSL.Data() {
+    open class GenericSubOptions(): DSL.Data() {
         var genericSubValue: Int = 42
     }
     /* expose GenericSubOptions as a nested DSL child */
@@ -16,13 +16,13 @@ private open class GenericOptions internal constructor(): DSL.Data() {
 }
 
 /* This is a more specific version of GenericOptions */
-private class SpecificOptions internal constructor(): GenericOptions() {
+private class SpecificOptions(): GenericOptions() {
     init {
         genericSimpleValue = "overridden default value"
     }
     var specificSimpleValue: String = "another default value"
 
-    class SpecificSubOptions internal constructor(): GenericSubOptions() {
+    class SpecificSubOptions(): GenericSubOptions() {
         var anotherSpecificSubValue: String? = null
     }
     /* this shadows the subValue member on the superclass with a more specific version */

@@ -9,16 +9,16 @@ private enum class Preparation { SHAKEN, STIRRED; }
 private class Settings: DSL.Data() {
     /* we want you to choose a particular kind of smoothie flavor with particular parameters... */
     sealed class SmoothieFlavor constructor(): DSL.Data()
-    class BananaFlavor internal constructor(): SmoothieFlavor() {
+    class BananaFlavor(): SmoothieFlavor() {
         var preparation = Preparation.STIRRED
     }
-    class StrawberryFlavor internal constructor(): SmoothieFlavor() {
+    class StrawberryFlavor(): SmoothieFlavor() {
         var nBerries = 5
     }
     /* we define a holder that can hold any flavor */
     /* "internal" because the generic accessor shouldn't be visible to users */
     /* this is null by default; a default could be explicitly specified, making this non-nullable */
-    internal val _flavor = subclassOf<SmoothieFlavor>()
+    protected val _flavor = subclassOf<SmoothieFlavor>()
     /* and then we define user-visible accessors for the different flavors */
     val banana = _flavor.option(::BananaFlavor)
     val strawberry = _flavor.option(::StrawberryFlavor)
@@ -54,9 +54,9 @@ open class DSLVarianceDemonstration : FreeSpec({
 private fun doWithConfiguration(configure: (Settings.()->Unit)? = null) {
     val config = DSL.resolve(::Settings, configure)
 
-    // we can access the result through the generic accessor
+    // we can access the result through any accessor
     // non-null was checked in the validator already
-    when (val flavor = config._flavor.v!!) {
+    when (val flavor = config.banana.v!!) {
         is Settings.BananaFlavor -> {
             flavor.preparation shouldBe Preparation.SHAKEN
         }

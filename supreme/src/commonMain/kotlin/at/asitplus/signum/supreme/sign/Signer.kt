@@ -20,10 +20,10 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
  * @see ec
  * @see rsa
  */
-open class SigningKeyConfiguration internal constructor() : DSL.Data() {
+open class SigningKeyConfiguration() : DSL.Data() {
     sealed class AlgorithmSpecific : DSL.Data()
 
-    internal val _algSpecific = subclassOf<AlgorithmSpecific>(default = ECConfiguration())
+    protected val _algSpecific = subclassOf<AlgorithmSpecific>(default = ECConfiguration())
 
     /** Generates an elliptic-curve key. */
     open val ec = _algSpecific.option(::ECConfiguration)
@@ -31,7 +31,7 @@ open class SigningKeyConfiguration internal constructor() : DSL.Data() {
     /** Generates an RSA key. */
     open val rsa = _algSpecific.option(::RSAConfiguration)
 
-    open class ECConfiguration internal constructor() : AlgorithmSpecific() {
+    open class ECConfiguration() : AlgorithmSpecific() {
         /** The [ECCurve] on which to generate the key. Defaults to [P-256][ECCurve.SECP_256_R_1] */
         var curve: ECCurve = ECCurve.SECP_256_R_1
 
@@ -42,7 +42,7 @@ open class SigningKeyConfiguration internal constructor() : DSL.Data() {
             set(v) { _digests = v }
     }
 
-    open class RSAConfiguration internal constructor() : AlgorithmSpecific() {
+    open class RSAConfiguration() : AlgorithmSpecific() {
         companion object {
             val F0 = BigInteger(3);
             val F4 = BigInteger(65537)

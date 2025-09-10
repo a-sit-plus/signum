@@ -10,7 +10,7 @@ import kotlin.reflect.KProperty
 object DSL {
     /** Resolve a DSL lambda to a concrete configuration */
     fun <S: DSL.Data, T: S> resolve(factory: ()->T, config: DSLConfigureFn<S>): T =
-        (if (config == null) factory() else factory().apply(config)).also(DSL.Data::validate)
+        (if (config == null) factory() else factory().apply(config)).also(DSL.Data::doValidate)
 
     /** A collection of equivalent DSL configuration structures which shadow each other.
      * @see getProperty */
@@ -59,7 +59,7 @@ object DSL {
          * This constructs a new specialized child, configures it using the specified block,
          * and stores it in the underlying generalized storage.
          */
-        internal constructor(private val factory: ()->S) : Invokable<T,S> {
+        constructor(private val factory: ()->S) : Invokable<T,S> {
             override val v: T get() = this@Generalized.v
             override operator fun invoke(configure: S.()->Unit) { _v = resolve(factory, configure) }
         }
@@ -110,9 +110,9 @@ object DSL {
 
         /**
          * Specifies a generalized holder of type T.
-         * Use as `internal val _subHolder = subclassOf<GeneralTypeOfSub>()`.
+         * Use as `protected val _subHolder = subclassOf<GeneralTypeOfSub>()`.
          *
-         * The generalized holder itself cannot be invoked, and should be marked `internal`.
+         * The generalized holder itself cannot be invoked, and should be marked `protected`.
          * Defaults to `null`.
          *
          * Specialized invokable accessors can be spun off via `.option(::SpecializedClass)`.
@@ -122,9 +122,9 @@ object DSL {
             Generalized<T?>(null)
         /**
          * Specifies a generalized holder of type T.
-         * Use as `internal val _subHolder = subclassOf<GeneralTypeOfSub>(SpecializedClass())`.
+         * Use as `protected val _subHolder = subclassOf<GeneralTypeOfSub>(SpecializedClass())`.
          *
-         * The generalized holder itself cannot be invoked, and should be marked `internal`.
+         * The generalized holder itself cannot be invoked, and should be marked `protected`.
          * Defaults to the specified `default`.
          *
          * Specialized invokable accessors can be spun off via `.option(::SpecializedClass)`.
@@ -169,7 +169,9 @@ object DSL {
          * Invoked by `DSL.resolve()` after the configuration block runs.
          * Can be used for sanity checks.
          */
-        internal open fun validate() {}
+        protected open fun validate() {}
+
+        internal fun doValidate() = validate()
     }
 }
 
