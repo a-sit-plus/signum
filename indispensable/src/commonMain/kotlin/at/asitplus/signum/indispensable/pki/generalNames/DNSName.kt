@@ -5,13 +5,14 @@ import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1String
+import at.asitplus.signum.indispensable.asn1.TagClass
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToIa5String
 import at.asitplus.signum.indispensable.asn1.runRethrowing
 import kotlinx.io.IOException
 
-class DNSName internal constructor(
+data class DNSName internal constructor(
     val value: Asn1String.IA5,
-    allowWildcard: Boolean = true,
+    val allowWildcard: Boolean = true,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.DNS,
 ) : GeneralNameOption, Asn1Encodable<Asn1Primitive> {
 
@@ -21,7 +22,7 @@ class DNSName internal constructor(
 
     companion object : Asn1Decodable<Asn1Primitive, DNSName> {
 
-        private val tag: Asn1Element.Tag = Asn1Element.Tag(2u, false)
+        private val tag: Asn1Element.Tag = Asn1Element.Tag(2u, false, TagClass.CONTEXT_SPECIFIC)
 
         override fun doDecode(src: Asn1Primitive): DNSName {
             return runRethrowing {

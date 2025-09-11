@@ -6,7 +6,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 
-class EDIPartyName (
+data class EDIPartyName (
     val value: Asn1ExplicitlyTagged,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.OTHER
 ): GeneralNameOption, Asn1Encodable<Asn1Element> {
