@@ -6,7 +6,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 
-class X400AddressName(
+data class X400AddressName(
     val value: Asn1Element,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.X400,
 ) : GeneralNameOption, Asn1Encodable<Asn1Element> {

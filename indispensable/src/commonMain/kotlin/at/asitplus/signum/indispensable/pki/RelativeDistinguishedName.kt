@@ -106,16 +106,7 @@ open class AttributeTypeAndValue(
 
         other as AttributeTypeAndValue
 
-        val thisStr = (this.value as? Asn1Primitive)?.asAsn1String()?.value
-        val otherStr = (other.value as? Asn1Primitive)?.asAsn1String()?.value
-        val thisNormalized = thisStr?.replace("\\s+".toRegex(), "")?.lowercase()
-        val otherNormalized = otherStr?.replace("\\s+".toRegex(), "")?.lowercase()
-        if (thisStr != null && otherStr != null) {
-            if (thisNormalized != otherNormalized) return false
-        } else {
-            if (value != other.value) return false
-        }
-
+        if (value != other.value) return false
         if (oid != other.oid) return false
 
         return true

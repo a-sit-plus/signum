@@ -5,7 +5,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 
-class RegisteredIDName (
+data class RegisteredIDName (
     val value: ObjectIdentifier,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.OID
 ): GeneralNameOption, Asn1Encodable<Asn1Primitive> {
