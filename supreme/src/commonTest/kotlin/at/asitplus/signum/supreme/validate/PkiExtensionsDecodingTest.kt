@@ -3,9 +3,9 @@ package at.asitplus.signum.supreme.validate
 import at.asitplus.signum.indispensable.asn1.Asn1Exception
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.indispensable.pki.pkiExtensions.GeneralNameOption
-import at.asitplus.signum.indispensable.pki.pkiExtensions.Qualifier
-import at.asitplus.signum.indispensable.pki.pkiExtensions.decodeCertificatePolicies
+import at.asitplus.signum.indispensable.pki.generalNames.GeneralNameOption
+import at.asitplus.signum.indispensable.pki.generalNames.Qualifier
+import at.asitplus.signum.indispensable.pki.generalNames.decodeCertificatePolicies
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec

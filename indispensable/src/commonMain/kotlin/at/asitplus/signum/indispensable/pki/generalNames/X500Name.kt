@@ -1,4 +1,4 @@
-package at.asitplus.signum.indispensable.pki.pkiExtensions
+package at.asitplus.signum.indispensable.pki.generalNames
 
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
