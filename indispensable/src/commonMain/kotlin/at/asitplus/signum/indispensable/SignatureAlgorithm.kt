@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.internals.Enumeration
+
 enum class RSAPadding {
     PKCS1,
     PSS;
@@ -21,7 +23,7 @@ sealed interface SignatureAlgorithm: DataIntegrityAlgorithm {
         val padding: RSAPadding
     ) : SignatureAlgorithm
 
-    companion object {
+    companion object : Enumeration<SignatureAlgorithm> {
         val ECDSAwithSHA256 = ECDSA(Digest.SHA256, null)
         val ECDSAwithSHA384 = ECDSA(Digest.SHA384, null)
         val ECDSAwithSHA512 = ECDSA(Digest.SHA512, null)
@@ -34,7 +36,7 @@ sealed interface SignatureAlgorithm: DataIntegrityAlgorithm {
         val RSAwithSHA384andPSSPadding = RSA(Digest.SHA384, RSAPadding.PSS)
         val RSAwithSHA512andPSSPadding = RSA(Digest.SHA512, RSAPadding.PSS)
 
-        val entries: Set<SignatureAlgorithm> by lazy {
+        override val entries: Set<SignatureAlgorithm> by lazy {
             setOf(
                 ECDSAwithSHA256,
                 ECDSAwithSHA384,
