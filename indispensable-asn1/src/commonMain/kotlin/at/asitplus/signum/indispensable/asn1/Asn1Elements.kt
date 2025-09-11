@@ -5,6 +5,8 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
 import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.signum.internals.Enumerable
+import at.asitplus.signum.internals.Enumeration
 import kotlinx.io.Buffer
 import kotlinx.io.Sink
 import kotlinx.io.readByteArray
@@ -253,7 +255,7 @@ sealed class Asn1Element(
     data class Tag internal constructor(
         val tagValue: ULong,
         val encodedTag: ByteArray
-    ) : Comparable<Tag> {
+    ) : Comparable<Tag>, Enumerable {
 
         //workaround because we cannot return two values or assign params in a destructured manner
         private constructor(decoded: Pair<ULong, ByteArray>) : this(decoded.first, decoded.second)
@@ -272,7 +274,7 @@ sealed class Asn1Element(
             tagValue, encode(tagClass, constructed, tagValue)
         )
 
-        companion object {
+        companion object : Enumeration<Tag> {
             private fun encode(tagClass: TagClass, constructed: Boolean, tagValue: ULong): ByteArray {
                 val derEncoded: ByteArray =
                     if (tagValue <= 30u) {
@@ -319,7 +321,7 @@ sealed class Asn1Element(
             val TIME_GENERALIZED = Tag(tagValue = BERTags.GENERALIZED_TIME.toULong(), constructed = false)
             val TIME_UTC = Tag(tagValue = BERTags.UTC_TIME.toULong(), constructed = false)
 
-            val entries: Set<Tag> by lazy {
+            override val entries: Set<Tag> by lazy {
                 setOf(
                     SET,
                     SEQUENCE,

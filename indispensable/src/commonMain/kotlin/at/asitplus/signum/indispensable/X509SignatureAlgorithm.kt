@@ -7,6 +7,8 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
+import at.asitplus.signum.internals.Enumerable
+import at.asitplus.signum.internals.Enumeration
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
@@ -73,7 +75,7 @@ fun X509SignatureAlgorithmDescription.requireSupported() {
 // future: open
 sealed class X509SignatureAlgorithm(
     oid: ObjectIdentifier
-) : X509SignatureAlgorithmDescription(oid), SpecializedSignatureAlgorithm {
+) : X509SignatureAlgorithmDescription(oid), SpecializedSignatureAlgorithm, Enumerable {
 
     /** The [X509SignatureAlgorithmProvider] for Signum's natively supported [X509SignatureAlgorithm]s */
     internal object Provider : X509SignatureAlgorithmProvider {
@@ -160,10 +162,10 @@ sealed class X509SignatureAlgorithm(
     object RS384 : RSAPKCS1(KnownOIDs.sha384WithRSAEncryption, Digest.SHA384)
     object RS512 : RSAPKCS1(KnownOIDs.sha512WithRSAEncryption, Digest.SHA512)
 
-    companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithm> {
+    companion object : Asn1Decodable<Asn1Sequence, X509SignatureAlgorithm>, Enumeration<X509SignatureAlgorithm> {
 
         //make it lazy to break init cycle that causes the weirdest nullpointer ever
-        val entries: Set<X509SignatureAlgorithm> by lazy {
+        override val entries: Set<X509SignatureAlgorithm> by lazy {
             setOf(
                 ES256, ES384, ES512,
                 PS256, PS384, PS512,
