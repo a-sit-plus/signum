@@ -7,7 +7,7 @@ import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.supreme.DisabledTestsExecutionReport
-import at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name
+import at.asitplus.signum.indispensable.pki.generalNames.X500Name
 import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.supreme.os.SignerConfiguration
 import at.asitplus.signum.supreme.sign

@@ -3,6 +3,8 @@
 ## 3.0
 
 ### NEXT
+* Refactored `AlternativeNames` for SAN/IAN extraction
+    * Removed detailed parsing of individual name types; now delegates decoding to `GeneralName`
 
 ### 3.18.2 / Supreme 0.10.2
 * Fixes

@@ -1,7 +1,6 @@
-package at.asitplus.signum.indispensable.pki.pkiExtensions
+package at.asitplus.signum.indispensable.pki.generalNames
 
 import at.asitplus.cidre.IpAddress
-import at.asitplus.cidre.IpAddressAndPrefix
 import at.asitplus.cidre.IpNetwork
 import at.asitplus.cidre.byteops.toPrefix
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable

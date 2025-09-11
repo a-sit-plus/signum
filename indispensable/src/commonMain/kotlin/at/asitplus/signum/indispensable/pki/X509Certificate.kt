@@ -10,14 +10,13 @@ import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
-import at.asitplus.signum.indispensable.isSupported
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.EXTENSIONS
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.ISSUER_UID
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.SUBJECT_UID
 import at.asitplus.signum.indispensable.requireSupported
-import at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name
+import at.asitplus.signum.indispensable.pki.generalNames.X500Name
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
