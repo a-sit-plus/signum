@@ -6,14 +6,16 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.readNull
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
+import at.asitplus.signum.internals.Enumerable
+import at.asitplus.signum.internals.Enumeration
 
-sealed interface MessageAuthenticationCode : DataIntegrityAlgorithm {
+sealed interface MessageAuthenticationCode : DataIntegrityAlgorithm, Enumerable {
     /** output size of MAC */
     val outputLength: BitLength
 
-    companion object {
+    companion object : Enumeration<MessageAuthenticationCode> {
         // lazy due to https://youtrack.jetbrains.com/issue/KT-79161
-        val entries: Set<MessageAuthenticationCode> by lazy {  HMAC.entries.toSet() }
+        override val entries: Set<MessageAuthenticationCode> by lazy {  HMAC.entries.toSet() }
     }
 
     @ConsistentCopyVisibility
