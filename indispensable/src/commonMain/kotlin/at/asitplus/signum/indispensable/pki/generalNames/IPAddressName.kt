@@ -9,7 +9,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1OctetStringPrimitive
 import kotlinx.io.IOException
 
-class IPAddressName(
+data class IPAddressName(
     val address: IpAddress<*>,
     val networkV4: IpNetwork.V4? = null,
     val networkV6: IpNetwork.V6? = null,

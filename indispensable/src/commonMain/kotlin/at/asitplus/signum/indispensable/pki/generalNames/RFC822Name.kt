@@ -5,9 +5,10 @@ import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1String
+import at.asitplus.signum.indispensable.asn1.TagClass
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToIa5String
 
-class RFC822Name(
+data class RFC822Name(
     val value: Asn1String.IA5,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.RFC822
 ) : GeneralNameOption, Asn1Encodable<Asn1Primitive> {
@@ -16,7 +17,7 @@ class RFC822Name(
 
     companion object : Asn1Decodable<Asn1Primitive, RFC822Name> {
 
-        private val tag: Asn1Element.Tag = Asn1Element.Tag(1u, false)
+        private val tag: Asn1Element.Tag = Asn1Element.Tag(1u, false, TagClass.CONTEXT_SPECIFIC)
 
         override fun doDecode(src: Asn1Primitive): RFC822Name {
             return RFC822Name(src.decodeToIa5String(tag))
