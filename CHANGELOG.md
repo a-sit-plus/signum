@@ -3,6 +3,8 @@
 ## 3.0
 
 ### NEXT
+* Refactored `AlternativeNames` for SAN/IAN extraction
+    * Removed detailed parsing of individual name types; now delegates decoding to `GeneralName`
 * Correct serialization logic for symmetric `CoseKey` in `CoseKeySerializer`
 * `Asn1String` revamp
     * Deprecated `Asn1Primitive.asAsn1String()`, moved decoding logic into `Asn1String.doDecode()`

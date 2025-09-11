@@ -1,10 +1,11 @@
-package at.asitplus.signum.indispensable.pki.pkiExtensions
+package at.asitplus.signum.indispensable.pki.generalNames
 
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
+import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1String
-import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
+import at.asitplus.signum.indispensable.asn1.encoding.decodeToIa5String
 import at.asitplus.signum.indispensable.asn1.runRethrowing
 import kotlinx.io.IOException
 
@@ -19,13 +20,14 @@ class DNSName internal constructor(
     override fun encodeToTlv() = value.encodeToTlv()
 
     companion object : Asn1Decodable<Asn1Primitive, DNSName> {
+
+        private val tag: Asn1Element.Tag = Asn1Element.Tag(2u, false)
+
         override fun doDecode(src: Asn1Primitive): DNSName {
             return runRethrowing {
                 DNSName(
                     type = GeneralNameOption.NameType.DNS,
-                    //TODO fix after merge of Asn1String PR
-//                    value = Asn1String.IA5(src.asAsn1String().value)
-                    value = Asn1String.IA5("")
+                    value = src.decodeToIa5String(tag)
                 )
             }
         }
