@@ -1,10 +1,11 @@
-package at.asitplus.signum.indispensable.pki.pkiExtensions
+package at.asitplus.signum.indispensable.pki.generalNames
 
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
+import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1String
-import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
+import at.asitplus.signum.indispensable.asn1.encoding.decodeToIa5String
 
 class RFC822Name(
     val value: Asn1String.IA5,
@@ -14,10 +15,11 @@ class RFC822Name(
     override fun encodeToTlv() = value.encodeToTlv()
 
     companion object : Asn1Decodable<Asn1Primitive, RFC822Name> {
+
+        private val tag: Asn1Element.Tag = Asn1Element.Tag(1u, false)
+
         override fun doDecode(src: Asn1Primitive): RFC822Name {
-            //TODO fix after merge of Asn1String PR
-//            return RFC822Name(Asn1String.IA5(src.asAsn1String().value))
-            return RFC822Name(Asn1String.IA5(""))
+            return RFC822Name(src.decodeToIa5String(tag))
         }
     }
 
