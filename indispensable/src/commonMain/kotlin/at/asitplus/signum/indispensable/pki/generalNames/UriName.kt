@@ -5,11 +5,12 @@ import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1String
+import at.asitplus.signum.indispensable.asn1.TagClass
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToIa5String
 import at.asitplus.signum.indispensable.asn1.runRethrowing
 import kotlinx.io.IOException
 
-class UriName(
+data class UriName(
     val host: Asn1String.IA5,
     val hostDNS: DNSName? = null,
     val hostIP: IPAddressName? = null,
@@ -21,7 +22,7 @@ class UriName(
 
     companion object : Asn1Decodable<Asn1Primitive, UriName> {
 
-        private val tag: Asn1Element.Tag = Asn1Element.Tag(6u, false)
+        private val tag: Asn1Element.Tag = Asn1Element.Tag(6u, false, TagClass.CONTEXT_SPECIFIC)
 
         override fun doDecode(src: Asn1Primitive): UriName {
             return runRethrowing {
@@ -35,41 +36,48 @@ class UriName(
             val schemeEnd = name.indexOf(':')
 
             if (schemeEnd <= 0) {
-                val normalized = name.removePrefix(".")
+                val host = name
                 val hostDNS = try {
-                    DNSName(Asn1String.IA5(normalized), allowWildcard)
+                    val normalizedHost = if (host.startsWith(".")) host.substring(1) else host
+                    DNSName(Asn1String.IA5(normalizedHost), allowWildcard)
                 } catch (e: IOException) {
                     throw IOException("Invalid URI name constraint: $name", e)
                 }
+
                 return UriName(Asn1String.IA5(name), hostDNS, null)
-            }
+            } else {
 
-            val afterScheme = name.substring(schemeEnd + 1)
-            val host = extractHost(afterScheme) ?: return UriName(Asn1String.IA5(name))
+                val afterScheme = name.substring(schemeEnd + 1)
+                val host: String? = extractHost(afterScheme)
+                var hostIP: IPAddressName? = null
+                var hostDNS: DNSName? = null
 
-            return when {
-                host.startsWith("[") && host.endsWith("]") -> {
-                    val ipv6 = host.drop(1).dropLast(1)
-                    val hostIP = try {
-                        IPAddressName.fromString(ipv6)
-                    } catch (_: IOException) {
-                        throw IOException("Invalid URI name: host portion is not a valid IPv6 address: $name")
+                if (host != null) {
+                    if (host.startsWith("[") && host.endsWith("]")) {
+                        val ipv6Host = host.substring(1, host.length - 1)
+                        hostIP = try {
+                            IPAddressName.fromString(ipv6Host)
+                        } catch (e: IOException) {
+                            throw IOException("Invalid URI name: host portion is not a valid IPv6 address: $name")
+                        }
+                    } else {
+                        hostDNS = try {
+                            DNSName(Asn1String.IA5(host), allowWildcard)
+                        } catch (_: IOException) {
+                            null
+                        }
+
+                        hostIP = if (hostDNS == null) {
+                            try {
+                                IPAddressName.fromString(host)
+                            } catch (_: IOException) {
+                                throw IOException("Invalid URI name: host is not a valid DNS, IPv4, or IPv6 address: $name")
+                            }
+                        } else null
                     }
-                    UriName(Asn1String.IA5(name), hostIP = hostIP)
                 }
-                else -> {
-                    val hostDNS = runCatching {
-                        DNSName(Asn1String.IA5(host), allowWildcard)
-                    }.getOrNull()
 
-                    val hostIP = hostDNS?.let { null } ?: runCatching {
-                        IPAddressName.fromString(host)
-                    }.getOrElse {
-                        throw IOException("Invalid URI name: host is not a valid DNS, IPv4, or IPv6 address: $name")
-                    }
-
-                    UriName(Asn1String.IA5(name), hostDNS, hostIP)
-                }
+                return UriName(Asn1String.IA5(name), hostDNS, hostIP)
             }
         }
 
