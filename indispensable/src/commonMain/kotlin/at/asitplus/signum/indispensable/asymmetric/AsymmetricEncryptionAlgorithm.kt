@@ -3,9 +3,11 @@ package at.asitplus.signum.indispensable.asymmetric
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.internals.Enumerable
+import at.asitplus.signum.internals.Enumeration
 
 
-sealed interface RSAPadding {
+sealed interface RSAPadding : Enumerable {
     @HazardousMaterials("This padding scheme is vulnerable to Bleichenbacher's attack. Use only with legacy application where you absolutely must")
     object PKCS1 : RSAPadding {
         override fun toString(): String = "PKCS1"
@@ -26,8 +28,8 @@ sealed interface RSAPadding {
         override fun toString(): String = "OAEP_${digest.name}"
     }
 
-    companion object {
-        val entries: Set<RSAPadding> by lazy {
+    companion object : Enumeration<RSAPadding> {
+        override val entries: Set<RSAPadding> by lazy {
             @OptIn(HazardousMaterials::class)
             setOf(PKCS1, NONE, OAEP.SHA1, OAEP.SHA256, OAEP.SHA384, OAEP.SHA512)
         }

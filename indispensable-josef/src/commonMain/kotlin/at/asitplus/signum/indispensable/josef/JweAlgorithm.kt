@@ -5,6 +5,8 @@ import at.asitplus.catching
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.symmetric.SpecializedSymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
+import at.asitplus.signum.internals.Enumerable
+import at.asitplus.signum.internals.Enumeration
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -15,7 +17,7 @@ import kotlinx.serialization.encoding.Encoder
 
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(with = JweAlgorithmSerializer::class)
-sealed class JweAlgorithm(override val identifier: String) : JsonWebAlgorithm {
+sealed class JweAlgorithm(override val identifier: String) : JsonWebAlgorithm, Enumerable {
 
     /**
      * ECDH-ES as per [RFC 8037](https://datatracker.ietf.org/doc/html/rfc8037#section-3.2)
@@ -26,8 +28,8 @@ sealed class JweAlgorithm(override val identifier: String) : JsonWebAlgorithm {
     sealed class Symmetric(identifier: String, override val algorithm: SymmetricEncryptionAlgorithm<*,*,*>)
         : JweAlgorithm(identifier), SpecializedSymmetricEncryptionAlgorithm {
 
-        companion object {
-            val entries: Set<JweAlgorithm.Symmetric> by lazy {
+        companion object : Enumeration<Symmetric> {
+            override val entries: Set<Symmetric> by lazy {
                 setOf(A128KW, A192KW, A256KW, A128GCMKW, A192GCMKW, A256GCMKW)
             }
         }
@@ -65,8 +67,8 @@ sealed class JweAlgorithm(override val identifier: String) : JsonWebAlgorithm {
 
     override fun toString() = "${this::class.simpleName}(identifier='$identifier')"
 
-    companion object {
-        val entries: Set<JweAlgorithm> by lazy {
+    companion object : Enumeration<JweAlgorithm> {
+        override val entries: Set<JweAlgorithm> by lazy {
             setOf(
                 ECDH_ES,
                 A128KW,

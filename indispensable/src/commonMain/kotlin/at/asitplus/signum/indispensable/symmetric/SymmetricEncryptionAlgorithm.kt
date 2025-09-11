@@ -8,6 +8,8 @@ import at.asitplus.signum.indispensable.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.asymmetric.RSAPadding
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
+import at.asitplus.signum.internals.Enumerable
+import at.asitplus.signum.internals.Enumeration
 import at.asitplus.signum.internals.ImplementationError
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
@@ -22,7 +24,7 @@ import kotlin.jvm.JvmName
  * * its [name]
  */
 sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out I : NonceTrait, out K : KeyType> :
-    Identifiable {
+    Identifiable, Enumerable {
     val authCapability: A
 
     /** Indicates if this algorithm requires a nonce.*/
@@ -30,9 +32,9 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
 
     override fun toString(): String
 
-    companion object {
+    companion object : Enumeration<SymmetricEncryptionAlgorithm<*, *, *>> {
 
-        val entries: Set<SymmetricEncryptionAlgorithm<*, *, *>> by lazy {
+        override val entries: Set<SymmetricEncryptionAlgorithm<*, *, *>> by lazy {
             setOf(ChaCha20Poly1305) + AES_128.entries + AES_192.entries + AES_256.entries
         }
 
@@ -45,10 +47,10 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
         /**
          * AES configuration hierarchy
          */
-        class AESDefinition(val keySize: BitLength) {
+        class AESDefinition(val keySize: BitLength) : Enumeration<AES<*, *, *>> {
 
             @OptIn(HazardousMaterials::class)
-            val entries: Set<AES<*, *, *>> by lazy {
+            override val entries: Set<AES<*, *, *>> by lazy {
                 setOf(GCM, ECB) + CBC.entries + WRAP.entries
             }
 
@@ -73,14 +75,14 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
              */
             val WRAP = WrapDefinition(keySize)
 
-            class WrapDefinition(keySize: BitLength) {
-                val entries: Set<AES.WRAP> by lazy { setOf(RFC3394) }
+            class WrapDefinition(keySize: BitLength) : Enumeration<AES.WRAP> {
+                override val entries: Set<AES.WRAP> by lazy { setOf(RFC3394) }
                 val RFC3394 = AES.WRAP.RFC3394(keySize)
             }
 
-            class CbcDefinition(keySize: BitLength) {
+            class CbcDefinition(keySize: BitLength) : Enumeration<AES.CBC<*, *>> {
                 @OptIn(HazardousMaterials::class)
-                val entries: Set<AES.CBC<*, *>> by lazy { setOf(PLAIN) + HMAC.entries }
+                override val entries: Set<AES.CBC<*, *>> by lazy { setOf(PLAIN) + HMAC.entries }
                 /**
                  * Plain, Unauthenticated AES in Cipher Block Chaining mode.
                  * You almost certainly don't want to use this as is, but rather some [HMAC]-authenticated variant
@@ -97,9 +99,9 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
                 /**
                  * AES-CBC-HMAC as per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1)
                  */
-                class HmacDefinition(innerCipher: AES.CBC.Unauthenticated) {
+                class HmacDefinition(innerCipher: AES.CBC.Unauthenticated) : Enumeration<AES.CBC.HMAC> {
                     @OptIn(HazardousMaterials::class)
-                    val entries: Set<AES.CBC.HMAC> by lazy { setOf(SHA_256, SHA_384, SHA_512, SHA_1) }
+                    override val entries: Set<AES.CBC.HMAC> by lazy { setOf(SHA_256, SHA_384, SHA_512, SHA_1) }
                     /**
                      * AES-CBC-HMAC as per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1)
                      */
