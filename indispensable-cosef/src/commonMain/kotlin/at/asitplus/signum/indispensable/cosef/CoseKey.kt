@@ -143,15 +143,14 @@ data class CoseKey(
             keyBytes: ByteArray,
             keyId: ByteArray?,
             vararg includedOps: CoseKeyOperation
-        ) {
-            CoseKey(
-                CoseKeyType.SYMMETRIC,
-                keyId = keyId,
-                algorithm = algorithm.toCoseAlgorithm().getOrThrow(),
-                keyParams = CoseKeyParams.SymmKeyParams(keyBytes),
-                operations = includedOps.let { if (it.isEmpty()) null else it.asList().toTypedArray() },
-            )
-        }
+        ) = CoseKey(
+            CoseKeyType.SYMMETRIC,
+            keyId = keyId,
+            algorithm = algorithm.toCoseAlgorithm().getOrThrow(),
+            keyParams = CoseKeyParams.SymmKeyParams(keyBytes),
+            operations = includedOps.let { if (it.isEmpty()) null else it.asList().toTypedArray() },
+        )
+
     }
 
     /**
