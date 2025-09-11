@@ -4,6 +4,8 @@
 
 ### NEXT
 * Fix `prettyPrint` for structures
+* Refactored `AlternativeNames` for SAN/IAN extraction
+    * Removed detailed parsing of individual name types; now delegates decoding to `GeneralName`
 * Add stricter length checks to be more resilient towards adversarial inputs
 * Correct serialization logic for symmetric `CoseKey` in `CoseKeySerializer`
 * `Asn1String` revamp

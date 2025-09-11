@@ -12,7 +12,7 @@ import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 import at.asitplus.signum.indispensable.pki.TbsCertificate
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name
+import at.asitplus.signum.indispensable.pki.generalNames.X500Name
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign

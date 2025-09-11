@@ -91,11 +91,11 @@ class X509CertificateJvmTest : FreeSpec({
         val tbsCertificate = TbsCertificate(
             version = 2,
             serialNumber = serialNumber.toByteArray(),
-            issuerName = at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
+            issuerName = at.asitplus.signum.indispensable.pki.generalNames.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
             validFrom = Asn1Time(notBeforeDate.toInstant().toKotlinInstant()),
             validUntil = Asn1Time(notAfterDate.toInstant().toKotlinInstant()),
             signatureAlgorithm = signatureAlgorithm,
-            subjectName = at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
+            subjectName = at.asitplus.signum.indispensable.pki.generalNames.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
             publicKey = cryptoPublicKey
         )
         val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
@@ -136,11 +136,11 @@ class X509CertificateJvmTest : FreeSpec({
         val tbsCertificate = TbsCertificate(
             version = 2,
             serialNumber = serialNumber.toByteArray(),
-            issuerName = at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
+            issuerName = at.asitplus.signum.indispensable.pki.generalNames.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
             validFrom = Asn1Time(notBeforeDate.toInstant().toKotlinInstant()),
             validUntil = Asn1Time(notAfterDate.toInstant().toKotlinInstant()),
             signatureAlgorithm = signatureAlgorithm,
-            subjectName = at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
+            subjectName = at.asitplus.signum.indispensable.pki.generalNames.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
             publicKey = cryptoPublicKey
         )
         val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
@@ -229,53 +229,53 @@ class X509CertificateJvmTest : FreeSpec({
         val tbsCertificate1 = TbsCertificate(
             version = 2,
             serialNumber = serialNumber.toByteArray(),
-            issuerName = at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
+            issuerName = at.asitplus.signum.indispensable.pki.generalNames.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
             validFrom = validFromDate,
             validUntil = validUntilDate,
             signatureAlgorithm = signatureAlgorithm256,
-            subjectName = at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
+            subjectName = at.asitplus.signum.indispensable.pki.generalNames.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
             publicKey = cryptoPublicKey
         )
         val tbsCertificate2 = TbsCertificate(
             version = 2,
             serialNumber = serialNumber.toByteArray(),
-            issuerName = at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
+            issuerName = at.asitplus.signum.indispensable.pki.generalNames.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
             validFrom = validFromDate,
             validUntil = validUntilDate,
             signatureAlgorithm = signatureAlgorithm256,
-            subjectName = at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
+            subjectName = at.asitplus.signum.indispensable.pki.generalNames.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
             publicKey = cryptoPublicKey
         )
         val tbsCertificate3 = TbsCertificate(
             version = 2,
             serialNumber = serialNumber.toByteArray(),
-            issuerName = at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
+            issuerName = at.asitplus.signum.indispensable.pki.generalNames.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
             validFrom = validFromDate,
             validUntil = validUntilDate,
             signatureAlgorithm = signatureAlgorithm512,
-            subjectName = at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
+            subjectName = at.asitplus.signum.indispensable.pki.generalNames.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
             publicKey = cryptoPublicKey
         )
         val tbsCertificate4 = TbsCertificate(
             version = 2,
             serialNumber = serialNumber.toByteArray(),
-            issuerName = at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
+            issuerName = at.asitplus.signum.indispensable.pki.generalNames.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
             validFrom = validFromDate,
             validUntil = validUntilDate,
             signatureAlgorithm = signatureAlgorithm256,
-            subjectName = at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("DefaultCryptoService1"))))),
+            subjectName = at.asitplus.signum.indispensable.pki.generalNames.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("DefaultCryptoService1"))))),
             publicKey = cryptoPublicKey
         )
         val tbsCertificate5 = TbsCertificate(
             version = 2,
             serialNumber = serialNumber.toByteArray(),
-            issuerName = at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
+            issuerName = at.asitplus.signum.indispensable.pki.generalNames.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
             validFrom = Asn1Time(Date.from(Instant.now().plusSeconds(1)).toInstant().toKotlinInstant()),
             validUntil = Asn1Time(
                 Date.from(Instant.now().plusSeconds(30.days.inWholeSeconds)).toInstant().toKotlinInstant()
             ),
             signatureAlgorithm = signatureAlgorithm256,
-            subjectName = at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
+            subjectName = at.asitplus.signum.indispensable.pki.generalNames.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
             publicKey = cryptoPublicKey
         )
 
@@ -379,11 +379,11 @@ class X509CertificateJvmTest : FreeSpec({
         val tbsCertificate6 = TbsCertificate(
             version = 2,
             serialNumber = serialNumber.toByteArray(),
-            issuerName = at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
+            issuerName = at.asitplus.signum.indispensable.pki.generalNames.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
             validFrom = validFromDate,
             validUntil = validUntilDate,
             signatureAlgorithm = signatureAlgorithm256,
-            subjectName = at.asitplus.signum.indispensable.pki.pkiExtensions.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
+            subjectName = at.asitplus.signum.indispensable.pki.generalNames.X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName))))),
             publicKey = cryptoPublicKey,
             extensions = listOf(ext1)
         )
