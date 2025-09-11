@@ -4,14 +4,21 @@ package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
-import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.DataIntegrityAlgorithm
+import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.HMAC
 import at.asitplus.signum.indispensable.MessageAuthenticationCode
-import at.asitplus.signum.indispensable.misc.BitLength
+import at.asitplus.signum.indispensable.RSAPadding
+import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.indispensable.SpecializedDataIntegrityAlgorithm
+import at.asitplus.signum.indispensable.SpecializedMessageAuthenticationCode
+import at.asitplus.signum.indispensable.SpecializedSignatureAlgorithm
 import at.asitplus.signum.indispensable.misc.bit
-import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
-import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.symmetric.SpecializedSymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
+import at.asitplus.signum.internals.Enumerable
+import at.asitplus.signum.internals.Enumeration
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -24,11 +31,11 @@ import kotlinx.serialization.encoding.Encoder
  * See [COSE Algorithm Registry](https://www.iana.org/assignments/cose/cose.xhtml)
  */
 @Serializable(with = CoseAlgorithmSerializer::class)
-sealed interface CoseAlgorithm {
+sealed interface CoseAlgorithm : Enumerable {
 
     sealed interface Symmetric : CoseAlgorithm {
-        companion object {
-            val entries: Collection<Symmetric> = MAC.entries + SymmetricEncryption.entries
+        companion object : Enumeration<Symmetric> {
+            override val entries: Set<Symmetric> = MAC.entries + SymmetricEncryption.entries
         }
     }
 
@@ -42,8 +49,8 @@ sealed interface CoseAlgorithm {
 
     @Serializable(with = CoseAlgorithmSerializer::class)
     sealed class DataIntegrity(override val coseValue: Int) : CoseAlgorithm, SpecializedDataIntegrityAlgorithm {
-        companion object {
-            val entries: Collection<DataIntegrity> by lazy { Signature.entries + MAC.entries }
+        companion object : Enumeration<DataIntegrity> {
+            override val entries: Set<DataIntegrity> by lazy { Signature.entries + MAC.entries }
         }
     }
 
@@ -65,8 +72,8 @@ sealed interface CoseAlgorithm {
         @Serializable(with = CoseAlgorithmSerializer::class)
         data object ChaCha20Poly1305 : SymmetricEncryption(24, SymmetricEncryptionAlgorithm.ChaCha20Poly1305)
 
-        companion object {
-            val entries: Collection<SymmetricEncryption> by lazy { listOf(A128GCM, A192GCM, A256GCM, ChaCha20Poly1305) }
+        companion object : Enumeration<SymmetricEncryption> {
+            override val entries: Set<SymmetricEncryption> by lazy { setOf(A128GCM, A192GCM, A256GCM, ChaCha20Poly1305) }
         }
     }
 
@@ -110,9 +117,9 @@ sealed interface CoseAlgorithm {
         @Serializable(with = CoseAlgorithmSerializer::class)
         data object RS1 : Signature(-65535, SignatureAlgorithm.RSA(Digest.SHA1, RSAPadding.PKCS1))
 
-        companion object {
-            val entries: Collection<Signature> by lazy {
-                listOf(
+        companion object : Enumeration<Signature> {
+            override val entries: Set<Signature> by lazy {
+                setOf(
                     ES256,
                     ES384,
                     ES512,
@@ -154,9 +161,9 @@ sealed interface CoseAlgorithm {
         @Serializable(with = CoseAlgorithmSerializer::class)
         data object UNOFFICIAL_HS1 : MAC(-2341169 /*random inside private use range*/, HMAC.SHA1)
 
-        companion object {
-            val entries: Collection<MAC> by lazy {
-                listOf(
+        companion object : Enumeration<MAC> {
+            override val entries: Set<MAC> by lazy {
+                setOf(
                     HS256,
                     HS256_64,
                     HS384,
@@ -167,8 +174,8 @@ sealed interface CoseAlgorithm {
         }
     }
 
-    companion object {
-        val entries: Collection<CoseAlgorithm> by lazy { DataIntegrity.entries + SymmetricEncryption.entries }
+    companion object : Enumeration<CoseAlgorithm> {
+        override val entries: Set<CoseAlgorithm> by lazy { DataIntegrity.entries + SymmetricEncryption.entries }
     }
 
 }
