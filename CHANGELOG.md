@@ -3,6 +3,8 @@
 ## 3.0
 
 ### NEXT
+* Refactored `AlternativeNames` for SAN/IAN extraction
+    * Removed detailed parsing of individual name types; now delegates decoding to `GeneralName`
 * `Asn1String` revamp
     * Deprecated `Asn1Primitive.asAsn1String()`, moved decoding logic into `Asn1String.doDecode()`
     * Added specific decodeTo functions in `Asn1Primitive` for every string type that follow usual pattern for decoding primitive, when dealing with implicit tags caller should call function for decoding specific string type. If we do something like 'Asn1String.decodeFromTlv()` we expect explicit tag.
