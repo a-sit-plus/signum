@@ -26,6 +26,7 @@ import kotlinx.serialization.encoding.Encoder
 @Serializable(with = CoseAlgorithmSerializer::class)
 sealed interface CoseAlgorithm {
 
+    @Serializable(with = CoseAlgorithmSerializer::class)
     sealed interface Symmetric : CoseAlgorithm {
         companion object {
             val entries: Collection<Symmetric> = MAC.entries + SymmetricEncryption.entries
