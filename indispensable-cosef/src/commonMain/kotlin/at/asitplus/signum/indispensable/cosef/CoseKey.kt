@@ -484,6 +484,15 @@ object CoseKeySerializer : KSerializer<CoseKey> {
             if (k == null) throw IllegalArgumentException("Parameter k not optional for symmetric keys")
         }
 
+        constructor(src: CoseKey) : this(
+            type = src.type,
+            keyId = src.keyId,
+            algorithm = src.algorithm?.let { it as CoseAlgorithm.Symmetric },
+            operations = src.operations,
+            baseIv = src.baseIv,
+            k = (src.keyParams as CoseKeyParams.SymmKeyParams).k
+        )
+
         override fun toCoseKey() =
             CoseKey(
                 type,
@@ -678,15 +687,22 @@ object CoseKeySerializer : KSerializer<CoseKey> {
     }
 
     override fun serialize(encoder: Encoder, value: CoseKey) {
-        if (value.keyParams is CoseKeyParams.EcYBoolParams)
-            encoder.encodeSerializableValue(
+        when (value.keyParams) {
+            is CoseKeyParams.EcYBoolParams -> encoder.encodeSerializableValue(
                 CompressedCompoundCoseKeySerialContainer.serializer(),
                 CompressedCompoundCoseKeySerialContainer(value)
             )
-        else encoder.encodeSerializableValue(
-            UncompressedCompoundCoseKeySerialContainer.serializer(),
-            UncompressedCompoundCoseKeySerialContainer(value)
-        )
+
+            is CoseKeyParams.SymmKeyParams -> encoder.encodeSerializableValue(
+                CoseSymmKeySerialContainer.serializer(),
+                CoseSymmKeySerialContainer(value)
+            )
+
+            else -> encoder.encodeSerializableValue(
+                UncompressedCompoundCoseKeySerialContainer.serializer(),
+                UncompressedCompoundCoseKeySerialContainer(value)
+            )
+        }
     }
 
 

@@ -1,10 +1,15 @@
 import at.asitplus.signum.indispensable.CryptoPublicKey
+import at.asitplus.signum.indispensable.HMAC
 import at.asitplus.signum.indispensable.cosef.CoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.CoseKey
+import at.asitplus.signum.indispensable.cosef.CoseKeyOperation
 import at.asitplus.signum.indispensable.cosef.CoseKeyParams
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.cosef.toCoseKey
 import at.asitplus.signum.indispensable.io.Base64Strict
+import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.symmetric.SymmetricKey
+import at.asitplus.signum.indispensable.symmetric.randomKey
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.indispensable.toJcaPublicKey
 import io.kotest.assertions.withClue
@@ -20,9 +25,11 @@ import kotlinx.serialization.decodeFromHexString
 import kotlinx.serialization.encodeToByteArray
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.KeyPairGenerator
+import java.security.SecureRandom
 import java.security.Security
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPublicKey
+import kotlin.random.Random
 
 private fun CryptoPublicKey.EC.withCompressionPreference(v: Boolean) =
     if (v) CryptoPublicKey.EC.fromCompressed(curve, xBytes, yCompressed)
@@ -185,6 +192,28 @@ class CoseKeySerializationTest : FreeSpec({
                     val decoded = coseCompliantSerializer.decodeFromByteArray<CoseKey>(cose)
                     decoded shouldBe coseKey
                 }
+            }
+        }
+
+        "Symmetric - HMAC" - {
+            withData(
+                HMAC.SHA256,
+                HMAC.SHA384,
+                HMAC.SHA512
+            ) { algorithm ->
+                val keySizeBits = when (algorithm) {
+                    HMAC.SHA256 -> 256
+                    HMAC.SHA384 -> 384
+                    HMAC.SHA512 -> 512
+                    else -> error("Unsupported HMAC algorithm: $algorithm")
+                }
+                val rawKey = Random.nextBytes(keySizeBits / 8)
+
+                val coseKey: CoseKey = CoseKey.forMacKey(algorithm, rawKey, null, CoseKeyOperation.MAC_CREATE, CoseKeyOperation.MAC_VERIFY )
+                val cose = coseCompliantSerializer.encodeToByteArray(coseKey)
+
+                val decoded = coseCompliantSerializer.decodeFromByteArray<CoseKey>(cose)
+                decoded shouldBe coseKey
             }
         }
     }
