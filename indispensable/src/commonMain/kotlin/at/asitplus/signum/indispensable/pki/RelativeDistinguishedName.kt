@@ -1,9 +1,23 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.catching
+import at.asitplus.signum.indispensable.asn1.Asn1Decodable
+import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.Asn1Encodable
+import at.asitplus.signum.indispensable.asn1.Asn1Exception
+import at.asitplus.signum.indispensable.asn1.Asn1Primitive
+import at.asitplus.signum.indispensable.asn1.Asn1Sequence
+import at.asitplus.signum.indispensable.asn1.Asn1Set
+import at.asitplus.signum.indispensable.asn1.Asn1String
+import at.asitplus.signum.indispensable.asn1.Identifiable
 import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
+import at.asitplus.signum.indispensable.asn1.readOid
+import at.asitplus.signum.indispensable.asn1.runRethrowing
+import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue.CommonName.Companion
 
 /**
  * X.500 Name (used in X.509 Certificates)
@@ -34,14 +48,14 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
 }
 
 //TODO: value should be Asn1Primitive???
-sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
-    abstract val value: Asn1Element
+open class AttributeTypeAndValue(
+    override val oid: ObjectIdentifier,
+    val value: Asn1Element
+) : Asn1Encodable<Asn1Sequence>, Identifiable {
 
     override fun toString() = value.toString()
 
-    class CommonName(override val value: Asn1Element) : AttributeTypeAndValue() {
-        override val oid = OID
-
+    class CommonName(value: Asn1Element) : AttributeTypeAndValue(OID, value) {
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
@@ -49,9 +63,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
     }
 
-    class Country(override val value: Asn1Element) : AttributeTypeAndValue() {
-        override val oid = OID
-
+    class Country(value: Asn1Element) : AttributeTypeAndValue(OID, value) {
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
@@ -59,9 +71,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
     }
 
-    class Organization(override val value: Asn1Element) : AttributeTypeAndValue() {
-        override val oid = OID
-
+    class Organization(value: Asn1Element) : AttributeTypeAndValue(OID, value) {
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
@@ -69,9 +79,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
     }
 
-    class OrganizationalUnit(override val value: Asn1Element) : AttributeTypeAndValue() {
-        override val oid = OID
-
+    class OrganizationalUnit(value: Asn1Element) : AttributeTypeAndValue(OID, value) {
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         companion object {
@@ -79,11 +87,12 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
         }
     }
 
-    class Other(override val oid: ObjectIdentifier, override val value: Asn1Element) : AttributeTypeAndValue() {
-        constructor(oid: ObjectIdentifier, str: Asn1String) : this(
-            oid,
-            Asn1Primitive(str.tag, str.value.encodeToByteArray())
-        )
+    class EmailAddress(value: Asn1Element) : AttributeTypeAndValue(OID, value) {
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
+
+        companion object {
+            val OID = KnownOIDs.emailAddress_1_2_840_113549_1_9_1
+        }
     }
 
     override fun encodeToTlv() = Asn1.Sequence {
@@ -120,6 +129,7 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
                 return@decodeRethrowing when (oid) {
                     CommonName.OID -> str.fold(onSuccess = { CommonName(it) }, onFailure = { CommonName(asn1String) })
                     Country.OID -> str.fold(onSuccess = { Country(it) }, onFailure = { Country(asn1String) })
+                    EmailAddress.OID -> str.fold(onSuccess = { EmailAddress(it) }, onFailure = { EmailAddress(asn1String) })
                     Organization.OID -> str.fold(
                         onSuccess = { Organization(it) },
                         onFailure = { Organization(asn1String) })
@@ -128,10 +138,10 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
                         onSuccess = { OrganizationalUnit(it) },
                         onFailure = { OrganizationalUnit(asn1String) })
 
-                    else -> Other(oid, asn1String)
+                    else -> AttributeTypeAndValue(oid, asn1String)
                 }
             }
-            Other(oid, next())
+            AttributeTypeAndValue(oid, next())
         }
 
     }
