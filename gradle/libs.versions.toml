@@ -10,7 +10,7 @@ kotlinpoet = "2.2.0"
 kotlincryptoRandom = "0.6.0"
 testballoon = "0.6.3-K2.2.20-SNAPSHOT"
 asp = "20251023"
-cidre = "0.1.0"
+cidre = "0.2.0"
 
 [libraries]
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }
