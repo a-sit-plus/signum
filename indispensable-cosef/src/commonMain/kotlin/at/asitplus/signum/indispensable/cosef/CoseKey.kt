@@ -485,12 +485,12 @@ object CoseKeySerializer : KSerializer<CoseKey> {
         }
 
         constructor(src: CoseKey) : this(
-            src.type,
-            src.keyId,
-            src.algorithm?.let { it as CoseAlgorithm.Symmetric },
-            src.operations,
-            src.baseIv,
-            (src.keyParams as CoseKeyParams.SymmKeyParams).k
+            type = src.type,
+            keyId = src.keyId,
+            algorithm = src.algorithm?.let { it as CoseAlgorithm.Symmetric },
+            operations = src.operations,
+            baseIv = src.baseIv,
+            k = (src.keyParams as CoseKeyParams.SymmKeyParams).k
         )
 
         override fun toCoseKey() =
