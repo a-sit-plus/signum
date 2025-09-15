@@ -13,7 +13,7 @@ kotlinpoet = "2.2.0"
 runner = "1.5.2"
 kotlincryptoRandom = "0.5.0"
 kotest= "6.0.0.M6"
-cidre = "0.1.0"
+cidre = "0.2.0"
 
 [libraries]
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }
