@@ -3,15 +3,30 @@ package at.asitplus.signum.indispensable.pki.generalNames
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
+import at.asitplus.signum.indispensable.asn1.Asn1Exception
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.TagClass
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToIa5String
 
-data class RFC822Name(
+data class RFC822Name internal constructor(
     val value: Asn1String.IA5,
+    override val performValidation: Boolean = false,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.RFC822
 ) : GeneralNameOption, Asn1Encodable<Asn1Primitive> {
+
+    override val isValid: Boolean by lazy { value.isValid }
+
+    /**
+     * @throws Asn1Exception if illegal RFC822Name is provided
+     */
+    @Throws(Asn1Exception::class)
+    constructor(value: Asn1String.IA5) : this(
+        value,
+        true
+    ) {
+        if (!isValid) throw Asn1Exception("Invalid RFC822Name.")
+    }
 
     override fun encodeToTlv() = value.encodeToTlv()
 

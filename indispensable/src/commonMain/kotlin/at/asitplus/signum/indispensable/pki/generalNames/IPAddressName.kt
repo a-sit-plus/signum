@@ -13,8 +13,14 @@ data class IPAddressName(
     val address: IpAddress<*, *>,
     val networkV4: IpNetwork.V4? = null,
     val networkV6: IpNetwork.V6? = null,
+    override val performValidation: Boolean = false,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.IP
 ) : GeneralNameOption, Asn1Encodable<Asn1Primitive> {
+
+    /**
+     * Always `null`, since no validation logic is implemented
+     */
+    override val isValid: Boolean? = null
 
     override fun encodeToTlv(): Asn1Primitive {
         val bytes = when {
