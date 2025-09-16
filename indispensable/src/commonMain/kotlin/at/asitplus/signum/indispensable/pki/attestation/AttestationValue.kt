@@ -23,7 +23,6 @@ sealed class AttestationValue<out A : Asn1Encodable<*>>(override val tagged: Aut
     class Success<out T : Asn1Encodable<*>> internal constructor(val value: T, tagged: AuthorizationList.Tagged) :
         AttestationValue<T>(tagged) {
         override fun encodeToTlv(): Asn1Element = value.encodeToTlv()
-
     }
 
     class Failure<E : Asn1Element> internal constructor(
@@ -43,18 +42,23 @@ sealed class AttestationValue<out A : Asn1Encodable<*>>(override val tagged: Aut
         is Failure<*> -> onFailure(elementName, tagged, rawAsn1Value)
     }
 
-    inline fun <reified R> onSuccess(onSuccess: (A) -> R) = if (this is Success) onSuccess(value) else {
-    }
+    inline fun <R> onSuccess(onSuccess: (A) -> R):R? =
+        if (this is Success) onSuccess(value) else { null }
 
-    inline fun <reified R> onFailure(onFailure: (String, AuthorizationList.Tagged, Asn1Element) -> R) =
-        if (this is Failure<*>) onFailure(elementName, tagged, rawAsn1Value) else {
-        }
+    inline fun <R> onFailure(onFailure: (String, AuthorizationList.Tagged, Asn1Element) -> R): R? =
+        if (this is Failure<*>) onFailure(elementName, tagged, rawAsn1Value) else { null }
 
     fun isSuccess(): Boolean {
         @OptIn(ExperimentalContracts::class)
         contract { returns(true) implies (this@AttestationValue is Success<*>) }
         return this is Success
     }
+
+    inline fun get():A = //  TODO TODO
+        when (this) {
+            is Success -> value
+            is Failure<*> -> throw NoSuchElementException("No value present; elementName=$elementName, tagged=$tagged, rawAsn1Value=$rawAsn1Value")
+        }
 }
 
 internal inline fun <reified E : Asn1Element, reified T : Asn1Encodable<E>, reified A : AttestationValue<T>> E.parsing(
