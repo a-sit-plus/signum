@@ -8,8 +8,14 @@ import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 
 data class OtherName (
     val value: Asn1ExplicitlyTagged,
+    override val performValidation: Boolean = false,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.OTHER
 ): GeneralNameOption, Asn1Encodable<Asn1Element> {
+
+    /**
+     * Always `null`, since no validation logic is implemented
+     */
+    override val isValid: Boolean? = null
 
     override fun encodeToTlv() = value
 
