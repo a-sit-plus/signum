@@ -15,6 +15,8 @@ data class X500Name(
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.DIRECTORY
 ) : Asn1Encodable<Asn1Sequence>, GeneralNameOption {
 
+    constructor(singleItem: RelativeDistinguishedName) : this(listOf(singleItem))
+
     override fun encodeToTlv() = Asn1.Sequence {
         relativeDistinguishedNames.forEach { +it }
     }
