@@ -12,8 +12,14 @@ import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 
 data class X500Name(
     val relativeDistinguishedNames: List<RelativeDistinguishedName>,
+    override val performValidation: Boolean = false,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.DIRECTORY
 ) : Asn1Encodable<Asn1Sequence>, GeneralNameOption {
+
+    /**
+     * Always `null`, since no validation logic is implemented
+     */
+    override val isValid: Boolean? = null
 
     constructor(singleItem: RelativeDistinguishedName) : this(listOf(singleItem))
 

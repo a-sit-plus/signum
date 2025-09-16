@@ -8,15 +8,20 @@ import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 
 data class X400AddressName(
     val value: Asn1Element,
+    override val performValidation: Boolean = false,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.X400,
 ) : GeneralNameOption, Asn1Encodable<Asn1Element> {
+
+    /**
+     * Always `null`, since no validation logic is implemented
+     */
+    override val isValid: Boolean? = null
 
     override fun encodeToTlv() = value
 
     companion object : Asn1Decodable<Asn1Element, X400AddressName> {
         override fun doDecode(src: Asn1Element): X400AddressName {
             if (src !is Asn1Sequence) throw Asn1StructuralException("Invalid x400Address Alternative Name found: ${src.toDerHexString()}")
-            //TODO: strict structural parsing
             return X400AddressName(src)
         }
     }
