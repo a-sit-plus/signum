@@ -30,7 +30,7 @@ sealed interface GeneralNameOption {
         MATCH,         // Exact match
         NARROWS,       // Input narrows this name
         WIDENS,        // Input widens this name
-        SAME_TYPE;      // Same type, but no match/narrow/widen
+        SAME_TYPE;     // Same type, but no match/narrow/widen
     }
 
     val type: NameType
