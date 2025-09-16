@@ -5,7 +5,16 @@ import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Exception
 
-interface GeneralNameOption {
+sealed interface GeneralNameOption {
+
+    /**
+     * Returns whether this name is valid:
+     * - `true`: validation succeeded
+     * - `false`: validation failed
+     * - `null`: no validation implemented
+     */
+    val isValid: Boolean?
+    val performValidation: Boolean
 
     enum class NameType(val value: ULong) {
         OTHER(0u), RFC822(1u), DNS(2u), X400(3u), DIRECTORY(4u), EDI(5u), URI(6u), IP(7u), OID(8u);

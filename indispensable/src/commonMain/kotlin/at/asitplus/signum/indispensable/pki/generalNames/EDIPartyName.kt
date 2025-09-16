@@ -8,8 +8,15 @@ import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 
 data class EDIPartyName (
     val value: Asn1ExplicitlyTagged,
+    override val performValidation: Boolean = false,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.OTHER
 ): GeneralNameOption, Asn1Encodable<Asn1Element> {
+
+    /**
+     * Always `null`, since no validation logic is implemented
+     */
+    override val isValid: Boolean? = null
+
     override fun encodeToTlv() = value
 
     companion object : Asn1Decodable<Asn1Element, OtherName> {
@@ -21,7 +28,6 @@ data class EDIPartyName (
                 if (it.children.find { it.tag.tagValue != GeneralNameOption.NameType.OTHER.value && it.tag.tagValue != GeneralNameOption.NameType.RFC822.value } != null) throw Asn1StructuralException(
                     "Invalid partyName Alternative Name found (illegal implicit tag): ${it.toDerHexString()}"
                 )
-//                //TODO: strict string parsing
             }
             return OtherName(src)
         }

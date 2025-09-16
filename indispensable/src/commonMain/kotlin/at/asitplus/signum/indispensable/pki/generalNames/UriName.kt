@@ -3,6 +3,7 @@ package at.asitplus.signum.indispensable.pki.generalNames
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
+import at.asitplus.signum.indispensable.asn1.Asn1Exception
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.TagClass
@@ -12,88 +13,71 @@ import kotlinx.io.IOException
 
 data class UriName(
     val host: Asn1String.IA5,
-    val hostDNS: DNSName? = null,
-    val hostIP: IPAddressName? = null,
+    val allowWildcard: Boolean = false,
+    override val performValidation: Boolean = true,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.URI,
 ) : GeneralNameOption, Asn1Encodable<Asn1Primitive> {
 
+    val hostDNS: DNSName?
+    val hostIP: IPAddressName?
+
+    override val isValid: Boolean
+
+    @Throws(Asn1Exception::class)
+    constructor(value: String, allowWildcard: Boolean = false) : this(Asn1String.IA5(value), allowWildcard, true)
+
+    init {
+        var dns: DNSName? = null
+        var ip: IPAddressName? = null
+        var valid = true
+
+        try {
+            val hostStr = host.value
+            if (hostStr.isEmpty()) throw IOException("URI name cannot be empty")
+
+            val schemeEnd = hostStr.indexOf(':')
+            val afterScheme = if (schemeEnd >= 0) hostStr.substring(schemeEnd + 1) else hostStr
+            val hostPart = extractHost(afterScheme) ?: afterScheme
+
+            if (hostPart.startsWith("[") && hostPart.endsWith("]")) {
+                // IPv6
+                val ipv6Host = hostPart.substring(1, hostPart.length - 1)
+                ip = IPAddressName.fromString(ipv6Host)
+            } else {
+                try { dns = DNSName(Asn1String.IA5(hostPart), allowWildcard) } catch (_: IOException) {}
+                if (dns == null) {
+                    ip = IPAddressName.fromString(hostPart)
+                }
+            }
+        } catch (_: IOException) {
+            valid = false
+        }
+
+        hostDNS = dns
+        hostIP = ip
+        isValid = valid
+
+        if (performValidation && !isValid) {
+            throw Asn1Exception("Invalid URI name: ${host.value}")
+        }
+    }
 
     override fun encodeToTlv() = host.encodeToTlv()
 
     companion object : Asn1Decodable<Asn1Primitive, UriName> {
-
         private val tag: Asn1Element.Tag = Asn1Element.Tag(6u, false, TagClass.CONTEXT_SPECIFIC)
 
-        override fun doDecode(src: Asn1Primitive): UriName {
-            return runRethrowing {
-                fromString(src.decodeToIa5String(tag).value)
-            }
+        override fun doDecode(src: Asn1Primitive): UriName = runRethrowing {
+            UriName(src.decodeToIa5String(tag))
         }
 
-        private fun fromString(name: String, allowWildcard: Boolean = false): UriName {
-            if (name.isEmpty()) throw IOException("URI name cannot be empty")
-
-            val schemeEnd = name.indexOf(':')
-
-            if (schemeEnd <= 0) {
-                val host = name
-                val hostDNS = try {
-                    val normalizedHost = if (host.startsWith(".")) host.substring(1) else host
-                    DNSName(Asn1String.IA5(normalizedHost), allowWildcard)
-                } catch (e: IOException) {
-                    throw IOException("Invalid URI name constraint: $name", e)
-                }
-
-                return UriName(Asn1String.IA5(name), hostDNS, null)
-            } else {
-
-                val afterScheme = name.substring(schemeEnd + 1)
-                val host: String? = extractHost(afterScheme)
-                var hostIP: IPAddressName? = null
-                var hostDNS: DNSName? = null
-
-                if (host != null) {
-                    if (host.startsWith("[") && host.endsWith("]")) {
-                        val ipv6Host = host.substring(1, host.length - 1)
-                        hostIP = try {
-                            IPAddressName.fromString(ipv6Host)
-                        } catch (e: IOException) {
-                            throw IOException("Invalid URI name: host portion is not a valid IPv6 address: $name")
-                        }
-                    } else {
-                        hostDNS = try {
-                            DNSName(Asn1String.IA5(host), allowWildcard)
-                        } catch (_: IOException) {
-                            null
-                        }
-
-                        hostIP = if (hostDNS == null) {
-                            try {
-                                IPAddressName.fromString(host)
-                            } catch (_: IOException) {
-                                throw IOException("Invalid URI name: host is not a valid DNS, IPv4, or IPv6 address: $name")
-                            }
-                        } else null
-                    }
-                }
-
-                return UriName(Asn1String.IA5(name), hostDNS, hostIP)
-            }
-        }
-
-        private fun extractHost(uriRemainder: String): String? {
-            if (!uriRemainder.startsWith("//")) return null
-
-            val withoutScheme = uriRemainder.removePrefix("//")
-            val endIndex = withoutScheme.indexOfAny(charArrayOf('/', '?', '#')).let {
-                if (it == -1) withoutScheme.length else it
-            }
-
-            val authority = withoutScheme.substring(0, endIndex)
-            val hostPort = authority.substringAfterLast('@', authority)
-            return hostPort.substringBefore(':') //port
+        private fun extractHost(value: String): String? {
+            val trimmed = value.trimStart('/')
+            val end = trimmed.indexOfAny(charArrayOf('/', '?', '#'))
+            return if (end >= 0) trimmed.substring(0, end) else trimmed
         }
     }
+
 
     override fun toString(): String {
         return host.value
