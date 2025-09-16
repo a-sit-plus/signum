@@ -17,6 +17,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlin.experimental.or
 import kotlin.jvm.JvmInline
+import com.ionspin.kotlin.bignum.integer.BigInteger
 
 private val REGEX_BASE10 = Regex("[0-9]+")
 private val REGEX_ZERO = Regex("0*")
@@ -49,6 +50,8 @@ sealed class Asn1Integer(internal val uint: VarUInt, val sign: Sign): Asn1Encoda
         Sign.POSITIVE -> uint.toString()
         Sign.NEGATIVE -> "-${uint}"
     }
+
+    fun toBigInteger() = BigInteger.parseString(this.toString())
 
     /** Encodes the [Asn1Integer] to its minimum-size twos-complement encoding. Non-empty. */
     abstract fun twosComplement(): ByteArray

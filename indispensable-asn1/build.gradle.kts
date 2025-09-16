@@ -69,6 +69,7 @@ kotlin {
                 api(kmmresult())
                 api(serialization("json"))
                 api(datetime())
+                api(libs.bignum)
             }
         }
 
