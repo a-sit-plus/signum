@@ -227,7 +227,7 @@ class EphemeralSignerCommonTests : FreeSpec({
                 }
 
                 val csr = TbsCertificationRequest(
-                    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
+                    subjectName = X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client"))))),
                     publicKey = signer.publicKey,
                     attributes = listOf(
                         Pkcs10CertificationRequestAttribute(
@@ -280,7 +280,7 @@ class EphemeralSignerCommonTests : FreeSpec({
                     it.requiredCurve shouldBeIn setOf(null, crv)
                 }
                 val csr = TbsCertificationRequest(
-                    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
+                    subjectName = X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client"))))),
                     publicKey = signer.publicKey,
                     attributes = listOf(
                         Pkcs10CertificationRequestAttribute(
