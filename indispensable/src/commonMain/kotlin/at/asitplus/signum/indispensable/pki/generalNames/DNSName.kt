@@ -16,8 +16,6 @@ data class DNSName internal constructor(
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.DNS,
 ) : GeneralNameOption, Asn1Encodable<Asn1Primitive> {
 
-    private val alphaDigits = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
     override fun encodeToTlv() = value.encodeToTlv()
 
     companion object : Asn1Decodable<Asn1Primitive, DNSName> {
@@ -34,8 +32,6 @@ data class DNSName internal constructor(
         }
 
         fun fromString(value: String, allowWildcard: Boolean = true): DNSName {
-            val alphaDigits = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
             if (value.isEmpty()) {
                 throw IOException("DNSName must not be null or empty")
             }
@@ -58,12 +54,12 @@ data class DNSName internal constructor(
 
                 if (allowWildcard && startIndex == 0) {
                     val firstChar = value[startIndex]
-                    if (alphaDigits.indexOf(firstChar) < 0) {
+                    if (!firstChar.isLetterOrDigit()) {
                         if (
                             value.length < 3 ||
                             value.indexOf('*') != 0 ||
                             value.getOrNull(startIndex + 1) != '.' ||
-                            alphaDigits.indexOf(value.getOrNull(startIndex + 2) ?: ' ') < 0
+                            value.getOrNull(startIndex + 2)?.let { it.isLetterOrDigit() && it.code < 128 } != true
                         ) {
                             throw IOException(
                                 "DNSName components must begin with a letter, digit, " +
@@ -73,14 +69,14 @@ data class DNSName internal constructor(
                     }
                 } else {
                     val firstChar = value[startIndex]
-                    if (alphaDigits.indexOf(firstChar) < 0) {
+                    if (!firstChar.isLetterOrDigit()) {
                         throw IOException("DNSName components must begin with a letter or digit")
                     }
                 }
 
                 for (i in (startIndex + 1) until endIndex) {
                     val c = value[i]
-                    if (alphaDigits.indexOf(c) < 0 && c != '-') {
+                    if (!c.isLetterOrDigit() && c != '-') {
                         throw IOException("DNSName components must consist of letters, digits, and hyphens")
                     }
                 }
