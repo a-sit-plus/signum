@@ -5,14 +5,18 @@ import java.time.Duration
 plugins {
     val kotlinVer = System.getenv("KOTLIN_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotlin.get()
 
-    id("at.asitplus.gradle.conventions") version "20250902"
+    id("at.asitplus.gradle.conventions") version "202509016"
     kotlin("multiplatform") version kotlinVer apply false
     kotlin("plugin.serialization") version kotlinVer apply false
     id("com.android.library") version libs.versions.agp.get() apply (false)
     id("de.infix.testBalloon") version libs.versions.testballoon.get() apply false
 }
 group = "at.asitplus.signum"
-
+subprojects {
+    repositories {
+        mavenLocal()
+    }
+}
 //work around nexus publish bug
 val artifactVersion: String by extra
 version = artifactVersion

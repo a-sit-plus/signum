@@ -133,7 +133,10 @@ val OidTest by testSuite {
                 }
             }
         }
-        "Automated UInt Capped" {
+        test(
+            "Automated UInt Capped" ,
+            testConfig = TestConfig.testScope(isEnabled = true, timeout = 10.minutes)
+        ) {
             checkAll(iterations = 15, Arb.positiveInt(39)) { second ->
                 checkAll(iterations = 5000, Arb.intArray(Arb.int(0..128), Arb.positiveInt(Int.MAX_VALUE))) {
                     listOf(0, 1, 2).forEach { first ->
@@ -182,7 +185,7 @@ val OidTest by testSuite {
         }
 
         testSuite(
-            "!Benchmarking fast case",
+            "Benchmarking fast case",
             testConfig = TestConfig.testScope(isEnabled = true, timeout = 10.minutes)
         ) {
             val repetitions = 10
