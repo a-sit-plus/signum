@@ -5,11 +5,10 @@ import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.encodeTo8Bytes
 import at.asitplus.signum.indispensable.HMAC
 import at.asitplus.signum.indispensable.MessageAuthenticationCode
-import at.asitplus.signum.indispensable.asymmetric.RSAPadding
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
-import at.asitplus.signum.internals.Enumerable
-import at.asitplus.signum.internals.Enumeration
+import Enumerable
+import Enumeration
 import at.asitplus.signum.internals.ImplementationError
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
@@ -99,7 +98,8 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
                 /**
                  * AES-CBC-HMAC as per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1)
                  */
-                class HmacDefinition(innerCipher: AES.CBC.Unauthenticated) : Enumeration<AES.CBC.HMAC> {
+                class HmacDefinition(innerCipher: AES.CBC.Unauthenticated) :
+                    Enumeration<AES.CBC.HMAC> {
                     @OptIn(HazardousMaterials::class)
                     override val entries: Set<AES.CBC.HMAC> by lazy { setOf(SHA_256, SHA_384, SHA_512, SHA_1) }
                     /**
