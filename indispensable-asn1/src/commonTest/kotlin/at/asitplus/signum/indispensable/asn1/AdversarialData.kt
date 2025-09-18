@@ -13,10 +13,10 @@ class AdversarialData : FreeSpec({
             shouldThrow<Asn1Exception> { Asn1Element.parseFromDerHexString(nineBytesLength) }
             val moreThanLongMaxValue =
                 "04888000000000000000"
-            shouldThrow<Asn1Exception> { Asn1Element.parseFromDerHexString(moreThanLongMaxValue) }.let { exception -> exception.printStackTrace() }
+            shouldThrow<Asn1Exception> { Asn1Element.parseFromDerHexString(moreThanLongMaxValue) }
             val moreThanIntMaxValue =
                 "048480000000"
-            shouldThrow<Asn1Exception> { Asn1Element.parseFromDerHexString(moreThanIntMaxValue) }.let { exception -> exception.printStackTrace() }
+            shouldThrow<Asn1Exception> { Asn1Element.parseFromDerHexString(moreThanIntMaxValue) }
         }
         "SEQUENCE" {
             val nineBytesLength =
@@ -24,10 +24,10 @@ class AdversarialData : FreeSpec({
             shouldThrow<Asn1Exception> { Asn1Element.parseFromDerHexString(nineBytesLength) }
             val mismatch1 =
                 "30887fffffffffffffff04887fffffffffffffff41414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141"
-            shouldThrow<Asn1Exception> { Asn1Element.parseFromDerHexString(mismatch1) }.let { exception -> exception.printStackTrace() }
+            shouldThrow<Asn1Exception> { Asn1Element.parseFromDerHexString(mismatch1) }
             val mismatch2 =
                 "30887fffffffffffff7f30013081804141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141"
-            shouldThrow<Asn1Exception> { Asn1Element.parseFromDerHexString(mismatch2) }.let { exception -> exception.printStackTrace() }
+            shouldThrow<Asn1Exception> { Asn1Element.parseFromDerHexString(mismatch2) }
         }
     }
 }
