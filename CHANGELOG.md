@@ -3,6 +3,7 @@
 ## 3.0
 
 ### NEXT
+* Fix `prettyPrint` for structures
 * Correct serialization logic for symmetric `CoseKey` in `CoseKeySerializer`
 * `Asn1String` revamp
     * Deprecated `Asn1Primitive.asAsn1String()`, moved decoding logic into `Asn1String.doDecode()`
