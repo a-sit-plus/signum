@@ -88,16 +88,19 @@ fun Asn1Element.Companion.parseFirst(source: ByteArray): Pair<Asn1Element, ByteA
         .let { Pair(it.first, source.copyOfRange(it.second.toInt(), source.size)) }
 
 private fun Source.doParseExactly(nBytes: Long): List<Asn1Element> = mutableListOf<Asn1Element>().also { list ->
-    var nBytesRead: Long = 0
+    val nBytes = nBytes.toULong()
+    var nBytesRead: ULong = 0u
     while (nBytesRead < nBytes) {
         val peekTagAndLen = peekTagAndLen()
-        val numberOfNextBytesRead = peekTagAndLen.second + peekTagAndLen.first.length
+        val numberOfNextBytesRead = peekTagAndLen.second.toULong() + peekTagAndLen.first.length.toULong()
+        require(numberOfNextBytesRead<= Long.MAX_VALUE.toULong()) {"Length overflow: $numberOfNextBytesRead"}
         if (nBytesRead + numberOfNextBytesRead > nBytes) break
         skip(peekTagAndLen.second.toLong()) // we only peeked before, so now we need to skip,
         //                                     since we want to recycle the result below
         val (elem, read) = readAsn1Element(peekTagAndLen.first, peekTagAndLen.second)
         list.add(elem)
-        nBytesRead += read
+        nBytesRead += read.toULong()
+        require(nBytesRead<= Long.MAX_VALUE.toULong()) {"Length overflow: $nBytesRead"}
     }
     require(nBytesRead == nBytes) { "Indicated length ($nBytes) does not correspond to an ASN.1 element boundary ($nBytesRead)" }
 }
@@ -657,17 +660,19 @@ private fun Source.decodeLength(): Pair<Long, Int> =
             Pair(firstByte.toUByte().toLong(), 1)
         } else { // its BER long form!
             val numberOfLengthOctets = (firstByte byteMask 0x7F).toInt()
-            val length = (0 until numberOfLengthOctets).fold(0L) { acc, index ->
+            if(numberOfLengthOctets>8) throw Asn1Exception("Unsupported length >2^8 (was: $numberOfLengthOctets length bytes)")
+            val length = (0 until numberOfLengthOctets).fold(0uL) { acc, index ->
                 require(!exhausted()) { "Can't decode length" }
                 val thisByte = readUByte().also {
                     if ((index == 0) && (it == 0u.toUByte())) {
                         throw Asn1Exception("Illegal DER length encoding; long form length with leading zeros")
                     }
-                }.toLong()
+                }.toULong()
                 acc or (thisByte shl Byte.SIZE_BITS * (numberOfLengthOctets - index - 1))
             }
-            if (length < 128) throw Asn1Exception("Illegal DER length encoding; length $length < 128 using long form")
-            Pair(length, 1 + numberOfLengthOctets)
+            if (length < 128uL) throw Asn1Exception("Illegal DER length encoding; length $length < 128 using long form")
+            if(length> Long.MAX_VALUE.toULong()) throw Asn1Exception("Unsupported length >Long.MAX_VALUE: $length")
+            Pair(length.toLong(), 1 + numberOfLengthOctets)
         }
     }
 
