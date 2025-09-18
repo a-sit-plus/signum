@@ -65,7 +65,6 @@ kotlin {
             )
 
             dependencies {
-                implementation(project(":internals"))
                 api(libs.kotlinx.io.core)
                 api(kmmresult())
                 api(serialization("json"))

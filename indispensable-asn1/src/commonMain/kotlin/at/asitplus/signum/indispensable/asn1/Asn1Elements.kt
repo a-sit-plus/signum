@@ -2,11 +2,11 @@
 
 package at.asitplus.signum.indispensable.asn1
 
+import Enumerable
+import Enumeration
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
 import at.asitplus.signum.indispensable.asn1.encoding.*
-import at.asitplus.signum.internals.Enumerable
-import at.asitplus.signum.internals.Enumeration
 import kotlinx.io.Buffer
 import kotlinx.io.Sink
 import kotlinx.io.readByteArray

@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.signum.internals.Enumeration
+import Enumeration
 
 enum class RSAPadding {
     PKCS1,
