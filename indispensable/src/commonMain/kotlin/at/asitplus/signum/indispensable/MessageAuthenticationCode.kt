@@ -6,8 +6,8 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Null
 import at.asitplus.signum.indispensable.asn1.encoding.readNull
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
-import at.asitplus.signum.internals.Enumerable
-import at.asitplus.signum.internals.Enumeration
+import Enumerable
+import Enumeration
 
 sealed interface MessageAuthenticationCode : DataIntegrityAlgorithm, Enumerable {
     /** output size of MAC */
