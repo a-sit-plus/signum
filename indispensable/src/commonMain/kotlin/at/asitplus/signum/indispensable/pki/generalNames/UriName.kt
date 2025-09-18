@@ -9,6 +9,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.TagClass
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToIa5String
 import at.asitplus.signum.indispensable.asn1.runRethrowing
+import com.eygraber.uri.Uri
 import kotlinx.io.IOException
 
 data class UriName(
@@ -27,35 +28,17 @@ data class UriName(
     constructor(value: String, allowWildcard: Boolean = false) : this(Asn1String.IA5(value), allowWildcard, true)
 
     init {
-        var dns: DNSName? = null
-        var ip: IPAddressName? = null
-        var valid = true
+        val uri = Uri.parse(host.value)
+        val hostStr = uri.host ?: throw IOException("URI name cannot be empty")
 
-        try {
-            val hostStr = host.value
-            if (hostStr.isEmpty()) throw IOException("URI name cannot be empty")
-
-            val schemeEnd = hostStr.indexOf(':')
-            val afterScheme = if (schemeEnd >= 0) hostStr.substring(schemeEnd + 1) else hostStr
-            val hostPart = extractHost(afterScheme) ?: afterScheme
-
-            if (hostPart.startsWith("[") && hostPart.endsWith("]")) {
-                // IPv6
-                val ipv6Host = hostPart.substring(1, hostPart.length - 1)
-                ip = IPAddressName.fromString(ipv6Host)
-            } else {
-                try { dns = DNSName(Asn1String.IA5(hostPart), allowWildcard) } catch (_: IOException) {}
-                if (dns == null) {
-                    ip = IPAddressName.fromString(hostPart)
-                }
-            }
+        hostDNS = try {
+            DNSName(Asn1String.IA5(hostStr), allowWildcard)
         } catch (_: IOException) {
-            valid = false
+            null
         }
 
-        hostDNS = dns
-        hostIP = ip
-        isValid = valid
+        hostIP = if (hostDNS == null) IPAddressName.fromString(hostStr) else null
+        isValid = hostDNS != null || hostIP != null
 
         if (performValidation && !isValid) {
             throw Asn1Exception("Invalid URI name: ${host.value}")
@@ -69,12 +52,6 @@ data class UriName(
 
         override fun doDecode(src: Asn1Primitive): UriName = runRethrowing {
             UriName(src.decodeToIa5String(tag))
-        }
-
-        private fun extractHost(value: String): String? {
-            val trimmed = value.trimStart('/')
-            val end = trimmed.indexOfAny(charArrayOf('/', '?', '#'))
-            return if (end >= 0) trimmed.substring(0, end) else trimmed
         }
     }
 
