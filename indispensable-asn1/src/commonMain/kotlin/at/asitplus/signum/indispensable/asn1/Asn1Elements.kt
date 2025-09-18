@@ -900,7 +900,7 @@ class Asn1CustomStructure private constructor(
                 (if (!tag.isConstructed) " PRIMITIVE" else "") +
                 " (=${tag.encodedTag.toHexString(HexFormat.UpperCase)}), length=${contentLength}" +
                 ", overallLength=${overallLength}" +
-                content?.let { " ${it.toHexString(HexFormat.UpperCase)}" }
+                (content?.let { " ${it.toHexString(HexFormat.UpperCase)}" }?:"")
 
     companion object {
         /**
