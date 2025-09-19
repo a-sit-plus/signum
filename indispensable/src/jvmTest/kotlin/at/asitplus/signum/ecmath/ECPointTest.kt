@@ -6,14 +6,15 @@ import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-class ECPointTest : FreeSpec({
+val ECPointTest  by testSuite{
     "Equals & hashCode" {
         val p1 = ECCurve.SECP_256_R_1.generator
         p1 shouldBe p1
@@ -73,4 +74,4 @@ class ECPointTest : FreeSpec({
             shouldThrow<IllegalArgumentException> { ECPoint.fromUncompressed(curve, g.xBytes, byteArrayOf(0)) }
         }
     }
-})
+}

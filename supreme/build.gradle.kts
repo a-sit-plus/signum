@@ -1,17 +1,10 @@
 import at.asitplus.gradle.*
-import com.squareup.kotlinpoet.AnnotationSpec
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.TypeSpec
 import org.gradle.internal.os.OperatingSystem
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree.Companion.test
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
-import org.jetbrains.kotlin.gradle.tasks.KotlinNativeLink
 import org.jetbrains.kotlin.konan.target.Family
 import java.io.ByteArrayOutputStream
-import java.io.FileInputStream
-import java.util.regex.Pattern
 
 plugins {
     id("com.android.library")
@@ -19,21 +12,15 @@ plugins {
     kotlin("plugin.serialization")
     id("signing")
     id("at.asitplus.gradle.conventions")
+    id("de.infix.testBalloon")
     id("io.github.ttypic.swiftklib") version "0.6.4"
-}
-
-buildscript {
-    dependencies {
-        classpath(libs.kotlinpoet)
-    }
 }
 
 val supremeVersion: String by extra
 version = supremeVersion
 
-wireAndroidInstrumentedTests()
 
-
+afterEvaluate {
 //we only ever test on the simulator, so these two should never be enabled in the first place
 //however, kotest ksp wiring messes this up and forces us to build for something we never intend, and this breaks linking.
 //hence, we disable those
@@ -44,6 +31,7 @@ tasks.configureEach {
     if (name == "iosX64Test") {
         enabled = false
     }
+}
 }
 
 
@@ -101,14 +89,6 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-
-    dependencies {
-        androidTestImplementation(libs.runner)
-        androidTestImplementation(libs.core)
-        androidTestImplementation(libs.rules)
-        androidTestImplementation(libs.kotest.runner.android)
-        testImplementation(libs.kotest.extensions.android)
-    }
 
     packaging {
         listOf(
@@ -210,57 +190,6 @@ signing {
     sign(publishing.publications)
 }
 
-
-fun wireAndroidInstrumentedTests() {
-    logger.lifecycle("  Wiring up Android Instrumented Tests")
-    val targetDir = project.layout.projectDirectory.dir("src")
-        .dir("androidInstrumentedTest").dir("kotlin")
-        .dir("generated").asFile.apply { deleteRecursively() }
-
-    val packagePattern = Pattern.compile("package\\s+(\\S+)", Pattern.UNICODE_CHARACTER_CLASS)
-    val searchPattern =
-        Pattern.compile("open\\s+class\\s+(\\S+)\\s*:\\s*FreeSpec", Pattern.UNICODE_CHARACTER_CLASS)
-    project.layout.projectDirectory.dir("src").dir("commonTest")
-        .dir("kotlin").asFileTree.filter { it.extension == "kt" }.forEach { file ->
-            FileInputStream(file).bufferedReader().use { reader ->
-                val source = reader.readText()
-
-                val packageName = packagePattern.matcher(source).run {
-                    if (find()) group(1) else null
-                }
-
-                val matcher = searchPattern.matcher(source)
-
-                while (matcher.find()) {
-                    val className = matcher.group(1)
-                    logger.lifecycle("Found Test class $className in file ${file.name}")
-
-                    FileSpec.builder(packageName ?: "", "Android$className")
-                        .addType(
-                            TypeSpec.classBuilder("Android$className")
-                                .apply {
-                                    this.superclass(ClassName(packageName ?: "", className))
-                                    annotations += AnnotationSpec.builder(
-                                        ClassName(
-                                            "org.junit.runner",
-                                            "RunWith"
-                                        )
-                                    ).addMember(
-                                        "%L",
-                                        "br.com.colman.kotest.KotestRunnerAndroid::class"
-                                    )
-                                        .build()
-                                }.build()
-                        ).build().apply {
-                            targetDir.also { file ->
-                                file.mkdirs()
-                                writeTo(file)
-                            }
-                        }
-                }
-            }
-        }
-}
 
 exportXCFramework(
     "SignumSupreme",

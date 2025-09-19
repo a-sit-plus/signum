@@ -8,14 +8,16 @@ import at.asitplus.signum.supreme.signature
 import com.nimbusds.jose.JWSObject
 import com.nimbusds.jose.crypto.ECDSAVerifier
 import com.nimbusds.jose.crypto.RSASSAVerifier
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.nulls.shouldNotBeNull
 import kotlinx.serialization.json.JsonElement
 import java.security.interfaces.RSAPublicKey
 
-class JwsSignedTest : FreeSpec({
+val JwsSignedTest  by testSuite{
 
     "JWS can be parsed and verified" - {
         val testvec = javaClass.classLoader.getResourceAsStream("JwsTestVectors.txt")?.reader()?.readLines()
@@ -51,4 +53,4 @@ class JwsSignedTest : FreeSpec({
         val signature = signer.sign(plainSignatureInput).signature //TODO: handle error
         println(JwsSigned(header, payload, signature, plainSignatureInput).serialize())// this we can verify on jwt.io
     }
-})
+}

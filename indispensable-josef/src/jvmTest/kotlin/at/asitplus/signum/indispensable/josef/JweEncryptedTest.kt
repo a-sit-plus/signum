@@ -5,15 +5,16 @@ import at.asitplus.signum.indispensable.symmetric.randomKey
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.supreme.symmetric.decrypt
 import at.asitplus.signum.supreme.symmetric.encrypt
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
 import com.nimbusds.jose.*
 import com.nimbusds.jose.crypto.AESEncrypter
 import com.nimbusds.jose.crypto.ECDHEncrypter
 import com.nimbusds.jose.jwk.Curve
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator
 import com.nimbusds.jose.util.Base64URL
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
-import io.kotest.matchers.nulls.shouldNotBeNull
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -22,9 +23,9 @@ import javax.crypto.KeyGenerator
 import kotlin.random.Random
 
 
-class JweEncryptedTest : FreeSpec({
+val JweEncryptedTest by testSuite {
 
-    "Minimal JWE can be parsed and verified" - {
+    "Minimal JWE can be parsed and verified" {
         val input = Random.Default.nextBytes(32)
 
         val jweNimbus = JWEObject(
@@ -44,7 +45,7 @@ class JweEncryptedTest : FreeSpec({
         parsed.ciphertext shouldBe jweNimbus.cipherText.decode()
     }
 
-    "JWE with some attributes can be parsed and verified" - {
+    "JWE with some attributes can be parsed and verified" {
         val input = Random.Default.nextBytes(32)
         val apu = Random.nextBytes(32)
         val apv = Random.nextBytes(32)
@@ -97,4 +98,4 @@ class JweEncryptedTest : FreeSpec({
         }
     }
 
-})
+}

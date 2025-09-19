@@ -6,7 +6,11 @@ import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.aroundEach
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldHaveMinLength
@@ -22,16 +26,17 @@ private fun ByteArray.trimLeadingZeros() =
         else -> this.copyOfRange(i, this.size)
     }
 
-class JsonWebKeyJvmTest : FreeSpec({
+val JsonWebKeyJvmTest by testSuite {
 
     lateinit var ecCurve: ECCurve
     lateinit var keyPair: KeyPair
     lateinit var keyPairRSA: KeyPair
 
-    beforeTest {
+    testConfig = TestConfig.aroundEach {
         ecCurve = ECCurve.SECP_256_R_1
         keyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair()
         keyPairRSA = KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }.genKeyPair()
+        it()
     }
 
     "JWK can be created from Coordinates" - {
@@ -88,5 +93,4 @@ class JsonWebKeyJvmTest : FreeSpec({
         }
 
     }
-
-})
+}

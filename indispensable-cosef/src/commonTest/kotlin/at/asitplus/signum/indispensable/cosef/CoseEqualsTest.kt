@@ -2,7 +2,8 @@ package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.property.Arb
@@ -14,8 +15,8 @@ import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ByteArraySerializer
 
-class CoseEqualsTest : FreeSpec({
-    "equals with byte array" {
+val CoseEqualsTest by testSuite {
+    "equals with byte array"  {
         checkAll(Arb.byteArray(length = Arb.int(0, 10), content = Arb.byte())) { bytes ->
             val bytesSigned1 = CoseSigned.create(
                 protectedHeader = CoseHeader(),
@@ -133,7 +134,7 @@ class CoseEqualsTest : FreeSpec({
         }
 
     }
-})
+}
 
 @Serializable
 data class DataClass(val content: String)

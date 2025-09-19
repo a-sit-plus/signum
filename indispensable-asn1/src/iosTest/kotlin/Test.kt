@@ -1,10 +1,11 @@
 package at.asitplus.signum.test
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldNotBe
 
-class Test : FreeSpec({
+val Test  by testSuite{
 
     "This dummy test" {
         "is just making sure" shouldNotBe "that iOS tests are indeed running"
     }
-})
+}

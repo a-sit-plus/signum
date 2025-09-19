@@ -6,10 +6,11 @@ import at.asitplus.signum.indispensable.misc.max
 import at.asitplus.signum.indispensable.misc.min
 
 import com.ionspin.kotlin.bignum.integer.BigInteger
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 
-class UtilTest : FreeSpec({
+val UtilTest by testSuite{
    
     "ByteArray.ensureSize" {
         val base = byteArrayOf(0x01, 0x02, 0x03, 0x04, 0x05)
@@ -37,4 +38,4 @@ class UtilTest : FreeSpec({
         BitLength(8u).bytes shouldBe 1u
         BitLength(9u).bytes shouldBe 2u
     }
-})
+}

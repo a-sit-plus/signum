@@ -6,7 +6,8 @@ import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.signum.supreme.signature
 import at.asitplus.signum.supreme.succeed
-import br.com.colman.kotest.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.should
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
@@ -16,7 +17,7 @@ import io.kotest.property.arbitrary.az
 import io.kotest.property.arbitrary.string
 import kotlin.random.Random
 
-class AndroidKeyStoreProviderTests : FreeSpec({
+val AndroidKeyStoreProviderTests  by testSuite{
     "Create attested keypair" {
         val alias = Arb.string(minSize = 32, maxSize = 32, Codepoint.az())
             .sample(RandomSource.default()).value
@@ -38,4 +39,4 @@ class AndroidKeyStoreProviderTests : FreeSpec({
             it.verify(plaintext, signature) } should succeed
 
     }
-})
+}

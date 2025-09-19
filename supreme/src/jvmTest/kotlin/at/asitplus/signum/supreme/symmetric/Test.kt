@@ -10,7 +10,13 @@ import at.asitplus.signum.supreme.symmetric.discouraged.andPredefinedNonce
 import at.asitplus.signum.supreme.symmetric.discouraged.encrypt
 import at.asitplus.signum.supreme.symmetric.encrypt
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import at.asitplus.testballoon.checkAllTests
+import at.asitplus.testballoon.checkAllSuites
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -23,11 +29,11 @@ import javax.crypto.spec.SecretKeySpec
 import kotlin.random.Random
 
 @OptIn(HazardousMaterials::class, ExperimentalStdlibApi::class)
-class JvmSymmetricTest : FreeSpec({
+val JvmSymmetricTest  by testSuite{
 
     "Against JCA" - {
         "AES" - {
-            withData(
+            withDataSuites(
                 SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
                 SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN,
                 SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN,
@@ -37,15 +43,14 @@ class JvmSymmetricTest : FreeSpec({
                 SymmetricEncryptionAlgorithm.AES_192.GCM,
                 SymmetricEncryptionAlgorithm.AES_256.GCM,
 
-                ) { alg ->
-                withData(
+                )  { alg ->
+                withDataSuites(
                     nameFn = { "iv: ${it.size} bytes" }, alg.randomNonce(), alg.randomNonce()
                 ) { iv ->
-                    withData(
+                    withDataSuites(
                         nameFn = { "aad: ${it?.size} bytes" }, alg.randomNonce(), alg.randomNonce(),
-
                         Random.nextBytes(19), null
-                    ) { aad ->
+                    )  { aad ->
                         withData(
                             nameFn = { "data: ${it.size} bytes" }, alg.randomNonce(), alg.randomNonce(),
                             Random.nextBytes(19),
@@ -147,7 +152,7 @@ class JvmSymmetricTest : FreeSpec({
                 }
             }
             "ECB + WRAP" - {
-                withData(
+                withDataSuites(
 
                     SymmetricEncryptionAlgorithm.AES_128.ECB,
                     SymmetricEncryptionAlgorithm.AES_192.ECB,
@@ -254,10 +259,10 @@ class JvmSymmetricTest : FreeSpec({
 
     "ChaCha20-Poly1305" - {
         val alg = SymmetricEncryptionAlgorithm.ChaCha20Poly1305
-        withData(
+        withDataSuites(
             nameFn = { "iv: ${it?.size} bytes" }, alg.randomNonce(), alg.randomNonce(), null
-        ) { nonce ->
-            withData(Random.nextBytes(19), null) { aad ->
+        )  { nonce ->
+            withDataSuites(Random.nextBytes(19), null)  { aad ->
                 withData( nameFn={"Random ${it.size} bytes"},
                     Random.nextBytes(19),
                     Random.nextBytes(1),
@@ -296,4 +301,4 @@ class JvmSymmetricTest : FreeSpec({
             }
         }
     }
-})
+}

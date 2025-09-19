@@ -7,6 +7,7 @@ import at.asitplus.testballoon.withData
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.disable
 import de.infix.testBalloon.framework.testScope
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.assertions.throwables.shouldThrow
@@ -15,13 +16,7 @@ import io.kotest.matchers.comparables.shouldBeLessThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.property.Arb
-import io.kotest.property.arbitrary.bigInt
-import io.kotest.property.arbitrary.int
-import io.kotest.property.arbitrary.intArray
-import io.kotest.property.arbitrary.negativeInt
-import io.kotest.property.arbitrary.positiveInt
-import io.kotest.property.arbitrary.uInt
-import io.kotest.property.arbitrary.uIntArray
+import io.kotest.property.arbitrary.*
 import io.kotest.property.checkAll
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import kotlin.time.Clock
@@ -134,7 +129,7 @@ val OidTest by testSuite {
             }
         }
         test(
-            "Automated UInt Capped" ,
+            "Automated UInt Capped",
             testConfig = TestConfig.testScope(isEnabled = true, timeout = 10.minutes)
         ) {
             checkAll(iterations = 15, Arb.positiveInt(39)) { second ->
@@ -184,10 +179,9 @@ val OidTest by testSuite {
             }
         }
 
-        testSuite(
-            "Benchmarking fast case",
-            testConfig = TestConfig.testScope(isEnabled = true, timeout = 10.minutes)
-        ) {
+        "!Benchmarking fast case" - {
+            testConfig = TestConfig.disable().testScope(isEnabled = true, timeout = 10.minutes)
+
             val repetitions = 10
 
             "Old Optimized" {

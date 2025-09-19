@@ -9,7 +9,13 @@ import at.asitplus.signum.supreme.symmetric.discouraged.andPredefinedNonce
 import at.asitplus.signum.supreme.symmetric.discouraged.encrypt
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import at.asitplus.testballoon.checkAllTests
+import at.asitplus.testballoon.checkAllSuites
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -17,7 +23,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 @OptIn(HazardousMaterials::class)
-class SymmetricAgainstReference : FreeSpec({
+val SymmetricAgainstReference  by testSuite{
     "AES GCM+CBC and ChaCha20-Poly1305" - {
         val reference: JsonArray = Json.decodeFromString(pregenerated)
 
@@ -212,7 +218,7 @@ class SymmetricAgainstReference : FreeSpec({
 
         }
     }
-})
+}
 
 
 private val pregenerated =

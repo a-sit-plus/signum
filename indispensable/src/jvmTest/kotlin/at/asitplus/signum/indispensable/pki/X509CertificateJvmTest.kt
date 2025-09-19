@@ -4,7 +4,10 @@ import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.signum.indispensable.asn1.encoding.parse
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.aroundEach
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -46,16 +49,17 @@ import kotlin.random.Random
 import kotlin.time.Duration.Companion.days
 import kotlin.time.toKotlinInstant
 
-class X509CertificateJvmTest : FreeSpec({
+val X509CertificateJvmTest  by testSuite{
 
     lateinit var ecCurve: ECCurve
     lateinit var keyPair: KeyPair
 
-    beforeTest {
+    testConfig= TestConfig.aroundEach {
         ecCurve = ECCurve.SECP_256_R_1
         keyPair = KeyPairGenerator.getInstance("EC").also {
             it.initialize(256)
         }.genKeyPair()
+        it()
     }
 
     "PSS" {
@@ -397,7 +401,7 @@ class X509CertificateJvmTest : FreeSpec({
     }
 
 
-})
+}
 
 private
 fun generateRsaPssCertificate(): java.security.cert.X509Certificate {

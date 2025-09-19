@@ -1,8 +1,10 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.pki.getContentSigner
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.DLSequence
@@ -24,7 +26,7 @@ import kotlin.random.Random
 import kotlin.time.Duration.Companion.days
 
 @OptIn(ExperimentalStdlibApi::class)
-class SignatureCodecTest : FreeSpec({
+val SignatureCodecTest  by testSuite{
 
     "EC" - {
         val curve = "secp256r1"
@@ -107,7 +109,5 @@ class SignatureCodecTest : FreeSpec({
 
         }
     }
-
-
-})
+}
 

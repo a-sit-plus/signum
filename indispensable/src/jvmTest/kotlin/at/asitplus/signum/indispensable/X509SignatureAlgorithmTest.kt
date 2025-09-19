@@ -6,9 +6,11 @@ import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import io.kotest.assertions.withClue
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.assertions.throwables.shouldNotThrow
-import io.kotest.datatest.withData
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.collections.shouldNotBeIn
@@ -18,7 +20,7 @@ import kotlinx.io.UnsafeIoApi
 import java.io.File
 
 @OptIn(UnsafeIoApi::class)
-class X509SignatureAlgorithmTest : FreeSpec({
+val X509SignatureAlgorithmTest  by testSuite{
 
     val (certsUnsupported, certsSupported) = readCerts()
 
@@ -50,7 +52,7 @@ class X509SignatureAlgorithmTest : FreeSpec({
 
 
 
-})
+}
 
 private fun readCerts(): Pair<List<Pair<String, ByteArray>>, List<Pair<String, ByteArray>>> {
     val certsUnsupported = File("./src/jvmTest/resources/certs-DSA").listFiles().shouldNotBeNull()

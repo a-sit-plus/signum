@@ -8,7 +8,11 @@ import at.asitplus.signum.indispensable.asn1.encoding.readAsn1Element
 import at.asitplus.signum.indispensable.asn1.wrapInUnsafeSource
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -32,7 +36,7 @@ import kotlin.random.nextInt
 import java.security.cert.X509Certificate as JcaCertificate
 
 @OptIn(UnsafeIoApi::class)
-class X509CertParserTest : FreeSpec({
+val X509CertParserTest  by testSuite{
 
     "Manual" {
         //ok-uniqueid-incomplete-byte.der
@@ -158,7 +162,7 @@ class X509CertParserTest : FreeSpec({
             }
         }
         "Faulty certs should glitch out" - {
-            withData(nameFn = { it.first }, faulty) { crt ->
+            withDataSuites(nameFn = { it.first }, faulty) { crt ->
                 runCatching {
                     shouldThrow<Throwable> {
                         X509Certificate.decodeFromTlv(Asn1Element.parse(crt.second) as Asn1Sequence)
@@ -180,7 +184,7 @@ class X509CertParserTest : FreeSpec({
             }
         }
 
-        withData(certs) {
+        withDataSuites(certs) {
             withData(it) {
                 val encodedSrc = it.decodeToByteArray(Base64 {})
 
@@ -202,7 +206,7 @@ class X509CertParserTest : FreeSpec({
             }
         }
     }
-})
+}
 
 
 private fun readGoogleCerts(): Pair<List<Pair<String, ByteArray>>, List<Pair<String, ByteArray>>> {

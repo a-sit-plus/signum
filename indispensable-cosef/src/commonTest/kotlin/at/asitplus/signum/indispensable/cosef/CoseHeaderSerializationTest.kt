@@ -1,7 +1,8 @@
 package at.asitplus.signum.indispensable.cosef
 
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -9,7 +10,7 @@ import kotlinx.serialization.decodeFromHexString
 import kotlinx.serialization.encodeToHexString
 
 @OptIn(ExperimentalSerializationApi::class)
-class CoseHeaderSerializationTest : FreeSpec({
+val CoseHeaderSerializationTest by testSuite {
 
     "COSE header with one certificate" {
         val input = """
@@ -145,4 +146,4 @@ class CoseHeaderSerializationTest : FreeSpec({
         }
     }
 
-})
+}

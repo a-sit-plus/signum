@@ -15,6 +15,8 @@
 * Kotest 6.0.0.M6
 * Remove Kotest Workarounds
 * Extend properties in `JweHeader`
+* TestBalloon-powered tests
+* New AGP-KMP-Library plugin
 
 ### 3.17.0 (Supreme 0.9.0)
 * **KDF Support**

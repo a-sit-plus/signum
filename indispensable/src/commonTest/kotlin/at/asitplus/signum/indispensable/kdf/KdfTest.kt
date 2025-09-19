@@ -2,12 +2,13 @@ package at.asitplus.signum.indispensable.kdf
 
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1ContentBytes
 
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
-class KdfTest: FreeSpec( {
+val KdfTest by testSuite {
    
     "Invoke Overrides"  {
         //withData is not working in all targets
@@ -66,4 +67,4 @@ class KdfTest: FreeSpec( {
             HKDF.SHA512.WithInfo(it.encodeToAsn1ContentBytes()) shouldNotBe HKDF.SHA384(it.encodeToAsn1ContentBytes())
         }
     }
-})
+}

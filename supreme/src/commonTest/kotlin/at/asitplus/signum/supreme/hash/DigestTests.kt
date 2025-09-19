@@ -4,12 +4,18 @@ import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.supreme.hash.digest
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.core.test.config.enabledOrReasonIf
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import at.asitplus.testballoon.checkAllTests
+import at.asitplus.testballoon.checkAllSuites
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 
-open class DigestTests: FreeSpec({
+val DigestTests by testSuite{
     data class TestSpec(val data: String, val reps: Int, val note: String, val ref: (Digest)->String)
-    withData(nameFn=TestSpec::note, listOf(
+    withDataSuites(nameFn=TestSpec::note, listOf(
         TestSpec("abc",1,"'abc', the bit string (0x)616263 of length 24 bits") { when(it) {
             Digest.SHA1 -> "a9993e364706816aba3e25717850c26c9cd0d89d"
             Digest.SHA256 -> "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
@@ -59,4 +65,4 @@ open class DigestTests: FreeSpec({
             result shouldBe ref
         }
     }
-})
+}

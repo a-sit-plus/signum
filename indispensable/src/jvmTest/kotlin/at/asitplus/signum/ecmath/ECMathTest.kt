@@ -7,8 +7,11 @@ import com.ionspin.kotlin.bignum.integer.Quadruple
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.integer.util.fromTwosComplementByteArray
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -27,7 +30,7 @@ private fun ECCurve.randomPoint(): ECPoint =
             this, Random.nextBytes(coordinateLength.bytes.toInt()), Random.nextBoolean())
     }}.firstNotNullOf { it.getOrNull() }
 
-class ECMathTest : FreeSpec({
+val ECMathTest  by testSuite{
     "Assumption: All implemented curves are prime order Weierstrass curves with a = -3" - {
         withData(ECCurve.entries) { curve ->
             // if new curves are ever added that violate this assumption,
@@ -37,7 +40,7 @@ class ECMathTest : FreeSpec({
         }
     }
     "Addition: group axioms" - {
-        withData(ECCurve.entries) { curve ->
+        withDataSuites(ECCurve.entries) { curve ->
             withData(nameFn = { (a, b, c) -> "(a=$a, b=$b, c=$c)" },
                 generateSequence {
                     Triple(curve.randomPoint(), curve.randomPoint(), curve.randomPoint())
@@ -53,7 +56,7 @@ class ECMathTest : FreeSpec({
         }
     }
     "Multiplication: axioms" - {
-        withData(ECCurve.entries) { curve ->
+        withDataSuites(ECCurve.entries) { curve ->
             withData(nameFn = { (a, b, x, y) -> "(a=$a, b=$b, x=$x, y=$y)" },
                 generateSequence {
                     Quadruple(curve.randomScalar(), curve.randomScalar(), curve.randomPoint(), curve.randomPoint())
@@ -719,7 +722,7 @@ class ECMathTest : FreeSpec({
     }
     "Multiplication: BouncyCastle ECDSA key pairs" - {
         Security.addProvider(BouncyCastleProvider())
-        withData(ECCurve.entries) { curve ->
+        withDataSuites(ECCurve.entries) { curve ->
             withData(generateSequence {
                 val keyPair = KeyPairGenerator.getInstance("EC", "BC").apply {
                     initialize(ECNamedCurveTable.getParameterSpec(curve.oid.toString()))
@@ -735,7 +738,7 @@ class ECMathTest : FreeSpec({
         }
     }
     "Multiplication: Strauss-Shamir trick" - {
-        withData(ECCurve.entries) { curve ->
+        withDataSuites(ECCurve.entries) { curve ->
             withData(nameFn = { (a, b, x, y) -> "(a=$a, b=$b, x=$x, y=$y)" },
                 generateSequence {
                     Quadruple(curve.randomScalar(),curve.randomScalar(),curve.randomPoint(),curve.randomPoint())
@@ -746,11 +749,11 @@ class ECMathTest : FreeSpec({
         }
     }
     "Multiplication: Montgomery ladder" - {
-        withData(ECCurve.entries) { curve ->
+        withDataSuites(ECCurve.entries) { curve ->
             withData(generateSequence { Pair(curve.randomScalar(), curve.randomPoint())}.take(10))
             { (k,P) ->
                 montgomeryMul(k.residue,P) shouldBe (k*P)
             }
         }
     }
-})
+}

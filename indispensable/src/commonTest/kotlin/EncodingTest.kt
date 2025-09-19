@@ -1,12 +1,13 @@
 package at.asitplus.signum
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 
-class EncodingTest: FreeSpec({
+val  EncodingTest by testSuite{
    
     "Correct serialName is determined by encoders" {
         ByteArrayBase64UrlSerializer.descriptor.serialName shouldBe "ByteArrayBase64UrlSerializer"
     }
-})
+}

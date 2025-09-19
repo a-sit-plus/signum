@@ -1,6 +1,8 @@
 package at.asitplus.signum.indispensable
 
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.TestSuite
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -10,7 +12,7 @@ import kotlin.reflect.KProperty1
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.memberProperties
 
-inline fun <reified T : Any> io.kotest.core.spec.style.FreeSpec.enumConsistencyTest() {
+inline fun <reified T : Any> TestSuite.enumConsistencyTest() {
     T::class.simpleName!! {
         val listed = T::class.companionObject!!.let { companion ->
             @Suppress("UNCHECKED_CAST")
@@ -38,8 +40,8 @@ inline fun <reified T : Any> io.kotest.core.spec.style.FreeSpec.enumConsistencyT
     }
 }
 
-class EnumConsistencyTests : FreeSpec({
+val EnumConsistencyTests by testSuite {
     enumConsistencyTest<MessageAuthenticationCode>()
     //TODO this test does not work any more since we started nesting stuff
     // enumConsistencyTest<DataIntegrityAlgorithm>()
-})
+}

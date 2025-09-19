@@ -2,12 +2,13 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.josef.io.sha256
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 
 
 /** Origin: https://www.di-mgt.com.au/sha_testvectors.html */
-class Sha256Test : FreeSpec({
+val Sha256Test by testSuite {
 
     "Testvectors" {
         val emptyStringHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -33,6 +34,6 @@ class Sha256Test : FreeSpec({
         "a".repeat(1000000).encodeToByteArray().sha256().toHexString() shouldBe aOneMillionHash
 
     }
-})
+}
 
 internal fun ByteArray.toHexString() = fold("") { str, it -> str + (0xFF and it.toInt()).toString(16).padStart(2, '0') }
