@@ -100,7 +100,7 @@ private fun Source.doParseExactly(nBytes: Long): List<Asn1Element> = mutableList
         val (elem, read) = readAsn1Element(peekTagAndLen.first, peekTagAndLen.second)
         list.add(elem)
         nBytesRead += read.toULong()
-        require(nBytesRead<= Long.MAX_VALUE.toULong()) {"Length overflow: $nBytesRead"}
+        require(nBytesRead <= Long.MAX_VALUE.toULong()) {"Length overflow: $nBytesRead"}
     }
     require(nBytesRead == nBytes) { "Indicated length ($nBytes) does not correspond to an ASN.1 element boundary ($nBytesRead)" }
 }
