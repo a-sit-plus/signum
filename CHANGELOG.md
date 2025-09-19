@@ -3,6 +3,17 @@
 ## 3.0
 
 ### NEXT
+* Add `Enumerable` and `Enumeration` interfaces to support the pattern in sealed types where the companion object provides `entries` containing all possible instances
+  * Classes and interfaces refactored to use `Set` as `entries` to follow  the standardized pattern:
+    * `Asn1Element.Tag`
+    * `CoseAlgorithm` and its nested implementations
+    * `JsonWebAlgorithm`
+    * `JwsAlgorithm` and its nested implementations
+    * `DataIntegrityAlgorithm`
+    * `MessageAuthenticationCode`
+    * `SignatureAlgorithm`
+    * `RSAPadding`
+    * `SymmetricEncryptionAlgorithm` and its nested implementations
 * Correct serialization logic for symmetric `CoseKey` in `CoseKeySerializer`
 * `Asn1String` revamp
     * Deprecated `Asn1Primitive.asAsn1String()`, moved decoding logic into `Asn1String.doDecode()`
