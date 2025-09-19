@@ -93,7 +93,7 @@ private fun Source.doParseExactly(nBytes: Long): List<Asn1Element> = mutableList
     while (nBytesRead < nBytes) {
         val peekTagAndLen = peekTagAndLen()
         val numberOfNextBytesRead = peekTagAndLen.second.toULong() + peekTagAndLen.first.length.toULong()
-        require(numberOfNextBytesRead<= Long.MAX_VALUE.toULong()) {"Length overflow: $numberOfNextBytesRead"}
+        require(numberOfNextBytesRead <= Long.MAX_VALUE.toULong()) {"Length overflow: $numberOfNextBytesRead"}
         if (nBytesRead + numberOfNextBytesRead > nBytes) break
         skip(peekTagAndLen.second.toLong()) // we only peeked before, so now we need to skip,
         //                                     since we want to recycle the result below
