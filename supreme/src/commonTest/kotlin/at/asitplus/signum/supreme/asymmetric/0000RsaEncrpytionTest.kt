@@ -6,8 +6,13 @@ import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.asymmetric.RSAPadding
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import at.asitplus.testballoon.checkAllTests
+import at.asitplus.testballoon.checkAllSuites
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -19,7 +24,7 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
 
 @OptIn(HazardousMaterials::class, SecretExposure::class, ExperimentalStdlibApi::class)
-class RsaEncryptionTest : FreeSpec({
+val RsaEncryptionTest  by testSuite{
 
     "From OpenSSL" - {
         withData(nameFn = { it.toString() }, testData) {
@@ -34,7 +39,7 @@ class RsaEncryptionTest : FreeSpec({
                 .getOrThrow() shouldBe it.plain
         }
     }
-})
+}
 
 @Serializable
 class RsaTestData(

@@ -3,10 +3,13 @@ package at.asitplus.signum.indispensable.pki
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
-import at.asitplus.signum.internals.ensureSize
 import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.signum.internals.ensureSize
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.aroundEach
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.assertions.withClue
-import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -32,13 +35,13 @@ internal fun X509SignatureAlgorithm.getContentSigner(key: PrivateKey) =
     }
 
 @OptIn(ExperimentalStdlibApi::class)
-class Pkcs10CertificationRequestJvmTest : FreeSpec({
+val Pkcs10CertificationRequestJvmTest by testSuite {
 
     lateinit var ecCurve: ECCurve
     lateinit var keyPair: KeyPair
     lateinit var keyPair1: KeyPair
 
-    beforeTest {
+    testConfig = TestConfig.aroundEach {
         ecCurve = ECCurve.SECP_256_R_1
         keyPair = KeyPairGenerator.getInstance("EC").also {
             it.initialize(256)
@@ -46,7 +49,9 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         keyPair1 = KeyPairGenerator.getInstance("EC").also {
             it.initialize(256)
         }.genKeyPair()
+        it()
     }
+
 
     "CSR match" {
         val ecPublicKey = keyPair.public as ECPublicKey
@@ -76,7 +81,11 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             initSign(keyPair.private)
             update(tbsCsr.encodeToDer())
         }.sign()
-        val csr = Pkcs10CertificationRequest(tbsCsr, signatureAlgorithm, CryptoSignature.parseFromJca(signed,signatureAlgorithm))
+        val csr = Pkcs10CertificationRequest(
+            tbsCsr,
+            signatureAlgorithm,
+            CryptoSignature.parseFromJca(signed, signatureAlgorithm)
+        )
 
         val kotlinEncoded = csr.encodeToDer()
 
@@ -135,7 +144,11 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             initSign(keyPair.private)
             update(tbsCsr.encodeToTlv().derEncoded)
         }.sign()
-        val csr = Pkcs10CertificationRequest(tbsCsr, signatureAlgorithm, CryptoSignature.parseFromJca(signed,signatureAlgorithm))
+        val csr = Pkcs10CertificationRequest(
+            tbsCsr,
+            signatureAlgorithm,
+            CryptoSignature.parseFromJca(signed, signatureAlgorithm)
+        )
 
         val kotlinEncoded = csr.encodeToTlv().derEncoded
         val jvmEncoded = bcCsr.encoded
@@ -201,7 +214,11 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             initSign(keyPair.private)
             update(tbsCsr.encodeToTlv().derEncoded)
         }.sign()
-        val csr = Pkcs10CertificationRequest(tbsCsr, signatureAlgorithm, CryptoSignature.parseFromJca(signed,signatureAlgorithm))
+        val csr = Pkcs10CertificationRequest(
+            tbsCsr,
+            signatureAlgorithm,
+            CryptoSignature.parseFromJca(signed, signatureAlgorithm)
+        )
 
         val kotlinEncoded = csr.encodeToTlv().derEncoded
         val jvmEncoded = bcCsr.encoded
@@ -224,7 +241,6 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         val spki = SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
 
 
-
         val bcCsr = PKCS10CertificationRequestBuilder(X500Name("CN=$commonName"), spki)
             .addAttribute(ASN1ObjectIdentifier("1.2.1840.13549.1.9.16.1337.26"), ASN1Integer(1337L))
             .build(contentSigner)
@@ -243,7 +259,11 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             initSign(keyPair.private)
             update(tbsCsr.encodeToTlv().derEncoded)
         }.sign()
-        val csr = Pkcs10CertificationRequest(tbsCsr, signatureAlgorithm, CryptoSignature.parseFromJca(signed,signatureAlgorithm))
+        val csr = Pkcs10CertificationRequest(
+            tbsCsr,
+            signatureAlgorithm,
+            CryptoSignature.parseFromJca(signed, signatureAlgorithm)
+        )
 
         val kotlinEncoded = csr.encodeToTlv().derEncoded
         val jvmEncoded = bcCsr.encoded
@@ -374,10 +394,26 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
             update(tbsCsr2.encodeToDer())
         }.sign()
 
-        val csr = Pkcs10CertificationRequest(tbsCsr1, signatureAlgorithm1, CryptoSignature.parseFromJca(signed,signatureAlgorithm1))
-        val csr1 = Pkcs10CertificationRequest(tbsCsr1, signatureAlgorithm1, CryptoSignature.parseFromJca(signed1,signatureAlgorithm1))
-        val csr11 = Pkcs10CertificationRequest(tbsCsr1, signatureAlgorithm2, CryptoSignature.parseFromJca(signed11,signatureAlgorithm2))
-        val csr2 = Pkcs10CertificationRequest(tbsCsr2, signatureAlgorithm1, CryptoSignature.parseFromJca(signed2,signatureAlgorithm1))
+        val csr = Pkcs10CertificationRequest(
+            tbsCsr1,
+            signatureAlgorithm1,
+            CryptoSignature.parseFromJca(signed, signatureAlgorithm1)
+        )
+        val csr1 = Pkcs10CertificationRequest(
+            tbsCsr1,
+            signatureAlgorithm1,
+            CryptoSignature.parseFromJca(signed1, signatureAlgorithm1)
+        )
+        val csr11 = Pkcs10CertificationRequest(
+            tbsCsr1,
+            signatureAlgorithm2,
+            CryptoSignature.parseFromJca(signed11, signatureAlgorithm2)
+        )
+        val csr2 = Pkcs10CertificationRequest(
+            tbsCsr2,
+            signatureAlgorithm1,
+            CryptoSignature.parseFromJca(signed2, signatureAlgorithm1)
+        )
 
         csr shouldNotBe csr1
         csr1 shouldBe csr1
@@ -401,13 +437,25 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         val extendedKeyUsage = ExtendedKeyUsage(KeyPurposeId.anyExtendedKeyUsage)
 
         val attr1 =
-            Pkcs10CertificationRequestAttribute(ObjectIdentifier("1.2.1840.13549.1.9.16.1337.26"), 1337.encodeToAsn1Primitive())
+            Pkcs10CertificationRequestAttribute(
+                ObjectIdentifier("1.2.1840.13549.1.9.16.1337.26"),
+                1337.encodeToAsn1Primitive()
+            )
         val attr11 =
-            Pkcs10CertificationRequestAttribute(ObjectIdentifier("1.2.1840.13549.1.9.16.1337.26"), 1337.encodeToAsn1Primitive())
+            Pkcs10CertificationRequestAttribute(
+                ObjectIdentifier("1.2.1840.13549.1.9.16.1337.26"),
+                1337.encodeToAsn1Primitive()
+            )
         val attr12 =
-            Pkcs10CertificationRequestAttribute(ObjectIdentifier("1.2.1840.13549.1.9.16.1337.27"), 1337.encodeToAsn1Primitive())
+            Pkcs10CertificationRequestAttribute(
+                ObjectIdentifier("1.2.1840.13549.1.9.16.1337.27"),
+                1337.encodeToAsn1Primitive()
+            )
         val attr13 =
-            Pkcs10CertificationRequestAttribute(ObjectIdentifier("1.2.1840.13549.1.9.16.1337.26"), 1338.encodeToAsn1Primitive())
+            Pkcs10CertificationRequestAttribute(
+                ObjectIdentifier("1.2.1840.13549.1.9.16.1337.26"),
+                1338.encodeToAsn1Primitive()
+            )
         val attr2 = Pkcs10CertificationRequestAttribute(KnownOIDs.keyUsage, Asn1Element.parse(keyUsage.encoded))
         val attr3 =
             Pkcs10CertificationRequestAttribute(KnownOIDs.extKeyUsage, Asn1Element.parse(extendedKeyUsage.encoded))
@@ -427,4 +475,4 @@ class Pkcs10CertificationRequestJvmTest : FreeSpec({
         attr2.hashCode() shouldNotBe attr3.hashCode()
 
     }
-})
+}

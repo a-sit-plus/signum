@@ -1,7 +1,13 @@
 package at.asitplus.signum.supreme.dsl
 
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import at.asitplus.testballoon.checkAllTests
+import at.asitplus.testballoon.checkAllSuites
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 
 private enum class Preparation { SHAKEN, STIRRED; }
@@ -29,7 +35,7 @@ private class Settings: DSL.Data() {
     }
 }
 
-open class DSLVarianceDemonstration : FreeSpec({
+val DSLVarianceDemonstration  by testSuite{
     "\uD83D\uDE0A" {
 
         doWithConfiguration {
@@ -49,7 +55,7 @@ open class DSLVarianceDemonstration : FreeSpec({
         shouldThrow<IllegalArgumentException> { doWithConfiguration() }
 
     }
-})
+}
 
 private fun doWithConfiguration(configure: (Settings.()->Unit)? = null) {
     val config = DSL.resolve(::Settings, configure)

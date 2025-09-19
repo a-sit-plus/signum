@@ -4,14 +4,20 @@ import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.succeed
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import at.asitplus.testballoon.checkAllTests
+import at.asitplus.testballoon.checkAllSuites
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
 import kotlin.random.Random
 
 @OptIn(HazardousMaterials::class)
-class ApiTest : FreeSpec({
+val ApiTest  by testSuite{
 
     "Utterly Untyped v2" - {
         withData(
@@ -239,4 +245,4 @@ class ApiTest : FreeSpec({
         }
     }
 
-})
+}

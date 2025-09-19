@@ -8,8 +8,11 @@ import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.io.Base64Strict
 import io.kotest.assertions.withClue
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -26,11 +29,11 @@ import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
 
 @OptIn(ExperimentalStdlibApi::class)
-class KeyTest : FreeSpec({
+val KeyTest  by testSuite{
     Security.addProvider(BouncyCastleProvider())
 
     "EC" - {
-        withData(256, 384, 521) { bits ->
+        withDataSuites(listOf(256, 384, 521)) { bits ->
             val keys = List(25600 / bits) {
                 val ecKp = KeyPairGenerator.getInstance("EC", "BC").apply {
                     initialize(bits)
@@ -170,4 +173,4 @@ class KeyTest : FreeSpec({
             }
         }
     }
-})
+}

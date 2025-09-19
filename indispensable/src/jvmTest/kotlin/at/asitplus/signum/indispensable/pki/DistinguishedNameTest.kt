@@ -1,19 +1,21 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.asn1.*
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
-class DistinguishedNameTest : FreeSpec({
+val DistinguishedNameTest by testSuite {
     "DistinguishedName test equals and hashCode" - {
         val oids = listOf(
             KnownOIDs.countryName, KnownOIDs.country, KnownOIDs.houseIdentifier,
             KnownOIDs.organizationName, KnownOIDs.organization, KnownOIDs.organizationalUnit,
             KnownOIDs.organizationalPerson, KnownOIDs.brainpoolP512r1
         )
-        withData(oids) { first ->
+        withDataSuites(oids) { first ->
             withData(oids) { second ->
                 if (first != second) {
                     val cn1 = AttributeTypeAndValue.CommonName(first.encodeToTlv())
@@ -75,4 +77,4 @@ class DistinguishedNameTest : FreeSpec({
             }
         }
     }
-})
+}

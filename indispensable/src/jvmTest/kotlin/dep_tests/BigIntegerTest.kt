@@ -1,15 +1,17 @@
 package dep_tests
 
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
-import io.kotest.core.spec.style.FreeSpec
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kotlin.random.Random
 
-class BigIntegerTest : FreeSpec({
+val BigIntegerTest by testSuite {
     "BigInteger" - {
         "equals & hashCode" {
             val v1 = BigInteger(42)
@@ -47,40 +49,43 @@ class BigIntegerTest : FreeSpec({
             v3 shouldBe v1
             v3.hashCode() shouldBe v1.hashCode()
         }
+        repeat(5000) {
+            "additive inverse" {
+                val modulus = BigInteger.fromByteArray(Random.nextBytes(32), Sign.POSITIVE)
+                val creator = ModularBigInteger.creatorForModulo(modulus)
+                val first = creator.fromBigInteger(BigInteger.fromByteArray(Random.nextBytes(32), Sign.POSITIVE))
+                val second = creator.fromBigInteger(BigInteger.fromByteArray(Random.nextBytes(32), Sign.POSITIVE))
 
-        "additive inverse".config(invocations = 5000) {
-            val modulus = BigInteger.fromByteArray(Random.nextBytes(32), Sign.POSITIVE)
-            val creator = ModularBigInteger.creatorForModulo(modulus)
-            val first = creator.fromBigInteger(BigInteger.fromByteArray(Random.nextBytes(32), Sign.POSITIVE))
-            val second = creator.fromBigInteger(BigInteger.fromByteArray(Random.nextBytes(32), Sign.POSITIVE))
-
-            first + (-first) shouldBe 0
-            second + (-second) shouldBe 0
-            first + (-second) shouldBe first - second
-            (-second) + first shouldBe first - second
-            (-first) + second shouldBe second - first
-            second + (-first) shouldBe second - first
-            -(-first) shouldBe first
-            -(-second) shouldBe second
+                first + (-first) shouldBe 0
+                second + (-second) shouldBe 0
+                first + (-second) shouldBe first - second
+                (-second) + first shouldBe first - second
+                (-first) + second shouldBe second - first
+                second + (-first) shouldBe second - first
+                -(-first) shouldBe first
+                -(-second) shouldBe second
+            }
         }
-        "multiplicative inverse".config(invocations = 500) {
-            val modulus = generateSequence {
-                BigInteger.fromByteArray(Random.nextBytes(32), Sign.POSITIVE)
-            }.filter { it.toJavaBigInteger().isProbablePrime(128) }.first()
-            val creator = ModularBigInteger.creatorForModulo(modulus)
-            val first = creator.fromBigInteger(BigInteger.fromByteArray(Random.nextBytes(32), Sign.POSITIVE))
-            val second = creator.fromBigInteger(BigInteger.fromByteArray(Random.nextBytes(32), Sign.POSITIVE))
+        repeat(500) {
+            "multiplicative inverse" {
+                val modulus = generateSequence {
+                    BigInteger.fromByteArray(Random.nextBytes(32), Sign.POSITIVE)
+                }.filter { it.toJavaBigInteger().isProbablePrime(128) }.first()
+                val creator = ModularBigInteger.creatorForModulo(modulus)
+                val first = creator.fromBigInteger(BigInteger.fromByteArray(Random.nextBytes(32), Sign.POSITIVE))
+                val second = creator.fromBigInteger(BigInteger.fromByteArray(Random.nextBytes(32), Sign.POSITIVE))
 
-            val firstInv = first.inverse()
-            val secondInv = second.inverse()
-            first * firstInv shouldBe 1
-            second * secondInv shouldBe 1
-            (first * secondInv) * second shouldBe first
-            first * (firstInv * second) shouldBe second
-            second * (first * secondInv) shouldBe first
-            secondInv * (first * second) shouldBe first
-            (first * second) * firstInv shouldBe second
-            (second * firstInv) * first shouldBe second
+                val firstInv = first.inverse()
+                val secondInv = second.inverse()
+                first * firstInv shouldBe 1
+                second * secondInv shouldBe 1
+                (first * secondInv) * second shouldBe first
+                first * (firstInv * second) shouldBe second
+                second * (first * secondInv) shouldBe first
+                secondInv * (first * second) shouldBe first
+                (first * second) * firstInv shouldBe second
+                (second * firstInv) * first shouldBe second
+            }
         }
     }
-})
+}

@@ -15,7 +15,14 @@ import at.asitplus.signum.supreme.symmetric.discouraged.andPredefinedNonce
 import at.asitplus.signum.supreme.symmetric.discouraged.encrypt
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import at.asitplus.testballoon.checkAllTests
+import at.asitplus.testballoon.checkAllSuites
+import de.infix.testBalloon.framework.testSuite
+import io.kotest.engine.runBlocking
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -27,7 +34,7 @@ import kotlin.random.nextUInt
 import kotlin.time.Clock
 
 @OptIn(HazardousMaterials::class)
-class SymmetricTest : FreeSpec({
+val SymmetricTest  by testSuite{
 
 
     "README" {
@@ -101,7 +108,7 @@ class SymmetricTest : FreeSpec({
 
 
     "Illegal IV Size" - {
-        withData(
+        withDataSuites(
             SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
             SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN,
             SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN,
@@ -157,7 +164,7 @@ class SymmetricTest : FreeSpec({
 
 
     "Illegal Key Size" - {
-        withData(
+        withDataSuites(
             SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
             SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN,
             SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN,
@@ -232,12 +239,12 @@ class SymmetricTest : FreeSpec({
 
     "CBC.PLAIN" - {
 
-        withData(
+        withDataSuites(
             SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
             SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN,
             SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN,
         ) {
-            withData(
+            withDataSuites(
                 nameFn = { "${it.size} Bytes" },
                 Random.Default.nextBytes(5),
                 Random.Default.nextBytes(15),
@@ -252,7 +259,7 @@ class SymmetricTest : FreeSpec({
                 Random.Default.nextBytes(21257),
             ) { plaintext ->
 
-                val key = it.randomKey()
+                val key = runBlocking {  it.randomKey() }
 
                 withData(
                     nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
@@ -318,15 +325,15 @@ class SymmetricTest : FreeSpec({
     }
 
     "GCM + ChaCha-Poly1503" - {
-        withData(
+        withDataSuites(
             SymmetricEncryptionAlgorithm.AES_128.GCM,
             SymmetricEncryptionAlgorithm.AES_192.GCM,
             SymmetricEncryptionAlgorithm.AES_256.GCM,
 
             SymmetricEncryptionAlgorithm.ChaCha20Poly1305
-        ) { alg ->
+        )  { alg ->
 
-            withData(
+            withDataSuites(
                 nameFn = { "${it.size} Bytes" },
                 Random.Default.nextBytes(5),
                 Random.Default.nextBytes(15),
@@ -339,8 +346,8 @@ class SymmetricTest : FreeSpec({
                 Random.Default.nextBytes(257),
                 Random.Default.nextBytes(1257),
                 Random.Default.nextBytes(21257),
-            ) { plaintext ->
-                val key = alg.randomKey()
+            )  { plaintext ->
+                val key = runBlocking { alg.randomKey() }
                 withData(
                     nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
                     alg.randomNonce(),
@@ -410,7 +417,7 @@ class SymmetricTest : FreeSpec({
     }
 
     "CBC+HMAC" - {
-        withData(
+        withDataSuites(
             nameFn = { it.first },
             "Default" to DefaultMacInputCalculation,
             "Oklahoma MAC" to {
@@ -419,9 +426,8 @@ class SymmetricTest : FreeSpec({
                             (iv ?: byteArrayOf()) +
                             (aad ?: byteArrayOf()) +
                             ciphertext
-            })
-        { (_, macInputFun) ->
-            withData(
+            })  { (_, macInputFun) ->
+            withDataSuites(
                 SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_1.Custom(
                     HMAC.SHA1.outputLength,
                     DefaultMacAuthTagTransformation,
@@ -479,8 +485,8 @@ class SymmetricTest : FreeSpec({
                     HMAC.SHA512.outputLength,
                     macInputFun,
                 ),
-            ) {
-                withData(
+            )  {
+                withDataSuites(
                     nameFn = { "${it.size} Bytes" },
                     Random.Default.nextBytes(16),
                     byteArrayOf(),
@@ -494,16 +500,16 @@ class SymmetricTest : FreeSpec({
                     Random.Default.nextBytes(257),
                     Random.Default.nextBytes(1257),
                     Random.Default.nextBytes(21257),
-                ) { plaintext ->
+                )  { plaintext ->
 
-                    val secretKey = it.randomKey().encryptionKey.getOrThrow()
+                    val secretKey = runBlocking { it.randomKey().encryptionKey.getOrThrow() }
 
-                    withData(
+                    withDataSuites(
                         nameFn = { "MAC KEY $it" },
                         16, 32, 64, 128, secretKey.size
-                    ) { macKeyLen ->
+                    )  { macKeyLen ->
 
-                        val key = it.randomKey(macKeyLen.bytes)
+                        val key = runBlocking { it.randomKey(macKeyLen.bytes) }
 
                         withData(
                             nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
@@ -624,8 +630,7 @@ class SymmetricTest : FreeSpec({
     }
 
     "ECB + WRAP" - {
-        withData(
-
+        withDataSuites(
             SymmetricEncryptionAlgorithm.AES_128.ECB,
             SymmetricEncryptionAlgorithm.AES_192.ECB,
             SymmetricEncryptionAlgorithm.AES_256.ECB,
@@ -633,7 +638,7 @@ class SymmetricTest : FreeSpec({
             SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394,
             SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394,
 
-            ) { alg ->
+            )  { alg ->
 
             withData(
                 nameFn = { "data: ${it.size} bytes" },
@@ -724,7 +729,7 @@ class SymmetricTest : FreeSpec({
 
 
     "Equality" - {
-        withData(allAlgorithms) { alg ->
+        withDataSuites(allAlgorithms)  { alg ->
             withData(
                 nameFn = { "data: ${it.size} bytes" },
                 //multiples of 8, so AES-KW works
@@ -806,7 +811,7 @@ class SymmetricTest : FreeSpec({
                     }
                 }
 
-                withData(allAlgorithms.filterNot { it /*check for same instance*/ === alg }) { wrongAlg ->
+                allAlgorithms.filterNot { it /*check for same instance*/ === alg }.forEach { wrongAlg ->
                     alg shouldNotBe wrongAlg
                     alg.randomKey() shouldNotBe wrongAlg.randomKey()
                     if (alg.keySize == wrongAlg.keySize) {
@@ -886,8 +891,7 @@ class SymmetricTest : FreeSpec({
 
     "Edge Cases " - {
         "all good" - {
-            withData(
-
+            withDataSuites(
                 SymmetricEncryptionAlgorithm.AES_128.ECB,
                 SymmetricEncryptionAlgorithm.AES_192.ECB,
                 SymmetricEncryptionAlgorithm.AES_256.ECB,
@@ -903,7 +907,7 @@ class SymmetricTest : FreeSpec({
                 /*NO WRAP, because it has constraints on input size*/
                 SymmetricEncryptionAlgorithm.ChaCha20Poly1305,
 
-                ) { alg ->
+                )  { alg ->
 
                 withData(0, 1, 4096) { sz ->
                     val data = Random.nextBytes(sz)
@@ -914,7 +918,7 @@ class SymmetricTest : FreeSpec({
         }
 
         "algorithm mismatch" - {
-            withData(allAlgorithms) { alg ->
+            withDataSuites(allAlgorithms) { alg ->
                 withData(allAlgorithms.filterNot { it == alg }) { wrongAlg ->
                     val encrypted = alg.randomKey().encrypt(Random.nextBytes(64)/*works with wrapping*/).getOrThrow()
                     val wrongKey = wrongAlg.randomKey()
@@ -925,7 +929,7 @@ class SymmetricTest : FreeSpec({
             }
         }
         "illegal key sizes" - {
-            withData(allAlgorithms) { alg ->
+            withDataSuites(allAlgorithms)  { alg ->
                 val wrongSized = mutableListOf<Int>()
                 while (wrongSized.size < 100) {
                     val wrong = Random.nextUInt(until = 1025u).toInt()
@@ -950,7 +954,7 @@ class SymmetricTest : FreeSpec({
         }
 
         "illegal nonce sizes" - {
-            withData(allAlgorithms.filter { it.requiresNonce() }) { alg ->
+            withDataSuites(allAlgorithms.filter { it.requiresNonce() })  { alg ->
                 alg as SymmetricEncryptionAlgorithm.RequiringNonce<*, *>
                 val wrongSized = mutableListOf<Int>()
                 while (wrongSized.size < 100) {
@@ -965,7 +969,5 @@ class SymmetricTest : FreeSpec({
             }
         }
     }
-
-
-})
+}
 

@@ -12,7 +12,13 @@ import at.asitplus.signum.supreme.sign
 import at.asitplus.signum.supreme.signature
 import at.asitplus.signum.supreme.succeed
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import at.asitplus.testballoon.checkAllTests
+import at.asitplus.testballoon.checkAllSuites
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.collections.shouldNotBeIn
 import io.kotest.matchers.should
@@ -94,7 +100,7 @@ object TestSuites {
 }
 
 @OptIn(SecretExposure::class)
-class EphemeralSignerCommonTests : FreeSpec({
+val EphemeralSignerCommonTests  by testSuite{
     "Functional" - {
         "RSA" - {
             withData(TestSuites.RSA) { (padding, digest, keySize, preHashed) ->
@@ -321,5 +327,4 @@ class EphemeralSignerCommonTests : FreeSpec({
             }
         }
     }
-
-})
+}

@@ -2,8 +2,9 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.KmmResult
 import at.asitplus.signum.indispensable.toX509SignatureAlgorithm
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 
 //somehow including kmmresult-test makes this fail
@@ -11,7 +12,7 @@ infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
     (this.getOrThrow() shouldBe b)
 
 
-class ConversionTest : FreeSpec({
+val ConversionTest by testSuite {
     "JWS -> SigAlg -> JWS is stable" - {
         "All" - {
             withData(JwsAlgorithm.entries) {
@@ -36,4 +37,4 @@ class ConversionTest : FreeSpec({
             it.algorithm.toJweKwAlgorithm() shouldSucceedWith it
         }
     }
-})
+}

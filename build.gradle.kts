@@ -5,7 +5,7 @@ import java.time.Duration
 plugins {
     val kotlinVer = System.getenv("KOTLIN_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotlin.get()
 
-    id("at.asitplus.gradle.conventions") version "202509016"
+    id("at.asitplus.gradle.conventions") version "202509019"
     kotlin("multiplatform") version kotlinVer apply false
     kotlin("plugin.serialization") version kotlinVer apply false
     id("com.android.library") version libs.versions.agp.get() apply (false)

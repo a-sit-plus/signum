@@ -3,12 +3,14 @@ package at.asitplus.signum.supreme.agree
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
-class KeyAgreementTest : FreeSpec({
+val KeyAgreementTest by testSuite {
 
     "000 Key Agreement Simple Equality Test" {
         val self = KeyAgreementPrivateValue.ECDH.Ephemeral(ECCurve.SECP_256_R_1).getOrThrow()
@@ -44,15 +46,16 @@ class KeyAgreementTest : FreeSpec({
                 other.keyAgreement(base.publicValue).isSuccess shouldBe success
                 base.keyAgreement(other.publicValue).isSuccess shouldBe success
 
-                if(success){
+                if (success) {
                     val agreed = other.keyAgreement(base.publicValue).getOrThrow()
                     agreed shouldBe base.keyAgreement(other.publicValue).getOrThrow()
-                    KeyAgreementPrivateValue.ECDH.Ephemeral(crv).getOrThrow().keyAgreement(base.publicValue) shouldNotBe agreed
-                    KeyAgreementPrivateValue.ECDH.Ephemeral(crv).getOrThrow().keyAgreement(other.publicValue) shouldNotBe agreed
+                    KeyAgreementPrivateValue.ECDH.Ephemeral(crv).getOrThrow()
+                        .keyAgreement(base.publicValue) shouldNotBe agreed
+                    KeyAgreementPrivateValue.ECDH.Ephemeral(crv).getOrThrow()
+                        .keyAgreement(other.publicValue) shouldNotBe agreed
                 }
             }
         }
 
     }
-
-})
+}

@@ -6,7 +6,13 @@ import at.asitplus.signum.supreme.sign.*
 import at.asitplus.signum.supreme.signature
 import at.asitplus.signum.supreme.succeed
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import at.asitplus.testballoon.checkAllTests
+import at.asitplus.testballoon.checkAllSuites
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNot
@@ -20,7 +26,7 @@ import java.nio.file.Path
 import kotlin.random.Random
 
 @OptIn(ExperimentalStdlibApi::class)
-class JKSProviderTest : FreeSpec({
+val JKSProviderTest  by testSuite{
     "Ephemeral" {
         val ks = JKSProvider.Ephemeral().getOrThrow()
         val alias = "Elfenbeinschloss"
@@ -137,4 +143,4 @@ class JKSProviderTest : FreeSpec({
             }
         }
     }
-})
+}

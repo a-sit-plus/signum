@@ -4,13 +4,17 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.aroundEach
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlin.random.Random
 
 @OptIn(ExperimentalStdlibApi::class)
-class JsonWebKeyTest : FreeSpec({
+val JsonWebKeyTest by testSuite {
 
     lateinit var curve: ECCurve
     lateinit var x: ByteArray
@@ -20,7 +24,7 @@ class JsonWebKeyTest : FreeSpec({
     lateinit var e: ByteArray
     lateinit var rsaKey: JsonWebKey
 
-    beforeTest {
+    testConfig= TestConfig.aroundEach {
         curve = ECCurve.SECP_256_R_1
         x = Random.nextBytes(32)
         y = Random.nextBytes(32)
@@ -28,6 +32,7 @@ class JsonWebKeyTest : FreeSpec({
         n = Random.nextBytes(1024)
         e = Random.nextBytes(16)
         rsaKey = JsonWebKey(type = JwkType.RSA, n = n, e = e)
+        it()
     }
 
     "Thumbprint for minimal EC Key" - {
@@ -88,4 +93,4 @@ class JsonWebKeyTest : FreeSpec({
         key.e!! shouldBe byteArrayOf(0x01, 0x00, 0x01)
     }
 
-})
+}

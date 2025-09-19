@@ -8,10 +8,16 @@ import at.asitplus.signum.supreme.a
 import at.asitplus.signum.supreme.b
 import com.ionspin.kotlin.bignum.integer.Quadruple
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import at.asitplus.testballoon.checkAllTests
+import at.asitplus.testballoon.checkAllSuites
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 
-class KDFTest : FreeSpec({
+val KDFTest  by testSuite{
     "HKDF" - {
         "Fixed Text Vectors" - {
             class TestInfo(
@@ -219,6 +225,4 @@ class KDFTest : FreeSpec({
             }
         }
     }
-
-
-})
+}

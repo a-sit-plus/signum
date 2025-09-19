@@ -8,12 +8,17 @@ import at.asitplus.signum.internals.view
 import at.asitplus.signum.supreme.b
 import com.lambdaworks.crypto.SCrypt
 import io.kotest.assertions.withClue
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import at.asitplus.testballoon.checkAllTests
+import at.asitplus.testballoon.checkAllSuites
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.Exhaustive
 import io.kotest.property.arbitrary.*
-import io.kotest.property.checkAll
 import io.kotest.property.exhaustive.ints
 import kotlin.math.pow
 import at.asitplus.signum.indispensable.kdf.SCrypt as scrypt
@@ -21,7 +26,7 @@ import at.asitplus.signum.indispensable.kdf.SCrypt as scrypt
 private val rnd = java.util.Random()
 
 @OptIn(ExperimentalStdlibApi::class)
-class ScryptTest : FreeSpec({
+val ScryptTest  by testSuite{
     "Little-Endian Bytearray converters" {
         ByteArray(8).also {
             uintArrayOf(0x31b2a3f4u, 0x72ff9813u).toLEByteArray(it.view)
@@ -31,11 +36,11 @@ class ScryptTest : FreeSpec({
             ubyteArrayOf(0x28u, 0xf3u, 0x79u, 0xc2u, 0x97u, 0xffu, 0xfbu, 0xfeu).asByteArray().view.toUIntArrayLE(it)
         } shouldBe uintArrayOf(0xc279f328u, 0xfefbff97u)
     }
-    "Integerify" {
-        checkAll(Exhaustive.ints(1..30)) { Npow ->
+    "Integerify" - {
+        checkAllSuites(Exhaustive.ints(1..30)) { Npow ->
             val N = 1 shl Npow
             val r = 8
-            checkAll(iterations = 64, Arb.byteArray(Arb.constant(128 * r), Arb.byte())) { input ->
+            checkAllTests(iterations = 64, Arb.byteArray(Arb.constant(128 * r), Arb.byte())) { input ->
                 withClue("input=${input.toHexString(HexFormat.UpperCase).let { it.substring(it.length - 128) }}") {
                     scrypt(
                         cost = N,
@@ -116,7 +121,7 @@ class ScryptTest : FreeSpec({
                 scrypt(cost = 16, blockSize = 1, parallelization = 1).Mixer().scryptROMix(it.view)
             } shouldBe output
         }
-        "Random Test Vectors" - {
+        "Random Test Vectors" {
 
             val N = 512
             val r = 8
@@ -137,16 +142,16 @@ class ScryptTest : FreeSpec({
     }
 
     "Against JVM reference" - {
-        checkAll(iterations = 3, Arb.nonNegativeInt(6)) {
+        checkAllSuites(iterations = 3, Arb.nonNegativeInt(6)) {
             val p = 2.0.pow(it + 1).toInt()
-            checkAll(iterations = 3, Arb.nonNegativeInt(7)) {
+            checkAllSuites(iterations = 3, Arb.nonNegativeInt(7)) {
                 val N = 2.0.pow(it+1).toInt()
-                checkAll(iterations = 4, Arb.nonNegativeInt(4)) {
+                checkAllSuites(iterations = 4, Arb.nonNegativeInt(4)) {
                     val r = it + 1
                     val scryptInstance = scrypt(N, blockSize = r, parallelization = p)
-                    checkAll(iterations = 6, Arb.byteArray(Arb.positiveInt(16), Arb.byte())) { salt ->
-                        checkAll(iterations = 6, Arb.byteArray(Arb.positiveInt(32), Arb.byte())) { ikm ->
-                            checkAll(iterations = 6, Arb.nonNegativeInt(256)) { len ->
+                    checkAllSuites(iterations = 6, Arb.byteArray(Arb.positiveInt(16), Arb.byte())) { salt ->
+                        checkAllSuites(iterations = 6, Arb.byteArray(Arb.positiveInt(32), Arb.byte())) { ikm ->
+                            checkAllTests(iterations = 6, Arb.nonNegativeInt(256)) { len ->
                                 SCrypt.scrypt(ikm, salt, N, r, p, len) shouldBe scryptInstance.deriveKey(
                                     salt,
                                     ikm,
@@ -159,4 +164,4 @@ class ScryptTest : FreeSpec({
             }
         }
     }
-})
+}
