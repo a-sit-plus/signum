@@ -660,7 +660,7 @@ private fun Source.decodeLength(): Pair<Long, Int> =
             Pair(firstByte.toUByte().toLong(), 1)
         } else { // its BER long form!
             val numberOfLengthOctets = (firstByte byteMask 0x7F).toInt()
-            if(numberOfLengthOctets>8) throw Asn1Exception("Unsupported length >2^8 (was: $numberOfLengthOctets length bytes)")
+            if (numberOfLengthOctets>8) throw Asn1Exception("Unsupported length >2^8 (was: $numberOfLengthOctets length bytes)")
             val length = (0 until numberOfLengthOctets).fold(0uL) { acc, index ->
                 require(!exhausted()) { "Can't decode length" }
                 val thisByte = readUByte().also {
