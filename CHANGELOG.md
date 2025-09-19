@@ -3,6 +3,17 @@
 ## 3.0
 
 ### NEXT
+* Add `Enumerable` and `Enumeration` interfaces to support the pattern in sealed types where the companion object provides `entries` containing all possible instances
+    * Classes and interfaces refactored to use `Set` as `entries` to follow  the standardized pattern:
+        * `Asn1Element.Tag`
+        * `CoseAlgorithm` and its nested implementations
+        * `JsonWebAlgorithm`
+        * `JwsAlgorithm` and its nested implementations
+        * `DataIntegrityAlgorithm`
+        * `MessageAuthenticationCode`
+        * `SignatureAlgorithm`
+        * `RSAPadding`
+        * `SymmetricEncryptionAlgorithm` and its nested implementations
 * Fix project setup on non-macOS build hosts
 
 ### 3.18.2 / Supreme 0.10.2
