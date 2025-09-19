@@ -671,7 +671,7 @@ private fun Source.decodeLength(): Pair<Long, Int> =
                 acc or (thisByte shl Byte.SIZE_BITS * (numberOfLengthOctets - index - 1))
             }
             if (length < 128uL) throw Asn1Exception("Illegal DER length encoding; length $length < 128 using long form")
-            if(length> Long.MAX_VALUE.toULong()) throw Asn1Exception("Unsupported length >Long.MAX_VALUE: $length")
+            if (length > Long.MAX_VALUE.toULong()) throw Asn1Exception("Unsupported length >Long.MAX_VALUE: $length")
             Pair(length.toLong(), 1 + numberOfLengthOctets)
         }
     }
