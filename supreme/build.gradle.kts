@@ -41,7 +41,7 @@ kotlin {
     jvm()
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
-        instrumentedTestVariant.sourceSetTree.set(test)
+      //  instrumentedTestVariant.sourceSetTree.set(test)
         publishLibraryVariants("release")
     }
     listOf(
@@ -66,6 +66,8 @@ kotlin {
         implementation("androidx.biometric:biometric:1.2.0-alpha05")
     }
 
+    sourceSets.commonTest.dependencies { implementation("at.asitplus:kmmresult-test:${AspVersions.kmmresult}") }
+
     sourceSets.jvmTest.dependencies {
         implementation("com.lambdaworks:scrypt:1.4.0")
     }
@@ -86,9 +88,8 @@ android {
         //override Android minSDK for Supreme
         logger.lifecycle("  \u001b[7m\u001b[1m" + "Overriding Android defaultConfig minSDK to 30 for project Supreme" + "\u001b[0m")
         minSdk = 30
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+      //  testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-
 
     packaging {
         listOf(

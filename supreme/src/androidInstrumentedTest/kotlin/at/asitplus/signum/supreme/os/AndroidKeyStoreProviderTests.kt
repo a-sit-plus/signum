@@ -5,10 +5,9 @@ import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.signum.supreme.signature
-import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.testSuite
-import io.kotest.matchers.should
+import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
 import io.kotest.property.RandomSource
@@ -36,7 +35,7 @@ val AndroidKeyStoreProviderTests  by testSuite{
         val signature = hardwareSigner.sign(plaintext).signature
 
         SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey).transform {
-            it.verify(plaintext, signature) } should succeed
+            it.verify(plaintext, signature) }.isSuccess shouldBe true
 
     }
 }
