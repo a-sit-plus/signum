@@ -162,7 +162,7 @@ val X509CertParserTest  by testSuite{
             }
         }
         "Faulty certs should glitch out" - {
-            withDataSuites(nameFn = { it.first }, faulty) { crt ->
+            withData(nameFn = { it.first }, faulty) { crt ->
                 runCatching {
                     shouldThrow<Throwable> {
                         X509Certificate.decodeFromTlv(Asn1Element.parse(crt.second) as Asn1Sequence)

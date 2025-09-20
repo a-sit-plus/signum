@@ -71,7 +71,7 @@ val ECMathTest  by testSuite{
     }
     /* from http://point-at-infinity.org/ecc/nisttv */
     "Multiplication: PaI test suite" - {
-        withData(nameFn = { (curve, _) -> curve.name },
+        withDataSuites(nameFn = { (curve, _) -> curve.name },
             sequence {
                 yield(Pair(ECCurve.SECP_256_R_1, """
                     k = 1
