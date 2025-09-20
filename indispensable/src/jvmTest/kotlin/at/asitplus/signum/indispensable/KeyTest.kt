@@ -95,7 +95,7 @@ val KeyTest  by testSuite{
     }
 
     "RSA" - {
-        withData(512, 1024, 2048, 3072, 4096) { bits ->
+        withDataSuites(512, 1024, 2048, 3072, 4096) { bits ->
             val keys = List(13000 / bits) {
                 val rsaKP = KeyPairGenerator.getInstance("RSA").apply {
                     initialize(bits)
@@ -147,7 +147,7 @@ val KeyTest  by testSuite{
     }
 
     "EC and RSA" - {
-        withData(512, 1024, 2048, 3072, 4096) { rsaBits ->
+        withDataSuites(512, 1024, 2048, 3072, 4096) { rsaBits ->
             withData(256, 384, 521) { ecBits ->
                 val keyPairEC1 = KeyPairGenerator.getInstance("EC").also { it.initialize(ecBits) }.genKeyPair()
                 val keyPairEC2 = KeyPairGenerator.getInstance("EC").also { it.initialize(ecBits) }.genKeyPair()
