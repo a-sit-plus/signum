@@ -1,5 +1,7 @@
 import at.asitplus.gradle.*
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree.Companion.test
 
 plugins {
     id("com.android.library")
@@ -17,7 +19,11 @@ private val Pair<*, String?>.comment: String? get() = this.second
 private val Pair<String, *>.oid: String? get() = this.first
 
 kotlin {
-    androidTarget { publishLibraryVariants("release") }
+    androidTarget {
+        @OptIn(ExperimentalKotlinGradlePluginApi::class)
+        instrumentedTestVariant.sourceSetTree.set(test)
+        publishLibraryVariants("release")
+    }
     jvm()
     macosArm64()
     macosX64()
@@ -77,6 +83,10 @@ kotlin {
                 api(coroutines("jvm"))
             }
         }
+
+        androidUnitTest.dependencies {
+            implementation("de.infix.testBalloon:testBalloon-framework-core-jvm:${AspVersions.testballoon}")
+        }
     }
 }
 
@@ -101,6 +111,7 @@ exportXCFramework(
 )
 
 android {
+    defaultConfig { testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" }
     namespace = "at.asitplus.signum.indispensable"
     packaging {
         listOf(

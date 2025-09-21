@@ -37,11 +37,11 @@ tasks.configureEach {
 
 kotlin {
     compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
-    applyDefaultHierarchyTemplate()
+    //applyDefaultHierarchyTemplate()
     jvm()
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
-      //  instrumentedTestVariant.sourceSetTree.set(test)
+        instrumentedTestVariant.sourceSetTree.set(test)
         publishLibraryVariants("release")
     }
     listOf(
@@ -54,22 +54,24 @@ kotlin {
         }
     }
 
-    sourceSets.commonMain.dependencies {
-        api(project(":indispensable"))
-        implementation(project(":internals"))
-        implementation(coroutines())
-        implementation(napier())
-        implementation(libs.securerandom) //fix composite build
-    }
+    sourceSets {
+        commonMain.dependencies {
+            api(project(":indispensable"))
+            implementation(project(":internals"))
+            implementation(coroutines())
+            implementation(napier())
+            implementation(libs.securerandom) //fix composite build
+        }
 
-    sourceSets.androidMain.dependencies {
-        implementation("androidx.biometric:biometric:1.2.0-alpha05")
-    }
+        androidMain.dependencies {
+            implementation("androidx.biometric:biometric:1.2.0-alpha05")
+        }
 
-    sourceSets.commonTest.dependencies { implementation("at.asitplus:kmmresult-test:${AspVersions.kmmresult}") }
+        commonTest.dependencies { implementation("at.asitplus:kmmresult-test:${AspVersions.kmmresult}") }
 
-    sourceSets.jvmTest.dependencies {
-        implementation("com.lambdaworks:scrypt:1.4.0")
+        jvmTest.dependencies {
+            implementation("com.lambdaworks:scrypt:1.4.0")
+        }
     }
 }
 

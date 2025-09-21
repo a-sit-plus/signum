@@ -1,5 +1,6 @@
 import at.asitplus.gradle.*
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree.Companion.test
 
 plugins {
     id("com.android.library")
@@ -14,7 +15,8 @@ val artifactVersion: String by extra
 version = artifactVersion
 
 kotlin {
-    androidTarget { publishLibraryVariants("release") }
+    androidTarget {  instrumentedTestVariant.sourceSetTree.set(test)
+        publishLibraryVariants("release") }
     jvm()
     macosArm64()
     macosX64()
@@ -69,6 +71,9 @@ kotlin {
             }
 
         }
+        androidUnitTest.dependencies {
+            implementation("de.infix.testBalloon:testBalloon-framework-core-jvm:${AspVersions.testballoon}")
+        }
     }
 }
 
@@ -95,6 +100,7 @@ exportXCFramework(
 
 
 android {
+    defaultConfig { testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" }
     namespace = "at.asitplus.signum.indispensable.josef"
 
 

@@ -1,9 +1,11 @@
+import at.asitplus.gradle.AspVersions
 import at.asitplus.gradle.exportXCFramework
 import at.asitplus.gradle.kotest
 import at.asitplus.gradle.setupDokka
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree.Companion.test
 import java.io.FileInputStream
 import java.util.regex.Pattern
 
@@ -206,7 +208,8 @@ fun generateKnownOIDs() {
 }
 
 kotlin {
-    androidTarget { publishLibraryVariants("release") }
+    androidTarget { instrumentedTestVariant.sourceSetTree.set(test)
+        publishLibraryVariants("release") }
     jvm()
     macosArm64()
     macosX64()
@@ -264,10 +267,14 @@ kotlin {
                 implementation(kotest("property"))
             }
         }
+        androidUnitTest.dependencies {
+            implementation("de.infix.testBalloon:testBalloon-framework-core-jvm:${AspVersions.testballoon}")
+        }
     }
 }
 
 android {
+    defaultConfig { testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" }
     namespace = "at.asitplus.signum.indispensable.oids"
     packaging {
         listOf(
