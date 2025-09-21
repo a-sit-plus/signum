@@ -114,6 +114,13 @@ android {
             "META-INF/licenses/*",
         ).forEach { resources.excludes.add(it) }
     }
+    dependencies {
+        androidTestImplementation(libs.runner)
+        androidTestImplementation(libs.core)
+        androidTestImplementation(libs.rules)
+        androidTestImplementation("de.infix.testBalloon:testBalloon-framework-core-jvm:${AspVersions.testballoon}")
+    }
+
 }
 
 val javadocJar = setupDokka(
