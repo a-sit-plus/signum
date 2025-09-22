@@ -5,6 +5,16 @@
 ### NEXT
 * Refactored `AlternativeNames` for SAN/IAN extraction
     * Removed detailed parsing of individual name types; now delegates decoding to `GeneralName`
+    * Introduced dedicated `GeneralName` classes:
+      * `DNSName`
+      * `EDIPartyName`
+      * `IPAddressName`
+      * `OtherName`
+      * `RegisteredIDName`
+      * `RFC822Name`
+      * `UriName`
+      * `X400AddressName`
+      * `X500Name`
 * Add stricter length checks to be more resilient towards adversarial inputs
 * Correct serialization logic for symmetric `CoseKey` in `CoseKeySerializer`
 * `Asn1String` revamp
