@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.supreme.azString
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.core.names.TestNameBuilder
@@ -53,7 +54,7 @@ val RFC9380Test by testSuite {
                     "Q1?\\.y\\s+=)?\\s+([0-9a-f\\s]+)"
         )
         val whitespacePattern = Regex("\\s")
-        withData(
+        withDataSuites(
             nameFn = SuiteTestInfo::suiteName, sequenceOf(
                 SuiteTestInfo(
                     suiteName = "P256_XMD:SHA-256_SSWU_RO_", suiteRef = RFC9380::`P256_XMD∶SHA-256_SSWU_RO_`,
@@ -687,7 +688,7 @@ Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
                                 ""
                             ).ifEmpty { null })
             }
-            withData(
+            withDataSuites(
                 nameFn = {
                     "Input: \"${
                         it.msg.substring(

@@ -348,7 +348,7 @@ val SymmetricTest  by testSuite{
                 Random.Default.nextBytes(21257),
             )  { plaintext ->
                 val key = runBlocking { alg.randomKey() }
-                withData(
+                withDataSuites(
                     nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
                     alg.randomNonce(),
                     alg.randomNonce(),
@@ -511,7 +511,7 @@ val SymmetricTest  by testSuite{
 
                         val key = runBlocking { it.randomKey(macKeyLen.bytes) }
 
-                        withData(
+                        withDataSuites(
                             nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
                             Random.Default.nextBytes((it.nonceSize.bytes).toInt()),
                             Random.Default.nextBytes((it.nonceSize.bytes).toInt()),

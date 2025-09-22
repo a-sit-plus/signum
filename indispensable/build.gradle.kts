@@ -85,7 +85,7 @@ kotlin {
         }
 
         androidUnitTest.dependencies {
-            implementation("de.infix.testBalloon:testBalloon-framework-core-jvm:${AspVersions.testballoon}")
+            implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
         }
     }
 }
@@ -133,7 +133,6 @@ android {
         androidTestImplementation(libs.runner)
         androidTestImplementation(libs.core)
         androidTestImplementation(libs.rules)
-        androidTestImplementation("de.infix.testBalloon:testBalloon-framework-core-jvm:${AspVersions.testballoon}")
     }
 
 
