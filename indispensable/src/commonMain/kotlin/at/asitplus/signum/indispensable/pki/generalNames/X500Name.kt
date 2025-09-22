@@ -50,8 +50,8 @@ data class X500Name(
         return when {
             inputRDNs.isEmpty() -> GeneralNameOption.ConstraintResult.WIDENS
             thisRDNs.isEmpty() -> GeneralNameOption.ConstraintResult.NARROWS
-            input.isWithinSubtree(thisRDNs) -> GeneralNameOption.ConstraintResult.NARROWS
-            this.isWithinSubtree(inputRDNs) -> GeneralNameOption.ConstraintResult.WIDENS
+            this.isWithinSubtree(inputRDNs) -> GeneralNameOption.ConstraintResult.NARROWS
+            input.isWithinSubtree(thisRDNs) -> GeneralNameOption.ConstraintResult.WIDENS
             else -> GeneralNameOption.ConstraintResult.SAME_TYPE
         }
     }

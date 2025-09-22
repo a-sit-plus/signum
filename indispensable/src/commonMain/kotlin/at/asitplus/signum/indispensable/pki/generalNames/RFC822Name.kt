@@ -61,8 +61,8 @@ data class RFC822Name internal constructor(
         if (thisName.endsWith(inputName)) {
             return when {
                 isEmailLike(inputName) -> GeneralNameOption.ConstraintResult.SAME_TYPE
-                hasDomainPrefix(inputName) -> GeneralNameOption.ConstraintResult.WIDENS
-                thisName.getOrNull(thisName.lastIndexOf(inputName) - 1) == '@' -> GeneralNameOption.ConstraintResult.WIDENS
+                hasDomainPrefix(inputName) -> GeneralNameOption.ConstraintResult.NARROWS
+                thisName.getOrNull(thisName.lastIndexOf(inputName) - 1) == '@' -> GeneralNameOption.ConstraintResult.NARROWS
                 else -> GeneralNameOption.ConstraintResult.SAME_TYPE
             }
         }
@@ -70,8 +70,8 @@ data class RFC822Name internal constructor(
         if (inputName.endsWith(thisName)) {
             return when {
                 isEmailLike(thisName) -> GeneralNameOption.ConstraintResult.SAME_TYPE
-                hasDomainPrefix(thisName) -> GeneralNameOption.ConstraintResult.NARROWS
-                inputName.getOrNull(inputName.lastIndexOf(thisName) - 1) == '@' -> GeneralNameOption.ConstraintResult.NARROWS
+                hasDomainPrefix(thisName) -> GeneralNameOption.ConstraintResult.WIDENS
+                inputName.getOrNull(inputName.lastIndexOf(thisName) - 1) == '@' -> GeneralNameOption.ConstraintResult.WIDENS
                 else -> GeneralNameOption.ConstraintResult.SAME_TYPE
             }
         }
