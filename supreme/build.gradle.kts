@@ -76,6 +76,17 @@ kotlin {
 
         val androidInstrumentedTest by getting {
             dependsOn(commonTest.get())
+            dependencies {
+                implementation(libs.runner)
+                implementation(libs.core)
+                implementation(libs.rules)
+            }
+        }
+
+        val androidUnitTest by getting {
+            dependencies {
+                implementation("de.infix.testBalloon:testBalloon-framework-core-jvm:${AspVersions.testballoon}")
+            }
         }
 
         jvmTest.dependencies {
@@ -119,11 +130,6 @@ android {
             "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
             "META-INF/licenses/*",
         ).forEach { resources.excludes.add(it) }
-    }
-    dependencies {
-        androidTestImplementation(libs.runner)
-        androidTestImplementation(libs.core)
-        androidTestImplementation(libs.rules)
     }
 
     testOptions {
@@ -270,4 +276,10 @@ project.gradle.taskGraph.whenReady {
     tasks.getByName("testDebugUnitTest") {
         enabled = false
     }
+}
+
+tasks.withType<AbstractTestTask>().configureEach {
+    println("disabled reporting for $this, class=${this::class.qualifiedName}")
+    reports.html.required = false
+    reports.junitXml.required = false
 }
