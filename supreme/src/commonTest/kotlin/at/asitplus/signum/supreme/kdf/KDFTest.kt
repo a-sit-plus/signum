@@ -7,15 +7,16 @@ import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.supreme.a
 import at.asitplus.signum.supreme.b
 import com.ionspin.kotlin.bignum.integer.Quadruple
-import io.kotest.core.spec.style.FreeSpec
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.withData
 import at.asitplus.testballoon.withDataSuites
 import at.asitplus.testballoon.checkAllTests
 import at.asitplus.testballoon.checkAllSuites
+import de.infix.testBalloon.framework.testScope
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
+import kotlin.time.Duration.Companion.minutes
 
 val KDFTest  by testSuite{
     "HKDF" - {
@@ -146,6 +147,7 @@ val KDFTest  by testSuite{
     }
     "RFC2898 PBKDF2" - {
         "PBKDF2-HMAC-SHA-1" - {
+            testConfig= de.infix.testBalloon.framework.TestConfig.testScope(isEnabled = true, timeout = 10.minutes)
             withData(nameFn = { "RFC6070: \"${it.d}\"" }, sequence {
                 yield(
                     Quadruple(

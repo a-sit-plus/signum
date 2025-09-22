@@ -24,14 +24,14 @@ afterEvaluate {
 //we only ever test on the simulator, so these two should never be enabled in the first place
 //however, kotest ksp wiring messes this up and forces us to build for something we never intend, and this breaks linking.
 //hence, we disable those
-tasks.configureEach {
-    if (name == "linkDebugTestIosX64") {
-        enabled = false
+    tasks.configureEach {
+        if (name == "linkDebugTestIosX64") {
+            enabled = false
+        }
+        if (name == "iosX64Test") {
+            enabled = false
+        }
     }
-    if (name == "iosX64Test") {
-        enabled = false
-    }
-}
 }
 
 
@@ -44,6 +44,7 @@ kotlin {
         instrumentedTestVariant.sourceSetTree.set(test)
         publishLibraryVariants("release")
     }
+
     listOf(
         iosX64(),
         iosArm64(),
@@ -53,6 +54,7 @@ kotlin {
             val main by getting { cinterops.create("AESwift") }
         }
     }
+
 
     sourceSets {
         commonMain.dependencies {
@@ -67,13 +69,21 @@ kotlin {
             implementation("androidx.biometric:biometric:1.2.0-alpha05")
         }
 
-        commonTest.dependencies { implementation("at.asitplus:kmmresult-test:${AspVersions.kmmresult}") }
+        commonTest.dependencies {
+            implementation("at.asitplus:kmmresult-test:${AspVersions.kmmresult}")
+            implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
+        }
+
+        val androidInstrumentedTest by getting {
+            dependsOn(commonTest.get())
+        }
 
         jvmTest.dependencies {
             implementation("com.lambdaworks:scrypt:1.4.0")
         }
     }
 }
+
 
 swiftklib {
     create("AESwift") {
@@ -83,6 +93,7 @@ swiftklib {
         minIos = 15
     }
 }
+
 
 android {
     namespace = "at.asitplus.signum.supreme"
@@ -113,7 +124,6 @@ android {
         androidTestImplementation(libs.runner)
         androidTestImplementation(libs.core)
         androidTestImplementation(libs.rules)
-        androidTestImplementation("de.infix.testBalloon:testBalloon-framework-core-jvm:${AspVersions.testballoon}")
     }
 
     testOptions {
@@ -121,10 +131,10 @@ android {
         targetSdk = android.defaultConfig.minSdk
         managedDevices {
             localDevices {
-                create("pixel2api33") {
+                create("pixel2api30") {
                     device = "Pixel 2"
-                    apiLevel = androidMinSdk!!
-                    systemImageSource = "aosp-atd"
+                    apiLevel = 30
+                    systemImageSource = "aosp"
                 }
             }
         }
@@ -200,6 +210,7 @@ signing {
 }
 
 
+/*
 exportXCFramework(
     "SignumSupreme",
     transitiveExports = false,
@@ -211,6 +222,7 @@ exportXCFramework(
     project(":indispensable-asn1"),
     libs.bignum
 )
+*/
 
 
 /*help the linker (yes, this is absolutely bonkers!)*/
@@ -259,4 +271,3 @@ project.gradle.taskGraph.whenReady {
         enabled = false
     }
 }
-
