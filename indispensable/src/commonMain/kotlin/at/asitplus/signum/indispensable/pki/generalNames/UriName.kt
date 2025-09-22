@@ -28,16 +28,52 @@ data class UriName(
     constructor(value: String, allowWildcard: Boolean = false) : this(Asn1String.IA5(value), allowWildcard, true)
 
     init {
-        val uri = Uri.parse(host.value)
-        val hostStr = uri.host ?: throw IOException("URI name cannot be empty")
-
-        hostDNS = try {
-            DNSName(Asn1String.IA5(hostStr), allowWildcard)
-        } catch (_: IOException) {
-            null
+        if (host.value.isEmpty()) {
+            throw IOException("URI name cannot be empty")
         }
 
-        hostIP = if (hostDNS == null) IPAddressName.fromString(hostStr) else null
+        val uri = Uri.parse(host.value)
+        val hostStr: String = if (uri.host == null) {
+            // No scheme → treat entire value as host
+            host.value
+        } else {
+            uri.host!!
+        }
+
+        var tmpHostDNS: DNSName? = null
+        var tmpHostIP: IPAddressName? = null
+
+        if (hostStr.startsWith("[") && hostStr.endsWith("]")) {
+            // IPv6 in brackets
+            val ipv6Host = hostStr.substring(1, hostStr.length - 1)
+            tmpHostIP = try {
+                IPAddressName.fromString(ipv6Host)
+            } catch (e: IOException) {
+                throw IOException("Invalid URI name: host portion is not a valid IPv6 address: ${host.value}", e)
+            }
+        } else {
+            // Try DNS first
+            tmpHostDNS = try {
+                val normalizedHost = if (hostStr.startsWith(".")) hostStr.substring(1) else hostStr
+                DNSName(Asn1String.IA5(normalizedHost), allowWildcard)
+            } catch (_: IOException) {
+                null
+            }
+
+            // If not DNS, try IP
+            if (tmpHostDNS == null) {
+                tmpHostIP = try {
+                    IPAddressName.fromString(hostStr)
+                } catch (e: IOException) {
+                    throw IOException(
+                        "Invalid URI name: host is not a valid DNS, IPv4, or IPv6 address: ${host.value}", e
+                    )
+                }
+            }
+        }
+
+        hostDNS = tmpHostDNS
+        hostIP = tmpHostIP
         isValid = hostDNS != null || hostIP != null
 
         if (performValidation && !isValid) {
