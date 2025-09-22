@@ -107,7 +107,7 @@ data class DNSName internal constructor(
             val charBefore = thisName.getOrNull(index - 1)
             val inputStartsWithDot = inputName.startsWith('.')
             if ((charBefore == '.' && !inputStartsWithDot) || (charBefore != '.' && inputStartsWithDot)) {
-                return GeneralNameOption.ConstraintResult.WIDENS
+                return GeneralNameOption.ConstraintResult.NARROWS
             }
             return GeneralNameOption.ConstraintResult.SAME_TYPE
         }
@@ -117,7 +117,7 @@ data class DNSName internal constructor(
             val charBefore = inputName.getOrNull(index - 1)
             val thisStartsWithDot = thisName.startsWith('.')
             if ((charBefore == '.' && !thisStartsWithDot) || (charBefore != '.' && thisStartsWithDot)) {
-                return GeneralNameOption.ConstraintResult.NARROWS
+                return GeneralNameOption.ConstraintResult.WIDENS
             }
             return GeneralNameOption.ConstraintResult.SAME_TYPE
         }
