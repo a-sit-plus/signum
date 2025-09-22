@@ -47,7 +47,6 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
 
 }
 
-//TODO: value should be Asn1Primitive???
 open class AttributeTypeAndValue(
     override val oid: ObjectIdentifier,
     val value: Asn1Element

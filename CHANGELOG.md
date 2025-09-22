@@ -5,6 +5,16 @@
 ### NEXT
 * Refactored `AlternativeNames` for SAN/IAN extraction
     * Removed detailed parsing of individual name types; now delegates decoding to `GeneralName`
+    * Introduced dedicated `GeneralName` classes:
+        * `DNSName`
+        * `EDIPartyName`
+        * `IPAddressName`
+        * `OtherName`
+        * `RegisteredIDName`
+        * `RFC822Name`
+        * `UriName`
+        * `X400AddressName`
+        * `X500Name`
 
 ### 3.18.2 / Supreme 0.10.2
 * Fixes
