@@ -75,7 +75,6 @@ kotlin {
         }
 
         val androidInstrumentedTest by getting {
-            dependsOn(commonTest.get())
             dependencies {
                 implementation(libs.runner)
                 implementation(libs.core)
