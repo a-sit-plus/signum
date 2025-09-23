@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.pki.generalNames
 
+import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.location
@@ -154,7 +156,38 @@ class GeneralNamesConstrainsTest : FreeSpec ({
         matchNameURi
     )
 
-    UriName(Asn1String.IA5("https://[fe80::1%25eth0]/path"))
+
+    fun ip(value: String) =IPAddressName.fromString(value)
+    val testIP = "192.168.1.2"
+    val testIPIsConstraint = arrayOf(
+        "192.168.1.1/24",
+        "192.168.1.1/28"
+    )
+    val testIPIsNotConstraint = arrayOf(
+        "192.168.3.1/30",
+        "192.168.1.1"
+    )
+    val widenIps = arrayOf(
+        "192.168.1.0/16"
+    )
+    val narrowIps = arrayOf(
+        "192.168.1.0/16"
+    )
+
+    testGeneralNameConstraints(
+        name = "IpAddressName.constrains",
+        createInstance = ::ip,
+        testName = testIP,
+        testNameIsConstraint = testIPIsConstraint,
+        testNameIsNotConstraint = testIPIsNotConstraint,
+        widenNames = widenIps,
+        narrowNames = narrowIps,
+        diffTypeOther = dummyOtherRFC,
+    )
+
+
+//    testIpName.constrains(otherIpName) shouldBe GeneralNameOption.ConstraintResult.NARROWS
+
 })
 
 

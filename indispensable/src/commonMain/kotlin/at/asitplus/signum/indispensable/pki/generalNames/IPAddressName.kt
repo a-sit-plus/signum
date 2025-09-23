@@ -35,10 +35,7 @@ data class IPAddressName(
 
     override fun encodeToTlv(): Asn1Primitive {
         //TODO change after CIDRE update
-        val bytes = when {
-            addressAndPrefix != null -> addressAndPrefix.address.octets + addressAndPrefix.netmask
-            else -> address.octets
-        }
+        val bytes = addressAndPrefix?.let { it.address.octets + it.netmask } ?: address.octets
         return bytes.encodeToAsn1OctetStringPrimitive()
     }
 
@@ -67,14 +64,10 @@ data class IPAddressName(
             return IPAddressName(address, addressAndPrefix = IpInterface.V6(address, prefix))
         }
 
-        @Throws(IOException::class)
-        fun fromString(name: String): IPAddressName {
-            return when (val network = IpNetwork(name)) {
-                is IpNetwork.V4 -> IPAddressName(network.address, addressAndPrefix = network)
-                is IpNetwork.V6 -> IPAddressName(network.address, addressAndPrefix = network)
-                else -> throw IllegalArgumentException("Unknown network type")
-            }
-        }
+        fun fromString(name: String): IPAddressName =
+            runCatching { IpInterface(name) }
+                .map { IPAddressName(it.address, it) }
+                .getOrElse { IPAddressName(IpAddress(name)) }
     }
 
     override fun toString(): String = addressAndPrefix?.toString() ?: address.toString()
@@ -112,6 +105,7 @@ data class IPAddressName(
             return GeneralNameOption.ConstraintResult.SAME_TYPE
         }
 
+        // Subnet vs Subnet
         if (network != null && input.network != null) {
             val thisNet = network as IpNetwork<Number, Any>
             val otherNet = input.network as IpNetwork<Number, Any>
@@ -128,7 +122,7 @@ data class IPAddressName(
             val thisNet = network as IpNetwork<Number, Any>
             val otherAddress = input.address as IpAddress<Number, Any>
             return if (thisNet.contains(otherAddress))
-                GeneralNameOption.ConstraintResult.NARROWS
+                GeneralNameOption.ConstraintResult.WIDENS
             else GeneralNameOption.ConstraintResult.SAME_TYPE
         }
 
