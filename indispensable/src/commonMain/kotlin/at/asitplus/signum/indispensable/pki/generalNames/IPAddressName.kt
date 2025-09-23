@@ -1,8 +1,12 @@
 package at.asitplus.signum.indispensable.pki.generalNames
 
 import at.asitplus.cidre.IpAddress
+import at.asitplus.cidre.IpAddressAndPrefix
+import at.asitplus.cidre.IpInterface
 import at.asitplus.cidre.IpNetwork
 import at.asitplus.cidre.byteops.toPrefix
+import at.asitplus.cidre.isV4
+import at.asitplus.cidre.isV6
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
@@ -11,8 +15,7 @@ import kotlinx.io.IOException
 
 data class IPAddressName(
     val address: IpAddress<*, *>,
-    val networkV4: IpNetwork.V4? = null,
-    val networkV6: IpNetwork.V6? = null,
+    val addressAndPrefix: IpAddressAndPrefix<*, *>? = null,
     override val performValidation: Boolean = false,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.IP
 ) : GeneralNameOption, Asn1Encodable<Asn1Primitive> {
@@ -22,10 +25,18 @@ data class IPAddressName(
      */
     override val isValid: Boolean? = null
 
+    val network: IpNetwork<*, *>? by lazy {
+        when (addressAndPrefix) {
+            is IpInterface<*, *> -> addressAndPrefix.network
+            is IpNetwork<*, *> -> addressAndPrefix
+            else -> null
+        }
+    }
+
     override fun encodeToTlv(): Asn1Primitive {
+        //TODO change after CIDRE update
         val bytes = when {
-            networkV4 != null -> networkV4.address.octets + networkV4.netmask
-            networkV6 != null -> networkV6.address.octets + networkV6.netmask
+            addressAndPrefix != null -> addressAndPrefix.address.octets + addressAndPrefix.netmask
             else -> address.octets
         }
         return bytes.encodeToAsn1OctetStringPrimitive()
@@ -43,30 +54,30 @@ data class IPAddressName(
                 else -> throw IOException("Invalid IP/Network length: ${content.size}")
             }
         }
-
+        //TODO change after CIDRE update
         private fun createNetworkV4(bytes: ByteArray): IPAddressName {
             val address = IpAddress.V4(bytes.copyOfRange(0, 4))
             val prefix = bytes.copyOfRange(4, 8).toPrefix()
-            return IPAddressName(address, networkV4 = IpNetwork.V4(address, prefix))
+            return IPAddressName(address, addressAndPrefix = IpInterface.V4(address, prefix))
         }
-
+        //TODO change after CIDRE update
         private fun createNetworkV6(bytes: ByteArray): IPAddressName {
             val address = IpAddress.V6(bytes.copyOfRange(0, 16))
             val prefix = bytes.copyOfRange(16, 32).toPrefix()
-            return IPAddressName(address, networkV6 = IpNetwork.V6(address, prefix))
+            return IPAddressName(address, addressAndPrefix = IpInterface.V6(address, prefix))
         }
 
         @Throws(IOException::class)
         fun fromString(name: String): IPAddressName {
             return when (val network = IpNetwork(name)) {
-                is IpNetwork.V4 -> IPAddressName(network.address, networkV4 = network)
-                is IpNetwork.V6 -> IPAddressName(network.address, networkV6 = network)
+                is IpNetwork.V4 -> IPAddressName(network.address, addressAndPrefix = network)
+                is IpNetwork.V6 -> IPAddressName(network.address, addressAndPrefix = network)
                 else -> throw IllegalArgumentException("Unknown network type")
             }
         }
     }
 
-    override fun toString(): String = networkV4?.toString() ?: networkV6?.toString() ?: address.toString()
+    override fun toString(): String = addressAndPrefix?.toString() ?: address.toString()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -74,18 +85,20 @@ data class IPAddressName(
 
         other as IPAddressName
 
+        if (performValidation != other.performValidation) return false
+        if (isValid != other.isValid) return false
         if (address != other.address) return false
-        if (networkV4 != other.networkV4) return false
-        if (networkV6 != other.networkV6) return false
+        if (addressAndPrefix != other.addressAndPrefix) return false
         if (type != other.type) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = address.hashCode()
-        result = 31 * result + (networkV4?.hashCode() ?: 0)
-        result = 31 * result + (networkV6?.hashCode() ?: 0)
+        var result = performValidation.hashCode()
+        result = 31 * result + (isValid?.hashCode() ?: 0)
+        result = 31 * result + address.hashCode()
+        result = 31 * result + (addressAndPrefix?.hashCode() ?: 0)
         result = 31 * result + type.hashCode()
         return result
     }
@@ -94,27 +107,15 @@ data class IPAddressName(
         if (input !is IPAddressName) return GeneralNameOption.ConstraintResult.DIFF_TYPE
         if (this == input) return GeneralNameOption.ConstraintResult.MATCH
 
-        if ((address is IpAddress.V4 && input.address is IpAddress.V4 && networkV4 == null && input.networkV4 == null) ||
-            (address is IpAddress.V6 && input.address is IpAddress.V6 && networkV6 == null && input.networkV6 == null)
-        ) {
+        if (network == null && input.network == null &&
+            ((address.isV4() && input.address.isV4()) || (address.isV6() && input.address.isV6()))) {
             return GeneralNameOption.ConstraintResult.SAME_TYPE
         }
 
-        // Subnet vs Subnet
-        if (networkV4 != null && input.networkV4 != null) {
-            val thisNet = networkV4
-            val otherNet = input.networkV4
-            return when {
-                thisNet == otherNet -> GeneralNameOption.ConstraintResult.MATCH
-                thisNet.contains(otherNet) -> GeneralNameOption.ConstraintResult.WIDENS
-                otherNet.contains(thisNet) -> GeneralNameOption.ConstraintResult.NARROWS
-                else -> GeneralNameOption.ConstraintResult.SAME_TYPE
-            }
-        }
-        if (networkV6 != null && input.networkV6 != null) {
-            val thisNet = networkV6
-            val otherNet = input.networkV6
-            return when {
+        if (network != null && input.network != null) {
+            val thisNet = network as IpNetwork<Number, Any>
+            val otherNet = input.network as IpNetwork<Number, Any>
+            when {
                 thisNet == otherNet -> GeneralNameOption.ConstraintResult.MATCH
                 thisNet.contains(otherNet) -> GeneralNameOption.ConstraintResult.WIDENS
                 otherNet.contains(thisNet) -> GeneralNameOption.ConstraintResult.NARROWS
@@ -123,26 +124,20 @@ data class IPAddressName(
         }
 
         // Other is subnet, this is host
-        if (networkV4 != null && input.address is IpAddress.V4) {
-            return if (networkV4.contains(input.address))
-                GeneralNameOption.ConstraintResult.NARROWS
-            else GeneralNameOption.ConstraintResult.SAME_TYPE
-        }
-        if (networkV6 != null && input.address is IpAddress.V6) {
-            return if (networkV6.contains(input.address))
+        if (network != null) {
+            val thisNet = network as IpNetwork<Number, Any>
+            val otherAddress = input.address as IpAddress<Number, Any>
+            return if (thisNet.contains(otherAddress))
                 GeneralNameOption.ConstraintResult.NARROWS
             else GeneralNameOption.ConstraintResult.SAME_TYPE
         }
 
-        // This is subnet, other is host
-        if (input.networkV4 != null && address is IpAddress.V4) {
-            return if (input.networkV4.contains(address))
-                GeneralNameOption.ConstraintResult.WIDENS
-            else GeneralNameOption.ConstraintResult.SAME_TYPE
-        }
-        if (input.networkV6 != null && address is IpAddress.V6) {
-            return if (input.networkV6.contains(address))
-                GeneralNameOption.ConstraintResult.WIDENS
+        // Other is subnet, this is host
+        if (input.network != null) {
+            val thisAddress = address as IpAddress<Number, Any>
+            val otherNet = input.network as IpNetwork<Number, Any>
+            return if (otherNet.contains(thisAddress))
+                GeneralNameOption.ConstraintResult.NARROWS
             else GeneralNameOption.ConstraintResult.SAME_TYPE
         }
 
