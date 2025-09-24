@@ -63,6 +63,11 @@ kotlin {
             }
         }
 
+        commonTest {
+            dependencies {
+                implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
+            }
+        }
 
         jvmTest {
             dependencies {
@@ -71,8 +76,17 @@ kotlin {
             }
 
         }
+
+        androidInstrumentedTest.dependencies {
+            implementation(libs.runner)
+            implementation(libs.core)
+            implementation(libs.rules)
+        }
+
         androidUnitTest.dependencies {
-            implementation("de.infix.testBalloon:testBalloon-framework-core-jvm:${AspVersions.testballoon}")
+            if (project.findProperty("local.androidUnitTestDance") != "removeDependency") {
+                implementation("de.infix.testBalloon:testBalloon-framework-core-jvm:${AspVersions.testballoon}")
+            }
         }
     }
 }
@@ -100,7 +114,10 @@ exportXCFramework(
 
 
 android {
-    defaultConfig { testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" }
+    defaultConfig {
+        minSdk = 26
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
     namespace = "at.asitplus.signum.indispensable.josef"
 
 
@@ -120,13 +137,6 @@ android {
             "META-INF/licenses/*",
         ).forEach { resources.excludes.add(it) }
     }
-    dependencies {
-        androidTestImplementation(libs.runner)
-        androidTestImplementation(libs.core)
-        androidTestImplementation(libs.rules)
-        androidTestImplementation("de.infix.testBalloon:testBalloon-framework-core-jvm:${AspVersions.testballoon}")
-    }
-
 }
 
 val javadocJar = setupDokka(

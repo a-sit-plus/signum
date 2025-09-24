@@ -77,9 +77,19 @@ kotlin {
                 api(datetime())
             }
         }
-        androidUnitTest.dependencies {
-            implementation("de.infix.testBalloon:testBalloon-framework-core-jvm:${AspVersions.testballoon}")
+
+        androidInstrumentedTest.dependencies {
+            implementation(libs.runner)
+            implementation(libs.core)
+            implementation(libs.rules)
         }
+
+        androidUnitTest.dependencies {
+            if (project.findProperty("local.androidUnitTestDance") != "removeDependency") {
+                implementation("de.infix.testBalloon:testBalloon-framework-core-jvm:${AspVersions.testballoon}")
+            }
+        }
+
         commonTest {
             dependencies {
                 implementation(project(":indispensable"))
@@ -93,7 +103,10 @@ tasks.withType<Test>().configureEach {
 }
 
 android {
-    defaultConfig { testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" }
+    defaultConfig {
+        minSdk = 26
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
     namespace = "at.asitplus.signum.indispensable.asn1"
     packaging {
         listOf(
@@ -111,13 +124,6 @@ android {
             "META-INF/licenses/*",
         ).forEach { resources.excludes.add(it) }
     }
-    dependencies {
-        androidTestImplementation(libs.runner)
-        androidTestImplementation(libs.core)
-        androidTestImplementation(libs.rules)
-        androidTestImplementation("de.infix.testBalloon:testBalloon-framework-core-jvm:${AspVersions.testballoon}")
-    }
-
 }
 
 // we don't have native android tests independent of our regular test suite.
