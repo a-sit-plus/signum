@@ -74,16 +74,14 @@ kotlin {
             implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
         }
 
-        val androidInstrumentedTest by getting {
-            dependencies {
-                implementation(libs.runner)
-                implementation(libs.core)
-                implementation(libs.rules)
-            }
+        named("androidInstrumentedTest").dependencies {
+            implementation(libs.runner)
+            implementation(libs.core)
+            implementation(libs.rules)
         }
 
-        val androidUnitTest by getting {
-            dependencies {
+        named("androidUnitTest").dependencies {
+            if (project.findProperty("local.androidUnitTestDance") != "removeDependency") {
                 implementation("de.infix.testBalloon:testBalloon-framework-core-jvm:${AspVersions.testballoon}")
             }
         }

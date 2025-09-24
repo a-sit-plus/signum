@@ -264,17 +264,30 @@ kotlin {
 
         commonTest {
             dependencies {
+                implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
                 implementation(kotest("property"))
             }
         }
+
+        androidInstrumentedTest.dependencies {
+            implementation(libs.runner)
+            implementation(libs.core)
+            implementation(libs.rules)
+        }
+
         androidUnitTest.dependencies {
-            implementation("de.infix.testBalloon:testBalloon-framework-core-jvm:${AspVersions.testballoon}")
+            if (project.findProperty("local.androidUnitTestDance") != "removeDependency") {
+                implementation("de.infix.testBalloon:testBalloon-framework-core-jvm:${AspVersions.testballoon}")
+            }
         }
     }
 }
 
 android {
-    defaultConfig { testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" }
+    defaultConfig {
+        minSdk = 26
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
     namespace = "at.asitplus.signum.indispensable.oids"
     packaging {
         listOf(
