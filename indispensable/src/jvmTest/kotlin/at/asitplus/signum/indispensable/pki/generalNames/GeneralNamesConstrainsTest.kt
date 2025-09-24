@@ -182,10 +182,6 @@ class GeneralNamesConstrainsTest : FreeSpec ({
         narrowNames = narrowIps,
         diffTypeOther = dummyOtherRFC,
     )
-
-
-//    testIpName.constrains(otherIpName) shouldBe GeneralNameOption.ConstraintResult.NARROWS
-
 })
 
 
