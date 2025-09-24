@@ -17,7 +17,7 @@ import java.security.Signature
  * Configures JVM-specific properties.
  * @see provider
  */
-actual class PlatformVerifierConfiguration internal actual constructor() : DSL.Data() {
+actual class PlatformVerifierConfiguration actual constructor() : DSL.Data() {
     /** The JCA provider to use, or none. */
     var provider: String? = null
 }

@@ -18,12 +18,12 @@ import at.asitplus.signum.supreme.sign.SigningKeyConfiguration
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-open class SigningProviderSigningKeyConfigurationBase<SignerConfigurationT: SignerConfiguration> internal constructor() : SigningKeyConfiguration() {
+open class SigningProviderSigningKeyConfigurationBase<SignerConfigurationT: SignerConfiguration>() : SigningKeyConfiguration() {
     /** Configure the signer that will be returned from [createSigningKey][SigningProviderI.createSigningKey] */
     open val signer = integratedReceiver<SignerConfigurationT>()
 }
-open class PlatformSigningKeyConfigurationBase<SignerConfigurationT: PlatformSignerConfigurationBase> internal constructor(): SigningProviderSigningKeyConfigurationBase<SignerConfigurationT>() {
-    open class AttestationConfiguration internal constructor(): DSL.Data() {
+open class PlatformSigningKeyConfigurationBase<SignerConfigurationT: PlatformSignerConfigurationBase>(): SigningProviderSigningKeyConfigurationBase<SignerConfigurationT>() {
+    open class AttestationConfiguration(): DSL.Data() {
         /** The server-provided attestation challenge */
         lateinit var challenge: ByteArray
         override fun validate() {
@@ -31,7 +31,7 @@ open class PlatformSigningKeyConfigurationBase<SignerConfigurationT: PlatformSig
         }
     }
 
-    open class ProtectionFactorConfiguration internal constructor(): DSL.Data() {
+    open class ProtectionFactorConfiguration(): DSL.Data() {
         /** Whether a biometric factor (fingerprint, facial recognition, ...) can authorize this key */
         var biometry = true
         /** Whether additional biometric factors can be added without invalidating the key */
@@ -45,7 +45,7 @@ open class PlatformSigningKeyConfigurationBase<SignerConfigurationT: PlatformSig
         }
     }
 
-    open class ProtectionConfiguration internal constructor(): DSL.Data() {
+    open class ProtectionConfiguration(): DSL.Data() {
         /** The timeout before this key will need to be unlocked again. */
         var timeout: Duration = 0.seconds
         /** Which authentication factors can authorize this key;
@@ -69,28 +69,28 @@ open class PlatformSigningKeyConfigurationBase<SignerConfigurationT: PlatformSig
     /** Require that this key is stored in some kind of hardware-backed storage, such as Android Keymaster or Apple Secure Enclave. */
     open val hardware = childOrNull(::SecureHardwareConfiguration)
 
-    open class RSAPurposeConfiguration internal constructor(): DSL.Data() {
+    open class RSAPurposeConfiguration(): DSL.Data() {
         /** Whether this key can be used for signing data */
         var signing = true
         /** Whether this key can be used for encrypting data*/
         var decrypting = false
     }
 
-    open class RSAConfiguration internal constructor(): SigningKeyConfiguration.RSAConfiguration() {
+    open class RSAConfiguration(): SigningKeyConfiguration.RSAConfiguration() {
         open val purposes = childOrDefault(::RSAPurposeConfiguration)
     }
 
     override val rsa = _algSpecific.option(::RSAConfiguration)
 
 
-    open class ECPurposeConfiguration internal constructor(): DSL.Data() {
+    open class ECPurposeConfiguration(): DSL.Data() {
         /** Whether this key can be used for signing data */
         var signing = true
         /** Whether this key can be used for ECDH key agreement */
         var keyAgreement = false
     }
 
-    open class ECConfiguration internal constructor(): SigningKeyConfiguration.ECConfiguration() {
+    open class ECConfiguration(): SigningKeyConfiguration.ECConfiguration() {
         open val purposes = childOrDefault(::ECPurposeConfiguration)
     }
 
@@ -118,7 +118,7 @@ internal inline val SigningKeyConfiguration.AlgorithmSpecific.allowsKeyAgreement
         else -> false
     }
 
-open class ECSignerConfiguration internal constructor(): DSL.Data() {
+open class ECSignerConfiguration(): DSL.Data() {
     /**
      * Explicitly specify the digest to sign over.
      * Omit to default to the only supported digest.
@@ -128,10 +128,11 @@ open class ECSignerConfiguration internal constructor(): DSL.Data() {
      *
      * @see SigningKeyConfiguration.ECConfiguration.digests
      */
-    var digest: Digest? = null; set(v) { digestSpecified = true; field = v }
-    internal var digestSpecified = false
+    var digest: Digest? = null; set(v) { _digestSpecified = true; field = v }
+    protected var _digestSpecified = false; private set
+    internal val digestSpecified get() = _digestSpecified
 }
-open class RSASignerConfiguration internal constructor(): DSL.Data() {
+open class RSASignerConfiguration(): DSL.Data() {
     /**
      * Explicitly specify the digest to sign over.
      * Omit to default to a reasonable default choice.
@@ -142,7 +143,8 @@ open class RSASignerConfiguration internal constructor(): DSL.Data() {
      * @see SigningKeyConfiguration.RSAConfiguration.digests
      */
     lateinit var digest: Digest
-    internal val digestSpecified get() = this::digest.isInitialized
+    protected val _digestSpecified get() = this::digest.isInitialized
+    internal val digestSpecified get() = _digestSpecified
 
     /**
      * Explicitly specify the padding to use.
@@ -154,11 +156,12 @@ open class RSASignerConfiguration internal constructor(): DSL.Data() {
      * @see SigningKeyConfiguration.RSAConfiguration.paddings
      */
     lateinit var padding: RSAPadding
-    internal val paddingSpecified get() = this::padding.isInitialized
+    protected val _paddingSpecified get() = this::padding.isInitialized
+    internal val paddingSpecified get() = _paddingSpecified
 
 
 }
-open class SignerConfiguration internal constructor(): DSL.Data() {
+open class SignerConfiguration(): DSL.Data() {
     /** Algorithm-specific configuration for a returned ECDSA signer. Ignored for RSA keys. */
     open val ec = childOrDefault(::ECSignerConfiguration)
     /** Algorithm-specific configuration for a returned RSA signer. Ignored for ECDSA keys. */
@@ -180,12 +183,12 @@ open class UnlockPromptConfiguration: DSL.Data() {
         const val defaultCancelText = "Cancel"
     }
 }
-open class PlatformSignerConfigurationBase internal constructor(): SignerConfiguration() {
+open class PlatformSignerConfigurationBase(): SignerConfiguration() {
     /** Configure the authorization prompt that will be shown to the user. */
     open val unlockPrompt = childOrDefault(::UnlockPromptConfiguration)
 }
 
-open class PlatformSigningProviderSignerSigningConfigurationBase internal constructor(): DSL.Data() {
+open class PlatformSigningProviderSignerSigningConfigurationBase(): DSL.Data() {
     open val unlockPrompt = childOrDefault(::UnlockPromptConfiguration)
 }
 
@@ -214,7 +217,7 @@ interface PlatformSigningProviderSigner
     }
 }
 
-open class PlatformSigningProviderConfigurationBase internal constructor(): DSL.Data()
+open class PlatformSigningProviderConfigurationBase(): DSL.Data()
 internal expect fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProviderI<*,*,*>
 
 /** KT-71089 workaround
@@ -251,7 +254,7 @@ val PlatformSigningProvider get() = getPlatformSigningProvider(null)
  * @see SigningProvider */
 interface SigningProviderI<out SignerT: Signer.WithAlias,
         out SignerConfigT: SignerConfiguration,
-        out KeyConfigT: PlatformSigningKeyConfigurationBase<*>> {
+        out KeyConfigT: SigningProviderSigningKeyConfigurationBase<*>> {
     suspend fun createSigningKey(alias: String, configure: DSLConfigureFn<KeyConfigT> = null): KmmResult<SignerT>
     suspend fun getSignerForKey(alias: String, configure: DSLConfigureFn<SignerConfigT> = null): KmmResult<SignerT>
     suspend fun deleteSigningKey(alias: String): KmmResult<Unit>

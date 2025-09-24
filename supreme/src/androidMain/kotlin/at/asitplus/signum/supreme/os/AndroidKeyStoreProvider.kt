@@ -61,15 +61,15 @@ internal sealed interface FragmentContext {
 
 private val keystoreContext = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
-class AndroidKeymasterConfiguration internal constructor(): PlatformSigningKeyConfigurationBase.SecureHardwareConfiguration() {
+class AndroidKeymasterConfiguration(): PlatformSigningKeyConfigurationBase.SecureHardwareConfiguration() {
     /** Whether a StrongBox TPM is required. */
     var strongBox: FeaturePreference = PREFERRED
 }
-class AndroidSigningKeyConfiguration internal constructor(): PlatformSigningKeyConfigurationBase<AndroidSignerConfiguration>() {
+class AndroidSigningKeyConfiguration(): PlatformSigningKeyConfigurationBase<AndroidSignerConfiguration>() {
     override val hardware = childOrNull(::AndroidKeymasterConfiguration)
 }
 
-class AndroidUnlockPromptConfiguration internal constructor(): UnlockPromptConfiguration() {
+class AndroidUnlockPromptConfiguration(): UnlockPromptConfiguration() {
     /** Explicitly specify the FragmentActivity to use for authentication prompts.
      * You will not need to set this in most cases; the default is the current activity. */
     lateinit var activity: FragmentActivity
@@ -157,12 +157,12 @@ object AndroidKeyStoreProvider:
         val config = DSL.resolve(::AndroidSigningKeyConfiguration, configure)
         val spec = KeyGenParameterSpec.Builder(
             alias,
-            config._algSpecific.v.let {
+            config.ec.v.let {
                 (if (it.allowsSigning) KeyProperties.PURPOSE_SIGN else 0) or
                 (if (it.allowsKeyAgreement) KeyProperties.PURPOSE_AGREE_KEY else 0)
             }
         ).apply {
-            when(val algSpec = config._algSpecific.v) {
+            when(val algSpec = config.ec.v) {
                 is SigningKeyConfiguration.RSAConfiguration -> {
                     setAlgorithmParameterSpec(
                         RSAKeyGenParameterSpec(algSpec.bits, algSpec.publicExponent.toJavaBigInteger()))
@@ -213,7 +213,7 @@ object AndroidKeyStoreProvider:
                 }
             }
         }.build()
-        KeyPairGenerator.getInstance(when(config._algSpecific.v) {
+        KeyPairGenerator.getInstance(when(config.ec.v) {
             is SigningKeyConfiguration.RSAConfiguration -> KeyProperties.KEY_ALGORITHM_RSA
             is SigningKeyConfiguration.ECConfiguration -> KeyProperties.KEY_ALGORITHM_EC
         }, "AndroidKeyStore").apply {

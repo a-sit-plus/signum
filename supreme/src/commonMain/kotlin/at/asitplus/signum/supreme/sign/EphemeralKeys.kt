@@ -18,23 +18,23 @@ internal expect fun makeEphemeralKey(configuration: EphemeralSigningKeyConfigura
 internal expect fun makePrivateKeySigner(key: CryptoPrivateKey.EC.WithPublicKey, algorithm: SignatureAlgorithm.ECDSA) : Signer.ECDSA
 internal expect fun makePrivateKeySigner(key: CryptoPrivateKey.RSA, algorithm: SignatureAlgorithm.RSA) : Signer.RSA
 
-open class EphemeralSigningKeyConfigurationBase internal constructor(): SigningKeyConfiguration() {
-    class ECConfiguration internal constructor(): SigningKeyConfiguration.ECConfiguration() {
+open class EphemeralSigningKeyConfigurationBase(): SigningKeyConfiguration() {
+    class ECConfiguration(): SigningKeyConfiguration.ECConfiguration() {
         init { digests = (Digest.entries.asSequence() + sequenceOf<Digest?>(null)).toSet() }
     }
     override val ec = _algSpecific.option(::ECConfiguration)
-    class RSAConfiguration internal constructor(): SigningKeyConfiguration.RSAConfiguration() {
+    class RSAConfiguration(): SigningKeyConfiguration.RSAConfiguration() {
         init { digests = Digest.entries.toSet(); paddings = RSAPadding.entries.toSet() }
     }
     override val rsa = _algSpecific.option(::RSAConfiguration)
 }
 
 @Suppress("NOTHING_TO_INLINE")
-expect class EphemeralSigningKeyConfiguration internal constructor(): EphemeralSigningKeyConfigurationBase
+expect class EphemeralSigningKeyConfiguration(): EphemeralSigningKeyConfigurationBase
 
 typealias EphemeralSignerConfigurationBase = SignerConfiguration
 @Suppress("NOTHING_TO_INLINE")
-expect class EphemeralSignerConfiguration internal constructor(): SignerConfiguration
+expect class EphemeralSignerConfiguration(): SignerConfiguration
 
 /**
  * An ephemeral keypair, not stored in any kind of persistent storage.
