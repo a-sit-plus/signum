@@ -378,3 +378,14 @@ signing {
     useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
     sign(publishing.publications)
 }
+
+
+if (project.findProperty("local.test.reports.enabled") == "false") {
+    tasks.withType<AbstractTestTask>().configureEach {
+        reports.html.required = false
+        reports.junitXml.required = false
+    }
+    tasks.withType<org.jetbrains.kotlin.gradle.testing.internal.KotlinTestReport>().configureEach {
+        enabled = false
+    }
+}
