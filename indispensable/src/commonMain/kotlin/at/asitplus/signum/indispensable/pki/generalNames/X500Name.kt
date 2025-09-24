@@ -2,11 +2,9 @@ package at.asitplus.signum.indispensable.pki.generalNames
 
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
-import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 
@@ -84,16 +82,7 @@ data class X500Name(
             .asReversed()
             .joinToString(",") { rdn ->
                 rdn.attrsAndValues.joinToString("+") { atv ->
-                    "${atv.oidToString()}=${(atv.value as? Asn1Primitive)?.asAsn1String()?.value}"
+                   atv.toRFC2253String()
                 }
             }
-
-    private fun AttributeTypeAndValue.oidToString(): String = when (oid) {
-        AttributeTypeAndValue.CommonName.OID -> "CN"
-        AttributeTypeAndValue.Organization.OID -> "O"
-        AttributeTypeAndValue.OrganizationalUnit.OID -> "OU"
-        AttributeTypeAndValue.Country.OID -> "C"
-        AttributeTypeAndValue.EmailAddress.OID -> "EMAILADDRESS"
-        else -> oid.toString()
-    }
 }

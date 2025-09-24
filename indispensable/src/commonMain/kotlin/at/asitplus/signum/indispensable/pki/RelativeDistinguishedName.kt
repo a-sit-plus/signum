@@ -14,10 +14,8 @@ import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
 import at.asitplus.signum.indispensable.asn1.readOid
 import at.asitplus.signum.indispensable.asn1.runRethrowing
-import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue.CommonName.Companion
 
 /**
  * X.500 Name (used in X.509 Certificates)
@@ -105,17 +103,7 @@ open class AttributeTypeAndValue(
 
         other as AttributeTypeAndValue
 
-        if (value != other.value) return false
-        val thisStr = (this.value as? Asn1Primitive)?.let { Asn1String.decodeFromTlv(this.value) }?.value
-        val otherStr = (other.value as? Asn1Primitive)?.let { Asn1String.decodeFromTlv(other.value) }?.value
-        val thisNormalized = thisStr?.replace("\\s+".toRegex(), "")?.lowercase()
-        val otherNormalized = otherStr?.replace("\\s+".toRegex(), "")?.lowercase()
-        if (thisStr != null && otherStr != null) {
-            if (thisNormalized != otherNormalized) return false
-        } else {
-            if (value != other.value) return false
-        }
-
+        if (toRFC2253String() != other.toRFC2253String()) return false
         if (oid != other.oid) return false
 
         return true
@@ -152,6 +140,59 @@ open class AttributeTypeAndValue(
             }
             AttributeTypeAndValue(oid, next())
         }
-
     }
+
+    fun toRFC2253String(): String {
+        val type = oidToString()
+
+        val valStr = (value as? Asn1Primitive)?.let { prim ->
+            runCatching { canonicalizeString(Asn1String.decodeFromTlv(prim).value) }
+                .getOrElse {
+                    // Fallback to hex form (# + hex of raw value)
+                    "#" + prim.content.toHexString()
+                }
+        } ?: ("#" + (value.toDerHexString()))
+
+        return "$type=$valStr".lowercase()
+    }
+
+    /**
+     * Apply RFC 2253 escaping + whitespace rules.
+     */
+    private fun canonicalizeString(input: String): String {
+        val escapees = ",+<>;\"\\"
+
+        return buildString {
+            var previousWasSpace = false
+            input.forEachIndexed { i, c ->
+                when {
+                    // Escape leading '#' or reserved characters
+                    (i == 0 && c == '#') || c in escapees -> {
+                        append('\\').append(c)
+                        previousWasSpace = false
+                    }
+                    // Collapse multiple spaces
+                    c.isWhitespace() -> if (!previousWasSpace) {
+                        append(' ')
+                        previousWasSpace = true
+                    }
+                    else -> {
+                        append(c)
+                        previousWasSpace = false
+                    }
+                }
+            }
+        }.trim()
+    }
+
+
+    private fun oidToString(): String = when (oid) {
+        CommonName.OID -> "CN"
+        Organization.OID -> "O"
+        OrganizationalUnit.OID -> "OU"
+        Country.OID -> "C"
+        EmailAddress.OID -> "EMAILADDRESS"
+        else -> oid.toString()
+    }
+
 }
