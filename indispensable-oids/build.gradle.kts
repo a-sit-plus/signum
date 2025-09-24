@@ -264,17 +264,30 @@ kotlin {
 
         commonTest {
             dependencies {
+                implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
                 implementation(kotest("property"))
             }
         }
+
+        androidInstrumentedTest.dependencies {
+            implementation(libs.runner)
+            implementation(libs.core)
+            implementation(libs.rules)
+        }
+
         androidUnitTest.dependencies {
-            implementation("de.infix.testBalloon:testBalloon-framework-core-jvm:${AspVersions.testballoon}")
+            if (project.findProperty("local.androidUnitTestDance") != "removeDependency") {
+                implementation("de.infix.testBalloon:testBalloon-framework-core-jvm:${AspVersions.testballoon}")
+            }
         }
     }
 }
 
 android {
-    defaultConfig { testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" }
+    defaultConfig {
+        minSdk = 26
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
     namespace = "at.asitplus.signum.indispensable.oids"
     packaging {
         listOf(
@@ -377,4 +390,15 @@ signing {
     val signingPassword: String? by project
     useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
     sign(publishing.publications)
+}
+
+
+if (project.findProperty("local.test.reports.enabled") == "false") {
+    tasks.withType<AbstractTestTask>().configureEach {
+        reports.html.required = false
+        reports.junitXml.required = false
+    }
+    tasks.withType<org.jetbrains.kotlin.gradle.testing.internal.KotlinTestReport>().configureEach {
+        enabled = false
+    }
 }

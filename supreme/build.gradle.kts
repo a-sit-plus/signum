@@ -74,8 +74,16 @@ kotlin {
             implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
         }
 
-        val androidInstrumentedTest by getting {
-            dependsOn(commonTest.get())
+        named("androidInstrumentedTest").dependencies {
+            implementation(libs.runner)
+            implementation(libs.core)
+            implementation(libs.rules)
+        }
+
+        named("androidUnitTest").dependencies {
+            if (project.findProperty("local.androidUnitTestDance") != "removeDependency") {
+                implementation("de.infix.testBalloon:testBalloon-framework-core-jvm:${AspVersions.testballoon}")
+            }
         }
 
         jvmTest.dependencies {
@@ -119,11 +127,6 @@ android {
             "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
             "META-INF/licenses/*",
         ).forEach { resources.excludes.add(it) }
-    }
-    dependencies {
-        androidTestImplementation(libs.runner)
-        androidTestImplementation(libs.core)
-        androidTestImplementation(libs.rules)
     }
 
     testOptions {
@@ -268,6 +271,17 @@ if (OperatingSystem.current() == OperatingSystem.MAC_OS) {
 
 project.gradle.taskGraph.whenReady {
     tasks.getByName("testDebugUnitTest") {
+        enabled = false
+    }
+}
+
+
+if (project.findProperty("local.test.reports.enabled") == "false") {
+    tasks.withType<AbstractTestTask>().configureEach {
+        reports.html.required = false
+        reports.junitXml.required = false
+    }
+    tasks.withType<org.jetbrains.kotlin.gradle.testing.internal.KotlinTestReport>().configureEach {
         enabled = false
     }
 }
