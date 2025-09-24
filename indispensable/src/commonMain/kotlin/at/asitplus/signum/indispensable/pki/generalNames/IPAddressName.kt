@@ -16,14 +16,18 @@ import kotlinx.io.IOException
 data class IPAddressName(
     val address: IpAddress<*, *>,
     val addressAndPrefix: IpAddressAndPrefix<*, *>? = null,
-    override val performValidation: Boolean = false,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.IP
 ) : GeneralNameOption, Asn1Encodable<Asn1Primitive> {
 
     /**
-     * Always `null`, since no validation logic is implemented
+     * Always `true`, since creation of [IPAddressName] is only possible if the
+     * underlying [IpAddress] or [IpAddressAndPrefix] are valid
      */
-    override val isValid: Boolean? = null
+    override val isValid: Boolean = true
+    /**
+     * Always `true`, since validation is done by [IpAddress] and [IpAddressAndPrefix]
+     */
+    override val performValidation: Boolean = true
 
     val network: IpNetwork<*, *>? by lazy {
         when (addressAndPrefix) {
