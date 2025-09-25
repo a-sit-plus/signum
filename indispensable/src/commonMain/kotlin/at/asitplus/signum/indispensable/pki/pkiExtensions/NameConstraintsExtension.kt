@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable.pki.pkiExtensions
 
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
-import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
@@ -93,7 +92,7 @@ class NameConstraintsExtension(
             }
         } else {
             if (newPermitted != null) {
-                val toExclude = permitted!!.intersectWith(newPermitted)
+                val toExclude = permitted!!.intersectAndReturnExclusions(newPermitted)
                 if (toExclude != null) {
                     if (excluded != null) {
                         excluded!!.unionWith(toExclude)
