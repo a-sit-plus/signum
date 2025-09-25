@@ -12,6 +12,9 @@ import at.asitplus.signum.indispensable.asn1.encoding.asAsn1BitString
 import at.asitplus.signum.indispensable.asn1.keyUsage
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 
+/**
+ * Defines the purpose of the key contained in the cert
+ * */
 class KeyUsageExtension(
     oid: ObjectIdentifier,
     critical: Boolean,

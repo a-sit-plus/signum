@@ -61,7 +61,7 @@ class CertificatePoliciesExtension(
 }
 
 
-class PolicyInformation(
+data class PolicyInformation(
     override val oid: ObjectIdentifier,
     val policyQualifiers: Set<PolicyQualifierInfo>
 ) : Asn1Encodable<Asn1Sequence>, Identifiable {
@@ -95,7 +95,7 @@ class PolicyInformation(
     }
 }
 
-class PolicyQualifierInfo(
+data class PolicyQualifierInfo(
     override val oid: ObjectIdentifier,
     val qualifier: Qualifier
 ) : Asn1Encodable<Asn1Sequence>, Identifiable {
@@ -163,7 +163,7 @@ sealed interface Qualifier : Asn1Encodable<Asn1Element>{
     }
 }
 
-class NoticeReference(
+data class NoticeReference(
     val organization: DisplayText,
     val noticeNumbers: List<Asn1Integer>
 ) : Asn1Encodable<Asn1Sequence> {
@@ -190,11 +190,9 @@ class NoticeReference(
     }
 }
 
-class DisplayText private constructor(val string: Asn1String) : Asn1Encodable<Asn1Primitive> {
+data class DisplayText(val value: Asn1String) : Asn1Encodable<Asn1Primitive> {
 
-    override fun encodeToTlv(): Asn1Primitive = string.encodeToTlv()
-
-    val value: String get() = string.value
+    override fun encodeToTlv(): Asn1Primitive = value.encodeToTlv()
 
     companion object : Asn1Decodable<Asn1Primitive, DisplayText> {
         private val allowedTags = setOf(
@@ -208,8 +206,7 @@ class DisplayText private constructor(val string: Asn1String) : Asn1Encodable<As
             if (!allowedTags.contains(src.tag.tagValue)) {
                 throw Asn1StructuralException("Wrong DisplayText tag.")
             }
-            val str = Asn1String.decodeFromTlv(src)
-            return DisplayText(str)
+            return DisplayText(Asn1String.decodeFromTlv(src))
         }
     }
 }

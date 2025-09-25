@@ -12,6 +12,11 @@ import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
+import at.asitplus.signum.indispensable.pki.generalNames.DNSName
+import at.asitplus.signum.indispensable.pki.generalNames.GeneralName
+import at.asitplus.signum.indispensable.pki.generalNames.GeneralNameOption
+import at.asitplus.signum.indispensable.pki.generalNames.IPAddressName
+import at.asitplus.signum.indispensable.pki.generalNames.RFC822Name
 import kotlinx.io.IOException
 
 /**
