@@ -135,10 +135,12 @@ data class GeneralSubtrees(
         return try {
             val newName = when (name.type) {
                 GeneralNameOption.NameType.RFC822 -> GeneralName(RFC822Name(Asn1String.IA5("")))
-                GeneralNameOption.NameType.DNS -> GeneralName(DNSName(Asn1String.IA5("")))
+                GeneralNameOption.NameType.DNS -> GeneralName(DNSName(Asn1String.IA5(""), true,
+                    performValidation = false
+                ))
                 GeneralNameOption.NameType.X400 -> GeneralName(X400AddressName(Asn1Element.parse("".encodeToByteArray())))
                 GeneralNameOption.NameType.DIRECTORY -> GeneralName(X500Name(emptyList()))
-                GeneralNameOption.NameType.URI -> GeneralName(UriName(Asn1String.IA5("")))
+                GeneralNameOption.NameType.URI -> GeneralName(UriName(Asn1String.IA5(".")))
                 GeneralNameOption.NameType.IP -> GeneralName(IPAddressName(address = IpAddress("0.0.0.0")))
 
                 else -> throw IOException("Unsupported GeneralNameOption type: ${name.type}")
@@ -152,107 +154,126 @@ data class GeneralSubtrees(
     /**
      * Merges permitted NameConstraints
      * */
-    fun intersectWith(other: GeneralSubtrees): GeneralSubtrees? {
-        if (other.trees.isEmpty()) return null
+    fun intersectAndReturnExclusions(other: GeneralSubtrees): GeneralSubtrees? {
+        require(other.trees != null) { "other GeneralSubtrees must not be null" }
 
-        val primary = this.minimize().trees.toMutableList()
-        val secondary = other.minimize().trees
-        val additions = mutableListOf<GeneralSubtree>()
-        var exclusions: MutableList<GeneralSubtree>? = null
+        val newThis = mutableListOf<GeneralSubtree>()
+        var newExcluded: MutableList<GeneralSubtree>? = null
 
-        var index = 0
-        while (index < primary.size) {
-            val currentName = primary[index].base.name
-            var shouldRemove = false
-            var hasOnlySameType = false
-            var replacement: GeneralSubtree? = null
-
-            for (candidate in secondary) {
-                val candidateName = candidate.base.name
-                when (currentName.constrains(candidateName)) {
-                    GeneralNameOption.ConstraintResult.NARROWS -> {
-                        shouldRemove = true
-                        replacement = candidate
-                        hasOnlySameType = false
-                        break
-                    }
-
-                    GeneralNameOption.ConstraintResult.SAME_TYPE -> {
-                        hasOnlySameType = true
-                    }
-
-                    GeneralNameOption.ConstraintResult.MATCH,
-                    GeneralNameOption.ConstraintResult.WIDENS -> {
-                        hasOnlySameType = false
-                        break
-                    }
-
-                    else -> {} // Ignore DIFF_TYPE
-                }
-            }
-
-            if (shouldRemove) {
-                primary.removeAt(index)
-                additions += replacement!!
-                continue
-            }
-
-            if (hasOnlySameType) {
-                var foundCompatible = false
-
-                for (altPrimary in primary) {
-                    val altName = altPrimary.base.name
-                    if (altName.type != currentName.type) continue
-
-                    for (altSecondary in secondary) {
-                        val secName = altSecondary.base.name
-                        when (altName.constrains(secName)) {
-                            GeneralNameOption.ConstraintResult.MATCH,
-                            GeneralNameOption.ConstraintResult.NARROWS,
-                            GeneralNameOption.ConstraintResult.WIDENS -> {
-                                foundCompatible = true
-                                break
-                            }
-
-                            else -> {}
-                        }
-                    }
-                    if (foundCompatible) break
-                }
-
-                if (!foundCompatible) {
-                    if (exclusions == null) exclusions = mutableListOf()
-                    val widest = createWidestSubtree(currentName)
-                    if (exclusions.none { it.base == widest.base }) {
-                        exclusions += widest
-                    }
-                    primary.removeAt(index)
-                    continue
-                }
-            }
-
-            index++
+        // Step 1: If this is empty, just add everything in other
+        if (trees.isEmpty()) {
+            this.trees.addAll(other.trees)
+            return null
         }
 
-        primary += additions
+        // Step 2: Minimize both
+        val primary = this.minimize().trees.toMutableList()
+        val secondary = other.minimize().trees
 
-        for (entry in secondary) {
-            val otherName = entry.base.name
-            val typeExists = primary.any {
-                when (it.base.name.constrains(otherName)) {
-                    GeneralNameOption.ConstraintResult.DIFF_TYPE -> false
-                    else -> true
+        var i = 0
+        while (i < primary.size) {
+            val thisEntry = primary[i].base.name
+            var sameType = false
+            var removed = false
+
+            // Step 3a: check each against secondary
+            for (candidateGS in secondary) {
+                val candidate = candidateGS.base.name
+                when (thisEntry.constrains(candidate)) {
+                    GeneralNameOption.ConstraintResult.NARROWS -> {
+                        sameType = false
+                        break
+                    }
+                    GeneralNameOption.ConstraintResult.SAME_TYPE -> {
+                        sameType = true
+                        continue
+                    }
+                    GeneralNameOption.ConstraintResult.MATCH,
+                    GeneralNameOption.ConstraintResult.WIDENS -> {
+                        // remove thisEntry, add candidate to newThis
+                        primary.removeAt(i)
+                        newThis += candidateGS
+                        sameType = false
+                        removed = true
+                        break
+                    }
+                    GeneralNameOption.ConstraintResult.DIFF_TYPE -> continue
                 }
             }
-            if (!typeExists) {
+
+            // Step 3b: if sameType true → no overlap, must exclude widest
+            if (!removed && sameType) {
+                var intersectionFound = false
+                for (altPrimary in primary) {
+                    if (altPrimary.base.name.type == thisEntry.type) {
+                        for (altSecondary in secondary) {
+                            when (altPrimary.base.name.constrains(altSecondary.base.name)) {
+                                GeneralNameOption.ConstraintResult.MATCH,
+                                GeneralNameOption.ConstraintResult.WIDENS,
+                                GeneralNameOption.ConstraintResult.NARROWS -> {
+                                    intersectionFound = true
+                                    break
+                                }
+                                else -> {}
+                            }
+                        }
+                    }
+                    if (intersectionFound) break
+                }
+
+                if (!intersectionFound) {
+                    if (newExcluded == null) newExcluded = mutableListOf()
+                    val widest = createWidestSubtree(thisEntry)
+                    if (newExcluded.none { it.base == widest.base }) {
+                        newExcluded += widest
+                    }
+                }
+
+                primary.removeAt(i)
+                continue // don’t advance i since we removed
+            }
+
+            if (!removed) {
+                i++
+            }
+        }
+
+        // Step 4: add replacements
+        primary += newThis
+
+        // Step 5: add entries from secondary that have no type in primary
+        for (entry in secondary) {
+            val entryName = entry.base.name
+            var diffType = false
+            for (thisEntryGS in primary) {
+                val thisEntry = thisEntryGS.base.name
+                when (thisEntry.constrains(entryName)) {
+                    GeneralNameOption.ConstraintResult.DIFF_TYPE -> {
+                        diffType = true
+                        continue
+                    }
+                    GeneralNameOption.ConstraintResult.NARROWS,
+                    GeneralNameOption.ConstraintResult.SAME_TYPE,
+                    GeneralNameOption.ConstraintResult.MATCH,
+                    GeneralNameOption.ConstraintResult.WIDENS -> {
+                        diffType = false
+                        break
+                    }
+                }
+                break
+            }
+            if (diffType) {
                 primary += entry
             }
         }
 
+        // Update this.trees
         this.trees.clear()
         this.trees.addAll(primary)
 
-        return exclusions?.takeIf { it.isNotEmpty() }?.let { GeneralSubtrees(it) }
+        // Step 6: return exclusions
+        return newExcluded?.takeIf { it.isNotEmpty() }?.let { GeneralSubtrees(it) }
     }
+
 }
 
