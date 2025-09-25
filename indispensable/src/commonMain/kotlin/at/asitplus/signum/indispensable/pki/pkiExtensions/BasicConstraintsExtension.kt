@@ -14,6 +14,7 @@ import at.asitplus.signum.indispensable.pki.X509CertificateExtension
 /**
  * Basic Constraints Extension
  * RFC 5280: 4.2.1.9.
+ * Defines is the subject of the cert CA and how deep a cert path may exist through that CA
 */
 class BasicConstraintsExtension(
     oid: ObjectIdentifier,

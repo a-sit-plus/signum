@@ -56,7 +56,7 @@ class PolicyMappingsExtension (
     }
 }
 
-class CertificatePolicyMap (
+data class CertificatePolicyMap (
     val issuerDomain: ObjectIdentifier,
     val subjectDomain: ObjectIdentifier
 ): Asn1Encodable<Asn1Sequence> {
