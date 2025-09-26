@@ -3,6 +3,8 @@ package at.asitplus.signum.indispensable.pki.generalNames
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
+import at.asitplus.signum.indispensable.asn1.Asn1String
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
@@ -32,6 +34,36 @@ data class X500Name(
                     add(RelativeDistinguishedName.decodeFromTlv(next().asSet()))
                 }
             }.let(::X500Name)
+        }
+
+        /**
+         * Parse an RFC 2253 string (e.g., "CN=John Doe,O=Company,C=US") into an X500Name
+         */
+        fun parse(rfc2253: String): X500Name {
+            val rdns = mutableListOf<RelativeDistinguishedName>()
+            var start = 0
+            var i = 0
+            var inEscape = false
+
+            while (i < rfc2253.length) {
+                val c = rfc2253[i]
+                when {
+                    inEscape -> inEscape = false
+                    c == '\\' -> inEscape = true
+                    c == ',' || c == ';' -> {
+                        val rdnStr = rfc2253.substring(start, i).trim()
+                        if (rdnStr.isNotEmpty()) rdns.add(RelativeDistinguishedName.parseFromString(rdnStr))
+                        start = i + 1
+                    }
+                }
+                i++
+            }
+
+            // Last RDN
+            val lastRdn = rfc2253.substring(start).trim()
+            if (lastRdn.isNotEmpty()) rdns.add(RelativeDistinguishedName.parseFromString(lastRdn))
+
+            return X500Name(rdns.reversed())
         }
     }
 
