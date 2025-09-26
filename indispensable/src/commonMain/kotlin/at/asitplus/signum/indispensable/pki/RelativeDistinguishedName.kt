@@ -39,6 +39,64 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
                 }
             }.let(::RelativeDistinguishedName)
         }
+
+        /**
+         * Parse a single RDN string (e.g., "CN=John Doe+O=Company")
+         */
+        fun parseFromString(rdnStr: String): RelativeDistinguishedName {
+            val atvStrings = splitRespectingEscape(rdnStr, '+')
+            val atvs = atvStrings.map { atvStr ->
+                val parts = splitFirstUnescaped(atvStr, '=')
+                if (parts.size != 2) throw IllegalArgumentException("Invalid RDN part: $atvStr")
+                AttributeTypeAndValue.parseFromString(parts[0], parts[1])
+            }
+            return RelativeDistinguishedName(atvs)
+        }
+
+        /** Split on the first unescaped delimiter */
+        private fun splitFirstUnescaped(input: String, delimiter: Char): List<String> {
+            val sb = StringBuilder()
+            var escaped = false
+            for ((i, c) in input.withIndex()) {
+                when {
+                    escaped -> {
+                        sb.append(c)
+                        escaped = false
+                    }
+                    c == '\\' -> escaped = true
+                    c == delimiter -> {
+                        // split here
+                        return listOf(sb.toString(), input.substring(i + 1))
+                    }
+                    else -> sb.append(c)
+                }
+            }
+            return listOf(sb.toString()) // delimiter not found
+        }
+
+
+        /** Utility function that respects escape sequences */
+        private fun splitRespectingEscape(input: String, delimiter: Char): List<String> {
+            val parts = mutableListOf<String>()
+            val sb = StringBuilder()
+            var escaped = false
+            input.forEach { c ->
+                when {
+                    escaped -> {
+                        sb.append(c)
+                        escaped = false
+                    }
+                    c == '\\' -> escaped = true
+                    c == delimiter -> {
+                        parts.add(sb.toString())
+                        sb.clear()
+                    }
+                    else -> sb.append(c)
+                }
+            }
+            parts.add(sb.toString())
+            return parts
+        }
     }
 
     override fun toString() = "DistinguishedName(attrsAndValues=${attrsAndValues.joinToString()})"
@@ -140,50 +198,74 @@ open class AttributeTypeAndValue(
             }
             AttributeTypeAndValue(oid, next())
         }
+
+        /**
+         * Parse an individual type=value string into the correct AttributeTypeAndValue subclass
+         */
+        fun parseFromString(type: String, value: String): AttributeTypeAndValue {
+            val asn1String = Asn1String.UTF8(value)
+            return when (type.uppercase()) {
+                "CN" -> CommonName(asn1String)
+                "O" -> Organization(asn1String)
+                "OU" -> OrganizationalUnit(asn1String)
+                "C" -> Country(asn1String)
+                "EMAILADDRESS" -> EmailAddress(asn1String)
+                else -> AttributeTypeAndValue(ObjectIdentifier(type), asn1String.encodeToTlv())
+            }
+        }
     }
 
     fun toRFC2253String(): String {
         val type = oidToString()
 
         val valStr = (value as? Asn1Primitive)?.let { prim ->
-            runCatching { canonicalizeString(Asn1String.decodeFromTlv(prim).value) }
-                .getOrElse {
-                    // Fallback to hex form (# + hex of raw value)
-                    "#" + prim.content.toHexString()
-                }
-        } ?: ("#" + (value.toDerHexString()))
+            runCatching {
+                canonicalizeString(Asn1String.decodeFromTlv(prim).value)
+            }.getOrElse {
+                "#" + prim.content.toHexString()
+            }
+        } ?: ("#" + value.toDerHexString())
 
         return "$type=$valStr".lowercase()
     }
+
 
     /**
      * Apply RFC 2253 escaping + whitespace rules.
      */
     private fun canonicalizeString(input: String): String {
-        val escapees = ",+<>;\"\\"
+        val escapees = ",+<>;\"\\="
+        if (input.isEmpty()) return ""
 
-        return buildString {
-            var previousWasSpace = false
-            input.forEachIndexed { i, c ->
-                when {
-                    // Escape leading '#' or reserved characters
-                    (i == 0 && c == '#') || c in escapees -> {
-                        append('\\').append(c)
-                        previousWasSpace = false
-                    }
-                    // Collapse multiple spaces
-                    c.isWhitespace() -> if (!previousWasSpace) {
-                        append(' ')
+        val sb = StringBuilder()
+        var previousWasSpace = false
+
+        input.forEachIndexed { i, c ->
+            when {
+                c.isWhitespace() -> {
+                    if (i != 0 && !previousWasSpace) {
+                        sb.append(' ')
+                        previousWasSpace = true
+                    } else if (i == 0) {
+                        sb.append(c)
                         previousWasSpace = true
                     }
-                    else -> {
-                        append(c)
-                        previousWasSpace = false
+                }
+                else -> {
+                    if (c in escapees || (i == 0 && c == '#')) {
+                        sb.append('\\')
                     }
+                    sb.append(c)
+                    previousWasSpace = false
                 }
             }
-        }.trim()
+        }
+
+        return sb.toString().trim()
     }
+
+
+
 
 
     private fun oidToString(): String = when (oid) {
