@@ -4,7 +4,6 @@ import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.BERTags.BMP_STRING
-import at.asitplus.signum.indispensable.asn1.BERTags.GENERAL_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.IA5_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.NUMERIC_STRING
 import at.asitplus.signum.indispensable.asn1.BERTags.PRINTABLE_STRING
@@ -18,6 +17,7 @@ import kotlinx.io.readByteArray
 import kotlinx.io.readUByte
 import kotlin.enums.enumEntries
 import kotlin.experimental.and
+import kotlin.jvm.JvmName
 import kotlin.time.Instant
 
 
@@ -87,20 +87,23 @@ fun Asn1Element.Companion.parseFirst(source: ByteArray): Pair<Asn1Element, ByteA
     source.wrapInUnsafeSource().readAsn1Element()
         .let { Pair(it.first, source.copyOfRange(it.second.toInt(), source.size)) }
 
-private fun Source.doParseExactly(nBytes: Long): List<Asn1Element> = mutableListOf<Asn1Element>().also { list ->
-    val nBytes = nBytes.toULong()
+@Suppress("NOTHING_TO_INLINE")
+private inline fun Source.doParseExactly(nBytes: Long): List<Asn1Element> = doParseExactly(nBytes.toULong())
+@JvmName("doParseExactlyULong")
+private fun Source.doParseExactly(nBytes: ULong): List<Asn1Element> = mutableListOf<Asn1Element>().also { list ->
+    require(nBytes <= Long.MAX_VALUE.toULong()) { "Max number of bytes to read exceeds ${Long.MAX_VALUE}: $nBytes" }
     var nBytesRead: ULong = 0u
     while (nBytesRead < nBytes) {
         val peekTagAndLen = peekTagAndLen()
         val numberOfNextBytesRead = peekTagAndLen.second.toULong() + peekTagAndLen.first.length.toULong()
-        require(numberOfNextBytesRead <= Long.MAX_VALUE.toULong()) {"Length overflow: $numberOfNextBytesRead"}
+        require(numberOfNextBytesRead <= Long.MAX_VALUE.toULong()) { "Length overflow: $numberOfNextBytesRead" }
         if (nBytesRead + numberOfNextBytesRead > nBytes) break
         skip(peekTagAndLen.second.toLong()) // we only peeked before, so now we need to skip,
         //                                     since we want to recycle the result below
         val (elem, read) = readAsn1Element(peekTagAndLen.first, peekTagAndLen.second)
         list.add(elem)
         nBytesRead += read.toULong()
-        require(nBytesRead <= Long.MAX_VALUE.toULong()) {"Length overflow: $nBytesRead"}
+        require(nBytesRead <= Long.MAX_VALUE.toULong()) { "Length overflow: $nBytesRead" }
     }
     require(nBytesRead == nBytes) { "Indicated length ($nBytes) does not correspond to an ASN.1 element boundary ($nBytesRead)" }
 }
@@ -310,21 +313,25 @@ inline fun Asn1Primitive.decodeToAsn1RealOrNull(assertTag: Asn1Element.Tag = Asn
 /** Decode the [Asn1Primitive] as a [Double]. **Beware of possible loss of precision!**
  * @throws [Asn1Exception] on invalid input*/
 @Throws(Asn1Exception::class)
-fun Asn1Primitive.decodeToDouble(assertTag: Asn1Element.Tag = Asn1Element.Tag.REAL) = decodeToAsn1Real(assertTag).toDouble()
+fun Asn1Primitive.decodeToDouble(assertTag: Asn1Element.Tag = Asn1Element.Tag.REAL) =
+    decodeToAsn1Real(assertTag).toDouble()
 
 /** Exception-free version of [decodeToDouble]. **Beware of possible loss of precision!** */
 @Suppress("NOTHING_TO_INLINE")
-inline fun Asn1Primitive.decodeToDoubleOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.REAL) = catchingUnwrapped { decodeToDouble(assertTag) }.getOrNull()
+inline fun Asn1Primitive.decodeToDoubleOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.REAL) =
+    catchingUnwrapped { decodeToDouble(assertTag) }.getOrNull()
 
 /** Decode the [Asn1Primitive] as a [Float]. **Beware of *probable* loss of precision!**
  * @throws [Asn1Exception] on invalid input*/
 @Throws(Asn1Exception::class)
 @Suppress("NOTHING_TO_INLINE")
-inline fun Asn1Primitive.decodeToFloat(assertTag: Asn1Element.Tag = Asn1Element.Tag.REAL) = decodeToAsn1Real(assertTag).toFloat()
+inline fun Asn1Primitive.decodeToFloat(assertTag: Asn1Element.Tag = Asn1Element.Tag.REAL) =
+    decodeToAsn1Real(assertTag).toFloat()
 
 /** Exception-free version of [decodeToFloat]. **Beware of *probable* loss of precision!** */
 @Suppress("NOTHING_TO_INLINE")
-inline fun Asn1Primitive.decodeToFloatOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.REAL) = catchingUnwrapped { decodeToFloat(assertTag) }.getOrNull()
+inline fun Asn1Primitive.decodeToFloatOrNull(assertTag: Asn1Element.Tag = Asn1Element.Tag.REAL) =
+    catchingUnwrapped { decodeToFloat(assertTag) }.getOrNull()
 
 /**
  * transforms this [Asn1Primitive] into an [Asn1String] subtype based on its tag
@@ -332,7 +339,10 @@ inline fun Asn1Primitive.decodeToFloatOrNull(assertTag: Asn1Element.Tag = Asn1El
  * @throws [Asn1Exception] all sorts of exceptions on invalid input
  */
 @Throws(Asn1Exception::class)
-@Deprecated("Doesn't support all the string types and doesn't behave well with implicit tags", ReplaceWith("Asn1String.decodeFromTlv()"))
+@Deprecated(
+    "Doesn't support all the string types and doesn't behave well with implicit tags",
+    ReplaceWith("Asn1String.decodeFromTlv()")
+)
 // If the implicit tag is used, the caller needs to call one of the methods for decoding to specific Asn1String type
 fun Asn1Primitive.asAsn1String(): Asn1String = runRethrowing {
     when (tag.tagValue) {
@@ -660,7 +670,7 @@ private fun Source.decodeLength(): Pair<Long, Int> =
             Pair(firstByte.toUByte().toLong(), 1)
         } else { // its BER long form!
             val numberOfLengthOctets = (firstByte byteMask 0x7F).toInt()
-            if (numberOfLengthOctets>8) throw Asn1Exception("Unsupported length >2^8 (was: $numberOfLengthOctets length bytes)")
+            if (numberOfLengthOctets > 8) throw Asn1Exception("Unsupported length >2^8 (was: $numberOfLengthOctets length bytes)")
             val length = (0 until numberOfLengthOctets).fold(0uL) { acc, index ->
                 require(!exhausted()) { "Can't decode length" }
                 val thisByte = readUByte().also {
