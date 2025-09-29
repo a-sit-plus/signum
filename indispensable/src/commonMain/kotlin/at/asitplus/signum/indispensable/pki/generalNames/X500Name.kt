@@ -3,11 +3,8 @@ package at.asitplus.signum.indispensable.pki.generalNames
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
-import at.asitplus.signum.indispensable.asn1.Asn1String
-import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 
 data class X500Name(
@@ -39,20 +36,20 @@ data class X500Name(
         /**
          * Parse an RFC 2253 string (e.g., "CN=John Doe,O=Company,C=US") into an X500Name
          */
-        fun parse(rfc2253: String): X500Name {
+        fun fromString(value: String): X500Name {
             val rdns = mutableListOf<RelativeDistinguishedName>()
             var start = 0
             var i = 0
             var inEscape = false
 
-            while (i < rfc2253.length) {
-                val c = rfc2253[i]
+            while (i < value.length) {
+                val c = value[i]
                 when {
                     inEscape -> inEscape = false
                     c == '\\' -> inEscape = true
                     c == ',' || c == ';' -> {
-                        val rdnStr = rfc2253.substring(start, i).trim()
-                        if (rdnStr.isNotEmpty()) rdns.add(RelativeDistinguishedName.parseFromString(rdnStr))
+                        val rdnStr = value.substring(start, i).trim()
+                        if (rdnStr.isNotEmpty()) rdns.add(RelativeDistinguishedName.fromString(rdnStr))
                         start = i + 1
                     }
                 }
@@ -60,10 +57,10 @@ data class X500Name(
             }
 
             // Last RDN
-            val lastRdn = rfc2253.substring(start).trim()
-            if (lastRdn.isNotEmpty()) rdns.add(RelativeDistinguishedName.parseFromString(lastRdn))
+            val lastRdn = value.substring(start).trim()
+            if (lastRdn.isNotEmpty()) rdns.add(RelativeDistinguishedName.fromString(lastRdn))
 
-            return X500Name(rdns.reversed())
+            return X500Name(rdns)
         }
     }
 
@@ -98,23 +95,9 @@ data class X500Name(
         return true
     }
 
-    fun findMostSpecificCommonName(): AttributeTypeAndValue.CommonName? {
-        for (rdn in relativeDistinguishedNames.asReversed()) {
-            for (attr in rdn.attrsAndValues) {
-                if (attr is AttributeTypeAndValue.CommonName) {
-                    return attr
-                }
-            }
+    fun toRfc2253String(): String {
+        return relativeDistinguishedNames.joinToString(",") { rdn ->
+            rdn.sortedAttrsAndValues.joinToString("+") { atv -> atv.toRFC2253String() }
         }
-        return null
     }
-
-    fun toRfc2253String(): String =
-        relativeDistinguishedNames
-            .asReversed()
-            .joinToString(",") { rdn ->
-                rdn.attrsAndValues.joinToString("+") { atv ->
-                   atv.toRFC2253String()
-                }
-            }
 }
