@@ -61,12 +61,12 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
         /**
          * Parse a single RDN string (e.g., "CN=John Doe+O=Company")
          */
-        fun parseFromString(rdnStr: String): RelativeDistinguishedName {
+        fun fromString(rdnStr: String): RelativeDistinguishedName {
             val atvStrings = splitRespectingEscapeAndQuotes(rdnStr, '+')
             val atvs = atvStrings.map { atvStr ->
                 val parts = splitFirstUnescaped(atvStr, '=')
                 if (parts.size != 2) throw IllegalArgumentException("Invalid RDN part: $atvStr")
-                AttributeTypeAndValue.parseFromString(parts[0], parts[1])
+                AttributeTypeAndValue.fromString(parts[0], parts[1])
             }
             return RelativeDistinguishedName(atvs)
         }
@@ -86,7 +86,7 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
                     else -> sb.append(c)
                 }
             }
-            return listOf(sb.toString()) // delimiter not found
+            return listOf(sb.toString())
         }
 
 
@@ -232,8 +232,8 @@ open class AttributeTypeAndValue(
         /**
          * Parse an individual type=value string into the correct AttributeTypeAndValue subclass
          */
-        fun parseFromString(type: String, value: String): AttributeTypeAndValue {
-            val trimmed = value.trim() // preserve quotes if present
+        fun fromString(type: String, value: String): AttributeTypeAndValue {
+            val trimmed = value.trim()
             val asn1String = Asn1String.UTF8(trimmed)
             return when (type.uppercase()) {
                 "CN" -> CommonName(asn1String)
@@ -247,20 +247,19 @@ open class AttributeTypeAndValue(
     }
 
     fun toRFC2253String(): String {
-        val valStr = (value as? Asn1Primitive)?.let { prim ->
+        val attrValue = (value as? Asn1Primitive)?.let { prim ->
             runCatching {
-                var s = Asn1String.decodeFromTlv(prim).value
-                val wasQuoted = s.startsWith("\"") && s.endsWith("\"")
-                s = s.removeSurrounding("\"")
-                val wasBackslashFirst = s.startsWith("\\")
-                // unescape any existing escapes
-                val unescaped = s.replace("""\\(.)""".toRegex(), "$1")
+                var decodedValue = Asn1String.decodeFromTlv(prim).value
+                val wasQuoted = decodedValue.startsWith("\"") && decodedValue.endsWith("\"")
+                decodedValue = decodedValue.removeSurrounding("\"")
+                val wasBackslashFirst = decodedValue.startsWith("\\")
+                val unescaped = decodedValue.replace("""\\(.)""".toRegex(), "$1")
 
                 canonicalizeString(unescaped, wasQuoted, wasBackslashFirst)
             }.getOrElse { "#" + prim.content.toHexString() }
         } ?: ("#" + value.toDerHexString())
 
-        return "$attrType=$valStr".lowercase()
+        return "$attrType=$attrValue".lowercase()
     }
 
 
@@ -269,57 +268,62 @@ open class AttributeTypeAndValue(
      * Canonicalize string according to RFC 2253 rules.
      *
      * @param wasQuoted If true, we preserve characters like '+' without escaping.
+     * @param wasBackSlashFirst used for checking is '#' intentionally escaped in hex
      */
-    private fun canonicalizeString(input: String, wasQuoted: Boolean, wasBackSlashFirst: Boolean): String {
+    private fun canonicalizeString(
+        input: String,
+        wasQuoted: Boolean,
+        wasBackSlashFirst: Boolean
+    ): String {
         if (input.isEmpty()) return ""
+        if (wasQuoted) return input.trim()
+        val escapees = ",+<>;\"\\="
 
-        val escapees = if (wasQuoted) ",<>;\"\\=" else ",+<>;\"\\="
-
-        // escape leading/trailing spaces
-        var s = input
-        if (s.startsWith(' ')) s = "\\" + s
-        if (s.endsWith(' ')) s = s.dropLast(1) + "\\ "
-
-        val sb = StringBuilder()
-        var previousWasSpace = false
-        var i = 0
-
-        // handle leading # for hex encoding
-        if (s.startsWith("#")) {
-            val hexPart = s.substring(1)
-            val isHex = hexPart.matches(Regex("[0-9A-Fa-f]+")) && hexPart.length % 2 == 0
-            if (isHex && !wasBackSlashFirst) {
-                sb.append('#')
-                i = 1
-            } else {
-                sb.append('\\').append('#')
-                i = 1
+        // Escape leading/trailing spaces (RFC 2253)
+        val s = buildString {
+            if (input.startsWith(' ')) append('\\')
+            append(input)
+            if (input.endsWith(' ')) {
+                deleteAt(length - 1)
+                append("\\ ")
             }
         }
 
-        while (i < s.length) {
-            val c = s[i]
-            when {
-                c.isWhitespace() -> {
-                    if (!previousWasSpace) {
-                        sb.append(' ')
-                        previousWasSpace = true
+        return buildString {
+            var previousWasSpace = false
+            var startIndex = 0
+
+            // Handle leading # for hex encoding
+            if (s.startsWith("#")) {
+                val hexPart = s.drop(1)
+                val isHex = hexPart.length % 2 == 0 && hexPart.all { it.isDigit() || it.lowercaseChar() in 'a'..'f' }
+                if (isHex && !wasBackSlashFirst) {
+                    append('#')
+                    startIndex = 1
+                } else {
+                    append('\\').append('#')
+                    startIndex = 1
+                }
+            }
+
+            for (c in s.drop(startIndex)) {
+                when {
+                    c.isWhitespace() -> {
+                        if (!previousWasSpace) {
+                            append(' ')
+                            previousWasSpace = true
+                        }
+                    }
+                    c in escapees -> {
+                        append('\\').append(c)
+                        previousWasSpace = false
+                    }
+                    else -> {
+                        append(c)
+                        previousWasSpace = false
                     }
                 }
-                c in escapees -> {
-                    sb.append('\\').append(c)
-                    previousWasSpace = false
-                }
-                else -> {
-                    sb.append(c)
-                    previousWasSpace = false
-                }
             }
-            i++
         }
-
-        return sb.toString()
     }
-
-
 }

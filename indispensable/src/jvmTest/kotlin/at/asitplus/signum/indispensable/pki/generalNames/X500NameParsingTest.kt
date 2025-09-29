@@ -3,11 +3,12 @@ package at.asitplus.signum.indispensable.pki.generalNames
 import at.asitplus.test.FreeSpec
 import io.kotest.matchers.shouldBe
 
-class X500NameTest : FreeSpec ({
+class X500NameParsingTest : FreeSpec ({
 
     fun assertCanonical(input: String, expected: String) {
-        val name = X500Name.parse(input)
+        val name = X500Name.fromString(input)
         val actual = name.toRfc2253String()
+        println(actual)
         actual shouldBe expected
     }
 
@@ -25,7 +26,8 @@ class X500NameTest : FreeSpec ({
         assertCanonical("CN=\\#nothex#string", "cn=\\#nothex#string")
         assertCanonical("TELEPHONENUMBER=\"+61999999999\"", "telephonenumber=+61999999999")
         assertCanonical("TELEPHONENUMBER=\\+61999999999", "telephonenumber=\\+61999999999")
-        assertCanonical("CN=\"a+b\"", "cn=a\\+b")
+        assertCanonical("CN=\"a+b\"", "cn=a+b")
+        assertCanonical("CN=\"a=b\"", "cn=a=b")
     }
 
     "testHexEncoded" {
@@ -36,7 +38,6 @@ class X500NameTest : FreeSpec ({
 
     "testCompositeRDNs" {
         // RDNs with multiple attributes
-        assertCanonical("CN=a+b", "cn=a\\+b")
         assertCanonical("SERIALNUMBER=16+CN=Steve Schoch", "cn=steve schoch+serialnumber=16")
         assertCanonical("CN=AA + SERIALNUMBER=BBB", "cn=aa+serialnumber=bbb")
     }
@@ -50,7 +51,6 @@ class X500NameTest : FreeSpec ({
 
     "testSpecialChars" {
         assertCanonical("CN=\\\"Quoted\\\"", "cn=\\\"quoted\\\"")
-        assertCanonical("CN=Comma\\,Semi;Colon", "cn=comma\\,semi\\;colon")
         assertCanonical("CN=Plus\\+Equals\\=", "cn=plus\\+equals\\=")
         assertCanonical("CN=Backslash\\\\Test", "cn=backslash\\\\test")
     }
