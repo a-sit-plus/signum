@@ -2,23 +2,39 @@ package at.asitplus.signum.indispensable.pki.generalNames
 
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
+import at.asitplus.signum.indispensable.asn1.Asn1Exception
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 
-data class X500Name(
+data class X500Name internal constructor(
     val relativeDistinguishedNames: List<RelativeDistinguishedName>,
     override val performValidation: Boolean = false,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.DIRECTORY
 ) : Asn1Encodable<Asn1Sequence>, GeneralNameOption {
 
-    /**
-     * Always `null`, since no validation logic is implemented
-     */
-    override val isValid: Boolean? = null
+    override val isValid: Boolean by lazy {
+        relativeDistinguishedNames.all { rdn ->
+            rdn.attrsAndValues.all { it.isValid == true }
+        }
+    }
 
+    init {
+        if (performValidation && !isValid) throw Asn1Exception("Invalid X500Name.")
+    }
+
+    /**
+     * @throws Asn1Exception if illegal X500Name is provided
+     */
+    @Throws(Asn1Exception::class)
     constructor(singleItem: RelativeDistinguishedName) : this(listOf(singleItem))
+
+    /**
+     * @throws Asn1Exception if illegal X500Name is provided
+     */
+    @Throws(Asn1Exception::class)
+    constructor(relativeDistinguishedNames: List<RelativeDistinguishedName>) : this(relativeDistinguishedNames, true)
 
     override fun encodeToTlv() = Asn1.Sequence {
         relativeDistinguishedNames.forEach { +it }
@@ -30,7 +46,7 @@ data class X500Name(
                 while (hasNext()) {
                     add(RelativeDistinguishedName.decodeFromTlv(next().asSet()))
                 }
-            }.let(::X500Name)
+            }.let{ X500Name(it, false) }
         }
 
         /**

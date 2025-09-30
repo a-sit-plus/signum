@@ -130,13 +130,34 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
 open class AttributeTypeAndValue(
     override val oid: ObjectIdentifier,
     val value: Asn1Element,
-    val attrType: String = oid.toString()
+    val attrType: String = oid.toString(),
+    val performValidation: Boolean = false
 ) : Asn1Encodable<Asn1Sequence>, Identifiable {
+
+    /**
+     * Returns whether this string is valid:
+     * - `true`: validation succeeded
+     * - `false`: validation failed
+     * - `null`: no validation implemented
+     */
+    val isValid: Boolean? by lazy {
+        runCatching { Asn1String.decodeFromTlv(value.asPrimitive()).isValid }.getOrNull()
+    }
 
     override fun toString() = value.toString()
 
-    class CommonName(value: Asn1Element) : AttributeTypeAndValue(OID, value, TYPE) {
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
+    class CommonName internal constructor(
+        value: Asn1Element,
+        performValidation: Boolean
+    ) : AttributeTypeAndValue(OID, value, TYPE, performValidation) {
+
+        /**
+         * @throws Asn1Exception if illegal CommonName is provided
+         */
+        @Throws(Asn1Exception::class)
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()), true) {
+            if (!isValid!!) throw Asn1Exception("Invalid CommonName!")
+        }
 
         companion object {
             const val TYPE = "CN"
@@ -144,8 +165,18 @@ open class AttributeTypeAndValue(
         }
     }
 
-    class Country(value: Asn1Element) : AttributeTypeAndValue(OID, value, TYPE) {
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
+    class Country internal constructor(
+        value: Asn1Element,
+        performValidation: Boolean
+    ) : AttributeTypeAndValue(OID, value, TYPE, performValidation) {
+
+        /**
+         * @throws Asn1Exception if illegal Country is provided
+         */
+        @Throws(Asn1Exception::class)
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()), true) {
+            if (!isValid!!) throw Asn1Exception("Invalid Country!")
+        }
 
         companion object {
             const val TYPE = "C"
@@ -153,8 +184,18 @@ open class AttributeTypeAndValue(
         }
     }
 
-    class Organization(value: Asn1Element) : AttributeTypeAndValue(OID, value, TYPE) {
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
+    class Organization internal constructor(
+        value: Asn1Element,
+        performValidation: Boolean
+    ) : AttributeTypeAndValue(OID, value, TYPE, performValidation) {
+
+        /**
+         * @throws Asn1Exception if illegal Organization is provided
+         */
+        @Throws(Asn1Exception::class)
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()), true) {
+            if (!isValid!!) throw Asn1Exception("Invalid Organization!")
+        }
 
         companion object {
             const val TYPE = "O"
@@ -162,8 +203,18 @@ open class AttributeTypeAndValue(
         }
     }
 
-    class OrganizationalUnit(value: Asn1Element) : AttributeTypeAndValue(OID, value, TYPE) {
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
+    class OrganizationalUnit internal constructor(
+        value: Asn1Element,
+        performValidation: Boolean
+    ) : AttributeTypeAndValue(OID, value, TYPE, performValidation) {
+
+        /**
+         * @throws Asn1Exception if illegal OrganizationalUnit is provided
+         */
+        @Throws(Asn1Exception::class)
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()), true) {
+            if (!isValid!!) throw Asn1Exception("Invalid OrganizationalUnit!")
+        }
 
         companion object {
             const val TYPE = "OU"
@@ -171,8 +222,18 @@ open class AttributeTypeAndValue(
         }
     }
 
-    class EmailAddress(value: Asn1Element) : AttributeTypeAndValue(OID, value, TYPE) {
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
+    class EmailAddress internal constructor(
+        value: Asn1Element,
+        performValidation: Boolean
+    ) : AttributeTypeAndValue(OID, value, TYPE, performValidation) {
+
+        /**
+         * @throws Asn1Exception if illegal EmailAddress is provided
+         */
+        @Throws(Asn1Exception::class)
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()), true) {
+            if (!isValid!!) throw Asn1Exception("Invalid EmailAddress!")
+        }
 
         companion object {
             const val TYPE = "EMAILADDRESS"
@@ -210,19 +271,12 @@ open class AttributeTypeAndValue(
             val oid = next().asPrimitive().readOid()
             if (oid.nodes.size >= 3 && oid.toString().startsWith("2.5.4.")) {
                 val asn1String = next().asPrimitive()
-                val str = catching { Asn1String.decodeFromTlv(asn1String) }
                 return@decodeRethrowing when (oid) {
-                    CommonName.OID -> str.fold(onSuccess = { CommonName(it) }, onFailure = { CommonName(asn1String) })
-                    Country.OID -> str.fold(onSuccess = { Country(it) }, onFailure = { Country(asn1String) })
-                    EmailAddress.OID -> str.fold(onSuccess = { EmailAddress(it) }, onFailure = { EmailAddress(asn1String) })
-                    Organization.OID -> str.fold(
-                        onSuccess = { Organization(it) },
-                        onFailure = { Organization(asn1String) })
-
-                    OrganizationalUnit.OID -> str.fold(
-                        onSuccess = { OrganizationalUnit(it) },
-                        onFailure = { OrganizationalUnit(asn1String) })
-
+                    CommonName.OID -> CommonName(asn1String, false)
+                    Country.OID -> Country(asn1String, false)
+                    EmailAddress.OID -> EmailAddress(asn1String, false)
+                    Organization.OID -> Organization(asn1String, false)
+                    OrganizationalUnit.OID -> OrganizationalUnit(asn1String, false)
                     else -> AttributeTypeAndValue(oid, asn1String)
                 }
             }
