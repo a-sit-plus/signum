@@ -83,6 +83,7 @@ data class X500Name internal constructor(
     override fun toString() = "X500Name(RDNs=${relativeDistinguishedNames.joinToString()})"
 
     override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
+        if (!isValid || input?.isValid == false) throw Asn1Exception("Invalid X500Name")
         if (input !is X500Name) return GeneralNameOption.ConstraintResult.DIFF_TYPE
 
         if (this == input) return GeneralNameOption.ConstraintResult.MATCH

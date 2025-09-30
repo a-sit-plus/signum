@@ -74,6 +74,7 @@ data class UriName internal constructor(
     }
 
     override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
+        if (!isValid || input?.isValid == false) throw Asn1Exception("Invalid UriName")
         if (input !is UriName) {
             return GeneralNameOption.ConstraintResult.DIFF_TYPE
         }
