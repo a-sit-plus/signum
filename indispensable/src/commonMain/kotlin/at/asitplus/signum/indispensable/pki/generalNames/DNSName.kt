@@ -91,6 +91,7 @@ data class DNSName internal constructor(
     }
 
     override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
+        if (!isValid || input?.isValid == false) throw Asn1Exception("Invalid DNSName")
         if (input !is DNSName) {
             return GeneralNameOption.ConstraintResult.DIFF_TYPE
         }

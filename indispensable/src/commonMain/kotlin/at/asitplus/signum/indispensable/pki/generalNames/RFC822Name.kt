@@ -44,6 +44,7 @@ data class RFC822Name internal constructor(
     }
 
     override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
+        if (!isValid || input?.isValid == false) throw Asn1Exception("Invalid RFC822Name")
         if (input !is RFC822Name) {
             return GeneralNameOption.ConstraintResult.DIFF_TYPE
         }
