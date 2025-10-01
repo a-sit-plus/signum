@@ -14,6 +14,11 @@ sealed interface GeneralNameOption {
      * - `null`: no validation implemented
      */
     val isValid: Boolean?
+
+    /**
+     * Indicates whether validation was performed when this object was created.
+     * This flag is controlled internally by the class and cannot be set by external users.
+     */
     val performValidation: Boolean
 
     enum class NameType(val value: ULong) {

@@ -82,6 +82,8 @@ data class X500Name internal constructor(
 
     override fun toString() = "X500Name(RDNs=${relativeDistinguishedNames.joinToString()})"
 
+
+
     override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
         if (!isValid || input?.isValid == false) throw Asn1Exception("Invalid X500Name")
         if (input !is X500Name) return GeneralNameOption.ConstraintResult.DIFF_TYPE
@@ -116,5 +118,25 @@ data class X500Name internal constructor(
         return relativeDistinguishedNames.joinToString(",") { rdn ->
             rdn.sortedAttrsAndValues.joinToString("+") { atv -> atv.toRFC2253String() }
         }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as X500Name
+
+        if (relativeDistinguishedNames != other.relativeDistinguishedNames) return false
+        if (type != other.type) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = performValidation.hashCode()
+        result = 31 * result + isValid.hashCode()
+        result = 31 * result + relativeDistinguishedNames.hashCode()
+        result = 31 * result + type.hashCode()
+        return result
     }
 }
