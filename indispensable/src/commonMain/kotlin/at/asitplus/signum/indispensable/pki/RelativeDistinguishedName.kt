@@ -254,6 +254,7 @@ open class AttributeTypeAndValue(
 
         if (toRFC2253String() != other.toRFC2253String()) return false
         if (oid != other.oid) return false
+        if (attrType != other.attrType) return false
 
         return true
     }

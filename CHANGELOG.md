@@ -17,7 +17,7 @@
         * `X500Name`
 * Dependency update:
     * Add `com.eygraber:uri-kmp:0.0.20` (for URI parsing)
-    * Add `at.asitplus:cidre:0.2.0` (CIDR math)
+    * Add `at.asitplus:cidre:0.3.0` (CIDR math)
 * Changed `AttributeTypeAndValue` from sealed to open and removed the `Other` subclass. Unknown OIDs now fall back to a plain `AttributeTypeAndValue` instance
 
 ### 3.18.2 / Supreme 0.10.2

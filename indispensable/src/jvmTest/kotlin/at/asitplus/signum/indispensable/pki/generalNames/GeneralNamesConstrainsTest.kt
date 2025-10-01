@@ -72,7 +72,7 @@ class GeneralNamesConstrainsTest : FreeSpec ({
     val testEmailIsNotConstraint = arrayOf(".abc.test.com", "www.test.com", "test1@abc.test.com", "bc.test.com")
     val widenNames = arrayOf(".test.com")
     val narrowNames = arrayOf(".test.com")
-    val dummyOtherDNS = DNSName(Asn1String.IA5(""), allowWildcard = true, performValidation = false)
+    val dummyOtherDNS = DNSName(Asn1String.IA5("example.com"), allowWildcard = true, performValidation = false)
 
     testGeneralNameConstraints(
         name = "RFC822Name.constrains",

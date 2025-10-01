@@ -5,8 +5,6 @@ import at.asitplus.cidre.IpAddressAndPrefix
 import at.asitplus.cidre.IpFamily
 import at.asitplus.cidre.IpInterface
 import at.asitplus.cidre.IpNetwork
-import at.asitplus.cidre.byteops.toNetmask
-import at.asitplus.cidre.byteops.toPrefix
 import at.asitplus.cidre.isV4
 import at.asitplus.cidre.isV6
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
@@ -14,7 +12,6 @@ import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Exception
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1OctetStringPrimitive
-import kotlinx.io.IOException
 
 data class IPAddressName internal constructor(
     val address: IpAddress<*, *>?,
@@ -24,24 +21,25 @@ data class IPAddressName internal constructor(
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.IP
 ) : GeneralNameOption, Asn1Encodable<Asn1Primitive> {
 
-    /**
-     * Always `true`, since creation of [IPAddressName] is only possible if the
-     * underlying [IpAddress] or [IpAddressAndPrefix] are valid
-     */
-    override val isValid: Boolean = address != null
+    override val isValid: Boolean by lazy { address != null }
+
+    init {
+        if (performValidation && !isValid) throw Asn1Exception("Invalid IpAddressName.")
+    }
 
     /**
-     * @throws Asn1Exception if illegal IpAddressName is provided
+     * @throws Asn1Exception if illegal IpAddress is provided
      */
     @Throws(Asn1Exception::class)
-    constructor(
-        address: IpAddress<*, *>? = null,
-        addressAndPrefix: IpAddressAndPrefix<*, *>? = null,
-    // TODO remove rawBytes param, use CIDRE method for calculating rawBytes
-        rawBytes: ByteArray
-    ) : this (address, addressAndPrefix, rawBytes, true) {
-        if (!isValid) throw Asn1Exception("Invalid IpAddressName.")
-    }
+    constructor(address: IpAddress<*, *>, addressAndPrefix: IpAddressAndPrefix<*, *>? = null)
+            : this(address, addressAndPrefix, addressAndPrefix?.toX509Octets() ?: address.octets, true)
+
+    /**
+     * @throws Asn1Exception if illegal IpAddress is provided
+     */
+    @Throws(Asn1Exception::class)
+    constructor(addressAndPrefix: IpAddressAndPrefix<*, *>)
+            : this(addressAndPrefix.address, addressAndPrefix, addressAndPrefix.toX509Octets(), true)
 
     val network: IpNetwork<*, *>? by lazy {
         when (addressAndPrefix) {
@@ -60,36 +58,31 @@ data class IPAddressName internal constructor(
         override fun doDecode(src: Asn1Primitive): IPAddressName {
             val content = src.content
             return when (content.size) {
-                IpFamily.V4.numberOfOctets -> IPAddressName(IpAddress.V4(content), rawBytes = IpAddress.V4(content).octets)
-                IpFamily.V6.numberOfOctets -> IPAddressName(IpAddress.V6(content), rawBytes = IpAddress.V6(content).octets)
-                2 * IpFamily.V4.numberOfOctets -> createNetworkV4(content)
-                2 * IpFamily.V6.numberOfOctets -> createNetworkV6(content)
-                else -> throw IOException("Invalid IP/Network length: ${content.size}")
+                IpFamily.V4.numberOfOctets -> IPAddressName(
+                    IpAddress.V4(content), rawBytes = IpAddress.V4(content).octets
+                )
+
+                IpFamily.V6.numberOfOctets -> IPAddressName(
+                    IpAddress.V6(content), rawBytes = IpAddress.V6(content).octets
+                )
+
+                else -> {
+                    val addressAndPrefix = IpInterface.fromX509Octets(content)
+                    IPAddressName(addressAndPrefix)
+                }
             }
-        }
-        //TODO change after CIDRE update
-        private fun createNetworkV4(bytes: ByteArray): IPAddressName {
-            val address = IpAddress.V4(bytes.copyOfRange(0, 4))
-            val prefix = bytes.copyOfRange(4, 8).toPrefix()
-            return IPAddressName(address, addressAndPrefix = IpInterface.V4(address, prefix), address.octets + prefix.toNetmask(4))
-        }
-        //TODO change after CIDRE update
-        private fun createNetworkV6(bytes: ByteArray): IPAddressName {
-            val address = IpAddress.V6(bytes.copyOfRange(0, 16))
-            val prefix = bytes.copyOfRange(16, 32).toPrefix()
-            return IPAddressName(address, addressAndPrefix = IpInterface.V6(address, prefix), address.octets + prefix.toNetmask(16))
         }
 
-        @Throws(Asn1Exception::class)
-        fun fromString(name: String): IPAddressName =
-            runCatching {
-                IpInterface(name).let { iface ->
-                    IPAddressName(iface.address, iface, iface.address.octets + iface.netmask)
-                }
-            }.getOrElse {
-                val addr = IpAddress(name)
-                IPAddressName(addr, null, addr.octets)
-            }
+        /**
+         * @throws IllegalArgumentException if an invalid string is provided
+         * @throws Asn1Exception if an invalid [address] is provided
+         * */
+        @Throws(Asn1Exception::class, IllegalArgumentException::class)
+        fun fromString(stringRepresentation: String): IPAddressName = runCatching {
+            IPAddressName(IpInterface(stringRepresentation))
+        }.getOrElse {
+            IPAddressName(IpAddress(stringRepresentation))
+        }
     }
 
     override fun toString(): String = addressAndPrefix?.toString() ?: address.toString()
@@ -123,8 +116,7 @@ data class IPAddressName internal constructor(
         if (input !is IPAddressName) return GeneralNameOption.ConstraintResult.DIFF_TYPE
         if (this == input) return GeneralNameOption.ConstraintResult.MATCH
 
-        if (network == null && input.network == null &&
-            ((address!!.isV4() && input.address!!.isV4()) || (address.isV6() && input.address!!.isV6()))) {
+        if (network == null && input.network == null && ((address!!.isV4() && input.address!!.isV4()) || (address.isV6() && input.address!!.isV6()))) {
             return GeneralNameOption.ConstraintResult.SAME_TYPE
         }
 
@@ -144,8 +136,7 @@ data class IPAddressName internal constructor(
         if (network != null) {
             val thisNet = network as IpNetwork<Number, Any>
             val otherAddress = input.address as IpAddress<Number, Any>
-            return if (thisNet.contains(otherAddress))
-                GeneralNameOption.ConstraintResult.WIDENS
+            return if (thisNet.contains(otherAddress)) GeneralNameOption.ConstraintResult.WIDENS
             else GeneralNameOption.ConstraintResult.SAME_TYPE
         }
 
@@ -153,8 +144,7 @@ data class IPAddressName internal constructor(
         if (input.network != null) {
             val thisAddress = address as IpAddress<Number, Any>
             val otherNet = input.network as IpNetwork<Number, Any>
-            return if (otherNet.contains(thisAddress))
-                GeneralNameOption.ConstraintResult.NARROWS
+            return if (otherNet.contains(thisAddress)) GeneralNameOption.ConstraintResult.NARROWS
             else GeneralNameOption.ConstraintResult.SAME_TYPE
         }
 
