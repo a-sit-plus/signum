@@ -1,4 +1,5 @@
 import at.asitplus.gradle.*
+import com.android.build.api.dsl.androidLibrary
 import org.gradle.internal.os.OperatingSystem
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree.Companion.test
@@ -7,7 +8,7 @@ import org.jetbrains.kotlin.konan.target.Family
 import java.io.ByteArrayOutputStream
 
 plugins {
-    id("com.android.library")
+    id("com.android.kotlin.multiplatform.library")
     kotlin("multiplatform")
     kotlin("plugin.serialization")
     id("signing")
@@ -39,11 +40,59 @@ kotlin {
     compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
     //applyDefaultHierarchyTemplate()
     jvm()
-    androidTarget {
+    /*androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         instrumentedTestVariant.sourceSetTree.set(test)
         publishLibraryVariants("release")
+    }*/
+
+
+    androidLibrary {
+        namespace = "at.asitplus.signum.supreme"
+       // defaultConfig {
+            //override Android minSDK for Supreme
+            logger.lifecycle("  \u001b[7m\u001b[1m" + "Overriding Android defaultConfig minSDK to 30 for project Supreme" + "\u001b[0m")
+            minSdk = 30
+        compileSdk= 38
+         //   testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        //}
+        withHostTestBuilder {}.configure {}
+        withDeviceTestBuilder {
+            sourceSetTreeName = "androidInstrumentedTest"
+        }
+        packaging {
+            listOf(
+                "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
+                "org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties",
+                "org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties",
+                "org/bouncycastle/x509/CertPathReviewerMessages_de.properties",
+                "org/bouncycastle/x509/CertPathReviewerMessages.properties",
+                "org/bouncycastle/pkix/CertPathReviewerMessages_de.properties",
+                "org/bouncycastle/pkix/CertPathReviewerMessages.properties",
+                "/META-INF/{AL2.0,LGPL2.1}",
+                "win32-x86-64/attach_hotspot_windows.dll",
+                "win32-x86/attach_hotspot_windows.dll",
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
+                "META-INF/licenses/*",
+            //noinspection WrongGradleMethod
+            ).forEach { resources.excludes.add(it) }
+        }
+/*
+        testOptions {
+            //take Android minSDK from defaultConfig, as it was overridden there
+            targetSdk = android.defaultConfig.minSdk
+            managedDevices {
+                localDevices {
+                    create("pixel2api30") {
+                        device = "Pixel 2"
+                        apiLevel = 30
+                        systemImageSource = "aosp"
+                    }
+                }
+            }
+        }*/
     }
+
 
     listOf(
         iosX64(),
@@ -73,18 +122,14 @@ kotlin {
             implementation("at.asitplus:kmmresult-test:${AspVersions.kmmresult}")
             implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
         }
-
-        named("androidInstrumentedTest").dependencies {
+        val androidJvmMain by creating {
+            dependsOn(get("commonMain"))
+        }/*
+        androidInstrumentedTest.dependencies {
             implementation(libs.runner)
             implementation(libs.core)
             implementation(libs.rules)
-        }
-
-        named("androidUnitTest").dependencies {
-            if (project.findProperty("local.androidUnitTestDance") != "removeDependency") {
-                implementation("de.infix.testBalloon:testBalloon-framework-core-jvm:${AspVersions.testballoon}")
-            }
-        }
+        }*/
 
         jvmTest.dependencies {
             implementation("com.lambdaworks:scrypt:1.4.0")
@@ -99,48 +144,6 @@ swiftklib {
         //Can't hide this in the iOS sources to consumers and using a discrete module is overkill -> so add "internal" to the package
         packageName("at.asitplus.signum.supreme.symmetric.internal.ios")
         minIos = 15
-    }
-}
-
-
-android {
-    namespace = "at.asitplus.signum.supreme"
-    defaultConfig {
-        //override Android minSDK for Supreme
-        logger.lifecycle("  \u001b[7m\u001b[1m" + "Overriding Android defaultConfig minSDK to 30 for project Supreme" + "\u001b[0m")
-        minSdk = 30
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-
-    packaging {
-        listOf(
-            "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
-            "org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties",
-            "org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties",
-            "org/bouncycastle/x509/CertPathReviewerMessages_de.properties",
-            "org/bouncycastle/x509/CertPathReviewerMessages.properties",
-            "org/bouncycastle/pkix/CertPathReviewerMessages_de.properties",
-            "org/bouncycastle/pkix/CertPathReviewerMessages.properties",
-            "/META-INF/{AL2.0,LGPL2.1}",
-            "win32-x86-64/attach_hotspot_windows.dll",
-            "win32-x86/attach_hotspot_windows.dll",
-            "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
-            "META-INF/licenses/*",
-        ).forEach { resources.excludes.add(it) }
-    }
-
-    testOptions {
-        //take Android minSDK from defaultConfig, as it was overridden there
-        targetSdk = android.defaultConfig.minSdk
-        managedDevices {
-            localDevices {
-                create("pixel2api30") {
-                    device = "Pixel 2"
-                    apiLevel = 30
-                    systemImageSource = "aosp"
-                }
-            }
-        }
     }
 }
 
@@ -266,11 +269,4 @@ if (OperatingSystem.current() == OperatingSystem.MAC_OS) {
                 )
             }
         }
-}
-
-
-project.gradle.taskGraph.whenReady {
-    tasks.getByName("testDebugUnitTest") {
-        enabled = false
-    }
 }

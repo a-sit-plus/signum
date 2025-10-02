@@ -1,8 +1,9 @@
 import at.asitplus.gradle.*
+import com.android.build.api.dsl.androidLibrary
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
-    id("com.android.library")
+    id("com.android.kotlin.multiplatform.library")
     kotlin("multiplatform")
     kotlin("plugin.serialization")
     id("signing")
@@ -15,7 +16,12 @@ version = artifactVersion
 
 
 kotlin {
-    androidTarget { publishLibraryVariants("release") }
+    //androidTarget { publishLibraryVariants("release") }
+    androidLibrary {
+        namespace = "at.asitplus.signum.indispensable.internals"
+        compileSdk = 38
+        minSdk = 26
+    }
     jvm()
     macosArm64()
     macosX64()
@@ -72,8 +78,6 @@ exportXCFramework(
     kmmresult()
 
 )
-
-android { namespace = "at.asitplus.signum.indispensable.internals" }
 
 val javadocJar = setupDokka(
     baseUrl = "https://github.com/a-sit-plus/signum/tree/main/",

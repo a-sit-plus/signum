@@ -8,7 +8,7 @@ plugins {
     id("at.asitplus.gradle.conventions") version "20251001"
     kotlin("multiplatform") version kotlinVer apply false
     kotlin("plugin.serialization") version kotlinVer apply false
-    id("com.android.library") version libs.versions.agp.get() apply (false)
+    id("com.android.kotlin.multiplatform.library") version libs.versions.agp.get() apply (false)
     id("de.infix.testBalloon") version libs.versions.testballoon.get() apply false
 }
 group = "at.asitplus.signum"
