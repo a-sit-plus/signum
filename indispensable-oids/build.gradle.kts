@@ -2,6 +2,7 @@ import at.asitplus.gradle.AspVersions
 import at.asitplus.gradle.exportXCFramework
 import at.asitplus.gradle.kotest
 import at.asitplus.gradle.setupDokka
+import com.android.build.api.dsl.androidLibrary
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
@@ -17,7 +18,7 @@ buildscript {
 }
 
 plugins {
-    id("com.android.library")
+    id("com.android.kotlin.multiplatform.library")
     kotlin("multiplatform")
     id("signing")
     id("at.asitplus.gradle.conventions")
@@ -208,8 +209,35 @@ fun generateKnownOIDs() {
 }
 
 kotlin {
-    androidTarget { instrumentedTestVariant.sourceSetTree.set(test)
-        publishLibraryVariants("release") }
+   // androidTarget { instrumentedTestVariant.sourceSetTree.set(test)
+     //   publishLibraryVariants("release") }
+
+    androidLibrary {
+        //defaultConfig {
+            minSdk = 26
+        compileSdk = 38
+          //  testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+       // }
+        namespace = "at.asitplus.signum.indispensable.oids"
+        packaging {
+            listOf(
+                "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
+                "org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties",
+                "org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties",
+                "org/bouncycastle/x509/CertPathReviewerMessages_de.properties",
+                "org/bouncycastle/x509/CertPathReviewerMessages.properties",
+                "org/bouncycastle/pkix/CertPathReviewerMessages_de.properties",
+                "org/bouncycastle/pkix/CertPathReviewerMessages.properties",
+                "/META-INF/{AL2.0,LGPL2.1}",
+                "win32-x86-64/attach_hotspot_windows.dll",
+                "win32-x86/attach_hotspot_windows.dll",
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
+                "META-INF/licenses/*",
+                //noinspection WrongGradleMethod
+            ).forEach { resources.excludes.add(it) }
+        }
+
+    }
     jvm()
     macosArm64()
     macosX64()
@@ -268,54 +296,15 @@ kotlin {
                 implementation(kotest("property"))
             }
         }
-
+/*
         androidInstrumentedTest.dependencies {
             implementation(libs.runner)
             implementation(libs.core)
             implementation(libs.rules)
-        }
-
-        androidUnitTest.dependencies {
-            if (project.findProperty("local.androidUnitTestDance") != "removeDependency") {
-                implementation("de.infix.testBalloon:testBalloon-framework-core-jvm:${AspVersions.testballoon}")
-            }
-        }
+        }*/
     }
 }
 
-android {
-    defaultConfig {
-        minSdk = 26
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-    namespace = "at.asitplus.signum.indispensable.oids"
-    packaging {
-        listOf(
-            "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
-            "org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties",
-            "org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties",
-            "org/bouncycastle/x509/CertPathReviewerMessages_de.properties",
-            "org/bouncycastle/x509/CertPathReviewerMessages.properties",
-            "org/bouncycastle/pkix/CertPathReviewerMessages_de.properties",
-            "org/bouncycastle/pkix/CertPathReviewerMessages.properties",
-            "/META-INF/{AL2.0,LGPL2.1}",
-            "win32-x86-64/attach_hotspot_windows.dll",
-            "win32-x86/attach_hotspot_windows.dll",
-            "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
-            "META-INF/licenses/*",
-        //noinspection WrongGradleMethod
-        ).forEach { resources.excludes.add(it) }
-    }
-
-}
-
-// we don't have native android tests independent of our regular test suite.
-// this task expect those and fails, since no tests are present, so we disable it.
-project.gradle.taskGraph.whenReady {
-    tasks.getByName("testDebugUnitTest") {
-        enabled = false
-    }
-}
 exportXCFramework(
     "IndispensableOIDs",
     transitiveExports = false,
