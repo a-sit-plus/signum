@@ -4,23 +4,22 @@ import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1ExplicitlyTagged
+import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 
-data class EDIPartyName (
+data class EDIPartyName internal constructor(
     val value: Asn1ExplicitlyTagged,
     override val performValidation: Boolean = false,
+    override val isValid: Boolean? = null,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.OTHER
 ): GeneralNameOption, Asn1Encodable<Asn1Element> {
 
-    /**
-     * Always `null`, since no validation logic is implemented
-     */
-    override val isValid: Boolean? = null
+    constructor(value: Asn1ExplicitlyTagged) : this(value, false)
 
     override fun encodeToTlv() = value
 
-    companion object : Asn1Decodable<Asn1Element, OtherName> {
-        override fun doDecode(src: Asn1Element): OtherName {
+    companion object : Asn1Decodable<Asn1Element, EDIPartyName> {
+        override fun doDecode(src: Asn1Element): EDIPartyName {
             if (src !is Asn1ExplicitlyTagged) throw Asn1StructuralException("Invalid ediPartyName Alternative Name found: ${src.toDerHexString()}")
 
             src.also { it ->
@@ -29,7 +28,7 @@ data class EDIPartyName (
                     "Invalid partyName Alternative Name found (illegal implicit tag): ${it.toDerHexString()}"
                 )
             }
-            return OtherName(src)
+            return EDIPartyName(src)
         }
     }
 
@@ -37,12 +36,7 @@ data class EDIPartyName (
         return value.prettyPrint()
     }
 
-
-    override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
-        if (input !is EDIPartyName) {
-            return GeneralNameOption.ConstraintResult.DIFF_TYPE
-        } else {
-            throw UnsupportedOperationException("Narrows, widens and match are not yet implemented for EDIPartyName.")
-        }
+    override fun validatedCopy(checkIsValid: (GeneralNameOption) -> Boolean): EDIPartyName {
+        return EDIPartyName(value, true, checkIsValid(this))
     }
 }

@@ -85,20 +85,21 @@ data class X500Name internal constructor(
 
 
     override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
-        if (!isValid || input?.isValid == false) throw Asn1Exception("Invalid X500Name")
-        if (input !is X500Name) return GeneralNameOption.ConstraintResult.DIFF_TYPE
+        return try {
+            super.constrains(input)
+        } catch (_: UnsupportedOperationException) {
+            if (this == input) return GeneralNameOption.ConstraintResult.MATCH
 
-        if (this == input) return GeneralNameOption.ConstraintResult.MATCH
+            val inputRDNs = (input as X500Name).relativeDistinguishedNames
+            val thisRDNs = this.relativeDistinguishedNames
 
-        val inputRDNs = input.relativeDistinguishedNames
-        val thisRDNs = this.relativeDistinguishedNames
-
-        return when {
-            inputRDNs.isEmpty() -> GeneralNameOption.ConstraintResult.WIDENS
-            thisRDNs.isEmpty() -> GeneralNameOption.ConstraintResult.NARROWS
-            this.isWithinSubtree(inputRDNs) -> GeneralNameOption.ConstraintResult.NARROWS
-            input.isWithinSubtree(thisRDNs) -> GeneralNameOption.ConstraintResult.WIDENS
-            else -> GeneralNameOption.ConstraintResult.SAME_TYPE
+            when {
+                inputRDNs.isEmpty() -> GeneralNameOption.ConstraintResult.WIDENS
+                thisRDNs.isEmpty() -> GeneralNameOption.ConstraintResult.NARROWS
+                this.isWithinSubtree(inputRDNs) -> GeneralNameOption.ConstraintResult.NARROWS
+                input.isWithinSubtree(thisRDNs) -> GeneralNameOption.ConstraintResult.WIDENS
+                else -> GeneralNameOption.ConstraintResult.SAME_TYPE
+            }
         }
     }
 

@@ -74,45 +74,40 @@ data class UriName internal constructor(
     }
 
     override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
-        if (!isValid || input?.isValid == false) throw Asn1Exception("Invalid UriName")
-        if (input !is UriName) {
-            return GeneralNameOption.ConstraintResult.DIFF_TYPE
-        }
+        return try {
+            super.constrains(input)
+        } catch (_: UnsupportedOperationException) {
+            val inputHost = (input as UriName).host.value.lowercase()
+            val thisHost = host.value.lowercase()
 
-        val inputHost = input.host.value.lowercase()
-        val thisHost = host.value.lowercase()
+            when {
+                thisHost == inputHost -> GeneralNameOption.ConstraintResult.MATCH
 
-        if (thisHost == inputHost) {
-            return GeneralNameOption.ConstraintResult.MATCH
-        }
+                hostDNS == null || input.hostDNS == null -> GeneralNameOption.ConstraintResult.SAME_TYPE
 
-        val inputHostObject = input.hostDNS
-        val thisDNS = this.hostDNS
+                else -> {
+                    val thisDomain = thisHost.startsWith('.')
+                    val otherDomain = inputHost.startsWith('.')
+                    var constraintResult = hostDNS.constrains(input.hostDNS)
 
-        if (thisDNS == null || inputHostObject == null) {
-            return GeneralNameOption.ConstraintResult.SAME_TYPE
-        }
+                    if (!thisDomain && !otherDomain &&
+                        (constraintResult == GeneralNameOption.ConstraintResult.WIDENS ||
+                                constraintResult == GeneralNameOption.ConstraintResult.NARROWS)
+                    ) {
+                        constraintResult = GeneralNameOption.ConstraintResult.SAME_TYPE
+                    }
 
-        val thisDomain = thisHost.startsWith('.')
-        val otherDomain = inputHost.startsWith('.')
+                    if (constraintResult == GeneralNameOption.ConstraintResult.MATCH && thisDomain != otherDomain) {
+                        constraintResult = if (thisDomain) {
+                            GeneralNameOption.ConstraintResult.WIDENS
+                        } else {
+                            GeneralNameOption.ConstraintResult.NARROWS
+                        }
+                    }
 
-        var constraintResult = thisDNS.constrains(inputHostObject)
-
-        if (!thisDomain && !otherDomain &&
-            (constraintResult == GeneralNameOption.ConstraintResult.WIDENS ||
-                    constraintResult == GeneralNameOption.ConstraintResult.NARROWS)
-        ) {
-            constraintResult = GeneralNameOption.ConstraintResult.SAME_TYPE
-        }
-
-        if (constraintResult == GeneralNameOption.ConstraintResult.MATCH && thisDomain != otherDomain) {
-            constraintResult = if (thisDomain) {
-                GeneralNameOption.ConstraintResult.WIDENS
-            } else {
-                GeneralNameOption.ConstraintResult.NARROWS
+                    constraintResult
+                }
             }
         }
-
-        return constraintResult
     }
 }

@@ -40,7 +40,36 @@ sealed interface GeneralNameOption {
 
     val type: NameType
 
-    fun constrains(input: GeneralNameOption?): ConstraintResult
+    fun constrains(input: GeneralNameOption?): ConstraintResult {
+        when {
+            input == null || this::class != input::class -> return ConstraintResult.DIFF_TYPE
+
+            isValid == null || input.isValid == null ->
+                throw IllegalArgumentException(
+                    "Validation for ${this::class.simpleName} has not been performed. " +
+                            "Use ${this::class.simpleName}.validatedCopy { /* validation lambda */ } to set isValid before calling constrains."
+                )
+
+            !isValid!! || !input.isValid!! -> {
+                throw Asn1Exception("Invalid ${this::class.simpleName}")
+            }
+
+            else -> throw UnsupportedOperationException(
+                "Narrows, widens and match are not yet implemented for ${this::class.simpleName}."
+            )
+        }
+    }
+
+    /**
+     * Returns a copy of this GeneralNameOption with the `isValid` property set
+     * according to the [checkIsValid] lambda.
+     *
+     * Intended for subclasses that do not implement validation (`isValid == null`)
+     * and allows marking them as valid or invalid before performing constraint checks.
+     */
+    fun validatedCopy(checkIsValid: (GeneralNameOption) -> Boolean) : GeneralNameOption {
+        throw IllegalArgumentException()
+    }
 }
 
 data class GeneralName(
@@ -76,6 +105,7 @@ data class GeneralName(
                         src.asExplicitlyTagged().children.first().asSequence()
                     )
                 )
+
                 else -> throw Asn1Exception("Unsupported GeneralName tag")
             }
         }

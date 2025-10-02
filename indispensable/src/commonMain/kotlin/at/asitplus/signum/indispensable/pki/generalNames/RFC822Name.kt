@@ -44,39 +44,37 @@ data class RFC822Name internal constructor(
     }
 
     override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
-        if (!isValid || input?.isValid == false) throw Asn1Exception("Invalid RFC822Name")
-        if (input !is RFC822Name) {
-            return GeneralNameOption.ConstraintResult.DIFF_TYPE
-        }
+        return try {
+            super.constrains(input)
+        } catch (_: UnsupportedOperationException) {
+            val thisName = value.value.lowercase()
+            val inputName = (input as RFC822Name).value.value.lowercase()
+            fun isEmailLike(name: String) = '@' in name
+            fun hasDomainPrefix(name: String) = name.startsWith(".")
 
-        val thisName = value.value.lowercase()
-        val inputName = input.value.value.lowercase()
+            when {
+                thisName == inputName -> GeneralNameOption.ConstraintResult.MATCH
 
-        if (thisName == inputName) {
-            return GeneralNameOption.ConstraintResult.MATCH
-        }
+                thisName.endsWith(inputName) -> {
+                    when {
+                        isEmailLike(inputName) -> GeneralNameOption.ConstraintResult.SAME_TYPE
+                        hasDomainPrefix(inputName) -> GeneralNameOption.ConstraintResult.NARROWS
+                        thisName.getOrNull(thisName.lastIndexOf(inputName) - 1) == '@' -> GeneralNameOption.ConstraintResult.NARROWS
+                        else -> GeneralNameOption.ConstraintResult.SAME_TYPE
+                    }
+                }
 
-        fun isEmailLike(name: String) = '@' in name
-        fun hasDomainPrefix(name: String) = name.startsWith(".")
+                inputName.endsWith(thisName) -> {
+                    when {
+                        isEmailLike(thisName) -> GeneralNameOption.ConstraintResult.SAME_TYPE
+                        hasDomainPrefix(thisName) -> GeneralNameOption.ConstraintResult.WIDENS
+                        inputName.getOrNull(inputName.lastIndexOf(thisName) - 1) == '@' -> GeneralNameOption.ConstraintResult.WIDENS
+                        else -> GeneralNameOption.ConstraintResult.SAME_TYPE
+                    }
+                }
 
-        if (thisName.endsWith(inputName)) {
-            return when {
-                isEmailLike(inputName) -> GeneralNameOption.ConstraintResult.SAME_TYPE
-                hasDomainPrefix(inputName) -> GeneralNameOption.ConstraintResult.NARROWS
-                thisName.getOrNull(thisName.lastIndexOf(inputName) - 1) == '@' -> GeneralNameOption.ConstraintResult.NARROWS
                 else -> GeneralNameOption.ConstraintResult.SAME_TYPE
             }
         }
-
-        if (inputName.endsWith(thisName)) {
-            return when {
-                isEmailLike(thisName) -> GeneralNameOption.ConstraintResult.SAME_TYPE
-                hasDomainPrefix(thisName) -> GeneralNameOption.ConstraintResult.WIDENS
-                inputName.getOrNull(inputName.lastIndexOf(thisName) - 1) == '@' -> GeneralNameOption.ConstraintResult.WIDENS
-                else -> GeneralNameOption.ConstraintResult.SAME_TYPE
-            }
-        }
-
-        return GeneralNameOption.ConstraintResult.SAME_TYPE
     }
 }

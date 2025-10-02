@@ -91,38 +91,39 @@ data class DNSName internal constructor(
     }
 
     override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
-        if (!isValid || input?.isValid == false) throw Asn1Exception("Invalid DNSName")
-        if (input !is DNSName) {
-            return GeneralNameOption.ConstraintResult.DIFF_TYPE
-        }
+        return try {
+            super.constrains(input)
+        } catch (_: UnsupportedOperationException) {
+            val thisName = value.value.lowercase()
+            val inputName = (input as DNSName).value.value.lowercase()
 
-        val thisName = value.value.lowercase()
-        val inputName = input.value.value.lowercase()
+            when {
+                thisName == inputName -> GeneralNameOption.ConstraintResult.MATCH
 
-        if (thisName == inputName) {
-            return GeneralNameOption.ConstraintResult.MATCH
-        }
+                thisName.endsWith(inputName) -> {
+                    val index = thisName.lastIndexOf(inputName)
+                    val charBefore = thisName.getOrNull(index - 1)
+                    val inputStartsWithDot = inputName.startsWith('.')
+                    if ((charBefore == '.' && !inputStartsWithDot) || (charBefore != '.' && inputStartsWithDot)) {
+                        GeneralNameOption.ConstraintResult.NARROWS
+                    } else {
+                        GeneralNameOption.ConstraintResult.SAME_TYPE
+                    }
+                }
 
-        if (thisName.endsWith(inputName)) {
-            val index = thisName.lastIndexOf(inputName)
-            val charBefore = thisName.getOrNull(index - 1)
-            val inputStartsWithDot = inputName.startsWith('.')
-            if ((charBefore == '.' && !inputStartsWithDot) || (charBefore != '.' && inputStartsWithDot)) {
-                return GeneralNameOption.ConstraintResult.NARROWS
+                inputName.endsWith(thisName) -> {
+                    val index = inputName.lastIndexOf(thisName)
+                    val charBefore = inputName.getOrNull(index - 1)
+                    val thisStartsWithDot = thisName.startsWith('.')
+                    if ((charBefore == '.' && !thisStartsWithDot) || (charBefore != '.' && thisStartsWithDot)) {
+                        GeneralNameOption.ConstraintResult.WIDENS
+                    } else {
+                        GeneralNameOption.ConstraintResult.SAME_TYPE
+                    }
+                }
+
+                else -> GeneralNameOption.ConstraintResult.SAME_TYPE
             }
-            return GeneralNameOption.ConstraintResult.SAME_TYPE
         }
-
-        if (inputName.endsWith(thisName)) {
-            val index = inputName.lastIndexOf(thisName)
-            val charBefore = inputName.getOrNull(index - 1)
-            val thisStartsWithDot = thisName.startsWith('.')
-            if ((charBefore == '.' && !thisStartsWithDot) || (charBefore != '.' && thisStartsWithDot)) {
-                return GeneralNameOption.ConstraintResult.WIDENS
-            }
-            return GeneralNameOption.ConstraintResult.SAME_TYPE
-        }
-
-        return GeneralNameOption.ConstraintResult.SAME_TYPE
     }
 }
