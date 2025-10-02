@@ -19,8 +19,6 @@ kotlin {
     //androidTarget { publishLibraryVariants("release") }
     androidLibrary {
         namespace = "at.asitplus.signum.indispensable.internals"
-        compileSdk = 38
-        minSdk = 26
     }
     jvm()
     macosArm64()

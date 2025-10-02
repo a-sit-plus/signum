@@ -214,8 +214,6 @@ kotlin {
 
     androidLibrary {
         //defaultConfig {
-            minSdk = 26
-        compileSdk = 38
           //  testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
        // }
         namespace = "at.asitplus.signum.indispensable.oids"

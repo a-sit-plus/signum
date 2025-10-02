@@ -22,8 +22,6 @@ kotlin {
 
     androidLibrary {
         //defaultConfig {
-        compileSdk=38
-            minSdk = 26
      //       testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
        // }
         namespace = "at.asitplus.signum.indispensable.cosef"
