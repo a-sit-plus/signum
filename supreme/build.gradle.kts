@@ -52,8 +52,7 @@ kotlin {
        // defaultConfig {
             //override Android minSDK for Supreme
             logger.lifecycle("  \u001b[7m\u001b[1m" + "Overriding Android defaultConfig minSDK to 30 for project Supreme" + "\u001b[0m")
-            minSdk = 30
-        compileSdk= 38
+            minSdk = 30 //override
          //   testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         //}
         withHostTestBuilder {}.configure {}

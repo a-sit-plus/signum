@@ -21,8 +21,6 @@ private val Pair<String, *>.oid: String? get() = this.first
 
 kotlin {
     androidLibrary {
-            compileSdk = 33
-            minSdk = 26
         //    testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         /*
         withHostTestBuilder {}.configure {}
@@ -108,9 +106,7 @@ kotlin {
                 implementation(kotest("property"))
             }
         }
-        val androidJvmMain by creating {
-            dependsOn(get("commonMain"))
-        }
+
         androidJvmMain {
             dependencies {
                 api(bouncycastle("bcpkix"))
