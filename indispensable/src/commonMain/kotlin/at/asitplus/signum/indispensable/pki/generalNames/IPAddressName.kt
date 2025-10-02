@@ -112,42 +112,43 @@ data class IPAddressName internal constructor(
     }
 
     override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
-        if (!isValid || input?.isValid == false) throw Asn1Exception("Invalid IpAddressName")
-        if (input !is IPAddressName) return GeneralNameOption.ConstraintResult.DIFF_TYPE
-        if (this == input) return GeneralNameOption.ConstraintResult.MATCH
-
-        if (network == null && input.network == null && ((address!!.isV4() && input.address!!.isV4()) || (address.isV6() && input.address!!.isV6()))) {
-            return GeneralNameOption.ConstraintResult.SAME_TYPE
-        }
-
-        // Subnet vs Subnet
-        if (network != null && input.network != null) {
-            val thisNet = network as IpNetwork<Number, Any>
-            val otherNet = input.network as IpNetwork<Number, Any>
+        return try {
+            super.constrains(input)
+        } catch (_: UnsupportedOperationException) {
             when {
-                thisNet == otherNet -> GeneralNameOption.ConstraintResult.MATCH
-                thisNet.contains(otherNet) -> GeneralNameOption.ConstraintResult.WIDENS
-                otherNet.contains(thisNet) -> GeneralNameOption.ConstraintResult.NARROWS
+                this == input as IPAddressName -> GeneralNameOption.ConstraintResult.MATCH
+
+                network == null && input.network == null &&
+                        ((address!!.isV4() && input.address!!.isV4()) || (address!!.isV6() && input.address!!.isV6())) ->
+                    GeneralNameOption.ConstraintResult.SAME_TYPE
+
+                network != null && input.network != null -> {
+                    val thisNet = network as IpNetwork<Number, Any>
+                    val otherNet = input.network as IpNetwork<Number, Any>
+                    when {
+                        thisNet == otherNet -> GeneralNameOption.ConstraintResult.MATCH
+                        thisNet.contains(otherNet) -> GeneralNameOption.ConstraintResult.WIDENS
+                        otherNet.contains(thisNet) -> GeneralNameOption.ConstraintResult.NARROWS
+                        else -> GeneralNameOption.ConstraintResult.SAME_TYPE
+                    }
+                }
+
+                network != null -> {
+                    val thisNet = network as IpNetwork<Number, Any>
+                    val otherAddress = input.address as IpAddress<Number, Any>
+                    if (thisNet.contains(otherAddress)) GeneralNameOption.ConstraintResult.WIDENS
+                    else GeneralNameOption.ConstraintResult.SAME_TYPE
+                }
+
+                input.network != null -> {
+                    val thisAddress = address as IpAddress<Number, Any>
+                    val otherNet = input.network as IpNetwork<Number, Any>
+                    if (otherNet.contains(thisAddress)) GeneralNameOption.ConstraintResult.NARROWS
+                    else GeneralNameOption.ConstraintResult.SAME_TYPE
+                }
+
                 else -> GeneralNameOption.ConstraintResult.SAME_TYPE
             }
         }
-
-        // Other is subnet, this is host
-        if (network != null) {
-            val thisNet = network as IpNetwork<Number, Any>
-            val otherAddress = input.address as IpAddress<Number, Any>
-            return if (thisNet.contains(otherAddress)) GeneralNameOption.ConstraintResult.WIDENS
-            else GeneralNameOption.ConstraintResult.SAME_TYPE
-        }
-
-        // Other is subnet, this is host
-        if (input.network != null) {
-            val thisAddress = address as IpAddress<Number, Any>
-            val otherNet = input.network as IpNetwork<Number, Any>
-            return if (otherNet.contains(thisAddress)) GeneralNameOption.ConstraintResult.NARROWS
-            else GeneralNameOption.ConstraintResult.SAME_TYPE
-        }
-
-        return GeneralNameOption.ConstraintResult.SAME_TYPE
     }
 }

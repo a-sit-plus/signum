@@ -6,16 +6,14 @@ import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 
-data class X400AddressName(
+data class X400AddressName internal constructor(
     val value: Asn1Element,
     override val performValidation: Boolean = false,
+    override val isValid: Boolean? = null,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.X400,
 ) : GeneralNameOption, Asn1Encodable<Asn1Element> {
 
-    /**
-     * Always `null`, since no validation logic is implemented
-     */
-    override val isValid: Boolean? = null
+    constructor(value: Asn1Element) : this(value, false)
 
     override fun encodeToTlv() = value
 
@@ -30,11 +28,7 @@ data class X400AddressName(
         return value.prettyPrint()
     }
 
-    override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
-        if (input !is X400AddressName) {
-            return GeneralNameOption.ConstraintResult.DIFF_TYPE
-        } else {
-            throw UnsupportedOperationException("Narrows, widens and match are not supported for X400Address in RFC5280.")
-        }
+    override fun validatedCopy(checkIsValid: (GeneralNameOption) -> Boolean): X400AddressName {
+        return X400AddressName(value, true, checkIsValid(this))
     }
 }

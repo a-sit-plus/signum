@@ -5,11 +5,14 @@ import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 
-data class RegisteredIDName (
+data class RegisteredIDName internal constructor(
     val value: ObjectIdentifier,
     override val performValidation: Boolean = false,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.OID
 ): GeneralNameOption, Asn1Encodable<Asn1Primitive> {
+
+    constructor(value: ObjectIdentifier) : this(value, false)
+
     override fun encodeToTlv() = value.encodeToTlv()
 
     /**
@@ -26,13 +29,5 @@ data class RegisteredIDName (
 
     override fun toString(): String {
         return value.toString()
-    }
-
-    override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
-        if (input !is RegisteredIDName) {
-            return GeneralNameOption.ConstraintResult.DIFF_TYPE
-        } else {
-            throw UnsupportedOperationException("Narrows, widens and match are not yet implemented for RegisteredIDName.")
-        }
     }
 }
