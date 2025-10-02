@@ -21,11 +21,12 @@ kotlin {
     androidLibrary {
         //defaultConfig {
             minSdk = 26
-        compileSdk = 38
           //  testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
        // }
         namespace = "at.asitplus.signum.indispensable.josef"
 
+
+        withHostTest { }
 
         packaging {
             listOf(
@@ -103,6 +104,11 @@ kotlin {
                 implementation(project(":supreme"))
             }
 
+        }
+        getByName("androidHostTest").dependencies {
+            if (project.findProperty("local.androidHostTestDance") != "removeDependency") implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
+            // implementation(libs.core)
+            // implementation(libs.rules)
         }
 /*
         androidInstrumentedTest.dependencies {

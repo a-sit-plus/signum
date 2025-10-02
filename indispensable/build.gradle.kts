@@ -5,8 +5,8 @@ import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree.Companion.test
 
 plugins {
-    id("com.android.kotlin.multiplatform.library")
     kotlin("multiplatform")
+    id("com.android.kotlin.multiplatform.library")
     kotlin("plugin.serialization")
     id("signing")
     id("at.asitplus.gradle.conventions")
@@ -28,10 +28,7 @@ kotlin {
            it.sourceSetTreeName = "test"
        }
         */
-        withHostTestBuilder {}.configure {}
-        withDeviceTestBuilder {
-            sourceSetTreeName = "androidInstrumentedTest"
-        }
+        withHostTest { }
         namespace = "at.asitplus.signum.indispensable"
         packaging {
             listOf(
@@ -106,7 +103,11 @@ kotlin {
                 implementation(kotest("property"))
             }
         }
-
+        getByName("androidHostTest").dependencies {
+            if (project.findProperty("local.androidHostTestDance") != "removeDependency") implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
+            // implementation(libs.core)
+            // implementation(libs.rules)
+        }
         androidJvmMain {
             dependencies {
                 api(bouncycastle("bcpkix"))
