@@ -18,6 +18,8 @@ version = artifactVersion
 kotlin {
     //androidTarget { publishLibraryVariants("release") }
     androidLibrary {
+
+        withHostTest { }
         namespace = "at.asitplus.signum.indispensable.internals"
     }
     jvm()
@@ -61,9 +63,14 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(libs.kotlinx.io.core)
+                implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
             }
         }
-
+        getByName("androidHostTest").dependencies {
+            if (project.findProperty("local.androidHostTestDance") != "removeDependency") implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
+            // implementation(libs.core)
+            // implementation(libs.rules)
+        }
     }
 }
 

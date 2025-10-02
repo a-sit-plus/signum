@@ -24,6 +24,8 @@ kotlin {
         //defaultConfig {
      //       testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
        // }
+
+        withHostTest { }
         namespace = "at.asitplus.signum.indispensable.cosef"
 
 
@@ -97,6 +99,11 @@ kotlin {
             dependencies {
                 implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
             }
+        }
+        getByName("androidHostTest").dependencies {
+            if (project.findProperty("local.androidHostTestDance") != "removeDependency") implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
+            // implementation(libs.core)
+            // implementation(libs.rules)
         }
 /*
         androidInstrumentedTest.dependencies {

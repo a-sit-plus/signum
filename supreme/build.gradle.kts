@@ -1,8 +1,9 @@
-import at.asitplus.gradle.*
+import at.asitplus.gradle.AspVersions
+import at.asitplus.gradle.coroutines
+import at.asitplus.gradle.napier
+import at.asitplus.gradle.setupDokka
 import com.android.build.api.dsl.androidLibrary
 import org.gradle.internal.os.OperatingSystem
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
-import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree.Companion.test
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.konan.target.Family
 import java.io.ByteArrayOutputStream
@@ -47,17 +48,28 @@ kotlin {
     }*/
 
 
+
     androidLibrary {
         namespace = "at.asitplus.signum.supreme"
-       // defaultConfig {
-            //override Android minSDK for Supreme
-            logger.lifecycle("  \u001b[7m\u001b[1m" + "Overriding Android defaultConfig minSDK to 30 for project Supreme" + "\u001b[0m")
-            minSdk = 30 //override
-         //   testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // defaultConfig {
+        //override Android minSDK for Supreme
+        logger.lifecycle("  \u001b[7m\u001b[1m" + "Overriding Android defaultConfig minSDK to 30 for project Supreme" + "\u001b[0m")
+        minSdk = 30 //override
+        //   testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         //}
-        withHostTestBuilder {}.configure {}
-        withDeviceTestBuilder {
-            sourceSetTreeName = "androidInstrumentedTest"
+        withHostTest { }
+        withDeviceTest {
+            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+            execution = "ANDROIDX_TEST_ORCHESTRATOR"
+            managedDevices {
+                localDevices {
+                    create("pixel2api30").apply {
+                        device = "Pixel 2"
+                        apiLevel = 30
+                        systemImageSource = "aosp"
+                    }
+                }
+            }
         }
         packaging {
             listOf(
@@ -73,23 +85,23 @@ kotlin {
                 "win32-x86/attach_hotspot_windows.dll",
                 "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
                 "META-INF/licenses/*",
-            //noinspection WrongGradleMethod
+                //noinspection WrongGradleMethod
             ).forEach { resources.excludes.add(it) }
         }
-/*
-        testOptions {
-            //take Android minSDK from defaultConfig, as it was overridden there
-            targetSdk = android.defaultConfig.minSdk
-            managedDevices {
-                localDevices {
-                    create("pixel2api30") {
-                        device = "Pixel 2"
-                        apiLevel = 30
-                        systemImageSource = "aosp"
+        /*
+                testOptions {
+                    //take Android minSDK from defaultConfig, as it was overridden there
+                    targetSdk = android.defaultConfig.minSdk
+                    managedDevices {
+                        localDevices {
+                            create("pixel2api30") {
+                                device = "Pixel 2"
+                                apiLevel = 30
+                                systemImageSource = "aosp"
+                            }
+                        }
                     }
-                }
-            }
-        }*/
+                }*/
     }
 
 
@@ -121,14 +133,18 @@ kotlin {
             implementation("at.asitplus:kmmresult-test:${AspVersions.kmmresult}")
             implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
         }
-        val androidJvmMain by creating {
-            dependsOn(get("commonMain"))
-        }/*
-        androidInstrumentedTest.dependencies {
+
+        getByName("androidDeviceTest").dependencies {
             implementation(libs.runner)
-            implementation(libs.core)
-            implementation(libs.rules)
-        }*/
+            implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
+            // implementation(libs.core)
+            // implementation(libs.rules)
+        }
+        getByName("androidHostTest").dependencies {
+            if (project.findProperty("local.androidHostTestDance") != "removeDependency") implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
+            // implementation(libs.core)
+            // implementation(libs.rules)
+        }
 
         jvmTest.dependencies {
             implementation("com.lambdaworks:scrypt:1.4.0")
@@ -250,13 +266,16 @@ if (OperatingSystem.current() == OperatingSystem.MAC_OS) {
     kotlin.targets.withType<KotlinNativeTarget>()
         .configureEach {
             val sub = when (konanTarget.family) {
-                Family.IOS     ->
+                Family.IOS ->
                     if (konanTarget.name.contains("SIMULATOR", true)) "iphonesimulator" else "iphoneos"
-                Family.OSX     -> "macosx"
-                Family.TVOS    ->
+
+                Family.OSX -> "macosx"
+                Family.TVOS ->
                     if (konanTarget.name.contains("SIMULATOR", true)) "appletvsimulator" else "appletvos"
+
                 Family.WATCHOS ->
                     if (konanTarget.name.contains("SIMULATOR", true)) "watchsimulator" else "watchos"
+
                 else -> throw StopExecutionException("Konan target ${konanTarget.name} is not recognized")
             }
 
