@@ -58,9 +58,11 @@ kotlin {
         //   testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         //}
         withHostTest { }
-        withDeviceTest {
-            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-            execution = "ANDROIDX_TEST_ORCHESTRATOR"
+        withDeviceTestBuilder {
+            sourceSetTreeName = "test"
+        }.configure {
+            // instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+            // execution = "ANDROIDX_TEST_ORCHESTRATOR"
             managedDevices {
                 localDevices {
                     create("pixel2api30").apply {
