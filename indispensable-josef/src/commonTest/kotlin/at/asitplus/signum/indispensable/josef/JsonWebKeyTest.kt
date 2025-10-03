@@ -4,30 +4,36 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.aroundEach
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
-class JsonWebKeyTest : FreeSpec({
+val JsonWebKeyTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
-    lateinit var curve: ECCurve
-    lateinit var x: ByteArray
-    lateinit var y: ByteArray
-    lateinit var ecKey: JsonWebKey
-    lateinit var n: ByteArray
-    lateinit var e: ByteArray
-    lateinit var rsaKey: JsonWebKey
+    val curve: ECCurve = ECCurve.SECP_256_R_1
+    var x: ByteArray = Random.nextBytes(32)
+    var y: ByteArray = Random.nextBytes(32)
+    var ecKey: JsonWebKey = JsonWebKey(type = JwkType.EC, curve = curve, x = x, y = y)
+    var n: ByteArray = Random.nextBytes(1024)
+    var e: ByteArray = Random.nextBytes(16)
+    var rsaKey: JsonWebKey = JsonWebKey(type = JwkType.RSA, n = n, e = e)
 
-    beforeTest {
-        curve = ECCurve.SECP_256_R_1
+    testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes).aroundEach {
         x = Random.nextBytes(32)
         y = Random.nextBytes(32)
         ecKey = JsonWebKey(type = JwkType.EC, curve = curve, x = x, y = y)
         n = Random.nextBytes(1024)
         e = Random.nextBytes(16)
         rsaKey = JsonWebKey(type = JwkType.RSA, n = n, e = e)
+        it()
     }
 
     "Thumbprint for minimal EC Key" - {
@@ -88,4 +94,4 @@ class JsonWebKeyTest : FreeSpec({
         key.e!! shouldBe byteArrayOf(0x01, 0x00, 0x01)
     }
 
-})
+}

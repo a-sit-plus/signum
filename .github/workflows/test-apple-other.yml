@@ -12,6 +12,7 @@ on:
 jobs:
   build:
     runs-on: macos-latest
+    timeout-minutes: 120
     steps:
       - name: Checkout (default)
         if: github.event_name != 'pull_request'
@@ -40,7 +41,28 @@ jobs:
         run: ./gradlew iosArm64MainKlibrary iosSimulatorArm64MainKlibrary
       - name: Run tests
         run: ./gradlew tvosX64Test tvosSimulatorArm64Test watchosSimulatorArm64Test watchosX64Test iosX64Test macosArm64Test macosX64Test -x :supreme:linkDebugTestIosX64 -x :supreme:iosX64Test
+      - name: 'Add default settings to node calls'
+        shell: bash
+        run: |
+          #
+          # The later used dorny/test-reporter@v2 action can throw the following exception when enough tests have been
+          # executed:
+          #     RangeError: Maximum call stack size exceeded
+          #
+          # We explicitly increase the max. stack size here to workaround this issue.
+          #
+          
+          which node
+          node --version
+          
+          mv /usr/local/bin/node /usr/local/bin/node_org
+          echo '#!/bin/bash' >> /usr/local/bin/node
+          echo '/usr/local/bin/node_org --stack-size=2048 $@' >> /usr/local/bin/node
+          cat /usr/local/bin/node
+          chmod +x /usr/local/bin/node
       - name: Test Report
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
         uses: dorny/test-reporter@v2
         if: success() || failure()
         with:

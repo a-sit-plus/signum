@@ -13,9 +13,13 @@
 * Add COSE_Mac0 support with `CoseMac` class
 * Introduce `ProtectedCoseHeaderSerializer` for serialization/deserialization protected header
 * Replace raw-byte protected header and its ByteArray extension serialization with `CoseHeader` using the new serializer
-* Kotest 6.0.0.M6
-* Remove Kotest Workarounds
+* Allow overriding randomness source for symmetric key generation
 * Extend properties in `JweHeader`
+* Fix RSA signing on Android
+* Kotlin 2.2.20
+* TestBalloon-powered tests
+* New KMP-AGP Plugin
+* Raise Android minSDK to 26 (Android 8.0 Oreo)
 
 ### 3.17.0 (Supreme 0.9.0)
 * **KDF Support**

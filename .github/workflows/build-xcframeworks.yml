@@ -3,6 +3,7 @@ on: workflow_dispatch
 jobs:
   build:
     runs-on: macos-latest
+    timeout-minutes: 120
     steps:
       - name: Checkout
         uses: actions/checkout@v3

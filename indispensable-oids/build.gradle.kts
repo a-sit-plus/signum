@@ -1,6 +1,8 @@
+import at.asitplus.gradle.AspVersions
 import at.asitplus.gradle.exportXCFramework
 import at.asitplus.gradle.kotest
 import at.asitplus.gradle.setupDokka
+import com.android.build.api.dsl.androidLibrary
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
@@ -15,10 +17,11 @@ buildscript {
 }
 
 plugins {
-    id("com.android.library")
+    id("com.android.kotlin.multiplatform.library")
     kotlin("multiplatform")
     id("signing")
     id("at.asitplus.gradle.conventions")
+    id("de.infix.testBalloon")
 }
 
 val artifactVersion: String by extra
@@ -122,10 +125,10 @@ fun generateKnownOIDs() {
     val knownOIDs =
         FileSpec.builder("at.asitplus.signum.indispensable.asn1", "KnownOidConstants")
             .apply {
-                    val oidType = ClassName(
-                        packageName = "at.asitplus.signum.indispensable.asn1",
-                        "ObjectIdentifier"
-                    )
+                val oidType = ClassName(
+                    packageName = "at.asitplus.signum.indispensable.asn1",
+                    "ObjectIdentifier"
+                )
 
                 val knownOIDtype = ClassName(
                     packageName = "at.asitplus.signum.indispensable.asn1",
@@ -136,16 +139,27 @@ fun generateKnownOIDs() {
 
                 val codeBlock = StringBuilder("mapOf(\n")
 
-                    collected.toList()
-                        .distinctBy { (_, oidTriple) -> oidTriple.oid }
-                        .sortedBy { (name, _) -> name }
-                        .forEach { (name, oidTriple) -> (
-                               addProperty( PropertySpec.builder(
+                collected.toList()
+                    .distinctBy { (_, oidTriple) -> oidTriple.oid }
+                    .sortedBy { (name, _) -> name }
+                    .forEach { (name, oidTriple) ->
+                        (
+                                addProperty(
+                                    PropertySpec.builder(
                                     name,
                                     oidType
                                 )
                                     .receiver(knownOIDtype)
-                                    .getter( FunSpec.getterBuilder().addCode("return ObjectIdentifier(\"${oidTriple.oid!!.replace(' ', '.')}\")").build())
+                                    .getter(
+                                        FunSpec.getterBuilder().addCode(
+                                            "return ObjectIdentifier(\"${
+                                                oidTriple.oid!!.replace(
+                                                    ' ',
+                                                    '.'
+                                                )
+                                            }\")"
+                                        ).build()
+                                    )
                                     .addKdoc(
                                         "`${
                                             oidTriple.oid!!.replace(
@@ -163,29 +177,30 @@ fun generateKnownOIDs() {
                                                 AnnotationSpec.builder(ClassName("kotlin.js", "JsName"))
                                                     .addMember("\"_$name\"").build()
                                             )*/
-                                    }.build())
-                            )
-                        }
-                    val mapBuilder =
-                        PropertySpec.builder(
-                            "oidMap", ClassName("kotlin.collections", "Map").parameterizedBy(
-                                oidType,
-                                ClassName("kotlin", "String")
-                            )
+                                    }.build()
+                                )
+                                )
+                    }
+                val mapBuilder =
+                    PropertySpec.builder(
+                        "oidMap", ClassName("kotlin.collections", "Map").parameterizedBy(
+                            oidType,
+                            ClassName("kotlin", "String")
                         )
-                    mapBuilder.initializer(
-                        codeBlock.append(")")
-                            .append(".also { KnownOIDs.putAll(it) }\n")
-                            .toString()
                     )
-                    oidMapBuilder.addInitializerBlock(mapBuilder.build().initializer!!)
+                mapBuilder.initializer(
+                    codeBlock.append(")")
+                        .append(".also { KnownOIDs.putAll(it) }\n")
+                        .toString()
+                )
+                oidMapBuilder.addInitializerBlock(mapBuilder.build().initializer!!)
 
-                    val getter = FunSpec.builder("initDescriptions")
-                        .apply { modifiers += KModifier.INTERNAL }
-                        .addKdoc("Adds descriptions to all known OIDs, if called once. Subsequent calls to this function are a NOOP.")
-                        .addCode("").build()
-                    oidMapBuilder.addFunction(getter)
-                }.build()
+                val getter = FunSpec.builder("initDescriptions")
+                    .apply { modifiers += KModifier.INTERNAL }
+                    .addKdoc("Adds descriptions to all known OIDs, if called once. Subsequent calls to this function are a NOOP.")
+                    .addCode("").build()
+                oidMapBuilder.addFunction(getter)
+            }.build()
 
 
     oidMap.addImport(packageName = "at.asitplus.signum.indispensable.asn1", "KnownOIDs")
@@ -205,7 +220,42 @@ fun generateKnownOIDs() {
 }
 
 kotlin {
-    androidTarget { publishLibraryVariants("release") }
+    androidLibrary {
+        namespace = "at.asitplus.signum.indispensable.oids"
+        withDeviceTestBuilder {
+            sourceSetTreeName = "test"
+        }.configure {
+            instrumentationRunnerArguments["timeout_msec"] = "2400000"
+            managedDevices {
+                localDevices {
+                    create("pixel2api36").apply {
+                        device = "Pixel 2"
+                        apiLevel = 36
+                        systemImageSource = "google_apis_playstore"
+                    }
+                }
+            }
+        }
+
+        packaging {
+            listOf(
+                "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
+                "org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties",
+                "org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties",
+                "org/bouncycastle/x509/CertPathReviewerMessages_de.properties",
+                "org/bouncycastle/x509/CertPathReviewerMessages.properties",
+                "org/bouncycastle/pkix/CertPathReviewerMessages_de.properties",
+                "org/bouncycastle/pkix/CertPathReviewerMessages.properties",
+                "/META-INF/{AL2.0,LGPL2.1}",
+                "win32-x86-64/attach_hotspot_windows.dll",
+                "win32-x86/attach_hotspot_windows.dll",
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
+                "META-INF/licenses/*",
+                //noinspection WrongGradleMethod
+            ).forEach { resources.excludes.add(it) }
+        }
+
+    }
     jvm()
     macosArm64()
     macosX64()
@@ -231,9 +281,10 @@ kotlin {
     androidNativeArm32()
     androidNativeArm64()
     listOf(
-        js(IR).apply { browser { testTask { enabled = false } } },
+        js().apply { browser { testTask { enabled = false } } },
         @OptIn(ExperimentalWasmDsl::class)
-        wasmJs().apply { browser { testTask { enabled = false } } }
+        wasmJs().apply { browser { testTask { enabled = false } } },
+       // wasmWasi()
     ).forEach {
         it.nodejs()
     }
@@ -260,41 +311,18 @@ kotlin {
 
         commonTest {
             dependencies {
+                implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
                 implementation(kotest("property"))
             }
+        }
+
+        getByName("androidDeviceTest").dependencies {
+            implementation(libs.runner)
+            implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
         }
     }
 }
 
-android {
-    namespace = "at.asitplus.signum.indispensable.oids"
-    packaging {
-        listOf(
-            "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
-            "org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties",
-            "org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties",
-            "org/bouncycastle/x509/CertPathReviewerMessages_de.properties",
-            "org/bouncycastle/x509/CertPathReviewerMessages.properties",
-            "org/bouncycastle/pkix/CertPathReviewerMessages_de.properties",
-            "org/bouncycastle/pkix/CertPathReviewerMessages.properties",
-            "/META-INF/{AL2.0,LGPL2.1}",
-            "win32-x86-64/attach_hotspot_windows.dll",
-            "win32-x86/attach_hotspot_windows.dll",
-            "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
-            "META-INF/licenses/*",
-        //noinspection WrongGradleMethod
-        ).forEach { resources.excludes.add(it) }
-    }
-
-}
-
-// we don't have native android tests independent of our regular test suite.
-// this task expect those and fails, since no tests are present, so we disable it.
-project.gradle.taskGraph.whenReady {
-    tasks.getByName("testDebugUnitTest") {
-        enabled = false
-    }
-}
 exportXCFramework(
     "IndispensableOIDs",
     transitiveExports = false,
@@ -306,6 +334,10 @@ val javadocJar = setupDokka(
     baseUrl = "https://github.com/a-sit-plus/signum/tree/main/",
     multiModuleDoc = true
 )
+
+tasks.withType<Test>().configureEach {
+    maxHeapSize = "4G"
+}
 
 publishing {
     publications {

@@ -10,7 +10,13 @@ import at.asitplus.signum.supreme.symmetric.discouraged.andPredefinedNonce
 import at.asitplus.signum.supreme.symmetric.discouraged.encrypt
 import at.asitplus.signum.supreme.symmetric.encrypt
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import at.asitplus.testballoon.checkAllTests
+import at.asitplus.testballoon.checkAllSuites
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -21,13 +27,16 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.random.Random
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 @OptIn(HazardousMaterials::class, ExperimentalStdlibApi::class)
-class JvmSymmetricTest : FreeSpec({
+val JvmSymmetricTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
     "Against JCA" - {
         "AES" - {
-            withData(
+            withDataSuites(
                 SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
                 SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN,
                 SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN,
@@ -37,15 +46,14 @@ class JvmSymmetricTest : FreeSpec({
                 SymmetricEncryptionAlgorithm.AES_192.GCM,
                 SymmetricEncryptionAlgorithm.AES_256.GCM,
 
-                ) { alg ->
-                withData(
+                )  { alg ->
+                withDataSuites(
                     nameFn = { "iv: ${it.size} bytes" }, alg.randomNonce(), alg.randomNonce()
                 ) { iv ->
-                    withData(
+                    withDataSuites(
                         nameFn = { "aad: ${it?.size} bytes" }, alg.randomNonce(), alg.randomNonce(),
-
                         Random.nextBytes(19), null
-                    ) { aad ->
+                    )  { aad ->
                         withData(
                             nameFn = { "data: ${it.size} bytes" }, alg.randomNonce(), alg.randomNonce(),
                             Random.nextBytes(19),
@@ -62,7 +70,7 @@ class JvmSymmetricTest : FreeSpec({
                                 Cipher.getInstance(if (alg.authCapability is AuthCapability.Unauthenticated) "AES/CBC/PKCS5PADDING" else "AES/GCM/NoPadding")
 
                             if (alg is SymmetricEncryptionAlgorithm.AES.GCM) {
-                                val secretKey = alg.randomKey()
+                                val secretKey = alg.randomKey(randomnessSourceOverride = Random.Default)
                                 //GCM need to cast key, because alg is AES with no mode of ops, since we mix CBC and GCM in the test input
                                 val own =
                                     (secretKey as SymmetricKey<AuthCapability.Authenticated<KeyType.Integrated>, NonceTrait.Required, KeyType.Integrated>).andPredefinedNonce(
@@ -100,7 +108,7 @@ class JvmSymmetricTest : FreeSpec({
                                     encrypted
                                 )
 
-                                val wrongKey = own.algorithm.randomKey()
+                                val wrongKey = own.algorithm.randomKey(randomnessSourceOverride = Random.Default)
                                 own.decrypt(wrongKey) shouldNot succeed
 
                                 val box = own.algorithm.sealedBox.withNonce(own.algorithm.randomNonce()).from(
@@ -112,7 +120,7 @@ class JvmSymmetricTest : FreeSpec({
 
                             } else {
                                 alg as SymmetricEncryptionAlgorithm.AES.CBC.Unauthenticated
-                                val secretKey = alg.randomKey()
+                                val secretKey = alg.randomKey(randomnessSourceOverride = Random.Default)
                                 //CBC
                                 val own = secretKey.encrypt(data).getOrThrow()
                                 jcaCipher.init(
@@ -132,7 +140,7 @@ class JvmSymmetricTest : FreeSpec({
                                 own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
 
                                 //this could succeed if we're lucky and padding works out
-                                own.decrypt(own.algorithm.randomKey()).onSuccess {
+                                own.decrypt(own.algorithm.randomKey(randomnessSourceOverride = Random.Default)).onSuccess {
                                     it shouldNotBe data
                                 }
 
@@ -147,7 +155,7 @@ class JvmSymmetricTest : FreeSpec({
                 }
             }
             "ECB + WRAP" - {
-                withData(
+                withDataSuites(
 
                     SymmetricEncryptionAlgorithm.AES_128.ECB,
                     SymmetricEncryptionAlgorithm.AES_192.ECB,
@@ -176,7 +184,7 @@ class JvmSymmetricTest : FreeSpec({
                         Random.nextBytes(72),
                     ) { data ->
 
-                        val secretKey = alg.randomKey()
+                        val secretKey = alg.randomKey(randomnessSourceOverride = Random.Default)
 
                         //CBC
                         if (alg !is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394) {
@@ -199,7 +207,7 @@ class JvmSymmetricTest : FreeSpec({
                             own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
 
                             //we might get lucky here
-                            own.decrypt(own.algorithm.randomKey()).onSuccess {
+                            own.decrypt(own.algorithm.randomKey(randomnessSourceOverride = Random.Default)).onSuccess {
                                 it shouldNotBe data
                             }
 
@@ -239,7 +247,7 @@ class JvmSymmetricTest : FreeSpec({
                                 own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
 
                                 //we might get lucky here
-                                own.decrypt(own.algorithm.randomKey()).onSuccess {
+                                own.decrypt(own.algorithm.randomKey(randomnessSourceOverride = Random.Default)).onSuccess {
                                     it shouldNotBe data
                                 }
 
@@ -254,10 +262,10 @@ class JvmSymmetricTest : FreeSpec({
 
     "ChaCha20-Poly1305" - {
         val alg = SymmetricEncryptionAlgorithm.ChaCha20Poly1305
-        withData(
+        withDataSuites(
             nameFn = { "iv: ${it?.size} bytes" }, alg.randomNonce(), alg.randomNonce(), null
-        ) { nonce ->
-            withData(Random.nextBytes(19), null) { aad ->
+        )  { nonce ->
+            withDataSuites(Random.nextBytes(19), null)  { aad ->
                 withData( nameFn={"Random ${it.size} bytes"},
                     Random.nextBytes(19),
                     Random.nextBytes(1),
@@ -268,7 +276,7 @@ class JvmSymmetricTest : FreeSpec({
                     Random.nextBytes(32),
                     Random.nextBytes(256),
                 ) { data ->
-                    val secretKey = alg.randomKey()
+                    val secretKey = alg.randomKey(randomnessSourceOverride = Random.Default)
                     val jcaCipher = Cipher.getInstance("ChaCha20-Poly1305");
 
                     val box = if (nonce != null) secretKey.andPredefinedNonce(nonce).getOrThrow().encrypt(data, aad)
@@ -296,4 +304,4 @@ class JvmSymmetricTest : FreeSpec({
             }
         }
     }
-})
+}

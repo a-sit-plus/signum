@@ -3,19 +3,22 @@
 package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.indispensable.HMAC
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.asn1.encoding.encodeTo4Bytes
-import at.asitplus.signum.indispensable.HMAC
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.succeed
-import at.asitplus.signum.supreme.symmetric.*
 import at.asitplus.signum.supreme.symmetric.discouraged.andPredefinedNonce
 import at.asitplus.signum.supreme.symmetric.discouraged.encrypt
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.assertions.withClue
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import io.kotest.engine.runBlocking
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -25,17 +28,21 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlin.random.Random
 import kotlin.random.nextUInt
 import kotlin.time.Clock
+import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.testScope
+import kotlin.time.Duration.Companion.minutes
 
 @OptIn(HazardousMaterials::class)
-class SymmetricTest : FreeSpec({
+val SymmetricTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
+    Random
 
     "README" {
 
         //base case
         val secret = "Top Secret".encodeToByteArray()
         val authenticatedData = "Bottom Secret".encodeToByteArray()
-        val secretKey = SymmetricEncryptionAlgorithm.ChaCha20Poly1305.randomKey()
+        val secretKey = SymmetricEncryptionAlgorithm.ChaCha20Poly1305.randomKey(Random.Default)
         val encrypted = secretKey.encrypt(secret, authenticatedData).getOrThrow(/*handle error*/)
         encrypted.decrypt(secretKey, authenticatedData).getOrThrow(/*handle error*/) shouldBe secret
 
@@ -66,7 +73,7 @@ class SymmetricTest : FreeSpec({
             }
 
         //any size is fine, really. omitting the override generates a mac key of the same size as the encryption key
-        val key = algorithm.randomKey(macKeyLength = 32.bit)
+        val key = algorithm.randomKey(macKeyLength = 32.bit, Random.Default)
         val aad = Clock.System.now().toString().encodeToByteArray()
 
         val sealedBox = key.encrypt(
@@ -101,7 +108,7 @@ class SymmetricTest : FreeSpec({
 
 
     "Illegal IV Size" - {
-        withData(
+        withDataSuites(
             SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
             SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN,
             SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN,
@@ -139,7 +146,7 @@ class SymmetricTest : FreeSpec({
                 null
             ) { iv ->
 
-                val key = alg.randomKey()
+                val key = alg.randomKey(Random.Default)
                 if (iv != null) key.andPredefinedNonce(iv) shouldNot succeed
                 else key.encrypt(Random.nextBytes(32)) should succeed
                 key.andPredefinedNonce(alg.randomNonce()).getOrThrow().encrypt(Random.nextBytes(32)) should succeed
@@ -157,7 +164,7 @@ class SymmetricTest : FreeSpec({
 
 
     "Illegal Key Size" - {
-        withData(
+        withDataSuites(
             SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
             SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN,
             SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN,
@@ -202,8 +209,12 @@ class SymmetricTest : FreeSpec({
                 } shouldNot succeed
 
                 val key = when (alg.hasDedicatedMac()) {
-                    true -> alg.keyFrom(alg.randomKey().encryptionKey.getOrThrow(), alg.randomKey().encryptionKey.getOrThrow())
-                    false -> alg.keyFrom(alg.randomKey().secretKey.getOrThrow())
+                    true -> alg.keyFrom(
+                        alg.randomKey(Random.Default).encryptionKey.getOrThrow(),
+                        alg.randomKey(Random.Default).encryptionKey.getOrThrow()
+                    )
+
+                    false -> alg.keyFrom(alg.randomKey(Random.Default).secretKey.getOrThrow())
                 }.getOrThrow()
 
 
@@ -213,14 +224,14 @@ class SymmetricTest : FreeSpec({
                     .encrypt(data = Random.nextBytes(32)) should succeed
 
                 if (alg.authCapability is AuthCapability.Authenticated)
-                    alg.randomKey().encrypt(
+                    alg.randomKey(Random.Default).encrypt(
                         Random.nextBytes(32)
                     ).let {
                         it should succeed
                         it.getOrThrow().algorithm.isAuthenticated() shouldBe true
                     }
                 else if (alg.authCapability is AuthCapability.Unauthenticated)
-                    alg.randomKey().encrypt(
+                    alg.randomKey(Random.Default).encrypt(
                         Random.nextBytes(32)
                     ).let {
                         it should succeed
@@ -232,12 +243,12 @@ class SymmetricTest : FreeSpec({
 
     "CBC.PLAIN" - {
 
-        withData(
+        withDataSuites(
             SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN,
             SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN,
             SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN,
         ) {
-            withData(
+            withDataSuites(
                 nameFn = { "${it.size} Bytes" },
                 Random.Default.nextBytes(5),
                 Random.Default.nextBytes(15),
@@ -252,7 +263,7 @@ class SymmetricTest : FreeSpec({
                 Random.Default.nextBytes(21257),
             ) { plaintext ->
 
-                val key = it.randomKey()
+                val key = runBlocking { it.randomKey(Random.Default) }
 
                 withData(
                     nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
@@ -276,7 +287,7 @@ class SymmetricTest : FreeSpec({
                     decrypted shouldBe plaintext
 
 
-                    val wrongDecrypted = ciphertext.decrypt(it.randomKey())
+                    val wrongDecrypted = ciphertext.decrypt(it.randomKey(Random.Default))
                     //We're not authenticated, so from time to time, we won't run into a padding error for specific plaintext sizes
                     wrongDecrypted.onSuccess { value -> value shouldNotBe plaintext }
 
@@ -285,15 +296,23 @@ class SymmetricTest : FreeSpec({
                             Random.Default.nextBytes(ciphertext.encryptedData.size)
                         ).getOrThrow()
 
-                    val wrongWrongDecrypted = wrongCiphertext.decrypt(it.randomKey())
-                    withClue("KEY: ${key.secretKey.getOrThrow().toHexString()}, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.nonce?.toHexString()}") {
+                    val wrongWrongDecrypted = wrongCiphertext.decrypt(it.randomKey(Random.Default))
+                    withClue(
+                        "KEY: ${
+                            key.secretKey.getOrThrow().toHexString()
+                        }, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.nonce?.toHexString()}"
+                    ) {
                         //we're not authenticated, so from time to time, this succeeds
                         //wrongWrongDecrypted shouldNot succeed
                         //instead, we test differently:
                         wrongWrongDecrypted.onSuccess { value -> value shouldNotBe plaintext }
                     }
                     val wrongRightDecrypted = wrongCiphertext.decrypt(key)
-                    withClue("KEY: ${key.secretKey.getOrThrow().toHexString()}, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.nonce?.toHexString()}") {
+                    withClue(
+                        "KEY: ${
+                            key.secretKey.getOrThrow().toHexString()
+                        }, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.nonce?.toHexString()}"
+                    ) {
                         //we're not authenticated, so from time to time, this succeeds
                         //wrongRightDecrypted shouldNot succeed
                         //instead, we test differently:
@@ -318,7 +337,7 @@ class SymmetricTest : FreeSpec({
     }
 
     "GCM + ChaCha-Poly1503" - {
-        withData(
+        withDataSuites(
             SymmetricEncryptionAlgorithm.AES_128.GCM,
             SymmetricEncryptionAlgorithm.AES_192.GCM,
             SymmetricEncryptionAlgorithm.AES_256.GCM,
@@ -326,7 +345,7 @@ class SymmetricTest : FreeSpec({
             SymmetricEncryptionAlgorithm.ChaCha20Poly1305
         ) { alg ->
 
-            withData(
+            withDataSuites(
                 nameFn = { "${it.size} Bytes" },
                 Random.Default.nextBytes(5),
                 Random.Default.nextBytes(15),
@@ -340,8 +359,8 @@ class SymmetricTest : FreeSpec({
                 Random.Default.nextBytes(1257),
                 Random.Default.nextBytes(21257),
             ) { plaintext ->
-                val key = alg.randomKey()
-                withData(
+                val key = runBlocking { alg.randomKey(Random.Default) }
+                withDataSuites(
                     nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
                     alg.randomNonce(),
                     alg.randomNonce(),
@@ -366,7 +385,7 @@ class SymmetricTest : FreeSpec({
                         decrypted shouldBe plaintext
 
 
-                        val wrongDecrypted = ciphertext.decrypt(alg.randomKey())
+                        val wrongDecrypted = ciphertext.decrypt(alg.randomKey(Random.Default))
                         wrongDecrypted shouldNot succeed
 
                         val wrongCiphertext = alg.sealedBox.withNonce(ciphertext.nonce).from(
@@ -375,7 +394,8 @@ class SymmetricTest : FreeSpec({
                         ).getOrThrow()
 
 
-                        val wrongWrongDecrypted = wrongCiphertext.decrypt(alg.randomKey(), aad ?: byteArrayOf())
+                        val wrongWrongDecrypted =
+                            wrongCiphertext.decrypt(alg.randomKey(Random.Default), aad ?: byteArrayOf())
                         wrongWrongDecrypted shouldNot succeed
 
                         val wrongRightDecrypted = wrongCiphertext.decrypt(key)
@@ -410,18 +430,16 @@ class SymmetricTest : FreeSpec({
     }
 
     "CBC+HMAC" - {
-        withData(
+        withDataSuites(
             nameFn = { it.first },
             "Default" to DefaultMacInputCalculation,
-            "Oklahoma MAC" to {
-                ciphertext: ByteArray, iv: ByteArray?, aad: ByteArray? ->
-                    "Oklahoma".encodeToByteArray() +
-                            (iv ?: byteArrayOf()) +
-                            (aad ?: byteArrayOf()) +
-                            ciphertext
-            })
-        { (_, macInputFun) ->
-            withData(
+            "Oklahoma MAC" to { ciphertext: ByteArray, iv: ByteArray?, aad: ByteArray? ->
+                "Oklahoma".encodeToByteArray() +
+                        (iv ?: byteArrayOf()) +
+                        (aad ?: byteArrayOf()) +
+                        ciphertext
+            }) { (_, macInputFun) ->
+            withDataSuites(
                 SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_1.Custom(
                     HMAC.SHA1.outputLength,
                     DefaultMacAuthTagTransformation,
@@ -480,7 +498,7 @@ class SymmetricTest : FreeSpec({
                     macInputFun,
                 ),
             ) {
-                withData(
+                withDataSuites(
                     nameFn = { "${it.size} Bytes" },
                     Random.Default.nextBytes(16),
                     byteArrayOf(),
@@ -496,16 +514,16 @@ class SymmetricTest : FreeSpec({
                     Random.Default.nextBytes(21257),
                 ) { plaintext ->
 
-                    val secretKey = it.randomKey().encryptionKey.getOrThrow()
+                    val secretKey = runBlocking { it.randomKey(Random.Default).encryptionKey.getOrThrow() }
 
-                    withData(
+                    withDataSuites(
                         nameFn = { "MAC KEY $it" },
                         16, 32, 64, 128, secretKey.size
                     ) { macKeyLen ->
 
-                        val key = it.randomKey(macKeyLen.bytes)
+                        val key = runBlocking { it.randomKey(macKeyLen.bytes, Random.Default) }
 
-                        withData(
+                        withDataSuites(
                             nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
                             Random.Default.nextBytes((it.nonceSize.bytes).toInt()),
                             Random.Default.nextBytes((it.nonceSize.bytes).toInt()),
@@ -547,7 +565,7 @@ class SymmetricTest : FreeSpec({
                                 val decrypted = ciphertext.decrypt(key, aad ?: byteArrayOf()).getOrThrow()
                                 decrypted shouldBe plaintext
 
-                                val wrongDecrypted = ciphertext.decrypt(it.randomKey())
+                                val wrongDecrypted = ciphertext.decrypt(it.randomKey(Random.Default))
                                 wrongDecrypted shouldNot succeed
 
                                 val wrongCiphertext =
@@ -556,7 +574,8 @@ class SymmetricTest : FreeSpec({
                                         authTag = ciphertext.authTag,
                                     ).getOrThrow()
 
-                                val wrongWrongDecrypted = wrongCiphertext.decrypt(it.randomKey(), aad ?: byteArrayOf())
+                                val wrongWrongDecrypted =
+                                    wrongCiphertext.decrypt(it.randomKey(Random.Default), aad ?: byteArrayOf())
                                 wrongWrongDecrypted shouldNot succeed
 
                                 val wrongRightDecrypted =
@@ -624,8 +643,7 @@ class SymmetricTest : FreeSpec({
     }
 
     "ECB + WRAP" - {
-        withData(
-
+        withDataSuites(
             SymmetricEncryptionAlgorithm.AES_128.ECB,
             SymmetricEncryptionAlgorithm.AES_192.ECB,
             SymmetricEncryptionAlgorithm.AES_256.ECB,
@@ -653,7 +671,7 @@ class SymmetricTest : FreeSpec({
                 Random.nextBytes(72),
             ) { data ->
 
-                val secretKey = alg.randomKey()
+                val secretKey = alg.randomKey(Random.Default)
 
                 //CBC
                 if (alg !is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394) {
@@ -664,7 +682,7 @@ class SymmetricTest : FreeSpec({
                     own.decrypt(secretKey).getOrThrow() shouldBe data
 
                     //we might get lucky here
-                    own.decrypt(own.algorithm.randomKey()).onSuccess {
+                    own.decrypt(own.algorithm.randomKey(Random.Default)).onSuccess {
                         it shouldNotBe data
                     }
 
@@ -675,8 +693,7 @@ class SymmetricTest : FreeSpec({
                     val shouldSucceed = (data.size >= 16) && (data.size % 8 == 0)
                     val trial = secretKey.encrypt(data)
 
-                    if (shouldSucceed)
-                        trial should succeed
+                    if (shouldSucceed) trial should succeed
                     else trial shouldNot succeed
 
 
@@ -689,7 +706,7 @@ class SymmetricTest : FreeSpec({
                         own.decrypt(secretKey).getOrThrow() shouldBe data
 
                         //we might get lucky here
-                        own.decrypt(own.algorithm.randomKey()).onSuccess {
+                        own.decrypt(own.algorithm.randomKey(Random.Default)).onSuccess {
                             it shouldNotBe data
                         }
 
@@ -724,7 +741,7 @@ class SymmetricTest : FreeSpec({
 
 
     "Equality" - {
-        withData(allAlgorithms) { alg ->
+        withDataSuites(allAlgorithms) { alg ->
             withData(
                 nameFn = { "data: ${it.size} bytes" },
                 //multiples of 8, so AES-KW works
@@ -737,7 +754,7 @@ class SymmetricTest : FreeSpec({
                 Random.nextBytes(1024),
                 Random.nextBytes(4096),
             ) { plaintext ->
-                alg.randomKey().also { key ->
+                alg.randomKey(Random.Default).also { key ->
                     when (alg.hasDedicatedMac()) {
                         true -> {
                             key shouldBe alg.keyFrom(
@@ -761,19 +778,20 @@ class SymmetricTest : FreeSpec({
                             ).getOrThrow()
                         }
 
-                        false -> key shouldBe alg.keyFrom((key as SymmetricKey.Integrated).secretKey.getOrThrow()).getOrThrow()
+                        false -> key shouldBe alg.keyFrom((key as SymmetricKey.Integrated).secretKey.getOrThrow())
+                            .getOrThrow()
                     }
                 }
 
 
                 if (alg.isAuthenticated()) {
                     val aad = plaintext.asList().shuffled().toByteArray()
-                    if (!alg.requiresNonce()) alg.randomKey().let { key ->
+                    if (!alg.requiresNonce()) alg.randomKey(Random.Default).let { key ->
                         key.encrypt(plaintext, aad).getOrThrow() shouldBe key.encrypt(plaintext, aad).getOrThrow()
                         key.encrypt(plaintext, plaintext).getOrThrow() shouldNotBe key.encrypt(plaintext, aad)
                             .getOrThrow()
                     }
-                    else alg.randomKey().let { key ->
+                    else alg.randomKey(Random.Default).let { key ->
 
                         key.encrypt(plaintext, aad).getOrThrow() shouldNotBe key.encrypt(plaintext, aad).getOrThrow()
 
@@ -788,9 +806,9 @@ class SymmetricTest : FreeSpec({
                             .encrypt(plaintext).getOrThrow()
                     }
                 } else {
-                    if (!alg.requiresNonce()) alg.randomKey().also { key ->
+                    if (!alg.requiresNonce()) alg.randomKey(Random.Default).also { key ->
                         key.encrypt(plaintext).getOrThrow() shouldBe key.encrypt(plaintext).getOrThrow()
-                    } else alg.randomKey().let { key ->
+                    } else alg.randomKey(Random.Default).let { key ->
 
                         key.encrypt(plaintext).getOrThrow() shouldNotBe key.encrypt(plaintext).getOrThrow()
 
@@ -806,20 +824,20 @@ class SymmetricTest : FreeSpec({
                     }
                 }
 
-                withData(allAlgorithms.filterNot { it /*check for same instance*/ === alg }) { wrongAlg ->
+                allAlgorithms.filterNot { it /*check for same instance*/ === alg }.forEach { wrongAlg ->
                     alg shouldNotBe wrongAlg
-                    alg.randomKey() shouldNotBe wrongAlg.randomKey()
+                    alg.randomKey(Random.Default) shouldNotBe wrongAlg.randomKey(Random.Default)
                     if (alg.keySize == wrongAlg.keySize) {
                         if (alg.isAuthenticated() && wrongAlg.isAuthenticated()) {
                             if (alg.hasDedicatedMac() && wrongAlg.hasDedicatedMac()) {
-                                alg.randomKey().let { key ->
+                                alg.randomKey(Random.Default).let { key ->
                                     wrongAlg.keyFrom(
                                         key.encryptionKey.getOrThrow(),
                                         key.macKey.getOrThrow() /*size will not match, but it will get us a valid key*/
                                     ).getOrThrow() shouldNotBe key
                                 }
                             } else if (!wrongAlg.hasDedicatedMac() && !alg.hasDedicatedMac()) {
-                                alg.randomKey().let { key ->
+                                alg.randomKey(Random.Default).let { key ->
                                     wrongAlg.keyFrom(
                                         key.secretKey.getOrThrow(),
                                     ).getOrThrow() shouldNotBe key
@@ -860,9 +878,11 @@ class SymmetricTest : FreeSpec({
                                     Random.nextBytes(wrongAlg.authTagSize.bytes.toInt()),
                             )
 
-                            false -> wrongAlg.sealedBox.withNonce(if (box.hasNonce() && box.nonce.size == wrongAlg.nonceSize.bytes.toInt()) box.nonce else
-                                wrongAlg.randomNonce()).from(
-                                 plaintext
+                            false -> wrongAlg.sealedBox.withNonce(
+                                if (box.hasNonce() && box.nonce.size == wrongAlg.nonceSize.bytes.toInt()) box.nonce else
+                                    wrongAlg.randomNonce()
+                            ).from(
+                                plaintext
                             )
                         }
 
@@ -886,8 +906,7 @@ class SymmetricTest : FreeSpec({
 
     "Edge Cases " - {
         "all good" - {
-            withData(
-
+            withDataSuites(
                 SymmetricEncryptionAlgorithm.AES_128.ECB,
                 SymmetricEncryptionAlgorithm.AES_192.ECB,
                 SymmetricEncryptionAlgorithm.AES_256.ECB,
@@ -907,17 +926,18 @@ class SymmetricTest : FreeSpec({
 
                 withData(0, 1, 4096) { sz ->
                     val data = Random.nextBytes(sz)
-                    val key = alg.randomKey()
+                    val key = alg.randomKey(Random.Default)
                     key.encrypt(data).getOrThrow().decrypt(key).getOrThrow() shouldBe data
                 }
             }
         }
 
         "algorithm mismatch" - {
-            withData(allAlgorithms) { alg ->
+            withDataSuites(allAlgorithms) { alg ->
                 withData(allAlgorithms.filterNot { it == alg }) { wrongAlg ->
-                    val encrypted = alg.randomKey().encrypt(Random.nextBytes(64)/*works with wrapping*/).getOrThrow()
-                    val wrongKey = wrongAlg.randomKey()
+                    val encrypted =
+                        alg.randomKey(Random.Default).encrypt(Random.nextBytes(64)/*works with wrapping*/).getOrThrow()
+                    val wrongKey = wrongAlg.randomKey(Random.Default)
 
                     encrypted.decrypt(wrongKey) shouldNot succeed
 
@@ -925,7 +945,7 @@ class SymmetricTest : FreeSpec({
             }
         }
         "illegal key sizes" - {
-            withData(allAlgorithms) { alg ->
+            withDataSuites(allAlgorithms) { alg ->
                 val wrongSized = mutableListOf<Int>()
                 while (wrongSized.size < 100) {
                     val wrong = Random.nextUInt(until = 1025u).toInt()
@@ -937,7 +957,7 @@ class SymmetricTest : FreeSpec({
                         true -> {
                             alg.keyFrom(
                                 Random.nextBytes(sz),
-                                alg.randomKey().encryptionKey.getOrThrow() /*mac key should not trigger, as it is unconstrained*/
+                                alg.randomKey(Random.Default).encryptionKey.getOrThrow() /*mac key should not trigger, as it is unconstrained*/
                             )
                         }
 
@@ -950,7 +970,7 @@ class SymmetricTest : FreeSpec({
         }
 
         "illegal nonce sizes" - {
-            withData(allAlgorithms.filter { it.requiresNonce() }) { alg ->
+            withDataSuites(allAlgorithms.filter { it.requiresNonce() }) { alg ->
                 alg as SymmetricEncryptionAlgorithm.RequiringNonce<*, *>
                 val wrongSized = mutableListOf<Int>()
                 while (wrongSized.size < 100) {
@@ -959,13 +979,11 @@ class SymmetricTest : FreeSpec({
                         wrongSized += wrong
                 }
                 withData(wrongSized) { sz ->
-                    alg.randomKey().andPredefinedNonce(Random.nextBytes(sz)) shouldNot succeed
+                    alg.randomKey(Random.Default).andPredefinedNonce(Random.nextBytes(sz)) shouldNot succeed
                 }
 
             }
         }
     }
-
-
-})
+}
 

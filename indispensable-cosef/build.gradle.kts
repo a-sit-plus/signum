@@ -1,19 +1,56 @@
 import at.asitplus.gradle.*
+import com.android.build.api.dsl.androidLibrary
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree.Companion.test
 
 plugins {
-    id("com.android.library")
+    id("com.android.kotlin.multiplatform.library")
     kotlin("multiplatform")
     kotlin("plugin.serialization")
     id("signing")
     id("at.asitplus.gradle.conventions")
+    id("de.infix.testBalloon")
 }
 
 val artifactVersion: String by extra
 version = artifactVersion
 
 kotlin {
-    androidTarget { publishLibraryVariants("release") }
+    androidLibrary {
+        namespace = "at.asitplus.signum.indispensable.cosef"
+
+        withDeviceTestBuilder {
+            sourceSetTreeName = "test"
+        }.configure {
+            managedDevices {
+                localDevices {
+                    create("pixel2api36").apply {
+                        device = "Pixel 2"
+                        apiLevel = 36
+                        systemImageSource = "google_apis_playstore"
+                    }
+                }
+            }
+        }
+
+        packaging {
+            listOf(
+                "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
+                "org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties",
+                "org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties",
+                "org/bouncycastle/x509/CertPathReviewerMessages_de.properties",
+                "org/bouncycastle/x509/CertPathReviewerMessages.properties",
+                "org/bouncycastle/pkix/CertPathReviewerMessages_de.properties",
+                "org/bouncycastle/pkix/CertPathReviewerMessages.properties",
+                "/META-INF/{AL2.0,LGPL2.1}",
+                "win32-x86-64/attach_hotspot_windows.dll",
+                "win32-x86/attach_hotspot_windows.dll",
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
+                "META-INF/licenses/*",
+            //noinspection WrongGradleMethod
+            ).forEach { resources.excludes.add(it) }
+        }
+    }
     jvm()
     macosArm64()
     macosX64()
@@ -36,9 +73,10 @@ kotlin {
     androidNativeArm64()
 
     listOf(
-        js(IR).apply { browser { testTask { enabled = false } } },
+        js().apply { browser { testTask { enabled = false } } },
         @OptIn(ExperimentalWasmDsl::class)
-        wasmJs().apply { browser { testTask { enabled = false } } }
+        wasmJs().apply { browser { testTask { enabled = false } } },
+        //wasmWasi()
     ).forEach {
         it.nodejs()
     }
@@ -61,15 +99,22 @@ kotlin {
                 implementation(libs.bignum) //Intellij bug work-around
             }
         }
+
+        commonTest {
+            dependencies {
+                implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
+            }
+        }
+
+        getByName("androidDeviceTest").dependencies {
+            implementation(libs.runner)
+            implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
+        }
     }
 }
 
-// we don't have native android tests independent of our regular test suite.
-// this task expect those and fails, since no tests are present, so we disable it.
-project.gradle.taskGraph.whenReady {
-    tasks.getByName("testDebugUnitTest") {
-        enabled = false
-    }
+tasks.withType<Test>().configureEach {
+    maxHeapSize = "4G"
 }
 
 exportXCFramework(
@@ -86,27 +131,6 @@ exportXCFramework(
 )
 
 
-android {
-    namespace = "at.asitplus.signum.indispensable.cosef"
-
-
-    packaging {
-        listOf(
-            "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
-            "org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties",
-            "org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties",
-            "org/bouncycastle/x509/CertPathReviewerMessages_de.properties",
-            "org/bouncycastle/x509/CertPathReviewerMessages.properties",
-            "org/bouncycastle/pkix/CertPathReviewerMessages_de.properties",
-            "org/bouncycastle/pkix/CertPathReviewerMessages.properties",
-            "/META-INF/{AL2.0,LGPL2.1}",
-            "win32-x86-64/attach_hotspot_windows.dll",
-            "win32-x86/attach_hotspot_windows.dll",
-            "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
-            "META-INF/licenses/*",
-        ).forEach { resources.excludes.add(it) }
-    }
-}
 
 val javadocJar = setupDokka(
     baseUrl = "https://github.com/a-sit-plus/signum/tree/main/",
