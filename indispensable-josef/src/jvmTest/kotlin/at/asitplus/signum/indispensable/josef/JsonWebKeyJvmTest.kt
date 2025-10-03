@@ -4,8 +4,8 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoPublicKey.EC.Companion.fromUncompressed
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
-import at.asitplus.signum.internals.ensureSize
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
+import at.asitplus.signum.internals.ensureSize
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import de.infix.testBalloon.framework.TestConfig
@@ -28,12 +28,11 @@ private fun ByteArray.trimLeadingZeros() =
 
 val JsonWebKeyJvmTest by testSuite {
 
-    lateinit var ecCurve: ECCurve
-    lateinit var keyPair: KeyPair
-    lateinit var keyPairRSA: KeyPair
+    val ecCurve: ECCurve = ECCurve.SECP_256_R_1
+    var keyPair: KeyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair()
+    var keyPairRSA: KeyPair = KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }.genKeyPair()
 
     testConfig = TestConfig.aroundEach {
-        ecCurve = ECCurve.SECP_256_R_1
         keyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair()
         keyPairRSA = KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }.genKeyPair()
         it()
@@ -70,8 +69,9 @@ val JsonWebKeyJvmTest by testSuite {
         val eFromBc = (keyPairRSA.public as RSAPublicKey).publicExponent
         val pubKey = CryptoPublicKey.RSA(
             nFromBc.toAsn1Integer() as Asn1Integer.Positive,
-            eFromBc.toAsn1Integer() as Asn1Integer.Positive)
-                .also { it.jwkId = it.didEncoded }
+            eFromBc.toAsn1Integer() as Asn1Integer.Positive
+        )
+            .also { it.jwkId = it.didEncoded }
         val jwk = pubKey.toJsonWebKey()
 
         jwk.shouldNotBeNull()

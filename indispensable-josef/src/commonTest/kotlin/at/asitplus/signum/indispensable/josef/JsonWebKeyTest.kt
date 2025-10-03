@@ -16,16 +16,15 @@ import kotlin.random.Random
 @OptIn(ExperimentalStdlibApi::class)
 val JsonWebKeyTest by testSuite {
 
-    lateinit var curve: ECCurve
-    lateinit var x: ByteArray
-    lateinit var y: ByteArray
-    lateinit var ecKey: JsonWebKey
-    lateinit var n: ByteArray
-    lateinit var e: ByteArray
-    lateinit var rsaKey: JsonWebKey
+    val curve: ECCurve = ECCurve.SECP_256_R_1
+    var x: ByteArray = Random.nextBytes(32)
+    var y: ByteArray = Random.nextBytes(32)
+    var ecKey: JsonWebKey = JsonWebKey(type = JwkType.EC, curve = curve, x = x, y = y)
+    var n: ByteArray = Random.nextBytes(1024)
+    var e: ByteArray = Random.nextBytes(16)
+    var rsaKey: JsonWebKey = JsonWebKey(type = JwkType.RSA, n = n, e = e)
 
-    testConfig= TestConfig.aroundEach {
-        curve = ECCurve.SECP_256_R_1
+    testConfig = TestConfig.aroundEach {
         x = Random.nextBytes(32)
         y = Random.nextBytes(32)
         ecKey = JsonWebKey(type = JwkType.EC, curve = curve, x = x, y = y)

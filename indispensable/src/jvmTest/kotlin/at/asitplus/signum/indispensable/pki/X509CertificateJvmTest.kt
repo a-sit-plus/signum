@@ -2,8 +2,8 @@ package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.*
-import at.asitplus.signum.internals.ensureSize
 import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.signum.internals.ensureSize
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.TestConfig
 import de.infix.testBalloon.framework.aroundEach
@@ -23,11 +23,7 @@ import org.bouncycastle.asn1.nist.NISTObjectIdentifiers
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers
 import org.bouncycastle.asn1.pkcs.RSASSAPSSparams
 import org.bouncycastle.asn1.x500.X500Name
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier
-import org.bouncycastle.asn1.x509.ExtendedKeyUsage
-import org.bouncycastle.asn1.x509.KeyPurposeId
-import org.bouncycastle.asn1.x509.KeyUsage
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
+import org.bouncycastle.asn1.x509.*
 import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
@@ -49,13 +45,14 @@ import kotlin.random.Random
 import kotlin.time.Duration.Companion.days
 import kotlin.time.toKotlinInstant
 
-val X509CertificateJvmTest  by testSuite{
+val X509CertificateJvmTest by testSuite {
 
-    lateinit var ecCurve: ECCurve
-    lateinit var keyPair: KeyPair
+    val ecCurve: ECCurve = ECCurve.SECP_256_R_1
+    var keyPair: KeyPair = KeyPairGenerator.getInstance("EC").also {
+        it.initialize(256)
+    }.genKeyPair()
 
-    testConfig= TestConfig.aroundEach {
-        ecCurve = ECCurve.SECP_256_R_1
+    testConfig = TestConfig.aroundEach {
         keyPair = KeyPairGenerator.getInstance("EC").also {
             it.initialize(256)
         }.genKeyPair()
@@ -63,7 +60,7 @@ val X509CertificateJvmTest  by testSuite{
     }
 
     "PSS" {
-        val pssCertFromJvm= generateRsaPssCertificate()
+        val pssCertFromJvm = generateRsaPssCertificate()
         println(pssCertFromJvm.encoded.toHexString())
         val decoded = X509Certificate.decodeFromDer(pssCertFromJvm!!.encoded)
         decoded.encodeToDer() shouldBe pssCertFromJvm.encoded
