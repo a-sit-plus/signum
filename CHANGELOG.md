@@ -16,7 +16,8 @@
 * Remove Kotest Workarounds
 * Extend properties in `JweHeader`
 * TestBalloon-powered tests
-* New AGP-KMP-Library plugin
+* New KMP-AGP Plugin
+* Raise Android minSDK to 26 (Android 8.0 Oreo)
 
 ### 3.17.0 (Supreme 0.9.0)
 * **KDF Support**

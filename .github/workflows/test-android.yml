@@ -39,12 +39,12 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - name: Connected Check
-        run: ./gradlew pixel2api30AndroidDeviceTest
+        run: ./gradlew pixel2api36AndroidDeviceTest
       - name: Test Report
         uses: dorny/test-reporter@v2
         if: success() || failure()
         with:
-          name: Supreme Android Connected Tests
+          name: Android Device Tests
           path: indispensable-asn1/build/outputs/androidTest-results/connected/**/TEST*.xml,indispensable-oids/build/outputs/androidTest-results/connected/**/TEST*.xml,indispensable/build/outputs/androidTest-results/connected/**/TEST*.xml,indispensable-josef/build/outputs/androidTest-results/connected/**/TEST*.xml,indispensable-cosef/build/outputs/androidTest-results/connected/**/TEST*.xml,supreme/build/outputs/androidTest-results/connected/**/TEST*.xml
           reporter: java-junit
           use-actions-summary: true

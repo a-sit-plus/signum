@@ -28,9 +28,9 @@ kotlin {
         }.configure {
             managedDevices {
                 localDevices {
-                    create("pixel2api30").apply {
+                    create("pixel2api36").apply {
                         device = "Pixel 2"
-                        apiLevel = 30
+                        apiLevel = 36
                         systemImageSource = "google_apis_playstore"
                     }
                 }
@@ -78,9 +78,10 @@ kotlin {
     androidNativeArm32()
     androidNativeArm64()
     listOf(
-        js(IR).apply { browser { testTask { enabled = false } } },
+        js().apply { browser { testTask { enabled = false } } },
         @OptIn(ExperimentalWasmDsl::class)
-        wasmJs().apply { browser { testTask { enabled = false } } }
+        wasmJs().apply { browser { testTask { enabled = false } } },
+      //  wasmWasi()
     ).forEach {
         it.nodejs()
     }
@@ -122,6 +123,9 @@ kotlin {
             implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
         }
     }
+}
+tasks.withType<Test>().configureEach {
+    maxHeapSize = "4G"
 }
 
 exportXCFramework(

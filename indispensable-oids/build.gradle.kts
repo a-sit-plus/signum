@@ -6,7 +6,6 @@ import com.android.build.api.dsl.androidLibrary
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
-import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree.Companion.test
 import java.io.FileInputStream
 import java.util.regex.Pattern
 
@@ -126,10 +125,10 @@ fun generateKnownOIDs() {
     val knownOIDs =
         FileSpec.builder("at.asitplus.signum.indispensable.asn1", "KnownOidConstants")
             .apply {
-                    val oidType = ClassName(
-                        packageName = "at.asitplus.signum.indispensable.asn1",
-                        "ObjectIdentifier"
-                    )
+                val oidType = ClassName(
+                    packageName = "at.asitplus.signum.indispensable.asn1",
+                    "ObjectIdentifier"
+                )
 
                 val knownOIDtype = ClassName(
                     packageName = "at.asitplus.signum.indispensable.asn1",
@@ -140,16 +139,27 @@ fun generateKnownOIDs() {
 
                 val codeBlock = StringBuilder("mapOf(\n")
 
-                    collected.toList()
-                        .distinctBy { (_, oidTriple) -> oidTriple.oid }
-                        .sortedBy { (name, _) -> name }
-                        .forEach { (name, oidTriple) -> (
-                               addProperty( PropertySpec.builder(
+                collected.toList()
+                    .distinctBy { (_, oidTriple) -> oidTriple.oid }
+                    .sortedBy { (name, _) -> name }
+                    .forEach { (name, oidTriple) ->
+                        (
+                                addProperty(
+                                    PropertySpec.builder(
                                     name,
                                     oidType
                                 )
                                     .receiver(knownOIDtype)
-                                    .getter( FunSpec.getterBuilder().addCode("return ObjectIdentifier(\"${oidTriple.oid!!.replace(' ', '.')}\")").build())
+                                    .getter(
+                                        FunSpec.getterBuilder().addCode(
+                                            "return ObjectIdentifier(\"${
+                                                oidTriple.oid!!.replace(
+                                                    ' ',
+                                                    '.'
+                                                )
+                                            }\")"
+                                        ).build()
+                                    )
                                     .addKdoc(
                                         "`${
                                             oidTriple.oid!!.replace(
@@ -167,29 +177,30 @@ fun generateKnownOIDs() {
                                                 AnnotationSpec.builder(ClassName("kotlin.js", "JsName"))
                                                     .addMember("\"_$name\"").build()
                                             )*/
-                                    }.build())
-                            )
-                        }
-                    val mapBuilder =
-                        PropertySpec.builder(
-                            "oidMap", ClassName("kotlin.collections", "Map").parameterizedBy(
-                                oidType,
-                                ClassName("kotlin", "String")
-                            )
+                                    }.build()
+                                )
+                                )
+                    }
+                val mapBuilder =
+                    PropertySpec.builder(
+                        "oidMap", ClassName("kotlin.collections", "Map").parameterizedBy(
+                            oidType,
+                            ClassName("kotlin", "String")
                         )
-                    mapBuilder.initializer(
-                        codeBlock.append(")")
-                            .append(".also { KnownOIDs.putAll(it) }\n")
-                            .toString()
                     )
-                    oidMapBuilder.addInitializerBlock(mapBuilder.build().initializer!!)
+                mapBuilder.initializer(
+                    codeBlock.append(")")
+                        .append(".also { KnownOIDs.putAll(it) }\n")
+                        .toString()
+                )
+                oidMapBuilder.addInitializerBlock(mapBuilder.build().initializer!!)
 
-                    val getter = FunSpec.builder("initDescriptions")
-                        .apply { modifiers += KModifier.INTERNAL }
-                        .addKdoc("Adds descriptions to all known OIDs, if called once. Subsequent calls to this function are a NOOP.")
-                        .addCode("").build()
-                    oidMapBuilder.addFunction(getter)
-                }.build()
+                val getter = FunSpec.builder("initDescriptions")
+                    .apply { modifiers += KModifier.INTERNAL }
+                    .addKdoc("Adds descriptions to all known OIDs, if called once. Subsequent calls to this function are a NOOP.")
+                    .addCode("").build()
+                oidMapBuilder.addFunction(getter)
+            }.build()
 
 
     oidMap.addImport(packageName = "at.asitplus.signum.indispensable.asn1", "KnownOIDs")
@@ -216,9 +227,9 @@ kotlin {
         }.configure {
             managedDevices {
                 localDevices {
-                    create("pixel2api30").apply {
+                    create("pixel2api36").apply {
                         device = "Pixel 2"
-                        apiLevel = 30
+                        apiLevel = 36
                         systemImageSource = "google_apis_playstore"
                     }
                 }
@@ -269,9 +280,10 @@ kotlin {
     androidNativeArm32()
     androidNativeArm64()
     listOf(
-        js(IR).apply { browser { testTask { enabled = false } } },
+        js().apply { browser { testTask { enabled = false } } },
         @OptIn(ExperimentalWasmDsl::class)
-        wasmJs().apply { browser { testTask { enabled = false } } }
+        wasmJs().apply { browser { testTask { enabled = false } } },
+       // wasmWasi()
     ).forEach {
         it.nodejs()
     }
@@ -321,6 +333,10 @@ val javadocJar = setupDokka(
     baseUrl = "https://github.com/a-sit-plus/signum/tree/main/",
     multiModuleDoc = true
 )
+
+tasks.withType<Test>().configureEach {
+    maxHeapSize = "4G"
+}
 
 publishing {
     publications {

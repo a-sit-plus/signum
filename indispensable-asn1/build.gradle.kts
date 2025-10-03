@@ -1,7 +1,6 @@
 import at.asitplus.gradle.*
 import com.android.build.api.dsl.androidLibrary
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
-import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree.Companion.test
 
 
 plugins {
@@ -28,9 +27,9 @@ kotlin {
         }.configure {
             managedDevices {
                 localDevices {
-                    create("pixel2api30").apply {
+                    create("pixel2api36").apply {
                         device = "Pixel 2"
-                        apiLevel = 30
+                        apiLevel = 36
                         systemImageSource = "google_apis_playstore"
                     }
                 }
@@ -51,7 +50,7 @@ kotlin {
                 "win32-x86/attach_hotspot_windows.dll",
                 "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
                 "META-INF/licenses/*",
-            //noinspection WrongGradleMethod
+                //noinspection WrongGradleMethod
             ).forEach { resources.excludes.add(it) }
         }
     }
@@ -81,9 +80,10 @@ kotlin {
     androidNativeArm64()
 
     listOf(
-        js(IR).apply { browser { testTask { enabled = false } } },
+        js().apply { browser { testTask { enabled = false } } },
         @OptIn(ExperimentalWasmDsl::class)
-        wasmJs().apply { browser { testTask { enabled = false } } }
+        wasmJs().apply { browser { testTask { enabled = false } } },
+       // wasmWasi()
     ).forEach {
         it.nodejs()
     }

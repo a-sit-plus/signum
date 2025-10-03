@@ -23,13 +23,30 @@ kotlin {
         }.configure {
             managedDevices {
                 localDevices {
-                    create("pixel2api30").apply {
+                    create("pixel2api36").apply {
                         device = "Pixel 2"
-                        apiLevel = 30
+                        apiLevel = 36
                         systemImageSource = "google_apis_playstore"
                     }
                 }
             }
+        }
+        packaging {
+            listOf(
+                "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
+                "org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties",
+                "org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties",
+                "org/bouncycastle/x509/CertPathReviewerMessages_de.properties",
+                "org/bouncycastle/x509/CertPathReviewerMessages.properties",
+                "org/bouncycastle/pkix/CertPathReviewerMessages_de.properties",
+                "org/bouncycastle/pkix/CertPathReviewerMessages.properties",
+                "/META-INF/{AL2.0,LGPL2.1}",
+                "win32-x86-64/attach_hotspot_windows.dll",
+                "win32-x86/attach_hotspot_windows.dll",
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
+                "META-INF/licenses/*",
+                //noinspection WrongGradleMethod
+            ).forEach { resources.excludes.add(it) }
         }
     }
     jvm()
@@ -54,9 +71,10 @@ kotlin {
     androidNativeArm32()
     androidNativeArm64()
     listOf(
-        js(IR).apply { browser { testTask { enabled = false } } },
+        js().apply { browser { testTask { enabled = false } } },
         @OptIn(ExperimentalWasmDsl::class)
-        wasmJs().apply { browser { testTask { enabled = false } } }
+        wasmJs().apply { browser { testTask { enabled = false } } },
+        //wasmWasi()
     ).forEach {
         it.nodejs()
     }
@@ -98,6 +116,10 @@ val javadocJar = setupDokka(
     baseUrl = "https://github.com/a-sit-plus/signum/tree/main/",
     multiModuleDoc = true
 )
+
+tasks.withType<Test>().configureEach {
+    maxHeapSize = "4G"
+}
 
 publishing {
     publications {

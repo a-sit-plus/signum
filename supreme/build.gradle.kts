@@ -49,9 +49,9 @@ kotlin {
         }.configure {
             managedDevices {
                 localDevices {
-                    create("pixel2api30").apply {
+                    create("pixel2api36").apply {
                         device = "Pixel 2"
-                        apiLevel = 30
+                        apiLevel = 36
                         systemImageSource = "google_apis_playstore"
                     }
                 }
@@ -134,6 +134,10 @@ val javadocJar = setupDokka(
 
 repositories {
     maven("https://repo1.maven.org/maven2")
+}
+
+tasks.withType<Test>().configureEach {
+    maxHeapSize = "4G"
 }
 
 publishing {
