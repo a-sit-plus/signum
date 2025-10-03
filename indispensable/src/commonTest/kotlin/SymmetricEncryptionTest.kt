@@ -11,11 +11,12 @@ import at.asitplus.testballoon.withData
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
+import kotlin.random.Random
 
 val SymmetricEncryptionTest by testSuite{
    
     withData(nameFn={ "Key generation: $it" }, SymmetricEncryptionAlgorithm.entries) { alg ->
-        val key = alg.randomKey()
+        val key = alg.randomKey(randomnessSourceOverride = Random.Default)
 
         key.algorithm shouldBe alg
 
