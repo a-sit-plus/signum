@@ -1,5 +1,6 @@
 import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import java.time.Duration
 
 plugins {
@@ -44,6 +45,22 @@ allprojects {
     group = rootProject.group
 }
 
+subprojects {
+    afterEvaluate {
+        val targets = project.extensions.getByType<KotlinMultiplatformExtension>().targets
+        val buildableTargets = getBuildableTargets()
+        if (targets.size > buildableTargets.size) {
+            logger.warn(
+                ">>>> The following targets are not buildable on the current host: ${
+                    targets.map { it.name }.toMutableSet().apply { removeAll(buildableTargets.map { it.name }) }
+                        .joinToString(", ")
+                } <<<<"
+            )
+            logger.warn("     disabling checkKotlinGradlePluginConfigurationErrors for project $name. YOLO!!!")
+            tasks.findByName("checkKotlinGradlePluginConfigurationErrors")?.enabled = false
+        }
+    }
+}
 
 tasks.register<Copy>("copyChangelog") {
     into(rootDir.resolve("docs/docs"))
@@ -74,3 +91,17 @@ tasks.register<Copy>("mkDocsSite") {
     into(rootDir.resolve("docs/site/assets/images/social"))
     from(rootDir.resolve("docs/docs/assets/images/social"))
 }
+
+
+fun Project.getBuildableTargets() =
+    project.extensions.getByType<KotlinMultiplatformExtension>().targets.filter { target ->
+        when {
+            // Non-native targets are always buildable
+            target.platformType != org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.native -> true
+            else -> runCatching {
+                val konanTarget = (target as? KotlinNativeTarget)
+                konanTarget?.publishable == true
+            }.getOrElse { false }
+        }
+    }
+
