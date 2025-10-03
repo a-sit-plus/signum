@@ -3,6 +3,7 @@
 ## 3.0
 
 ### NEXT
+* Fix `prettyPrint` for structures
 * Add stricter length checks to be more resilient towards adversarial inputs
 * Correct serialization logic for symmetric `CoseKey` in `CoseKeySerializer`
 * `Asn1String` revamp
