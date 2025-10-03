@@ -15,6 +15,7 @@
 * Kotest 6.0.0.M6
 * Remove Kotest Workarounds
 * Extend properties in `JweHeader`
+* Kotlin 2.2.20
 * TestBalloon-powered tests
 * New KMP-AGP Plugin
 * Raise Android minSDK to 26 (Android 8.0 Oreo)
