@@ -19,15 +19,24 @@ version = artifactVersion
 
 kotlin {
     jvm()
-    /*androidTarget {
-        instrumentedTestVariant.sourceSetTree.set(test)
-        publishLibraryVariants("release")
-    }*/
 
     androidLibrary {
-
-        withHostTest { }
         namespace = "at.asitplus.signum.indispensable.asn1"
+
+        withDeviceTestBuilder {
+            sourceSetTreeName = "test"
+        }.configure {
+            managedDevices {
+                localDevices {
+                    create("pixel2api30").apply {
+                        device = "Pixel 2"
+                        apiLevel = 30
+                        systemImageSource = "google_apis_playstore"
+                    }
+                }
+            }
+        }
+
         packaging {
             listOf(
                 "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
@@ -102,23 +111,16 @@ kotlin {
                 api(datetime())
             }
         }
-/*
-        androidInstrumentedTest.dependencies {
-            implementation(libs.runner)
-            implementation(libs.core)
-            implementation(libs.rules)
-        }*/
-
         commonTest {
             dependencies {
                 implementation(project(":indispensable"))
                 implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
             }
         }
-        getByName("androidHostTest").dependencies {
-            if (project.findProperty("local.androidHostTestDance") != "removeDependency") implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
-            // implementation(libs.core)
-            // implementation(libs.rules)
+
+        getByName("androidDeviceTest").dependencies {
+            implementation(libs.runner)
+            implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
         }
     }
 }

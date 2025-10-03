@@ -16,11 +16,21 @@ version = artifactVersion
 
 
 kotlin {
-    //androidTarget { publishLibraryVariants("release") }
     androidLibrary {
-
-        withHostTest { }
         namespace = "at.asitplus.signum.indispensable.internals"
+        withDeviceTestBuilder {
+            sourceSetTreeName = "test"
+        }.configure {
+            managedDevices {
+                localDevices {
+                    create("pixel2api30").apply {
+                        device = "Pixel 2"
+                        apiLevel = 30
+                        systemImageSource = "google_apis_playstore"
+                    }
+                }
+            }
+        }
     }
     jvm()
     macosArm64()
@@ -66,10 +76,10 @@ kotlin {
                 implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
             }
         }
-        getByName("androidHostTest").dependencies {
-            if (project.findProperty("local.androidHostTestDance") != "removeDependency") implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
-            // implementation(libs.core)
-            // implementation(libs.rules)
+
+        getByName("androidDeviceTest").dependencies {
+            implementation(libs.runner)
+            implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
         }
     }
 }

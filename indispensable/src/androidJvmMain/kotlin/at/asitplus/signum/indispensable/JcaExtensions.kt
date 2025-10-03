@@ -93,6 +93,7 @@ fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null
 fun SpecializedSignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) =
     this.algorithm.getJCASignatureInstancePreHashed(provider)
 
+
 val Digest.jcaName
     get() = when (this) {
         Digest.SHA256 -> "SHA-256"

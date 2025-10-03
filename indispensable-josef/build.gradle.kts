@@ -16,17 +16,22 @@ val artifactVersion: String by extra
 version = artifactVersion
 
 kotlin {
-   // androidTarget {  instrumentedTestVariant.sourceSetTree.set(test)
-   //     publishLibraryVariants("release") }
     androidLibrary {
-        //defaultConfig {
-            minSdk = 26
-          //  testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-       // }
         namespace = "at.asitplus.signum.indispensable.josef"
 
-
-        withHostTest { }
+        withDeviceTestBuilder {
+            sourceSetTreeName = "test"
+        }.configure {
+            managedDevices {
+                localDevices {
+                    create("pixel2api30").apply {
+                        device = "Pixel 2"
+                        apiLevel = 30
+                        systemImageSource = "google_apis_playstore"
+                    }
+                }
+            }
+        }
 
         packaging {
             listOf(
@@ -105,18 +110,11 @@ kotlin {
             }
 
         }
-        getByName("androidHostTest").dependencies {
-            if (project.findProperty("local.androidHostTestDance") != "removeDependency") implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
-            // implementation(libs.core)
-            // implementation(libs.rules)
-        }
-/*
-        androidInstrumentedTest.dependencies {
-            implementation(libs.runner)
-            implementation(libs.core)
-            implementation(libs.rules)
-        }*/
 
+        getByName("androidDeviceTest").dependencies {
+            implementation(libs.runner)
+            implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
+        }
     }
 }
 

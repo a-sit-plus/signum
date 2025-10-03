@@ -3,25 +3,21 @@
 package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.indispensable.HMAC
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.asn1.encoding.encodeTo4Bytes
-import at.asitplus.signum.indispensable.HMAC
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.succeed
-import at.asitplus.signum.supreme.symmetric.*
 import at.asitplus.signum.supreme.symmetric.discouraged.andPredefinedNonce
 import at.asitplus.signum.supreme.symmetric.discouraged.encrypt
-import io.kotest.assertions.withClue
-import io.kotest.core.spec.style.FreeSpec
-import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import at.asitplus.testballoon.withDataSuites
-import at.asitplus.testballoon.checkAllTests
-import at.asitplus.testballoon.checkAllSuites
 import de.infix.testBalloon.framework.testSuite
+import io.kotest.assertions.withClue
 import io.kotest.engine.runBlocking
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
@@ -34,7 +30,7 @@ import kotlin.random.nextUInt
 import kotlin.time.Clock
 
 @OptIn(HazardousMaterials::class)
-val SymmetricTest  by testSuite{
+val SymmetricTest by testSuite {
 
     Random
 
@@ -74,7 +70,7 @@ val SymmetricTest  by testSuite{
             }
 
         //any size is fine, really. omitting the override generates a mac key of the same size as the encryption key
-        val key = algorithm.randomKey(macKeyLength = 32.bit,Random.Default)
+        val key = algorithm.randomKey(macKeyLength = 32.bit, Random.Default)
         val aad = Clock.System.now().toString().encodeToByteArray()
 
         val sealedBox = key.encrypt(
@@ -210,7 +206,11 @@ val SymmetricTest  by testSuite{
                 } shouldNot succeed
 
                 val key = when (alg.hasDedicatedMac()) {
-                    true -> alg.keyFrom(alg.randomKey(Random.Default).encryptionKey.getOrThrow(), alg.randomKey(Random.Default).encryptionKey.getOrThrow())
+                    true -> alg.keyFrom(
+                        alg.randomKey(Random.Default).encryptionKey.getOrThrow(),
+                        alg.randomKey(Random.Default).encryptionKey.getOrThrow()
+                    )
+
                     false -> alg.keyFrom(alg.randomKey(Random.Default).secretKey.getOrThrow())
                 }.getOrThrow()
 
@@ -260,7 +260,7 @@ val SymmetricTest  by testSuite{
                 Random.Default.nextBytes(21257),
             ) { plaintext ->
 
-                val key = runBlocking {  it.randomKey(Random.Default) }
+                val key = runBlocking { it.randomKey(Random.Default) }
 
                 withData(
                     nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
@@ -294,14 +294,22 @@ val SymmetricTest  by testSuite{
                         ).getOrThrow()
 
                     val wrongWrongDecrypted = wrongCiphertext.decrypt(it.randomKey(Random.Default))
-                    withClue("KEY: ${key.secretKey.getOrThrow().toHexString()}, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.nonce?.toHexString()}") {
+                    withClue(
+                        "KEY: ${
+                            key.secretKey.getOrThrow().toHexString()
+                        }, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.nonce?.toHexString()}"
+                    ) {
                         //we're not authenticated, so from time to time, this succeeds
                         //wrongWrongDecrypted shouldNot succeed
                         //instead, we test differently:
                         wrongWrongDecrypted.onSuccess { value -> value shouldNotBe plaintext }
                     }
                     val wrongRightDecrypted = wrongCiphertext.decrypt(key)
-                    withClue("KEY: ${key.secretKey.getOrThrow().toHexString()}, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.nonce?.toHexString()}") {
+                    withClue(
+                        "KEY: ${
+                            key.secretKey.getOrThrow().toHexString()
+                        }, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.nonce?.toHexString()}"
+                    ) {
                         //we're not authenticated, so from time to time, this succeeds
                         //wrongRightDecrypted shouldNot succeed
                         //instead, we test differently:
@@ -332,7 +340,7 @@ val SymmetricTest  by testSuite{
             SymmetricEncryptionAlgorithm.AES_256.GCM,
 
             SymmetricEncryptionAlgorithm.ChaCha20Poly1305
-        )  { alg ->
+        ) { alg ->
 
             withDataSuites(
                 nameFn = { "${it.size} Bytes" },
@@ -347,7 +355,7 @@ val SymmetricTest  by testSuite{
                 Random.Default.nextBytes(257),
                 Random.Default.nextBytes(1257),
                 Random.Default.nextBytes(21257),
-            )  { plaintext ->
+            ) { plaintext ->
                 val key = runBlocking { alg.randomKey(Random.Default) }
                 withDataSuites(
                     nameFn = { "IV: " + it?.toHexString()?.substring(0..8) },
@@ -383,7 +391,8 @@ val SymmetricTest  by testSuite{
                         ).getOrThrow()
 
 
-                        val wrongWrongDecrypted = wrongCiphertext.decrypt(alg.randomKey(Random.Default), aad ?: byteArrayOf())
+                        val wrongWrongDecrypted =
+                            wrongCiphertext.decrypt(alg.randomKey(Random.Default), aad ?: byteArrayOf())
                         wrongWrongDecrypted shouldNot succeed
 
                         val wrongRightDecrypted = wrongCiphertext.decrypt(key)
@@ -421,13 +430,12 @@ val SymmetricTest  by testSuite{
         withDataSuites(
             nameFn = { it.first },
             "Default" to DefaultMacInputCalculation,
-            "Oklahoma MAC" to {
-                ciphertext: ByteArray, iv: ByteArray?, aad: ByteArray? ->
-                    "Oklahoma".encodeToByteArray() +
-                            (iv ?: byteArrayOf()) +
-                            (aad ?: byteArrayOf()) +
-                            ciphertext
-            })  { (_, macInputFun) ->
+            "Oklahoma MAC" to { ciphertext: ByteArray, iv: ByteArray?, aad: ByteArray? ->
+                "Oklahoma".encodeToByteArray() +
+                        (iv ?: byteArrayOf()) +
+                        (aad ?: byteArrayOf()) +
+                        ciphertext
+            }) { (_, macInputFun) ->
             withDataSuites(
                 SymmetricEncryptionAlgorithm.AES_128.CBC.HMAC.SHA_1.Custom(
                     HMAC.SHA1.outputLength,
@@ -486,7 +494,7 @@ val SymmetricTest  by testSuite{
                     HMAC.SHA512.outputLength,
                     macInputFun,
                 ),
-            )  {
+            ) {
                 withDataSuites(
                     nameFn = { "${it.size} Bytes" },
                     Random.Default.nextBytes(16),
@@ -501,14 +509,14 @@ val SymmetricTest  by testSuite{
                     Random.Default.nextBytes(257),
                     Random.Default.nextBytes(1257),
                     Random.Default.nextBytes(21257),
-                )  { plaintext ->
+                ) { plaintext ->
 
                     val secretKey = runBlocking { it.randomKey(Random.Default).encryptionKey.getOrThrow() }
 
                     withDataSuites(
                         nameFn = { "MAC KEY $it" },
                         16, 32, 64, 128, secretKey.size
-                    )  { macKeyLen ->
+                    ) { macKeyLen ->
 
                         val key = runBlocking { it.randomKey(macKeyLen.bytes, Random.Default) }
 
@@ -563,7 +571,8 @@ val SymmetricTest  by testSuite{
                                         authTag = ciphertext.authTag,
                                     ).getOrThrow()
 
-                                val wrongWrongDecrypted = wrongCiphertext.decrypt(it.randomKey(Random.Default), aad ?: byteArrayOf())
+                                val wrongWrongDecrypted =
+                                    wrongCiphertext.decrypt(it.randomKey(Random.Default), aad ?: byteArrayOf())
                                 wrongWrongDecrypted shouldNot succeed
 
                                 val wrongRightDecrypted =
@@ -639,7 +648,7 @@ val SymmetricTest  by testSuite{
             SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394,
             SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394,
 
-            )  { alg ->
+            ) { alg ->
 
             withData(
                 nameFn = { "data: ${it.size} bytes" },
@@ -681,8 +690,7 @@ val SymmetricTest  by testSuite{
                     val shouldSucceed = (data.size >= 16) && (data.size % 8 == 0)
                     val trial = secretKey.encrypt(data)
 
-                    if (shouldSucceed)
-                        trial should succeed
+                    if (shouldSucceed) trial should succeed
                     else trial shouldNot succeed
 
 
@@ -730,7 +738,7 @@ val SymmetricTest  by testSuite{
 
 
     "Equality" - {
-        withDataSuites(allAlgorithms)  { alg ->
+        withDataSuites(allAlgorithms) { alg ->
             withData(
                 nameFn = { "data: ${it.size} bytes" },
                 //multiples of 8, so AES-KW works
@@ -767,7 +775,8 @@ val SymmetricTest  by testSuite{
                             ).getOrThrow()
                         }
 
-                        false -> key shouldBe alg.keyFrom((key as SymmetricKey.Integrated).secretKey.getOrThrow()).getOrThrow()
+                        false -> key shouldBe alg.keyFrom((key as SymmetricKey.Integrated).secretKey.getOrThrow())
+                            .getOrThrow()
                     }
                 }
 
@@ -866,9 +875,11 @@ val SymmetricTest  by testSuite{
                                     Random.nextBytes(wrongAlg.authTagSize.bytes.toInt()),
                             )
 
-                            false -> wrongAlg.sealedBox.withNonce(if (box.hasNonce() && box.nonce.size == wrongAlg.nonceSize.bytes.toInt()) box.nonce else
-                                wrongAlg.randomNonce()).from(
-                                 plaintext
+                            false -> wrongAlg.sealedBox.withNonce(
+                                if (box.hasNonce() && box.nonce.size == wrongAlg.nonceSize.bytes.toInt()) box.nonce else
+                                    wrongAlg.randomNonce()
+                            ).from(
+                                plaintext
                             )
                         }
 
@@ -908,7 +919,7 @@ val SymmetricTest  by testSuite{
                 /*NO WRAP, because it has constraints on input size*/
                 SymmetricEncryptionAlgorithm.ChaCha20Poly1305,
 
-                )  { alg ->
+                ) { alg ->
 
                 withData(0, 1, 4096) { sz ->
                     val data = Random.nextBytes(sz)
@@ -921,7 +932,8 @@ val SymmetricTest  by testSuite{
         "algorithm mismatch" - {
             withDataSuites(allAlgorithms) { alg ->
                 withData(allAlgorithms.filterNot { it == alg }) { wrongAlg ->
-                    val encrypted = alg.randomKey(Random.Default).encrypt(Random.nextBytes(64)/*works with wrapping*/).getOrThrow()
+                    val encrypted =
+                        alg.randomKey(Random.Default).encrypt(Random.nextBytes(64)/*works with wrapping*/).getOrThrow()
                     val wrongKey = wrongAlg.randomKey(Random.Default)
 
                     encrypted.decrypt(wrongKey) shouldNot succeed
@@ -930,7 +942,7 @@ val SymmetricTest  by testSuite{
             }
         }
         "illegal key sizes" - {
-            withDataSuites(allAlgorithms)  { alg ->
+            withDataSuites(allAlgorithms) { alg ->
                 val wrongSized = mutableListOf<Int>()
                 while (wrongSized.size < 100) {
                     val wrong = Random.nextUInt(until = 1025u).toInt()
@@ -955,7 +967,7 @@ val SymmetricTest  by testSuite{
         }
 
         "illegal nonce sizes" - {
-            withDataSuites(allAlgorithms.filter { it.requiresNonce() })  { alg ->
+            withDataSuites(allAlgorithms.filter { it.requiresNonce() }) { alg ->
                 alg as SymmetricEncryptionAlgorithm.RequiringNonce<*, *>
                 val wrongSized = mutableListOf<Int>()
                 while (wrongSized.size < 100) {

@@ -38,20 +38,13 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-
       - name: Connected Check
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          arch: x86_64
-          api-level: 33
-          target: google_apis
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: ./gradlew connectedCheck
+        run: ./gradlew pixel2api30AndroidDeviceTest
       - name: Test Report
         uses: dorny/test-reporter@v2
         if: success() || failure()
         with:
           name: Supreme Android Connected Tests
-          path: supreme/build/outputs/androidTest-results/connected/**/TEST*.xml
+          path: indispensable-asn1/build/outputs/androidTest-results/connected/**/TEST*.xml,indispensable-oids/build/outputs/androidTest-results/connected/**/TEST*.xml,indispensable/build/outputs/androidTest-results/connected/**/TEST*.xml,indispensable-josef/build/outputs/androidTest-results/connected/**/TEST*.xml,indispensable-cosef/build/outputs/androidTest-results/connected/**/TEST*.xml,supreme/build/outputs/androidTest-results/connected/**/TEST*.xml
           reporter: java-junit
           use-actions-summary: true

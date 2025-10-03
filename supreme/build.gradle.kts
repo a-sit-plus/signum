@@ -39,36 +39,20 @@ afterEvaluate {
 
 kotlin {
     compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
-    //applyDefaultHierarchyTemplate()
     jvm()
-    /*androidTarget {
-        @OptIn(ExperimentalKotlinGradlePluginApi::class)
-        instrumentedTestVariant.sourceSetTree.set(test)
-        publishLibraryVariants("release")
-    }*/
-
-
-
     androidLibrary {
         namespace = "at.asitplus.signum.supreme"
-        // defaultConfig {
-        //override Android minSDK for Supreme
         logger.lifecycle("  \u001b[7m\u001b[1m" + "Overriding Android defaultConfig minSDK to 30 for project Supreme" + "\u001b[0m")
         minSdk = 30 //override
-        //   testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        //}
-        withHostTest { }
         withDeviceTestBuilder {
             sourceSetTreeName = "test"
         }.configure {
-            // instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-            // execution = "ANDROIDX_TEST_ORCHESTRATOR"
             managedDevices {
                 localDevices {
                     create("pixel2api30").apply {
                         device = "Pixel 2"
                         apiLevel = 30
-                        systemImageSource = "aosp"
+                        systemImageSource = "google_apis_playstore"
                     }
                 }
             }
@@ -90,20 +74,6 @@ kotlin {
                 //noinspection WrongGradleMethod
             ).forEach { resources.excludes.add(it) }
         }
-        /*
-                testOptions {
-                    //take Android minSDK from defaultConfig, as it was overridden there
-                    targetSdk = android.defaultConfig.minSdk
-                    managedDevices {
-                        localDevices {
-                            create("pixel2api30") {
-                                device = "Pixel 2"
-                                apiLevel = 30
-                                systemImageSource = "aosp"
-                            }
-                        }
-                    }
-                }*/
     }
 
 
@@ -136,20 +106,13 @@ kotlin {
             implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
         }
 
+        jvmTest.dependencies {
+            implementation("com.lambdaworks:scrypt:1.4.0")
+        }
+
         getByName("androidDeviceTest").dependencies {
             implementation(libs.runner)
             implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
-            // implementation(libs.core)
-            // implementation(libs.rules)
-        }
-        getByName("androidHostTest").dependencies {
-            if (project.findProperty("local.androidHostTestDance") != "removeDependency") implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
-            // implementation(libs.core)
-            // implementation(libs.rules)
-        }
-
-        jvmTest.dependencies {
-            implementation("com.lambdaworks:scrypt:1.4.0")
         }
     }
 }
