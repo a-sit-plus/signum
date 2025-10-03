@@ -28,7 +28,7 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class, ExperimentalStdlibApi::class)
-val OidTest by testSuite {
+val OidTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     "OID test" - {
 
         "manual" {
@@ -181,7 +181,6 @@ val OidTest by testSuite {
 
         "!Benchmarking fast case" - {
             testConfig = TestConfig.disable().testScope(isEnabled = true, timeout = 10.minutes)
-
             val repetitions = 10
 
             "Old Optimized" {

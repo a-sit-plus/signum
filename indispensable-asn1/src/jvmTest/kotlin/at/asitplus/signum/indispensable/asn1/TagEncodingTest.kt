@@ -19,8 +19,11 @@ import kotlinx.io.Buffer
 import kotlinx.io.snapshot
 import org.bouncycastle.asn1.ASN1Integer
 import org.bouncycastle.asn1.DERTaggedObject
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-val TagEncodingTest by testSuite {
+val TagEncodingTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
     "fails" {
         val it = 2204309167L

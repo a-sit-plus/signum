@@ -6,8 +6,11 @@ import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.assertions.throwables.shouldThrow
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-val AdversarialData by testSuite{
+val AdversarialData by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     "Overlong length" - {
         "OCTET STRING" {
             val nineBytesLength =

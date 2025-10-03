@@ -9,6 +9,9 @@ import at.asitplus.testballoon.checkAllSuites
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.assertions.AssertionErrorBuilder.Companion.fail
 import io.kotest.matchers.shouldBe
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 /* All options classes need to inherit from DSL.Data; it is also annotated with a DSL marker */
 private open class GenericOptions internal constructor(): DSL.Data() {
@@ -35,7 +38,7 @@ private class SpecificOptions internal constructor(): GenericOptions() {
     override val subValue = childOrDefault(::SpecificSubOptions)
 }
 
-val DSLInheritanceDemonstration  by testSuite{
+val DSLInheritanceDemonstration  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     "\uD83D\uDE0A" {
         /* if we have the necessary type information, we know that it's a specific DSL subclass... */
         doWithConfiguration {

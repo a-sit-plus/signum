@@ -8,6 +8,7 @@ import at.asitplus.signum.internals.ensureSize
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.TestConfig
 import de.infix.testBalloon.framework.aroundEach
+import de.infix.testBalloon.framework.testScope
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.assertions.withClue
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -28,6 +29,7 @@ import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.interfaces.ECPublicKey
+import kotlin.time.Duration.Companion.minutes
 
 internal fun X509SignatureAlgorithm.getContentSigner(key: PrivateKey) =
     getJCASignatureInstance().getOrThrow().algorithm.let {
@@ -35,7 +37,7 @@ internal fun X509SignatureAlgorithm.getContentSigner(key: PrivateKey) =
     }
 
 @OptIn(ExperimentalStdlibApi::class)
-val Pkcs10CertificationRequestJvmTest by testSuite {
+val Pkcs10CertificationRequestJvmTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
     val ecCurve: ECCurve = ECCurve.SECP_256_R_1
     var keyPair: KeyPair = KeyPairGenerator.getInstance("EC").also {
@@ -45,7 +47,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
         it.initialize(256)
     }.genKeyPair()
 
-    testConfig = TestConfig.aroundEach {
+    testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes).aroundEach {
         keyPair = KeyPairGenerator.getInstance("EC").also {
             it.initialize(256)
         }.genKeyPair()

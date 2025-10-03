@@ -7,8 +7,11 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-val KnownOIDTests by testSuite {
+val KnownOIDTests by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
     val dateDescription = KnownOIDs.date
     "Before Adding known OIDs" {

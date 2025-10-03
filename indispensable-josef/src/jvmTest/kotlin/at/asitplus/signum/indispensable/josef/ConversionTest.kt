@@ -6,13 +6,16 @@ import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 //somehow including kmmresult-test makes this fail
 infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
     (this.getOrThrow() shouldBe b)
 
 
-val ConversionTest by testSuite {
+val ConversionTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     "JWS -> SigAlg -> JWS is stable" - {
         "All" - {
             withData(JwsAlgorithm.entries) {

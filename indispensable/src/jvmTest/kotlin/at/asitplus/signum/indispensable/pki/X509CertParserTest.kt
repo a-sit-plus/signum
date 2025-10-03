@@ -34,9 +34,12 @@ import java.security.cert.CertificateFactory
 import kotlin.random.Random
 import kotlin.random.nextInt
 import java.security.cert.X509Certificate as JcaCertificate
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 @OptIn(UnsafeIoApi::class)
-val X509CertParserTest  by testSuite{
+val X509CertParserTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
     "Manual" {
         //ok-uniqueid-incomplete-byte.der

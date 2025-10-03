@@ -14,6 +14,7 @@
 * Replace raw-byte protected header and its ByteArray extension serialization with `CoseHeader` using the new serializer
 * Allow overriding randomness source for symmetric key generation
 * Extend properties in `JweHeader`
+* Fix RSA signing on Android
 * Kotlin 2.2.20
 * TestBalloon-powered tests
 * New KMP-AGP Plugin

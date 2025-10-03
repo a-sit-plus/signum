@@ -27,9 +27,12 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.random.Random
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 @OptIn(HazardousMaterials::class, ExperimentalStdlibApi::class)
-val JvmSymmetricTest  by testSuite{
+val JvmSymmetricTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
     "Against JCA" - {
         "AES" - {

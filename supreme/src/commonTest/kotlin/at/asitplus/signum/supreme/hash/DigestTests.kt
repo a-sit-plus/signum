@@ -12,8 +12,11 @@ import at.asitplus.testballoon.checkAllTests
 import at.asitplus.testballoon.checkAllSuites
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-val DigestTests by testSuite{
+val DigestTests by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     data class TestSpec(val data: String, val reps: Int, val note: String, val ref: (Digest)->String)
     withDataSuites(nameFn=TestSpec::note, listOf(
         TestSpec("abc",1,"'abc', the bit string (0x)616263 of length 24 bits") { when(it) {

@@ -33,8 +33,11 @@ import java.security.KeyPairGenerator
 import java.security.interfaces.ECPublicKey
 import kotlin.random.Random
 import kotlin.time.Clock
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-val JwkTest  by testSuite{
+val JwkTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     "EC" - {
         withDataSuites(256, 384, 521) { bits ->
             val keys = List<ECPublicKey>(10) {

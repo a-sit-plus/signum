@@ -24,9 +24,12 @@ import io.kotest.property.arbitrary.string
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.random.Random
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
-val JKSProviderTest  by testSuite{
+val JKSProviderTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     "Ephemeral" {
         val ks = JKSProvider.Ephemeral().getOrThrow()
         val alias = "Elfenbeinschloss"

@@ -4,8 +4,11 @@ import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-val Asn1BitStringTest by testSuite {
+val Asn1BitStringTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
     val bitSet1 = BitSet.fromBitString("011011100101110111")
     val bitSet2 = BitSet.fromBitString("011011100101110111")

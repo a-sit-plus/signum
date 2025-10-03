@@ -12,9 +12,11 @@ import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
-val JsonWebKeyTest by testSuite {
+val JsonWebKeyTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
     val curve: ECCurve = ECCurve.SECP_256_R_1
     var x: ByteArray = Random.nextBytes(32)
@@ -24,7 +26,7 @@ val JsonWebKeyTest by testSuite {
     var e: ByteArray = Random.nextBytes(16)
     var rsaKey: JsonWebKey = JsonWebKey(type = JwkType.RSA, n = n, e = e)
 
-    testConfig = TestConfig.aroundEach {
+    testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes).aroundEach {
         x = Random.nextBytes(32)
         y = Random.nextBytes(32)
         ecKey = JsonWebKey(type = JwkType.EC, curve = curve, x = x, y = y)

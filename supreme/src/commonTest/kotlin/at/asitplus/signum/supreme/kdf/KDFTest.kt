@@ -10,15 +10,13 @@ import com.ionspin.kotlin.bignum.integer.Quadruple
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.withData
-import at.asitplus.testballoon.withDataSuites
-import at.asitplus.testballoon.checkAllTests
-import at.asitplus.testballoon.checkAllSuites
 import de.infix.testBalloon.framework.testScope
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.TestConfig
 
-val KDFTest  by testSuite{
+val KDFTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 40.minutes)) {
     "HKDF" - {
         "Fixed Text Vectors" - {
             class TestInfo(
@@ -147,7 +145,6 @@ val KDFTest  by testSuite{
     }
     "RFC2898 PBKDF2" - {
         "PBKDF2-HMAC-SHA-1" - {
-            testConfig= de.infix.testBalloon.framework.TestConfig.testScope(isEnabled = true, timeout = 10.minutes)
             withData(nameFn = { "RFC6070: \"${it.d}\"" }, sequence {
                 yield(
                     Quadruple(

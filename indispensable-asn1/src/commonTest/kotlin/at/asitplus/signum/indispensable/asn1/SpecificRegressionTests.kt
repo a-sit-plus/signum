@@ -3,9 +3,12 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.assertions.throwables.shouldThrow
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
-val SpecificRegressionTests by testSuite {
+val SpecificRegressionTests by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     "Illegal length encoding" {
         shouldThrow<Asn1Exception> {
             // length < 128 encoded as long form

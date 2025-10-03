@@ -21,9 +21,12 @@ import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import java.net.URI
 import javax.crypto.KeyGenerator
 import kotlin.random.Random
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 
-val JweEncryptedTest by testSuite {
+val JweEncryptedTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
     "Minimal JWE can be parsed and verified" {
         val input = Random.Default.nextBytes(32)

@@ -3,12 +3,15 @@ package at.asitplus.signum.indispensable.kdf
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1ContentBytes
 
 import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.testScope
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import kotlin.time.Duration.Companion.minutes
 
-val KdfTest by testSuite {
+val KdfTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
    
     "Invoke Overrides"  {
         //withData is not working in all targets

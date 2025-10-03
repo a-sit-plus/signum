@@ -44,15 +44,17 @@ import kotlin.math.absoluteValue
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.days
 import kotlin.time.toKotlinInstant
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-val X509CertificateJvmTest by testSuite {
+val X509CertificateJvmTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
     val ecCurve: ECCurve = ECCurve.SECP_256_R_1
     var keyPair: KeyPair = KeyPairGenerator.getInstance("EC").also {
         it.initialize(256)
     }.genKeyPair()
 
-    testConfig = TestConfig.aroundEach {
+    testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes).aroundEach {
         keyPair = KeyPairGenerator.getInstance("EC").also {
             it.initialize(256)
         }.genKeyPair()

@@ -13,8 +13,11 @@ import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kotlinx.serialization.json.Json
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-val ECPointTest  by testSuite{
+val ECPointTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     "Equals & hashCode" {
         val p1 = ECCurve.SECP_256_R_1.generator
         p1 shouldBe p1

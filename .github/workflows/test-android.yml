@@ -12,6 +12,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - name: Checkout (default)
         if: github.event_name != 'pull_request'
@@ -40,8 +41,29 @@ jobs:
           sudo udevadm trigger --name-match=kvm
       - name: Connected Check
         run: ./gradlew pixel2api36AndroidDeviceTest
+      - name: 'Add default settings to node calls'
+        shell: bash
+        run: |
+          #
+          # The later used dorny/test-reporter@v2 action can throw the following exception when enough tests have been
+          # executed:
+          #     RangeError: Maximum call stack size exceeded
+          #
+          # We explicitly increase the max. stack size here to workaround this issue.
+          #
+          
+          which node
+          node --version
+          
+          mv /usr/local/bin/node /usr/local/bin/node_org
+          echo '#!/bin/bash' >> /usr/local/bin/node
+          echo '/usr/local/bin/node_org --stack-size=2048 $@' >> /usr/local/bin/node
+          cat /usr/local/bin/node
+          chmod +x /usr/local/bin/node
       - name: Test Report
         uses: dorny/test-reporter@v2
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
         if: success() || failure()
         with:
           name: Android Device Tests

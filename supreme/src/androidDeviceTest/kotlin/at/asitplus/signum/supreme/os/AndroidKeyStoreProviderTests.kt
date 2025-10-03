@@ -6,6 +6,8 @@ import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.signum.supreme.signature
 import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -15,8 +17,9 @@ import io.kotest.property.arbitrary.Codepoint
 import io.kotest.property.arbitrary.az
 import io.kotest.property.arbitrary.string
 import kotlin.random.Random
+import de.infix.testBalloon.framework.testScope
 
-val AndroidKeyStoreProviderTests  by testSuite{
+val AndroidKeyStoreProviderTests  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     "Create attested keypair" {
         val alias = Arb.string(minSize = 32, maxSize = 32, Codepoint.az())
             .sample(RandomSource.default()).value

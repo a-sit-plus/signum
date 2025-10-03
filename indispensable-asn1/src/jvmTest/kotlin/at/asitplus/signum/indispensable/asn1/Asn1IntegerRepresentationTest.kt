@@ -18,9 +18,12 @@ import io.kotest.property.arbitrary.positiveInt
 import io.kotest.property.checkAll
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 @OptIn(ExperimentalUuidApi::class)
-val Asn1IntegerRepresentationTest by testSuite {
+val Asn1IntegerRepresentationTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
     "Manual" - {
         withData("1027", "256", "1", "3", "8", "127", "128", "255", "512", "1024") {

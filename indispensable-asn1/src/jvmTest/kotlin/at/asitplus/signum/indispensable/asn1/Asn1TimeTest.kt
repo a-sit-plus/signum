@@ -9,8 +9,11 @@ import io.kotest.property.arbitrary.instant
 import io.kotest.property.checkAll
 import java.time.Instant
 import kotlin.time.toKotlinInstant
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-val Asn1TimeTest by testSuite {
+val Asn1TimeTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
     "Asn1Time test equals and hashCode" {
         checkAll(

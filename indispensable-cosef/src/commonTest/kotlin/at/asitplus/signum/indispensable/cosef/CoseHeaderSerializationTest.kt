@@ -8,9 +8,12 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromHexString
 import kotlinx.serialization.encodeToHexString
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 @OptIn(ExperimentalSerializationApi::class)
-val CoseHeaderSerializationTest by testSuite {
+val CoseHeaderSerializationTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
     "COSE header with one certificate" {
         val input = """

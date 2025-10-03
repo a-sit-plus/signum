@@ -24,9 +24,12 @@ import kotlinx.serialization.json.Json
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
+import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.testScope
+import kotlin.time.Duration.Companion.minutes
 
 @OptIn(ExperimentalEncodingApi::class)
-val RSAVerifierCommonTests  by testSuite{
+val RSAVerifierCommonTests  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     @Serializable
     data class RawTestInfo(
         val dig: String, val pad: String, val key: String, val msg: String, val sig: String)

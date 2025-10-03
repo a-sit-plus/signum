@@ -12,8 +12,11 @@ import de.infix.testBalloon.framework.testSuite
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import kotlin.random.Random
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-val SymmetricEncryptionTest by testSuite{
+val SymmetricEncryptionTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
    
     withData(nameFn={ "Key generation: $it" }, SymmetricEncryptionAlgorithm.entries) { alg ->
         val key = alg.randomKey(randomnessSourceOverride = Random.Default)

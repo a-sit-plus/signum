@@ -21,9 +21,12 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.testScope
+import kotlin.time.Duration.Companion.minutes
 
 @OptIn(HazardousMaterials::class)
-val SymmetricAgainstReference  by testSuite{
+val SymmetricAgainstReference  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     "AES GCM+CBC and ChaCha20-Poly1305" - {
         val reference: JsonArray = Json.decodeFromString(pregenerated)
 

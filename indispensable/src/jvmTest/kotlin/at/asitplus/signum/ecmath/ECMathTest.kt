@@ -20,6 +20,9 @@ import java.security.Security
 import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.ECPublicKey
 import kotlin.random.Random
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 private fun ECCurve.randomScalar(): ModularBigInteger =
     scalarCreator.fromBigInteger(BigInteger.fromByteArray(Random.nextBytes(scalarLength.bytes.toInt()), Sign.POSITIVE))
@@ -30,7 +33,7 @@ private fun ECCurve.randomPoint(): ECPoint =
             this, Random.nextBytes(coordinateLength.bytes.toInt()), Random.nextBoolean())
     }}.firstNotNullOf { it.getOrNull() }
 
-val ECMathTest  by testSuite{
+val ECMathTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     "Assumption: All implemented curves are prime order Weierstrass curves with a = -3" - {
         withData(ECCurve.entries) { curve ->
             // if new curves are ever added that violate this assumption,

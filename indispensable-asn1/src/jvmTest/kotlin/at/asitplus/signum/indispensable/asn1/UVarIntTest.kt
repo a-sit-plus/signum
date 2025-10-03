@@ -15,8 +15,11 @@ import kotlinx.io.Buffer
 import kotlinx.io.snapshot
 import kotlin.math.ceil
 import kotlin.random.Random
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-val UVarIntTest by testSuite {
+val UVarIntTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
     //TODO: buffer based tests with capped number of bytes test
     "UInts with trailing bytes" - {

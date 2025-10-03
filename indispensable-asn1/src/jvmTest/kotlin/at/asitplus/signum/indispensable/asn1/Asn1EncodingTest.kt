@@ -23,8 +23,11 @@ import io.kotest.property.Arb
 import io.kotest.property.arbitrary.boolean
 import io.kotest.property.checkAll
 import kotlin.time.Clock
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-val Asn1EncodingTest by testSuite {
+val Asn1EncodingTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
     "Boolean" {
         checkAll(Arb.boolean()) {

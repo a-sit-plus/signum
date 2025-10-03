@@ -17,6 +17,9 @@ import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
 import io.kotest.property.checkAll
 import java.math.BigInteger as JavaBigInteger
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 private fun UByteArray.stripLeadingZeros() =
     when (val i = indexOfFirst { it != 0x00u.toUByte() }) {
@@ -27,7 +30,7 @@ private fun UByteArray.stripLeadingZeros() =
 
 private fun ByteArray.stripLeadingZeros() = asUByteArray().stripLeadingZeros()
 
-val Asn1IntegerTest by testSuite {
+val Asn1IntegerTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     "Encoding: Negative" {
         val result =
             Asn1Integer(-20).encodeToAsn1Primitive()

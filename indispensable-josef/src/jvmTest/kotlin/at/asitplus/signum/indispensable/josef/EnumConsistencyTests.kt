@@ -13,6 +13,9 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.memberProperties
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 inline fun<reified T: Any> TestSuite.enumConsistencyTest() {
     T::class.simpleName!! {
@@ -42,6 +45,6 @@ inline fun<reified T: Any> TestSuite.enumConsistencyTest() {
     }
 }
 
-val EnumConsistencyTests by testSuite {
+val EnumConsistencyTests by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     enumConsistencyTest<JwsAlgorithm>()
 }

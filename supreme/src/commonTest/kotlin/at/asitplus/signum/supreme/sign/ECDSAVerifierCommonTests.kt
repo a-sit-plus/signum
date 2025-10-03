@@ -6,13 +6,8 @@ import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.supreme.succeed
-import io.kotest.core.spec.style.FreeSpec
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.withData
 import at.asitplus.testballoon.withDataSuites
-import at.asitplus.testballoon.checkAllTests
-import at.asitplus.testballoon.checkAllSuites
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldNot
@@ -21,11 +16,14 @@ import kotlinx.serialization.json.Json
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 internal fun <T> Random.of(v: Collection<T>) = v.random(this)
 
 @OptIn(ExperimentalEncodingApi::class)
-val ECDSAVerifierCommonTests  by testSuite{
+val ECDSAVerifierCommonTests  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     @Serializable data class RawTestInfo(
         val crv: String, val dig: String, val key: String, val msg: String, val sig: String)
     class TestInfo(test: RawTestInfo) {

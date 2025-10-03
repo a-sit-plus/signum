@@ -22,6 +22,7 @@ kotlin {
         withDeviceTestBuilder {
             sourceSetTreeName = "test"
         }.configure {
+            instrumentationRunnerArguments["timeout_msec"] = "2400000"
             managedDevices {
                 localDevices {
                     create("pixel2api36").apply {

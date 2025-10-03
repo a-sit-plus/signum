@@ -9,8 +9,11 @@ import com.ionspin.kotlin.bignum.integer.BigInteger
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-val UtilTest by testSuite{
+val UtilTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
    
     "ByteArray.ensureSize" {
         val base = byteArrayOf(0x01, 0x02, 0x03, 0x04, 0x05)

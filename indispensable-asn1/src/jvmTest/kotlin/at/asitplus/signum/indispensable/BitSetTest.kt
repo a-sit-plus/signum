@@ -16,8 +16,11 @@ import io.kotest.property.arbitrary.int
 import at.asitplus.testballoon.checkAllSuites
 import java.util.*
 import at.asitplus.signum.indispensable.asn1.BitSet as KmpBitSet
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-val BitSetTest by testSuite {
+val BitSetTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
     //outer container required for checkall
     "Custom BitSet Implementation" - {

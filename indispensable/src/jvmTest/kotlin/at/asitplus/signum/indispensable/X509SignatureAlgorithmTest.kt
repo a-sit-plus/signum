@@ -18,9 +18,12 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.io.UnsafeIoApi
 import java.io.File
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 @OptIn(UnsafeIoApi::class)
-val X509SignatureAlgorithmTest  by testSuite{
+val X509SignatureAlgorithmTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
     val (certsUnsupported, certsSupported) = readCerts()
 

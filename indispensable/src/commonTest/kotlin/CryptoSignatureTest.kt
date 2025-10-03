@@ -8,8 +8,11 @@ import com.ionspin.kotlin.bignum.integer.toBigInteger
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-val CryptoSignatureTest  by testSuite{
+val CryptoSignatureTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
 
     val values = (1..Byte.MAX_VALUE).toMutableSet()

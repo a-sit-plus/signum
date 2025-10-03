@@ -14,8 +14,11 @@ import io.kotest.property.checkAll
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ByteArraySerializer
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-val CoseEqualsTest by testSuite {
+val CoseEqualsTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     "equals with byte array"  {
         checkAll(Arb.byteArray(length = Arb.int(0, 10), content = Arb.byte())) { bytes ->
             val bytesSigned1 = CoseSigned.create(

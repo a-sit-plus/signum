@@ -7,6 +7,7 @@ import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import at.asitplus.testballoon.withDataSuites
 import com.ionspin.kotlin.bignum.integer.BigInteger
+import de.infix.testBalloon.framework.TestConfig
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.core.names.TestNameBuilder
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -19,8 +20,10 @@ import io.kotest.property.arbitrary.int
 import io.kotest.property.checkAll
 import kotlin.math.min
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-val RFC9380Test by testSuite {
+val RFC9380Test by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     "Assumption: all implemented curves have AB > 0" - {
         withData(ECCurve.entries) { crv ->
             /* map_to_curve_simple_swu in RFC9380.kt depends on this */

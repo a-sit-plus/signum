@@ -5,12 +5,15 @@ import com.ionspin.kotlin.bignum.integer.toBigInteger
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 /**
  * Verifies the hard coded field modulus versus its functional definition
  * See https://www.secg.org/sec2-v2.pdf chapter 2
  */
-val ECCurveTest  by testSuite{
+val ECCurveTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     "SECP256 modulus correct" {
         ECCurve.SECP_256_R_1.modulus shouldBe
                 (2.toBigInteger().shl(223)

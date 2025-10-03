@@ -20,8 +20,11 @@ import java.security.Security
 import java.security.Signature
 import java.security.spec.ECGenParameterSpec
 import kotlin.random.Random
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-val VerifierTests by testSuite {
+val VerifierTests by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     Security.addProvider(BouncyCastleProvider())
 
     withDataSuites(

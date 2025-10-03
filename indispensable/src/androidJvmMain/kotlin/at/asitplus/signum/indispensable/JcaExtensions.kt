@@ -47,14 +47,14 @@ val Digest.jcaPSSParams
         Digest.SHA512 -> PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 64, 1)
     }
 
-internal fun sigGetInstance(alg: String, provider: String?) =
+internal fun sigGetInstance(alg: String, provider: String?): Signature =
     when (provider) {
         null -> Signature.getInstance(alg)
         else -> Signature.getInstance(alg, provider)
     }
 
 /** Get a pre-configured JCA instance for this algorithm */
-fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null) = catching {
+fun SignatureAlgorithm.getJCASignatureInstance(provider: String? = null): KmmResult<Signature> = catching {
     when (this) {
         is SignatureAlgorithm.ECDSA ->
             sigGetInstance("${this.digest.jcaAlgorithmComponent}withECDSA", provider)
@@ -70,7 +70,7 @@ fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = nu
     this.algorithm.getJCASignatureInstance(provider)
 
 /** Get a pre-configured JCA instance for pre-hashed data for this algorithm */
-fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null) = catching {
+fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null): KmmResult<Signature> = catching {
     when (this) {
         is SignatureAlgorithm.ECDSA -> sigGetInstance("NONEwithECDSA", provider)
         is SignatureAlgorithm.RSA -> when (this.padding) {
@@ -84,8 +84,6 @@ fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null
                 false -> throw UnsupportedOperationException("Pre-hashed RSA input is unsupported on JVM")
             }
         }
-
-        else -> TODO("$this is unsupported with pre-hashed data")
     }
 }
 

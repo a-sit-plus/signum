@@ -10,6 +10,7 @@ import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import de.infix.testBalloon.framework.TestConfig
 import de.infix.testBalloon.framework.aroundEach
+import de.infix.testBalloon.framework.testScope
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -18,6 +19,7 @@ import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPublicKey
+import kotlin.time.Duration.Companion.minutes
 
 private fun ByteArray.trimLeadingZeros() =
     when (val i = this.indexOfFirst { it != 0x00.toByte() }) {
@@ -26,13 +28,13 @@ private fun ByteArray.trimLeadingZeros() =
         else -> this.copyOfRange(i, this.size)
     }
 
-val JsonWebKeyJvmTest by testSuite {
+val JsonWebKeyJvmTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
     val ecCurve: ECCurve = ECCurve.SECP_256_R_1
     var keyPair: KeyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair()
     var keyPairRSA: KeyPair = KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }.genKeyPair()
 
-    testConfig = TestConfig.aroundEach {
+    testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes).aroundEach {
         keyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair()
         keyPairRSA = KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }.genKeyPair()
         it()

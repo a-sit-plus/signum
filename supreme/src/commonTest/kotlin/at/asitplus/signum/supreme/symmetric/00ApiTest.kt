@@ -15,9 +15,12 @@ import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
 import kotlin.random.Random
+import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.testScope
+import kotlin.time.Duration.Companion.minutes
 
 @OptIn(HazardousMaterials::class)
-val ApiTest  by testSuite{
+val ApiTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
     "Utterly Untyped v2" - {
         withData(

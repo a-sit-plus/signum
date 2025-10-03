@@ -33,12 +33,15 @@ import java.security.Security
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPublicKey
 import kotlin.random.Random
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 private fun CryptoPublicKey.EC.withCompressionPreference(v: Boolean) =
     if (v) CryptoPublicKey.EC.fromCompressed(curve, xBytes, yCompressed)
     else CryptoPublicKey.EC.fromUncompressed(curve, xBytes, yBytes)
 
-val CoseKeySerializationTest by testSuite {
+val CoseKeySerializationTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     Security.addProvider(BouncyCastleProvider())
 
     "Deserializing" - {

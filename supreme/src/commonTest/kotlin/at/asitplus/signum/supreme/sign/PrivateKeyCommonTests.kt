@@ -14,9 +14,12 @@ import at.asitplus.testballoon.checkAllSuites
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import kotlin.random.Random
+import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.testScope
+import kotlin.time.Duration.Companion.minutes
 
 @OptIn(SecretExposure::class)
-val PrivateKeyCommonTests  by testSuite{
+val PrivateKeyCommonTests  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     "RSA" {
         val rsa = """
             -----BEGIN PRIVATE KEY-----

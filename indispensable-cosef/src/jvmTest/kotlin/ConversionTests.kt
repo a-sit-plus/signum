@@ -12,12 +12,15 @@ import io.kotest.matchers.shouldBe
 import java.security.KeyPairGenerator
 import java.security.interfaces.ECPublicKey
 import kotlin.random.Random
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 //somehow including kmmresult-test makes this fail
 infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
     (this.getOrThrow() shouldBe b)
 
-val ConversionTests by testSuite {
+val ConversionTests by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     "COSE -> SigAlg -> COSE is stable" - {
 
         "All" - {

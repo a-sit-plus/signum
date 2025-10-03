@@ -22,11 +22,14 @@ import io.kotest.property.arbitrary.*
 import io.kotest.property.exhaustive.ints
 import kotlin.math.pow
 import at.asitplus.signum.indispensable.kdf.SCrypt as scrypt
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 private val rnd = java.util.Random()
 
 @OptIn(ExperimentalStdlibApi::class)
-val ScryptTest  by testSuite{
+val ScryptTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     "Little-Endian Bytearray converters" {
         ByteArray(8).also {
             uintArrayOf(0x31b2a3f4u, 0x72ff9813u).toLEByteArray(it.view)

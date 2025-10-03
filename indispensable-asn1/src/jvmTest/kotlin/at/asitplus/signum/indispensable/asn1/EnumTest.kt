@@ -7,14 +7,16 @@ import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import de.infix.testBalloon.framework.testSuite
-
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 import io.kotest.matchers.shouldBe
 
 enum class TestEnum {
     ONE, TWO, THREE
 }
 
-val EnumTest by testSuite {
+val EnumTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
 
     "Values beyond valid Kotlin enum ordinals should work" - {
         withData(Long.MIN_VALUE, Long.MAX_VALUE, -1L, Int.MAX_VALUE.toLong()+1L, Int.MIN_VALUE.toLong()-1L) {

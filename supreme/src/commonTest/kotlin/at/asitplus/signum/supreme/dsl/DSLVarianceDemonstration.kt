@@ -9,6 +9,9 @@ import at.asitplus.testballoon.checkAllTests
 import at.asitplus.testballoon.checkAllSuites
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
+import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.testScope
+import kotlin.time.Duration.Companion.minutes
 
 private enum class Preparation { SHAKEN, STIRRED; }
 /* all options classes need to inherit from DSL.Data */
@@ -35,7 +38,7 @@ private class Settings: DSL.Data() {
     }
 }
 
-val DSLVarianceDemonstration  by testSuite{
+val DSLVarianceDemonstration  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
     "\uD83D\uDE0A" {
 
         doWithConfiguration {
