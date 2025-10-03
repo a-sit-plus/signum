@@ -2,10 +2,12 @@ package io.kotest.provided.at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Exception
-import at.asitplus.test.FreeSpec
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.assertions.throwables.shouldThrow
 
-class AdversarialData : FreeSpec({
+val AdversarialData by testSuite{
     "Overlong length" - {
         "OCTET STRING" {
             val nineBytesLength =
@@ -31,4 +33,3 @@ class AdversarialData : FreeSpec({
         }
     }
 }
-)

@@ -34,7 +34,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Run tests
-        run: ./gradlew jvmTest
+        run: ./gradlew jvmTest --info
       - name: Test Report
         uses: dorny/test-reporter@v2
         if: success() || failure()
