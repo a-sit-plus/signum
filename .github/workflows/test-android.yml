@@ -45,6 +45,6 @@ jobs:
         if: success() || failure()
         with:
           name: Android Device Tests
-          path: indispensable-asn1/build/outputs/androidTest-results/connected/**/TEST*.xml,indispensable-oids/build/outputs/androidTest-results/connected/**/TEST*.xml,indispensable/build/outputs/androidTest-results/connected/**/TEST*.xml,indispensable-josef/build/outputs/androidTest-results/connected/**/TEST*.xml,indispensable-cosef/build/outputs/androidTest-results/connected/**/TEST*.xml,supreme/build/outputs/androidTest-results/connected/**/TEST*.xml
+          path: indispensable-asn1/build/outputs/androidTest-results/managedDevice/androidmain/**/TEST*.xml,indispensable-oids/build/outputs/androidTest-results/managedDevice/androidmain/**/TEST*.xml,indispensable/build/outputs/androidTest-results/managedDevice/androidmain/**/TEST*.xml,indispensable-josef/build/outputs/androidTest-results/managedDevice/androidmain/**/TEST*.xml,indispensable-cosef/build/outputs/androidTest-results/managedDevice/androidmain/**/TEST*.xml,supreme/build/outputs/androidTest-results/managedDevice/androidmain/**/TEST*.xml
           reporter: java-junit
           use-actions-summary: true
