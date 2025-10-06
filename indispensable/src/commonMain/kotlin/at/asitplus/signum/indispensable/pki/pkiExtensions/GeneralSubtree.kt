@@ -99,12 +99,12 @@ data class GeneralSubtrees(
                     }
 
                     GeneralNameOption.ConstraintResult.NARROWS -> {
-                        mutableTrees.removeAt(j)
+                        removeCurrent = true
+                        break
                     }
 
                     GeneralNameOption.ConstraintResult.WIDENS -> {
-                        removeCurrent = true
-                        break
+                        mutableTrees.removeAt(j)
                     }
 
                     GeneralNameOption.ConstraintResult.SAME_TYPE -> {
@@ -120,6 +120,7 @@ data class GeneralSubtrees(
             }
         }
 
+        trees = mutableTrees
         return GeneralSubtrees(mutableTrees)
     }
 
