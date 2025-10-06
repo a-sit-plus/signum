@@ -32,14 +32,13 @@ actual class EphemeralSignerConfiguration internal actual constructor(): Ephemer
 sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Signer {
     override val mayRequireUserUnlock = false
     override suspend fun sign(data: SignatureInput) = signCatching {
-        val  (inputData, jcaSignatureInstance ) = when (signatureAlgorithm) {
-            is SignatureAlgorithm.ECDSA ->  data.convertTo(signatureAlgorithm.preHashedSignatureFormat).getOrThrow() to signatureAlgorithm.getJCASignatureInstancePreHashed(provider = null)
-            is SignatureAlgorithm.RSA -> data to signatureAlgorithm.getJCASignatureInstance(provider = null)
-        }
-
-        jcaSignatureInstance.getOrThrow().run {
+        when {
+            (data.format == null) -> signatureAlgorithm.getJCASignatureInstance(provider = null)
+            (data.format == signatureAlgorithm.preHashedSignatureFormat) -> signatureAlgorithm.getJCASignatureInstancePreHashed(provider = null)
+            else -> throw IllegalArgumentException("Input format mismatch: ${data.format} != ${signatureAlgorithm.preHashedSignatureFormat}")
+        }.getOrThrow().run {
             initSign(privateKey)
-            inputData.data.forEach { update(it) }
+            data.data.forEach(this::update)
             sign().let(::parseFromJca)
         }
     }

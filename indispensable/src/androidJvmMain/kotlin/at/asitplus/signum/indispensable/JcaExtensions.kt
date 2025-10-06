@@ -79,10 +79,7 @@ fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null
                 false -> throw UnsupportedOperationException("Pre-hashed RSA input is unsupported on JVM")
             }
 
-            RSAPadding.PSS -> when (isAndroid) {
-                true -> sigGetInstance("NONEwithRSA/PSS", provider)
-                false -> throw UnsupportedOperationException("Pre-hashed RSA input is unsupported on JVM")
-            }
+            RSAPadding.PSS -> throw UnsupportedOperationException("Pre-hashed RSA input is unsupported")
         }
     }
 }
