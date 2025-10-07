@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.supreme.DisabledTestsExecutionReport
 import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.withData
 import at.asitplus.testballoon.withDataSuites
@@ -17,13 +18,14 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.report
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
 internal fun <T> Random.of(v: Collection<T>) = v.random(this)
 
 @OptIn(ExperimentalEncodingApi::class)
-val ECDSAVerifierCommonTests  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
+val ECDSAVerifierCommonTests  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes).report(DisabledTestsExecutionReport())) {
     @Serializable data class RawTestInfo(
         val crv: String, val dig: String, val key: String, val msg: String, val sig: String)
     class TestInfo(test: RawTestInfo) {

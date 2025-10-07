@@ -6,6 +6,7 @@ import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.asymmetric.RSAPadding
+import at.asitplus.signum.supreme.DisabledTestsExecutionReport
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.withData
@@ -23,11 +24,12 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
 import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.report
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
 @OptIn(HazardousMaterials::class, SecretExposure::class, ExperimentalStdlibApi::class)
-val RsaEncryptionTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
+val RsaEncryptionTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes).report(DisabledTestsExecutionReport())) {
     "From OpenSSL" - {
         withData(nameFn = { it.toString() }, testData) {
             it.key as CryptoPrivateKey.RSA

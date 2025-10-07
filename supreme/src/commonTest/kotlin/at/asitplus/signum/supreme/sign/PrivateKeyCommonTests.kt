@@ -3,6 +3,7 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.supreme.DisabledTestsExecutionReport
 import at.asitplus.signum.supreme.isSuccess
 import at.asitplus.signum.supreme.signature
 import at.asitplus.testballoon.minus
@@ -15,11 +16,12 @@ import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import kotlin.random.Random
 import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.report
 import de.infix.testBalloon.framework.testScope
 import kotlin.time.Duration.Companion.minutes
 
 @OptIn(SecretExposure::class)
-val PrivateKeyCommonTests  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
+val PrivateKeyCommonTests  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes).report(DisabledTestsExecutionReport())) {
     "RSA" {
         val rsa = """
             -----BEGIN PRIVATE KEY-----

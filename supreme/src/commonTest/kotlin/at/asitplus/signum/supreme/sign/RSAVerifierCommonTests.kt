@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.supreme.DisabledTestsExecutionReport
 import at.asitplus.signum.supreme.succeed
 import io.kotest.core.spec.style.FreeSpec
 import at.asitplus.testballoon.minus
@@ -25,11 +26,12 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.report
 import de.infix.testBalloon.framework.testScope
 import kotlin.time.Duration.Companion.minutes
 
 @OptIn(ExperimentalEncodingApi::class)
-val RSAVerifierCommonTests  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
+val RSAVerifierCommonTests  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes).report(DisabledTestsExecutionReport())) {
     @Serializable
     data class RawTestInfo(
         val dig: String, val pad: String, val key: String, val msg: String, val sig: String)

@@ -6,6 +6,7 @@ import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.supreme.DisabledTestsExecutionReport
 import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.supreme.os.SignerConfiguration
 import at.asitplus.signum.supreme.sign
@@ -25,6 +26,7 @@ import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.report
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
@@ -99,7 +101,7 @@ object TestSuites {
 }
 
 @OptIn(SecretExposure::class)
-val EphemeralSignerCommonTests  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
+val EphemeralSignerCommonTests  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes).report(DisabledTestsExecutionReport())) {
     "Functional" - {
         "RSA" - {
             withData(TestSuites.RSA) { (padding, digest, keySize, preHashed) ->
