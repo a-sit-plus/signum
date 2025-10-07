@@ -3,6 +3,7 @@ package at.asitplus.signum.ecmath
 import at.asitplus.signum.indispensable.ECPoint
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
+
 import kotlin.math.max
 
 // ECMathNIST -> https://eprint.iacr.org/2015/1060
@@ -42,19 +43,24 @@ inline operator fun ECPoint.Normalized.unaryMinus()
 @Suppress("NOTHING_TO_INLINE")
 inline operator fun ECPoint.minus(other: ECPoint) = this + (-other)
 
-// TODO: i'm sure this could be smarter (keyword: "comb")
-// i'm also sure this isn't resistant to timing side channels if that is something you care about
-// TODO Manfred: two comments how to implement constant time (provided that "x = if(a) b else c" performs constant time)
-// TODO there is also another timing problem with ModularBigInteger as it internally uses BigInteger and time can depend on value - should be implemented fixed number of bytes
+@Suppress("NOTHING_TO_INLINE")
+inline fun <T> CMOV(a: T, b: T, c: Boolean) = if (c) b else a
+
+// TODO resistance to timing side channels depends on CMOV-implementation
 operator fun BigInteger.times(point: ECPoint): ECPoint {
-    var o = point // Manfred: I would rename the point to "p" (or q,r,...) ; in ECC context the symbol "o" or "O" is commonly for the neutral element/identity (since it looks+behaves like the origin/zero, i.e., p+o = p for every p)
-    var sum = if (this.bitAt(0)) point else point.curve.IDENTITY
+    val modulus = point.curve.order
+    var p = point
+    var sum = p.curve.IDENTITY
+    var sum2 = p
+    sum = CMOV(sum,sum2,this.bitAt(0))
+
     /* double-and-add */
-    for (i in 1L..<this.bitLength()) { // TODO Manfred 1: instead of BigInter we should use ModularBigInteger or make use of the group order of the curve -> has a fixed number of bits -> fixed number of loop-iterations, independent from the input
+    for (i in 1L..<modulus.bitLength()) {
         /* we double o on each iteration (it is (2^i)*point) */
-        o = o.double()
+        p = p.double()
         /* and decide whether to add it based on the bit */
-        if (this.bitAt(i)) sum += o  // TODO Manfred 2: "sum += if (bit) o else point.curve.IDENTITY"
+        sum2 = sum+p
+        sum = CMOV(sum,sum2,this.bitAt(i))
     }
     return sum
 }
