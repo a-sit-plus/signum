@@ -8,7 +8,6 @@ import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 
 data class RegisteredIDName internal constructor(
     val value: ObjectIdentifier,
-    override val performValidation: Boolean = false,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.OID
 ): GeneralNameOption, Asn1Encodable<Asn1Primitive> {
 
