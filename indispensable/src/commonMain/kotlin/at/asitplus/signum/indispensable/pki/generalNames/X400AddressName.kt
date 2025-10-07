@@ -14,6 +14,13 @@ data class X400AddressName internal constructor(
 
     constructor(value: Asn1Element) : this(value, null)
 
+    /**
+     * Creates a new [X400AddressName] instance with validation applied at construction time.
+     * This constructor allows supplying a custom [validate] lambda that determines the value of [isValid].
+     */
+    constructor(value: Asn1Element, validate: (GeneralNameOption) -> Boolean) :
+            this(value, validate(X400AddressName(value)))
+
     override fun encodeToTlv() = value
 
     companion object : Asn1Decodable<Asn1Element, X400AddressName> {
@@ -27,7 +34,7 @@ data class X400AddressName internal constructor(
         return value.prettyPrint()
     }
 
-    override fun validatedCopy(checkIsValid: (GeneralNameOption) -> Boolean): X400AddressName {
-        return X400AddressName(value, checkIsValid(this))
-    }
+    override fun createValidatedCopy(validate: (GeneralNameOption) -> Boolean): X400AddressName =
+        X400AddressName(value, validate)
+
 }

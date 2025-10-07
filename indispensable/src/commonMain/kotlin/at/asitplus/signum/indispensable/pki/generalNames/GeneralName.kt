@@ -40,8 +40,9 @@ sealed interface GeneralNameOption {
 
             isValid == null || input.isValid == null ->
                 throw IllegalArgumentException(
-                    "Validation for ${this::class.simpleName} has not been performed. " +
-                            "Use ${this::class.simpleName}.validatedCopy { /* validation lambda */ } to set isValid before calling constrains."
+                    "${this::class.simpleName} does not support validation out of the box. " +
+                            "You must explicitly provide custom validation logic using " +
+                            "${this::class.simpleName}.createValidatedCopy { /* validation logic */ } before calling constrains."
                 )
 
             !isValid!! || !input.isValid!! -> {
@@ -56,12 +57,12 @@ sealed interface GeneralNameOption {
 
     /**
      * Returns a copy of this GeneralNameOption with the `isValid` property set
-     * according to the [checkIsValid] lambda.
+     * according to the [validate] lambda.
      *
      * Intended for subclasses that do not implement validation (`isValid == null`)
      * and allows marking them as valid or invalid before performing constraint checks.
      */
-    fun validatedCopy(checkIsValid: (GeneralNameOption) -> Boolean) : GeneralNameOption {
+    fun createValidatedCopy(validate: (GeneralNameOption) -> Boolean) : GeneralNameOption {
         throw IllegalArgumentException()
     }
 }
