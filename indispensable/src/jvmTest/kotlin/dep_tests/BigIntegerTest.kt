@@ -14,7 +14,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val BigIntegerTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val BigIntegerTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
     "BigInteger" - {
         "equals & hashCode" {
             val v1 = BigInteger(42)

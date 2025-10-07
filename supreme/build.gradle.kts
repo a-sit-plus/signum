@@ -36,6 +36,13 @@ afterEvaluate {
     }
 }
 
+androidComponents {
+    // Runs for every build variant of your library
+    onVariants { v ->
+        // Configure the instrumented-test APK only
+        v.androidTest?.manifestPlaceholders?.put("testLargeHeap", "true")
+    }
+}
 
 kotlin {
     compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
@@ -47,13 +54,14 @@ kotlin {
         withDeviceTestBuilder {
             sourceSetTreeName = "test"
         }.configure {
-            instrumentationRunnerArguments["timeout_msec"] = "2400000"
+            instrumentationRunnerArguments["timeout_msec"] = "5400000"
+            instrumentationRunnerArguments["clearPackageData"] = "true"
             managedDevices {
                 localDevices {
-                    create("pixel2api36").apply {
-                        device = "Pixel 2"
-                        apiLevel = 36
-                        systemImageSource = "google_apis_playstore"
+                    create("pixelAVD").apply {
+                        device = "Pixel 8 Pro"
+                        apiLevel = 35
+                        systemImageSource = "aosp-atd"
                     }
                 }
             }

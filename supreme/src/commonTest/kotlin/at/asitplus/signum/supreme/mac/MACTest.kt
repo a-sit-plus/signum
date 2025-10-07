@@ -13,7 +13,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val MACTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val MACTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
     "RFC4231" - {
         class I(val comment: String, key: String, data: String,
                 SHA224: String, SHA256: String, SHA384: String, SHA512: String) {

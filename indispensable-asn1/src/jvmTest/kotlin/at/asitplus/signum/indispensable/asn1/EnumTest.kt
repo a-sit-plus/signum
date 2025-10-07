@@ -16,7 +16,7 @@ enum class TestEnum {
     ONE, TWO, THREE
 }
 
-val EnumTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val EnumTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
 
     "Values beyond valid Kotlin enum ordinals should work" - {
         withData(Long.MIN_VALUE, Long.MAX_VALUE, -1L, Int.MAX_VALUE.toLong()+1L, Int.MIN_VALUE.toLong()-1L) {

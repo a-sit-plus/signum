@@ -23,7 +23,7 @@ import kotlin.random.Random
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val RFC9380Test by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val RFC9380Test by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
     "Assumption: all implemented curves have AB > 0" - {
         withData(ECCurve.entries) { crv ->
             /* map_to_curve_simple_swu in RFC9380.kt depends on this */

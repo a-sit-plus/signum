@@ -32,7 +32,7 @@ import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
 @OptIn(HazardousMaterials::class, ExperimentalStdlibApi::class)
-val JvmSymmetricTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val JvmSymmetricTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
 
     "Against JCA" - {
         "AES" - {

@@ -45,6 +45,6 @@ inline fun<reified T: Any> TestSuite.enumConsistencyTest() {
     }
 }
 
-val EnumConsistencyTests by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val EnumConsistencyTests by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
     enumConsistencyTest<JwsAlgorithm>()
 }

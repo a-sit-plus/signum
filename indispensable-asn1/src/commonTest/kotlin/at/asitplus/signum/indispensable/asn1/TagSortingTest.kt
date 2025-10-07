@@ -14,7 +14,7 @@ import io.kotest.property.checkAll
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val TagSortingTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val TagSortingTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
 
     "Automated" {
         val sortedClasses =

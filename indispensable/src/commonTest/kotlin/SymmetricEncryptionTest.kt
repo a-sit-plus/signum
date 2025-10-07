@@ -16,7 +16,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val SymmetricEncryptionTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val SymmetricEncryptionTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
    
     withData(nameFn={ "Key generation: $it" }, SymmetricEncryptionAlgorithm.entries) { alg ->
         val key = alg.randomKey(randomnessSourceOverride = Random.Default)

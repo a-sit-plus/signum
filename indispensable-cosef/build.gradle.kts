@@ -24,7 +24,7 @@ kotlin {
         }.configure {
             managedDevices {
                 localDevices {
-                    create("pixel2api36").apply {
+                    create("pixelAVD").apply {
                         device = "Pixel 2"
                         apiLevel = 36
                         systemImageSource = "google_apis_playstore"

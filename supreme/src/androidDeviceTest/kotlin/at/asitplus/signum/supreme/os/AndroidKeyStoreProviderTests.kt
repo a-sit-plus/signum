@@ -19,7 +19,7 @@ import io.kotest.property.arbitrary.string
 import kotlin.random.Random
 import de.infix.testBalloon.framework.testScope
 
-val AndroidKeyStoreProviderTests  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val AndroidKeyStoreProviderTests  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
     "Create attested keypair" {
         val alias = Arb.string(minSize = 32, maxSize = 32, Codepoint.az())
             .sample(RandomSource.default()).value

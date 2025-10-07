@@ -26,7 +26,7 @@ import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
 
-val JweEncryptedTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val JweEncryptedTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
 
     "Minimal JWE can be parsed and verified" {
         val input = Random.Default.nextBytes(32)

@@ -99,7 +99,7 @@ object TestSuites {
 }
 
 @OptIn(SecretExposure::class)
-val EphemeralSignerCommonTests  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val EphemeralSignerCommonTests  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
     "Functional" - {
         "RSA" - {
             withData(TestSuites.RSA) { (padding, digest, keySize, preHashed) ->

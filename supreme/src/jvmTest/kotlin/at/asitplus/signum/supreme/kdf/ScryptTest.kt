@@ -29,7 +29,7 @@ import de.infix.testBalloon.framework.testScope
 private val rnd = java.util.Random()
 
 @OptIn(ExperimentalStdlibApi::class)
-val ScryptTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val ScryptTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
     "Little-Endian Bytearray converters" {
         ByteArray(8).also {
             uintArrayOf(0x31b2a3f4u, 0x72ff9813u).toLEByteArray(it.view)

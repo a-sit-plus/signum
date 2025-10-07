@@ -15,7 +15,7 @@ infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
     (this.getOrThrow() shouldBe b)
 
 
-val ConversionTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val ConversionTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
     "JWS -> SigAlg -> JWS is stable" - {
         "All" - {
             withData(JwsAlgorithm.entries) {

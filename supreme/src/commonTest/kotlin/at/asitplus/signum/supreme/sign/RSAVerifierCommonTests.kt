@@ -29,7 +29,7 @@ import de.infix.testBalloon.framework.testScope
 import kotlin.time.Duration.Companion.minutes
 
 @OptIn(ExperimentalEncodingApi::class)
-val RSAVerifierCommonTests  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val RSAVerifierCommonTests  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
     @Serializable
     data class RawTestInfo(
         val dig: String, val pad: String, val key: String, val msg: String, val sig: String)

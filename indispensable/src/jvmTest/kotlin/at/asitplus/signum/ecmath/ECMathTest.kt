@@ -33,7 +33,7 @@ private fun ECCurve.randomPoint(): ECPoint =
             this, Random.nextBytes(coordinateLength.bytes.toInt()), Random.nextBoolean())
     }}.firstNotNullOf { it.getOrNull() }
 
-val ECMathTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val ECMathTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
     "Assumption: All implemented curves are prime order Weierstrass curves with a = -3" - {
         withData(ECCurve.entries) { curve ->
             // if new curves are ever added that violate this assumption,

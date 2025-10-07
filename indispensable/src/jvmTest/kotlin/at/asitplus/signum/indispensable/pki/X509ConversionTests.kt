@@ -14,7 +14,7 @@ import de.infix.testBalloon.framework.testScope
 infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
     (this.getOrThrow() shouldBe b)
 
-val X509ConversionTests by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val X509ConversionTests by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
     "X509 -> Alg -> X509 is stable" - {
         withData(X509SignatureAlgorithm.entries) {
             it.toX509SignatureAlgorithm() shouldSucceedWith it

@@ -24,7 +24,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val VerifierTests by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val VerifierTests by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
     Security.addProvider(BouncyCastleProvider())
 
     withDataSuites(

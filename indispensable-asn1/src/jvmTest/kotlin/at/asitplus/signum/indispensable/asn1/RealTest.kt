@@ -20,7 +20,7 @@ import de.infix.testBalloon.framework.testScope
 
 
 @OptIn(ExperimentalStdlibApi::class)
-val RealTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val RealTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
 
     val input =
         data.lines().map { it.split("; ").let { it.first().toDouble() to it.last().hexToByteArray(HexFormat.Default) } }

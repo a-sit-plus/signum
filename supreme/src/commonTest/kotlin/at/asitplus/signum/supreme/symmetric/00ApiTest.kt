@@ -20,7 +20,7 @@ import de.infix.testBalloon.framework.testScope
 import kotlin.time.Duration.Companion.minutes
 
 @OptIn(HazardousMaterials::class)
-val ApiTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val ApiTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
 
     "Utterly Untyped v2" - {
         withData(

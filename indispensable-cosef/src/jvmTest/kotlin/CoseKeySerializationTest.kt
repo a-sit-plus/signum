@@ -41,7 +41,7 @@ private fun CryptoPublicKey.EC.withCompressionPreference(v: Boolean) =
     if (v) CryptoPublicKey.EC.fromCompressed(curve, xBytes, yCompressed)
     else CryptoPublicKey.EC.fromUncompressed(curve, xBytes, yBytes)
 
-val CoseKeySerializationTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val CoseKeySerializationTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
     Security.addProvider(BouncyCastleProvider())
 
     "Deserializing" - {

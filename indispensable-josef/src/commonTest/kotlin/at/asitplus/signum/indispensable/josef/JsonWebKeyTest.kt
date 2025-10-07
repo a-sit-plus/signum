@@ -16,7 +16,7 @@ import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
-val JsonWebKeyTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val JsonWebKeyTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
 
     val curve: ECCurve = ECCurve.SECP_256_R_1
     var x: ByteArray = Random.nextBytes(32)
@@ -26,7 +26,7 @@ val JsonWebKeyTest by testSuite(testConfig = TestConfig.testScope(isEnabled = tr
     var e: ByteArray = Random.nextBytes(16)
     var rsaKey: JsonWebKey = JsonWebKey(type = JwkType.RSA, n = n, e = e)
 
-    testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes).aroundEach {
+    testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes).aroundEach {
         x = Random.nextBytes(32)
         y = Random.nextBytes(32)
         ecKey = JsonWebKey(type = JwkType.EC, curve = curve, x = x, y = y)

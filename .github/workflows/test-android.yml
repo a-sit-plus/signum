@@ -40,7 +40,7 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - name: Connected Check
-        run: ./gradlew pixel2api36AndroidDeviceTest
+        run: ./gradlew pixelAVDAndroidDeviceTest
       - name: 'Add default settings to node calls'
         shell: bash
         run: |

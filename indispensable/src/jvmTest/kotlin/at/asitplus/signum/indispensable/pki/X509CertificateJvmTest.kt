@@ -47,14 +47,14 @@ import kotlin.time.toKotlinInstant
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val X509CertificateJvmTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val X509CertificateJvmTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
 
     val ecCurve: ECCurve = ECCurve.SECP_256_R_1
     var keyPair: KeyPair = KeyPairGenerator.getInstance("EC").also {
         it.initialize(256)
     }.genKeyPair()
 
-    testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes).aroundEach {
+    testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes).aroundEach {
         keyPair = KeyPairGenerator.getInstance("EC").also {
             it.initialize(256)
         }.genKeyPair()

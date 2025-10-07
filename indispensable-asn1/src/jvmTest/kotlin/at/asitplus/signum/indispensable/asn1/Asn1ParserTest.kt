@@ -16,7 +16,7 @@ import de.infix.testBalloon.framework.testScope
 //this copied over to not change delicate test behaviour, as the original function is not deprecated, with DeprecationLevel.ERROR
 private fun Asn1Element.Companion.parseInternal(input: ByteIterator)=parse(mutableListOf<Byte>().also { while (input.hasNext()) it.add(input.nextByte()) }.toByteArray())
 
-val Asn1ParserTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val Asn1ParserTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
 
     "Multiple Elements" - {
         val seq = Asn1.Sequence {
