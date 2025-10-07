@@ -186,7 +186,7 @@ sealed class IosSigner(final override val alias: String,
                 // record the successful unlock timestamp and LAContext for reuse
                 // produce a dummy signature to ensure that the unlock has succeeded; this is required by secure enclave keys, which do not prompt for unlock until signing time
                 corecall { SecKeyCreateSignature(newPrivateKey.value, signatureAlgorithm.secKeyAlgorithmPreHashed,
-                    ByteArray(signatureAlgorithm.preHashedSignatureFormat!!.outputLength.bytes.toInt()).toNSData().giveToCF(), error) }
+                    ByteArray(signatureAlgorithm.preHashedSignatureFormat!!.outputLength.bytes.toInt()).toNSData().let(::giveToCF), error) }
 
                 // if we have reached this point, the unlock operation has definitively succeeded
                 LAContextStorage.successfulAuthentication = LAContextStorage.SuccessfulAuthentication(
@@ -218,7 +218,7 @@ sealed class IosSigner(final override val alias: String,
         val plaintext = data.convertTo(signatureAlgorithm.preHashedSignatureFormat).getOrThrow().data.first().toNSData()
         val signatureBytes = try {
             corecall {
-                SecKeyCreateSignature(privateKeyManager.get(signingConfig).value, algorithm, plaintext.giveToCF(), error)
+                SecKeyCreateSignature(privateKeyManager.get(signingConfig).value, algorithm, plaintext.let(::giveToCF), error)
             }.takeFromCF<NSData>().toByteArray()
         } catch (x: CoreFoundationException) { /* secure enclave failure */
             if (x.nsError.domain == LAErrorDomain) when (x.nsError.code) {

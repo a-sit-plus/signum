@@ -33,7 +33,10 @@ fun NSError.toNiceString(): String {
 }
 
 class CoreFoundationException(val nsError: NSError): Throwable(nsError.toNiceString())
-class corecall private constructor(val error: CPointer<CFErrorRefVar>) {
+class corecall private constructor(val error: CPointer<CFErrorRefVar>, @PublishedApi internal val memScope: MemScope) {
+    /** Produce a Core Foundation reference whose lifetime is equal to that of the corecall */
+    inline fun <reified T: CFTypeRef?> giveToCF(v: Any?) =
+        memScope.giveToCF<T>(v)
     /** Helper for calling Core Foundation functions, and bridging exceptions across.
      *
      * Usage:
@@ -48,7 +51,7 @@ class corecall private constructor(val error: CPointer<CFErrorRefVar>) {
         operator fun <T> invoke(call: corecall.()->T?) : T {
             memScoped {
                 val errorH = alloc<CFErrorRefVar>()
-                val result = corecall(errorH.ptr).call()
+                val result = corecall(errorH.ptr, this@memScoped).call()
                 val error = errorH.value
                 when {
                     (result != null) && (error == null) -> return result
@@ -96,19 +99,20 @@ class OwnedCFValue<T: CFTypeRef> constructor(val value: T) {
 
 @Suppress("NOTHING_TO_INLINE") inline fun <T: CFTypeRef> T.manage() = OwnedCFValue(this)
 
-inline fun <reified T: CFTypeRef?> Any?.giveToCF() = when(this) {
-    null -> this
-    is Boolean -> if (this) kCFBooleanTrue else kCFBooleanFalse
-    is CValuesRef<*> -> this
-    else -> CFBridgingRetain(this)
+/** Produce a Core Foundation reference whose lifetime is that of the containing [DeferScope] */
+inline fun <reified T: CFTypeRef?> DeferScope.giveToCF(v: Any?) = when(v) {
+    null -> v
+    is Boolean -> if (v) kCFBooleanTrue else kCFBooleanFalse
+    is CValuesRef<*> -> v
+    else -> CFBridgingRetain(v).also { ref -> this@giveToCF.defer { CFRelease(ref) } }
 } as T
 
 inline fun <reified T> CFTypeRef?.takeFromCF() = CFBridgingRelease(this) as T
 
-fun MemScope.cfDictionaryOf(vararg pairs: Pair<*,*>): CFDictionaryRef {
+fun DeferScope.cfDictionaryOf(vararg pairs: Pair<*,*>): CFDictionaryRef {
     val dict = CFDictionaryCreateMutable(null, pairs.size.toLong(),
         kCFTypeDictionaryKeyCallBacks.ptr, kCFTypeDictionaryValueCallBacks.ptr)!!
-    defer { CFBridgingRelease(dict) } // free it after the memscope finishes
+    defer { CFRelease(dict) } // free it after the memscope finishes
     pairs.forEach { (k,v) -> dict[k] = v }
     return dict
 }
@@ -120,16 +124,18 @@ class CFDictionaryInitScope private constructor() {
     infix fun Any?.mapsTo(other: Any?) { map(this to other) }
 
     companion object {
-        fun resolve(scope: MemScope, fn: CFDictionaryInitScope.()->Unit) =
+        fun resolve(scope: DeferScope, fn: CFDictionaryInitScope.()->Unit) =
             scope.cfDictionaryOf(*CFDictionaryInitScope().apply(fn).pairs.toTypedArray())
     }
 }
-fun MemScope.createCFDictionary(pairs: CFDictionaryInitScope.()->Unit) =
+fun DeferScope.createCFDictionary(pairs: CFDictionaryInitScope.()->Unit) =
     CFDictionaryInitScope.resolve(this, pairs)
 
-inline operator fun <reified T> CFDictionaryRef.get(key: Any?): T =
-    CFDictionaryGetValue(this, key.giveToCF()).takeFromCF<T>()
+inline operator fun <reified T> CFDictionaryRef.get(key: Any?): T = memScoped {
+    CFDictionaryGetValue(this, giveToCF(key)).takeFromCF<T>()
+}
 
 @Suppress("NOTHING_TO_INLINE")
-inline operator fun CFMutableDictionaryRef.set(key: Any?, value: Any?) =
-    CFDictionarySetValue(this, key.giveToCF(), value.giveToCF())
+inline operator fun CFMutableDictionaryRef.set(key: Any?, value: Any?) = memScoped {
+    CFDictionarySetValue(this, giveToCF(key), giveToCF(value))
+}

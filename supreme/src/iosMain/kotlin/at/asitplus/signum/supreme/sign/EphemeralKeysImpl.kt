@@ -32,7 +32,7 @@ sealed class EphemeralSigner(internal val privateKey: OwnedCFValue<SecKeyRef>) :
         val algorithm = signatureAlgorithm.secKeyAlgorithmPreHashed
         val input = inputData.data.single().toNSData()
         val signatureBytes = corecall {
-            SecKeyCreateSignature(privateKey.value, algorithm, input.giveToCF(), error)
+            SecKeyCreateSignature(privateKey.value, algorithm, input.let(::giveToCF), error)
         }.takeFromCF<NSData>().toByteArray()
         return@signCatching when (val pubkey = publicKey) {
             is CryptoPublicKey.EC -> CryptoSignature.EC.decodeFromDer(signatureBytes).withCurve(pubkey.curve)

@@ -111,7 +111,7 @@ fun CryptoPublicKey.toSecKey() = catching {
                 is CryptoPublicKey.RSA -> kSecAttrKeyTypeRSA
             })
         corecall {
-            SecKeyCreateWithData(this@toSecKey.iosEncoded.toNSData().giveToCF(), attr, error)
+            SecKeyCreateWithData(this@toSecKey.iosEncoded.toNSData().let(::giveToCF), attr, error)
         }.manage()
     }
 }
@@ -139,7 +139,7 @@ fun CryptoPrivateKey.WithPublicKey<*>.toSecKey(): KmmResult<OwnedCFValue<SecKeyR
             }
         }
         corecall {
-            SecKeyCreateWithData(data!!.toNSData().giveToCF(), attr, error)
+            SecKeyCreateWithData(data!!.toNSData().let(::giveToCF), attr, error)
         }.manage()
     }
 }
