@@ -14,7 +14,6 @@ import kotlinx.io.IOException
 data class DNSName internal constructor(
     val value: Asn1String.IA5,
     val allowWildcard: Boolean = true,
-    override val performValidation: Boolean = false,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.DNS,
 ) : GeneralNameOption, Asn1Encodable<Asn1Primitive> {
 
@@ -29,7 +28,7 @@ data class DNSName internal constructor(
     constructor(value: Asn1String.IA5, allowWildcard: Boolean = true) : this(
         value,
         allowWildcard,
-        true
+        GeneralNameOption.NameType.DNS
     ) {
         if (!isValid) throw Asn1Exception("Invalid DNSName.")
     }
@@ -45,7 +44,6 @@ data class DNSName internal constructor(
                 DNSName(
                     type = GeneralNameOption.NameType.DNS,
                     value = src.decodeToIa5String(tag),
-                    performValidation = false
                 )
             }
         }

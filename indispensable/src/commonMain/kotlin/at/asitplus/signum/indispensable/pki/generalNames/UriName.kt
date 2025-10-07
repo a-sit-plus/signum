@@ -12,10 +12,10 @@ import at.asitplus.signum.indispensable.asn1.runRethrowing
 import com.eygraber.uri.Uri
 import kotlinx.io.IOException
 
-data class UriName internal constructor(
+class UriName internal constructor(
     val host: Asn1String.IA5,
     val allowWildcard: Boolean = false,
-    override val performValidation: Boolean = false,
+    performValidation: Boolean = false,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.URI,
 ) : GeneralNameOption, Asn1Encodable<Asn1Primitive> {
 

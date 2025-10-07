@@ -8,12 +8,11 @@ import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 
 data class OtherName internal constructor(
     val value: Asn1ExplicitlyTagged,
-    override val performValidation: Boolean = false,
     override val isValid: Boolean? = null,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.OTHER
 ): GeneralNameOption, Asn1Encodable<Asn1Element> {
 
-    constructor(value: Asn1ExplicitlyTagged) : this(value, false)
+    constructor(value: Asn1ExplicitlyTagged) : this(value, null)
 
     override fun encodeToTlv() = value
 
@@ -31,6 +30,6 @@ data class OtherName internal constructor(
     }
 
     override fun validatedCopy(checkIsValid: (GeneralNameOption) -> Boolean): OtherName {
-        return OtherName(value, true, checkIsValid(this))
+        return OtherName(value, checkIsValid(this))
     }
 }

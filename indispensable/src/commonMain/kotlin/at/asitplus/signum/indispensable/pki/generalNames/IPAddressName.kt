@@ -13,11 +13,11 @@ import at.asitplus.signum.indispensable.asn1.Asn1Exception
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1OctetStringPrimitive
 
-data class IPAddressName internal constructor(
+class IPAddressName internal constructor(
     val address: IpAddress<*, *>?,
     val addressAndPrefix: IpAddressAndPrefix<*, *>? = null,
     val rawBytes: ByteArray,
-    override val performValidation: Boolean = false,
+    performValidation: Boolean = false,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.IP
 ) : GeneralNameOption, Asn1Encodable<Asn1Primitive> {
 
@@ -93,21 +93,23 @@ data class IPAddressName internal constructor(
 
         other as IPAddressName
 
-        if (performValidation != other.performValidation) return false
         if (isValid != other.isValid) return false
         if (address != other.address) return false
         if (addressAndPrefix != other.addressAndPrefix) return false
+        if (!rawBytes.contentEquals(other.rawBytes)) return false
         if (type != other.type) return false
+        if (network != other.network) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = performValidation.hashCode()
-        result = 31 * result + isValid.hashCode()
-        result = 31 * result + address.hashCode()
+        var result = isValid.hashCode()
+        result = 31 * result + (address?.hashCode() ?: 0)
         result = 31 * result + (addressAndPrefix?.hashCode() ?: 0)
+        result = 31 * result + rawBytes.contentHashCode()
         result = 31 * result + type.hashCode()
+        result = 31 * result + (network?.hashCode() ?: 0)
         return result
     }
 

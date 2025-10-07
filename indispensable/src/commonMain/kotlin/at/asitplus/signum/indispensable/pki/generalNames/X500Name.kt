@@ -8,9 +8,9 @@ import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 
-data class X500Name internal constructor(
+class X500Name internal constructor(
     val relativeDistinguishedNames: List<RelativeDistinguishedName>,
-    override val performValidation: Boolean = false,
+    performValidation: Boolean = false,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.DIRECTORY
 ) : Asn1Encodable<Asn1Sequence>, GeneralNameOption {
 
@@ -127,6 +127,7 @@ data class X500Name internal constructor(
 
         other as X500Name
 
+        if (isValid != other.isValid) return false
         if (relativeDistinguishedNames != other.relativeDistinguishedNames) return false
         if (type != other.type) return false
 
@@ -134,8 +135,7 @@ data class X500Name internal constructor(
     }
 
     override fun hashCode(): Int {
-        var result = performValidation.hashCode()
-        result = 31 * result + isValid.hashCode()
+        var result = isValid.hashCode()
         result = 31 * result + relativeDistinguishedNames.hashCode()
         result = 31 * result + type.hashCode()
         return result
