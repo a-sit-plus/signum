@@ -8,7 +8,6 @@ plugins {
     kotlin("plugin.serialization")
     id("signing")
     id("at.asitplus.gradle.conventions")
-    id("de.infix.testBalloon")
 }
 
 val artifactVersion: String by extra

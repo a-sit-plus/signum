@@ -55,11 +55,10 @@ kotlin {
             sourceSetTreeName = "test"
         }.configure {
             instrumentationRunnerArguments["timeout_msec"] = "5400000"
-            instrumentationRunnerArguments["clearPackageData"] = "true"
             managedDevices {
                 localDevices {
                     create("pixelAVD").apply {
-                        device = "Pixel 8 Pro"
+                        device = "Pixel 4"
                         apiLevel = 35
                         systemImageSource = "aosp-atd"
                     }
