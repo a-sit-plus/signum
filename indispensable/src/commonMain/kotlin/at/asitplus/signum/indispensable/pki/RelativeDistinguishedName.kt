@@ -33,7 +33,7 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
     val sortedAttrsAndValues by lazy {
         if (attrsAndValues.size > 1) {
             attrsAndValues.sortedWith(compareBy { atv ->
-                rfc2253Order[atv.attrType.uppercase()] ?: Int.MAX_VALUE
+                Rfc2253Constants.ORDER[atv.attrType.uppercase()] ?: Int.MAX_VALUE
             })
         } else {
             attrsAndValues
@@ -49,14 +49,6 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
                 }
             }.let(::RelativeDistinguishedName)
         }
-
-        // Predefined RFC2253 keyword order
-        private val rfc2253Order = listOf(
-            "CN", "C", "L", "S", "ST", "O", "OU", "T", "IP", "STREET",
-            "DC", "DNQUALIFIER", "DNQ", "SURNAME", "GIVENNAME",
-            "INITIALS", "GENERATION", "EMAIL", "EMAILADDRESS",
-            "UID", "SERIALNUMBER"
-        ).withIndex().associate { it.value.uppercase() to it.index }
 
         /**
          * Parse a single RDN string (e.g., "CN=John Doe+O=Company")
@@ -130,8 +122,7 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
 open class AttributeTypeAndValue(
     override val oid: ObjectIdentifier,
     val value: Asn1Element,
-    val attrType: String = oid.toString(),
-    val performValidation: Boolean = false
+    val attrType: String = oid.toString()
 ) : Asn1Encodable<Asn1Sequence>, Identifiable {
 
     /**
@@ -148,14 +139,13 @@ open class AttributeTypeAndValue(
 
     class CommonName internal constructor(
         value: Asn1Element,
-        performValidation: Boolean
-    ) : AttributeTypeAndValue(OID, value, TYPE, performValidation) {
+    ) : AttributeTypeAndValue(OID, value, TYPE) {
 
         /**
          * @throws Asn1Exception if illegal CommonName is provided
          */
         @Throws(Asn1Exception::class)
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()), true) {
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray())) {
             if (!isValid!!) throw Asn1Exception("Invalid CommonName!")
         }
 
@@ -167,14 +157,13 @@ open class AttributeTypeAndValue(
 
     class Country internal constructor(
         value: Asn1Element,
-        performValidation: Boolean
-    ) : AttributeTypeAndValue(OID, value, TYPE, performValidation) {
+    ) : AttributeTypeAndValue(OID, value, TYPE) {
 
         /**
          * @throws Asn1Exception if illegal Country is provided
          */
         @Throws(Asn1Exception::class)
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()), true) {
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray())) {
             if (!isValid!!) throw Asn1Exception("Invalid Country!")
         }
 
@@ -186,14 +175,13 @@ open class AttributeTypeAndValue(
 
     class Organization internal constructor(
         value: Asn1Element,
-        performValidation: Boolean
-    ) : AttributeTypeAndValue(OID, value, TYPE, performValidation) {
+    ) : AttributeTypeAndValue(OID, value, TYPE) {
 
         /**
          * @throws Asn1Exception if illegal Organization is provided
          */
         @Throws(Asn1Exception::class)
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()), true) {
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray())) {
             if (!isValid!!) throw Asn1Exception("Invalid Organization!")
         }
 
@@ -205,14 +193,13 @@ open class AttributeTypeAndValue(
 
     class OrganizationalUnit internal constructor(
         value: Asn1Element,
-        performValidation: Boolean
-    ) : AttributeTypeAndValue(OID, value, TYPE, performValidation) {
+    ) : AttributeTypeAndValue(OID, value, TYPE) {
 
         /**
          * @throws Asn1Exception if illegal OrganizationalUnit is provided
          */
         @Throws(Asn1Exception::class)
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()), true) {
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray())) {
             if (!isValid!!) throw Asn1Exception("Invalid OrganizationalUnit!")
         }
 
@@ -224,14 +211,13 @@ open class AttributeTypeAndValue(
 
     class EmailAddress internal constructor(
         value: Asn1Element,
-        performValidation: Boolean
-    ) : AttributeTypeAndValue(OID, value, TYPE, performValidation) {
+    ) : AttributeTypeAndValue(OID, value, TYPE) {
 
         /**
          * @throws Asn1Exception if illegal EmailAddress is provided
          */
         @Throws(Asn1Exception::class)
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()), true) {
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray())) {
             if (!isValid!!) throw Asn1Exception("Invalid EmailAddress!")
         }
 
@@ -273,11 +259,11 @@ open class AttributeTypeAndValue(
             if (oid.nodes.size >= 3 && oid.toString().startsWith("2.5.4.")) {
                 val asn1String = next().asPrimitive()
                 return@decodeRethrowing when (oid) {
-                    CommonName.OID -> CommonName(asn1String, false)
-                    Country.OID -> Country(asn1String, false)
-                    EmailAddress.OID -> EmailAddress(asn1String, false)
-                    Organization.OID -> Organization(asn1String, false)
-                    OrganizationalUnit.OID -> OrganizationalUnit(asn1String, false)
+                    CommonName.OID -> CommonName(asn1String)
+                    Country.OID -> Country(asn1String)
+                    EmailAddress.OID -> EmailAddress(asn1String)
+                    Organization.OID -> Organization(asn1String)
+                    OrganizationalUnit.OID -> OrganizationalUnit(asn1String)
                     else -> AttributeTypeAndValue(oid, asn1String)
                 }
             }
@@ -381,4 +367,14 @@ open class AttributeTypeAndValue(
             }
         }
     }
+}
+
+object Rfc2253Constants {
+    // Predefined RFC2253 keyword order
+    val ORDER = listOf(
+        "CN", "C", "L", "S", "ST", "O", "OU", "T", "IP", "STREET",
+        "DC", "DNQUALIFIER", "DNQ", "SURNAME", "GIVENNAME",
+        "INITIALS", "GENERATION", "EMAIL", "EMAILADDRESS",
+        "UID", "SERIALNUMBER"
+    ).withIndex().associate { it.value.uppercase() to it.index }
 }

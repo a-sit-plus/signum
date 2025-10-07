@@ -11,7 +11,6 @@ import at.asitplus.signum.indispensable.asn1.encoding.decodeToIa5String
 
 data class RFC822Name internal constructor(
     val value: Asn1String.IA5,
-    override val performValidation: Boolean = false,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.RFC822
 ) : GeneralNameOption, Asn1Encodable<Asn1Primitive> {
 
@@ -23,7 +22,7 @@ data class RFC822Name internal constructor(
     @Throws(Asn1Exception::class)
     constructor(value: Asn1String.IA5) : this(
         value,
-        true
+        GeneralNameOption.NameType.RFC822
     ) {
         if (!isValid) throw Asn1Exception("Invalid RFC822Name.")
     }
@@ -35,7 +34,7 @@ data class RFC822Name internal constructor(
         private val tag: Asn1Element.Tag = Asn1Element.Tag(1u, false, TagClass.CONTEXT_SPECIFIC)
 
         override fun doDecode(src: Asn1Primitive): RFC822Name {
-            return RFC822Name(src.decodeToIa5String(tag))
+            return RFC822Name(src.decodeToIa5String(tag), GeneralNameOption.NameType.RFC822)
         }
     }
 

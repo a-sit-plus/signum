@@ -7,11 +7,10 @@ import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 
 data class RegisteredIDName internal constructor(
     val value: ObjectIdentifier,
-    override val performValidation: Boolean = false,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.OID
 ): GeneralNameOption, Asn1Encodable<Asn1Primitive> {
 
-    constructor(value: ObjectIdentifier) : this(value, false)
+    constructor(value: ObjectIdentifier) : this(value, GeneralNameOption.NameType.OID)
 
     override fun encodeToTlv() = value.encodeToTlv()
 
