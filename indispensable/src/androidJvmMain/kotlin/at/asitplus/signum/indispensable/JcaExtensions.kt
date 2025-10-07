@@ -73,14 +73,7 @@ fun SpecializedSignatureAlgorithm.getJCASignatureInstance(provider: String? = nu
 fun SignatureAlgorithm.getJCASignatureInstancePreHashed(provider: String? = null): KmmResult<Signature> = catching {
     when (this) {
         is SignatureAlgorithm.ECDSA -> sigGetInstance("NONEwithECDSA", provider)
-        is SignatureAlgorithm.RSA -> when (this.padding) {
-            RSAPadding.PKCS1 -> when (isAndroid) {
-                true -> sigGetInstance("NONEwithRSA", provider)
-                false -> throw UnsupportedOperationException("Pre-hashed RSA input is unsupported on JVM")
-            }
-
-            RSAPadding.PSS -> throw UnsupportedOperationException("Pre-hashed RSA input is unsupported")
-        }
+        is SignatureAlgorithm.RSA -> throw UnsupportedOperationException("Pre-hashed RSA input is unsupported")
     }
 }
 

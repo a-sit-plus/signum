@@ -123,7 +123,8 @@ val EphemeralSignerCommonTests  by testSuite(testConfig = TestConfig.testScope(i
                 }
 
                 val secondSig = signer.exportPrivateKey()
-                    .transform { signer.signatureAlgorithm.signerFor(it) }.getOrThrow().sign(data).signature
+                    .transform { signer.signatureAlgorithm.signerFor(it) }.getOrThrow()
+                    .sign(data).signature
 
                 val verifier = signer.makeVerifier().getOrThrow()
                 verifier.verify(data, signature) should succeed
@@ -132,20 +133,21 @@ val EphemeralSignerCommonTests  by testSuite(testConfig = TestConfig.testScope(i
         }
         "ECDSA" - {
             withData(TestSuites.ECDSA) { (crv, digest, preHashed) ->
+                val data = Random.Default.nextBytes(64)
                 val signer =
                     Signer.Ephemeral { ec { curve = crv; digests = setOf(digest) } }.getOrThrow()
                 signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.ECDSA>().let {
                     it.digest shouldBe digest
                     it.requiredCurve shouldBeIn setOf(null, crv)
                 }
-                val data = Random.Default.nextBytes(64)
                 val signature = signer.sign(SignatureInput(data).let {
                     if (preHashed) it.convertTo(digest).getOrThrow() else it
                 }).signature
 
 
                 val secondSig = signer.exportPrivateKey()
-                    .transform { signer.signatureAlgorithm.signerFor(it)  }.getOrThrow().sign(data).signature
+                    .transform { signer.signatureAlgorithm.signerFor(it)  }.getOrThrow()
+                    .sign(data).signature
 
                 val verifier = signer.makeVerifier().getOrThrow()
                 verifier.verify(data, signature) should succeed
