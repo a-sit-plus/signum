@@ -14,6 +14,13 @@ data class OtherName internal constructor(
 
     constructor(value: Asn1ExplicitlyTagged) : this(value, null)
 
+    /**
+     * Creates a new [OtherName] instance with validation applied at construction time.
+     * This constructor allows supplying a custom [validate] lambda that determines the value of [isValid].
+     */
+    constructor(value: Asn1ExplicitlyTagged, validate: (GeneralNameOption) -> Boolean) :
+            this(value, validate(OtherName(value)))
+
     override fun encodeToTlv() = value
 
     companion object : Asn1Decodable<Asn1Element, OtherName> {
@@ -29,7 +36,7 @@ data class OtherName internal constructor(
         return value.prettyPrint()
     }
 
-    override fun validatedCopy(checkIsValid: (GeneralNameOption) -> Boolean): OtherName {
-        return OtherName(value, checkIsValid(this))
-    }
+    override fun createValidatedCopy(validate: (GeneralNameOption) -> Boolean): OtherName =
+        OtherName(value, validate)
+
 }

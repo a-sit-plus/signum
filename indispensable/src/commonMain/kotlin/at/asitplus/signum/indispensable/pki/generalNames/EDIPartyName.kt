@@ -4,7 +4,6 @@ import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1ExplicitlyTagged
-import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 
 data class EDIPartyName internal constructor(
@@ -14,6 +13,13 @@ data class EDIPartyName internal constructor(
 ): GeneralNameOption, Asn1Encodable<Asn1Element> {
 
     constructor(value: Asn1ExplicitlyTagged) : this(value, null)
+
+    /**
+     * Creates a new [EDIPartyName] instance with validation applied at construction time.
+     * This constructor allows supplying a custom [validate] lambda that determines the value of [isValid].
+     */
+    constructor(value: Asn1ExplicitlyTagged, validate: (GeneralNameOption) -> Boolean) :
+            this(value, validate(EDIPartyName(value)))
 
     override fun encodeToTlv() = value
 
@@ -35,7 +41,7 @@ data class EDIPartyName internal constructor(
         return value.prettyPrint()
     }
 
-    override fun validatedCopy(checkIsValid: (GeneralNameOption) -> Boolean): EDIPartyName {
-        return EDIPartyName(value, checkIsValid(this))
-    }
+    override fun createValidatedCopy(validate: (GeneralNameOption) -> Boolean): EDIPartyName =
+        EDIPartyName(value, validate)
+
 }
