@@ -54,4 +54,40 @@ class X500NameParsingTest : FreeSpec ({
         assertCanonical("CN=Plus\\+Equals\\=", "cn=plus\\+equals\\=")
         assertCanonical("CN=Backslash\\\\Test", "cn=backslash\\\\test")
     }
+
+    "testEmptyValues" {
+        assertCanonical("O=,CN=ABC,C=LT", "o=,cn=abc,c=lt")
+        assertCanonical("", "")
+    }
+
+    "testQuotedEqualityAndCase" {
+        assertCanonical("CN=\"  CA1 -   CP.04.03\", OU=Testing, O=U.S. Government, C=US",
+            "cn=ca1 - cp.04.03,ou=testing,o=u.s. government,c=us")
+        assertCanonical("CN=\"ca1 - CP.04.03  \", OU=Testing, O=U.S. Government, C=US",
+            "cn=ca1 - cp.04.03,ou=testing,o=u.s. government,c=us")
+    }
+
+    "testCaseInsensitiveEquality" {
+        assertCanonical("CN=The Legion", "cn=the legion")
+        assertCanonical("cn=THE LEGION", "cn=the legion")
+    }
+
+    "testTrailingBackslash" {
+        assertCanonical("CN=trailing\\", "cn=trailing")
+    }
+
+    "testQuotedRDNCombination" {
+        assertCanonical("CN=\"a+b\"+O=TestOrg", "cn=a+b+o=testorg")
+        assertCanonical("CN=\"a=b\"+OU=\"Sub+Unit\"", "cn=a=b+ou=sub+unit")
+    }
+
+    "testUnknownOid" {
+        assertCanonical("1.2.3.4.5=somevalue", "1.2.3.4.5=somevalue")
+    }
+
+    "testInvalidHexAfterHash" {
+        assertCanonical("CN=#nothex", "cn=\\#nothex")
+        assertCanonical("CN=#GG11", "cn=\\#gg11")
+    }
+
 })
