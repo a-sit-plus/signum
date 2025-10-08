@@ -1,9 +1,21 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.catching
+import at.asitplus.signum.indispensable.asn1.Asn1Decodable
+import at.asitplus.signum.indispensable.asn1.Asn1Element
+import at.asitplus.signum.indispensable.asn1.Asn1Encodable
+import at.asitplus.signum.indispensable.asn1.Asn1Exception
+import at.asitplus.signum.indispensable.asn1.Asn1Primitive
+import at.asitplus.signum.indispensable.asn1.Asn1Sequence
+import at.asitplus.signum.indispensable.asn1.Asn1Set
+import at.asitplus.signum.indispensable.asn1.Asn1String
+import at.asitplus.signum.indispensable.asn1.Identifiable
 import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.encoding.asAsn1String
+import at.asitplus.signum.indispensable.asn1.readOid
+import at.asitplus.signum.indispensable.asn1.runRethrowing
 
 /**
  * X.500 Name (used in X.509 Certificates)
@@ -18,6 +30,16 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
         }
     }
 
+    val sortedAttrsAndValues by lazy {
+        if (attrsAndValues.size > 1) {
+            attrsAndValues.sortedWith(compareBy { atv ->
+                Rfc2253Constants.ORDER[atv.attrType.uppercase()] ?: Int.MAX_VALUE
+            })
+        } else {
+            attrsAndValues
+        }
+    }
+
     companion object : Asn1Decodable<Asn1Set, RelativeDistinguishedName> {
         override fun doDecode(src: Asn1Set): RelativeDistinguishedName = src.decodeRethrowing {
             buildList {
@@ -27,63 +49,158 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
                 }
             }.let(::RelativeDistinguishedName)
         }
+
+        /**
+         * Parse a single RDN string (e.g., "CN=John Doe+O=Company")
+         */
+        fun fromString(rdnStr: String): RelativeDistinguishedName {
+            val atvStrings = splitRespectingEscapeAndQuotes(rdnStr, '+')
+            val atvs = atvStrings.map { atvStr ->
+                val parts = splitFirstUnescaped(atvStr, '=')
+                if (parts.size != 2) throw IllegalArgumentException("Invalid RDN part: $atvStr")
+                AttributeTypeAndValue.fromString(parts[0], parts[1])
+            }
+            return RelativeDistinguishedName(atvs)
+        }
+
+        /** Split on the first unescaped delimiter */
+        private fun splitFirstUnescaped(input: String, delimiter: Char): List<String> {
+            val regex = Regex("(?<!\\\\)${Regex.escape(delimiter.toString())}")
+            return input.split(regex, limit = 2)
+        }
+
+        /** Utility function that respects escape sequences */
+        private fun splitRespectingEscapeAndQuotes(input: String, delimiter: Char): List<String> {
+            val d = Regex.escape(delimiter.toString())
+            val tokenPattern = """"(?:\\.|[^"\\])*"|\\.|[^"\\${d}]+|${d}"""
+            val regex = Regex(tokenPattern)
+
+            return buildList {
+                val sb = StringBuilder()
+                for (match in regex.findAll(input)) {
+                    val token = match.value
+                    if (token.length == 1 && token[0] == delimiter) {
+                        add(sb.toString())
+                        sb.clear()
+                    } else {
+                        sb.append(token)
+                    }
+                }
+                add(sb.toString().trim())
+            }
+        }
     }
 
     override fun toString() = "DistinguishedName(attrsAndValues=${attrsAndValues.joinToString()})"
 
 }
 
-//TODO: value should be Asn1Primitive???
-sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
-    abstract val value: Asn1Element
+open class AttributeTypeAndValue(
+    override val oid: ObjectIdentifier,
+    val value: Asn1Element,
+    val attrType: String = oid.toString()
+) : Asn1Encodable<Asn1Sequence>, Identifiable {
+
+    /**
+     * Returns whether this string is valid:
+     * - `true`: validation succeeded
+     * - `false`: validation failed
+     * - `null`: no validation implemented
+     */
+    val isValid: Boolean? by lazy {
+        runCatching { Asn1String.decodeFromTlv(value.asPrimitive()).isValid }.getOrNull()
+    }
 
     override fun toString() = value.toString()
 
-    class CommonName(override val value: Asn1Element) : AttributeTypeAndValue() {
-        override val oid = OID
+    class CommonName internal constructor(
+        value: Asn1Element,
+    ) : AttributeTypeAndValue(OID, value, TYPE) {
 
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
+        /**
+         * @throws Asn1Exception if illegal CommonName is provided
+         */
+        @Throws(Asn1Exception::class)
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray())) {
+            if (!isValid!!) throw Asn1Exception("Invalid CommonName!")
+        }
 
         companion object {
+            const val TYPE = "CN"
             val OID = KnownOIDs.commonName
         }
     }
 
-    class Country(override val value: Asn1Element) : AttributeTypeAndValue() {
-        override val oid = OID
+    class Country internal constructor(
+        value: Asn1Element,
+    ) : AttributeTypeAndValue(OID, value, TYPE) {
 
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
+        /**
+         * @throws Asn1Exception if illegal Country is provided
+         */
+        @Throws(Asn1Exception::class)
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray())) {
+            if (!isValid!!) throw Asn1Exception("Invalid Country!")
+        }
 
         companion object {
+            const val TYPE = "C"
             val OID = KnownOIDs.countryName
         }
     }
 
-    class Organization(override val value: Asn1Element) : AttributeTypeAndValue() {
-        override val oid = OID
+    class Organization internal constructor(
+        value: Asn1Element,
+    ) : AttributeTypeAndValue(OID, value, TYPE) {
 
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
+        /**
+         * @throws Asn1Exception if illegal Organization is provided
+         */
+        @Throws(Asn1Exception::class)
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray())) {
+            if (!isValid!!) throw Asn1Exception("Invalid Organization!")
+        }
 
         companion object {
+            const val TYPE = "O"
             val OID = KnownOIDs.organizationName
         }
     }
 
-    class OrganizationalUnit(override val value: Asn1Element) : AttributeTypeAndValue() {
-        override val oid = OID
+    class OrganizationalUnit internal constructor(
+        value: Asn1Element,
+    ) : AttributeTypeAndValue(OID, value, TYPE) {
 
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
+        /**
+         * @throws Asn1Exception if illegal OrganizationalUnit is provided
+         */
+        @Throws(Asn1Exception::class)
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray())) {
+            if (!isValid!!) throw Asn1Exception("Invalid OrganizationalUnit!")
+        }
 
         companion object {
+            const val TYPE = "OU"
             val OID = KnownOIDs.organizationalUnitName
         }
     }
 
-    class Other(override val oid: ObjectIdentifier, override val value: Asn1Element) : AttributeTypeAndValue() {
-        constructor(oid: ObjectIdentifier, str: Asn1String) : this(
-            oid,
-            Asn1Primitive(str.tag, str.value.encodeToByteArray())
-        )
+    class EmailAddress internal constructor(
+        value: Asn1Element,
+    ) : AttributeTypeAndValue(OID, value, TYPE) {
+
+        /**
+         * @throws Asn1Exception if illegal EmailAddress is provided
+         */
+        @Throws(Asn1Exception::class)
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray())) {
+            if (!isValid!!) throw Asn1Exception("Invalid EmailAddress!")
+        }
+
+        companion object {
+            const val TYPE = "EMAILADDRESS"
+            val OID = KnownOIDs.emailAddress_1_2_840_113549_1_9_1
+        }
     }
 
     override fun encodeToTlv() = Asn1.Sequence {
@@ -97,8 +214,9 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
 
         other as AttributeTypeAndValue
 
-        if (value != other.value) return false
+        if (toRFC2253String() != other.toRFC2253String()) return false
         if (oid != other.oid) return false
+        if (attrType != other.attrType) return false
 
         return true
     }
@@ -116,23 +234,123 @@ sealed class AttributeTypeAndValue : Asn1Encodable<Asn1Sequence>, Identifiable {
             val oid = next().asPrimitive().readOid()
             if (oid.nodes.size >= 3 && oid.toString().startsWith("2.5.4.")) {
                 val asn1String = next().asPrimitive()
-                val str = catching { Asn1String.decodeFromTlv(asn1String) }
                 return@decodeRethrowing when (oid) {
-                    CommonName.OID -> str.fold(onSuccess = { CommonName(it) }, onFailure = { CommonName(asn1String) })
-                    Country.OID -> str.fold(onSuccess = { Country(it) }, onFailure = { Country(asn1String) })
-                    Organization.OID -> str.fold(
-                        onSuccess = { Organization(it) },
-                        onFailure = { Organization(asn1String) })
-
-                    OrganizationalUnit.OID -> str.fold(
-                        onSuccess = { OrganizationalUnit(it) },
-                        onFailure = { OrganizationalUnit(asn1String) })
-
-                    else -> Other(oid, asn1String)
+                    CommonName.OID -> CommonName(asn1String)
+                    Country.OID -> Country(asn1String)
+                    EmailAddress.OID -> EmailAddress(asn1String)
+                    Organization.OID -> Organization(asn1String)
+                    OrganizationalUnit.OID -> OrganizationalUnit(asn1String)
+                    else -> AttributeTypeAndValue(oid, asn1String)
                 }
             }
-            Other(oid, next())
+            AttributeTypeAndValue(oid, next())
         }
 
+        /**
+         * Parse an individual type=value string into the correct AttributeTypeAndValue subclass
+         */
+        fun fromString(type: String, value: String): AttributeTypeAndValue {
+            val trimmed = value.trim()
+            val asn1String = Asn1String.UTF8(trimmed)
+            return when (type.uppercase()) {
+                "CN" -> CommonName(asn1String)
+                "O" -> Organization(asn1String)
+                "OU" -> OrganizationalUnit(asn1String)
+                "C" -> Country(asn1String)
+                "EMAILADDRESS" -> EmailAddress(asn1String)
+                else -> AttributeTypeAndValue(ObjectIdentifier("0.0"), asn1String.encodeToTlv(), type)
+            }
+        }
     }
+
+    fun toRFC2253String(): String {
+        val attrValue = (value as? Asn1Primitive)?.let { prim ->
+            runCatching {
+                var decodedValue = Asn1String.decodeFromTlv(prim).value
+                val wasQuoted = decodedValue.startsWith("\"") && decodedValue.endsWith("\"")
+                decodedValue = decodedValue.removeSurrounding("\"")
+                val wasBackslashFirst = decodedValue.startsWith("\\")
+                val unescaped = decodedValue.replace("""\\(.)""".toRegex(), "$1")
+
+                canonicalizeString(unescaped, wasQuoted, wasBackslashFirst)
+            }.getOrElse { "#" + prim.content.toHexString() }
+        } ?: ("#" + value.toDerHexString())
+
+        return "$attrType=$attrValue".lowercase()
+    }
+
+
+
+    /**
+     * Canonicalize string according to RFC 2253 rules.
+     *
+     * @param wasQuoted If true, we preserve characters like '+' without escaping.
+     * @param wasBackSlashFirst used for checking is '#' intentionally escaped in hex
+     */
+    private fun canonicalizeString(
+        input: String,
+        wasQuoted: Boolean,
+        wasBackSlashFirst: Boolean
+    ): String {
+        if (input.isEmpty()) return ""
+        if (wasQuoted) return input.trim().replace(Regex("\\s+"), " ")
+        val escapees = ",+<>;\"\\="
+
+        // Escape leading/trailing spaces (RFC 2253)
+        val s = buildString {
+            if (input.startsWith(' ')) append('\\')
+            append(input)
+            if (input.endsWith(' ')) {
+                deleteAt(length - 1)
+                append("\\ ")
+            }
+        }
+
+        return buildString {
+            var previousWasSpace = false
+            var startIndex = 0
+
+            // Handle leading # for hex encoding
+            if (s.startsWith("#")) {
+                val hexPart = s.drop(1)
+                val isHex = hexPart.length % 2 == 0 && hexPart.all { it.isDigit() || it.lowercaseChar() in 'a'..'f' }
+                if (isHex && !wasBackSlashFirst) {
+                    append('#')
+                    startIndex = 1
+                } else {
+                    append('\\').append('#')
+                    startIndex = 1
+                }
+            }
+
+            for (c in s.drop(startIndex)) {
+                when {
+                    c.isWhitespace() -> {
+                        if (!previousWasSpace) {
+                            append(' ')
+                            previousWasSpace = true
+                        }
+                    }
+                    c in escapees -> {
+                        append('\\').append(c)
+                        previousWasSpace = false
+                    }
+                    else -> {
+                        append(c)
+                        previousWasSpace = false
+                    }
+                }
+            }
+        }
+    }
+}
+
+object Rfc2253Constants {
+    // Predefined RFC2253 keyword order
+    val ORDER = listOf(
+        "CN", "C", "L", "S", "ST", "O", "OU", "T", "IP", "STREET",
+        "DC", "DNQUALIFIER", "DNQ", "SURNAME", "GIVENNAME",
+        "INITIALS", "GENERATION", "EMAIL", "EMAILADDRESS",
+        "UID", "SERIALNUMBER"
+    ).withIndex().associate { it.value.uppercase() to it.index }
 }

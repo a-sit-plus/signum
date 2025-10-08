@@ -64,6 +64,8 @@ kotlin {
             api(libs.bignum)
             implementation(project(":internals"))
             api(libs.securerandom)
+            api(libs.cidre)
+            api(libs.urikmp)
         }
 
 
