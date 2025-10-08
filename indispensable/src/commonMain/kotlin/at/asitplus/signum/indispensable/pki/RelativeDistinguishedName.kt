@@ -65,54 +65,30 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
 
         /** Split on the first unescaped delimiter */
         private fun splitFirstUnescaped(input: String, delimiter: Char): List<String> {
-            val sb = StringBuilder()
-            var escaped = false
-            for ((i, c) in input.withIndex()) {
-                when {
-                    escaped -> {
-                        sb.append('\\').append(c) // preserve the escape
-                        escaped = false
-                    }
-                    c == '\\' -> escaped = true
-                    c == delimiter -> return listOf(sb.toString(), input.substring(i + 1))
-                    else -> sb.append(c)
-                }
-            }
-            return listOf(sb.toString())
+            val regex = Regex("(?<!\\\\)${Regex.escape(delimiter.toString())}")
+            return input.split(regex, limit = 2)
         }
-
 
         /** Utility function that respects escape sequences */
         private fun splitRespectingEscapeAndQuotes(input: String, delimiter: Char): List<String> {
-            val parts = mutableListOf<String>()
-            val sb = StringBuilder()
-            var escaped = false
-            var inQuotes = false
+            val d = Regex.escape(delimiter.toString())
+            val tokenPattern = """"(?:\\.|[^"\\])*"|\\.|[^"\\${d}]+|${d}"""
+            val regex = Regex(tokenPattern)
 
-            input.forEach { c ->
-                when {
-                    escaped -> {
-                        sb.append('\\').append(c) // preserve escape
-                        escaped = false
-                    }
-                    c == '\\' -> escaped = true
-                    c == '"' -> {
-                        sb.append(c)
-                        inQuotes = !inQuotes
-                    }
-                    c == delimiter && !inQuotes -> {
-                        parts.add(sb.toString())
+            return buildList {
+                val sb = StringBuilder()
+                for (match in regex.findAll(input)) {
+                    val token = match.value
+                    if (token.length == 1 && token[0] == delimiter) {
+                        add(sb.toString())
                         sb.clear()
+                    } else {
+                        sb.append(token)
                     }
-                    else -> sb.append(c)
                 }
+                add(sb.toString().trim())
             }
-
-            parts.add(sb.toString().trim())
-            return parts
         }
-
-
     }
 
     override fun toString() = "DistinguishedName(attrsAndValues=${attrsAndValues.joinToString()})"
@@ -317,7 +293,7 @@ open class AttributeTypeAndValue(
         wasBackSlashFirst: Boolean
     ): String {
         if (input.isEmpty()) return ""
-        if (wasQuoted) return input.trim()
+        if (wasQuoted) return input.trim().replace(Regex("\\s+"), " ")
         val escapees = ",+<>;\"\\="
 
         // Escape leading/trailing spaces (RFC 2253)

@@ -53,30 +53,31 @@ class X500Name internal constructor(
          * Parse an RFC 2253 string (e.g., "CN=John Doe,O=Company,C=US") into an X500Name
          */
         fun fromString(value: String): X500Name {
-            val rdns = mutableListOf<RelativeDistinguishedName>()
-            var start = 0
-            var i = 0
-            var inEscape = false
+            if (value.isBlank()) return X500Name(emptyList())
 
-            while (i < value.length) {
-                val c = value[i]
-                when {
-                    inEscape -> inEscape = false
-                    c == '\\' -> inEscape = true
-                    c == ',' || c == ';' -> {
-                        val rdnStr = value.substring(start, i).trim()
-                        if (rdnStr.isNotEmpty()) rdns.add(RelativeDistinguishedName.fromString(rdnStr))
-                        start = i + 1
+            val delimiterPattern = "[,;]"
+            val tokenPattern = """"(?:\\.|[^"\\])*"|\\.|[^"\\,;]+|[,;]"""
+            val regex = Regex(tokenPattern)
+
+            return X500Name(
+                buildList {
+                    var current = buildString { }
+
+                    for (match in regex.findAll(value)) {
+                        val token = match.value
+                        if (token.length == 1 && token.matches(Regex(delimiterPattern))) {
+                            val rdnStr = current.trim()
+                            if (rdnStr.isNotEmpty()) add(RelativeDistinguishedName.fromString(rdnStr))
+                            current = buildString { } // reset buffer
+                        } else {
+                            current += token
+                        }
                     }
+
+                    val last = current.trim()
+                    if (last.isNotEmpty()) add(RelativeDistinguishedName.fromString(last))
                 }
-                i++
-            }
-
-            // Last RDN
-            val lastRdn = value.substring(start).trim()
-            if (lastRdn.isNotEmpty()) rdns.add(RelativeDistinguishedName.fromString(lastRdn))
-
-            return X500Name(rdns)
+            )
         }
     }
 
