@@ -4,14 +4,23 @@ import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.succeed
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import at.asitplus.testballoon.checkAllTests
+import at.asitplus.testballoon.checkAllSuites
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
 import kotlin.random.Random
+import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.testScope
+import kotlin.time.Duration.Companion.minutes
 
 @OptIn(HazardousMaterials::class)
-class ApiTest : FreeSpec({
+val ApiTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
 
     "Utterly Untyped v2" - {
         withData(
@@ -22,7 +31,7 @@ class ApiTest : FreeSpec({
                 SymmetricEncryptionAlgorithm.AES_128.ECB,
                 SymmetricEncryptionAlgorithm.ChaCha20Poly1305
             ).map { runBlocking {
-                val key = it.randomKey()
+                val key = it.randomKey(Random.Default)
                 val plain = Random.nextBytes(131)
                 val encrypted = key.encrypt(plain).getOrThrow()
                 Triple(key, plain, encrypted)
@@ -45,7 +54,7 @@ class ApiTest : FreeSpec({
         ) { algorithm ->
 
             //create a key, encrypt and decrypt works!
-            val key = algorithm.randomKey()
+            val key = algorithm.randomKey(Random.Default)
             val plain = "Harvest".encodeToByteArray()
             val box = key.encrypt(plain).getOrThrow()
             box.decrypt(key).onSuccess { it shouldBe plain } should succeed
@@ -204,7 +213,7 @@ class ApiTest : FreeSpec({
             val algorithm = it
 
             //create a key, encrypt and decrypt works!
-            val key = algorithm.randomKey()
+            val key = algorithm.randomKey(Random.Default)
             val box = key.encrypt("Harvest".encodeToByteArray()).getOrThrow()
             box.decrypt(key) should succeed
 
@@ -239,4 +248,4 @@ class ApiTest : FreeSpec({
         }
     }
 
-})
+}
