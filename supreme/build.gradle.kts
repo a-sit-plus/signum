@@ -54,7 +54,7 @@ kotlin {
         withDeviceTestBuilder {
             sourceSetTreeName = "test"
         }.configure {
-            instrumentationRunnerArguments["timeout_msec"] = "5400000"
+            instrumentationRunnerArguments["timeout_msec"] = "5000"
             managedDevices {
                 localDevices {
                     create("pixelAVD").apply {
