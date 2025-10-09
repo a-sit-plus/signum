@@ -21,49 +21,53 @@ import kotlin.time.Instant
 import kotlin.time.Clock
 
 class CertificateValidationContext(
-//   Basic constraints should be ignored in SEAL certificate verification
-    val basicConstraintsCheck: Boolean = true,
+    val performBasicConstraintsCheck: Boolean = true,
+    val performPolicyCheck: Boolean = true,
+    val performNameConstraintsCheck: Boolean = true,
+    val performKeyUsageCheck: Boolean = true,
     val date: Instant = Clock.System.now(),
     val explicitPolicyRequired: Boolean = false,
     val policyMappingInhibited: Boolean = false,
     val anyPolicyInhibited: Boolean = false,
     val policyQualifiersRejected: Boolean = false,
     val initialPolicies: Set<ObjectIdentifier> = emptySet(),
-    val trustAnchors: Set<TrustAnchor> = emptySet()
+    val trustAnchors: Set<TrustAnchor> = emptySet(),
+    val validators: Set<CertificateValidator> = emptySet()
 )
 
-class CertificateValidationResult (
+data class CertificateValidationResult (
     val rootPolicyNode: PolicyNode? = null,
-    val subject: X509Certificate
+    val subject: X509Certificate,
 )
 
 suspend fun CertificateChain.validate(
     context: CertificateValidationContext = CertificateValidationContext(),
 ) : CertificateValidationResult {
 
-    val validators = mutableListOf<CertificateValidator>()
+    val validators = context.validators.toMutableSet()
 
-    val rootNode = PolicyNode(
-        parent = null,
-        validPolicy = KnownOIDs.anyPolicy,
-        criticalityIndicator = false,
-        expectedPolicySet = setOf(KnownOIDs.anyPolicy),
-        generatedByPolicyMapping = false
-    )
-    validators.add(
-        PolicyValidator(
-            initialPolicies = context.initialPolicies,
-            expPolicyRequired = context.explicitPolicyRequired,
-            polMappingInhibited = context.policyMappingInhibited,
-            anyPolicyInhibited = context.anyPolicyInhibited,
-            certPathLen = this.size,
-            rejectPolicyQualifiers = context.policyQualifiersRejected,
-            rootNode = rootNode
+    when {
+        context.performPolicyCheck -> validators.addIfMissing(
+            PolicyValidator(
+                initialPolicies = context.initialPolicies,
+                expPolicyRequired = context.explicitPolicyRequired,
+                polMappingInhibited = context.policyMappingInhibited,
+                anyPolicyInhibited = context.anyPolicyInhibited,
+                certPathLen = this.size,
+                rejectPolicyQualifiers = context.policyQualifiersRejected,
+                rootNode = PolicyNode(
+                    parent = null,
+                    validPolicy = KnownOIDs.anyPolicy,
+                    criticalityIndicator = false,
+                    expectedPolicySet = setOf(KnownOIDs.anyPolicy),
+                    generatedByPolicyMapping = false
+                )
+            )
         )
-    )
-    validators.add(NameConstraintsValidator(this.size))
-    validators.add(KeyUsageValidator(this.size))
-    if (context.basicConstraintsCheck) validators.add(BasicConstraintsValidator(this.size))
+        context.performNameConstraintsCheck -> validators.addIfMissing(NameConstraintsValidator(this.size))
+        context.performKeyUsageCheck -> validators.addIfMissing(KeyUsageValidator(this.size))
+        context.performKeyUsageCheck -> validators.addIfMissing(BasicConstraintsValidator(this.size))
+    }
 
     if (!context.trustAnchors.haveIssuerFor(this.root)) throw CertificateChainValidatorException("Untrusted root certificate.")
 
@@ -85,6 +89,10 @@ suspend fun CertificateChain.validate(
         }
     }
     return CertificateValidationResult((validators.find { it is PolicyValidator } as? PolicyValidator)?.rootNode, this.leaf)
+}
+
+fun <T : CertificateValidator> MutableCollection<CertificateValidator>.addIfMissing(validator: T) {
+    if (none { it::class == validator::class }) add(validator)
 }
 
 private fun verifySignature(
