@@ -1,0 +1,70 @@
+package at.asitplus.signum.supreme.validate
+
+import at.asitplus.signum.CertificateChainValidatorException
+import at.asitplus.signum.CryptoOperationFailed
+import at.asitplus.signum.indispensable.X509SignatureAlgorithm
+import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.pki.CertificateChain
+import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
+import at.asitplus.signum.supreme.sign.verifierFor
+import at.asitplus.signum.supreme.sign.verify
+import kotlin.time.Instant
+
+class ChainValidator(
+    private val certificateChain: CertificateChain,
+    private var currentCertIndex: Int = 0
+) : CertificateValidator {
+    override suspend fun check(
+        currCert: X509Certificate,
+        remainingCriticalExtensions: MutableSet<ObjectIdentifier>
+    ) {
+        if (currentCertIndex < certificateChain.lastIndex) {
+            val childCert = certificateChain[currentCertIndex + 1]
+            verifySignature(childCert, issuer = currCert, childCert == certificateChain.last())
+            subjectAndIssuerPrincipalMatch(childCert, issuer = currCert)
+            wasCertificateIssuedWithinIssuerValidityPeriod(
+                childCert.tbsCertificate.validFrom.instant,
+                issuer = currCert
+            )
+            currentCertIndex++
+        }
+    }
+
+    private fun verifySignature(
+        cert: X509Certificate,
+        issuer: X509Certificate,
+        isLeaf: Boolean,
+    ) {
+        val verifier = (cert.signatureAlgorithm as X509SignatureAlgorithm).verifierFor(issuer.decodedPublicKey.getOrThrow()).getOrThrow()
+        if (!verifier.verify(cert.tbsCertificate.encodeToDer(), cert.decodedSignature.getOrThrow()).isSuccess) {
+            throw CryptoOperationFailed("Signature verification failed in ${if (isLeaf) "leaf" else "CA"} certificate.")
+        }
+    }
+
+    private fun subjectAndIssuerPrincipalMatch(
+        cert: X509Certificate,
+        issuer: X509Certificate
+    ) {
+        val issuerInChildPrincipal = cert.tbsCertificate.issuerName
+        val subjectInIssuerPrincipal = issuer.tbsCertificate.subjectName
+        if (issuerInChildPrincipal != subjectInIssuerPrincipal) {
+            throw CertificateChainValidatorException("Subject of issuer cert and issuer of child certificate mismatch.")
+        }
+
+        if (cert.tbsCertificate.issuerUniqueID != issuer.tbsCertificate.subjectUniqueID) {
+            throw CertificateChainValidatorException("UID of issuer cert and UID of issuer in child certificate mismatch.")
+        }
+    }
+
+    private fun wasCertificateIssuedWithinIssuerValidityPeriod(
+        dateOfIssuance: Instant,
+        issuer: X509Certificate
+    ) {
+        val beginValidity = issuer.tbsCertificate.validFrom.instant
+        val endValidity = issuer.tbsCertificate.validUntil.instant
+        if (beginValidity > dateOfIssuance || dateOfIssuance > endValidity) {
+            throw CertificateChainValidatorException("Certificate issued outside issuer validity period.")
+        }
+    }
+}

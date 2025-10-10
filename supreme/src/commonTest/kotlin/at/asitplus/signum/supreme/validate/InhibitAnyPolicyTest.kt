@@ -3,10 +3,12 @@ package at.asitplus.signum.supreme.validate
 import at.asitplus.signum.CertificatePolicyException
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.validate.PolicyValidator
 import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 
 /*
 * PKITS 4.12 Inhibit Any Policy
@@ -179,10 +181,10 @@ open class InhibitAnyPolicyTest : FreeSpec({
         val ca = X509Certificate.decodeFromPem(inhibitAnyPolicy0CACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
-
-        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        val result = chain.validate(defaultContext)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Valid inhibitAnyPolicy Test2" {
@@ -213,7 +215,9 @@ open class InhibitAnyPolicyTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
 
-        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
+        val result = chain.validate(defaultContext)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
     }
 
     "inhibitAnyPolicy Test3" {
@@ -245,12 +249,15 @@ open class InhibitAnyPolicyTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
-        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
+        var result = chain.validate(defaultContext)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
 
         val context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), anyPolicyInhibited = true)
-        shouldThrow<CertificatePolicyException> { chain.validate(context) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        result = chain.validate(context)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Invalid inhibitAnyPolicy Test4" {
@@ -282,9 +289,10 @@ open class InhibitAnyPolicyTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
-        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        val result = chain.validate(defaultContext)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Invalid inhibitAnyPolicy Test5" {
@@ -386,9 +394,10 @@ open class InhibitAnyPolicyTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSubCa, subCa, ca)
 
-        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        val result = chain.validate(defaultContext)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Invalid inhibitAnyPolicy Test6" {
@@ -443,9 +452,10 @@ open class InhibitAnyPolicyTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
-        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        val result = chain.validate(defaultContext)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Valid Self-Issued inhibitAnyPolicy Test7" {
@@ -478,7 +488,9 @@ open class InhibitAnyPolicyTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, selfIssuedCa, ca)
 
-        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
+        val result = chain.validate(defaultContext)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
     }
 
     "Invalid Self-Issued inhibitAnyPolicy Test8" {
@@ -535,9 +547,10 @@ open class InhibitAnyPolicyTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSubCa, subCa, selfIssuedCa, ca)
 
-        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        val result = chain.validate(defaultContext)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Valid Self-Issued inhibitAnyPolicy Test9" {
@@ -594,7 +607,9 @@ open class InhibitAnyPolicyTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, selfIssuedSubCa, subCa, selfIssuedCa, ca)
 
-        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
+        val result = chain.validate(defaultContext)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
     }
 
     "Invalid Self-Issued inhibitAnyPolicy Test10" {
@@ -627,8 +642,9 @@ open class InhibitAnyPolicyTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, selfIssuedCa, ca)
 
-        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        val result = chain.validate(defaultContext)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 })
