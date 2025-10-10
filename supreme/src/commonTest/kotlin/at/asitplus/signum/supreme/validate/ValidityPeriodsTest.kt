@@ -9,6 +9,7 @@ import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
@@ -150,8 +151,10 @@ open class ValidityPeriodsTest : FreeSpec({
 
         // Validation fails due to the wasCertificateIssuedWithinIssuerValidityPeriod check,
         // because it is called before individual time validity check on leaf
-        shouldThrow<CertificateChainValidatorException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Certificate issued outside issuer validity period."
+        shouldThrow<CertificateValidityException> { chain.validate(defaultContext) }.apply {
+            message shouldBe "certificate not valid till " + leaf.tbsCertificate.validFrom.instant.toLocalDateTime(
+                TimeZone.currentSystemDefault()
+            )
         }
     }
 
@@ -183,10 +186,16 @@ open class ValidityPeriodsTest : FreeSpec({
 
         // Validation fails due to the wasCertificateIssuedWithinIssuerValidityPeriod check,
         // even though all certificates pass their individual validity checks as required by the test suite.
-        runCatching { chain.validate(defaultContext) }
-            .onFailure {
-                if (it is CertificateValidityException) fail("Unexpected CertificateValidityException: ${it.message}")
-            }
+        val result = chain.validate(defaultContext)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == ChainValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        // Validation fails due to the wasCertificateIssuedWithinIssuerValidityPeriod check,
+        // because it is called before individual time validity check on leaf
+        validatorResult!!.errorMessage shouldBe "Certificate issued outside issuer validity period."
+//        runCatching { chain.validate(defaultContext) }
+//            .onFailure {
+//                if (it is CertificateValidityException) fail("Unexpected CertificateValidityException: ${it.message}")
+//            }
     }
 
     "Valid GeneralizedTime notBefore Date Test4" {
@@ -216,12 +225,16 @@ open class ValidityPeriodsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, goodCACert)
 
+        val result = chain.validate(defaultContext)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == ChainValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
         // Validation fails due to the wasCertificateIssuedWithinIssuerValidityPeriod check,
-        // even though all certificates pass their individual validity checks as required by the test suite.
-        runCatching { chain.validate(defaultContext) }
-            .onFailure {
-                if (it is CertificateValidityException) fail("Unexpected CertificateValidityException: ${it.message}")
-            }
+        // because it is called before individual time validity check on leaf
+        validatorResult!!.errorMessage shouldBe "Certificate issued outside issuer validity period."
+//        runCatching { chain.validate(defaultContext) }
+//            .onFailure {
+//                if (it is CertificateValidityException) fail("Unexpected CertificateValidityException: ${it.message}")
+//            }
     }
 
     "Invalid CA notAfter Date Test5" {
@@ -341,10 +354,10 @@ open class ValidityPeriodsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, goodCACert)
 
-        // Validation fails due to the wasCertificateIssuedWithinIssuerValidityPeriod check,
-        // because it is called before individual time validity check on leaf
-        shouldThrow<CertificateChainValidatorException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Certificate issued outside issuer validity period."
+        shouldThrow<CertificateValidityException> { chain.validate(defaultContext) }.apply {
+            message shouldBe "certificate expired on " + leaf.tbsCertificate.validUntil.instant.toLocalDateTime(
+                TimeZone.currentSystemDefault()
+            )
         }
     }
 
@@ -375,6 +388,8 @@ open class ValidityPeriodsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, goodCACert)
 
-        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
+        val result = chain.validate(defaultContext)
+        result.validatorResults.firstOrNull { it.validatorName == ChainValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
     }
 })

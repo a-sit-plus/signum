@@ -7,10 +7,13 @@ import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificatePoliciesExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.Qualifier
+import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
+import at.asitplus.signum.indispensable.pki.validate.PolicyValidator
 import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 
 /*
 * PKITS 4.8 Certificate Policies
@@ -211,23 +214,28 @@ open class CertificatePoliciesTest : FreeSpec({
             trustAnchors = setOf(trustAnchor),
             explicitPolicyRequired = true
         )
-        shouldNotThrow<Throwable> { chain.validate(context) }
+        var result = chain.validate(context)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
 
         context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
             explicitPolicyRequired = true,
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne))
         )
-        shouldNotThrow<Throwable> { chain.validate(context) }
+        result = chain.validate(context)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
 
         context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
             explicitPolicyRequired = true,
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo))
         )
-        shouldThrow<CertificatePolicyException> { chain.validate(context) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        result = chain.validate(context)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
 
         context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
@@ -237,8 +245,9 @@ open class CertificatePoliciesTest : FreeSpec({
                 ObjectIdentifier(NISTTestPolicyTwo)
             )
         )
-        shouldNotThrow<Throwable> { chain.validate(context) }
-    }
+        result = chain.validate(context)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0    }
 
     "All Certificates No Policies Test2" {
         val noPoliciesCACert = "-----BEGIN CERTIFICATE-----\n" +
@@ -289,15 +298,18 @@ open class CertificatePoliciesTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
 
-        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
+        var result = chain.validate(defaultContext)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
 
         val context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
             explicitPolicyRequired = true
         )
-        shouldThrow<CertificatePolicyException> { chain.validate(context) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        result = chain.validate(context)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Different Policies Test3" {
@@ -329,15 +341,18 @@ open class CertificatePoliciesTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
-        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
+        var result = chain.validate(defaultContext)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
 
         var context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
             explicitPolicyRequired = true
         )
-        shouldThrow<CertificatePolicyException> { chain.validate(context) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        result = chain.validate(context)
+        var validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
 
         context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
@@ -347,9 +362,10 @@ open class CertificatePoliciesTest : FreeSpec({
                 ObjectIdentifier(NISTTestPolicyTwo)
             )
         )
-        shouldThrow<CertificatePolicyException> { chain.validate(context) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        result = chain.validate(context)
+        validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Different Policies Test4" {
@@ -402,9 +418,10 @@ open class CertificatePoliciesTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
-        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        val result = chain.validate(defaultContext)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Different Policies Test5" {
@@ -459,9 +476,10 @@ open class CertificatePoliciesTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
-        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        val result = chain.validate(defaultContext)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Overlapping Policies Test6" {
@@ -564,21 +582,26 @@ open class CertificatePoliciesTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSubCa, subCa, ca)
 
-        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
+        var result = chain.validate(defaultContext)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
 
         var context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne))
         )
-        shouldNotThrow<Throwable> { chain.validate(context) }
+        result = chain.validate(context)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
 
         context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo))
         )
-        shouldThrow<CertificatePolicyException> { chain.validate(context) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        result = chain.validate(context)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Different Policies Test7" {
@@ -634,9 +657,10 @@ open class CertificatePoliciesTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSubCa, subCa, ca)
 
-        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        val result = chain.validate(defaultContext)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Different Policies Test8" {
@@ -714,9 +738,10 @@ open class CertificatePoliciesTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSubCa, subCa, ca)
 
-        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        val result = chain.validate(defaultContext)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Different Policies Test9" {
@@ -797,9 +822,10 @@ open class CertificatePoliciesTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSubSubCa, subSubCa, subCa, ca)
 
-        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        val result = chain.validate(defaultContext)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "All Certificates Same Policies Test10" {
@@ -830,19 +856,25 @@ open class CertificatePoliciesTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
 
-        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
+        var result = chain.validate(defaultContext)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
 
         var context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne))
         )
-        shouldNotThrow<Throwable> { chain.validate(context) }
+        result = chain.validate(context)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
 
         context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo))
         )
-        shouldNotThrow<Throwable> { chain.validate(context) }
+        result = chain.validate(context)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
     }
 
     "All Certificates AnyPolicy Test11" {
@@ -873,13 +905,17 @@ open class CertificatePoliciesTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
 
-        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
+        var result = chain.validate(defaultContext)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
 
         val context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne))
         )
-        shouldNotThrow<Throwable> { chain.validate(context) }
+        result = chain.validate(context)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
     }
 
     "Different Policies Test12" {
@@ -933,9 +969,10 @@ open class CertificatePoliciesTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
 
-        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        val result = chain.validate(defaultContext)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "All Certificates Same Policies Test13" {
@@ -970,19 +1007,25 @@ open class CertificatePoliciesTest : FreeSpec({
             trustAnchors = setOf(trustAnchor),
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne))
         )
-        shouldNotThrow<Throwable> { chain.validate(context) }
+        var result = chain.validate(context)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
 
         context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo))
         )
-        shouldNotThrow<Throwable> { chain.validate(context) }
+        result = chain.validate(context)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
 
         context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyThree))
         )
-        shouldNotThrow<Throwable> { chain.validate(context) }
+        result = chain.validate(context)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
     }
 
     "AnyPolicy Test14" {
@@ -1016,15 +1059,18 @@ open class CertificatePoliciesTest : FreeSpec({
             trustAnchors = setOf(trustAnchor),
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne))
         )
-        shouldNotThrow<Throwable> { chain.validate(context) }
+        var result = chain.validate(context)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
 
         context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo))
         )
-        shouldThrow<CertificatePolicyException> { chain.validate(context) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        result = chain.validate(context)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "User Notice Qualifier Test15" {
@@ -1056,10 +1102,10 @@ open class CertificatePoliciesTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf)
 
-        shouldNotThrow<Throwable> {
-            val validationResult = chain.validate(defaultContext)
-            validationResult.rootPolicyNode?.getAllSubtreeQualifiers()?.size shouldBe 1
-        }
+        var result = chain.validate(defaultContext)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
+        result.rootPolicyNode?.getAllSubtreeQualifiers()?.size shouldBe 1
     }
 
     "User Notice Qualifier Test16" {
@@ -1094,19 +1140,20 @@ open class CertificatePoliciesTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
 
-        shouldNotThrow<Throwable> {
-            val validationResult = chain.validate(defaultContext)
-            val qualifiers = validationResult.rootPolicyNode?.getAllSubtreeQualifiers()
-            qualifiers?.size shouldBe 1
+        val result = chain.validate(defaultContext)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
 
-            val displayedQualifier = qualifiers?.first()?.qualifier as Qualifier.UserNotice
-            val expectedQualifier = leaf.findExtension<CertificatePoliciesExtension>()
-                ?.certificatePolicies
-                ?.first { it.oid.toString() == NISTTestPolicyOne } // Verify whether the given qualifier is correctly associated with the specified policy
-                ?.policyQualifiers?.first()
-                ?.qualifier as Qualifier.UserNotice
-            displayedQualifier.explicitText?.value shouldBe expectedQualifier.explicitText?.value
-        }
+        val qualifiers = result.rootPolicyNode?.getAllSubtreeQualifiers()
+        qualifiers?.size shouldBe 1
+
+        val displayedQualifier = qualifiers?.first()?.qualifier as Qualifier.UserNotice
+        val expectedQualifier = leaf.findExtension<CertificatePoliciesExtension>()
+            ?.certificatePolicies
+            ?.first { it.oid.toString() == NISTTestPolicyOne } // Verify whether the given qualifier is correctly associated with the specified policy
+            ?.policyQualifiers?.first()
+            ?.qualifier as Qualifier.UserNotice
+        displayedQualifier.explicitText?.value shouldBe expectedQualifier.explicitText?.value
     }
 
     "User Notice Qualifier Test17" {
@@ -1138,20 +1185,21 @@ open class CertificatePoliciesTest : FreeSpec({
         val ca = X509Certificate.decodeFromPem(goodCACert).getOrThrow()
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
+        val result = chain.validate(defaultContext)
 
-        shouldNotThrow<Throwable> {
-            val validationResult = chain.validate(defaultContext)
-            val qualifiers = validationResult.rootPolicyNode?.getAllSubtreeQualifiers()
-            qualifiers?.size shouldBe 1
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
 
-            val displayedQualifier = qualifiers?.first()?.qualifier as Qualifier.UserNotice
-            val expectedQualifier = leaf.findExtension<CertificatePoliciesExtension>()
-                ?.certificatePolicies
-                ?.first { it.oid == KnownOIDs.anyPolicy } // Verify whether the given qualifier is correctly associated with the specified policy
-                ?.policyQualifiers?.first()
-                ?.qualifier as Qualifier.UserNotice
-            displayedQualifier.explicitText?.value shouldBe expectedQualifier.explicitText?.value
-        }
+        val qualifiers = result.rootPolicyNode?.getAllSubtreeQualifiers()
+        qualifiers?.size shouldBe 1
+
+        val displayedQualifier = qualifiers?.first()?.qualifier as Qualifier.UserNotice
+        val expectedQualifier = leaf.findExtension<CertificatePoliciesExtension>()
+            ?.certificatePolicies
+            ?.first { it.oid == KnownOIDs.anyPolicy } // Verify whether the given qualifier is correctly associated with the specified policy
+            ?.policyQualifiers?.first()
+            ?.qualifier as Qualifier.UserNotice
+        displayedQualifier.explicitText?.value shouldBe expectedQualifier.explicitText?.value
     }
 
     "User Notice Qualifier Test18" {
@@ -1192,37 +1240,40 @@ open class CertificatePoliciesTest : FreeSpec({
             trustAnchors = setOf(trustAnchor),
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne))
         )
-        shouldNotThrow<Throwable> {
-            val validationResult = chain.validate(context)
-            val qualifiers = validationResult.rootPolicyNode?.getAllSubtreeQualifiers()
-            qualifiers?.size shouldBe 1
+        var result = chain.validate(context)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
 
-            val displayedQualifier = qualifiers?.first()?.qualifier as Qualifier.UserNotice
-            val expectedQualifier = leaf.findExtension<CertificatePoliciesExtension>()
-                ?.certificatePolicies
-                ?.first { it.oid.toString() == NISTTestPolicyOne } // Verify whether the given qualifier is correctly associated with the specified policy
-                ?.policyQualifiers?.first()
-                ?.qualifier as Qualifier.UserNotice
-            displayedQualifier.explicitText?.value shouldBe expectedQualifier.explicitText?.value
-        }
+        var qualifiers = result.rootPolicyNode?.getAllSubtreeQualifiers()
+        qualifiers?.size shouldBe 1
+
+        var displayedQualifier = qualifiers?.first()?.qualifier as Qualifier.UserNotice
+        var expectedQualifier = leaf.findExtension<CertificatePoliciesExtension>()
+            ?.certificatePolicies
+            ?.first { it.oid.toString() == NISTTestPolicyOne } // Verify whether the given qualifier is correctly associated with the specified policy
+            ?.policyQualifiers?.first()
+            ?.qualifier as Qualifier.UserNotice
+        displayedQualifier.explicitText?.value shouldBe expectedQualifier.explicitText?.value
+
 
         context = CertificateValidationContext(
             trustAnchors = setOf(trustAnchor),
             initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo))
         )
-        shouldNotThrow<Throwable> {
-            val validationResult = chain.validate(context)
-            val qualifiers = validationResult.rootPolicyNode?.getAllSubtreeQualifiers()
-            qualifiers?.size shouldBe 1
+        result = chain.validate(context)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
 
-            val displayedQualifier = qualifiers?.first()?.qualifier as Qualifier.UserNotice
-            val expectedQualifier = leaf.findExtension<CertificatePoliciesExtension>()
-                ?.certificatePolicies
-                ?.first { it.oid == KnownOIDs.anyPolicy } // Verify whether the given qualifier is correctly associated with the specified policy
-                ?.policyQualifiers?.first()
-                ?.qualifier as Qualifier.UserNotice
-            displayedQualifier.explicitText?.value shouldBe expectedQualifier.explicitText?.value
-        }
+        qualifiers = result.rootPolicyNode?.getAllSubtreeQualifiers()
+        qualifiers?.size shouldBe 1
+
+        displayedQualifier = qualifiers?.first()?.qualifier as Qualifier.UserNotice
+        expectedQualifier = leaf.findExtension<CertificatePoliciesExtension>()
+            ?.certificatePolicies
+            ?.first { it.oid == KnownOIDs.anyPolicy } // Verify whether the given qualifier is correctly associated with the specified policy
+            ?.policyQualifiers?.first()
+            ?.qualifier as Qualifier.UserNotice
+        displayedQualifier.explicitText?.value shouldBe expectedQualifier.explicitText?.value
     }
 
     "User Notice Qualifier Test19" {
@@ -1258,20 +1309,20 @@ open class CertificatePoliciesTest : FreeSpec({
 
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf)
+        val result = chain.validate(defaultContext)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
 
-        shouldNotThrow<Throwable> {
-            val validationResult = chain.validate(defaultContext)
-            val qualifiers = validationResult.rootPolicyNode?.getAllSubtreeQualifiers()
-            qualifiers?.size shouldBe 1
+        val qualifiers = result.rootPolicyNode?.getAllSubtreeQualifiers()
+        qualifiers?.size shouldBe 1
 
-            val displayedQualifier = qualifiers?.first()?.qualifier as Qualifier.UserNotice
-            val expectedQualifier = leaf.findExtension<CertificatePoliciesExtension>()
-                ?.certificatePolicies
-                ?.first { it.oid.toString() == NISTTestPolicyOne } // Verify whether the given qualifier is correctly associated with the specified policy
-                ?.policyQualifiers?.first()
-                ?.qualifier as Qualifier.UserNotice
-            displayedQualifier.explicitText?.value shouldBe expectedQualifier.explicitText?.value
-        }
+        val displayedQualifier = qualifiers?.first()?.qualifier as Qualifier.UserNotice
+        val expectedQualifier = leaf.findExtension<CertificatePoliciesExtension>()
+            ?.certificatePolicies
+            ?.first { it.oid.toString() == NISTTestPolicyOne } // Verify whether the given qualifier is correctly associated with the specified policy
+            ?.policyQualifiers?.first()
+            ?.qualifier as Qualifier.UserNotice
+        displayedQualifier.explicitText?.value shouldBe expectedQualifier.explicitText?.value
     }
 
     "CPS Pointer Qualifier Test20" {
@@ -1308,18 +1359,19 @@ open class CertificatePoliciesTest : FreeSpec({
             trustAnchors = setOf(trustAnchor),
             explicitPolicyRequired = true
         )
-        shouldNotThrow<Throwable> {
-            val validationResult = chain.validate(context)
-            val qualifiers = validationResult.rootPolicyNode?.getAllSubtreeQualifiers()
-            qualifiers?.size shouldBe 1
+        val result = chain.validate(context)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
 
-            val displayedQualifier = qualifiers?.first()?.qualifier as Qualifier.CPSUri
-            val expectedQualifier = leaf.findExtension<CertificatePoliciesExtension>()
-                ?.certificatePolicies
-                ?.first { it.oid.toString() == NISTTestPolicyOne } // Verify whether the given qualifier is correctly associated with the specified policy
-                ?.policyQualifiers?.first()
-                ?.qualifier as Qualifier.CPSUri
-            displayedQualifier.uri.value shouldBe expectedQualifier.uri.value
-        }
+        val qualifiers = result.rootPolicyNode?.getAllSubtreeQualifiers()
+        qualifiers?.size shouldBe 1
+
+        val displayedQualifier = qualifiers?.first()?.qualifier as Qualifier.CPSUri
+        val expectedQualifier = leaf.findExtension<CertificatePoliciesExtension>()
+            ?.certificatePolicies
+            ?.first { it.oid.toString() == NISTTestPolicyOne } // Verify whether the given qualifier is correctly associated with the specified policy
+            ?.policyQualifiers?.first()
+            ?.qualifier as Qualifier.CPSUri
+        displayedQualifier.uri.value shouldBe expectedQualifier.uri.value
     }
 })

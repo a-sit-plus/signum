@@ -3,10 +3,12 @@ package at.asitplus.signum.supreme.validate
 import at.asitplus.signum.CertificatePolicyException
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.validate.PolicyValidator
 import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 
 /*
 * PKITS 4.9 Require Explicit Policy
@@ -229,7 +231,9 @@ open class RequireExplicitPolicyTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSubSubCa, subSubCa, subCa, ca)
 
-        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
+        val result = chain.validate(defaultContext)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
     }
 
     "Valid RequireExplicitPolicy Test2" {
@@ -355,7 +359,9 @@ open class RequireExplicitPolicyTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSubSubCa, subSubCa, subCa, ca)
 
-        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
+        val result = chain.validate(defaultContext)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
     }
 
     "Invalid RequireExplicitPolicy Test3" {
@@ -481,9 +487,10 @@ open class RequireExplicitPolicyTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSubSubCa, subSubCa, subCa, ca)
 
-        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        val result = chain.validate(defaultContext)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Valid RequireExplicitPolicy Test4" {
@@ -609,7 +616,9 @@ open class RequireExplicitPolicyTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSubSubCa, subSubCa, subCa, ca)
 
-        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
+        val result = chain.validate(defaultContext)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
     }
 
     "Invalid RequireExplicitPolicy Test5" {
@@ -736,9 +745,10 @@ open class RequireExplicitPolicyTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSubSubCa, subSubCa, subCa, ca)
 
-        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        val result = chain.validate(defaultContext)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Valid Self-Issued requireExplicitPolicy Test6" {
@@ -770,7 +780,9 @@ open class RequireExplicitPolicyTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, selfIssuedCa, ca)
 
-        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
+        val result = chain.validate(defaultContext)
+        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
     }
 
     "Invalid Self-Issued requireExplicitPolicy Test7" {
@@ -803,9 +815,10 @@ open class RequireExplicitPolicyTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, selfIssuedCa, ca)
 
-        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        val result = chain.validate(defaultContext)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Invalid Self-Issued requireExplicitPolicy Test8" {
@@ -862,8 +875,9 @@ open class RequireExplicitPolicyTest : FreeSpec ({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, selfIssuedSubCa, subCa, selfIssuedCa, ca)
 
-        shouldThrow<CertificatePolicyException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Non-null policy tree required but policy tree is null"
-        }
+        val result = chain.validate(defaultContext)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 })

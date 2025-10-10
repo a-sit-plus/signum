@@ -3,10 +3,13 @@ package at.asitplus.signum.supreme.validate
 import at.asitplus.signum.KeyUsageException
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.validate.KeyUsageValidator
+import at.asitplus.signum.indispensable.pki.validate.PolicyValidator
 import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 
 /*
 * PKITS 4.7 Key Usage
@@ -89,9 +92,10 @@ open class  KeyUsageTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
 
-        shouldThrow<KeyUsageException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Digital signature key usage extension not present at the intermediate cert!"
-        }
+        val result = chain.validate(defaultContext)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == KeyUsageValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Digital signature key usage extension not present at the intermediate cert!"
     }
 
     "Invalid keyUsage Not Critical keyCertSign False Test2" {
@@ -146,9 +150,10 @@ open class  KeyUsageTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
 
-        shouldThrow<KeyUsageException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "Digital signature key usage extension not present at the intermediate cert!"
-        }
+        val result = chain.validate(defaultContext)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == KeyUsageValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "Digital signature key usage extension not present at the intermediate cert!"
     }
 
     "Valid keyUsage Not Critical Test3" {
@@ -201,7 +206,9 @@ open class  KeyUsageTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
 
-        shouldNotThrow<Throwable> { chain.validate(defaultContext) }
+        val result = chain.validate(defaultContext)
+        result.validatorResults.firstOrNull { it.validatorName == KeyUsageValidator::class.simpleName } shouldBe null
+        result.validatorResults.size shouldBe 0
     }
 
     "Invalid keyUsage Critical cRLSign False Test4" {
@@ -255,9 +262,10 @@ open class  KeyUsageTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
 
-        shouldThrow<KeyUsageException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "CRL signature key usage extension not present at the intermediate cert!"
-        }
+        val result = chain.validate(defaultContext)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == KeyUsageValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "CRL signature key usage extension not present at the intermediate cert!"
     }
 
     "Invalid keyUsage Not Critical cRLSign False Test5" {
@@ -312,8 +320,9 @@ open class  KeyUsageTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
 
-        shouldThrow<KeyUsageException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "CRL signature key usage extension not present at the intermediate cert!"
-        }
+        val result = chain.validate(defaultContext)
+        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == KeyUsageValidator::class.simpleName!!}
+        validatorResult shouldNotBe null
+        validatorResult!!.errorMessage shouldBe "CRL signature key usage extension not present at the intermediate cert!"
     }
 })
