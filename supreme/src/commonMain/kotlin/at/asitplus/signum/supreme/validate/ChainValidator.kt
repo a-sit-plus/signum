@@ -11,6 +11,13 @@ import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
 import kotlin.time.Instant
 
+/**
+ * Validator that ensures the integrity and correctness of a certificate chain.
+ *
+ * This validator verifies that each certificate is properly signed by its issuer,
+ * ensures that the subject of the issuer certificate matches the issuer of the child certificate and
+ * confirms that each certificate was issued within the validity period of its issuer.
+ */
 class ChainValidator(
     private val certificateChain: CertificateChain,
     private var currentCertIndex: Int = 0

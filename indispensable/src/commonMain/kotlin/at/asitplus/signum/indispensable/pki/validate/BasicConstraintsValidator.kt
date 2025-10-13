@@ -6,6 +6,9 @@ import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtension
 
+/**
+ * Enforces the X.509 Basic Constraints extension rules for a certificate chain
+ */
 class BasicConstraintsValidator(
     private val pathLength: Int,
     private var remainingPathLength: UInt? = null,

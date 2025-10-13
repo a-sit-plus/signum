@@ -7,6 +7,9 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Instant
 
+/**
+ * Checks the validity of the each certificate in the chain based on the given date.
+ */
 class TimeValidityValidator(
     val date: Instant
 ) : CertificateValidator {

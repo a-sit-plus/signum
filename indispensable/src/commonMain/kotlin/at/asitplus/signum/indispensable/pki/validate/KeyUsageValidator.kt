@@ -7,6 +7,11 @@ import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsage
 import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsageExtension
 
+/**
+ * Ensures that intermediate CA certificates have the necessary
+ * key usage extensions.
+ * Key usage to sign certificates (keyCertSign) and sign certificate revocation lists (cRLSign), according to RFC 5280.
+ */
 class KeyUsageValidator (
     private val pathLength: Int,
     private var currentCertIndex: Int = 0,
