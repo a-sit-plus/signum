@@ -8,6 +8,10 @@ import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.NameConstraintsExtension
 import kotlinx.io.IOException
 
+/**
+ * Ensures that each certificate conforms to the permitted and excluded
+ * subtrees specified in previous NameConstraints extensions, according to RFC 5280.
+ */
 class NameConstraintsValidator(
     private val pathLength: Int,
     private var currentCertIndex: Int = 0,

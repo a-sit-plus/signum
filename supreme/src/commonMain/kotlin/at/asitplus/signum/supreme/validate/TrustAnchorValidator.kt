@@ -1,12 +1,15 @@
 package at.asitplus.signum.supreme.validate
 
-import at.asitplus.signum.CertificateChainValidatorException
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
 import org.kotlincrypto.error.CertificateException
 
+/**
+ * This validator checks whether any certificate in the chain is issued by a trusted anchor
+ * from the provided [trustAnchors] set
+ */
 class TrustAnchorValidator(
     private val trustAnchors: Set<TrustAnchor>,
     private val certChain: CertificateChain,
