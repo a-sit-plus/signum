@@ -329,12 +329,23 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
             ?.toSet()
             ?: emptySet()
 
-    fun isSelfIssued(): Boolean = tbsCertificate.subjectName == tbsCertificate.issuerName
+    /**
+     * Indicates whether this certificate is self-issued.
+     * A certificate is self-issued if the subject and issuer are the same.
+     * Note that self-issued is not the same as self-signed. Self-signed means that cert signature
+     * can be verified using the public key from the same certificate. In other words, all self-signed
+     * certificates are self-issued, but not all self-issued certificates are self-signed.
+     */
+    val isSelfIssued: Boolean
+        get() = tbsCertificate.subjectName == tbsCertificate.issuerName
 
     inline fun <reified T : X509CertificateExtension> findExtension(): T? {
         return this.tbsCertificate.extensions?.firstNotNullOfOrNull { it as? T }
     }
 
+    /**
+     * Checks whether this certificate is valid at the specified [date].
+     */
     fun checkValidity(date: Instant = Clock.System.now()) {
         if (date > tbsCertificate.validUntil.instant) {
             throw CertificateValidityException(

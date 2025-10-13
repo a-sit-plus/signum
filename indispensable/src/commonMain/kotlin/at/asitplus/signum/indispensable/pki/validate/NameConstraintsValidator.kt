@@ -16,7 +16,7 @@ class NameConstraintsValidator(
 
     override suspend fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
         currentCertIndex++
-        if (previousNameConstraints != null && (currentCertIndex == pathLength || !currCert.isSelfIssued())) {
+        if (previousNameConstraints != null && (currentCertIndex == pathLength || !currCert.isSelfIssued)) {
 
             try {
                 if (!previousNameConstraints!!.verify(currCert)) {
