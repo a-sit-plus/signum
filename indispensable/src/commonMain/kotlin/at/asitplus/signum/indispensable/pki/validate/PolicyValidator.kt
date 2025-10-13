@@ -76,7 +76,7 @@ class PolicyValidator(
     ): Int {
         var result = currentValue
 
-        if (result > 0 && !currentCert.isSelfIssued()) {
+        if (result > 0 && !currentCert.isSelfIssued) {
             result--
         }
 
@@ -104,7 +104,7 @@ class PolicyValidator(
     ): Int {
         var result = currentValue
 
-        if (result > 0 && !currentCert.isSelfIssued()) {
+        if (result > 0 && !currentCert.isSelfIssued) {
             result--
         }
 
@@ -128,7 +128,7 @@ class PolicyValidator(
     ): Int {
         var result = currentValue
 
-        if (result > 0 && !currentCert.isSelfIssued()) {
+        if (result > 0 && !currentCert.isSelfIssued) {
             result--
         }
 
@@ -207,7 +207,7 @@ class PolicyValidator(
 
             // RFC 5280: 6.1.3 (d)(2)
             if (containsAnyPolicy) {
-                if (inhibitAnyPolicy > 0 || (!isFinalCert && currentCert.isSelfIssued())) {
+                if (inhibitAnyPolicy > 0 || (!isFinalCert && currentCert.isSelfIssued)) {
                     processParentNodes(
                         certIndex,
                         isCritical,

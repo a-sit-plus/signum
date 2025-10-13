@@ -14,7 +14,7 @@ import at.asitplus.signum.supreme.sign.verify
  * */
 class TrustAnchor private constructor(
     val publicKey: CryptoPublicKey,
-    val principle: X500Name?,
+    val principal: X500Name?,
     private val name: String?,
     val cert: X509Certificate?
 ) {

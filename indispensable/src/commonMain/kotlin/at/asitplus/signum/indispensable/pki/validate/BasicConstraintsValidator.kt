@@ -27,7 +27,7 @@ class BasicConstraintsValidator(
             throw BasicConstraintsException("Missing CA flag at cert index $currentCertIndex.")
         }
 
-        if (remainingPathLength != null && !currCert.isSelfIssued()) {
+        if (remainingPathLength != null && !currCert.isSelfIssued) {
             if (remainingPathLength?.toInt() == 0) {
                 throw BasicConstraintsException("pathLenConstraint violated at cert index $currentCertIndex.")
             }
