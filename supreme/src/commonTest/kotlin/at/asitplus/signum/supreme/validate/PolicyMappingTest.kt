@@ -1,16 +1,12 @@
 package at.asitplus.signum.supreme.validate
 
-import at.asitplus.signum.CertificatePolicyException
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificatePoliciesExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.Qualifier
-import at.asitplus.signum.indispensable.pki.validate.KeyUsageValidator
 import at.asitplus.signum.indispensable.pki.validate.PolicyValidator
-import io.kotest.assertions.throwables.shouldNotThrow
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -300,20 +296,20 @@ open class PolicyMappingTest : FreeSpec ({
 
         var context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
         var result = chain.validate(context)
-        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
+        result.isValid shouldBe true
 
         context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo)))
         result = chain.validate(context)
-        var validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
+        var validatorFailure = result.validatorFailures.firstOrNull {it.validator is PolicyValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
 
         context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), policyMappingInhibited = true)
         result = chain.validate(context)
-        validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
+        validatorFailure = result.validatorFailures.firstOrNull {it.validator is PolicyValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Invalid Policy Mapping Test2" {
@@ -345,15 +341,15 @@ open class PolicyMappingTest : FreeSpec ({
         val chain: CertificateChain = listOf(leaf, ca)
 
         var result = chain.validate(defaultContext)
-        var validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
+        var validatorFailure = result.validatorFailures.firstOrNull {it.validator is PolicyValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
 
         val context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), policyMappingInhibited = true)
         result = chain.validate(context)
-        validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
+        validatorFailure = result.validatorFailures.firstOrNull {it.validator is PolicyValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Valid Policy Mapping Test3" {
@@ -388,14 +384,14 @@ open class PolicyMappingTest : FreeSpec ({
 
         var context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo)))
         var result = chain.validate(context)
-        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
+        result.isValid shouldBe true
 
         context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
         result = chain.validate(context)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is PolicyValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Invalid Policy Mapping Test4" {
@@ -429,9 +425,9 @@ open class PolicyMappingTest : FreeSpec ({
         val chain: CertificateChain = listOf(leaf, subSubCa, subCa, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is PolicyValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Valid Policy Mapping Test5" {
@@ -465,14 +461,14 @@ open class PolicyMappingTest : FreeSpec ({
 
         var context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
         var result = chain.validate(context)
-        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
+        result.isValid shouldBe true
 
         context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicySix)))
         result = chain.validate(context)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is PolicyValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Valid Policy Mapping Test6" {
@@ -506,14 +502,14 @@ open class PolicyMappingTest : FreeSpec ({
 
         var context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
         var result = chain.validate(context)
-        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
+        result.isValid shouldBe true
 
         context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicySix)))
         result = chain.validate(context)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is PolicyValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Invalid Mapping From anyPolicy Test7" {
@@ -569,9 +565,9 @@ open class PolicyMappingTest : FreeSpec ({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "issuerDomainPolicy must not be ANY_POLICY"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is PolicyValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "issuerDomainPolicy must not be ANY_POLICY"
     }
 
     "Invalid Mapping To anyPolicy Test8" {
@@ -627,9 +623,9 @@ open class PolicyMappingTest : FreeSpec ({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "subjectDomainPolicy must not be ANY_POLICY"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is PolicyValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "subjectDomainPolicy must not be ANY_POLICY"
     }
 
     "Valid Policy Mapping Test9" {
@@ -685,8 +681,8 @@ open class PolicyMappingTest : FreeSpec ({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Invalid Policy Mapping Test10" {
@@ -719,9 +715,9 @@ open class PolicyMappingTest : FreeSpec ({
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == PolicyValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is PolicyValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
 
     "Valid Policy Mapping Test11" {
@@ -754,8 +750,8 @@ open class PolicyMappingTest : FreeSpec ({
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Valid Policy Mapping Test12" {
@@ -796,8 +792,8 @@ open class PolicyMappingTest : FreeSpec ({
 
         var context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyOne)))
         var result = chain.validate(context)
-        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
+        result.isValid shouldBe true
 
         var qualifiers = result.rootPolicyNode?.getAllSubtreeQualifiers()
         qualifiers?.size shouldBe 1
@@ -813,8 +809,8 @@ open class PolicyMappingTest : FreeSpec ({
 
         context = CertificateValidationContext(trustAnchors = setOf(trustAnchor), initialPolicies = setOf(ObjectIdentifier(NISTTestPolicyTwo)))
         result = chain.validate(context)
-        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
+        result.isValid shouldBe true
         qualifiers = result.rootPolicyNode?.getAllSubtreeQualifiers()
         qualifiers?.size shouldBe 1
 
@@ -857,8 +853,8 @@ open class PolicyMappingTest : FreeSpec ({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
+        result.isValid shouldBe true
 
         val qualifiers = result.rootPolicyNode?.getAllSubtreeQualifiers()
         qualifiers?.size shouldBe 1
@@ -901,8 +897,8 @@ open class PolicyMappingTest : FreeSpec ({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == PolicyValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is PolicyValidator } shouldBe null
+        result.isValid shouldBe true
 
         val qualifiers = result.rootPolicyNode?.getAllSubtreeQualifiers()
         qualifiers?.size shouldBe 1

@@ -1,11 +1,7 @@
 package at.asitplus.signum.supreme.validate
 
-import at.asitplus.signum.CertificateChainValidatorException
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import at.asitplus.signum.indispensable.pki.validate.KeyUsageValidator
-import io.kotest.assertions.throwables.shouldNotThrow
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -112,9 +108,9 @@ open class NameChainingTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == ChainValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "Subject of issuer cert and issuer of child certificate mismatch."
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is ChainValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "Subject of issuer cert and issuer of child certificate mismatch."
     }
 
     "Invalid Name Chaining Order Test2" {
@@ -171,9 +167,9 @@ open class NameChainingTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == ChainValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "Subject of issuer cert and issuer of child certificate mismatch."
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is ChainValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "Subject of issuer cert and issuer of child certificate mismatch."
     }
 
     "Valid Name Chaining Whitespace Test3" {
@@ -205,8 +201,8 @@ open class NameChainingTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == ChainValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is ChainValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Valid Name Chaining Whitespace Test4" {
@@ -238,8 +234,8 @@ open class NameChainingTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == ChainValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is ChainValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Valid Name Chaining Capitalization Test5" {
@@ -271,8 +267,8 @@ open class NameChainingTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == ChainValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is ChainValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Valid Name Chaining UIDs Test6" {
@@ -303,8 +299,8 @@ open class NameChainingTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == ChainValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is ChainValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Valid RFC3280 Mandatory Attribute Types Test7" {
@@ -362,8 +358,8 @@ open class NameChainingTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == ChainValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is ChainValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Valid RFC3280 Optional Attribute Types Test8" {
@@ -421,8 +417,8 @@ open class NameChainingTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == ChainValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is ChainValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Valid UTF8String Encoded Names Test9" {
@@ -476,8 +472,8 @@ open class NameChainingTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == ChainValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is ChainValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Valid Rollover from PrintableString to UTF8String Test10" {
@@ -533,8 +529,8 @@ open class NameChainingTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == ChainValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is ChainValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Valid UTF8String Case Insensitive Match Test11" {
@@ -590,7 +586,7 @@ open class NameChainingTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == ChainValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is ChainValidator } shouldBe null
+        result.isValid shouldBe true
     }
 })

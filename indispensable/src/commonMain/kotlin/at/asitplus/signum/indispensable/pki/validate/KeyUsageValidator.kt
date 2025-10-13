@@ -19,12 +19,11 @@ class KeyUsageValidator (
     )
 
     override suspend fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
+        remainingCriticalExtensions.removeAll(supportedExtensions)
         if (currentCertIndex < pathLength - 1)
             verifyIntermediateKeyUsage(currCert)
 
         currentCertIndex++
-
-        remainingCriticalExtensions.removeAll(supportedExtensions)
     }
 
     private fun verifyIntermediateKeyUsage(currCert: X509Certificate) {

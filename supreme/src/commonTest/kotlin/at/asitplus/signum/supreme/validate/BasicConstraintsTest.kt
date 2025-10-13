@@ -1,11 +1,8 @@
 package at.asitplus.signum.supreme.validate
 
-import at.asitplus.signum.BasicConstraintsException
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
-import io.kotest.assertions.throwables.shouldNotThrow
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -157,10 +154,10 @@ open class BasicConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == BasicConstraintsValidator::class.simpleName!!}
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}
 
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "Missing basicConstraints extension at cert index 0."
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "Missing basicConstraints extension at cert index 0."
     }
 
     "Invalid cA False Test2" {
@@ -214,10 +211,10 @@ open class BasicConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == BasicConstraintsValidator::class.simpleName!!}
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}
 
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "Missing CA flag at cert index 0."
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "Missing CA flag at cert index 0."
     }
 
     "Invalid cA False Test3" {
@@ -271,10 +268,10 @@ open class BasicConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == BasicConstraintsValidator::class.simpleName!!}
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}
 
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "basicConstraints extension must be critical (index 0)."
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "basicConstraints extension must be critical (index 0)."
     }
 
     "Invalid pathLenConstraint Test5" {
@@ -329,10 +326,10 @@ open class BasicConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, ca)
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == BasicConstraintsValidator::class.simpleName!!}
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}
 
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "pathLenConstraint violated at cert index 1."
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "pathLenConstraint violated at cert index 1."
     }
 
     "Valid pathLenConstraint Test7" {
@@ -363,8 +360,8 @@ open class BasicConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == BasicConstraintsValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is BasicConstraintsValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Valid pathLenConstraint Test8" {
@@ -395,8 +392,8 @@ open class BasicConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == BasicConstraintsValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is BasicConstraintsValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Invalid pathLenConstraint Test9" {
@@ -475,10 +472,10 @@ open class BasicConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSubCa, subCa, ca)
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == BasicConstraintsValidator::class.simpleName!!}
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}
 
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "pathLenConstraint violated at cert index 2."
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "pathLenConstraint violated at cert index 2."
     }
 
     "Invalid pathLenConstraint Test11" {
@@ -581,10 +578,10 @@ open class BasicConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSubSubCa, subSubCa, subCa, ca)
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == BasicConstraintsValidator::class.simpleName!!}
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}
 
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "pathLenConstraint violated at cert index 3."
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "pathLenConstraint violated at cert index 3."
     }
 
     "Valid pathLenConstraint Test13" {
@@ -687,8 +684,8 @@ open class BasicConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSubSubCa, subSubCa, subCa, ca)
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == BasicConstraintsValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is BasicConstraintsValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Valid Self-Issued pathLenConstraint Test15" {
@@ -720,8 +717,8 @@ open class BasicConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, selfIssuedCa, ca)
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == BasicConstraintsValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is BasicConstraintsValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Invalid Self-Issued pathLenConstraint Test16" {
@@ -777,10 +774,10 @@ open class BasicConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subCa, selfIssuedCa, ca)
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == BasicConstraintsValidator::class.simpleName!!}
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is BasicConstraintsValidator}
 
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "pathLenConstraint violated at cert index 2."
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "pathLenConstraint violated at cert index 2."
     }
 
     "Valid Self-Issued pathLenConstraint Test17" {
@@ -906,7 +903,7 @@ open class BasicConstraintsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, subSelfIssuedCa, subCa, selfIssuedCa, ca)
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == BasicConstraintsValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is BasicConstraintsValidator } shouldBe null
+        result.isValid shouldBe true
     }
 })

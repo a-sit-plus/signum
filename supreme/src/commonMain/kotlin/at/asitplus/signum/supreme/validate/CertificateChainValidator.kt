@@ -1,22 +1,18 @@
 package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.CertificateChainValidatorException
-import at.asitplus.signum.CryptoOperationFailed
-import at.asitplus.signum.indispensable.X509SignatureAlgorithm
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.leaf
-import at.asitplus.signum.indispensable.pki.root
 import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
 import at.asitplus.signum.indispensable.pki.validate.CertificateValidator
 import at.asitplus.signum.indispensable.pki.validate.KeyUsageValidator
 import at.asitplus.signum.indispensable.pki.validate.NameConstraintsValidator
 import at.asitplus.signum.indispensable.pki.validate.PolicyNode
 import at.asitplus.signum.indispensable.pki.validate.PolicyValidator
-import at.asitplus.signum.supreme.sign.verifierFor
-import at.asitplus.signum.supreme.sign.verify
+import at.asitplus.signum.indispensable.pki.validate.TimeValidityValidator
 import kotlin.time.Instant
 import kotlin.time.Clock
 
@@ -34,13 +30,18 @@ class CertificateValidationContext(
 data class CertificateValidationResult (
     val rootPolicyNode: PolicyNode? = null,
     val subject: X509Certificate,
-    val validatorResults: List<ValidatorResult>
-)
+    val validatorFailures: List<ValidatorFailure>
+) {
+    val isValid: Boolean
+        get() = validatorFailures.isEmpty()
+}
 
-data class ValidatorResult(
+data class ValidatorFailure(
     val validatorName: String,
-    val success: Boolean,
-    val errorMessage: String? = null
+    val validator: CertificateValidator,
+    val errorMessage: String,
+    val certificateIndex: Int,
+    val cause: Throwable? = null
 )
 
 suspend fun CertificateChain.validate(
@@ -71,35 +72,34 @@ suspend fun CertificateChain.validate(
     validators.addIfMissing(KeyUsageValidator(this.size))
     validators.addIfMissing(BasicConstraintsValidator(this.size))
     validators.addIfMissing(ChainValidator(this.reversed()))
+    validators.addIfMissing(TimeValidityValidator(context.date))
 
 
     val activeValidators = validators.toMutableSet()
-    val failedResults = emptyList<ValidatorResult>().toMutableList()
+    val validatorFailures = emptyList<ValidatorFailure>().toMutableList()
+    val trustAnchorValidator = TrustAnchorValidator(context.trustAnchors, this)
 
     try {
-        val trustAnchorValidator = TrustAnchorValidator(context.trustAnchors, this)
         this.forEach {
             trustAnchorValidator.check(it, it.criticalExtensionOids.toMutableSet())
         }
     } catch (e: Throwable) {
-        failedResults.add(ValidatorResult(TrustAnchorValidator::class.simpleName!!, false, e.message))
+        validatorFailures.add(ValidatorFailure(TrustAnchorValidator::class.simpleName!!, trustAnchorValidator, e.message ?: "Trust Anchor validation failed.", -1, e))
     }
 
-    val reversed = this.reversed()
-    reversed.forEach { cert ->
+    this.reversed().forEachIndexed { i, cert ->
         val remainingCriticalExtensions = cert.criticalExtensionOids.toMutableSet()
-        cert.checkValidity(context.date)
         validators.forEach {
             try {
                 it.check(cert, remainingCriticalExtensions)
             } catch (e: Throwable) {
                 activeValidators.remove(it)
-                failedResults.add(ValidatorResult(it::class.simpleName!!, false, e.message))
+                validatorFailures.add(ValidatorFailure(it::class.simpleName!!, it, e.message ?: "Validation failed.", i, e))
             }
         }
-        if (failedResults.isEmpty()) verifyCriticalExtensions(remainingCriticalExtensions)
+        verifyCriticalExtensions(remainingCriticalExtensions)
     }
-    return CertificateValidationResult((validators.find { it is PolicyValidator } as? PolicyValidator)?.rootNode, this.leaf, failedResults)
+    return CertificateValidationResult((validators.find { it is PolicyValidator } as? PolicyValidator)?.rootNode, this.leaf, validatorFailures)
 }
 
 fun <T : CertificateValidator> MutableCollection<CertificateValidator>.addIfMissing(validator: T) {
@@ -114,7 +114,4 @@ private fun verifyCriticalExtensions(remainingCriticalExtensions: MutableSet<Obj
     if (remainingCriticalExtensions.isNotEmpty())
         throw CertificateChainValidatorException("Unsupported critical extensions: $remainingCriticalExtensions")
 }
-
-private fun Set<TrustAnchor>.haveIssuerFor(cert: X509Certificate): Boolean =
-    any { it.isIssuerOf(cert) }
 

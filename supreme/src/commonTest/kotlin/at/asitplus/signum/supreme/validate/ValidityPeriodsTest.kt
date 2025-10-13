@@ -1,11 +1,9 @@
 package at.asitplus.signum.supreme.validate
 
-import at.asitplus.signum.CertificateChainValidatorException
 import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import io.kotest.assertions.fail
-import io.kotest.assertions.throwables.shouldNotThrow
+import at.asitplus.signum.indispensable.pki.validate.TimeValidityValidator
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
@@ -116,11 +114,12 @@ open class ValidityPeriodsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
 
-        shouldThrow<CertificateValidityException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "certificate not valid till " + ca.tbsCertificate.validFrom.instant.toLocalDateTime(
-                TimeZone.currentSystemDefault()
-            )
-        }
+        val result = chain.validate(defaultContext)
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is TimeValidityValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "certificate not valid till " + ca.tbsCertificate.validFrom.instant.toLocalDateTime(
+            TimeZone.currentSystemDefault()
+        )
     }
 
     "2 Invalid EE notBefore Date Test2" {
@@ -149,13 +148,12 @@ open class ValidityPeriodsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, goodCACert)
 
-        // Validation fails due to the wasCertificateIssuedWithinIssuerValidityPeriod check,
-        // because it is called before individual time validity check on leaf
-        shouldThrow<CertificateValidityException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "certificate not valid till " + leaf.tbsCertificate.validFrom.instant.toLocalDateTime(
-                TimeZone.currentSystemDefault()
-            )
-        }
+        val result = chain.validate(defaultContext)
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is TimeValidityValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "certificate not valid till " + leaf.tbsCertificate.validFrom.instant.toLocalDateTime(
+            TimeZone.currentSystemDefault()
+        )
     }
 
     "Valid pre2000 UTC notBefore Date Test3" {
@@ -184,18 +182,11 @@ open class ValidityPeriodsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, goodCACert)
 
-        // Validation fails due to the wasCertificateIssuedWithinIssuerValidityPeriod check,
-        // even though all certificates pass their individual validity checks as required by the test suite.
+
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == ChainValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        // Validation fails due to the wasCertificateIssuedWithinIssuerValidityPeriod check,
-        // because it is called before individual time validity check on leaf
-        validatorResult!!.errorMessage shouldBe "Certificate issued outside issuer validity period."
-//        runCatching { chain.validate(defaultContext) }
-//            .onFailure {
-//                if (it is CertificateValidityException) fail("Unexpected CertificateValidityException: ${it.message}")
-//            }
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is ChainValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "Certificate issued outside issuer validity period."
     }
 
     "Valid GeneralizedTime notBefore Date Test4" {
@@ -226,15 +217,9 @@ open class ValidityPeriodsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, goodCACert)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == ChainValidator::class.simpleName!!}
+        val validatorResult = result.validatorFailures.firstOrNull {it.validator is ChainValidator}
         validatorResult shouldNotBe null
-        // Validation fails due to the wasCertificateIssuedWithinIssuerValidityPeriod check,
-        // because it is called before individual time validity check on leaf
         validatorResult!!.errorMessage shouldBe "Certificate issued outside issuer validity period."
-//        runCatching { chain.validate(defaultContext) }
-//            .onFailure {
-//                if (it is CertificateValidityException) fail("Unexpected CertificateValidityException: ${it.message}")
-//            }
     }
 
     "Invalid CA notAfter Date Test5" {
@@ -287,11 +272,12 @@ open class ValidityPeriodsTest : FreeSpec({
         val ca = X509Certificate.decodeFromPem(badNotAfterDateCACert).getOrThrow()
         val chain: CertificateChain = listOf(leaf, ca)
 
-        shouldThrow<CertificateValidityException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "certificate expired on " + ca.tbsCertificate.validUntil.instant.toLocalDateTime(
-                TimeZone.currentSystemDefault()
-            )
-        }
+        val result = chain.validate(defaultContext)
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is TimeValidityValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "certificate expired on " + ca.tbsCertificate.validUntil.instant.toLocalDateTime(
+            TimeZone.currentSystemDefault()
+        )
     }
 
     "Invalid EE notAfter Date Test6" {
@@ -320,11 +306,12 @@ open class ValidityPeriodsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, goodCACert)
 
-        shouldThrow<CertificateValidityException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "certificate expired on " + leaf.tbsCertificate.validUntil.instant.toLocalDateTime(
-                TimeZone.currentSystemDefault()
-            )
-        }
+        val result = chain.validate(defaultContext)
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is TimeValidityValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "certificate expired on " + leaf.tbsCertificate.validUntil.instant.toLocalDateTime(
+            TimeZone.currentSystemDefault()
+        )
     }
 
     "Invalid pre2000 UTC EE notAfter Date Test7" {
@@ -354,11 +341,12 @@ open class ValidityPeriodsTest : FreeSpec({
         val leaf = X509Certificate.decodeFromPem(leafPem).getOrThrow()
         val chain: CertificateChain = listOf(leaf, goodCACert)
 
-        shouldThrow<CertificateValidityException> { chain.validate(defaultContext) }.apply {
-            message shouldBe "certificate expired on " + leaf.tbsCertificate.validUntil.instant.toLocalDateTime(
-                TimeZone.currentSystemDefault()
-            )
-        }
+        val result = chain.validate(defaultContext)
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is TimeValidityValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "certificate expired on " + leaf.tbsCertificate.validUntil.instant.toLocalDateTime(
+            TimeZone.currentSystemDefault()
+        )
     }
 
     "Valid GeneralizedTime notAfter Date Test8" {
@@ -389,7 +377,6 @@ open class ValidityPeriodsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, goodCACert)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == ChainValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.isValid shouldBe true
     }
 })
