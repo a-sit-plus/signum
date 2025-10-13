@@ -45,6 +45,8 @@ class PolicyValidator(
     }
 
     override suspend fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
+        remainingCriticalExtensions.removeAll(supportedExtensions)
+
         rootNode = processPolicies(
             certIndex,
             initPolicies,
@@ -63,8 +65,6 @@ class PolicyValidator(
             inhibitAnyPolicy = updateInhibitAnyPolicy(inhibitAnyPolicy, currCert)
         }
         certIndex++
-
-        remainingCriticalExtensions.removeAll(supportedExtensions)
     }
 
     /**

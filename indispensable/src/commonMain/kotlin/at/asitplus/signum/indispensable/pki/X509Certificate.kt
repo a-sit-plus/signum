@@ -344,24 +344,28 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     }
 
     /**
+     * Checks whether this certificate has expired at the specified [date].
+     *
+     * @return `true` if the certificate is expired, `false` otherwise.
+     */
+    fun isExpired(date: Instant = Clock.System.now()): Boolean =
+        date > tbsCertificate.validUntil.instant
+
+    /**
+     * Checks whether this certificate is not yet valid at the specified [date].
+     *
+     * @return `true` if the certificate is not yet valid, `false` otherwise.
+     */
+    fun isNotYetValid(date: Instant = Clock.System.now()): Boolean =
+        date < tbsCertificate.validFrom.instant
+
+
+    /**
      * Checks whether this certificate is valid at the specified [date].
      */
-    fun checkValidity(date: Instant = Clock.System.now()) {
-        if (date > tbsCertificate.validUntil.instant) {
-            throw CertificateValidityException(
-                "certificate expired on " + tbsCertificate.validUntil.instant.toLocalDateTime(
-                    TimeZone.currentSystemDefault()
-                )
-            )
-        }
-
-        if (date < tbsCertificate.validFrom.instant) {
-            throw CertificateValidityException(
-                "certificate not valid till " + tbsCertificate.validFrom.instant.toLocalDateTime(
-                    TimeZone.currentSystemDefault()
-                )
-            )
-        }
+    @Throws(CertificateValidityException::class)
+    fun checkValidity(date: Instant = Clock.System.now()): Boolean {
+        return !(isExpired(date) || isNotYetValid(date))
     }
 
     companion object :

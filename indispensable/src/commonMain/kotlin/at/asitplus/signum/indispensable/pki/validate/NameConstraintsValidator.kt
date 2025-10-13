@@ -15,6 +15,7 @@ class NameConstraintsValidator(
 ) : CertificateValidator {
 
     override suspend fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
+        remainingCriticalExtensions.remove(KnownOIDs.nameConstraints_2_5_29_30)
         currentCertIndex++
         if (previousNameConstraints != null && (currentCertIndex == pathLength || !currCert.isSelfIssued)) {
 
@@ -30,7 +31,6 @@ class NameConstraintsValidator(
         }
         previousNameConstraints = mergeNameConstraints(currCert, previousNameConstraints)
 
-        remainingCriticalExtensions.remove(KnownOIDs.nameConstraints_2_5_29_30)
     }
 
     private fun mergeNameConstraints(

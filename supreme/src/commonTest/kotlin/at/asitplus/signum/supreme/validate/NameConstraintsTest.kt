@@ -1,11 +1,8 @@
 package at.asitplus.signum.supreme.validate
 
-import at.asitplus.signum.NameConstraintsException
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.validate.NameConstraintsValidator
-import io.kotest.assertions.throwables.shouldNotThrow
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -430,8 +427,8 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == NameConstraintsValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is NameConstraintsValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Invalid DN nameConstraints Test2" {
@@ -463,9 +460,9 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == NameConstraintsValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is NameConstraintsValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
     }
 
     "Invalid DN nameConstraints Test3" {
@@ -501,9 +498,9 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == NameConstraintsValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is NameConstraintsValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
     }
 
     "Valid DN nameConstraints Test4" {
@@ -537,8 +534,8 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == NameConstraintsValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is NameConstraintsValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Valid DN nameConstraints Test5" {
@@ -600,8 +597,8 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == NameConstraintsValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is NameConstraintsValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Valid DN nameConstraints Test6" {
@@ -633,8 +630,8 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == NameConstraintsValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is NameConstraintsValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Invalid DN nameConstraints Test7" {
@@ -666,9 +663,9 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == NameConstraintsValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is NameConstraintsValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
     }
 
     "Invalid DN nameConstraints Test8" {
@@ -700,9 +697,9 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == NameConstraintsValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is NameConstraintsValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
     }
 
     "Invalid DN nameConstraints Test9" {
@@ -734,9 +731,9 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == NameConstraintsValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is NameConstraintsValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
     }
 
     "Invalid DN nameConstraints Test10" {
@@ -769,9 +766,9 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == NameConstraintsValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is NameConstraintsValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
     }
 
     "Valid DN nameConstraints Test11" {
@@ -804,8 +801,8 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == NameConstraintsValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is NameConstraintsValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Invalid DN nameConstraints Test12" {
@@ -865,9 +862,9 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == NameConstraintsValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "NameConstraints violation at cert index 3"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is NameConstraintsValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 3"
     }
 
     "Invalid DN nameConstraints Test13" {
@@ -901,9 +898,9 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == NameConstraintsValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "NameConstraints violation at cert index 3"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is NameConstraintsValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 3"
     }
 
     "Valid DN nameConstraints Test14" {
@@ -936,8 +933,8 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == NameConstraintsValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is NameConstraintsValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Invalid DN nameConstraints Test15" {
@@ -971,9 +968,9 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == NameConstraintsValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "NameConstraints violation at cert index 3"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is NameConstraintsValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 3"
     }
 
     "Invalid DN nameConstraints Test16" {
@@ -1007,9 +1004,9 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == NameConstraintsValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "NameConstraints violation at cert index 3"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is NameConstraintsValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 3"
     }
 
     "Invalid DN nameConstraints Test17" {
@@ -1043,9 +1040,9 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == NameConstraintsValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "NameConstraints violation at cert index 3"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is NameConstraintsValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 3"
     }
 
     "Valid DN nameConstraints Test18" {
@@ -1078,8 +1075,8 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == NameConstraintsValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is NameConstraintsValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Valid Self-Issued DN nameConstraints Test19" {
@@ -1136,8 +1133,8 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, selfIssuedCa, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == NameConstraintsValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is NameConstraintsValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Invalid Self-Issued DN nameConstraints Test20" {
@@ -1168,9 +1165,9 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == NameConstraintsValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is NameConstraintsValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
     }
 
     "Valid RFC822 nameConstraints Test21" {
@@ -1203,8 +1200,8 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == NameConstraintsValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is NameConstraintsValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Invalid RFC822 nameConstraints Test22" {
@@ -1237,9 +1234,9 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == NameConstraintsValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is NameConstraintsValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
     }
 
     "Valid RFC822 nameConstraints Test23" {
@@ -1272,8 +1269,8 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == NameConstraintsValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is NameConstraintsValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Invalid RFC822 nameConstraints Test24" {
@@ -1306,9 +1303,9 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == NameConstraintsValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is NameConstraintsValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
     }
 
     "Valid RFC822 nameConstraints Test25" {
@@ -1341,8 +1338,8 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == NameConstraintsValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is NameConstraintsValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Invalid RFC822 nameConstraints Test26" {
@@ -1375,9 +1372,9 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == NameConstraintsValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is NameConstraintsValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
     }
 
     "Valid DN and RFC822 nameConstraints Test27" {
@@ -1412,8 +1409,8 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == NameConstraintsValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is NameConstraintsValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Invalid DN and RFC822 nameConstraints Test28" {
@@ -1448,9 +1445,9 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == NameConstraintsValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "NameConstraints violation at cert index 3"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is NameConstraintsValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 3"
     }
 
     "Invalid DN and RFC822 nameConstraints Test29" {
@@ -1485,9 +1482,9 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, subCa, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == NameConstraintsValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "NameConstraints violation at cert index 3"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is NameConstraintsValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 3"
     }
 
     "Valid DNS nameConstraints Test30" {
@@ -1520,8 +1517,8 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == NameConstraintsValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is NameConstraintsValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Invalid DNS nameConstraints Test31" {
@@ -1554,9 +1551,9 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == NameConstraintsValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is NameConstraintsValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
     }
 
     "Valid DNS nameConstraints Test32" {
@@ -1589,8 +1586,8 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == NameConstraintsValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is NameConstraintsValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Invalid DNS nameConstraints Test33" {
@@ -1623,9 +1620,9 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == NameConstraintsValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is NameConstraintsValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
     }
 
     "Valid URI nameConstraints Test34" {
@@ -1658,8 +1655,8 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == NameConstraintsValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is NameConstraintsValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Invalid URI nameConstraints Test35" {
@@ -1692,9 +1689,9 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == NameConstraintsValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is NameConstraintsValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
     }
 
     "Valid URI nameConstraints Test36" {
@@ -1727,8 +1724,8 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        result.validatorResults.firstOrNull { it.validatorName == NameConstraintsValidator::class.simpleName } shouldBe null
-        result.validatorResults.size shouldBe 0
+        result.validatorFailures.firstOrNull { it.validator is NameConstraintsValidator } shouldBe null
+        result.isValid shouldBe true
     }
 
     "Invalid URI nameConstraints Test37" {
@@ -1761,9 +1758,9 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == NameConstraintsValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is NameConstraintsValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
     }
 
     "Invalid DNS nameConstraints Test38" {
@@ -1796,8 +1793,8 @@ open class NameConstraintsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, ca)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorResults.firstOrNull {it.validatorName == NameConstraintsValidator::class.simpleName!!}
-        validatorResult shouldNotBe null
-        validatorResult!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is NameConstraintsValidator}
+        validatorFailure shouldNotBe null
+        validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
     }
 })
