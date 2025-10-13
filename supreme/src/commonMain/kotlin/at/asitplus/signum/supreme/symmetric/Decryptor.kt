@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.symmetric
 
+import at.asitplus.signum.CryptoOperationFailed
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.mac.mac
 
@@ -33,6 +34,12 @@ internal class Decryptor(
     }
 
     internal suspend fun decrypt(encryptedData: ByteArray): ByteArray {
+        if(algorithm is SymmetricEncryptionAlgorithm.AES && algorithm.mode == BlockCipher.ModeOfOperation.ECB){
+            //Fail early for all platforms
+            if (encryptedData.size % 16 != 0) throw CryptoOperationFailed("data must be aligned to block size")
+        }
+
+
         if (algorithm.hasDedicatedMac()) {
             val dedicatedMacInputCalculation = algorithm.macInputCalculation
             val hmacInput = algorithm.dedicatedMacInputCalculation(

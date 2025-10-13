@@ -690,7 +690,7 @@ val SymmetricTest by testSuite(testConfig = TestConfig.testScope(isEnabled = tru
                 } else {
 
 
-                    val shouldSucceed = (data.size >= 16) && (data.size % 8 == 0)
+                    val shouldSucceed = (data.size % 16 == 0)
                     val trial = secretKey.encrypt(data)
 
                     if (shouldSucceed) trial should succeed

@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.symmetric
 
+import at.asitplus.signum.CryptoOperationFailed
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.internals.ImplementationError
@@ -60,6 +61,12 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, K : KeyType>
      * E.g., an authenticated encryption algorithm causes this function to return a [at.asitplus.signum.indispensable.symmetric.Ciphertext.Authenticated].
      */
     internal suspend fun encrypt(data: ByteArray): SealedBox<A, I, out K> {
+        if(algorithm is SymmetricEncryptionAlgorithm.AES && algorithm.mode == BlockCipher.ModeOfOperation.ECB){
+            //Fail early for all platforms
+            if (data.size % 16 != 0) throw CryptoOperationFailed("data must be aligned to block size")
+        }
+
+
         //Our own, flexible construction to make any unauthenticated cipher into an authenticated cipher
         if (algorithm.hasDedicatedMac()) {
 

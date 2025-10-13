@@ -10,7 +10,7 @@ plugins {
     kotlin("multiplatform") version kotlinVer apply false
     kotlin("plugin.serialization") version kotlinVer apply false
     id("com.android.kotlin.multiplatform.library") version libs.versions.agp.get() apply (false)
-    id("de.infix.testBalloon") version "0.6.2-K2.2.20-SNAPSHOT" apply false
+    id("de.infix.testBalloon") version "0.6.3-K2.2.20-SNAPSHOT" apply false
 }
 group = "at.asitplus.signum"
 subprojects {
