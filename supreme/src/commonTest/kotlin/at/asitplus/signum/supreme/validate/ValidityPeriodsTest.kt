@@ -151,9 +151,7 @@ open class ValidityPeriodsTest : FreeSpec({
         val result = chain.validate(defaultContext)
         val validatorFailure = result.validatorFailures.firstOrNull {it.validator is TimeValidityValidator}
         validatorFailure shouldNotBe null
-        validatorFailure!!.errorMessage shouldBe "certificate not valid till " + leaf.tbsCertificate.validFrom.instant.toLocalDateTime(
-            TimeZone.currentSystemDefault()
-        )
+        validatorFailure!!.errorMessage shouldBe "Certificate issued outside issuer validity period."
     }
 
     "Valid pre2000 UTC notBefore Date Test3" {
@@ -184,7 +182,7 @@ open class ValidityPeriodsTest : FreeSpec({
 
 
         val result = chain.validate(defaultContext)
-        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is ChainValidator}
+        val validatorFailure = result.validatorFailures.firstOrNull {it.validator is TimeValidityValidator}
         validatorFailure shouldNotBe null
         validatorFailure!!.errorMessage shouldBe "Certificate issued outside issuer validity period."
     }
@@ -217,7 +215,7 @@ open class ValidityPeriodsTest : FreeSpec({
         val chain: CertificateChain = listOf(leaf, goodCACert)
 
         val result = chain.validate(defaultContext)
-        val validatorResult = result.validatorFailures.firstOrNull {it.validator is ChainValidator}
+        val validatorResult = result.validatorFailures.firstOrNull {it.validator is TimeValidityValidator}
         validatorResult shouldNotBe null
         validatorResult!!.errorMessage shouldBe "Certificate issued outside issuer validity period."
     }
@@ -344,9 +342,7 @@ open class ValidityPeriodsTest : FreeSpec({
         val result = chain.validate(defaultContext)
         val validatorFailure = result.validatorFailures.firstOrNull {it.validator is TimeValidityValidator}
         validatorFailure shouldNotBe null
-        validatorFailure!!.errorMessage shouldBe "certificate expired on " + leaf.tbsCertificate.validUntil.instant.toLocalDateTime(
-            TimeZone.currentSystemDefault()
-        )
+        validatorFailure!!.errorMessage shouldBe "Certificate issued outside issuer validity period."
     }
 
     "Valid GeneralizedTime notAfter Date Test8" {

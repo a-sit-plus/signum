@@ -364,9 +364,7 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
      * Checks whether this certificate is valid at the specified [date].
      */
     @Throws(CertificateValidityException::class)
-    fun checkValidity(date: Instant = Clock.System.now()): Boolean {
-        return !(isExpired(date) || isNotYetValid(date))
-    }
+    fun checkValidity(date: Instant = Clock.System.now()): Boolean = !(isExpired(date) || isNotYetValid(date))
 
     companion object :
         PemDecodable<Asn1Sequence, X509Certificate>(EB_STRINGS.DEFAULT, EB_STRINGS.LEGACY) {

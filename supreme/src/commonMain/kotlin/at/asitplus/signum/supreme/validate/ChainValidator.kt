@@ -15,8 +15,7 @@ import kotlin.time.Instant
  * Validator that ensures the integrity and correctness of a certificate chain.
  *
  * This validator verifies that each certificate is properly signed by its issuer,
- * ensures that the subject of the issuer certificate matches the issuer of the child certificate and
- * confirms that each certificate was issued within the validity period of its issuer.
+ * ensures that the subject of the issuer certificate matches the issuer of the child certificate.
  */
 class ChainValidator(
     private val certificateChain: CertificateChain,
@@ -30,10 +29,6 @@ class ChainValidator(
             val childCert = certificateChain[currentCertIndex + 1]
             verifySignature(childCert, issuer = currCert, childCert == certificateChain.last())
             subjectAndIssuerPrincipalMatch(childCert, issuer = currCert)
-            wasCertificateIssuedWithinIssuerValidityPeriod(
-                childCert.tbsCertificate.validFrom.instant,
-                issuer = currCert
-            )
             currentCertIndex++
         }
     }
@@ -61,17 +56,6 @@ class ChainValidator(
 
         if (cert.tbsCertificate.issuerUniqueID != issuer.tbsCertificate.subjectUniqueID) {
             throw CertificateChainValidatorException("UID of issuer cert and UID of issuer in child certificate mismatch.")
-        }
-    }
-
-    private fun wasCertificateIssuedWithinIssuerValidityPeriod(
-        dateOfIssuance: Instant,
-        issuer: X509Certificate
-    ) {
-        val beginValidity = issuer.tbsCertificate.validFrom.instant
-        val endValidity = issuer.tbsCertificate.validUntil.instant
-        if (beginValidity > dateOfIssuance || dateOfIssuance > endValidity) {
-            throw CertificateChainValidatorException("Certificate issued outside issuer validity period.")
         }
     }
 }
