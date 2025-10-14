@@ -55,14 +55,14 @@ jobs:
           which node
           node --version
           
-          mv /usr/local/bin/node /usr/local/bin/node_org
-          echo '#!/bin/bash' >> /usr/local/bin/node
-          echo '/usr/local/bin/node_org --stack-size=2048 $@' >> /usr/local/bin/node
-          cat /usr/local/bin/node
-          chmod +x /usr/local/bin/node
+          mv /opt/homebrew/bin/node /opt/homebrew/bin/node_org
+          echo '#!/bin/bash' >> /opt/homebrew/bin/node
+          echo '/opt/homebrew/bin/node_org --stack-size=4096 $@' >> /opt/homebrew/bin/node
+          cat /opt/homebrew/bin/node
+          chmod +x /opt/homebrew/bin/node
       - name: Test Report
         env:
-          NODE_OPTIONS: --max-old-space-size=4096
+          NODE_OPTIONS: --max-old-space-size=8192
         uses: dorny/test-reporter@v2
         if: success() || failure()
         with:

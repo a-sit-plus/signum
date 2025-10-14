@@ -50,13 +50,13 @@ jobs:
           which node
           node --version
           
-          mv /opt/homebrew/bin/node /usr/local/bin/node_org
+          mv /opt/homebrew/bin/node /opt/homebrew/bin/node_org
           echo '#!/bin/bash' >> /opt/homebrew/bin/node
           echo '/opt/homebrew/bin/node_org --stack-size=4096 $@' >> /opt/homebrew/bin/node
           cat /opt/homebrew/bin/node
           chmod +x /opt/homebrew/bin/node
       - name: Test Report
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v2
         env:
           NODE_OPTIONS: --max-old-space-size=8192
         if: success() || failure()
