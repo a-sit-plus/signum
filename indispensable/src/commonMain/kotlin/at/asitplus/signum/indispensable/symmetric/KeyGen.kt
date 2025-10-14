@@ -22,7 +22,7 @@ suspend fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEn
 ): SymmetricKey<A, I, out K> =
     keyFromInternal(
         randomBytes(keySize.bytes.toInt(), randomnessSourceOverride),
-        if (hasDedicatedMac()) randomBytes(preferredMacKeyLength.bytes.toInt())
+        if (hasDedicatedMac()) randomBytes(preferredMacKeyLength.bytes.toInt(), randomnessSourceOverride)
         else null
     ) as SymmetricKey<A, I, out K>
 
