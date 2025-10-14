@@ -100,7 +100,7 @@ suspend fun CertificateChain.validate(
     validators.addIfMissing(KeyUsageValidator(this.size))
     validators.addIfMissing(BasicConstraintsValidator(this.size))
     validators.addIfMissing(ChainValidator(this.reversed()))
-    validators.addIfMissing(TimeValidityValidator(context.date))
+    validators.addIfMissing(TimeValidityValidator(context.date, certificateChain = this.reversed()))
 
 
     val activeValidators = validators.toMutableSet()
@@ -117,12 +117,15 @@ suspend fun CertificateChain.validate(
 
     this.reversed().forEachIndexed { i, cert ->
         val remainingCriticalExtensions = cert.criticalExtensionOids.toMutableSet()
-        validators.forEach {
+
+        val iterator = activeValidators.iterator()
+        while (iterator.hasNext()) {
+            val currValidator = iterator.next()
             try {
-                it.check(cert, remainingCriticalExtensions)
+                currValidator.check(cert, remainingCriticalExtensions)
             } catch (e: Throwable) {
-                activeValidators.remove(it)
-                validatorFailures.add(ValidatorFailure(it::class.simpleName!!, it, e.message ?: "Validation failed.", i, e))
+                iterator.remove()
+                validatorFailures.add(ValidatorFailure(currValidator::class.simpleName!!, currValidator, e.message ?: "Validation failed.", i, e))
             }
         }
         verifyCriticalExtensions(remainingCriticalExtensions, i , validatorFailures)
