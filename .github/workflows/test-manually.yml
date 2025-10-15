@@ -36,25 +36,6 @@ jobs:
           java-version: '17'
       - name: Run tests
         run: ./gradlew allTests -x iosX64Test
-      - name: 'Add default settings to node calls'
-        shell: bash
-        run: |
-          #
-          # The later used dorny/test-reporter@v2 action can throw the following exception when enough tests have been
-          # executed:
-          #     RangeError: Maximum call stack size exceeded
-          #
-          # We explicitly increase the max. stack size here to workaround this issue.
-          #
-          
-          which node
-          node --version
-          
-          mv /opt/homebrew/bin/node /opt/homebrew/bin/node_org
-          echo '#!/bin/bash' >> /opt/homebrew/bin/node
-          echo '/opt/homebrew/bin/node_org --stack-size=4096 $@' >> /opt/homebrew/bin/node
-          cat /opt/homebrew/bin/node
-          chmod +x /opt/homebrew/bin/node
       - name: Test Report
         uses: dorny/test-reporter@v2
         env:
@@ -63,4 +44,7 @@ jobs:
         with:
           name: All Tests
           path: indispensable-asn1/build/test-results/**/TEST*.xml,indispensable-oids/build/test-results/**/TEST*.xml,indispensable/build/test-results/**/TEST*.xml,indispensable-josef/build/test-results/**/TEST*.xml,indispensable-cosef/build/test-results/**/TEST*.xml,supreme/build/test-results/**/TEST*.xml
+          list-suites: failed
+          list-tests: failed
           reporter: java-junit
+          use-actions-summary: true
