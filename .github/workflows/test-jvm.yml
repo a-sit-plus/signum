@@ -30,80 +30,21 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           submodules: recursive
-
       - uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
-
       - name: Run tests
         run: ./gradlew jvmTest
-
-      # --- Per-module artifacts ---
-      - name: Upload results (indispensable-asn1)
-        if: success() || failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-indispensable-asn1
-          path: indispensable-asn1/build/test-results/**/TEST*.xml
-          if-no-files-found: ignore
-
-      - name: Upload results (indispensable-oids)
-        if: success() || failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-indispensable-oids
-          path: indispensable-oids/build/test-results/**/TEST*.xml
-          if-no-files-found: ignore
-
-      - name: Upload results (indispensable)
-        if: success() || failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-indispensable
-          path: indispensable/build/test-results/**/TEST*.xml
-          if-no-files-found: ignore
-
-      - name: Upload results (indispensable-josef)
-        if: success() || failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-indispensable-josef
-          path: indispensable-josef/build/test-results/**/TEST*.xml
-          if-no-files-found: ignore
-
-      - name: Upload results (indispensable-cosef)
-        if: success() || failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-indispensable-cosef
-          path: indispensable-cosef/build/test-results/**/TEST*.xml
-          if-no-files-found: ignore
-
-      - name: Upload results (supreme)
-        if: success() || failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-supreme
-          path: supreme/build/test-results/**/TEST*.xml
-          if-no-files-found: ignore
-
-      # --- Single reporter step that renders a section per artifact ---
-      - name: Test Report (per module)
-        if: success() || failure()
+      - name: Test Report
         uses: dorny/test-reporter@v2
         env:
-          # keep memory headroom; adjust as you like
           NODE_OPTIONS: --max-old-space-size=16384
+        if: success() || failure()
         with:
-          artifact: /test-results-(.*)/   # regex over artifact names
-          name: JVM — $1                  # e.g. "JVM — indispensable-asn1"
-          report-title: $1                # section title = module name
-          path: '*.xml'                   # inside each artifact archive
+          name: JVM All Tests
+          path: '**/build/test-results/**/TEST*.xml'
           reporter: java-junit
-          # full details as requested:
-          list-suites: all
-          list-tests: all
-          # avoid excessive API load while keeping full summary content:
-          max-annotations: 50
+          list-suites: failed
+          list-tests: failed
           use-actions-summary: true
