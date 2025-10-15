@@ -7,6 +7,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
+import at.asitplus.signum.indispensable.pki.Rfc2253Constants
 
 class X500Name internal constructor(
     val relativeDistinguishedNames: List<RelativeDistinguishedName>,
@@ -118,7 +119,11 @@ class X500Name internal constructor(
 
     fun toRfc2253String(): String {
         return relativeDistinguishedNames.joinToString(",") { rdn ->
-            rdn.sortedAttrsAndValues.joinToString("+") { atv -> atv.toRFC2253String() }
+            rdn.attrsAndValues
+                .sortedWith(compareBy { atv ->
+                    Rfc2253Constants.ORDER[atv.attrType.uppercase()] ?: Int.MAX_VALUE
+                })
+                .joinToString("+") { atv -> atv.toRFC2253String() }
         }
     }
 
