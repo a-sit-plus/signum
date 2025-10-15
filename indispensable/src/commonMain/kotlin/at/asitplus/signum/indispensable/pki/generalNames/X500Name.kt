@@ -16,9 +16,7 @@ class X500Name internal constructor(
 ) : Asn1Encodable<Asn1Sequence>, GeneralNameOption {
 
     override val isValid: Boolean by lazy {
-        relativeDistinguishedNames.all { rdn ->
-            rdn.attrsAndValues.all { it.isValid == true }
-        }
+        relativeDistinguishedNames.all { it.isValid }
     }
 
     init {
@@ -119,11 +117,7 @@ class X500Name internal constructor(
 
     fun toRfc2253String(): String {
         return relativeDistinguishedNames.joinToString(",") { rdn ->
-            rdn.attrsAndValues
-                .sortedWith(compareBy { atv ->
-                    Rfc2253Constants.ORDER[atv.attrType.uppercase()] ?: Int.MAX_VALUE
-                })
-                .joinToString("+") { atv -> atv.toRFC2253String() }
+            rdn.attrsAndValues.joinToString("+") { atv -> atv.toRFC2253String() }
         }
     }
 

@@ -25,7 +25,25 @@ import at.asitplus.signum.indispensable.asn1.runRethrowing
 /**
  * X.500 Name (used in X.509 Certificates)
  */
-data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndValue>) : Asn1Encodable<Asn1Set> {
+class RelativeDistinguishedName private constructor(
+    val attrsAndValues: List<AttributeTypeAndValue>,
+    performValidation: Boolean = false,
+) : Asn1Encodable<Asn1Set> {
+
+    val isValid: Boolean by lazy {
+        attrsAndValues.all { it.isValid == true }
+    }
+
+    init {
+        if (performValidation && !isValid) throw Asn1Exception("Invalid RelativeDistinguishedName.")
+    }
+
+    constructor(attrsAndValues: List<AttributeTypeAndValue>) : this(
+        attrsAndValues.sortedWith(compareBy { atv ->
+            Rfc2253Constants.ORDER[atv.attrType.uppercase()] ?: Int.MAX_VALUE
+        }),
+        true
+    )
 
     constructor(singleItem: AttributeTypeAndValue) : this(listOf(singleItem))
 
@@ -37,12 +55,13 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
 
     companion object : Asn1Decodable<Asn1Set, RelativeDistinguishedName> {
         override fun doDecode(src: Asn1Set): RelativeDistinguishedName = src.decodeRethrowing {
-            buildList {
+            val attrsAndValues = buildList {
                 while (hasNext()) {
                     val child = next().asSequence()
                     add(AttributeTypeAndValue.decodeFromTlv(child))
                 }
-            }.let(::RelativeDistinguishedName)
+            }
+            RelativeDistinguishedName(attrsAndValues, false)
         }
 
         /**
@@ -88,6 +107,23 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
 
     override fun toString() = "DistinguishedName(attrsAndValues=${attrsAndValues.joinToString()})"
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as RelativeDistinguishedName
+
+        if (isValid != other.isValid) return false
+        if (attrsAndValues != other.attrsAndValues) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = isValid.hashCode()
+        result = 31 * result + attrsAndValues.hashCode()
+        return result
+    }
 }
 
 open class AttributeTypeAndValue(
