@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable.pki
 
-import at.asitplus.catching
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
@@ -10,10 +10,15 @@ import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1Set
 import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.Identifiable
-import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.commonName
+import at.asitplus.signum.indispensable.asn1.countryName
 import at.asitplus.signum.indispensable.asn1.decodeRethrowing
+import at.asitplus.signum.indispensable.asn1.emailAddress_1_2_840_113549_1_9_1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
+import at.asitplus.signum.indispensable.asn1.organizationName
+import at.asitplus.signum.indispensable.asn1.organizationalUnitName
 import at.asitplus.signum.indispensable.asn1.readOid
 import at.asitplus.signum.indispensable.asn1.runRethrowing
 
@@ -27,16 +32,6 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
     override fun encodeToTlv() = runRethrowing {
         Asn1.Set {
             attrsAndValues.forEach { +it }
-        }
-    }
-
-    val sortedAttrsAndValues by lazy {
-        if (attrsAndValues.size > 1) {
-            attrsAndValues.sortedWith(compareBy { atv ->
-                Rfc2253Constants.ORDER[atv.attrType.uppercase()] ?: Int.MAX_VALUE
-            })
-        } else {
-            attrsAndValues
         }
     }
 
@@ -89,7 +84,7 @@ data class RelativeDistinguishedName(val attrsAndValues: List<AttributeTypeAndVa
                 add(sb.toString().trim())
             }
         }
-    }
+        }
 
     override fun toString() = "DistinguishedName(attrsAndValues=${attrsAndValues.joinToString()})"
 
@@ -108,7 +103,7 @@ open class AttributeTypeAndValue(
      * - `null`: no validation implemented
      */
     val isValid: Boolean? by lazy {
-        runCatching { Asn1String.decodeFromTlv(value.asPrimitive()).isValid }.getOrNull()
+        catchingUnwrapped { Asn1String.decodeFromTlv(value.asPrimitive()).isValid }.getOrNull()
     }
 
     override fun toString() = value.toString()
@@ -122,8 +117,11 @@ open class AttributeTypeAndValue(
          */
         @Throws(Asn1Exception::class)
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray())) {
-            if (!isValid!!) throw Asn1Exception("Invalid CommonName!")
+            if (isValid == false) throw Asn1Exception("Invalid CommonName!")
         }
+
+        @Throws(Asn1Exception::class)
+        constructor(str: String) : this(Asn1String.UTF8(str))
 
         companion object {
             const val TYPE = "CN"
@@ -140,8 +138,11 @@ open class AttributeTypeAndValue(
          */
         @Throws(Asn1Exception::class)
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray())) {
-            if (!isValid!!) throw Asn1Exception("Invalid Country!")
+            if (isValid == false) throw Asn1Exception("Invalid Country!")
         }
+
+        @Throws(Asn1Exception::class)
+        constructor(str: String) : this(Asn1String.UTF8(str))
 
         companion object {
             const val TYPE = "C"
@@ -158,8 +159,11 @@ open class AttributeTypeAndValue(
          */
         @Throws(Asn1Exception::class)
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray())) {
-            if (!isValid!!) throw Asn1Exception("Invalid Organization!")
+            if (isValid == false) throw Asn1Exception("Invalid Organization!")
         }
+
+        @Throws(Asn1Exception::class)
+        constructor(str: String) : this(Asn1String.UTF8(str))
 
         companion object {
             const val TYPE = "O"
@@ -176,8 +180,11 @@ open class AttributeTypeAndValue(
          */
         @Throws(Asn1Exception::class)
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray())) {
-            if (!isValid!!) throw Asn1Exception("Invalid OrganizationalUnit!")
+            if (isValid == false) throw Asn1Exception("Invalid OrganizationalUnit!")
         }
+
+        @Throws(Asn1Exception::class)
+        constructor(str: String) : this(Asn1String.UTF8(str))
 
         companion object {
             const val TYPE = "OU"
@@ -194,8 +201,11 @@ open class AttributeTypeAndValue(
          */
         @Throws(Asn1Exception::class)
         constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray())) {
-            if (!isValid!!) throw Asn1Exception("Invalid EmailAddress!")
+            if (isValid == false) throw Asn1Exception("Invalid EmailAddress!")
         }
+
+        @Throws(Asn1Exception::class)
+        constructor(str: String) : this(Asn1String.UTF8(str))
 
         companion object {
             const val TYPE = "EMAILADDRESS"
