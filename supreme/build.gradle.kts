@@ -1,12 +1,7 @@
 @file:OptIn(ExperimentalKotlinGradlePluginApi::class)
 
 import at.asitplus.gradle.*
-import com.android.build.api.dsl.androidLibrary
-import org.gradle.internal.os.OperatingSystem
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
-import org.jetbrains.kotlin.konan.target.Family
-import java.io.ByteArrayOutputStream
 
 plugins {
     id("com.android.kotlin.multiplatform.library")
@@ -108,11 +103,6 @@ val javadocJar = setupDokka(
     baseUrl = "https://github.com/a-sit-plus/signum/tree/main/",
     multiModuleDoc = true
 )
-
-repositories {
-    maven("https://repo1.maven.org/maven2")
-}
-
 
 publishing {
     publications {

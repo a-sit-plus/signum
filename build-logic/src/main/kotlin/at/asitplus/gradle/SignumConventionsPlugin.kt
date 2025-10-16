@@ -34,105 +34,105 @@ class SignumConventionsExtension(private val project: Project) {
                 maxHeapSize = "4G"
             }
         }
-
-
         project.fermentRottenApples()
+    }
 
-        fun android(namespace: String, minSdkOverride: Int? = null) {
-            project.extensions.getByType<KotlinMultiplatformExtension>().apply {
-                androidLibrary {
-                    this.namespace = namespace
-                    minSdkOverride?.let {
-                        project.logger.lifecycle("  \u001b[7m\u001b[1m" + "Overriding Android defaultConfig minSDK to $minSdkOverride for project ${project.name}" + "\u001b[0m")
-                        minSdk = it
-                    }
-                    withDeviceTestBuilder {
-                        sourceSetTreeName = "test"
-                    }.configure {
-                        instrumentationRunnerArguments["timeout_msec"] = "2400000"
-                        managedDevices {
-                            localDevices {
-                                create("pixelAVD").apply {
-                                    device = "Pixel 4"
-                                    apiLevel = 35
-                                    systemImageSource = "aosp-atd"
-                                }
+
+    fun android(namespace: String, minSdkOverride: Int? = null) {
+        project.extensions.getByType<KotlinMultiplatformExtension>().apply {
+            androidLibrary {
+                this.namespace = namespace
+                minSdkOverride?.let {
+                    project.logger.lifecycle("  \u001b[7m\u001b[1m" + "Overriding Android defaultConfig minSDK to $minSdkOverride for project ${project.name}" + "\u001b[0m")
+                    minSdk = it
+                }
+                withDeviceTestBuilder {
+                    sourceSetTreeName = "test"
+                }.configure {
+                    instrumentationRunnerArguments["timeout_msec"] = "2400000"
+                    managedDevices {
+                        localDevices {
+                            create("pixelAVD").apply {
+                                device = "Pixel 4"
+                                apiLevel = 35
+                                systemImageSource = "aosp-atd"
                             }
                         }
                     }
-                    packaging {
-                        listOf(
-                            "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
-                            "org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties",
-                            "org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties",
-                            "org/bouncycastle/x509/CertPathReviewerMessages_de.properties",
-                            "org/bouncycastle/x509/CertPathReviewerMessages.properties",
-                            "org/bouncycastle/pkix/CertPathReviewerMessages_de.properties",
-                            "org/bouncycastle/pkix/CertPathReviewerMessages.properties",
-                            "/META-INF/{AL2.0,LGPL2.1}",
-                            "win32-x86-64/attach_hotspot_windows.dll",
-                            "win32-x86/attach_hotspot_windows.dll",
-                            "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
-                            "META-INF/licenses/*",
-                            //noinspection WrongGradleMethod
-                        ).forEach { resources.excludes.add(it) }
-                    }
+                }
+                packaging {
+                    listOf(
+                        "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
+                        "org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties",
+                        "org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties",
+                        "org/bouncycastle/x509/CertPathReviewerMessages_de.properties",
+                        "org/bouncycastle/x509/CertPathReviewerMessages.properties",
+                        "org/bouncycastle/pkix/CertPathReviewerMessages_de.properties",
+                        "org/bouncycastle/pkix/CertPathReviewerMessages.properties",
+                        "/META-INF/{AL2.0,LGPL2.1}",
+                        "win32-x86-64/attach_hotspot_windows.dll",
+                        "win32-x86/attach_hotspot_windows.dll",
+                        "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
+                        "META-INF/licenses/*",
+                        //noinspection WrongGradleMethod
+                    ).forEach { resources.excludes.add(it) }
                 }
             }
-        }
-    }
-
-    fun Project.signumConventions(init: SignumConventionsExtension.() -> Unit) {
-        SignumConventionsExtension(this).init()
-
-    }
-
-    //we only require this for when swift-klib is used, so we let the extension trigger it
-    private fun Project.fermentRottenApples() = extensions.findByName("swiftklib")?.let {
-
-        /*help the linker (yes, this is absolutely bonkers!)*/
-        if (OperatingSystem.current() == OperatingSystem.MAC_OS) {
-            val devDir = System.getenv("DEVELOPER_DIR")?.ifEmpty { null }.let {
-                if (it == null) {
-                    val output = ByteArrayOutputStream()
-                    exec {
-                        commandLine("xcode-select", "-p")
-                        standardOutput = output
-                    }
-                    output.toString().trim()
-                } else it
-            }
-
-            logger.lifecycle("  DEV DIR points to $devDir")
-
-            val swiftLib = "$devDir/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/"
-
-            extensions.getByType<KotlinMultiplatformExtension>().targets.withType<KotlinNativeTarget>()
-                .configureEach {
-                    val sub = when (konanTarget.family) {
-                        Family.IOS ->
-                            if (konanTarget.name.contains("SIMULATOR", true)) "iphonesimulator" else "iphoneos"
-
-                        Family.OSX -> "macosx"
-                        Family.TVOS ->
-                            if (konanTarget.name.contains("SIMULATOR", true)) "appletvsimulator" else "appletvos"
-
-                        Family.WATCHOS ->
-                            if (konanTarget.name.contains("SIMULATOR", true)) "watchsimulator" else "watchos"
-
-                        else -> throw StopExecutionException("Konan target ${konanTarget.name} is not recognized")
-                    }
-
-                    logger.lifecycle("  KONAN target is ${konanTarget.name} which resolves to $sub")
-                    binaries.all {
-                        linkerOpts(
-                            "-L${swiftLib}$sub",
-                            "-L/usr/lib/swift"
-                        )
-                    }
-                }
         }
     }
 }
+
+fun Project.signumConventions(init: SignumConventionsExtension.() -> Unit) {
+    SignumConventionsExtension(this).init()
+
+}
+
+//we only require this for when swift-klib is used, so we let the extension trigger it
+private fun Project.fermentRottenApples() = extensions.findByName("swiftklib")?.let {
+
+    /*help the linker (yes, this is absolutely bonkers!)*/
+    if (OperatingSystem.current() == OperatingSystem.MAC_OS) {
+        val devDir = System.getenv("DEVELOPER_DIR")?.ifEmpty { null }.let {
+            if (it == null) {
+                val output = ByteArrayOutputStream()
+                exec {
+                    commandLine("xcode-select", "-p")
+                    standardOutput = output
+                }
+                output.toString().trim()
+            } else it
+        }
+
+        logger.lifecycle("  DEV DIR points to $devDir")
+
+        val swiftLib = "$devDir/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/"
+
+        extensions.getByType<KotlinMultiplatformExtension>().targets.withType<KotlinNativeTarget>()
+            .configureEach {
+                val sub = when (konanTarget.family) {
+                    Family.IOS ->
+                        if (konanTarget.name.contains("SIMULATOR", true)) "iphonesimulator" else "iphoneos"
+
+                    Family.OSX -> "macosx"
+                    Family.TVOS ->
+                        if (konanTarget.name.contains("SIMULATOR", true)) "appletvsimulator" else "appletvos"
+
+                    Family.WATCHOS ->
+                        if (konanTarget.name.contains("SIMULATOR", true)) "watchsimulator" else "watchos"
+
+                    else -> throw StopExecutionException("Konan target ${konanTarget.name} is not recognized")
+                }
+
+                logger.lifecycle("  KONAN target is ${konanTarget.name} which resolves to $sub")
+                binaries.all {
+                    linkerOpts(
+                        "-L${swiftLib}$sub",
+                        "-L/usr/lib/swift"
+                    )
+                }
+            }
+    }
+}
+
 
 

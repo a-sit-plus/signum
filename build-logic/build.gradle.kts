@@ -26,9 +26,14 @@ dependencies {
 
     implementation("org.jetbrains.kotlin.multiplatform:org.jetbrains.kotlin.multiplatform.gradle.plugin:$kotlinVer")
     implementation(libs.agp)
+    implementation(libs.asp)
 }
 
 repositories {
+    maven {
+        url = uri("https://raw.githubusercontent.com/a-sit-plus/gradle-conventions-plugin/mvn/repo")
+        name = "aspConventions"
+    }
     mavenLocal()
     gradlePluginPortal()
     google()
