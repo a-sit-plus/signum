@@ -45,19 +45,20 @@ allprojects {
     group = rootProject.group
 }
 
+//shush!
 subprojects {
-    afterEvaluate {
-        val targets = project.extensions.getByType<KotlinMultiplatformExtension>().targets
+    var silentium: Boolean? = null
+    project.extensions.getByType<KotlinMultiplatformExtension>().targets.whenObjectAdded {
         val buildableTargets = getBuildableTargets()
-        if (targets.size > buildableTargets.size) {
-            logger.warn(
-                ">>>> The following targets are not buildable on the current host: ${
-                    targets.map { it.name }.toMutableSet().apply { removeAll(buildableTargets.map { it.name }) }
-                        .joinToString(", ")
-                } <<<<"
-            )
+        if (this !in buildableTargets) {
+            logger.warn(">>>> Target $this is not buildable on the current host! <<<<")
+            project.extensions.getByType<KotlinMultiplatformExtension>().targets.remove(this)
+            if (silentium == null) silentium = false
+        }
+        if (silentium == false) {
             logger.warn("     disabling checkKotlinGradlePluginConfigurationErrors for project $name. YOLO!!!")
             tasks.findByName("checkKotlinGradlePluginConfigurationErrors")?.enabled = false
+            silentium = true
         }
     }
 }
