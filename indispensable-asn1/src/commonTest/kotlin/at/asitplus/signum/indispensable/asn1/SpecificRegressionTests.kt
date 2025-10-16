@@ -8,7 +8,7 @@ import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
-val SpecificRegressionTests by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
+val SpecificRegressionTests by testSuite() {
     "Illegal length encoding" {
         shouldThrow<Asn1Exception> {
             // length < 128 encoded as long form

@@ -22,7 +22,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val Asn1NumberEncodingTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
+val Asn1NumberEncodingTest by testSuite() {
 
 
     "Asn1 Number encoding" - {

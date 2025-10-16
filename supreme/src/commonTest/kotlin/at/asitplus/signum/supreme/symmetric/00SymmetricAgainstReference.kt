@@ -26,7 +26,7 @@ import de.infix.testBalloon.framework.testScope
 import kotlin.time.Duration.Companion.minutes
 
 @OptIn(HazardousMaterials::class)
-val SymmetricAgainstReference  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
+val SymmetricAgainstReference  by testSuite() {
     "AES GCM+CBC and ChaCha20-Poly1305" - {
         val reference: JsonArray = Json.decodeFromString(pregenerated)
 

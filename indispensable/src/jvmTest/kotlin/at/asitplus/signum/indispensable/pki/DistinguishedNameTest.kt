@@ -11,7 +11,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val DistinguishedNameTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
+val DistinguishedNameTest by testSuite() {
     "DistinguishedName test equals and hashCode" - {
         val oids = listOf(
             KnownOIDs.countryName, KnownOIDs.country, KnownOIDs.houseIdentifier,

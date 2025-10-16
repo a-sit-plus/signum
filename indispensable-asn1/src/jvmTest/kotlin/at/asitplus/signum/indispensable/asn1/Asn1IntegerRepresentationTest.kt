@@ -23,7 +23,7 @@ import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
 @OptIn(ExperimentalUuidApi::class)
-val Asn1IntegerRepresentationTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
+val Asn1IntegerRepresentationTest by testSuite() {
 
     "Manual" - {
         withData("1027", "256", "1", "3", "8", "127", "128", "255", "512", "1024") {

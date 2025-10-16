@@ -38,7 +38,7 @@ private class Settings: DSL.Data() {
     }
 }
 
-val DSLVarianceDemonstration  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
+val DSLVarianceDemonstration  by testSuite() {
     "\uD83D\uDE0A" {
 
         doWithConfiguration {

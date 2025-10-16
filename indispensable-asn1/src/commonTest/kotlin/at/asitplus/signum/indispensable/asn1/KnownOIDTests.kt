@@ -11,7 +11,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val KnownOIDTests by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
+val KnownOIDTests by testSuite() {
 
     val dateDescription = KnownOIDs.date
     "Before Adding known OIDs" {

@@ -13,7 +13,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val CustomTaggedTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
+val CustomTaggedTest by testSuite() {
     "Custom CONSTRUCTED" {
         checkAll(Arb.int(min = 0, max = Int.MAX_VALUE/*BC limits*/)) {
             Asn1CustomStructure(

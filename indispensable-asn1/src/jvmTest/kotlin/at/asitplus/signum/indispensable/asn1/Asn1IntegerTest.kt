@@ -30,7 +30,7 @@ private fun UByteArray.stripLeadingZeros() =
 
 private fun ByteArray.stripLeadingZeros() = asUByteArray().stripLeadingZeros()
 
-val Asn1IntegerTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
+val Asn1IntegerTest by testSuite() {
     "Encoding: Negative" {
         val result =
             Asn1Integer(-20).encodeToAsn1Primitive()

@@ -25,7 +25,7 @@ import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
 @OptIn(ExperimentalSerializationApi::class)
-val CoseSerializationTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
+val CoseSerializationTest by testSuite() {
 
     "CoseSigned can not be constructed with ByteStringWrapper" {
         val payload = ByteStringWrapper("StringType")

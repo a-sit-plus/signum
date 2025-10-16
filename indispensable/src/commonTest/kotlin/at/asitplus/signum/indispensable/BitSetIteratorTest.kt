@@ -10,7 +10,7 @@ import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import kotlin.time.Duration.Companion.minutes
 
-val BitSetIteratorTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
+val BitSetIteratorTest  by testSuite() {
    
     "simple test" {
         var remaining = 1

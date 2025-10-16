@@ -29,7 +29,7 @@ import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
-val JKSProviderTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 90.minutes)) {
+val JKSProviderTest  by testSuite() {
     "Ephemeral" {
         val ks = JKSProvider.Ephemeral().getOrThrow()
         val alias = "Elfenbeinschloss"
