@@ -9,7 +9,6 @@ import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.invoke
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
-import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.konan.target.Family
 import java.io.ByteArrayOutputStream
@@ -27,8 +26,57 @@ class SignumConventionsPlugin : Plugin<Project> {
 
 class SignumConventionsExtension(private val project: Project) {
     init {
+       // project.silence()
         project.tasks.whenObjectAdded {
             if (this is Test) maxHeapSize = "4G"
+        }
+
+        project.extensions.findByName("swiftklib")?.run {
+
+
+            /*help the linker (yes, this is absolutely bonkers!)*/
+            if (OperatingSystem.current() == OperatingSystem.MAC_OS) {
+                val devDir = System.getenv("DEVELOPER_DIR")?.ifEmpty { null }.let {
+                    if (it == null) {
+                        val output = ByteArrayOutputStream()
+                        project.exec {
+                            commandLine("xcode-select", "-p")
+                            standardOutput = output
+                        }
+                        output.toString().trim()
+                    } else it
+                }
+
+                project.logger.lifecycle("  DEV DIR points to $devDir")
+
+                val swiftLib = "$devDir/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/"
+
+                project.extensions.getByType<KotlinMultiplatformExtension>().targets.withType<KotlinNativeTarget>()
+                    .configureEach {
+                        val sub = when (konanTarget.family) {
+                            Family.IOS ->
+                                if (konanTarget.name.contains("SIMULATOR", true)) "iphonesimulator" else "iphoneos"
+
+                            Family.OSX -> "macosx"
+                            Family.TVOS ->
+                                if (konanTarget.name.contains("SIMULATOR", true)) "appletvsimulator" else "appletvos"
+
+                            Family.WATCHOS ->
+                                if (konanTarget.name.contains("SIMULATOR", true)) "watchsimulator" else "watchos"
+
+                            else -> {/*non-apple*/
+                            }
+                        }
+
+                        project.logger.lifecycle("  KONAN target is ${konanTarget.name} which resolves to $sub")
+                        binaries.all {
+                            linkerOpts(
+                                "-L${swiftLib}$sub",
+                                "-L/usr/lib/swift"
+                            )
+                        }
+                    }
+            }
         }
     }
 
@@ -80,4 +128,33 @@ class SignumConventionsExtension(private val project: Project) {
 fun Project.signumConventions(init: SignumConventionsExtension.() -> Unit) {
     SignumConventionsExtension(this).init()
 
+}
+
+private fun Project.getBuildableTargets() =
+    extensions.getByType<KotlinMultiplatformExtension>().targets.filter { target ->
+        when {
+            // Non-native targets are always buildable
+            target.platformType != org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.native -> true
+            else -> runCatching {
+                val konanTarget = (target as? KotlinNativeTarget)
+                konanTarget?.publishable == true
+            }.getOrElse { false }
+        }
+    }
+
+private fun Project.silence() {
+    var silentium: Boolean? = null
+    extensions.getByType<KotlinMultiplatformExtension>().targets.whenObjectAdded {
+        val buildableTargets = getBuildableTargets()
+        if (this !in buildableTargets) {
+            logger.warn(">>>> Target $this is not buildable on the current host! <<<<")
+            extensions.getByType<KotlinMultiplatformExtension>().targets.remove(this)
+            if (silentium == null) silentium = false
+        }
+        if (silentium == false) {
+            logger.warn("     disabling checkKotlinGradlePluginConfigurationErrors for project $name. YOLO!!!")
+            tasks.findByName("checkKotlinGradlePluginConfigurationErrors")?.enabled = false
+            silentium = true
+        }
+    }
 }
