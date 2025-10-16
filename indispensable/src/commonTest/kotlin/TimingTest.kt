@@ -4,39 +4,34 @@ import kotlin.math.abs
 import kotlin.random.Random
 import kotlin.time.TimeSource
 
-inline fun g() = Random.nextInt(0, 2)
 
-inline fun A() = g()
-inline fun B() = 0
+
+inline fun g() : Int = Random.nextInt(0, 2)
+//fun fib(n: Int): Int = if (n <= 1) n else fib(n - 1) + fib(n - 2)
+//inline fun g() = fib(3)
+
+inline fun A() = 0
+inline fun B() = g()
 
 val NUM_TESTS = 10
 val TIMES_INNER = 1000000
-val TIMES_OUTER = 10000
+val TIMES_OUTER = 1000
 
-suspend fun f(x: Int) : Int {
-    var s = 0
-    repeat(TIMES_INNER)
-    {
-        val a = A()
-        val b = B()
-        s += CMOV(a, b, x!=0) // CMOV is not constant time
-    }
-    return s
+inline fun f(x: Int) : Int {
+    val a = A()
+    val b = B()
+    return CMOV(a, b, x!=0) // CMOV is not constant time
 }
 
-@Suppress("NOTHING_TO_INLINE")
+inline fun <T> CMOV(a: T, b: T, c: Boolean) = if (c) b else a
+
 inline fun CMOV_ALTERNATIVE(a: Int, b: Int, c: Int) = (1-c)*a+c*b
 
-suspend fun f_ALTERNATIVE(x: Int) : Int {
-    var s = 0
-    repeat(TIMES_INNER)
-    {
-        val a = A()
-        val b = B()
-        // require(CMOV_ALTERNATIVE(a,b,x) == CMOV(a,b,xBool))  // TODO: comment in for testing, but note that this is not constant time because of CMOV
-        s += CMOV_ALTERNATIVE(a, b, x) // CMOV_ALTERNATIVE is constant time
-    }
-    return s
+inline fun f_ALTERNATIVE(x: Int) : Int {
+    val a = A()
+    val b = B()
+    // require(CMOV_ALTERNATIVE(a,b,x) == CMOV(a,b,xBool))  // TODO: comment in for testing, but note that this is not constant time because of CMOV
+    return CMOV_ALTERNATIVE(a, b, x) // CMOV_ALTERNATIVE is constant time
 }
 
 fun correlation(data: List<Pair<Double, Double>>): Double {
@@ -71,19 +66,25 @@ class TimingTest : FunSpec({
 
             repeat(TIMES_OUTER) {
                 for (x in xs) {
-                    var y : Int
+                    var y : Int = 0
                     var deltaTime : Long
 
                     if (test%2 == 0)
                     {
                         val startTime = TimeSource.Monotonic.markNow()
-                        y = f(x) // not constant time
+                        repeat(TIMES_INNER)
+                        {
+                            y += f(x) // not constant time
+                        }
                         deltaTime = startTime.elapsedNow().inWholeNanoseconds
                     }
                     else
                     {
                         val startTime = TimeSource.Monotonic.markNow()
-                        y = f_ALTERNATIVE(x) // constant time
+                        repeat(TIMES_INNER)
+                        {
+                            y += f_ALTERNATIVE(x) // constant time
+                        }
                         deltaTime = startTime.elapsedNow().inWholeNanoseconds
                     }
 
