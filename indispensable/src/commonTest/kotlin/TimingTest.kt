@@ -7,10 +7,11 @@ import kotlin.time.TimeSource
 inline fun g() = Random.nextInt(0, 2)
 
 inline fun A() = g()
-inline fun B() = g()-g()+g()
+inline fun B() = 0
 
-val TIMES_INNER = 100000
-val TIMES_OUTER = 3000
+val NUM_TESTS = 10
+val TIMES_INNER = 1000000
+val TIMES_OUTER = 10000
 
 suspend fun f(x: Int) : Int {
     var s = 0
@@ -61,17 +62,15 @@ fun correlationStrength(r: Double): String {
 
 class TimingTest : FunSpec({
     test("measure time") {
-        for (test in 0 until 10) {
+        for (test in 0 until NUM_TESTS) {
 
             val xs = listOf(0,1)
             val results = mutableListOf<Pair<Int, Long>>() // (x, t)
             val variant = if(test%2 == 0) "CMOV" else "CMOV_ALTERNATIVE"
             println("test # $test with $variant:")
-            for (x in xs) {
-                var tSum = 0L
-                var ySum = 0L
 
-                repeat(TIMES_OUTER) {
+            repeat(TIMES_OUTER) {
+                for (x in xs) {
                     var y : Int
                     var deltaTime : Long
 
@@ -89,11 +88,8 @@ class TimingTest : FunSpec({
                     }
 
                     results += x to deltaTime
-                    tSum += deltaTime
-                    ySum += y
                 }
 
-                println("  it took $tSum ns to compute f($x) = $ySum")
             }
 
             val corr = correlation(results.map { it.first.toDouble() to it.second.toDouble() })
