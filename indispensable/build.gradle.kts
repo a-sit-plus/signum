@@ -94,6 +94,9 @@ kotlin {
         }
     }
 }
+tasks.withType<Test>().configureEach {
+    maxHeapSize = "4G"
+}
 
 exportXCFramework(
     "Indispensable",
@@ -106,6 +109,8 @@ exportXCFramework(
     project(":indispensable-oids"),
     libs.bignum
 )
+
+
 
 
 val javadocJar = setupDokka(

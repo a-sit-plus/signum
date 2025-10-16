@@ -301,6 +301,10 @@ val javadocJar = setupDokka(
     multiModuleDoc = true
 )
 
+tasks.withType<Test>().configureEach {
+    maxHeapSize = "4G"
+}
+
 publishing {
     publications {
         withType<MavenPublication> {

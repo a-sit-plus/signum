@@ -92,6 +92,10 @@ kotlin {
     }
 }
 
+tasks.withType<Test>().configureEach {
+    maxHeapSize = "4G"
+}
+
 exportXCFramework(
     "IndispensableAsn1",
     transitiveExports = false,

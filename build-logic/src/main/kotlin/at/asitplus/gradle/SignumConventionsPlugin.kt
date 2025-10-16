@@ -3,15 +3,10 @@ package at.asitplus.gradle
 import com.android.build.api.dsl.androidLibrary
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.tasks.testing.Test
-import org.gradle.internal.os.OperatingSystem
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.invoke
-import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
-import org.jetbrains.kotlin.konan.target.Family
-import java.io.ByteArrayOutputStream
 
 /**
  * Gradle convention plugin for Signum
@@ -26,58 +21,7 @@ class SignumConventionsPlugin : Plugin<Project> {
 
 class SignumConventionsExtension(private val project: Project) {
     init {
-       // project.silence()
-        project.tasks.whenObjectAdded {
-            if (this is Test) maxHeapSize = "4G"
-        }
-
-        project.extensions.findByName("swiftklib")?.run {
-
-
-            /*help the linker (yes, this is absolutely bonkers!)*/
-            if (OperatingSystem.current() == OperatingSystem.MAC_OS) {
-                val devDir = System.getenv("DEVELOPER_DIR")?.ifEmpty { null }.let {
-                    if (it == null) {
-                        val output = ByteArrayOutputStream()
-                        project.exec {
-                            commandLine("xcode-select", "-p")
-                            standardOutput = output
-                        }
-                        output.toString().trim()
-                    } else it
-                }
-
-                project.logger.lifecycle("  DEV DIR points to $devDir")
-
-                val swiftLib = "$devDir/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/"
-
-                project.extensions.getByType<KotlinMultiplatformExtension>().targets.withType<KotlinNativeTarget>()
-                    .configureEach {
-                        val sub = when (konanTarget.family) {
-                            Family.IOS ->
-                                if (konanTarget.name.contains("SIMULATOR", true)) "iphonesimulator" else "iphoneos"
-
-                            Family.OSX -> "macosx"
-                            Family.TVOS ->
-                                if (konanTarget.name.contains("SIMULATOR", true)) "appletvsimulator" else "appletvos"
-
-                            Family.WATCHOS ->
-                                if (konanTarget.name.contains("SIMULATOR", true)) "watchsimulator" else "watchos"
-
-                            else -> {/*non-apple*/
-                            }
-                        }
-
-                        project.logger.lifecycle("  KONAN target is ${konanTarget.name} which resolves to $sub")
-                        binaries.all {
-                            linkerOpts(
-                                "-L${swiftLib}$sub",
-                                "-L/usr/lib/swift"
-                            )
-                        }
-                    }
-            }
-        }
+        project.silence()
     }
 
     fun android(namespace: String, minSdkOverride: Int? = null) {
