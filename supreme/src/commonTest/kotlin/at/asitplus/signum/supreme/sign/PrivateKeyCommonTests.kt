@@ -21,7 +21,7 @@ import de.infix.testBalloon.framework.testScope
 import kotlin.time.Duration.Companion.minutes
 
 @OptIn(SecretExposure::class)
-val PrivateKeyCommonTests  by testSuite() {
+val PrivateKeyCommonTests  by testSuite(.report(DisabledTestsExecutionReport())) {
     "RSA" {
         val rsa = """
             -----BEGIN PRIVATE KEY-----

@@ -45,6 +45,23 @@ allprojects {
     group = rootProject.group
 }
 
+//shush!
+subprojects {
+    var silentium: Boolean? = null
+    project.extensions.getByType<KotlinMultiplatformExtension>().targets.whenObjectAdded {
+        val buildableTargets = getBuildableTargets()
+        if (this !in buildableTargets) {
+            logger.warn(">>>> Target $this is not buildable on the current host! <<<<")
+            project.extensions.getByType<KotlinMultiplatformExtension>().targets.remove(this)
+            if (silentium == null) silentium = false
+        }
+        if (silentium == false) {
+            logger.warn("     disabling checkKotlinGradlePluginConfigurationErrors for project $name. YOLO!!!")
+            tasks.findByName("checkKotlinGradlePluginConfigurationErrors")?.enabled = false
+            silentium = true
+        }
+    }
+}
 
 tasks.register<Copy>("copyChangelog") {
     into(rootDir.resolve("docs/docs"))
@@ -77,4 +94,15 @@ tasks.register<Copy>("mkDocsSite") {
 }
 
 
+fun Project.getBuildableTargets() =
+    project.extensions.getByType<KotlinMultiplatformExtension>().targets.filter { target ->
+        when {
+            // Non-native targets are always buildable
+            target.platformType != org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.native -> true
+            else -> runCatching {
+                val konanTarget = (target as? KotlinNativeTarget)
+                konanTarget?.publishable == true
+            }.getOrElse { false }
+        }
+    }
 

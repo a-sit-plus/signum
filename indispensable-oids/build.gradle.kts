@@ -1,4 +1,7 @@
-import at.asitplus.gradle.*
+import at.asitplus.gradle.AspVersions
+import at.asitplus.gradle.exportXCFramework
+import at.asitplus.gradle.kotest
+import at.asitplus.gradle.setupDokka
 import com.android.build.api.dsl.androidLibrary
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -18,7 +21,6 @@ plugins {
     kotlin("multiplatform")
     id("signing")
     id("at.asitplus.gradle.conventions")
-    id("at.asitplus.signum.buildlogic")
 }
 
 val artifactVersion: String by extra
@@ -216,12 +218,43 @@ fun generateKnownOIDs() {
 
 }
 
-signumConventions {
-    android("at.asitplus.signum.indispensable.oids")
-}
-
-
 kotlin {
+    androidLibrary {
+        namespace = "at.asitplus.signum.indispensable.oids"
+        withDeviceTestBuilder {
+            sourceSetTreeName = "test"
+        }.configure {
+            instrumentationRunnerArguments["timeout_msec"] = "2400000"
+            managedDevices {
+                localDevices {
+                    create("pixelAVD").apply {
+                        device = "Pixel 2"
+                        apiLevel = 36
+                        systemImageSource = "google_apis_playstore"
+                    }
+                }
+            }
+        }
+
+        packaging {
+            listOf(
+                "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
+                "org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties",
+                "org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties",
+                "org/bouncycastle/x509/CertPathReviewerMessages_de.properties",
+                "org/bouncycastle/x509/CertPathReviewerMessages.properties",
+                "org/bouncycastle/pkix/CertPathReviewerMessages_de.properties",
+                "org/bouncycastle/pkix/CertPathReviewerMessages.properties",
+                "/META-INF/{AL2.0,LGPL2.1}",
+                "win32-x86-64/attach_hotspot_windows.dll",
+                "win32-x86/attach_hotspot_windows.dll",
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
+                "META-INF/licenses/*",
+                //noinspection WrongGradleMethod
+            ).forEach { resources.excludes.add(it) }
+        }
+
+    }
     jvm()
     macosArm64()
     macosX64()

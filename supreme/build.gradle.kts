@@ -1,9 +1,9 @@
-@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
-
-import at.asitplus.gradle.*
+import at.asitplus.gradle.AspVersions
+import at.asitplus.gradle.coroutines
+import at.asitplus.gradle.napier
+import at.asitplus.gradle.setupDokka
 import com.android.build.api.dsl.androidLibrary
 import org.gradle.internal.os.OperatingSystem
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.konan.target.Family
 import java.io.ByteArrayOutputStream
@@ -16,7 +16,6 @@ plugins {
     id("at.asitplus.gradle.conventions")
     id("de.infix.testBalloon")
     id("io.github.ttypic.swiftklib") version "0.6.4"
-    id("at.asitplus.signum.buildlogic")
 }
 
 val supremeVersion: String by extra
@@ -45,14 +44,46 @@ androidComponents {
     }
 }
 
-signumConventions {
-    android("at.asitplus.signum.supreme", 30)
-}
-
-
 kotlin {
     compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
     jvm()
+    androidLibrary {
+        namespace = "at.asitplus.signum.supreme"
+        logger.lifecycle("  \u001b[7m\u001b[1m" + "Overriding Android defaultConfig minSDK to 30 for project Supreme" + "\u001b[0m")
+        minSdk = 30 //override
+        withDeviceTestBuilder {
+            sourceSetTreeName = "test"
+        }.configure {
+            instrumentationRunnerArguments["timeout_msec"] = "5000"
+            managedDevices {
+                localDevices {
+                    create("pixelAVD").apply {
+                        device = "Pixel 4"
+                        apiLevel = 35
+                        systemImageSource = "aosp-atd"
+                    }
+                }
+            }
+        }
+        packaging {
+            listOf(
+                "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
+                "org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties",
+                "org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties",
+                "org/bouncycastle/x509/CertPathReviewerMessages_de.properties",
+                "org/bouncycastle/x509/CertPathReviewerMessages.properties",
+                "org/bouncycastle/pkix/CertPathReviewerMessages_de.properties",
+                "org/bouncycastle/pkix/CertPathReviewerMessages.properties",
+                "/META-INF/{AL2.0,LGPL2.1}",
+                "win32-x86-64/attach_hotspot_windows.dll",
+                "win32-x86/attach_hotspot_windows.dll",
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
+                "META-INF/licenses/*",
+                //noinspection WrongGradleMethod
+            ).forEach { resources.excludes.add(it) }
+        }
+    }
+
 
     listOf(
         iosX64(),
