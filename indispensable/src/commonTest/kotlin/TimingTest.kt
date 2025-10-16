@@ -1,6 +1,5 @@
 import at.asitplus.signum.ecmath.CMOV
 import io.kotest.core.spec.style.FunSpec
-import kotlinx.coroutines.delay
 import kotlin.math.abs
 import kotlin.random.Random
 import kotlin.time.TimeSource
@@ -10,9 +9,12 @@ inline fun g() = Random.nextInt(0, 2)
 inline fun A() = g()
 inline fun B() = g()-g()+g()
 
+val TIMES_INNER = 100000
+val TIMES_OUTER = 3000
+
 suspend fun f(x: Int) : Int {
     var s = 0
-    repeat(1000)
+    repeat(TIMES_INNER)
     {
         val a = A()
         val b = B()
@@ -26,7 +28,7 @@ inline fun CMOV_ALTERNATIVE(a: Int, b: Int, c: Int) = (1-c)*a+c*b
 
 suspend fun f_ALTERNATIVE(x: Int) : Int {
     var s = 0
-    repeat(1000)
+    repeat(TIMES_INNER)
     {
         val a = A()
         val b = B()
@@ -69,7 +71,7 @@ class TimingTest : FunSpec({
                 var tSum = 0L
                 var ySum = 0L
 
-                repeat(10000) {
+                repeat(TIMES_OUTER) {
                     var y : Int
                     var deltaTime : Long
 
