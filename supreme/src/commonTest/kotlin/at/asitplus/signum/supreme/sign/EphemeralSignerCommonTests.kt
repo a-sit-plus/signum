@@ -101,7 +101,7 @@ object TestSuites {
 }
 
 @OptIn(SecretExposure::class)
-val EphemeralSignerCommonTests  by testSuite(.report(DisabledTestsExecutionReport())) {
+val EphemeralSignerCommonTests  by testSuite() {
     "Functional" - {
         "RSA" - {
             withData(TestSuites.RSA) { (padding, digest, keySize, preHashed) ->
