@@ -1,52 +1,27 @@
 @file:OptIn(ExperimentalKotlinGradlePluginApi::class)
 
-import at.asitplus.gradle.*
+import at.asitplus.gradle.AspVersions
+import at.asitplus.gradle.coroutines
+import at.asitplus.gradle.napier
+import at.asitplus.gradle.signumConventions
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 
 plugins {
-    id("com.android.kotlin.multiplatform.library")
-    kotlin("multiplatform")
-    kotlin("plugin.serialization")
-    id("signing")
-    id("at.asitplus.gradle.conventions")
-    id("de.infix.testBalloon")
-    id("io.github.ttypic.swiftklib") version "0.6.4"
     id("at.asitplus.signum.buildlogic")
-}
-
-val supremeVersion: String by extra
-version = supremeVersion
-
-
-afterEvaluate {
-//we only ever test on the simulator, so these two should never be enabled in the first place
-//however, kotest ksp wiring messes this up and forces us to build for something we never intend, and this breaks linking.
-//hence, we disable those
-    tasks.configureEach {
-        if (name == "linkDebugTestIosX64") {
-            enabled = false
-        }
-        if (name == "iosX64Test") {
-            enabled = false
-        }
-    }
-}
-
-androidComponents {
-    // Runs for every build variant of your library
-    onVariants { v ->
-        // Configure the instrumented-test APK only
-        v.androidTest?.manifestPlaceholders?.put("testLargeHeap", "true")
-    }
+    id("io.github.ttypic.swiftklib") version "0.6.4"
 }
 
 signumConventions {
     android("at.asitplus.signum.supreme", 30)
+    mavenPublish(
+        name = "Signum Supreme",
+        description = "Kotlin Multiplatform Crypto Provider"
+    )
+    supreme = true
 }
 
 
 kotlin {
-    compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
     jvm()
 
     listOf(
@@ -97,70 +72,6 @@ swiftklib {
         packageName("at.asitplus.signum.supreme.symmetric.internal.ios")
         minIos = 15
     }
-}
-
-val javadocJar = setupDokka(
-    baseUrl = "https://github.com/a-sit-plus/signum/tree/main/",
-    multiModuleDoc = true
-)
-
-publishing {
-    publications {
-        withType<MavenPublication> {
-            if (this.name != "relocation") artifact(javadocJar)
-            pom {
-                name.set("Signum Supreme")
-                description.set("Kotlin Multiplatform Crypto Provider")
-                url.set("https://github.com/a-sit-plus/signum")
-                licenses {
-                    license {
-                        name.set("The Apache License, Version 2.0")
-                        url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
-                    }
-                }
-                developers {
-                    developer {
-                        id.set("JesusMcCloud")
-                        name.set("Bernd Prünster")
-                        email.set("bernd.pruenster@a-sit.at")
-                    }
-                    developer {
-                        id.set("iaik-jheher")
-                        name.set("Jakob Heher")
-                        email.set("jakob.heher@tugraz.at")
-                    }
-                    developer {
-                        id.set("nodh")
-                        name.set("Christian Kollmann")
-                        email.set("christian.kollmann@a-sit.at")
-                    }
-                }
-                scm {
-                    connection.set("scm:git:git@github.com:a-sit-plus/signum.git")
-                    developerConnection.set("scm:git:git@github.com:a-sit-plus/signum.git")
-                    url.set("https://github.com/a-sit-plus/signum")
-                }
-            }
-        }
-    }
-    repositories {
-        mavenLocal {
-            signing.isRequired = false
-        }
-        maven {
-            url = uri(layout.projectDirectory.dir("..").dir("repo"))
-            name = "local"
-            signing.isRequired = false
-        }
-    }
-}
-
-signing {
-    val signingKeyId: String? by project
-    val signingKey: String? by project
-    val signingPassword: String? by project
-    useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
-    sign(publishing.publications)
 }
 
 
