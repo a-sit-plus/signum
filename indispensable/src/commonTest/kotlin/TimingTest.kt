@@ -64,9 +64,9 @@ class TimingTest : FunSpec({
             val variant = if(test%2 == 0) "CMOV" else "CMOV_ALTERNATIVE"
             println("test # $test with $variant:")
 
+            var y : Long = 0
             repeat(TIMES_OUTER) {
                 for (x in xs) {
-                    var y : Int = 0
                     var deltaTime : Long
 
                     if (test%2 == 0)
@@ -95,7 +95,7 @@ class TimingTest : FunSpec({
 
             val corr = correlation(results.map { it.first.toDouble() to it.second.toDouble() })
             var corrStr = correlationStrength(corr)
-            println("  correlation: $corr ($corrStr)")
+            println("  correlation: $corr ($corrStr) ; random y = $y") // Note: only printing y so that compiler cannot "optimize" by removing computations
             println()
         }
     }
