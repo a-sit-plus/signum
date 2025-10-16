@@ -30,11 +30,6 @@ kotlin {
         }
 
         commonMain {
-            kotlin.srcDir(
-                project.layout.projectDirectory.dir("generated")
-                    .dir("commonMain").dir("kotlin")
-            )
-
             dependencies {
                 api(libs.kotlinx.io.core)
                 api(kmmresult())

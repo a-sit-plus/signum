@@ -13,6 +13,7 @@ import org.gradle.kotlin.dsl.*
 import org.gradle.plugins.signing.SigningExtension
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.konan.target.Family
 import java.io.ByteArrayOutputStream
@@ -44,6 +45,7 @@ class SignumConventionsExtension(private val project: Project) {
                 maxHeapSize = "4G"
             }
         }
+        project.silence()
         project.fermentRottenApples()
 
         project.extensions.getByType<KotlinMultiplatformExtension>().apply {
@@ -264,6 +266,36 @@ private fun Project.fermentRottenApples() = extensions.findByName("swiftklib")?.
             }
     }
 }
+
+private fun Project.silence() {
+    val kmp = extensions.getByType<KotlinMultiplatformExtension>()
+    val tbr = mutableSetOf<KotlinTarget>()
+    kmp.targets.whenObjectAdded {
+        val buildableTargets = kmp.getBuildableTargets()
+        if (!buildableTargets.contains(this)) {
+            tasks.findByName("checkKotlinGradlePluginConfigurationErrors")?.enabled = false
+            tbr += this
+            logger.warn(">>>> Target $this is not buildable on the current host <<<<")
+        }
+    }
+    afterEvaluate {
+        kmp.targets.removeAll(tbr)
+    }
+
+}
+
+private fun KotlinMultiplatformExtension.getBuildableTargets() =
+    targets.filter { target ->
+        when {
+            // Non-native targets are always buildable
+            target.platformType != org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.native -> true
+            else -> runCatching {
+                val konanTarget = (target as? KotlinNativeTarget)
+                konanTarget?.publishable == true
+            }.getOrElse { false }
+        }
+    }
+
 
 fun KotlinMultiplatformExtension.indispensableTargets() {
     jvm()
