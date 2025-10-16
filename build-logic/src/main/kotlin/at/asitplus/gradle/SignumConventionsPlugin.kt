@@ -4,6 +4,7 @@ import com.android.build.api.dsl.androidLibrary
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.StopExecutionException
+import org.gradle.api.tasks.testing.Test
 import org.gradle.internal.os.OperatingSystem
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.invoke
@@ -27,9 +28,13 @@ class SignumConventionsPlugin : Plugin<Project> {
 class SignumConventionsExtension(private val project: Project) {
     init {
 
+        project.tasks.whenTaskAdded {
+            if (this is Test) maxHeapSize = "4G"
+        }
+
         project.extensions.findByName("swiftklib")?.let {
 
-        /*help the linker (yes, this is absolutely bonkers!)*/
+            /*help the linker (yes, this is absolutely bonkers!)*/
             if (OperatingSystem.current() == OperatingSystem.MAC_OS) {
                 val devDir = System.getenv("DEVELOPER_DIR")?.ifEmpty { null }.let {
                     if (it == null) {

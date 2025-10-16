@@ -113,9 +113,6 @@ repositories {
     maven("https://repo1.maven.org/maven2")
 }
 
-tasks.withType<Test>().configureEach {
-    maxHeapSize = "4G"
-}
 
 publishing {
     publications {
