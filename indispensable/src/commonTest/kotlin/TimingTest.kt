@@ -13,9 +13,9 @@ inline fun g() : Int = Random.nextInt(0, 2)
 inline fun A() = 0
 inline fun B() = g()
 
-val NUM_TESTS = 10
-val TIMES_INNER = 1000000
-val TIMES_OUTER = 1000
+val NUM_TESTS = 10 // depending on machine, cpu speed might change -> using multiple runs for more stability
+val TIMES_INNER = 1000000 // if set to low, startTime.elapsedNow().inWholeNanoseconds becomes too inprecise
+val TIMES_OUTER = 1000 // if set to low, standard deviation messes up correlation computation
 
 inline fun f(x: Int) : Int {
     val a = A()
