@@ -34,7 +34,7 @@ val JsonWebKeyJvmTest by testSuite() {
     var keyPair: KeyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair()
     var keyPairRSA: KeyPair = KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }.genKeyPair()
 
-    .aroundEach {
+    testConfig = TestConfig.aroundEach {
         keyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair()
         keyPairRSA = KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }.genKeyPair()
         it()

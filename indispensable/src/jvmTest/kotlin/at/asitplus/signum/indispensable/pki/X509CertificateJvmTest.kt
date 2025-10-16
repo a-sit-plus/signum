@@ -54,7 +54,7 @@ val X509CertificateJvmTest by testSuite() {
         it.initialize(256)
     }.genKeyPair()
 
-    .aroundEach {
+    testConfig = TestConfig.aroundEach {
         keyPair = KeyPairGenerator.getInstance("EC").also {
             it.initialize(256)
         }.genKeyPair()
