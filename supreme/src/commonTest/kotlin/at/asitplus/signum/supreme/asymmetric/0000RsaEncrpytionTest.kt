@@ -29,7 +29,7 @@ import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
 @OptIn(HazardousMaterials::class, SecretExposure::class, ExperimentalStdlibApi::class)
-val RsaEncryptionTest  by testSuite(.report(DisabledTestsExecutionReport())) {
+val RsaEncryptionTest  by testSuite() {
     "From OpenSSL" - {
         withData(nameFn = { it.toString() }, testData) {
             it.key as CryptoPrivateKey.RSA

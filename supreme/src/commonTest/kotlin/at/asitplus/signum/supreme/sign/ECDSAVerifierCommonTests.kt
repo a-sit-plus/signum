@@ -25,7 +25,7 @@ import de.infix.testBalloon.framework.testScope
 internal fun <T> Random.of(v: Collection<T>) = v.random(this)
 
 @OptIn(ExperimentalEncodingApi::class)
-val ECDSAVerifierCommonTests  by testSuite(.report(DisabledTestsExecutionReport())) {
+val ECDSAVerifierCommonTests  by testSuite() {
     @Serializable data class RawTestInfo(
         val crv: String, val dig: String, val key: String, val msg: String, val sig: String)
     class TestInfo(test: RawTestInfo) {
