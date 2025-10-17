@@ -80,30 +80,39 @@ class RelativeDistinguishedName private constructor(
         }
 
         /** Split on the first unescaped delimiter */
-        private fun splitFirstUnescaped(input: String, delimiter: Char): List<String> {
+        internal fun splitFirstUnescaped(input: String, delimiter: Char): List<String> {
             val regex = Regex("(?<!\\\\)${Regex.escape(delimiter.toString())}")
             return input.split(regex, limit = 2)
         }
 
         /** Utility function that respects escape sequences */
-        private fun splitRespectingEscapeAndQuotes(input: String, delimiter: Char): List<String> {
-            val d = Regex.escape(delimiter.toString())
-            val tokenPattern = """"(?:\\.|[^"\\])*"|\\.|[^"\\${d}]+|${d}"""
-            val regex = Regex(tokenPattern)
+        internal fun splitRespectingEscapeAndQuotes(input: String, delimiter: Char): List<String> {
+            val parts = mutableListOf<String>()
+            val sb = StringBuilder()
+            var escaped = false
+            var inQuotes = false
 
-            return buildList {
-                val sb = StringBuilder()
-                for (match in regex.findAll(input)) {
-                    val token = match.value
-                    if (token.length == 1 && token[0] == delimiter) {
-                        add(sb.toString())
-                        sb.clear()
-                    } else {
-                        sb.append(token)
+            input.forEach { c ->
+                when {
+                    escaped -> {
+                        sb.append('\\').append(c) // preserve escape
+                        escaped = false
                     }
+                    c == '\\' -> escaped = true
+                    c == '"' -> {
+                        sb.append(c)
+                        inQuotes = !inQuotes
+                    }
+                    c == delimiter && !inQuotes -> {
+                        parts.add(sb.toString())
+                        sb.clear()
+                    }
+                    else -> sb.append(c)
                 }
-                add(sb.toString().trim())
             }
+
+            parts.add(sb.toString())
+            return parts
         }
     }
 
