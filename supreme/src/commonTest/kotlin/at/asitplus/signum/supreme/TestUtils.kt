@@ -12,6 +12,7 @@ import io.kotest.property.RandomSource
 import io.kotest.property.arbitrary.Codepoint
 import io.kotest.property.arbitrary.az
 import io.kotest.property.arbitrary.string
+import org.kotlincrypto.random.CryptoRand
 import kotlin.random.Random
 
 
@@ -46,4 +47,9 @@ class DisabledTestsExecutionReport : TestExecutionReport() {
         }
 
     }
+}
+
+object InsecureRandom: CryptoRand() {
+    override fun nextBytes(buf: ByteArray) = Random.nextBytes(buf)
+    fun nextBytes(size: Int) = Random.nextBytes(size)
 }

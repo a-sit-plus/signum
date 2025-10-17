@@ -5,22 +5,19 @@ import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricKey
 import at.asitplus.signum.indispensable.symmetric.preferredMacKeyLength
 import at.asitplus.signum.indispensable.symmetric.randomKey
-
-import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.withData
 import de.infix.testBalloon.framework.testSuite
-import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
+import org.kotlincrypto.random.CryptoRand
 import kotlin.random.Random
-import de.infix.testBalloon.framework.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.testScope
 
 @OptIn(HazardousMaterials::class)
 val SymmetricEncryptionTest by testSuite() {
-   
-    withData(nameFn={ "Key generation: $it" }, SymmetricEncryptionAlgorithm.entries) { alg ->
-        val key = alg.randomKey(random = Random.Default)
+
+    withData(nameFn = { "Key generation: $it" }, SymmetricEncryptionAlgorithm.entries) { alg ->
+        val key = alg.randomKey(random = object : CryptoRand() {
+            override fun nextBytes(buf: ByteArray) = Random.nextBytes(buf)
+        })
 
         key.algorithm shouldBe alg
 
@@ -29,12 +26,14 @@ val SymmetricEncryptionTest by testSuite() {
                 @OptIn(SecretExposure::class)
                 key.secretKey.getOrThrow().size shouldBe key.algorithm.keySize.bytes.toInt()
             }
+
             is SymmetricKey.WithDedicatedMac -> {
                 @OptIn(SecretExposure::class)
                 key.encryptionKey.getOrThrow().size shouldBe key.algorithm.keySize.bytes.toInt()
                 @OptIn(SecretExposure::class)
                 key.macKey.getOrThrow().size shouldBe key.algorithm.preferredMacKeyLength.bytes.toInt()
             }
+
             else -> error("unreachable")
         }
     }

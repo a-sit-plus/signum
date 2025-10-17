@@ -19,19 +19,24 @@ import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import org.kotlincrypto.random.CryptoRand
+import org.kotlincrypto.random.DelicateCryptoRandApi
 import java.net.URI
 import javax.crypto.KeyGenerator
 import kotlin.random.Random
-import de.infix.testBalloon.framework.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.testScope
 
+
+@OptIn(DelicateCryptoRandApi::class)
+private object InsecureRandom : CryptoRand() {
+    override fun nextBytes(buf: ByteArray) = Random.nextBytes(buf)
+    fun nextBytes(n: Int) = ByteArray(n).also { nextBytes(it) }
+}
 
 @OptIn(HazardousMaterials::class)
 val JweEncryptedTest by testSuite() {
 
     "Minimal JWE can be parsed and verified" {
-        val input = Random.Default.nextBytes(32)
+        val input = InsecureRandom.nextBytes(32)
 
         val jweNimbus = JWEObject(
             JWEHeader.Builder(
@@ -51,7 +56,7 @@ val JweEncryptedTest by testSuite() {
     }
 
     "JWE with some attributes can be parsed and verified" {
-        val input = Random.Default.nextBytes(32)
+        val input = InsecureRandom.nextBytes(32)
         val apu = Random.nextBytes(32)
         val apv = Random.nextBytes(32)
         val jku = "https://example.com/" + Random.nextBytes(16).encodeToString(Base64UrlStrict)
@@ -97,7 +102,9 @@ val JweEncryptedTest by testSuite() {
     "JWE symmetric encryption" - {
         withData(JweAlgorithm.Symmetric.entries) { alg ->
             val plain = Random.nextBytes(32)
-            val key = alg.randomKey(random = Random.Default).toJsonWebKey().getOrThrow()
+            val key = alg.randomKey(random = object : CryptoRand() {
+                override fun nextBytes(buf: ByteArray) = Random.nextBytes(buf)
+            }).toJsonWebKey().getOrThrow()
             val ciphertext = key.encrypt(plain).getOrThrow()
             ciphertext.decrypt(key) shouldSucceedWith plain
         }

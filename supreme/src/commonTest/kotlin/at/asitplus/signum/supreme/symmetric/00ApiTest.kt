@@ -2,6 +2,7 @@ package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.*
+import at.asitplus.signum.supreme.InsecureRandom
 import at.asitplus.signum.supreme.succeed
 import io.kotest.core.spec.style.FreeSpec
 import at.asitplus.testballoon.minus
@@ -31,7 +32,7 @@ val ApiTest  by testSuite() {
                 SymmetricEncryptionAlgorithm.AES_128.ECB,
                 SymmetricEncryptionAlgorithm.ChaCha20Poly1305
             ).map { runBlocking {
-                val key = it.randomKey(Random.Default)
+                val key = it.randomKey(InsecureRandom)
                 val plain = Random.nextBytes(131)
                 val encrypted = key.encrypt(plain).getOrThrow()
                 Triple(key, plain, encrypted)
@@ -54,7 +55,7 @@ val ApiTest  by testSuite() {
         ) { algorithm ->
 
             //create a key, encrypt and decrypt works!
-            val key = algorithm.randomKey(Random.Default)
+            val key = algorithm.randomKey(InsecureRandom)
             val plain = "Harvest".encodeToByteArray()
             val box = key.encrypt(plain).getOrThrow()
             box.decrypt(key).onSuccess { it shouldBe plain } should succeed
@@ -213,7 +214,7 @@ val ApiTest  by testSuite() {
             val algorithm = it
 
             //create a key, encrypt and decrypt works!
-            val key = algorithm.randomKey(Random.Default)
+            val key = algorithm.randomKey(InsecureRandom)
             val box = key.encrypt("Harvest".encodeToByteArray()).getOrThrow()
             box.decrypt(key) should succeed
 
