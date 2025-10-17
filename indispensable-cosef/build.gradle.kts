@@ -12,12 +12,10 @@ signumConventions {
     )
 }
 
-
 kotlin {
-indispensableTargets()
+    indispensableTargets()
 
     sourceSets {
-
         commonMain {
             dependencies {
                 api(project(":indispensable"))
@@ -26,17 +24,6 @@ indispensableTargets()
                 implementation(libs.multibase)
                 implementation(libs.bignum) //Intellij bug work-around
             }
-        }
-
-        commonTest {
-            dependencies {
-                implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
-            }
-        }
-
-        getByName("androidDeviceTest").dependencies {
-            implementation(libs.runner)
-            implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
         }
     }
 }

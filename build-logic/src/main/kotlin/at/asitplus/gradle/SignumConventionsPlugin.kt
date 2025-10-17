@@ -23,9 +23,7 @@ import java.io.ByteArrayOutputStream
  */
 class SignumConventionsPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
-        // Intentionally left blank for skeleton setup.
-        // Add common configuration and plugin applications here in the future.
-        logger.info("SignumConventionsPlugin applied as skeleton to project: ${'$'}{target.path}")
+        logger.info("SignumC onventions Plugin applied to project: ${'$'}{target.path}")
         pluginManager.apply("org.jetbrains.kotlin.multiplatform")
         pluginManager.apply("org.jetbrains.kotlin.plugin.serialization")
         pluginManager.apply("com.android.kotlin.multiplatform.library")
@@ -37,8 +35,8 @@ class SignumConventionsPlugin : Plugin<Project> {
 
 class SignumConventionsExtension(private val project: Project) {
     init {
-        val artifactVersion: String by project.extra
-        project.version = artifactVersion
+        val indispensableVersion: String by project.extra
+        project.version = indispensableVersion
         //if we do this properly, cinterop (swift-klib) blows up, so we hack!
         project.afterEvaluate {
             tasks.withType<Test>().configureEach {
@@ -69,8 +67,8 @@ class SignumConventionsExtension(private val project: Project) {
         }
         set(value) {
             if (!value) {
-                val artifactVersion: String by project.extra
-                project.version = artifactVersion
+                val indispensableVersion: String by project.extra
+                project.version = indispensableVersion
             } else {
                 val supremeVersion: String by project.extra
                 project.version = supremeVersion
@@ -219,7 +217,6 @@ fun Project.signumConventions(init: SignumConventionsExtension.() -> Unit) {
     SignumConventionsExtension(this).init()
 
 }
-
 //we only require this for when swift-klib is used, so we let the extension trigger it
 private fun Project.fermentRottenApples() = extensions.findByName("swiftklib")?.let {
 

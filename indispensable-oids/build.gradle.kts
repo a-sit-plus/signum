@@ -224,8 +224,6 @@ kotlin {
     }
 
     sourceSets {
-
-
         commonMain {
             kotlin.srcDir(
                 project.layout.projectDirectory.dir("generated")
@@ -235,18 +233,6 @@ kotlin {
             dependencies {
                 api(project(":indispensable-asn1"))
             }
-        }
-
-        commonTest {
-            dependencies {
-                implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
-                implementation(kotest("property"))
-            }
-        }
-
-        getByName("androidDeviceTest").dependencies {
-            implementation(libs.runner)
-            implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
         }
     }
 }

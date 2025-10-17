@@ -16,9 +16,8 @@ signumConventions {
 
 kotlin {
     indispensableTargets()
+
     sourceSets {
-
-
         commonMain {
             dependencies {
                 api(project(":indispensable"))
@@ -28,23 +27,12 @@ kotlin {
             }
         }
 
-        commonTest {
-            dependencies {
-                implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
-            }
-        }
-
         jvmTest {
             dependencies {
                 implementation(libs.jose)
                 implementation(project(":supreme"))
             }
 
-        }
-
-        getByName("androidDeviceTest").dependencies {
-            implementation(libs.runner)
-            implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
         }
     }
 }

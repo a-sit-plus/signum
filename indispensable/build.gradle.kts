@@ -18,10 +18,9 @@ private val Pair<*, String?>.comment: String? get() = this.second
 private val Pair<String, *>.oid: String? get() = this.first
 
 kotlin {
-indispensableTargets()
+    indispensableTargets()
 
     sourceSets {
-
         commonMain.dependencies {
             api(project(":indispensable-asn1"))
             api(project(":indispensable-oids"))
@@ -31,23 +30,11 @@ indispensableTargets()
             api(libs.securerandom)
         }
 
-
-        commonTest {
-            dependencies {
-                implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
-                implementation(kotest("property"))
-            }
-        }
         androidJvmMain {
             dependencies {
                 api(bouncycastle("bcpkix"))
                 api(coroutines("jvm"))
             }
-        }
-
-        getByName("androidDeviceTest").dependencies {
-            implementation(libs.runner)
-            implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
         }
     }
 }

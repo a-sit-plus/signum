@@ -19,8 +19,8 @@ subprojects {
     }
 }
 //work around nexus publish bug
-val artifactVersion: String by extra
-version = artifactVersion
+val indispensableVersion: String by extra
+version = indispensableVersion
 
 nexusPublishing {
     transitionCheckOptions {

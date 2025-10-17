@@ -34,13 +34,12 @@ kotlin {
         }
     }
 
-
     sourceSets {
         commonMain.dependencies {
             api(project(":indispensable"))
             implementation(project(":internals"))
             implementation(coroutines())
-            implementation(napier())
+            implementation(napier()) //TODO: modulator!
             implementation(libs.securerandom) //fix composite build
         }
 
@@ -50,16 +49,10 @@ kotlin {
 
         commonTest.dependencies {
             implementation("at.asitplus:kmmresult-test:${AspVersions.kmmresult}")
-            implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
         }
 
         jvmTest.dependencies {
             implementation("com.lambdaworks:scrypt:1.4.0")
-        }
-
-        getByName("androidDeviceTest").dependencies {
-            implementation(libs.runner)
-            implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
         }
     }
 }

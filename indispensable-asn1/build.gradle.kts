@@ -13,10 +13,6 @@ signumConventions {
     )
 }
 
-val artifactVersion: String by extra
-version = artifactVersion
-
-
 kotlin {
     indispensableTargets()
     //we cannot currently test this, so it is only enabled for publishing
@@ -25,10 +21,6 @@ kotlin {
     }
 
     sourceSets {
-        all {
-            languageSettings.enableLanguageFeature("ContextParameters")
-        }
-
         commonMain {
             dependencies {
                 api(libs.kotlinx.io.core)
@@ -40,13 +32,7 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(project(":indispensable"))
-                implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
             }
-        }
-
-        getByName("androidDeviceTest").dependencies {
-            implementation(libs.runner)
-            implementation("de.infix.testBalloon:testBalloon-framework-core:${AspVersions.testballoon}")
         }
     }
 }
