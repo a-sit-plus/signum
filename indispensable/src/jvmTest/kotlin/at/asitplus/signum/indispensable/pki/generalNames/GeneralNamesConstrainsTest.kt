@@ -8,6 +8,10 @@ import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 import at.asitplus.test.FreeSpec
 import io.kotest.matchers.shouldBe
 
+/**
+ * Adapted from BouncyCastle's PKIXNameConstraintsTest:
+ * https://github.com/bcgit/bc-java/blob/126ac9e14a0f56fae088973a777f1f90a521fd82/prov/src/test/java/org/bouncycastle/jce/provider/test/PKIXNameConstraintsTest.java
+ */
 class GeneralNamesConstrainsTest : FreeSpec ({
 
     fun <T : GeneralNameOption> testGeneralNameConstraints(

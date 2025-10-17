@@ -21,13 +21,15 @@ import at.asitplus.signum.indispensable.asn1.organizationName
 import at.asitplus.signum.indispensable.asn1.organizationalUnitName
 import at.asitplus.signum.indispensable.asn1.readOid
 import at.asitplus.signum.indispensable.asn1.runRethrowing
+import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue.CommonName.Companion
+import kotlinx.serialization.json.internal.InternalJsonWriter
 
 /**
  * X.500 Name (used in X.509 Certificates)
  */
 class RelativeDistinguishedName private constructor(
     val attrsAndValues: List<AttributeTypeAndValue>,
-    performValidation: Boolean = false,
+    performValidation: Boolean
 ) : Asn1Encodable<Asn1Set> {
 
     val isValid: Boolean by lazy {
@@ -103,7 +105,7 @@ class RelativeDistinguishedName private constructor(
                 add(sb.toString().trim())
             }
         }
-        }
+    }
 
     override fun toString() = "DistinguishedName(attrsAndValues=${attrsAndValues.joinToString()})"
 
@@ -142,19 +144,21 @@ open class AttributeTypeAndValue(
         catchingUnwrapped { Asn1String.decodeFromTlv(value.asPrimitive()).isValid }.getOrNull()
     }
 
+    protected constructor(value: Asn1Element, attrType: String, oid: ObjectIdentifier) : this(oid, value, attrType) {
+        if (isValid == false) throw Asn1Exception("Invalid $attrType!")
+    }
+
     override fun toString() = value.toString()
 
     class CommonName internal constructor(
         value: Asn1Element,
-    ) : AttributeTypeAndValue(OID, value, TYPE) {
+    ) : AttributeTypeAndValue(value, TYPE, OID) {
 
         /**
          * @throws Asn1Exception if illegal CommonName is provided
          */
         @Throws(Asn1Exception::class)
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray())) {
-            if (isValid == false) throw Asn1Exception("Invalid CommonName!")
-        }
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         @Throws(Asn1Exception::class)
         constructor(str: String) : this(Asn1String.UTF8(str))
@@ -167,15 +171,13 @@ open class AttributeTypeAndValue(
 
     class Country internal constructor(
         value: Asn1Element,
-    ) : AttributeTypeAndValue(OID, value, TYPE) {
+    ) : AttributeTypeAndValue(value, TYPE, OID) {
 
         /**
          * @throws Asn1Exception if illegal Country is provided
          */
         @Throws(Asn1Exception::class)
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray())) {
-            if (isValid == false) throw Asn1Exception("Invalid Country!")
-        }
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         @Throws(Asn1Exception::class)
         constructor(str: String) : this(Asn1String.UTF8(str))
@@ -188,7 +190,7 @@ open class AttributeTypeAndValue(
 
     class Organization internal constructor(
         value: Asn1Element,
-    ) : AttributeTypeAndValue(OID, value, TYPE) {
+    ) : AttributeTypeAndValue(value, TYPE, OID) {
 
         /**
          * @throws Asn1Exception if illegal Organization is provided
@@ -209,15 +211,13 @@ open class AttributeTypeAndValue(
 
     class OrganizationalUnit internal constructor(
         value: Asn1Element,
-    ) : AttributeTypeAndValue(OID, value, TYPE) {
+    ) : AttributeTypeAndValue(value, TYPE, OID) {
 
         /**
          * @throws Asn1Exception if illegal OrganizationalUnit is provided
          */
         @Throws(Asn1Exception::class)
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray())) {
-            if (isValid == false) throw Asn1Exception("Invalid OrganizationalUnit!")
-        }
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         @Throws(Asn1Exception::class)
         constructor(str: String) : this(Asn1String.UTF8(str))
@@ -230,15 +230,13 @@ open class AttributeTypeAndValue(
 
     class EmailAddress internal constructor(
         value: Asn1Element,
-    ) : AttributeTypeAndValue(OID, value, TYPE) {
+    ) : AttributeTypeAndValue(value, TYPE, OID) {
 
         /**
          * @throws Asn1Exception if illegal EmailAddress is provided
          */
         @Throws(Asn1Exception::class)
-        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray())) {
-            if (isValid == false) throw Asn1Exception("Invalid EmailAddress!")
-        }
+        constructor(str: Asn1String) : this(Asn1Primitive(str.tag, str.value.encodeToByteArray()))
 
         @Throws(Asn1Exception::class)
         constructor(str: String) : this(Asn1String.UTF8(str))

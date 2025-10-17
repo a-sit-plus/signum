@@ -17,7 +17,7 @@ class IPAddressName internal constructor(
     val address: IpAddress<*, *>?,
     val addressAndPrefix: IpAddressAndPrefix<*, *>? = null,
     val rawBytes: ByteArray,
-    performValidation: Boolean = false,
+    performValidation: Boolean,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.IP
 ) : GeneralNameOption, Asn1Encodable<Asn1Primitive> {
 
@@ -59,11 +59,11 @@ class IPAddressName internal constructor(
             val content = src.content
             return when (content.size) {
                 IpFamily.V4.numberOfOctets -> IPAddressName(
-                    IpAddress.V4(content), rawBytes = IpAddress.V4(content).octets
+                    IpAddress.V4(content), rawBytes = IpAddress.V4(content).octets, performValidation = false
                 )
 
                 IpFamily.V6.numberOfOctets -> IPAddressName(
-                    IpAddress.V6(content), rawBytes = IpAddress.V6(content).octets
+                    IpAddress.V6(content), rawBytes = IpAddress.V6(content).octets, performValidation = false
                 )
 
                 else -> {

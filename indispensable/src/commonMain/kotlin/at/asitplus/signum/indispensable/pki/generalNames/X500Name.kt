@@ -11,7 +11,7 @@ import at.asitplus.signum.indispensable.pki.Rfc2253Constants
 
 class X500Name internal constructor(
     val relativeDistinguishedNames: List<RelativeDistinguishedName>,
-    performValidation: Boolean = false,
+    performValidation: Boolean,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.DIRECTORY
 ) : Asn1Encodable<Asn1Sequence>, GeneralNameOption {
 

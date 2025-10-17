@@ -15,7 +15,7 @@ import kotlinx.io.IOException
 class UriName internal constructor(
     val host: Asn1String.IA5,
     val allowWildcard: Boolean = false,
-    performValidation: Boolean = false,
+    performValidation: Boolean,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.URI,
 ) : GeneralNameOption, Asn1Encodable<Asn1Primitive> {
 
@@ -64,7 +64,7 @@ class UriName internal constructor(
         private val tag: Asn1Element.Tag = Asn1Element.Tag(6u, false, TagClass.CONTEXT_SPECIFIC)
 
         override fun doDecode(src: Asn1Primitive): UriName = runRethrowing {
-            UriName(src.decodeToIa5String(tag))
+            UriName(src.decodeToIa5String(tag), allowWildcard = false, performValidation = false)
         }
     }
 

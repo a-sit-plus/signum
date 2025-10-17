@@ -3,6 +3,10 @@ package at.asitplus.signum.indispensable.pki.generalNames
 import at.asitplus.test.FreeSpec
 import io.kotest.matchers.shouldBe
 
+/**
+ * Adapted from BouncyCastle's X500NameTest:
+ * https://github.com/bcgit/bc-java/blob/main/core/src/test/java/org/bouncycastle/asn1/test/X500NameTest.java
+ */
 class X500NameParsingTest : FreeSpec ({
 
     fun assertCanonical(input: String, expected: String) {
