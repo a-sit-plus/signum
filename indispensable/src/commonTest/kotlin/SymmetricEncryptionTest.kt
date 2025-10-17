@@ -16,10 +16,11 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
+@OptIn(HazardousMaterials::class)
 val SymmetricEncryptionTest by testSuite() {
    
     withData(nameFn={ "Key generation: $it" }, SymmetricEncryptionAlgorithm.entries) { alg ->
-        val key = alg.randomKey(randomnessSourceOverride = Random.Default)
+        val key = alg.randomKey(random = Random.Default)
 
         key.algorithm shouldBe alg
 

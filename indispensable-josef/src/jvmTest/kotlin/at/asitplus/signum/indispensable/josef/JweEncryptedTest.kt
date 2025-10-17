@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.symmetric.randomKey
 import at.asitplus.signum.indispensable.toCryptoPublicKey
@@ -26,6 +27,7 @@ import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
 
+@OptIn(HazardousMaterials::class)
 val JweEncryptedTest by testSuite() {
 
     "Minimal JWE can be parsed and verified" {
@@ -95,7 +97,7 @@ val JweEncryptedTest by testSuite() {
     "JWE symmetric encryption" - {
         withData(JweAlgorithm.Symmetric.entries) { alg ->
             val plain = Random.nextBytes(32)
-            val key = alg.randomKey(randomnessSourceOverride = Random.Default).toJsonWebKey().getOrThrow()
+            val key = alg.randomKey(random = Random.Default).toJsonWebKey().getOrThrow()
             val ciphertext = key.encrypt(plain).getOrThrow()
             ciphertext.decrypt(key) shouldSucceedWith plain
         }

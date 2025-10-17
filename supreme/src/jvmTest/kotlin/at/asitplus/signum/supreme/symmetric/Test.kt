@@ -70,7 +70,7 @@ val JvmSymmetricTest  by testSuite() {
                                 Cipher.getInstance(if (alg.authCapability is AuthCapability.Unauthenticated) "AES/CBC/PKCS5PADDING" else "AES/GCM/NoPadding")
 
                             if (alg is SymmetricEncryptionAlgorithm.AES.GCM) {
-                                val secretKey = alg.randomKey(randomnessSourceOverride = Random.Default)
+                                val secretKey = alg.randomKey(random = Random.Default)
                                 //GCM need to cast key, because alg is AES with no mode of ops, since we mix CBC and GCM in the test input
                                 val own =
                                     (secretKey as SymmetricKey<AuthCapability.Authenticated<KeyType.Integrated>, NonceTrait.Required, KeyType.Integrated>).andPredefinedNonce(
@@ -108,7 +108,7 @@ val JvmSymmetricTest  by testSuite() {
                                     encrypted
                                 )
 
-                                val wrongKey = own.algorithm.randomKey(randomnessSourceOverride = Random.Default)
+                                val wrongKey = own.algorithm.randomKey(random = Random.Default)
                                 own.decrypt(wrongKey) shouldNot succeed
 
                                 val box = own.algorithm.sealedBox.withNonce(own.algorithm.randomNonce()).from(
@@ -120,7 +120,7 @@ val JvmSymmetricTest  by testSuite() {
 
                             } else {
                                 alg as SymmetricEncryptionAlgorithm.AES.CBC.Unauthenticated
-                                val secretKey = alg.randomKey(randomnessSourceOverride = Random.Default)
+                                val secretKey = alg.randomKey(random = Random.Default)
                                 //CBC
                                 val own = secretKey.encrypt(data).getOrThrow()
                                 jcaCipher.init(
@@ -140,7 +140,7 @@ val JvmSymmetricTest  by testSuite() {
                                 own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
 
                                 //this could succeed if we're lucky and padding works out
-                                own.decrypt(own.algorithm.randomKey(randomnessSourceOverride = Random.Default)).onSuccess {
+                                own.decrypt(own.algorithm.randomKey(random = Random.Default)).onSuccess {
                                     it shouldNotBe data
                                 }
 
@@ -184,7 +184,7 @@ val JvmSymmetricTest  by testSuite() {
                         Random.nextBytes(72),
                     ) { data ->
 
-                        val secretKey = alg.randomKey(randomnessSourceOverride = Random.Default)
+                        val secretKey = alg.randomKey(random = Random.Default)
 
                         //CBC
                         if (alg !is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394) {
@@ -207,7 +207,7 @@ val JvmSymmetricTest  by testSuite() {
                             own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
 
                             //we might get lucky here
-                            own.decrypt(own.algorithm.randomKey(randomnessSourceOverride = Random.Default)).onSuccess {
+                            own.decrypt(own.algorithm.randomKey(random = Random.Default)).onSuccess {
                                 it shouldNotBe data
                             }
 
@@ -247,7 +247,7 @@ val JvmSymmetricTest  by testSuite() {
                                 own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
 
                                 //we might get lucky here
-                                own.decrypt(own.algorithm.randomKey(randomnessSourceOverride = Random.Default)).onSuccess {
+                                own.decrypt(own.algorithm.randomKey(random = Random.Default)).onSuccess {
                                     it shouldNotBe data
                                 }
 
@@ -276,7 +276,7 @@ val JvmSymmetricTest  by testSuite() {
                     Random.nextBytes(32),
                     Random.nextBytes(256),
                 ) { data ->
-                    val secretKey = alg.randomKey(randomnessSourceOverride = Random.Default)
+                    val secretKey = alg.randomKey(random = Random.Default)
                     val jcaCipher = Cipher.getInstance("ChaCha20-Poly1305");
 
                     val box = if (nonce != null) secretKey.andPredefinedNonce(nonce).getOrThrow().encrypt(data, aad)

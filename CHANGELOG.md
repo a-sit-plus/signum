@@ -12,9 +12,11 @@
 * Add COSE_Mac0 support with `CoseMac` class
 * Introduce `ProtectedCoseHeaderSerializer` for serialization/deserialization protected header
 * Replace raw-byte protected header and its ByteArray extension serialization with `CoseHeader` using the new serializer
-* Allow overriding randomness source for symmetric key generation
+* Introduce `SecureRandom`, implemening Kotlin's `Random` interface, but delegates to `CryptRand` 
+* Allow overriding randomness source for symmetric key generation (requires HazMat opt in)
 * Extend properties in `JweHeader`
 * Fix RSA signing on Android
+* Strictly enforce RFC3394 key wrapping on Android
 * Kotlin 2.2.20
 * TestBalloon-powered tests
 * New KMP-AGP Plugin
