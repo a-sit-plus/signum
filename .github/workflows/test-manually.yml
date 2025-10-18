@@ -35,7 +35,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Run tests
-        run: ./gradlew allTests -x iosX64Test
+        run: ./gradlew allTests -x iosX64Test --scan
       - name: Test Report
         uses: dorny/test-reporter@v2
         env:
