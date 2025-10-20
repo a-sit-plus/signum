@@ -60,7 +60,7 @@ enum class HMAC(val digest: Digest, override val oid: ObjectIdentifier) : Messag
     }
 
 
-    companion object : Asn1Decodable<Asn1Sequence, HMAC> {
+    companion object : Asn1Decodable<Asn1Sequence, HMAC>, Enumeration<HMAC> {
 
         fun byOID(oid: ObjectIdentifier): HMAC? = entries.find { it.oid == oid }
 
@@ -78,6 +78,8 @@ enum class HMAC(val digest: Digest, override val oid: ObjectIdentifier) : Messag
             next().asPrimitive().readNull()
             byOID(oid) ?: throw Asn1OidException("Unknown OID", oid)
         }
+
+        override val entries: Set<HMAC> by lazy { HMAC.entries.toSet() }
     }
 
     override val outputLength: BitLength get() = digest.outputLength
