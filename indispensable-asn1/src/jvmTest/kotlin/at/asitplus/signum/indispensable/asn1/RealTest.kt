@@ -20,7 +20,7 @@ import de.infix.testBalloon.framework.testScope
 
 
 @OptIn(ExperimentalStdlibApi::class)
-val RealTest by testSuite() {
+val RealTest by testSuite {
 
     val input =
         data.lines().map { it.split("; ").let { it.first().toDouble() to it.last().hexToByteArray(HexFormat.Default) } }

@@ -16,7 +16,7 @@ import io.kotest.matchers.shouldBe
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.TestConfig
 
-val KDFTest  by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 40.minutes)) {
+val KDFTest  by testSuite {
     "HKDF" - {
         "Fixed Text Vectors" - {
             class TestInfo(

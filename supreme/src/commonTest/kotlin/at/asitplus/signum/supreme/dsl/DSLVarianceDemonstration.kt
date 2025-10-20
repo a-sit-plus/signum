@@ -38,7 +38,7 @@ private class Settings: DSL.Data() {
     }
 }
 
-val DSLVarianceDemonstration  by testSuite() {
+val DSLVarianceDemonstration  by testSuite {
     "\uD83D\uDE0A" {
 
         doWithConfiguration {

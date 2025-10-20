@@ -28,7 +28,7 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class, ExperimentalStdlibApi::class)
-val OidTest by testSuite() {
+val OidTest by testSuite {
     "OID test" - {
 
         "manual" {
@@ -128,10 +128,7 @@ val OidTest by testSuite() {
                 }
             }
         }
-        test(
-            "Automated UInt Capped",
-            testConfig = TestConfig.testScope(isEnabled = true, timeout = 10.minutes)
-        ) {
+        "Automated UInt Capped" {
             checkAll(iterations = 15, Arb.positiveInt(39)) { second ->
                 checkAll(iterations = 5000, Arb.intArray(Arb.int(0..128), Arb.positiveInt(Int.MAX_VALUE))) {
                     listOf(0, 1, 2).forEach { first ->
@@ -180,7 +177,6 @@ val OidTest by testSuite() {
         }
 
         "!Benchmarking fast case" - {
-            testConfig = TestConfig.disable().testScope(isEnabled = true, timeout = 10.minutes)
             val repetitions = 10
 
             "Old Optimized" {

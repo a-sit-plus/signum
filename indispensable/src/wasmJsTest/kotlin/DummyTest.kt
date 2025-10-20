@@ -6,7 +6,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val WasmJsTest by testSuite() {
+val WasmJsTest by testSuite {
   "This dummy test" {
       "it is just making sure" shouldNotBe "that WasmJS tests are indeed running"
   }

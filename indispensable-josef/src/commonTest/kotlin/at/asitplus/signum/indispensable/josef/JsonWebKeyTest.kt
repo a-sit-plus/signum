@@ -14,7 +14,7 @@ import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
-val JsonWebKeyTest by testSuite(testConfig = TestConfig.testScope(isEnabled = true, timeout = 20.minutes)) {
+val JsonWebKeyTest by testSuite {
 
     class Context {
         val curve: ECCurve = ECCurve.SECP_256_R_1

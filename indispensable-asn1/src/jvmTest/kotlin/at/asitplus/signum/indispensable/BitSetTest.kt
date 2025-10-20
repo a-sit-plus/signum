@@ -20,7 +20,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val BitSetTest by testSuite() {
+val BitSetTest by testSuite {
 
     //outer container required for checkall
     "Custom BitSet Implementation" - {

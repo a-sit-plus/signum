@@ -20,7 +20,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val JwsSignedTest  by testSuite() {
+val JwsSignedTest  by testSuite {
 
     "JWS can be parsed and verified" - {
         val testvec = javaClass.classLoader.getResourceAsStream("JwsTestVectors.txt")?.reader()?.readLines()

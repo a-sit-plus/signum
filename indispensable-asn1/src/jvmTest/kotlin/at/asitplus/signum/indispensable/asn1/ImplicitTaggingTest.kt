@@ -19,7 +19,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val ImplicitTaggingTest by testSuite() {
+val ImplicitTaggingTest by testSuite {
 
     "Plain" - {
         checkAllSuites(Arb.uLong()) { tagNum ->

@@ -19,7 +19,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val Asn1AddonsTest by testSuite() {
+val Asn1AddonsTest by testSuite {
    
     "BigInteger Encoding: Negative" {
         val result =

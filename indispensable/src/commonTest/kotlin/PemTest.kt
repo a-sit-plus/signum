@@ -16,7 +16,7 @@ import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
-val PemTest  by testSuite() {
+val PemTest  by testSuite {
 
    
     "Cert"  {

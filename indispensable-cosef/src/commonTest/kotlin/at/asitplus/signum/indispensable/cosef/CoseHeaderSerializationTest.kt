@@ -13,7 +13,7 @@ import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
 @OptIn(ExperimentalSerializationApi::class)
-val CoseHeaderSerializationTest by testSuite() {
+val CoseHeaderSerializationTest by testSuite {
 
     "COSE header with one certificate" {
         val input = """

@@ -23,7 +23,7 @@ import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
 @OptIn(UnsafeIoApi::class)
-val X509SignatureAlgorithmTest  by testSuite() {
+val X509SignatureAlgorithmTest  by testSuite {
 
     val (certsUnsupported, certsSupported) = readCerts()
 

@@ -13,7 +13,7 @@ import de.infix.testBalloon.framework.testScope
  * Verifies the hard coded field modulus versus its functional definition
  * See https://www.secg.org/sec2-v2.pdf chapter 2
  */
-val ECCurveTest  by testSuite() {
+val ECCurveTest  by testSuite {
     "SECP256 modulus correct" {
         ECCurve.SECP_256_R_1.modulus shouldBe
                 (2.toBigInteger().shl(223)

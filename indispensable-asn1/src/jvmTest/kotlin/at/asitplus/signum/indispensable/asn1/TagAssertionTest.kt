@@ -11,7 +11,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val TagAssertionTest by testSuite() {
+val TagAssertionTest by testSuite {
     "Automated" {
         checkAll(iterations = 100000, Arb.uLong(max = ULong.MAX_VALUE - 2uL)) {
             var seq = (Asn1.Sequence { } withImplicitTag it).asStructure()

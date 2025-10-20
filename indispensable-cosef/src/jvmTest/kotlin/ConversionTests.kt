@@ -20,7 +20,7 @@ import de.infix.testBalloon.framework.testScope
 infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
     (this.getOrThrow() shouldBe b)
 
-val ConversionTests by testSuite() {
+val ConversionTests by testSuite {
     "COSE -> SigAlg -> COSE is stable" - {
 
         "All" - {

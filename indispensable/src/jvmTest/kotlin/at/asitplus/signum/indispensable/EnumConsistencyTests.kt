@@ -43,7 +43,7 @@ inline fun <reified T : Any> TestSuite.enumConsistencyTest() {
     }
 }
 
-val EnumConsistencyTests by testSuite() {
+val EnumConsistencyTests by testSuite {
     enumConsistencyTest<MessageAuthenticationCode>()
     //TODO this test does not work any more since we started nesting stuff
     // enumConsistencyTest<DataIntegrityAlgorithm>()

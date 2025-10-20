@@ -19,7 +19,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val ConfigTests  by testSuite() {
+val ConfigTests  by testSuite {
     "Asymmetric Provider Config" {
         val kp =
             EphemeralKey {

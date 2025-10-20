@@ -32,7 +32,7 @@ import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
-val KeyTest  by testSuite() {
+val KeyTest  by testSuite {
     Security.addProvider(BouncyCastleProvider())
 
     "EC" - {

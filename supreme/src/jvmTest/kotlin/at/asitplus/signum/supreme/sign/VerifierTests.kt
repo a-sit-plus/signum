@@ -24,7 +24,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val VerifierTests by testSuite() {
+val VerifierTests by testSuite {
     Security.addProvider(BouncyCastleProvider())
 
     withDataSuites(

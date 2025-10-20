@@ -34,7 +34,7 @@ import de.infix.testBalloon.framework.testScope
 import kotlin.time.Duration.Companion.minutes
 
 @OptIn(HazardousMaterials::class)
-val SymmetricTest by testSuite() {
+val SymmetricTest by testSuite {
 
     "README" {
 

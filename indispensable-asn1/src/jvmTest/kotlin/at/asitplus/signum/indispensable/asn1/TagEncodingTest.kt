@@ -23,7 +23,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val TagEncodingTest by testSuite() {
+val TagEncodingTest by testSuite {
 
     "fails" {
         val it = 2204309167L

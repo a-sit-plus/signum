@@ -9,7 +9,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val CastingTest by testSuite() {
+val CastingTest by testSuite {
 
     "Primitive" {
         shouldThrow<Asn1StructuralException> { Asn1.Int(0).asSet() }

@@ -45,6 +45,6 @@ inline fun<reified T: Any> TestSuite.enumConsistencyTest() {
     }
 }
 
-val EnumConsistencyTests by testSuite() {
+val EnumConsistencyTests by testSuite {
     enumConsistencyTest<JwsAlgorithm>()
 }

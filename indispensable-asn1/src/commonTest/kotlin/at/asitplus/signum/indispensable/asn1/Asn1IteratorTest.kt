@@ -9,7 +9,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val Asn1IteratorTest by testSuite() {
+val Asn1IteratorTest by testSuite {
     "Iteration" {
         val elm = Asn1.Sequence {
             +Asn1.Int(42)

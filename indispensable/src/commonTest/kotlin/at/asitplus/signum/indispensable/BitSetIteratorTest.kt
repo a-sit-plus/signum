@@ -10,7 +10,7 @@ import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import kotlin.time.Duration.Companion.minutes
 
-val BitSetIteratorTest  by testSuite() {
+val BitSetIteratorTest  by testSuite {
    
     "simple test" {
         var remaining = 1

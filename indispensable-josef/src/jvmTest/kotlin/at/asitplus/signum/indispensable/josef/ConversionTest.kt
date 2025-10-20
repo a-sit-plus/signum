@@ -15,7 +15,7 @@ infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
     (this.getOrThrow() shouldBe b)
 
 
-val ConversionTest by testSuite() {
+val ConversionTest by testSuite {
     "JWS -> SigAlg -> JWS is stable" - {
         "All" - {
             withData(JwsAlgorithm.entries) {

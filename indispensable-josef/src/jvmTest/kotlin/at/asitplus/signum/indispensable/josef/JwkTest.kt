@@ -37,7 +37,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val JwkTest  by testSuite() {
+val JwkTest  by testSuite {
     "EC" - {
         withDataSuites(256, 384, 521) { bits ->
             val keys = List<ECPublicKey>(10) {

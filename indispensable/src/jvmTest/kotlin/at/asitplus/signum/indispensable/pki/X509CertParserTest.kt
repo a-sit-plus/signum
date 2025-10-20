@@ -39,7 +39,7 @@ import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
 @OptIn(UnsafeIoApi::class)
-val X509CertParserTest  by testSuite() {
+val X509CertParserTest  by testSuite {
 
     "Manual" {
         //ok-uniqueid-incomplete-byte.der

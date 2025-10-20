@@ -13,7 +13,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val MACTest  by testSuite() {
+val MACTest  by testSuite {
     "RFC4231" - {
         class I(val comment: String, key: String, data: String,
                 SHA224: String, SHA256: String, SHA384: String, SHA512: String) {

@@ -16,7 +16,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val DigestTests by testSuite() {
+val DigestTests by testSuite {
     data class TestSpec(val data: String, val reps: Int, val note: String, val ref: (Digest)->String)
     withDataSuites(nameFn=TestSpec::note, listOf(
         TestSpec("abc",1,"'abc', the bit string (0x)616263 of length 24 bits") { when(it) {

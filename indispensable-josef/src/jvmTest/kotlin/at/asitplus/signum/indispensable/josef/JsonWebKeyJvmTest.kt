@@ -28,7 +28,7 @@ private fun ByteArray.trimLeadingZeros() =
         else -> this.copyOfRange(i, this.size)
     }
 
-val JsonWebKeyJvmTest by testSuite() {
+val JsonWebKeyJvmTest by testSuite {
 
     val ecCurve: ECCurve = ECCurve.SECP_256_R_1
     var keyPair: KeyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair()

@@ -8,7 +8,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val  EncodingTest by testSuite() {
+val  EncodingTest by testSuite {
    
     "Correct serialName is determined by encoders" {
         ByteArrayBase64UrlSerializer.descriptor.serialName shouldBe "ByteArrayBase64UrlSerializer"

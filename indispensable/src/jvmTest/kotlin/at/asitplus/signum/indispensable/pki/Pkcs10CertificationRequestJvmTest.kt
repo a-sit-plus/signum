@@ -37,7 +37,7 @@ internal fun X509SignatureAlgorithm.getContentSigner(key: PrivateKey) =
     }
 
 @OptIn(ExperimentalStdlibApi::class)
-val Pkcs10CertificationRequestJvmTest by testSuite() {
+val Pkcs10CertificationRequestJvmTest by testSuite {
 
     val ecCurve: ECCurve = ECCurve.SECP_256_R_1
     var keyPair: KeyPair = KeyPairGenerator.getInstance("EC").also {

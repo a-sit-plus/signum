@@ -13,7 +13,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val UtilTest by testSuite() {
+val UtilTest by testSuite {
    
     "ByteArray.ensureSize" {
         val base = byteArrayOf(0x01, 0x02, 0x03, 0x04, 0x05)

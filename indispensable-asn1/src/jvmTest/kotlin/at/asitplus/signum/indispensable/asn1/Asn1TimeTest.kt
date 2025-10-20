@@ -13,7 +13,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val Asn1TimeTest by testSuite() {
+val Asn1TimeTest by testSuite {
 
     "Asn1Time test equals and hashCode" {
         checkAll(

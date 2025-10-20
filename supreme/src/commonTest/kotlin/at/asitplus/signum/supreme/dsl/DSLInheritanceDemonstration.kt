@@ -38,7 +38,7 @@ private class SpecificOptions internal constructor(): GenericOptions() {
     override val subValue = childOrDefault(::SpecificSubOptions)
 }
 
-val DSLInheritanceDemonstration  by testSuite() {
+val DSLInheritanceDemonstration  by testSuite {
     "\uD83D\uDE0A" {
         /* if we have the necessary type information, we know that it's a specific DSL subclass... */
         doWithConfiguration {

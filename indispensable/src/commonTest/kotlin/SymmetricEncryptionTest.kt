@@ -12,7 +12,7 @@ import org.kotlincrypto.random.CryptoRand
 import kotlin.random.Random
 
 @OptIn(HazardousMaterials::class)
-val SymmetricEncryptionTest by testSuite() {
+val SymmetricEncryptionTest by testSuite {
 
     withData(nameFn = { "Key generation: $it" }, SymmetricEncryptionAlgorithm.entries) { alg ->
         val key = alg.randomKey(random = object : CryptoRand() {

@@ -33,7 +33,7 @@ private object InsecureRandom : CryptoRand() {
 }
 
 @OptIn(HazardousMaterials::class)
-val JweEncryptedTest by testSuite() {
+val JweEncryptedTest by testSuite {
 
     "Minimal JWE can be parsed and verified" {
         val input = InsecureRandom.nextBytes(32)

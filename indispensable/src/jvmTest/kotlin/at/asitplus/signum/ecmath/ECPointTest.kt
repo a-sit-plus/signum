@@ -17,7 +17,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val ECPointTest  by testSuite() {
+val ECPointTest  by testSuite {
     "Equals & hashCode" {
         val p1 = ECCurve.SECP_256_R_1.generator
         p1 shouldBe p1

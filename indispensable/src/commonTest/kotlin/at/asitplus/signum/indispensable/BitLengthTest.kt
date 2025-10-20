@@ -12,7 +12,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kotlin.time.Duration.Companion.minutes
 
-val BitLengthTest  by testSuite() {
+val BitLengthTest  by testSuite {
    
     "Small toy values" {
         BitLength(0u).run {

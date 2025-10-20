@@ -8,7 +8,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val Asn1StringTest by testSuite() {
+val Asn1StringTest by testSuite {
 
     val utf8 = Asn1String.UTF8("uÄasdiu3")
     val universal = Asn1String.Universal("adsa4")

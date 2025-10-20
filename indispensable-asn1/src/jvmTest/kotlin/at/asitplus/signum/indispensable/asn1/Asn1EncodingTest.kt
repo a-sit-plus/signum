@@ -27,7 +27,7 @@ import de.infix.testBalloon.framework.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val Asn1EncodingTest by testSuite() {
+val Asn1EncodingTest by testSuite {
 
     "Boolean" {
         checkAll(Arb.boolean()) {
