@@ -80,6 +80,7 @@ kotlin {
 
     sourceSets.jvmTest.dependencies {
         implementation("com.lambdaworks:scrypt:1.4.0")
+        implementation(project(":internals-test"))
     }
 }
 

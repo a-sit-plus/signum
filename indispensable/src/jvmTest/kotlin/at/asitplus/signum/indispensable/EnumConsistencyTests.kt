@@ -10,7 +10,7 @@ import kotlin.reflect.KProperty1
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.memberProperties
 
-inline fun <reified T : Any> io.kotest.core.spec.style.FreeSpec.enumConsistencyTest() {
+inline fun <reified T : Any> FreeSpec.enumConsistencyTest() {
     T::class.simpleName!! {
         val listed = T::class.companionObject!!.let { companion ->
             @Suppress("UNCHECKED_CAST")
@@ -38,7 +38,7 @@ inline fun <reified T : Any> io.kotest.core.spec.style.FreeSpec.enumConsistencyT
     }
 }
 
-class EnumConsistencyTests : FreeSpec({
+open class EnumConsistencyTests : FreeSpec({
     enumConsistencyTest<MessageAuthenticationCode>()
     //TODO this test does not work any more since we started nesting stuff
     // enumConsistencyTest<DataIntegrityAlgorithm>()

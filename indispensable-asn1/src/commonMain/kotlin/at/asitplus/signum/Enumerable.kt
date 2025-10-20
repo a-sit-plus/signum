@@ -1,3 +1,4 @@
+package at.asitplus.signum
 
 /**
  * Marker interface for types that can be enumerated.

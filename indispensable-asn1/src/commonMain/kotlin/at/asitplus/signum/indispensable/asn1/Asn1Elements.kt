@@ -2,8 +2,8 @@
 
 package at.asitplus.signum.indispensable.asn1
 
-import Enumerable
-import Enumeration
+import at.asitplus.signum.Enumerable
+import at.asitplus.signum.Enumeration
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
 import at.asitplus.signum.indispensable.asn1.encoding.*
