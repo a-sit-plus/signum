@@ -21,8 +21,6 @@ import at.asitplus.signum.indispensable.asn1.organizationName
 import at.asitplus.signum.indispensable.asn1.organizationalUnitName
 import at.asitplus.signum.indispensable.asn1.readOid
 import at.asitplus.signum.indispensable.asn1.runRethrowing
-import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue.CommonName.Companion
-import kotlinx.serialization.json.internal.InternalJsonWriter
 
 /**
  * X.500 Name (used in X.509 Certificates)
