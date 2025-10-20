@@ -48,3 +48,10 @@ jobs:
           list-tests: failed
           reporter: java-junit
           use-actions-summary: true
+      - name: Upload metrics
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: metrics
+          path: ./metrics,**/metrics
+          if-no-files-found: ignore
