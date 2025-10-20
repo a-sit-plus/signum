@@ -7,8 +7,8 @@ import at.asitplus.signum.indispensable.HMAC
 import at.asitplus.signum.indispensable.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
-import Enumerable
-import Enumeration
+import at.asitplus.signum.Enumerable
+import at.asitplus.signum.Enumeration
 import at.asitplus.signum.internals.ImplementationError
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract

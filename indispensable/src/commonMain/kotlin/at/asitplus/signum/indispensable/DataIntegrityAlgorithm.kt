@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable
 
-import Enumerable
-import Enumeration
+import at.asitplus.signum.Enumerable
+import at.asitplus.signum.Enumeration
 
 /**
  * Umbrella interface encompassing _data integrity algorithms_:

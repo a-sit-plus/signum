@@ -2,8 +2,8 @@ package at.asitplus.signum.indispensable.asymmetric
 
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.Digest
-import Enumerable
-import Enumeration
+import at.asitplus.signum.Enumerable
+import at.asitplus.signum.Enumeration
 
 
 sealed interface RSAPadding : Enumerable {

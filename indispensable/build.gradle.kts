@@ -32,6 +32,8 @@ kotlin {
             api(libs.urikmp)
         }
 
+        jvmTest.dependencies { implementation(project(":internals-test")) }
+
         androidJvmMain {
             dependencies {
                 api(bouncycastle("bcpkix"))

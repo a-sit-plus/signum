@@ -31,6 +31,8 @@ kotlin {
         }
         commonTest {
             dependencies {
+                implementation(kotest("property"))
+                implementation(project(":internals-test"))
                 implementation(project(":indispensable"))
             }
         }
