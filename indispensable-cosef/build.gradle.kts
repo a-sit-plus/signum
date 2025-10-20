@@ -25,6 +25,7 @@ kotlin {
                 implementation(libs.bignum) //Intellij bug work-around
             }
         }
+        jvmTest.dependencies { implementation(project(":internals-test")) }
     }
 }
 exportXCFramework(

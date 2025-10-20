@@ -1,8 +1,8 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.catching
-import Enumerable
-import Enumeration
+import at.asitplus.signum.Enumerable
+import at.asitplus.signum.Enumeration
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
