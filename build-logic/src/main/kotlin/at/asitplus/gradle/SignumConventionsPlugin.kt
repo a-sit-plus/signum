@@ -23,7 +23,7 @@ import java.io.ByteArrayOutputStream
  */
 class SignumConventionsPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
-        logger.info("SignumC onventions Plugin applied to project: ${'$'}{target.path}")
+        logger.info("Signum Conventions Plugin applied to project: ${'$'}{target.path}")
         pluginManager.apply("org.jetbrains.kotlin.multiplatform")
         pluginManager.apply("org.jetbrains.kotlin.plugin.serialization")
         pluginManager.apply("com.android.kotlin.multiplatform.library")
