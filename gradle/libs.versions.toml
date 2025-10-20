@@ -20,7 +20,7 @@ multibase = { module = "at.asitplus:multibase", version.ref = "multibase" }
 securerandom = { module = "org.kotlincrypto.random:crypto-rand", version.ref = "kotlincryptoRandom" }
 asp = { module = "at.asitplus.gradle:k2", version.ref = "asp" }
 
-#for build logic
+#for build logic conventions plugin, as it needs the artefact, not the plugin ID
 agp = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 
 [plugins]

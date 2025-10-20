@@ -19,7 +19,15 @@ import org.jetbrains.kotlin.konan.target.Family
 import java.io.ByteArrayOutputStream
 
 /**
- * Gradle convention plugin for Signum
+ * Gradle convention plugin for Signum. Handles:
+ * * plugin application
+ * * setting artefact coordinates and version
+ * * maven publish
+ * * hacks to make swift interop ACTUALLY work
+ * * android wiring
+ * * large test heap
+ * * setting up all targets
+ * * silencing warnings on non-apple system about unbuildable targets
  */
 class SignumConventionsPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
@@ -41,6 +49,20 @@ class SignumConventionsExtension(private val project: Project) {
         project.afterEvaluate {
             tasks.withType<Test>().configureEach {
                 maxHeapSize = "4G"
+            }
+
+            if (supreme) {
+                //we still need this. Something's fishy with x64 test targets.
+                // HOWEVER: we never want to test on X64 anyway, and it has no impact on
+                // producing valid artefacts, and I have spent enough time failing to find the root cause
+                tasks.configureEach {
+                    if (name == "linkDebugTestIosX64") {
+                        enabled = false
+                    }
+                    if (name == "iosX64Test") {
+                        enabled = false
+                    }
+                }
             }
         }
         project.silence()
@@ -72,19 +94,6 @@ class SignumConventionsExtension(private val project: Project) {
             } else {
                 val supremeVersion: String by project.extra
                 project.version = supremeVersion
-                project.afterEvaluate {
-                    //we only ever test on the simulator, so these two should never be enabled in the first place
-                    //however, kotest ksp wiring messes this up and forces us to build for something we never intend, and this breaks linking.
-                    //hence, we disable those
-                    tasks.configureEach {
-                        if (name == "linkDebugTestIosX64") {
-                            enabled = false
-                        }
-                        if (name == "iosX64Test") {
-                            enabled = false
-                        }
-                    }
-                }
             }
             field = value
 
@@ -213,10 +222,12 @@ class SignumConventionsExtension(private val project: Project) {
     }
 }
 
+
 fun Project.signumConventions(init: SignumConventionsExtension.() -> Unit) {
     SignumConventionsExtension(this).init()
 
 }
+
 //we only require this for when swift-klib is used, so we let the extension trigger it
 private fun Project.fermentRottenApples() = extensions.findByName("swiftklib")?.let {
 
@@ -256,8 +267,7 @@ private fun Project.fermentRottenApples() = extensions.findByName("swiftklib")?.
                 logger.lifecycle("  KONAN target is ${konanTarget.name} which resolves to $sub")
                 binaries.all {
                     linkerOpts(
-                        "-L${swiftLib}$sub",
-                        "-L/usr/lib/swift"
+                        "-L${swiftLib}$sub"
                     )
                 }
             }

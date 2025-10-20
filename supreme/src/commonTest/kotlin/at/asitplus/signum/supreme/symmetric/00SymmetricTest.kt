@@ -36,8 +36,6 @@ import kotlin.time.Duration.Companion.minutes
 @OptIn(HazardousMaterials::class)
 val SymmetricTest by testSuite() {
 
-    Random
-
     "README" {
 
         //base case
