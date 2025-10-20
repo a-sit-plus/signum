@@ -8,6 +8,6 @@ import de.infix.testBalloon.framework.testScope
 
 val WasmJsTest by testSuite() {
   "This dummy test" {
-      "is t jut making sure" shouldNotBe "that WasmJS tests are indeed running"
+      "it is just making sure" shouldNotBe "that WasmJS tests are indeed running"
   }
 }
