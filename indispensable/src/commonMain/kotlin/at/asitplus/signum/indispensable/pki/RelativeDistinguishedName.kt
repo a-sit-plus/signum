@@ -21,8 +21,6 @@ import at.asitplus.signum.indispensable.asn1.organizationName
 import at.asitplus.signum.indispensable.asn1.organizationalUnitName
 import at.asitplus.signum.indispensable.asn1.readOid
 import at.asitplus.signum.indispensable.asn1.runRethrowing
-import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue.CommonName.Companion
-import kotlinx.serialization.json.internal.InternalJsonWriter
 
 /**
  * X.500 Name (used in X.509 Certificates)
@@ -267,7 +265,7 @@ open class AttributeTypeAndValue(
 
         other as AttributeTypeAndValue
 
-        if (toRFC2253String() != other.toRFC2253String()) return false
+        if (toRfc2253String() != other.toRfc2253String()) return false
         if (oid != other.oid) return false
         if (attrType != other.attrType) return false
 
@@ -316,7 +314,7 @@ open class AttributeTypeAndValue(
         }
     }
 
-    fun toRFC2253String(): String {
+    fun toRfc2253String(): String {
         val attrValue = (value as? Asn1Primitive)?.let { prim ->
             runCatching {
                 var decodedValue = Asn1String.decodeFromTlv(prim).value
