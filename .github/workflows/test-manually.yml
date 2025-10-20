@@ -53,5 +53,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: metrics
-          path: ./metrics,**/metrics
+          path: metrics/*.json,**/metrics/*.json
           if-no-files-found: ignore
