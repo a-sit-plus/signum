@@ -67,7 +67,7 @@ suspend fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authent
  */
 @HazardousMaterials("Don't explicitly generate nonces!")
 fun SymmetricEncryptionAlgorithm<*, NonceTrait.Required, *>.randomNonce(): ByteArray =
-    randomBytes((nonceSize.bytes).toInt(), CryptoRand.Default)
+    @OptIn(HazardousMaterials::class) randomNonce(CryptoRand.Default)
 
 /**
  * Generates a new random nonce matching the Nonce size of this algorithm.
