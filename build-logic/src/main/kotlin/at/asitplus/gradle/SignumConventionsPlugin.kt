@@ -66,7 +66,7 @@ class SignumConventionsExtension(private val project: Project) {
             }
         }
         project.silence()
-        project.fermentRottenApples()
+        project.workaroundAppleToolchainBugs()
 
         project.extensions.getByType<KotlinMultiplatformExtension>().apply {
             compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
@@ -229,7 +229,8 @@ fun Project.signumConventions(init: SignumConventionsExtension.() -> Unit) {
 }
 
 //we only require this for when swift-klib is used, so we let the extension trigger it
-private fun Project.fermentRottenApples() = extensions.findByName("swiftklib")?.let {
+// this is a target-agnostic version of the fix described in https://github.com/ttypic/swift-klib-plugin/issues/35
+private fun Project.workaroundAppleToolchainBugs() = extensions.findByName("swiftklib")?.let {
 
     /*help the linker (yes, this is absolutely bonkers!)*/
     if (OperatingSystem.current() == OperatingSystem.MAC_OS) {

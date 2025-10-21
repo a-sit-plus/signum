@@ -25,7 +25,7 @@ import java.net.URI
 import javax.crypto.KeyGenerator
 import kotlin.random.Random
 
-
+// CryptRand != Random, see https://github.com/KotlinCrypto/random/issues/50
 @OptIn(DelicateCryptoRandApi::class)
 private object InsecureRandom : CryptoRand() {
     override fun nextBytes(buf: ByteArray) = Random.nextBytes(buf)
