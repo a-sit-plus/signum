@@ -29,7 +29,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Run tests
-        run: ./gradlew allTests -x iosX64Test --scan
+        run: ./gradlew -Dkotlin.build.report.json.directory="$PWD/metrics" allTests -x iosX64Test --scan
       - name: Test Report
         uses: dorny/test-reporter@v2
         env:
@@ -47,5 +47,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: metrics
-          path: metrics/*.json,**/metrics/*.json
+          path: metrics/*.json
           if-no-files-found: ignore
