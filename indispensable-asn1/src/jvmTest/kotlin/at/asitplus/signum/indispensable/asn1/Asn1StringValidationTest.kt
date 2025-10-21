@@ -3,11 +3,12 @@ package at.asitplus.signum.indispensable.asn1
 import io.kotest.assertions.throwables.shouldThrow
 import kotlinx.serialization.json.Json
 import at.asitplus.testballoon.*
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.provided.at.asitplus.signum.indispensable.asn1.Asn1StringFixture
 
 
-class Asn1StringValidationTest by testSuite{
+val Asn1StringValidationTest by testSuite{
 
     val json = Json
     val root = json.decodeFromString<Asn1StringFixture>(resourceText("asn1strings.json"))
@@ -23,7 +24,7 @@ class Asn1StringValidationTest by testSuite{
         }
     }
 
-    "PrintableStringTest" - {
+    "PrintableStringTest"  {
         val data = tests.printable
         data.valid.forEach { str ->
             Asn1String.Printable(str).value shouldBe str
@@ -33,7 +34,7 @@ class Asn1StringValidationTest by testSuite{
         }
     }
 
-    "VisibleStringTest" - {
+    "VisibleStringTest"  {
         val data = tests.visible
         data.valid.forEach { str ->
             Asn1String.Visible(str).value shouldBe str
@@ -43,7 +44,7 @@ class Asn1StringValidationTest by testSuite{
         }
     }
 
-    "IA5StringTest" - {
+    "IA5StringTest"  {
         val data = tests.ia5
         data.valid.forEach { str ->
             Asn1String.IA5(str).value shouldBe str
@@ -53,7 +54,7 @@ class Asn1StringValidationTest by testSuite{
         }
     }
 
-    "UTF8StringTest" - {
+    "UTF8StringTest"  {
         val data = tests.utf8
         data.valid.forEach { str ->
             Asn1String.UTF8(str).value shouldBe str
@@ -63,14 +64,14 @@ class Asn1StringValidationTest by testSuite{
         }
     }
 
-    "TeletexStringTest" - {
+    "TeletexStringTest"  {
         val data = tests.teletex
         data.valid.forEach { str ->
             Asn1String.Teletex(str).value shouldBe str
         }
     }
 
-    "GraphicStringTest" - {
+    "GraphicStringTest"  {
         val data = tests.graphic
         data.valid.forEach { str ->
             Asn1String.Graphic(str).value shouldBe str
@@ -80,20 +81,20 @@ class Asn1StringValidationTest by testSuite{
         }
     }
 
-    "BmpStringTest" - {
+    "BmpStringTest"  {
         val data = tests.bmp
         data.valid.forEach { str ->
             Asn1String.BMP(str).value shouldBe str
         }
     }
 
-    "UniversalStringTest" - {
+    "UniversalStringTest"  {
         val data = tests.universal
         data.valid.forEach { str ->
             Asn1String.Universal(str).value shouldBe str
         }
     }
-})
+}
 
 private fun resourceText(path: String): String =
     Asn1StringValidationTest::class.java.classLoader?.getResourceAsStream(path)
