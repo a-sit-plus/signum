@@ -20,8 +20,8 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import platform.CoreFoundation.CFDictionaryRefVar
+import platform.CoreFoundation.CFRelease
 import platform.DeviceCheck.DCAppAttestService
-import platform.Foundation.CFBridgingRelease
 import platform.Foundation.NSBundle
 import platform.Foundation.NSData
 import platform.LocalAuthentication.*
@@ -112,7 +112,6 @@ sealed class IosSigner(final override val alias: String,
     internal val privateKeyManager = object : PrivateKeyManager {
         private var storedKey: AutofreeVariable<SecKeyRef>? = null
         override fun get(signingConfig: IosSignerSigningConfiguration): AutofreeVariable<SecKeyRef> {
-
             Napier.v { "Private Key access for alias $alias requested (needs unlock? ${metadata.needsUnlock}; timeout? ${metadata.unlockTimeout})" }
 
             val ctx: LAContext? /* the LAContext (potentially old if the timeout permits) to use */
@@ -186,7 +185,7 @@ sealed class IosSigner(final override val alias: String,
                 // record the successful unlock timestamp and LAContext for reuse
                 // produce a dummy signature to ensure that the unlock has succeeded; this is required by secure enclave keys, which do not prompt for unlock until signing time
                 corecall { SecKeyCreateSignature(newPrivateKey.value, signatureAlgorithm.secKeyAlgorithmPreHashed,
-                    ByteArray(signatureAlgorithm.preHashedSignatureFormat!!.outputLength.bytes.toInt()).toNSData().let(::giveToCF), error) }
+                    ByteArray(signatureAlgorithm.preHashedSignatureFormat!!.outputLength.bytes.toInt()).toNSData().let(::giveToCF), error).let(::CFRelease) }
 
                 // if we have reached this point, the unlock operation has definitively succeeded
                 LAContextStorage.successfulAuthentication = LAContextStorage.SuccessfulAuthentication(
@@ -318,7 +317,7 @@ internal data class IosKeyMetadata(
 
 @OptIn(ExperimentalForeignApi::class)
 object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfiguration, IosSigningKeyConfiguration> {
-    private fun MemScope.getPublicKey(alias: String): SecKeyRef? {
+    private fun MemScope.getPublicKey(alias: String): OwnedCFValue<SecKeyRef>? {
         val it = alloc<SecKeyRefVar>()
         val query = cfDictionaryOf(
             kSecClass to kSecClassKey,
@@ -329,7 +328,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
         )
         val status = SecItemCopyMatching(query, it.ptr.reinterpret())
         return when (status) {
-            errSecSuccess -> it.value
+            errSecSuccess -> it.value?.manage()
             errSecItemNotFound -> null
             else -> {
                 throw CFCryptoOperationFailed(thing = "retrieve public key", osStatus = status)
@@ -362,6 +361,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
         val status = SecItemCopyMatching(query, it.ptr.reinterpret())
         return when (status) {
             errSecSuccess -> it.value!!.get<String>(kSecAttrLabel).let(Json::decodeFromString)
+                .also { _ -> CFRelease(it.value) }
             else -> {
                 throw CFCryptoOperationFailed(thing = "retrieve key metadata", osStatus = status)
             }
@@ -427,7 +427,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                                     }.let {
                                         if (useSecureEnclave) it or kSecAccessControlPrivateKeyUsage else it
                                     }, error)
-                            }.also { defer { CFBridgingRelease(it) } }
+                            }.also { defer { CFRelease(it) } }
                         }
                     }
                 }
@@ -450,7 +450,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             if ((status == errSecSuccess) && (pubkey.value != null) && (privkey.value != null)) {
                 return@memScoped corecall {
                     SecKeyCopyExternalRepresentation(pubkey.value, error)
-                }.let { it.takeFromCF<NSData>() }.toByteArray()
+                }.takeFromCF<NSData>().toByteArray()
             } else {
                 val x = CFCryptoOperationFailed(thing = "generate key", osStatus = status)
                 if ((status == -50) &&
@@ -536,8 +536,8 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             val publicKey = getPublicKey(alias)
                 ?: throw NoSuchElementException("No key for alias $alias exists")
             return@memScoped corecall {
-                SecKeyCopyExternalRepresentation(publicKey, error)
-            }.let { it.takeFromCF<NSData>() }.toByteArray()
+                SecKeyCopyExternalRepresentation(publicKey.value, error)
+            }.takeFromCF<NSData>().toByteArray()
         }
         val publicKey =
             CryptoPublicKey.fromIosEncoded(publicKeyBytes)

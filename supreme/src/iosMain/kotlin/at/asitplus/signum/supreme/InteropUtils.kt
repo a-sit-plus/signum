@@ -7,6 +7,8 @@ import at.asitplus.signum.internals.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.cinterop.*
+import platform.CoreFoundation.CFRelease
+import platform.CoreFoundation.CFTypeRef
 import platform.Foundation.NSError
 import platform.Security.SecCopyErrorMessageString
 import platform.darwin.OSStatus
@@ -14,7 +16,7 @@ import kotlin.experimental.ExperimentalNativeApi
 import kotlin.native.ref.createCleaner
 
 @OptIn(ExperimentalNativeApi::class)
-class AutofreeVariable<T: CPointer<*>> internal constructor(
+class AutofreeVariable<T: CFTypeRef> internal constructor(
     arena: Arena,
     private val variable: CPointerVarOf<T>) {
     companion object {
@@ -25,7 +27,10 @@ class AutofreeVariable<T: CPointer<*>> internal constructor(
         }
     }
     @Suppress("UNUSED")
-    private val cleaner = createCleaner(arena, Arena::clear)
+    private val cleaner = createCleaner(Pair(arena, variable)) {
+        it.second.value?.let(::CFRelease)
+        it.first.clear()
+    }
     internal val ptr get() = variable.ptr
     internal val value get() = variable.value
 }
