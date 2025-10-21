@@ -10,7 +10,7 @@ import at.asitplus.signum.supreme.symmetric.decrypt
 import at.asitplus.signum.supreme.symmetric.discouraged.andPredefinedNonce
 import at.asitplus.signum.supreme.symmetric.discouraged.encrypt
 import at.asitplus.signum.supreme.symmetric.encrypt
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.*
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.withData

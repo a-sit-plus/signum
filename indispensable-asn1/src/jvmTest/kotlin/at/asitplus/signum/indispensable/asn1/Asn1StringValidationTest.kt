@@ -2,12 +2,12 @@ package at.asitplus.signum.indispensable.asn1
 
 import io.kotest.assertions.throwables.shouldThrow
 import kotlinx.serialization.json.Json
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.*
 import io.kotest.matchers.shouldBe
 import io.kotest.provided.at.asitplus.signum.indispensable.asn1.Asn1StringFixture
 
 
-class Asn1StringValidationTest : FreeSpec({
+class Asn1StringValidationTest by testSuite{
 
     val json = Json
     val root = json.decodeFromString<Asn1StringFixture>(resourceText("asn1strings.json"))

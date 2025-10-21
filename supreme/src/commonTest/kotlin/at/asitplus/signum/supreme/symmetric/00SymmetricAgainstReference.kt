@@ -8,7 +8,7 @@ import at.asitplus.signum.indispensable.symmetric.nonce
 import at.asitplus.signum.supreme.symmetric.discouraged.andPredefinedNonce
 import at.asitplus.signum.supreme.symmetric.discouraged.encrypt
 import io.kotest.assertions.withClue
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.*
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.withData

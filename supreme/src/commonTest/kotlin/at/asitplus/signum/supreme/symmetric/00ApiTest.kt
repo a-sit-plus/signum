@@ -4,7 +4,7 @@ import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.InsecureRandom
 import at.asitplus.signum.supreme.succeed
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.*
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.withData

@@ -2,7 +2,7 @@ package at.asitplus.signum.supreme.hash
 
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.supreme.hash.digest
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.*
 import io.kotest.core.test.config.enabledOrReasonIf
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.invoke
