@@ -18,6 +18,7 @@ import kotlinx.coroutines.newFixedThreadPoolContext
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import platform.CoreFoundation.CFDictionaryRefVar
 import platform.CoreFoundation.CFRelease
@@ -358,9 +359,8 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             kSecAttrApplicationTag to KeychainTags.PUBLIC_KEYS,
             kSecReturnAttributes to true
         )
-        val status = SecItemCopyMatching(query, it.ptr.reinterpret())
-        return when (status) {
-            errSecSuccess -> it.value!!.get<String>(kSecAttrLabel).let(Json::decodeFromString)
+        return when (val status = SecItemCopyMatching(query, it.ptr.reinterpret())) {
+            errSecSuccess -> it.value!!.get<String>(kSecAttrLabel).let{ Json.decodeFromString<IosKeyMetadata>(it) }
                 .also { _ -> CFRelease(it.value) }
             else -> {
                 throw CFCryptoOperationFailed(thing = "retrieve key metadata", osStatus = status)
