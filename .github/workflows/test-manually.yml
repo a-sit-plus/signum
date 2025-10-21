@@ -7,12 +7,7 @@ on:
         required: false
         default: ''
         type: string
-      kotest-version:
-        description: 'Override Kotest version?'
-        required: false
-        default: ''
-        type: string
-      ksp-version:
+      test-version:
         description: 'Override TestBalloon version (full version string)?'
         required: false
         default: ''
@@ -23,8 +18,7 @@ jobs:
     timeout-minutes: 300
     env:
       KOTLIN_VERSION_ENV: ${{ inputs.kotlin-version }}
-      KOTEST_VERSION_ENV: ${{ inputs.kotest-version }}
-      TESTBALLOON_VERSION_OVERRIDE: ${{ inputs.ksp-version }}
+      TESTBALLOON_VERSION_OVERRIDE: ${{ inputs.test-version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
