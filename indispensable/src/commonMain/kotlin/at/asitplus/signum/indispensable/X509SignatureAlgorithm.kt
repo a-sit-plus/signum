@@ -104,6 +104,14 @@ sealed class X509SignatureAlgorithm(
         override val parameters get() = emptyList<Asn1Element>()
         override val algorithm get() = SignatureAlgorithm.ECDSA(digest, null)
         override fun toString() = algorithm.toString()
+
+        companion object : Enumeration<ECDSA> {
+            override val entries: Set<ECDSA> by lazy {
+                setOf(
+                    ES256, ES384, ES512,
+                )
+            }
+        }
     }
 
     @Deprecated("Use type check", replaceWith = ReplaceWith("this is X509SignatureAlgorithm.ECDSA"))
@@ -140,6 +148,14 @@ sealed class X509SignatureAlgorithm(
         override val algorithm get() = SignatureAlgorithm.RSA(digest, RSAPadding.PSS)
 
         override fun toString() = algorithm.toString()
+
+        companion object : Enumeration<RSAPSS> {
+            override val entries: Set<RSAPSS> by lazy {
+                setOf(
+                    PS256, PS384, PS512
+                )
+            }
+        }
     }
 
     // RSASSA-PKCS1-v1_5 with SHA-size
@@ -147,6 +163,14 @@ sealed class X509SignatureAlgorithm(
         X509SignatureAlgorithm(oid) {
         override val parameters get() = listOf(Asn1Null)
         override val algorithm get() = SignatureAlgorithm.RSA(digest, RSAPadding.PKCS1)
+
+        companion object : Enumeration<RSAPKCS1> {
+            override val entries: Set<RSAPKCS1> by lazy {
+                setOf(
+                    RS1, RS256, RS384, RS512
+                )
+            }
+        }
     }
 
     object ES256 : ECDSA(KnownOIDs.ecdsaWithSHA256, Digest.SHA256)
@@ -167,11 +191,7 @@ sealed class X509SignatureAlgorithm(
 
         //make it lazy to break init cycle that causes the weirdest nullpointer ever
         override val entries: Set<X509SignatureAlgorithm> by lazy {
-            setOf(
-                ES256, ES384, ES512,
-                PS256, PS384, PS512,
-                RS1, RS256, RS384, RS512
-            )
+            ECDSA.entries + RSAPKCS1.entries + RSAPSS.entries
         }
 
         @Throws(Asn1Exception::class)
