@@ -314,7 +314,7 @@ fun KotlinMultiplatformExtension.indispensableTargets() {
             (project.extraProperties["disableAppleTargets"] as String).also {
                 Logger.lifecycle("  > Property disableAppleTargets set to $it from extra properties")
             }
-        }
+        }.getOrNull()
 
     jvm()
 
