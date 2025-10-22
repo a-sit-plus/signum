@@ -2,10 +2,13 @@
 
 ## 3.0
 
-### NEXT
-* Fix `prettyPrint` for structures
-* Add stricter length checks to be more resilient towards adversarial inputs
-* Correct serialization logic for symmetric `CoseKey` in `CoseKeySerializer`
+### 3.18.0 / Supreme 0.10.0
+* **Fixes:**
+    * Fix memleak on iOS targets
+    * Add stricter length checks to be more resilient towards adversarial inputs
+    * Fix RSA signing on Android
+    * Correct serialization logic for symmetric `CoseKey` in `CoseKeySerializer`
+    * Fix `prettyPrint` for structures
 * `Asn1String` revamp
     * Deprecated `Asn1Primitive.asAsn1String()`, moved decoding logic into `Asn1String.doDecode()`
     * Added specific decodeTo functions in `Asn1Primitive` for every string type that follow usual pattern for decoding primitive, when dealing with implicit tags caller should call function for decoding specific string type. If we do something like 'Asn1String.decodeFromTlv()` we expect explicit tag.
@@ -17,13 +20,14 @@
     * requires HazMat opt in
     * provides only secure random (insecure/test/faux RNGs need to be implemented by consumers)
 * Extend properties in `JweHeader`
-* Fix RSA signing on Android
 * Strictly enforce RFC3394 key wrapping on Android
-* Kotlin 2.2.20
-* TestBalloon-powered tests
-* New KMP-AGP Plugin
-* Raise Android minSDK to 26 (Android 8.0 Oreo)
-* Make it possible to disable all apple targets by setting Gradle property `disableAppleTargets=true` (either through `gradle.properties`/`local.properties` or as env variable)
+* Build Setup:
+    * Kotlin 2.2.20
+    * TestBalloon-powered tests
+    * New KMP-AGP Plugin
+    * Raise Android minSDK to 26 (Android 8.0 Oreo)
+    * Make it possible to disable all apple targets by setting Gradle property `disableAppleTargets=true` (either through `gradle.properties`/`local.properties` or as env variable)
+    * Auto-setup unsupported JVM toolchains
 
 ### 3.17.0 (Supreme 0.9.0)
 * **KDF Support**

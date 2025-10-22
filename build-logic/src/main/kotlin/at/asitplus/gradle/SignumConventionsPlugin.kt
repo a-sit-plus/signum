@@ -159,22 +159,23 @@ class SignumConventionsExtension(private val project: Project) {
                 maven {
                     url = uri(layout.projectDirectory.dir("..").dir("repo"))
                     this.name = "local"
-                    extensions.getByType<SigningExtension>().apply {
-                        isRequired = false
-                    }
+                    if (System.getenv("SIGN_LOCAL_REPO_ARTEFACTS")?.ifBlank { "false" } != "true") {
+                        Logger.lifecycle("  > NOT signing locally published maven artefacts!")
+                        extensions.getByType<SigningExtension>().apply {
+                            isRequired = false
+                        }
+                    }else
+                        Logger.lifecycle("  > Signing locally published maven artefacts!")
                 }
             }
         }
 
         extensions.getByType<SigningExtension>().apply {
-            {
-                val signingKeyId: String? by project
-                val signingKey: String? by project
-                val signingPassword: String? by project
-                useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
-                sign(extensions.getByType<PublishingExtension>().publications)
-            }
-
+            val signingKeyId: String? by project
+            val signingKey: String? by project
+            val signingPassword: String? by project
+            useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+            sign(extensions.getByType<PublishingExtension>().publications)
         }
     }
 

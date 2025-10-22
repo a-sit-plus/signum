@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.io.MultiBase
+import at.asitplus.io.multibaseEncode
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.parse
@@ -8,6 +10,7 @@ import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.TestConfig
 import de.infix.testBalloon.framework.aroundEach
 import de.infix.testBalloon.framework.testSuite
+import io.kotest.assertions.withClue
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -44,22 +47,13 @@ import kotlin.math.absoluteValue
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.days
 import kotlin.time.toKotlinInstant
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.testScope
 
 val X509CertificateJvmTest by testSuite {
 
-    val ecCurve: ECCurve = ECCurve.SECP_256_R_1
-    var keyPair: KeyPair = KeyPairGenerator.getInstance("EC").also {
+    val keyGen = KeyPairGenerator.getInstance("EC").also {
         it.initialize(256)
-    }.genKeyPair()
-
-    testConfig = TestConfig.aroundEach {
-        keyPair = KeyPairGenerator.getInstance("EC").also {
-            it.initialize(256)
-        }.genKeyPair()
-        it()
     }
+    val ecCurve: ECCurve = ECCurve.SECP_256_R_1
 
     "PSS" {
         val pssCertFromJvm = generateRsaPssCertificate()
@@ -68,62 +62,84 @@ val X509CertificateJvmTest by testSuite {
         decoded.encodeToDer() shouldBe pssCertFromJvm.encoded
     }
 
-    "Certificates match" {
-        val ecPublicKey = keyPair.public as ECPublicKey
-        val cryptoPublicKey = ecPublicKey.toCryptoPublicKey().getOrThrow()
+    repeat(100) {
+        "Certificates $it match" {
+            val keyPair: KeyPair = keyGen.genKeyPair()
+            System.setProperty("kotest.assertions.collection.print.size", "5000")
+            val ecPublicKey = keyPair.public as ECPublicKey
+            val cryptoPublicKey = ecPublicKey.toCryptoPublicKey().getOrThrow()
 
-        // create certificate with bouncycastle
-        val notBeforeDate = Date.from(Instant.now())
-        val notAfterDate = Date.from(Instant.now().plusSeconds(30.days.inWholeSeconds))
-        val serialNumber: BigInteger = BigInteger.valueOf(Random.nextLong().absoluteValue)
-        val commonName = "DefaultCryptoService"
-        val issuer = X500Name("CN=$commonName")
-        val builder = X509v3CertificateBuilder(
-            /* issuer = */ issuer,
-            /* serial = */ serialNumber,
-            /* notBefore = */ notBeforeDate,
-            /* notAfter = */ notAfterDate,
-            /* subject = */ issuer,
-            /* publicKeyInfo = */ SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
-        )
-        val signatureAlgorithm = X509SignatureAlgorithm.ES256
-        val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
-        val certificateHolder = builder.build(contentSigner)
+            // create certificate with bouncycastle
+            val notBeforeDate = Date.from(Instant.now())
+            val notAfterDate = Date.from(Instant.now().plusSeconds(30.days.inWholeSeconds))
+            val serialNumber: BigInteger = BigInteger.valueOf(Random.nextLong().absoluteValue)
+            val commonName = "DefaultCryptoService"
+            val issuer = X500Name("CN=$commonName")
+            val builder = X509v3CertificateBuilder(
+                /* issuer = */ issuer,
+                /* serial = */ serialNumber,
+                /* notBefore = */ notBeforeDate,
+                /* notAfter = */ notAfterDate,
+                /* subject = */ issuer,
+                /* publicKeyInfo = */ SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)
+            )
+            val signatureAlgorithm = X509SignatureAlgorithm.ES256
+            val contentSigner: ContentSigner = signatureAlgorithm.getContentSigner(keyPair.private)
+            val certificateHolder = builder.build(contentSigner)
 
-        // create certificate with our structure
-        val tbsCertificate = TbsCertificate(
-            version = 2,
-            serialNumber = serialNumber.toByteArray(),
-            issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
-            validFrom = Asn1Time(notBeforeDate.toInstant().toKotlinInstant()),
-            validUntil = Asn1Time(notAfterDate.toInstant().toKotlinInstant()),
-            signatureAlgorithm = signatureAlgorithm,
-            subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8(commonName)))),
-            publicKey = cryptoPublicKey
-        )
-        val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
-            initSign(keyPair.private)
-            update(tbsCertificate.encodeToTlv().derEncoded)
-        }.sign()
-        val test = CryptoSignature.decodeFromDer(signed)
-        val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, test)
-        val kotlinEncoded = x509Certificate.encodeToDer()
-        val jvmEncoded = certificateHolder.encoded
-        println(
-            "Certificates will never entirely match because of randomness in ECDSA signature" +
-                    "\nKotlinEncoded\n" +
-                    kotlinEncoded.encodeToString(Base16()) +
-                    "\nJvmEncoded\n" +
-                    jvmEncoded.encodeToString(Base16())
-        )
-        kotlinEncoded.drop(7).take(228) shouldBe jvmEncoded.drop(7).take(228)
+            // create certificate with our structure
+            val tbsCertificate = TbsCertificate(
+                version = 2,
+                serialNumber = serialNumber.toByteArray(),
+                issuerName = listOf(
+                    RelativeDistinguishedName(
+                        AttributeTypeAndValue.CommonName(
+                            Asn1String.UTF8(
+                                commonName
+                            )
+                        )
+                    )
+                ),
+                validFrom = Asn1Time(notBeforeDate.toInstant().toKotlinInstant()),
+                validUntil = Asn1Time(notAfterDate.toInstant().toKotlinInstant()),
+                signatureAlgorithm = signatureAlgorithm,
+                subjectName = listOf(
+                    RelativeDistinguishedName(
+                        AttributeTypeAndValue.CommonName(
+                            Asn1String.UTF8(
+                                commonName
+                            )
+                        )
+                    )
+                ),
+                publicKey = cryptoPublicKey
+            )
+            val signed = signatureAlgorithm.getJCASignatureInstance().getOrThrow().apply {
+                initSign(keyPair.private)
+                update(tbsCertificate.encodeToTlv().derEncoded)
+            }.sign()
+            val test = CryptoSignature.decodeFromDer(signed)
+            val x509Certificate = X509Certificate(tbsCertificate, signatureAlgorithm, test)
+            val kotlinEncoded = x509Certificate.encodeToDer()
+            val jvmEncoded = certificateHolder.encoded
+            println(
+                "Certificates will never entirely match because of randomness in ECDSA signature" +
+                        "\nKotlinEncoded\n" +
+                        kotlinEncoded.encodeToString(Base16()) +
+                        "\nJvmEncoded\n" +
+                        jvmEncoded.encodeToString(Base16())
+            )
+            withClue(kotlinEncoded.multibaseEncode(MultiBase.Base.BASE64) + ": " + jvmEncoded.multibaseEncode(MultiBase.Base.BASE64))
+            { kotlinEncoded.drop(7).take(228) shouldBe jvmEncoded.drop(7).take(228) }
 
-        val parsedFromKotlinCertificate =
-            CertificateFactory.getInstance("X.509").generateCertificate(kotlinEncoded.inputStream())
-        parsedFromKotlinCertificate.verify(keyPair.public)
+            val parsedFromKotlinCertificate =
+                CertificateFactory.getInstance("X.509").generateCertificate(kotlinEncoded.inputStream())
+            parsedFromKotlinCertificate.verify(keyPair.public)
+        }
     }
 
     "Certificates Conversions" {
+        val keyPair: KeyPair = keyGen.genKeyPair()
         val ecPublicKey = keyPair.public as ECPublicKey
         val cryptoPublicKey = ecPublicKey.toCryptoPublicKey().getOrThrow()
 
@@ -162,6 +178,7 @@ val X509CertificateJvmTest by testSuite {
     }
 
     "Certificate can be parsed" {
+        val keyPair: KeyPair = keyGen.genKeyPair()
         val ecPublicKey = keyPair.public as ECPublicKey
         val keyX = ecPublicKey.w.affineX.toByteArray().ensureSize(ecCurve.coordinateLength.bytes)
         val keyY = ecPublicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLength.bytes)
@@ -214,6 +231,7 @@ val X509CertificateJvmTest by testSuite {
         /*
             TbsCertificate
         */
+        val keyPair: KeyPair = keyGen.genKeyPair()
         val ecPublicKey = keyPair.public as ECPublicKey
         val cryptoPublicKey = ecPublicKey.toCryptoPublicKey().getOrThrow()
 

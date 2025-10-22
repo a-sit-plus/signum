@@ -1,0 +1,66 @@
+name: Manually Test Android implementation
+on:
+  workflow_dispatch:
+    inputs:
+      kotlin-version:
+        description: 'Override Kotlin version?'
+        required: false
+        default: ''
+        type: string
+      testballoon-version:
+        description: 'Override TestBalloon version (full version string)?'
+        required: false
+        default: ''
+        type: string
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      KOTLIN_VERSION_ENV: ${{ inputs.kotlin-version }}
+      TESTBALLOON_VERSION_OVERRIDE: ${{ inputs.testballoon-version }}
+    steps:
+      - name: Checkout (default)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      # For pull_request_target, explicitly fetch the PR head
+      - name: Checkout PR head (for pull_request)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Connected Check
+        run: ./gradlew -Dkotlin.build.report.json.directory="$PWD/metrics" pixelAVDAndroidDeviceTest --scan
+      - name: Test Report
+        uses: dorny/test-reporter@v2
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
+        if: success() || failure()
+        with:
+          name: Android Device Tests
+          path: '**/build/outputs/androidTest-results/managedDevice/androidmain/**/TEST*.xml'
+          reporter: java-junit
+          list-suites: failed
+          list-tests: failed
+          use-actions-summary: true
+      - name: Upload metrics
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: metrics
+          path: metrics/*.json
+          if-no-files-found: ignore
