@@ -13,8 +13,7 @@ import de.infix.testBalloon.framework.invocation
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.testScope
 
-val KnownOIDTests by testSuite(testConfig = TestConfig.invocation(TestInvocation.CONCURRENT)
-    .testScope(isEnabled = true, timeout = 20.minutes)) {
+val KnownOIDTests by testSuite {
 
     val dateDescription = KnownOIDs.date
     "Before Adding known OIDs" {

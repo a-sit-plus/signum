@@ -6,8 +6,7 @@ import de.infix.testBalloon.framework.invocation
 import de.infix.testBalloon.framework.testScope
 import kotlin.time.Duration.Companion.minutes
 
-//Supercharge tests with concurrency!
+//Don't supercharge tests with concurrency, a it messes with some stateful tests!
 class ModuleTestSession : TestSession(
-    testConfig = DefaultConfiguration.invocation(TestInvocation.CONCURRENT)
-        .testScope(isEnabled = true, timeout = 20.minutes)
+    testConfig = DefaultConfiguration.testScope(isEnabled = true, timeout = 20.minutes)
 )
