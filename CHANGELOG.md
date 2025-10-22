@@ -23,6 +23,7 @@
 * New KMP-AGP Plugin
 * Raise Android minSDK to 26 (Android 8.0 Oreo)
 * Make it possible to disable all apple targets by setting Gradle property `disableAppleTargets=true` (either through `gradle.properties`/`local.properties` or as env variable)
+* Enable building when only Java 21 is available
 
 ### 3.17.0 (Supreme 0.9.0)
 * **KDF Support**
