@@ -4,11 +4,16 @@ package at.asitplus.signum.supreme.mac
 import at.asitplus.signum.indispensable.HMAC
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.supreme.b
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.withData
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-class MACTest : FreeSpec({
+val MACTest  by testSuite {
     "RFC4231" - {
         class I(val comment: String, key: String, data: String,
                 SHA224: String, SHA256: String, SHA384: String, SHA512: String) {
@@ -94,4 +99,4 @@ class MACTest : FreeSpec({
             .mac(key=b("0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"), b("4869205468657265"))
             .getOrThrow() shouldBe byteArrayOf(0xa0.toByte())
     }
-})
+}

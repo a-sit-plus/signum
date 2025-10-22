@@ -1,9 +1,10 @@
+import at.asitplus.gradle.envExtra
 import at.asitplus.gradle.exportXCFramework
-import at.asitplus.gradle.kotest
-import at.asitplus.gradle.setupDokka
+import at.asitplus.gradle.indispensableTargets
+import at.asitplus.gradle.signumConventions
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.gradle.kotlin.dsl.provideDelegate
 import java.io.FileInputStream
 import java.util.regex.Pattern
 
@@ -15,14 +16,8 @@ buildscript {
 }
 
 plugins {
-    id("com.android.library")
-    kotlin("multiplatform")
-    id("signing")
-    id("at.asitplus.gradle.conventions")
+    id("at.asitplus.signum.buildlogic")
 }
-
-val artifactVersion: String by extra
-version = artifactVersion
 
 
 private val Triple<*, String?, String>.comment: String? get() = this.second
@@ -58,6 +53,7 @@ tasks.register<DefaultTask>("regenerateKnownOIDs") {
  *
  * `# End of Fahnenstange`
  */
+//@formatter:off
 fun generateKnownOIDs() {
     logger.lifecycle("  Regenerating KnownOIDs.kt")
     val collected = mutableMapOf<String, Triple<String, String?, String>>()
@@ -122,10 +118,10 @@ fun generateKnownOIDs() {
     val knownOIDs =
         FileSpec.builder("at.asitplus.signum.indispensable.asn1", "KnownOidConstants")
             .apply {
-                    val oidType = ClassName(
-                        packageName = "at.asitplus.signum.indispensable.asn1",
-                        "ObjectIdentifier"
-                    )
+                val oidType = ClassName(
+                    packageName = "at.asitplus.signum.indispensable.asn1",
+                    "ObjectIdentifier"
+                )
 
                 val knownOIDtype = ClassName(
                     packageName = "at.asitplus.signum.indispensable.asn1",
@@ -136,56 +132,68 @@ fun generateKnownOIDs() {
 
                 val codeBlock = StringBuilder("mapOf(\n")
 
-                    collected.toList()
-                        .distinctBy { (_, oidTriple) -> oidTriple.oid }
-                        .sortedBy { (name, _) -> name }
-                        .forEach { (name, oidTriple) -> (
-                               addProperty( PropertySpec.builder(
-                                    name,
-                                    oidType
+                collected.toList()
+                    .distinctBy { (_, oidTriple) -> oidTriple.oid }
+                    .sortedBy { (name, _) -> name }
+                    .forEach { (name, oidTriple) ->
+                        (
+                                addProperty(
+                                    PropertySpec.builder(
+                                        name,
+                                        oidType
+                                    )
+                                        .receiver(knownOIDtype)
+                                        .getter(
+                                            FunSpec.getterBuilder().addCode(
+                                                "return ObjectIdentifier(\"${
+                                                    oidTriple.oid!!.replace(
+                                                        ' ',
+                                                        '.'
+                                                    )
+                                                }\")"
+                                            ).build()
+                                        )
+                                        .addKdoc(
+                                            "`${
+                                                oidTriple.oid!!.replace(
+                                                    ' ',
+                                                    '.'
+                                                )
+                                            }`: ${oidTriple.comment}"
+                                        ).apply {
+                                            val hrName = oidTriple.originalDescription.replace("\"", "\\\"")
+                                            val humanReadable =
+                                                oidTriple.comment?.replace("\"", "\\\"")?.let { "$hrName ($it)" } ?: hrName
+                                            codeBlock.append("KnownOIDs.`$name` to \"${humanReadable}\",\n")
+                                            /*if (name.matches(Regex("^[0.-9].*")))
+                                                this.addAnnotation(
+                                                    AnnotationSpec.builder(ClassName("kotlin.js", "JsName"))
+                                                        .addMember("\"_$name\"").build()
+                                                )*/
+                                        }.build()
                                 )
-                                    .receiver(knownOIDtype)
-                                    .getter( FunSpec.getterBuilder().addCode("return ObjectIdentifier(\"${oidTriple.oid!!.replace(' ', '.')}\")").build())
-                                    .addKdoc(
-                                        "`${
-                                            oidTriple.oid!!.replace(
-                                                ' ',
-                                                '.'
-                                            )
-                                        }`: ${oidTriple.comment}"
-                                    ).apply {
-                                        val hrName = oidTriple.originalDescription.replace("\"", "\\\"")
-                                        val humanReadable =
-                                            oidTriple.comment?.replace("\"", "\\\"")?.let { "$hrName ($it)" } ?: hrName
-                                        codeBlock.append("KnownOIDs.`$name` to \"${humanReadable}\",\n")
-                                        /*if (name.matches(Regex("^[0.-9].*")))
-                                            this.addAnnotation(
-                                                AnnotationSpec.builder(ClassName("kotlin.js", "JsName"))
-                                                    .addMember("\"_$name\"").build()
-                                            )*/
-                                    }.build())
-                            )
-                        }
-                    val mapBuilder =
-                        PropertySpec.builder(
-                            "oidMap", ClassName("kotlin.collections", "Map").parameterizedBy(
-                                oidType,
-                                ClassName("kotlin", "String")
-                            )
+                                )
+                    }
+                val mapBuilder =
+                    PropertySpec.builder(
+                        "oidMap", ClassName("kotlin.collections", "Map").parameterizedBy(
+                            oidType,
+                            ClassName("kotlin", "String")
                         )
-                    mapBuilder.initializer(
-                        codeBlock.append(")")
-                            .append(".also { KnownOIDs.putAll(it) }\n")
-                            .toString()
                     )
-                    oidMapBuilder.addInitializerBlock(mapBuilder.build().initializer!!)
+                mapBuilder.initializer(
+                    codeBlock.append(")")
+                        .append(".also { KnownOIDs.putAll(it) }\n")
+                        .toString()
+                )
+                oidMapBuilder.addInitializerBlock(mapBuilder.build().initializer!!)
 
-                    val getter = FunSpec.builder("initDescriptions")
-                        .apply { modifiers += KModifier.INTERNAL }
-                        .addKdoc("Adds descriptions to all known OIDs, if called once. Subsequent calls to this function are a NOOP.")
-                        .addCode("").build()
-                    oidMapBuilder.addFunction(getter)
-                }.build()
+                val getter = FunSpec.builder("initDescriptions")
+                    .apply { modifiers += KModifier.INTERNAL }
+                    .addKdoc("Adds descriptions to all known OIDs, if called once. Subsequent calls to this function are a NOOP.")
+                    .addCode("").build()
+                oidMapBuilder.addFunction(getter)
+            }.build()//@formatter:on
 
 
     oidMap.addImport(packageName = "at.asitplus.signum.indispensable.asn1", "KnownOIDs")
@@ -204,49 +212,23 @@ fun generateKnownOIDs() {
 
 }
 
+signumConventions {
+    android("at.asitplus.signum.indispensable.oids")
+    mavenPublish(
+        name = "Indispensable OIDs",
+        description = "Kotlin Multiplatform ASN.1 Object Identifiers"
+    )
+}
+
+
 kotlin {
-    androidTarget { publishLibraryVariants("release") }
-    jvm()
-    macosArm64()
-    macosX64()
-    tvosArm64()
-    tvosX64()
-    tvosSimulatorArm64()
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
-    watchosSimulatorArm64()
-    watchosX64()
-    watchosArm32()
-    watchosArm64()
+    indispensableTargets()
     //we cannot currently test this, so it is only enabled for publishing
-    gradle.startParameter.taskNames.firstOrNull { it.contains("publish") }?.let {
+    project.gradle.startParameter.taskNames.firstOrNull { it.contains("publish") }?.let {
         watchosDeviceArm64()
     }
-    tvosSimulatorArm64()
-    tvosX64()
-    tvosArm64()
-    androidNativeX64()
-    androidNativeX86()
-    androidNativeArm32()
-    androidNativeArm64()
-    listOf(
-        js(IR).apply { browser { testTask { enabled = false } } },
-        @OptIn(ExperimentalWasmDsl::class)
-        wasmJs().apply { browser { testTask { enabled = false } } }
-    ).forEach {
-        it.nodejs()
-    }
-
-    linuxX64()
-    linuxArm64()
-    mingwX64()
 
     sourceSets {
-        all {
-            languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
-        }
-
         commonMain {
             kotlin.srcDir(
                 project.layout.projectDirectory.dir("generated")
@@ -257,116 +239,13 @@ kotlin {
                 api(project(":indispensable-asn1"))
             }
         }
-
-        commonTest {
-            dependencies {
-                implementation(kotest("property"))
-            }
-        }
     }
 }
 
-android {
-    namespace = "at.asitplus.signum.indispensable.oids"
-    packaging {
-        listOf(
-            "org/bouncycastle/pqc/crypto/picnic/lowmcL5.bin.properties",
-            "org/bouncycastle/pqc/crypto/picnic/lowmcL3.bin.properties",
-            "org/bouncycastle/pqc/crypto/picnic/lowmcL1.bin.properties",
-            "org/bouncycastle/x509/CertPathReviewerMessages_de.properties",
-            "org/bouncycastle/x509/CertPathReviewerMessages.properties",
-            "org/bouncycastle/pkix/CertPathReviewerMessages_de.properties",
-            "org/bouncycastle/pkix/CertPathReviewerMessages.properties",
-            "/META-INF/{AL2.0,LGPL2.1}",
-            "win32-x86-64/attach_hotspot_windows.dll",
-            "win32-x86/attach_hotspot_windows.dll",
-            "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
-            "META-INF/licenses/*",
-        //noinspection WrongGradleMethod
-        ).forEach { resources.excludes.add(it) }
-    }
-
-}
-
-// we don't have native android tests independent of our regular test suite.
-// this task expect those and fails, since no tests are present, so we disable it.
-project.gradle.taskGraph.whenReady {
-    tasks.getByName("testDebugUnitTest") {
-        enabled = false
-    }
-}
-exportXCFramework(
+val disableAppleTargets by envExtra
+if ("true" != disableAppleTargets) exportXCFramework(
     "IndispensableOIDs",
     transitiveExports = false,
     static = false,
 
     )
-
-val javadocJar = setupDokka(
-    baseUrl = "https://github.com/a-sit-plus/signum/tree/main/",
-    multiModuleDoc = true
-)
-
-publishing {
-    publications {
-        withType<MavenPublication> {
-            if (this.name != "relocation") artifact(javadocJar)
-            pom {
-                name.set("Indispensable OIDs")
-                description.set("Kotlin Multiplatform ASN.1 Object Identifiers")
-                url.set("https://github.com/a-sit-plus/signum")
-                licenses {
-                    license {
-                        name.set("The Apache License, Version 2.0")
-                        url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
-                    }
-                }
-                developers {
-                    developer {
-                        id.set("JesusMcCloud")
-                        name.set("Bernd Prünster")
-                        email.set("bernd.pruenster@a-sit.at")
-                    }
-                    developer {
-                        id.set("iaik-jheher")
-                        name.set("Jakob Heher")
-                        email.set("jakob.heher@tugraz.at")
-                    }
-                    developer {
-                        id.set("nodh")
-                        name.set("Christian Kollmann")
-                        email.set("christian.kollmann@a-sit.at")
-                    }
-                    developer {
-                        id.set("n0900")
-                        name.set("Simon Müller")
-                        email.set("simon.mueller@a-sit.at")
-                    }
-                }
-                scm {
-                    connection.set("scm:git:git@github.com:a-sit-plus/signum.git")
-                    developerConnection.set("scm:git:git@github.com:a-sit-plus/signum.git")
-                    url.set("https://github.com/a-sit-plus/signum")
-                }
-            }
-        }
-    }
-    repositories {
-        mavenLocal {
-            signing.isRequired = false
-        }
-        maven {
-            url = uri(layout.projectDirectory.dir("..").dir("repo"))
-            name = "local"
-            signing.isRequired = false
-        }
-    }
-}
-
-signing {
-    val signingKeyId: String? by project
-    val signingKey: String? by project
-    val signingPassword: String? by project
-    useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
-    sign(publishing.publications)
-}

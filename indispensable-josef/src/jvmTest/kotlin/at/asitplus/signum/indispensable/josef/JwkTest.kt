@@ -15,8 +15,11 @@ import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -30,10 +33,13 @@ import java.security.KeyPairGenerator
 import java.security.interfaces.ECPublicKey
 import kotlin.random.Random
 import kotlin.time.Clock
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-class JwkTest : FreeSpec({
+val JwkTest  by testSuite {
     "EC" - {
-        withData(256, 384, 521) { bits ->
+        withDataSuites(256, 384, 521) { bits ->
             val keys = List<ECPublicKey>(10) {
                 val ecKp = KeyPairGenerator.getInstance("EC").apply {
                     initialize(bits)
@@ -153,7 +159,7 @@ class JwkTest : FreeSpec({
         ).value
         cpk.toJsonWebKey(keyId = kid).keyId shouldBe kid
     }
-})
+}
 
 private fun randomCertificate() = X509Certificate(
     TbsCertificate(

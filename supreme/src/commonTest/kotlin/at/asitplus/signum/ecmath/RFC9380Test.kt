@@ -3,10 +3,13 @@ package at.asitplus.signum.ecmath
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.supreme.azString
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
 import com.ionspin.kotlin.bignum.integer.BigInteger
+import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.core.names.TestNameBuilder
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -17,8 +20,10 @@ import io.kotest.property.arbitrary.int
 import io.kotest.property.checkAll
 import kotlin.math.min
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-open class RFC9380Test : FreeSpec({
+val RFC9380Test by testSuite {
     "Assumption: all implemented curves have AB > 0" - {
         withData(ECCurve.entries) { crv ->
             /* map_to_curve_simple_swu in RFC9380.kt depends on this */
@@ -52,7 +57,7 @@ open class RFC9380Test : FreeSpec({
                     "Q1?\\.y\\s+=)?\\s+([0-9a-f\\s]+)"
         )
         val whitespacePattern = Regex("\\s")
-        withData(
+        withDataSuites(
             nameFn = SuiteTestInfo::suiteName, sequenceOf(
                 SuiteTestInfo(
                     suiteName = "P256_XMD:SHA-256_SSWU_RO_", suiteRef = RFC9380::`P256_XMD∶SHA-256_SSWU_RO_`,
@@ -686,7 +691,7 @@ Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
                                 ""
                             ).ifEmpty { null })
             }
-            withData(
+            withDataSuites(
                 nameFn = {
                     "Input: \"${
                         it.msg.substring(
@@ -698,13 +703,13 @@ Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
                 testcasePattern.findAll(suiteInfo.tests).map(::TestInfo)
             )
             { test ->
-                registerTest(TestNameBuilder.builder("hash_to_curve").build(), false, null) {
+                test("hash_to_curve") {
                     val result = suite(test.msg.encodeToByteArray()).normalize()
                     result.curve shouldBe suiteInfo.curve
                     result.x.toString(16).padStart(test.Px.length, '0') shouldBe test.Px
                     result.y.toString(16).padStart(test.Py.length, '0') shouldBe test.Py
                 }
-                registerTest(TestNameBuilder.builder("hash_to_field").build(), false, null) {
+               test("hash_to_field") {
                     val htfA = RFC9380.hash_to_field(
                         RFC9380.expand_message_xmd(suiteInfo.curve.nativeDigest), suiteInfo.curve, suiteInfo.dstB
                     )
@@ -717,7 +722,7 @@ Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
                         u.toString(16).padStart(test.u0.length, '0') shouldBe test.u0
                     }
                 }
-                registerTest(TestNameBuilder.builder("map_to_curve").build(), false, null) {
+                test("map_to_curve"){
                     val mtc = RFC9380.map_to_curve_simple_swu(suiteInfo.curve)
                     val u0 = BigInteger.parseString(test.u0, 16).toModularBigInteger(suiteInfo.curve.modulus)
                     val Q0 = mtc(u0).normalize()
@@ -756,4 +761,4 @@ Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
             }
         }
     }
-})
+}

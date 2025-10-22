@@ -6,13 +6,16 @@ import at.asitplus.signum.indispensable.pki.*
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.supreme.DisabledTestsExecutionReport
 import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.supreme.os.SignerConfiguration
 import at.asitplus.signum.supreme.sign
 import at.asitplus.signum.supreme.signature
 import at.asitplus.signum.supreme.succeed
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.withData
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.collections.shouldNotBeIn
 import io.kotest.matchers.should
@@ -22,6 +25,10 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
+import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.report
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 interface SignatureTestSuite {
     val isPreHashed: Boolean
@@ -94,7 +101,7 @@ object TestSuites {
 }
 
 @OptIn(SecretExposure::class)
-class EphemeralSignerCommonTests : FreeSpec({
+val EphemeralSignerCommonTests  by testSuite {
     "Functional" - {
         "RSA" - {
             withData(TestSuites.RSA) { (padding, digest, keySize, preHashed) ->
@@ -118,7 +125,8 @@ class EphemeralSignerCommonTests : FreeSpec({
                 }
 
                 val secondSig = signer.exportPrivateKey()
-                    .transform { signer.signatureAlgorithm.signerFor(it) }.getOrThrow().sign(data).signature
+                    .transform { signer.signatureAlgorithm.signerFor(it) }.getOrThrow()
+                    .sign(data).signature
 
                 val verifier = signer.makeVerifier().getOrThrow()
                 verifier.verify(data, signature) should succeed
@@ -127,20 +135,21 @@ class EphemeralSignerCommonTests : FreeSpec({
         }
         "ECDSA" - {
             withData(TestSuites.ECDSA) { (crv, digest, preHashed) ->
+                val data = Random.Default.nextBytes(64)
                 val signer =
                     Signer.Ephemeral { ec { curve = crv; digests = setOf(digest) } }.getOrThrow()
                 signer.signatureAlgorithm.shouldBeInstanceOf<SignatureAlgorithm.ECDSA>().let {
                     it.digest shouldBe digest
                     it.requiredCurve shouldBeIn setOf(null, crv)
                 }
-                val data = Random.Default.nextBytes(64)
                 val signature = signer.sign(SignatureInput(data).let {
                     if (preHashed) it.convertTo(digest).getOrThrow() else it
                 }).signature
 
 
                 val secondSig = signer.exportPrivateKey()
-                    .transform { signer.signatureAlgorithm.signerFor(it)  }.getOrThrow().sign(data).signature
+                    .transform { signer.signatureAlgorithm.signerFor(it)  }.getOrThrow()
+                    .sign(data).signature
 
                 val verifier = signer.makeVerifier().getOrThrow()
                 verifier.verify(data, signature) should succeed
@@ -321,5 +330,4 @@ class EphemeralSignerCommonTests : FreeSpec({
             }
         }
     }
-
-})
+}

@@ -1,5 +1,6 @@
 pluginManagement {
     repositories {
+        mavenLocal()
         google()
         mavenCentral()
         gradlePluginPortal()
@@ -10,6 +11,22 @@ pluginManagement {
         }
     }
 }
+
+plugins {
+    id("com.gradle.develocity") version "4.2.2"
+}
+
+develocity {
+    buildScan {
+        termsOfUseUrl = "https://gradle.com/help/legal-terms-of-use"
+        if (System.getenv("CI") != null) termsOfUseAgree = "yes"
+        publishing.onlyIf { gradle.startParameter.isBuildScan }
+    }
+}
+
+
+// Include the local build logic as a composite build
+includeBuild("build-logic")
 
 include(":internals")
 include(":indispensable-asn1")

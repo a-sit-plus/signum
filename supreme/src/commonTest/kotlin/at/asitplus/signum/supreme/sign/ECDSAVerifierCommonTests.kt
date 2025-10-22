@@ -5,9 +5,11 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SignatureAlgorithm
+import at.asitplus.signum.supreme.DisabledTestsExecutionReport
 import at.asitplus.signum.supreme.succeed
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldNot
 import kotlinx.serialization.Serializable
@@ -15,11 +17,15 @@ import kotlinx.serialization.json.Json
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
+import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.report
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 internal fun <T> Random.of(v: Collection<T>) = v.random(this)
 
 @OptIn(ExperimentalEncodingApi::class)
-open class ECDSAVerifierCommonTests : FreeSpec({
+val ECDSAVerifierCommonTests  by testSuite {
     @Serializable data class RawTestInfo(
         val crv: String, val dig: String, val key: String, val msg: String, val sig: String)
     class TestInfo(test: RawTestInfo) {
@@ -383,8 +389,8 @@ open class ECDSAVerifierCommonTests : FreeSpec({
         .groupBy(RawTestInfo::crv)
         .mapValues { it.value.groupBy(RawTestInfo::dig).mapValues { (_,v) -> v.map(::TestInfo) } }
 
-    withData(tests) { byCurve ->
-        withData(byCurve) { byDigest ->
+    withDataSuites(tests) { byCurve ->
+        withDataSuites(byCurve) { byDigest ->
             withData(nameFn = TestInfo::b64msg, byDigest) { test ->
                 val verifier = SignatureAlgorithm.ECDSA(test.digest, null).verifierFor(test.key).getOrThrow()
                 verifier.verify(test.msg, test.sig) should succeed
@@ -401,4 +407,4 @@ open class ECDSAVerifierCommonTests : FreeSpec({
             }
         }
     }
-})
+}

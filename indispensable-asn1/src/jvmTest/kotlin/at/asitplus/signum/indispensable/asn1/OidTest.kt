@@ -1,12 +1,17 @@
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.signum.indispensable.asn1.encoding.toAsn1VarInt
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
+import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.disable
+import de.infix.testBalloon.framework.testScope
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
 import io.kotest.matchers.comparables.shouldBeLessThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -17,18 +22,20 @@ import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class, ExperimentalStdlibApi::class)
-class OidTest : FreeSpec({
+val OidTest by testSuite {
     "OID test" - {
 
         "manual" {
             val oid = ObjectIdentifier("1.3.311.128.1.4.99991.9311.21.20")
             val oid1 = ObjectIdentifier("1.3.311.128.1.4.99991.9311.21.20")
             val oid2 = ObjectIdentifier("1.3.312.128.1.4.99991.9311.21.20")
-            val oid3= ObjectIdentifier("1.3.132.0.34")
+            val oid3 = ObjectIdentifier("1.3.132.0.34")
 
             oid3.bytes shouldBe ObjectIdentifier.decodeFromDer(oid3.encodeToDer()).bytes
             oid.bytes shouldBe ObjectIdentifier.decodeFromDer(oid.encodeToDer()).bytes
@@ -93,10 +100,10 @@ class OidTest : FreeSpec({
             }
             val stringRepesentations = mutableListOf<String>()
 
-            repeat(255-40) { stringRepesentations += "0.${it + 40}" }
-            repeat(255-40) { stringRepesentations += "1.${it + 40}" }
-            repeat(255-48) { stringRepesentations += "2.${it + 48}" }
-            repeat(255-3) { stringRepesentations += "${3 + it}.${it % 40}" }
+            repeat(255 - 40) { stringRepesentations += "0.${it + 40}" }
+            repeat(255 - 40) { stringRepesentations += "1.${it + 40}" }
+            repeat(255 - 48) { stringRepesentations += "2.${it + 48}" }
+            repeat(255 - 3) { stringRepesentations += "${3 + it}.${it % 40}" }
 
             withData(nameFn = { "String $it" }, stringRepesentations) {
                 shouldThrow<Asn1Exception> {
@@ -106,21 +113,22 @@ class OidTest : FreeSpec({
 
         }
 
-        "Failing negative Bigints" - {
+        "Failing negative Bigints" {
             checkAll(iterations = 50, Arb.negativeInt()) { negativeInt ->
                 checkAll(iterations = 15, Arb.positiveInt(39)) { second ->
                     checkAll(iterations = 100, Arb.intArray(Arb.int(0..128), Arb.positiveInt(Int.MAX_VALUE))) { rest ->
                         listOf(0, 1, 2).forEach { first ->
-                            val withNegative = intArrayOf(negativeInt, *rest).apply { shuffle() }.map { BigInteger(it) }.toTypedArray()
+                            val withNegative =
+                                intArrayOf(negativeInt, *rest).apply { shuffle() }.map { BigInteger(it) }.toTypedArray()
                             shouldThrow<Asn1Exception> {
-                                ObjectIdentifier("$first.$second."+withNegative.joinToString("."))
+                                ObjectIdentifier("$first.$second." + withNegative.joinToString("."))
                             }
                         }
                     }
                 }
             }
         }
-        "Automated UInt Capped" - {
+        "Automated UInt Capped" {
             checkAll(iterations = 15, Arb.positiveInt(39)) { second ->
                 checkAll(iterations = 5000, Arb.intArray(Arb.int(0..128), Arb.positiveInt(Int.MAX_VALUE))) {
                     listOf(0, 1, 2).forEach { first ->
@@ -169,11 +177,10 @@ class OidTest : FreeSpec({
         }
 
         "!Benchmarking fast case" - {
-            val oldOptimized = mutableListOf<Duration>()
-            val optimized = mutableListOf<Duration>()
-            val repetitions= 10
+            val repetitions = 10
 
-            "Old Optimized" - {
+            "Old Optimized" {
+                val oldOptimized = mutableListOf<Duration>()
                 repeat(repetitions) {
                     val before = Clock.System.now()
                     checkAll(iterations = 15, Arb.uInt(max = 39u)) { second ->
@@ -188,13 +195,19 @@ class OidTest : FreeSpec({
                     oldOptimized += duration
                     println("Old Optimized: $duration")
                 }
+                val avgOldOpt = (oldOptimized.sorted().subList(1, oldOptimized.size - 1)
+                    .sumOf { it.inWholeMilliseconds } / oldOptimized.size - 2).milliseconds
+                println("AvgOldOpt: $avgOldOpt")
             }
 
-            val avgOldOpt = (oldOptimized.sorted().subList(1, oldOptimized.size - 1)
-                .sumOf { it.inWholeMilliseconds } / oldOptimized.size - 2).milliseconds
-            println("AvgOldOpt: $avgOldOpt")
+            val fixture = testFixture {
+                object {
+                    var avgOpt = 0.seconds
+                }
+            }
 
-            "Optimized" - {
+            "Optimized" {
+                val optimized = mutableListOf<Duration>()
                 repeat(repetitions) {
                     val before = Clock.System.now()
                     checkAll(iterations = 15, Arb.uInt(max = 39u)) { second ->
@@ -209,14 +222,15 @@ class OidTest : FreeSpec({
                     optimized += duration
                     println("Optimized: $duration")
                 }
+
+                val avgOpt = (optimized.sorted().subList(1, optimized.size - 1)
+                    .sumOf { it.inWholeMilliseconds } / optimized.size - 2).milliseconds
+                println("AvgOpt: $avgOpt")
+                fixture().avgOpt = avgOpt
             }
 
-
-            val avgOpt = (optimized.sorted().subList(1, optimized.size - 1)
-                .sumOf { it.inWholeMilliseconds } / optimized.size - 2).milliseconds
-            println("AvgOpt: $avgOpt")
-            val simple = mutableListOf<Duration>()
-            "Simple" - {
+            "Simple" {
+                val simple = mutableListOf<Duration>()
                 repeat(repetitions) {
                     val before = Clock.System.now()
                     checkAll(iterations = 15, Arb.uInt(max = 39u)) { second ->
@@ -231,22 +245,20 @@ class OidTest : FreeSpec({
                     simple += duration
                     println("Simple $duration")
                 }
+
+                val avgSimple = (simple.sorted().subList(1, simple.size - 1)
+                    .sumOf { it.inWholeMilliseconds } / simple.size - 2).milliseconds
+                println("AvgSimple: $avgSimple")
+                fixture().avgOpt shouldBeLessThan avgSimple
             }
-
-            val avgSimple = (simple.sorted().subList(1, simple.size - 1)
-                .sumOf { it.inWholeMilliseconds } / simple.size - 2).milliseconds
-            println("AvgSimple: $avgSimple")
-
-            avgOpt shouldBeLessThan avgSimple
-
         }
 
 
         "Benchmarking UUID" - {
-            val inputs = List<Uuid>(1000000){Uuid.random()}
+            val inputs = List<Uuid>(1000000) { Uuid.random() }
 
             val optimized = mutableListOf<Duration>()
-            val repetitions= 10
+            val repetitions = 10
 
 
 
@@ -258,38 +270,29 @@ class OidTest : FreeSpec({
                     optimized += duration
                     println("Optimized: $duration")
                 }
-            }
+                val avgOpt = (optimized.sorted().subList(1, optimized.size - 1)
+                    .sumOf { it.inWholeMilliseconds } / optimized.size - 2).milliseconds
+                println("AvgOpt: $avgOpt")
 
 
-            val avgOpt = (optimized.sorted().subList(1, optimized.size - 1)
-                .sumOf { it.inWholeMilliseconds } / optimized.size - 2).milliseconds
-            println("AvgOpt: $avgOpt")
-
-            val oldOptimized = mutableListOf<Duration>()
-
-
-
-            "Old Bigint-Based" - {
-                repeat(repetitions) {
-                    val before = Clock.System.now()
-                    inputs.forEach { BigIntObjectIdentifier(it) }
-                    val duration = Clock.System.now() - before
-                    oldOptimized += duration
-                    println("Old Optimized: $duration")
+                "Old Bigint-Based" {
+                    val oldOptimized = mutableListOf<Duration>()
+                    repeat(repetitions) {
+                        val before = Clock.System.now()
+                        inputs.forEach { BigIntObjectIdentifier(it) }
+                        val duration = Clock.System.now() - before
+                        oldOptimized += duration
+                        println("Old Optimized: $duration")
+                    }
+                    val avgOldOpt = (oldOptimized.sorted().subList(1, oldOptimized.size - 1)
+                        .sumOf { it.inWholeMilliseconds } / oldOptimized.size - 2).milliseconds
+                    println("AvgOldOpt: $avgOldOpt")
+                    avgOpt shouldBeLessThan avgOldOpt
                 }
             }
-
-
-            val avgOldOpt = (oldOptimized.sorted().subList(1, oldOptimized.size - 1)
-                .sumOf { it.inWholeMilliseconds } / oldOptimized.size - 2).milliseconds
-            println("AvgOldOpt: $avgOldOpt")
-
-
-            avgOpt shouldBeLessThan avgOldOpt
-
         }
 
-        "Automated BigInt" - {
+        "Automated BigInt" {
             checkAll(iterations = 15, Arb.positiveInt(39)) { second ->
                 checkAll(iterations = 500, Arb.bigInt(1, 358)) {
                     listOf(1, 2).forEach { first ->
@@ -346,7 +349,7 @@ class OidTest : FreeSpec({
                 val oid = ObjectIdentifier(oidString)
                 oid.encodeToDer() shouldBe ASN1ObjectIdentifier(oidString).encoded
                 oid.nodes.size shouldBe 3
-                oid.nodes.first() shouldBe  "2"
+                oid.nodes.first() shouldBe "2"
                 oid.nodes[1] shouldBe "25"
                 oid.nodes.last() shouldBe bigint.toString()
 
@@ -354,7 +357,7 @@ class OidTest : FreeSpec({
             }
         }
     }
-})
+}
 
 
 // old implementation for benchmarking
@@ -495,14 +498,14 @@ class BigIntObjectIdentifier @Throws(Asn1Exception::class) private constructor(
             throw Asn1Exception("Empty OIDs are not supported")
 
         bytes?.apply {
-            if(first().toUByte()>127u) throw Asn1Exception("OID top-level arc can only be number 0, 1 or 2")
+            if (first().toUByte() > 127u) throw Asn1Exception("OID top-level arc can only be number 0, 1 or 2")
         }
         nodes?.apply {
             if (size < 2) throw Asn1StructuralException("at least two nodes required!")
             if (first() > 2u) throw Asn1Exception("OID top-level arc can only be number 0, 1 or 2")
-            if(first()<2u) {
+            if (first() < 2u) {
                 if (get(1) > 39u) throw Asn1Exception("Second segment must be <40")
-            }else {
+            } else {
                 if (get(1) > 47u) throw Asn1Exception("Second segment must be <48")
             }
             forEach { if (it.isNegative) throw Asn1Exception("Negative Number encountered: $it") }

@@ -7,11 +7,16 @@ import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.supreme.a
 import at.asitplus.signum.supreme.b
 import com.ionspin.kotlin.bignum.integer.Quadruple
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.withData
+import de.infix.testBalloon.framework.testScope
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.TestConfig
 
-class KDFTest : FreeSpec({
+val KDFTest  by testSuite {
     "HKDF" - {
         "Fixed Text Vectors" - {
             class TestInfo(
@@ -219,6 +224,4 @@ class KDFTest : FreeSpec({
             }
         }
     }
-
-
-})
+}

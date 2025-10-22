@@ -15,6 +15,7 @@ import at.asitplus.signum.indispensable.toCryptoPrivateKey
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.supreme.signCatching
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import java.security.KeyPair
@@ -31,10 +32,13 @@ actual class EphemeralSignerConfiguration internal actual constructor(): Ephemer
 sealed class AndroidEphemeralSigner (internal val privateKey: PrivateKey) : Signer {
     override val mayRequireUserUnlock = false
     override suspend fun sign(data: SignatureInput) = signCatching {
-        val inputData = data.convertTo(signatureAlgorithm.preHashedSignatureFormat).getOrThrow()
-        signatureAlgorithm.getJCASignatureInstancePreHashed(provider = null).getOrThrow().run {
+        when {
+            (data.format == null) -> signatureAlgorithm.getJCASignatureInstance(provider = null)
+            (data.format == signatureAlgorithm.preHashedSignatureFormat) -> signatureAlgorithm.getJCASignatureInstancePreHashed(provider = null)
+            else -> throw IllegalArgumentException("Input format mismatch: ${data.format} != ${signatureAlgorithm.preHashedSignatureFormat}")
+        }.getOrThrow().run {
             initSign(privateKey)
-            inputData.data.forEach { update(it) }
+            data.data.forEach(this::update)
             sign().let(::parseFromJca)
         }
     }

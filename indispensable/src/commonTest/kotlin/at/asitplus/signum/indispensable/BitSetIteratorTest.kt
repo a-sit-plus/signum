@@ -2,11 +2,15 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.asn1.BitSet
 
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.testScope
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
+import kotlin.time.Duration.Companion.minutes
 
-class BitSetIteratorTest : FreeSpec({
+val BitSetIteratorTest  by testSuite {
    
     "simple test" {
         var remaining = 1
@@ -17,4 +21,4 @@ class BitSetIteratorTest : FreeSpec({
         }
         remaining shouldBe 0
     }
-})
+}

@@ -5,23 +5,35 @@ import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.asn1.encoding.bitLength
 import at.asitplus.signum.indispensable.misc.BitLength
-import at.asitplus.signum.indispensable.symmetric.*
 import org.kotlincrypto.random.CryptoRand
 import kotlin.jvm.JvmName
 
-private inline fun randomBytes(n: Int) = CryptoRand.Default.nextBytes(ByteArray(n))
+private inline fun randomBytes(n: Int, random: CryptoRand = CryptoRand.Default): ByteArray =
+    ByteArray(n).also {   random.nextBytes(it)}
 
 /**
  * Generates a fresh random key for this algorithm.
  */
 @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "UNCHECKED_CAST")
 @kotlin.internal.LowPriorityInOverloadResolution
-suspend fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.randomKey(): SymmetricKey<A, I, out K> =
+suspend fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.randomKey() =
+    @OptIn(HazardousMaterials::class) randomKey(CryptoRand.Default)
+/**
+ * Generates a fresh random key for this algorithm.
+ */
+@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "UNCHECKED_CAST")
+@kotlin.internal.LowPriorityInOverloadResolution
+@HazardousMaterials("The default randomness source is cryptographically secure. If you override it, make sure you know what you are doing (such as for deterministic tests).")
+suspend fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEncryptionAlgorithm<A, I, K>.randomKey(
+    random: CryptoRand
+): SymmetricKey<A, I, out K> =
     keyFromInternal(
-        randomBytes(keySize.bytes.toInt()),
-        if (hasDedicatedMac()) randomBytes(preferredMacKeyLength.bytes.toInt())
+        randomBytes(keySize.bytes.toInt(), random),
+        if (hasDedicatedMac()) randomBytes(preferredMacKeyLength.bytes.toInt(), random)
         else null
     ) as SymmetricKey<A, I, out K>
+
+
 
 /**
  * Generates a fresh random key for this algorithm.
@@ -31,11 +43,23 @@ suspend fun <A : AuthCapability<out K>, I : NonceTrait, K : KeyType> SymmetricEn
 @Suppress("UNCHECKED_CAST")
 suspend fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac, I, KeyType.WithDedicatedMacKey>.randomKey(
     macKeyLength: BitLength
+) = @OptIn(HazardousMaterials::class) randomKey(macKeyLength, CryptoRand.Default)
+/**
+ * Generates a fresh random key for this algorithm.
+ * [macKeyLength] can be specified to override [preferredMacKeyLength].
+ */
+@JvmName("randomKeyAndMacKey")
+@Suppress("UNCHECKED_CAST")
+@HazardousMaterials("The default randomness source is cryptographically secure. If you override it, make sure you know what you are doing (such as for deterministic tests).")
+suspend fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.WithDedicatedMac, I, KeyType.WithDedicatedMacKey>.randomKey(
+    macKeyLength: BitLength,
+    random: CryptoRand
 ): SymmetricKey.WithDedicatedMac<I> =
     keyFromInternal(
-        randomBytes(keySize.bytes.toInt()),
-        randomBytes(macKeyLength.bytes.toInt())
+        randomBytes(keySize.bytes.toInt(), random),
+        randomBytes(macKeyLength.bytes.toInt(), random)
     ) as SymmetricKey.WithDedicatedMac<I>
+
 
 /**
  * Generates a new random nonce matching the Nonce size of this algorithm.
@@ -43,7 +67,16 @@ suspend fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authent
  */
 @HazardousMaterials("Don't explicitly generate nonces!")
 fun SymmetricEncryptionAlgorithm<*, NonceTrait.Required, *>.randomNonce(): ByteArray =
-    randomBytes((nonceSize.bytes).toInt())
+    @OptIn(HazardousMaterials::class) randomNonce(CryptoRand.Default)
+
+/**
+ * Generates a new random nonce matching the Nonce size of this algorithm.
+ * You typically don't want to use this, but have your nonces auto-generated during the encryption process
+ */
+@HazardousMaterials("Don't explicitly generate nonces!")
+@HazardousMaterials("The default randomness source is cryptographically secure. If you override it, make sure you know what you are doing (such as for deterministic tests).")
+fun SymmetricEncryptionAlgorithm<*, NonceTrait.Required, *>.randomNonce(random: CryptoRand): ByteArray =
+    randomBytes((nonceSize.bytes).toInt(), random)
 
 
 @OptIn(HazardousMaterials::class)
@@ -110,7 +143,7 @@ fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<K
  */
 @JvmName("fixedKeyDedicatedMacKey")
 @Suppress("UNCHECKED_CAST")
-fun <A:AuthCapability<KeyType.WithDedicatedMacKey>, I : NonceTrait> SymmetricEncryptionAlgorithm<A, I, KeyType.WithDedicatedMacKey>.keyFrom(
+fun <A : AuthCapability<KeyType.WithDedicatedMacKey>, I : NonceTrait> SymmetricEncryptionAlgorithm<A, I, KeyType.WithDedicatedMacKey>.keyFrom(
     encryptionKey: ByteArray,
     macKey: ByteArray
 ): KmmResult<SymmetricKey<A, I, KeyType.WithDedicatedMacKey>> =
@@ -118,5 +151,10 @@ fun <A:AuthCapability<KeyType.WithDedicatedMacKey>, I : NonceTrait> SymmetricEnc
         (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(encryptionKey, macKey)
     } as KmmResult<SymmetricKey<A, I, KeyType.WithDedicatedMacKey>>
 
+
 suspend fun SpecializedSymmetricEncryptionAlgorithm.randomKey() =
-    algorithm.randomKey()
+    @OptIn(HazardousMaterials::class) randomKey(CryptoRand.Default)
+
+@HazardousMaterials("The default randomness source is cryptographically secure. If you override it, make sure you know what you are doing (such as for deterministic tests).")
+suspend fun SpecializedSymmetricEncryptionAlgorithm.randomKey(random: CryptoRand) =
+    algorithm.randomKey(random)

@@ -1,16 +1,20 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.parse
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
 import io.kotest.property.checkAll
 import org.bouncycastle.asn1.ASN1InputStream
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-class CustomTaggedTest : FreeSpec({
-    "Custom CONSTRUCTED" - {
+val CustomTaggedTest by testSuite {
+    "Custom CONSTRUCTED" {
         checkAll(Arb.int(min = 0, max = Int.MAX_VALUE/*BC limits*/)) {
             Asn1CustomStructure(
                 listOf(),
@@ -23,7 +27,7 @@ class CustomTaggedTest : FreeSpec({
         }
     }
 
-    "Custom as Primitive" - {
+    "Custom as Primitive" {
         checkAll(Arb.int(min = 0, max = Int.MAX_VALUE/*BC limits*/)) {
             Asn1CustomStructure.asPrimitive(
                 listOf(),
@@ -39,4 +43,4 @@ class CustomTaggedTest : FreeSpec({
         }
     }
 
-})
+}

@@ -1,29 +1,27 @@
 [versions]
-kotlin = "2.2.0"
-ksp = "2.0.2"
-agp = "8.10.0"
+kotlin = "2.2.20"
+agp = "8.12.3"
 core = "1.5.0"
 kotlinxIoCore = "0.7.0"
 multibase = "1.2.2"
-kotestExtensionsAndroid = "local-asp"
-kotestRunnerAndroid = "local-asp"
 bignum = "0.3.10"
 jose = "9.31"
 kotlinpoet = "2.2.0"
-runner = "1.5.2"
 kotlincryptoRandom = "0.5.0"
-kotest= "6.0.0.M6"
+testballoon = "0.6.3-K2.2.20-SNAPSHOT"
+asp = "20251017"
 
 [libraries]
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }
-core = { module = "androidx.test:core", version.ref = "core" }
-kotest-extensions-android = { module = "br.com.colman:kotest-extensions-android", version.ref = "kotestExtensionsAndroid" }
-kotest-runner-android = { module = "br.com.colman:kotest-runner-android", version.ref = "kotestRunnerAndroid" }
 kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinxIoCore" }
 jose = { group = "com.nimbusds", name = "nimbus-jose-jwt", version.ref = "jose" }
 kotlinpoet = { group = "com.squareup", name = "kotlinpoet", version.ref = "kotlinpoet" }
-rules = { module = "androidx.test:rules", version.ref = "core" }
-runner = { module = "androidx.test:runner", version.ref = "runner" }
 multibase = { module = "at.asitplus:multibase", version.ref = "multibase" }
 securerandom = { module = "org.kotlincrypto.random:crypto-rand", version.ref = "kotlincryptoRandom" }
+asp = { module = "at.asitplus.gradle:k2", version.ref = "asp" }
 
+#for build logic conventions plugin, as it needs the artefact, not the plugin ID
+agp = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+
+[plugins]
+asp = { id = "at.asitplus.gradle.conventions", version.ref = "asp" }

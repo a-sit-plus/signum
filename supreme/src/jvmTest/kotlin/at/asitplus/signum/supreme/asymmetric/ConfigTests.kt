@@ -4,13 +4,22 @@ import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.supreme.sign.EphemeralKey
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import at.asitplus.testballoon.checkAllTests
+import at.asitplus.testballoon.checkAllSuites
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.NoSuchProviderException
 import java.security.Security
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-class ConfigTests : FreeSpec({
+val ConfigTests  by testSuite {
     "Asymmetric Provider Config" {
         val kp =
             EphemeralKey {
@@ -81,5 +90,4 @@ class ConfigTests : FreeSpec({
         if (!bcPresent) Security.removeProvider("BC")
 
     }
-
-})
+}

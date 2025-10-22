@@ -1,9 +1,11 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
-import io.kotest.core.spec.style.FreeSpec
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
@@ -13,8 +15,11 @@ import kotlinx.io.Buffer
 import kotlinx.io.snapshot
 import kotlin.math.ceil
 import kotlin.random.Random
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-class UVarIntTest : FreeSpec({
+val UVarIntTest by testSuite {
 
     //TODO: buffer based tests with capped number of bytes test
     "UInts with trailing bytes" - {
@@ -64,7 +69,7 @@ class UVarIntTest : FreeSpec({
     }
 
     "BigInts" - {
-        "long-capped" - {
+        "long-capped" {
             checkAll(Arb.uLong()) { long ->
                 val uLongVarInt = long.toAsn1VarInt()
                 val bigInteger = BigInteger.fromULong(long)
@@ -87,7 +92,7 @@ class UVarIntTest : FreeSpec({
             }
         }
 
-        "larger" - {
+        "larger" {
             checkAll(Arb.byteArray(Arb.positiveInt(1024), Arb.byte())) {
                 val bigInt = BigInteger.fromByteArray(it, Sign.POSITIVE)
                 val bigIntVarint = bigInt.toAsn1VarInt()
@@ -104,7 +109,7 @@ class UVarIntTest : FreeSpec({
         }
     }
 
-})
+}
 
 //old code for regeressiontests
 

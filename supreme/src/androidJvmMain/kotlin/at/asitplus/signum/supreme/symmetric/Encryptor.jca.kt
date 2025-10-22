@@ -46,6 +46,11 @@ internal class JcaPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : 
         val jcaCiphertext = cipher.doFinal(data)
         //JCA simply concatenates ciphertext and authtag, so we need to split
 
+        //align android and JVM
+        if(algorithm is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394){
+            require((data.size >= 16) && (data.size % 8 == 0)) {"data length not compliant to RFC 3394. should be: (data.size >= 16) && (data.size % 8 == 0), is: ${data.size}"}
+        }
+
         val (ciphertext, authTag) = when (algorithm.isAuthenticated()) {
             true -> {
                 val tagSize = algorithm.authTagSize.bytes.toInt()

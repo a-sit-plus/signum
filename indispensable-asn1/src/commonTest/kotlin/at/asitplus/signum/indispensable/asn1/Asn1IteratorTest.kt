@@ -1,11 +1,15 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-class Asn1IteratorTest : FreeSpec({
+val Asn1IteratorTest by testSuite {
     "Iteration" {
         val elm = Asn1.Sequence {
             +Asn1.Int(42)
@@ -58,4 +62,4 @@ class Asn1IteratorTest : FreeSpec({
         it4.hasNext() shouldBe true
         it4.next() shouldBe Asn1.Bool(true)
     }
-})
+}

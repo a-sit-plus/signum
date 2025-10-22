@@ -1,31 +1,42 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.symmetric.randomKey
 import at.asitplus.signum.indispensable.toCryptoPublicKey
 import at.asitplus.signum.supreme.symmetric.decrypt
 import at.asitplus.signum.supreme.symmetric.encrypt
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
 import com.nimbusds.jose.*
 import com.nimbusds.jose.crypto.AESEncrypter
 import com.nimbusds.jose.crypto.ECDHEncrypter
 import com.nimbusds.jose.jwk.Curve
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator
 import com.nimbusds.jose.util.Base64URL
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
-import io.kotest.matchers.nulls.shouldNotBeNull
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
+import org.kotlincrypto.random.CryptoRand
+import org.kotlincrypto.random.DelicateCryptoRandApi
 import java.net.URI
 import javax.crypto.KeyGenerator
 import kotlin.random.Random
 
+// CryptRand != Random, see https://github.com/KotlinCrypto/random/issues/50
+@OptIn(DelicateCryptoRandApi::class)
+private object InsecureRandom : CryptoRand() {
+    override fun nextBytes(buf: ByteArray) = Random.nextBytes(buf)
+    fun nextBytes(n: Int) = ByteArray(n).also { nextBytes(it) }
+}
 
-class JweEncryptedTest : FreeSpec({
+@OptIn(HazardousMaterials::class)
+val JweEncryptedTest by testSuite {
 
-    "Minimal JWE can be parsed and verified" - {
-        val input = Random.Default.nextBytes(32)
+    "Minimal JWE can be parsed and verified" {
+        val input = InsecureRandom.nextBytes(32)
 
         val jweNimbus = JWEObject(
             JWEHeader.Builder(
@@ -44,8 +55,8 @@ class JweEncryptedTest : FreeSpec({
         parsed.ciphertext shouldBe jweNimbus.cipherText.decode()
     }
 
-    "JWE with some attributes can be parsed and verified" - {
-        val input = Random.Default.nextBytes(32)
+    "JWE with some attributes can be parsed and verified" {
+        val input = InsecureRandom.nextBytes(32)
         val apu = Random.nextBytes(32)
         val apv = Random.nextBytes(32)
         val jku = "https://example.com/" + Random.nextBytes(16).encodeToString(Base64UrlStrict)
@@ -91,10 +102,12 @@ class JweEncryptedTest : FreeSpec({
     "JWE symmetric encryption" - {
         withData(JweAlgorithm.Symmetric.entries) { alg ->
             val plain = Random.nextBytes(32)
-            val key = alg.randomKey().toJsonWebKey().getOrThrow()
+            val key = alg.randomKey(random = object : CryptoRand() {
+                override fun nextBytes(buf: ByteArray) = Random.nextBytes(buf)
+            }).toJsonWebKey().getOrThrow()
             val ciphertext = key.encrypt(plain).getOrThrow()
             ciphertext.decrypt(key) shouldSucceedWith plain
         }
     }
 
-})
+}

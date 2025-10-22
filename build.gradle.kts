@@ -1,25 +1,27 @@
-import at.asitplus.gradle.at.asitplus.gradle.getBuildableTargets
 import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import java.time.Duration
 
 plugins {
     val kotlinVer = System.getenv("KOTLIN_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotlin.get()
-    val kotestVer = System.getenv("KOTEST_VERSION_ENV")?.ifBlank { null } ?: libs.versions.kotest.get()
-    val kspVer = System.getenv("KSP_VERSION_ENV")?.ifBlank { null } ?: "$kotlinVer-${libs.versions.ksp.get()}"
+    val testballoonVer = System.getenv("TESTBALLOON_VERSION_OVERRIDE")?.ifBlank { null } ?: libs.versions.testballoon.get()
 
-    id("at.asitplus.gradle.conventions") version "20250728"
-    id("io.kotest") version kotestVer
+    alias(libs.plugins.asp)
     kotlin("multiplatform") version kotlinVer apply false
     kotlin("plugin.serialization") version kotlinVer apply false
-    id("com.android.library") version libs.versions.agp.get() apply (false)
-    id("com.google.devtools.ksp") version kspVer
+    id("com.android.kotlin.multiplatform.library") version libs.versions.agp.get() apply (false)
+    id("de.infix.testBalloon") version testballoonVer apply false
 }
 group = "at.asitplus.signum"
-
+subprojects {
+    repositories {
+        mavenLocal()
+    }
+}
 //work around nexus publish bug
-val artifactVersion: String by extra
-version = artifactVersion
+val indispensableVersion: String by extra
+version = indispensableVersion
 
 nexusPublishing {
     transitionCheckOptions {
@@ -43,25 +45,6 @@ allprojects {
     apply(plugin = "org.jetbrains.dokka")
     group = rootProject.group
 }
-
-
-subprojects {
-    afterEvaluate {
-        val targets = project.extensions.getByType<KotlinMultiplatformExtension>().targets
-        val buildableTargets = getBuildableTargets()
-        if (targets.size > buildableTargets.size) {
-            logger.warn(
-                ">>>> The following targets are not buildable on the current host: ${
-                    targets.map { it.name }.toMutableSet().apply { removeAll(buildableTargets.map { it.name }) }
-                        .joinToString(", ")
-                } <<<<"
-            )
-            logger.warn("     disabling checkKotlinGradlePluginConfigurationErrors for project $name")
-            tasks.findByName("checkKotlinGradlePluginConfigurationErrors")?.enabled = false
-        }
-    }
-}
-
 
 tasks.register<Copy>("copyChangelog") {
     into(rootDir.resolve("docs/docs"))
@@ -92,3 +75,5 @@ tasks.register<Copy>("mkDocsSite") {
     into(rootDir.resolve("docs/site/assets/images/social"))
     from(rootDir.resolve("docs/docs/assets/images/social"))
 }
+
+

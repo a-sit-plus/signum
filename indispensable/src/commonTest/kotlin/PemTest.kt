@@ -6,13 +6,17 @@ import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.pki.Pkcs10CertificationRequest
 import at.asitplus.signum.indispensable.pki.X509Certificate
 
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlin.random.Random
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
-class PemTest : FreeSpec({
+val PemTest  by testSuite {
 
    
     "Cert"  {
@@ -498,4 +502,4 @@ class PemTest : FreeSpec({
             CryptoPrivateKey.decodeFromPem(it).getOrThrow()
         }
     }
-})
+}

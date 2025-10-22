@@ -3,10 +3,13 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToAsn1Integer
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
-import io.kotest.core.names.TestName
-import io.kotest.core.names.TestNameBuilder
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.checkAllSuites
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import de.infix.testBalloon.framework.testSuite
+
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -14,6 +17,9 @@ import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
 import io.kotest.property.checkAll
 import java.math.BigInteger as JavaBigInteger
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 private fun UByteArray.stripLeadingZeros() =
     when (val i = indexOfFirst { it != 0x00u.toUByte() }) {
@@ -24,7 +30,7 @@ private fun UByteArray.stripLeadingZeros() =
 
 private fun ByteArray.stripLeadingZeros() = asUByteArray().stripLeadingZeros()
 
-class Asn1IntegerTest : FreeSpec({
+val Asn1IntegerTest by testSuite {
     "Encoding: Negative" {
         val result =
             Asn1Integer(-20).encodeToAsn1Primitive()
@@ -78,20 +84,20 @@ class Asn1IntegerTest : FreeSpec({
             }
         }
         "Random values" - {
-            checkAll(iterations = 100, Arb.byteArray(Arb.int(100, 200), Arb.byte())) {
+            checkAllSuites(iterations = 100, Arb.byteArray(Arb.int(100, 200), Arb.byte())) {
                 val bigint = JavaBigInteger(1, it)
                 val varuint = VarUInt(it)
-                registerContainer(TestNameBuilder.builder("Left Bitshift").build(), false, null) {
+                "Left Bitshift" {
                     checkAll(iterations = 50, Arb.nonNegativeInt(max = 128)) { i ->
                         varuint.shl(i).words shouldBe bigint.shiftLeft(i).toByteArray().stripLeadingZeros()
                     }
                 }
-                registerContainer(TestNameBuilder.builder("Right Bitshift").build(), false, null) {
+                "Right Bitshift" {
                     checkAll(iterations = 50, Arb.nonNegativeInt()) { i ->
                         varuint.shr(i).words shouldBe bigint.shiftRight(i).toByteArray().stripLeadingZeros()
                     }
                 }
-                registerContainer(TestNameBuilder.builder("Binary Operators").build(), false, null) {
+                "Binary Operators" {
                     checkAll(iterations = 10, Arb.byteArray(Arb.int(100, 200), Arb.byte())) { it2 ->
                         val bigint2 = JavaBigInteger(1, it2)
                         val varuint2 = VarUInt(it2)
@@ -106,7 +112,7 @@ class Asn1IntegerTest : FreeSpec({
     "Java BigInteger <-> Asn1Integer" - {
         "Specific values" - {
             withData(
-                nameFn = { it.first }, sequenceOf(
+                nameFn = { it.first }, listOf(
                     Triple("Zero", JavaBigInteger.ZERO, Asn1Integer(0)),
                     Triple("Zero from Long", JavaBigInteger.valueOf(0L), Asn1Integer(0uL)),
                     Triple("One", JavaBigInteger.ONE, Asn1Integer(1)),
@@ -118,7 +124,7 @@ class Asn1IntegerTest : FreeSpec({
                 asn1int.toJavaBigInteger() shouldBe bigint
             }
         }
-        "Generic values" - {
+        "Generic values" {
             checkAll(iterations = 2500, Arb.positiveLong()) {
                 val bigint = JavaBigInteger.valueOf(it)
                 val asn1int = Asn1Integer(it)
@@ -154,13 +160,13 @@ class Asn1IntegerTest : FreeSpec({
             val arb = Arb.byteArray(Arb.int(1500..2500), Arb.byte())
             val randoms = List<ByteArray>(10) { arb.next() }
 
-            withData(randoms) { outer ->
+            withDataSuites({ "$it" }, data = randoms) { outer: ByteArray ->
                 val i1 = Asn1Integer.fromUnsignedByteArray(outer)
                 i1 shouldBe Asn1Integer.fromUnsignedByteArray(outer)
-                withData(randoms.filterNot { it contentEquals outer }) { inner ->
+                withData(data = randoms.filterNot { it contentEquals outer }) { inner: ByteArray ->
                     i1 shouldNotBe Asn1Integer.fromUnsignedByteArray(inner)
                 }
             }
         }
     }
-})
+}

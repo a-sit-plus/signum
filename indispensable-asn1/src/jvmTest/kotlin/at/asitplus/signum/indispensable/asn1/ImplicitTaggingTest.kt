@@ -3,34 +3,43 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.withClass
 import at.asitplus.signum.indispensable.asn1.Asn1Element.Tag.Template.Companion.without
 import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.testballoon.checkAllSuites
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
 import com.ionspin.kotlin.bignum.integer.BigInteger
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.uLong
-import io.kotest.property.checkAll
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-class ImplicitTaggingTest : FreeSpec({
+val ImplicitTaggingTest by testSuite {
 
     "Plain" - {
-        checkAll(Arb.uLong()) { tagNum ->
+        checkAllSuites(Arb.uLong()) { tagNum ->
             val universalConstructed = Asn1Element.Tag(tagNum, constructed = true)
 
-            universalConstructed.tagValue shouldBe tagNum
-            universalConstructed.isConstructed.shouldBeTrue()
-            universalConstructed.tagClass shouldBe TagClass.UNIVERSAL
+            "universalConstructed" {
+                universalConstructed.tagValue shouldBe tagNum
+                universalConstructed.isConstructed.shouldBeTrue()
+                universalConstructed.tagClass shouldBe TagClass.UNIVERSAL
+            }
 
             val universalPrimitive = Asn1Element.Tag(tagNum, constructed = false)
 
+            "universalPrimitive" {
+                universalPrimitive.tagValue shouldBe tagNum
+                universalPrimitive.isConstructed.shouldBeFalse()
+                universalPrimitive.tagClass shouldBe TagClass.UNIVERSAL
+            }
 
-            universalPrimitive.tagValue shouldBe tagNum
-            universalPrimitive.isConstructed.shouldBeFalse()
-            universalPrimitive.tagClass shouldBe TagClass.UNIVERSAL
-
-            withData(nameFn = { "$tagNum $it" }, TagClass.entries) { tagClass ->
+            withData(nameFn = { "$tagNum $it" }, data = TagClass.entries) { tagClass ->
                 val classy = universalConstructed withClass tagClass
                 classy.tagClass shouldBe tagClass
                 (universalConstructed without CONSTRUCTED).isConstructed shouldBe false
@@ -54,17 +63,19 @@ class ImplicitTaggingTest : FreeSpec({
     }
 
     "Primitive" - {
-        checkAll(Arb.uLong()) { tagNum ->
+        checkAllSuites(Arb.uLong()) { tagNum ->
             val primitive = Asn1Primitive(tagNum, byteArrayOf())
 
-            val universalPrimitive = primitive.tag
+            "setup" {
+                val universalPrimitive = primitive.tag
 
 
-            universalPrimitive.tagValue shouldBe tagNum
-            universalPrimitive.isConstructed.shouldBeFalse()
-            universalPrimitive.tagClass shouldBe TagClass.UNIVERSAL
+                universalPrimitive.tagValue shouldBe tagNum
+                universalPrimitive.isConstructed.shouldBeFalse()
+                universalPrimitive.tagClass shouldBe TagClass.UNIVERSAL
 
-            (primitive withImplicitTag tagNum).tag.tagClass shouldBe TagClass.CONTEXT_SPECIFIC
+                (primitive withImplicitTag tagNum).tag.tagClass shouldBe TagClass.CONTEXT_SPECIFIC
+            }
 
             "convenience $tagNum" {
                 val tag = Asn1Element.Tag(tagNum, constructed = false)
@@ -78,7 +89,7 @@ class ImplicitTaggingTest : FreeSpec({
             }
 
 
-            withData(nameFn = { "$tagNum $it" }, TagClass.entries) { tagClass ->
+            withData(nameFn = { "$tagNum $it" }, data = TagClass.entries) { tagClass ->
 
                 val newTagValue = tagNum / 2uL;
                 val newTagObject = Asn1Element.Tag(newTagValue, constructed = true) //test CONSTRUCTED override
@@ -107,40 +118,43 @@ class ImplicitTaggingTest : FreeSpec({
 
 
     "Constructed" - {
-        checkAll(Arb.uLong()) { tagNum ->
+        checkAllSuites(Arb.uLong()) { tagNum ->
             val set = Asn1Set(listOf())
 
-            val universalConstructed = set.tag
+            "setup" {
+                val universalConstructed = set.tag
 
 
-            universalConstructed shouldBe Asn1Element.Tag.SET
-            universalConstructed.isConstructed.shouldBeTrue()
-            universalConstructed.tagClass shouldBe TagClass.UNIVERSAL
+                universalConstructed shouldBe Asn1Element.Tag.SET
+                universalConstructed.isConstructed.shouldBeTrue()
+                universalConstructed.tagClass shouldBe TagClass.UNIVERSAL
 
-            (set withImplicitTag tagNum).tag.tagClass shouldBe TagClass.CONTEXT_SPECIFIC
+                (set withImplicitTag tagNum).tag.tagClass shouldBe TagClass.CONTEXT_SPECIFIC
+            }
 
-            withData(nameFn = { "$tagNum $it" }, TagClass.entries) { tagClass ->
-
+            withDataSuites(nameFn = { "$tagNum $it" }, data = TagClass.entries) { tagClass ->
                 val newTagValue = tagNum / 2uL
 
-                val taggedElement = set withImplicitTag (newTagValue withClass tagClass)
-                val classySet = taggedElement.tag
-                classySet.tagClass shouldBe tagClass
-                classySet.tagValue shouldBe newTagValue
-                classySet.isConstructed.shouldBeTrue()
-                (set withImplicitTag (newTagValue withClass tagClass without CONSTRUCTED)).also {
-                    it.tag.isConstructed.shouldBeFalse()
-                    it.tag.tagValue shouldBe newTagValue
-                    it.tag.tagClass shouldBe tagClass
+                "setup" {
+                    val taggedElement = set withImplicitTag (newTagValue withClass tagClass)
+                    val classySet = taggedElement.tag
+                    classySet.tagClass shouldBe tagClass
+                    classySet.tagValue shouldBe newTagValue
+                    classySet.isConstructed.shouldBeTrue()
+                    (set withImplicitTag (newTagValue withClass tagClass without CONSTRUCTED)).also {
+                        it.tag.isConstructed.shouldBeFalse()
+                        it.tag.tagValue shouldBe newTagValue
+                        it.tag.tagClass shouldBe tagClass
+                    }
+
+                    val encoded = taggedElement.derEncoded
+                    Asn1Element.parse(encoded).derEncoded shouldBe encoded
+
+                    val primitive = set withImplicitTag (newTagValue without CONSTRUCTED)
+                    primitive.tag.tagClass shouldBe TagClass.CONTEXT_SPECIFIC
+                    primitive.tag.isConstructed.shouldBeFalse()
+                    primitive.tag.tagValue shouldBe newTagValue
                 }
-
-                val encoded = taggedElement.derEncoded
-                Asn1Element.parse(encoded).derEncoded shouldBe encoded
-
-                val primitive = set withImplicitTag (newTagValue without CONSTRUCTED)
-                primitive.tag.tagClass shouldBe TagClass.CONTEXT_SPECIFIC
-                primitive.tag.isConstructed.shouldBeFalse()
-                primitive.tag.tagValue shouldBe newTagValue
 
                 withData(true, false) { constructed ->
                     val newTag = Asn1Element.Tag(newTagValue, constructed = constructed)
@@ -163,4 +177,4 @@ class ImplicitTaggingTest : FreeSpec({
     }
 
 
-})
+}

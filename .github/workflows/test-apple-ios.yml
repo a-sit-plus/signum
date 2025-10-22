@@ -12,6 +12,7 @@ on:
 jobs:
   build:
     runs-on: macos-latest
+    timeout-minutes: 120
     steps:
       - name: Checkout (default)
         if: github.event_name != 'pull_request'
@@ -42,9 +43,13 @@ jobs:
         run: ./gradlew iosSimulatorArm64Test
       - name: Test Report
         uses: dorny/test-reporter@v2
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
         if: success() || failure()
         with:
           name: iOS Tests
-          path: indispensable/build/test-results/**/TEST*.xml,indispensable-oids/build/test-results/**/TEST*.xml,indispensable-asn1/build/test-results/**/TEST*.xml,indispensable-cosef/build/test-results/**/TEST*.xml,indispensable-josef/build/test-results/**/TEST*.xml,supreme/build/test-results/**/TEST*.xml
+          path: '**/build/test-results/**/TEST*.xml'
           reporter: java-junit
+          list-suites: failed
+          list-tests: failed
           use-actions-summary: true

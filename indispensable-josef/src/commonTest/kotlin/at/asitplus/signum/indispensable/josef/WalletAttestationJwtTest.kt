@@ -1,15 +1,19 @@
 package at.asitplus.signum.indispensable.josef
 
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-class WalletAttestationJwtTest : FreeSpec({
+val WalletAttestationJwtTest by testSuite {
 
     // https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-wallet-attestations-in-jwt-
-    "Wallet Instance Attestation" - {
+    "Wallet Instance Attestation"  {
         val input = """
             {
               "iss": "https://client.example.com",
@@ -38,5 +42,4 @@ class WalletAttestationJwtTest : FreeSpec({
 
         Json.decodeFromString<JsonWebToken>(Json.encodeToString(parsed)) shouldBe parsed
     }
-
-})
+}

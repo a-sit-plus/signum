@@ -8,8 +8,11 @@ import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.indispensable.io.Base64Strict
 import io.kotest.assertions.withClue
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -24,13 +27,16 @@ import java.security.Security
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 @OptIn(ExperimentalStdlibApi::class)
-class KeyTest : FreeSpec({
+val KeyTest  by testSuite {
     Security.addProvider(BouncyCastleProvider())
 
     "EC" - {
-        withData(256, 384, 521) { bits ->
+        withDataSuites(listOf(256, 384, 521)) { bits ->
             val keys = List(25600 / bits) {
                 val ecKp = KeyPairGenerator.getInstance("EC", "BC").apply {
                     initialize(bits)
@@ -92,7 +98,7 @@ class KeyTest : FreeSpec({
     }
 
     "RSA" - {
-        withData(512, 1024, 2048, 3072, 4096) { bits ->
+        withDataSuites(512, 1024, 2048, 3072, 4096) { bits ->
             val keys = List(13000 / bits) {
                 val rsaKP = KeyPairGenerator.getInstance("RSA").apply {
                     initialize(bits)
@@ -144,7 +150,7 @@ class KeyTest : FreeSpec({
     }
 
     "EC and RSA" - {
-        withData(512, 1024, 2048, 3072, 4096) { rsaBits ->
+        withDataSuites(512, 1024, 2048, 3072, 4096) { rsaBits ->
             withData(256, 384, 521) { ecBits ->
                 val keyPairEC1 = KeyPairGenerator.getInstance("EC").also { it.initialize(ecBits) }.genKeyPair()
                 val keyPairEC2 = KeyPairGenerator.getInstance("EC").also { it.initialize(ecBits) }.genKeyPair()
@@ -170,4 +176,4 @@ class KeyTest : FreeSpec({
             }
         }
     }
-})
+}

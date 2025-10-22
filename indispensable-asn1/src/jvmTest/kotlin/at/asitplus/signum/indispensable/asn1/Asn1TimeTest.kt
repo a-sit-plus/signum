@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.asn1
 
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.property.Arb
@@ -8,8 +9,11 @@ import io.kotest.property.arbitrary.instant
 import io.kotest.property.checkAll
 import java.time.Instant
 import kotlin.time.toKotlinInstant
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-class Asn1TimeTest : FreeSpec({
+val Asn1TimeTest by testSuite {
 
     "Asn1Time test equals and hashCode" {
         checkAll(
@@ -55,4 +59,4 @@ class Asn1TimeTest : FreeSpec({
         }
     }
 
-})
+}

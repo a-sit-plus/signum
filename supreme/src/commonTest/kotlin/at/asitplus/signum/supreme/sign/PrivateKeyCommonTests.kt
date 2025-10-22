@@ -3,14 +3,25 @@ package at.asitplus.signum.supreme.sign
 import at.asitplus.signum.indispensable.CryptoPrivateKey
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.supreme.DisabledTestsExecutionReport
 import at.asitplus.signum.supreme.isSuccess
 import at.asitplus.signum.supreme.signature
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import at.asitplus.testballoon.checkAllTests
+import at.asitplus.testballoon.checkAllSuites
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import kotlin.random.Random
+import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.report
+import de.infix.testBalloon.framework.testScope
+import kotlin.time.Duration.Companion.minutes
 
 @OptIn(SecretExposure::class)
-class PrivateKeyCommonTests : FreeSpec({
+val PrivateKeyCommonTests  by testSuite {
     "RSA" {
         val rsa = """
             -----BEGIN PRIVATE KEY-----
@@ -97,4 +108,4 @@ class PrivateKeyCommonTests : FreeSpec({
             CryptoPrivateKey.decodeFromDer("3041020100301306072a8648ce3d020106082a8648ce3d03010704273025020101042001811d2b378be969f614283650e8ca3b07eba2289841239513e24fd230e5a538".hexToByteArray())
         }
     }
-})
+}

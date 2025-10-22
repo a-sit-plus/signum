@@ -1,69 +1,34 @@
 import at.asitplus.gradle.*
-import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
-    id("io.kotest")
-    id("com.android.library")
-    kotlin("multiplatform")
-    kotlin("plugin.serialization")
-    id("signing")
-    id("at.asitplus.gradle.conventions")
+    id("at.asitplus.signum.buildlogic")
 }
 
-val artifactVersion: String by extra
-version = artifactVersion
+signumConventions {
+
+    android("at.asitplus.signum.indispensable.internals")
+    mavenPublish(
+        name = "Indispensable Internals",
+        description = "Kotlin Multiplatform Crypto Library, Internal Shared Helpers"
+    )
+}
 
 
 kotlin {
-    androidTarget { publishLibraryVariants("release") }
-    jvm()
-    macosArm64()
-    macosX64()
-    tvosArm64()
-    tvosX64()
-    tvosSimulatorArm64()
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
+    indispensableTargets()
     watchosDeviceArm64()
-    watchosSimulatorArm64()
-    watchosX64()
-    watchosArm32()
-    watchosArm64()
-    tvosSimulatorArm64()
-    tvosX64()
-    tvosArm64()
-    androidNativeX64()
-    androidNativeX86()
-    androidNativeArm32()
-    androidNativeArm64()
-    listOf(
-        js(IR).apply { browser { testTask { enabled = false } } },
-        @OptIn(ExperimentalWasmDsl::class)
-        wasmJs().apply { browser { testTask { enabled = false } } }
-    ).forEach {
-        it.nodejs()
-    }
-
-    linuxX64()
-    linuxArm64()
-    mingwX64()
 
     sourceSets {
-        all {
-            languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
-        }
-
         commonTest {
             dependencies {
                 implementation(libs.kotlinx.io.core)
             }
         }
-
     }
 }
 
-exportXCFramework(
+val disableAppleTargets by envExtra
+if ("true" != disableAppleTargets) exportXCFramework(
     "Internals",
     transitiveExports = false,
     static = false,
@@ -73,73 +38,3 @@ exportXCFramework(
 
 )
 
-android { namespace = "at.asitplus.signum.indispensable.internals" }
-
-val javadocJar = setupDokka(
-    baseUrl = "https://github.com/a-sit-plus/signum/tree/main/",
-    multiModuleDoc = true
-)
-
-publishing {
-    publications {
-        withType<MavenPublication> {
-            if (this.name != "relocation") artifact(javadocJar)
-            pom {
-                name.set("Indispensable Internals")
-                description.set("Kotlin Multiplatform Crypto Library, Internal Shared Helpers")
-                url.set("https://github.com/a-sit-plus/signum")
-                licenses {
-                    license {
-                        name.set("The Apache License, Version 2.0")
-                        url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
-                    }
-                }
-                developers {
-                    developer {
-                        id.set("JesusMcCloud")
-                        name.set("Bernd Prünster")
-                        email.set("bernd.pruenster@a-sit.at")
-                    }
-                    developer {
-                        id.set("iaik-jheher")
-                        name.set("Jakob Heher")
-                        email.set("jakob.heher@tugraz.at")
-                    }
-                    developer {
-                        id.set("nodh")
-                        name.set("Christian Kollmann")
-                        email.set("christian.kollmann@a-sit.at")
-                    }
-                    developer {
-                        id.set("n0900")
-                        name.set("Simon Müller")
-                        email.set("simon.mueller@a-sit.at")
-                    }
-                }
-                scm {
-                    connection.set("scm:git:git@github.com:a-sit-plus/signum.git")
-                    developerConnection.set("scm:git:git@github.com:a-sit-plus/signum.git")
-                    url.set("https://github.com/a-sit-plus/signum")
-                }
-            }
-        }
-    }
-    repositories {
-        mavenLocal {
-            signing.isRequired = false
-        }
-        maven {
-            url = uri(layout.projectDirectory.dir("..").dir("repo"))
-            name = "local"
-            signing.isRequired = false
-        }
-    }
-}
-
-signing {
-    val signingKeyId: String? by project
-    val signingKey: String? by project
-    val signingPassword: String? by project
-    useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
-    sign(publishing.publications)
-}

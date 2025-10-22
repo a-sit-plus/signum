@@ -1,14 +1,18 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.asn1.encoding.toTwosComplementByteArray
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.testSuite
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.toBigInteger
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-class CryptoSignatureTest : FreeSpec({
+val CryptoSignatureTest  by testSuite {
 
 
     val values = (1..Byte.MAX_VALUE).toMutableSet()
@@ -85,4 +89,4 @@ class CryptoSignatureTest : FreeSpec({
         val r2 = BigInteger.ONE.shl(ECCurve.entries.maxOf { it.scalarLength.bits }.toInt() + 1)
         shouldThrow<IllegalArgumentException> { CryptoSignature.EC.fromRS(r2, s).guessCurve() }
     }
-})
+}

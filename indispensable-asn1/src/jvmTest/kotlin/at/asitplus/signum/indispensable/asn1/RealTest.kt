@@ -3,23 +3,29 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToDouble
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
 import com.ionspin.kotlin.bignum.decimal.BigDecimal
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import de.infix.testBalloon.framework.testSuite
+
 import io.kotest.matchers.longs.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 
 @OptIn(ExperimentalStdlibApi::class)
-class RealTest : FreeSpec({
+val RealTest by testSuite {
 
     val input =
         data.lines().map { it.split("; ").let { it.first().toDouble() to it.last().hexToByteArray(HexFormat.Default) } }
     "Encoding from Ref" - {
-        withData(input) { (double, bytes) ->
+        withData(data = input) { (double, bytes) ->
             val own = Asn1Real(double)
             own.encodeToDer() shouldBe bytes
             Asn1Real.decodeFromDer(bytes) shouldBe own
@@ -84,7 +90,7 @@ class RealTest : FreeSpec({
     }
 
 
-})
+}
 
 //generated using asn1tools
 private val data = """

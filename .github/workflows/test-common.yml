@@ -12,6 +12,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - name: Checkout (default)
         if: github.event_name != 'pull_request'
@@ -37,9 +38,13 @@ jobs:
         run: ./gradlew allTests -x jvmTest -x iosSimulatorArm64Test -x iosX64Test -x macosArm64Test -x macosX64Test -x tvosX64Test -x tvosSimulatorArm64Test -x watchosSimulatorArm64Test -x watchosX64Test
       - name: Test Report
         uses: dorny/test-reporter@v2
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
         if: success() || failure()
         with:
           name: All Tests
-          path: indispensable-asn1/build/test-results/**/TEST*.xml,indispensable-oids/build/test-results/**/TEST*.xml,indispensable/build/test-results/**/TEST*.xml,indispensable-josef/build/test-results/**/TEST*.xml,indispensable-cosef/build/test-results/**/TEST*.xml,supreme/build/test-results/**/TEST*.xml
+          path: '**/build/test-results/**/TEST*.xml'
           reporter: java-junit
+          list-suites: failed
+          list-tests: failed
           use-actions-summary: true

@@ -7,23 +7,18 @@ on:
         required: false
         default: ''
         type: string
-      kotest-version:
-        description: 'Override Kotest version?'
-        required: false
-        default: ''
-        type: string
-      ksp-version:
-        description: 'Override KSP version (full version string)?'
+      testballoon-version:
+        description: 'Override TestBalloon version (full version string)?'
         required: false
         default: ''
         type: string
 jobs:
   build:
     runs-on: macos-latest
+    timeout-minutes: 300
     env:
       KOTLIN_VERSION_ENV: ${{ inputs.kotlin-version }}
-      KOTEST_VERSION_ENV: ${{ inputs.kotest-version }}
-      KSP_VERSION_ENV: ${{ inputs.ksp-version }}
+      TESTBALLOON_VERSION_OVERRIDE: ${{ inputs.testballoon-version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -34,11 +29,23 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Run tests
-        run: ./gradlew allTests -x iosX64Test
+        run: ./gradlew -Dkotlin.build.report.json.directory="$PWD/metrics" allTests -x iosX64Test --scan
       - name: Test Report
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v2
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
         if: success() || failure()
         with:
           name: All Tests
-          path: indispensable-asn1/build/test-results/**/TEST*.xml,indispensable-oids/build/test-results/**/TEST*.xml,indispensable/build/test-results/**/TEST*.xml,indispensable-josef/build/test-results/**/TEST*.xml,indispensable-cosef/build/test-results/**/TEST*.xml,supreme/build/test-results/**/TEST*.xml
+          path: '**/build/test-results/**/TEST*.xml'
+          list-suites: failed
+          list-tests: failed
           reporter: java-junit
+          use-actions-summary: true
+      - name: Upload metrics
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: metrics
+          path: metrics/*.json
+          if-no-files-found: ignore

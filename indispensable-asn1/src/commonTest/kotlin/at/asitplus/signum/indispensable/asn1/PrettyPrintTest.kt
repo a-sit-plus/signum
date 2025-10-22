@@ -1,12 +1,11 @@
-package io.kotest.provided.at.asitplus.signum.indispensable.asn1
+package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.signum.indispensable.asn1.Asn1CustomStructure
-import at.asitplus.signum.indispensable.asn1.TagClass
-import at.asitplus.test.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 
-class PrettyPrintTest: FreeSpec( {
-    "pretty print" - {
+val PrettyPrintTest by testSuite {
+    "pretty print"  {
         val structure = Asn1CustomStructure(
             children = emptyList(),
             tag = 0UL,
@@ -20,4 +19,4 @@ class PrettyPrintTest: FreeSpec( {
         
         }""".trimIndent()
     }
-})
+}

@@ -3,19 +3,24 @@ package at.asitplus.signum.indispensable
 import at.asitplus.signum.indispensable.asn1.memDump
 import at.asitplus.signum.indispensable.asn1.toBitSet
 import at.asitplus.signum.indispensable.asn1.toBitString
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
 import io.kotest.assertions.withClue
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.boolean
 import io.kotest.property.arbitrary.booleanArray
 import io.kotest.property.arbitrary.int
-import io.kotest.property.checkAll
+import at.asitplus.testballoon.checkAllSuites
 import java.util.*
 import at.asitplus.signum.indispensable.asn1.BitSet as KmpBitSet
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-class BitSetTest : FreeSpec({
+val BitSetTest by testSuite {
 
     //outer container required for checkall
     "Custom BitSet Implementation" - {
@@ -127,7 +132,7 @@ class BitSetTest : FreeSpec({
             kmm.memDump() shouldBe ""
         }
 
-        checkAll(
+        checkAllSuites(
             iterations = 32,
             Arb.booleanArray(
                 Arb.int(1..128),
@@ -205,7 +210,7 @@ class BitSetTest : FreeSpec({
         }
 
         "toString() Tests" - {
-            checkAll(
+            checkAllSuites(
                 iterations = 32,
                 Arb.booleanArray(
                     Arb.int(1..128),
@@ -241,7 +246,7 @@ class BitSetTest : FreeSpec({
                     val truncated = input.dropLastWhile { !it }
                     val monotonicOrderedStr = truncated.chunked(8)
                         .map { byte ->
-                            (0..<8).map { kotlin.runCatching { byte[it] }.getOrElse { false } }
+                            (0..<8).map { runCatching { byte[it] }.getOrElse { false } }
                                 .joinToString(separator = "") { if (it) "1" else "0" }
                         }.joinToString(separator = "") { it }.dropLastWhile { it == '0' }
 
@@ -251,7 +256,7 @@ class BitSetTest : FreeSpec({
             }
         }
     }
-})
+}
 
 fun BitSet.toBitString(): String = toByteArray().toBitString()
 fun BitSet.memDump(): String = toByteArray().memDump()

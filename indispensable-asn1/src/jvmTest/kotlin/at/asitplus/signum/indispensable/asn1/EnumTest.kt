@@ -3,15 +3,20 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToEnum
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToEnumOrdinal
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.datatest.withData
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.withData
+import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 import io.kotest.matchers.shouldBe
 
 enum class TestEnum {
     ONE, TWO, THREE
 }
 
-class EnumTest : FreeSpec({
+val EnumTest by testSuite {
 
     "Values beyond valid Kotlin enum ordinals should work" - {
         withData(Long.MIN_VALUE, Long.MAX_VALUE, -1L, Int.MAX_VALUE.toLong()+1L, Int.MIN_VALUE.toLong()-1L) {
@@ -20,7 +25,7 @@ class EnumTest : FreeSpec({
     }
 
     "encoding should produce correct ordinals" - {
-        withData(TestEnum.entries) {
+        withData(data = TestEnum.entries) {
             val automagically = Asn1.Enumerated(it)
             automagically shouldBe Asn1.Enumerated(it.ordinal)
             //check correct tag
@@ -31,4 +36,4 @@ class EnumTest : FreeSpec({
             decoded shouldBe it
         }
     }
-})
+}

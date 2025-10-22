@@ -1,8 +1,17 @@
 package at.asitplus.signum.supreme.dsl
 
-import io.kotest.assertions.fail
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.minus
+import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.withData
+import at.asitplus.testballoon.withDataSuites
+import at.asitplus.testballoon.checkAllTests
+import at.asitplus.testballoon.checkAllSuites
+import de.infix.testBalloon.framework.testSuite
+import io.kotest.assertions.AssertionErrorBuilder.Companion.fail
 import io.kotest.matchers.shouldBe
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
 /* All options classes need to inherit from DSL.Data; it is also annotated with a DSL marker */
 private open class GenericOptions internal constructor(): DSL.Data() {
@@ -29,7 +38,7 @@ private class SpecificOptions internal constructor(): GenericOptions() {
     override val subValue = childOrDefault(::SpecificSubOptions)
 }
 
-open class DSLInheritanceDemonstration : FreeSpec({
+val DSLInheritanceDemonstration  by testSuite {
     "\uD83D\uDE0A" {
         /* if we have the necessary type information, we know that it's a specific DSL subclass... */
         doWithConfiguration {
@@ -58,7 +67,7 @@ open class DSLInheritanceDemonstration : FreeSpec({
         /* this also works btw */
         doWithConfiguration()
     }
-})
+}
 
 private fun doWithConfiguration(configure: (SpecificOptions.()->Unit)? = null) {
     /* resolve the configuration lambda to a concrete configuration object */

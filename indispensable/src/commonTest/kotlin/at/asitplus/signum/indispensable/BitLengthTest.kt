@@ -4,11 +4,15 @@ import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
 import at.asitplus.signum.indispensable.misc.bytes
 
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.testScope
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import kotlin.time.Duration.Companion.minutes
 
-class BitLengthTest : FreeSpec({
+val BitLengthTest  by testSuite {
    
     "Small toy values" {
         BitLength(0u).run {
@@ -55,4 +59,4 @@ class BitLengthTest : FreeSpec({
             bitSpacing shouldBe 7u
         }
     }
-})
+}

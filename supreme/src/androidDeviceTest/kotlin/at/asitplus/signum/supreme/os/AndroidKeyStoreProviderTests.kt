@@ -1,13 +1,13 @@
 package at.asitplus.signum.supreme.os
 
+import at.asitplus.shouldSucceed
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.supreme.sign.verifierFor
 import at.asitplus.signum.supreme.sign.verify
 import at.asitplus.signum.supreme.signature
-import at.asitplus.signum.supreme.succeed
-import br.com.colman.kotest.FreeSpec
-import io.kotest.matchers.should
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
 import io.kotest.property.RandomSource
@@ -16,7 +16,7 @@ import io.kotest.property.arbitrary.az
 import io.kotest.property.arbitrary.string
 import kotlin.random.Random
 
-class AndroidKeyStoreProviderTests : FreeSpec({
+val AndroidKeyStoreProviderTests by testSuite {
     "Create attested keypair" {
         val alias = Arb.string(minSize = 32, maxSize = 32, Codepoint.az())
             .sample(RandomSource.default()).value
@@ -34,8 +34,10 @@ class AndroidKeyStoreProviderTests : FreeSpec({
         val plaintext = Random.nextBytes(64)
         val signature = hardwareSigner.sign(plaintext).signature
 
+        //@formatter:off
         SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey).transform {
-            it.verify(plaintext, signature) } should succeed
+            it.verify(plaintext, signature) }.shouldSucceed()
+        //@formatter:on
 
     }
-})
+}

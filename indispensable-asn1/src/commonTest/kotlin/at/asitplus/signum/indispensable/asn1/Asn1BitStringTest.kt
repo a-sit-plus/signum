@@ -1,10 +1,14 @@
 package at.asitplus.signum.indispensable.asn1
 
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import de.infix.testBalloon.framework.TestConfig
+import kotlin.time.Duration.Companion.minutes
+import de.infix.testBalloon.framework.testScope
 
-class Asn1BitStringTest : FreeSpec({
+val Asn1BitStringTest by testSuite {
 
     val bitSet1 = BitSet.fromBitString("011011100101110111")
     val bitSet2 = BitSet.fromBitString("011011100101110111")
@@ -21,4 +25,4 @@ class Asn1BitStringTest : FreeSpec({
         fromBitSet1.hashCode() shouldBe fromBitSet2.hashCode()
         fromBitSet1.hashCode() shouldNotBe fromBitSet3.hashCode()
     }
-})
+}
