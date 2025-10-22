@@ -37,7 +37,8 @@ kotlin {
     }
 }
 
-exportXCFramework(
+val disableAppleTargets by envExtra
+if ("true" != disableAppleTargets) exportXCFramework(
     "IndispensableJosef",
     transitiveExports = false,
     static = false,

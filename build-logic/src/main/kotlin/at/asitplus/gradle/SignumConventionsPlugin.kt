@@ -14,6 +14,7 @@ import org.gradle.plugins.signing.SigningExtension
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
+import org.jetbrains.kotlin.gradle.plugin.extraProperties
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.konan.target.Family
 import java.io.ByteArrayOutputStream
@@ -306,22 +307,34 @@ private fun KotlinMultiplatformExtension.getBuildableTargets() =
 
 
 fun KotlinMultiplatformExtension.indispensableTargets() {
+
+    val disableAppleTargets = System.getenv("disableAppleTargets")
+        ?.also { Logger.lifecycle("  > Property disableAppleTargets set to $it from environment") }
+        ?: runCatching {
+            (project.extraProperties["disableAppleTargets"] as String).also {
+                Logger.lifecycle("  > Property disableAppleTargets set to $it from extra properties")
+            }
+        }
+
     jvm()
-    macosArm64()
-    macosX64()
-    tvosArm64()
-    tvosX64()
-    tvosSimulatorArm64()
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
-    watchosSimulatorArm64()
-    watchosX64()
-    watchosArm32()
-    watchosArm64()
-    tvosSimulatorArm64()
-    tvosX64()
-    tvosArm64()
+
+    if ("true" != disableAppleTargets) {
+        macosArm64()
+        macosX64()
+        tvosArm64()
+        tvosX64()
+        tvosSimulatorArm64()
+        iosX64()
+        iosArm64()
+        iosSimulatorArm64()
+        watchosSimulatorArm64()
+        watchosX64()
+        watchosArm32()
+        watchosArm64()
+        tvosSimulatorArm64()
+        tvosX64()
+        tvosArm64()
+    }
     androidNativeX64()
     androidNativeX86()
     androidNativeArm32()

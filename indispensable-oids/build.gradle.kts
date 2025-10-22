@@ -1,8 +1,10 @@
+import at.asitplus.gradle.envExtra
 import at.asitplus.gradle.exportXCFramework
 import at.asitplus.gradle.indispensableTargets
 import at.asitplus.gradle.signumConventions
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import org.gradle.kotlin.dsl.provideDelegate
 import java.io.FileInputStream
 import java.util.regex.Pattern
 
@@ -240,7 +242,8 @@ kotlin {
     }
 }
 
-exportXCFramework(
+val disableAppleTargets by envExtra
+if ("true" != disableAppleTargets) exportXCFramework(
     "IndispensableOIDs",
     transitiveExports = false,
     static = false,

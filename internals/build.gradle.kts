@@ -27,7 +27,8 @@ kotlin {
     }
 }
 
-exportXCFramework(
+val disableAppleTargets by envExtra
+if ("true" != disableAppleTargets) exportXCFramework(
     "Internals",
     transitiveExports = false,
     static = false,

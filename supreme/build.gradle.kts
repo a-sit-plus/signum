@@ -1,11 +1,7 @@
 @file:OptIn(ExperimentalKotlinGradlePluginApi::class)
 
-import at.asitplus.gradle.AspVersions
-import at.asitplus.gradle.coroutines
-import at.asitplus.gradle.napier
-import at.asitplus.gradle.signumConventions
+import at.asitplus.gradle.*
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
-import org.jetbrains.kotlin.konan.target.HostManager
 
 plugins {
     id("at.asitplus.signum.buildlogic")
@@ -21,10 +17,11 @@ signumConventions {
     supreme = true
 }
 
+val disableAppleTargets by envExtra
 
 kotlin {
     jvm()
-    if (HostManager.hostIsMac) {
+    if ("true" != disableAppleTargets) {
         listOf(
             iosX64(),
             iosArm64(),
@@ -59,7 +56,7 @@ kotlin {
     }
 }
 
-if (HostManager.hostIsMac) {
+if ("true" != disableAppleTargets) {
     swiftklib {
         create("AESwift") {
             path = file("src/iosMain/swift")
@@ -68,6 +65,7 @@ if (HostManager.hostIsMac) {
             minIos = 15
         }
     }
+
 }
 /*
 exportXCFramework(
