@@ -5,6 +5,7 @@ import at.asitplus.gradle.coroutines
 import at.asitplus.gradle.napier
 import at.asitplus.gradle.signumConventions
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.konan.target.HostManager
 
 plugins {
     id("at.asitplus.signum.buildlogic")
@@ -23,14 +24,15 @@ signumConventions {
 
 kotlin {
     jvm()
-
-    listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach {
-        it.compilations {
-            val main by getting { cinterops.create("AESwift") }
+    if (HostManager.hostIsMac) {
+        listOf(
+            iosX64(),
+            iosArm64(),
+            iosSimulatorArm64()
+        ).forEach {
+            it.compilations {
+                val main by getting { cinterops.create("AESwift") }
+            }
         }
     }
 
@@ -57,17 +59,16 @@ kotlin {
     }
 }
 
-
-swiftklib {
-    create("AESwift") {
-        path = file("src/iosMain/swift")
-        //Can't hide this in the iOS sources to consumers and using a discrete module is overkill -> so add "internal" to the package
-        packageName("at.asitplus.signum.supreme.symmetric.internal.ios")
-        minIos = 15
+if (HostManager.hostIsMac) {
+    swiftklib {
+        create("AESwift") {
+            path = file("src/iosMain/swift")
+            //Can't hide this in the iOS sources to consumers and using a discrete module is overkill -> so add "internal" to the package
+            packageName("at.asitplus.signum.supreme.symmetric.internal.ios")
+            minIos = 15
+        }
     }
 }
-
-
 /*
 exportXCFramework(
     "SignumSupreme",

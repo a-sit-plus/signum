@@ -7,7 +7,7 @@ on:
         required: false
         default: ''
         type: string
-      test-version:
+      testballoon-version:
         description: 'Override TestBalloon version (full version string)?'
         required: false
         default: ''
@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 300
     env:
       KOTLIN_VERSION_ENV: ${{ inputs.kotlin-version }}
-      TESTBALLOON_VERSION_OVERRIDE: ${{ inputs.test-version }}
+      TESTBALLOON_VERSION_OVERRIDE: ${{ inputs.testballoon-version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
