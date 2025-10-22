@@ -4,28 +4,6 @@ plugins {
 
 group = "at.asitplus.signum.buildlogic"
 
-java {
-    val preferredVersions = listOf(21, 17)
-    val toolchains = project.extensions.getByType(org.gradle.jvm.toolchain.JavaToolchainService::class.java)
-
-    val availableVersion = preferredVersions.firstOrNull { version ->
-        try {
-            toolchains.launcherFor {
-                languageVersion.set(JavaLanguageVersion.of(version))
-            }.get()
-            true
-        } catch (_: Exception) {
-            false
-        }
-    } ?: 17 // fallback if neither found
-
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(availableVersion))
-    }
-
-    println("Using Java toolchain version: $availableVersion")
-}
-
 gradlePlugin {
     plugins {
         create("signumConventions") {
