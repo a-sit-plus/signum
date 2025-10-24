@@ -135,13 +135,11 @@ data class GeneralSubtrees(
     private fun createWidestSubtree(name: GeneralNameOption): GeneralSubtree {
         return try {
             val newName = when (name.type) {
-                GeneralNameOption.NameType.RFC822 -> GeneralName(RFC822Name(Asn1String.IA5("")))
-                GeneralNameOption.NameType.DNS -> GeneralName(DNSName(Asn1String.IA5(""), true,
-                    performValidation = false
-                ))
+                GeneralNameOption.NameType.RFC822 -> GeneralName(RFC822Name(Asn1String.IA5(""), type = GeneralNameOption.NameType.RFC822))
+                GeneralNameOption.NameType.DNS -> GeneralName(DNSName(Asn1String.IA5(""), true, GeneralNameOption.NameType.DNS))
                 GeneralNameOption.NameType.X400 -> GeneralName(X400AddressName(Asn1Element.parse("".encodeToByteArray())))
-                GeneralNameOption.NameType.DIRECTORY -> GeneralName(X500Name(emptyList()))
-                GeneralNameOption.NameType.URI -> GeneralName(UriName(Asn1String.IA5(".")))
+                GeneralNameOption.NameType.DIRECTORY -> GeneralName(X500Name(emptyList(), false))
+                GeneralNameOption.NameType.URI -> GeneralName(UriName(Asn1String.IA5("."), false, false))
                 GeneralNameOption.NameType.IP -> GeneralName(IPAddressName(address = IpAddress("0.0.0.0")))
 
                 else -> throw IOException("Unsupported GeneralNameOption type: ${name.type}")
