@@ -157,7 +157,7 @@ class NameConstraintsTest : FreeSpec ({
         val dnsIntersect = arrayOf( "www.test.de", null, "www.test.de" )
         val dnsUnion = arrayOf(arrayOf("test.de"), arrayOf("www.test1.de", "www.test.de"), arrayOf("www.test.de"))
 
-        fun dns(value: String) = DNSName(Asn1String.IA5(value), allowWildcard = true, performValidation = false)
+        fun dns(value: String) = DNSName(Asn1String.IA5(value), allowWildcard = true, type = GeneralNameOption.NameType.DNS)
 
         testIntersectPairs(dns1, dns2, dnsIntersect, ::dns)
         testUnionPairs(dns1, dns2, dnsUnion, ::dns)
