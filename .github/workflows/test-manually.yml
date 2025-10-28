@@ -30,22 +30,103 @@ jobs:
           java-version: '17'
       - name: Run tests
         run: ./gradlew -Dkotlin.build.report.json.directory="$PWD/metrics" allTests -x iosX64Test --scan
-      - name: Test Report
-        uses: dorny/test-reporter@v2
-        env:
-          NODE_OPTIONS: --max-old-space-size=8192
+      - name: Upload unit-test results
         if: success() || failure()
+        uses: actions/upload-artifact@v4
         with:
-          name: All Tests
+          name: junit-macos
           path: '**/build/test-results/**/TEST*.xml'
-          list-suites: failed
-          list-tests: failed
-          reporter: java-junit
-          use-actions-summary: true
+          if-no-files-found: ignore
       - name: Upload metrics
         if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
-          name: metrics
+          name: metrics-macos
           path: metrics/*.json
           if-no-files-found: ignore
+
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      KOTLIN_VERSION_ENV: ${{ inputs.kotlin-version }}
+      TESTBALLOON_VERSION_OVERRIDE: ${{ inputs.testballoon-version }}
+    steps:
+      - name: Checkout (default)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      # For pull_request_target, explicitly fetch the PR head
+      - name: Checkout PR head (for pull_request)
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Connected Check
+        run: ./gradlew -Dkotlin.build.report.json.directory="$PWD/metrics" pixelAVDAndroidDeviceTest --scan
+      - name: Upload android-test results
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-android
+          path: '**/build/outputs/androidTest-results/managedDevice/androidmain/**/TEST*.xml'
+          if-no-files-found: ignore
+      - name: Upload metrics
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: metrics-android
+          path: metrics/*.json
+          if-no-files-found: ignore
+
+  aggregate:
+    runs-on: ubuntu-latest
+    needs: [build, android]
+    if: success() || failure()
+    steps:
+      - name: Download junit results (macOS)
+        uses: actions/download-artifact@v4
+        with:
+          name: junit-macos
+          path: reports/junit/macos
+      - name: Download junit results (Android)
+        uses: actions/download-artifact@v4
+        with:
+          name: junit-android
+          path: reports/junit/android
+      - name: Download metrics (macOS)
+        uses: actions/download-artifact@v4
+        with:
+          name: metrics-macos
+          path: reports/metrics/macos
+      - name: Download metrics (Android)
+        uses: actions/download-artifact@v4
+        with:
+          name: metrics-android
+          path: reports/metrics/android
+      - name: Aggregate Test Report
+        uses: dorny/test-reporter@v2
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
+        with:
+          name: Combined Test Report (macOS + Android)
+          path: |
+            reports/junit/macos/**/TEST*.xml
+            reports/junit/android/**/TEST*.xml
+          reporter: java-junit
+          list-suites: failed
+          list-tests: failed
+          use-actions-summary: true
