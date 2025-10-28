@@ -39,7 +39,7 @@ private fun verifyImpl(signatureAlgorithm: SignatureAlgorithm, publicKey: Crypto
     try {
         corecall {
             SecKeyVerifySignature(key.value, signatureAlgorithm.secKeyAlgorithmPreHashed,
-                inputData.toNSData().let(::giveToCF), signature.iosEncoded.toNSData().let(::giveToCF), error).takeIf { it }
+                inputData.toNSData().giveToCF(), signature.iosEncoded.toNSData().giveToCF(), error).takeIf { it }
         }
     } catch (x: CoreFoundationException) {
         if ((x.nsError.domain == NSOSStatusErrorDomain) && (x.nsError.code == errSecVerifyFailed.toLong()))
