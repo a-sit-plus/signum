@@ -59,12 +59,16 @@ import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
 import at.asitplus.signum.indispensable.jsonEncoded
 import at.asitplus.signum.indispensable.SecretExposure
+import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
+import at.asitplus.signum.indispensable.symmetric.randomKey
 import at.asitplus.signum.supreme.agree.Ephemeral
 import at.asitplus.signum.supreme.asKmmResult
 import at.asitplus.signum.supreme.os.PlatformSignerConfigurationBase
 import at.asitplus.signum.supreme.os.SignerConfiguration
 import at.asitplus.signum.supreme.os.SigningProvider
 import at.asitplus.signum.supreme.sign.Verifier
+import at.asitplus.signum.supreme.symmetric.decrypt
+import at.asitplus.signum.supreme.symmetric.encrypt
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
 import io.ktor.util.encodeBase64
@@ -159,6 +163,7 @@ internal fun App() {
         }
         val verifyPossible by getter { signatureData?.isSuccess == true }
         var verifyState by remember { mutableStateOf<KmmResult<Verifier.Success>?>(null) }
+        var encRT by remember { mutableStateOf<String?>(null) }
         val verifySucceededStr by getter {
             verifyState?.fold(onSuccess = {
                 "Verify OK!"
@@ -171,11 +176,12 @@ internal fun App() {
         var genTextOverride by remember { mutableStateOf<String?>(null) }
         val genText by getter { genTextOverride ?: "Generate" }
 
-        fun genEphemeralKey(){
+        fun genEphemeralKey() {
             ephemeralKey = if (currentKey?.getOrNull() is CryptoPublicKey.EC)
-                KeyAgreementPrivateValue.ECDH.Ephemeral((currentKey!!.getOrThrow() as CryptoPublicKey.EC).curve).getOrNull()
-                else null
-            agreedKey=null
+                KeyAgreementPrivateValue.ECDH.Ephemeral((currentKey!!.getOrThrow() as CryptoPublicKey.EC).curve)
+                    .getOrNull()
+            else null
+            agreedKey = null
         }
 
 
@@ -221,7 +227,8 @@ internal fun App() {
                         "Attestation",
                         modifier = Modifier.padding(top = 11.dp)
                     )
-                    Checkbox(checked = attestation,
+                    Checkbox(
+                        checked = attestation,
                         modifier = Modifier.wrapContentSize(Alignment.TopStart).padding(0.dp),
                         onCheckedChange = {
                             attestation = it
@@ -270,7 +277,8 @@ internal fun App() {
                                 " 20s",
                                 " 60s"
                             ).forEachIndexed { _, s ->
-                                DropdownMenuItem(text = { Text(text = s) },
+                                DropdownMenuItem(
+                                    text = { Text(text = s) },
                                     onClick = {
                                         expanded = false
                                         biometricAuth = s
@@ -309,7 +317,8 @@ internal fun App() {
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         algos.forEachIndexed { index, s ->
-                            DropdownMenuItem(text = { Text(text = s.toString()) },
+                            DropdownMenuItem(
+                                text = { Text(text = s.toString()) },
                                 onClick = {
                                     keyAlgorithm = algos[index]
                                     expanded = false
@@ -440,7 +449,8 @@ internal fun App() {
                 }
 
             }
-            OutlinedTextField(value = currentKeyStr,
+            OutlinedTextField(
+                value = currentKeyStr,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 minLines = 1,
                 maxLines = 5,
@@ -448,7 +458,8 @@ internal fun App() {
                 readOnly = true, onValueChange = {}, label = { Text("Current Key") })
 
 
-            OutlinedTextField(value = inputData,
+            OutlinedTextField(
+                value = inputData,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 enabled = true,
                 minLines = 1,
@@ -476,7 +487,8 @@ internal fun App() {
                 Napier.i { "Ephemeral key: $ephemeralKey" }
                 Spacer(Modifier.height(8.dp))
                 ephemeralKey?.let { ephemeralKey ->
-                    OutlinedTextField(value = ephemeralKey.publicValue.toString(),
+                    OutlinedTextField(
+                        value = ephemeralKey.publicValue.toString(),
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
                         minLines = 1,
                         textStyle = TextStyle.Default.copy(fontSize = 10.sp),
@@ -512,9 +524,10 @@ internal fun App() {
                 }
 
                 if (agreedKey != null) {
-                    OutlinedTextField(value =
-                    "Computed from ext_pub + hardware-backed_priv:\n" + agreedKey?.map { it.encodeBase64() }
-                        ?.getOrElse { it.message ?: it::class.simpleName ?: "" },
+                    OutlinedTextField(
+                        value =
+                        "Computed from ext_pub + hardware-backed_priv:\n" + agreedKey?.map { it.encodeBase64() }
+                            ?.getOrElse { it.message ?: it::class.simpleName ?: "" },
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
                         minLines = 1,
                         textStyle = TextStyle.Default.copy(fontSize = 10.sp),
@@ -525,7 +538,8 @@ internal fun App() {
             }
 
             if (signatureData != null) {
-                OutlinedTextField(value = signatureDataStr,
+                OutlinedTextField(
+                    value = signatureDataStr,
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
                     minLines = 1,
                     textStyle = TextStyle.Default.copy(fontSize = 10.sp),
@@ -552,8 +566,10 @@ internal fun App() {
                 }
             }
 
+
             if (verifyState != null) {
-                OutlinedTextField(value = verifySucceededStr,
+                OutlinedTextField(
+                    value = verifySucceededStr,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                     minLines = 1,
                     textStyle = TextStyle.Default.copy(fontSize = 10.sp),
@@ -563,13 +579,51 @@ internal fun App() {
             }
 
             if (currentAttestation != null) {
-                OutlinedTextField(value = currentAttestationStr,
+                OutlinedTextField(
+                    value = currentAttestationStr,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                     minLines = 1,
                     textStyle = TextStyle.Default.copy(fontSize = 10.sp),
                     readOnly = true,
                     onValueChange = {},
                     label = { Text("Key Attestation") })
+            }
+
+            Button(
+                onClick = {
+                    CoroutineScope(context).launch {
+                        encRT=""
+                        listOf(
+                            SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_256,
+                            SymmetricEncryptionAlgorithm.AES_256.GCM,
+                            SymmetricEncryptionAlgorithm.ChaCha20Poly1305
+                        ).forEach { alg ->
+                            val k = alg.randomKey()
+                            val data = Random.nextBytes(1023)
+                            val ciph = k.encrypt(data).getOrThrow()
+                            val dec= ciph.decrypt(k).getOrThrow()
+                            encRT+="ALG: ${alg.name}:\n\ndata: ${data.encodeBase64()}"
+                            encRT+="\n\nencrypted: ${ciph.encryptedData.encodeBase64()}"
+                            encRT+="\n\ndecrypted: ${dec.encodeBase64()}\n\n------------\n\n"
+                        }
+                    }
+                },
+
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            ) {
+                Text("Symmetric roundtrip")
+            }
+
+
+            if (encRT != null) {
+                OutlinedTextField(
+                    value = encRT?:"",
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    minLines = 1,
+                    textStyle = TextStyle.Default.copy(fontSize = 10.sp),
+                    readOnly = true,
+                    onValueChange = {},
+                    label = { Text("Encryption Round Trip") })
             }
         }
     }

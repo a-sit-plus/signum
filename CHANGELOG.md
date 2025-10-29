@@ -3,10 +3,14 @@
 ## 3.0
 
 ### NEXT
-Dependency Updates:
-* Kotlin 2.2.21
-* Kotlinx.io 0.8.0
-* crypto-rand 0.6.0
+* Fixes
+   * Fix memory management on iOS
+* Dependency Updates:
+    * Kotlin 2.2.21
+    * Kotlinx.io 0.8.0
+    * crypto-rand 0.6.0
+* Build Setup:
+    * Remove Swift-Klib and massively cleanup Swift Interop 
 
 
 ### 3.18.1 / Supreme 0.10.1

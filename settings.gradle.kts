@@ -37,3 +37,4 @@ include(":indispensable-josef")
 include(":indispensable-cosef")
 include(":supreme")
 rootProject.name = "Signum"
+include("cinterop")

@@ -18,6 +18,8 @@ pluginManagement {
     }
 }
 
+includeBuild("..")
+
 dependencyResolutionManagement {
     repositories {
         google()

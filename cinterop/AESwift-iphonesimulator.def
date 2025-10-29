@@ -1,0 +1,14 @@
+# Adapted from https://github.com/openwallet-foundation/multipaz
+
+package = at.asitplus.signum.supreme.symmetric.internal.ios
+language = Objective-C
+
+headers = AESwift/AESwift-Swift.h
+headerFilter = AESwift/*
+
+staticLibraries = libAESwift.a
+libraryPaths = ../cinterop/build/Release-iphonesimulator
+
+linkerOpts = -L/usr/lib/swift
+linkerOpts.ios_x64 = -platform_version ios-simulator 14.0 14.0 -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/
+linkerOpts.ios_arm64 = -platform_version ios-simulator 14.0 14.0 -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/
