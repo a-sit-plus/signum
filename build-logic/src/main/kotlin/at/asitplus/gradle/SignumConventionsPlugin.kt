@@ -67,7 +67,6 @@ class SignumConventionsExtension(private val project: Project) {
             }
         }
         project.silence()
-        project.workaroundAppleToolchainBugs()
 
         project.extensions.getByType<KotlinMultiplatformExtension>().apply {
             compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
@@ -230,52 +229,6 @@ fun Project.signumConventions(init: SignumConventionsExtension.() -> Unit) {
 
 }
 
-//we only require this for when swift-klib is used, so we let the extension trigger it
-// this is a target-agnostic version of the fix described in https://github.com/ttypic/swift-klib-plugin/issues/35
-private fun Project.workaroundAppleToolchainBugs() = extensions.findByName("swiftklib")?.let {
-
-    /*help the linker (yes, this is absolutely bonkers!)*/
-    if (OperatingSystem.current() == OperatingSystem.MAC_OS) {
-        val devDir = System.getenv("DEVELOPER_DIR")?.ifEmpty { null }.let {
-            if (it == null) {
-                val output = ByteArrayOutputStream()
-                exec {
-                    commandLine("xcode-select", "-p")
-                    standardOutput = output
-                }
-                output.toString().trim()
-            } else it
-        }
-
-        logger.lifecycle("  DEV DIR points to $devDir")
-
-        val swiftLib = "$devDir/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/"
-
-        extensions.getByType<KotlinMultiplatformExtension>().targets.withType<KotlinNativeTarget>()
-            .configureEach {
-                val sub = when (konanTarget.family) {
-                    Family.IOS ->
-                        if (konanTarget.name.contains("SIMULATOR", true)) "iphonesimulator" else "iphoneos"
-
-                    Family.OSX -> "macosx"
-                    Family.TVOS ->
-                        if (konanTarget.name.contains("SIMULATOR", true)) "appletvsimulator" else "appletvos"
-
-                    Family.WATCHOS ->
-                        if (konanTarget.name.contains("SIMULATOR", true)) "watchsimulator" else "watchos"
-
-                    else -> throw StopExecutionException("Konan target ${konanTarget.name} is not recognized")
-                }
-
-                logger.lifecycle("  KONAN target is ${konanTarget.name} which resolves to $sub")
-                binaries.all {
-                    linkerOpts(
-                        "-L${swiftLib}$sub"
-                    )
-                }
-            }
-    }
-}
 
 private fun Project.silence() {
     val kmp = extensions.getByType<KotlinMultiplatformExtension>()

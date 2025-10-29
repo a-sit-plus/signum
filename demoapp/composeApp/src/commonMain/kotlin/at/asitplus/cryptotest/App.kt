@@ -163,6 +163,7 @@ internal fun App() {
         }
         val verifyPossible by getter { signatureData?.isSuccess == true }
         var verifyState by remember { mutableStateOf<KmmResult<Verifier.Success>?>(null) }
+        var encRT by remember { mutableStateOf<String?>(null) }
         val verifySucceededStr by getter {
             verifyState?.fold(onSuccess = {
                 "Verify OK!"
@@ -565,27 +566,6 @@ internal fun App() {
                 }
             }
 
-            Button(
-                onClick = {
-                    CoroutineScope(context).launch {
-                        listOf(
-                            SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_256,
-                            SymmetricEncryptionAlgorithm.AES_256.GCM,
-                            SymmetricEncryptionAlgorithm.ChaCha20Poly1305
-                        ).forEach { alg ->
-                            val k = alg.randomKey()
-                            val data = Random.nextBytes(1023)
-                            val ciph = k.encrypt(data).getOrThrow()
-                            ciph.decrypt(k)
-                        }
-                    }
-                },
-
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            ) {
-                Text("Symmetric roundtrip")
-            }
-
 
             if (verifyState != null) {
                 OutlinedTextField(
@@ -607,6 +587,43 @@ internal fun App() {
                     readOnly = true,
                     onValueChange = {},
                     label = { Text("Key Attestation") })
+            }
+
+            Button(
+                onClick = {
+                    CoroutineScope(context).launch {
+                        encRT=""
+                        listOf(
+                            SymmetricEncryptionAlgorithm.AES_256.CBC.HMAC.SHA_256,
+                            SymmetricEncryptionAlgorithm.AES_256.GCM,
+                            SymmetricEncryptionAlgorithm.ChaCha20Poly1305
+                        ).forEach { alg ->
+                            val k = alg.randomKey()
+                            val data = Random.nextBytes(1023)
+                            val ciph = k.encrypt(data).getOrThrow()
+                            val dec= ciph.decrypt(k).getOrThrow()
+                            encRT+="ALG: ${alg.name}:\n\ndata: ${data.encodeBase64()}"
+                            encRT+="\n\nencrypted: ${ciph.encryptedData.encodeBase64()}"
+                            encRT+="\n\ndecrypted: ${dec.encodeBase64()}\n\n------------\n\n"
+                        }
+                    }
+                },
+
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            ) {
+                Text("Symmetric roundtrip")
+            }
+
+
+            if (encRT != null) {
+                OutlinedTextField(
+                    value = encRT?:"",
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    minLines = 1,
+                    textStyle = TextStyle.Default.copy(fontSize = 10.sp),
+                    readOnly = true,
+                    onValueChange = {},
+                    label = { Text("Encryption Round Trip") })
             }
         }
     }
