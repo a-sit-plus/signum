@@ -3,6 +3,15 @@
 ## 3.0
 
 ### NEXT
+* Fixes
+   * Fix memory management on iOS
+* Dependency Updates:
+    * Kotlin 2.2.21
+    * Kotlinx.io 0.8.0
+    * crypto-rand 0.6.0
+* Build Setup:
+    * Remove Swift-Klib and massively cleanup Swift Interop 
+
 
 ### 3.18.1 / Supreme 0.10.1
 Fix Android target pulling in JDK-21-specifics ([KT-71375](https://youtrack.jetbrains.com/issue/KT-71375/Prevent-Kotlins-removeFirst-and-removeLast-from-causing-crashes-on-Android-14-and-below-after-upgrading-to-Android-API-Level-35))

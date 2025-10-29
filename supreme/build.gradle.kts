@@ -2,10 +2,10 @@
 
 import at.asitplus.gradle.*
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.konan.target.HostManager
 
 plugins {
     id("at.asitplus.signum.buildlogic")
-    id("io.github.ttypic.swiftklib") version "0.6.4"
 }
 
 signumConventions {
@@ -17,18 +17,36 @@ signumConventions {
     supreme = true
 }
 
-val disableAppleTargets by envExtra
-
 kotlin {
     jvm()
-    if ("true" != disableAppleTargets) {
-        listOf(
-            iosX64(),
-            iosArm64(),
-            iosSimulatorArm64()
-        ).forEach {
-            it.compilations {
-                val main by getting { cinterops.create("AESwift") }
+
+    val iosTargets = listOf(iosX64(), iosArm64(), iosSimulatorArm64())
+    // Adapted from https://github.com/openwallet-foundation/multipaz
+    iosTargets.forEach { target ->
+        val platform = when (target.name) {
+            "iosX64" -> "iphonesimulator"
+            "iosArm64" -> "iphoneos"
+            "iosSimulatorArm64" -> "iphonesimulator"
+            else -> error("Unsupported target ${target.name}")
+        }
+        if (HostManager.hostIsMac) {
+            target.compilations.getByName("main") {
+                val cinterop by cinterops.creating {
+                    definitionFile.set(file("$rootDir/cinterop/AESwift-$platform.def"))
+                    includeDirs.headerFilterOnly("$rootDir/cinterop/build/Release-$platform/include")
+
+                    val interopTask = tasks[interopProcessingTaskName]
+                    interopTask.dependsOn(":cinterop:buildIphoneos")
+                    interopTask.dependsOn(":cinterop:buildIphonesimulator")
+                }
+
+                target.binaries.all {
+                    linkerOpts(
+                        "-L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/${platform}/",
+                        "-L$rootDir/cinterop/build/Release-${platform}",
+                        "-lAESwift"
+                    )
+                }
             }
         }
     }
@@ -56,17 +74,7 @@ kotlin {
     }
 }
 
-if ("true" != disableAppleTargets) {
-    swiftklib {
-        create("AESwift") {
-            path = file("src/iosMain/swift")
-            //Can't hide this in the iOS sources to consumers and using a discrete module is overkill -> so add "internal" to the package
-            packageName("at.asitplus.signum.supreme.symmetric.internal.ios")
-            minIos = 15
-        }
-    }
 
-}
 /*
 exportXCFramework(
     "SignumSupreme",

@@ -18,7 +18,6 @@ import kotlinx.coroutines.newFixedThreadPoolContext
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import platform.CoreFoundation.CFDictionaryRefVar
 import platform.CoreFoundation.CFRelease
@@ -351,7 +350,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
         }
     }
     private fun getKeyMetadata(alias: String): IosKeyMetadata = memScoped {
-        val it = alloc<CFDictionaryRefVar>()
+        val dict = alloc<CFDictionaryRefVar>()
         val query = cfDictionaryOf(
             kSecClass to kSecClassKey,
             kSecAttrKeyClass to kSecAttrKeyClassPublic,
@@ -359,9 +358,9 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             kSecAttrApplicationTag to KeychainTags.PUBLIC_KEYS,
             kSecReturnAttributes to true
         )
-        return when (val status = SecItemCopyMatching(query, it.ptr.reinterpret())) {
-            errSecSuccess -> it.value!!.get<String>(kSecAttrLabel).let{ Json.decodeFromString<IosKeyMetadata>(it) }
-                .also { _ -> CFRelease(it.value) }
+        return when (val status = SecItemCopyMatching(query, dict.ptr.reinterpret())) {
+            errSecSuccess -> dict.value!!.get<String>(kSecAttrLabel).let{ Json.decodeFromString<IosKeyMetadata>(it) }
+                .also { _ -> CFRelease(dict.value) }
             else -> {
                 throw CFCryptoOperationFailed(thing = "retrieve key metadata", osStatus = status)
             }
@@ -450,7 +449,10 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             if ((status == errSecSuccess) && (pubkey.value != null) && (privkey.value != null)) {
                 return@memScoped corecall {
                     SecKeyCopyExternalRepresentation(pubkey.value, error)
-                }.takeFromCF<NSData>().toByteArray()
+                }.takeFromCF<NSData>().toByteArray().also{
+                    CFRelease(pubkey.value)
+                    CFRelease(privkey.value)
+                }
             } else {
                 val x = CFCryptoOperationFailed(thing = "generate key", osStatus = status)
                 if ((status == -50) &&
