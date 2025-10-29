@@ -102,7 +102,6 @@ class SignumConventionsExtension(private val project: Project) {
     fun mavenPublish(name: String, description: String) = project.afterEvaluate {
         val javadocJar = setupDokka(
             baseUrl = "https://github.com/a-sit-plus/signum/tree/main/",
-            multiModuleDoc = true
         )
         extensions.getByType<PublishingExtension>().apply {
 
