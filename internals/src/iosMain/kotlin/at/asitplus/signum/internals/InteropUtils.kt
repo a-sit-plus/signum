@@ -131,10 +131,6 @@ class CFDictionaryInitScope private constructor() {
 fun DeferScope.createCFDictionary(pairs: CFDictionaryInitScope.()->Unit) =
     CFDictionaryInitScope.resolve(this, pairs)
 
-inline operator fun <reified T> CFDictionaryRef.get(key: Any?): T = memScoped {
-    CFDictionaryGetValue(this@get, giveToCF(key)).takeFromCF<T>()
-}
-
 @Suppress("NOTHING_TO_INLINE")
 inline operator fun CFMutableDictionaryRef.set(key: Any?, value: Any?) = memScoped {
     CFDictionarySetValue(this@set, giveToCF(key), giveToCF(value))
