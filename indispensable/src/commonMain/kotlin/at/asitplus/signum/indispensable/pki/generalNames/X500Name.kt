@@ -9,7 +9,6 @@ import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 
-@OptIn(ExperimentalPkiApi::class)
 class X500Name internal constructor(
     val relativeDistinguishedNames: List<RelativeDistinguishedName>,
     performValidation: Boolean,

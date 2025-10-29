@@ -6,7 +6,6 @@ import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 
-@OptIn(ExperimentalPkiApi::class)
 data class RegisteredIDName internal constructor(
     val value: ObjectIdentifier,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.OID

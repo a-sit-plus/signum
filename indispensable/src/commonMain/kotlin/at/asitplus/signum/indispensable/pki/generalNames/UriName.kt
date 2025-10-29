@@ -13,7 +13,6 @@ import at.asitplus.signum.indispensable.asn1.runRethrowing
 import com.eygraber.uri.Uri
 import kotlinx.io.IOException
 
-@OptIn(ExperimentalPkiApi::class)
 class UriName internal constructor(
     val host: Asn1String.IA5,
     val allowWildcard: Boolean = false,

@@ -10,7 +10,6 @@ import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.TagClass
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToIa5String
 
-@OptIn(ExperimentalPkiApi::class)
 data class RFC822Name internal constructor(
     val value: Asn1String.IA5,
     override val type: GeneralNameOption.NameType = GeneralNameOption.NameType.RFC822

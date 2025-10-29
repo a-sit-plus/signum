@@ -6,7 +6,6 @@ import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Exception
 
-@ExperimentalPkiApi
 sealed interface GeneralNameOption {
 
     /**
@@ -70,7 +69,6 @@ sealed interface GeneralNameOption {
     }
 }
 
-@OptIn(ExperimentalPkiApi::class)
 data class GeneralName(
     val name: GeneralNameOption
 ) : Asn1Encodable<Asn1Element> {

@@ -7,7 +7,6 @@ import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 
-@OptIn(ExperimentalPkiApi::class)
 data class X400AddressName internal constructor(
     val value: Asn1Element,
     override val isValid: Boolean? = null,

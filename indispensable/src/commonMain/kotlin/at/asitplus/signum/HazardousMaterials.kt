@@ -5,10 +5,9 @@ package at.asitplus.signum
 @Repeatable
 annotation class HazardousMaterials(val message: String="")
 
-@RequiresOptIn(
-    message = "This API is part of the experimental certificate validation feature. " +
-            "It may change or be removed without notice. Specify @OptIn(ExperimentalPkiApi::class)."
-)
+@RequiresOptIn(message = "This API is part of the experimental certificate validation feature. " +
+        "It may not yet handle everything according to spec, could contain vulnerabilities, may change without notice, or eat your cat. " +
+        "Specify @OptIn(ExperimentalPkiApi::class)")
 /**
  * Marks elements of the certificate validation (PKI) api as experimental and subject to change.
  * This includes all certificate path validation logic, constraint processing (e.g., NameConstraints),

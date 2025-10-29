@@ -11,7 +11,6 @@ import at.asitplus.signum.indispensable.asn1.TagClass
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToIa5String
 import at.asitplus.signum.indispensable.asn1.runRethrowing
 
-@OptIn(ExperimentalPkiApi::class)
 data class DNSName internal constructor(
     val value: Asn1String.IA5,
     val allowWildcard: Boolean = true,
