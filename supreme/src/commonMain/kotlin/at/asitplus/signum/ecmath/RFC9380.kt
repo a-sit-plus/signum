@@ -204,8 +204,6 @@ RFC9380.HashToEllipticCurve { msg: Sequence<ByteArray> ->
     /*return*/ P
 }
 
-@Suppress("NOTHING_TO_INLINE")
-private inline fun <T> CMOV(a: T, b: T, c: Boolean) = if (c) b else a
 
 object RFC9380 {
     @JvmInline
