@@ -31,9 +31,7 @@ kotlin {
             }
         }
         commonMain.dependencies {
-            implementation(libs.supreme) {
-                isChanging = true
-            }
+            implementation(libs.supreme)
             implementation(compose.runtime)
             implementation(compose.material3)
             implementation(compose.materialIconsExtended)
