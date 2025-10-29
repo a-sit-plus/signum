@@ -362,17 +362,11 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             kSecAttrKeyClass to kSecAttrKeyClassPublic,
             kSecAttrApplicationLabel to alias,
             kSecAttrApplicationTag to KeychainTags.PUBLIC_KEYS,
-            kSecReturnAttributes to kCFBooleanTrue
+            kSecReturnAttributes to true
         )
         return when (val status = SecItemCopyMatching(query, dict.ptr.reinterpret())) {
-            errSecSuccess -> {
-
-                val raw = CFDictionaryGetValue(dict.value, giveToCF(kSecAttrLabel))!!
-                val owned = CFRetain(raw)!! // you now own it
-                val json: String = owned.takeFromCF<String>()
-                json.let{ Json.decodeFromString<IosKeyMetadata>(it) }
-                    .also { _ -> CFRelease(dict.value as CFDictionaryRef) }
-            }
+            errSecSuccess -> dict.value!!.get<String>(kSecAttrLabel).let{ Json.decodeFromString<IosKeyMetadata>(it) }
+                .also { _ -> CFRelease(dict.value) }
             else -> {
                 throw CFCryptoOperationFailed(thing = "retrieve key metadata", osStatus = status)
             }
