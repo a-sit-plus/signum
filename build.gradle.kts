@@ -25,11 +25,11 @@ version = indispensableVersion
 
 nexusPublishing {
     transitionCheckOptions {
-        maxRetries.set(200)
+        maxRetries.set(400)
         delayBetween.set(Duration.ofSeconds(20))
     }
     connectTimeout.set(Duration.ofMinutes(15))
-    clientTimeout.set(Duration.ofMinutes(15))
+    clientTimeout.set(Duration.ofMinutes(40))
 }
 //end work around nexus publish bug
 
