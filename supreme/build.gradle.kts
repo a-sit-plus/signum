@@ -17,8 +17,6 @@ signumConventions {
     supreme = true
 }
 
-val disableAppleTargets by envExtra
-
 kotlin {
     jvm()
 

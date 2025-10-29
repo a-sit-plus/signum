@@ -37,8 +37,7 @@ kotlin {
     }
 }
 
-val disableAppleTargets by envExtra
-if ("true" != disableAppleTargets) exportXCFramework(
+exportXCFramework(
     "IndispensableAsn1",
     transitiveExports = false,
     static = false,
