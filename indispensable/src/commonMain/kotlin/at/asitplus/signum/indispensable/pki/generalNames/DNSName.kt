@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki.generalNames
 
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
@@ -9,8 +10,8 @@ import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.TagClass
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToIa5String
 import at.asitplus.signum.indispensable.asn1.runRethrowing
-import kotlinx.io.IOException
 
+@OptIn(ExperimentalPkiApi::class)
 data class DNSName internal constructor(
     val value: Asn1String.IA5,
     val allowWildcard: Boolean = true,
@@ -88,6 +89,7 @@ data class DNSName internal constructor(
         return value.value
     }
 
+    @ExperimentalPkiApi
     override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
         return try {
             super.constrains(input)

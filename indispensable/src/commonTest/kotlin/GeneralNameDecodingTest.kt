@@ -5,6 +5,7 @@ import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 
+@OptIn(ExperimentalPkiApi::class)
 open class GeneralNameDecodingTest : FreeSpec({
 
     "Alternative Names Decoding" {

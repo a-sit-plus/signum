@@ -7,12 +7,14 @@ import at.asitplus.cidre.IpInterface
 import at.asitplus.cidre.IpNetwork
 import at.asitplus.cidre.isV4
 import at.asitplus.cidre.isV6
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Exception
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1OctetStringPrimitive
 
+@OptIn(ExperimentalPkiApi::class)
 class IPAddressName internal constructor(
     val address: IpAddress<*, *>?,
     val addressAndPrefix: IpAddressAndPrefix<*, *>? = null,
@@ -113,6 +115,7 @@ class IPAddressName internal constructor(
         return result
     }
 
+    @ExperimentalPkiApi
     override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
         return try {
             super.constrains(input)

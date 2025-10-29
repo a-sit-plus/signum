@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki.generalNames
 
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
 import at.asitplus.signum.indispensable.asn1.Asn1Exception
@@ -8,6 +9,7 @@ import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 
+@OptIn(ExperimentalPkiApi::class)
 class X500Name internal constructor(
     val relativeDistinguishedNames: List<RelativeDistinguishedName>,
     performValidation: Boolean,
@@ -80,7 +82,7 @@ class X500Name internal constructor(
     override fun toString() = "X500Name(RDNs=${relativeDistinguishedNames.joinToString()})"
 
 
-
+    @ExperimentalPkiApi
     override fun constrains(input: GeneralNameOption?): GeneralNameOption.ConstraintResult {
         return try {
             super.constrains(input)
@@ -100,6 +102,7 @@ class X500Name internal constructor(
         }
     }
 
+    @ExperimentalPkiApi
     private fun isWithinSubtree(otherRDNs: List<RelativeDistinguishedName>): Boolean {
         if (this.relativeDistinguishedNames == otherRDNs) return true
         if (otherRDNs.isEmpty()) return true

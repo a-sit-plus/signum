@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki.generalNames
 
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.location
@@ -12,6 +13,7 @@ import io.kotest.matchers.shouldBe
  * Adapted from BouncyCastle's PKIXNameConstraintsTest:
  * https://github.com/bcgit/bc-java/blob/126ac9e14a0f56fae088973a777f1f90a521fd82/prov/src/test/java/org/bouncycastle/jce/provider/test/PKIXNameConstraintsTest.java
  */
+@OptIn(ExperimentalPkiApi::class)
 class GeneralNamesConstrainsTest : FreeSpec ({
 
     fun <T : GeneralNameOption> testGeneralNameConstraints(
