@@ -113,4 +113,30 @@ class UriName internal constructor(
             }
         }
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as UriName
+
+        if (allowWildcard != other.allowWildcard) return false
+        if (isValid != other.isValid) return false
+        if (host != other.host) return false
+        if (type != other.type) return false
+        if (hostDNS != other.hostDNS) return false
+        if (hostIP != other.hostIP) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = allowWildcard.hashCode()
+        result = 31 * result + isValid.hashCode()
+        result = 31 * result + host.hashCode()
+        result = 31 * result + type.hashCode()
+        result = 31 * result + (hostDNS?.hashCode() ?: 0)
+        result = 31 * result + (hostIP?.hashCode() ?: 0)
+        return result
+    }
 }
