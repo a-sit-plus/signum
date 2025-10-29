@@ -2,9 +2,9 @@
 
 ## 3.0
 
-### NEXT
+### 3.18.2 / Supreme 0.10.2
 * Fixes
-   * Fix memory management on iOS
+    * Fix memory management on iOS
 * Dependency Updates:
     * Kotlin 2.2.21
     * Kotlinx.io 0.8.0
