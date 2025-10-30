@@ -12,6 +12,8 @@ testballoon = "0.6.3-K2.2.20-SNAPSHOT"
 asp = "20251023"
 cidre = "0.3.0"
 urikmp = "0.0.20"
+kotlinxCoroutinesCore = "1.10.2"
+
 
 [libraries]
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }
@@ -23,6 +25,7 @@ securerandom = { module = "org.kotlincrypto.random:crypto-rand", version.ref = "
 asp = { module = "at.asitplus.gradle:k2", version.ref = "asp" }
 cidre = { module = "at.asitplus:cidre", version.ref = "cidre"}
 urikmp = {module = "com.eygraber:uri-kmp", version.ref = "urikmp"}
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutinesCore" }
 
 #for build logic conventions plugin, as it needs the artefact, not the plugin ID
 agp = { module = "com.android.tools.build:gradle", version.ref = "agp" }

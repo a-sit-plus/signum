@@ -7,6 +7,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Exception
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
+import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 
 class X500Name internal constructor(
@@ -119,6 +120,14 @@ class X500Name internal constructor(
             rdn.attrsAndValues.joinToString("+") { atv -> atv.toRfc2253String().trim() }
         }
     }
+
+    fun findMostSpecificCommonName(): AttributeTypeAndValue.CommonName? =
+        relativeDistinguishedNames.asReversed()
+            .asSequence()
+            .flatMap { it.attrsAndValues.asSequence() }
+            .filterIsInstance<AttributeTypeAndValue.CommonName>()
+            .firstOrNull()
+
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
