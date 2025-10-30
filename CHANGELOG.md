@@ -3,6 +3,16 @@
 ## 3.0
 
 ### NEXT
+* Introduced dedicated X509 extension classes:
+  * `X509CertificateExtension` is now a base class
+  * Enables polymorphic decoding/encoding of extension types
+    * `BasicConstraintsExtension`
+    * `CertificatePoliciesExtension`
+    * `InhibitAnyPolicyExtension`
+    * `KeyUsageExtension`
+    * `NameConstraintsExtension` and `GeneralSubtree`
+    * `PolicyConstraintsExtension`
+    * `PolicyMappingsExtension`
 * Refactored `AlternativeNames` for SAN/IAN extraction
     * Removed detailed parsing of individual name types; now delegates decoding to `GeneralName`
     * Introduced dedicated `GeneralName` classes:
