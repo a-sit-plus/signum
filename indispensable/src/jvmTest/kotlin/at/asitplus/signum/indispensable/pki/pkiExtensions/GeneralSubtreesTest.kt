@@ -13,9 +13,7 @@ import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import at.asitplus.testballoon.invoke
 
-
-
-val NameConstraintsTest by testSuite {
+val GeneralSubtreesTest by testSuite {
 
     fun <T : GeneralNameOption> testSubtreeOperation(
         arr1: Array<String>,
