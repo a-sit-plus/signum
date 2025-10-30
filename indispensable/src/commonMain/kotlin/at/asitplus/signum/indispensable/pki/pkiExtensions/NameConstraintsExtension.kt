@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki.pkiExtensions
 
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
 import at.asitplus.signum.indispensable.asn1.Asn1Primitive
@@ -170,6 +171,7 @@ class NameConstraintsExtension(
     /**
      * verify that a name is consistent with both permitted and excluded subtree
      * */
+    @OptIn(ExperimentalPkiApi::class)
     fun verify(name: GeneralNameOption?): Boolean {
         if (name == null) {
             throw IOException("name is null")
