@@ -3,14 +3,14 @@ package at.asitplus.signum.test
 
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
+import de.infix.testBalloon.framework.TestSuite
 import io.github.classgraph.ClassGraph
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import java.lang.reflect.ParameterizedType
 import kotlin.reflect.full.companionObject
+
 
 inline fun <reified T : Any> findImplementations(packageRoot: String = ""): List<Class<out T>> =
     ClassGraph()
@@ -23,17 +23,20 @@ inline fun <reified T : Any> findImplementations(packageRoot: String = ""): List
                 .loadClasses(T::class.java)
         }
 
-abstract class EnumConsistencyTestTemplate(testName: String, addedExcludes: Set<String> = setOf()) : FreeSpec({
+fun TestSuite.EnumConsistencyTestTemplate(testName: String, addedExcludes: Set<String> = setOf()) {
     val excludedClasses = if (addedExcludes.isNotEmpty()) (BASE_EXCLUDES + addedExcludes) else BASE_EXCLUDES
 
-    testName {
+
+    test(testName) {
         val allEnumerables = findImplementations<Enumerable>(packageRoot = "at.asitplus.signum")
         val companionToEnumerable = allEnumerables.associateBy { it.kotlin.companionObject }
         findImplementations<Enumeration<*>>(packageRoot = "at.asitplus.signum").forEach { companion ->
             /** Every Enumeration<*> should be a companion */
             val surroundingClass = companionToEnumerable[companion.kotlin].shouldNotBeNull()
+
             /** Every Enumeration<*> should be parametrized with its own supertype */
-            val enumerationImpl = companion.genericInterfaces.find { t -> t.javaClass == Enumeration::class.java } as ParameterizedType
+            val enumerationImpl =
+                companion.genericInterfaces.find { t -> t.javaClass == Enumeration::class.java } as ParameterizedType
             enumerationImpl.actualTypeArguments[0] shouldBe surroundingClass
         }
         allEnumerables.asSequence().filter { cls ->
@@ -47,17 +50,17 @@ abstract class EnumConsistencyTestTemplate(testName: String, addedExcludes: Set<
             }
         }
     }
-}) {
-    companion object {
-        val BASE_EXCLUDES = setOf(
-            "at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm\$",
-            "at.asitplus.signum.indispensable.MessageAuthenticationCode\$Truncated",
-            "at.asitplus.signum.indispensable.X509SignatureAlgorithm\$",
-            "at.asitplus.signum.indispensable.asymmetric.RSAPadding\$",
-            "at.asitplus.signum.indispensable.cosef.CoseAlgorithm\$MAC\$",
-            "at.asitplus.signum.indispensable.cosef.CoseAlgorithm\$Signature\$",
-            "at.asitplus.signum.indispensable.cosef.CoseAlgorithm\$SymmetricEncryption\$",
-            "at.asitplus.signum.indispensable.josef.JsonWebAlgorithm\$UNKNOWN"
-        )
-    }
+
 }
+
+val BASE_EXCLUDES = setOf(
+    "at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm\$",
+    "at.asitplus.signum.indispensable.MessageAuthenticationCode\$Truncated",
+    "at.asitplus.signum.indispensable.X509SignatureAlgorithm\$",
+    "at.asitplus.signum.indispensable.asymmetric.RSAPadding\$",
+    "at.asitplus.signum.indispensable.cosef.CoseAlgorithm\$MAC\$",
+    "at.asitplus.signum.indispensable.cosef.CoseAlgorithm\$Signature\$",
+    "at.asitplus.signum.indispensable.cosef.CoseAlgorithm\$SymmetricEncryption\$",
+    "at.asitplus.signum.indispensable.josef.JsonWebAlgorithm\$UNKNOWN"
+)
+
