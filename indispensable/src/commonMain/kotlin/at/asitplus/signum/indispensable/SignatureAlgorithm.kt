@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.Enumeration
-import at.asitplus.signum.indispensable.SignatureAlgorithm.Companion
 
 enum class RSAPadding {
     PKCS1,

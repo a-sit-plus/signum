@@ -53,8 +53,9 @@ kotlin {
             languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
         }
         jvmMain.dependencies {
-            api("io.github.classgraph:classgraph:4.8.173")
             api(kotlin("reflect"))
+            api(libs.classgraph)
+            implementation(project(":internals"))
             implementation(kotest("assertions-core"))
         }
     }

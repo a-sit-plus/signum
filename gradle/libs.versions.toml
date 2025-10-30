@@ -10,6 +10,7 @@ kotlinpoet = "2.2.0"
 kotlincryptoRandom = "0.6.0"
 testballoon = "0.6.3-K2.2.20-SNAPSHOT"
 asp = "20251023"
+classgraph = "4.8.184"
 
 [libraries]
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }
@@ -19,6 +20,7 @@ kotlinpoet = { group = "com.squareup", name = "kotlinpoet", version.ref = "kotli
 multibase = { module = "at.asitplus:multibase", version.ref = "multibase" }
 securerandom = { module = "org.kotlincrypto.random:crypto-rand", version.ref = "kotlincryptoRandom" }
 asp = { module = "at.asitplus.gradle:k2", version.ref = "asp" }
+classgraph = { group = "io.github.classgraph", name = "classgraph", version.ref = "classgraph" }
 
 #for build logic conventions plugin, as it needs the artefact, not the plugin ID
 agp = { module = "com.android.tools.build:gradle", version.ref = "agp" }
