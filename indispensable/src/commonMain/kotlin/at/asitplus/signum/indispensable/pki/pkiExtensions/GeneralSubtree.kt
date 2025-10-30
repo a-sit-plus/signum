@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.pki.pkiExtensions
 
 import at.asitplus.cidre.IpAddress
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1Encodable
@@ -77,6 +78,7 @@ data class GeneralSubtrees(
     /**
      * Removes all redundant entries
      * */
+    @OptIn(ExperimentalPkiApi::class)
     private fun minimize(): GeneralSubtrees {
         val mutableTrees = trees.toMutableList()
 
@@ -153,6 +155,7 @@ data class GeneralSubtrees(
     /**
      * Merges permitted NameConstraints
      * */
+    @OptIn(ExperimentalPkiApi::class)
     fun intersectAndReturnExclusions(other: GeneralSubtrees): GeneralSubtrees? {
         require(other.trees != null) { "other GeneralSubtrees must not be null" }
 
