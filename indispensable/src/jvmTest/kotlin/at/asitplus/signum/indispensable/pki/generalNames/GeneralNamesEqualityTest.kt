@@ -7,11 +7,12 @@ import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
-import at.asitplus.test.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
-class GeneralNamesEqualityTest : FreeSpec ({
+val GeneralNamesEqualityTest by testSuite{
 
     val bytes = byteArrayOf(-96, 30, 6, 3, 42, 3, 4, -96, 23, 12, 21, 115, 111, 109, 101, 32, 111, 116, 104, 101, 114, 32, 105, 100, 101, 110, 116, 105, 102, 105, 101, 114)
     val changedBytes = byteArrayOf(-95, 31, 6, 3, 42, 3, 4, -96, 24, 12, 22, 115, 111, 109, 101, 32, 101, 100, 105, 116, 101, 100, 32, 105, 100, 101, 110, 116, 105, 102, 105, 101, 114)
@@ -236,4 +237,4 @@ class GeneralNamesEqualityTest : FreeSpec ({
         x500multi1 shouldNotBe x500multi3
         x500name1 shouldNotBe x500multi1
     }
-})
+}

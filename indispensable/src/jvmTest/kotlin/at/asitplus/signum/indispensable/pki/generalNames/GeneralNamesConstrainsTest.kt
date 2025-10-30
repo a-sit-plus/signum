@@ -6,7 +6,8 @@ import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.location
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
-import at.asitplus.test.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 
 /**
@@ -14,7 +15,7 @@ import io.kotest.matchers.shouldBe
  * https://github.com/bcgit/bc-java/blob/126ac9e14a0f56fae088973a777f1f90a521fd82/prov/src/test/java/org/bouncycastle/jce/provider/test/PKIXNameConstraintsTest.java
  */
 @OptIn(ExperimentalPkiApi::class)
-class GeneralNamesConstrainsTest : FreeSpec ({
+val GeneralNamesConstrainsTest by testSuite{
 
     fun <T : GeneralNameOption> testGeneralNameConstraints(
         name: String,
@@ -188,7 +189,7 @@ class GeneralNamesConstrainsTest : FreeSpec ({
         narrowNames = narrowIps,
         diffTypeOther = dummyOtherRFC,
     )
-})
+}
 
 
 fun x500NameFromString(dn: String): X500Name {

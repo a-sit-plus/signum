@@ -162,6 +162,7 @@ val X509CertificateJvmTest by testSuite {
     }
 
     "Certificate can be parsed" {
+        val keyPair: KeyPair = keyGen.genKeyPair()
         val ecPublicKey = keyPair.public as ECPublicKey
         val keyX = ecPublicKey.w.affineX.toByteArray().ensureSize(ecCurve.coordinateLength.bytes)
         val keyY = ecPublicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLength.bytes)

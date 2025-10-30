@@ -3,10 +3,11 @@ package at.asitplus.signum.indispensable.pki.generalNames
 import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.encoding.parse
-import at.asitplus.test.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 
-class DefaultValidationTest : FreeSpec ({
+val DefaultValidationTest by testSuite{
     val bytes = byteArrayOf(-96, 30, 6, 3, 42, 3, 4, -96, 23, 12, 21, 115, 111, 109, 101, 32, 111, 116, 104, 101, 114, 32, 105, 100, 101, 110, 116, 105, 102, 105, 101, 114)
 
     "EDIPartyName without custom validation " {
@@ -38,4 +39,4 @@ class DefaultValidationTest : FreeSpec ({
         val validated = name.createValidatedCopy { true }
         validated.isValid shouldBe true
     }
-})
+}

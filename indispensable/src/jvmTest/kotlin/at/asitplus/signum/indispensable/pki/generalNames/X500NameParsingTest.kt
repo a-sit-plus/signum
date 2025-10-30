@@ -1,13 +1,14 @@
 package at.asitplus.signum.indispensable.pki.generalNames
 
-import at.asitplus.test.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 
 /**
  * Adapted from BouncyCastle's X500NameTest:
  * https://github.com/bcgit/bc-java/blob/main/core/src/test/java/org/bouncycastle/asn1/test/X500NameTest.java
  */
-class X500NameParsingTest : FreeSpec ({
+val X500NameParsingTest by testSuite {
 
     fun assertCanonical(input: String, expected: String) {
         val name = X500Name.fromString(input)
@@ -65,10 +66,14 @@ class X500NameParsingTest : FreeSpec ({
     }
 
     "testQuotedEqualityAndCase" {
-        assertCanonical("CN=\"  CA1 -   CP.04.03\", OU=Testing, O=U.S. Government, C=US",
-            "cn=ca1 - cp.04.03,ou=testing,o=u.s. government,c=us")
-        assertCanonical("CN=\"ca1 - CP.04.03  \", OU=Testing, O=U.S. Government, C=US",
-            "cn=ca1 - cp.04.03,ou=testing,o=u.s. government,c=us")
+        assertCanonical(
+            "CN=\"  CA1 -   CP.04.03\", OU=Testing, O=U.S. Government, C=US",
+            "cn=ca1 - cp.04.03,ou=testing,o=u.s. government,c=us"
+        )
+        assertCanonical(
+            "CN=\"ca1 - CP.04.03  \", OU=Testing, O=U.S. Government, C=US",
+            "cn=ca1 - cp.04.03,ou=testing,o=u.s. government,c=us"
+        )
     }
 
     "testCaseInsensitiveEquality" {
@@ -94,4 +99,4 @@ class X500NameParsingTest : FreeSpec ({
         assertCanonical("CN=#GG11", "cn=\\#gg11")
     }
 
-})
+}

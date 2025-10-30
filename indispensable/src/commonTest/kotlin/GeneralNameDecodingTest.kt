@@ -1,12 +1,13 @@
 package at.asitplus.signum
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.generalNames.GeneralNameOption
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.assertions.throwables.shouldNotThrowAny
-import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
+import at.asitplus.testballoon.invoke
 
 @OptIn(ExperimentalPkiApi::class)
-open class GeneralNameDecodingTest : FreeSpec({
+val GeneralNameDecodingTest by testSuite{
 
     "Alternative Names Decoding" {
         val sanRFC822namesPem = "-----BEGIN CERTIFICATE-----\n" +
@@ -275,4 +276,4 @@ open class GeneralNameDecodingTest : FreeSpec({
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.forEach { it.name.type shouldBe GeneralNameOption.NameType.DIRECTORY }
     }
-})
+}

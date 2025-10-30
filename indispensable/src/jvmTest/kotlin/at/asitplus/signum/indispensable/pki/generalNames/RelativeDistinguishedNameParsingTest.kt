@@ -4,12 +4,13 @@ import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName.Companion.splitFirstUnescaped
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName.Companion.splitRespectingEscapeAndQuotes
-import at.asitplus.test.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 
-class RelativeDistinguishedNameParsingTest : FreeSpec({
+val RelativeDistinguishedNameParsingTest  by testSuite{
 
     "splitRespectingEscapeAndQuotes should split simple RDN" {
         val input = "CN=John+O=Company"
@@ -115,4 +116,4 @@ class RelativeDistinguishedNameParsingTest : FreeSpec({
             recombined shouldBe dn
         }
     }
-})
+}
