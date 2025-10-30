@@ -30,10 +30,10 @@ val DistinguishedNameTest by testSuite {
                     val o2 = AttributeTypeAndValue.Organization(second.encodeToTlv())
                     val ou1 = AttributeTypeAndValue.OrganizationalUnit(first.encodeToTlv())
                     val ou2 = AttributeTypeAndValue.OrganizationalUnit(second.encodeToTlv())
-                    val ot1 = AttributeTypeAndValue.Other(first, first.encodeToTlv())
-                    val ot2 = AttributeTypeAndValue.Other(first, second.encodeToTlv())
-                    val ot3 = AttributeTypeAndValue.Other(second, first.encodeToTlv())
-                    val ot4 = AttributeTypeAndValue.Other(second, second.encodeToTlv())
+                    val ot1 = AttributeTypeAndValue(first, first.encodeToTlv())
+                    val ot2 = AttributeTypeAndValue(first, second.encodeToTlv())
+                    val ot3 = AttributeTypeAndValue(second, first.encodeToTlv())
+                    val ot4 = AttributeTypeAndValue(second, second.encodeToTlv())
 
                     // equals()
                     cn1 shouldBe cn1
