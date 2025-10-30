@@ -7,6 +7,7 @@ import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.supreme.DisabledTestsExecutionReport
+import at.asitplus.signum.indispensable.pki.generalNames.X500Name
 import at.asitplus.signum.supreme.os.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.supreme.os.SignerConfiguration
 import at.asitplus.signum.supreme.sign
@@ -235,7 +236,7 @@ val EphemeralSignerCommonTests  by testSuite {
                 }
 
                 val csr = TbsCertificationRequest(
-                    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
+                    subjectName = X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client"))))),
                     publicKey = signer.publicKey,
                     attributes = listOf(
                         Pkcs10CertificationRequestAttribute(
@@ -257,12 +258,12 @@ val EphemeralSignerCommonTests  by testSuite {
                 val tbsCrt = TbsCertificate(
                     serialNumber = Random.nextBytes(16),
                     signatureAlgorithm = signer.signatureAlgorithm.toX509SignatureAlgorithm().getOrThrow(),
-                    issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("Foo")))),
+                    issuerName = X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("Foo"))))),
                     validFrom = Asn1Time(
                         Clock.System.now()
                     ),
                     validUntil = Asn1Time(Clock.System.now() + 356.days),
-                    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
+                    subjectName = X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client"))))),
                     publicKey = signer.publicKey,
                     extensions = listOf(
                         X509CertificateExtension(
@@ -288,7 +289,7 @@ val EphemeralSignerCommonTests  by testSuite {
                     it.requiredCurve shouldBeIn setOf(null, crv)
                 }
                 val csr = TbsCertificationRequest(
-                    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
+                    subjectName = X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client"))))),
                     publicKey = signer.publicKey,
                     attributes = listOf(
                         Pkcs10CertificationRequestAttribute(
@@ -309,12 +310,12 @@ val EphemeralSignerCommonTests  by testSuite {
                 val tbsCrt = TbsCertificate(
                     serialNumber = Random.nextBytes(16),
                     signatureAlgorithm = signer.signatureAlgorithm.toX509SignatureAlgorithm().getOrThrow(),
-                    issuerName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("Foo")))),
+                    issuerName = X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("Foo"))))),
                     validFrom = Asn1Time(
                         Clock.System.now()
                     ),
                     validUntil = Asn1Time(Clock.System.now() + 356.days),
-                    subjectName = listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client")))),
+                    subjectName = X500Name(listOf(RelativeDistinguishedName(AttributeTypeAndValue.CommonName(Asn1String.UTF8("client"))))),
                     publicKey = signer.publicKey,
                     extensions = listOf(
                         X509CertificateExtension(

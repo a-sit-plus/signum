@@ -10,13 +10,13 @@ import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
-import at.asitplus.signum.indispensable.isSupported
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findSubjectAltNames
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.EXTENSIONS
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.ISSUER_UID
 import at.asitplus.signum.indispensable.pki.TbsCertificate.Companion.Tags.SUBJECT_UID
 import at.asitplus.signum.indispensable.requireSupported
+import at.asitplus.signum.indispensable.pki.generalNames.X500Name
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -32,11 +32,11 @@ data class TbsCertificate
 constructor(
     val version: Int? = 2,
     val serialNumber: ByteArray,
+    val issuerName: X500Name,
     val signatureAlgorithm: X509SignatureAlgorithmDescription,
-    val issuerName: List<RelativeDistinguishedName>,
     val validFrom: Asn1Time,
     val validUntil: Asn1Time,
-    val subjectName: List<RelativeDistinguishedName>,
+    val subjectName: X500Name,
     val rawPublicKey: Asn1Sequence,
     val issuerUniqueID: Asn1BitString? = null,
     val subjectUniqueID: Asn1BitString? = null,
@@ -47,15 +47,15 @@ constructor(
         version: Int? = 2,
         serialNumber: ByteArray,
         signatureAlgorithm: X509SignatureAlgorithmDescription,
-        issuerName: List<RelativeDistinguishedName>,
+        issuerName: X500Name,
         validFrom: Asn1Time,
         validUntil: Asn1Time,
-        subjectName: List<RelativeDistinguishedName>,
+        subjectName: X500Name,
         publicKey: CryptoPublicKey,
         issuerUniqueID: Asn1BitString? = null,
         subjectUniqueID: Asn1BitString? = null,
         extensions: List<X509CertificateExtension>? = null,
-    ) : this(version, serialNumber, signatureAlgorithm, issuerName, validFrom, validUntil, subjectName,
+    ) : this(version, serialNumber, issuerName, signatureAlgorithm, validFrom, validUntil, subjectName,
             publicKey.encodeToTlv(), issuerUniqueID, subjectUniqueID, extensions)
 
     init {
@@ -98,14 +98,14 @@ constructor(
             version?.let { +Version(it) }
             +Asn1Primitive(Asn1Element.Tag.INT, serialNumber)
             +signatureAlgorithm
-            +Asn1.Sequence { issuerName.forEach { +it } }
+            +issuerName
 
             +Asn1.Sequence {
                 +validFrom
                 +validUntil
             }
 
-            +Asn1.Sequence { subjectName.forEach { +it } }
+            +subjectName
 
             //subject public key
             +rawPublicKey
@@ -189,14 +189,11 @@ constructor(
             }
             val serialNumber = next().asPrimitive().decode(Asn1Element.Tag.INT) { it }
             val sigAlg = X509SignatureAlgorithmDescription.decodeFromTlv(next().asSequence())
-            val issuerNames = next().asSequence().children.map {
-                RelativeDistinguishedName.decodeFromTlv(it.asSet())
-            }
+            val issuerNames = X500Name.decodeFromTlv(next().asSequence())
 
             val timestamps = decodeTimestamps(next().asSequence())
-            val subject = (next().asSequence()).children.map {
-                RelativeDistinguishedName.decodeFromTlv(it.asSet())
-            }
+            val subject = X500Name.decodeFromTlv(next().asSequence())
+
 
             val publicKey = next().asSequence()
 

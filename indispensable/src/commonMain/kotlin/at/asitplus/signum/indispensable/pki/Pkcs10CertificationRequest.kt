@@ -11,6 +11,7 @@ import at.asitplus.signum.indispensable.asn1.encoding.Asn1.BitString
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.ExplicitlyTagged
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1BitString
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
+import at.asitplus.signum.indispensable.pki.generalNames.X500Name
 import at.asitplus.signum.indispensable.requireSupported
 
 /**
@@ -23,7 +24,7 @@ import at.asitplus.signum.indispensable.requireSupported
  */
 data class TbsCertificationRequest(
     val version: Int = 0,
-    val subjectName: List<RelativeDistinguishedName>,
+    val subjectName: X500Name,
     val publicKey: CryptoPublicKey,
     val attributes: List<Pkcs10CertificationRequestAttribute> = listOf()
 ) : Asn1Encodable<Asn1Sequence> {
@@ -35,7 +36,7 @@ data class TbsCertificationRequest(
      */
     @Throws(IllegalArgumentException::class)
     constructor(
-        subjectName: List<RelativeDistinguishedName>,
+        subjectName: X500Name,
         publicKey: CryptoPublicKey,
         extensions: List<X509CertificateExtension>? = null,
         version: Int = 0,
@@ -53,7 +54,7 @@ data class TbsCertificationRequest(
 
     override fun encodeToTlv() = Asn1.Sequence {
         +Asn1.Int(version)
-        +Asn1.Sequence { subjectName.forEach { +it } }
+        +subjectName
 
         //subject Public Key
         +publicKey
@@ -64,9 +65,7 @@ data class TbsCertificationRequest(
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence) = src.decodeRethrowing {
             val version = (next() as Asn1Primitive).decodeToInt()
-            val subject = (next() as Asn1Sequence).children.map {
-                RelativeDistinguishedName.decodeFromTlv(it as Asn1Set)
-            }
+            val subject = X500Name.decodeFromTlv(next().asSequence())
             val cryptoPublicKey = CryptoPublicKey.decodeFromTlv(next() as Asn1Sequence)
             val attributes = if (hasNext()) {
                 (next() as Asn1ExplicitlyTagged).verifyTag(0u)
