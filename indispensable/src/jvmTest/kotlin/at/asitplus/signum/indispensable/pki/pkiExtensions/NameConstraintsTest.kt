@@ -9,10 +9,13 @@ import at.asitplus.signum.indispensable.pki.generalNames.IPAddressName
 import at.asitplus.signum.indispensable.pki.generalNames.RFC822Name
 import at.asitplus.signum.indispensable.pki.generalNames.UriName
 import at.asitplus.signum.indispensable.pki.generalNames.x500NameFromString
-import at.asitplus.test.FreeSpec
+import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
+import at.asitplus.testballoon.invoke
 
-class NameConstraintsTest : FreeSpec ({
+
+
+val NameConstraintsTest by testSuite {
 
     fun <T : GeneralNameOption> testSubtreeOperation(
         arr1: Array<String>,
@@ -56,7 +59,6 @@ class NameConstraintsTest : FreeSpec ({
         }
     }
 
-
     fun <T : GeneralNameOption> testIntersectPairs(
         arr1: Array<String>,
         arr2: Array<String>,
@@ -81,7 +83,7 @@ class NameConstraintsTest : FreeSpec ({
         a.unionWith(b)
     }
 
-    "testRfc" - {
+    "test Rfc" {
         val email1 = arrayOf(
             "test@test.com",
             "test@test.com",
@@ -146,8 +148,8 @@ class NameConstraintsTest : FreeSpec ({
         )
         fun rfc822(value: String) = RFC822Name(Asn1String.IA5(value))
 
-        testIntersectPairs(email1, email2, emailIntersect, ::rfc822)
-        testUnionPairs(email1, email2, emailUnion, ::rfc822)
+        testIntersectPairs(email1, email2, emailIntersect) { value: String -> rfc822(value) }
+        testUnionPairs(email1, email2, emailUnion) { value: String -> rfc822(value) }
     }
 
 
@@ -157,7 +159,11 @@ class NameConstraintsTest : FreeSpec ({
         val dnsIntersect = arrayOf( "www.test.de", null, "www.test.de" )
         val dnsUnion = arrayOf(arrayOf("test.de"), arrayOf("www.test1.de", "www.test.de"), arrayOf("www.test.de"))
 
-        fun dns(value: String) = DNSName(Asn1String.IA5(value), allowWildcard = true, type = GeneralNameOption.NameType.DNS)
+        fun dns(value: String) = DNSName(
+            Asn1String.IA5(value),
+            allowWildcard = true,
+            type = GeneralNameOption.NameType.DNS
+        )
 
         testIntersectPairs(dns1, dns2, dnsIntersect, ::dns)
         testUnionPairs(dns1, dns2, dnsUnion, ::dns)
@@ -211,5 +217,4 @@ class NameConstraintsTest : FreeSpec ({
         testIntersectPairs(ip1, ip2, ipIntersect, ::ip)
         testUnionPairs(ip1, ip2, ipUnion, ::ip)
     }
-
-})
+}
