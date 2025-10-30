@@ -126,6 +126,7 @@ data class GeneralSubtrees(
         return GeneralSubtrees(mutableTrees)
     }
 
+    @ExperimentalPkiApi
     fun unionWith(other: GeneralSubtrees?) {
         other?.trees?.let { trees.addAll(it) }
         minimize()
@@ -155,7 +156,7 @@ data class GeneralSubtrees(
     /**
      * Merges permitted NameConstraints
      * */
-    @OptIn(ExperimentalPkiApi::class)
+    @ExperimentalPkiApi
     fun intersectAndReturnExclusions(other: GeneralSubtrees): GeneralSubtrees? {
         require(other.trees != null) { "other GeneralSubtrees must not be null" }
 

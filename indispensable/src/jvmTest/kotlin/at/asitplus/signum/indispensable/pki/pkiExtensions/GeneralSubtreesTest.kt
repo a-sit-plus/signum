@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki.pkiExtensions
 
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.asn1.Asn1String
 import at.asitplus.signum.indispensable.pki.generalNames.DNSName
@@ -13,6 +14,7 @@ import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.shouldBe
 import at.asitplus.testballoon.invoke
 
+@OptIn(ExperimentalPkiApi::class)
 val GeneralSubtreesTest by testSuite {
 
     fun <T : GeneralNameOption> testSubtreeOperation(

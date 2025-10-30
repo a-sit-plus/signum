@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.pki.pkiExtensions
 
 import at.asitplus.cidre.IpAddress
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
 import at.asitplus.signum.indispensable.asn1.Asn1Integer
 import at.asitplus.signum.indispensable.asn1.Asn1String
@@ -16,6 +17,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
 
+@OptIn(ExperimentalPkiApi::class)
 val NameConstraintsExtensionsTest by testSuite {
 
     val testOid = KnownOIDs.nameConstraints_2_5_29_30

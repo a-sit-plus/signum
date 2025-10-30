@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki.pkiExtensions
 
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
@@ -61,6 +62,7 @@ class NameConstraintsExtension(
         }
     }
 
+    @ExperimentalPkiApi
     fun mergeWith(newConstraints: NameConstraintsExtension?) {
         if (newConstraints == null) {
             return
