@@ -27,10 +27,13 @@ kotlin {
                 api(kmmresult())
                 api(serialization("json"))
                 api(datetime())
+                implementation(project(":internals"))
             }
         }
         commonTest {
             dependencies {
+                implementation(kotest("property"))
+                implementation(project(":internals-test"))
                 implementation(project(":indispensable"))
             }
         }

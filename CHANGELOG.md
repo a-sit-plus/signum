@@ -3,6 +3,34 @@
 ## 3.0
 
 ### NEXT
+* Add `Enumerable` and `Enumeration` interfaces to support the pattern in sealed types where the companion object provides `entries` containing all possible instances
+    * Classes and interfaces refactored to use `Set` as `entries` to follow  the standardized pattern:
+        * `Asn1Element.Tag`
+        * `CoseAlgorithm` and its nested implementations
+        * `JsonWebAlgorithm`
+        * `JwsAlgorithm` and its nested implementations
+        * `DataIntegrityAlgorithm`
+        * `MessageAuthenticationCode`
+        * `SignatureAlgorithm`
+        * `RSAPadding`
+        * `SymmetricEncryptionAlgorithm` and its nested implementations
+* Refactored `AlternativeNames` for SAN/IAN extraction
+    * Removed detailed parsing of individual name types; now delegates decoding to `GeneralName`
+    * Introduced dedicated `GeneralName` classes:
+        * `DNSName`
+        * `EDIPartyName`
+        * `IPAddressName`
+        * `OtherName`
+        * `RegisteredIDName`
+        * `RFC822Name`
+        * `UriName`
+        * `X400AddressName`
+        * `X500Name`
+* Add `constrains()` method in `GeneralNameOption` interface to perform constraint checking between General Names, this method is intended for use in NameConstraints check during certificate chain validation
+* Add full RFC 2253 support for Distinguished Names (`X500Name`, `RDN`, `AttributeTypeAndValue`):
+    * `X500Name.fromString()` / `.toRfc2253String()` - parse and serialize complete DNs with escaping and normalization
+    * `RelativeDistinguishedName.fromString()` - parse multi-attribute RDNs
+    * `AttributeTypeAndValue.fromString()` / `.toRfc2253String` - handle known attributes and canonicalize values
 
 ### 3.18.2 / Supreme 0.10.2
 * Fixes
