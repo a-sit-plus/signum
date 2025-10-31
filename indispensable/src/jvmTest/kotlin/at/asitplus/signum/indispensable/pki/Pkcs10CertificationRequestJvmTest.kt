@@ -6,9 +6,6 @@ import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.TestConfig
-import de.infix.testBalloon.framework.aroundEach
-import de.infix.testBalloon.framework.testScope
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.assertions.withClue
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -40,25 +37,13 @@ internal fun X509SignatureAlgorithm.getContentSigner(key: PrivateKey) =
 val Pkcs10CertificationRequestJvmTest by testSuite {
 
     val ecCurve: ECCurve = ECCurve.SECP_256_R_1
-    var keyPair: KeyPair = KeyPairGenerator.getInstance("EC").also {
-        it.initialize(256)
-    }.genKeyPair()
-    var keyPair1: KeyPair = KeyPairGenerator.getInstance("EC").also {
-        it.initialize(256)
-    }.genKeyPair()
-
-    testConfig = TestConfig.aroundEach {
-        keyPair = KeyPairGenerator.getInstance("EC").also {
-            it.initialize(256)
-        }.genKeyPair()
-        keyPair1 = KeyPairGenerator.getInstance("EC").also {
-            it.initialize(256)
-        }.genKeyPair()
-        it()
+    val keyGen = KeyPairGenerator.getInstance("EC").also {
+        it.initialize(ecCurve.coordinateLength.bits.toInt())
     }
 
 
     "CSR match" {
+        val keyPair: KeyPair = keyGen.genKeyPair()
         val ecPublicKey = keyPair.public as ECPublicKey
         val cryptoPublicKey = ecPublicKey.toCryptoPublicKey().getOrThrow()
 
@@ -109,6 +94,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
     }
 
     "CSR with attributes match" {
+        val keyPair: KeyPair = keyGen.genKeyPair()
         val ecPublicKey = keyPair.public as ECPublicKey
         val cryptoPublicKey = ecPublicKey.toCryptoPublicKey().getOrThrow()
 
@@ -173,6 +159,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
     }
 
     "CSRs with extensionRequest match" {
+        val keyPair: KeyPair = keyGen.genKeyPair()
         val ecPublicKey = keyPair.public as ECPublicKey
         val cryptoPublicKey = ecPublicKey.toCryptoPublicKey().getOrThrow()
 
@@ -236,6 +223,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
     }
 
     "CSRs with empty extensions match" {
+        val keyPair: KeyPair = keyGen.genKeyPair()
         val ecPublicKey = keyPair.public as ECPublicKey
         val cryptoPublicKey = ecPublicKey.toCryptoPublicKey().getOrThrow()
 
@@ -282,6 +270,7 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
     }
 
     "CSR can be parsed" {
+        val keyPair: KeyPair = keyGen.genKeyPair()
         val ecPublicKey = keyPair.public as ECPublicKey
         val keyX = ecPublicKey.w.affineX.toByteArray().ensureSize(ecCurve.coordinateLength.bytes)
         val keyY = ecPublicKey.w.affineY.toByteArray().ensureSize(ecCurve.coordinateLength.bytes)
@@ -311,6 +300,8 @@ val Pkcs10CertificationRequestJvmTest by testSuite {
         /*
             TbsCertificationRequest
         */
+        val keyPair: KeyPair = keyGen.genKeyPair()
+        val keyPair1: KeyPair = keyGen.genKeyPair()
         val ecPublicKey1 = keyPair.public as ECPublicKey
         val cryptoPublicKey1 = ecPublicKey1.toCryptoPublicKey().getOrThrow()
         val ecPublicKey11 = keyPair.public as ECPublicKey

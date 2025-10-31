@@ -8,9 +8,6 @@ import at.asitplus.signum.indispensable.asn1.toAsn1Integer
 import at.asitplus.signum.internals.ensureSize
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
-import de.infix.testBalloon.framework.TestConfig
-import de.infix.testBalloon.framework.aroundEach
-import de.infix.testBalloon.framework.testScope
 import de.infix.testBalloon.framework.testSuite
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -19,7 +16,6 @@ import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPublicKey
-import kotlin.time.Duration.Companion.minutes
 
 private fun ByteArray.trimLeadingZeros() =
     when (val i = this.indexOfFirst { it != 0x00.toByte() }) {
@@ -31,16 +27,12 @@ private fun ByteArray.trimLeadingZeros() =
 val JsonWebKeyJvmTest by testSuite {
 
     val ecCurve: ECCurve = ECCurve.SECP_256_R_1
-    var keyPair: KeyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair()
-    var keyPairRSA: KeyPair = KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }.genKeyPair()
+    val keyGenEC = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }
+    var keyGenRSA = KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }
 
-    testConfig = TestConfig.aroundEach {
-        keyPair = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }.genKeyPair()
-        keyPairRSA = KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }.genKeyPair()
-        it()
-    }
 
     "JWK can be created from Coordinates" - {
+        val keyPair: KeyPair = keyGenEC.genKeyPair()
         val xFromBc = (keyPair.public as ECPublicKey).w.affineX.toByteArray().ensureSize(ecCurve.coordinateLength.bytes)
         val yFromBc = (keyPair.public as ECPublicKey).w.affineY.toByteArray().ensureSize(ecCurve.coordinateLength.bytes)
         val pubKey = fromUncompressed(ecCurve, xFromBc, yFromBc).also { it.jwkId = it.didEncoded }
@@ -67,6 +59,7 @@ val JsonWebKeyJvmTest by testSuite {
     }
 
     "JWK can be created from n and e" - {
+        val keyPairRSA: KeyPair = keyGenRSA.genKeyPair()
         val nFromBc = (keyPairRSA.public as RSAPublicKey).modulus
         val eFromBc = (keyPairRSA.public as RSAPublicKey).publicExponent
         val pubKey = CryptoPublicKey.RSA(
