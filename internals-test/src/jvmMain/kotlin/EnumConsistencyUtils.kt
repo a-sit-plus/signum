@@ -3,7 +3,7 @@ package at.asitplus.signum.test
 
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
-import de.infix.testBalloon.framework.TestSuite
+import de.infix.testBalloon.framework.testSuite
 import io.github.classgraph.ClassGraph
 import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -12,12 +12,13 @@ import java.lang.reflect.ParameterizedType
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.companionObjectInstance
 
-fun TestSuite.enumConsistencyTest(testName: String) = test(testName) {
-    ClassGraph()
-        .enableClassInfo()
-        .enableExternalClasses()
-        .acceptPackages("at.asitplus.signum")
-        .scan()
+fun enumConsistencyTest(testName: String) = testSuite {
+    test(testName) {
+        ClassGraph()
+            .enableClassInfo()
+            .enableExternalClasses()
+            .acceptPackages("at.asitplus.signum")
+            .scan()
         .use { scanResult ->
             val companionsOfEnumerable =
                 scanResult
@@ -45,11 +46,11 @@ fun TestSuite.enumConsistencyTest(testName: String) = test(testName) {
                             (enumerableClass.companionObjectInstance as Enumeration<*>).entries
                                 .shouldContainAll(
                                     scanResult.getSubclasses(enumerableClass.java)
-                                        .loadClasses(enumerableClass.java)
-                                        .asSequence()
-                                        .map(Class<*>::kotlin)
-                                        .mapNotNull { it.objectInstance }
-                                        .toSet())
+                                            .loadClasses(enumerableClass.java)
+                                            .asSequence()
+                                            .map(Class<*>::kotlin)
+                                            .mapNotNull { it.objectInstance }
+                                            .toSet())
                         }
 
                         /** map to the companion that we processed and validated */
@@ -67,5 +68,5 @@ fun TestSuite.enumConsistencyTest(testName: String) = test(testName) {
 
             implementersOfEnumeration shouldBe companionsOfEnumerable
         }
+    }
 }
-
