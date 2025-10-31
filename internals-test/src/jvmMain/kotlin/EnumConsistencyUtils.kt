@@ -3,6 +3,7 @@ package at.asitplus.signum.test
 
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
+import de.infix.testBalloon.framework.TestDiscoverable
 import de.infix.testBalloon.framework.testSuite
 import io.github.classgraph.ClassGraph
 import io.kotest.matchers.collections.shouldContainAll
@@ -12,6 +13,7 @@ import java.lang.reflect.ParameterizedType
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.companionObjectInstance
 
+@TestDiscoverable
 fun enumConsistencyTest(testName: String) = testSuite {
     test(testName) {
         ClassGraph()
