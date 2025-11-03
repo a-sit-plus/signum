@@ -12,6 +12,11 @@ on:
         required: false
         default: ''
         type: string
+      gradle-args:
+        description: 'Additional Gradle args'
+        required: false
+        default: ''
+        type: string
 jobs:
   build:
     runs-on: macos-latest
@@ -29,7 +34,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Run tests
-        run: ./gradlew -Dkotlin.build.report.json.directory="$PWD/metrics" allTests -x iosX64Test --scan
+        run: ./gradlew ${{ inputs.gradle-args }} -Dkotlin.build.report.json.directory="$PWD/metrics" allTests -x iosX64Test --scan
       - name: Test Report
         uses: dorny/test-reporter@v2
         env:

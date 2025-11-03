@@ -75,7 +75,7 @@ kotlin {
 }
 
 
-/*
+
 exportXCFramework(
     "SignumSupreme",
     transitiveExports = false,
@@ -87,5 +87,5 @@ exportXCFramework(
     project(":indispensable-asn1"),
     libs.bignum
 )
-*/
+
 

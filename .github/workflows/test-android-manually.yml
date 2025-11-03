@@ -12,6 +12,11 @@ on:
         required: false
         default: ''
         type: string
+      gradle-args:
+        description: 'Additional Gradle args'
+        required: false
+        default: ''
+        type: string
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -44,7 +49,7 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - name: Connected Check
-        run: ./gradlew -Dkotlin.build.report.json.directory="$PWD/metrics" pixelAVDAndroidDeviceTest --scan
+        run: ./gradlew ${{ inputs.gradle-args }} -Dkotlin.build.report.json.directory="$PWD/metrics" pixelAVDAndroidDeviceTest --scan
       - name: Test Report
         uses: dorny/test-reporter@v2
         env:
