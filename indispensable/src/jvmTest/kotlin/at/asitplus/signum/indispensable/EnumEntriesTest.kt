@@ -11,4 +11,4 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlin.reflect.KClass
 import kotlin.reflect.full.companionObject
 
-val EnumEntriesTest by enumConsistencyTest("IndispensableEnums")
+val IndispensableEnums by enumConsistencyTest()
