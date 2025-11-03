@@ -7,7 +7,6 @@ import de.infix.testBalloon.framework.TestDiscoverable
 import de.infix.testBalloon.framework.TestElementName
 import de.infix.testBalloon.framework.testSuite
 import io.github.classgraph.ClassGraph
-import io.github.classgraph.ClassInfo
 import io.github.classgraph.ScanResult
 import io.kotest.assertions.asClue
 import io.kotest.assertions.withClue
@@ -17,11 +16,7 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
-import java.util.Deque
-import java.util.Queue
 import kotlin.reflect.full.companionObject
-import kotlin.reflect.full.companionObjectInstance
-import kotlin.reflect.jvm.jvmName
 
 private val Type.rawType: Type get() = when (this) {
     is ParameterizedType -> this.rawType
