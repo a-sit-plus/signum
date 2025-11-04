@@ -3,64 +3,70 @@ package at.asitplus.signum.test
 
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
-import de.infix.testBalloon.framework.TestSuite
+import de.infix.testBalloon.framework.testSuite
 import io.github.classgraph.ClassGraph
+import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.types.shouldBeInstanceOf
 import java.lang.reflect.ParameterizedType
 import kotlin.reflect.full.companionObject
+import kotlin.reflect.full.companionObjectInstance
 
-
-inline fun <reified T : Any> findImplementations(packageRoot: String = ""): List<Class<out T>> =
-    ClassGraph()
-        .enableClassInfo()
-        .enableExternalClasses()
-        .acceptPackages(packageRoot) // or restrict: "com.example"
-        .scan().use { scanResult ->
-            return scanResult.getClassesImplementing(T::class.java.name)
-                .filter { !it.isAbstract && !it.isInterface }
-                .loadClasses(T::class.java)
-        }
-
-fun TestSuite.EnumConsistencyTestTemplate(testName: String, addedExcludes: Set<String> = setOf()) {
-    val excludedClasses = if (addedExcludes.isNotEmpty()) (BASE_EXCLUDES + addedExcludes) else BASE_EXCLUDES
-
-
+fun enumConsistencyTest(testName: String) = testSuite {
     test(testName) {
-        val allEnumerables = findImplementations<Enumerable>(packageRoot = "at.asitplus.signum")
-        val companionToEnumerable = allEnumerables.associateBy { it.kotlin.companionObject }
-        findImplementations<Enumeration<*>>(packageRoot = "at.asitplus.signum").forEach { companion ->
-            /** Every Enumeration<*> should be a companion */
-            val surroundingClass = companionToEnumerable[companion.kotlin].shouldNotBeNull()
+        ClassGraph()
+            .enableClassInfo()
+            .enableExternalClasses()
+            .acceptPackages("at.asitplus.signum")
+            .scan()
+        .use { scanResult ->
+            val companionsOfEnumerable =
+                scanResult
+                    .getClassesImplementing(Enumerable::class.java)
+                    .loadClasses(Enumerable::class.java)
+                    .asSequence()
+                    .map(Class<Enumerable>::kotlin)
+                    .mapNotNull { enumerableClass ->
+                        val companionObject = enumerableClass.companionObject
 
-            /** Every Enumeration<*> should be parametrized with its own supertype */
-            val enumerationImpl =
-                companion.genericInterfaces.find { t -> t.javaClass == Enumeration::class.java } as ParameterizedType
-            enumerationImpl.actualTypeArguments[0] shouldBe surroundingClass
-        }
-        allEnumerables.asSequence().filter { cls ->
-            excludedClasses.none { exclude -> cls.name.startsWith(exclude) }
-        }.map {
-            val cls = it.kotlin
-            val companion = cls.companionObject.shouldNotBeNull()
-            companion.objectInstance.shouldBeInstanceOf<Enumeration<*>>().entries.forEach {
-                it::class shouldBe cls
-                // TODO: the entire logic is broken i think, reconsider
-            }
+                        if (enumerableClass.java.interfaces.contains(Enumerable::class.java)) {
+                            /** If this class explicitly implements Enumerable, it must have a companion */
+                            companionObject.shouldNotBeNull()
+                        }
+
+                        if (companionObject != null) {
+                            /** If there is a companion, it needs to implement Enumeration<T> ... */
+                            companionObject.java.genericInterfaces.asSequence()
+                                .mapNotNull { it as? ParameterizedType }
+                                .find { it.rawType == Enumeration::class.java }
+                                .shouldNotBeNull() // It must implement Enumeration<*>
+                                .actualTypeArguments[0] shouldBe enumerableClass.java // the type parameter must be T
+
+                            /** ... and needs to be complete */
+                            (enumerableClass.companionObjectInstance as Enumeration<*>).entries
+                                .shouldContainAll(
+                                    scanResult.getSubclasses(enumerableClass.java)
+                                            .loadClasses(enumerableClass.java)
+                                            .asSequence()
+                                            .map(Class<*>::kotlin)
+                                            .mapNotNull { it.objectInstance }
+                                            .toSet())
+                        }
+
+                        /** map to the companion that we processed and validated */
+                        companionObject
+                    }
+                    .toSet()
+
+            val implementersOfEnumeration =
+                scanResult
+                    .getClassesImplementing(Enumeration::class.java)
+                    .loadClasses(Enumeration::class.java)
+                    .asSequence()
+                    .map { it.kotlin.objectInstance.shouldNotBeNull() }
+                    .toSet()
+
+            implementersOfEnumeration shouldBe companionsOfEnumerable
         }
     }
-
 }
-
-val BASE_EXCLUDES = setOf(
-    "at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm\$",
-    "at.asitplus.signum.indispensable.MessageAuthenticationCode\$Truncated",
-    "at.asitplus.signum.indispensable.X509SignatureAlgorithm\$",
-    "at.asitplus.signum.indispensable.asymmetric.RSAPadding\$",
-    "at.asitplus.signum.indispensable.cosef.CoseAlgorithm\$MAC\$",
-    "at.asitplus.signum.indispensable.cosef.CoseAlgorithm\$Signature\$",
-    "at.asitplus.signum.indispensable.cosef.CoseAlgorithm\$SymmetricEncryption\$",
-    "at.asitplus.signum.indispensable.josef.JsonWebAlgorithm\$UNKNOWN"
-)
-

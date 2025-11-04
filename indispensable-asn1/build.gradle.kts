@@ -27,6 +27,7 @@ kotlin {
                 api(kmmresult())
                 api(serialization("json"))
                 api(datetime())
+                implementation(project(":internals"))
             }
         }
         commonTest {

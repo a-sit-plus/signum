@@ -1,52 +1,5 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.signum.Enumerable
-import at.asitplus.signum.Enumeration
-import at.asitplus.signum.test.findImplementations
-import io.kotest.core.spec.style.FreeSpec
-import io.kotest.matchers.collections.shouldContainAll
-import io.kotest.matchers.nulls.shouldNotBeNull
-import io.kotest.matchers.shouldBe
-import io.kotest.matchers.types.shouldBeInstanceOf
-import kotlin.reflect.KClass
-import kotlin.reflect.full.companionObject
+import at.asitplus.signum.test.enumConsistencyTest
 
-class EnumEntriesTest : FreeSpec({
-
-    val excludedClasses = setOf(
-        "at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm\$",
-        "at.asitplus.signum.indispensable.MessageAuthenticationCode\$Truncated",
-        "at.asitplus.signum.indispensable.X509SignatureAlgorithm\$",
-        "at.asitplus.signum.indispensable.asymmetric.RSAPadding\$",
-        "at.asitplus.signum.indispensable.cosef.CoseAlgorithm\$MAC\$",
-        "at.asitplus.signum.indispensable.cosef.CoseAlgorithm\$Signature\$",
-        "at.asitplus.signum.indispensable.cosef.CoseAlgorithm\$SymmetricEncryption\$",
-        "at.asitplus.signum.indispensable.josef.JsonWebAlgorithm\$UNKNOWN",
-        "at.asitplus.signum.indispensable.josef.JweAlgorithm\$",
-        "at.asitplus.signum.indispensable.josef.JwsAlgorithm\$MAC\$",
-        "at.asitplus.signum.indispensable.josef.JwsAlgorithm\$Signature\$EC",
-        "at.asitplus.signum.indispensable.josef.JwsAlgorithm\$Signature\$RSA",
-        "at.asitplus.signum.indispensable.josef.JwsAlgorithm\$MAC\$",
-    )
-
-    "JosefEnums" {
-        val all = findImplementations<Enumerable>()
-        var enum: Enumeration<*>? = null
-        val discovered = mutableListOf<KClass<out Enumerable>>()
-        val filtered = all.filter { cls ->
-            excludedClasses.none { exclude -> cls.name.startsWith(exclude) }
-        }
-        filtered.forEach {
-            val cls = it.kotlin
-            val companion = cls.companionObject
-            companion.shouldNotBeNull()
-            enum = companion.objectInstance.shouldBeInstanceOf<Enumeration<*>>()
-            val entries = enum.entries
-            entries.forEach {
-                it::class shouldBe cls
-                discovered.add(it::class)
-            }
-        }
-        all.filter { !it.kotlin.isAbstract }.map { it.kotlin.qualifiedName } shouldContainAll discovered.map { it.qualifiedName }
-    }
-})
+val EnumEntriesTest by enumConsistencyTest("JosefEnums")
