@@ -10,13 +10,19 @@ import io.github.classgraph.ClassGraph
 import io.github.classgraph.ScanResult
 import io.kotest.assertions.asClue
 import io.kotest.assertions.withClue
+import io.kotest.common.reflection.annotation
 import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
+import kotlinx.metadata.jvm.KotlinClassMetadata
+import kotlinx.serialization.Serializable
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
+import kotlin.reflect.KClass
 import kotlin.reflect.full.companionObject
+import kotlin.reflect.full.findAnnotation
 
 private val Type.rawType: Type get() = when (this) {
     is ParameterizedType -> this.rawType
@@ -34,6 +40,24 @@ private fun <T> ScanResult.loadAllTransitiveSubclassesAndSubinterfaces(superclas
                 .filter { it.implementsInterface(superclass) }
                 .map { it.loadClass(superclass) }
 
+private val KClass<*>.metadata get() = this.java.getAnnotation(Metadata::class.java)?.let {
+    KotlinClassMetadata.readLenient(it)
+}
+
+private val KClass<*>.explicitCompanionObject: KClass<*>? get() = this.companionObject?.takeIf { companion ->
+    (
+        !companion.java.isSynthetic
+    )
+    &&
+    (
+        companion.metadata !is KotlinClassMetadata.SyntheticClass
+    )
+    &&
+    (
+        (this.metadata as? KotlinClassMetadata.Class)?.kmClass?.companionObject != null
+    )
+}
+
 @TestDiscoverable
 fun enumConsistencyTest(@TestElementName name: String = "") = testSuite(name = name) { test("Enum consistency") {
     ClassGraph()
@@ -48,14 +72,25 @@ fun enumConsistencyTest(@TestElementName name: String = "") = testSuite(name = n
                     .map(Class<Enumerable>::kotlin)
                     .mapNotNull { enumerableClass ->
                         withClue(enumerableClass) {
-                            val companionObject = enumerableClass.companionObject
+                            val companionObject = enumerableClass.explicitCompanionObject
 
                             if (enumerableClass.java.interfaces.contains(Enumerable::class.java)) {
-                                /** If this class explicitly implements Enumerable, it must have a companion */
-                                companionObject.shouldNotBeNull()
+                                "if this class explicitly implements Enumerable, it must have a companion...".asClue {
+                                    companionObject.shouldNotBeNull()
+                                }
+                                "... and the companion must implement Enumeration".asClue {
+                                    companionObject!!.objectInstance.shouldBeInstanceOf<Enumeration<*>>()
+                                }
                             }
 
                             if (companionObject != null) {
+                                /** this covers for cases where Serializable creates the companion */
+                                if (
+                                    (companionObject.objectInstance !is Enumeration<*>) &&
+                                    enumerableClass.annotation<Serializable>() != null
+                                ) {
+                                    return@mapNotNull null
+                                }
                                 "if there is a companion, it needs to implement Enumeration<T>".asClue {
                                     companionObject.java.genericInterfaces.asSequence()
                                         .mapNotNull { it as? ParameterizedType }

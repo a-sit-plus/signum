@@ -3,6 +3,7 @@ kotlin = "2.2.21"
 agp = "8.12.3"
 core = "1.5.0"
 kotlinxIoCore = "0.8.0"
+kotlinxMetadataJvm = "0.9.0"
 multibase = "1.2.2"
 bignum = "0.3.10"
 jose = "9.31"
@@ -15,6 +16,7 @@ classgraph = "4.8.184"
 [libraries]
 bignum = { group = "com.ionspin.kotlin", name = "bignum", version.ref = "bignum" }
 kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinxIoCore" }
+kotlinx-metadata-jvm = { group = "org.jetbrains.kotlinx", name = "kotlinx-metadata-jvm", version.ref = "kotlinxMetadataJvm" }
 jose = { group = "com.nimbusds", name = "nimbus-jose-jwt", version.ref = "jose" }
 kotlinpoet = { group = "com.squareup", name = "kotlinpoet", version.ref = "kotlinpoet" }
 multibase = { module = "at.asitplus:multibase", version.ref = "multibase" }

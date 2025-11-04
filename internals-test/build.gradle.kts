@@ -27,6 +27,8 @@ kotlin {
             api(libs.classgraph)
             implementation(project(":internals"))
             implementation(kotest("assertions-core"))
+            implementation(serialization("json"))
+            implementation(libs.kotlinx.metadata.jvm)
         }
     }
 }
