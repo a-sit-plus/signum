@@ -3,6 +3,7 @@
 ## 3.0
 
 ### NEXT
+* Fix project setup on non-macOS build hosts
 
 ### 3.18.2 / Supreme 0.10.2
 * Fixes
