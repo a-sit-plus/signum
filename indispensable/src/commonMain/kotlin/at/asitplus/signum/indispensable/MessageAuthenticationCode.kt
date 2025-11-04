@@ -15,7 +15,7 @@ sealed interface MessageAuthenticationCode : DataIntegrityAlgorithm, Enumerable 
 
     companion object : Enumeration<MessageAuthenticationCode> {
         // lazy due to https://youtrack.jetbrains.com/issue/KT-79161
-        override val entries: Set<MessageAuthenticationCode> by lazy {  HMAC.entries.toSet() }
+        override val entries: Iterable<MessageAuthenticationCode> by lazy {  HMAC.entries }
     }
 
     @ConsistentCopyVisibility
@@ -79,7 +79,7 @@ enum class HMAC(val digest: Digest, override val oid: ObjectIdentifier) : Messag
             byOID(oid) ?: throw Asn1OidException("Unknown OID", oid)
         }
 
-        override val entries: Set<HMAC> by lazy { HMAC.entries.toSet() }
+        override val entries: Iterable<HMAC> by lazy { HMAC.entries }
     }
 
     override val outputLength: BitLength get() = digest.outputLength

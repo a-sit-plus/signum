@@ -36,7 +36,7 @@ sealed interface CoseAlgorithm : Enumerable {
     @Serializable(with = CoseAlgorithmSerializer::class)
     sealed interface Symmetric : CoseAlgorithm {
         companion object : Enumeration<Symmetric> {
-            override val entries: Set<Symmetric> = MAC.entries + SymmetricEncryption.entries
+            override val entries: Collection<Symmetric> = MAC.entries + SymmetricEncryption.entries
         }
     }
 
@@ -51,7 +51,7 @@ sealed interface CoseAlgorithm : Enumerable {
     @Serializable(with = CoseAlgorithmSerializer::class)
     sealed class DataIntegrity(override val coseValue: Int) : CoseAlgorithm, SpecializedDataIntegrityAlgorithm {
         companion object : Enumeration<DataIntegrity> {
-            override val entries: Set<DataIntegrity> by lazy { Signature.entries + MAC.entries }
+            override val entries: Collection<DataIntegrity> by lazy { Signature.entries + MAC.entries }
         }
     }
 
@@ -74,7 +74,7 @@ sealed interface CoseAlgorithm : Enumerable {
         data object ChaCha20Poly1305 : SymmetricEncryption(24, SymmetricEncryptionAlgorithm.ChaCha20Poly1305)
 
         companion object : Enumeration<SymmetricEncryption> {
-            override val entries: Set<SymmetricEncryption> by lazy { setOf(A128GCM, A192GCM, A256GCM, ChaCha20Poly1305) }
+            override val entries: Collection<SymmetricEncryption> by lazy { setOf(A128GCM, A192GCM, A256GCM, ChaCha20Poly1305) }
         }
     }
 
@@ -119,7 +119,7 @@ sealed interface CoseAlgorithm : Enumerable {
         data object RS1 : Signature(-65535, SignatureAlgorithm.RSA(Digest.SHA1, RSAPadding.PKCS1))
 
         companion object : Enumeration<Signature> {
-            override val entries: Set<Signature> by lazy {
+            override val entries: Collection<Signature> by lazy {
                 setOf(
                     ES256,
                     ES384,
@@ -163,7 +163,7 @@ sealed interface CoseAlgorithm : Enumerable {
         data object UNOFFICIAL_HS1 : MAC(-2341169 /*random inside private use range*/, HMAC.SHA1)
 
         companion object : Enumeration<MAC> {
-            override val entries: Set<MAC> by lazy {
+            override val entries: Collection<MAC> by lazy {
                 setOf(
                     HS256,
                     HS256_64,
@@ -176,7 +176,7 @@ sealed interface CoseAlgorithm : Enumerable {
     }
 
     companion object : Enumeration<CoseAlgorithm> {
-        override val entries: Set<CoseAlgorithm> by lazy { DataIntegrity.entries + SymmetricEncryption.entries }
+        override val entries: Collection<CoseAlgorithm> by lazy { DataIntegrity.entries + SymmetricEncryption.entries }
     }
 
 }

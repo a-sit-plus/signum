@@ -63,7 +63,7 @@ sealed interface SignatureAlgorithm: DataIntegrityAlgorithm {
         val RSAwithSHA384andPSSPadding = RSA(Digest.SHA384, RSAPadding.PSS)
         val RSAwithSHA512andPSSPadding = RSA(Digest.SHA512, RSAPadding.PSS)
 
-        override val entries: Set<SignatureAlgorithm> by lazy {
+        override val entries: Iterable<SignatureAlgorithm> by lazy {
             ECDSA.entries + RSA.entries
         }
 

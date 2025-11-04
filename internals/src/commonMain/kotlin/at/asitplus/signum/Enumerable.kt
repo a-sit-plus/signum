@@ -16,5 +16,5 @@ interface Enumeration<T: Enumerable> {
     /**
      * The order of elements in [entries] is not guaranteed.
      * */
-    val entries: Set<T>
+    val entries: Iterable<T>
 }

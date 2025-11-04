@@ -321,7 +321,7 @@ sealed class Asn1Element(
             val TIME_GENERALIZED = Tag(tagValue = BERTags.GENERALIZED_TIME.toULong(), constructed = false)
             val TIME_UTC = Tag(tagValue = BERTags.UTC_TIME.toULong(), constructed = false)
 
-            override val entries: Set<Tag> by lazy {
+            override val entries: Iterable<Tag> by lazy {
                 setOf(
                     SET,
                     SEQUENCE,

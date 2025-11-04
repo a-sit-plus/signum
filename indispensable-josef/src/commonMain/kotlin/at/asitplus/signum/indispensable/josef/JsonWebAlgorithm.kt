@@ -17,7 +17,8 @@ interface JsonWebAlgorithm : Enumerable {
     val identifier: String
 
     companion object : Enumeration<JsonWebAlgorithm> {
-        override val entries: Set<JsonWebAlgorithm> by lazy { JwsAlgorithm.entries + JweAlgorithm.entries }
+        // TODO: keeping this as list for backwards compatibility
+        override val entries: List<JsonWebAlgorithm> by lazy { JwsAlgorithm.entries + JweAlgorithm.entries }
     }
 
     @Serializable(with = JwaSerializer::class)

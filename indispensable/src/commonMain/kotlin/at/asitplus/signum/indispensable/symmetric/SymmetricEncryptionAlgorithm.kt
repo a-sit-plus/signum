@@ -33,8 +33,8 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
 
     companion object : Enumeration<SymmetricEncryptionAlgorithm<*, *, *>> {
 
-        override val entries: Set<SymmetricEncryptionAlgorithm<*, *, *>> by lazy {
-            setOf(ChaCha20Poly1305) + AES_128.entries + AES_192.entries + AES_256.entries
+        override val entries: List<SymmetricEncryptionAlgorithm<*, *, *>> by lazy {
+            listOf(ChaCha20Poly1305) + AES_128.entries + AES_192.entries + AES_256.entries
         }
 
         //ChaCha20Poly1305 is already an object, so we don't need to redeclare here
@@ -49,8 +49,8 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
         class AESDefinition(val keySize: BitLength) : Enumeration<AES<*, *, *>> {
 
             @OptIn(HazardousMaterials::class)
-            override val entries: Set<AES<*, *, *>> by lazy {
-                setOf(GCM, ECB) + CBC.entries + WRAP.entries
+            override val entries: List<AES<*, *, *>> by lazy {
+                listOf(GCM, ECB) + CBC.entries + WRAP.entries
             }
 
             /**
@@ -75,13 +75,13 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
             val WRAP = WrapDefinition(keySize)
 
             class WrapDefinition(keySize: BitLength) : Enumeration<AES.WRAP> {
-                override val entries: Set<AES.WRAP> by lazy { setOf(RFC3394) }
+                override val entries: List<AES.WRAP> by lazy { listOf(RFC3394) }
                 val RFC3394 = AES.WRAP.RFC3394(keySize)
             }
 
             class CbcDefinition(keySize: BitLength) : Enumeration<AES.CBC<*, *>> {
                 @OptIn(HazardousMaterials::class)
-                override val entries: Set<AES.CBC<*, *>> by lazy { setOf(PLAIN) + HMAC.entries }
+                override val entries: List<AES.CBC<*, *>> by lazy { listOf(PLAIN) + HMAC.entries }
                 /**
                  * Plain, Unauthenticated AES in Cipher Block Chaining mode.
                  * You almost certainly don't want to use this as is, but rather some [HMAC]-authenticated variant
@@ -101,7 +101,7 @@ sealed interface SymmetricEncryptionAlgorithm<out A : AuthCapability<out K>, out
                 class HmacDefinition(innerCipher: AES.CBC.Unauthenticated) :
                     Enumeration<AES.CBC.HMAC> {
                     @OptIn(HazardousMaterials::class)
-                    override val entries: Set<AES.CBC.HMAC> by lazy { setOf(SHA_256, SHA_384, SHA_512, SHA_1) }
+                    override val entries: List<AES.CBC.HMAC> by lazy { listOf(SHA_256, SHA_384, SHA_512, SHA_1) }
                     /**
                      * AES-CBC-HMAC as per [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518#section-5.2.2.1)
                      */

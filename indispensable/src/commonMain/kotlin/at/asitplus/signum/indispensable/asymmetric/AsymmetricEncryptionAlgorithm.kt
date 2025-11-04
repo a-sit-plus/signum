@@ -28,9 +28,9 @@ sealed interface RSAPadding : Enumerable {
     }
 
     companion object : Enumeration<RSAPadding> {
-        override val entries: Set<RSAPadding> by lazy {
+        override val entries: List<RSAPadding> by lazy {
             @OptIn(HazardousMaterials::class)
-            setOf(PKCS1, NONE, OAEP.SHA1, OAEP.SHA256, OAEP.SHA384, OAEP.SHA512)
+            listOf(PKCS1, NONE, OAEP.SHA1, OAEP.SHA256, OAEP.SHA384, OAEP.SHA512)
         }
 
         fun fromString(string: String) = entries.firstOrNull { it.toString() == string }
