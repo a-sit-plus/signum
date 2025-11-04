@@ -156,7 +156,7 @@ sealed class JwsAlgorithm(override val identifier: String) :
     companion object : Enumeration<JwsAlgorithm> {
         //Why can't these entries be accessed right away and directly assigning always result in a nullpointer?
         //why does it need lazy?
-        val entries: Collection<JwsAlgorithm> by lazy { Signature.entries + MAC.entries }
+        override val entries: Collection<JwsAlgorithm> by lazy { Signature.entries + MAC.entries }
     }
 }
 
