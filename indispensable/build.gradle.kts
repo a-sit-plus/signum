@@ -30,6 +30,8 @@ kotlin {
             api(libs.securerandom)
         }
 
+        jvmTest.dependencies { implementation(project(":internals-test")) }
+
         androidJvmMain {
             dependencies {
                 api(bouncycastle("bcpkix"))

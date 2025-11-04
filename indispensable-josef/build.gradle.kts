@@ -31,6 +31,7 @@ kotlin {
             dependencies {
                 implementation(libs.jose)
                 implementation(project(":supreme"))
+                implementation(project(":internals-test"))
             }
 
         }

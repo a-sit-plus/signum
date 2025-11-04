@@ -1,6 +1,8 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.catching
+import at.asitplus.signum.Enumerable
+import at.asitplus.signum.Enumeration
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -11,11 +13,12 @@ import kotlinx.serialization.encoding.Encoder
 
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(with = JwaSerializer::class)
-interface JsonWebAlgorithm {
+interface JsonWebAlgorithm : Enumerable {
     val identifier: String
 
-    companion object {
-        val entries: List<JsonWebAlgorithm> = JwsAlgorithm.entries + JweAlgorithm.entries
+    companion object : Enumeration<JsonWebAlgorithm> {
+        // TODO: keeping this as list for backwards compatibility
+        override val entries: List<JsonWebAlgorithm> by lazy { JwsAlgorithm.entries + JweAlgorithm.entries }
     }
 
     @Serializable(with = JwaSerializer::class)

@@ -1,5 +1,7 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.Enumeration
+
 enum class RSAPadding {
     PKCS1,
     PSS;
@@ -12,16 +14,43 @@ sealed interface SignatureAlgorithm: DataIntegrityAlgorithm {
         val digest: Digest?,
         /** Whether this algorithm specifies a particular curve to use, or `null` for any curve. */
         val requiredCurve: ECCurve?
-    ) : SignatureAlgorithm
+    ) : SignatureAlgorithm {
+
+        companion object : Enumeration<ECDSA> {
+            override val entries: Set<ECDSA> by lazy {
+                setOf(
+                    ECDSAwithSHA256,
+                    ECDSAwithSHA384,
+                    ECDSAwithSHA512
+                )
+            }
+        }
+    }
 
     data class RSA(
         /** The digest to apply to the data. */
         val digest: Digest,
         /** The padding to apply to the data. */
         val padding: RSAPadding
-    ) : SignatureAlgorithm
+    ) : SignatureAlgorithm {
 
-    companion object {
+        companion object : Enumeration<RSA> {
+            override val entries: Set<RSA> by lazy {
+                setOf(
+                    RSAwithSHA256andPSSPadding,
+                    RSAwithSHA384andPSSPadding,
+                    RSAwithSHA512andPSSPadding,
+
+                    RSAwithSHA256andPKCS1Padding,
+                    RSAwithSHA384andPKCS1Padding,
+                    RSAwithSHA512andPKCS1Padding
+                )
+            }
+
+        }
+    }
+
+    companion object : Enumeration<SignatureAlgorithm> {
         val ECDSAwithSHA256 = ECDSA(Digest.SHA256, null)
         val ECDSAwithSHA384 = ECDSA(Digest.SHA384, null)
         val ECDSAwithSHA512 = ECDSA(Digest.SHA512, null)
@@ -34,19 +63,9 @@ sealed interface SignatureAlgorithm: DataIntegrityAlgorithm {
         val RSAwithSHA384andPSSPadding = RSA(Digest.SHA384, RSAPadding.PSS)
         val RSAwithSHA512andPSSPadding = RSA(Digest.SHA512, RSAPadding.PSS)
 
-        val entries: Iterable<SignatureAlgorithm> = listOf(
-            ECDSAwithSHA256,
-            ECDSAwithSHA384,
-            ECDSAwithSHA512,
-
-            RSAwithSHA256andPSSPadding,
-            RSAwithSHA384andPSSPadding,
-            RSAwithSHA512andPSSPadding,
-
-            RSAwithSHA256andPKCS1Padding,
-            RSAwithSHA384andPKCS1Padding,
-            RSAwithSHA512andPKCS1Padding
-        )
+        override val entries: Iterable<SignatureAlgorithm> by lazy {
+            ECDSA.entries + RSA.entries
+        }
 
     }
 }
