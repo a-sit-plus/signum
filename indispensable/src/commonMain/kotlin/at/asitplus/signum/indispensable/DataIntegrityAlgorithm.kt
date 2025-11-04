@@ -10,7 +10,7 @@ import at.asitplus.signum.Enumeration
  */
 sealed interface DataIntegrityAlgorithm : Enumerable {
     companion object : Enumeration<DataIntegrityAlgorithm> {
-        override val entries: Iterable<DataIntegrityAlgorithm> by lazy { MessageAuthenticationCode.entries.toSet() + SignatureAlgorithm.entries }
+        override val entries: Iterable<DataIntegrityAlgorithm> by lazy { MessageAuthenticationCode.entries + SignatureAlgorithm.entries }
     }
 
 }

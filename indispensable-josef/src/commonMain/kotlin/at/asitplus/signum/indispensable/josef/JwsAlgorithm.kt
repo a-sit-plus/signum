@@ -50,7 +50,7 @@ sealed class JwsAlgorithm(override val identifier: String) :
                 }
 
             companion object : Enumeration<Signature.EC> {
-                override val entries: List<EC> by lazy {
+                override val entries: Collection<EC> by lazy {
                     listOf(
                         ES256,
                         ES384,
