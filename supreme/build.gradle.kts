@@ -71,6 +71,9 @@ kotlin {
         jvmTest.dependencies {
             implementation("com.lambdaworks:scrypt:1.4.0")
         }
+        iosMain {
+            if (!HostManager.hostIsMac) kotlin.srcDir("src/iosMain/stubbed")
+        }
     }
 }
 
