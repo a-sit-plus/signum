@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.asn1.Asn1Decodable
 import at.asitplus.signum.indispensable.asn1.Asn1Element
 import at.asitplus.signum.indispensable.asn1.Asn1EncapsulatingOctetString
@@ -9,12 +10,21 @@ import at.asitplus.signum.indispensable.asn1.Asn1PrimitiveOctetString
 import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1TagMismatchException
 import at.asitplus.signum.indispensable.asn1.Identifiable
-import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.basicConstraints_2_5_29_19
+import at.asitplus.signum.indispensable.asn1.certificatePolicies_2_5_29_32
 import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1
 import at.asitplus.signum.indispensable.asn1.encoding.Asn1.Bool
+import at.asitplus.signum.indispensable.asn1.inhibitAnyPolicy
+import at.asitplus.signum.indispensable.asn1.keyUsage
+import at.asitplus.signum.indispensable.asn1.nameConstraints_2_5_29_30
+import at.asitplus.signum.indispensable.asn1.policyConstraints_2_5_29_36
+import at.asitplus.signum.indispensable.asn1.policyMappings
 import at.asitplus.signum.indispensable.asn1.readOid
+import at.asitplus.signum.indispensable.pki.X509CertificateExtension.Companion.decodeBase
+import at.asitplus.signum.indispensable.pki.X509CertificateExtension.Companion.doDecode
 import at.asitplus.signum.indispensable.pki.pkiExtensions.BasicConstraintsExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificatePoliciesExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.InhibitAnyPolicyExtension
@@ -28,6 +38,11 @@ import kotlinx.coroutines.flow.update
 
 /**
  * X.509 Certificate Extension
+ *
+ * Decoding behaviour:
+ * - If the extension OID has a registered decoder, [doDecode] attempts to decode it using that decoder.
+ * - If the dedicated decoder throws an exception decoding softly fails. An [InvalidCertificateExtension] is created, preserving the base properties and the exception is stored in `cause`.
+ * - If the extension OID is unknown (no registered decoder), the extension is decoded to a [X509CertificateExtension] instance using [decodeBase].
  */
 open class X509CertificateExtension @Throws(Asn1Exception::class) private constructor(
     override val oid: ObjectIdentifier,
@@ -57,6 +72,15 @@ open class X509CertificateExtension @Throws(Asn1Exception::class) private constr
         +value
     }
 
+    /**
+     * Represents an extension that has a registered OID and dedicated decoder class,
+     * but failed to decode properly.
+     */
+    class InvalidCertificateExtension internal constructor(
+        base: X509CertificateExtension,
+        val cause: Throwable
+    ) : X509CertificateExtension(base.oid, base.value, base.critical)
+
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
 
         private val _registeredExtensionDecoders = MutableStateFlow(
@@ -82,9 +106,15 @@ open class X509CertificateExtension @Throws(Asn1Exception::class) private constr
 
         @Throws(Asn1Exception::class)
         override fun doDecode(src: Asn1Sequence): X509CertificateExtension = src.decodeRethrowing {
-
-            val oid = next().asPrimitive().readOid()
-            return registeredExtensionDecoders[oid]?.invoke(src, null) ?: decodeBase(src)
+            val oid = peek()?.asPrimitive()?.readOid()
+            val decoder = registeredExtensionDecoders[oid]
+            return if (decoder != null) {
+                catchingUnwrapped { decoder(src, null) }.getOrElse {
+                    InvalidCertificateExtension(decodeBase(src), it)
+                }
+            } else {
+                decodeBase(src)
+            }
         }
 
         @Throws(Asn1Exception::class)

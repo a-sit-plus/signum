@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.asn1.Asn1Sequence
 import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
+import at.asitplus.signum.indispensable.asn1.decodeRethrowing
 import at.asitplus.signum.indispensable.asn1.encoding.asAsn1BitString
 import at.asitplus.signum.indispensable.asn1.keyUsage
 import at.asitplus.signum.indispensable.pki.X509CertificateExtension
@@ -28,7 +29,7 @@ class KeyUsageExtension(
     ) : this(base.oid, base.critical, base.value.asEncapsulatingOctetString(), keyUsage)
 
     companion object : Asn1Decodable<Asn1Sequence, X509CertificateExtension> {
-        override fun doDecode(src: Asn1Sequence): KeyUsageExtension {
+        override fun doDecode(src: Asn1Sequence): KeyUsageExtension = src.decodeRethrowing {
             val base = decodeBase(src)
 
             if (base.oid != KnownOIDs.keyUsage) throw Asn1StructuralException(message = "Expected KeyUsage extension (OID: ${KnownOIDs.keyUsage}), but found OID: ${base.oid}")
