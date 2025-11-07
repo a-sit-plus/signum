@@ -6,9 +6,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
-import org.gradle.api.tasks.StopExecutionException
 import org.gradle.api.tasks.testing.Test
-import org.gradle.internal.os.OperatingSystem
 import org.gradle.kotlin.dsl.*
 import org.gradle.plugins.signing.SigningExtension
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
@@ -16,8 +14,8 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import org.jetbrains.kotlin.gradle.plugin.extraProperties
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
-import org.jetbrains.kotlin.konan.target.Family
-import java.io.ByteArrayOutputStream
+import java.io.File
+import java.util.*
 
 /**
  * Gradle convention plugin for Signum. Handles:
@@ -32,10 +30,11 @@ import java.io.ByteArrayOutputStream
  */
 class SignumConventionsPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
+        target.keepAndroidJvmTarget = true // keep androidJvmMain wiring even if no AGP is applied
         logger.info("Signum Conventions Plugin applied to project: ${'$'}{target.path}")
         pluginManager.apply("org.jetbrains.kotlin.multiplatform")
         pluginManager.apply("org.jetbrains.kotlin.plugin.serialization")
-        pluginManager.apply("com.android.kotlin.multiplatform.library")
+        if (target.hasAndroidSdk()) pluginManager.apply("com.android.kotlin.multiplatform.library")
         pluginManager.apply("signing")
         pluginManager.apply("at.asitplus.gradle.conventions")
         pluginManager.apply("de.infix.testBalloon")
@@ -49,7 +48,7 @@ class SignumConventionsExtension(private val project: Project) {
         //if we do this properly, cinterop (swift-klib) blows up, so we hack!
         project.afterEvaluate {
             tasks.withType<Test>().configureEach {
-                maxHeapSize = "4G"
+                maxHeapSize = "10G"
             }
 
             if (supreme) {
@@ -163,7 +162,7 @@ class SignumConventionsExtension(private val project: Project) {
                         extensions.getByType<SigningExtension>().apply {
                             isRequired = false
                         }
-                    }else
+                    } else
                         Logger.lifecycle("  > Signing locally published maven artefacts!")
                 }
             }
@@ -180,6 +179,10 @@ class SignumConventionsExtension(private val project: Project) {
 
 
     fun android(namespace: String, minSdkOverride: Int? = null) {
+        if (!project.hasAndroidSdk()) {
+            project.logger.lifecycle(">> Android SDK not setup. Disabling Android targets!")
+            return
+        }
         project.extensions.getByType<KotlinMultiplatformExtension>().apply {
             androidLibrary {
                 this.namespace = namespace
@@ -194,7 +197,7 @@ class SignumConventionsExtension(private val project: Project) {
                     managedDevices {
                         localDevices {
                             create("pixelAVD").apply {
-                                device = "Pixel 4"
+                                device = "Pixel 9 Pro" //more ram for more tests
                                 apiLevel = 35
                                 systemImageSource = "aosp-atd"
                             }
@@ -289,10 +292,13 @@ fun KotlinMultiplatformExtension.indispensableTargets() {
         tvosX64()
         tvosArm64()
     }
-    androidNativeX64()
-    androidNativeX86()
-    androidNativeArm32()
-    androidNativeArm64()
+
+    if (project.hasAndroidSdk()) {
+        androidNativeX64()
+        androidNativeX86()
+        androidNativeArm32()
+        androidNativeArm64()
+    }
 
     listOf(
         js().apply { browser { testTask { enabled = false } } },
@@ -308,3 +314,37 @@ fun KotlinMultiplatformExtension.indispensableTargets() {
     mingwX64()
 }
 
+
+fun Project.hasAndroidSdk() = resolveAndroidSdk(this)?.let { it -> isValidAndroidSdk(it) } == true
+
+private fun resolveAndroidSdk(project: Project): File? {
+    // Highest precedence: ANDROID_SDK_ROOT (preferred), then ANDROID_HOME (legacy)
+    val env = System.getenv()
+    val fromEnv = listOf("ANDROID_SDK_ROOT", "ANDROID_HOME")
+        .asSequence()
+        .mapNotNull { env[it]?.takeIf { it.isNotBlank() } }
+        .map(::File)
+        .firstOrNull { it.exists() }
+
+    if (fromEnv != null) return fromEnv
+
+    // Fallback: local.properties (common on dev machines)
+    val localProps = File(project.rootDir, "local.properties")
+    if (localProps.exists()) {
+        Properties().apply {
+            localProps.inputStream().use(::load)
+            (getProperty("sdk.dir") ?: getProperty("android.sdk.path"))?.let {
+                val f = File(it)
+                if (f.exists()) return f
+            }
+        }
+    }
+    return null
+}
+
+
+private fun isValidAndroidSdk(sdk: File): Boolean {
+    val platformsOk = File(sdk, "platforms").listFiles()?.any { it.isDirectory } == true
+    val buildToolsOk = File(sdk, "build-tools").listFiles()?.any { it.isDirectory } == true
+    return platformsOk && buildToolsOk
+}

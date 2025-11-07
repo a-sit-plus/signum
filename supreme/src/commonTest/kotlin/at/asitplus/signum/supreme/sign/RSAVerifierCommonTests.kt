@@ -5,30 +5,20 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.supreme.DisabledTestsExecutionReport
 import at.asitplus.signum.supreme.succeed
-import at.asitplus.testballoon.*
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.checkAll
 import at.asitplus.testballoon.withData
 import at.asitplus.testballoon.withDataSuites
-import at.asitplus.testballoon.checkAllTests
-import at.asitplus.testballoon.checkAllSuites
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldNot
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.of
-import io.kotest.property.checkAll
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
-import de.infix.testBalloon.framework.TestConfig
-import de.infix.testBalloon.framework.report
-import de.infix.testBalloon.framework.testScope
-import kotlin.time.Duration.Companion.minutes
 
 @OptIn(ExperimentalEncodingApi::class)
 val RSAVerifierCommonTests  by testSuite {
@@ -159,9 +149,9 @@ fun main() {
         .groupBy(RawTestInfo::pad)
         .mapValues { it.value.groupBy(RawTestInfo::dig).mapValues { (_,v) -> v.map(::TestInfo)}}
 
-    withDataSuites(tests) { byPadding ->
-        withDataSuites(byPadding) { byDigest ->
-            withData(nameFn = TestInfo::b64msg, byDigest) { test ->
+    withData(tests) - { byPadding ->
+        withData(byPadding) - { byDigest ->
+            withData(nameFn = TestInfo::b64msg, byDigest) - { test ->
                 val verifier = SignatureAlgorithm.RSA(test.digest, test.padding).verifierFor(test.key).getOrThrow()
                 verifier.verify(test.msg, test.sig) should succeed
                 verifier.verify(test.msg.copyOfRange(0, test.msg.size/2), test.sig) shouldNot succeed

@@ -6,14 +6,9 @@ import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.asn1.encodeToPEM
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.asymmetric.RSAPadding
-import at.asitplus.signum.supreme.DisabledTestsExecutionReport
 import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.withData
-import at.asitplus.testballoon.withDataSuites
-import at.asitplus.testballoon.checkAllTests
-import at.asitplus.testballoon.checkAllSuites
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -23,15 +18,11 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
-import de.infix.testBalloon.framework.TestConfig
-import de.infix.testBalloon.framework.report
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.testScope
 
 @OptIn(HazardousMaterials::class, SecretExposure::class, ExperimentalStdlibApi::class)
 val RsaEncryptionTest  by testSuite {
     "From OpenSSL" - {
-        withData(nameFn = { it.toString() }, testData) {
+        withData(nameFn = { it.toString().let { if (it.length <= 128) it else (it.substring(0, 125)+"..." )} }, testData) {
             it.key as CryptoPrivateKey.RSA
             AsymmetricEncryptionAlgorithm.RSA(it.padding).decryptorFor(it.key).decrypt(it.enc)
                 .getOrThrow() shouldBe it.plain

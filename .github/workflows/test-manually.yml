@@ -1,4 +1,5 @@
-name: Test Everything
+name: Test Everything (All OS/Arch)
+
 on:
   workflow_dispatch:
     inputs:
@@ -12,40 +13,72 @@ on:
         required: false
         default: ''
         type: string
+
 jobs:
-  build:
-    runs-on: macos-latest
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            name: macRunner
+            arch: arm64
+            run: ./gradlew -Dkotlin.build.report.json.directory="$PWD/metrics" allTests -x iosX64Test -x jvmTest -x jsTest
+          - os: ubuntu-latest
+            name: linuxNativeRunner
+            arch: x64
+            run: ./gradlew -Dkotlin.build.report.json.directory="$PWD/metrics" linuxX64Test --scan
+          - os: ubuntu-latest
+            name: jvmRunner
+            arch: x64
+            run: ./gradlew -Dkotlin.build.report.json.directory="$PWD/metrics" jvmTest --scan
+          - os: ubuntu-latest
+            name: jsRunner
+            arch: x64
+            run: ./gradlew -Dkotlin.build.report.json.directory="$PWD/metrics" jsTest --scan
+          - os: windows-latest
+            name: mingwRunner
+            arch: x64
+            shell: bash
+            run: ./gradlew "-Dkotlin.build.report.json.directory=$PWD/metrics" mingwX64Test --scan
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 300
     env:
       KOTLIN_VERSION_ENV: ${{ inputs.kotlin-version }}
       TESTBALLOON_VERSION_OVERRIDE: ${{ inputs.testballoon-version }}
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
-      - uses: actions/setup-java@v3
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '17'
+
       - name: Run tests
-        run: ./gradlew -Dkotlin.build.report.json.directory="$PWD/metrics" allTests -x iosX64Test --scan
+        run: ${{ matrix.run }}
+
       - name: Test Report
+        if: success() || failure()
         uses: dorny/test-reporter@v2
         env:
           NODE_OPTIONS: --max-old-space-size=8192
-        if: success() || failure()
         with:
-          name: All Tests
-          path: '**/build/test-results/**/TEST*.xml'
+          name: All Tests (${{ matrix.os }}-${{ matrix.name }}-${{ matrix.arch }})
+          path: "**/build/test-results/**/TEST*.xml"
           list-suites: failed
           list-tests: failed
           reporter: java-junit
           use-actions-summary: true
+
       - name: Upload metrics
         if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
-          name: metrics
+          name: metrics-${{ matrix.os }}-${{ matrix.name }}-${{ matrix.arch }}
           path: metrics/*.json
           if-no-files-found: ignore

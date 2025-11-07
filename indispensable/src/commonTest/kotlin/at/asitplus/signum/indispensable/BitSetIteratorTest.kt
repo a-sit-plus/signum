@@ -3,9 +3,9 @@ package at.asitplus.signum.indispensable
 import at.asitplus.signum.indispensable.asn1.BitSet
 
 import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.TestConfig
-import de.infix.testBalloon.framework.testScope
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.TestConfig
+import de.infix.testBalloon.framework.core.testScope
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import kotlin.time.Duration.Companion.minutes

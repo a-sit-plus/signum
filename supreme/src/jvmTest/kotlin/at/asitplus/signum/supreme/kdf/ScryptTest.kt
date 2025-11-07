@@ -12,9 +12,9 @@ import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.withData
 import at.asitplus.testballoon.withDataSuites
-import at.asitplus.testballoon.checkAllTests
+import at.asitplus.testballoon.checkAll
 import at.asitplus.testballoon.checkAllSuites
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.Exhaustive
@@ -22,9 +22,9 @@ import io.kotest.property.arbitrary.*
 import io.kotest.property.exhaustive.ints
 import kotlin.math.pow
 import at.asitplus.signum.indispensable.kdf.SCrypt as scrypt
-import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.testScope
+import de.infix.testBalloon.framework.core.testScope
 
 private val rnd = java.util.Random()
 
@@ -43,7 +43,7 @@ val ScryptTest  by testSuite {
         checkAllSuites(Exhaustive.ints(1..30)) { Npow ->
             val N = 1 shl Npow
             val r = 8
-            checkAllTests(iterations = 64, Arb.byteArray(Arb.constant(128 * r), Arb.byte())) { input ->
+            checkAll(iterations = 64, Arb.byteArray(Arb.constant(128 * r), Arb.byte())) { input ->
                 withClue("input=${input.toHexString(HexFormat.UpperCase).let { it.substring(it.length - 128) }}") {
                     scrypt(
                         cost = N,
@@ -154,7 +154,7 @@ val ScryptTest  by testSuite {
                     val scryptInstance = scrypt(N, blockSize = r, parallelization = p)
                     checkAllSuites(iterations = 6, Arb.byteArray(Arb.positiveInt(16), Arb.byte())) { salt ->
                         checkAllSuites(iterations = 6, Arb.byteArray(Arb.positiveInt(32), Arb.byte())) { ikm ->
-                            checkAllTests(iterations = 6, Arb.nonNegativeInt(256)) { len ->
+                            checkAll(iterations = 6, Arb.nonNegativeInt(256)) { len ->
                                 SCrypt.scrypt(ikm, salt, N, r, p, len) shouldBe scryptInstance.deriveKey(
                                     salt,
                                     ikm,

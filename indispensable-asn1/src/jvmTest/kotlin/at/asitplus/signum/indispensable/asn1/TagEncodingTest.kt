@@ -3,25 +3,22 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.testballoon.checkAll
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import io.kotest.assertions.withClue
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.positiveInt
 import io.kotest.property.arbitrary.uInt
 import io.kotest.property.arbitrary.uLong
-import io.kotest.property.checkAll
 import kotlinx.io.Buffer
 import kotlinx.io.snapshot
 import org.bouncycastle.asn1.ASN1Integer
 import org.bouncycastle.asn1.DERTaggedObject
-import de.infix.testBalloon.framework.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.testScope
 
 val TagEncodingTest by testSuite {
 
@@ -35,7 +32,7 @@ val TagEncodingTest by testSuite {
         long shouldBe it
     }
 
-    "length encoding" {
+    "length encoding" - {
         checkAll(Arb.positiveInt()) {
            Buffer().apply { encodeLength(it.toLong()) }.snapshot().toByteArray() shouldBe it.encodeLength()
         }
@@ -50,13 +47,13 @@ val TagEncodingTest by testSuite {
         }
 
     }
-    "Automated" {
+    "Automated" - {
         checkAll(iterations = 100000, Arb.uLong()) {
             it.toAsn1VarInt().decodeAsn1VarULong().first shouldBe it
             Asn1Element.Tag(it, constructed = it % 2uL == 0uL).tagValue shouldBe it
         }
     }
-    "Against BC" {
+    "Against BC" - {
         checkAll(iterations = 1000000, Arb.int(min = 0)) {
             val tag = Asn1Element.Tag(it.toULong(), constructed = false)
             tag.tagValue shouldBe it.toULong()
@@ -100,7 +97,7 @@ val TagEncodingTest by testSuite {
     }
 
 
-    "Ints" {
+    "Ints" - {
         checkAll(iterations = 100000, Arb.uInt()) {
             it.toAsn1VarInt().apply {
                 decodeAsn1VarULong().first.toUInt() shouldBe it

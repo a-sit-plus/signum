@@ -16,7 +16,9 @@ signumConventions {
 
 kotlin {
     indispensableTargets()
-    watchosDeviceArm64()
+    project.gradle.startParameter.taskNames.firstOrNull { it.contains("publish") }?.let {
+        watchosDeviceArm64()
+    }
 
     sourceSets {
         commonTest {
