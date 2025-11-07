@@ -1,8 +1,7 @@
-import de.infix.testBalloon.framework.TestInvocation
-import de.infix.testBalloon.framework.TestSession
-import de.infix.testBalloon.framework.TestSession.Companion.DefaultConfiguration
-import de.infix.testBalloon.framework.invocation
-import de.infix.testBalloon.framework.testScope
+import de.infix.testBalloon.framework.core.TestInvocation
+import de.infix.testBalloon.framework.core.TestSession
+import de.infix.testBalloon.framework.core.invocation
+import de.infix.testBalloon.framework.core.testScope
 import kotlin.time.Duration.Companion.minutes
 
 //Supercharge tests with concurrency!

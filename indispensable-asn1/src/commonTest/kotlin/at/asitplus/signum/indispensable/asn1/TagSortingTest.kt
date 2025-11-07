@@ -1,25 +1,20 @@
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.testScope
-import de.infix.testBalloon.framework.testSuite
+import at.asitplus.testballoon.checkAll
+import at.asitplus.testballoon.minus
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.comparables.shouldBeLessThan
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.uLong
-import io.kotest.property.checkAll
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.testScope
 
 val TagSortingTest by testSuite {
 
-    "Automated" {
+    "Automated" - {
         val sortedClasses =
             listOf(TagClass.UNIVERSAL, TagClass.APPLICATION, TagClass.CONTEXT_SPECIFIC, TagClass.PRIVATE)
-        checkAll(iterations = 1000, Arb.uLong()) { a ->
+        checkAll(iterations = 1000, Arb.uLong()) - { a ->
             val tagA = Asn1Element.Tag(
                 a,
                 constructed = false,
@@ -47,6 +42,7 @@ val TagSortingTest by testSuite {
                 tagClass = TagClass.UNIVERSAL
             )
 
+
             tagA shouldBeLessThan tagAC
 
             tagA shouldBeLessThan tagAAPP
@@ -56,6 +52,7 @@ val TagSortingTest by testSuite {
             tagAC shouldBeLessThan tagAAPP
             tagAC shouldBeLessThan tagACTX
             tagAC shouldBeLessThan tagAP
+
 
             val aTags = listOf(tagA, tagAC, tagAAPP, tagACTX, tagAP)
             checkAll(iterations = 1000, Arb.uLong()) { b ->

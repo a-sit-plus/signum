@@ -5,30 +5,20 @@ import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.Digest
 import at.asitplus.signum.indispensable.RSAPadding
 import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.supreme.DisabledTestsExecutionReport
 import at.asitplus.signum.supreme.succeed
-import at.asitplus.testballoon.*
-import at.asitplus.testballoon.minus
-import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.checkAll
 import at.asitplus.testballoon.withData
 import at.asitplus.testballoon.withDataSuites
-import at.asitplus.testballoon.checkAllTests
-import at.asitplus.testballoon.checkAllSuites
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldNot
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.of
-import io.kotest.property.checkAll
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
-import de.infix.testBalloon.framework.TestConfig
-import de.infix.testBalloon.framework.report
-import de.infix.testBalloon.framework.testScope
-import kotlin.time.Duration.Companion.minutes
 
 @OptIn(ExperimentalEncodingApi::class)
 val RSAVerifierCommonTests  by testSuite {
@@ -42,6 +32,7 @@ val RSAVerifierCommonTests  by testSuite {
         val b64msg = test.msg
         val msg = Base64.decode(b64msg)
         val sig = CryptoSignature.RSA(Base64.decode(test.sig))
+        val truncatedName = if (b64msg.length <= 128) b64msg else b64msg.take(125) +"..."
     }
 
     /*
@@ -159,9 +150,9 @@ fun main() {
         .groupBy(RawTestInfo::pad)
         .mapValues { it.value.groupBy(RawTestInfo::dig).mapValues { (_,v) -> v.map(::TestInfo)}}
 
-    withDataSuites(tests) { byPadding ->
-        withDataSuites(byPadding) { byDigest ->
-            withData(nameFn = TestInfo::b64msg, byDigest) { test ->
+    withData(tests) - { byPadding ->
+        withData(byPadding) - { byDigest ->
+            withData(nameFn = TestInfo::truncatedName, byDigest) { test ->
                 val verifier = SignatureAlgorithm.RSA(test.digest, test.padding).verifierFor(test.key).getOrThrow()
                 verifier.verify(test.msg, test.sig) should succeed
                 verifier.verify(test.msg.copyOfRange(0, test.msg.size/2), test.sig) shouldNot succeed

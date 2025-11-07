@@ -3,7 +3,7 @@ package at.asitplus.signum.indispensable.asn1
 import io.kotest.assertions.throwables.shouldThrow
 import kotlinx.serialization.json.Json
 import at.asitplus.testballoon.*
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.provided.at.asitplus.signum.indispensable.asn1.Asn1StringFixture
 

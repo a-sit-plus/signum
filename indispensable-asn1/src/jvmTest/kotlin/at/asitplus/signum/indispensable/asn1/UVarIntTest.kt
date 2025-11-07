@@ -1,23 +1,20 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.*
+import at.asitplus.testballoon.checkAll
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
-import io.kotest.property.checkAll
 import kotlinx.io.Buffer
 import kotlinx.io.snapshot
 import kotlin.math.ceil
 import kotlin.random.Random
-import de.infix.testBalloon.framework.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.testScope
 
 val UVarIntTest by testSuite {
 
@@ -31,7 +28,7 @@ val UVarIntTest by testSuite {
             repeat(3){buf.readByte() shouldBe 0.toByte()}
             buf.exhausted().shouldBeTrue()
         }
-        "automated -" {
+        "automated" - {
             checkAll(Arb.uInt()) { int ->
                 val rnd = Random.nextBytes(8)
                 val src = int.toAsn1VarInt().asList() + rnd.asList()
@@ -53,7 +50,7 @@ val UVarIntTest by testSuite {
             repeat(3){buf.readByte() shouldBe 0.toByte()}
             buf.exhausted().shouldBeTrue()
         }
-        "automated -" {
+        "automated" - {
             checkAll(Arb.uLong()) { long ->
                 val rnd = Random.nextBytes(8)
                 val src = long.toAsn1VarInt().asList() + rnd.asList()
@@ -69,7 +66,7 @@ val UVarIntTest by testSuite {
     }
 
     "BigInts" - {
-        "long-capped" {
+        "long-capped" - {
             checkAll(Arb.uLong()) { long ->
                 val uLongVarInt = long.toAsn1VarInt()
                 val bigInteger = BigInteger.fromULong(long)
@@ -92,7 +89,7 @@ val UVarIntTest by testSuite {
             }
         }
 
-        "larger" {
+        "larger" - {
             checkAll(Arb.byteArray(Arb.positiveInt(1024), Arb.byte())) {
                 val bigInt = BigInteger.fromByteArray(it, Sign.POSITIVE)
                 val bigIntVarint = bigInt.toAsn1VarInt()

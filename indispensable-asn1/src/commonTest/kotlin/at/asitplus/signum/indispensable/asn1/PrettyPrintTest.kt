@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 
 val PrettyPrintTest by testSuite {

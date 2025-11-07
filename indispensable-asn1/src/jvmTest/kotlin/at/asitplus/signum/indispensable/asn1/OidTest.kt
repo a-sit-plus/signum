@@ -1,15 +1,13 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.toAsn1VarInt
+import at.asitplus.testballoon.checkAll
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
-import de.infix.testBalloon.framework.TestConfig
-import de.infix.testBalloon.framework.disable
-import de.infix.testBalloon.framework.testScope
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.matchers.comparables.shouldBeLessThan
@@ -17,15 +15,14 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
-import io.kotest.property.checkAll
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+import io.kotest.property.checkAll as kotestCheckAll
 
 @OptIn(ExperimentalUuidApi::class, ExperimentalStdlibApi::class)
 val OidTest by testSuite {
@@ -113,9 +110,9 @@ val OidTest by testSuite {
 
         }
 
-        "Failing negative Bigints" {
-            checkAll(iterations = 50, Arb.negativeInt()) { negativeInt ->
-                checkAll(iterations = 15, Arb.positiveInt(39)) { second ->
+        "Failing negative Bigints" - {
+            checkAll(iterations = 50, Arb.negativeInt()) - { negativeInt ->
+                checkAll(iterations = 15, Arb.positiveInt(39)) - { second ->
                     checkAll(iterations = 100, Arb.intArray(Arb.int(0..128), Arb.positiveInt(Int.MAX_VALUE))) { rest ->
                         listOf(0, 1, 2).forEach { first ->
                             val withNegative =
@@ -128,8 +125,8 @@ val OidTest by testSuite {
                 }
             }
         }
-        "Automated UInt Capped" {
-            checkAll(iterations = 15, Arb.positiveInt(39)) { second ->
+        "Automated UInt Capped" - {
+            checkAll(iterations = 15, Arb.positiveInt(39)) - { second ->
                 checkAll(iterations = 5000, Arb.intArray(Arb.int(0..128), Arb.positiveInt(Int.MAX_VALUE))) {
                     listOf(0, 1, 2).forEach { first ->
                         val oid = ObjectIdentifier(
@@ -179,11 +176,11 @@ val OidTest by testSuite {
         "!Benchmarking fast case" - {
             val repetitions = 10
 
-            "Old Optimized" {
+            "Old Optimized" - {
                 val oldOptimized = mutableListOf<Duration>()
                 repeat(repetitions) {
                     val before = Clock.System.now()
-                    checkAll(iterations = 15, Arb.uInt(max = 39u)) { second ->
+                    checkAll(iterations = 15, Arb.uInt(max = 39u)) - { second ->
                         checkAll(iterations = 5000, Arb.uIntArray(Arb.int(0..256), Arb.uInt(UInt.MAX_VALUE))) {
                             listOf(1u, 2u).forEach { first ->
                                 val oid = BigIntObjectIdentifier(first, second, *it.toUIntArray())
@@ -206,12 +203,12 @@ val OidTest by testSuite {
                 }
             }
 
-            "Optimized" {
+            "Optimized"  {
                 val optimized = mutableListOf<Duration>()
                 repeat(repetitions) {
                     val before = Clock.System.now()
-                    checkAll(iterations = 15, Arb.uInt(max = 39u)) { second ->
-                        checkAll(iterations = 5000, Arb.uIntArray(Arb.int(0..256), Arb.uInt(UInt.MAX_VALUE))) {
+                    kotestCheckAll(iterations = 15, Arb.uInt(max = 39u))  { second ->
+                        kotestCheckAll(iterations = 5000, Arb.uIntArray(Arb.int(0..256), Arb.uInt(UInt.MAX_VALUE))) {
                             listOf(1u, 2u).forEach { first ->
                                 val oid = ObjectIdentifier(first, second, *it.toUIntArray())
                                 ObjectIdentifier.decodeFromTlv(oid.encodeToTlv())
@@ -233,8 +230,8 @@ val OidTest by testSuite {
                 val simple = mutableListOf<Duration>()
                 repeat(repetitions) {
                     val before = Clock.System.now()
-                    checkAll(iterations = 15, Arb.uInt(max = 39u)) { second ->
-                        checkAll(iterations = 5000, Arb.uIntArray(Arb.int(0..256), Arb.uInt(UInt.MAX_VALUE))) {
+                    kotestCheckAll(iterations = 15, Arb.uInt(max = 39u))  { second ->
+                        kotestCheckAll(iterations = 5000, Arb.uIntArray(Arb.int(0..256), Arb.uInt(UInt.MAX_VALUE))) {
                             listOf(1u, 2u).forEach { first ->
                                 val oid = OldOIDObjectIdentifier(first, second, *it.toUIntArray())
                                 OldOIDObjectIdentifier.decodeFromTlv(oid.encodeToTlv())
@@ -292,8 +289,8 @@ val OidTest by testSuite {
             }
         }
 
-        "Automated BigInt" {
-            checkAll(iterations = 15, Arb.positiveInt(39)) { second ->
+        "Automated BigInt" - {
+            checkAll(iterations = 15, Arb.positiveInt(39)) - { second ->
                 checkAll(iterations = 500, Arb.bigInt(1, 358)) {
                     listOf(1, 2).forEach { first ->
                         val third = BigInteger.fromByteArray(it.toByteArray(), Sign.POSITIVE)

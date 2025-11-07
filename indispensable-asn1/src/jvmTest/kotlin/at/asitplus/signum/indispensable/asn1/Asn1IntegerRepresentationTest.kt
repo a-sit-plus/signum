@@ -1,26 +1,22 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.signum.indispensable.asn1.encoding.decodeAsn1VarBigInt
-import at.asitplus.testballoon.invoke
+import at.asitplus.testballoon.checkAll
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import com.ionspin.kotlin.bignum.integer.util.toTwosComplementByteArray
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.byte
 import io.kotest.property.arbitrary.byteArray
 import io.kotest.property.arbitrary.positiveInt
-import io.kotest.property.checkAll
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
-import de.infix.testBalloon.framework.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.testScope
 
 @OptIn(ExperimentalUuidApi::class)
 val Asn1IntegerRepresentationTest by testSuite {
@@ -46,7 +42,7 @@ val Asn1IntegerRepresentationTest by testSuite {
     }
 
 
-    "Automated" {
+    "Automated" - {
         checkAll(Arb.byteArray(Arb.positiveInt(65), Arb.byte())) {
             val bigInt = BigInteger.fromByteArray(it, Sign.POSITIVE)
             val ref = bigInt.toString()
@@ -88,7 +84,7 @@ val Asn1IntegerRepresentationTest by testSuite {
             }
         }
 
-        "automated" {
+        "automated" - {
             checkAll(Arb.byteArray(Arb.positiveInt(349), Arb.byte())) {
                 val pos = BigInteger.fromByteArray(it, Sign.POSITIVE)
                 val neg = BigInteger.fromByteArray(it, Sign.NEGATIVE)

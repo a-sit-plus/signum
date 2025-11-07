@@ -7,7 +7,7 @@ import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import io.kotest.assertions.withClue
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.boolean
@@ -16,9 +16,9 @@ import io.kotest.property.arbitrary.int
 import at.asitplus.testballoon.checkAllSuites
 import java.util.*
 import at.asitplus.signum.indispensable.asn1.BitSet as KmpBitSet
-import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.testScope
+import de.infix.testBalloon.framework.core.testScope
 
 val BitSetTest by testSuite {
 

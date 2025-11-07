@@ -8,9 +8,9 @@ import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.withData
 import at.asitplus.testballoon.withDataSuites
-import at.asitplus.testballoon.checkAllTests
+import at.asitplus.testballoon.checkAll
 import at.asitplus.testballoon.checkAllSuites
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldNot
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -20,9 +20,9 @@ import java.security.Security
 import java.security.Signature
 import java.security.spec.ECGenParameterSpec
 import kotlin.random.Random
-import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.testScope
+import de.infix.testBalloon.framework.core.testScope
 
 val VerifierTests by testSuite {
     Security.addProvider(BouncyCastleProvider())

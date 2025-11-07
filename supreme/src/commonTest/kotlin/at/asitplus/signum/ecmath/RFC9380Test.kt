@@ -3,13 +3,12 @@ package at.asitplus.signum.ecmath
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.supreme.azString
+import at.asitplus.testballoon.checkAll
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import at.asitplus.testballoon.withDataSuites
 import com.ionspin.kotlin.bignum.integer.BigInteger
-import de.infix.testBalloon.framework.TestConfig
-import de.infix.testBalloon.framework.testSuite
-import io.kotest.core.names.TestNameBuilder
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -17,11 +16,8 @@ import io.kotest.property.Arb
 import io.kotest.property.arbitrary.byte
 import io.kotest.property.arbitrary.byteArray
 import io.kotest.property.arbitrary.int
-import io.kotest.property.checkAll
 import kotlin.math.min
 import kotlin.random.Random
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.testScope
 
 val RFC9380Test by testSuite {
     "Assumption: all implemented curves have AB > 0" - {
@@ -740,7 +736,7 @@ Q.y     = 0068889ea2e1442245fe42bfda9e58266828c0263119f35a61631a
         }
     }
     "HashToScalar" - {
-        withData(ECCurve.entries) { curve ->
+        withData(ECCurve.entries) - { curve ->
             val hash_to_scalar = curve.hashToScalar(Random.azString(32).encodeToByteArray())
             checkAll(iterations = 5000, Arb.byteArray(Arb.int(25, 125), Arb.byte())) { input ->
                 val base = hash_to_scalar(input)

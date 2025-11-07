@@ -7,11 +7,7 @@ import org.gradle.api.Project
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.testing.Test
-import org.gradle.kotlin.dsl.extra
-import org.gradle.kotlin.dsl.getByType
-import org.gradle.kotlin.dsl.invoke
-import org.gradle.kotlin.dsl.provideDelegate
-import org.gradle.kotlin.dsl.withType
+import org.gradle.kotlin.dsl.*
 import org.gradle.plugins.signing.SigningExtension
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
@@ -52,7 +48,7 @@ class SignumConventionsExtension(private val project: Project) {
         //if we do this properly, cinterop (swift-klib) blows up, so we hack!
         project.afterEvaluate {
             tasks.withType<Test>().configureEach {
-                maxHeapSize = "4G"
+                maxHeapSize = "10G"
             }
 
             if (supreme) {
@@ -201,7 +197,7 @@ class SignumConventionsExtension(private val project: Project) {
                     managedDevices {
                         localDevices {
                             create("pixelAVD").apply {
-                                device = "Pixel 4"
+                                device = "Pixel 9 Pro" //more ram for more tests
                                 apiLevel = 35
                                 systemImageSource = "aosp-atd"
                             }

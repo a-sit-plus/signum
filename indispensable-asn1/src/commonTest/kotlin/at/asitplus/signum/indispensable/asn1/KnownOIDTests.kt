@@ -1,8 +1,8 @@
 package at.asitplus.signum.indispensable.asn1
 
 import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.TestCompartment
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.TestCompartment
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe

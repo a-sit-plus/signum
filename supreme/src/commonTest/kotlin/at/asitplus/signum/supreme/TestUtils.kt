@@ -3,8 +3,8 @@
 package at.asitplus.signum.supreme
 
 import at.asitplus.KmmResult
-import de.infix.testBalloon.framework.TestElementEvent
-import de.infix.testBalloon.framework.TestExecutionReport
+import de.infix.testBalloon.framework.core.TestElementEvent
+import de.infix.testBalloon.framework.core.TestExecutionReport
 import io.kotest.matchers.Matcher
 import io.kotest.matchers.MatcherResult
 import io.kotest.property.Arb

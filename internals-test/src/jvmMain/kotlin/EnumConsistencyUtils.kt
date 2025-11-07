@@ -3,9 +3,9 @@ package at.asitplus.signum.test
 
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
-import de.infix.testBalloon.framework.TestDiscoverable
-import de.infix.testBalloon.framework.TestElementName
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
+import de.infix.testBalloon.framework.shared.TestElementName
+import de.infix.testBalloon.framework.shared.TestRegistering
 import io.github.classgraph.ClassGraph
 import io.github.classgraph.ScanResult
 import io.kotest.assertions.asClue
@@ -22,7 +22,6 @@ import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import kotlin.reflect.KClass
 import kotlin.reflect.full.companionObject
-import kotlin.reflect.full.findAnnotation
 
 private val Type.rawType: Type get() = when (this) {
     is ParameterizedType -> this.rawType
@@ -58,7 +57,7 @@ private val KClass<*>.explicitCompanionObject: KClass<*>? get() = this.companion
     )
 }
 
-@TestDiscoverable
+@TestRegistering
 fun enumConsistencyTest(@TestElementName name: String = "") = testSuite(name = name) { test("Enum consistency") {
     ClassGraph()
         .enableClassInfo()

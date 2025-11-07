@@ -1,21 +1,18 @@
 package at.asitplus.signum.indispensable.asn1
 
-import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.testSuite
+import at.asitplus.testballoon.checkAll
+import at.asitplus.testballoon.minus
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.instant
-import io.kotest.property.checkAll
 import java.time.Instant
 import kotlin.time.toKotlinInstant
-import de.infix.testBalloon.framework.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.testScope
 
 val Asn1TimeTest by testSuite {
 
-    "Asn1Time test equals and hashCode" {
+    "Asn1Time test equals and hashCode" - {
         checkAll(
             iterations = 150,
             /* Subtract random number from upper bound, which is used to add seconds to val [later] */

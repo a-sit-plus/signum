@@ -3,23 +3,18 @@ package at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.asn1.encoding.decodeToAsn1Integer
 import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1Primitive
 import at.asitplus.signum.indispensable.asn1.encoding.parse
-import at.asitplus.testballoon.checkAllSuites
+import at.asitplus.testballoon.checkAll
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
-import at.asitplus.testballoon.withDataSuites
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
 
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
-import io.kotest.property.checkAll
 import java.math.BigInteger as JavaBigInteger
-import de.infix.testBalloon.framework.TestConfig
-import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.testScope
 
 private fun UByteArray.stripLeadingZeros() =
     when (val i = indexOfFirst { it != 0x00u.toUByte() }) {
@@ -84,20 +79,20 @@ val Asn1IntegerTest by testSuite {
             }
         }
         "Random values" - {
-            checkAllSuites(iterations = 100, Arb.byteArray(Arb.int(100, 200), Arb.byte())) {
+            checkAll(iterations = 100, Arb.byteArray(Arb.int(100, 200), Arb.byte())) - {
                 val bigint = JavaBigInteger(1, it)
                 val varuint = VarUInt(it)
-                "Left Bitshift" {
+                "Left Bitshift" - {
                     checkAll(iterations = 50, Arb.nonNegativeInt(max = 128)) { i ->
                         varuint.shl(i).words shouldBe bigint.shiftLeft(i).toByteArray().stripLeadingZeros()
                     }
                 }
-                "Right Bitshift" {
+                "Right Bitshift" - {
                     checkAll(iterations = 50, Arb.nonNegativeInt()) { i ->
                         varuint.shr(i).words shouldBe bigint.shiftRight(i).toByteArray().stripLeadingZeros()
                     }
                 }
-                "Binary Operators" {
+                "Binary Operators" - {
                     checkAll(iterations = 10, Arb.byteArray(Arb.int(100, 200), Arb.byte())) { it2 ->
                         val bigint2 = JavaBigInteger(1, it2)
                         val varuint2 = VarUInt(it2)
@@ -124,7 +119,7 @@ val Asn1IntegerTest by testSuite {
                 asn1int.toJavaBigInteger() shouldBe bigint
             }
         }
-        "Generic values" {
+        "Generic values" - {
             checkAll(iterations = 2500, Arb.positiveLong()) {
                 val bigint = JavaBigInteger.valueOf(it)
                 val asn1int = Asn1Integer(it)
@@ -160,7 +155,7 @@ val Asn1IntegerTest by testSuite {
             val arb = Arb.byteArray(Arb.int(1500..2500), Arb.byte())
             val randoms = List<ByteArray>(10) { arb.next() }
 
-            withDataSuites({ "$it" }, data = randoms) { outer: ByteArray ->
+            withData({ "$it" }, data = randoms) - { outer: ByteArray ->
                 val i1 = Asn1Integer.fromUnsignedByteArray(outer)
                 i1 shouldBe Asn1Integer.fromUnsignedByteArray(outer)
                 withData(data = randoms.filterNot { it contentEquals outer }) { inner: ByteArray ->
