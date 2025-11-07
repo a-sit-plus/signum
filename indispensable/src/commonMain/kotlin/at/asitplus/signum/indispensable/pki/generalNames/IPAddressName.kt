@@ -96,9 +96,7 @@ class IPAddressName internal constructor(
 
         if (isValid != other.isValid) return false
         if (address != other.address) return false
-//      TODO Add equals for IpInterface in CIDRE
-        if (addressAndPrefix?.address != other.addressAndPrefix?.address) return false
-        if (addressAndPrefix?.prefix != other.addressAndPrefix?.prefix) return false
+        if (addressAndPrefix != other.addressAndPrefix) return false
         if (!rawBytes.contentEquals(other.rawBytes)) return false
         if (type != other.type) return false
         if (network != other.network) return false
