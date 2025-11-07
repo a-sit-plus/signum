@@ -4,12 +4,12 @@ import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import at.asitplus.testballoon.withDataSuites
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.testScope
+import de.infix.testBalloon.framework.core.testScope
 
 val DistinguishedNameTest by testSuite {
     "DistinguishedName test equals and hashCode" - {
@@ -19,7 +19,7 @@ val DistinguishedNameTest by testSuite {
             KnownOIDs.organizationalPerson, KnownOIDs.brainpoolP512r1
         )
         withDataSuites(oids) { first ->
-            withData(oids) { second ->
+            withData(oids, compact= true) { second ->
                 if (first != second) {
                     val cn1 = AttributeTypeAndValue.CommonName(first.encodeToTlv())
                     val cn2 = AttributeTypeAndValue.CommonName(first.encodeToTlv())

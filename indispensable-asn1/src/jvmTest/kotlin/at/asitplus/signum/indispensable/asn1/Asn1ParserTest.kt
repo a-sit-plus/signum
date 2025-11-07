@@ -5,12 +5,12 @@ import at.asitplus.signum.indispensable.asn1.encoding.readFullyToAsn1Elements
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import io.kotest.assertions.throwables.shouldThrow
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import kotlin.random.Random
-import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.testScope
+import de.infix.testBalloon.framework.core.testScope
 
 
 //this copied over to not change delicate test behaviour, as the original function is not deprecated, with DeprecationLevel.ERROR

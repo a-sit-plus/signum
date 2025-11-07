@@ -6,10 +6,10 @@ import at.asitplus.signum.indispensable.asn1.encoding.decodeToEnumOrdinal
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
-import de.infix.testBalloon.framework.testSuite
-import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.core.testSuite
+import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.testScope
+import de.infix.testBalloon.framework.core.testScope
 import io.kotest.matchers.shouldBe
 
 enum class TestEnum {

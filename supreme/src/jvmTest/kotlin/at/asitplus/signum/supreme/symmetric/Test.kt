@@ -15,9 +15,9 @@ import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.withData
 import at.asitplus.testballoon.withDataSuites
-import at.asitplus.testballoon.checkAllTests
+import at.asitplus.testballoon.checkAll
 import at.asitplus.testballoon.checkAllSuites
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -28,9 +28,9 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.random.Random
-import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.testScope
+import de.infix.testBalloon.framework.core.testScope
 
 @OptIn(HazardousMaterials::class, ExperimentalStdlibApi::class)
 val JvmSymmetricTest  by testSuite {

@@ -12,7 +12,7 @@ import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.minus
 import at.asitplus.testballoon.withData
 import at.asitplus.testballoon.withDataSuites
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.datatest.withData
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -34,9 +34,9 @@ import java.security.cert.CertificateFactory
 import kotlin.random.Random
 import kotlin.random.nextInt
 import java.security.cert.X509Certificate as JcaCertificate
-import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.testScope
+import de.infix.testBalloon.framework.core.testScope
 
 @OptIn(UnsafeIoApi::class)
 val X509CertParserTest  by testSuite {

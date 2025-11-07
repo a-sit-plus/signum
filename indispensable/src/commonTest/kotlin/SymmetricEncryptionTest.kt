@@ -6,7 +6,7 @@ import at.asitplus.signum.indispensable.symmetric.SymmetricKey
 import at.asitplus.signum.indispensable.symmetric.preferredMacKeyLength
 import at.asitplus.signum.indispensable.symmetric.randomKey
 import at.asitplus.testballoon.withData
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import org.kotlincrypto.random.CryptoRand
 import kotlin.random.Random
@@ -14,7 +14,7 @@ import kotlin.random.Random
 @OptIn(HazardousMaterials::class)
 val SymmetricEncryptionTest by testSuite {
 
-    withData(nameFn = { "Key generation: $it" }, SymmetricEncryptionAlgorithm.entries) { alg ->
+    withData(nameFn = { "Key generation: $it" } , SymmetricEncryptionAlgorithm.entries, compact = true) { alg ->
         val key = alg.randomKey(random = object : CryptoRand() {
             override fun nextBytes(buf: ByteArray) = Random.nextBytes(buf)
         })

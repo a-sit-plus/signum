@@ -1,4 +1,4 @@
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 
 val alibi by testSuite {
