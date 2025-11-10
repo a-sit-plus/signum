@@ -32,7 +32,6 @@ val RSAVerifierCommonTests  by testSuite {
         val b64msg = test.msg
         val msg = Base64.decode(b64msg)
         val sig = CryptoSignature.RSA(Base64.decode(test.sig))
-        val truncatedName = if (b64msg.length <= 128) b64msg else b64msg.take(125) +"..."
     }
 
     /*
@@ -152,7 +151,7 @@ fun main() {
 
     withData(tests) - { byPadding ->
         withData(byPadding) - { byDigest ->
-            withData(nameFn = TestInfo::truncatedName, byDigest) { test ->
+            withData(nameFn = TestInfo::b64msg, byDigest) { test ->
                 val verifier = SignatureAlgorithm.RSA(test.digest, test.padding).verifierFor(test.key).getOrThrow()
                 verifier.verify(test.msg, test.sig) should succeed
                 verifier.verify(test.msg.copyOfRange(0, test.msg.size/2), test.sig) shouldNot succeed
