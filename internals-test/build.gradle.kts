@@ -18,7 +18,7 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                api(project(":indispensable-asn1"))
+                implementation(project(":indispensable-asn1"))
                 implementation("at.asitplus.gradle:testballoon-shim:${libs.versions.asp.get()}")
                 implementation(libs.kotlinx.io.core)
             }
