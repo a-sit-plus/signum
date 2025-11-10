@@ -49,7 +49,7 @@ sealed class JwsAlgorithm(override val identifier: String) :
                     ES512 -> ECCurve.SECP_521_R_1
                 }
 
-            companion object : Enumeration<Signature.EC> {
+            companion object : Enumeration<EC> {
                 override val entries: Collection<EC> by lazy {
                     listOf(
                         ES256,
@@ -85,7 +85,7 @@ sealed class JwsAlgorithm(override val identifier: String) :
 
             @Serializable(with = JwsAlgorithmSerializer::class)
             data object NON_JWS_SHA1_WITH_RSA : RSA("RS1", SignatureAlgorithm.RSA(Digest.SHA1, RSAPadding.PKCS1))
-            companion object : Enumeration<Signature.RSA> {
+            companion object : Enumeration<RSA> {
                 override val entries: Collection<RSA> by lazy {
                     setOf(
                         PS256,
