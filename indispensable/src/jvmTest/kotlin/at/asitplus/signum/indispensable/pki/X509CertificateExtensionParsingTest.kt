@@ -11,12 +11,12 @@ import at.asitplus.signum.indispensable.asn1.keyUsage
 import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsageExtension
 import at.asitplus.testballoon.invoke
 import at.asitplus.testballoon.withDataSuites
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import org.bouncycastle.asn1.x509.KeyUsage
-import de.infix.testBalloon.framework.TestConfig
+import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
-import de.infix.testBalloon.framework.testScope
+import de.infix.testBalloon.framework.core.testScope
 
 val X509CertificateExtensionParsingTest by testSuite {
 

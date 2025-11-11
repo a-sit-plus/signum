@@ -12,7 +12,7 @@ import at.asitplus.signum.indispensable.pki.generalNames.GeneralName
 import at.asitplus.signum.indispensable.pki.generalNames.GeneralNameOption
 import at.asitplus.signum.indispensable.pki.generalNames.IPAddressName
 import at.asitplus.testballoon.invoke
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 

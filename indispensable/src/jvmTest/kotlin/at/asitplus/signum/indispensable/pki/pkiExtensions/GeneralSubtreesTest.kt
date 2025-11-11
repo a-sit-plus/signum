@@ -10,7 +10,7 @@ import at.asitplus.signum.indispensable.pki.generalNames.IPAddressName
 import at.asitplus.signum.indispensable.pki.generalNames.RFC822Name
 import at.asitplus.signum.indispensable.pki.generalNames.UriName
 import at.asitplus.signum.indispensable.pki.generalNames.x500NameFromString
-import de.infix.testBalloon.framework.testSuite
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import at.asitplus.testballoon.invoke
 
