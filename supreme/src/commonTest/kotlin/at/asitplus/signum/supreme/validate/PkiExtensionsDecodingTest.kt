@@ -2,17 +2,18 @@ package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.indispensable.asn1.Asn1Exception
 import at.asitplus.signum.indispensable.pki.X509Certificate
+import at.asitplus.signum.indispensable.pki.generalNames.GeneralNameOption
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificatePoliciesExtension
-import at.asitplus.signum.indispensable.pki.pkiExtensions.GeneralNameOption
 import at.asitplus.signum.indispensable.pki.pkiExtensions.Qualifier
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 
-open class PkiExtensionsDecodingTest : FreeSpec({
+val PkiExtensionsDecodingTest by testSuite {
 
     "User Notice Decoding" {
         val certUserNoticeQualifierPem = "-----BEGIN CERTIFICATE-----\n" +
@@ -392,4 +393,4 @@ open class PkiExtensionsDecodingTest : FreeSpec({
         generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
         generalNames?.forEach { it.name.type shouldBe GeneralNameOption.NameType.DIRECTORY }
     }
-})
+}

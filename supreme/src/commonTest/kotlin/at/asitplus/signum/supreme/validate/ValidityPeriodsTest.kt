@@ -1,11 +1,10 @@
 package at.asitplus.signum.supreme.validate
 
-import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.validate.TimeValidityValidator
-import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kotlinx.datetime.TimeZone
@@ -14,7 +13,7 @@ import kotlinx.datetime.toLocalDateTime
 /*
 * PKITS 4.2 Validity Periods
 * */
-open class ValidityPeriodsTest : FreeSpec({
+val ValidityPeriodsTest by testSuite {
 
     val trustAnchorRootCertificate = "-----BEGIN CERTIFICATE-----\n" +
             "MIIDRzCCAi+gAwIBAgIBATANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
@@ -375,4 +374,4 @@ open class ValidityPeriodsTest : FreeSpec({
         val result = chain.validate(defaultContext)
         result.isValid shouldBe true
     }
-})
+}

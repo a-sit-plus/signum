@@ -3,14 +3,15 @@ package at.asitplus.signum.supreme.validate
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.validate.NameConstraintsValidator
-import io.kotest.core.spec.style.FreeSpec
+import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.invoke
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
 /*
 * PKITS 4.13 Name Constraints
 * */
-open class NameConstraintsTest : FreeSpec({
+val NameConstraintsTest by testSuite {
 
     val trustAnchorRootCertificate = "-----BEGIN CERTIFICATE-----\n" +
             "MIIDRzCCAi+gAwIBAgIBATANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
@@ -1797,4 +1798,4 @@ open class NameConstraintsTest : FreeSpec({
         validatorFailure shouldNotBe null
         validatorFailure!!.errorMessage shouldBe "NameConstraints violation at cert index 2"
     }
-})
+}

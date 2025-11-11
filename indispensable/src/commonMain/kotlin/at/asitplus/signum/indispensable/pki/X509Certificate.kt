@@ -1,31 +1,14 @@
 package at.asitplus.signum.indispensable.pki
 
+import at.asitplus.catching
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.CertificateValidityException
 import at.asitplus.signum.indispensable.CryptoPublicKey
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.X509SignatureAlgorithm
-import at.asitplus.signum.indispensable.asn1.Asn1BitString
-import at.asitplus.signum.indispensable.asn1.Asn1Decodable
-import at.asitplus.signum.indispensable.asn1.Asn1Element
-import at.asitplus.signum.indispensable.asn1.Asn1Encodable
-import at.asitplus.signum.indispensable.asn1.Asn1Exception
-import at.asitplus.signum.indispensable.asn1.Asn1ExplicitlyTagged
-import at.asitplus.signum.indispensable.asn1.Asn1Primitive
-import at.asitplus.signum.indispensable.asn1.Asn1Sequence
-import at.asitplus.signum.indispensable.asn1.Asn1StructuralException
-import at.asitplus.signum.indispensable.asn1.Asn1Time
-import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
-import at.asitplus.signum.indispensable.asn1.PemDecodable
-import at.asitplus.signum.indispensable.asn1.PemEncodable
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1
-import at.asitplus.signum.indispensable.asn1.encoding.Asn1TreeBuilder
-import at.asitplus.signum.indispensable.asn1.encoding.asAsn1BitString
-import at.asitplus.signum.indispensable.asn1.encoding.decode
-import at.asitplus.signum.indispensable.asn1.encoding.decodeToInt
-import at.asitplus.signum.indispensable.asn1.encoding.encodeToAsn1BitStringPrimitive
-import at.asitplus.signum.indispensable.asn1.encoding.parse
-import at.asitplus.signum.indispensable.asn1.runRethrowing
+import at.asitplus.signum.indispensable.X509SignatureAlgorithmDescription
+import at.asitplus.signum.indispensable.asn1.*
+import at.asitplus.signum.indispensable.asn1.encoding.*
 import at.asitplus.signum.indispensable.io.Base64Strict
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
 import at.asitplus.signum.indispensable.pki.AlternativeNames.Companion.findIssuerAltNames
@@ -38,12 +21,10 @@ import at.asitplus.signum.indispensable.pki.generalNames.X500Name
 import io.matthewnelson.encoding.base64.Base64
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Transient
 import kotlinx.serialization.builtins.serializer
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 /**
  * Very simple implementation of the meat of an X.509 Certificate:
@@ -366,8 +347,6 @@ data class X509Certificate @Throws(IllegalArgumentException::class) constructor(
     @Throws(CertificateValidityException::class)
     fun checkValidity(date: Instant = Clock.System.now()): Boolean = !(isExpired(date) || isNotYetValid(date))
 
-    companion object :
-        PemDecodable<Asn1Sequence, X509Certificate>(EB_STRINGS.DEFAULT, EB_STRINGS.LEGACY) {
     val rawPublicKey get() = tbsCertificate.rawPublicKey
     val decodedPublicKey get() = tbsCertificate.decodedPublicKey
 
