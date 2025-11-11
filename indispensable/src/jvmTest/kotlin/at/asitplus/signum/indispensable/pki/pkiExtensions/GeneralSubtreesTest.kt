@@ -14,6 +14,10 @@ import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import at.asitplus.testballoon.invoke
 
+/**
+ * Adapted from BouncyCastle's PKIXNameConstraintsTest:
+ * https://github.com/bcgit/bc-java/blob/126ac9e14a0f56fae088973a777f1f90a521fd82/prov/src/test/java/org/bouncycastle/jce/provider/test/PKIXNameConstraintsTest.java
+ */
 @OptIn(ExperimentalPkiApi::class)
 val GeneralSubtreesTest by testSuite {
 
@@ -83,7 +87,7 @@ val GeneralSubtreesTest by testSuite {
         a.unionWith(b)
     }
 
-    "test Rfc" {
+    "test Rfc822Name" {
         val email1 = arrayOf(
             "test@test.com",
             "test@test.com",
@@ -153,7 +157,7 @@ val GeneralSubtreesTest by testSuite {
     }
 
 
-    "testDns" {
+    "test DnsName" {
         val dns1 = arrayOf("www.test.de", "www.test1.de", "www.test.de")
         val dns2 = arrayOf("test.de", "www.test.de", "www.test.de")
         val dnsIntersect = arrayOf( "www.test.de", null, "www.test.de" )
@@ -169,7 +173,7 @@ val GeneralSubtreesTest by testSuite {
         testUnionPairs(dns1, dns2, dnsUnion, ::dns)
     }
 
-    "testDNs" {
+    "test DNs" {
         val dn1 = arrayOf("O=test org, OU=test org unit, CN=John Doe")
         val dn2 = arrayOf("O=test org, OU=test org unit")
         val dnIntersection: Array<String?> = arrayOf("O=test org, OU=test org unit, CN=John Doe")
@@ -179,7 +183,7 @@ val GeneralSubtreesTest by testSuite {
         testUnionPairs(dn1, dn2, dnUnion, ::x500NameFromString)
     }
 
-    "testURI" {
+    "test URIName" {
         fun uri(value: String) = UriName(value)
         val uri1 = arrayOf("www.test.de", ".test.de", "test1.de", ".test.de")
         val uri2 = arrayOf("test.de", "www.test.de", "test1.de", ".test.de")
@@ -190,7 +194,7 @@ val GeneralSubtreesTest by testSuite {
         testUnionPairs(uri1, uri2, uriUnion, ::uri)
     }
 
-    "testIP" {
+    "test IPAddressName" {
         val ip1 = arrayOf(
             "192.168.1.1/23",
             "192.168.1.1/32",
