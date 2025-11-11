@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.pki.validate
 
 import at.asitplus.signum.CertificateChainValidatorException
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.NameConstraintsException
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
@@ -37,6 +38,7 @@ class NameConstraintsValidator(
 
     }
 
+    @OptIn(ExperimentalPkiApi::class)
     private fun mergeNameConstraints(
         currCert: X509Certificate,
         previousNameConstraints: NameConstraintsExtension?

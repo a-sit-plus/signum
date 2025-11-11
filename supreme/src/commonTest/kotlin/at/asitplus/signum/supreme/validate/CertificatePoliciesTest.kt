@@ -7,14 +7,15 @@ import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.pkiExtensions.CertificatePoliciesExtension
 import at.asitplus.signum.indispensable.pki.pkiExtensions.Qualifier
 import at.asitplus.signum.indispensable.pki.validate.PolicyValidator
-import io.kotest.core.spec.style.FreeSpec
+import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.invoke
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
 /*
 * PKITS 4.8 Certificate Policies
 * */
-open class CertificatePoliciesTest : FreeSpec({
+val CertificatePoliciesTest by testSuite {
 
     val NISTTestPolicyOne = "2.16.840.1.101.3.2.1.48.1"
     val NISTTestPolicyTwo = "2.16.840.1.101.3.2.1.48.2"
@@ -1370,4 +1371,4 @@ open class CertificatePoliciesTest : FreeSpec({
             ?.qualifier as Qualifier.CPSUri
         displayedQualifier.uri.value shouldBe expectedQualifier.uri.value
     }
-})
+}

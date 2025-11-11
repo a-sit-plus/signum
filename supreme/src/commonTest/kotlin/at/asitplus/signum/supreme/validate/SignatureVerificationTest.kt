@@ -2,14 +2,16 @@ package at.asitplus.signum.supreme.validate
 
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
-import io.kotest.core.spec.style.FreeSpec
+import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.invoke
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
 /*
 * PKITS 4.1 Signature Verification
 * */
-open class SignatureVerificationTest : FreeSpec({
+val SignatureVerificationTest by testSuite {
+
     val trustAnchorRootCertificate = "-----BEGIN CERTIFICATE-----\n" +
             "MIIDRzCCAi+gAwIBAgIBATANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
             "MB0GA1UEChMWVGVzdCBDZXJ0aWZpY2F0ZXMgMjAxMTEVMBMGA1UEAxMMVHJ1c3Qg\n" +
@@ -140,4 +142,4 @@ open class SignatureVerificationTest : FreeSpec({
         validatorFailure shouldNotBe null
         validatorFailure!!.errorMessage shouldBe "No trusted issuer found in the chain."
     }
-})
+}

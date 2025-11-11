@@ -3,14 +3,15 @@ package at.asitplus.signum.supreme.validate
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.validate.PolicyValidator
-import io.kotest.core.spec.style.FreeSpec
+import de.infix.testBalloon.framework.core.testSuite
+import at.asitplus.testballoon.invoke
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
 /*
 * PKITS 4.11 Inhibit Policy Mappings
 * */
-open class InhibitPolicyMappingTest : FreeSpec ({
+val InhibitPolicyMappingTest by testSuite {
 
     val trustAnchorRootCertificate = "-----BEGIN CERTIFICATE-----\n" +
             "MIIDRzCCAi+gAwIBAgIBATANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
@@ -810,4 +811,4 @@ open class InhibitPolicyMappingTest : FreeSpec ({
         validatorFailure shouldNotBe null
         validatorFailure!!.errorMessage shouldBe "Non-null policy tree required but policy tree is null"
     }
-})
+}

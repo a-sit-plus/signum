@@ -3,14 +3,15 @@ package at.asitplus.signum.supreme.validate
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
 import at.asitplus.signum.indispensable.pki.validate.BasicConstraintsValidator
-import io.kotest.core.spec.style.FreeSpec
+import at.asitplus.testballoon.invoke
+import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
 /*
 * PKITS 4.6 Verifying Basic Constraints
 * */
-open class BasicConstraintsTest : FreeSpec({
+val BasicConstraintsTest by testSuite{
 
     val trustAnchorRootCertificate = "-----BEGIN CERTIFICATE-----\n" +
             "MIIDRzCCAi+gAwIBAgIBATANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJVUzEf\n" +
@@ -906,4 +907,4 @@ open class BasicConstraintsTest : FreeSpec({
         result.validatorFailures.firstOrNull { it.validator is BasicConstraintsValidator } shouldBe null
         result.isValid shouldBe true
     }
-})
+}

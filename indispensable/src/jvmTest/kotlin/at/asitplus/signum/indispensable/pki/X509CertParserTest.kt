@@ -179,15 +179,6 @@ val X509CertParserTest  by testSuite {
 
 
     "From attestation collector" - {
-        val shouldFailInvalidDNSName = setOf(
-            "MIICLDCCAbKgAwIBAgIKByMgRxkUcWkXITAKBggqhkjOPQQDAjAbMRkwFwYDVQQFExA1YjAzNTljY2E4ODc5Y2I1MB4XDTE2MDUyNjE2NDgzM1oXDTI2MDUyNDE2NDgzM1owGzEZMBcGA1UEBRMQNjVkOTYzMTQzOTkzN2MyZjBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABEwp7Q5Vr1L9uIt7mY0d2M4V98kto0tOvgYtpiQuV/A96H5my4kS6pNzchIHdMSQg087mkfAHpSrY28fxIMb+R2jgd0wgdowHQYDVR0OBBYEFJZ7TP4UUY0D2lT95WAU1pxP4UnAMB8GA1UdIwQYMBaAFAbd7gqSHZtx4caJQUTvOTlwJgA1MAwGA1UdEwEB/wQCMAAwDgYDVR0PAQH/BAQDAgeAMCQGA1UdHgQdMBugGTAXghVpbnZhbGlkO2VtYWlsOmludmFsaWQwVAYDVR0fBE0wSzBJoEegRYZDaHR0cHM6Ly9hbmRyb2lkLmdvb2dsZWFwaXMuY29tL2F0dGVzdGF0aW9uL2NybC8wNzIzMjA0NzE5MTQ3MTY5MTcyMTAKBggqhkjOPQQDAgNoADBlAjBUawVtvLVXDmaTN7RMyD0pL5XpfHbzKkWUDugxhDCtKNPcQ5/WzCIRu4qPzvoEMZECMQDfXJvHJ7iEMhtWHYg+yGjWmWHlk+glFKEeY04Yzuh58Rb4gj/fSYOV8xewHM0230I=",
-            "MIICKzCCAbKgAwIBAgIKBRBZQmlAYhCWlzAKBggqhkjOPQQDAjAbMRkwFwYDVQQFExA1YjAzNTljY2E4ODc5Y2I1MB4XDTE2MDUyNjE2NTA1NloXDTI2MDUyNDE2NTA1NlowGzEZMBcGA1UEBRMQMDQyZDYxOThiOWJiZTBlODBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABPk/aYKYCeNadJNxSbBuG8u/qX0RgwzAE3n6YcjLW5XvtsRmkY5SqKlItNuiyLXghhItc/d/7WeNs4jUesBUTCujgd0wgdowHQYDVR0OBBYEFJZVrWDHZqIsjO2hLFcN7Ofc6qvqMB8GA1UdIwQYMBaAFAbd7gqSHZtx4caJQUTvOTlwJgA1MAwGA1UdEwEB/wQCMAAwDgYDVR0PAQH/BAQDAgeAMCQGA1UdHgQdMBugGTAXghVpbnZhbGlkO2VtYWlsOmludmFsaWQwVAYDVR0fBE0wSzBJoEegRYZDaHR0cHM6Ly9hbmRyb2lkLmdvb2dsZWFwaXMuY29tL2F0dGVzdGF0aW9uL2NybC8wNTEwNTk0MjY5NDA2MjEwOTY5NzAKBggqhkjOPQQDAgNnADBkAjBMKjIhecbMYr8cuXxgJ3TnrGnR0UcPh0S4dUw8tAWbQCH8QrRCMU4KnKeqLOASIiMCMDxwSLz2htX+voUjioqqeGo5Tutom7PaM3KJ+vGzis1ZaTMIaVOg2RWSJSqsRF2HiQ==",
-            "MIICKzCCAbKgAwIBAgIKBDF0QZGDBSImFzAKBggqhkjOPQQDAjAbMRkwFwYDVQQFExA4N2Y0NTE0NDc1YmEwYTJiMB4XDTE2MDUyNjE3MDQzMFoXDTI2MDUyNDE3MDQzMFowGzEZMBcGA1UEBRMQMzU5NDMyN2QzYTgwYWRiNTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABCcn6GQxcCunI51AtQGMi4iICDbFmk8vszJvASLBiMsH6AIhRaFPUU+Wu8NbNL7KARKu735Z4raea2i/3T9EMrujgd0wgdowHQYDVR0OBBYEFFNQ+Ojxx9jbL3MDrZda8XPT8ZWCMB8GA1UdIwQYMBaAFDBEI+Wi9gbhUKt3XxYWu5HMY8ZZMAwGA1UdEwEB/wQCMAAwDgYDVR0PAQH/BAQDAgeAMCQGA1UdHgQdMBugGTAXghVpbnZhbGlkO2VtYWlsOmludmFsaWQwVAYDVR0fBE0wSzBJoEegRYZDaHR0cHM6Ly9hbmRyb2lkLmdvb2dsZWFwaXMuY29tL2F0dGVzdGF0aW9uL2NybC8wNDMxNzQ0MTkxODMwNTIyMjYxNzAKBggqhkjOPQQDAgNnADBkAjB4yKLpApiNy4MUmG92DysyD7AuA7i7Bh4IsM9ciKJfsp+tOGJdcu650WGQ+qGnx2cCMGbGmyffz5d8cKJiwx/q58iSFJDSX9pXY6IWDyf1HOBNX+11xJPz1gEuVsboqk76ZA==",
-            "MIICKzCCAbKgAwIBAgIKEXhzFQJ5hgIAEDAKBggqhkjOPQQDAjAbMRkwFwYDVQQFExA4N2Y0NTE0NDc1YmEwYTJiMB4XDTE2MDUyNjE3MTUwMloXDTI2MDUyNDE3MTUwMlowGzEZMBcGA1UEBRMQYzYwNDc1NzFkOGYwZDE3YzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABOoJkrjZcbPu6IcDxyrvlugASVQm5MX7OGGT0T34rzlwwbR9UV2ATu6aMiEa8uuQdP3iy5qSUYeCzUuneIdo7dujgd0wgdowHQYDVR0OBBYEFHlfwP7+91r1xLPq/o7/eYXAU9ocMB8GA1UdIwQYMBaAFDBEI+Wi9gbhUKt3XxYWu5HMY8ZZMAwGA1UdEwEB/wQCMAAwDgYDVR0PAQH/BAQDAgeAMCQGA1UdHgQdMBugGTAXghVpbnZhbGlkO2VtYWlsOmludmFsaWQwVAYDVR0fBE0wSzBJoEegRYZDaHR0cHM6Ly9hbmRyb2lkLmdvb2dsZWFwaXMuY29tL2F0dGVzdGF0aW9uL2NybC8xMTc4NzMxNTAyNzk4NjAyMDAxMDAKBggqhkjOPQQDAgNnADBkAjAMOvX7podpWf2gJjzut3Woz/bq1B42pC7Bu511pv1zj4jbtsdhhYCo/u/pnylG3LMCMCgdkdZQBPOEaJuBTYmxGiWrqVFe6vTsX60SJ4vqa1PruSZzEFcyukXMckPn1wcz8A==",
-            "MIICKTCCAa+gAwIBAgIJaDkSRnQoRzlhMAoGCCqGSM49BAMCMBsxGTAXBgNVBAUTEDg3ZjQ1MTQ0NzViYTBhMmIwHhcNMTYwNTI2MTcwNzMzWhcNMjYwNTI0MTcwNzMzWjAbMRkwFwYDVQQFExBkNzc1MjM0ODY2ZjM3ZjUzMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEqrXOysRNrb+GjpMdrmsXrqq+jyLaahkcgCo6rAROyYWOKaERvaFowtGsxkSfMSbqopj3qp//JBOW5iRrHRcp4KOB2zCB2DAdBgNVHQ4EFgQUL78c0llO0rDTlgtwnhdE3BoQUEswHwYDVR0jBBgwFoAUMEQj5aL2BuFQq3dfFha7kcxjxlkwDAYDVR0TAQH/BAIwADAOBgNVHQ8BAf8EBAMCB4AwJAYDVR0eBB0wG6AZMBeCFWludmFsaWQ7ZW1haWw6aW52YWxpZDBSBgNVHR8ESzBJMEegRaBDhkFodHRwczovL2FuZHJvaWQuZ29vZ2xlYXBpcy5jb20vYXR0ZXN0YXRpb24vY3JsLzY4MzkxMjQ2NzQyODQ3Mzk2MTAKBggqhkjOPQQDAgNoADBlAjA9rA4BW4NtHoD3nXysHziKlLoAhCup8V4dNmWu6htIt43I3ANmVm7CzetNqgEjNPACMQCBuDKKwLOHBA9a/dHb9y8ApGZ+AU6StdxH/rHPYRFq84/5WOmUV7vPeFuRoMPe080=",
-            "MIICLDCCAbKgAwIBAgIKFUBEAXmRdIgoUzAKBggqhkjOPQQDAjAbMRkwFwYDVQQFExA4N2Y0NTE0NDc1YmEwYTJiMB4XDTE2MDUyNjE3MTEwN1oXDTI2MDUyNDE3MTEwN1owGzEZMBcGA1UEBRMQMmMwMmY2YjkyYzVmZmViMTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABD1tMTI9EL+Nrs49Bzha5FH3oYf+7K3LXKjYHXf2dfS1HKWMX62mU/kkpSIa9xII3JoX0Gn2ANy1eZltDcM9QRejgd0wgdowHQYDVR0OBBYEFEhMLjxrhtV5A+nxgFJ8HmLdYs0kMB8GA1UdIwQYMBaAFDBEI+Wi9gbhUKt3XxYWu5HMY8ZZMAwGA1UdEwEB/wQCMAAwDgYDVR0PAQH/BAQDAgeAMCQGA1UdHgQdMBugGTAXghVpbnZhbGlkO2VtYWlsOmludmFsaWQwVAYDVR0fBE0wSzBJoEegRYZDaHR0cHM6Ly9hbmRyb2lkLmdvb2dsZWFwaXMuY29tL2F0dGVzdGF0aW9uL2NybC8xNTQwNDQwMTc5OTE3NDg4Mjg1MzAKBggqhkjOPQQDAgNoADBlAjASb/EEF9U8xV69Qsaw+wriMXasredm+enx3t9wfkcBqdaHRRs3eIXVBG0eYPbiVdkCMQDk4NvRqTa883uqOQFT2m1Aqtyeis0Vcg08zcknyf5h/7XxTLXoh1fpCHA/WqO2DVM=",
-            "MIICKzCCAbKgAwIBAgIKEXhzFQJ5hgIAEDAKBggqhkjOPQQDAjAbMRkwFwYDVQQFExA4N2Y0NTE0NDc1YmEwYTJiMB4XDTE2MDUyNjE3MTUwMloXDTI2MDUyNDE3MTUwMlowGzEZMBcGA1UEBRMQYzYwNDc1NzFkOGYwZDE3YzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABOoJkrjZcbPu6IcDxyrvlugASVQm5MX7OGGT0T34rzlwwbR9UV2ATu6aMiEa8uuQdP3iy5qSUYeCzUuneIdo7dujgd0wgdowHQYDVR0OBBYEFHlfwP7+91r1xLPq/o7/eYXAU9ocMB8GA1UdIwQYMBaAFDBEI+Wi9gbhUKt3XxYWu5HMY8ZZMAwGA1UdEwEB/wQCMAAwDgYDVR0PAQH/BAQDAgeAMCQGA1UdHgQdMBugGTAXghVpbnZhbGlkO2VtYWlsOmludmFsaWQwVAYDVR0fBE0wSzBJoEegRYZDaHR0cHM6Ly9hbmRyb2lkLmdvb2dsZWFwaXMuY29tL2F0dGVzdGF0aW9uL2NybC8xMTc4NzMxNTAyNzk4NjAyMDAxMDAKBggqhkjOPQQDAgNnADBkAjAMOvX7podpWf2gJjzut3Woz/bq1B42pC7Bu511pv1zj4jbtsdhhYCo/u/pnylG3LMCMCgdkdZQBPOEaJuBTYmxGiWrqVFe6vTsX60SJ4vqa1PruSZzEFcyukXMckPn1wcz8A=="
-        )
         val json = File("./src/jvmTest/resources/results").listFiles()
             ?.map { Pair(it.nameWithoutExtension, Json.parseToJsonElement(it.readText()).jsonObject) }
             .shouldNotBeNull()
@@ -199,31 +190,22 @@ val X509CertParserTest  by testSuite {
 
         withDataSuites(certs) {
             withData(it) {
-                if (shouldFailInvalidDNSName.contains(it)) {
-                    shouldThrow<Asn1Exception> {
-                        val encodedSrc = it.decodeToByteArray(Base64 {})
-                        X509Certificate.decodeFromDer(encodedSrc)
-                    }.apply {
-                        message shouldBe "DNSName components must consist of letters, digits, and hyphens"
-                    }
-                } else {
-                    val encodedSrc = it.decodeToByteArray(Base64 {})
+                val encodedSrc = it.decodeToByteArray(Base64 {})
 
-                    val jcaCert = CertificateFactory
-                        .getInstance("X509")
-                        .generateCertificate(ByteArrayInputStream(encodedSrc)) as java.security.cert.X509Certificate
+                val jcaCert = CertificateFactory
+                    .getInstance("X509")
+                    .generateCertificate(ByteArrayInputStream(encodedSrc)) as java.security.cert.X509Certificate
 
-                    val cert = X509Certificate.decodeFromDer(encodedSrc)
+                val cert = X509Certificate.decodeFromDer(encodedSrc)
 
-                    jcaCert.encoded shouldBe encodedSrc
-                    cert.encodeToTlv().derEncoded shouldBe encodedSrc
+                jcaCert.encoded shouldBe encodedSrc
+                cert.encodeToTlv().derEncoded shouldBe encodedSrc
 
-                    val garbage = Random.nextBytes(Random.nextInt(0..128))
-                    val input = (jcaCert.encoded + garbage).wrapInUnsafeSource()
-                    input.readAsn1Element().let { (parsed, _) ->
-                        parsed.derEncoded shouldBe jcaCert.encoded
-                        input.readByteArray() shouldBe garbage
-                    }
+                val garbage = Random.nextBytes(Random.nextInt(0..128))
+                val input = (jcaCert.encoded + garbage).wrapInUnsafeSource()
+                input.readAsn1Element().let { (parsed, _) ->
+                    parsed.derEncoded shouldBe jcaCert.encoded
+                    input.readByteArray() shouldBe garbage
                 }
             }
         }
