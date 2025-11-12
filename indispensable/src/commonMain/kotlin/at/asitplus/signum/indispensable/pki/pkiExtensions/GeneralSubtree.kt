@@ -77,7 +77,7 @@ data class GeneralSubtrees(
 
     /**
      * Removes all redundant entries
-     * */
+     */
     @OptIn(ExperimentalPkiApi::class)
     private fun minimize(): GeneralSubtrees {
         val mutableTrees = trees.toMutableList()
@@ -127,14 +127,14 @@ data class GeneralSubtrees(
     }
 
     @ExperimentalPkiApi
-    fun unionWith(other: GeneralSubtrees?) {
-        other?.trees?.let { trees.addAll(it) }
+    fun unionWith(other: GeneralSubtrees) {
+        trees.addAll(other.trees)
         minimize()
     }
 
     /**
-     * Creates Subtree containing widest name of that type]
-     * */
+     * Creates Subtree containing widest name of that type
+     */
     private fun createWidestSubtree(name: GeneralNameOption): GeneralSubtree {
         return try {
             val newName = when (name.type) {
@@ -155,7 +155,7 @@ data class GeneralSubtrees(
 
     /**
      * Merges permitted NameConstraints
-     * */
+     */
     @ExperimentalPkiApi
     fun intersectAndReturnExclusions(other: GeneralSubtrees): GeneralSubtrees? {
         require(other.trees != null) { "other GeneralSubtrees must not be null" }
