@@ -30,6 +30,7 @@ kotlin {
             api(libs.securerandom)
             api(libs.cidre)
             api(libs.urikmp)
+            implementation(coroutines())
         }
 
         androidJvmMain {
