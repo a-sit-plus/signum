@@ -49,7 +49,7 @@ val PkiExtensionsDecodingTest by testSuite {
 
         val userNotice = policyInfo?.policyQualifiers?.first()?.qualifier.shouldBeInstanceOf<Qualifier.UserNotice>()
 
-        userNotice.explicitText?.value shouldBe "q1:  This is the user notice from qualifier 1.  This certificate is for test purposes only"
+        userNotice.explicitText?.value?.value shouldBe "q1:  This is the user notice from qualifier 1.  This certificate is for test purposes only"
     }
 
     "CPS Pointer Decoding" {
@@ -177,9 +177,10 @@ val PkiExtensionsDecodingTest by testSuite {
                 "cHZkH9okuLpO5zNsYPEWjg1NoF4wwxw=\n" +
                 "-----END CERTIFICATE-----"
 
-        shouldThrow<Asn1Exception> { X509Certificate.decodeFromPem(sanEmptyHostPem).getOrThrow() }.apply {
-            message shouldBe "DNSName must not be null or empty"
-        }
+        cert = X509Certificate.decodeFromPem(sanEmptyHostPem).getOrThrow()
+        generalNames = cert.tbsCertificate.subjectAlternativeNames?.generalNames
+        generalNames?.size shouldBe 1
+        generalNames?.forEach { it.name.type shouldBe GeneralNameOption.NameType.DNS }
 
         val sanOtherName = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIC/DCCAeSgAwIBAgITBmaU4PsnM8bqyYetOWyVgmVRkzANBgkqhkiG9w0BAQUF\n" +
