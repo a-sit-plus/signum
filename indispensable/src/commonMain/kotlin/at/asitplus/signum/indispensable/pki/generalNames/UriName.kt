@@ -102,11 +102,7 @@ class UriName internal constructor(
                     }
 
                     if (constraintResult == GeneralNameOption.ConstraintResult.MATCH && thisDomain != otherDomain) {
-                        constraintResult = if (thisDomain) {
-                            GeneralNameOption.ConstraintResult.WIDENS
-                        } else {
-                            GeneralNameOption.ConstraintResult.NARROWS
-                        }
+                        constraintResult = GeneralNameOption.ConstraintResult.NARROWS
                     }
 
                     constraintResult

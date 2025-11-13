@@ -147,7 +147,7 @@ class NameConstraintsExtension(
                     val generalName = if (isIp) IPAddressName.decodeFromTlv(cn) else DNSName.decodeFromTlv(cn)
                     alternativeNames.add(GeneralName(generalName))
                 }
-            } catch (_: IOException) {
+            } catch (_: Throwable) {
                 // cn is not ip or dns
             }
         }
@@ -175,9 +175,9 @@ class NameConstraintsExtension(
                 val excludedName = generalSubtree.base.name
                 when (excludedName.constrains(name)) {
                     GeneralNameOption.ConstraintResult.MATCH,
-                    GeneralNameOption.ConstraintResult.NARROWS -> return false
+                    GeneralNameOption.ConstraintResult.WIDENS -> return false
                     GeneralNameOption.ConstraintResult.DIFF_TYPE,
-                    GeneralNameOption.ConstraintResult.WIDENS,
+                    GeneralNameOption.ConstraintResult.NARROWS,
                     GeneralNameOption.ConstraintResult.SAME_TYPE -> continue
                 }
             }
@@ -190,9 +190,9 @@ class NameConstraintsExtension(
                 val permittedName = generalSubtree.base.name
                 when (permittedName.constrains(name)) {
                     GeneralNameOption.ConstraintResult.MATCH,
-                    GeneralNameOption.ConstraintResult.NARROWS -> return true
+                    GeneralNameOption.ConstraintResult.WIDENS -> return true
                     GeneralNameOption.ConstraintResult.DIFF_TYPE -> continue
-                    GeneralNameOption.ConstraintResult.WIDENS,
+                    GeneralNameOption.ConstraintResult.NARROWS,
                     GeneralNameOption.ConstraintResult.SAME_TYPE -> {
                         sameType = true
                         continue

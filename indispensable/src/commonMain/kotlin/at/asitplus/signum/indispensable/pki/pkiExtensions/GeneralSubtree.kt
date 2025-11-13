@@ -226,9 +226,17 @@ data class GeneralSubtrees(
 
                 if (!intersectionFound) {
                     if (newExcluded == null) newExcluded = mutableListOf()
-                    val widest = createWidestSubtree(thisEntry)
-                    if (newExcluded.none { it.base == widest.base }) {
-                        newExcluded += widest
+
+                    if (thisEntry.type == GeneralNameOption.NameType.DIRECTORY) {
+                        // for x500Name exclude actual subtree
+                        if (newExcluded.none { it.base == primary[i].base }) {
+                            newExcluded += primary[i]
+                        }
+                    } else {
+                        val widest = createWidestSubtree(thisEntry)
+                        if (newExcluded.none { it.base == widest.base }) {
+                            newExcluded += widest
+                        }
                     }
                 }
 

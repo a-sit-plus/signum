@@ -265,7 +265,17 @@ open class AttributeTypeAndValue(
 
         other as AttributeTypeAndValue
 
-        if (toRfc2253String() != other.toRfc2253String()) return false
+        val thisNormalized = runCatching {
+            Asn1String.decodeFromTlv(value.asPrimitive()).value.replace("\\s+".toRegex(), "").lowercase()
+        }.getOrNull()
+        val otherNormalized = runCatching {
+            Asn1String.decodeFromTlv(other.value.asPrimitive()).value.replace("\\s+".toRegex(), "").lowercase()
+        }.getOrNull()
+
+        if (thisNormalized != null && otherNormalized != null) {
+            if (thisNormalized != otherNormalized) return false
+        } else if (value != other.value) return false
+
         if (oid != other.oid) return false
         if (attrType != other.attrType) return false
 
