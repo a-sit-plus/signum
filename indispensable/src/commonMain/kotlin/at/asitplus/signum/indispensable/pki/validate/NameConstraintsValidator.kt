@@ -19,6 +19,7 @@ class NameConstraintsValidator(
     private var previousNameConstraints: NameConstraintsExtension? = null
 ) : CertificateValidator {
 
+    @ExperimentalPkiApi
     override suspend fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
         remainingCriticalExtensions.remove(KnownOIDs.nameConstraints_2_5_29_30)
         currentCertIndex++
@@ -28,7 +29,7 @@ class NameConstraintsValidator(
                 if (!previousNameConstraints!!.verify(currCert)) {
                     throw NameConstraintsException("NameConstraints violation at cert index $currentCertIndex")
                 }
-            } catch (e: IOException) {
+            } catch (e: Throwable) {
                 throw CertificateChainValidatorException(
                     e.message ?: "NameConstraints validation failed."
                 )
@@ -44,16 +45,15 @@ class NameConstraintsValidator(
         previousNameConstraints: NameConstraintsExtension?
     ): NameConstraintsExtension? {
 
-        val newNameConstraints =
-            currCert.findExtension<NameConstraintsExtension>()
+        val newNameConstraints = currCert.findExtension<NameConstraintsExtension>()
 
         return if (previousNameConstraints == null) {
             newNameConstraints?.copy()
         } else {
             try {
                 previousNameConstraints.mergeWith(newNameConstraints)
-            } catch (ioe: IOException) {
-                throw NameConstraintsException(ioe.message ?: "NameConstraints merge failed.")
+            } catch (e: Throwable) {
+                throw NameConstraintsException(e.message ?: "NameConstraints merge failed.")
             }
             previousNameConstraints
         }

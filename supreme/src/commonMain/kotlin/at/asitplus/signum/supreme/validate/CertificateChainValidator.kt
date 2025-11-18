@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.validate
 
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.KnownOIDs
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.asn1.anyPolicy
@@ -72,6 +73,7 @@ data class ValidatorFailure(
  * @return a [CertificateValidationResult] containing the resulting policy tree,
  * the end-entity certificate, and a list of any [ValidatorFailure] entries describing validation issues.
  */
+@ExperimentalPkiApi
 suspend fun CertificateChain.validate(
     context: CertificateValidationContext = CertificateValidationContext(),
 ) : CertificateValidationResult {
@@ -125,7 +127,7 @@ suspend fun CertificateChain.validate(
                 currValidator.check(cert, remainingCriticalExtensions)
             } catch (e: Throwable) {
                 iterator.remove()
-                validatorFailures.add(ValidatorFailure(currValidator::class.simpleName!!, currValidator, e.message ?: "Validation failed.", i, e))
+                validatorFailures.add(ValidatorFailure(currValidator::class.simpleName!!, currValidator, e.message ?: "Validation failed.", i + 1, e))
             }
         }
         verifyCriticalExtensions(remainingCriticalExtensions, i , validatorFailures)

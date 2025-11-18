@@ -1,5 +1,6 @@
 package at.asitplus.signum.supreme.validate
 
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.X509Certificate
@@ -18,6 +19,7 @@ class TrustAnchorValidator(
 
     private var foundTrusted: Boolean = false
 
+    @ExperimentalPkiApi
     override suspend fun check(
         currCert: X509Certificate,
         remainingCriticalExtensions: MutableSet<ObjectIdentifier>

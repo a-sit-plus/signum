@@ -92,7 +92,7 @@ val KeyUsageTest by testSuite {
         val result = chain.validate(defaultContext)
         val validatorFailure = result.validatorFailures.firstOrNull {it.validator is KeyUsageValidator}
         validatorFailure shouldNotBe null
-        validatorFailure!!.errorMessage shouldBe "Digital signature key usage extension not present at the intermediate cert!"
+        validatorFailure!!.errorMessage shouldBe "Digital signature key usage extension not present at cert index 1."
     }
 
     "Invalid keyUsage Not Critical keyCertSign False Test2" {
@@ -150,7 +150,7 @@ val KeyUsageTest by testSuite {
         val result = chain.validate(defaultContext)
         val validatorFailure = result.validatorFailures.firstOrNull {it.validator is KeyUsageValidator}
         validatorFailure shouldNotBe null
-        validatorFailure!!.errorMessage shouldBe "Digital signature key usage extension not present at the intermediate cert!"
+        validatorFailure!!.errorMessage shouldBe "Digital signature key usage extension not present at cert index 1."
     }
 
     "Valid keyUsage Not Critical Test3" {
@@ -262,7 +262,7 @@ val KeyUsageTest by testSuite {
         val result = chain.validate(defaultContext)
         val validatorFailure = result.validatorFailures.firstOrNull {it.validator is KeyUsageValidator}
         validatorFailure shouldNotBe null
-        validatorFailure!!.errorMessage shouldBe "CRL signature key usage extension not present at the intermediate cert!"
+        validatorFailure!!.errorMessage shouldBe "CRL signature key usage extension not present at cert index 1."
     }
 
     "Invalid keyUsage Not Critical cRLSign False Test5" {
@@ -320,6 +320,6 @@ val KeyUsageTest by testSuite {
         val result = chain.validate(defaultContext)
         val validatorFailure = result.validatorFailures.firstOrNull {it.validator is KeyUsageValidator}
         validatorFailure shouldNotBe null
-        validatorFailure!!.errorMessage shouldBe "CRL signature key usage extension not present at the intermediate cert!"
+        validatorFailure!!.errorMessage shouldBe "CRL signature key usage extension not present at cert index 1."
     }
 }

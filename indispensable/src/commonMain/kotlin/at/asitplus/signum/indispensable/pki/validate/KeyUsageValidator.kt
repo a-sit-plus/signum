@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.pki.validate
 
+import at.asitplus.signum.ExperimentalPkiApi
 import at.asitplus.signum.KeyUsageException
 import at.asitplus.signum.indispensable.asn1.*
 import at.asitplus.signum.indispensable.asn1.ObjectIdentifier
@@ -8,8 +9,7 @@ import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsage
 import at.asitplus.signum.indispensable.pki.pkiExtensions.KeyUsageExtension
 
 /**
- * Ensures that intermediate CA certificates have the necessary
- * key usage extensions.
+ * Ensures that intermediate CA certificates have the necessary key usage extensions.
  * Key usage to sign certificates (keyCertSign) and sign certificate revocation lists (cRLSign), according to RFC 5280.
  */
 class KeyUsageValidator (
@@ -23,21 +23,21 @@ class KeyUsageValidator (
         KnownOIDs.subjectAltName_2_5_29_17,
     )
 
+    @ExperimentalPkiApi
     override suspend fun check(currCert: X509Certificate, remainingCriticalExtensions: MutableSet<ObjectIdentifier>) {
         remainingCriticalExtensions.removeAll(supportedExtensions)
-        if (currentCertIndex < pathLength - 1)
-            verifyIntermediateKeyUsage(currCert)
-
         currentCertIndex++
+        if (currentCertIndex <= pathLength - 1)
+            verifyIntermediateKeyUsage(currCert)
     }
 
     private fun verifyIntermediateKeyUsage(currCert: X509Certificate) {
         if (currCert.findExtension<KeyUsageExtension>()?.keyUsage?.contains(KeyUsage.KEY_CERT_SIGN) != true) {
-            throw KeyUsageException("Digital signature key usage extension not present at the intermediate cert!")
+            throw KeyUsageException("Digital signature key usage extension not present at cert index $currentCertIndex.")
         }
 
         if (currCert.findExtension<KeyUsageExtension>()?.keyUsage?.contains(KeyUsage.CRL_SIGN) != true) {
-            throw KeyUsageException("CRL signature key usage extension not present at the intermediate cert!")
+            throw KeyUsageException("CRL signature key usage extension not present at cert index $currentCertIndex.")
         }
     }
 }
